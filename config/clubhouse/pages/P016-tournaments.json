@@ -100,7 +100,9 @@
       "src/clubhouse/screens/tournaments/import/__tests__/results.test.ts",
       "src/clubhouse/screens/tournaments/import/__tests__/plan.test.ts",
       "src/clubhouse/screens/tournaments/import/__tests__/grid.test.ts",
-      "src/app/golf/actions/__tests__/tournaments-import.test.ts"
+      "src/app/golf/actions/__tests__/tournaments-import.test.ts",
+      "src/clubhouse/__tests__/exports.test.tsx",
+      "src/clubhouse/screens/tournaments/__tests__/export.test.ts"
     ],
     "loader": "src/clubhouse/data/tournaments.ts",
     "route": "src/clubhouse/routes/tournaments.tsx"
@@ -297,6 +299,24 @@
       "tests": [
         "src/app/golf/actions/__tests__/tournaments-import.test.ts",
         "src/clubhouse/__tests__/tournaments-import.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P016-EXPORT-RESULTS",
+      "label": "Export an event's results (teams and our players)",
+      "component": "src/clubhouse/screens/tournaments/EventDesk.tsx#EventDesk",
+      "handler": "ExportButton run",
+      "service": "src/clubhouse/lib/csv.ts#saveCsv",
+      "data": [
+        "a CSV file on the device"
+      ],
+      "bridge": {
+        "success": 160980,
+        "failure": 160682
+      },
+      "tests": [
+        "src/clubhouse/__tests__/exports.test.tsx",
+        "src/clubhouse/screens/tournaments/__tests__/export.test.ts"
       ]
     }
   ],

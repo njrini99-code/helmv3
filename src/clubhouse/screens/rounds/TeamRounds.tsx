@@ -31,6 +31,7 @@ import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { LiveNowCard } from '../home/LiveNowCard';
 import type { LiveSnapshot } from '../../live/model';
+import { ExportRounds, LIVE_READ_ROUND_HOLES, type ChReadRoundHoles } from './ExportRounds';
 
 type Group = 'month' | 'player';
 
@@ -262,7 +263,20 @@ function TeamRoundsTable({ groups, by, earlierAt }: { groups: RoundGroup[]; by: 
 const inviteHref = rebuiltHref('/golf/dashboard/roster?invite=1');
 const rosterHref = rebuiltHref('/golf/dashboard/roster');
 
-export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTeamRounds; teamId: string; live?: LiveSnapshot; liveNow?: number }) {
+export function TeamRounds({
+  data: fresh,
+  teamId,
+  live,
+  liveNow,
+  readHoles = LIVE_READ_ROUND_HOLES,
+}: {
+  data: ChTeamRounds;
+  teamId: string;
+  live?: LiveSnapshot;
+  liveNow?: number;
+  /** Export's one read (F-02): the holes of the rounds it holds. */
+  readHoles?: ChReadRoundHoles;
+}) {
   const phone = useChPhone();
   const { refresh, refreshing } = useRefresh();
   // A refresh that fails keeps the list the coach was reading and says it may be out of date; a first load that fails is the error as it came.
@@ -276,6 +290,12 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
   // A kept filter for a player who has left the team shows everyone rather than an empty list with no way to see why.
   const playerId = data.players.some((p) => p.id === player) ? player : ALL_PLAYERS;
   const groups = useMemo(() => groupTeamRounds(list, group, q, playerId), [list, group, q, playerId]);
+  // Export takes the rounds the search and the player filter leave, newest first whatever the grouping (F-02).
+  const shown = useMemo(() => {
+    const ids = new Set(groups.flatMap((g) => g.rounds.map((r) => r.id)));
+    return list.filter((r) => ids.has(r.id));
+  }, [groups, list]);
+  const shownPlayer = playerId === ALL_PLAYERS ? null : (data.players.find((p) => p.id === playerId)?.name ?? null);
   const earlierAt = earlierStartsAt(groups, group, data.seasonStart);
   const s = data.season;
   const unscored = data.rounds.error ? 0 : (data.rounds.unscored ?? 0);
@@ -392,6 +412,7 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
                   { value: 'player', label: 'By player' },
                 ]}
               />
+              {shown.length > 0 && <ExportRounds rounds={shown} team name={[data.teamName, shownPlayer, 'rounds']} read={readHoles} icon={phone} />}
             </div>
             {groups.length === 0 ? (
               <EmptyState code="CH-11321" compact title={q.trim() ? `No rounds for “${q.trim()}”` : 'No rounds for this player'} body={q.trim() ? 'Check the spelling, or search part of a name or course.' : 'They haven’t posted a round yet.'} />

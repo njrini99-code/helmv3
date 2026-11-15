@@ -33,6 +33,7 @@ import { browserSharePorts, type LiveSharePorts } from '../../live/share-ports';
 import { useRoundSharing } from './track/LiveShareSheet';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { courseHref, groupCourseRounds } from '../../data/course-key';
+import { ExportRounds, LIVE_READ_ROUND_HOLES, type ChReadRoundHoles } from './ExportRounds';
 
 type Group = 'month' | 'course';
 
@@ -98,7 +99,20 @@ const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between rounds', keys: ['
  * in progress, the season's scoring, then every posted round by month or by
  * course.
  */
-export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRITES, sharePorts = browserSharePorts }: { data: ChRoundsLibrary; playerId: string; writes?: ChRoundsWrites; sharePorts?: LiveSharePorts }) {
+export function RoundsLibrary({
+  data: fresh,
+  playerId,
+  writes = LIVE_ROUNDS_WRITES,
+  sharePorts = browserSharePorts,
+  readHoles = LIVE_READ_ROUND_HOLES,
+}: {
+  data: ChRoundsLibrary;
+  playerId: string;
+  writes?: ChRoundsWrites;
+  sharePorts?: LiveSharePorts;
+  /** Export's one read (F-02): the holes of the rounds it holds. */
+  readHoles?: ChReadRoundHoles;
+}) {
   const phone = useChPhone();
   const { refresh, refreshing } = useRefresh();
   usePageKeys('Rounds', phone ? null : ROW_KEYS);
@@ -118,6 +132,11 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
   const list = data.rounds.list;
   const unfinished = useMemo(() => data.unfinished.list.filter((r) => !discarded.has(r.id)), [data.unfinished.list, discarded]);
   const groups = useMemo(() => groupRounds(list, group, q), [list, group, q]);
+  // Export takes the rounds the search leaves, newest first whatever the grouping (F-02).
+  const shown = useMemo(() => {
+    const ids = new Set(groups.flatMap((g) => g.rounds.map((r) => r.id)));
+    return list.filter((r) => ids.has(r.id));
+  }, [groups, list]);
   const newHref = roundsLinks.newRound();
   const counted = data.season.rounds;
 
@@ -297,6 +316,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                     { value: 'course', label: 'By course' },
                   ]}
                 />
+                {shown.length > 0 && <ExportRounds rounds={shown} team={false} name={['rounds']} read={readHoles} icon={phone} />}
               </div>
               {groups.length === 0 ? (
                 <EmptyState code="CH-11303" kind="filtered" compact title={`No rounds at “${q.trim()}”`} body="Check the spelling, or search part of the course name." />

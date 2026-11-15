@@ -560,7 +560,8 @@
       "file": "src/clubhouse/preview/PreviewRounds.tsx",
       "group": "preview",
       "exports": [
-        "PreviewRounds"
+        "PreviewRounds",
+        "PreviewTeamRounds"
       ],
       "styles": [],
       "examples": [],
@@ -7163,6 +7164,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/qualifiers/ExportStandings.tsx",
+      "group": "screens",
+      "exports": [
+        "ExportStandings"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/qualifiers/LiveOnCourse.tsx",
       "group": "screens",
       "exports": [
@@ -8206,6 +8217,17 @@
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/ExportRounds.tsx",
+      "group": "screens",
+      "exports": [
+        "ExportRounds",
+        "LIVE_READ_ROUND_HOLES"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -12680,6 +12702,21 @@
       ],
       "styles": [
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/ExportButton.tsx",
+      "group": "ui",
+      "exports": [
+        "ChExportReadError",
+        "ExportButton"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"

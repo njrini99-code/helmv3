@@ -63,7 +63,10 @@
       "src/lib/golf/__tests__/shot-entry-rules.test.ts",
       "src/clubhouse/__tests__/team-rounds-shape.test.ts",
       "src/clubhouse/__tests__/live-rounds-copy.test.ts",
-      "src/clubhouse/screens/rounds/__tests__/live-surfaces.test.tsx"
+      "src/clubhouse/screens/rounds/__tests__/live-surfaces.test.tsx",
+      "src/clubhouse/__tests__/exports.test.tsx",
+      "src/clubhouse/screens/rounds/__tests__/export.test.ts",
+      "src/app/golf/actions/__tests__/rounds-export.test.ts"
     ],
     "also": [
       "src/clubhouse/routes/round-new.tsx",
@@ -93,7 +96,9 @@
       "src/clubhouse/data/course-glance.ts",
       "src/clubhouse/data/course-page-shape.ts",
       "src/clubhouse/data/compare-rounds.ts",
-      "src/clubhouse/data/record-marks.ts"
+      "src/clubhouse/data/record-marks.ts",
+      "src/app/golf/actions/rounds-export.ts",
+      "src/clubhouse/preview/export-holes.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/rounds.md",
@@ -302,6 +307,27 @@
       "tests": [
         "src/clubhouse/__tests__/rounds-coach-note.test.tsx",
         "src/app/golf/actions/__tests__/round-coach-note.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P011-EXPORT-ROUNDS",
+      "label": "Export rounds with their holes (player Rounds, coach Team rounds)",
+      "component": "src/clubhouse/screens/rounds/ExportRounds.tsx#ExportRounds",
+      "handler": "ExportButton run",
+      "service": "src/app/golf/actions/rounds-export.ts#readRoundHolesForExport",
+      "data": [
+        "golf_holes (read, through RLS)",
+        "a CSV file on the device"
+      ],
+      "bridge": {
+        "loading": 110280,
+        "success": 110980,
+        "failure": 110680
+      },
+      "tests": [
+        "src/clubhouse/__tests__/exports.test.tsx",
+        "src/clubhouse/screens/rounds/__tests__/export.test.ts",
+        "src/app/golf/actions/__tests__/rounds-export.test.ts"
       ]
     }
   ],

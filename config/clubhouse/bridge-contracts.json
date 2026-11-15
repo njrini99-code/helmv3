@@ -10609,6 +10609,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90680,
+    "page": "P009",
+    "category": 6,
+    "item": 80,
+    "name": "EXPORT_STANDINGS_FAILS_THE_BROWSER_REFUSED_THE",
+    "chCode": "CH-09080",
+    "meaning": "Export standings fails: the browser refused the file (launch readiness F-02)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,
@@ -10874,6 +10885,19 @@
     "where": "QualifierForm.tsx#create, save; QualifierSelection.tsx#confirm",
     "tests": [
       "src/clubhouse/__tests__/qualifiers.test.tsx"
+    ]
+  },
+  {
+    "id": 90980,
+    "page": "P009",
+    "category": 9,
+    "item": 80,
+    "name": "EXPORT_STANDINGS_LANDED",
+    "meaning": "An export of standings that lands says so in a toast (\"Standings exported · 9 players\") with the success haptic: a download on a computer, the share sheet on a phone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/qualifiers/ExportStandings.tsx#ExportStandings (src/clubhouse/ui/ExportButton.tsx)",
+    "tests": [
+      "src/clubhouse/__tests__/exports.test.tsx"
     ]
   },
   {
@@ -12739,6 +12763,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110280,
+    "page": "P011",
+    "category": 2,
+    "item": 80,
+    "name": "EXPORT_IS_READING_THE_HOLES_OF_THE",
+    "chCode": "CH-11480",
+    "meaning": "Export is reading the holes of the rounds it holds (F-02)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -13637,6 +13672,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110680,
+    "page": "P011",
+    "category": 6,
+    "item": 80,
+    "name": "EXPORT_ON_ROUNDS_OR_TEAM_ROUNDS_FAILS",
+    "chCode": "CH-11080",
+    "meaning": "Export on Rounds or Team rounds fails: the holes didn’t load, or the browser refused the file (launch readiness F-02)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -13974,6 +14020,19 @@
     "tests": [
       "src/clubhouse/__tests__/round-tracking.test.tsx",
       "src/clubhouse/__tests__/round-entry-routes.test.tsx"
+    ]
+  },
+  {
+    "id": 110980,
+    "page": "P011",
+    "category": 9,
+    "item": 80,
+    "name": "EXPORT_ROUNDS_LANDED",
+    "meaning": "An export of rounds that lands says so in a toast (\"Rounds exported · 12 rounds\") with the success haptic: a download on a computer, the share sheet on a phone. Closing the share sheet is not a failure and says nothing.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/ExportRounds.tsx#ExportRounds (src/clubhouse/ui/ExportButton.tsx)",
+    "tests": [
+      "src/clubhouse/__tests__/exports.test.tsx"
     ]
   },
   {
@@ -21450,6 +21509,17 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160682,
+    "page": "P016",
+    "category": 6,
+    "item": 82,
+    "name": "EXPORT_RESULTS_FAILS_THE_BROWSER_REFUSED_THE",
+    "chCode": "CH-16082",
+    "meaning": "Export results fails: the browser refused the file (launch readiness F-02)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160701,
     "page": "P016",
     "category": 7,
@@ -21481,6 +21551,19 @@
     "meaning": "The coach has no team, or lost access to it",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160980,
+    "page": "P016",
+    "category": 9,
+    "item": 80,
+    "name": "EXPORT_RESULTS_LANDED",
+    "meaning": "An export of an event's results that lands says so in a toast (\"Results exported · 12 teams, 5 players\") with the success haptic: a download on a computer, the share sheet on a phone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/tournaments/EventDesk.tsx#EventDesk (src/clubhouse/ui/ExportButton.tsx)",
+    "tests": [
+      "src/clubhouse/__tests__/exports.test.tsx"
+    ]
   },
   {
     "id": 161001,

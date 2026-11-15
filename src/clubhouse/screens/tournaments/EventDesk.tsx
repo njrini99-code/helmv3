@@ -25,6 +25,9 @@ import { TourChip, TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourP
 import { useTourPaths, type ChTourPaths } from './paths';
 import { WhoCounted } from './WhoCounted';
 import { DeskTrackMenu } from './track-actions';
+import { resultsCount, resultsCsv } from './export';
+import { ExportButton } from '../../ui/ExportButton';
+import { isoDay } from '../../lib/dates';
 import type { ChTourDeskData, ChTourDeskSearch, ChTourDeskTab, ChTourEvent, ChTourFinding, ChTourPlayerRound, EventDeskProps } from './types';
 import '../../styles/tournaments-desk.css';
 
@@ -115,6 +118,19 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
     move({ tab: t, ...(round != null ? { round } : {}) });
   };
 
+  // F-02: the results as a spreadsheet, from Who counted's own section (the teams, then our players and their rounds).
+  const exportKey = hasScores && !data.errors.rounds && (
+    <ExportButton
+      file={() => resultsCsv(data, isoDay(new Date()))}
+      done={(f) => `Results exported · ${resultsCount(f)}`}
+      failed={`Couldn’t export ${e.short}’s results`}
+      code="CH-16082"
+      surface="tournaments.desk.export"
+      icon={phone ? 'Export results' : undefined}
+      variant="ghost"
+      size="sm"
+    />
+  );
   const result = e.team.result;
   const mismatch = e.playerRounds.filter((p) => p.officialTotal != null && p.officialTotal !== p.total);
   const first = mismatch[0];
@@ -241,7 +257,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
       <div role="tabpanel" id={`ch-tour-desk-panel-${tab}`} aria-labelledby={`ch-tour-desk-tab-${tab}`} className="ch-tour-desk-panel">
         {tab === 'overview' && (
           <>
-            <Section id="ch-tour-desk-who" title="Who counted" meta={hasScores ? `Lowest ${e.format.counting} whole-round scores each round make the team total` : undefined}>
+            <Section id="ch-tour-desk-who" title="Who counted" meta={hasScores ? `Lowest ${e.format.counting} whole-round scores each round make the team total` : undefined} actions={exportKey || undefined}>
               {data.errors.rounds ? <RoundsFailed onRetry={refresh} retrying={refreshing} /> : hasScores ? <WhoCounted event={e} rows={rows} round="all" view="team" phone={phone} onOpen={openScore} /> : <NoScores event={e} onImport={canImport ? () => setImporting(true) : undefined} />}
             </Section>
             {data.findings.length > 0 && (
@@ -264,7 +280,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
           </Section>
         )}
         {tab === 'counted' && (
-          <Section id="ch-tour-desk-counted" title="Who counted" meta={hasScores ? `Lowest ${e.format.counting} whole-round scores each round make the team total` : undefined}>
+          <Section id="ch-tour-desk-counted" title="Who counted" meta={hasScores ? `Lowest ${e.format.counting} whole-round scores each round make the team total` : undefined} actions={exportKey || undefined}>
             {data.errors.rounds ? (
               <RoundsFailed onRetry={refresh} retrying={refreshing} />
             ) : hasScores ? (

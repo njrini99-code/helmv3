@@ -4,8 +4,11 @@ import { useMemo } from 'react';
 import type { ChRoundsLibrary } from '../data/rounds-shape';
 import type { LiveShare } from '../live/model';
 import type { LiveSharePorts } from '../live/share-ports';
+import type { ChTeamRounds } from '../data/team-rounds-shape';
 import { RoundsLibrary } from '../screens/rounds/RoundsLibrary';
+import { TeamRounds } from '../screens/rounds/TeamRounds';
 import type { ChRoundsWrites } from '../screens/rounds/writes';
+import { previewReadRoundHoles } from './export-holes';
 
 const wait = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 400));
 
@@ -31,5 +34,12 @@ export function PreviewRounds({ data, state }: { data: ChRoundsLibrary; state?: 
   const fail = state === 'failwrites';
   const writes = useMemo<ChRoundsWrites>(() => ({ discard: () => wait(fail ? { success: false, error: 'Preview: this save is set to fail.' } : { success: true }) }), [fail]);
   const sharePorts = useMemo(() => previewSharePorts(), []);
-  return <RoundsLibrary data={data} playerId="preview-player" writes={writes} sharePorts={sharePorts} />;
+  const readHoles = useMemo(() => previewReadRoundHoles(data.rounds.list), [data.rounds.list]);
+  return <RoundsLibrary data={data} playerId="preview-player" writes={writes} sharePorts={sharePorts} readHoles={readHoles} />;
+}
+
+/** Team rounds for the dev preview: Export's holes are made up from the listed rounds, so nothing reaches the server. */
+export function PreviewTeamRounds({ data }: { data: ChTeamRounds }) {
+  const readHoles = useMemo(() => previewReadRoundHoles(data.rounds.list), [data.rounds.list]);
+  return <TeamRounds teamId="preview-team" data={data} readHoles={readHoles} />;
 }

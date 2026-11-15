@@ -161,14 +161,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P006 | 4 | 5 | 3 | 10 | 14 | 58 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 146 |
 | P007 | 2 | 11 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 |  | 2 | 1 |  | 121 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
-| P009 | 7 | 7 | 4 | 12 | 14 | 34 | 8 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
+| P009 | 7 | 7 | 4 | 12 | 14 | 35 | 8 | 12 | 3 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 139 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
-| P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
+| P011 | 16 | 16 |  | 26 | 11 | 45 | 22 | 5 | 3 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 213 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
 | P013 | 6 | 13 |  | 31 | 3 | 42 | 62 | 7 | 3 |  | 3 | 1 |  | 3 | 3 | 4 | 10 | 19 | 1 |  | 1 |  | 1 |  |  | 213 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
-| P016 | 31 | 2 | 1 | 28 | 4 | 37 | 2 | 1 |  | 2 | 6 | 1 |  |  | 5 | 2 |  | 4 |  |  |  |  |  |  |  | 126 |
+| P016 | 31 | 2 | 1 | 28 | 4 | 38 | 2 | 1 | 1 | 2 | 6 | 1 |  |  | 5 | 2 |  | 4 |  |  |  |  |  |  |  | 128 |
 
 ## P001 Shell
 
@@ -1145,6 +1145,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90633 | CH-09220 | 06 Server / system error | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | implemented | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
 | 90634 | CH-09223 | 06 Server / system error | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | implemented | The player's rounds panel crashes (desktop, beside the leaderboard) |
 | 90635 | CH-09224 | 06 Server / system error | `EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE` | implemented | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) |
+| 90680 | CH-09080 | 06 Server / system error | `EXPORT_STANDINGS_FAILS_THE_BROWSER_REFUSED_THE` | implemented | Export standings fails: the browser refused the file (launch readiness F-02) |
 | 90701 | CH-09903 | 07 Network / offline | `THE_SQUAD_IS_CONFIRMED` | implemented | The squad is confirmed (Manage selections) |
 | 90702 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, none of the eight writes (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) is sent: the shell's offline toast (CH-1903) names what did not happen, the error haptic fires, and the page does not move on. |
 | 90703 | CH-09904 | 07 Network / offline | `THE_LISTS_FILTER_AND_SEARCH` | reserved | The list's filter and search |
@@ -1167,6 +1168,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90812 |  | 08 Permission / authorization | `STATUS_ACTION_RECHECKS_THE_COACH` | implemented | Close and Reopen check on the server that the caller's organisation owns the qualifier's team, so a player or another organisation's coach is refused as Unauthorized before anything is updated. |
 | 90901 |  | 09 Success | `CHANGE_LANDED` | implemented | A write that lands (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) says what landed in a toast and fires the success haptic. |
 | 90902 |  | 09 Success | `QUALIFIER_OPENS_AFTER_A_CREATE_SAVE_OR_CONFIRM` | implemented | A landed create opens the new qualifier and a landed save or confirm returns to the qualifier, while close, reopen, start selecting, save a pick and remove a pick leave the coach where they are. |
+| 90980 |  | 09 Success | `EXPORT_STANDINGS_LANDED` | implemented | An export of standings that lands says so in a toast ("Standings exported · 9 players") with the success haptic: a download on a computer, the share sheet on a phone. |
 | 91001 | CH-09901 | 10 Warning | `THE_QUALIFIER_IS_CLOSED` | implemented | The qualifier is closed |
 | 91101 | CH-09501 | 11 Destructive | `CLOSE_QUALIFIER` | implemented | Close qualifier |
 | 91102 | CH-09503 | 11 Destructive | `START_SELECTING` | implemented | Start selecting |
@@ -1335,6 +1337,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110213 | CH-11412 | 02 Initial loading / skeleton | `TEAM_ROUNDS_IS_REFRESHING_WITH_THE_PAGE` | implemented | Team rounds is refreshing (a Try again is running) with the page on screen |
 | 110214 | CH-11413 | 02 Initial loading / skeleton | `TEAM_ROUNDS_IS_LOADING` | implemented | Team rounds is loading |
 | 110215 | CH-11421 | 02 Initial loading / skeleton | `THE_COURSE_PAGE_DIDNT_LOAD` | implemented | The course page didn't load (P-7) |
+| 110280 | CH-11480 | 02 Initial loading / skeleton | `EXPORT_IS_READING_THE_HOLES_OF_THE` | implemented | Export is reading the holes of the rounds it holds (F-02) |
 | 110401 | CH-11301 | 04 Empty | `NO_ROUND_POSTED_AND_NONE_IN_PROGRESS` | implemented | No round posted and none in progress |
 | 110402 | CH-11302 | 04 Empty | `ROUNDS_POSTED_BUT_NO_COUNTABLE_18_HOLE` | implemented | Rounds posted, but no countable 18-hole round since August 1 |
 | 110403 | CH-11303 | 04 Empty | `A_COURSE_SEARCH_MATCHES_NOTHING` | implemented | A course search matches nothing |
@@ -1416,6 +1419,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110642 | CH-11220 | 06 Server / system error | `TEAM_ROUNDS_THE_ROSTER_DOESNT_LOAD` | implemented | Team rounds: the roster doesn't load |
 | 110643 | CH-11221 | 06 Server / system error | `TEAM_ROUNDS_THE_POSTED_ROUNDS_DONT_LOAD` | implemented | Team rounds: the posted rounds don't load |
 | 110644 | CH-11222 | 06 Server / system error | `A_ROUNDS_COACH_NOTE_CANT_BE_CHECKED` | implemented | A round's coach note can't be checked (the read of `golf_round_reviews.coach_notes` failed) |
+| 110680 | CH-11080 | 06 Server / system error | `EXPORT_ON_ROUNDS_OR_TEAM_ROUNDS_FAILS` | implemented | Export on Rounds or Team rounds fails: the holes didn’t load, or the browser refused the file (launch readiness F-02) |
 | 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 110702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard, setup's Start and the hole's Try again are driven offline (the browser's own flag) in rounds-contracts.test.tsx. Exit's Discard is forced offline in round-entry-wiring.test (nothing is sent and a hole that exists only on the device keeps its device copy). A discard whose request never lands keeps the device copy and the queued entry (rounds.test for the library's write, use-new-round-session.preservation.test for the engine's). The shell's tests cover useAction's refusal. |
 | 110703 | CH-11902 | 07 Network / offline | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | implemented | The round changed on another device and this one stopped saving |
@@ -1445,6 +1449,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110805 |  | 08 Permission / authorization | `A_CLOSED_QUALIFIER_CANT_BE_CHOSEN` | implemented | A qualifier with no round the player can still enter is listed but cannot be chosen, and its row says why; only one with a round open is offered above Round details (closed means closed, D-31). Choosing the Qualifier type with none open says "No qualifier is open for you right now" (CH-11312), and a qualifiers read that failed says so (CH-11211). |
 | 110901 |  | 09 Success | `DISCARD_LANDED` | implemented | A discard that lands says so in a toast ("Round discarded") with the success haptic, and the card leaves and the idle card ("No round in progress") takes its place, whether the discard came from the question or from the toast's Retry. |
 | 110902 |  | 09 Success | `ROUND_POSTED_SAYS_SO` | implemented | A submitted round says "Round posted" with the course, names the coach ("Coach Reyes can see it now.", else "Your coach can see it now.") and links View round review (the round screen ticks the success haptic once and opens it after two and a half seconds). While it submits it names the real shot count, not timed steps, and a failed submit says so with Try again (CH-11005). |
+| 110980 |  | 09 Success | `EXPORT_ROUNDS_LANDED` | implemented | An export of rounds that lands says so in a toast ("Rounds exported · 12 rounds") with the success haptic: a download on a computer, the share sheet on a phone. Closing the share sheet is not a failure and says nothing. |
 | 111101 | CH-11501 | 11 Destructive | `DISCARD_ON_AN_UNFINISHED_ROUND` | implemented | Discard on an unfinished round |
 | 111102 | CH-11502 | 11 Destructive | `UNDO` | implemented | Undo |
 | 111103 | CH-11503 | 11 Destructive | `PENALTY` | implemented | Penalty |
@@ -2135,9 +2140,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160635 | CH-16072 | 06 Server / system error | `HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS` | implemented | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) |
 | 160680 | CH-16080 | 06 Server / system error | `IMPORT_RESULTS_SAVING_FAILS_OR_IS_REFUSED` | implemented | Import results: saving fails or is refused (the results are official, not a coach, a round that isn’t the event’s, a field row that isn’t) |
 | 160681 | CH-16081 | 06 Server / system error | `ENTER_HOLES_SAVING_THE_GRID_FAILS_OR` | implemented | Enter holes: saving the grid fails or is refused |
+| 160682 | CH-16082 | 06 Server / system error | `EXPORT_RESULTS_FAILS_THE_BROWSER_REFUSED_THE` | implemented | Export results fails: the browser refused the file (launch readiness F-02) |
 | 160701 | CH-16605 | 07 Network / offline | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | implemented | The device is offline while the card or the live view is open |
 | 160780 | CH-16980 | 07 Network / offline | `IMPORT_RESULTS_A_ROUND_IN_THE_FILE` | implemented | Import results: a round in the file differs from the player’s card or submitted round |
 | 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | The coach has no team, or lost access to it |
+| 160980 |  | 09 Success | `EXPORT_RESULTS_LANDED` | implemented | An export of an event's results that lands says so in a toast ("Results exported · 12 teams, 5 players") with the success haptic: a download on a computer, the share sheet on a phone. |
 | 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
 | 161002 | CH-16665 | 10 Warning | `A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES` | implemented | A round's sharing was changed 30 times (slice 2) |
 | 161101 | CH-16550 | 11 Destructive | `STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Stop tracking, from the desk's tournament menu (P-5) |

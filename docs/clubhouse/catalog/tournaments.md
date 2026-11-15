@@ -51,6 +51,7 @@ sync` mints its Bridge ID.
 | CH-16092 | Player: saving their reflection fails or is refused | Error toast "Couldn’t save your reflection" + the server’s words + Try again. What they wrote stays in the box | `Reflection` (`useAction`, `saveTournamentReflection`) | tournaments-player.test › CH-16092 |
 | CH-16080 | Import results: saving fails or is refused (the results are official, not a coach, a round that isn’t the event’s, a field row that isn’t) | Error toast “Couldn’t save the results” + the server’s words, or “Nothing new was lost. Try again; rounds already saved are left as they are.” + Try again. The check step stays as it was | `ImportResults` (`useAction`, `importTournamentResults`) | tournaments-import.test › CH-16080 |
 | CH-16081 | Enter holes: saving the grid fails or is refused | Error toast “Couldn’t save the holes” + the server’s words + Try again. The grid keeps what was typed | `HoleEntry` (`useAction`, `importTournamentResults`) | tournaments-import.test › CH-16081 |
+| CH-16082 | Export results fails: the browser refused the file (launch readiness F-02) | Error toast “Couldn’t export Oakmont’s results” + “Your browser didn’t take the file. Try again, or export from a computer.” Done: “Results exported · 12 teams, 5 players”. The key sits on Who counted (overview and its own tab) once there are scores | `EventDesk` → `ExportButton` (`resultsCsv`, `lib/csv.ts`) | exports.test › CH-16082 |
 
 ## 161xx Validation
 

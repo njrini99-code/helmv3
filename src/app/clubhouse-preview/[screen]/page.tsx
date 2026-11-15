@@ -10,7 +10,7 @@ import { LiveView } from '@/clubhouse/screens/live/LiveView';
 import { PREVIEW_LIVE_NOW, previewLive, previewOwn } from '@/clubhouse/preview/fixtures-live';
 import { PlayerHome } from '@/clubhouse/screens/home/PlayerHome';
 import { PreviewHub } from '@/clubhouse/preview/PreviewHub';
-import { PreviewRounds } from '@/clubhouse/preview/PreviewRounds';
+import { PreviewRounds, PreviewTeamRounds } from '@/clubhouse/preview/PreviewRounds';
 import { PreviewTracking } from '@/clubhouse/preview/PreviewTracking';
 import { PreviewSetup } from '@/clubhouse/preview/PreviewSetup';
 import { RoundReview } from '@/clubhouse/screens/rounds/RoundReview';
@@ -19,7 +19,6 @@ import { previewViewer } from '@/clubhouse/preview/viewer';
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_COACH, PREVIEW_REVIEW_COACH_NOTED, PREVIEW_REVIEW_NOTE_FAILED, PREVIEW_REVIEW_PLAYER_NOTED, PREVIEW_REVIEW_HOLE_BY_HOLE, PREVIEW_REVIEW_NO_HOLES, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_NO_SHOTS, PREVIEW_REVIEW_TOTAL_ONLY, PREVIEW_REVIEW_DEBRIEF, PREVIEW_REVIEW_DEBRIEF_THIN } from '@/clubhouse/preview/fixtures-round-review';
 import { PREVIEW_ROUNDS, PREVIEW_ROUNDS_EMPTY, PREVIEW_ROUNDS_FAILED, PREVIEW_ROUNDS_IDLE, PREVIEW_ROUNDS_MANY, PREVIEW_ROUNDS_NO_SEASON, PREVIEW_ROUNDS_UNFINISHED_FAILED } from '@/clubhouse/preview/fixtures-rounds';
 import '@/clubhouse/styles/rounds.css';
-import { TeamRounds } from '@/clubhouse/screens/rounds/TeamRounds';
 import { TeamRoundsSkeleton } from '@/clubhouse/screens/rounds/TeamRoundsSkeleton';
 import { WhatsNew } from '@/clubhouse/screens/whats-new/WhatsNew';
 import { WhatsNewSkeleton } from '@/clubhouse/screens/whats-new/WhatsNewSkeleton';
@@ -350,8 +349,7 @@ export default async function ClubhousePreview({
         state === 'loading' ? (
           <TeamRoundsSkeleton />
         ) : (
-          <TeamRounds
-            teamId="preview-team"
+          <PreviewTeamRounds
             data={{ earlier: PREVIEW_TEAM_ROUNDS_EARLIER, empty: PREVIEW_TEAM_ROUNDS_EMPTY, failed: PREVIEW_TEAM_ROUNDS_FAILED, rosterfailed: PREVIEW_TEAM_ROUNDS_ROSTER_FAILED, noroster: PREVIEW_TEAM_ROUNDS_NO_ROSTER }[state ?? ''] ?? PREVIEW_TEAM_ROUNDS}
           />
         ),

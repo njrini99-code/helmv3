@@ -93,6 +93,7 @@ saving (CH-11402).
 | 110213 | CH-11412 | `TEAM_ROUNDS_IS_REFRESHING_WITH_THE_PAGE` | Team rounds is refreshing (a Try again is running) with the page on screen |
 | 110214 | CH-11413 | `TEAM_ROUNDS_IS_LOADING` | Team rounds is loading |
 | 110215 | CH-11421 | `THE_COURSE_PAGE_DIDNT_LOAD` | The course page didn't load (P-7) |
+| 110280 | CH-11480 | `EXPORT_IS_READING_THE_HOLES_OF_THE` | Export is reading the holes of the rounds it holds (F-02) |
 
 ## 03 — Background loading / refresh
 
@@ -241,6 +242,7 @@ Neither route has a Clubhouse error view: `rounds/error.tsx` and
 | 110642 | CH-11220 | `TEAM_ROUNDS_THE_ROSTER_DOESNT_LOAD` | Team rounds: the roster doesn't load |
 | 110643 | CH-11221 | `TEAM_ROUNDS_THE_POSTED_ROUNDS_DONT_LOAD` | Team rounds: the posted rounds don't load |
 | 110644 | CH-11222 | `A_ROUNDS_COACH_NOTE_CANT_BE_CHECKED` | A round's coach note can't be checked (the read of `golf_round_reviews.coach_notes` failed) |
+| 110680 | CH-11080 | `EXPORT_ON_ROUNDS_OR_TEAM_ROUNDS_FAILS` | Export on Rounds or Team rounds fails: the holes didn’t load, or the browser refused the file (launch readiness F-02) |
 
 ## 07 — Network / offline
 
@@ -342,6 +344,7 @@ sheet, or downloads it; nothing goes to a server.
 | --- | --- | --- | --- |
 | 110901 | — | `DISCARD_LANDED` | A discard that lands says so in a toast ("Round discarded") with the success haptic, and the card leaves and the idle card ("No round in progress") takes its place, whether the discard came from the question or from the toast's Retry. |
 | 110902 | — | `ROUND_POSTED_SAYS_SO` | A submitted round says "Round posted" with the course, names the coach ("Coach Reyes can see it now.", else "Your coach can see it now.") and links View round review (the round screen ticks the success haptic once and opens it after two and a half seconds). While it submits it names the real shot count, not timed steps, and a failed submit says so with Try again (CH-11005). |
+| 110980 | — | `EXPORT_ROUNDS_LANDED` | An export of rounds that lands says so in a toast ("Rounds exported · 12 rounds") with the success haptic: a download on a computer, the share sheet on a phone. Closing the share sheet is not a failure and says nothing. |
 
 From the shell (P001): 10901 CHANGE_LANDED.
 

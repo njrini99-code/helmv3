@@ -30,6 +30,7 @@ import { createOpenRow, PlayerRounds as ShowcaseRounds } from './RoundsShowcase'
 import { LiveOnCourse } from './LiveOnCourse';
 import type { ChQOnCourse } from './on-course';
 import { RulesText } from './RulesText';
+import { ExportStandings } from './ExportStandings';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -222,6 +223,8 @@ export function QualifierDetailPhone({
           <Button leftIcon={Pencil} href={`${LIST}/${data.id}/edit`}>
             Edit details
           </Button>
+          {/* F-02: the standings as a spreadsheet, through the share sheet. */}
+          {b && b.rows.length > 0 && <ExportStandings name={data.name} board={b} numRounds={data.numRounds} label="Export standings" variant="secondary" size="md" />}
           {(status === 'in_progress' || closeDue) && (
             <Button
               leftIcon={Lock}

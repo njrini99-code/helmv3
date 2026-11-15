@@ -223,6 +223,7 @@ page again (91402), and Retry runs the write again (91401).
 | 90633 | CH-09220 | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
 | 90634 | CH-09223 | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | The player's rounds panel crashes (desktop, beside the leaderboard) |
 | 90635 | CH-09224 | `EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE` | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) |
+| 90680 | CH-09080 | `EXPORT_STANDINGS_FAILS_THE_BROWSER_REFUSED_THE` | Export standings fails: the browser refused the file (launch readiness F-02) |
 
 ## 07 — Network / offline
 
@@ -343,6 +344,7 @@ scored), best effort, and a notification that fails is logged and not shown
 | --- | --- | --- | --- |
 | 90901 | — | `CHANGE_LANDED` | A write that lands (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) says what landed in a toast and fires the success haptic. |
 | 90902 | — | `QUALIFIER_OPENS_AFTER_A_CREATE_SAVE_OR_CONFIRM` | A landed create opens the new qualifier and a landed save or confirm returns to the qualifier, while close, reopen, start selecting, save a pick and remove a pick leave the coach where they are. |
+| 90980 | — | `EXPORT_STANDINGS_LANDED` | An export of standings that lands says so in a toast ("Standings exported · 9 players") with the success haptic: a download on a computer, the share sheet on a phone. |
 
 From the shell (P001): 10901 CHANGE_LANDED.
 

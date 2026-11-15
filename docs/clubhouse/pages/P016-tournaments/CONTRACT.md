@@ -175,6 +175,7 @@ flags and its lane's rows.
 | 160635 | CH-16072 | `HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS` | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) |
 | 160680 | CH-16080 | `IMPORT_RESULTS_SAVING_FAILS_OR_IS_REFUSED` | Import results: saving fails or is refused (the results are official, not a coach, a round that isn’t the event’s, a field row that isn’t) |
 | 160681 | CH-16081 | `ENTER_HOLES_SAVING_THE_GRID_FAILS_OR` | Enter holes: saving the grid fails or is refused |
+| 160682 | CH-16082 | `EXPORT_RESULTS_FAILS_THE_BROWSER_REFUSED_THE` | Export results fails: the browser refused the file (launch readiness F-02) |
 
 ## 07 — Network / offline
 
@@ -208,10 +209,15 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 ## 09 — Success
 
-Status: N/A — not defined yet: no view is built (each renders the base's
+Status: DEFINED
 
-placeholder) and nothing is wired. The lane that builds the view defines this
-category with its catalog rows (screens/tournaments/README.md).
+An export of the event's results that lands says so in a toast with the success
+haptic (160980). Other writes on the desk say so in their own flows (import,
+the hole grid, the lineup); they are catalogued with their codes.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 160980 | — | `EXPORT_RESULTS_LANDED` | An export of an event's results that lands says so in a toast ("Results exported · 12 teams, 5 players") with the success haptic: a download on a computer, the share sheet on a phone. |
 
 ## 10 — Warning
 

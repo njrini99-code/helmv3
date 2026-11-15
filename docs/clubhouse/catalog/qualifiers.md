@@ -55,6 +55,7 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09008 | Confirming the squad fails | "Couldn’t confirm the squad" + the reason, or "Nothing was confirmed and nobody was told. Try again." Done: "Squad confirmed · 5 players" (Q-116), then the qualifier opens | `useAction('qualifiers.confirmSquad')` → `confirmQualifierSelection` | qualifiers.test › CH-09008 |
 | CH-09009 | The squad is confirmed but telling the players failed | An error toast "The players weren’t all told" + "The squad is confirmed. Let the entrants know yourself." (Q-116) | `confirmQualifierSelection` returns `notified: false` | qualifiers.test › CH-09009 |
 | CH-09010 | Giving or taking back a place at a tied cut fails | "Couldn’t give {name} the place" / "Couldn’t take the place back from {name}" + "Nothing changed. Try again." Done: "{name} takes the place at the cut" / "{name} is level at the cut again" (Q-114) | `useAction('qualifiers.chooseTie')` → `chooseQualifierTiePlace` | qualifiers.test › CH-09318 |
+| CH-09080 | Export standings fails: the browser refused the file (launch readiness F-02) | Error toast “Couldn’t export the standings” + “Your browser didn’t take the file. Try again, or export from a computer.” Done: “Standings exported · 12 players”. Coach only: Round-by-round scores’ Export on desktop, Export standings in the phone’s actions sheet | `ExportStandings` → `ExportButton` (`standingsCsv`, `lib/csv.ts`) | exports.test › CH-09080 |
 
 ## 091xx Validation
 

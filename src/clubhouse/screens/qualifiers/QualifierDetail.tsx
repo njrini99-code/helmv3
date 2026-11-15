@@ -31,6 +31,7 @@ import { StandingsSpread } from './StandingsSpread';
 import { RulesText } from './RulesText';
 import { createOpenRow, PlayerRounds, type OpenRow } from './RoundsShowcase';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
+import { ExportStandings } from './ExportStandings';
 import { LiveOnCourse } from './LiveOnCourse';
 import type { ChQOnCourse } from './on-course';
 import { LIST_HREF, noteIfSelectionLink, useStepBack } from './return-state';
@@ -273,7 +274,7 @@ export function QualifierDetail({
             </SectionBoundary>
             {coach && b && b.rows.length > 0 && (
               <SectionBoundary surface="qualifiers.rounds" label="Round-by-round scores" code="CH-09213">
-                <RoundByRound board={b} numRounds={data.numRounds} />
+                <RoundByRound board={b} numRounds={data.numRounds} name={data.name} />
               </SectionBoundary>
             )}
           </div>
@@ -771,7 +772,7 @@ function RoundHead({ n }: { n: number }) {
   return <Streamed fallback={`R${n}`}>{(s) => <span title={s.roundCourses.find((c) => c.number === n)?.course ?? undefined}>R{n}</span>}</Streamed>;
 }
 
-function RoundByRound({ board, numRounds }: { board: ChQBoard; numRounds: number }) {
+function RoundByRound({ board, numRounds, name }: { board: ChQBoard; numRounds: number; name: string }) {
   const cols = `36px minmax(120px, 1fr) ${Array.from({ length: numRounds }, () => '52px').join(' ')} 56px 60px`;
   const minWidth = 36 + 120 + numRounds * 52 + 56 + 60 + (numRounds + 4) * 12 + 24;
   return (
@@ -781,6 +782,7 @@ function RoundByRound({ board, numRounds }: { board: ChQBoard; numRounds: number
           <h2 id="ch-qf-rbr">Round-by-round scores</h2>
           <p>Gross strokes · coach only</p>
         </div>
+        <ExportStandings name={name} board={board} numRounds={numRounds} />
       </div>
       <ScrollRegion label="Round-by-round scores, scrolls sideways" className="ch-qf-table">
         <div role="table" aria-labelledby="ch-qf-rbr" style={{ minWidth }}>
