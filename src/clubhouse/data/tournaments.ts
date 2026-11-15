@@ -8,6 +8,7 @@ import { logServerEvent } from '@/lib/server-error-logger';
 import { isTourSchemaMissing } from '@/lib/golf/tournament-refusals';
 import { isoDay } from '../lib/dates';
 import { isScoreCountable } from './round-scope';
+import { loadTeamZone } from './season';
 import { chLogServer } from '../lib/track-server';
 import { suggestLinks, type LinkCandidateRound, type LinkEventRound } from '../screens/tournaments/links';
 import {
@@ -192,13 +193,13 @@ interface TeamInfo {
 }
 
 async function readTeam(ctx: TourCtx): Promise<TeamInfo> {
-  const [{ data, error }, settings] = await Promise.all([
-    ctx.supabase.from('golf_teams').select('id, name, timezone, gender').eq('id', ctx.teamId).maybeSingle(),
-    ctx.supabase.from('golf_team_settings').select('timezone').eq('team_id', ctx.teamId).maybeSingle(),
+  const [{ data, error }, tz] = await Promise.all([
+    ctx.supabase.from('golf_teams').select('id, name, gender').eq('id', ctx.teamId).maybeSingle(),
+    loadTeamZone(ctx.supabase, ctx.teamId, 'tournaments'),
   ]);
   if (error || !data) throw new ReadFailed('team', error ?? { message: 'team not found' });
-  // The team's clock as Calendar reads it (golf_team_settings), then the team row's; a round day is a date on it.
-  const tz = (!settings.error && settings.data?.timezone) || data.timezone || 'America/New_York';
+  // The team's clock, the settings zone every Clubhouse loader reads (`loadTeamZone`); a round day is a date on it. DF-C-07: it fell
+  // back to `golf_teams.timezone`, which Settings never writes, and took a zone that isn't one as given.
   const today = todayIsoInZone(tz, new Date(ctx.now));
   const season = seasonIdOf(today);
   const label = `${data.name} · ${season.slice(0, 4)}–${season.slice(5)}`;
