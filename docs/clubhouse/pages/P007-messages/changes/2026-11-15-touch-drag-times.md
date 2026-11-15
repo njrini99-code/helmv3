@@ -13,10 +13,9 @@ Held items:     the hand test on the iPhone (D tier)
 
 ### Changed
 
-- `screens/messages/use-thread-drag-times.ts`: `.ch-ms-msgs` gets
-  `will-change: transform` once the sideways lock is confirmed, before its first
-  move is drawn, and loses it when it has settled at rest. A scroll never
-  promotes it.
+- `screens/messages/use-thread-drag-times.ts`: `.ch-ms-msgs` gets `will-change:
+  transform` once the sideways lock is confirmed, before its first move is
+  drawn, and loses it when it has settled at rest. A scroll never promotes it.
 
 ### Why
 

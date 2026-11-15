@@ -1,6 +1,6 @@
 # P004 — Changelog
 
-## 2026-11-15 — the phone's leg bars grow from zero on first view; a new window glides over 360 ms
+## 2026-11-15 — The phone's leg bars grow on first view; windows glide
 
 ```text
 Design package: none (MOTION-AND-VISUAL 3.7)
@@ -13,9 +13,11 @@ Held items:     before/after capture of a first view; D-tier check owed
 
 ### Changed
 
-- `StatsTeamPhone.tsx` (Strokes gained by leg): on the screen's first view in a session each bar grows out from the zero
-  line over 360 ms on the iOS curve (`useFirstViewGrow('stats-team-phone', 'x')`), never on a revisit, under Reduce
-  Motion, with Animations off, or on a page the server drew. A window change glides over 360 ms on the iOS curve.
+- `StatsTeamPhone.tsx` (Strokes gained by leg): on the screen's first view in a
+  session each bar grows out from the zero line over 360 ms on the iOS curve
+  (`useFirstViewGrow('stats-team-phone', 'x')`), never on a revisit, under
+  Reduce Motion, with Animations off, or on a page the server drew. A window
+  change glides over 360 ms on the iOS curve.
 
 ### Why
 

@@ -13,8 +13,9 @@ Held items:     none
 
 ### Changed
 
-- `editor-tournament.tsx`: an editor that opens on a tournament shows its fields at once (the mount fade and its 50 ms
-  delay are deleted); turning tracking on still fades them in over 180 ms.
+- `editor-tournament.tsx`: an editor that opens on a tournament shows its fields
+  at once (the mount fade and its 50 ms delay are deleted); turning tracking on
+  still fades them in over 180 ms.
 
 ### Why
 
@@ -22,4 +23,5 @@ Held items:     none
 
 ### Verification
 
-- `__tests__/calendar.test.tsx` and `tournaments/__tests__/link-rounds-reachable.test.tsx` pass. jsdom only.
+- `__tests__/calendar.test.tsx` and
+  `tournaments/__tests__/link-rounds-reachable.test.tsx` pass. jsdom only.

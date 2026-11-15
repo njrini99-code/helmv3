@@ -13,7 +13,9 @@ Held items: none
 
 ### Changed
 
-- `screens/onboard/Steps.tsx` (Your game): Lower and Higher on the handicap fire `haptic('select')` once a step through `lib/haptics.ts`; a press at either end of the scale, which changes nothing, stays silent. Nothing visible changes.
+- `screens/onboard/Steps.tsx` (Your game): Lower and Higher on the handicap fire
+  `haptic('select')` once a step through `lib/haptics.ts`; a press at either end
+  of the scale, which changes nothing, stays silent. Nothing visible changes.
 
 ### Why
 
@@ -21,4 +23,6 @@ Held items: none
 
 ### Verification
 
-- Unit: `__tests__/onboard.test.tsx` ("the handicap steppers tick the selection haptic…"), `__tests__/haptic-grammar.test.ts`. The tick itself is native only; a device check (D) is owed with the rest of 3.10.
+- Unit: `__tests__/onboard.test.tsx` ("the handicap steppers tick the selection
+  haptic…"), `__tests__/haptic-grammar.test.ts`. The tick itself is native only;
+  a device check (D) is owed with the rest of 3.10.
