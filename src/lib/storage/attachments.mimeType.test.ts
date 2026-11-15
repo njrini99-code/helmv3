@@ -135,21 +135,47 @@ describe('the premise: the SDK ignores contentType for a Blob body', () => {
     return sdk.slice(start, end);
   }
 
+  /** What `uploadOrUpdate` does with a Blob: from the Blob test to the first `else`. */
+  function blobBranch(): string {
+    const body = uploadOrUpdateBody();
+    const start = body.indexOf('fileBody instanceof Blob');
+    expect(start, 'uploadOrUpdate should test for a Blob body').toBeGreaterThan(-1);
+    const end = body.indexOf('else', start);
+    expect(end).toBeGreaterThan(start);
+    return body.slice(start, end);
+  }
+
+  /**
+   * The code that builds the request body for a Blob. storage-js up to 2.117
+   * built the FormData inline in that branch; 2.118 moved it into
+   * `prepareUploadFormData`, which the branch now calls. Either way this
+   * returns the code that actually runs for a Blob.
+   */
+  function blobBodyBuilder(): string {
+    const branch = blobBranch();
+    if (!branch.includes('prepareUploadFormData(')) return branch;
+    const def = /\n\s*prepareUploadFormData\([^)]*\)\s*\{/.exec(sdk);
+    expect(def, 'prepareUploadFormData should be defined in the vendored SDK').not.toBeNull();
+    // From its opening brace to the matching closing one.
+    const open = def!.index + def![0].length - 1;
+    let depth = 0;
+    for (let i = open; i < sdk.length; i++) {
+      if (sdk[i] === '{') depth++;
+      else if (sdk[i] === '}' && --depth === 0) return sdk.slice(def!.index, i + 1);
+    }
+    throw new Error('prepareUploadFormData has no closing brace in the vendored SDK');
+  }
+
   it('routes a Blob through FormData rather than a raw body', () => {
-    expect(uploadOrUpdateBody()).toContain('fileBody instanceof Blob');
-    expect(uploadOrUpdateBody()).toContain('new FormData()');
+    expect(blobBodyBuilder()).toContain('new FormData()');
   });
 
   it('sets a content-type header only on the branch a Blob never reaches', () => {
-    const body = uploadOrUpdateBody();
-    const blobBranch = body.slice(
-      body.indexOf('fileBody instanceof Blob'),
-      body.indexOf('fileBody instanceof FormData'),
-    );
-    // If this ever contains contentType, the SDK started honouring the option
-    // and the reasoning behind `typedFile` needs revisiting — it stays correct
-    // either way, but the comment explaining it would no longer be true.
-    expect(blobBranch).not.toContain('contentType');
-    expect(body).toContain('headers["content-type"] = options.contentType');
+    // If the Blob path ever reads contentType, the SDK started honouring the
+    // option and the reasoning behind `typedFile` needs revisiting — it stays
+    // correct either way, but the comment explaining it would no longer be true.
+    expect(blobBranch()).not.toContain('contentType');
+    expect(blobBodyBuilder()).not.toContain('contentType');
+    expect(uploadOrUpdateBody()).toContain('headers["content-type"] = options.contentType');
   });
 });
