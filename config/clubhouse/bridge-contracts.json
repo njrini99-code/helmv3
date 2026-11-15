@@ -5172,6 +5172,72 @@
     ]
   },
   {
+    "id": 60180,
+    "page": "P006",
+    "category": 1,
+    "item": 80,
+    "name": "PRACTICE_HOURS_DRAFTS_EACH_PLAYERS_WEEK",
+    "meaning": "Practice hours (Calendar › More › Practice hours, /golf/dashboard/calendar/hours) drafts each player's week from the calendar and attendance (F-03): a day a column, the week against its limit (\"20.5 of 20\"), the days off. Practices and meetings count their length, a qualifier or tournament day counts 3 and the practice round the day before it counts as a practice day, travel and class count nothing, a player marked absent or a no-show counts nothing that day; the limits are the team's (association, season dates, week start) from Settings, Team or its own saved limits, read against cited NCAA bylaws. It is a draft for the coach's CARA form, and the page says so.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours; src/clubhouse/screens/calendar/hours/model.ts#draftHours; src/clubhouse/data/hours.ts#loadHours",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx",
+      "src/clubhouse/screens/calendar/hours/__tests__/hours.test.ts"
+    ]
+  },
+  {
+    "id": 60181,
+    "page": "P006",
+    "category": 1,
+    "item": 81,
+    "name": "SAYS_WHO_HAS_A_WARNING_AND_WHY",
+    "meaning": "A day or week over its limit, or too few days off, is a warning on the player's row and the cell it is about, in words with the bylaw behind it (never colour alone); the week's verdict is one status line (CH-6881).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx"
+    ]
+  },
+  {
+    "id": 60182,
+    "page": "P006",
+    "category": 1,
+    "item": 82,
+    "name": "WHAT_COUNTED_LISTS_EVERY_EVENT_BY_DAY",
+    "meaning": "What counted lists every event of the week by day with its time, how many players it covers, whether it counted, how much and why (\"Practice round the day before a qualifier counts 3\"); a coach's change shows as \"your change\" with its note, and a player reads it as \"your coach’s change\".",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx"
+    ]
+  },
+  {
+    "id": 60183,
+    "page": "P006",
+    "category": 1,
+    "item": 83,
+    "name": "STEPS_A_WEEK_AT_A_TIME_THROUGH_THE_ADDRESS",
+    "meaning": "Previous week, Next week and This week step through ?date=YYYY-MM-DD in the address (read on the server, so a week can be linked); the week starts on the team's week-start day.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx"
+    ]
+  },
+  {
+    "id": 60184,
+    "page": "P006",
+    "category": 1,
+    "item": 84,
+    "name": "A_PLAYER_SEES_THEIR_OWN_WEEK",
+    "meaning": "A player sees only their own week (\"Your practice hours\") and why each event counts, with no Limits and no Change; the loader reads only what RLS lets them read.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx"
+    ]
+  },
+  {
     "id": 60201,
     "page": "P006",
     "category": 2,
@@ -5223,6 +5289,17 @@
     "name": "ATTENDANCE_IS_LOADING",
     "chCode": "CH-6405",
     "meaning": "Attendance is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60280,
+    "page": "P006",
+    "category": 2,
+    "item": 80,
+    "name": "PRACTICE_HOURS_IS_LOADING",
+    "chCode": "CH-6480",
+    "meaning": "Practice hours is loading",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -5370,6 +5447,39 @@
     "name": "THE_COURSE_PICKER_FINDS_NO_COURSE_FOR",
     "chCode": "CH-6340",
     "meaning": "The course picker (tournament section) finds no course for the search",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60480,
+    "page": "P006",
+    "category": 4,
+    "item": 80,
+    "name": "PRACTICE_HOURS_NO_PLAYERS_ON_THE_TEAM",
+    "chCode": "CH-6380",
+    "meaning": "Practice hours: no players on the team yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60481,
+    "page": "P006",
+    "category": 4,
+    "item": 81,
+    "name": "PRACTICE_HOURS_A_COUNTED_EVENT_HAS_NO",
+    "chCode": "CH-6381",
+    "meaning": "Practice hours: a counted event has no times (all day) and no standard for untimed practices is set",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60482,
+    "page": "P006",
+    "category": 4,
+    "item": 82,
+    "name": "PRACTICE_HOURS_NOTHING_ON_THE_CALENDAR_THIS",
+    "chCode": "CH-6382",
+    "meaning": "Practice hours: nothing on the calendar this week",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -5524,6 +5634,28 @@
     "name": "EDITING_A_CANCELLED_EVENT_OF_TYPE_TOURNAMENT",
     "chCode": "CH-6149",
     "meaning": "Editing a cancelled event of type Tournament",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60580,
+    "page": "P006",
+    "category": 5,
+    "item": 80,
+    "name": "A_PRACTICE_HOUR_LIMIT_THAT_CANT_BE",
+    "chCode": "CH-6180",
+    "meaning": "A practice hour limit that can't be saved: a season with no last day, a last day before the first, a season over 366 days, fall and spring overlapping, a Custom day over 24 or week over 168 hours, a week under a day, days off over 7, an untimed figure over 12",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60581,
+    "page": "P006",
+    "category": 5,
+    "item": 81,
+    "name": "A_CHANGE_TO_HOW_AN_EVENT_COUNTS",
+    "chCode": "CH-6181",
+    "meaning": "A change to how an event counts that can't be saved: hours that aren't a number from 0 to 24, or a note over 280 characters",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -6166,6 +6298,94 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60680,
+    "page": "P006",
+    "category": 6,
+    "item": 80,
+    "name": "SAVING_PRACTICE_HOUR_LIMITS_FAILS_PRACTICE_HOURS",
+    "chCode": "CH-6080",
+    "meaning": "Saving practice hour limits fails (Practice hours › Limits, coach; F-03)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60681,
+    "page": "P006",
+    "category": 6,
+    "item": 81,
+    "name": "CHANGING_HOW_ONE_EVENT_COUNTS_FAILS_PRACTICE",
+    "chCode": "CH-6081",
+    "meaning": "Changing how one event counts fails (Practice hours › What counted › Change, coach; F-03)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60682,
+    "page": "P006",
+    "category": 6,
+    "item": 82,
+    "name": "EXPORTING_THE_PRACTICE_HOURS_FAILS_THE_BROWSER",
+    "chCode": "CH-6082",
+    "meaning": "Exporting the practice hours fails: the browser refused the file (F-03)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60683,
+    "page": "P006",
+    "category": 6,
+    "item": 83,
+    "name": "PRACTICE_HOURS_THE_WEEKS_EVENTS_DONT_LOAD",
+    "chCode": "CH-6280",
+    "meaning": "Practice hours: the week's events don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60684,
+    "page": "P006",
+    "category": 6,
+    "item": 84,
+    "name": "PRACTICE_HOURS_ATTENDANCE_DOESNT_LOAD",
+    "chCode": "CH-6281",
+    "meaning": "Practice hours: attendance doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60685,
+    "page": "P006",
+    "category": 6,
+    "item": 85,
+    "name": "PRACTICE_HOURS_THE_ROSTER_DOESNT_LOAD_COACH",
+    "chCode": "CH-6282",
+    "meaning": "Practice hours: the roster doesn't load (coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60686,
+    "page": "P006",
+    "category": 6,
+    "item": 86,
+    "name": "PRACTICE_HOURS_THE_TEAMS_HOURS_TABLES_ARENT",
+    "chCode": "CH-6283",
+    "meaning": "Practice hours: the team's hours tables aren't in the database yet (migration 20261115230000 held)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60687,
+    "page": "P006",
+    "category": 6,
+    "item": 87,
+    "name": "PRACTICE_HOURS_THE_WEEKS_TABLE_OR_LIST",
+    "chCode": "CH-6284",
+    "meaning": "Practice hours: the week's table or list crashes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -6291,6 +6511,47 @@
     "where": "src/clubhouse/screens/calendar/editor.tsx; extras.tsx; inspector.tsx (useAction copy)",
     "tests": [
       "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60980,
+    "page": "P006",
+    "category": 9,
+    "item": 80,
+    "name": "LIMITS_SAVED",
+    "meaning": "Saving limits that pass the check says \"Limits saved\" with the success haptic, closes the sheet and reads the week again against them.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/sheets.tsx#LimitsSheet; src/app/golf/actions/hours.ts#saveHoursSettings",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx",
+      "src/app/golf/actions/__tests__/hours.test.ts"
+    ]
+  },
+  {
+    "id": 60981,
+    "page": "P006",
+    "category": 9,
+    "item": 81,
+    "name": "CHANGE_TO_HOW_AN_EVENT_COUNTS_SAVED",
+    "meaning": "Saving how one event counts says so (\"Practice round counts 3 hours\", \"Travel briefing doesn’t count\", \"… counts as drafted\") with the success haptic, closes the sheet and reads the week again; As drafted removes the change.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/sheets.tsx#AdjustSheet; src/app/golf/actions/hours.ts#saveHoursAdjustment",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx",
+      "src/app/golf/actions/__tests__/hours.test.ts"
+    ]
+  },
+  {
+    "id": 60982,
+    "page": "P006",
+    "category": 9,
+    "item": 82,
+    "name": "PRACTICE_HOURS_EXPORT_LANDED",
+    "meaning": "An export of the week that lands says so (\"Practice hours exported · 5 players\") with the success haptic: a download on a computer, the share sheet on a phone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours (src/clubhouse/ui/ExportButton.tsx)",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx"
     ]
   },
   {
@@ -6715,6 +6976,28 @@
     "name": "A_ROUND_DROPPED_WHERE_IT_WOULD_START",
     "chCode": "CH-6843",
     "meaning": "A round dropped (or moved with Alt and an arrow) where it would start before the round ahead of it, or after the one behind: it snaps back, felt as an error, nothing asked or written. One polite line: \"R2 can’t move before R1. Move R1 first.\" (or \"R2 can’t move after R3. Move R3 first.\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61880,
+    "page": "P006",
+    "category": 18,
+    "item": 80,
+    "name": "PRACTICE_HOURS_DESKTOP_IS_A_TABLE_A",
+    "chCode": "CH-6880",
+    "meaning": "Practice hours (desktop) is a table: a row header per player, a column a day, “Week” as “20.5 of 20”, Days off; a cell over a limit carries its warning in words, never colour alone, and the warnings row names each bylaw. On the phone each player is a list item with their days as a list",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61881,
+    "page": "P006",
+    "category": 18,
+    "item": 81,
+    "name": "THE_WEEKS_VERDICT_IS_ONE_POLITE_LINE",
+    "chCode": "CH-6881",
+    "meaning": "The week's verdict is one polite line: “2 players with a warning”, “A warning this week” (a player) or “No warnings this week”",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },

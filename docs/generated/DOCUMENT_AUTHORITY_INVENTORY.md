@@ -334,7 +334,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/README.md` | generated | - | - | yes | - |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | - |
 | `memory/glossary.md` | current | yes | yes | yes | - |
-| `memory/projects/golfhelm.md` | current | yes | yes | - | - |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | 1 |
 | `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | - |
 
 ### `PROCESS_CONTRACT`
@@ -962,7 +962,7 @@ them would bury everything above.
 | `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |
 | `docs/clubhouse/ask-v2/GAP.md` | current | - | - | - | 2 |
 | `docs/clubhouse/catalog/auth.md` | current | - | - | - | - |
-| `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/calendar.md` | current | - | - | - | 1 |
 | `docs/clubhouse/catalog/classes.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/coachhelm.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
@@ -2028,7 +2028,7 @@ them would bury everything above.
 | `src/lib/coachhelm/v3/chat/knowledge/SOURCES.md` | current | - | - | - | - |
 | `src/lib/coachhelm/v3/chat/tasks/INVENTORY.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 7 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 3 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 4 |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |
 | `tools/QUICK_REFERENCE.md` | current | - | - | - | - |

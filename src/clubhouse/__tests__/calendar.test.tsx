@@ -1140,7 +1140,7 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(hapticSpy).not.toHaveBeenCalled();
   });
 
-  it('row 81: the coach’s More on the phone opens desktop’s items without Print, and Add busy time opens its sheet; a player has none', async () => {
+  it('row 81: the coach’s More on the phone opens desktop’s items without Print, and Add busy time opens its sheet; a player’s holds only their practice hours (F-03)', async () => {
     const user = userEvent.setup();
     wrap(cal());
     await user.click(screen.getByRole('button', { name: 'More' }));
@@ -1149,11 +1149,14 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(items).toContain('Add to calendar app');
     expect(items).toContain('Add busy time');
     expect(items.some((t) => /^Print/.test(t ?? ''))).toBe(false);
+    expect(items[0]).toBe('Practice hours');
     await user.click(within(menu).getByRole('menuitem', { name: /Add busy time/ }));
     expect(await screen.findByRole('heading', { name: 'Add busy time' })).toBeTruthy();
     cleanup();
     wrap(cal({ role: 'player', viewerPlayerId: 'jonah' }));
-    expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    const mine = await screen.findByRole('menu', { name: 'More' });
+    expect(within(mine).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Your practice hours']);
   });
 
   it('B10.4 away from today, a Today key brings the phone back; on today it is not there', async () => {
@@ -2176,8 +2179,8 @@ describe('Calendar · what each role is given', () => {
     // The first menu leaves on a short exit; on a loaded runner it was still in the DOM when the next one opened (CI).
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
     await user.click(screen.getByRole('button', { name: 'More' }));
-    // Printing is not planning: a player prints their week too.
-    expect(menuItems()).toEqual(['Add to calendar app', 'Print week']);
+    // Printing is not planning: a player prints their week too, and reads their own practice hours (F-03).
+    expect(menuItems()).toEqual(['Your practice hours', 'Add to calendar app', 'Print week']);
     player.unmount();
     // The same address, for a coach.
     wrap(cal(), seeded);
@@ -2531,10 +2534,17 @@ describe('Calendar · a cancelled event can be restored or deleted, as in produc
 });
 
 describe('Calendar · this file', () => {
-  it('62401 every catalog row of kinds 0 to 5 that is not marked preview is named by a test here, and so is every Bridge ID this page proves', () => {
+  it('62401 every catalog row of kinds 0 to 5 that is not marked preview is named by a test here (or in the practice hours tests), and so is every Bridge ID this page proves', () => {
     const root = process.cwd();
     const read = (file: string) => readFileSync(join(root, file), 'utf8');
-    const own = read('src/clubhouse/__tests__/calendar.test.tsx');
+    // Practice hours (F-03) is proved in its own files, under the page's own folder and its server action.
+    const own = [
+      'src/clubhouse/__tests__/calendar.test.tsx',
+      'src/clubhouse/__tests__/practice-hours.test.tsx',
+      'src/app/golf/actions/__tests__/hours.test.ts',
+    ]
+      .map(read)
+      .join('\n');
     const rows = [...read('docs/clubhouse/catalog/calendar.md').matchAll(/^\|\s*(CH-6[0-5]\d\d)\s*\|.*$/gm)]
       .filter((m) => !/\|\s*preview\s*\|\s*$/.test(m[0].trim()) && !/retired/i.test(m[0]))
       .map((m) => m[1]!);

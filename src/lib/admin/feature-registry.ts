@@ -284,6 +284,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'getExpandedEvents',
       ],
       'src/app/golf/actions/event-documents.ts': 'ALL',
+      'src/app/golf/actions/hours.ts': 'ALL',
     },
     primaryTable: 'golf_events',
     heartbeatTable: 'golf_events',

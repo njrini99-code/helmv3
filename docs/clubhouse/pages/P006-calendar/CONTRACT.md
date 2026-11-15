@@ -53,6 +53,11 @@ draws the grid, and the panel says there is nothing on the team calendar today
 | 60102 | — | `ADDRESS_HOLDS_VIEW_DAY_AND_EVENT` | The address decides what is shown: ?view=day\|week\|month\|agenda, ?date=YYYY-MM-DD and ?event=<id> are read on the server, so the right window and the open panel are there on first paint and a state can be linked. A value that is not real (an unknown view, an impossible date such as 2026-02-30) falls back to the week and to today, an event that is no longer in the loaded range says so (CH-6305), and changing the view or the day rewrites the address. |
 | 60103 | — | `SEEDS_FROM_OTHER_PAGES` | ?new=1 opens New event once for a coach and drops itself from the address; &with=<player> makes it a meeting with only that player invited (a player the Calendar does not list invites nobody, never the team); &type= picks the new event's type from those a coach can create and ignores anything else. |
 | 60104 | — | `TIMES_ARE_THE_TEAMS_ZONE` | The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and in the week it is one bar in the all-day lane that drags by whole days with its times kept (P-4 4.5); an all-day event keeps its stored dates, one entry for each day of a span. |
+| 60180 | — | `PRACTICE_HOURS_DRAFTS_EACH_PLAYERS_WEEK` | Practice hours (Calendar › More › Practice hours, /golf/dashboard/calendar/hours) drafts each player's week from the calendar and attendance (F-03): a day a column, the week against its limit ("20.5 of 20"), the days off. Practices and meetings count their length, a qualifier or tournament day counts 3 and the practice round the day before it counts as a practice day, travel and class count nothing, a player marked absent or a no-show counts nothing that day; the limits are the team's (association, season dates, week start) from Settings, Team or its own saved limits, read against cited NCAA bylaws. It is a draft for the coach's CARA form, and the page says so. |
+| 60181 | — | `SAYS_WHO_HAS_A_WARNING_AND_WHY` | A day or week over its limit, or too few days off, is a warning on the player's row and the cell it is about, in words with the bylaw behind it (never colour alone); the week's verdict is one status line (CH-6881). |
+| 60182 | — | `WHAT_COUNTED_LISTS_EVERY_EVENT_BY_DAY` | What counted lists every event of the week by day with its time, how many players it covers, whether it counted, how much and why ("Practice round the day before a qualifier counts 3"); a coach's change shows as "your change" with its note, and a player reads it as "your coach’s change". |
+| 60183 | — | `STEPS_A_WEEK_AT_A_TIME_THROUGH_THE_ADDRESS` | Previous week, Next week and This week step through ?date=YYYY-MM-DD in the address (read on the server, so a week can be linked); the week starts on the team's week-start day. |
+| 60184 | — | `A_PLAYER_SEES_THEIR_OWN_WEEK` | A player sees only their own week ("Your practice hours") and why each event counts, with no Limits and no Change; the loader reads only what RLS lets them read. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
@@ -76,6 +81,7 @@ v2 timing: nothing for 150ms, then a fade (the shell's motion).
 | 60203 | CH-6403 | `AN_EVENTS_FILES_ARE_LOADING` | An event's files are loading |
 | 60204 | CH-6404 | `DOCUMENTS_ARE_LOADING` | Documents are loading (attach) |
 | 60205 | CH-6405 | `ATTENDANCE_IS_LOADING` | Attendance is loading |
+| 60280 | CH-6480 | `PRACTICE_HOURS_IS_LOADING` | Practice hours is loading |
 
 From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
@@ -133,6 +139,9 @@ the bar carries the title (states audit c1, c4, 2026-10-08).
 | 60408 | CH-6308 | `A_DAY_WITH_NOTHING_ON_IT` | A day with nothing on it (phone Day view) |
 | 60409 | CH-6309 | `A_COACH_WHOSE_TEAM_HAS_NEVER_SCHEDULED` | A coach whose team has never scheduled anything (D-71) |
 | 60410 | CH-6340 | `THE_COURSE_PICKER_FINDS_NO_COURSE_FOR` | The course picker (tournament section) finds no course for the search |
+| 60480 | CH-6380 | `PRACTICE_HOURS_NO_PLAYERS_ON_THE_TEAM` | Practice hours: no players on the team yet |
+| 60481 | CH-6381 | `PRACTICE_HOURS_A_COUNTED_EVENT_HAS_NO` | Practice hours: a counted event has no times (all day) and no standard for untimed practices is set |
+| 60482 | CH-6382 | `PRACTICE_HOURS_NOTHING_ON_THE_CALENDAR_THIS` | Practice hours: nothing on the calendar this week |
 
 ## 05 — Validation
 
@@ -160,6 +169,8 @@ and invitees are choices, and the title, place and notes have length limits.
 | 60512 | CH-6147 | `NO_TOURNAMENT_NAME_OR_LONGER_THAN_120` | No tournament name, or longer than 120 |
 | 60513 | CH-6148 | `EDITING_A_REPEATING_OCCURRENCE_OF_TYPE_TOURNAMENT` | Editing a repeating occurrence of type Tournament |
 | 60514 | CH-6149 | `EDITING_A_CANCELLED_EVENT_OF_TYPE_TOURNAMENT` | Editing a cancelled event of type Tournament |
+| 60580 | CH-6180 | `A_PRACTICE_HOUR_LIMIT_THAT_CANT_BE` | A practice hour limit that can't be saved: a season with no last day, a last day before the first, a season over 366 days, fall and spring overlapping, a Custom day over 24 or week over 168 hours, a week under a day, days off over 7, an untimed figure over 12 |
+| 60581 | CH-6181 | `A_CHANGE_TO_HOW_AN_EVENT_COUNTS` | A change to how an event counts that can't be saved: hours that aren't a number from 0 to 24, or a note over 280 characters |
 
 ## 06 — Server / system error
 
@@ -248,6 +259,14 @@ that landed (C-17; busy time 2026-10-17).
 | 60656 | CH-6044 | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | A round or the tournament is restored |
 | 60657 | CH-6040 | `A_TOURNAMENT_IS_SET_UP_FROM_THE` | A tournament is set up from the editor (P-5, `golf_tournaments_v1`) |
 | 60658 | CH-6024 | `OPENING_A_FILE_ATTACHED_TO_AN_EVENT` | Opening a file attached to an event fails (the signed link can't be made, or the file has no stored copy) |
+| 60680 | CH-6080 | `SAVING_PRACTICE_HOUR_LIMITS_FAILS_PRACTICE_HOURS` | Saving practice hour limits fails (Practice hours › Limits, coach; F-03) |
+| 60681 | CH-6081 | `CHANGING_HOW_ONE_EVENT_COUNTS_FAILS_PRACTICE` | Changing how one event counts fails (Practice hours › What counted › Change, coach; F-03) |
+| 60682 | CH-6082 | `EXPORTING_THE_PRACTICE_HOURS_FAILS_THE_BROWSER` | Exporting the practice hours fails: the browser refused the file (F-03) |
+| 60683 | CH-6280 | `PRACTICE_HOURS_THE_WEEKS_EVENTS_DONT_LOAD` | Practice hours: the week's events don't load |
+| 60684 | CH-6281 | `PRACTICE_HOURS_ATTENDANCE_DOESNT_LOAD` | Practice hours: attendance doesn't load |
+| 60685 | CH-6282 | `PRACTICE_HOURS_THE_ROSTER_DOESNT_LOAD_COACH` | Practice hours: the roster doesn't load (coach) |
+| 60686 | CH-6283 | `PRACTICE_HOURS_THE_TEAMS_HOURS_TABLES_ARENT` | Practice hours: the team's hours tables aren't in the database yet (migration 20261115230000 held) |
+| 60687 | CH-6284 | `PRACTICE_HOURS_THE_WEEKS_TABLE_OR_LIST` | Practice hours: the week's table or list crashes |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10609 CH-1208,
@@ -355,6 +374,9 @@ Undo (61302).
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 60901 | — | `CHANGE_LANDED` | A change that goes through the shell's useAction and lands names itself in a toast with the success haptic: Published, Moved or Saved, Cancelled, link ready, Busy time added, Removed, Attached, the player's reply, and the attendance marks saved. |
+| 60980 | — | `LIMITS_SAVED` | Saving limits that pass the check says "Limits saved" with the success haptic, closes the sheet and reads the week again against them. |
+| 60981 | — | `CHANGE_TO_HOW_AN_EVENT_COUNTS_SAVED` | Saving how one event counts says so ("Practice round counts 3 hours", "Travel briefing doesn’t count", "… counts as drafted") with the success haptic, closes the sheet and reads the week again; As drafted removes the change. |
+| 60982 | — | `PRACTICE_HOURS_EXPORT_LANDED` | An export of the week that lands says so ("Practice hours exported · 5 players") with the success haptic: a download on a computer, the share sheet on a phone. |
 
 From the shell (P001): 10901 CHANGE_LANDED.
 
@@ -560,6 +582,8 @@ CH-1842, 11825 CH-1816.
 | 61808 | CH-6841 | `THE_ROUNDS_CHANGE_WITH_THE_DAYS_OR` | The rounds change with the days, or reorder after a day or tee change: one polite line: "3 rounds, Thursday 5 November to Saturday 7 November." or "Rounds reordered. Round 2 is now Friday 6 November at 8:30 AM." |
 | 61809 | CH-6842 | `ESCAPE_WHILE_THE_TOURNAMENT_IS_BEING_CREATED` | Escape (or the close button) while the tournament is being created: the editor stays open and says "Still creating the tournament." |
 | 61810 | CH-6843 | `A_ROUND_DROPPED_WHERE_IT_WOULD_START` | A round dropped (or moved with Alt and an arrow) where it would start before the round ahead of it, or after the one behind: it snaps back, felt as an error, nothing asked or written. One polite line: "R2 can’t move before R1. Move R1 first." (or "R2 can’t move after R3. Move R3 first.") |
+| 61880 | CH-6880 | `PRACTICE_HOURS_DESKTOP_IS_A_TABLE_A` | Practice hours (desktop) is a table: a row header per player, a column a day, “Week” as “20.5 of 20”, Days off; a cell over a limit carries its warning in words, never colour alone, and the warnings row names each bylaw. On the phone each player is a list item with their days as a list |
+| 61881 | CH-6881 | `THE_WEEKS_VERDICT_IS_ONE_POLITE_LINE` | The week's verdict is one polite line: “2 players with a warning”, “A warning this week” (a player) or “No warnings this week” |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

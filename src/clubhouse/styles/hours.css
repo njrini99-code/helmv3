@@ -1,0 +1,435 @@
+/* Launch readiness F-03: Practice hours, under Calendar (screens/calendar/hours). Its own prefix, .ch-hrs-. */
+
+.ch-hrs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-5);
+  max-width: var(--ch-measure-page);
+  margin: 0 auto;
+  padding: var(--ch-page-top-eyebrow-low-2) var(--ch-page-gutter) 80px;
+  color: var(--ch-text-primary);
+}
+.ch-hrs.is-phone {
+  gap: var(--ch-space-4);
+  padding: var(--ch-space-4) var(--ch-space-4) 110px;
+}
+
+/* Head: the way back, the team and its association, the title, the limits; the week and the actions beside it. */
+.ch-hrs-h {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ch-space-4);
+}
+.ch-hrs-h__t {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ch-space-1);
+  min-width: 0;
+}
+.ch-hrs-h__t h1 {
+  margin: var(--ch-space-2) 0 0;
+  font: var(--ch-type-hero);
+  letter-spacing: var(--ch-track-hero);
+}
+.ch-hrs-k {
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
+  color: var(--ch-text-tertiary);
+}
+.ch-hrs-lim {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ch-space-1) var(--ch-space-3);
+  margin: var(--ch-space-1) 0 0;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-hrs-lim__src {
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-hrs-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ch-space-3);
+}
+.ch-hrs-tools__act {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+}
+.ch-hrs-step {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+}
+.ch-hrs-step__t {
+  min-width: 112px;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  text-align: center;
+}
+
+.ch-hrs-status {
+  margin: 0;
+  font: var(--ch-type-14-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-hrs-status.is-warn {
+  color: var(--ch-warning-600);
+}
+
+/* A note the page owes the coach: saving waits on an update, or an event has no times. */
+.ch-hrs-note {
+  display: grid;
+  gap: var(--ch-space-1);
+  padding: var(--ch-space-3) var(--ch-space-4);
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-md);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-hrs-note b {
+  font: var(--ch-type-14-medium);
+  color: var(--ch-text-primary);
+}
+.ch-hrs-note.is-warn {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+.ch-hrs-note.is-warn b {
+  color: var(--ch-warning-600);
+}
+
+/* The desktop week, in the pattern of the Team rounds table. */
+.ch-hrs-tbl {
+  overflow: hidden;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-hrs-tr {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(180px, 1.6fr) repeat(7, minmax(44px, 0.6fr)) minmax(72px, 0.9fr) 64px;
+  column-gap: var(--ch-space-3);
+  align-items: center;
+  min-height: 52px;
+  padding: var(--ch-space-2) var(--ch-space-5);
+  font: var(--ch-type-14);
+}
+.ch-hrs-tbl > [role='rowgroup'] + [role='rowgroup']::before {
+  position: absolute;
+  inset: auto 0 auto var(--ch-space-5);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  content: '';
+}
+.ch-hrs-tbl > [role='rowgroup'] {
+  position: relative;
+}
+.ch-hrs-tr--head {
+  min-height: 0;
+  padding-block: var(--ch-space-3);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
+  color: var(--ch-text-secondary);
+}
+.ch-hrs-dow {
+  color: var(--ch-text-tertiary);
+}
+.ch-hrs-tr .r {
+  justify-self: end;
+  text-align: right;
+}
+.ch-hrs-who {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-width: 0;
+}
+.ch-hrs-who__n {
+  overflow: hidden;
+  font: var(--ch-type-14-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-hrs-who__y {
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-hrs-td {
+  min-width: 36px;
+  padding: 2px var(--ch-space-1);
+  border-radius: var(--ch-radius-sm);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-hrs-td.is-off {
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-hrs-td.is-comp {
+  font: var(--ch-type-15-medium);
+}
+.ch-hrs-td--wk {
+  font: var(--ch-type-15-medium);
+}
+.ch-hrs-td.is-warn {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+/* A flagged player's warnings, under their row. */
+.ch-hrs-flags {
+  display: block;
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: var(--ch-space-3);
+}
+.ch-hrs-flags__l {
+  display: grid;
+  gap: var(--ch-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-warning-600);
+}
+.ch-hrs-flags__l li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--ch-space-2);
+}
+.ch-hrs-flags__l li.is-check {
+  color: var(--ch-text-secondary);
+}
+.ch-hrs-flags__by {
+  color: var(--ch-text-tertiary);
+}
+.ch-hrs-tr:not(.ch-hrs-tr--head) + .ch-hrs-flags {
+  padding-left: calc(var(--ch-space-5) + 32px + var(--ch-space-3));
+}
+
+/* The phone week: a player a block on the card, the days in a row of seven. */
+.ch-hrs-pl {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  list-style: none;
+}
+.ch-hrs-pc {
+  display: grid;
+  gap: var(--ch-space-2);
+  padding: var(--ch-space-3) var(--ch-space-4);
+}
+.ch-hrs-pc + .ch-hrs-pc {
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+}
+.ch-hrs-pc__h {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+}
+.ch-hrs-pc__n {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-hrs-pc__wk {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-hrs-pc__wk.is-warn {
+  color: var(--ch-warning-600);
+}
+.ch-hrs-pc__days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--ch-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-hrs-pc__days li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: var(--ch-space-1) 0;
+  border-radius: var(--ch-radius-sm);
+  font: var(--ch-type-14);
+}
+.ch-hrs-pc__days li.is-off {
+  color: var(--ch-text-tertiary);
+}
+.ch-hrs-pc__days li.is-warn {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+.ch-hrs-pc__dow {
+  font: var(--ch-type-11-medium);
+  color: var(--ch-text-tertiary);
+}
+.ch-hrs-pc__days li.is-warn .ch-hrs-pc__dow {
+  color: var(--ch-warning-600);
+}
+
+/* What counted: every event of the week by day. */
+.ch-hrs-ev {
+  display: grid;
+  gap: var(--ch-space-4);
+}
+.ch-hrs-ev__day {
+  display: grid;
+  gap: var(--ch-space-2);
+}
+.ch-hrs-ev__dt {
+  margin: 0;
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
+  color: var(--ch-text-secondary);
+}
+.ch-hrs-ev__l {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  list-style: none;
+}
+.ch-hrs-ln {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 52px;
+  padding: var(--ch-space-3) var(--ch-space-4);
+}
+.ch-hrs-ln + .ch-hrs-ln {
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+}
+.ch-hrs-ln__main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-hrs-ln__t {
+  overflow: hidden;
+  font: var(--ch-type-14-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-hrs-ln__m,
+.ch-hrs-ln__why {
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-hrs-ln.is-changed .ch-hrs-ln__why {
+  color: var(--ch-text-primary);
+}
+.ch-hrs-ln__h {
+  min-width: 32px;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  text-align: right;
+}
+.ch-hrs-ln.is-out .ch-hrs-ln__t,
+.ch-hrs-ln.is-out .ch-hrs-ln__h {
+  color: var(--ch-text-secondary);
+}
+
+/* The rules: what each limit is, with its bylaw. */
+.ch-hrs-cites {
+  display: grid;
+  gap: var(--ch-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: var(--ch-type-14);
+}
+.ch-hrs-cites li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ch-space-4);
+}
+.ch-hrs-cites__by {
+  flex: none;
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-hrs-draft {
+  margin: var(--ch-space-3) 0 0;
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-secondary);
+}
+
+/* The sheets' fields. */
+.ch-hrs-form {
+  display: grid;
+  gap: var(--ch-space-4);
+}
+.ch-hrs-form__set {
+  display: grid;
+  gap: var(--ch-space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ch-hrs-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ch-space-3);
+}
+.ch-hrs-form__row--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 820px) {
+  .ch-hrs-h {
+    align-items: stretch;
+  }
+  .ch-hrs-tools {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .ch-hrs-cites li {
+    flex-direction: column;
+    gap: 0;
+  }
+  .ch-hrs-ln {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .ch-hrs-ln__act {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .ch-hrs-form__row--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media print {
+  .ch-hrs-tools,
+  .ch-hrs-ln__act {
+    display: none;
+  }
+}
