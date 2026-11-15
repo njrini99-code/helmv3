@@ -13,10 +13,10 @@ Held items:     screenshots owed (the receipt list as the last person moves from
 
 ### Changed
 
-- `screens/messages/seen-by.tsx`: a section that empties ("Not seen yet"
-  once everyone has opened it) leaves on opacity over the quick beat
-  (180 ms) instead of folding its height to 0 on the smooth spring. The rows'
-  glide between sections and the count and meta crossfades are unchanged.
+- `screens/messages/seen-by.tsx`: a section that empties ("Not seen yet" once
+  everyone has opened it) leaves on opacity over the quick beat (180 ms) instead
+  of folding its height to 0 on the smooth spring. The rows' glide between
+  sections and the count and meta crossfades are unchanged.
 
 ### Why
 
@@ -24,5 +24,5 @@ Held items:     screenshots owed (the receipt list as the last person moves from
 
 ### Verification
 
-- `__tests__/messages-seen-by.test.tsx` and the receipts tests; source and
-  jsdom only, no browser or device run.
+- `__tests__/messages-seen-by.test.tsx` and the receipts tests; source and jsdom
+  only, no browser or device run.

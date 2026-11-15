@@ -44,7 +44,8 @@ vi.mock('@/app/golf/actions/whats-new', () => ({
 function FeatureUnavailableStub() {
   return null;
 }
-vi.mock('@/components/fairway', () => ({
+// The page imports the component's own file, not the Fairway barrel (MAC-11), so the mock sits on that path.
+vi.mock('@/components/fairway/feedback/FeatureUnavailable', () => ({
   FeatureUnavailable: FeatureUnavailableStub,
 }));
 

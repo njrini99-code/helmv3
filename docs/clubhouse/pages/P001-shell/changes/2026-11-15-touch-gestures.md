@@ -19,13 +19,13 @@ Held items:     the hand test on the iPhone (D tier)
   `use-route-swipe.ts` does. The screen (and a covered screen beneath) gets
   `will-change: transform` at that touchstart instead of on the first move, and
   loses it on a refusal or a let-go that never dragged.
-- `shell/PullToRefresh.tsx`: the medium haptic still marks the trigger
-  mid-drag, but the read (`useRefresh`) starts on release, once per pull, and
-  the spinner's minimum counts from it. The rubber band already follows the
-  c = 0.55 formula. Its touchmove stays registered before the touch, at the
-  top of the page only: WebKit settles at touchstart whether a touch's moves
-  can be cancelled, so a listener added once the finger is down could not
-  hold the page still for the pull.
+- `shell/PullToRefresh.tsx`: the medium haptic still marks the trigger mid-drag,
+  but the read (`useRefresh`) starts on release, once per pull, and the
+  spinner's minimum counts from it. The rubber band already follows the c = 0.55
+  formula. Its touchmove stays registered before the touch, at the top of the
+  page only: WebKit settles at touchstart whether a touch's moves can be
+  cancelled, so a listener added once the finger is down could not hold the page
+  still for the pull.
 
 ### Why
 
@@ -35,8 +35,8 @@ Held items:     the hand test on the iPhone (D tier)
 
 ### Verification
 
-- `shell/__tests__/phone-shell-gestures.test.tsx`: no touchmove for a touch
-  away from the edge; armed and composited at an edge touchstart; disarmed and
+- `shell/__tests__/phone-shell-gestures.test.tsx`: no touchmove for a touch away
+  from the edge; armed and composited at an edge touchstart; disarmed and
   demoted when it turns out to be a scroll.
 - `__tests__/motion-approved.test.tsx`: the haptic fires mid-drag with no
   refresh; one refresh on release.

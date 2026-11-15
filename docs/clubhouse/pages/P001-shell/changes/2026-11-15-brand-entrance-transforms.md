@@ -1,6 +1,6 @@
 # 2026-11-15 — shell
 
-## 2026-11-15 — Sign-in brand entrance: the rise and the glint are transforms (MOT-15)
+## 2026-11-15 — Sign-in brand entrance on transforms only (MOT-15)
 
 ```text
 Design package: none (production audit 2026-11-15, MOT-15)
@@ -17,8 +17,8 @@ Held items:     screenshots owed (desktop sidebar brand panel mid-glint, before/
   `ch-brand-rise`) rises the last 3px into place without the 3px blur filter.
   The glint (`ch-brand-glint`) is a band 250% of the panel wide slid on
   `translateX` from −78% to 18% of its own width, the same path it took as a
-  `background-position` from 130% to −30%. Timing, curve and the hand-off
-  pause are unchanged.
+  `background-position` from 130% to −30%. Timing, curve and the hand-off pause
+  are unchanged.
 
 ### Why
 

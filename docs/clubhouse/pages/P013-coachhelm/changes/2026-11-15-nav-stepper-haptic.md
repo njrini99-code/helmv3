@@ -13,12 +13,18 @@ Held items: none
 
 ### Changed
 
-- `screens/coachhelm/plan/PlanCard.tsx`: Shorter and Longer in a plan block's sheet each fire `haptic('select')` through `lib/haptics.ts`, as every other stepper does (the practice builder's `Stepper` already did). Nothing visible changes.
+- `screens/coachhelm/plan/PlanCard.tsx`: Shorter and Longer in a plan block's
+  sheet each fire `haptic('select')` through `lib/haptics.ts`, as every other
+  stepper does (the practice builder's `Stepper` already did). Nothing visible
+  changes.
 
 ### Why
 
-- 3.10 lists "Stepper change: select". This was the one Clubhouse stepper that was silent.
+- 3.10 lists "Stepper change: select". This was the one Clubhouse stepper that
+  was silent.
 
 ### Verification
 
-- Unit: `screens/coachhelm/plan/__tests__/plan-card-stepper-haptic.test.tsx` (one select per step), `__tests__/haptic-grammar.test.ts`. The tick itself is native only; a device check (D) is owed with the rest of 3.10.
+- Unit: `screens/coachhelm/plan/__tests__/plan-card-stepper-haptic.test.tsx`
+  (one select per step), `__tests__/haptic-grammar.test.ts`. The tick itself is
+  native only; a device check (D) is owed with the rest of 3.10.

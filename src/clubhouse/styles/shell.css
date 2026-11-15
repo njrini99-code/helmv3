@@ -4033,13 +4033,14 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 
 /* -- The folding sidebar (owner, 2026-10-17: "a little circle that collapses the sidebar and just shows the golfhelm
    logo and all the icons") --------------------------------------------------------------------------------------------
-   The rail is the sidebar at --ch-rail-w; the canvas is the rest of the row, so the page simply gains the width. One
-   motion carries it: the sidebar's edge, the circle riding it, the word's track and the brand panel all move over the
-   base beat on the iOS curve (production audit 2026-11-15, S4.4: 260 ms, so the width is laid out for half as many
-   frames as on the 462 ms spring), so the edge slides and the wheel glides to the rail's centre as one object. The icons never move: the
-   rail is exactly as wide as the icons' column. The words leave first and arrive last: folding, they fade out quickly
-   before the edge reaches them; opening, they fade in once the edge has passed, drifting the last 4px into place, so
-   no label is ever seen squeezed. Reduced motion and Animations off swap at once (the tokens go to 0). Desktop only. */
+   The rail is the sidebar at --ch-rail-w; the canvas is the rest of the row, so the page simply gains the width. The
+   fold moves on transform and opacity only (production audit 2026-11-15, S4.4, MOT-11): the sidebar's edge, the circle
+   on it, the word's track and the brand panel take their new place at once, so the canvas is laid out once, not on
+   every frame of the fold. The icons never move: the rail is exactly as wide as the icons' column. What moves is drawn
+   on the compositor: the circle's chevron turns over the base beat on the iOS curve, and the words fade and slide over
+   the quick beat. Opening, they arrive on the iOS curve, drifting the last 4px into place; folding, the rail clips them
+   at once and what is left fades on --ch-ease-out. Reduced motion and Animations off swap at once (the tokens go to 0).
+   Desktop only. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-app {
     position: relative;
@@ -4049,12 +4050,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
   .ch-sidebar {
     overflow-x: hidden;
-    transition: width var(--ch-dur-base) var(--ch-ease-ios);
   }
   /* While the fold moves (lib/rail-fold.ts sets data-ch-rail-moving; motion pass 2026-10-22, mot-01), the brand panel
-     drops its frost: a blur under a box that changes size is redrawn on every frame of the spring. Over the sidebar's
-     clear field, a smooth gradient, the panel reads nearly the same without it, and the frost is back as it settles.
-     The page's own size readers wait the fold out in the same way (afterRailMove). */
+     drops its frost. The width no longer moves (MOT-11), so this now spans a single task; it stays so that a sidebar
+     given a width transition again keeps its blur from being redrawn on every frame. The page's own size readers wait
+     the fold out in the same way (afterRailMove). */
   .ch-app[data-ch-rail-moving] .ch-brand {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -4080,8 +4080,8 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
       inset 0 1px 0 #fff,
       var(--ch-elevation-on-frame);
     cursor: pointer;
-    transition: translate var(--ch-dur-base) var(--ch-ease-ios),
-      transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+    /* No transition on its translate: the circle stays on the seam, which takes its place at once (MOT-11). */
+    transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
   /* 22px drawn, 24 x 24 to the pointer (F-0022): it sat under the desktop minimum on every page. */
   .ch-railtoggle::after {
@@ -4103,12 +4103,12 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
   .ch-railtoggle[data-ch-pressed] {
     transform: scale(0.94);
-    transition-duration: var(--ch-dur-spring-smooth), var(--ch-dur-press), var(--ch-dur-press);
+    transition-duration: var(--ch-dur-press), var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-railtoggle:active {
       transform: scale(0.94);
-      transition-duration: var(--ch-dur-spring-smooth), var(--ch-dur-press), var(--ch-dur-press);
+      transition-duration: var(--ch-dur-press), var(--ch-dur-press);
     }
   }
   .ch-railtoggle:focus-visible {
@@ -4117,20 +4117,12 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
 
   /* The brand: the word's track closes to nothing (a grid column from 1fr to 0fr), the gap with it, and the panel
-     tightens to the wheel, so the wheel ends at the rail's centre. */
-  .ch-brand {
-    transition: margin var(--ch-dur-base) var(--ch-ease-ios),
-      padding var(--ch-dur-base) var(--ch-ease-ios);
-  }
-  .ch-brand__line {
-    transition: gap var(--ch-dur-base) var(--ch-ease-ios);
-  }
+     tightens to the wheel, so the wheel sits at the rail's centre. All of it at once; only the word fades. */
   .ch-brand__fold {
     display: grid;
     grid-template-columns: 1fr;
     min-width: 0;
-    transition: grid-template-columns var(--ch-dur-base) var(--ch-ease-ios),
-      opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios);
   }
   .ch-brand__fold > .ch-brand__word {
     min-width: 0;
@@ -4148,11 +4140,10 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-app[data-ch-rail='folded'] .ch-brand__fold {
     grid-template-columns: 0fr;
     opacity: 0;
-    transition: grid-template-columns var(--ch-dur-base) var(--ch-ease-ios),
-      opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
   }
 
-  /* The words: out first, in last. The icon keeps its size while the row narrows; the label gives way. */
+  /* The words. The icon keeps its size on the rail; the label gives way. */
   .ch-navitem {
     white-space: nowrap;
   }
@@ -4167,16 +4158,16 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-nav__head > *,
   .ch-identity__txt,
   .ch-sidebar__card {
-    transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8),
-      transform var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8),
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios),
+      transform var(--ch-dur-quick) var(--ch-ease-ios),
       visibility 0s linear 0s;
   }
   .ch-app[data-ch-rail='folded'] :is(.ch-navitem__label, .ch-nav__head > *, .ch-identity__txt, .ch-sidebar__card) {
     opacity: 0;
     transform: translateX(-4px);
-    transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out),
-      transform calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out),
-      visibility 0s linear calc(var(--ch-dur-quick) * 0.7);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-out),
+      transform var(--ch-dur-quick) var(--ch-ease-out),
+      visibility 0s linear var(--ch-dur-quick);
   }
   /* The card is wide and fixed, so it never reflows while the edge passes over it; on the rail it is hidden. */
   .ch-sidebar__card {
@@ -4202,11 +4193,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     height: var(--ch-hairline-w);
     background: rgb(220 205 166 / 0.4);
     opacity: 0;
-    transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-app[data-ch-rail='folded'] .ch-nav__head::before {
     opacity: 1;
-    transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios);
   }
 
   /* A count rides the icon's corner on the rail. */
@@ -4289,11 +4280,8 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ch-sidebar,
   .ch-railtoggle,
   .ch-railtoggle svg,
-  .ch-brand,
-  .ch-brand__line,
   .ch-brand__fold,
   .ch-navitem__label,
   .ch-nav__head > *,

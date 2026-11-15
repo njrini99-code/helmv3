@@ -34,10 +34,10 @@ same parallax the pop uses (`CH_UNDERLAY_SHIFT`,
 reaches the right edge. With a second pushed
   screen beneath (a thread under its details) that screen moves instead of the
 page. The scrim stays at its resting dim.
-- **Commit mark.** Half the width (S4.2, production audit 2026-11-15). The selection haptic (`haptic('select')`)
-  ticks as the finger crosses it, and again
-  when it crosses back. Nothing else is felt: the sheet-settling `commit` haptic
-is for sheets (D-70).
+- **Commit mark.** Half the width (S4.2, production audit 2026-11-15). The
+  selection haptic (`haptic('select')`) ticks as the finger crosses it, and
+  again when it crosses back. Nothing else is felt: the sheet-settling `commit`
+  haptic is for sheets (D-70).
 - **Release.** Past the mark, or flicked right faster than 0.7 px/ms after at
   least 10px of travel, pops the screen: the
   screen's own Back runs and the screen leaves on the smooth spring from where
