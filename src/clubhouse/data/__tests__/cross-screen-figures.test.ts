@@ -146,7 +146,7 @@ describe('the season average on Rounds is the one Stats prints for Season', () =
 
   it('a player’s Rounds page and their Stats, Season: the same rounds, the same average', () => {
     const mine = rows.filter((r) => r.player_id === 'a');
-    const home = playerFiguresOver(stats.filter((r) => r.player_id === 'a'), season, START);
+    const home = playerFiguresOver(stats.filter((r) => r.player_id === 'a'), season, START, new Map());
     const library = seasonFrom(mine.map((r) => toLibraryRound(r as unknown as ChRoundListRow)).filter((r): r is ChLibraryRound => r != null), START);
     // 71, 75, 74 and 77: practice, the unknown type, the nine and July are out.
     expect(home.rounds).toBe(4);
@@ -156,7 +156,7 @@ describe('the season average on Rounds is the one Stats prints for Season', () =
   });
 
   it('the coach’s Team rounds and Team stats, Season: the same rounds, the same average', () => {
-    const home = teamFiguresOver(stats, ['a', 'b'], season, START);
+    const home = teamFiguresOver(stats, ['a', 'b'], season, START, new Map());
     const team = teamSeasonFrom(toTeamRounds(rows as unknown as ChTeamRoundRow[], names).list, START);
     expect(home.rounds).toBe(6);
     expect(team.scored).toBe(home.rounds);
