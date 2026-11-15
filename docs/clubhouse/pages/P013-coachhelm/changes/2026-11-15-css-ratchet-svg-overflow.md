@@ -1,6 +1,6 @@
 # 2026-11-15 — coachhelm
 
-## 2026-11-15 — The CoachHelm ball's SVG layers drop a needless overflow: visible (no visible change)
+## 2026-11-15 — Ball SVG layers lose a needless overflow rule (looks the same)
 
 ```text
 Design package: none (tooling; no visible change)
@@ -13,7 +13,10 @@ Held items:     none
 
 ### Changed
 
-- `coachhelm-ball.css`: the shared layer rule no longer sets `overflow: visible`. The divs it also matched default to visible, and every dimple and point of light sits inside the 24-unit drawing; the thinking waves scale the SVG element itself, so nothing is clipped.
+- `coachhelm-ball.css`: the shared layer rule no longer sets `overflow:
+  visible`. The divs it also matched default to visible, and every dimple and
+  point of light sits inside the 24-unit drawing; the thinking waves scale the
+  SVG element itself, so nothing is clipped.
 
 ### Why
 

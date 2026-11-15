@@ -2,6 +2,7 @@
 // where an env file points. It must name a project without ever printing its URL or a key.
 import { describe, it, expect } from 'vitest';
 import { browserStatus, diskStatus, envTarget, parseMcpList } from '../ui-tools-check.mjs';
+import { KNOWN_PROD_PROJECT_REF } from '../prod-target-guard.mjs';
 
 describe('browserStatus', () => {
   it('matches the wanted revision to the installed folder name', () => {
@@ -33,7 +34,7 @@ describe('diskStatus', () => {
 
 describe('envTarget', () => {
   it('names the project and never returns the URL', () => {
-    expect(envTarget('X=1\nNEXT_PUBLIC_SUPABASE_URL=https://qmnssrrolpinvwjjnufo.supabase.co\n')).toBe('production');
+    expect(envTarget(`X=1\nNEXT_PUBLIC_SUPABASE_URL=https://${KNOWN_PROD_PROJECT_REF}.supabase.co\n`)).toBe('production');
     expect(envTarget('NEXT_PUBLIC_SUPABASE_URL="https://ybmwektreyrwjscxlogv.supabase.co"')).toBe('staging');
     expect(envTarget('NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321')).toBe('local');
     expect(envTarget('OTHER=1')).toBe('unset');

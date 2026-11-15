@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { accessOf, areaOf, listScreens, productOf, routeFromPageFile, summarize } from '../list.mjs';
 import { blankedEnv, gallery, main, patternRegex, plan, resolveDynamic } from '../sweep.mjs';
+import { KNOWN_PROD_PROJECT_REF } from '../../lib/prod-target-guard.mjs';
 
 describe('routeFromPageFile', () => {
   it('drops route groups and keeps dynamic segments', () => {
@@ -76,7 +77,7 @@ describe('safety', () => {
   });
   it('blanks every env-file key for its own server, except the allowlist, and fakes Supabase', () => {
     const dir = mkdtempSync(join(tmpdir(), 'screens-env-'));
-    writeFileSync(join(dir, '.env.local'), 'RESEND_API_KEY=re_live\nANTHROPIC_API_KEY=sk-x\nNEXT_PUBLIC_SUPABASE_URL=https://qmnssrrolpinvwjjnufo.supabase.co\nNEXT_PUBLIC_APP_URL=http://x\n');
+    writeFileSync(join(dir, '.env.local'), `RESEND_API_KEY=re_live\nANTHROPIC_API_KEY=sk-x\nNEXT_PUBLIC_SUPABASE_URL=https://${KNOWN_PROD_PROJECT_REF}.supabase.co\nNEXT_PUBLIC_APP_URL=http://x\n`);
     const env = blankedEnv({ PATH: '/bin' }, dir);
     expect(env.RESEND_API_KEY).toBe('');
     expect(env.ANTHROPIC_API_KEY).toBe('');

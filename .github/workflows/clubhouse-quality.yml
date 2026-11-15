@@ -144,7 +144,10 @@ jobs:
         env:
           CH_PIXELS: '1'
           CH_VISUAL_BASELINES: ${{ github.workspace }}/.helm/screenshots/clubhouse/pixel-baselines
-        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project pixels-phone --project pixels-desktop --update-snapshots=all --output test-results/clubhouse-quality/pixels
+        run: >-
+          ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts
+          --project pixels-phone --project pixels-desktop --update-snapshots=all
+          --output test-results/clubhouse-quality/pixels
       - name: Upload pixel baselines
         if: ${{ !cancelled() && github.event_name == 'schedule' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2

@@ -3,8 +3,10 @@
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { isProductionDatabase, isProductionSite, productionAllowed, refuseProduction } from '../production-site-guard.mjs';
+import { KNOWN_PROD_PROJECT_REF } from '../prod-target-guard.mjs';
 
-const PROD_DB = 'https://qmnssrrolpinvwjjnufo.supabase.co';
+// Built from the one constant: scripts-no-committed-secrets refuses the production URL written out.
+const PROD_DB = `https://${KNOWN_PROD_PROJECT_REF}.supabase.co`;
 const STAGING_DB = 'https://ybmwektreyrwjscxlogv.supabase.co';
 
 describe('isProductionSite', () => {

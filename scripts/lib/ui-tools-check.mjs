@@ -10,6 +10,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { homedir, platform } from 'node:os';
 import { join } from 'node:path';
+import { KNOWN_PROD_PROJECT_REF } from './prod-target-guard.mjs';
 
 const run = (cmd, args, timeout = 20_000) => execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout }).trim();
 const tryRun = (cmd, args, timeout) => { try { return run(cmd, args, timeout); } catch { return null; } };
@@ -47,7 +48,7 @@ export function diskStatus(freeGb) {
 export function envTarget(text) {
   const m = /^\s*NEXT_PUBLIC_SUPABASE_URL\s*=\s*["']?([^"'\s]+)/m.exec(String(text));
   if (!m) return 'unset';
-  if (/qmnssrrolpinvwjjnufo/.test(m[1])) return 'production';
+  if (m[1].includes(KNOWN_PROD_PROJECT_REF)) return 'production';
   if (/ybmwektreyrwjscxlogv/.test(m[1])) return 'staging';
   if (/127\.0\.0\.1|localhost/.test(m[1])) return 'local';
   return 'other';

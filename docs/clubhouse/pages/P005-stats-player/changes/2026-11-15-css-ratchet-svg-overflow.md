@@ -1,6 +1,6 @@
 # 2026-11-15 — stats (player)
 
-## 2026-11-15 — Shared stats stylesheet: the team chart's average key drops a needless overflow: visible (no change here)
+## 2026-11-15 — Shared stats stylesheet: one team-chart rule (no change here)
 
 ```text
 Design package: none (tooling; no visible change)
@@ -13,7 +13,9 @@ Held items:     none
 
 ### Changed
 
-- Nothing on player stats. `stats-redesign.css` is mapped to this page too; the one rule changed, `.ch-shs-mean-key svg`, draws under the team chart only (see P004's fragment of the same date).
+- Nothing on player stats. `stats-redesign.css` is mapped to this page too; the
+  one rule changed, `.ch-shs-mean-key svg`, draws under the team chart only (see
+  P004's fragment of the same date).
 
 ### Why
 

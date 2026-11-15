@@ -1,6 +1,6 @@
 # 2026-11-15 — stats (team)
 
-## 2026-11-15 — The round-day average key drops a needless overflow: visible (no visible change)
+## 2026-11-15 — Average key SVG loses a needless overflow rule (looks the same)
 
 ```text
 Design package: none (tooling; no visible change)
@@ -13,7 +13,9 @@ Held items:     none
 
 ### Changed
 
-- `stats-redesign.css`: `.ch-shs-mean-key svg` no longer sets `overflow: visible`. Its 1-unit dashed line sits at the middle of a 16×2 drawing, so it was never outside it.
+- `stats-redesign.css`: `.ch-shs-mean-key svg` no longer sets `overflow:
+  visible`. Its 1-unit dashed line sits at the middle of a 16×2 drawing, so it
+  was never outside it.
 
 ### Why
 
