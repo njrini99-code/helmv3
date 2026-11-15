@@ -54,6 +54,19 @@ vi.mock('@/lib/coachhelm/v3/qualifying/loader', () => ({
   loadQualifyingWorkspace: vi.fn(),
 }));
 
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () =>
+    createFakeSupabase({
+      tables: {
+        users: [
+          { id: 'u1', email: 'a@example.com' },
+          { id: 'u2', email: 'b@example.com' },
+          { id: 'u3', email: 'c@example.com' },
+        ],
+      },
+    }),
+}));
+
 import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
 import { confirmSelection } from '@/lib/coachhelm/v3/qualifying/service';
 import { notifyPlayersOfSelectionOutcome } from '@/lib/coachhelm/v3/qualifying/player-notify';
@@ -140,11 +153,8 @@ function buildSb(): FakeSb {
         { id: 'p2', user_id: 'u2' },
         { id: 'p3', user_id: 'u3' },
       ],
-      users: [
-        { id: 'u1', email: 'a@example.com' },
-        { id: 'u2', email: 'b@example.com' },
-        { id: 'u3', email: 'c@example.com' },
-      ],
+      // public.users RLS is own-row only: the coach's session has no player's row. The service role does (below).
+      users: [],
     },
   });
 }

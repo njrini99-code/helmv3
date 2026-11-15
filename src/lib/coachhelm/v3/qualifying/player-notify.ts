@@ -30,6 +30,8 @@ import { sendPushNotification } from '@/lib/notifications/push';
 import { recordInAppNotification } from '@/lib/notifications/in-app';
 import type { QualifyingWorkspace, SelectionCandidate } from './types';
 import { allSettledReported } from '@/lib/settled-failures';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { describeError } from '@/lib/utils/describe-error';
 
 type Sb = SupabaseClient<Database>;
 
@@ -96,7 +98,12 @@ export async function notifyPlayersOfSelectionOutcome(
 
   const userIdByPlayer = new Map(playerRows.map((p) => [p.id, p.user_id]));
 
-  const { data: userRows } = await supabase
+  // SERVICE-ROLE, not the caller's client. `public.users` only allows
+  // `users_select_own` and `admin_read_all`, so a coach reading a player's row
+  // gets nothing and the player is never told. Same fix as announcements.ts.
+  // Not a privilege widening: the candidates belong to a qualifier whose team the
+  // caller was verified to staff before confirmSelection ran.
+  const { data: userRows, error: userRowsError } = await createAdminClient()
     .from('users')
     .select('id, email')
     // `user_id` is nullable once an account is deleted and the player's history
@@ -105,6 +112,8 @@ export async function notifyPlayersOfSelectionOutcome(
     // golf.ts that already do this. NOT NULL in production today, so this
     // removes nothing yet: that is what lets it ship before the migration.
     .in('id', playerRows.map((p) => p.user_id).filter((id): id is string => Boolean(id)));
+  // Thrown so confirmSelection tells the coach (Q-116) instead of reporting everyone told.
+  if (userRowsError) throw new Error(`recipient read: ${describeError(userRowsError)}`);
   if (!userRows?.length) return;
 
   const emailByUser = new Map(userRows.map((u) => [u.id, u.email]));

@@ -5,9 +5,16 @@
  * Recovery tap (`01-input-integrity.md` row 7, `03` §3.3): today a tee miss
  * carries its lie (rough, or 'other' for trees, hazard edges and waste) but
  * not whether the next shot was a recovery. The tee-miss-cost read prices a
- * blocked punch-out from the trees like an open shot from the rough. One tap
- * on the tee shot ("Clear shot" / "Blocked or punch out") records it as
- * `ShotRecord.lieAfterRecovery`, stored as `golf_shots.lie_after_recovery`.
+ * punch-out from the trees like an open shot from the rough. One tap on the
+ * tee shot ("Clear shot" / "Recovery / layup", `RECOVERY_CHOICES`) records it
+ * as `ShotRecord.lieAfterRecovery`, stored as `golf_shots.lie_after_recovery`.
+ *
+ * What `true` means (owner, 2026-11-12, renamed from "Blocked or punch out"):
+ * the next shot could not go at the green from where the tee shot finished,
+ * so it was a recovery or a forced layup. Strokes gained starts it on
+ * Broadie's recovery curve. A strategic layup from a clean lie is a clear
+ * shot: the rough curve already prices it. Rows saved under the old label
+ * (a punch-out) mean the same `true` and read unchanged; nothing is mapped.
  * It sits beside the lie, not in place of it: a new lie value would change
  * every strokes-gained lookup and lie-keyed stat that reads `lie_after`
  * today, and costing a recovery is an engine change of its own.
@@ -22,6 +29,29 @@ import type { ShotRecord } from '@/lib/types/golf';
 import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 
 export const DATA_PROMPTS_FLAG = 'coachhelm_data_prompts_v2';
+
+/**
+ * The tap's two answers, the same in Clubhouse and Fairway: `false` a clear
+ * shot, `true` a recovery or forced layup (`golf_shots.lie_after_recovery`).
+ */
+export const RECOVERY_CHOICES: ReadonlyArray<{ value: boolean; label: string }> = [
+  { value: false, label: 'Clear shot' },
+  { value: true, label: 'Recovery / layup' },
+];
+
+/**
+ * The line under the question before it is answered: where the tee shot
+ * finished, and when Recovery / layup applies, so a strategic layup from a
+ * clean lie is not tagged (it is a clear shot).
+ */
+export function recoveryHint(result: ShotRecord['result']): string {
+  return `${result === 'other' ? 'Tee shot, other lie' : 'Tee shot, rough'}. Recovery / layup only if you couldn’t go at the green.`;
+}
+
+/** The receipt under the row once the tap is saved. */
+export function recoverySavedLine(recovery: boolean): string {
+  return recovery ? 'Saved: a recovery or layup' : 'Saved: a clear shot';
+}
 
 /** Tee results after which the next shot may be a recovery. Sand is left
  *  out: a fairway bunker is its own lie and the sand reads already cost it. */

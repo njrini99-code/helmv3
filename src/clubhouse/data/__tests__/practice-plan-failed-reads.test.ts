@@ -33,7 +33,14 @@ function from(table: string) {
   return chain;
 }
 
-vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ from }) }));
+/** golf_player_profiles: the plan page's names (practice-plan.ts `context`), every player on the asked teams. */
+function rpc(_fn: string, args: { p_team_ids?: string[] }) {
+  const teams = args.p_team_ids ?? [];
+  const ids = new Set((tables.golf_team_members ?? []).filter((m) => teams.includes(m.team_id as string)).map((m) => m.player_id));
+  return Promise.resolve({ data: (tables.golf_players ?? []).filter((p) => ids.has(p.id)), error: null });
+}
+
+vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ from, rpc }) }));
 vi.mock('../../lib/track-server', () => ({ chLogServer: logged }));
 
 import { loadCoachPlan, loadPlanDrills, PlanDrillsUnreadError } from '../practice-plan';
@@ -71,7 +78,8 @@ beforeEach(() => {
     golf_practice_plan_formats: [],
     golf_events: [{ id: 'ev-1', start_time: '2026-11-05T19:00:00Z', end_time: '2026-11-05T21:00:00Z', team_id: 't-1', location: 'Lakeside' }],
     golf_teams: [{ id: 't-1', name: 'Demo Golf', timezone: 'America/New_York', organization_id: 'o-1' }],
-    golf_team_members: [{ team_id: 't-1', status: 'active', player_id: 'p1', golf_players: { first_name: 'Maya', last_name: 'Reed' } }],
+    golf_team_members: [{ team_id: 't-1', status: 'active', player_id: 'p1' }],
+    golf_players: [{ id: 'p1', user_id: null, first_name: 'Maya', last_name: 'Reed', avatar_url: null, graduation_year: null, handicap: null, handicap_index: null }],
     golf_coaches: [{ organization_id: 'o-1', full_name: 'Coach Lin' }],
     golf_team_drills: [{ id: 'td-1', name: 'Ladder', area: 'putting', minutes: 15, setup: 'Five tees', goal: 'Make three in a row', diagram: null, scoring: null, levels: null }],
     golf_drills: [{ id: 'ld-1', title: 'Up and down', category: 'short_game', duration_min: 20, description: 'Nine balls' }],

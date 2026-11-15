@@ -171,6 +171,16 @@ Player Team Hub
 - Files attached to an announcement must be the team's own documents, checked
   before the announcement is written; a post whose file links fail reports
   `attachmentsError` beside the id (`announcements.ts`).
+- A `golf_documents` row with no `file_url` is a published practice plan
+  (N-00 `20261026010400`), not a file. Every reader that lists, attaches,
+  opens or signs files leaves it out or refuses it without throwing (the N-10
+  reader shim): `getDocuments` returns files only unless the caller passes
+  `{ plans: true }` (only Team Hub does, and opens a plan row as its plan);
+  event attachments, the announcement picker, check and detail, Ask's
+  documents list and the admin upload feed filter `file_url IS NOT NULL`;
+  `getPreviewUrl` answers `noContent`, `getDocument` and `getTextFileContent`
+  say it is a plan. Pinned by
+  `src/app/golf/actions/__tests__/documents-plan-rows.test.ts`.
 - A player reads a teammate's display columns (name, avatar, class year,
   handicap) only through `readGolfPlayerProfiles` (`src/lib/golf/player-profiles.ts`,
   the player-profiles database function), never a `golf_players` table read or
@@ -297,6 +307,7 @@ in `memory/features/coachhelm-ai.md`.
 
 ## Known Risk Areas
 
+- `createTask` reads assignees' `users.email` with the service role (2026-11-05): `public.users` RLS is own-row only, so the coach's session read no rows with no error and no assignee got the email or the `New task` bell row. The ids are already checked by `verifyPlayersOnTeam`.
 - Task reminder auto-send is missing; setting `reminder_at` does not imply notifications will fire.
 - Travel expense split table exists but dedicated split calculation/assignment logic is incomplete.
 - Budget/expense actions may exist even when UI exposure is partial.

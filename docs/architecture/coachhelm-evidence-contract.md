@@ -2643,7 +2643,11 @@ Rule-based templates only; no LLM. The numbers are the same interpolations in
 both voices. Before storing, `BaseGenerator.run()` and
 `synthesizeForPlayer` check the copy with `coachCopyIssues`: both parts
 non-empty, the same numbers as the player's copy (read the way the Clubhouse
-reader reads them), no second person and no club word. A copy that fails is
+reader reads them), no second person and no club word. A generator that
+quotes a proper noun lists it in `ComposedContent.names` (CourseMgmt: the
+worst holes' course names), and the club-word and second-person checks read
+the copy without those names, so "Oak Hollow Country Club" or "Pine Woods" is
+not a club (incident 4fb650c5, 2026-11-15). A copy that fails is
 not stored, and the miss is logged (`v3.generator.<name>.coach_copy`,
 `v3.composite.<rule>.coach_copy`), so coaches fall back to the player's text
 as before. Test: `v3/engine/__tests__/coach-copy.test.ts` runs every

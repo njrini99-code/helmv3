@@ -193,7 +193,21 @@ async function resolveUploaders(
 // DOCUMENT CRUD OPERATIONS
 // ============================================
 
-async function getDocumentsImpl(teamId: string): Promise<{ data: GolfDocument[] | null; error: string | null }> {
+/**
+ * A row of golf_documents with no file: a published practice plan (N-00 `20261026010400` drops NOT NULL on `file_url` and files
+ * each plan as a row with `practice_plan_id` set and `file_url` NULL). Every reader that lists, opens or signs FILES leaves it
+ * out or refuses it (the N-10 reader shim, HELD.md 010400 row); only a reader built for plan rows (Team Hub's folders) asks
+ * for them. Until 010400 is applied no such row exists, so these checks change nothing today.
+ */
+function hasNoFile(row: { file_url?: string | null } | null | undefined): boolean {
+  return row?.file_url == null;
+}
+
+/** What a file-only read says about a practice-plan row. Not exported: a 'use server' module exports async functions only. */
+const NOT_A_FILE = 'This is a practice plan, not a file. Open it from Practice plans.';
+
+/** Documents (files) of a team. `{ plans: true }` also returns practice-plan rows (no file), for a reader that draws them. */
+async function getDocumentsImpl(teamId: string, options: { plans?: boolean } = {}): Promise<{ data: GolfDocument[] | null; error: string | null }> {
   try {
     const supabase = await createClient();
 
@@ -216,6 +230,10 @@ async function getDocumentsImpl(teamId: string): Promise<{ data: GolfDocument[] 
     // mirrors the page-level filter and the RLS policy (defense-in-depth).
     if (role !== 'coach') {
       query = query.eq('is_public', true);
+    }
+    // A plan row has no file to list, attach or open (N-10 shim): only a caller that draws plans asks for them.
+    if (!options.plans) {
+      query = query.not('file_url', 'is', null);
     }
 
     const { data, error } = await query;
@@ -240,8 +258,8 @@ const observedGetDocuments = withAdminObserved(
   getDocumentsImpl,
 );
 
-export async function getDocuments(teamId: string): Promise<{ data: GolfDocument[] | null; error: string | null }> {
-  return observedGetDocuments(teamId);
+export async function getDocuments(teamId: string, options: { plans?: boolean } = {}): Promise<{ data: GolfDocument[] | null; error: string | null }> {
+  return observedGetDocuments(teamId, options);
 }
 
 async function getDocumentImpl(documentId: string): Promise<{ data: GolfDocument | null; error: string | null }> {
@@ -254,7 +272,7 @@ async function getDocumentImpl(documentId: string): Promise<{ data: GolfDocument
     // Verify user has access to this document's team
     const { data: docCheck, error: docCheckError } = await supabase
       .from('golf_documents')
-      .select('team_id, is_public')
+      .select('team_id, is_public, file_url')
       .eq('id', documentId)
       .single();
 
@@ -268,6 +286,8 @@ async function getDocumentImpl(documentId: string): Promise<{ data: GolfDocument
     if (role !== 'coach' && docCheck.is_public !== true) {
       return { data: null, error: 'Not authorized to access this document' };
     }
+    // A practice-plan row has no file and no versions: it opens its plan page, never this document view (N-10 shim).
+    if (hasNoFile(docCheck)) return { data: null, error: NOT_A_FILE };
 
     const { data, error } = await (supabase as any)
       .from('golf_documents')
@@ -1164,7 +1184,7 @@ async function getPreviewUrlImpl(
     // Verify user has access to this document's team
     const { data: docCheck, error: docCheckError } = await supabase
       .from('golf_documents')
-      .select('team_id, is_public')
+      .select('team_id, is_public, file_url')
       .eq('id', documentId)
       .single();
 
@@ -1177,6 +1197,10 @@ async function getPreviewUrlImpl(
     if (role === 'none' || (role !== 'coach' && docCheck.is_public !== true)) {
       return { data: null, error: 'Not authorized to access this document' };
     }
+
+    // A practice-plan row has no file to sign (N-10 shim): the honest empty state, with no version read, no signing and no
+    // error logged. Without this a version number made `.single()` throw on the missing version row.
+    if (hasNoFile(docCheck)) return { data: null, error: null, noContent: true };
 
     if (versionNumber) {
       // Get specific version
@@ -1791,7 +1815,7 @@ async function getTextFileContentImpl(
     // Verify user has access to this document's team
     const { data: docCheck, error: docCheckError } = await supabase
       .from('golf_documents')
-      .select('team_id, is_public')
+      .select('team_id, is_public, file_url')
       .eq('id', documentId)
       .single();
 
@@ -1804,6 +1828,7 @@ async function getTextFileContentImpl(
     if (role === 'none' || (role !== 'coach' && docCheck.is_public !== true)) {
       return { data: null, error: 'Not authorized to access this document' };
     }
+    if (hasNoFile(docCheck)) return { data: null, error: NOT_A_FILE };
 
     let storagePath: string;
 

@@ -1,0 +1,31 @@
+schema_version: 1
+replay_id: coachhelm-calibration-truncation-2026-11-08
+incident_id: /admin/errors/health:coachhelm-calibration-truncation
+feature_id: coachhelm_ai
+title: >-
+  The nightly calibration cron read golf_prediction_validations with one
+  capped .limit(1000), so with 1253 validations in its 90-day window it
+  silently dropped about a fifth of the evidence; it now pages by id.
+bad_version: 743cb23a1979181e129be517c8dbe31c47fe5325
+fixed_version: 1ebb715aa8a543f7edea1d68a70c57f458f24a9d
+fixture:
+  - source: route-pagination.test.ts
+    target: src/app/api/cron/coachhelm-calibration/__tests__/route-pagination.test.ts
+test_command: >-
+  ./node_modules/.bin/vitest run --project unit
+  src/app/api/cron/coachhelm-calibration/__tests__/route-pagination.test.ts
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic prediction ids and values; only the row count (1253) mirrors
+    production. No PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-11-08"
+notes: >-
+  Found by the app-health routine, not filed by Diagnose. On bad_version the
+  test fails with "expected 1000 to be 1253".

@@ -43,6 +43,8 @@ function chain(table: string) {
     select: self,
     eq: self,
     in: self,
+    // The attachment check reads files only (`not file_url is null`, the N-10 reader shim): these fixtures are all files.
+    not: self,
     order: self,
     limit: self,
     update: self,

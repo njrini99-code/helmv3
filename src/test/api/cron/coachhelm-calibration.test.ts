@@ -25,14 +25,17 @@ function buildSupabase(opts: {
   upsertError?: string | null;
   upsertSpy?: ReturnType<typeof vi.fn>;
 }) {
+  const validationsResult = {
+    data: opts.validations,
+    error: opts.validationsError ? { message: opts.validationsError, code: 'VV' } : null,
+  };
   const validationsBuilder = {
     select: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
     not: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockResolvedValue({
-      data: opts.validations,
-      error: opts.validationsError ? { message: opts.validationsError, code: 'VV' } : null,
-    }),
+    order: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue(validationsResult),
+    range: vi.fn().mockResolvedValue(validationsResult),
   };
   const predictionsBuilder = {
     select: vi.fn().mockReturnThis(),

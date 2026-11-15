@@ -34,7 +34,7 @@ export interface RawShotRow {
   putt_made: boolean | null;
   miss_direction: string | null;
   created_at: string | null;
-  /** Recovery tap: the player marked this shot's finish as blocked. */
+  /** Recovery tap: the player marked the next shot "Recovery / layup" (blocked from the green; "Blocked or punch out" before 2026-11-12, same `true`). */
   lie_after_recovery?: boolean | null;
 }
 

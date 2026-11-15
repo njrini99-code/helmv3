@@ -7,7 +7,10 @@ import {
   lieAfterRecoveryFor,
   lieAfterRecoveryFromRow,
   lieAfterRecoveryPayload,
+  RECOVERY_CHOICES,
   recoveryAskShot,
+  recoveryHint,
+  recoverySavedLine,
   setLieAfterRecovery,
   withoutLieAfterRecovery,
 } from '../recovery';
@@ -100,5 +103,36 @@ describe('isRoundStartMoment', () => {
   it('follows a shotgun start', () => {
     expect(isRoundStartMoment({ holeScores: blank, currentHoleIndex: 1, startHole: 2, shotCount: 0 })).toBe(true);
     expect(isRoundStartMoment({ holeScores: blank, currentHoleIndex: 0, startHole: 2, shotCount: 0 })).toBe(false);
+  });
+});
+
+describe('Recovery / layup (renamed from Blocked or punch out, 2026-11-12)', () => {
+  it('offers Clear shot and Recovery / layup, stored as false and true', () => {
+    expect(RECOVERY_CHOICES).toEqual([
+      { value: false, label: 'Clear shot' },
+      { value: true, label: 'Recovery / layup' },
+    ]);
+    expect(RECOVERY_CHOICES.some((c) => /punch|blocked/i.test(c.label))).toBe(false);
+  });
+
+  it('says when Recovery / layup applies, so a strategic layup from a clean lie stays a clear shot', () => {
+    expect(recoveryHint('rough')).toBe('Tee shot, rough. Recovery / layup only if you couldn’t go at the green.');
+    expect(recoveryHint('other')).toBe('Tee shot, other lie. Recovery / layup only if you couldn’t go at the green.');
+    expect(recoverySavedLine(true)).toBe('Saved: a recovery or layup');
+    expect(recoverySavedLine(false)).toBe('Saved: a clear shot');
+  });
+
+  it('a Recovery / layup tap is saved as the same lie_after_recovery the old label wrote', () => {
+    const layup = RECOVERY_CHOICES.find((c) => c.label === 'Recovery / layup')!.value;
+    expect(lieAfterRecoveryPayload({ ...TEE, lieAfterRecovery: layup })).toEqual({ lie_after_recovery: true });
+    expect(setLieAfterRecovery([TEE], 1, layup)[0]!.lieAfterRecovery).toBe(true);
+  });
+
+  it('a row saved under Blocked or punch out reads as Recovery / layup: nothing is mapped or rewritten', () => {
+    // Before 2026-11-12 the true answer was labelled "Blocked or punch out"; the stored value is the same boolean.
+    const oldRow = { shot_number: 1, shot_type: 'tee', result: 'other', lie_after_recovery: true };
+    expect(lieAfterRecoveryFromRow(oldRow)).toBe(true);
+    expect(RECOVERY_CHOICES.find((c) => c.value === lieAfterRecoveryFromRow(oldRow))?.label).toBe('Recovery / layup');
+    expect(lieAfterRecoveryFromRow({ ...oldRow, lie_after_recovery: false })).toBe(false);
   });
 });

@@ -552,7 +552,13 @@ async function triggerPlayerInsightsAfterRoundImpl(
         success: false,
         error: `${completedRoundCount} completed round${completedRoundCount === 1 ? '' : 's'} so far — CoachHelm speaks after ${philosophy.minRoundsForSignal} (the coach's minimum-rounds setting)`,
         code: 'engine_below_round_floor',
-        details: { completedRounds: completedRoundCount, floor: philosophy.minRoundsForSignal },
+        // Logged above under `round-floor:<player>`; tells the observed
+        // wrapper not to file the same outcome a second time (ecb08865).
+        details: {
+          completedRounds: completedRoundCount,
+          floor: philosophy.minRoundsForSignal,
+          bridgeLogged: true,
+        },
       };
     }
 

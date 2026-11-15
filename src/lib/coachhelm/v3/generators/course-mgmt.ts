@@ -283,6 +283,9 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
             .join(', ') +
           `${excludedNote}.`
         : '';
+    // The course names worstClause quotes: proper nouns, so the coach-copy
+    // gate does not read "Country Club" or "Pine Woods" as a club word.
+    const names = agg.worst_holes.flatMap((w) => (w.course_name ? [w.course_name] : []));
     // Dominant proximate cause among the double-plus holes.
     type CauseKey = 'three_putt' | 'penalty' | 'missed_gir_no_scramble';
     const causes = ([
@@ -324,6 +327,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
         // >0.3 over the Tour is high, over it at all is medium, at/under low.
         priority: this.anchoredPriority(agg, 0, 0.3),
         signature: `course_management:penalty_rate`,
+        names,
         evidence: {
           metric: this.metricId,
           metric_label: 'Penalties per Round',
@@ -367,6 +371,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       // >2pp over the Tour is high, over it at all is medium, at/under low.
       priority: this.anchoredPriority(agg, 0, 2),
       signature: `course_management:big_number`,
+      names,
       evidence: {
         metric: this.metricId,
         metric_label: 'Double Bogey-or-Worse Rate',

@@ -575,7 +575,7 @@ max_namespaces = 10
 enabled = true
 
 [remotes.production.storage.vector]
-enabled = true
+enabled = false
 
 [remotes.production.auth.mfa.totp]
 enroll_enabled = true

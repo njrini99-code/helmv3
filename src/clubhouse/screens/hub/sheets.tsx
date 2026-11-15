@@ -155,18 +155,22 @@ function useFocusAfter() {
   return setTarget;
 }
 
+/** A file, not a practice plan's row: only a file can go with a post. */
+const isAttachable = (x: ChHubFile) => !x.planId;
+
 /**
  * Files from the team's Documents to send with the post: the chosen ones as chips that come off with a tap, and a list to
  * choose from. The team's documents came with the page, so the list has nothing to load. Only files players can open are
  * offered (Q-83): the post goes to players, and a coach-only file would arrive as an attachment they can't open, so a line says
  * how many were left out (CH-10314). With none to show it says why: the read failed (CH-10209), nothing has been added yet
- * (CH-10311), or every file is coach-only (CH-10314).
+ * (CH-10311), or every file is coach-only (CH-10314). A practice plan filed in Documents (`planId`, no file: N-00 010400) is
+ * not a file, so it is never offered or counted here; the server refuses one as an attachment (N-10 shim).
  */
 function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['documents']; picked: string[]; onChange: (ids: string[]) => void }) {
   const listId = useId();
   const [listing, setListing] = useState(false);
-  const all = documents.folders.flatMap((f) => f.files);
-  const folders = documents.folders.map((f) => ({ ...f, files: f.files.filter((x) => x.isPublic) })).filter((f) => f.files.length > 0);
+  const all = documents.folders.flatMap((f) => f.files).filter(isAttachable);
+  const folders = documents.folders.map((f) => ({ ...f, files: f.files.filter((x) => x.isPublic && isAttachable(x)) })).filter((f) => f.files.length > 0);
   const files = folders.flatMap((f) => f.files);
   const hidden = all.length - files.length;
   const chosen = picked.map((id) => files.find((f) => f.id === id)).filter((f): f is ChHubFile => !!f);
@@ -297,8 +301,8 @@ export function ComposeSheet({
   // The server refuses an announcement without a message (announcements.ts, body.min(1)), so it is required here too.
   const bodyErr = tried && !body.trim() ? 'Add a message.' : null;
   const pickErr = tried && aud === 'pick' && picked.length === 0 ? 'Choose at least one player, or send it to the whole team.' : null;
-  // A file deleted from Documents while the sheet was open is not sent, nor one that has become coach-only.
-  const attached = docs.filter((d) => documents.folders.some((f) => f.files.some((x) => x.id === d && x.isPublic)));
+  // A file deleted from Documents while the sheet was open is not sent, nor one that has become coach-only, nor a plan row.
+  const attached = docs.filter((d) => documents.folders.some((f) => f.files.some((x) => x.id === d && x.isPublic && isAttachable(x))));
   const toast = useToast();
   const create = useAction(
     'hub.postAnnouncement',

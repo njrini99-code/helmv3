@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { parsePlanBody, parseVersionBody, toPlayerPlan, withOwnLines, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { chLogServer } from '../lib/track-server';
 import { sheetFormat, toSheetModel, type PlanSheetFormat, type PlanSheetModel } from '../screens/coachhelm/plan/sheet/plan-sheet-model';
 import type { PlayerPracticeData } from '../screens/coachhelm/plan/player/PlayerPractice';
@@ -23,17 +24,20 @@ async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: st
   if (!eventId) return null;
   const { data: event, error: eventError } = await sb.from('golf_events').select('start_time, end_time, team_id, location').eq('id', eventId).maybeSingle();
   if (eventError || !event) return null;
-  const [{ data: team, error: teamError }, { data: members, error: membersError }] = await Promise.all([
+  // Names come through golf_player_profiles, never a golf_players embed: a player's sheet names their group-mates, and a
+  // player may not read a teammate's golf_players row once 20261017005000 is applied (every mate would read "—"). The
+  // profiles are the team's, read beside the roster; only active members are kept, so a coach's "seen N of M" counts
+  // the active roster as before.
+  const [{ data: team, error: teamError }, { data: members, error: membersError }, profiles] = await Promise.all([
     sb.from('golf_teams').select('name, timezone, organization_id').eq('id', event.team_id).maybeSingle(),
-    sb.from('golf_team_members').select('player_id, golf_players(first_name, last_name)').eq('team_id', event.team_id).eq('status', 'active'),
+    sb.from('golf_team_members').select('player_id').eq('team_id', event.team_id).eq('status', 'active'),
+    readGolfPlayerProfiles(sb, { teamIds: [event.team_id] }),
   ]);
-  if (teamError || membersError) return null;
+  if (teamError || membersError || profiles.error) return null;
   const { data: coaches } = team?.organization_id ? await sb.from('golf_coaches').select('full_name').eq('organization_id', team.organization_id) : { data: [] };
+  const active = new Set((members ?? []).map((m) => m.player_id).filter((id): id is string => !!id));
   const names = new Map<string, string>();
-  for (const m of members ?? []) {
-    const p = m.golf_players as { first_name: string | null; last_name: string | null } | null;
-    if (m.player_id && p) names.set(m.player_id, [p.first_name, p.last_name].filter(Boolean).join(' '));
-  }
+  for (const p of profiles.data) if (active.has(p.id)) names.set(p.id, [p.first_name, p.last_name].filter(Boolean).join(' '));
   return { event, team, names, coaches: (coaches ?? []).map((c) => c.full_name).filter((n): n is string => !!n) };
 }
 

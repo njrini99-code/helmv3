@@ -271,7 +271,7 @@ export async function chooseQualifierTiePlace(
 
 const observedConfirmQualifierSelection = withAdminObserved(
   'confirmQualifierSelection',
-  { sport: 'golf', feature: 'qualifiers' },
+  { demoSafe: true, sport: 'golf', feature: 'qualifiers' },
   confirmQualifierSelectionImpl,
 );
 

@@ -11,9 +11,10 @@ import { createFakeSupabase } from '@/test/fixtures/fake-supabase';
 let fake: unknown;
 let entriesInsertError: unknown = null;
 let qualifierDeleteFails = false;
+let adminClient: unknown = null;
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn(async () => fake) }));
-vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn(() => fake) }));
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn(() => adminClient ?? fake) }));
 vi.mock('@/lib/golf/resolve-team-server', () => ({ resolveCoachTeamIdWithCookie: async () => 'team-1' }));
 vi.mock('next/server', () => ({ after: vi.fn((cb: () => unknown) => cb()) }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), updateTag: vi.fn() }));
@@ -33,6 +34,9 @@ vi.mock('@/lib/notifications/email', () => ({ sendEmailNotification: vi.fn(async
 vi.mock('@/lib/notifications/push', () => ({ sendBulkPushNotification: vi.fn(async () => {}) }));
 
 import { createGolfQualifier } from '../qualifier-actions';
+import { logServerError } from '@/lib/server-error-logger';
+import { notifyQualifierCreated } from '@/lib/notifications';
+import { sendBulkPushNotification } from '@/lib/notifications/push';
 
 type Row = Record<string, unknown>;
 
@@ -101,6 +105,31 @@ beforeEach(() => {
   vi.clearAllMocks();
   entriesInsertError = null;
   qualifierDeleteFails = false;
+  adminClient = null;
+});
+
+describe('createGolfQualifier tells the entrants', () => {
+  // world() leaves the session's `users` empty, which is what public.users RLS gives a coach for a player's row.
+  const serviceRole = (users: Row[]) => createFakeSupabase({ user: { id: 'user-1' }, tables: { users }, idFactory: () => crypto.randomUUID() });
+
+  it('reads their emails with the service role, because RLS shows a coach no player’s users row', async () => {
+    world();
+    adminClient = serviceRole([{ id: 'u-a', email: 'a@example.com' }, { id: 'u-b', email: 'b@example.com' }]);
+    expect((await createGolfQualifier(input([ON_ROSTER, ALSO_ON_ROSTER]))).success).toBe(true);
+    const told = vi.mocked(notifyQualifierCreated).mock.calls.map((c) => c[1]).sort();
+    expect(told).toEqual(['a@example.com', 'b@example.com']);
+    expect(sendBulkPushNotification).toHaveBeenCalledWith('qualifier_created', expect.arrayContaining(['u-a', 'u-b']), expect.anything());
+  });
+
+  it('a failed recipient read is recorded, and the qualifier still stands', async () => {
+    world();
+    adminClient = {
+      from: () => ({ select: () => ({ in: async () => ({ data: null, error: { message: 'boom', code: '08006' } }) }) }),
+    };
+    expect((await createGolfQualifier(input([ON_ROSTER]))).success).toBe(true);
+    expect(vi.mocked(logServerError).mock.calls.map((c) => String(c[0])).some((m) => m.includes('recipient read failed'))).toBe(true);
+    expect(notifyQualifierCreated).not.toHaveBeenCalled();
+  });
 });
 
 describe('createGolfQualifier roster check (C-13)', () => {

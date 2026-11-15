@@ -1,13 +1,13 @@
 {
-  "total": 963,
+  "total": 961,
   "byArea": {
-    "app/golf/actions": 350,
+    "app/golf/actions": 349,
     "app/baseball/actions": 217,
     "lib/baseball/read-models": 62,
     "lib/admin/data": 43,
     "app/baseball/(dashboard)": 29,
-    "lib/coachhelm/v3": 22,
     "app/api/cron": 21,
+    "lib/coachhelm/v3": 21,
     "lib/baseball/coachhelm": 15,
     "test/coachhelm/v3": 12,
     "lib/coachhelm/v2": 11,

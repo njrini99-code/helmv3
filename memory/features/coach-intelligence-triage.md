@@ -57,6 +57,7 @@ Coaching philosophy saves use one authoritative hook write path with downstream 
 - `src/components/golf/coachhelm/analytics/**`
 - `src/components/golf/coachhelm/settings/**`
 - `src/components/golf/coachhelm/v2/**`
+- `src/components/fairway/pages/scouting/**` (the Scouting Report on a player's `/game` page: verdict, three claims with evidence, and "Assign focus")
 
 ### Data
 
@@ -104,6 +105,7 @@ CoachHelm generates insight/pattern/prediction
 - “Scan team” (`generateAlerts`) analyzes at most 4 players at once (#2061): an unbounded roster-wide `Promise.all` of the full generator pipeline helped exhaust the database pool on 2026-09-24. Alert rows keep roster order.
 - Insight evidence is part of the trust contract; UI should make supporting evidence reachable when present.
 - Benchmark provenance (2026-09-23, repair plan N16): a `comparison_source` label must never claim a measured average/norm for a value that is actually derived/estimated. `EvidencePanel.tsx`'s `SOURCE_LABELS` and `baseline-registry.ts`'s `BaselineEntry.provenance`/`sourceNote` fields are the enforcement points; full contract in `docs/architecture/coachhelm-evidence-contract.md`.
+- A read's figure travels into a focus area only in its metric's own unit (2026-11-10, `7f3eca05`). An approach read stores its green-hit percent under an `approach_proximity_*` id, which the registry defines as feet, lower is better; the Scouting Report's "Assign focus" sent that percent as the baseline and a target toward Tour, and `createFocusAreaFromInsight`'s wrong-way guard refused it. `focusNumbersForAssign` (`scouting-model.ts`) now sends the reading and target only when `evidence.unit` equals the registry unit, and leaves out a target the guard would refuse; the focus is then created with no baseline or target and keeps its `target_metric`.
 - Coaching philosophy settings feed future alert/insight prioritization and should not be treated as cosmetic preferences.
 - CoachHelm analytics currently has sparse effectiveness data, so UI and agents should not assume the dashboard is fully populated.
 - Chart/label honesty (2026-09-23, Package 11): `signal.ageDays` derives from `golf_coach_insights.created_at`, frozen by upsert-by-signature — a signal recomputed today into an old row still reads as old. Any age-bucketed UI ("New this week", a recency chart) built on it is a confident lie, not a real trend; `BriefBand.tsx`, `buildTriageViewModel.ts`'s `'new'` filter, and `TeamSignalSummary.tsx`'s "New this week" tile / "Signal velocity" chart / per-category "fresh" caption have all been removed for this reason. Restore only when a real `content_generated_at` is available. Separately, `FairwayEffectiveness.tsx`'s Predictions drill-down StatTiles (`overallAccuracy`, `calibrationScore`) must starve at their own declared `required` threshold, not just `resolved === 0` — see `isAccuracyHeadlineLive`/`BUCKET_MIN_RESOLVED` for the pattern the Cockpit tab already enforces.

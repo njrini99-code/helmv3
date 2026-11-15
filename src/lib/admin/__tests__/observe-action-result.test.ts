@@ -286,6 +286,34 @@ describe('observe-action-result', () => {
     expect(errorCall?.[1]).toMatchObject({ userId: 'user-xyz', userEmail: 'player@example.com' });
   });
 
+  // Bridge noise, 2026-11-06 (health routine): the nightly roster sweep filed
+  // every under-floor player twice — `round-floor:<player>` by the impl, then
+  // fingerprint ecb08865 by this wrapper for the same returned envelope. An
+  // impl that already wrote its own row says so with `details.bridgeLogged`.
+  it('skips an info empty state whose impl already filed its own Bridge row', () => {
+    observeActionSoftFailure(
+      {
+        success: false,
+        error: '1 completed round so far — CoachHelm speaks after 3',
+        code: 'engine_below_round_floor',
+        details: { completedRounds: 1, floor: 3, bridgeLogged: true },
+      },
+      { action: 'insights.triggerPlayerInsightsAfterRound', sport: 'golf', feature: 'coachhelm_ai_engine', source: 'server_action' },
+    );
+
+    expect(mocks.logServerEvent).not.toHaveBeenCalled();
+    expect(mocks.logServerError).not.toHaveBeenCalled();
+  });
+
+  it('never lets bridgeLogged hide a real error', () => {
+    observeActionSoftFailure(
+      { success: false, error: 'Could not save document', details: { bridgeLogged: true } },
+      { action: 'uploadBaseballDocument', sport: 'baseball', feature: 'baseball_documents', source: 'server_action' },
+    );
+
+    expect(mocks.logServerError).toHaveBeenCalledTimes(1);
+  });
+
   it('logs unexpected soft failures at error severity', () => {
     observeActionSoftFailure(
       { success: false, error: 'Could not save document' },

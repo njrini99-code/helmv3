@@ -752,7 +752,9 @@ recovery.ts` (pure).
 - Recovery tap: after a non-penalty tee shot whose result is `rough` or
   `other`, while it is the hole's last shot, `useRecoveryPrompt` and
   `FairwayRecoveryPrompt` draw one row, "Next shot from there?", Clear shot
-  · Blocked / punch out, Skip. The tap goes through
+  · Recovery / layup, Skip (`RECOVERY_CHOICES`, one list for both apps; the
+  line under it says "Recovery / layup only if you couldn’t go at the
+  green", `recoveryHint`). The tap goes through
   `useShotTracking.handleTagRecovery` (`use-recovery-tagger.ts`): the
   `TAG_LIE_AFTER_RECOVERY` reducer action sets
   `ShotRecord.lieAfterRecovery` on that tee shot only, then `onAutoSave`
@@ -768,8 +770,24 @@ recovery.ts` (pure).
   fallbacks still strip it
   (`withoutLieAfterRecovery`). Continue Round reads it back from
   `select('*')` when the column exists (`lieAfterRecoveryFromRow`).
-  Stored beside the lie, not as a new lie value, so no strokes-gained lookup
-  changes; costing it is a later engine slice.
+  Stored beside the lie, not as a new lie value, so no lie-keyed lookup
+  changes.
+- Meaning of `true` (owner, 2026-11-12; the label was "Blocked or punch
+  out" until then): the next shot could not go at the green from where the
+  tee shot finished, a recovery or a forced layup. A strategic layup from a
+  clean lie is Clear shot (`false`). Rows saved under the old label are the
+  same `true`; nothing is mapped or rewritten, and no migration was needed.
+- Strokes gained: the app calculators price the shot after a `true` tee
+  shot from Broadie's recovery curve and end the tee shot there
+  (`withRecoveryStart` / `withNextShotStart` in
+  `golf-stats-calculator-shots.ts`; `isFromBlocked` in CoachHelm's
+  `shot-sg.ts`). The database's stored strokes gained ignores the tag until
+  the held `20261023170000_golf_sg_other_lie_curve.sql` is applied.
+- Known gap (2026-11-12, follow-up): the app calculator can pick the shot
+  after a `true` tag as the hole's approach (a par 4's shot 2 from the
+  rough, 180 to 60 yards, passes `isPlausibleApproach`), so a layup counts
+  as a 60-yard approach proximity. A fix in TypeScript alone would split
+  from the database cache's approach figures, which need SQL.
 - Course nudge: when the round has no course id, `useCourseNudge` (owned by
   the round client) feeds `FairwayCourseNudge` on the shot screen at the
   round's start only (`isRoundStartMoment`: first hole in play order, no

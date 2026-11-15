@@ -65,9 +65,13 @@ function tableChain(table: string) {
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: async () => ({ data: { user: { id: 'u1' } }, error: null }) },
-    from: (t: string) => tableChain(t),
+    // public.users RLS is own-row only: a coach's session reads no player's row. Only the service role sees the emails.
+    from: (t: string) => tableChain(t === 'users' ? 'users:session' : t),
     rpc: async () => ({ data: null, error: null }),
   }),
+}));
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({ from: (t: string) => tableChain(t) }),
 }));
 
 const PLAYER_ID = '4d2f8a11-6b93-4c27-8e51-9a0c3b7d2e64';

@@ -113,7 +113,8 @@ export async function getPractice(sb: Sb, ctx: CoachChatContext, input: { since_
 /** Titles, folders and whether players can see each: never a file's contents. */
 export async function getDocuments(sb: Sb, ctx: CoachChatContext, input: { folder?: string; limit: number }): Promise<ToolEnvelope> {
   const limit = Math.min(Math.max(input.limit, 1), 60);
-  let q = sb.from('golf_documents').select('id, title, folder, category, is_public, updated_at').eq('team_id', ctx.team_id).eq('is_test', false).order('updated_at', { ascending: false }).limit(limit);
+  // Files only: a practice-plan row (N-00 010400, file_url NULL) is read as a plan by the practice reads, not as a document (N-10 shim).
+  let q = sb.from('golf_documents').select('id, title, folder, category, is_public, updated_at').eq('team_id', ctx.team_id).eq('is_test', false).not('file_url', 'is', null).order('updated_at', { ascending: false }).limit(limit);
   if (input.folder) q = q.eq('folder', input.folder);
   const { data, error } = await q;
   if (error) {

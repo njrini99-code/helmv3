@@ -117,8 +117,27 @@ export const SECOND_PERSON = /\b(?:you|your|yours|yourself)\b|\byou['’](?:re|v
 export const CLUB_WORDS =
   /\b(?:clubs?|clubbing|under-clubbing|over-clubbing|irons?|wedges?|hybrids?|woods?|putters?|bag)\b/i;
 
-/** What is wrong with a coach copy against its player copy; empty when it can be stored. */
-export function coachCopyIssues(player: ReadCopy, coach: ReadCopy): string[] {
+/**
+ * The text with each name blanked out, longest first so a name inside a longer
+ * one cannot leave half of it behind. A name is a proper noun the copy quotes
+ * as written (a course: "Oak Hollow Country Club", "Pine Woods"), so a club
+ * word or a "you" inside it says nothing about the read.
+ */
+function withoutNames(text: string, names: readonly string[]): string {
+  let out = text;
+  for (const name of [...names].sort((a, b) => b.length - a.length)) {
+    if (name.trim() !== '') out = out.split(name).join(' ');
+  }
+  return out;
+}
+
+/**
+ * What is wrong with a coach copy against its player copy; empty when it can
+ * be stored. `names` are the proper nouns the copy quotes (course names,
+ * `ComposedContent.names`): the club-word and second-person checks read the
+ * copy without them, the number check reads it whole.
+ */
+export function coachCopyIssues(player: ReadCopy, coach: ReadCopy, names: readonly string[] = []): string[] {
   const issues: string[] = [];
   for (const part of ['title', 'content'] as const) {
     const text = coach[part];
@@ -127,8 +146,9 @@ export function coachCopyIssues(player: ReadCopy, coach: ReadCopy): string[] {
       continue;
     }
     if (!sameNumbers(text, player[part])) issues.push(`${part}: numbers differ from the player's copy`);
-    if (SECOND_PERSON.test(text)) issues.push(`${part}: second person`);
-    if (CLUB_WORDS.test(text)) issues.push(`${part}: club word`);
+    const prose = withoutNames(text, names);
+    if (SECOND_PERSON.test(prose)) issues.push(`${part}: second person`);
+    if (CLUB_WORDS.test(prose)) issues.push(`${part}: club word`);
   }
   return issues;
 }

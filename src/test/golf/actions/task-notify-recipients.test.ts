@@ -30,8 +30,9 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(), revalidateTag: vi.fn(), updateTag: vi.fn(),
   unstable_cache: (fn: unknown) => fn,
 }));
+const notifyTaskAssigned = vi.fn(async () => {});
 vi.mock('@/lib/notifications', () => ({
-  notifyTaskAssigned: vi.fn(async () => {}),
+  notifyTaskAssigned,
   notifyTeamAnnouncement: vi.fn(async () => {}),
 }));
 
@@ -64,9 +65,14 @@ function tableChain(table: string) {
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: async () => ({ data: { user: { id: 'u1' } }, error: null }) },
-    from: (t: string) => tableChain(t),
+    // public.users RLS is own-row only: a coach's session reads no player's row, with no error. That silence is why
+    // no assignee was ever told and nothing was logged. Only the service role sees the emails.
+    from: (t: string) => tableChain(t === 'users' ? 'users:session' : t),
     rpc: async () => ({ data: null, error: null }),
   }),
+}));
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({ from: (t: string) => tableChain(t) }),
 }));
 
 const PLAYER_ID = '4d2f8a11-6b93-4c27-8e51-9a0c3b7d2e64';
@@ -79,6 +85,7 @@ async function createTask(assignees: string[] = [PLAYER_ID]) {
 
 beforeEach(() => {
   logServerError.mockClear();
+  notifyTaskAssigned.mockClear();
   outcomes.clear();
   outcomes.set('golf_coaches:single', ok({ id: 'coach-1', organization_id: 'org-1', full_name: 'Coach' }));
   outcomes.set('golf_teams:single', ok({ id: 'team-1' }));
@@ -110,6 +117,14 @@ describe('task assignment — a failed recipient read must not be silent', () =>
 
     const said = logServerError.mock.calls.map((c) => String((c as unknown[])[0]));
     expect(said.some((m) => /notif|recipient|email|user/i.test(m))).toBe(true);
+  });
+});
+
+describe('task assignment — the assignee is told', () => {
+  it('reads the email with the service role, because RLS shows a coach no player’s users row', async () => {
+    await createTask();
+    expect(notifyTaskAssigned).toHaveBeenCalledTimes(1);
+    expect(notifyTaskAssigned.mock.calls[0]).toEqual(expect.arrayContaining(['u-player', 'p@example.com', 'Sign the waiver']));
   });
 });
 
