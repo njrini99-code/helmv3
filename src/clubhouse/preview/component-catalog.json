@@ -15469,7 +15469,13 @@
         "ch-seg",
         "ch-select"
       ],
-      "tokens": []
+      "tokens": [
+        {
+          "name": "--ch-drain",
+          "value": "81.68",
+          "scope": ".ch-akg-ring[data-run] .drn"
+        }
+      ]
     },
     {
       "file": "src/clubhouse/styles/coachhelm-ask-look.css",
@@ -16075,6 +16081,11 @@
       ],
       "tokens": [
         {
+          "name": "--ch-arrive-t",
+          "value": "scale(0.96)",
+          "scope": ".ch-ask-pick"
+        },
+        {
           "name": "--ch-ink-700",
           "value": "#1c1b18",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask"
@@ -16163,6 +16174,11 @@
           "name": "--ch-champagne-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask"
+        },
+        {
+          "name": "--ch-arrive-o",
+          "value": "var(--ch-enter-from, 0.55)",
+          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → .ch-ask[data-ch-enter]:not(.is-phone) > :is(.ch-ask-body, .ch-ask-plain)"
         }
       ]
     },
@@ -16600,6 +16616,11 @@
           "name": "--ch-hf-seg-ink",
           "value": "var(--ch-on-green-ink)",
           "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-arrive-o",
+          "value": "var(--ch-enter-from, 0.55)",
+          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → .ch-hf[data-ch-enter]:not(.is-phone) .ch-hf-flow"
         },
         {
           "name": "--ch-hf-o",
@@ -17187,7 +17208,7 @@
         },
         {
           "name": "--ch-rm-animation",
-          "value": "var(--ch-dur-crossfade-rm)",
+          "value": "var(--ch-dur-quick)",
           "scope": "@media (prefers-reduced-motion: reduce) → .ch-hr-sure:not([hidden])"
         }
       ]
@@ -17375,6 +17396,11 @@
           "name": "--ch-rm-animation",
           "value": "var(--ch-dur-crossfade-rm)",
           "scope": "@media (prefers-reduced-motion: reduce) → .ch-htb .story"
+        },
+        {
+          "name": "--ch-arrive-o",
+          "value": "var(--ch-enter-from, 0.55)",
+          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → .ch-htb[data-ch-enter]:not(.is-phone) > *"
         },
         {
           "name": "--ch-chart-gain",
@@ -17680,6 +17706,11 @@
           "name": "--ch-skel-sheen",
           "value": "rgb(255 255 255 / 0.16)",
           "scope": ".ch-sk-on-green"
+        },
+        {
+          "name": "--ch-arrive-o",
+          "value": "var(--ch-enter-from, 0.55)",
+          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → .ch-hl[data-ch-enter]:not(.is-phone) > :not(.ch-hl-h):not([data-ch-strip])"
         },
         {
           "name": "--ch-ink-700",
@@ -19261,6 +19292,11 @@
           "name": "--ch-ms-pill-top",
           "value": "76px",
           "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → [data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread)"
+        },
+        {
+          "name": "--ch-rm-animation",
+          "value": "var(--ch-dur-quick)",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ch-ms-v2] .ch-msv-typing"
         }
       ]
     },
@@ -19614,7 +19650,7 @@
         },
         {
           "name": "--ch-rm-animation",
-          "value": "var(--ch-dur-crossfade-rm)",
+          "value": "var(--ch-dur-quick)",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ch-ms-v2] .ch-ms-det"
         },
         {
