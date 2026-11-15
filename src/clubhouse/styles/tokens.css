@@ -287,7 +287,7 @@
   /* Score mark (double): edge, lit top, contact shadow. */
   --ch-score-double-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(28 25 18 / 0.3);
   /* Green, not ink: the owner rejected the black keyboard outline (F-46). */
-  --ch-border-focus: var(--ch-green-600);
+  --ch-border-focus: var(--ch-green-500);
   /* The focus ring on a dark or green surface (CONS-36): the champagne that reads on the hero green and at night. */
   --ch-border-focus-on-dark: var(--ch-champagne-300);
   /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
@@ -1253,7 +1253,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-score-eagle-shadow: inset 0 0 0 1px rgb(239 133 118 / 0.7), 0 1px 2px rgb(0 0 0 / 0.45);
   --ch-score-bogey-shadow: inset 0 0 0 1px rgb(237 231 216 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4);
   --ch-score-double-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5);
-  --ch-border-focus: #6bbb8c;
+  --ch-border-focus: var(--ch-green-500);
   --ch-green-ring: rgb(107 187 140 / 0.35);
   --ch-green-rule: rgb(107 187 140 / 0.45);
   --ch-ink-rule: rgb(237 231 216 / 0.22);
