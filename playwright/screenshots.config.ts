@@ -1,11 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 import { config } from 'dotenv';
+import { refuseProduction } from '../scripts/lib/production-site-guard.mjs';
 
 // Load environment from .env.local first (takes precedence), then .env.
 config({ path: '.env.local' });
 config({ path: '.env' });
 
 const BASE = process.env.GOLFHELM_BASE_URL || 'http://localhost:3000';
+// It signs a player and a coach in (a write) and serves pages that write on open: never production by accident.
+refuseProduction({ what: 'ui:auth (playwright/screenshots.config.ts)', baseUrl: BASE, supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL });
 
 /**
  * Dedicated Playwright config for the UI-intelligence auth setup.

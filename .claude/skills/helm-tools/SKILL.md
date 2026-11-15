@@ -28,7 +28,15 @@ Rules:
   **production**. A preview is safe to click through; it is not production.
 - During an audit, only `supabase-staging-ro` is used. The audit session
   (`HELM_AUDIT=1`) runs `.claude/hooks/no-prod-in-audit.mjs`, which refuses any
-  other Supabase server and any MCP call that names `qmnssrrolpinvwjjnufo`.
+  other Supabase server and any MCP, Bash or WebFetch call that names
+  `qmnssrrolpinvwjjnufo` or the production site (with or without a scheme). The
+  audit browsers also start with `--blocked-origins` for the production site.
+- Outside an audit, suites and scripts that sign in refuse production on their
+  own (`scripts/lib/production-site-guard.mjs`): the root Playwright suite,
+  `ui:auth` / `ui:screenshots`, `scripts/ui-smoke.mjs` and the baseball visual
+  audit. `HELM_ALLOW_PRODUCTION=1` is the owner-approved override. `debugger`,
+  `helm-worker` and `helm-ui-worker` have no production write tools
+  (`disallowedTools`); production changes go to the Production rollout thread.
 - Read `src/lib/types/database.ts` before writing SQL.
 - `is_test` rounds exist on staging. Say whether a number includes them.
 
@@ -101,6 +109,9 @@ log each one in the run's `writes.md`. List and file:line in
 | Before/after screenshots | `npm run clubhouse:shots`, `node scripts/clubhouse/gallery.mjs`, `node scripts/clubhouse/side-by-side.mjs` | Both |
 | Measured speed (prod build, local DB, ~12 min, heavy) | `npm run clubhouse:perf` | Chromium |
 | Real-route shots, both roles | `npx playwright test e2e/clubhouse-route-shots.spec.ts` | WebKit |
+| Motion gate: what animates on every phone gate screen, Reduce Motion on and off, against D-64 | `CH_QUALITY=1 npx playwright test -c playwright.clubhouse.config.ts --project motion-phone` | WebKit (W) |
+| Pixel regression on the gate screens (baselines from the nightly run on `main`) | `CH_QUALITY=1 CH_PIXELS=1 CH_VISUAL_BASELINES=<dir> npx playwright test -c playwright.clubhouse.config.ts --project pixels-phone --project pixels-desktop` | WebKit 390 + Chromium 1440 |
+| The live site, logged out: five public pages, GET only, telemetry held, nothing written | `node scripts/clubhouse/audit/prod-public.mjs` (nightly: `clubhouse-prod-public.yml`) | WebKit (W) |
 
 Never run `hairlines.mjs`, `pressed-hover.mjs` or `radius-steps.mjs` with
 `--apply`, or `spacing-scale` / `type-roles` in write mode, during an audit:

@@ -1,4 +1,4 @@
-// Fixture tests for .claude/hooks/no-prod-in-audit.mjs (PreToolUse, matcher mcp__.*): during an audit only the
+// Fixture tests for .claude/hooks/no-prod-in-audit.mjs (PreToolUse, matchers mcp__.* and Bash|WebFetch): during an audit only the
 // read-only staging server answers database questions and no MCP call names production. Each case feeds the hook the
 // PreToolUse JSON Claude Code sends, the way the session runs it.
 import { describe, it, expect } from 'vitest';
@@ -55,6 +55,26 @@ describe('during an audit (HELM_AUDIT=1)', () => {
     expect(run('mcp__playwright-webkit__browser_navigate', { url: 'https://helmv3-abc123-nick-rinis-projects.vercel.app/golf/dashboard' })).toBeNull();
   });
 
+  // The 15 Nov 2026 audit got each of these past the hook: a bare host, a protocol-relative URL, WebFetch and Bash.
+  it('denies the production site written without a scheme, or protocol-relative', () => {
+    expect(run('mcp__playwright-webkit__browser_navigate', { url: 'helmsportslabs.com/golf/login' }).permissionDecision).toBe('deny');
+    expect(run('mcp__playwright-webkit__browser_navigate', { url: 'www.helmsportslabs.com' }).permissionDecision).toBe('deny');
+    expect(run('mcp__chrome-devtools__navigate_page', { url: '//helmsportslabs.com/golf/dashboard' }).permissionDecision).toBe('deny');
+  });
+
+  it('denies WebFetch and Bash when they name the production site or project', () => {
+    expect(run('WebFetch', { url: 'https://helmsportslabs.com/golf/login', prompt: 'read it' }).permissionDecision).toBe('deny');
+    expect(run('Bash', { command: 'curl -s https://www.helmsportslabs.com/golf/dashboard' }).permissionDecision).toBe('deny');
+    expect(run('Bash', { command: `npx supabase db dump --project-ref ${PROD_REF}` }).permissionDecision).toBe('deny');
+  });
+
+  it('lets Bash and WebFetch run when they name no production target', () => {
+    expect(run('Bash', { command: 'npm run release:status' })).toBeNull();
+    expect(run('WebFetch', { url: 'https://helmv3-abc123-nick-rinis-projects.vercel.app/golf/login', prompt: 'read it' })).toBeNull();
+    // A look-alike domain is not production.
+    expect(run('WebFetch', { url: 'https://nothelmsportslabs.com', prompt: 'read it' })).toBeNull();
+  });
+
   it('leaves a demo email address that mentions the domain alone', () => {
     expect(run('mcp__playwright-webkit__browser_type', { text: 'demo.coach@helmsportslabs.com' })).toBeNull();
   });
@@ -66,6 +86,11 @@ describe('during an audit (HELM_AUDIT=1)', () => {
 });
 
 describe('outside an audit', () => {
+  it('leaves Bash and WebFetch alone, production included', () => {
+    expect(run('Bash', { command: 'curl -s https://helmsportslabs.com/golf/login' }, { audit: false })).toBeNull();
+    expect(run('WebFetch', { url: 'https://helmsportslabs.com', prompt: 'read it' }, { audit: false })).toBeNull();
+  });
+
   it('allows everything, production servers included', () => {
     expect(run('mcp__supabase-readonly__execute_sql', { query: 'select 1' }, { audit: false })).toBeNull();
     expect(run('mcp__supabase-staging-ro__execute_sql', { query: `select '${PROD_REF}'` }, { audit: false })).toBeNull();
@@ -79,7 +104,15 @@ describe('serverOf and decide', () => {
     expect(serverOf('Bash')).toBeNull();
   });
 
-  it('never refuses a tool that is not an MCP tool', () => {
-    expect(decide({ toolName: 'Bash', toolInput: { command: PROD_REF }, audit: true, supabaseIds: [] })).toEqual({ deny: false });
+  // Until 15 Nov 2026 Bash was outside the hook too; the audit found `curl` reached production that way. Bash and
+  // WebFetch are now checked for production targets; file tools never are.
+  it('never refuses a tool that is not an MCP, Bash or WebFetch call', () => {
+    for (const toolName of ['Read', 'Edit', 'Write', 'Grep'])
+      expect(decide({ toolName, toolInput: { file_path: PROD_REF, pattern: 'https://helmsportslabs.com' }, audit: true, supabaseIds: [] })).toEqual({ deny: false });
+  });
+
+  it('refuses Bash naming the production ref during an audit, and never outside one', () => {
+    expect(decide({ toolName: 'Bash', toolInput: { command: PROD_REF }, audit: true, supabaseIds: [] }).deny).toBe(true);
+    expect(decide({ toolName: 'Bash', toolInput: { command: PROD_REF }, audit: false, supabaseIds: [] })).toEqual({ deny: false });
   });
 });

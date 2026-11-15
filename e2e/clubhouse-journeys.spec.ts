@@ -151,10 +151,18 @@ test('Team Hub: a coach posts an announcement that asks players to acknowledge i
   await compose.getByRole('switch', { name: 'Ask players to acknowledge' }).check();
   await compose.getByRole('button', { name: 'Post', exact: true }).click();
   await expect(compose).toBeHidden({ timeout: 60_000 });
+  // Since F-0045 (#2422, 30 Oct) the sheet closes and the post is drawn at once, marked "Posting…", before the server answers.
+  // So the row on the page proves nothing about the database: the server's answer is the "Posted" toast, and only then is the
+  // row there to read. Reading straight after the sheet closed raced the action and failed every night from 3 Nov (and on
+  // 1 Nov, while 2 Nov passed on the same commit). The nightly WebKit trace shows the action's request still in flight.
   await expect(page.locator('#ch-content').getByText(headline).first()).toBeVisible();
+  await expect(page.getByText(`Posted “${headline}”`, { exact: true }), 'the server answered the post').toBeVisible({ timeout: 60_000 });
 
-  const [post] = await sql<{ id: string; ack: boolean }>('select id, requires_acknowledgement as ack from golf_announcements where team_id = $1 and title = $2', [team.teamId, headline]);
-  expect(post?.ack, 'the announcement is stored and asks for acknowledgement').toBe(true);
+  // Exactly one row, asking for acknowledgement: a double post or a dropped flag fails here.
+  await expect
+    .poll(async () => sql<{ ack: boolean }>('select requires_acknowledgement as ack from golf_announcements where team_id = $1 and title = $2', [team.teamId, headline]), { timeout: 30_000 })
+    .toEqual([{ ack: true }]);
+  const [post] = await sql<{ id: string }>('select id from golf_announcements where team_id = $1 and title = $2', [team.teamId, headline]);
   const recipients = await sql<{ n: number }>('select count(*)::int as n from golf_announcement_recipients where announcement_id = $1', [post!.id]);
   // A whole-team post has no recipient rows: none is how every reader tells "all team" (announcements.ts, step 2).
   expect(recipients[0]!.n, 'a whole-team post names no recipients').toBe(0);

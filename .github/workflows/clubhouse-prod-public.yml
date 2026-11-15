@@ -1,0 +1,49 @@
+name: Clubhouse production public lane
+
+# What an iPhone visitor gets on the five public production pages (/, /golf/login, /golf/signup, /golf/demo,
+# /golf/forgot-password), checked nightly in Playwright WebKit with the iPhone 17 Pro preset (tier W):
+# status, sideways scroll, axe WCAG 2.2 AA, LCP, tap targets, clipped text, console errors, third-party origins, and
+# any write the page tries on load (scripts/clubhouse/audit/prod-public.mjs; budgets in
+# config/clubhouse/prod-public-budgets.json).
+#
+# Zero writes by construction: it never signs in, clicks, types or submits; every non-GET request is aborted in the
+# browser; navigator.sendBeacon is stubbed and Vercel Analytics, Speed Insights and the Sentry tunnel are aborted, so a
+# run adds no page view or session to real-user data. This is the one workflow allowed to name the production site
+# (scripts/__tests__/no-production-test-targets.test.mjs). Advisory: not a required check. About 3 runner-minutes.
+
+on:
+  schedule:
+    - cron: '17 10 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: clubhouse-prod-public
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  public-lane:
+    name: Public pages in WebKit (iPhone 17 Pro), no writes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup-node-npm
+      - name: Unit tests for the lane and its guards
+        run: ./node_modules/.bin/vitest run --project unit scripts/clubhouse/audit/__tests__/prod-public.test.mjs
+      - run: ./node_modules/.bin/playwright install --with-deps webkit
+      - name: Logged-out production pass (https://helmsportslabs.com)
+        run: node scripts/clubhouse/audit/prod-public.mjs --out prod-public-evidence
+      - name: Upload screenshots and results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: clubhouse-prod-public
+          path: prod-public-evidence/
+          if-no-files-found: warn
+          retention-days: 14
