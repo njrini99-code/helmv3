@@ -658,6 +658,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md` | current | - | - | - | - |
 | `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md` | current | - | - | - | - |
 | `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md` | current | - | - | - | - |
+| `memory/incidents/team_communications/INC-2026-11-15-thread-day-key-collision.md` | current | - | - | - | - |
 
 ### `ADR`
 
@@ -1547,6 +1548,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-13-unread-conversations.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-15-announcements-failed-keeps-inbox.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-15-messages-waits-per-section.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-15-thread-day-key.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
