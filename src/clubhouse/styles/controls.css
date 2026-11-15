@@ -463,7 +463,16 @@
   border-radius: var(--ch-radius-xl);
   background: #faf8f2;
   box-shadow: var(--ch-elevation-overlay);
-  animation: ch-pop var(--ch-dur-base) var(--ch-ease);
+  /* A centred dialog: 260ms from 8px down and .98, on the sheet curve (S3.2); it leaves by fading over 180ms. */
+  animation: ch-pop var(--ch-dur-base) var(--ch-ease-sheet);
+}
+/* The ⌘K palette comes up from .96 over the quick beat (motion spec 15 Nov 3.4) and an alert settles from 1.1 (S3.6, the iOS
+   alert); both leave by fading over 110ms (lib/dialog-lifetime.ts). Low specificity, so the phone sheet's rise below wins. */
+:where(.ch-modal[data-ch-pop='quick']) .ch-modal__panel {
+  animation: ch-pop-in var(--ch-dur-quick) var(--ch-ease-sheet);
+}
+:where(.ch-modal[role='alertdialog']) .ch-modal__panel {
+  animation: ch-alert-in var(--ch-dur-quick) var(--ch-ease-sheet);
 }
 .ch-modal__panel > .ch-grab {
   display: none;
@@ -550,7 +559,19 @@
 @keyframes ch-pop {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(8px) scale(0.98);
+  }
+}
+@keyframes ch-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes ch-alert-in {
+  from {
+    opacity: 0;
+    transform: scale(1.1);
   }
 }
 @keyframes ch-fade {
@@ -577,9 +598,9 @@
     max-height: var(--ch-modal-max-h);
     padding-bottom: env(safe-area-inset-bottom);
     border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
-    /* It rises on the smooth spring, as More and the bell do (CH-1602, CH-1612): a soft start and a settle with no
-       overshoot; the ease-out over base where linear() is missing. */
-    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    /* It rises over the reveal beat on the iOS sheet curve, 520ms, as the bell does (S3.2, motion spec 15 Nov 3.4): it
+       leaves at speed and settles with no overshoot. It leaves over 280ms on the same curve (lib/dialog-lifetime.ts). */
+    animation: ch-rise var(--ch-dur-reveal) var(--ch-ease-sheet);
   }
   .ch-modal__panel > .ch-grab {
     display: block;
@@ -1594,7 +1615,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
     background: var(--ch-bg-page);
     box-shadow: var(--ch-elevation-sheet);
-    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    animation: ch-rise var(--ch-dur-reveal) var(--ch-ease-sheet);
   }
   .ch-fsheet-dlg.is-full .ch-fsheet {
     height: calc(100dvh - max(54px, env(safe-area-inset-top)));
@@ -1702,7 +1723,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    animation: ch-rise var(--ch-dur-reveal) var(--ch-ease-sheet);
   }
   .ch-fsheet-act__card {
     flex: none;

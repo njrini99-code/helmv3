@@ -268,7 +268,7 @@ const RAW_LONGHAND: Record<string, number> = {
   'styles/rounds-track.css': 27,
   'styles/rounds.css': 71,
   'styles/settings.css': 6,
-  'styles/shell.css': 22,
+  'styles/shell.css': 21,
   'styles/stats.css': 55,
   'styles/ui.css': 20,
 };

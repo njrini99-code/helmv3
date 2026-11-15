@@ -26,7 +26,7 @@ import { Menu, type MenuItem } from '../../../ui/Menu';
 import { Modal } from '../../../ui/Modal';
 import { BackLink } from '../../../ui/Section';
 import { Segmented } from '../../../ui/Segmented';
-import { useToast } from '../../../ui/Toast';
+import { CH_TOAST_ACTION_MS, useToast } from '../../../ui/Toast';
 import type { PlanPartData } from '../../coachhelm/plan/PlanCard';
 import { printPlan } from '../../coachhelm/plan/PrintPlan';
 import { PracticePlanSheet } from '../../coachhelm/plan/sheet/PracticePlanSheet';
@@ -57,8 +57,8 @@ type HelperState = { k: 'idle' } | { k: 'running'; request: string } | { k: 'gho
  * inspector with a CoachHelm tab; on a phone: one column with a sheet per block. CoachHelm's suggestions wait beside the plan as outlined drafts with Keep, Swap and Remove, and
  * nothing joins it until kept. Coach only: the route never hands this to a player.
  */
-/** A publish waits this long with an Undo before anything is written or sent, as Ask's does. */
-const PUBLISH_HOLD_MS = 8000;
+/** A publish waits this long with an Undo before anything is written or sent: the ten seconds every Undo window gives (NP-06). */
+const PUBLISH_HOLD_MS = CH_TOAST_ACTION_MS;
 
 const zonedClock = (iso: string, zone: string) => formatWith(new Date(iso), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zone });
 const zonedDate = (iso: string, zone: string) => isoDay(iso, zone);
@@ -248,7 +248,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       setConfirm(false);
       // The 8 second hold: nothing is written or sent until it runs out, so Undo, or closing the page, leaves the draft as it was.
       toast({
-        title: `${publishLabel === 'Publish' ? 'Publishing' : 'Republishing'} in 8 seconds`,
+        title: `${publishLabel === 'Publish' ? 'Publishing' : 'Republishing'} in ${PUBLISH_HOLD_MS / 1000} seconds`,
         body: republish ? (tell && diff && !diff.wordingOnly ? `${plural(diff.affected.length, 'player')} hear when it goes.` : 'No one will be notified.') : `${peopleLine} hear when it goes.`,
         holdMs: PUBLISH_HOLD_MS,
         action: { label: 'Undo', run: () => toast({ title: 'Not published. Nobody was told.' }) },
@@ -853,7 +853,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
               </div>
             </dl>
           )}
-          <p className="ch-prc-note">You get 8 seconds to undo before anyone is told.</p>
+          <p className="ch-prc-note">You get {PUBLISH_HOLD_MS / 1000} seconds to undo before anyone is told.</p>
         </div>
       </Modal>
       <PracticeSheet open={!!moving} onClose={() => setMoving(null)} title="Practice time" actionLabel="Save" onAction={() => setMoveAsk(true)} actionDisabled={!moving?.start}>

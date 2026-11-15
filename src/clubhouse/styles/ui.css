@@ -438,17 +438,18 @@
   top: calc(20px + env(safe-area-inset-top));
   bottom: auto;
 }
-/* A toast rises 10px as it fades in (Toast.tsx): CSS on the compositor, so a save that keeps the page busy can't hold it. */
+/* A toast rises 8px as it fades in, over the base beat on the sheet curve (Toast.tsx; motion spec 15 Nov 3.4, S3.7): CSS on
+   the compositor, so a save that keeps the page busy can't hold it. */
 @keyframes ch-toast-in {
   from {
-    transform: translateY(10px) scale(0.98);
+    transform: translateY(8px);
   }
 }
 [data-motion='off'] .ch-toast {
   animation: none;
 }
 .ch-toast {
-  animation: ch-toast-in var(--ch-dur-base) var(--ch-ease) backwards;
+  animation: ch-toast-in var(--ch-dur-base) var(--ch-ease-sheet) backwards;
   display: flex;
   align-items: center;
   gap: 8px;

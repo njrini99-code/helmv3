@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
 import { useEffect, useLayoutEffect } from 'react';
-import { ToastProvider, useDelayedToast, useToast, type ToastInput } from '../ui/Toast';
+import { CH_TOAST_ACTION_MS, ToastProvider, useDelayedToast, useToast, type ToastInput } from '../ui/Toast';
 
 /**
  * A toast's dismiss timer outlived its provider: on CI (#2110) a roster test's
@@ -74,7 +74,7 @@ describe('ToastProvider timers', () => {
     expect(vi.getTimerCount()).toBe(1);
     act(() => vi.advanceTimersByTime(5000));
     expect(screen.getByText('Delayed scope feedback')).toBeTruthy();
-    act(() => vi.advanceTimersByTime(4000));
+    act(() => vi.advanceTimersByTime(5000));
     expect(screen.queryByText('Delayed scope feedback')).toBeNull();
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -127,20 +127,49 @@ describe('ToastProvider timers', () => {
     expect(vi.getTimerCount()).toBe(1);
   });
 
-  it('keeps confirmations for 4 seconds and errors for 8 seconds', () => {
+  it('a confirmation stays 2.4 seconds (motion spec 15 Nov 3.4); an error stays until it is closed (NP-06)', () => {
     vi.useFakeTimers();
     render(<ToastProvider><Raise input={{ title: 'Confirmed' }} /><Raise input={{ title: 'Failed', tone: 'error' }} /></ToastProvider>);
-    act(() => vi.advanceTimersByTime(3999));
+    act(() => vi.advanceTimersByTime(2399));
     expect(screen.getByText('Confirmed')).toBeTruthy();
     expect(screen.getByRole('alert')).toHaveTextContent('Failed');
     act(() => vi.advanceTimersByTime(1));
     expect(screen.queryByText('Confirmed')).toBeNull();
-    expect(screen.getByRole('alert')).toHaveTextContent('Failed');
-    act(() => vi.advanceTimersByTime(3999));
-    expect(screen.getByRole('alert')).toHaveTextContent('Failed');
-    act(() => vi.advanceTimersByTime(1));
-    expect(screen.queryByText('Failed')).toBeNull();
+    // No clock at all for the error: a phone has no hover or focus to hold it, so it waits to be closed.
     expect(vi.getTimerCount()).toBe(0);
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(screen.getByRole('alert')).toHaveTextContent('Failed');
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
+    expect(screen.queryByText('Failed')).toBeNull();
+  });
+
+  it('a press pauses it, on its Undo too, and it runs on once the finger lifts (motion spec 15 Nov 3.4)', () => {
+    vi.useFakeTimers();
+    const undo = { label: 'Undo', run: () => {} };
+    render(<ToastProvider><Raise input={{ title: 'Held down', action: undo }} /></ToastProvider>);
+    const key = screen.getByRole('button', { name: 'Undo' });
+    fireEvent.pointerDown(key, { pointerId: 7, button: 0, isPrimary: true, pointerType: 'touch' });
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(screen.getByText('Held down')).toBeTruthy();
+    act(() => {
+      window.dispatchEvent(Object.assign(new Event('pointercancel'), { pointerId: 7 }));
+    });
+    // Let go, it stays its held-resume minimum at least, then goes.
+    act(() => vi.advanceTimersByTime(CH_TOAST_ACTION_MS));
+    expect(screen.queryByText('Held down')).toBeNull();
+  });
+
+  it('NP-06 a toast with an action stays at least 10 seconds, whatever hold it asked for, and never the Messages pill’s 1.7', () => {
+    vi.useFakeTimers();
+    const undo = { label: 'Undo', run: () => {} };
+    render(<ToastProvider><Raise input={{ title: 'Moved', action: undo }} /><Raise input={{ title: 'Held', action: undo, holdMs: 4000 }} /></ToastProvider>);
+    act(() => vi.advanceTimersByTime(9999));
+    expect(screen.getByText('Moved')).toBeTruthy();
+    expect(screen.getByText('Held')).toBeTruthy();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByText('Moved')).toBeNull();
+    expect(screen.queryByText('Held')).toBeNull();
+    expect(CH_TOAST_ACTION_MS).toBe(10_000);
   });
 
   it('abort removes only its visible notice and releases its timer and listener', () => {
@@ -160,7 +189,7 @@ describe('ToastProvider timers', () => {
     // A late repeat of the prior cancellation cannot remove the newer notice.
     act(() => old.abort());
     expect(screen.getByText('Current request')).toBeTruthy();
-    act(() => vi.advanceTimersByTime(4000));
+    act(() => vi.advanceTimersByTime(5000));
     expect(removeCurrent).toHaveBeenCalledWith('abort', expect.any(Function));
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -284,7 +313,8 @@ describe('Toast onExpire, replace and dismiss (wave 5)', () => {
     act(() => vi.advanceTimersByTime(20_000));
     expect(expired).not.toHaveBeenCalled();
     fireEvent.pointerOut(card, { pointerType: 'mouse', relatedTarget: document.body });
-    act(() => vi.advanceTimersByTime(4000));
+    // With an Undo it has its ten seconds (NP-06).
+    act(() => vi.advanceTimersByTime(10_000));
     expect(expired).toHaveBeenCalledTimes(1);
     act(() => vi.advanceTimersByTime(20_000));
     expect(expired).toHaveBeenCalledTimes(1);

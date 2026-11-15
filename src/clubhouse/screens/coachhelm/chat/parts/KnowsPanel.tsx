@@ -116,9 +116,9 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
         </button>
       )}
       <button type="button" className="ed is-quiet" onClick={() => setSeeing(true)}>
-        What Ask can see
+        What CoachHelm can see
       </button>
-      <Modal open={seeing} title="What Ask can see" onClose={() => setSeeing(false)}>
+      <Modal open={seeing} title="What CoachHelm can see" onClose={() => setSeeing(false)}>
         <AskCanSee />
       </Modal>
       {error && (

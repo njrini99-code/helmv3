@@ -85,7 +85,7 @@ import { monthCells, type ChCalEvent, type ChCalType } from '../screens/calendar
 import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarSkeleton } from '../screens/calendar/CalendarSkeleton';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
-import { ToastProvider } from '../ui/Toast';
+import { CH_TOAST_ACTION_MS, ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR, PREVIEW_CALENDAR_PLAYER } from '../preview/fixtures-calendar';
 import { clashesAt, snapQuarter } from '../screens/calendar/views';
 import './dialog-polyfill';
@@ -152,14 +152,14 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:45 – 2:30 PM/);
     expect(a.updateGolfEvent).not.toHaveBeenCalled();
     await act(async () => {
-      vi.advanceTimersByTime(4000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
     });
     expect(a.updateGolfEvent).toHaveBeenCalledWith('e9', expect.objectContaining({ startDate: '2026-10-15', startTime: '13:45', endTime: '14:30', allDay: false }));
     // A failed write puts it back and says so.
     a.updateGolfEvent.mockResolvedValue({ success: false, error: 'nope' });
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowUp', altKey: true });
     await act(async () => {
-      vi.advanceTimersByTime(4000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
     });
     vi.useRealTimers();
     await expectCode('CH-6015', /Couldn’t move Travel briefing/);
@@ -188,14 +188,14 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
     fireEvent.pointerOver(moveToast(), { pointerType: 'mouse' });
     await act(async () => {
-      vi.advanceTimersByTime(10_000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS + 2000);
     });
     // Undo is still on screen, so nothing is written.
     expect(screen.getByRole('button', { name: 'Undo' })).toBeTruthy();
     expect(a.updateGolfEvent).not.toHaveBeenCalled();
     fireEvent.pointerOut(moveToast(), { pointerType: 'mouse', relatedTarget: document.body });
     await act(async () => {
-      vi.advanceTimersByTime(3000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS - 1000);
     });
     expect(a.updateGolfEvent).not.toHaveBeenCalled();
     await act(async () => {
@@ -210,13 +210,13 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
   });
 
-  it('Undo after the hover outlasts 4 seconds still puts it back, and nothing is ever written', async () => {
+  it('Undo after the hover outlasts the 10-second window still puts it back, and nothing is ever written', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const view = wrap(cal());
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
     fireEvent.pointerOver(moveToast(), { pointerType: 'mouse' });
     await act(async () => {
-      vi.advanceTimersByTime(6000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS + 2000);
     });
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
@@ -266,7 +266,7 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Moved to 2:15 PM')).toBeTruthy();
     await act(async () => {
-      vi.advanceTimersByTime(4000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
     });
     expect(a.updateGolfEvent).toHaveBeenCalledTimes(2);
     expect(a.updateGolfEvent).toHaveBeenLastCalledWith('e9', expect.objectContaining({ startTime: '14:15' }));
@@ -301,7 +301,7 @@ describe('Calendar · a held move comes back (P-4)', () => {
   const series = () => block(/^Short-game block/);
   const expire = () =>
     act(async () => {
-      vi.advanceTimersByTime(4000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
     });
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });

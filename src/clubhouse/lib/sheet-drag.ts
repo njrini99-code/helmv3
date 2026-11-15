@@ -12,10 +12,12 @@ export function sheetSettleHaptic(): void {
   haptic('commit');
 }
 
-/** A drag down past this many pixels closes the sheet. */
+/** A drag down past this share of the sheet's height closes it (motion spec 15 Nov 3.4, S3.3: 25%). */
+export const CH_SHEET_CLOSE_FRACTION = 0.25;
+/** Where a sheet has no measured height yet (a test page, a sheet still laying out), past this many pixels instead. */
 export const CH_SHEET_CLOSE_PX = 80;
-/** So does a flick faster than this (px per ms), once it has moved a little. */
-const FLICK_PX_PER_MS = 0.5;
+/** So does a flick faster than this (px per ms), once it has moved a little (3.4: 0.4 px/ms). */
+export const CH_SHEET_FLICK_PX_PER_MS = 0.4;
 /** A finger that stops before it lets go is no longer flicking: its speed fades to nothing over this long. */
 const FLICK_MAX_AGE_MS = 80;
 /** The release speed is read over the last stretch of the drag, not from its last two events alone. */
@@ -154,7 +156,8 @@ export function chScrimAt(offset: number, size: number): number {
 }
 
 /**
- * A phone sheet follows the finger down, and closes past 80px or on a quick flick with the medium settle haptic;
+ * A phone sheet follows the finger down, and closes past a quarter of its height or on a flick faster than 0.4 px/ms
+ * (motion spec 15 Nov 3.4) with the medium settle haptic;
  * let go sooner and it springs back on the smooth spring, starting at the speed it was moving, and a finger can catch
  * it on the way. Pulled up past its open position it gives like a rubber band, its own colour reaching under it, and
  * thrown back up hard it carries on a little past that position over the same floor. Its body drags it too, once that is
@@ -287,7 +290,8 @@ export function useSheetDrag(
         if (ev.pointerId !== pointerId) return;
         stop.current?.();
         const speed = releaseSpeed(samples, ev.timeStamp);
-        if (ev.type === 'pointerup' && (dy > (messages ? size * MS_CLOSE_FRACTION : CH_SHEET_CLOSE_PX) || (dy > 10 && speed > FLICK_PX_PER_MS))) {
+        const past = messages ? size * MS_CLOSE_FRACTION : size > 0 ? size * CH_SHEET_CLOSE_FRACTION : CH_SHEET_CLOSE_PX;
+        if (ev.type === 'pointerup' && (dy > past || (dy > 10 && speed > CH_SHEET_FLICK_PX_PER_MS))) {
           if (floored) el.style.boxShadow = '';
           flings.set(el, { speed: Math.max(0, speed), at: performance.now() });
           haptic('commit');

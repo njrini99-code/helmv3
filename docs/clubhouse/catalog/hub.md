@@ -132,7 +132,7 @@ Logistics first.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-10501 | Deleting an announcement | An alert that names it ("Delete “Short-game block moves to Green 2”?") + "Players stop seeing it, and its acknowledgements go with it. This can’t be undone." Cancel (focused) / Delete announcement; on the phone the iOS action sheet. Warning haptic (NP-05) | `ConfirmDelete` | hub.test › CH-10501 |
-| CH-10502 | Deleting a task | "Delete “Sign travel waiver”?" + "It leaves all 7 players’ lists, done or not. This can’t be undone." (the assigned count); Cancel (focused) / Delete task (NP-05) | `ConfirmDelete` | hub.test › CH-10502 |
+| CH-10502 | Deleting a task | "Delete “Sign travel waiver”?" + "It leaves 7 players’ lists, done or not. This can’t be undone." (the assigned count); Cancel (focused) / Delete task (NP-05) | `ConfirmDelete` | hub.test › CH-10502 |
 | CH-10503 | Deleting a file | "Delete “NCAA hours log”?" + "Players can no longer open it. This can’t be undone." Cancel (focused) / Delete file (NP-05) | `ConfirmDelete` | hub.test › CH-10503 |
 | CH-10504 | Deleting a trip | "Delete “Seahawk Intercollegiate”?" + "Players stop seeing the itinerary. Its expenses and budgets are deleted with it, and the calendar event stays. This can’t be undone." Cancel (focused) / Delete trip. Warning haptic (NP-05) | `ConfirmDelete` | hub-trip-manage.test › CH-10504 |
 

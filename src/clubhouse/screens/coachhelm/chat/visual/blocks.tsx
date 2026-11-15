@@ -25,12 +25,35 @@ export function MissPattern({ block }: { block: MissPatternBlock }) {
   const wedge = (deg: number, r: number) => `M${C},${C} L${at(deg - 22, r)} A${r},${r} 0 0 1 ${at(deg + 22, r)} Z`;
   return (
     <figure className="ch-aks-miss">
-      <svg viewBox="-14 0 236 208" role="img" aria-label={`${block.total} shots by miss direction: ${block.wedges.map((w) => `${said(w.direction)} ${w.count}`).join(', ')}`}>
+      {/* A named group, not an image: the wedges are buttons, and an image's children are hidden from a screen reader (SWP-08).
+         Each wedge's key is the whole 45° sector out to the ring, drawn clear over the visible wedge, so the smallest share is
+         still a thumb-sized target (SWP-05: a 14-unit wedge was 19 by 19 points). */}
+      <svg viewBox="-14 0 236 208" role="group" aria-label={`${block.total} shots by miss direction: ${block.wedges.map((w) => `${said(w.direction)} ${w.count}`).join(', ')}`}>
         <circle cx={C} cy={C} r={R} className="ch-aks-miss__ring" />
         <circle cx={C} cy={C} r={R / 2} className="ch-aks-miss__ring is-minor" />
-        {block.wedges.map((w) => (
-          <path key={w.direction} d={wedge(ANGLE[w.direction] ?? 0, 14 + (w.count / max) * (R - 14))} className={'ch-aks-miss__wedge' + (w.count === max && w.count > 0 ? ' is-most' : '')} role="button" tabIndex={0} aria-label={`Ask about ${said(w.direction)} misses, ${w.count}`} onClick={() => askAbout(`${said(w.direction)} misses, ${w.count} shots`)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); askAbout(`${said(w.direction)} misses, ${w.count} shots`); } }} />
-        ))}
+        {block.wedges.map((w) => {
+          const deg = ANGLE[w.direction] ?? 0;
+          const ask = () => askAbout(`${said(w.direction)} misses, ${w.count} shots`);
+          return (
+            <g
+              key={w.direction}
+              className="ch-aks-miss__key"
+              role="button"
+              tabIndex={0}
+              aria-label={`Ask about ${said(w.direction)} misses, ${w.count}`}
+              onClick={ask}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  ask();
+                }
+              }}
+            >
+              <path d={wedge(deg, R)} className="ch-aks-miss__hit" fill="transparent" />
+              <path d={wedge(deg, 14 + (w.count / max) * (R - 14))} className={'ch-aks-miss__wedge' + (w.count === max && w.count > 0 ? ' is-most' : '')} />
+            </g>
+          );
+        })}
         {/* Dots by distance left: the wedge says how often, the dot how far (ASK_REDESIGN 3.4). */}
         {block.wedges.map((w) => {
           if (w.avg_left_ft == null || w.count === 0) return null;

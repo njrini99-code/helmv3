@@ -19,6 +19,7 @@ vi.mock('../../motion/messages-motion', async (orig) => {
 });
 
 import { HoldLift, atRestBox, placeLift, type LiftGeometry } from '../../hold-lift';
+import { menuOpenCurve } from '../../motion/messages-motion';
 import { HoldReactKeys } from '../HoldKeys';
 import { ComposerPlusV2, ATTACH_IN, ATTACH_OUT } from '../../ComposerPlusV2';
 import { layerReactions } from '../../api/use-overlay-api';
@@ -101,16 +102,19 @@ describe('MSG-402 / 403 the lift', () => {
     expect(row.style.visibility).toBe('hidden');
   });
 
-  it('MOT-HOLD-2/3/4/5: copy lifts on lift from the press scale, bar pops, menu unfolds on lift, scrim fades on smooth', () => {
+  it('MOT-HOLD-2/3/4/5: copy lifts on lift from the press scale, bar and menu arrive as a menu does (OVL-15, OVL-16), scrim fades on smooth', () => {
     mount();
     const by = (cls: string) => calls().find((c) => c.node.className.includes(cls))!;
     expect(by('ch-mso-lift__copy').spring).toBe('lift');
     expect(String(by('ch-mso-lift__copy').keyframes[0]!.transform)).toMatch(/^translateY\(0\) scale\((0\.9\d{0,2}|1)\)$/);
     expect(by('ch-mso-lift__copy').keyframes[1]).toEqual({ transform: 'translateY(0px) scale(1.02)' });
-    expect(by('ch-mso-rbar').spring).toBe('pop');
-    expect(by('ch-mso-rbar').keyframes[0]).toEqual({ transform: 'scale(.5)', opacity: 0 });
-    expect(by('ch-mso-menu').spring).toBe('lift');
-    expect(by('ch-mso-menu').keyframes[0]).toEqual({ transform: 'scale(.8)', opacity: 0 });
+    // From just under full size over the quick beat, ease-out: not from half size on the overshooting pop.
+    expect(by('ch-mso-rbar').spring).toBeNull();
+    expect(by('ch-mso-rbar').keyframes[0]).toEqual({ transform: 'scale(.92)', opacity: 0 });
+    expect(by('ch-mso-rbar').opts).toMatchObject({ timing: menuOpenCurve });
+    expect(by('ch-mso-menu').spring).toBeNull();
+    expect(by('ch-mso-menu').keyframes[0]).toEqual({ transform: 'scale(.96)', opacity: 0 });
+    expect(by('ch-mso-menu').opts).toMatchObject({ timing: menuOpenCurve });
     expect(by('ch-mso-lift__scrim').spring).toBe('smooth');
     expect(by('ch-mso-lift__copy').node.style.transformOrigin).toBe('290px 20px');
   });

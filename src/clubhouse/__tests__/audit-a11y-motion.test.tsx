@@ -105,7 +105,7 @@ describe('A-25: focus handed back by code does not open a hover card', () => {
   it('Peek skips a quiet focus; dialogs and the calendar hand focus back quietly', () => {
     const read = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
     expect(read('ui/Peek.tsx')).toMatch(/if \(target\.closest\?\.\('\[data-ch-peek-quiet\]'\)\) return;/);
-    expect(read('lib/dialog-lifetime.ts')).toMatch(/chFocusQuietly\(target\)/);
+    expect(read('lib/dialog-lifetime.ts')).toMatch(/chFocusQuietly\(back\)/);
     expect(read('screens/calendar/Calendar.tsx')).toMatch(/chFocusQuietly\(el\)/);
   });
 });

@@ -29,7 +29,8 @@ import { EmptyState, Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
 import { sheetDragOffset, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { useAfterPaint } from '../lib/use-painted';
-import { CH_POP, chFade, chSpring, chSpringCurve } from '../lib/motion';
+import { CH_DUR, CH_EASE_SHEET, chFade, chSpring, chSpringCurve } from '../lib/motion';
+import { chMenuMotion } from '../lib/menu-motion';
 import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
 import { useChPhone } from '../lib/use-phone';
 import { useSectionSwitch } from './section-switch';
@@ -66,15 +67,13 @@ export interface ChBellApi {
 const FEED_LIMIT = 30;
 
 /**
- * The drop's arrival: the reveal spring, ended once it is within 1% of its mark and rescaled so it lands there without a
- * step. The spring alone spent its last 300ms creeping the final few dozen pixels of the veil (827ms in all, measured on
- * the Simulator, 2026-10-14); this lands in about 660ms on the same curve.
+ * The drop's arrival and its tapped close, as every sheet's (motion spec 15 Nov 3.4, S3.2): in over the reveal beat, 520ms,
+ * out over the release beat, 280ms, both on the iOS sheet curve (`--ch-ease-sheet`). The reveal spring it rode before
+ * spent its last 300ms creeping the veil's final pixels (827ms in all, Simulator, 2026-10-14; OVL-11, MAC-16). A throw
+ * still leaves on the smooth spring at the throw's speed (below).
  */
-const REVEAL_IN = (() => {
-  const c = chSpringCurve('reveal', { rest: 0.01 });
-  const top = c.ease(0.9999);
-  return { duration: c.ms / 1000, ease: (p: number) => (p >= 1 ? 1 : Math.min(1, c.ease(p) / top)) };
-})();
+const REVEAL_IN = { duration: CH_DUR.reveal, ease: [...CH_EASE_SHEET] as [number, number, number, number] };
+const RELEASE_OUT = { duration: CH_DUR.release, ease: [...CH_EASE_SHEET] as [number, number, number, number] };
 const W = 380;
 
 const BellSource = createContext<ChBellApi | null>(null);
@@ -179,16 +178,16 @@ export function Bell() {
       const travel = 140;
       const left = travel + from;
       const fling = takeSheetFling(el, { peek: true }) * 1000;
-      const out = chSpringCurve('smooth', { velocity: left > 0 ? fling / left : 0, rest: 0.5 / Math.max(left, 1) });
+      const out = fling > 0 ? chSpringCurve('smooth', { velocity: left > 0 ? fling / left : 0, rest: 0.5 / Math.max(left, 1) }) : null;
       return {
         transform: [`translateY(${from}px)`, `translateY(${-travel}px)`],
         opacity: 0,
-        transition: { duration: out.ms / 1000, ease: out.ease },
+        transition: out ? { duration: out.ms / 1000, ease: out.ease } : RELEASE_OUT,
         transitionEnd: { visibility: 'hidden' },
       };
     },
   };
-  /** The sheet follows the finger up from its header or grab (CH-1611): past 80px, or flicked, it closes. */
+  /** The sheet follows the finger up from its header or grab (CH-1611): past a quarter of its height, or flicked, it closes. */
   const drag = useSheetDrag(panel, close, { enabled: phone, direction: 'up', reduced });
 
   // The phone drop opens on its cards: the feed is read once the page settles, so the first open of a visit doesn't start
@@ -602,7 +601,7 @@ export function Bell() {
                     ? { opacity: open ? 1 : 0, transform: 'translateY(0%)', visibility: 'visible', transition: chFade(mode), transitionEnd: { visibility: open ? 'visible' : 'hidden' } }
                     : moving
                       ? { transform: 'translateY(0%)', opacity: 1, visibility: 'visible', transition: REVEAL_IN }
-                      : { transform: 'translateY(-100%)', opacity: 1, transition: chSpring('smooth'), transitionEnd: { visibility: 'hidden' } }
+                      : { transform: 'translateY(-100%)', opacity: 1, transition: RELEASE_OUT, transitionEnd: { visibility: 'hidden' } }
                 }
                 onClick={() => close()}
               />
@@ -674,8 +673,8 @@ export function Bell() {
                   tabIndex={-1}
                   className="ch-bellp ch-popover"
                   data-ui="clubhouse"
-                  style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: W }}
-                  {...(reduced ? {} : CH_POP)}
+                  style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: W, transformOrigin: 'top right' }}
+                  {...chMenuMotion(reduced)}
                 >
                   <div className="ch-bellp__head">
                     <b>

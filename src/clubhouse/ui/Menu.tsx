@@ -7,7 +7,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type 
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
 import { haptic } from '../lib/haptics';
-import { CH_POP, chTween } from '../lib/motion';
+import { chMenuMotion } from '../lib/menu-motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { chTrail } from '../lib/track';
 
@@ -184,10 +184,7 @@ export function Menu({
                 className="ch-menu ch-popover"
                 data-ui="clubhouse"
                 style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width, transformOrigin: pos?.origin }}
-                initial={reduced ? { opacity: 0 } : CH_POP.initial}
-                animate={reduced ? { opacity: 1 } : CH_POP.animate}
-                exit={reduced ? { opacity: 0 } : CH_POP.exit}
-                transition={chTween('quick', reduced)}
+                {...chMenuMotion(reduced)}
                 onKeyDown={onKey}
               >
                 <MenuItems items={items} onClose={close} />

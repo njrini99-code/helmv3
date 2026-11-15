@@ -4,7 +4,7 @@ import { AnimatePresence, m } from 'motion/react';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { haptic } from '../lib/haptics';
-import { CH_POP, chTween } from '../lib/motion';
+import { chMenuMotion } from '../lib/menu-motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { MenuItems, menuKeyDown, type MenuItem } from './Menu';
 import { Modal } from './Modal';
@@ -296,10 +296,7 @@ function ContextMenuSurface<T>({ at, label, items, onClose }: { at: Open<T>; lab
       className="ch-menu ch-popover ch-cmd-ctx"
       data-ui="clubhouse"
       style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, maxHeight: pos?.maxHeight, width: W, transformOrigin: pos?.origin ?? 'top left' }}
-      initial={reduced ? { opacity: 0 } : CH_POP.initial}
-      animate={reduced ? { opacity: 1 } : CH_POP.animate}
-      exit={reduced ? { opacity: 0 } : CH_POP.exit}
-      transition={chTween('quick', reduced)}
+      {...chMenuMotion(reduced)}
       onKeyDown={(e) =>
         menuKeyDown(e, list.current, {
           onEscape: () => onClose(true),

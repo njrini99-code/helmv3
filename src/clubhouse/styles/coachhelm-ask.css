@@ -779,7 +779,8 @@
   right: 0;
   bottom: calc(100% + 8px);
   left: 0;
-  z-index: var(--ch-z-sticky);
+  /* Above the dock (50), which it covers for a moment (MENTION-04). */
+  z-index: var(--ch-z-overlay);
   border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-overlay), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
@@ -931,15 +932,15 @@
 body.keyboard-open .ch-ask-hist.is-drawer {
   height: calc(100dvh - var(--keyboard-height, 0px));
 }
+/* In and out on the same property (OVL-13): the exit (useDialogLifetime) animates transform from where the rise has it, so
+   a close mid-open, or a reopen mid-close, turns round where it stands; a rise on translate added to it and jumped. The
+   drag keeps translate. */
 .ch-ask-drawer[open] .ch-ask-hist.is-drawer {
-  animation: ch-ask-drawer-in var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  animation: ch-ask-drawer-in var(--ch-dur-reveal) var(--ch-ease-sheet);
 }
 @keyframes ch-ask-drawer-in {
   from {
-    translate: -100% 0;
-  }
-  to {
-    translate: 0 0;
+    transform: translateX(-100%);
   }
 }
 .ch-ask-drawer .ch-ask-hist__head :is(b, h2) {

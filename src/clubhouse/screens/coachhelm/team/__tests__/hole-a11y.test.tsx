@@ -3,6 +3,7 @@ import { cleanup, render } from '@testing-library/react';
 import { stationFigures, type ChTeamPlayer } from '../../../../data/coachhelm-team-shape';
 import { PREVIEW_TEAM_BOARD } from '../../../../preview/fixtures-coachhelm-team';
 import { TeamHole } from '../TeamHole';
+import { Huddle } from '../Huddle';
 
 /**
  * F-0007 (audit, 13 Nov 2026): the course map was role="img" with twelve station buttons inside it. An image's children are
@@ -50,5 +51,14 @@ describe('the course map’s stations reach a screen reader (F-0007)', () => {
     const svg = hole(true).querySelector('.holesvg')!;
     expect(svg.getAttribute('role')).toBe('img');
     expect(svg.querySelectorAll('[role="button"]')).toHaveLength(0);
+  });
+});
+
+describe('the Huddle chart’s coins reach a screen reader (SWP-10)', () => {
+  it('the chart is a named group, not an image, and its coins are buttons inside it', () => {
+    const svg = render(<Huddle data={PREVIEW_TEAM_BOARD} onPlayer={() => {}} />).container.querySelector('.hudsvg')!;
+    expect(svg.getAttribute('role')).toBe('group');
+    expect(svg.getAttribute('aria-label')).toMatch(/^Huddle chart/);
+    expect(svg.querySelectorAll('[role="button"]').length).toBeGreaterThan(0);
   });
 });

@@ -15,6 +15,7 @@ import { Swap } from '../../ui/Swap';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useSlidePlate } from '../../lib/slide-plate';
 import { haptic } from '../../lib/haptics';
+import { plural } from '../../lib/plural';
 import { chTrail } from '../../lib/track';
 import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
@@ -799,7 +800,7 @@ export function TeamHub({
               confirm?.kind === 'ann'
                 ? 'Players stop seeing it, and its acknowledgements go with it. This can’t be undone.'
                 : confirm?.kind === 'task'
-                  ? `${confirm.t.done ? `It leaves ${confirm.t.done[1] === 1 ? 'the 1 player’s list' : `all ${confirm.t.done[1]} players’ lists`}` : 'It leaves every player’s list'}, done or not. This can’t be undone.`
+                  ? `${confirm.t.done ? `It leaves ${plural(confirm.t.done[1], 'player’s list', 'players’ lists')}` : 'It leaves every player’s list'}, done or not. This can’t be undone.`
                   : confirm?.kind === 'trip'
                     ? 'Players stop seeing the itinerary. Its expenses and budgets are deleted with it, and the calendar event stays. This can’t be undone.'
                     : 'Players can no longer open it. This can’t be undone.'
