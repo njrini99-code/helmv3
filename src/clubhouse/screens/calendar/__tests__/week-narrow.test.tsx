@@ -298,10 +298,11 @@ describe('the desktop week takes the full width', () => {
     expect(css).toMatch(/@container \(max-width: 1060px\) \{\s*\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap:not\(\[data-under\]\) \{\s*grid-column: auto;\s*grid-row: auto;\s*max-height: none;\s*\}\s*\}/);
   });
 
-  it('closed, the panel has no place in the grid; opened after the page is drawn it fades in, and not with motion off', () => {
+  it('closed, the panel has no place in the grid; opened after the page is drawn it crossfades in, and not with motion off', () => {
     expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\]:not\(\[data-open\]\) > \.ch-in-wrap:not\(\[data-under\]\) \{\s*position: absolute;\s*width: 0;\s*height: 0;/);
-    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: ch-cal-panel-in var\(--ch-dur-base\) var\(--ch-ease\) both;\s*\}/);
-    expect(css).toMatch(/@keyframes ch-cal-panel-in \{\s*from \{\s*opacity: 0;\s*\}\s*\}/);
+    // The shared crossfade, motion.css ch-in, on the quick beat (MOTION-AND-VISUAL 3.5, 3.12).
+    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: ch-in var\(--ch-dur-quick\) var\(--ch-ease-out\) both;\s*\}/);
+    expect(css).not.toMatch(/@keyframes/);
     expect(css).toMatch(/\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: none;/);
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: none;/);
   });
