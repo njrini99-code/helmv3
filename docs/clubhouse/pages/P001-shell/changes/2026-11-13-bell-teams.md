@@ -1,6 +1,6 @@
 # 2026-11-13 — the bell names another team's item, and opens it on that team
 
-## 2026-11-13 — Another team's notification is labelled; opening it switches team first
+## 2026-11-13 — Another team's item is labelled and opens on its team
 
 ```text
 Design package: none (coach audit, 13 Nov 2026, §2 Notifications)

@@ -1,6 +1,6 @@
 # 2026-11-13 — Ask keeps its own misses and self-talk out of the answer
 
-## 2026-11-13 — Retried steps read as retries; no self-talk headline; the team's day on "computed"
+## 2026-11-13 — Retries read as retries; no self-talk; the team's day
 
 ```text
 Design package: none (coach audit, 13 Nov 2026, §3c Ask)
@@ -23,7 +23,7 @@ Held items:     none
   drawn and when a stored turn is restored.
   An answer had led with "Oops, I added a stray key." A bare "Sorry, there are
   no rounds this season." states a finding and stays.
-- "computed <day>" is that day in the team's zone (`useLightPlace().timeZone`
+- "computed `<day>`" is that day in the team's zone (`useLightPlace().timeZone`
   into `evidenceBlocks`, `sourceLine`, `readRows`). At 11 PM Eastern on
   12 Nov it had said "computed Nov 13". A stamp at exactly midnight UTC is a
   date stored as a moment and is read as written.

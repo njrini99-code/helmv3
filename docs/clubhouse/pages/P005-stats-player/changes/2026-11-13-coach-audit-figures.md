@@ -15,9 +15,10 @@ Held items:     none
 
 - Toughest holes ranks each course's own holes: a play is grouped by course (the
   course id, else the name folded for case, spacing and a club suffix) and hole
-  number, and each row names its course. It pooled hole numbers across courses, so
-  "Hole 12 · Par 3" mixed a par 3, a par 4 and a par 5. A round with no course is
-  left out. Production's getWorstHoleAnalysis still pools (PARITY SC11).
+  number, and each row names its course. It pooled hole numbers across courses,
+  so "Hole 12 · Par 3" mixed a par 3, a par 4 and a par 5. A round with no
+  course is left out. Production's getWorstHoleAnalysis still pools (PARITY
+  SC11).
 - Make rate by break reads 3 to 10 ft. Tap-ins are tagged "straight" by default
   and drew Straight at 100%.
 - Off the tee's lead says the penalties earned off par-4 and par-5 tees

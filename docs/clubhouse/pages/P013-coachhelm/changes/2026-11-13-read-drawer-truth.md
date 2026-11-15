@@ -1,6 +1,6 @@
 # 2026-11-13 — the read drawer says the read's own rounds, and which way is better
 
-## 2026-11-13 — Direction from the registry when a read has none; the read's rounds in the header
+## 2026-11-13 — Direction from the registry; the read's rounds in the header
 
 ```text
 Design package: none (coach audit, 13 Nov 2026, §3a read drawer)

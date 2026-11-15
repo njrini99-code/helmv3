@@ -1,6 +1,6 @@
 # 2026-11-13 — a qualifier past its last day asks to be closed
 
-## 2026-11-13 — Past last day, whatever its status; who is short, by name; the rules once
+## 2026-11-13 — Past last day, any status; who is short; the rules once
 
 ```text
 Design package: none (coach audit, 13 Nov 2026, §12 #1–#3)

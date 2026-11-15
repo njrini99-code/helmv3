@@ -1,5 +1,7 @@
 # 2026-11-13 — a player opened from Roster goes back to Roster
 
+## 2026-11-13 — A player opened from Roster goes back to Roster
+
 ```text
 Design package: none (coach audit, 13 Nov 2026, §8 #7)
 PR/commit:      agent/coach-fix-roster

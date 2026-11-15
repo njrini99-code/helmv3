@@ -289,23 +289,31 @@ entries are history. The tool list and the prompt are described where the tools 
   stored). An edited card carries `revision`; a Confirm or an edit names the revision on screen, and one that names
   another is answered with the card as it stands and writes nothing, so a card changed in one tab cannot be confirmed
   from a stale copy in another. The plan that is committed is the one the ledger row held when it was claimed.
-- **Steps of work.** Each read, calculation and draft is a step: a `data-progress` row (`ChatStep`) with its kind,
-  its state, clock readings for when it began and ended, who it is about (players only from the caller's own roster
-  and named from it; a player's steps name only that player), what it counted, the read it produced
-  (`evidence_ref`, openable as soon as the step is done) and, for a read the model's code called, the step it ran
-  under. Every step event carries the turn's sequence number, and each state change is sent once. A running
-  calculation re-sends its tally at most every 250 ms. Nothing is estimated and no step is announced before it is
-  running. `done.work` and `data-turn-meta` give the turn's step count and the time at least one step was running.
-  The rows are stored with the turn; `restoreUIMessages(rows, { steps: true })` keeps them on reload. A failed step
-  with a later step of the same tool reads as a retry ("One drawing was retried"), whether that try is running or done;
-  only a miss with nothing after it shows as failed (coach audit 13 Nov 2026, §3c). An answer never leads with the
-  model talking to itself: rule 8 says never to mention a slip it fixed ("Oops"), and `withoutSelfTalk`
-  (`v3/chat/self-talk.ts`) takes one off the first text both when the turn is drawn and when it is restored. Ask's
-  "computed <day>" is that day in the team's zone (`sourceLine(m, zone)`); a stamp at midnight UTC exactly is read as a date. A tool declares
-  its own step (`ToolBase.step`: a kind, or `{ kind, doneLabel(input, result), subjects(input, ctx) }`): the finished
-  row's wording (`done_label`) is the tool's own sentence or is not sent, and what a tool says its step is about is
-  checked against the caller's roster and team before it is sent (on a player's turn, only the player). A step lists at
-  most twelve subjects and says how many more there are (`subjects_more`).
+- **Steps of work.** Each read, calculation and draft is a step: a
+  `data-progress` row (`ChatStep`) with its kind, its state, clock readings for
+  when it began and ended, who it is about (players only from the caller's own
+  roster and named from it; a player's steps name only that player), what it
+  counted, the read it produced (`evidence_ref`, openable as soon as the step is
+  done) and, for a read the model's code called, the step it ran under. Every
+  step event carries the turn's sequence number, and each state change is sent
+  once. A running calculation re-sends its tally at most every 250 ms. Nothing
+  is estimated and no step is announced before it is running. `done.work` and
+  `data-turn-meta` give the turn's step count and the time at least one step was
+  running. The rows are stored with the turn; `restoreUIMessages(rows, { steps:
+  true })` keeps them on reload. A failed step with a later step of the same
+  tool reads as a retry ("One drawing was retried"), whether that try is running
+  or done; only a miss with nothing after it shows as failed (coach audit 13 Nov
+  2026, §3c). An answer never leads with the model talking to itself: rule 8
+  says never to mention a slip it fixed ("Oops"), and `withoutSelfTalk`
+  (`v3/chat/self-talk.ts`) takes one off the first text both when the turn is
+  drawn and when it is restored. Ask's "computed `<day>`" is that day in the
+  team's zone (`sourceLine(m, zone)`); a stamp at midnight UTC exactly is read
+  as a date. A tool declares its own step (`ToolBase.step`: a kind, or `{ kind,
+  doneLabel(input, result), subjects(input, ctx) }`): the finished row's wording
+  (`done_label`) is the tool's own sentence or is not sent, and what a tool says
+  its step is about is checked against the caller's roster and team before it is
+  sent (on a player's turn, only the player). A step lists at most twelve
+  subjects and says how many more there are (`subjects_more`).
 - **What to ask next.** After a coach's turn has completed and `done` has gone out, one small call (Claude Haiku
   5.5, effort `low`, no tools, a fixed JSON shape; `engine/suggestions.ts`) asks for two to four follow-ups from the
   question and the answer: each `{ label, prompt, kind: read | compare | action }`. They are checked before anything is

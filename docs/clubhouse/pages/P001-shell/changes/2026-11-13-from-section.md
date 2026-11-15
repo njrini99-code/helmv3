@@ -1,5 +1,7 @@
 # 2026-11-13 — the sidebar keeps lit the section a page was opened from
 
+## 2026-11-13 — The sidebar keeps the opening section lit
+
 ```text
 Design package: none (coach audit, 13 Nov 2026, §8 #7)
 PR/commit:      agent/coach-fix-roster

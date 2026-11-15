@@ -1,6 +1,6 @@
 # 2026-11-13 — quick chat picks up only this team's recent thread
 
-## 2026-11-13 — Quick chat opens fresh unless this team's thread is under 30 minutes old; New chat
+## 2026-11-13 — Quick chat opens fresh unless this team's thread is recent
 
 ```text
 Design package: none (coach audit, 13 Nov 2026, §2 quick chat #1, #2, #5)
