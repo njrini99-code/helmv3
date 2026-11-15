@@ -148,6 +148,28 @@ describe('the edge swipe on a pushed screen', () => {
     expect(page.style.translate).toBe('');
   });
 
+  it('blocks no scroll: its touchmove is on only while an edge touch is read, and the screen is promoted as it lands (MOT-02, MOT-03)', () => {
+    const add = vi.spyOn(EventTarget.prototype, 'addEventListener');
+    const { el } = mount();
+    const moves = () => add.mock.calls.filter(([type], i) => type === 'touchmove' && add.mock.contexts[i] === el).length;
+    expect(moves()).toBe(0);
+    now += 600;
+    // A touch away from the edge: no touchmove, no layer.
+    touch(el, 'touchstart', 200, 300, now);
+    expect(moves()).toBe(0);
+    expect(el.style.willChange).toBe('');
+    touch(el, 'touchend', 0, 0, now + 16);
+    // At the edge: armed and composited before the first move.
+    touch(el, 'touchstart', 8, 300, now + 100);
+    expect(moves()).toBe(1);
+    expect(el.style.willChange).toBe('transform');
+    // It turns out to be a scroll: the layer goes, and the scroll's next moves are never read.
+    const remove = vi.spyOn(EventTarget.prototype, 'removeEventListener');
+    touch(el, 'touchmove', 10, 340, now + 116);
+    expect(el.style.willChange).toBe('');
+    expect(remove.mock.calls.some(([type], i) => type === 'touchmove' && remove.mock.contexts[i] === el)).toBe(true);
+  });
+
   it('starts only within the left 20px', () => {
     const { el } = mount();
     const move = swipeTo(el, 200, { from: 24 });

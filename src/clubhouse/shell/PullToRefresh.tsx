@@ -56,10 +56,10 @@ type Mode = 'idle' | 'maybe' | 'pull' | 'hold' | 'off';
  * Pull to refresh, in the iPhone app only (CH-1909, owner-approved 2026-10-08). The app has no native refresh control
  * and WKWebView gives a page none, so the page draws its own: at the top of a phone page a downward drag pulls the
  * parchment sheet down off the green chassis, with UIKit's rubber band. Past the trigger the medium haptic fires
- * (CH-1709, D-70) and the page re-reads (`useRefresh`) while the spinner turns on the green. Let go, the sheet settles
- * at the spinner on the smooth spring from the finger's speed, and springs home once the read has landed (CH-1622); a
- * finger can catch it on the way. Mobile Safari keeps its own pull: nothing here runs there. Reduced motion and
- * Animations off settle at once, and the spinner holds still.
+ * (CH-1709, D-70) and the spinner turns on the green. Let go, the page re-reads (`useRefresh`; on release, never mid-drag,
+ * S4.6), the sheet settles at the spinner on the smooth spring from the finger's speed, and springs home once the read
+ * has landed (CH-1622); a finger can catch it on the way. Mobile Safari keeps its own pull: nothing here runs there.
+ * Reduced motion and Animations off settle at once, and the spinner holds still.
  */
 export function PullToRefresh({ pathname }: { pathname: string }) {
   const reduced = useChReducedMotion();
@@ -86,6 +86,7 @@ export function PullToRefresh({ pathname }: { pathname: string }) {
       base: 0,
       triggered: false,
       triggeredAt: 0,
+      asked: false,
       step: -1,
       samples: [] as [number, number][],
       parts: [] as HTMLElement[],
@@ -117,6 +118,7 @@ export function PullToRefresh({ pathname }: { pathname: string }) {
       s.parts = [];
       s.mode = 'idle';
       s.triggered = false;
+      s.asked = false;
       s.step = -1;
       el.dataset.state = 'rest';
       track();
@@ -215,6 +217,8 @@ export function PullToRefresh({ pathname }: { pathname: string }) {
       place(d);
       s.samples.push([performance.now(), d]);
       if (s.samples.length > 8) s.samples.shift();
+      // Past the trigger the haptic marks it and the spinner turns; the read itself starts when the finger lets go (S4.6),
+      // so nothing heavier than a frame runs under the drag.
       if (!s.triggered && d >= PULL_TRIGGER) {
         s.triggered = true;
         s.triggeredAt = performance.now();
@@ -223,7 +227,6 @@ export function PullToRefresh({ pathname }: { pathname: string }) {
         });
         el.dataset.state = 'spin';
         haptic('commit');
-        live.current.refresh();
       }
     };
     const onEnd = () => {
@@ -234,13 +237,22 @@ export function PullToRefresh({ pathname }: { pathname: string }) {
       const v = speed();
       if (s.triggered) {
         s.mode = 'hold';
+        // One read per pull (a finger that catches the sheet on its way home does not ask again); the spinner's minimum
+        // counts from it, so a read that lands at once still shows as one.
+        if (!s.asked) {
+          s.asked = true;
+          s.triggeredAt = performance.now();
+          live.current.refresh();
+        }
         settle(PULL_HOLD, v, landed);
       } else {
         s.mode = 'idle';
         settle(0, v, rest);
       }
     };
-    // A blocking touchmove listener only while a pull can start or runs: below the top, scrolling never waits on it.
+    // A blocking touchmove listener only while a pull can start or runs: below the top, scrolling never waits on it. It is
+    // registered before the touch, never during it: WebKit settles at touchstart whether a touch's moves can be cancelled,
+    // so a listener added once the finger is down could not hold the page still for the pull's first move.
     const track = () => {
       const want = window.scrollY <= 0 || s.mode === 'pull' || s.mode === 'maybe';
       if (want === s.moving) return;
