@@ -109,7 +109,7 @@ Card anatomy (the fix for Nick's screenshot):
    - Pushed pages (player profile): same green bar, "‹ Roster" in champagne on the left, the page's name centred in on-green ink, a more button on the right.
    - Home: the same green bar with the team mark and "Home ⌄", over the flat deep green hero.
    - Code: `shell/phone-chrome.tsx`, `ui/PhoneBar.tsx`, `PhoneTop`, the section switch. The refresh changes nothing about the bar's look, gestures or contents. No ivory or glass bar replaces it.
-2. **Large title** (optional per screen, 34pt `--ch-type-large-title`) on the sheet under the bar, as the page's heading. It opens nothing; the bar's title is always visible above it. On scroll it shrinks about 14% and fades; nothing moves into the bar. Reduce Motion: fade only.
+2. **Large title** (optional per screen, 34pt `--ch-type-large-title`) on the sheet under the bar, as the page's heading. It opens nothing; the bar's title is always visible above it. On scroll it fades to 10% over the first 52px as it goes under the bar, on the scroll itself, and never scales (production audit 2026-11-15, S4.3; the 14% shrink is gone, an interim call for Nick, MOT-06); nothing moves into the bar. Reduce Motion: the same fade, since the person's own scroll drives it.
 3. **Context line** under the large title: 15pt secondary, one line ("Varsity · 7 active · countable rounds").
 4. **Controls** (the green segmented) directly under the context line, sticky under the green bar when scrolled, on the page colour.
 5. **Cards**, 24pt apart, grouped by question (law 6).

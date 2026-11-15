@@ -4075,8 +4075,9 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 /* -- The folding sidebar (owner, 2026-10-17: "a little circle that collapses the sidebar and just shows the golfhelm
    logo and all the icons") --------------------------------------------------------------------------------------------
    The rail is the sidebar at --ch-rail-w; the canvas is the rest of the row, so the page simply gains the width. One
-   motion carries it: the sidebar's edge, the circle riding it, the word's track and the brand panel all move on the
-   smooth spring, so the edge slides and the wheel glides to the rail's centre as one object. The icons never move: the
+   motion carries it: the sidebar's edge, the circle riding it, the word's track and the brand panel all move over the
+   base beat on the iOS curve (production audit 2026-11-15, S4.4: 260 ms, so the width is laid out for half as many
+   frames as on the 462 ms spring), so the edge slides and the wheel glides to the rail's centre as one object. The icons never move: the
    rail is exactly as wide as the icons' column. The words leave first and arrive last: folding, they fade out quickly
    before the edge reaches them; opening, they fade in once the edge has passed, drifting the last 4px into place, so
    no label is ever seen squeezed. Reduced motion and Animations off swap at once (the tokens go to 0). Desktop only. */
@@ -4089,7 +4090,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
   .ch-sidebar {
     overflow-x: hidden;
-    transition: width var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    transition: width var(--ch-dur-base) var(--ch-ease-ios);
   }
   /* While the fold moves (lib/rail-fold.ts sets data-ch-rail-moving; motion pass 2026-10-22, mot-01), the brand panel
      drops its frost: a blur under a box that changes size is redrawn on every frame of the spring. Over the sidebar's
@@ -4120,7 +4121,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
       inset 0 1px 0 #fff,
       var(--ch-elevation-on-frame);
     cursor: pointer;
-    transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+    transition: translate var(--ch-dur-base) var(--ch-ease-ios),
       transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
   /* 22px drawn, 24 x 24 to the pointer (F-0022): it sat under the desktop minimum on every page. */
@@ -4130,7 +4131,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     content: '';
   }
   .ch-railtoggle svg {
-    transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    transition: transform var(--ch-dur-base) var(--ch-ease-ios);
   }
   .ch-app[data-ch-rail='folded'] .ch-railtoggle svg {
     transform: rotate(180deg);
@@ -4159,17 +4160,17 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   /* The brand: the word's track closes to nothing (a grid column from 1fr to 0fr), the gap with it, and the panel
      tightens to the wheel, so the wheel ends at the rail's centre. */
   .ch-brand {
-    transition: margin var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
-      padding var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    transition: margin var(--ch-dur-base) var(--ch-ease-ios),
+      padding var(--ch-dur-base) var(--ch-ease-ios);
   }
   .ch-brand__line {
-    transition: gap var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    transition: gap var(--ch-dur-base) var(--ch-ease-ios);
   }
   .ch-brand__fold {
     display: grid;
     grid-template-columns: 1fr;
     min-width: 0;
-    transition: grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+    transition: grid-template-columns var(--ch-dur-base) var(--ch-ease-ios),
       opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
   }
   .ch-brand__fold > .ch-brand__word {
@@ -4188,7 +4189,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-app[data-ch-rail='folded'] .ch-brand__fold {
     grid-template-columns: 0fr;
     opacity: 0;
-    transition: grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
+    transition: grid-template-columns var(--ch-dur-base) var(--ch-ease-ios),
       opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
   }
 
@@ -4273,7 +4274,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 
   /* The avatar centres on the rail; the foot's rule goes with the card. */
   .ch-identity .ch-avatar {
-    transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    transition: translate var(--ch-dur-base) var(--ch-ease-ios);
   }
   .ch-app[data-ch-rail='folded'] .ch-identity .ch-avatar {
     translate: -5px 0;
@@ -4309,7 +4310,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     opacity: 1;
     transform: translate(0, -50%);
     transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
-      translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+      translate var(--ch-dur-base) var(--ch-ease-ios);
   }
 }
 @keyframes ch-rail-count {
@@ -4396,12 +4397,18 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 }
 
 
-/* Clubhouse refresh, PR 3: the large title's context line, the title's scroll scale origin
-   (shell/large-title.tsx sets scale and opacity from the scroll), and controls that stick under the green bar on the page colour.
+/* Clubhouse refresh, PR 3: the large title's context line, and controls that stick under the green bar on the page colour.
    The bar itself is not touched. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-app[data-ch-refresh='on'] .ch-large-title {
-    transform-origin: left bottom;
+  /* The large title fades as it goes under the bar, over the first 52px of the page's scroll (production audit
+     2026-11-15, S4.3): scroll-driven, so no script runs per frame, and it never scales. Older Safari has no scroll
+     timeline and gets the same fade from shell/large-title.tsx. A pushed screen and a dialog scroll their own box. */
+  @supports (animation-timeline: scroll()) {
+    [data-ui='clubhouse'] main .ch-large-title:not(.ch-large-title--skel, .ch-pscreen .ch-large-title, dialog .ch-large-title) {
+      animation: ch-lt-under linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0px 52px;
+    }
   }
   .ch-app[data-ch-refresh='on'] .ch-large-title__context {
     margin: 4px 0 0;
@@ -4419,6 +4426,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-large-title__context {
     display: none;
+  }
+}
+@keyframes ch-lt-under {
+  to {
+    opacity: 0.1;
   }
 }
 

@@ -48,22 +48,25 @@ const PHONE = CH_PHONE_QUERY;
 
 /** Refresh: the shade under the bar waits for 8px of scroll (DESIGN_LANGUAGE 5). */
 const REFRESH_EDGE_AT = 8;
-/** Refresh: how far a large title shrinks as it scrolls under the bar (DESIGN_LANGUAGE 5, 8). */
-const REFRESH_TITLE_MIN_SCALE = 0.86;
-
-/** Refresh: the scroll over which it does (classes-roster-home 08 #10). */
-const REFRESH_TITLE_RANGE = 56;
+/**
+ * The scroll over which a large title goes under the bar (production audit 2026-11-15, S4.3): the bar's 44pt collapsed
+ * and about 96pt expanded, so 52px. It fades as it goes and never scales (the 0.86 shrink is gone, MOT-06: an iOS
+ * large title scrolls with the content, it is not scaled by a script). Where Safari runs scroll-driven animations (26 and
+ * later) the fade is CSS on the scroll timeline (styles/shell.css, "ch-lt-under"); this is the older phones' fallback.
+ */
+export const CH_LARGE_TITLE_RANGE = 52;
 const REFRESH_TITLE_MIN_OPACITY = 0.1;
 
-/** The large title at scroll `y`: over the first 56px it shrinks to 86% and fades to 10%. Reduced: it fades only. Scroll-linked, so no curve. */
-export function titleOnScroll(y: number, reduced: boolean): { scale: number; opacity: number } {
-  const p = Math.min(1, Math.max(0, y / REFRESH_TITLE_RANGE));
-  return { scale: reduced ? 1 : 1 - (1 - REFRESH_TITLE_MIN_SCALE) * p, opacity: 1 - (1 - REFRESH_TITLE_MIN_OPACITY) * p };
+/** The large title's opacity at scroll `y`: over the first 52px it fades to 10%. Scroll-linked, so no curve, and the same
+ *  under Reduce Motion (S4.9: the person's own scroll drives it). */
+export function titleOnScroll(y: number): number {
+  const p = Math.min(1, Math.max(0, y / CH_LARGE_TITLE_RANGE));
+  return 1 - (1 - REFRESH_TITLE_MIN_OPACITY) * p;
 }
 
-function motionAllowed(el: Element): boolean {
-  if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-  return !el.closest("[data-motion='off']");
+/** Whether CSS drives the title's fade from the scroll itself (no script per frame). */
+function scrollDriven(): boolean {
+  return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('animation-timeline: scroll()');
 }
 
 /**
@@ -100,13 +103,14 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
     io.observe(next);
   };
   let frame = 0;
+  const cssFade = scrollDriven();
   const edgeNow = () => {
     frame = 0;
     const y = window.scrollY;
-    bar.toggleAttribute('data-scrolled', y > REFRESH_EDGE_AT);
-    if (target) {
-      const { scale, opacity } = titleOnScroll(y, !motionAllowed(canvas));
-      target.style.scale = scale === 1 ? '' : String(scale);
+    const scrolled = y > REFRESH_EDGE_AT;
+    if (bar.hasAttribute('data-scrolled') !== scrolled) bar.toggleAttribute('data-scrolled', scrolled);
+    if (target && !cssFade) {
+      const opacity = titleOnScroll(y);
       target.style.opacity = opacity === 1 ? '' : String(opacity);
     }
   };
@@ -126,10 +130,7 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
     if (frame) cancelAnimationFrame(frame);
     bar.removeAttribute('data-large-title');
     bar.removeAttribute('data-scrolled');
-    if (target) {
-      target.style.scale = '';
-      target.style.opacity = '';
-    }
+    if (target) target.style.opacity = '';
   };
 }
 

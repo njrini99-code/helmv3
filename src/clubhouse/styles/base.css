@@ -327,6 +327,13 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
     animation-duration: var(--ch-dur-sweep) !important;
     animation-iteration-count: infinite !important;
   }
+  /* The large title's fade runs on the page's scroll, not on time (S4.3, S4.9: the person's own scroll drives it, so it
+     stays under Reduce Motion); a 1ms duration would cut it to a jump. */
+  @supports (animation-timeline: scroll()) {
+    .ch-root main .ch-large-title {
+      animation-duration: auto !important;
+    }
+  }
   /* A dialog's scrim is its own pseudo-element in the top layer and kept its fade (audit A-12). Its own rule, so a
      browser that can't parse ::backdrop drops only this one, not the floor above. */
   .ch-root *::backdrop {
