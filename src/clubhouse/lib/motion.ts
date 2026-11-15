@@ -7,19 +7,15 @@ import type { Transition } from 'motion/react';
  *   (sheets, panels, pushes, crossfades), release 280ms on the spring,
  *   reveal 520ms (the sign-in handoff curtain lifting, lib/handoff.ts; the staggered first-paint reveal ended on
  *   2026-10-01, so a page is visible at once under the page crossfade).
- *   Curves: ease-out (.22,1,.36,1), in-out (.65,0,.35,1), spring (.34,1.3,.64,1). Since 2026-10-08, real springs
- *   on the same durations for what moves and can be interrupted or thrown (CH_SPRINGS, below).
+ *   Curves: ease-out (.22,1,.36,1), in-out (.65,0,.35,1) and the iOS curve (.32,.72,0,1) for every tap-started enter
+ *   and exit (CH_EASE_IOS; production audit 2026-11-15, S3.1). The overshooting (.34,1.3,.64,1) is gone (MOT-08).
+ *   Since 2026-10-08, real springs on the same durations for what moves and can be interrupted or thrown (CH_SPRINGS).
  * Banned: count-ups and staggers, except the quick chat's content rise on open and its told coins (coachhelm 07 M-CONTENT, M-TOLD). One exception (owner decision 1, 2026-10-24, OQ-16 / B9): when a chart's figures change
  * (a new window), its bars, dots and lines glide to their new places over the base beat (useGlide, lib/motion-glide.ts).
  * Never on first paint, never under reduced motion, and the digits beside them do not roll: they take the new figure at once.
  */
 export const CH_EASE = [0.22, 1, 0.36, 1] as const;
 export const CH_EASE_IO = [0.65, 0, 0.35, 1] as const;
-export const CH_SPRING = [0.34, 1.3, 0.64, 1] as const;
-
-/** How long the shared springs take to settle, in ms: a spring's length is its physics, not a step on the scale. */
-export const CH_SPRING_SETTLE_MS = 462;
-export const CH_SPRING_POP_MS = 507;
 /** A chart's marks settling on a changed value, in ms (--ch-dur-marks): the Stats scoring line's morph on a window change. */
 export const CH_MARKS_MS = 360;
 /** One pass of the progress sweep, in ms (--ch-dur-sweep). */
@@ -69,20 +65,25 @@ export const CH_FADE_MS = CH_DUR.quick * 1000;
  *   reveal  a layer that comes over the whole screen and should glide, not snap: the phone notification drop
  *           (owner 2026-10-12, "ultra smooth"). D-64's reveal duration, no bounce. It leaves on smooth.
  */
+const CH_SPRING_BASE = { visualDuration: CH_DUR.base, bounce: 0 } as const;
 export const CH_SPRINGS = {
-  smooth: { visualDuration: CH_DUR.base, bounce: 0 },
-  settle: { visualDuration: CH_DUR.base, bounce: 0.1 },
+  smooth: CH_SPRING_BASE,
+  /**
+   * Bounce 0 on every tap-opened surface (production audit 2026-11-15, S3.1, MOT-08): settle (a free part arriving), pop
+   * (the reaction bar, a toast, the jump key, the Ask island) and lift (a held bubble, a menu) are the smooth spring.
+   * The names stay for their callers; the 0.1 to 0.35 overshoots they carried are gone.
+   */
+  settle: CH_SPRING_BASE,
+  pop: CH_SPRING_BASE,
+  lift: CH_SPRING_BASE,
   reveal: { visualDuration: CH_DUR.reveal, bounce: 0 },
-  // Messages only, past the 0.1 cap with the owner's sign-off (31 Oct 2026: "yeah as long as it's smooth"): a sent bubble arriving,
-  // a badge or key popping, a held bubble lifting. The D-64 three above keep the base or reveal duration and a bounce of 0 to 0.1.
-  send: { visualDuration: 0.42, bounce: 0.12 },
-  pop: { visualDuration: 0.25, bounce: 0.35 },
-  lift: { visualDuration: 0.28, bounce: 0.15 },
-  // Messages v2 (Q-04, default; the owner to confirm the 0.2): a sent bubble rising out of the field with one soft overshoot
-  // (MOT-SPR-5, 812 ms by chSpringCurve). Named beside send, pop and lift in motion-physics.test.tsx.
-  launch: { visualDuration: 0.5, bounce: 0.2 },
-  /** The quick chat panel pouring out of the Helm key (2026-10-31): a native sheet's settle, no bounce. */
-  pour: { visualDuration: 0.42, bounce: 0 },
+  // A sent bubble and a launched one are physical objects, so they keep a soft overshoot, at most 0.08 (S3.1): the send
+  // lands in about 0.32 s, the launch rises out of the field in about 0.35 s (MOT-08's fix; Messages' owner sign-off of
+  // 31 Oct 2026 covered larger bounces, which the audit spec replaces).
+  send: { visualDuration: 0.32, bounce: 0.06 },
+  launch: { visualDuration: 0.35, bounce: 0.08 },
+  /** The quick chat panel pouring out of the Helm key: the smooth spring (MOT-09; the panel opens as a popover, S3.5). */
+  pour: CH_SPRING_BASE,
   /**
    * The one spring a released gesture finishes on (production audit 2026-11-15, S3.1, S4.2): Apple's 0.5 s with no
    * bounce, mass 1, stiffness 157.9, damping 25.13, seeded with the finger's speed. framer reads a visual duration as
@@ -222,6 +223,10 @@ export function chSpringCurve(
   const hasLinear = typeof CSS === 'undefined' || !CSS.supports || CSS.supports('transition-timing-function', 'linear(0, 1)');
   return { ms, ease, linear: hasLinear ? `linear(${points.join(', ')})` : `cubic-bezier(${CH_EASE.join(', ')})` };
 }
+
+/** How long the shared smooth spring takes to settle, in ms (462): its physics, read from the curve so a caller timing a
+ *  WAAPI copy of it never drifts from the spring. CSS has no spring durations (S3.1). */
+export const CH_SPRING_SETTLE_MS = chSpringCurve('smooth').ms;
 
 /** A panel's content swap inside a fixed frame (a Settings section): a base crossfade with a 6px settle. */
 // The presets below move by transform strings, not framer's x, y and scale: framer runs those on the main thread, and

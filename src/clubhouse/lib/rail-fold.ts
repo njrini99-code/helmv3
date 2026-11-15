@@ -4,7 +4,7 @@
  * The desktop sidebar folding to its icon rail and opening again (RailToggle, shell.css "The folding sidebar"), as one
  * moment the rest of the page can wait out (motion pass 2026-10-22, mot-01).
  *
- * The fold keeps its spring on the sidebar's width: a transform-only fold would leave the canvas a step behind or
+ * The fold keeps its motion on the sidebar's width (260 ms on the iOS curve since the 2026-11-15 audit, S4.4): a transform-only fold would leave the canvas a step behind or
  * ahead of the edge. But the canvas narrows or widens on every frame of it, so every reader of the canvas's size (a
  * chart's ResizeObserver, a zone map, the evidence pane, Lenis's scroll limit) re-measured and re-rendered on every
  * frame, and that, not the width itself, was the stutter. While the fold moves, `data-ch-rail-moving` is on `.ch-app`

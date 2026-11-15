@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { CH_SPRING_SETTLE_MS } from '../lib/motion';
 
 /**
  * The live Clubhouse duration set, decided 2026-10-18 (complete-and-elevate pass, owner delegation): the code is
@@ -52,8 +53,12 @@ describe('Clubhouse motion durations (D-64 as built)', () => {
     expect(css).not.toContain('--ch-skel-delay');
   });
 
-  it('the smooth spring settles in 462ms where linear() is supported (sheets)', () => {
-    expect(css).toMatch(/--ch-dur-spring-smooth:\s*462ms;/);
+  // Production audit 2026-11-15 (S3.1, MOT-08): CSS has no spring curves or spring durations; a one-shot entry rides the one
+  // curve on a D-64 beat. The smooth spring runs in script only (what can be retargeted or thrown), and settles in 462ms.
+  it('CSS has no spring durations; the script smooth spring settles in 462ms', () => {
+    expect(css).not.toMatch(/--ch-dur-spring-[a-z]+:\s*[1-9]\d*ms;/);
+    expect(css).not.toContain('linear(0, ');
+    expect(CH_SPRING_SETTLE_MS).toBe(462);
   });
 
   it('the loops: shimmer 1.9s, live pulse 2.8s, sweep 900ms', () => {

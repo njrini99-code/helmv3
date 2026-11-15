@@ -44,10 +44,10 @@ describe('CH-1606 press', () => {
     Element.prototype.animate = original;
   });
 
-  it('shrinks about 6px whatever the width, never below 0.96', () => {
-    expect(pressScale(300)).toBeCloseTo(0.98);
-    expect(pressScale(100)).toBeCloseTo(0.96);
-    expect(pressScale(40)).toBe(0.96);
+  it('presses to 0.97 at any width (S3.11)', () => {
+    expect(pressScale(300)).toBe(0.97);
+    expect(pressScale(100)).toBe(0.97);
+    expect(pressScale(40)).toBe(0.97);
   });
 
   it('presses on pointer down over press and springs back over release, on the scale property', () => {
@@ -60,6 +60,9 @@ describe('CH-1606 press', () => {
     fireEvent.pointerUp(getByText('Save'));
     expect(animate).toHaveBeenCalledTimes(2);
     expect((animate.mock.calls[1] as unknown as [unknown, KeyframeAnimationOptions])[1].duration).toBe(CH_DUR.release * 1000);
+    // Both ways on the iOS curve: the release never overshoots (MOT-08, S3.11).
+    expect(opts.easing).toBe('cubic-bezier(0.32, 0.72, 0, 1)');
+    expect((animate.mock.calls[1] as unknown as [unknown, KeyframeAnimationOptions])[1].easing).toBe('cubic-bezier(0.32, 0.72, 0, 1)');
   });
 
   it('audit F02: rows, links and tabs do not scale, and neither does a button wider than a button', () => {

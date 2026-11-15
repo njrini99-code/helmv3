@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { CH_FADE_MS, CH_MS, CH_SPRINGS, chSpringCurve } from '../../../../lib/motion';
+import { CH_FADE_MS, CH_MS, CH_SPRINGS, chSpringAt, chSpringCurve } from '../../../../lib/motion';
 import { FADE_MS, KEYBOARD_EASE, KEYBOARD_MS, layoutEnd, msAnimate, springScroll } from '../messages-motion';
 import {
   ARROW_EASE,
@@ -33,16 +33,21 @@ const calls = (el: HTMLElement) => (el.animate as unknown as ReturnType<typeof v
 describe('MOT-SPR: the seven springs through the app curve', () => {
   it.each([
     ['smooth', 0.26, 0, 462],
-    ['settle', 0.26, 0.1, 417],
+    // Production audit 2026-11-15 (S3.1, MOT-08): bounce 0 on every tap-opened surface, so settle, pop and lift are the
+    // smooth spring; a sent and a launched bubble keep at most 0.08.
+    ['settle', 0.26, 0, 462],
     ['reveal', 0.52, 0, 921],
-    ['send', 0.42, 0.12, 700],
-    ['launch', 0.5, 0.2, 812],
-    ['pop', 0.25, 0.35, 496],
-    ['lift', 0.28, 0.15, 471],
+    ['send', 0.32, 0.06, 446],
+    ['launch', 0.35, 0.08, 442],
+    ['pop', 0.26, 0, 462],
+    ['lift', 0.26, 0, 462],
   ] as const)('%s is %s visual / %s bounce, %s ms by chSpringCurve', (kind, visual, bounce, ms) => {
     expect(CH_SPRINGS[kind]).toEqual({ visualDuration: visual, bounce });
     expect(chSpringCurve(kind).ms).toBe(ms);
     expect(chSpringCurve(kind).linear).toMatch(/^linear\(/);
+    let high = 0;
+    for (let t = 0; t <= 1.5; t += 0.001) high = Math.max(high, chSpringAt(kind, t));
+    expect(high - 1).toBeLessThanOrEqual(bounce > 0 ? 0.01 : 0);
   });
 });
 
@@ -88,12 +93,12 @@ describe('MOT-SEND-4: the send key', () => {
 describe('MOT-SEND-6 / -7 / -8: the send flight', () => {
   const input = { field: { left: 40, bottom: 800 }, bubble: { left: 220, bottom: 700 }, text: true } as const;
 
-  it('SEND-7: up on launch (812 ms), sideways on the house ease over 62% of it, scale .92 on pop from the lower left', () => {
+  it('SEND-7: up on launch (442 ms), sideways on the house ease over 62% of it, scale .92 on pop from the lower left', () => {
     const plan = planSendRise(input);
     // The whole way from the field to its resting place, in the page's own space: the list's make-room glide is cancelled on the row.
-    expect(plan.y).toEqual({ from: 800 - 700, spring: 'launch', ms: 812, delayMs: 0 });
-    expect(plan.x).toEqual({ from: 40 - 9 - 220, ms: Math.round(812 * LAUNCH_X_SHARE), easing: HOUSE_EASE, delayMs: 0 });
-    expect(plan.x.ms).toBe(503);
+    expect(plan.y).toEqual({ from: 800 - 700, spring: 'launch', ms: 442, delayMs: 0 });
+    expect(plan.x).toEqual({ from: 40 - 9 - 220, ms: Math.round(442 * LAUNCH_X_SHARE), easing: HOUSE_EASE, delayMs: 0 });
+    expect(plan.x.ms).toBe(274);
     expect(plan.scale).toEqual({ from: 0.92, spring: 'pop', origin: '0% 100%', delayMs: 0 });
     expect(HOUSE_EASE).toBe('cubic-bezier(0.22, 1, 0.36, 1)');
   });
@@ -113,7 +118,7 @@ describe('MOT-SEND-6 / -7 / -8: the send flight', () => {
     const plan = planSendRise(input);
     expect(plan.fill).toEqual({ ms: 160, easing: FILL_EASE });
     expect(FILL_EASE).toBe('cubic-bezier(0.3, 0, 0.5, 1)');
-    expect(plan.tail).toEqual({ ms: 496 + 60, hold: 0.15, from: 0.3 });
+    expect(plan.tail).toEqual({ ms: 462 + 60, hold: 0.15, from: 0.3 });
   });
 
   it('SEND-6: the arrow leaves 14 px up in 200 ms on its curve', () => {
@@ -125,13 +130,13 @@ describe('MOT-SEND-6 / -7 / -8: the send flight', () => {
     expect(ARROW_EASE).toBe('cubic-bezier(0.4, 0, 0.9, 0.3)');
   });
 
-  it('SEND-8: Delivered rises 4 px in 260 ms after 70% of launch (568 ms); the field fades back in 220 ms after 140 ms', () => {
+  it('SEND-8: Delivered rises 4 px in 260 ms after 70% of launch (309 ms); the field fades back in 220 ms after 140 ms', () => {
     const plan = planSendRise(input);
-    expect(plan.receiptDelayMs).toBe(Math.round(812 * LAUNCH_RECEIPT_SHARE));
-    expect(plan.receiptDelayMs).toBe(568);
+    expect(plan.receiptDelayMs).toBe(Math.round(442 * LAUNCH_RECEIPT_SHARE));
+    expect(plan.receiptDelayMs).toBe(309);
     const rec = node();
     playReceiptRise(rec, plan, false);
-    expect(calls(rec)[0]![1]).toMatchObject({ duration: 260, delay: 568 });
+    expect(calls(rec)[0]![1]).toMatchObject({ duration: 260, delay: 309 });
     expect(playReceiptRise(node(), plan, true)).toBeNull();
     const field = node();
     playFieldReturn(field, false);
@@ -152,14 +157,14 @@ describe('MOT-SEND-6 / -7 / -8: the send flight', () => {
     // Up: one transform on the stack, the full distance on launch.
     expect(calls(stack)).toHaveLength(1);
     expect(calls(stack)[0]![0]).toEqual([{ transform: 'translateY(100px)' }, { transform: 'translateY(0px)' }]);
-    expect(calls(stack)[0]![1]).toMatchObject({ duration: 812, fill: 'backwards' });
+    expect(calls(stack)[0]![1]).toMatchObject({ duration: 442, fill: 'backwards' });
     // The thread's glide (56 px low at the first frame, on its own clock) is taken back off this row alone.
     expect(calls(line)[0]![0]).toEqual([{ transform: 'translateY(-56px)' }, { transform: 'translateY(0px)' }]);
     expect(calls(line)[0]![1]).toMatchObject({ duration: 700, easing: 'linear' });
-    // The bubble: sideways (503 ms), scale (pop) and the fill coming up (160 ms), each its own property.
+    // The bubble: sideways (274 ms), scale (pop) and the fill coming up (160 ms), each its own property.
     const c = calls(b);
     expect(c.map(([frames]) => moved(frames))).toEqual([['translate'], ['scale'], ['opacity']]);
-    expect(c.map(([, o]) => o.duration)).toEqual([503, 496, 160]);
+    expect(c.map(([, o]) => o.duration)).toEqual([274, 462, 160]);
     expect(calls(tail)[0]![0].map((k) => k.offset)).toEqual([0, 0.15, 1]);
     // Compositor only: transforms and opacity, never a colour, and never an additive animation.
     for (const el of [stack, line, b, tail]) {

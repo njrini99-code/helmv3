@@ -806,7 +806,7 @@
   background: var(--ch-switch-thumb-bg);
   box-shadow: var(--ch-switch-thumb-shadow);
   transform-origin: left center;
-  transition: transform var(--ch-dur-base) var(--ch-ease-spring), scale var(--ch-dur-press) var(--ch-ease),
+  transition: transform var(--ch-dur-base) var(--ch-ease-ios), scale var(--ch-dur-press) var(--ch-ease),
     transform-origin var(--ch-dur-press) var(--ch-ease);
 }
 .ch-switch input:checked + .ch-switch__track {

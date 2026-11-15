@@ -245,7 +245,7 @@
 .ch-htb .stn {
   cursor:pointer;
   transform-box:view-box;
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-spring),opacity var(--ch-dur-quick) var(--ch-ease);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios),opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-htb .stn .halo {
   fill:color-mix(in srgb, var(--ch-feature-loss) 17%, transparent);
@@ -447,7 +447,7 @@
   color:var(--ch-feature-ink);
   font-weight:var(--ch-fw-500);}
 .ch-htb .hole .stn {
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-spring),opacity var(--ch-dur-base) var(--ch-ease);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios),opacity var(--ch-dur-base) var(--ch-ease);
 }
 .ch-htb .hole.offh .stn {
   opacity:.38;
@@ -2029,7 +2029,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   }
 }
 .ch-htb .wk.is-new {
-  animation: ch-htb-wk var(--ch-dur-reveal) var(--ch-ease-spring);
+  animation: ch-htb-wk var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-htb .insp {

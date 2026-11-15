@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { CH_DUR, CH_EASE, CH_SPRING } from './motion';
+import { CH_DUR, CH_EASE_IOS } from './motion';
 
 const bezier = (c: readonly number[]) => `cubic-bezier(${c.join(', ')})`;
 
@@ -14,14 +14,16 @@ const PRESSABLE = '.ch-btn,[data-ch-press],[data-ch-press-scale]';
 /** Wider than this is a row or a full-width bar, not a button: it does not scale either. */
 export const PRESS_MAX_WIDTH = 240;
 
-/** v2: shrink by about 6px whatever the width, never below 0.96. */
-export function pressScale(width: number): number {
-  return Math.max(0.96, 1 - 6 / (width || 80));
+/** A button pressed (production audit 2026-11-15, S3.11): scale 0.97 whatever its width, as an iOS button does. */
+export const PRESS_SCALE = 0.97;
+/** The scale a button takes under the finger. One value at every width: about 6px at 200px, 1px on a 44px key. */
+export function pressScale(_width?: number): number {
+  return PRESS_SCALE;
 }
 
 /**
- * A card that opens something opts in with `data-ch-press-scale=".97"`: that flat scale at any width (the width cap is for a row or a
- * bar that did not ask), and `--ch-ease` both ways. Null: no opt-in, or a value that is not a scale.
+ * A card that opens something opts in with `data-ch-press-scale=".97"`: that scale at any width (the width cap is for a row or a
+ * bar that did not ask). Null: no opt-in, or a value that is not a scale.
  */
 export function pressScaleOptIn(el: Element | null): number | null {
   const raw = el?.getAttribute('data-ch-press-scale');
@@ -48,8 +50,8 @@ const PRESSED_TARGET = '[data-ch-pressable],button,a,[role="button"]';
  *   waits 70ms and a move past 10px or a cancel drops it, so a scroll that starts on a row never flashes it; a tap that
  *   lifts sooner still shows it, and every press shows it for at least 90ms, so a quick tap is always acknowledged.
  *   This runs whatever the motion setting: it is a state, not a movement.
- * - The scale: a button (`.ch-btn`, `[data-ch-press]`, no wider than a button) shrinks over press (110ms, ease-out) and
- *   springs back over release (280ms) from wherever it had got to. It animates the `scale` property, which composes with
+ * - The scale: a button (`.ch-btn`, `[data-ch-press]`, no wider than a button) shrinks to 0.97 over press (110ms) and
+ *   comes back over release (280ms) from wherever it had got to, both on the iOS curve with no overshoot (S3.11). It animates the `scale` property, which composes with
  *   `transform` and `translate`, so it never fights framer-motion or a sheet drag. Skipped without `motion` (reduced
  *   motion, Animations off) and where the Web Animations API is missing.
  *
@@ -59,7 +61,7 @@ export function useChPress(motion: boolean): void {
   useEffect(() => {
     if (typeof Element === 'undefined') return;
     const scales = motion && !!Element.prototype.animate;
-    type Press = { target: HTMLElement | null; el: HTMLElement | null; scale: number; flat: boolean };
+    type Press = { target: HTMLElement | null; el: HTMLElement | null; scale: number };
     let held: (Press & { anim: Animation | null; at: number }) | null = null;
     /** A touch press waiting out its delay (A12): where it started, and the timer that will press it. */
     let pending: (Press & { x: number; y: number; id: number; timer: number }) | null = null;
@@ -73,11 +75,11 @@ export function useChPress(motion: boolean): void {
       lingering.target.removeAttribute('data-ch-pressed');
       lingering = null;
     };
-    const press = ({ target, el, scale, flat }: Press) => {
+    const press = ({ target, el, scale }: Press) => {
       unmark();
       target?.setAttribute('data-ch-pressed', '');
-      const anim = el && scales ? el.animate([{ scale: '1' }, { scale: String(scale) }], { duration: CH_DUR.press * 1000, easing: bezier(CH_EASE), fill: 'forwards' }) : null;
-      held = { target, el, scale, flat, anim, at: Date.now() };
+      const anim = el && scales ? el.animate([{ scale: '1' }, { scale: String(scale) }], { duration: CH_DUR.press * 1000, easing: bezier(CH_EASE_IOS), fill: 'forwards' }) : null;
+      held = { target, el, scale, anim, at: Date.now() };
     };
     const drop = () => {
       if (!pending) return;
@@ -99,7 +101,7 @@ export function useChPress(motion: boolean): void {
       const width = el?.getBoundingClientRect().width ?? 0;
       const optIn = pressScaleOptIn(el);
       if (optIn == null && width > PRESS_MAX_WIDTH) el = null;
-      const p: Press = { target: off(target) ? null : target, el, scale: optIn ?? pressScale(width), flat: optIn != null };
+      const p: Press = { target: off(target) ? null : target, el, scale: optIn ?? pressScale(width) };
       if (!p.target && !p.el) return;
       // Mouse and pen press at once; a finger waits out the delay, as UIKit's delaysContentTouches does in a scroll view.
       if (e.pointerType !== 'touch') {
@@ -136,11 +138,11 @@ export function useChPress(motion: boolean): void {
       drop();
       release(true);
     };
-    /** Springs the scale back at once; the pressed look stays out its 90ms (unless the press was cancelled). */
+    /** Brings the scale back at once; the pressed look stays out its 90ms (unless the press was cancelled). */
     const release = (now = false) => {
       window.clearTimeout(tapTimer);
       if (!held) return;
-      const { target, el, scale, flat, anim, at } = held;
+      const { target, el, scale, anim, at } = held;
       held = null;
       if (target) {
         const left = now ? 0 : PRESS_TAP_SHOW_MS - (Date.now() - at);
@@ -148,10 +150,10 @@ export function useChPress(motion: boolean): void {
         else target.removeAttribute('data-ch-pressed');
       }
       if (!el || !anim) return;
-      // Spring back from where the press actually is: a release before the press finished starts from part-way.
+      // Back from where the press actually is: a release before the press finished starts from part-way. No overshoot (MOT-08).
       const current = parseFloat(getComputedStyle(el).scale);
       const fromScale = Number.isFinite(current) && current > 0 ? current : scale;
-      el.animate([{ scale: String(fromScale) }, { scale: '1' }], { duration: CH_DUR.release * 1000, easing: bezier(flat ? CH_EASE : CH_SPRING) });
+      el.animate([{ scale: String(fromScale) }, { scale: '1' }], { duration: CH_DUR.release * 1000, easing: bezier(CH_EASE_IOS) });
       anim.cancel();
     };
     document.addEventListener('pointerdown', down, true);

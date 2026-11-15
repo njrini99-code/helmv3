@@ -3180,7 +3180,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   translate: calc(var(--ch-qf-x, 0) * 1cqw) 0;
   transition:
     translate var(--ch-dur-reveal) var(--ch-ease),
-    transform var(--ch-dur-quick) var(--ch-ease-spring);
+    transform var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-qf-sp__plot li.is-score > span {
   background: var(--ch-green-900);

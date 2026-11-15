@@ -10,16 +10,16 @@ afterEach(() => cleanup());
 /** MOT-SEND-8: Delivered rises after 70% of the launch, counted from the send, not from when the receipt mounts. */
 describe('receipt delay (MOT-SEND-8)', () => {
   const full = Math.round(chSpringCurve('launch').ms * LAUNCH_RECEIPT_SHARE);
-  it('is 70% of the launch spring (568 ms at 812), not the artifact\'s rounded 580', () => {
-    expect(chSpringCurve('launch').ms).toBe(812);
-    expect(full).toBe(568);
-    expect(receiptDelayAfter(0)).toBe(568);
+  it('is 70% of the launch spring (309 ms at 442; production audit 2026-11-15, MOT-08)', () => {
+    expect(chSpringCurve('launch').ms).toBe(442);
+    expect(full).toBe(309);
+    expect(receiptDelayAfter(0)).toBe(309);
   });
   it('counts the wait from the send: a fast confirm waits out the rest, a slow one rises at once', () => {
-    expect(receiptDelayAfter(100)).toBe(468);
-    expect(receiptDelayAfter(568)).toBe(0);
+    expect(receiptDelayAfter(100)).toBe(209);
+    expect(receiptDelayAfter(309)).toBe(0);
     expect(receiptDelayAfter(2400)).toBe(0);
-    expect(receiptDelayAfter(-50)).toBe(568);
+    expect(receiptDelayAfter(-50)).toBe(309);
   });
   it('plays 4 px / opacity 0 > 1 on the receipt beat after that delay, and not at all under Reduce Motion', () => {
     const el = document.createElement('span');
@@ -28,7 +28,7 @@ describe('receipt delay (MOT-SEND-8)', () => {
     playReceiptRise(el, { receiptDelayMs: receiptDelayAfter(100) }, false);
     const [frames, timing] = animate.mock.calls[0] as unknown as [Keyframe[], KeyframeAnimationOptions];
     expect(frames).toEqual([{ translate: '0 4px', opacity: 0 }, { translate: '0 0', opacity: 1 }]);
-    expect(timing).toMatchObject({ duration: 260, delay: 468, fill: 'backwards' });
+    expect(timing).toMatchObject({ duration: 260, delay: 209, fill: 'backwards' });
     expect(playReceiptRise(el, { receiptDelayMs: 0 }, true)).toBeNull();
   });
 });

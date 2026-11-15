@@ -534,7 +534,7 @@ path.ch-rt-map__shot {
 .ch-rt-map__stop.is-play {
   transform-box: fill-box;
   transform-origin: center;
-  animation: ch-rt-stop-pop var(--ch-dur-base) var(--ch-ease-spring) var(--ch-rt-at, 0s) both;
+  animation: ch-rt-stop-pop var(--ch-dur-base) var(--ch-ease-ios) var(--ch-rt-at, 0s) both;
 }
 @keyframes ch-rt-stop-pop {
   from {

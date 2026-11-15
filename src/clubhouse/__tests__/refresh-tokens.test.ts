@@ -52,9 +52,10 @@ describe('refresh motion tokens', () => {
     expect(tokens).toContain('--ch-push-dim: rgb(0 0 0 / 0.075);');
     expect(tokens).not.toContain('--ch-vt-parallax');
   });
-  it('the settle spring has its CSS curve', () => {
-    expect(tokens).toMatch(/--ch-ease-spring-settle: linear\(0, 0\.0429,/);
-    expect(tokens).toContain('--ch-dur-spring-settle: 417ms;');
+  it('the settle beat is the base beat on the iOS curve, no spring duration (S3.1)', () => {
+    expect(tokens).toContain('--ch-ease-spring-settle: var(--ch-ease-ios);');
+    expect(tokens).toContain('--ch-dur-spring-settle: var(--ch-dur-base);');
+    expect(tokens).not.toContain('417ms');
   });
 });
 

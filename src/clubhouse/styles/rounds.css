@@ -4093,7 +4093,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzdot {
   transform-box: view-box;
-  transition: transform var(--ch-dur-quick) var(--ch-ease-spring);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-rv .ch-rzdot.is-hot {
   transform: scale(1.35);

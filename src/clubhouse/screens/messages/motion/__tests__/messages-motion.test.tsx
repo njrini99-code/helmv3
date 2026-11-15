@@ -10,8 +10,9 @@ const node = () => {
 
 describe('messages motion module', () => {
   it('names the artifact numbers from the app tokens', () => {
-    expect(CH_SPRINGS.launch).toEqual({ visualDuration: 0.5, bounce: 0.2 });
-    expect(chSpringCurve('launch').ms).toBe(812);
+    // Production audit 2026-11-15 (S3.1, MOT-08): a launched bubble keeps a bounce of at most 0.08, landing in 442ms.
+    expect(CH_SPRINGS.launch).toEqual({ visualDuration: 0.35, bounce: 0.08 });
+    expect(chSpringCurve('launch').ms).toBe(442);
     expect(KEYBOARD_MS).toBe(480);
     expect(KEYBOARD_EASE).toBe('cubic-bezier(0.32, 0.72, 0, 1)');
     expect(FADE_MS).toBe(CH_FADE_MS);
@@ -21,7 +22,7 @@ describe('messages motion module', () => {
   it('plays a spring, stacking with composite add', () => {
     const el = node();
     msAnimate(el, [{ transform: 'translateY(20px)' }, { transform: 'none' }], 'launch', { composite: 'add' });
-    expect(el.animate).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ duration: 812, composite: 'add' }));
+    expect(el.animate).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ duration: 442, composite: 'add' }));
   });
 
   it('under Reduce Motion crossfades an opacity motion and drops one without opacity or with rd null', () => {

@@ -3715,7 +3715,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   inset: -4px;
 }
 [data-ch-ms-v2] .ch-msv-plus__key svg {
-  transition: transform var(--ch-dur-release) var(--ch-ease-spring);
+  transition: transform var(--ch-dur-release) var(--ch-ease-ios);
 }
 [data-ch-ms-v2] .ch-msv-plus__key.is-open svg {
   transform: rotate(45deg);
