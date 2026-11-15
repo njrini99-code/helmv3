@@ -1099,6 +1099,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-13-span-switch-labels.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-15-desk-green-corner.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
