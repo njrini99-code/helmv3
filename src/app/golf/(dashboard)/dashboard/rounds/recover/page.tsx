@@ -1,6 +1,7 @@
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import { FeatureUnavailable } from '@/components/fairway';
+// The component's own file, never the Fairway barrel: the barrel made this page load every Fairway client component (about 240 KB gzipped; MAC-11).
+import { FeatureUnavailable } from '@/components/fairway/feedback/FeatureUnavailable';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseRoundRecoverRoute } from '@/clubhouse/routes/round-recover';
 
