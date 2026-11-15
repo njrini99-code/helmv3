@@ -495,7 +495,8 @@ export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: C
 export function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
   if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again." covered={covered} />;
   if (!data.putting) return <EmptyState compact code="CH-4306" title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />;
-  const bands = data.putting.bands.slice(0, 5);
+  // Every band the data has, as the rings and the note below (CH-18): the longest band was cut while the note still named it.
+  const bands = data.putting.bands;
   const drawn = bands.reduce((a, b) => a + b.attempts, 0);
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-stm-putt">

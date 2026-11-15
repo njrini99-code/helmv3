@@ -481,6 +481,10 @@ before, after, baseline or evidence.
 | `P011__track__player__390x844__recovery-answered-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-answered-light |
 | `P011__track__player__390x844__recovery-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-dark |
 | `P011__track__player__390x844__recovery-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-light |
+| `P011__rounds__player__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | rounds (player), 1440x932px, default; /clubhouse-preview/rounds |
+| `P011__rounds__player__1440x932__default__before__c882964.png` | before | c882964 | rounds (player), 1440x932px, default; /clubhouse-preview/rounds |
+| `P011__rounds__player__402__default__after__8c9eb23.png` | after | 8c9eb23 | rounds (player), 402px, default; /clubhouse-preview/rounds |
+| `P011__rounds__player__402__default__before__c882964.png` | before | c882964 | rounds (player), 402px, default; /clubhouse-preview/rounds |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 

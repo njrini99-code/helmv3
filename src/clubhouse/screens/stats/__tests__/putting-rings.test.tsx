@@ -26,3 +26,17 @@ describe('PuttingRings · one rule, every band (CH-18)', () => {
     expect(container.querySelectorAll('.ch-pg-pct.is-below')).toHaveLength(1);
   });
 });
+
+describe('Team putting bars · every band the note names (CH-18)', () => {
+  it('the preview team’s six bands draw six rows, so the 25+ ft band the note calls below the Tour is on screen', async () => {
+    const { Putting } = await import('../StatsTeamPhone');
+    const { PREVIEW_TEAM_STATS } = await import('../../../preview/fixtures-stats');
+    const bands = PREVIEW_TEAM_STATS.putting!.bands;
+    expect(bands).toHaveLength(6);
+    const { container } = render(<Putting data={PREVIEW_TEAM_STATS} covered={false} />);
+    const rows = [...container.querySelectorAll('.ch-stm-putt__r')].map((r) => r.querySelector('span')!.textContent);
+    expect(rows).toEqual(bands.map((b) => b.label));
+    const note = container.querySelector('.ch-stm-note')!.textContent!;
+    for (const b of bands.filter(puttBelowTour)) expect(note).toContain(b.label.replace(' ft', ' ft'));
+  });
+});
