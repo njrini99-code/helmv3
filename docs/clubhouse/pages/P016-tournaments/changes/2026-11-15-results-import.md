@@ -68,4 +68,6 @@ Held items:     none
 - Component: `src/clubhouse/__tests__/tournaments-import.test.tsx`, 17 tests,
   one per catalog code, plus the desk wiring (desktop head, Holes tab, phone
   empty state, no button on an official result).
-- Screenshots: see VERIFY.md.
+- Screenshots: 13 in VERIFY.md (desktop 1440 and phone 402, Chromium from the
+  preview fixture, tier C). Not yet: a WebKit pass, and a save against the
+  staging tables.

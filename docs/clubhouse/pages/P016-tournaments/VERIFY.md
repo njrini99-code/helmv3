@@ -33,11 +33,28 @@ Phase is before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P016__enter-holes__coach__1440__bad-cell__after__d2b1386.png` | after | d2b1386 | enter-holes (coach), 1440px, bad-cell; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
+| `P016__enter-holes__coach__1440__empty-round__after__d2b1386.png` | after | d2b1386 | enter-holes (coach), 1440px, empty-round; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
+| `P016__enter-holes__coach__1440__typed-front-nine__after__d2b1386.png` | after | d2b1386 | enter-holes (coach), 1440px, typed-front-nine; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
+| `P016__event-desk__coach__1440__holes-tab-enter-holes__after__d2b1386.png` | after | d2b1386 | event-desk (coach), 1440px, holes-tab-enter-holes; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
+| `P016__event-desk__coach__1440__import-results-head__after__d2b1386.png` | after | d2b1386 | event-desk (coach), 1440px, import-results-head; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
+| `P016__event-desk__coach__402__live-no-scores__after__d2b1386.png` | after | d2b1386 | event-desk (coach), 402px, live-no-scores; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
+| `P016__event-desk__coach__402__no-scores-import__after__d2b1386.png` | after | d2b1386 | event-desk (coach), 402px, no-scores-import; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
+| `P016__import-results__coach__1440__check-field__after__d2b1386.png` | after | d2b1386 | import-results (coach), 1440px, check-field; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture with a Golf Genius style round 1 CSV, 61 players, 12 teams |
+| `P016__import-results__coach__1440__check-players__after__d2b1386.png` | after | d2b1386 | import-results (coach), 1440px, check-players; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture with a Golf Genius style round 1 CSV, 61 players, 12 teams |
+| `P016__import-results__coach__1440__choose-file__after__d2b1386.png` | after | d2b1386 | import-results (coach), 1440px, choose-file; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
+| `P016__import-results__coach__402__check-full-sheet__after__d2b1386.png` | after | d2b1386 | import-results (coach), 402px, check-full-sheet; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture with a Golf Genius style round 1 CSV, 61 players, 12 teams |
+| `P016__import-results__coach__402__check-players__after__d2b1386.png` | after | d2b1386 | import-results (coach), 402px, check-players; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture with a Golf Genius style round 1 CSV, 61 players, 12 teams |
+| `P016__import-results__coach__402__choose-file__after__d2b1386.png` | after | d2b1386 | import-results (coach), 402px, choose-file; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
 
 ## Open verification gaps
 
-- No screenshots yet: the base renders placeholders; each lane shoots its views
-  (the integrator runs the shots).
+- The only screenshots logged here are the results import and the hole grid
+  (launch readiness F-01, 15 Nov 2026), taken in Chromium from the preview
+  fixture (tier C, `.claude/rules/browsers.md`): the cloud container has no
+  WebKit. A WebKit pass (tier W) at the iPhone 17 Pro preset, and one save of a
+  real Golf Genius export against the staging tables, are still to do.
+- The other views have no logged screenshots yet.
 - The routes have not been opened in a browser (no browser runs in the wiring
   pass), and nothing has run against real tournament tables: the migrations are
   held.
