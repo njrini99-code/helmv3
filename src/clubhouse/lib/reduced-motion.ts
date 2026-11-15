@@ -36,8 +36,8 @@ export function useChReducedMotion(): boolean {
 /**
  * How a page or a sheet comes and goes (owner decision 2, 2026-10-24, OQ-15): `full` slides and springs; `fade`, under
  * the OS Reduce Motion setting, swaps the slide for an opacity fade over the quick beat (180ms, `chFade`), as iOS does;
- * `off`, Settings › Animations off, is the kill switch and swaps at once. Only pages and sheets read it: everything
- * else stays instant under either (useChReducedMotion).
+ * `off`, Settings › Animations off, is the kill switch and swaps at once. Only pages, sheets and list rows
+ * (ui/ListPresence.tsx, S3.10) read it: everything else stays instant under either (useChReducedMotion).
  */
 export type ChMotionMode = 'full' | 'fade' | 'off';
 

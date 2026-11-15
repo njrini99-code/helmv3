@@ -527,6 +527,18 @@ describe('CH-1909 pull to refresh in the iPhone app', () => {
     expect(route.style.translate).toBe('0 52.00px');
   });
 
+  it('the haptic marks the trigger mid-drag, but the read starts only when the finger lets go (S4.6, MOT-02)', () => {
+    media({ reduce: true });
+    const { band, row } = app();
+    touch(row, 'touchstart', 300);
+    for (let i = 1; i <= 12; i++) touch(row, 'touchmove', 300 + (220 * i) / 12);
+    expect(haptics.haptic).toHaveBeenCalledWith('commit');
+    expect(band()!.dataset.state).toBe('spin');
+    expect(router.refresh).not.toHaveBeenCalled();
+    touch(row, 'touchend', 520);
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
   it('short of the trigger it springs home with no refresh and no haptic', () => {
     media({ reduce: true });
     const { band, row, route } = app();

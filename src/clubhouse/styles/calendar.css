@@ -4303,11 +4303,11 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
     top: 0;
     pointer-events: none;
   }
+  /* No standing will-change (MOT-19): day-timeline.tsx promotes the card only while the finger holds it. */
   .ch-tl__card {
     top: 0;
     left: 0;
     right: 0;
-    will-change: transform;
   }
   .ch-tl.is-adjust .ch-tl__card {
     pointer-events: auto;

@@ -334,3 +334,37 @@ describe('another day', () => {
     expect(container.querySelector('.ch-tl h3')!.textContent).toMatch(/16/);
   });
 });
+
+describe('scrolls never wait on the drag (MOT-02, MOT-19)', () => {
+  it('the only blocking touchmove is on the movable rows, and it cancels nothing until the card is in hand', () => {
+    const add = vi.spyOn(EventTarget.prototype, 'addEventListener');
+    const { row } = phone();
+    const blocking = add.mock.contexts.filter((_, i) => {
+      const [type, , opts] = add.mock.calls[i]!;
+      return type === 'touchmove' && typeof opts === 'object' && opts?.passive === false;
+    });
+    add.mockRestore();
+    expect(blocking.length).toBeGreaterThan(0);
+    for (const el of blocking) expect((el as Element).matches('.ch-calm-ev.is-movable')).toBe(true);
+    const touched = row();
+    down(touched);
+    // Before the lift the move is the page's: a scroll that starts on a movable row is never cancelled.
+    expect(fireEvent.touchMove(touched, { touches: [{ clientX: 200, clientY: 324 }] })).toBe(true);
+    hold();
+    expect(fireEvent.touchMove(touched, { touches: [{ clientX: 200, clientY: 328 }] })).toBe(false);
+    fireEvent.touchEnd(touched);
+    expect(touchClaim()).toBe('idle');
+  });
+
+  it('the card is composited only while the finger holds it', () => {
+    const { row, container } = phone();
+    const touched = row();
+    down(touched);
+    hold();
+    touchMove(touched, 200, 332);
+    const card = container.querySelector<HTMLElement>('.ch-tl__card')!;
+    expect(card.style.willChange).toBe('transform');
+    fireEvent.touchEnd(touched);
+    expect(card.style.willChange).toBe('');
+  });
+});

@@ -74,9 +74,21 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       if (page.length) placeUnderlay(page, 1 - frame.progress);
       for (const c of covered) c.style.translate = `${(COVERED_SHIFT * frame.offset).toFixed(2)}px 0`;
     };
+    // The one listener that can hold up a scroll (it may preventDefault) is on only while a touch that landed at the edge
+    // is being read (S4.6, MOT-02), so every other touch on the screen scrolls without waiting on script.
+    const MOVE = { passive: false } as const;
+    const disarm = () => el.removeEventListener('touchmove', onMove);
+    /** The screens a touch at the edge may move are composited from the moment it lands, not on its first move (MOT-03). */
+    const lift = () => {
+      for (const n of [el, ...covered]) n.style.willChange = 'transform';
+    };
+    const unlift = () => {
+      for (const n of [el, ...covered]) n.style.willChange = '';
+    };
     const stop = () => {
       machine = null;
       live = false;
+      disarm();
     };
     /** The system took the touch (iOS's own swipe, a call): every part goes back where it was, at once. */
     const abort = () => {
@@ -84,7 +96,10 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       const dragged = machine.phase === 'dragging';
       machine.cancel();
       stop();
-      if (!dragged) return;
+      if (!dragged) {
+        unlift();
+        return;
+      }
       clear(el, ...covered);
       if (reduced) return;
       if (page.length) placeUnderlay(page, 1);
@@ -189,6 +204,9 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       const m = createEdgeSwipe(width);
       if (!m.start(t.clientX, t.clientY, e.timeStamp)) return;
       machine = m;
+      covered = reduced ? [] : Array.from(document.querySelectorAll<HTMLElement>('.ch-pscreen[data-ch-covered]')).filter((c) => c !== el);
+      lift();
+      el.addEventListener('touchmove', onMove, MOVE);
     };
     const onMove = (e: TouchEvent) => {
       if (!machine) return;
@@ -198,7 +216,14 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
         return;
       }
       const move = machine.move(t.clientX, t.clientY, e.timeStamp);
-      if (!move.claim || !move.frame) return;
+      if (!move.claim || !move.frame) {
+        // The touch turned out to be a scroll: it is the scroll's for the rest of the touch, with nothing held up.
+        if (machine.phase === 'refused') {
+          stop();
+          unlift();
+        }
+        return;
+      }
       // Ours: the page does not scroll with it. (iOS lets a touch be claimed only before it has started panning.)
       if (e.cancelable) e.preventDefault();
       if (move.crossed) haptic('select');
@@ -211,13 +236,9 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       }
       if (!live) {
         live = true;
-        covered = Array.from(document.querySelectorAll<HTMLElement>('.ch-pscreen[data-ch-covered]')).filter((c) => c !== el);
         // With a screen beneath this one the page is behind it both: only the one beneath moves.
         page = covered.length ? [] : underlayParts();
-        for (const n of [el, ...covered]) {
-          n.style.transition = 'none';
-          n.style.willChange = 'transform';
-        }
+        for (const n of [el, ...covered]) n.style.transition = 'none';
       }
       place(move.frame);
     };
@@ -225,7 +246,10 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       if (!machine) return;
       const release = machine.end(e.timeStamp);
       stop();
-      if (!release) return;
+      if (!release) {
+        unlift();
+        return;
+      }
       if (reduced) {
         const back = release.outcome === 'commit' ? findScreenBack(el) : null;
         if (!back) {
@@ -247,12 +271,11 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
     const onCancel = () => abort();
 
     el.addEventListener('touchstart', onStart, { passive: true });
-    el.addEventListener('touchmove', onMove, { passive: false });
     el.addEventListener('touchend', onEnd);
     el.addEventListener('touchcancel', onCancel);
     return () => {
       el.removeEventListener('touchstart', onStart);
-      el.removeEventListener('touchmove', onMove);
+      disarm();
       el.removeEventListener('touchend', onEnd);
       el.removeEventListener('touchcancel', onCancel);
       abort();

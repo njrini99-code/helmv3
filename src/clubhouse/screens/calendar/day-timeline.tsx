@@ -9,16 +9,16 @@
  *
  * Who owns the gesture (P-4 changelog): `DayView` mounts this engine and the timeline layer above its pager and swap,
  * so the row the finger went down on stays in the document for the whole touch (WebKit sends a detached node's
- * touchmoves nowhere), and the day the card is over is local state; the page's own day changes after the fold. One
- * non-passive `touchmove` on the root, registered at mount, keeps iOS from scrolling while a card is in hand and reads
- * the finger. On a phone the document scrolls (the canvas is `overflow: visible` there), so unfold, auto-scroll and
- * growth all move the window.
+ * touchmoves nowhere), and the day the card is over is local state; the page's own day changes after the fold. A
+ * passive `touchmove` on the root reads the finger; a non-passive one on each movable row (`holdCardStill`), registered
+ * with the row, keeps iOS from scrolling while that row's card is in hand and never otherwise. On a phone the document
+ * scrolls (the canvas is `overflow: visible` there), so unfold, auto-scroll and growth all move the window.
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import { haptic, hapticScrub } from '../../lib/haptics';
 import { chSpringCurve, CH_DUR, CH_EASE } from '../../lib/motion';
 import { chSupportsLinear } from '../../lib/sheet-drag';
-import { claimTouch, releaseTouch } from '../../lib/touch-claim';
+import { claimTouch, releaseTouch, touchClaim } from '../../lib/touch-claim';
 import { isOffline } from '../../lib/use-action';
 import { useChClock } from '../../lib/use-clock';
 import type { PeekLift } from '../../ui/Peek';
@@ -81,6 +81,24 @@ export function flipFrom(els: Iterable<HTMLElement>, from: Map<string, DOMRect>,
     if (fade) out.push(el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_DUR.press * 1000, easing: 'linear' }));
   }
   return out;
+}
+
+/** A move on a movable row while its card is in hand belongs to the card: the page does not scroll under it. */
+const holdStill = (ev: TouchEvent) => {
+  if (touchClaim() === 'lifted' && ev.cancelable) ev.preventDefault();
+};
+
+/**
+ * MOT-02 (S4.6): the one non-passive `touchmove` the drag needs, on a movable row (`ref={lift ? holdCardStill : undefined}`)
+ * and nowhere else, so a scroll that starts anywhere else on the day never waits on script. It is registered with the row,
+ * before any touch, because WebKit settles at touchstart whether a touch's moves can be cancelled: a listener added at the
+ * lift could not hold the page still. It cancels nothing until the hold has lifted the card (`touchClaim`), and the claim
+ * ends with the touch.
+ */
+export function holdCardStill(node: HTMLElement | null): (() => void) | undefined {
+  if (!node) return undefined;
+  node.addEventListener('touchmove', holdStill, { passive: false });
+  return () => node.removeEventListener('touchmove', holdStill);
 }
 
 export interface ChPhoneDrag {
@@ -283,6 +301,8 @@ export function usePhoneDayDrag(opts: {
         return;
       }
       hapticScrub('end');
+      // MOT-19: the card is composited only while the finger holds it; its settle is a WAAPI transform of its own.
+      if (card.current) card.current.style.willChange = '';
       const e = s.e;
       const to = s.to;
       const moved = !cancelled && (to.date !== e.date || to.start !== e.start || to.end !== e.end);
@@ -316,15 +336,15 @@ export function usePhoneDayDrag(opts: {
     [reset],
   );
 
-  // Mount-time listeners on the root (the touched row stays inside it): a blocking touchmove that holds iOS still while
-  // a card is in hand and reads the finger, and the touch's end as the drop.
+  // Mount-time listeners on the root (the touched row stays inside it): a passive touchmove that reads the finger while a
+  // card is in hand, and the touch's end as the drop. Holding iOS still is `holdCardStill`'s, on the movable rows only
+  // (MOT-02), so a scroll anywhere else on the day never waits on script.
   useEffect(() => {
     const root = opts.root.current;
     if (!root) return;
     const onMove = (ev: TouchEvent) => {
       const s = g.current;
       if (!s) return;
-      if (ev.cancelable) ev.preventDefault();
       const t = ev.touches[0];
       if (!t || !s.started) return;
       const at = performance.now();
@@ -337,7 +357,7 @@ export function usePhoneDayDrag(opts: {
     };
     const onEnd = () => drop(false);
     const onCancel = () => drop(true);
-    root.addEventListener('touchmove', onMove, { passive: false });
+    root.addEventListener('touchmove', onMove, { passive: true });
     root.addEventListener('touchend', onEnd);
     root.addEventListener('touchcancel', onCancel);
     return () => {
@@ -354,6 +374,8 @@ export function usePhoneDayDrag(opts: {
     const el = grid.current;
     if (!s?.align || !el) return;
     s.align = false;
+    // MOT-19: the card in hand rides the finger on its own layer from the unfold until the drop.
+    if (card.current) card.current.style.willChange = 'transform';
     const slot = el.getBoundingClientRect().top + (s.e.start! - boundsRef.current.from) * PHONE_HH;
     const want = s.y - s.grabPx;
     if (Math.abs(slot - want) > 0.5) window.scrollBy(0, slot - want);
@@ -442,6 +464,9 @@ export function usePhoneDayDrag(opts: {
     let last = origin;
     let tick = -Infinity;
     hapticScrub('start');
+    // MOT-19: composited while the finger is down on it, and only then.
+    const held = card.current;
+    if (held) held.style.willChange = 'transform';
     const move = (m: PointerEvent) => {
       const r = el.getBoundingClientRect();
       const h = hourAt(m.clientY, r.top, PHONE_HH, b.from);
@@ -462,6 +487,7 @@ export function usePhoneDayDrag(opts: {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
+      if (held) held.style.willChange = '';
       hapticScrub('end');
     };
     window.addEventListener('pointermove', move);
