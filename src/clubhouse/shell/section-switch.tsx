@@ -8,7 +8,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import type { ChShellData } from '../data/shell';
 import { haptic } from '../lib/haptics';
-import { CH_DUR, CH_EASE, chSpring, chSpringCurve } from '../lib/motion';
+import { CH_DUR, CH_EASE, CH_SWIPE, chSpring, chSpringCurve } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { Icon } from '../ui/Icon';
 import { phoneSectionFor, phoneSectionsFor, type ChNavItem, type ChRole } from './nav';
@@ -397,7 +397,8 @@ export function useSectionGestures(bar: RefObject<HTMLElement | null>, enabled: 
     };
     const down = (e: PointerEvent) => {
       if (!window.matchMedia(PHONE).matches || (e.pointerType === 'mouse' && e.button !== 0)) return;
-      if (e.clientX < 20) return;
+      // The left edge is the back swipe's (CH_SWIPE.edge, MOTION-AND-VISUAL 3.3).
+      if (e.clientX < CH_SWIPE.edge) return;
       const t = e.target instanceof Element ? e.target : null;
       if (t?.closest('.ch-topbar__actions, .ch-pbar__right, .ch-pbar__back, .ch-pbar__text, .ch-pbar__icon')) return;
       const now = performance.now();

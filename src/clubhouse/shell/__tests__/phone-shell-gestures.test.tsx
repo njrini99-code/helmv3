@@ -177,7 +177,8 @@ describe('the edge swipe on a pushed screen', () => {
     expect(el.style.translate).toBe('');
   });
 
-  it('lets go past half the width and the screen leaves on its own spring while its Back runs', () => {
+  // MOTION-AND-VISUAL 3.3: the finish runs 520 ms times the share of the way left, 35% floor, on the iOS curve.
+  it('lets go past half the width and the screen leaves from where it is, over its share of 520 ms on the iOS curve, while its Back runs', () => {
     const { el, exit, onBack, page } = mount();
     swipeTo(el, 220);
     now += 200;
@@ -185,8 +186,9 @@ describe('the edge swipe on a pushed screen', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
     expect(exit.current.holding).toBe(true);
     expect(el.style.translate).toBe(`${W}px 0`);
-    expect(el.style.transition).toMatch(/^translate \d+ms linear\(/);
-    // The page is left where it is for PhoneUnderlay to carry home from there on the same spring.
+    // Let go at 212 px of 390: 178 px left, 520 × 178 / 390 = 237 ms.
+    expect(el.style.transition).toBe(`translate ${Math.round(520 * (1 - 212 / W))}ms cubic-bezier(0.32, 0.72, 0, 1)`);
+    // The page is left where it is for PhoneUnderlay to carry home from there on the same timing.
     expect(parseFloat(page.style.translate)).toBeLessThan(0);
     // The exit is handed back once the screen has gone.
     act(() => {
@@ -196,7 +198,7 @@ describe('the edge swipe on a pushed screen', () => {
     expect(exit.current.done).toHaveBeenCalledTimes(1);
   });
 
-  it('lets go short of half slowly and it springs back: no Back, the page returns to drawn back', () => {
+  it('lets go short of half slowly and it goes home on the same curve, 35% floor: no Back, the page returns to drawn back', () => {
     const { el, exit, onBack } = mount();
     swipeTo(el, 100);
     now += 300;
@@ -204,7 +206,8 @@ describe('the edge swipe on a pushed screen', () => {
     expect(onBack).not.toHaveBeenCalled();
     expect(exit.current.holding).toBe(false);
     expect(el.style.translate).toBe('');
-    expect(el.style.transition).toMatch(/^translate \d+ms linear\(/);
+    // 92 px of 390 home is under the floor: 0.35 × 520 = 182 ms.
+    expect(el.style.transition).toBe('translate 182ms cubic-bezier(0.32, 0.72, 0, 1)');
   });
 
   it('a quick flick from a short way pops it', () => {
@@ -215,19 +218,19 @@ describe('the edge swipe on a pushed screen', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it('ticks the selection haptic as the commit mark is crossed, and again crossing back', () => {
+  // MOTION-AND-VISUAL 3.3 and 3.10: the back swipe is silent, as on iOS (it ticked the selection haptic at the mark before).
+  it('fires no haptic crossing the commit mark, crossing back, or letting go', () => {
     const { el } = mount();
     now += 600;
     touch(el, 'touchstart', 8, 400, now);
     touch(el, 'touchmove', 20, 400, now + 16);
-    expect(haptics.haptic).not.toHaveBeenCalled();
     touch(el, 'touchmove', 220, 400, now + 32);
-    expect(haptics.haptic).toHaveBeenCalledTimes(1);
-    expect(haptics.haptic).toHaveBeenLastCalledWith('select');
     touch(el, 'touchmove', 230, 400, now + 48);
-    expect(haptics.haptic).toHaveBeenCalledTimes(1);
     touch(el, 'touchmove', 100, 400, now + 64);
-    expect(haptics.haptic).toHaveBeenCalledTimes(2);
+    touch(el, 'touchmove', 260, 400, now + 80);
+    touch(el, 'touchend', 0, 0, now + 300);
+    expect(haptics.haptic).not.toHaveBeenCalled();
+    expect(haptics.hapticScrub).not.toHaveBeenCalled();
   });
 
   it('is off while a sheet or dialog is open, and on a round tracking route', () => {
@@ -294,25 +297,19 @@ describe('the edge swipe on a pushed screen', () => {
     expect(parseFloat(page.style.translate)).toBeCloseTo(-24, 1);
   });
 
-  // F-0018 (audit 2026-10-29): Reduce Motion changes how a gesture settles, never whether it works. The screen follows the
-  // finger; the page beneath stays put (no parallax); a commit pops it, and a let-go short of the mark puts it back at once.
-  it('with reduced motion the screen follows the finger, the page beneath stays, and a commit pops it', () => {
+  // MOTION-AND-VISUAL 3.11 (replaces F-0018, audit 2026-10-29): under Reduce Motion the interactive back swipe is off; the
+  // bar's Back stays. A touch at the edge is the page's: nothing moves, the scroll is not held, and no Back runs.
+  it('with reduced motion the swipe is off: nothing follows the finger and no Back runs, while the Back button stays', () => {
     const { el, onBack, page } = mount({ reduced: true });
     const move = swipeTo(el, 220);
-    expect(move.prevented()).toBe(true);
-    expect(el.style.translate).toMatch(/^\d+(\.\d+)?px 0$/);
-    expect(parseFloat(el.style.translate)).toBeGreaterThan(0);
+    expect(move.prevented()).toBe(false);
+    expect(el.style.translate).toBe('');
     expect(page.style.translate).toBe('');
     now += 200;
     touch(el, 'touchend', 0, 0, now);
-    expect(onBack).toHaveBeenCalledTimes(1);
-    onBack.mockClear();
-    swipeTo(el, 60);
-    expect(parseFloat(el.style.translate)).toBeGreaterThan(0);
-    now += 300;
-    touch(el, 'touchend', 0, 0, now);
     expect(onBack).not.toHaveBeenCalled();
-    expect(el.style.translate).toBe('');
+    screen.getByRole('button', { name: 'Roster' }).click();
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 
   it('a Back that is refused brings the screen home again', () => {
@@ -466,6 +463,16 @@ describe('in the iOS app a pushed screen holds the swipe for the web gesture (he
     render(<Harness exit={exitHold()} onBack={vi.fn()} enabled={false} />);
     await settle();
     expect(post).not.toHaveBeenCalled();
+  });
+
+  // MOTION-AND-VISUAL 3.11: under Reduce Motion the back swipe is off, the web one and the app's alike. The screen keeps
+  // holding the native swipe, which would otherwise drag the whole app back, and runs none of its own.
+  it('under Reduce Motion it still holds the native swipe, so neither swipe runs', async () => {
+    app.native = true;
+    const post = bridge();
+    render(<Harness exit={exitHold()} onBack={vi.fn()} reduced />);
+    await settle();
+    expect(webSwipe(post)).toEqual([true]);
   });
 });
 

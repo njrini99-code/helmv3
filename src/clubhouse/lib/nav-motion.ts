@@ -1,7 +1,7 @@
 'use client';
 
 import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
-import { CH_EASE_IOS, CH_EASE_IOS_CSS, CH_FADE_MS, CH_PUSH_MS, chBezier, chSpringCurve } from './motion';
+import { CH_EASE_IOS, CH_EASE_IOS_CSS, CH_FADE_MS, CH_PUSH_MS, chBezier } from './motion';
 import { chMotionModeNow } from './reduced-motion';
 import { markHandPop, poppedByUA } from './ua-pop';
 
@@ -172,7 +172,7 @@ export function cloneInView(el: HTMLElement, viewH: number, depth: number): HTML
 }
 
 /**
- * A push still sliding in when Back comes (motion pass 2026-10-22): how far it had come, from 0 to 1 along its spring,
+ * A push still sliding in when Back comes (motion pass 2026-10-22): how far it had come, from 0 to 1 along its curve,
  * with the page transition ended where it stood so the pop can take over from there. 1 when no push is running. A
  * view transition can't be reversed, and the pop drawn over one still playing showed both at once: the page
  * uncovered slid in from the right as if pushed, under the copy sliding out.
@@ -233,17 +233,8 @@ export interface ChNavCurve {
   ease: (p: number) => number;
 }
 
-/**
- * A released swipe's finish (S4.2): the one gesture spring (CH_SPRINGS.gesture) as WAAPI timing (a linear() curve where the engine has one), with
- * the finger's speed in it.
- */
-export function chPushTiming(spring?: { velocity?: number; rest?: number; hold?: boolean }): { curve: ChNavCurve; timing: KeyframeAnimationOptions } {
-  const curve = chSpringCurve('gesture', spring);
-  const linear = typeof CSS !== 'undefined' && CSS.supports?.('transition-timing-function', 'linear(0, 1)');
-  return { curve, timing: { duration: curve.ms, easing: linear ? curve.linear : CH_EASE_IOS_CSS } };
-}
-
-/** A tapped push and its pop (S4.1): 520ms on the iOS curve, as UIKit's own push moves. */
+/** A tapped push and its pop (S4.1): 520ms on the iOS curve, as UIKit's own push moves. A released swipe finishes on the
+ *  same curve over the share of the way it has left (shell/edge-swipe.ts `swipeFinish`, MOTION-AND-VISUAL 3.3). */
 export function chTapTiming(): { curve: ChNavCurve; timing: KeyframeAnimationOptions } {
   return { curve: { ms: CH_PUSH_MS, ease: chBezier(CH_EASE_IOS) }, timing: { duration: CH_PUSH_MS, easing: CH_EASE_IOS_CSS } };
 }
@@ -393,7 +384,7 @@ function playPush(from: string, to: string, layer: HTMLElement) {
   );
 }
 
-/** How far the running push has come, 0 to 1 along its spring, read from its page's animation. */
+/** How far the running push has come, 0 to 1 along its curve, read from its page's animation. */
 function pushShare(run: NonNullable<typeof pushing>): number {
   const at = Number(run.anims[0]?.currentTime ?? run.curve.ms);
   return run.curve.ease(Math.min(1, Math.max(0, at / run.curve.ms)));
