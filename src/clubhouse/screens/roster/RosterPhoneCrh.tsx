@@ -575,7 +575,7 @@ class SheetGuard extends Component<{ children: ReactNode }, { failed: boolean }>
 }
 
 function PlayerActionsCrh({ p, onClose, onRemove, onStatus }: { p: ChRosterPlayer | undefined; onClose: () => void; onRemove: (p: ChRosterPlayer) => void; onStatus: (p: ChRosterPlayer) => void }) {
-  const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}`) : null;
+  const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season`) : null;
   // The shared sheet of actions (ui MenuSheet), not a list drawn here: its rows, its keys and its destructive row are the app's own.
   const items: MenuItem[] = !p
     ? []

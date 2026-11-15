@@ -3,7 +3,7 @@
 import { createSortedRowModel, rowSortingFeature, tableFeatures, useTable, type ColumnDef, type SortFn, type SortingState } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import type { ChRosterPlayer } from '../../data/roster';
-import { isEarlyRead } from './format';
+import { isEarlyRead, roundsPlayed } from './format';
 
 export type PhoneSort = 'avg' | 'sg' | 'name';
 /** Every order the Roster offers: the phone's three, and the desktop table's handicap and rounds (B10.5). */
@@ -44,7 +44,7 @@ const COMPARE: Record<RosterSort, (a: ChRosterPlayer, b: ChRosterPlayer) => numb
   avg: (a, b) => rankedFirst(a, b, a.avg, b.avg),
   sg: (a, b) => rankedFirst(a, b, a.sgPerRound == null ? null : -a.sgPerRound, b.sgPerRound == null ? null : -b.sgPerRound),
   hcp: (a, b) => nullsLast(a.handicap, b.handicap),
-  rounds: (a, b) => b.rounds - a.rounds,
+  rounds: (a, b) => roundsPlayed(b) - roundsPlayed(a),
   name: (a, b) => lastName(a.name).localeCompare(lastName(b.name)),
 };
 

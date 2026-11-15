@@ -60,9 +60,16 @@ export function rowNote(p: ChRosterPlayer, statsError: boolean): { text: string;
   if (p.attention) return { text: p.attention.text, tone: p.attention.tone };
   if (statsError) return null;
   if (p.form !== 'early') return { text: FORM_WORD[p.form], tone: null };
-  if (p.rounds === 0) return { text: 'No rounds this season', tone: null };
-  return { text: `Early read · ${plural(p.rounds, 'round')}`, tone: null };
+  // DF-C-05: a nine-hole round is a round this season; the early read is of the eighteens the average and form read.
+  const played = p.roundsAll ?? p.rounds;
+  if (played === 0) return { text: 'No rounds this season', tone: null };
+  const nines = played - p.rounds;
+  const what = nines <= 0 ? plural(p.rounds, 'round') : p.rounds === 0 ? plural(nines, 'nine-hole round') : `${plural(p.rounds, 'round')} and ${plural(nines, 'nine')}`;
+  return { text: `Early read · ${what}`, tone: null };
 }
+
+/** The rounds a player has posted this season that count, of either length: what a count of rounds shows (DF-C-05). */
+export const roundsPlayed = (p: Pick<ChRosterPlayer, 'rounds' | 'roundsAll'>): number => p.roundsAll ?? p.rounds;
 
 /** Under this many rounds a player's average is an early read: no place on the team, no strip (P003 #3). */
 export const ROSTER_EARLY_FLOOR = 3;
