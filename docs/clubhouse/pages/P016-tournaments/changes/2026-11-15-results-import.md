@@ -48,6 +48,12 @@ Held items:     none
   entered total says it will be replaced by the holes. Cells that can't be saved
   are listed (CH-16182). It saves through the same action as the import.
 - Leaving either with choices made asks first (CH-16580, CH-16581).
+- From the first screenshot pass: our own team's round in the file counts only
+  our lineup that day (an individual's low round never counts, as on the desk);
+  the field list has column heads (R1, R2, Total, Place); the source line says
+  what was read ("Hole by hole · 61 players · 12 teams"); a bad cell in the grid
+  drops out of the sums instead of blanking them, and Save says "Fix 1 hole to
+  save"; a phone says "Choose the results file", having nothing to drag.
 
 ### Why
 

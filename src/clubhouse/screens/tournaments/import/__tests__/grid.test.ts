@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { advancesAfter, cellKey, gridCards, gridErrors, gridFor, readCell, rowHoles, rowSum } from '../grid';
+import { advancesAfter, cellKey, gridCards, gridErrors, gridFor, readCell, rowHoles, rowSum, shownHoles } from '../grid';
 import type { ChTourHoleLedger } from '../../types';
 import { COURSE, PARS, ROSTER, card, event, pr } from './fixtures';
 
@@ -77,6 +77,10 @@ describe('hole grid: cells and the save', () => {
     ]);
     expect(rowHoles(g.grid.rows[0]!, edits)).toBeNull();
     expect(gridCards(g.grid, edits)).toEqual([]);
+    // The sums keep going while the coach fixes it: the bad cell counts as what is saved there.
+    const eli = g.grid.rows.find((r) => r.playerId === 'eli')!;
+    expect(shownHoles(eli, { ...edits, [cellKey('eli', 1)]: '4' }).slice(0, 3)).toEqual([4, null, null]);
+    expect(shownHoles(g.grid.rows[0]!, edits)[2]).toBe(card(0)[2]);
   });
 
   it('sums what is there, and to par over those holes', () => {

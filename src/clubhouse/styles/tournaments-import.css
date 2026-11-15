@@ -378,6 +378,19 @@
   color: var(--ch-text-secondary);
   text-align: right;
 }
+.ch-tour-imp-t--head {
+  min-height: 0;
+  padding-block: 8px;
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-imp-t--head .ch-tour-imp-t__r,
+.ch-tour-imp-t--head .ch-tour-imp-t__tot,
+.ch-tour-imp-t--head .ch-tour-imp-t__pl {
+  font: var(--ch-type-12-medium);
+  letter-spacing: normal;
+  color: var(--ch-text-secondary);
+}
 .ch-tour-imp-t.is-off .ch-tour-imp-t__n b,
 .ch-tour-imp-t.is-off .ch-tour-imp-t__r,
 .ch-tour-imp-t.is-off .ch-tour-imp-t__tot {
@@ -419,6 +432,13 @@
   }
   .ch-tour-imp-t > :last-child {
     grid-area: save;
+  }
+  /* On a phone the heads caption each row's second line. */
+  .ch-tour-imp-t--head {
+    grid-template-areas: 'rounds total place save';
+  }
+  .ch-tour-imp-t--head .ch-tour-imp-t__n {
+    display: none;
   }
 }
 

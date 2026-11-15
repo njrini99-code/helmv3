@@ -220,6 +220,9 @@ describe('Enter holes', () => {
     expect(errs).toHaveAttribute('data-ch-code', 'CH-16182');
     expect(errs.textContent).toBe('Eli Brandt, hole 3: A hole score is a whole number of strokes, 1 or more.');
     expect(cell('Eli Brandt', 3)).toHaveAttribute('aria-invalid', 'true');
+    expect(within(dialog()).getByRole('button', { name: 'Fix 1 hole to save' })).toBeDisabled();
+    fireEvent.change(cell('Eli Brandt', 3), { target: { value: '' } });
+    expect(within(dialog()).queryByRole('alert')).toBeNull();
     expect(within(dialog()).getByRole('button', { name: 'Nothing to save' })).toBeDisabled();
   });
 

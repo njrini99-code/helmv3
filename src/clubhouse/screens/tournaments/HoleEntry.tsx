@@ -13,7 +13,7 @@ import { Select } from '../../ui/Select';
 import { EmptyState } from '../../ui/States';
 import { tourDay } from './format';
 import { ImpField } from './ImportResults';
-import { advancesAfter, CELL_ERROR_WORDS, cellKey, gridCards, gridErrors, gridFor, rowHoles, rowSum, type ChGrid, type ChGridEdits } from './import/grid';
+import { advancesAfter, CELL_ERROR_WORDS, cellKey, gridCards, gridErrors, gridFor, rowSum, shownHoles, type ChGrid, type ChGridEdits } from './import/grid';
 import { ToPar, TourChip } from './parts';
 import type { ChTourDeskData } from './types';
 import '../../styles/tournaments-import.css';
@@ -71,10 +71,11 @@ export function HoleEntry({ open, onClose, data, round: initial }: { open: boole
     return g?.ok ? gridCards(g.grid, edits[r.number] ?? {}) : [];
   });
   const errors = now.ok ? gridErrors(now.grid, typed) : [];
-  const anyErrors = e.rounds.some((r) => {
+  const badCells = e.rounds.reduce((n, r) => {
     const g = grids.get(r.number);
-    return g?.ok ? gridErrors(g.grid, edits[r.number] ?? {}).length > 0 : false;
-  });
+    return n + (g?.ok ? gridErrors(g.grid, edits[r.number] ?? {}).length : 0);
+  }, 0);
+  const anyErrors = badCells > 0;
   const players = new Set(cards.map((c) => c.playerId)).size;
 
   const save = useAction(
@@ -160,7 +161,7 @@ export function HoleEntry({ open, onClose, data, round: initial }: { open: boole
               Cancel
             </Button>
             <Button variant="primary" leftIcon={Check} busy={save.pending} disabled={!cards.length || anyErrors} onClick={() => void doSave()}>
-              {save.pending ? 'Saving…' : cards.length ? `Save holes for ${plural(players, 'player')}` : 'Nothing to save'}
+              {save.pending ? 'Saving…' : anyErrors ? `Fix ${plural(badCells, 'hole')} to save` : cards.length ? `Save holes for ${plural(players, 'player')}` : 'Nothing to save'}
             </Button>
           </>
         }
@@ -291,7 +292,7 @@ function Grid({
           </thead>
           <tbody>
             {grid.rows.map((row, ri) => {
-              const holes = rowHoles(row, edits) ?? row.saved;
+              const holes = shownHoles(row, edits);
               const front = rowSum(holes.slice(0, 9), grid.pars.slice(0, 9));
               const back = rowSum(holes.slice(9), grid.pars.slice(9));
               const all = rowSum(holes, grid.pars);

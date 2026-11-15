@@ -7,6 +7,7 @@ import { importTournamentResults, type TourImportKept, type TourImportResult } f
 import { haptic } from '../../lib/haptics';
 import { plural, pluralWord } from '../../lib/plural';
 import { useAction } from '../../lib/use-action';
+import { useChPhone } from '../../lib/use-phone';
 import { useRefresh } from '../../lib/use-refresh';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
@@ -100,6 +101,7 @@ const KEPT_WORDS: Record<TourImportKept, string> = {
  */
 export function ImportResults({ open, onClose, data }: { open: boolean; onClose: () => void; data: ChTourDeskData }) {
   const e = data.event;
+  const phone = useChPhone();
   const ctx = useMemo<ChPlanContext>(
     () => ({
       event: e,
@@ -422,8 +424,11 @@ export function ImportResults({ open, onClose, data }: { open: boolean; onClose:
                     <span className="ch-tour-imp-drop__ic" aria-hidden="true">
                       <Icon icon={Upload} size={20} />
                     </span>
-                    <b>Drop the results file here</b>
-                    <em>or choose a file · .xlsx, .csv or .txt · up to {MAX_RESULTS_FILE_BYTES / 1024 / 1024} MB</em>
+                    {/* A phone has nothing to drag a file from: it only chooses one. */}
+                    <b>{phone ? 'Choose the results file' : 'Drop the results file here'}</b>
+                    <em>
+                      {phone ? '' : 'or choose a file · '}.xlsx, .csv or .txt · up to {MAX_RESULTS_FILE_BYTES / 1024 / 1024} MB
+                    </em>
                     <span className="ch-tour-imp-drop__tip">Hole-by-hole exports fill in each player’s card. Leaderboards with round scores work too.</span>
                   </button>
                   <input
@@ -534,17 +539,26 @@ function CheckView({
   const us = plan.teams.find((t) => t.us);
   const others = plan.teams.filter((t) => !t.us);
   const read_ = layouts.filter((l) => l.kind !== 'none');
-  const sheetLine = read_.length ? listOf(read_.map((l) => source.sheets[l.sheet]?.name ?? 'Sheet')) : 'no sheet read yet';
+  // What was read, in the coach's words: "Hole by hole · 61 players · 12 teams"; a workbook names the sheets it used.
+  const shapes = [...new Set(read_.map((l) => SHAPE_WORDS[l.kind]))].filter(Boolean);
+  const teamsRead = new Set([...read.teams.map((t) => t.key), ...read.players.map((p) => p.team ?? '').filter(Boolean)]).size;
+  const sheetLine = read_.length
+    ? [
+        source.sheets.length > 1 ? `${listOf(read_.map((l) => source.sheets[l.sheet]?.name ?? 'Sheet'))} of ${plural(source.sheets.length, 'sheet')}` : null,
+        shapes.length === 1 ? shapes[0] : null,
+        read.players.length ? plural(read.players.length, 'player') : null,
+        teamsRead ? plural(teamsRead, 'team') : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : 'Nothing read yet';
 
   return (
     <>
       <div className="ch-tour-imp-src">
         <p>
           <b>{source.name}</b>
-          <span>
-            {source.sheets.length > 1 ? `${plural(source.sheets.length, 'sheet')} · read ` : 'Read '}
-            {sheetLine}
-          </span>
+          <span>{sheetLine}</span>
         </p>
         <Button
           size="sm"
@@ -665,6 +679,7 @@ function CheckView({
             <section className="ch-tour-imp-sec" aria-labelledby="ch-tour-imp-teams">
               <h3 id="ch-tour-imp-teams">The field</h3>
               <ul className="ch-tour-imp-ts">
+                <TeamHead event={data.event} />
                 {us && <TeamRow t={us} event={data.event} />}
                 {others.map((t) => (
                   <TeamRow key={t.key} t={t} event={data.event} onKeep={(keep) => onKeep(t.key, keep)} />
@@ -727,7 +742,6 @@ function PlayerRow({
       <div className="ch-tour-imp-p__h">
         <span className="ch-tour-imp-p__n">
           <b>{p.fileName}</b>
-          {p.team && <span>{p.team}</span>}
         </span>
         <span className="ch-tour-imp-p__m">
           {p.how === 'close' && <TourChip tone="warn">Close match</TourChip>}
@@ -801,6 +815,23 @@ function PlayerRow({
             </div>
           );
         })}
+    </li>
+  );
+}
+
+/** The field's column heads, for sight only: each row says its own figures to a screen reader. */
+function TeamHead({ event }: { event: ChTourDeskData['event'] }) {
+  return (
+    <li className="ch-tour-imp-t ch-tour-imp-t--head" aria-hidden="true">
+      <span className="ch-tour-imp-t__n">Team</span>
+      <span className="ch-tour-imp-t__r">
+        {event.rounds.map((r) => (
+          <i key={r.number}>R{r.number}</i>
+        ))}
+      </span>
+      <span className="ch-tour-imp-t__tot">Total</span>
+      <span className="ch-tour-imp-t__pl">Place</span>
+      <span />
     </li>
   );
 }
@@ -981,6 +1012,8 @@ function ColumnEditor({
     </div>
   );
 }
+
+const SHAPE_WORDS: Record<ChSheetLayout['kind'], string> = { holes: 'Hole by hole', rounds: 'Round scores', teams: 'Team scores', none: '' };
 
 /** A figure as drawn, said in words: "Total 287", or "No total" for the dash. */
 function Spoken<T extends string | number>({ value, said, none }: { value: T | null; said: (v: T) => string; none: string }) {

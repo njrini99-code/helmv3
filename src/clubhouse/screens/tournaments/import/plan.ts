@@ -200,6 +200,13 @@ export function playsRound(event: ChTourEvent, playerId: string, roundNumber: nu
   return event.entries.some((e) => e.playerId === playerId && e.role !== 'alternate');
 }
 
+/** Whether a player's score can count for the team in a round: in the lineup that day (never an individual or alternate). */
+export function countsForTeam(event: ChTourEvent, playerId: string, roundNumber: number): boolean {
+  const row = event.playerRounds.find((p) => p.playerId === playerId && p.roundNumber === roundNumber);
+  if (row) return row.role === 'lineup';
+  return event.entries.some((e) => e.playerId === playerId && e.role === 'lineup');
+}
+
 /** The round the file's unnamed round most likely is: the first with no scores of ours, else the last started. */
 export function defaultPickRound(event: ChTourEvent): number | null {
   const scored = new Set(event.playerRounds.filter((p) => p.total != null).map((p) => p.roundNumber));
@@ -333,14 +340,23 @@ export function buildPlan(read: ChResultsRead, ctx: ChPlanContext, opts: ChPlanC
   }
   if (read.holes && !pars) warnings.push('The course has no hole pars yet, so holes can’t be saved. Round totals are saved instead.');
 
-  const teams = planTeams(read, ctx, usKey, pickRound);
-  const places = placesOf(read, ctx, teams, usKey, pickRound);
+  // Our team's rounds count only our lineup: an individual in the file plays for no team score (the other teams' files
+  // don't say who is an individual, so theirs count everyone listed, as the host's own team rows would).
+  const benched = (key: string, roundNumber: number) => {
+    const p = players.find((x) => x.key === key);
+    return !p?.playerId || !countsForTeam(ev, p.playerId, roundNumber);
+  };
+  const teams = planTeams(read, ctx, usKey, pickRound, benched);
+  const places = placesOf(read, ctx, teams, usKey, pickRound, benched);
   if (places.places !== 'none') for (const t of teams) t.place = places.byKey.get(t.key) ?? t.place;
   return { players, teams, pickRound, places: places.places, warnings };
 }
 
-function playerScores(team: readonly ChFilePlayer[], roundNumber: number, pick: number | null): ChTourPlayerScore[] {
+type Benched = (key: string, roundNumber: number) => boolean;
+
+function playerScores(team: readonly ChFilePlayer[], roundNumber: number, pick: number | null, benched?: Benched): ChTourPlayerScore[] {
   return team.flatMap((p) => {
+    if (benched?.(p.key, roundNumber)) return [];
     const entry = Object.entries(p.rounds).find(([n]) => resolveRound(Number(n), pick) === roundNumber)?.[1];
     if (!entry) return [];
     const holes = entry.holes;
@@ -349,7 +365,7 @@ function playerScores(team: readonly ChFilePlayer[], roundNumber: number, pick: 
   });
 }
 
-function planTeams(read: ChResultsRead, ctx: ChPlanContext, usKey: string | null, pick: number | null): ChPlanTeam[] {
+function planTeams(read: ChResultsRead, ctx: ChPlanContext, usKey: string | null, pick: number | null, benched: Benched): ChPlanTeam[] {
   const ev = ctx.event;
   const format = formatOf(ev.format.kind, ev.format.players, ev.format.counting, ev.format.holes);
   const names = new Map<string, string>();
@@ -366,7 +382,7 @@ function planTeams(read: ChResultsRead, ctx: ChPlanContext, usKey: string | null
       if (written != null) return written;
       if (!squad.length) return null;
       from = 'players';
-      const tr = teamRound(playerScores(squad, r.number, pick), format, r.par);
+      const tr = teamRound(playerScores(squad, r.number, pick, us ? benched : undefined), format, r.par);
       return tr.kind === 'complete' ? tr.total : null;
     });
     const complete = rounds.length > 0 && rounds.every((v) => v != null);
@@ -378,7 +394,14 @@ function planTeams(read: ChResultsRead, ctx: ChPlanContext, usKey: string | null
 }
 
 /** Places for the whole field, when the file is a finished result: the file's own, else the NCAA ladder. */
-function placesOf(read: ChResultsRead, ctx: ChPlanContext, teams: readonly ChPlanTeam[], usKey: string | null, pick: number | null): { places: ChImportPlan['places']; byKey: Map<string, ChPlace> } {
+function placesOf(
+  read: ChResultsRead,
+  ctx: ChPlanContext,
+  teams: readonly ChPlanTeam[],
+  usKey: string | null,
+  pick: number | null,
+  benched: Benched,
+): { places: ChImportPlan['places']; byKey: Map<string, ChPlace> } {
   const none = { places: 'none' as const, byKey: new Map<string, ChPlace>() };
   const ev = ctx.event;
   if (teams.length < 2 || !teams.every((t) => t.rounds.every((v) => v != null))) return none;
@@ -393,7 +416,7 @@ function placesOf(read: ChResultsRead, ctx: ChPlanContext, teams: readonly ChPla
     let dropped = 0;
     const countingByRound: number[][] = [];
     for (const r of ev.rounds) {
-      const scores = playerScores(squad, r.number, pick);
+      const scores = playerScores(squad, r.number, pick, t.key === usKey ? benched : undefined);
       const tr = teamRound(scores, format, r.par);
       if (tr.kind !== 'complete') return none;
       dropped += tr.droppedTotal ?? 0;
@@ -401,7 +424,6 @@ function placesOf(read: ChResultsRead, ctx: ChPlanContext, teams: readonly ChPla
     }
     rows.push({ id: t.key, total: t.total, droppedTotal: dropped, countingByRound });
   }
-  void usKey;
   const placed = placeField(rows, 'ncaa', ncaaTeamTiebreak);
   return { places: 'ladder', byKey: new Map(placed.filter((p) => p.place != null).map((p) => [p.id, { n: p.place!, tied: p.tied }])) };
 }

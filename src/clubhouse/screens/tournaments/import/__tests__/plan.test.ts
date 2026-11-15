@@ -121,6 +121,20 @@ describe('results import: the field and places', () => {
     expect(us.rounds).toEqual([294, 292]);
   });
 
+  it('our team’s rounds count only our lineup: an individual’s or alternate’s low round in the file never does', () => {
+    // Will is an individual here (and an alternate in the base event); his 70s would count first if he were in the lineup.
+    const will = { 'William Harper': [card(-2), card(-2)] } as Record<string, [number[], number[]]>;
+    const individual = { entries: [...['ava', 'theo', 'sofia', 'jonah', 'eli'].map((playerId, i) => ({ playerId, role: 'lineup' as const, slot: i + 1, squad: 'A' as const })), { playerId: 'will', role: 'individual' as const, slot: null, squad: 'A' as const }] };
+    for (const over of [{}, individual]) {
+      const plan = buildPlan(holesFile({ ...OURS, ...will, ...ELON }), ctx(over));
+      expect(plan.teams.find((t) => t.us)!.rounds).toEqual([294, 292]);
+    }
+    // A lineup change for one round counts him in that round only.
+    const swapped = buildPlan(holesFile({ ...OURS, ...will, ...ELON }), ctx({ ...individual, playerRounds: [pr({ playerId: 'will', roundNumber: 2, role: 'lineup' }), pr({ playerId: 'eli', roundNumber: 2, role: 'individual' })] }));
+    // Round 2 without Eli (76) and with Will (70): 70, 72, 73, 73 count = 288.
+    expect(swapped.teams.find((t) => t.us)!.rounds).toEqual([294, 288]);
+  });
+
   it('a finished field with every player gets NCAA ladder places; a tie on total goes to the lower dropped scores', () => {
     // Elon tie us at 586 (292 + 294 against our 294 + 292) with lower dropped scores.
     const elon = { ...ELON, 'Elon Kai Ito': [card(1), card(1)], 'Elon Ren Ota': [card(1), card(3)] } as Record<string, [number[], number[]]>;

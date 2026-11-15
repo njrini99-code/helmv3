@@ -113,6 +113,16 @@ export function rowHoles(row: ChGridRow, edits: ChGridEdits): Array<number | nul
   return out;
 }
 
+/** Each row's holes as the grid shows them while typing: what reads as a score, else what is saved (a bad cell drops out of the sums). */
+export function shownHoles(row: ChGridRow, edits: ChGridEdits): Array<number | null> {
+  return row.saved.map((saved, i) => {
+    const text = edits[cellKey(row.playerId, i + 1)];
+    if (text === undefined) return saved ?? null;
+    const c = readCell(text, saved ?? null);
+    return 'error' in c ? (saved ?? null) : c.value;
+  });
+}
+
 /** The cells that can't be saved, with why. */
 export function gridErrors(grid: ChGrid, edits: ChGridEdits): Array<{ playerId: string; hole: number; error: ChCellError }> {
   const out: Array<{ playerId: string; hole: number; error: ChCellError }> = [];
