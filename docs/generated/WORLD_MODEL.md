@@ -277,7 +277,7 @@ Settings And Preferences · active · criticality medium · owner product
 Shot Tracking · active · criticality high · owner product
 
 - **Relations:** 2 doc/structurally-evidenced, 9 import-graph-only (weak)
-- **Tables:** `helm_debug`
+- **Tables:** `helm_debug`, `helm_private`
 - **RPCs:** none
 - **Test surfaces:** 4
 - **Sentry/admin_events signals:** none
