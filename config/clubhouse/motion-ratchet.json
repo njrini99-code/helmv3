@@ -1,0 +1,46 @@
+{
+  "src/clubhouse/styles/auth.css": {
+    "paint-keyframes": 0,
+    "off-token-duration": 2
+  },
+  "src/clubhouse/styles/base.css": {
+    "paint-keyframes": 0,
+    "off-token-duration": 2
+  },
+  "src/clubhouse/styles/coachhelm-ask-v2.css": {
+    "paint-keyframes": 7,
+    "off-token-duration": 3
+  },
+  "src/clubhouse/styles/coachhelm-file.css": {
+    "paint-keyframes": 0,
+    "off-token-duration": 2
+  },
+  "src/clubhouse/styles/hub.css": {
+    "paint-keyframes": 4,
+    "off-token-duration": 0
+  },
+  "src/clubhouse/styles/onboard.css": {
+    "paint-keyframes": 5,
+    "off-token-duration": 0
+  },
+  "src/clubhouse/styles/quick-chat.css": {
+    "paint-keyframes": 0,
+    "off-token-duration": 1
+  },
+  "src/clubhouse/styles/recruiting.css": {
+    "paint-keyframes": 2,
+    "off-token-duration": 0
+  },
+  "src/clubhouse/styles/settings.css": {
+    "paint-keyframes": 2,
+    "off-token-duration": 0
+  },
+  "src/clubhouse/styles/shell.css": {
+    "paint-keyframes": 8,
+    "off-token-duration": 0
+  },
+  "src/clubhouse/styles/stats-redesign.css": {
+    "paint-keyframes": 0,
+    "off-token-duration": 1
+  }
+}
