@@ -5,8 +5,9 @@
  * was seen: a causality run must not date a first exposure, or count a confounding one, from them. Rows with no surface (older
  * writers) still count. The rows themselves are untouched; deleting or relabelling them is the owner's call.
  *
- * When Team Hub records its card from the client after it has been on screen (the audit's follow-up), narrow this to rows written
- * before that change.
+ * Launch readiness DF-P-02 (15 Nov 2026) found the card itself is drawn by no Clubhouse screen, so every `hub_signal` row, prefetched or
+ * opened, is an insight nobody saw; the hub aggregate no longer reads it, and no new rows are written. Keep the exclusion for the old
+ * ones; narrow it only if a screen that draws the card starts recording it again.
  */
 export const CAUSALITY_EXCLUDED_SURFACES = ['hub_signal'] as const;
 

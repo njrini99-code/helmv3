@@ -179,6 +179,13 @@ export interface GetInsightsForCoachOptions {
    * the flag off.
    */
   includeMore?: boolean;
+  /**
+   * As on the player feed: which returned rows the calling surface draws, known only once it has shaped them. Called once with the
+   * returned page; only the ids the promise resolves to are recorded as shown (`coach_feed`), and a promise that rejects records
+   * nothing. Omitted: the whole page counts, as before. Launch readiness 2026-11-15, DF-P-03: the coach's Standing of a player read
+   * the whole feed to mark which metric has an open read, and every row of it was recorded as shown though Standing draws none.
+   */
+  drawnLater?: (shown: EvidenceInsight[]) => Promise<readonly string[]>;
 }
 
 /**
@@ -943,7 +950,16 @@ async function getInsightsForCoachWithMetaImpl(
   // + slice). Rows beyond the limit are NOT counted — only what's surfaced is.
   // The rank maps are keyed by id, so they survive collapse + dedupe + slice,
   // which all preserve ids while reordering and dropping rows.
-  recordExposureForReturned(data_, 'coach_feed', exposureCoachId, scoreMap(rankedScored));
+  const scores = scoreMap(rankedScored);
+  if (opts.drawnLater) {
+    const byId = new Map(data_.map((i) => [i.id, i]));
+    void opts.drawnLater(data_).then(
+      (ids) => recordExposureForReturned(ids.map((id) => byId.get(id)).filter((i): i is EvidenceInsight => !!i), 'coach_feed', exposureCoachId, scores),
+      () => undefined,
+    );
+  } else {
+    recordExposureForReturned(data_, 'coach_feed', exposureCoachId, scores);
+  }
   return { ok: true, data: data_, total: ranked.length, capped: ranked.length > data_.length };
 }
 

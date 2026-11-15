@@ -393,8 +393,17 @@ entries are history. The tool list and the prompt are described where the tools 
   fetched Team Hub ahead of the tap and its loader recorded the card as shown,
   so those rows are not evidence of a view. The cron's bulk first-exposure
   read, `computeComparableAttribution` and `detectConfoundingInterventions`
-  read `surface is null or surface not in (hub_signal)`. Team Hub is now in
-  the prefetch guard (`src/clubhouse/lib/prefetch-guard.ts`).
+  read `surface is null or surface not in (hub_signal)`. Since DF-P-02
+  (launch readiness, 2026-11-15) the hub aggregate (`player-hub-data.ts`)
+  reads no insight at all: no Clubhouse screen drew the card, so every
+  `hub_signal` row is unseen and none are written now. Team Hub is fetched
+  ahead like any other tab again.
+- A coach surface records only the reads it draws (DF-P-03, 2026-11-15):
+  `getInsightsForCoach(WithMeta)` takes `drawnLater`, as the player feed and
+  `topInsights` do. The coach's player Standing passes one that draws nothing
+  (it reads the feed only to mark open reads); the coach's player dive
+  records the reads it renders, once it is sure to render
+  (`src/clubhouse/data/coachhelm-player.ts`).
 - Support and the claim ladder (Slice 1, 2026-10-20, flag
   `coachhelm_support_v1`, off): after the generators and composites write a
   player's rows for a run, `v3/support/run-pass.ts` adds `support` (gap to the

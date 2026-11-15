@@ -147,9 +147,14 @@ describe('no page the nav fetches ahead of a tap records exposure (PMAC-01)', ()
     expect(pageRecords(pageFor('/golf/dashboard/coachhelm'))).toBe(true);
   });
 
-  it('Team Hub is one of them, through its player signal card', () => {
-    expect(pageRecords(pageFor('/golf/dashboard/team-hub'))).toBe(true);
-    expect(fullPrefetchAllowed('/golf/dashboard/team-hub')).toBe(false);
-    expect(fullPrefetchAllowed('/golf/dashboard/team-hub?tab=updates')).toBe(false);
+  // PMAC-01 found Team Hub recording its top insight on prefetch; DF-P-02 (launch readiness, 15 Nov 2026) found it recorded on every
+  // open, for a card no screen draws. The aggregate no longer reads the insight, so Team Hub records nothing and the strip may fetch it.
+  it('Team Hub records nothing, so it may be fetched ahead', () => {
+    expect(pageRecords(pageFor('/golf/dashboard/team-hub'))).toBe(false);
+    expect(fullPrefetchAllowed('/golf/dashboard/team-hub')).toBe(true);
+  });
+
+  it('the hub aggregate never reads a CoachHelm insight', () => {
+    expect(recordingNames(join(SRC, 'app/golf/actions/player-hub-data.ts')).size).toBe(0);
   });
 });

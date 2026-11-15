@@ -14,12 +14,12 @@ against it. Update a row whenever its loader changes. The audit tooling
 
 In production builds, `src/clubhouse/shell/use-prefetch-tabs.ts:50-55`
 (`fetchAhead`) prefetches every tab. When the browser is idle it also sweeps the
-other sections (Roster, Settings, …). `/golf/dashboard/coachhelm` and, since
-15 Nov 2026, `/golf/dashboard/team-hub` are left out
-(`src/clubhouse/lib/prefetch-guard.ts`; prod audit PMAC-01).
+other sections (Roster, Settings, …). `/golf/dashboard/coachhelm` is left out
+(`src/clubhouse/lib/prefetch-guard.ts`).
 `src/clubhouse/lib/__tests__/prefetch-exposure.test.ts` walks every nav page's
 code to the insight-delivery functions that record exposure and fails when one
-that records is not left out.
+that records is not left out. Team Hub records nothing since 15 Nov 2026
+(launch readiness DF-P-02), so it is fetched ahead like any other tab.
 
 So a page that writes while it renders on the server can write before the
 auditor ever opens it. Row 3 is exposed to this; row 2 was until 15 Nov.
@@ -47,8 +47,8 @@ the box.
 
 | # | View | Table written | Where | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | CoachHelm (team board, player file, Your week, deep dive, standing) | `golf_insight_exposure` insert | `src/lib/coachhelm/v3/effectiveness/event-ledger.ts:193,244`, via `recordExposureForReturned` (`src/app/golf/actions/insight-delivery.ts:280`). Called from `src/clubhouse/data/coachhelm-team.ts:159`, `coachhelm-file.ts:48`, `coachhelm-dive.ts:176`, `coachhelm-player.ts:176,221` (`insight-delivery.ts:926`) | At most once per insight, coach and surface per UTC day. Uses the admin client. |
-| 2 | Team Hub, player view | `golf_insight_exposure` (`hub_signal`) | `src/clubhouse/data/hub.ts:368` → `src/app/golf/actions/player-hub-data.ts:138` → `insight-delivery.ts:441/501` | Not prefetched since 15 Nov 2026 (PMAC-01): it writes only when Team Hub is opened. Rows written before that include prefetches nobody saw; causality runs leave every `hub_signal` row out (`src/lib/coachhelm/v3/causality/exposure-scope.ts`). Recording from the client once the card has been on screen is the follow-up; what to do with the old rows is Nick's call. |
+| 1 | CoachHelm (team board, player file, Your week, deep dive) | `golf_insight_exposure` insert | `src/lib/coachhelm/v3/effectiveness/event-ledger.ts:193,244`, via `recordExposureForReturned` (`src/app/golf/actions/insight-delivery.ts:280`). Called from `src/clubhouse/data/coachhelm-team.ts:159`, `coachhelm-file.ts:48`, `coachhelm-dive.ts:176`, `coachhelm-player.ts` (`coachDiveRead`, through `drawnLater`) | At most once per insight, coach and surface per UTC day. Uses the admin client. Since 15 Nov 2026 (DF-P-03) the coach's player dive records only the reads it draws, once it has drawn them, and the coach's player Standing records nothing: it reads the feed only to mark which metrics have an open read. |
+| 2 | Team Hub, player view | Nothing since 15 Nov 2026. Before that, `golf_insight_exposure` (`hub_signal`) | Was `src/clubhouse/data/hub.ts` → `src/app/golf/actions/player-hub-data.ts` (`getTopInsightForPlayer`) → `insight-delivery.ts` | The hub aggregate read the player's top insight and recorded it as shown on every open and every prefetch, for a card no Clubhouse screen draws (PMAC-01, DF-P-02). It no longer reads it; `prefetch-exposure.test.ts` fails if it does again. Every `hub_signal` row is therefore an insight nobody saw, and causality runs leave them all out (`src/lib/coachhelm/v3/causality/exposure-scope.ts`). What to do with the old rows is Nick's call. |
 | 3 | Settings, head coach | `golf_team_coachhelm_settings` insert if missing | `src/clubhouse/data/settings.ts:255` → `src/app/golf/actions/insights-coachhelm.ts:1180` | Prefetched. Only once per team. |
 | 4 | Messages, opening a thread | `golf_conversation_participants.last_read_at`, `mark_golf_messages_read` RPC | `src/hooks/golf/use-golf-messages.ts:860` (and `:952` when a new message arrives while the tab is visible) → `src/app/actions/messages.ts` about 677–730 | Not fired for the thread desktop opens by itself (`deferMarkRead`, `src/clubhouse/screens/messages/Messages.tsx:160`). A deep link with `?conv=` does fire it. |
 | 5 | Messages, one-time pin import | `golf_pin_conversation` RPC | `src/clubhouse/screens/messages/use-conversation-pins.ts:86` | Only if the browser has old pins in localStorage. A clean audit browser won't fire it. |

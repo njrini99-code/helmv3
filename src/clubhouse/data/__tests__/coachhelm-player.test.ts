@@ -177,8 +177,12 @@ describe('the loaders read only the scope’s player', () => {
     const out = await loadCoachPlayerStanding({ scope });
     expect(standingRead.load).toHaveBeenCalledWith(PID);
     // The ladder's open reads come from the coach feed for this player, never the player's own feed.
-    expect(delivery.coach).toHaveBeenCalledWith(COACH, { player_id: PID, limit: PLAYER_FEED_LIMIT, includeMore: true });
+    expect(delivery.coach).toHaveBeenCalledWith(COACH, { player_id: PID, limit: PLAYER_FEED_LIMIT, includeMore: true, drawnLater: expect.any(Function) });
     expect(delivery.player).not.toHaveBeenCalled();
+    // Launch readiness DF-P-03: Standing reads the feed only to mark which metrics have an open read, and draws no card, so it records
+    // none of the feed as shown.
+    const standingOpts = delivery.coach.mock.calls[0]?.[1] as { drawnLater: (shown: unknown[]) => Promise<readonly string[]> };
+    await expect(standingOpts.drawnLater([penalties(PID), slope(PID)])).resolves.toEqual([]);
     if (out.status !== 'ready') throw new Error(out.status);
     const ids = out.data.groups.flatMap((g) => g.rows.map((r) => r.id));
     // The four parts of the round draw on Where strokes go, not in the groups (#2290); the other ten rows are the groups'.
@@ -192,12 +196,24 @@ describe('the loaders read only the scope’s player', () => {
     const scope = await okScope();
     delivery.coach.mockResolvedValue([penalties(PID), slope(PID), penalties(OTHER, 'in-not-theirs')]);
     const out = await loadCoachPlayerDeepDive({ scope });
-    expect(delivery.coach).toHaveBeenCalledWith(COACH, { player_id: PID, limit: PLAYER_FEED_LIMIT, includeMore: true });
+    expect(delivery.coach).toHaveBeenCalledWith(COACH, { player_id: PID, limit: PLAYER_FEED_LIMIT, includeMore: true, drawnLater: expect.any(Function) });
     expect(delivery.player).not.toHaveBeenCalled();
     expect(delivery.coachThemes).toHaveBeenCalledWith({ player_id: PID });
     expect(delivery.playerThemes).not.toHaveBeenCalled();
     if (out.status !== 'ready') throw new Error(out.status);
     expect(out.data.list.map((i) => i.base.id).sort()).toEqual(['in-pen', 'in-slope']);
+    // DF-P-03: the dive records the reads it draws, never the other player's row it dropped.
+    const diveOpts = delivery.coach.mock.calls[0]?.[1] as { drawnLater: (shown: unknown[]) => Promise<readonly string[]> };
+    expect([...(await diveOpts.drawnLater([]))].sort()).toEqual(['in-pen', 'in-slope']);
+  });
+
+  it('Deep dive: a dive that draws nothing of the feed (only another player’s row) records nothing as shown', async () => {
+    const scope = await okScope();
+    delivery.coach.mockResolvedValue([penalties(OTHER, 'in-not-theirs')]);
+    const out = await loadCoachPlayerDeepDive({ scope });
+    expect(out.status === 'ready' ? out.data.list : []).toEqual([]);
+    const diveOpts = delivery.coach.mock.calls[0]?.[1] as { drawnLater: (shown: unknown[]) => Promise<readonly string[]> };
+    await expect(diveOpts.drawnLater([])).resolves.toEqual([]);
   });
 
   it('Deep dive: an empty coach feed with reads on file is "didn’t load", not a first run', async () => {
