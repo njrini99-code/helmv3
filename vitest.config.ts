@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { globSync, readFileSync } from 'node:fs';
+import { TEST_SUPABASE_ENV, namesHostedSupabase } from './src/test/network-isolation';
 
 /**
  * Vitest config — root settings + project split.
@@ -74,9 +75,23 @@ const SCRIPT_UNIT_TESTS: string[] = globSync('scripts/**/*.{test,spec}.{mjs,ts}'
   .filter((f) => !GUARD_TESTS.includes(f) && !isNodeTestFile(path.join(__dirname, f)))
   .sort();
 
+/**
+ * Tests never see the shell's Supabase target (launch readiness DATA-01, 2026-11-15). CI's workflow env hands every
+ * job the real project URL and anon key, and vitest passes the shell's environment through, so unit runs were sending
+ * about 3,000 failed calls a day to production. `env` pins a local, keyless stand-in for every project; setup pins it
+ * again per file, removes the server-side secrets and refuses the network (src/test/network-isolation.ts).
+ */
+if (namesHostedSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL)) {
+  console.log(
+    `${process.env.CI ? '::notice::' : ''}vitest: this shell's NEXT_PUBLIC_SUPABASE_URL names a hosted Supabase ` +
+      `project; tests use ${TEST_SUPABASE_ENV.NEXT_PUBLIC_SUPABASE_URL} instead and cannot reach it.`,
+  );
+}
+
 const sharedTestConfig = {
   environment: 'jsdom' as const,
   globals: true,
+  env: { ...TEST_SUPABASE_ENV },
   // Vitest 5 flipped this default to `true` (vi.clearAllMocks() before every
   // test). Pinned to the Vitest 4 behaviour so the upgrade does not change
   // what any existing test observes: suites that record mock calls in
