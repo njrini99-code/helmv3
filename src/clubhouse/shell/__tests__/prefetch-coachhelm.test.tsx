@@ -52,3 +52,22 @@ describe('CH-R1 · CoachHelm is never fetched ahead', () => {
     expect([HOME, CAL, '/golf/dashboard/coachhelmish', '/golf/dashboard/stats?tab=coachhelm'].map(fullPrefetchAllowed)).toEqual([true, true, true, true]);
   });
 });
+
+describe('PMAC-01 · Team Hub is never fetched ahead either', () => {
+  const HUB = '/golf/dashboard/team-hub';
+
+  it('is refused by the guard, with or without a query, and nothing that only starts like it is', () => {
+    expect([HUB, `${HUB}?tab=updates`, `${HUB}/`].map(fullPrefetchAllowed)).toEqual([false, false, false]);
+    expect(['/golf/dashboard/team-hubs', '/golf/dashboard/team'].map(fullPrefetchAllowed)).toEqual([true, true]);
+  });
+
+  it('as a tab, a section and on press, every other page is fetched and Team Hub is not', () => {
+    renderHook(() => usePrefetchTabs([HOME, CAL, HUB], HOME, [HOME, CAL, HUB]));
+    act(() => void vi.advanceTimersByTime(5_000));
+    expect(fetched()).toContain(CAL);
+    expect(fetched().some((href) => href.startsWith(HUB))).toBe(false);
+    router.prefetch.mockClear();
+    prefetchOnPress(router as never, HUB, Date.now());
+    expect(router.prefetch).not.toHaveBeenCalled();
+  });
+});
