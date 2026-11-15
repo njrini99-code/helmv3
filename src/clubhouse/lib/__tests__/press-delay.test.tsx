@@ -2,8 +2,10 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * A12: a finger's press waits 70ms before the button shrinks, so a scroll that starts on a button never makes it flinch; a tap
- * that lifts sooner still shows its press for 90ms; a cancel or a move past 10px never shrinks it; a mouse presses at once.
+ * A12, MOTION-AND-VISUAL 3.8: a finger's press waits 50ms before the button shrinks (was 70ms; 3.8 keeps the 50ms delay
+ * and moves it into lib/press.ts), so a scroll that starts on a button never makes it flinch; a tap that lifts sooner
+ * still shows its press for the press beat, 110ms (was 90ms; 3.8: it flashes for 110ms, as on iOS); a cancel or a move
+ * past 10px never shrinks it; a mouse presses at once.
  */
 
 import { PRESS_TAP_SHOW_MS, PRESS_TOUCH_DELAY_MS, useChPress } from '../press';
@@ -47,21 +49,28 @@ afterEach(() => {
 const save = () => screen.getByText('Save');
 
 describe('the touch press waits (A12)', () => {
-  it('no scale at 50ms after a touch down; the scale at 70ms', () => {
+  it('the delay is 50ms and the flash the 110ms press beat (3.8)', () => {
+    expect(PRESS_TOUCH_DELAY_MS).toBe(50);
+    expect(PRESS_TAP_SHOW_MS).toBe(110);
+  });
+
+  it('no scale at 49ms after a touch down; the scale at 50ms', () => {
     act(() => void save().dispatchEvent(pointer('pointerdown', 'touch')));
-    act(() => vi.advanceTimersByTime(50));
+    act(() => vi.advanceTimersByTime(PRESS_TOUCH_DELAY_MS - 1));
     expect(presses()).toBe(0);
-    act(() => vi.advanceTimersByTime(PRESS_TOUCH_DELAY_MS - 50));
+    act(() => vi.advanceTimersByTime(1));
     expect(presses()).toBe(1);
   });
 
-  it('a tap lifted at 30ms still shows its press for 90ms, then springs back', () => {
+  it('a tap lifted at 30ms still shows its press for 110ms, then springs back', () => {
     act(() => void save().dispatchEvent(pointer('pointerdown', 'touch')));
     act(() => vi.advanceTimersByTime(30));
     act(() => void save().dispatchEvent(pointer('pointerup', 'touch')));
     expect(presses()).toBe(1);
     expect(springs()).toBe(0);
-    act(() => vi.advanceTimersByTime(PRESS_TAP_SHOW_MS));
+    act(() => vi.advanceTimersByTime(PRESS_TAP_SHOW_MS - 1));
+    expect(springs()).toBe(0);
+    act(() => vi.advanceTimersByTime(1));
     expect(springs()).toBe(1);
   });
 
