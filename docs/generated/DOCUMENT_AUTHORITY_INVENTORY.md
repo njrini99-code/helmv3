@@ -406,6 +406,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/messages-v2/PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-06-practice-plan-row.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-06-practice-plan-rows.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-15-plan-rows-file-url.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-22-player-course-plan.md` | current | - | - | - | 1 |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-24-course-plan-send.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-04-practice-plan-end-to-end.md` | current | - | - | - | - |
@@ -1469,6 +1470,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-label-in-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-set-up-lands.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-attendance-counts-typed.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
