@@ -16,7 +16,9 @@ export function threadItems(msgs: ChMsg[], now: string, timeZone: string): ChThr
     const d = parts(m.at, timeZone);
     if (d !== day) {
       day = d;
-      out.push({ kind: 'day', key: `d${d}`, label: dayLabel(m.at, now, timeZone), at: m.at });
+      // Keyed by the day AND the message that opens it: a thread that comes back round to a day (input not strictly
+      // chronological) would otherwise render two `d<day>` children (Sentry JAVASCRIPT-NEXTJS-1EH / 1MG, 2026-11-15).
+      out.push({ kind: 'day', key: `d${d}:${m.id}`, label: dayLabel(m.at, now, timeZone), at: m.at });
     }
     const prev = msgs[i - 1];
     const next = msgs[i + 1];

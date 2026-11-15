@@ -170,8 +170,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/team-communications.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/clubhouse/screens/messages/**`, `src/clubhouse/styles/messages.css`, `src/app/actions/messages.ts`, `src/app/golf/actions/messages.ts`, `src/app/golf/actions/message-attachments.ts` … and 50 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
-- **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`, `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md`
-- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified), `conversation-rail-deadline-abort-2026-10-07` (verified), `last-read-deadline-abort-2026-10-13` (released)
+- **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`, `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md`, `memory/incidents/team_communications/INC-2026-11-15-thread-day-key-collision.md`
+- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified), `conversation-rail-deadline-abort-2026-10-07` (verified), `last-read-deadline-abort-2026-10-13` (released), `thread-day-key-collision-2026-11-15` (verified)
 - **History:** `memory/ledgers/changes/team_communications.md`, `memory/ledgers/tests/team_communications.md`
 
 ## `team_operations`
