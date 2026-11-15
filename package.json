@@ -185,6 +185,7 @@
     "clubhouse:catalog": "node scripts/clubhouse/component-catalog.mjs",
     "clubhouse:css": "node scripts/clubhouse/css-quality.mjs",
     "clubhouse:perf:check": "node scripts/clubhouse/perf-budget.mjs",
+    "clubhouse:js-budget": "node scripts/clubhouse/route-js-budget.mjs",
     "clubhouse:tools": "node scripts/clubhouse/tools.mjs",
     "clubhouse:tools:setup": "node scripts/clubhouse/tools.mjs --setup",
     "clubhouse:profile": "npx --yes react-devtools@8.0.0",
