@@ -45,8 +45,8 @@ describe('resultsCsv', () => {
     expect(f.name).toBe('fall-invitational-results-2026-11-15.csv');
     expect(f.head).toEqual(['Row', 'Place', 'Name', 'Team', 'Role', 'R1', 'R2', 'Total', 'To par', 'Rounds counted']);
     expect(f.rows.slice(0, 3)).toEqual([
-      ['Team', '1', 'Demo University', null, null, 286, 287, 573, -3, null],
-      ['Team', '2', 'Elon', null, null, 290, 291, 581, 5, null],
+      ['Team', 1, 'Demo University', null, null, 286, 287, 573, -3, null],
+      ['Team', 2, 'Elon', null, null, 290, 291, 581, 5, null],
       ['Team', null, 'Furman B', null, null, 300, null, null, null, null],
     ]);
     expect(f.rows[3]).toEqual(['Player', null, 'Ava Lindqvist', 'Demo University', 'Lineup', 70, 71, 141, -3, '2 of 2']);
@@ -92,6 +92,6 @@ describe('resultsCsv', () => {
       },
     });
     const f = resultsCsv({ event: ev, players: ROSTER, teamName: null }, '2026-11-15');
-    expect(f.rows[0]).toEqual(['Team', '4', 'Our team', null, null, 290, 285, 575, -1, null]);
+    expect(f.rows[0]).toEqual(['Team', 4, 'Our team', null, null, 290, 285, 575, -1, null]);
   });
 });

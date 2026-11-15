@@ -16,7 +16,7 @@ export function standingsCsv(input: {
   const rounds = Math.max(input.numRounds, ...input.board.rows.flatMap((r) => r.rounds.map((x) => x.number)), 1);
   const head = ['Place', 'Player', 'Class', ...Array.from({ length: rounds }, (_, i) => `R${i + 1}`), 'Total', 'To par', 'Rounds', 'Average', 'Standing'];
   const row = (r: ChQRow, placed: boolean): ChCsvValue[] => [
-    placed && r.position != null ? `${r.tied ? 'T' : ''}${r.position}` : null,
+    placed && r.position != null ? (r.tied ? `T${r.position}` : r.position) : null,
     r.name,
     r.classYear,
     ...Array.from({ length: rounds }, (_, i) => r.rounds.find((x) => x.number === i + 1)?.total ?? null),

@@ -41,6 +41,16 @@ export function csvRound(v: number | null | undefined, places = 1): number | nul
   return Math.round(v * k) / k;
 }
 
+/**
+ * A finishing place as a spreadsheet sorts it: a plain place as a number ("3" is 3), a tie as written ("T3"). Text places
+ * would sort 1, 10, 2.
+ */
+export function csvPlace(place: string | number | null | undefined): number | string | null {
+  if (place == null || place === '') return null;
+  if (typeof place === 'number') return Number.isFinite(place) ? place : null;
+  return /^\d+$/.test(place) ? Number(place) : place;
+}
+
 /** A file name from its parts: "Demo University", "rounds", "2026-11-15" is demo-university-rounds-2026-11-15.csv. */
 export function chCsvName(...parts: ReadonlyArray<string | null | undefined>): string {
   const slug = parts

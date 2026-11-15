@@ -305,7 +305,7 @@ export function RoundsLibrary({
               {/* B11: on desktop, Up and Down walk the rounds that open (their links), Home and End go to the ends; one Tab stop. */}
               {!phone && <RovingRows selector=".ch-rd-book a.ch-rd-sc" within=".ch-rd" />}
               <div className="ch-rd-tools">
-                <SearchField value={q} onChange={setQ} placeholder="Search course…" label="Search rounds by course" />
+                <SearchField value={q} onChange={setQ} placeholder={phone ? 'Search…' : 'Search course…'} label="Search rounds by course" />
                 <Segmented weight="filter" redraws
                   label="Group rounds"
                   size="sm"

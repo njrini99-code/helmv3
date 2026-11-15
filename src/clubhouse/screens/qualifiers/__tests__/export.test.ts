@@ -76,7 +76,7 @@ describe('standingsCsv', () => {
     expect(f.name).toBe('spring-qualifier-standings-2026-11-15.csv');
     expect(f.head).toEqual(['Place', 'Player', 'Class', 'R1', 'R2', 'R3', 'Total', 'To par', 'Rounds', 'Average', 'Standing']);
     expect(f.rows).toEqual([
-      ['1', 'Ava Lindqvist', 'Junior', 70, 72, 71, 213, -3, 3, 71, 'Qualifying'],
+      [1, 'Ava Lindqvist', 'Junior', 70, 72, 71, 213, -3, 3, 71, 'Qualifying'],
       ['T2', 'Theo Marchetti', 'Junior', 72, 73, 71, 216, 0, 3, 72, 'Tie at cut'],
       ['T2', 'Sofia Alvarez', 'Junior', 74, null, 73, 147, 3, 2, 73.5, 'Missed a round'],
       [null, 'Eli Brandt', null, null, null, null, null, null, 0, null, null],

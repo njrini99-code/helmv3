@@ -173,7 +173,7 @@ describe('Export standings', () => {
     render(shell(<ExportStandings name="Spring Qualifier" board={board} numRounds={2} />));
     fireEvent.click(screen.getByRole('button', { name: 'Export' }));
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
-    expect(saved[0]!.rows[0]).toEqual(['1', 'Ava Lindqvist', 'Junior', 70, null, 70, -2, 1, 70, 'Qualifying']);
+    expect(saved[0]!.rows[0]).toEqual([1, 'Ava Lindqvist', 'Junior', 70, null, 70, -2, 1, 70, 'Qualifying']);
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Standings exported · 1 player' }));
   });
 

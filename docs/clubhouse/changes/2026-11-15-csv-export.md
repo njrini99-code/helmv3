@@ -21,6 +21,8 @@ Held items:     none
     cell, never a made-up zero; a flag is Yes or No.
   - The file starts with a UTF-8 byte order mark and ends its lines CRLF, so
     Excel on Windows reads accented names and curly apostrophes right.
+  - `csvPlace` writes a plain place as a number and a tie as written ("T3"), so
+    the column sorts 1, 2, 10 rather than 1, 10, 2.
   - `chCsvName` makes a plain file name ("demo-university-rounds-2026-11-15.csv").
   - `saveCsv` hands the file to the share sheet on a phone (Files, Mail,
     AirDrop) and downloads it anywhere else. Closing the share sheet is not a

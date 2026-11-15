@@ -1,4 +1,4 @@
-import { chCsvName, type ChCsvFile, type ChCsvValue } from '../../lib/csv';
+import { chCsvName, csvPlace, type ChCsvFile, type ChCsvValue } from '../../lib/csv';
 import { plural } from '../../lib/plural';
 import { deskRows } from './desk-model';
 import type { ChTourDeskData, ChTourFieldTeam, ChTourPlayerRound } from './types';
@@ -37,7 +37,7 @@ export function resultsCsv(data: Pick<ChTourDeskData, 'event' | 'players' | 'tea
         .sort(placeOrder)
         .map((t) => [
           'Team',
-          t.place,
+          csvPlace(t.place),
           t.squad === 'B' ? `${t.name} B` : t.name,
           null,
           null,
@@ -50,7 +50,7 @@ export function resultsCsv(data: Pick<ChTourDeskData, 'event' | 'players' | 'tea
       ? [
           [
             'Team',
-            e.finish?.place ?? null,
+            csvPlace(e.finish?.place),
             us,
             null,
             null,

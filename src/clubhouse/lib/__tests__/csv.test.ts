@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { chCsv, chCsvCell, chCsvName, csvRound, saveCsv } from '../csv';
+import { chCsv, chCsvCell, chCsvName, csvPlace, csvRound, saveCsv } from '../csv';
 
 /** Launch readiness F-02: every Clubhouse export is built by lib/csv.ts. */
 describe('chCsvCell', () => {
@@ -61,6 +61,17 @@ describe('csvRound', () => {
     expect(csvRound(0.1 + 0.2, 1)).toBe(0.3);
     expect(csvRound(null)).toBeNull();
     expect(csvRound(Number.NaN)).toBeNull();
+  });
+});
+
+describe('csvPlace', () => {
+  it('writes a plain place as a number, so the column sorts 1, 2, 10, and a tie as written', () => {
+    expect(csvPlace('1')).toBe(1);
+    expect(csvPlace('10')).toBe(10);
+    expect(csvPlace('T3')).toBe('T3');
+    expect(csvPlace(4)).toBe(4);
+    expect(csvPlace(null)).toBeNull();
+    expect(csvPlace('')).toBeNull();
   });
 });
 
