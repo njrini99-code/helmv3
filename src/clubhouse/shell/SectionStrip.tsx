@@ -72,12 +72,17 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
     if (sw?.open) centre();
   }, [sw?.open, centre]);
 
-  // The plate slides from the pill it left to the one chosen, on the compositor (lib/slide-plate.ts).
-  useSlidePlate(row, '[aria-current="page"] > .ch-strip__plate', sw?.shown?.id ?? null, { reduced, still: () => shutRef.current });
+  // The plate slides from the pill it left to the one chosen, on the compositor (lib/slide-plate.ts): 260 ms on the iOS
+  // curve, translate and width (MOTION-AND-VISUAL 3.3; MAC-17 keeps the width), each label taking its ink as the plate
+  // crosses it. The page under it swaps at once.
+  useSlidePlate(row, '[aria-current="page"] > .ch-strip__plate', sw?.shown?.id ?? null, { reduced, still: () => shutRef.current, tween: 'thumb', ink: '.ch-strip__pill' });
 
   if (!sw?.enabled) return null;
 
-  /** Tapping the open section closes the strip and does what a retapped tab did (CH-1907): pop, or scroll to the top. */
+  /**
+   * Tapping the open section closes the strip and does what a retapped tab did (CH-1907; MOTION-AND-VISUAL 3.3): pop, or
+   * scroll the page to the top, smoothly unless Reduce Motion is on.
+   */
   const retap = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
     sw.setOpen(false);
     const level = (window.history.state as { chPhone?: unknown } | null)?.chPhone;
@@ -92,16 +97,20 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
   };
 
   /**
-   * Choosing another section (F-0008, F-0046). The row holds still, unsnapped, so the focused pill doesn't recentre it
-   * under the plate's glide; and the route change waits a frame, so the strip's close is on the compositor before the
-   * new page's commit can hold its first frame. The switch itself still swaps at once (mot-03). A modified click (a new
-   * tab) is left to the link.
+   * Choosing another section (F-0008, F-0046; MOTION-AND-VISUAL 3.3). The selection haptic ticks (sw.choose), and a pill
+   * an end of the row clips scrolls wholly into view, smoothly unless Reduce Motion is on; otherwise the row holds still,
+   * unsnapped, so the focused pill doesn't recentre it under the plate's glide. The route change waits a frame, so the
+   * strip's close is on the compositor before the new page's commit can hold its first frame. The switch itself swaps
+   * the page at once (mot-03). A modified click (a new tab) is left to the link.
    */
   const choose = (e: MouseEvent<HTMLAnchorElement>, s: (typeof sw.sections)[number]) => {
     sw.choose(s);
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    if (row.current) row.current.dataset.holding = '';
+    if (row.current) {
+      row.current.dataset.holding = '';
+      revealPill(row.current, e.currentTarget, reduced);
+    }
     requestAnimationFrame(() => window.setTimeout(() => router.push(s.href, { scroll: false }), 0));
   };
 
@@ -174,4 +183,17 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
       </m.nav>
     </>
   );
+}
+
+/**
+ * Scrolls the strip's row so `pill` is wholly in view, clear of the row's inline scroll padding (the edge fade): only
+ * when an end clips it, and only as far as it takes. Smooth unless Reduce Motion is on (MOTION-AND-VISUAL 3.3, 3.11).
+ */
+export function revealPill(row: HTMLElement, pill: HTMLElement, reduced: boolean): void {
+  const pad = parseFloat(getComputedStyle(row).scrollPaddingInlineStart) || 0;
+  const start = pill.offsetLeft - pad;
+  const end = pill.offsetLeft + pill.offsetWidth + pad - row.clientWidth;
+  const to = row.scrollLeft > start ? start : row.scrollLeft < end ? end : null;
+  if (to === null) return;
+  row.scrollTo({ left: Math.max(0, to), behavior: reduced ? 'instant' : 'smooth' });
 }

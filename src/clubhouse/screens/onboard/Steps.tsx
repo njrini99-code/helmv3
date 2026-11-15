@@ -712,6 +712,11 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
   const n = none ? 8 : d.hcp!;
   const pct = ((n - HCP_MIN) / (HCP_MAX - HCP_MIN)) * 100;
   const set = (v: number) => up({ hcp: clampHcp(v) });
+  // A stepper's change is a selection tick (MOTION-AND-VISUAL 3.10, D-70); a press at the end of the scale changes nothing and stays silent.
+  const step = (by: number) => {
+    if (clampHcp(n + by) !== n) haptic('select');
+    set(n + by);
+  };
   const go = () => {
     const p = hometownProblem(d.city, d.state);
     if (p) {
@@ -743,12 +748,12 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
             {!none && (
               <span className="ch-ox-steps">
                 <Tooltip>
-                  <button type="button" className="ch-ox-step" aria-label="Lower" onClick={() => set(n - 0.1)}>
+                  <button type="button" className="ch-ox-step" aria-label="Lower" onClick={() => step(-0.1)}>
                     <Icon icon={Minus} size={16} />
                   </button>
                 </Tooltip>
                 <Tooltip>
-                  <button type="button" className="ch-ox-step" aria-label="Higher" onClick={() => set(n + 0.1)}>
+                  <button type="button" className="ch-ox-step" aria-label="Higher" onClick={() => step(0.1)}>
                     <Icon icon={Plus} size={16} />
                   </button>
                 </Tooltip>

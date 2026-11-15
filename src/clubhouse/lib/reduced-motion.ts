@@ -5,10 +5,29 @@ import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preference
 
 const QUERY = '(prefers-reduced-motion: reduce)';
 
+/**
+ * The OS setting is read here and nowhere else in Clubhouse (MOTION-AND-VISUAL 3.11): one media query and one listener
+ * for the whole app, however many parts read it, and every part gets it from here (the hooks below for React, and
+ * chMotionModeNow outside it). Each read asks the query as it renders, so a reading is never stale.
+ */
+const readers = new Set<() => void>();
+let query: MediaQueryList | null = null;
+const tell = () => {
+  for (const reader of Array.from(readers)) reader();
+};
+
 function subscribe(onChange: () => void) {
-  const mql = window.matchMedia(QUERY);
-  mql.addEventListener('change', onChange);
-  return () => mql.removeEventListener('change', onChange);
+  readers.add(onChange);
+  if (!query) {
+    query = window.matchMedia(QUERY);
+    query.addEventListener?.('change', tell);
+  }
+  return () => {
+    readers.delete(onChange);
+    if (readers.size || !query) return;
+    query.removeEventListener?.('change', tell);
+    query = null;
+  };
 }
 
 function useOsReduce(): boolean {

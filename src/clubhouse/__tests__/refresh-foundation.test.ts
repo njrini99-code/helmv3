@@ -51,6 +51,7 @@ describe('titleOnScroll', () => {
   it('fades on the scroll timeline in CSS where Safari has one, with no scale anywhere', () => {
     const shell = css('shell.css');
     expect(shell).toMatch(/@supports \(animation-timeline: scroll\(\)\)[\s\S]*?\.ch-large-title[\s\S]*?animation-timeline: scroll\(root block\);[\s\S]*?animation-range: 0px 52px;/);
-    expect(shell).toMatch(/@keyframes ch-lt-under \{\s*to \{\s*opacity: 0\.1;\s*\}\s*\}/);
+    // One keyframe for both titles (MOTION-AND-VISUAL 3.3): the large title ends at 0.1, the bar's title at --ch-lt-to: 1.
+    expect(shell).toMatch(/@keyframes ch-lt-under \{\s*to \{\s*opacity: var\(--ch-lt-to, 0\.1\);\s*\}\s*\}/);
   });
 });
