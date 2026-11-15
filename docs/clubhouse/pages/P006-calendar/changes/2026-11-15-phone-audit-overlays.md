@@ -13,14 +13,16 @@ Held items:     none
 
 ### Changed
 
-- The coach's phone More is the shared Menu anchored to its key, not a sheet with a title, grab and Close (CALMORE-03, S3.5).
+- The coach's phone More is the shared Menu anchored to its key, not a sheet
+  with a title, grab and Close (CALMORE-03, S3.5).
 - A page popover opens and leaves on the menu motion (180 in from .96, 110 out).
 - Undo before the players hear lasts the ten-second Undo window (NP-06).
 - Small keys reach 44 by 44 on the phone.
 
 ### Why
 
-- The 15 Nov production audit: phone layout, overlays and names that disagreed with the screen.
+- The 15 Nov production audit: phone layout, overlays and names that disagreed
+  with the screen.
 
 ### Verification
 

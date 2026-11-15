@@ -13,13 +13,16 @@ Held items:     none
 
 ### Changed
 
-- A round row is named from what it shows, in drawn order (day, month for a screen reader, 9 holes, fairways, greens, to par), with no aria-label to disagree (MAC-09, PMAC-07).
+- A round row is named from what it shows, in drawn order (day, month for a
+  screen reader, 9 holes, fairways, greens, to par), with no aria-label to
+  disagree (MAC-09, PMAC-07).
 - The hole map's score marks inside a link are drawn only (MAC-20).
 - Small keys reach 44 by 44 on the phone.
 
 ### Why
 
-- The 15 Nov production audit: phone layout, overlays and names that disagreed with the screen.
+- The 15 Nov production audit: phone layout, overlays and names that disagreed
+  with the screen.
 
 ### Verification
 

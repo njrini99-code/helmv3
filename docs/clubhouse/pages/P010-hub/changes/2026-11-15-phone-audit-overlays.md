@@ -13,13 +13,16 @@ Held items:     none
 
 ### Changed
 
-- Delete asks with the item's own name and focuses Cancel: an action sheet on the phone, an alert dialog on a desk (NP-05, S3.6).
-- A task row's count is words in the button's name (", 3 of 5 done"), and the mini bar is drawn only (MAC-20).
+- Delete asks with the item's own name and focuses Cancel: an action sheet on
+  the phone, an alert dialog on a desk (NP-05, S3.6).
+- A task row's count is words in the button's name (", 3 of 5 done"), and the
+  mini bar is drawn only (MAC-20).
 - Ledger rows set `aria-controls` only while their panel is open (PMAC-13).
 
 ### Why
 
-- The 15 Nov production audit: phone layout, overlays and names that disagreed with the screen.
+- The 15 Nov production audit: phone layout, overlays and names that disagreed
+  with the screen.
 
 ### Verification
 

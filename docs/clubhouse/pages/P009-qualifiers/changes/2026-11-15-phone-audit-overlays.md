@@ -13,12 +13,15 @@ Held items:     none
 
 ### Changed
 
-- Inside the phone row's button the thru dots are aria-hidden; the button's own name says the progress (MAC-20, aria_descendant_valid).
-- The rounds showcase sets `aria-controls` only while its panel is mounted (PMAC-13).
+- Inside the phone row's button the thru dots are aria-hidden; the button's own
+  name says the progress (MAC-20, aria_descendant_valid).
+- The rounds showcase sets `aria-controls` only while its panel is mounted
+  (PMAC-13).
 
 ### Why
 
-- The 15 Nov production audit: phone layout, overlays and names that disagreed with the screen.
+- The 15 Nov production audit: phone layout, overlays and names that disagreed
+  with the screen.
 
 ### Verification
 

@@ -13,13 +13,15 @@ Held items:     none
 
 ### Changed
 
-- A class card is named from its face in drawn order; its week strip's days and time are said in words after the instructor (PMAC-07, MAC-09).
+- A class card is named from its face in drawn order; its week strip's days and
+  time are said in words after the instructor (PMAC-07, MAC-09).
 - The in-class sheet follows the shared sheet motion.
 - Class status keys reach 44 by 44 on the phone.
 
 ### Why
 
-- The 15 Nov production audit: phone layout, overlays and names that disagreed with the screen.
+- The 15 Nov production audit: phone layout, overlays and names that disagreed
+  with the screen.
 
 ### Verification
 

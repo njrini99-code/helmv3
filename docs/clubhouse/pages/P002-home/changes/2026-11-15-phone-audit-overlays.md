@@ -13,11 +13,13 @@ Held items:     none
 
 ### Changed
 
-- The coach Home route has its own document title, Home (CHROME-P-06, CHROME-P-07).
+- The coach Home route has its own document title, Home (CHROME-P-06,
+  CHROME-P-07).
 
 ### Why
 
-- The 15 Nov production audit: phone layout, overlays and names that disagreed with the screen.
+- The 15 Nov production audit: phone layout, overlays and names that disagreed
+  with the screen.
 
 ### Verification
 

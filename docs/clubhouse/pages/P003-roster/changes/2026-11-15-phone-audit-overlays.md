@@ -13,15 +13,20 @@ Held items:     none
 
 ### Changed
 
-- A leader card is named from what it draws (label, figure, unit, player) with "Open profile" for a screen reader only, instead of an aria-label that disagreed with it (MAC-09, N13C-19).
-- On the phone list the form stub bars are drawn only (aria-hidden) and the row's name says "no rounds yet" in words (MAC-20).
+- A leader card is named from what it draws (label, figure, unit, player) with
+  "Open profile" for a screen reader only, instead of an aria-label that
+  disagreed with it (MAC-09, N13C-19).
+- On the phone list the form stub bars are drawn only (aria-hidden) and the
+  row's name says "no rounds yet" in words (MAC-20).
 - Small keys reach 44 by 44 on the phone without changing how they are drawn.
 
 ### Why
 
-- The 15 Nov production audit: phone layout, overlays and names that disagreed with the screen.
+- The 15 Nov production audit: phone layout, overlays and names that disagreed
+  with the screen.
 
 ### Verification
 
-- `screens/roster/__tests__/leaders-rule.test.tsx`, `__tests__/roster*.test.tsx` (jsdom).
+- `screens/roster/__tests__/leaders-rule.test.tsx`, `__tests__/roster*.test.tsx`
+  (jsdom).
 - A real-iPhone pass (tier D) is still owed.

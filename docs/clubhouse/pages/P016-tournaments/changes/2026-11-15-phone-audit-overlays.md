@@ -13,11 +13,13 @@ Held items:     none
 
 ### Changed
 
-- The hole grid's score marks inside a button are drawn only; the button's name says the score (MAC-20).
+- The hole grid's score marks inside a button are drawn only; the button's name
+  says the score (MAC-20).
 
 ### Why
 
-- The 15 Nov production audit: phone layout, overlays and names that disagreed with the screen.
+- The 15 Nov production audit: phone layout, overlays and names that disagreed
+  with the screen.
 
 ### Verification
 

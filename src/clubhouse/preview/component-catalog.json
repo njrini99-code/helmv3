@@ -2291,7 +2291,9 @@
         "src/clubhouse/styles/messages-details.css",
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -2508,7 +2510,6 @@
       "styles": [
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3370,7 +3371,9 @@
         "src/clubhouse/styles/messages-details.css",
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -4147,7 +4150,9 @@
         "src/clubhouse/styles/messages-details.css",
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -6243,7 +6248,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -7846,8 +7852,10 @@
         "src/clubhouse/styles/messages-details.css",
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -8692,9 +8700,11 @@
         "src/clubhouse/styles/messages-details.css",
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -11291,26 +11301,7 @@
         "AccountSheet"
       ],
       "styles": [
-        "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/classes.css",
-        "src/clubhouse/styles/coachhelm-ask-v2.css",
-        "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/command.css",
-        "src/clubhouse/styles/controls.css",
-        "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/messages-overlays.css",
-        "src/clubhouse/styles/practice.css",
-        "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
-        "src/clubhouse/styles/roster.css",
-        "src/clubhouse/styles/rounds-setup.css",
-        "src/clubhouse/styles/rounds-track.css",
-        "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats-redesign.css",
-        "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
-        "src/clubhouse/styles/tournaments-home.css",
-        "src/clubhouse/styles/ui.css"
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -11322,53 +11313,6 @@
         "AskSheetContext"
       ],
       "styles": [],
-      "examples": [],
-      "fixture": "Contextual module"
-    },
-    {
-      "file": "src/clubhouse/shell/AskSheetBody.tsx",
-      "group": "shell",
-      "exports": [
-        "AskSheetBody"
-      ],
-      "styles": [
-        "src/clubhouse/styles/auth.css",
-        "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/classes.css",
-        "src/clubhouse/styles/coachhelm-ask-cards.css",
-        "src/clubhouse/styles/coachhelm-ask-v2.css",
-        "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-file.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
-        "src/clubhouse/styles/coachhelm-read.css",
-        "src/clubhouse/styles/coachhelm-team.css",
-        "src/clubhouse/styles/coachhelm-thread.css",
-        "src/clubhouse/styles/coachhelm-views.css",
-        "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/controls.css",
-        "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/hub.css",
-        "src/clubhouse/styles/messages.css",
-        "src/clubhouse/styles/onboard.css",
-        "src/clubhouse/styles/practice.css",
-        "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
-        "src/clubhouse/styles/roster.css",
-        "src/clubhouse/styles/rounds-setup.css",
-        "src/clubhouse/styles/rounds-track.css",
-        "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats-redesign.css",
-        "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tournaments-home.css",
-        "src/clubhouse/styles/tournaments-lineup.css",
-        "src/clubhouse/styles/tournaments-live.css",
-        "src/clubhouse/styles/tournaments-player.css",
-        "src/clubhouse/styles/tournaments-review.css",
-        "src/clubhouse/styles/tournaments.css",
-        "src/clubhouse/styles/ui.css"
-      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -11962,6 +11906,7 @@
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
+        "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-team.css",
@@ -12987,6 +12932,7 @@
         "PhoneTextAction"
       ],
       "styles": [
+        "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/quick-chat.css",
@@ -13149,9 +13095,11 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [
         "SearchField"
@@ -13502,6 +13450,7 @@
       "file": "src/clubhouse/ui/Toast.tsx",
       "group": "ui",
       "exports": [
+        "CH_TOAST_ACTION_MS",
         "ToastProvider"
       ],
       "styles": [
@@ -15641,6 +15590,8 @@
         "ch-aks-link__tx",
         "ch-aks-miss",
         "ch-aks-miss__dot",
+        "ch-aks-miss__hit",
+        "ch-aks-miss__key",
         "ch-aks-miss__pin",
         "ch-aks-miss__ring",
         "ch-aks-miss__side",
@@ -16047,7 +15998,8 @@
         "ch-seg",
         "ch-seg__b",
         "ch-skel",
-        "ch-skel-ln"
+        "ch-skel-ln",
+        "ch-topbar"
       ],
       "tokens": [
         {
@@ -17894,6 +17846,7 @@
         "ch-menu__shortcut",
         "ch-menu__text",
         "ch-modal",
+        "ch-modal--over",
         "ch-modal__action",
         "ch-modal__body",
         "ch-modal__foot",
@@ -17989,6 +17942,16 @@
           "name": "--ch-modal-max-h",
           "value": "calc(100dvh - 48px)",
           "scope": ".ch-modal__panel"
+        },
+        {
+          "name": "--ch-pop-from",
+          "value": "scale(0.96)",
+          "scope": ":where(.ch-modal[data-ch-pop='quick']) .ch-modal__panel"
+        },
+        {
+          "name": "--ch-pop-from",
+          "value": "scale(1.1)",
+          "scope": ":where(.ch-modal[role='alertdialog']) .ch-modal__panel"
         },
         {
           "name": "--ch-modal-max-h",
@@ -22752,18 +22715,8 @@
     {
       "file": "src/clubhouse/styles/shell.css",
       "classes": [
+        "ch-acct",
         "ch-app",
-        "ch-ask-cmp__round",
-        "ch-asks",
-        "ch-asks__ctx",
-        "ch-asks__dock",
-        "ch-asks__drag",
-        "ch-asks__head",
-        "ch-asks__hint",
-        "ch-asks__open",
-        "ch-asks__panel",
-        "ch-asks__scroll",
-        "ch-asks__title",
         "ch-avatar",
         "ch-bell",
         "ch-bell__count",
@@ -22889,10 +22842,9 @@
         "ch-large-title__context",
         "ch-lp",
         "ch-lp__bar",
-        "ch-more",
+        "ch-modal__body",
         "ch-more__cap",
         "ch-more__count",
-        "ch-more__head",
         "ch-more__ic",
         "ch-more__label",
         "ch-more__list",
@@ -22902,7 +22854,6 @@
         "ch-more__sub",
         "ch-more__team",
         "ch-more__tick",
-        "ch-more__x",
         "ch-nav",
         "ch-nav--plate",
         "ch-nav__group",
@@ -22957,7 +22908,6 @@
         "ch-rs-head",
         "ch-rsd",
         "ch-rsm",
-        "ch-scrim",
         "ch-serif-num",
         "ch-sheet",
         "ch-sidebar",
@@ -30692,7 +30642,6 @@
       "classes": [
         "ch-app",
         "ch-ask-cmp__send",
-        "ch-asks__open",
         "ch-avatar",
         "ch-avatar--ring",
         "ch-backlink",

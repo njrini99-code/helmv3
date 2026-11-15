@@ -13,13 +13,16 @@ Held items:     none
 
 ### Changed
 
-- The welcome greeting uses the app's one time-of-day rule (morning from 5), saying evening under its dark sky for the rest of the night (MAC-14).
+- The welcome greeting uses the app's one time-of-day rule (morning from 5),
+  saying evening under its dark sky for the rest of the night (MAC-14).
 - Onboarding's small keys reach 44 by 44 on the phone.
-- The coach and player onboarding routes name the tab "Set up your team" and "Set up your profile" (GAP-R-08).
+- The coach and player onboarding routes name the tab "Set up your team" and
+  "Set up your profile" (GAP-R-08).
 
 ### Why
 
-- The 15 Nov production audit: phone layout, overlays and names that disagreed with the screen.
+- The 15 Nov production audit: phone layout, overlays and names that disagreed
+  with the screen.
 
 ### Verification
 
