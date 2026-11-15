@@ -20,7 +20,7 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qcs .cmp__send { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border: 0; border-radius: 50%; background: var(--ch-accent); color: var(--ch-text-on-accent); cursor: pointer; }
 .ch-qcs .cmp__send.off { background: var(--ch-skel-base); color: var(--ch-text-tertiary); }
 .ch-qcs .cmp__send.stop { background: var(--ch-text-primary); color: var(--ch-card-bg); box-shadow: none; }
-.ch-qcs .cmp__send .sq { width: 11px; height: 11px; border-radius: var(--ch-radius-mark); background: currentColor; }
+.ch-qcs .cmp__send .sq { width: 11px; height: 11px; border-radius: var(--ch-radius-xs); background: currentColor; }
 .ch-qcs .cmp__send svg { width: 17px; height: 17px; stroke-width: 2.5; }
 .ch-qcs .qc__sheet { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .ch-qcs .qc__inner { gap: 12px; }
@@ -67,7 +67,7 @@ html[data-fw-theme='dark'] .ch-qcs {
    centred and the name would run under it (Player stats, design review 10 Nov 2026). Every bar without one is a tab root's, its title at the left
    with room beside it, whether or not the bar swipes between sections: the name was tied to that swipe, so What's new had the plain mark while
    the other roots had the name, and a root lost it for as long as a pushed screen covered it. */
-.ch-qck .hkey__label { display: none; position: relative; white-space: nowrap; font: var(--ch-type-13-medium); letter-spacing: var(--ch-track-13); }
+.ch-qck .hkey__label { display: none; position: relative; white-space: nowrap; font: var(--ch-type-footnote); letter-spacing: var(--ch-track-13); }
 .ch-qck .hkey .ch-qc-keys { display: none; position: relative; }
 @media (max-width: 820px) and (min-width: 360px) {
   .ch-topbar:not(:has(.ch-pbar__back)) .ch-qck.keyslot { width: auto; }
@@ -217,7 +217,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 @keyframes ch-qc-leave { to { opacity: 0; } }
 .ch-qcs.is-reduce .qc-starts.is-leaving { display: none; }
 /* `ST-9.qc.today`: a quiet rule over the last page of a thread from earlier today. */
-.ch-qcs .qc-rule { position: sticky; top: -16px; z-index: 1; display: flex; align-items: center; gap: 12px; margin: -16px 0 4px; padding: 12px 0 8px; background: var(--ch-card-bg); font: var(--ch-type-12-medium); letter-spacing: var(--ch-track-12); color: var(--ch-text-secondary); animation: ch-qc-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+.ch-qcs .qc-rule { position: sticky; top: -16px; z-index: 1; display: flex; align-items: center; gap: 12px; margin: -16px 0 4px; padding: 12px 0 8px; background: var(--ch-card-bg); font: var(--ch-type-caption); letter-spacing: var(--ch-track-12); color: var(--ch-text-secondary); animation: ch-qc-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
 .ch-qcs .qc-rule::before, .ch-qcs .qc-rule::after { content: ''; flex: 1; height: var(--ch-hairline-w); background: var(--ch-border-hairline); }
 
 /* `ST-1.context`: one chip on its own row above the capsule, its leading edge on the field's text. */

@@ -145,7 +145,7 @@
   position: relative;
   display: block;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   /* The warm track every CoachHelm bar sits on (the Team view's), not a cool grey rule colour. */
   background: var(--ch-chart-track);
   box-shadow: var(--ch-chart-track-ring);
@@ -169,7 +169,7 @@
   bottom: -4px;
   width: 2px;
   margin-left: -1px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-text-primary);
 }
 

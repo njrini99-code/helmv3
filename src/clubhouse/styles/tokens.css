@@ -323,23 +323,8 @@
   --ch-fw-500: 500;
   --ch-fw-600: 600;
   --ch-fw-700: 700;
-  --ch-type-figure-40-500: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
-  --ch-type-figure-44-500: 500 calc(44 * var(--ch-type-k))/1 var(--ch-font-sans);
   /* Title steps (once the serif titles; the owner moved titles to the heavy sans on 2026-10-07): page and section titles
      only, never data or controls. The names stay so every consumer follows. */
-  --ch-type-serif-l: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
-  --ch-type-serif-m: 600 calc(22 * var(--ch-type-k))/1.15 var(--ch-font-sans);
-  --ch-type-serif-s: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-  --ch-type-display-l: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
-  --ch-type-display-s: 600 calc(22 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-  --ch-type-title: 600 calc(15 * var(--ch-type-k))/1.35 var(--ch-font-sans);
-  --ch-type-body-l: 400 calc(16 * var(--ch-type-k))/1.55 var(--ch-font-sans);
-  --ch-type-body: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
-  --ch-type-body-s: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
-  --ch-type-label: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-  --ch-type-label-s: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-  --ch-type-caption: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
-  --ch-type-figure-l: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
   --ch-type-mono: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-mono);
 
   /* B1: one role per type step (mot-08's 11 sizes), each a whole `font` with its own leading, a 500 `-medium` and a 600 `-strong` form, and a
@@ -407,27 +392,23 @@
   /* Two widths only (B1): 96 for display text, 88 for dense numbers and condensed titles. */
   --ch-wdth-display: 'wdth' 96;
   --ch-wdth-dense: 'wdth' 88;
-  /* Named roles. The large title (34, wdth 88, 600); the bar title, pushed and at a tab's root alike (17/600, as iOS);
-     the desktop hero (52, every section including Rounds); the section header; the card title. */
-  --ch-type-large-title: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-track-large-title: -0.038em;
-  --ch-type-bar-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-track-bar-title: var(--ch-track-17);
-  --ch-type-hero: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-sans);
-  --ch-track-hero: -0.01em;
-  --ch-type-section: 600 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-track-section: var(--ch-track-20);
-  /* CONS-30: every eyebrow and kicker, one role (13/500, no tracking). */
-  --ch-type-eyebrow: 500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-track-eyebrow: 0;
-  --ch-type-card-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
-  /* Clubhouse refresh, PR 1: row title, meta, and the two figures (width and tracking are the caller's; DESIGN_LANGUAGE 6). */
-  --ch-type-row: 500 calc(16 * var(--ch-type-k))/calc(21 * var(--ch-type-k)) var(--ch-font-sans);
-  /* Meta is never larger than body (audit TYPE, spec S1.7): 14 on a desktop board, 15 on phone where body is 16. */
-  --ch-type-meta: 400 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-type-figure-hero: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
-  --ch-type-figure: 600 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans);
-  --ch-track-card-title: var(--ch-track-17);
+  /* Type: nine roles (MOTION-AND-VISUAL 4.3), scaled by --ch-type-k so text follows iPhone Text Size. Desktop values
+     here; the phone block below sets the phone ones. Large title 30/36 700, title 22/28 600, headline 16/22 600, body
+     15/22 400, callout 14/20 500, footnote 13/18 500, caption 12/16 500, hero figure 56 600, row figure 15/20 600.
+     Figures are tabular wherever they are drawn. */
+  --ch-type-large-title: 700 calc(30 * var(--ch-type-k))/calc(36 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-large-title: -0.02em;
+  --ch-type-title: 600 calc(22 * var(--ch-type-k))/calc(28 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-title: -0.01em;
+  --ch-type-headline: 600 calc(16 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-body: 400 calc(15 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-callout: 500 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-footnote: 500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-caption: 500 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-caption: 0.01em;
+  --ch-type-figure-hero: 600 calc(56 * var(--ch-type-k))/1 var(--ch-font-sans);
+  --ch-track-figure-hero: -0.025em;
+  --ch-type-figure: 600 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
 
   /* Space and layout */
   /* B2: the spacing scale (a 4px grid with 2 and 6 for tight pairs). A stylesheet in spacing-scale.test.ts's MIGRATED
@@ -514,7 +495,7 @@
   --ch-gap-section-phone-snug: var(--ch-space-6);
   --ch-gap-section-phone-tight: var(--ch-space-4);
   --ch-gap-group: var(--ch-space-3);
-  --ch-sidebar-w: 240px;
+  --ch-sidebar-w: 232px; /* MOTION-AND-VISUAL 4.8 */
   /* The sidebar folded to its icon rail (RailToggle): the rows' 16px icons, 20px in from the edge, stay where they are. */
   --ch-rail-w: 56px;
   --ch-topbar-h: 56px;
@@ -602,21 +583,22 @@
   --ch-skel-base: #d8d0bb;
   --ch-skel-sheen: #ebe5d6;
   --ch-topbar-paper: #f7f2e6;
-  /* Radius (row 35): four steps, 8 / 12 / 16 / 20. xs is the floor for keycaps, badges, checkboxes and the nested rule,
-     not a step. Capsules are 999px, circles 50%. Inner corner = outer step less the padding between, floored at xs:
-     max(var(--ch-radius-xs), calc(var(--ch-radius-<outer>) - var(--ch-space-<pad>))). Buttons sit on sm and md, the
-     owner's 8 and 12 (decision 7). */
-  --ch-radius-xs: 4px;
+  /* Radius: five steps (MOTION-AND-VISUAL 4.5). sm 8: menu items, small chips, keycaps, chart pins. md 12: buttons,
+     inputs, hole chips, menus. lg 16: cards, toasts, options. xl 20: sheets and the phone lip. full: pills, segmented
+     controls, capsule bars, avatars. Circles are 50%. Two shapes sit outside the steps because the corner is the
+     meaning: xs 4 is the score glyph's square (a bogey is a square, a birdie a circle), a checkbox, and the floor of a
+     nested corner; the Messages bubble is 18 with its tail corner at 6. An inner corner is the outer step less the
+     padding between, floored at xs: max(var(--ch-radius-xs), calc(var(--ch-radius-<outer>) - var(--ch-space-<pad>))). */
   --ch-radius-sm: 8px;
   --ch-radius-md: 12px;
   --ch-radius-lg: 16px;
   --ch-radius-xl: 20px;
-  --ch-radius-mark: 2px; /* chart marks, ticks, thin bars */
-  --ch-radius-tail: 6px; /* the Messages bubble tail corner */
-  /* B3: a card's corner (X-4: 16, as .ch-surface already drew it) and a bottom sheet's top corners (X-3: 20). An inner
-     corner is the card's less the padding between them, floored at --ch-radius-xs. */
-  --ch-radius-card: 16px;
-  --ch-radius-sheet: 20px;
+  --ch-radius-full: 999px;
+  /* The Practice style's thumb sits 3px inside its well (MOTION-AND-VISUAL 4.2): the control's own geometry, not spacing. */
+  --ch-seg-inset: 3px;
+  --ch-radius-xs: 4px;
+  --ch-radius-bubble: 18px;
+  --ch-radius-tail: 6px;
   /* CONS-23: the one sheet grab handle's fill (controls.css .ch-grab). */
   --ch-grab-bg: var(--ch-ivory-300);
   /* B4: how far a sideways scroller's clipped edge fades on a phone (ui.css .ch-hscroll), so the edge reads as more. */
@@ -643,16 +625,14 @@
      Roster lanes' own) are the same recipe and remain only for the files that still spell them. */
   /* S1.5 (Nov 15 audit): one hairline ring and two soft layers. No lit inset rim, no sun drift, no third ambient fall. */
   --ch-elevation-card: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08);
-  --ch-glass-bg: rgb(250 248 241 / 0.7);
+  --ch-glass-bg: color-mix(in oklab, var(--ch-workspace) 78%, transparent);
   /* Glass is for the floating navigation only (top bar, tab bar); 20px reads as frosted without the muddy edge. */
   --ch-glass-blur: 20px;
-  --ch-glass-saturate: 110%;
+  --ch-glass-saturate: 140%;
   /* Messages v2 (docs/clubhouse/messages-v2/SPEC.md tokens): bars, composer and pills blur 24 and saturate 170%; the overlay
      behind a lifted bubble blurs 14 and saturates 120%. A Messages rule writes blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))),
      so the elevation test still finds var(--ch-glass-blur) and a browser without the token falls back to the shared glass.
      Reduce Transparency and Increase Contrast zero all four below. */
-  --ch-glass-blur-msg: 24px;
-  --ch-glass-saturate-msg: 170%;
   --ch-scrim-blur-msg: 14px;
   --ch-scrim-saturate-msg: 120%;
 
@@ -669,18 +649,17 @@
      line (the green hero, the green Up next card). */
   --ch-elevation-cast: 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08);
   /* A card that opens something, under the pointer: the same card with its ring a step darker, not a new elevation. */
-  --ch-elevation-reading-hover: 0 0 0 1px rgb(28 25 18 / 0.14), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08);
-  --ch-elevation-reading-accent: 0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12);
+  --ch-elevation-reading-hover: var(--ch-elevation-card);
+  --ch-elevation-reading-accent: var(--ch-elevation-card);
   /* The page empty's medallion tile, cast on its rings (Tournaments' first run; the route error and every page empty,
      shell.css .ch-empty-page__ic / .ch-es__tile; W19 B). The danger tone casts its own. */
   --ch-medallion-shadow: 0 16px 30px -14px rgb(11 58 37 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.1);
   /* A control's contact shadow only: no lit white rim and no sun drift (S1.5, nothing white). */
-  --ch-elevation-control: 0 1px 2px rgb(28 25 18 / 0.06);
+  --ch-elevation-control: 0 0 0 0 transparent;
   /* Row 40: three elevation levels. Reading (a card at rest, above), raised (a menu, a popover, a lifted control) and
      overlay (a sheet, a dialog, below). Floating was the raised level's old name and folds into it. */
   /* S1.5b: menus, popovers, hover cards, toasts and the floating compose button, on --ch-bg-elevated. */
   --ch-elevation-raised: 0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18);
-  --ch-elevation-floating: var(--ch-elevation-raised);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
     var(--ch-elevation-raised);
   /* Row 40: tinted drops. A surface on the green or ink casts its shadow in its own colour (an ink shadow greys on
@@ -692,13 +671,15 @@
   --ch-drop-ink: 0 0 0 1px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.35);
   /* Depth on the Frame's green (owner, 2026-10-07): the framed dashboard panel, and a plate or card lifted off the
      green (the selected nav row, the next-event card). A gilt ring, then a deeper drop than ivory needs. */
-  --ch-elevation-framed: var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12), inset 1px 0 0 rgb(11 58 37 / 0.12);
-  --ch-elevation-on-frame: 0 0 0 1px rgb(176 149 96 / 0.45), var(--ch-light-drift-near) 1px 2px rgb(2 18 10 / 0.3);
+  --ch-elevation-framed: var(--ch-elevation-card);
+  --ch-elevation-on-frame: var(--ch-elevation-card);
   /* The sidebar's selected row (P001-A2, owner 2026-10-08: "highlight ivory whichever tab you're on, not green"): an ivory
      plate with a champagne hairline and a soft drop, green text and icon on it (shell.css). */
-  --ch-nav-well-bg: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-on-green-plate));
-  --ch-nav-well-shadow: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(0 0 0 / 0.25), 0 6px 14px -8px rgb(0 0 0 / 0.45), inset 0 1px 0 #fff;
-  --ch-elevation-on-frame-hover: 0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 6px rgb(2 18 10 / 0.35);
+  /* The current sidebar item: the ivory pill on green, the phone strip's (MOTION-AND-VISUAL 4.8). Flat paper on the card
+     level; no champagne ring (champagne means attention) and no lit rim. */
+  --ch-nav-well-bg: var(--ch-card-bg);
+  --ch-nav-well-shadow: var(--ch-elevation-card);
+  --ch-elevation-on-frame-hover: var(--ch-elevation-card);
   /* The Ledger (owner, 2026-10-07: "flush, not so card heavy"): inside the framed workspace a section is a rule and a
      heading on the canvas, not a card. Engraved gilt-brown rules, forest ink for headings, the head's eyebrow brown. */
   --ch-ledger-rule: rgb(110 98 62 / 0.16);
@@ -777,7 +758,6 @@
   /* Messages redesign, 11a (golf_messages_redesign_v1): nothing in main reads these. Shadows are filters, so the drawn tail casts with the body. */
   --ch-bubble-theirs-bg: var(--ch-card-bg);
   --ch-bubble-mine-fill: #155a39;
-  --ch-bubble-radius: 19px;
   /* Messages v2 thread roles and measures (SPEC MSG-204 to 222): the artifact's own numbers between the type steps and the spacing scale. */
   --ch-type-msg-bubble: 400 calc(16 * var(--ch-type-k))/1.32 var(--ch-font-sans);
   --ch-type-msg-bubble-desk: 400 calc(15 * var(--ch-type-k))/1.32 var(--ch-font-sans);
@@ -798,15 +778,15 @@
   --ch-bubble-theirs-shadow: drop-shadow(0 0 0.5px rgb(28 27 24 / 0.24)) drop-shadow(0 1px 2px rgb(28 25 18 / 0.05)) drop-shadow(0 6px 8px rgb(28 25 18 / 0.06));
   --ch-bubble-mine-shadow: drop-shadow(0 1px 1px rgb(11 58 37 / 0.22)) drop-shadow(0 6px 10px rgb(11 58 37 / 0.2));
   --ch-shadow-float: 0 0 0 0.5px rgb(28 25 18 / 0.1), 0 8px 24px -6px rgb(28 25 18 / 0.22), 0 2px 6px rgb(28 25 18 / 0.08);
-  --ch-glass: rgb(253 251 247 / 0.78);
-  --ch-glass-strong: rgb(253 251 247 / 0.9);
+  --ch-glass: var(--ch-glass-bg);
+  --ch-glass-strong: var(--ch-glass-bg);
   --ch-glass-rule: rgb(28 25 18 / 0.1);
   --ch-typing-dot: #7a766c;
   --ch-ring-own: #8c703a;
   --ch-switch-off-ring: var(--ch-border-control); /* the one control edge (audit S1.8), 3:1 on the linen */
   /* Messages v2: the lifted-bubble scrim, the one flat card style, and the ivory ink on a sent bubble (the artifact's
      scrim, card-shadow and sent-ink; --ch-scrim, --ch-card-shadow and --ch-text-on-accent are shared app-wide and stay). */
-  --ch-scrim-msg: rgb(28 30 24 / 0.22);
+  --ch-scrim-msg: var(--ch-scrim);
   --ch-card-shadow-flat: var(--ch-elevation-card);
   --ch-bubble-mine-ink: #fdfcf8;
   /* S2.4: the series line, 2px, 6.2:1 on the card. */
@@ -843,20 +823,20 @@
      SHARED-2). Its depth is a cast alone, in depth.css's green (rgb 8 43 28): a contact shadow and an ambient fall. No
      white top edge and no ring, which draw an outline on green. --ch-feature-shadow is the same value. */
   --ch-feature-bg: var(--ch-green-800);
-  --ch-elevation-feature: 0 1px 2px rgb(8 43 28 / 0.2), 0 14px 30px -18px rgb(8 43 28 / 0.6);
+  --ch-elevation-feature: var(--ch-elevation-card);
   /* A field-green board hung on the page (a scorecard nine, the round strip, a row's Out/In/Tot): a short green drop,
      a step deeper when its row is hovered. A lit data mark (the best round's dot, the putts bar, a hit green): a small
      green glow under it. Drop only; the caller keeps its own ring or inset edge. */
-  --ch-elevation-board: 0 14px 22px -16px rgb(8 43 28 / 0.8);
-  --ch-elevation-board-hover: 0 14px 20px -12px rgb(8 43 28 / 0.85);
-  --ch-elevation-mark: 0 4px 8px -4px rgb(21 90 57 / 0.6);
+  --ch-elevation-board: var(--ch-elevation-card);
+  --ch-elevation-board-hover: var(--ch-elevation-card);
+  --ch-elevation-mark: var(--ch-elevation-raised);
   /* The same small drop for the other data marks: amber under a loss bar, ink under a neutral mark, number or dot. A
      gold-ringed reading plate on the page (a zone's reading, the round's figures): a long, faint drop. The selected
      segment pill on green: a tight green contact shadow. A portrait card on the roster: a three-step drift that follows
      the light, deeper and with a green falloff when hovered. Drop only; the caller keeps its own ring or inset edge. */
-  --ch-elevation-mark-warn: 0 6px 12px -8px rgb(148 96 14 / 0.6);
-  --ch-elevation-mark-ink: 0 5px 10px -6px rgb(28 25 18 / 0.45);
-  --ch-elevation-plate: 0 18px 28px -24px rgb(28 25 18 / 0.5);
+  --ch-elevation-mark-warn: var(--ch-elevation-raised);
+  --ch-elevation-mark-ink: var(--ch-elevation-raised);
+  --ch-elevation-plate: var(--ch-elevation-card);
   /* The chosen segment of every switcher (owner, 2026-10-16: green, with more depth): a lit green chip raised off its
      well, the light on its top edge, a contact shadow and a soft one under it. */
   --ch-seg-on-bg: linear-gradient(180deg, var(--ch-green-fill-500) 0%, var(--ch-green-fill-700) 100%);
@@ -870,11 +850,11 @@
   /* A portrait set into the page head: a canvas gap, a fine engraved ring, a soft green drop. */
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4);
   /* Hover depth, tokenised when the hover rules moved behind @media (hover: hover) (2026-10-07). */
-  --ch-elevation-field-hover: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.05);
-  --ch-elevation-chip-hover: inset 0 0 0 1px rgb(28 25 18 / 0.24), 0 2px 6px -2px rgb(28 25 18 / 0.18);
-  --ch-elevation-choice-hover: 0 0 0 1.5px var(--ch-green-600), 0 10px 20px -14px rgb(11 58 37 / 0.4);
-  --ch-elevation-row-card-hover: 0 0 0 1px rgb(21 90 57 / 0.25), 0 14px 28px -18px rgb(11 58 37 / 0.4);
-  --ch-elevation-on-frame-card-hover: 0 0 0 1px rgb(176 149 96 / 0.6), 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 #fff;
+  --ch-elevation-field-hover: 0 0 0 1px var(--ch-border-strong);
+  --ch-elevation-chip-hover: inset 0 0 0 1px var(--ch-border-control);
+  --ch-elevation-choice-hover: 0 0 0 1.5px var(--ch-green-600);
+  --ch-elevation-row-card-hover: var(--ch-elevation-card);
+  --ch-elevation-on-frame-card-hover: var(--ch-elevation-card);
   /* The keys (audit Batch 5 item 6): solid faces, one token per state, so a theme changes values and never rules. */
   --ch-primary-bg: var(--ch-field-green);
   --ch-primary-bg-hover: #124b2e;
@@ -890,15 +870,15 @@
   /* The floating panels' name in the code (popover, peek, hover card, tooltip, toast): the raised elevation (S1.5b). */
   --ch-elevation-overlay: var(--ch-elevation-raised);
   /* S1.5c: a sheet or dialog over the scrim. The scrim separates it; only the top edge draws. */
-  --ch-elevation-sheet: 0 -1px 0 rgb(28 25 18 / 0.06);
+  --ch-elevation-sheet: var(--ch-elevation-raised);
   /* Bubbles, badges, pills and chips are flat (spec S1.5c, the 15 Nov audit; the Oct 21 bubbles): three elevations
      only, and a bubble is not one of them. Theirs is the card's paper, yours the green fill. */
   --ch-bubble-mine-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 60%, #0f4a2f 100%);
   /* The phone section strip and the notification drop's glass (section-strip.md): drop-only, the caller keeps its rim. */
-  --ch-elevation-strip: 0 18px 30px -18px rgb(6 20 12 / 0.45);
-  --ch-elevation-strip-plate: 0 4px 12px rgb(0 0 0 / 0.18);
-  --ch-elevation-glass-card: 0 12px 28px rgb(0 0 0 / 0.2);
-  --ch-elevation-glass-edge: 0 8px 18px rgb(0 0 0 / 0.16);
+  --ch-elevation-strip: 0 0 0 0 transparent;
+  --ch-elevation-strip-plate: 0 0 0 0 transparent;
+  --ch-elevation-glass-card: var(--ch-elevation-raised);
+  --ch-elevation-glass-edge: var(--ch-elevation-raised);
   --ch-control-bg: var(--ch-raised-bg);
   --ch-field-pill-edge: inset 0 0 0 1px rgb(28 25 18 / 0.14);
   --ch-field-pill-edge-focus: inset 0 0 0 1.5px var(--ch-border-focus);
@@ -952,7 +932,7 @@
   /* The one tint behind every sheet, dialog and drawer on the native top layer (popup audit 2026-10-13): a solid wash,
      never a blur, which re-blurs the page on every frame of a WebKit open. Read by ::backdrop, which inherits it from
      the dialog; each use keeps the light value as its fallback. */
-  --ch-scrim: rgb(20 20 18 / 0.36);
+  --ch-scrim: rgb(28 25 18 / 0.24); /* the one scrim under sheets and dialogs (MOTION-AND-VISUAL 4.6) */
   /* Materials on the green hero (the content layer is dark there). Raised: a lighter tonal green with a mint-lit top
      edge and a deep green cast shadow (ink shadows vanish on green). Well: one recess darker than the hero. Control: a
      raised green face that compresses on press. */
@@ -1070,13 +1050,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-bubble-theirs-shadow: drop-shadow(0 0.5px 0.5px rgb(0 0 0 / 0.4)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.3));
   --ch-bubble-mine-shadow: drop-shadow(0 1px 1px rgb(0 0 0 / 0.4)) drop-shadow(0 6px 10px rgb(0 0 0 / 0.35));
   --ch-shadow-float: 0 0 0 0.5px rgb(237 231 216 / 0.12), 0 8px 24px -6px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.4);
-  --ch-glass: rgb(22 27 23 / 0.74);
-  --ch-glass-strong: rgb(27 32 28 / 0.88);
   --ch-glass-rule: rgb(237 231 216 / 0.1);
   --ch-typing-dot: #827d71;
   --ch-ring-own: #c9ad74;
   --ch-switch-off-ring: var(--ch-border-control);
-  --ch-scrim-msg: rgb(0 0 0 / 0.45);
   --ch-bubble-mine-ink: #f4eedd;
   /* Clubhouse refresh, PR 1. Dark Sophomore is #8B6B30 (DECISIONS: white reads 4.95:1; the language table's #8F6E31 gives 4.7). */
   --ch-grouped-bg: var(--ch-workspace);
@@ -1131,9 +1108,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
      3.78 there and 4.27 on the raised surface). Visual pass 2026-10-28. */
   /* The sidebar's selected plate at night (overnight polish, 2026-10-15): the day plate's gradient ran from the night
      ivory to the day's, a white bar with dark ink on the dark frame. A raised green plate under ivory ink instead. */
-  --ch-nav-well-bg: linear-gradient(180deg, #24432f, #1a3524);
-  --ch-nav-well-shadow: 0 0 0 1px rgb(205 187 142 / 0.32), 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 14px -8px rgb(0 0 0 / 0.6),
-    inset 0 1px 0 rgb(255 255 255 / 0.1);
+  --ch-nav-well-bg: #24432f;
   --ch-nav-well-ink: #f3efe6;
   --ch-nav-well-icon: #9fe0b6;
   --ch-on-fill-0: #f7f2e6;
@@ -1269,8 +1244,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-champagne-rule: rgb(205 187 142 / 0.28);
   --ch-champagne-rule-strong: rgb(205 187 142 / 0.4);
   --ch-focus-halo: rgb(107 187 140 / 0.2);
-
-  --ch-glass-bg: rgb(22 27 23 / 0.74);
   --ch-edge: rgb(255 255 255 / 0.07);
   /* The night's light is the dark theme's own: a cool moon key, very faint, warming only a touch at golden hour. */
   --ch-light-key: color-mix(in oklab, #b9cbea, #e9c48c calc(var(--ch-sun-warmth, 0) * 45%));
@@ -1303,15 +1276,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   /* S1.5: a night card is carried by tone and its ring; shadows do not read on near-black. */
   --ch-elevation-card: 0 0 0 1px var(--ch-card-ring);
   --ch-elevation-cast: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px -4px rgb(0 0 0 / 0.4);
-  --ch-elevation-reading-hover: 0 0 0 1px rgb(241 236 223 / 0.14);
-  --ch-elevation-reading-accent: 0 1px 3px rgb(0 0 0 / 0.35), 0 4px 12px -6px rgb(0 0 0 / 0.45);
-  --ch-elevation-control: 0 1px 2px rgb(0 0 0 / 0.35);
-  --ch-elevation-floating: var(--ch-elevation-raised);
   /* S1.5b at night, on --ch-bg-elevated. */
   --ch-elevation-raised: 0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55);
-  --ch-elevation-framed: 0 1px 3px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.04), inset 1px 0 0 rgb(255 255 255 / 0.03);
-  --ch-elevation-on-frame: 0 0 0 1px rgb(201 173 116 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5);
-  --ch-elevation-on-frame-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 2px 6px rgb(0 0 0 / 0.55);
   --ch-ledger-rule: rgb(205 187 142 / 0.15);
   --ch-ledger-rule-soft: rgb(205 187 142 / 0.08);
   --ch-ledger-rule-strong: rgb(205 187 142 / 0.42);
@@ -1320,22 +1286,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ledger-eyebrow: #c9b88a;
   --ch-ledger-row-hover: rgb(205 187 142 / 0.06);
   --ch-ledger-rule-double: 3px double rgb(205 187 142 / 0.22);
-  --ch-elevation-feature: 0 0 0 1px rgb(107 187 140 / 0.14), 0 14px 28px -18px rgb(0 0 0 / 0.8);
-  --ch-elevation-board: 0 14px 22px -16px rgb(0 0 0 / 0.8);
-  --ch-elevation-board-hover: 0 14px 20px -12px rgb(0 0 0 / 0.85);
-  --ch-elevation-mark: 0 4px 8px -4px rgb(0 0 0 / 0.6);
-  --ch-elevation-mark-warn: 0 6px 12px -8px rgb(0 0 0 / 0.6);
-  --ch-elevation-mark-ink: 0 5px 10px -6px rgb(0 0 0 / 0.6);
-  --ch-elevation-plate: 0 18px 28px -24px rgb(0 0 0 / 0.7);
   --ch-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.5),
     0 3px 8px -2px rgb(0 0 0 / 0.45);
   --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 12%, transparent);
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(0 0 0 / 0.6);
-  --ch-elevation-field-hover: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(0 0 0 / 0.3);
-  --ch-elevation-chip-hover: inset 0 0 0 1px rgb(237 231 216 / 0.24), 0 2px 6px -2px rgb(0 0 0 / 0.5);
-  --ch-elevation-choice-hover: 0 0 0 1.5px var(--ch-green-600), 0 10px 20px -14px rgb(0 0 0 / 0.6);
-  --ch-elevation-row-card-hover: 0 0 0 1px rgb(107 187 140 / 0.3), 0 14px 28px -18px rgb(0 0 0 / 0.6);
-  --ch-elevation-on-frame-card-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 10px 22px -10px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.06);
   --ch-primary-bg: #25734d;
   --ch-primary-bg-hover: #2c7a52;
   --ch-primary-bg-press: #17543a;
@@ -1349,11 +1303,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     0 8px 16px -8px rgb(0 0 0 / 0.55);
   --ch-elevation-overlay: var(--ch-elevation-raised);
   /* S1.5c at night: the sheet's edge. */
-  --ch-elevation-sheet: 0 0 0 1px rgb(241 236 223 / 0.1);
-  --ch-elevation-strip: 0 18px 30px -16px rgb(0 0 0 / 0.6);
-  --ch-elevation-strip-plate: 0 4px 12px rgb(0 0 0 / 0.4);
-  --ch-elevation-glass-card: 0 12px 28px rgb(0 0 0 / 0.45);
-  --ch-elevation-glass-edge: 0 8px 18px rgb(0 0 0 / 0.38);
   --ch-field-pill-edge: inset 0 0 0 1px rgb(237 231 216 / 0.16);
   --ch-switch-track-bg: #3a423b;
   /* At night the off track's edge is the ivory at 0.3 (3.5:1 on a card, 3.1 on the raised surface; it was 0.05, 1.6:1),
@@ -1405,7 +1354,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-phone-bar-bg: var(--ch-frame);
     /* Glass, not a lid: the page shows through as it slides under (F-49). */
     --ch-phone-tabbar-bg: rgb(243 240 231 / 0.84);
-    --ch-glass-bg: rgb(243 240 231 / 0.84);
   }
 }
 
@@ -1547,19 +1495,16 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
   }
 }
 
-/* Phone reading sizes (owner 2026-10-01, high-fidelity audit F09: "Phone 16 / 14"). Per role, never a page scale:
-   reading text 16px, important secondary text 14px, labels 13-14px; captions only to 13px, because chart axes and chips
-   use them. Desktop keeps the compact board sizes for dense tables. */
+/* The nine roles on a phone (MOTION-AND-VISUAL 4.3): large title 34/41, headline 17/22, body 17/24, callout 15/20,
+   hero figure 44, row figure 17/22; title, footnote and caption are the same on both. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] {
-    --ch-type-title: 600 calc(16 * var(--ch-type-k))/1.35 var(--ch-font-sans);
-    --ch-type-body-l: 400 calc(17 * var(--ch-type-k))/1.5 var(--ch-font-sans);
-    --ch-type-body: 400 calc(16 * var(--ch-type-k))/1.5 var(--ch-font-sans);
-    --ch-type-body-s: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
-    --ch-type-label: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-    --ch-type-label-s: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-    --ch-type-caption: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
-    --ch-type-meta: 400 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-large-title: 700 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-headline: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-body: 400 calc(17 * var(--ch-type-k))/calc(24 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-callout: 500 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-figure-hero: 600 calc(44 * var(--ch-type-k))/1 var(--ch-font-sans);
+    --ch-type-figure: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
   }
 }
 
@@ -1573,7 +1518,6 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-glass-blur: 0px;
     --ch-glass: var(--ch-bg-page);
     --ch-glass-strong: var(--ch-bg-page);
-    --ch-glass-blur-msg: 0px;
     --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-phone-composer-bg: var(--ch-bg-surface);
@@ -1583,7 +1527,6 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-glass-blur: 0px;
     --ch-glass: var(--ch-bg-page);
     --ch-glass-strong: var(--ch-bg-page);
-    --ch-glass-blur-msg: 0px;
     --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-phone-composer-bg: var(--ch-bg-surface);
@@ -1595,7 +1538,6 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
   --ch-glass-blur: 0px;
   --ch-glass: var(--ch-bg-page);
   --ch-glass-strong: var(--ch-bg-page);
-  --ch-glass-blur-msg: 0px;
   --ch-scrim-blur-msg: 0px;
   --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
   --ch-phone-composer-bg: var(--ch-bg-surface);
@@ -1625,6 +1567,8 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 
 @media (prefers-contrast: more) {
   [data-ui='clubhouse'] {
+    --ch-glass-bg: var(--ch-bg-page);
+    --ch-glass-blur: 0px;
     --ch-hairline-w: 1px;
     --ch-border-hairline: rgb(28 25 18 / 0.2);
     --ch-border-subtle: rgb(28 25 18 / 0.28);
@@ -1636,11 +1580,6 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-ledger-rule-double: 3px double rgb(28 25 18 / 0.4);
     --ch-ledger-eyebrow: var(--ch-text-secondary);
     --ch-text-tertiary: var(--ch-ink-600);
-    --ch-glass-bg: var(--ch-bg-page);
-    --ch-glass-blur: 0px;
-    --ch-glass: var(--ch-bg-page);
-    --ch-glass-strong: var(--ch-bg-page);
-    --ch-glass-blur-msg: 0px;
     --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-light-rim: transparent;
@@ -1656,6 +1595,8 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-hm-ring-over: var(--ch-border-strong);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] {
+    --ch-glass-bg: var(--ch-bg-page);
+    --ch-glass-blur: 0px;
     --ch-border-hairline: rgb(237 231 216 / 0.24);
     --ch-border-subtle: rgb(237 231 216 / 0.3);
     --ch-border-control: #9a9586;
@@ -1666,11 +1607,6 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-ledger-rule-double: 3px double rgb(237 231 216 / 0.42);
     --ch-ledger-eyebrow: var(--ch-text-secondary);
     --ch-text-tertiary: var(--ch-ink-600);
-    --ch-glass-bg: var(--ch-bg-page);
-    --ch-glass-blur: 0px;
-    --ch-glass: var(--ch-bg-page);
-    --ch-glass-strong: var(--ch-bg-page);
-    --ch-glass-blur-msg: 0px;
     --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-light-rim: transparent;
@@ -1704,5 +1640,8 @@ html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='d
     --ch-type-14-medium: 560 calc(14 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
     --ch-type-15: 450 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
     --ch-type-15-medium: 560 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-footnote: 560 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-caption: 560 calc(13 * var(--ch-type-k))/calc(17 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-callout: 560 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
   }
 }

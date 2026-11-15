@@ -9,9 +9,9 @@
    so this page carries the lighter value (3.28 / 3.40 / 3.08 on surface, subtle and selected). Light uses the shared fill. */
 [data-ui='clubhouse'] {
   --ch-live-bead-eagle: var(--ch-score-eagle-fill);
-  /* The 40 px figure (above the 11 steps, free by the type rule): the value of --ch-type-figure-l, named as a role. */
-  --ch-type-live-figure: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
-  /* The 34 px figure of the player's own card, the value of --ch-type-display-l named as a role. */
+  /* The 40 px figure (above the steps, free by the type rule), at the hero figure's 600 (MOTION-AND-VISUAL 4.3). */
+  --ch-type-live-figure: 600 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
+  /* The 34 px figure of the player's own card (600, on the 34 step). */
   --ch-type-live-own: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
 }
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
@@ -30,7 +30,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 /* ---- A card of lanes (Home, the live view's groups) ---- */
 .ch-lv-card {
   background: var(--ch-bg-surface);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   box-shadow: var(--ch-elevation-reading);
   overflow: hidden;
 }
@@ -270,11 +270,11 @@ section.ch-lv-card {
 .ch-lv-bead[data-kind='bogey'] {
   --ch-lv-ink: var(--ch-ink-700);
   border: 1.5px solid var(--ch-ink-700);
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-xs);
 }
 .ch-lv-bead[data-kind='double'] {
   --ch-lv-ink: var(--ch-score-double);
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-xs);
   background: var(--ch-score-double);
 }
 .ch-lv-bead[data-kind='unplayed'] {
@@ -456,10 +456,10 @@ section.ch-lv-card {
   gap: var(--ch-space-1_5);
   min-height: 24px;
   padding: 0 var(--ch-space-2);
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-subtle);
   color: var(--ch-ink-600);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   white-space: nowrap;
 }
 .ch-lv-chip__retry {
@@ -529,7 +529,7 @@ section.ch-lv-card {
 .ch-lv-eyebrow {
   display: block;
   margin-bottom: 6px;
-  font: var(--ch-type-eyebrow);
+  font: var(--ch-type-footnote);
   color: var(--ch-ink-500);
 }
 .ch-lv-tools {
@@ -553,7 +553,7 @@ section.ch-lv-card {
   border-radius: var(--ch-radius-md);
   background: transparent;
   color: var(--ch-ink-600);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -573,7 +573,7 @@ section.ch-lv-card {
   min-height: 44px;
   padding: 0 var(--ch-space-3);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-selected-strong);
   color: var(--ch-text-on-accent);
   font: var(--ch-type-13-strong);
@@ -629,7 +629,7 @@ section.ch-lv-card {
   padding: var(--ch-space-4);
   overflow: auto;
   overscroll-behavior: contain;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -733,7 +733,7 @@ section.ch-lv-card {
   place-items: center;
   min-width: 22px;
   height: 22px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-selected-strong);
   color: var(--ch-text-on-accent);
   font: var(--ch-type-11-strong);
@@ -838,7 +838,7 @@ section.ch-lv-card {
   display: grid;
   gap: var(--ch-space-3);
   padding: var(--ch-space-4);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }

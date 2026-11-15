@@ -71,10 +71,6 @@
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: auto;
-  gap: 2px;
-  padding: 4px;
-  border-radius: var(--ch-radius-lg);
-  min-height: calc(40 * var(--ch-type-k));
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -87,10 +83,7 @@
 }
 .ch-shs .ch-shs-ctl .ch-seg__b {
   position: relative;
-  min-height: calc(32 * var(--ch-type-k));
   padding: 0 2px;
-  border-radius: var(--ch-radius-md);
-  font: var(--ch-type-14-medium);
   white-space: nowrap;
 }
 /* 44 tall to the finger, 32 drawn (08 criterion 113). */
@@ -101,9 +94,6 @@
 }
 .ch-shs-ctl .ch-sw-last {
   display: none;
-}
-.ch-shs-ctl .ch-seg__pill {
-  border-radius: var(--ch-radius-md);
 }
 .ch-shs-ctl .ch-sf__open {
   position: relative;
@@ -142,7 +132,7 @@
 }
 .ch-shs-sech {
   margin: 16px 2px 0;
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
   color: var(--ch-shs-s-ink);
@@ -322,7 +312,7 @@
   gap: 8px;
 }
 .ch-shs-fig {
-  font: var(--ch-type-figure-40-500);
+  font: var(--ch-type-figure-hero);
   font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
@@ -381,7 +371,7 @@
 .ch-shs-legend .ll {
   width: 16px;
   height: 3px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-shs-legend .lp {
   width: 16px;
@@ -396,7 +386,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  border-radius: var(--ch-radius-tail);
+  border-radius: var(--ch-radius-sm);
   font: var(--ch-type-13-strong);
 
   white-space: nowrap;
@@ -440,7 +430,7 @@
   margin-top: 12px;
 }
 .ch-shs-cmp-h {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-shs-s-ink-2);
 }
 .ch-shs-also {
@@ -465,7 +455,7 @@
   text-align: right; letter-spacing: var(--ch-track-17); }
 .ch-shs-cmp-track {
   height: calc(14 * var(--ch-type-k));
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-track);
   box-shadow: var(--ch-shs-s-track-ring);
   overflow: hidden;
@@ -473,7 +463,7 @@
 .ch-shs-cmp-track i {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   transform-origin: 0 50%;
 }
 .ch-shs-fill-gain {
@@ -548,7 +538,7 @@
   font: var(--ch-type-15);
   color: var(--ch-shs-s-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-shs-gc .v {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
 
@@ -646,7 +636,7 @@
   position: relative;
   display: block;
   height: calc(12 * var(--ch-type-k));
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-track);
   box-shadow: var(--ch-shs-s-track-ring);
 }
@@ -660,14 +650,14 @@
   bottom: -5px;
   width: 1.5px;
   margin-left: -1px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-zero);
 }
 .ch-shs-bar {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
 }
 .ch-shs-whisk {
   position: absolute;
@@ -712,7 +702,7 @@
   display: flex;
   gap: 2px;
   height: calc(22 * var(--ch-type-k));
-  border-radius: var(--ch-radius-tail);
+  border-radius: var(--ch-radius-sm);
   overflow: hidden;
   background: var(--ch-shs-s-card);
   transform-origin: 0 50%;
@@ -759,7 +749,7 @@
   position: relative;
   display: block;
   height: calc(12 * var(--ch-type-k));
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-track);
   box-shadow: var(--ch-shs-s-track-ring);
 }
@@ -771,7 +761,7 @@
   left: 0;
   top: 0;
   bottom: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   transform-origin: 0 50%;
 }
 .ch-shs-tour {
@@ -780,7 +770,7 @@
   bottom: -5px;
   width: 2px;
   margin-left: -1px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-ink);
 }
 .ch-shs-mr .ch-shs-tour {
@@ -810,7 +800,7 @@
 }
 .ch-shs-strip .v small {
   margin-left: 1px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-shs-s-ink-2);
 }
 
@@ -1000,7 +990,7 @@
   display: block;
   overflow: hidden;
   background: var(--ch-skel-base);
-  border-radius: var(--ch-radius-tail);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-shs-skel::before {
   content: '';
@@ -1128,7 +1118,7 @@
 }
 .ch-shs-d-hero__fig {
   display: block;
-  font: var(--ch-type-figure-40-500);
+  font: var(--ch-type-figure-hero);
   font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
@@ -1199,7 +1189,7 @@
 }
 .ch-shs-m4 .v {
   margin-top: 4px;
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
 
@@ -1263,7 +1253,7 @@
   padding: 1px 2px;
   transform: translateY(-50%);
   background: var(--ch-shs-s-card);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-shs-s-ink-2);
 }
 .ch-shs-rib .rx {
@@ -1318,14 +1308,14 @@
   right: 0;
   top: 7px;
   height: 2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-track);
 }
 .ch-shs-db .seg {
   position: absolute;
   top: 6px;
   height: 4px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-shs-db .was,
 .ch-shs-db .now {
@@ -1625,7 +1615,7 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-tour-key i {
   width: 2px;
   height: 12px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-ink);
 }
 /* The dashed mean's key, under the team chart (F-0009): on the line, the scoring line ran through its words. */
@@ -1646,7 +1636,7 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-early-key i {
   width: 16px;
   height: 8px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: none;
   box-shadow: var(--ch-stats-redesign-x5);
 }
@@ -1669,7 +1659,7 @@ li + li > .ch-shs-rrow::before {
   align-self: center;
   width: 10px;
   height: 10px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-shs-skey b {
   margin-left: auto;
@@ -1882,7 +1872,7 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-prog {
   height: calc(8 * var(--ch-type-k));
   margin-top: 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-track);
   box-shadow: var(--ch-shs-s-track-ring);
   overflow: hidden;
@@ -1890,7 +1880,7 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-prog i {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-gain-fill);
   transform-origin: 0 50%;
 }
@@ -1952,7 +1942,7 @@ p.ch-shs-mini-cap {
 }
 .ch-shs-m3 .v {
   margin-top: 4px;
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   letter-spacing: -0.02em;
 
 }
@@ -2156,7 +2146,7 @@ p.ch-shs-mini-cap {
 }
 .ch-shs-who h1 {
   margin: 0;
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
   color: var(--ch-on-green-ink);
@@ -2623,7 +2613,7 @@ p.ch-shs-mini-cap {
 .ch-shs-desk__dett {
   margin: 0;
   padding: var(--ch-space-4) var(--ch-space-4) 0;
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
   color: var(--ch-shs-s-ink);
@@ -2681,14 +2671,14 @@ p.ch-shs-mini-cap {
 .ch-shs-desk__det .ch-stm-putt__bar {
   position: relative;
   height: calc(10 * var(--ch-type-k));
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-track);
   box-shadow: var(--ch-shs-s-track-ring);
 }
 .ch-shs-desk__det .ch-stm-putt__bar i {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-gain-fill);
 }
 .ch-shs-desk__det .ch-stm-putt__bar i.is-low {
@@ -2700,7 +2690,7 @@ p.ch-shs-mini-cap {
   bottom: -4px;
   width: 2px;
   margin-left: -1px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-ink);
 }
 /* What changed, the pane's last card, on its neighbours' edges and title ink. */

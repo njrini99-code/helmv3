@@ -47,8 +47,8 @@ describe('weights', () => {
 });
 
 describe('the type scale (mot-08, owner-approved 2026-10-23)', () => {
-  it('every text size up to 36px sits on one of the 11 steps', () => {
-    const steps = [11, 12, 13, 14, 15, 16, 17, 20, 22, 28, 34];
+  it('every text size up to 36px sits on one of the 12 steps (the 11, plus the desktop large title 30, MOTION-AND-VISUAL 4.3)', () => {
+    const steps = [11, 12, 13, 14, 15, 16, 17, 20, 22, 28, 30, 34];
     const size = String.raw`(?:calc\(\s*([\d.]+)\s*\*\s*var\(--ch-type-k\)\s*\)|([\d.]+)px)`;
     const decl = new RegExp(String.raw`(?:font-size:\s*|(?:^|[;{\s])(?:font|--ch-type-[a-z0-9-]+):\s*(?:(?:italic|normal|\d{3})\s+)*)` + size, 'gm');
     const off: string[] = [];
@@ -166,20 +166,21 @@ describe('type roles (B1)', () => {
     expect(bare).toEqual([]);
   });
 
-  it('the bar title is one role, pushed or at a tab’s root, and the shell’s stand-in matches it', () => {
+  it('the bar title is the headline role, pushed or at a tab’s root, and the shell’s stand-in matches it', () => {
     const shell = read('shell.css');
     const rule = (sel: string) => shell.slice(shell.indexOf(sel), shell.indexOf('}', shell.indexOf(sel)));
-    expect(tokens).toMatch(/--ch-type-bar-title: 600 calc\(17 \* var\(--ch-type-k\)\)\/calc\(22 \* var\(--ch-type-k\)\)/);
-    expect(rule('  .ch-pbar__title {')).toMatch(/font: var\(--ch-type-bar-title\);/);
+    expect(tokens).toMatch(/--ch-type-headline: 600 calc\(16 \* var\(--ch-type-k\)\)\/calc\(22 \* var\(--ch-type-k\)\)/);
+    expect(tokens).toMatch(/--ch-type-headline: 600 calc\(17 \* var\(--ch-type-k\)\)\/calc\(22 \* var\(--ch-type-k\)\)/);
+    expect(rule('  .ch-pbar__title {')).toMatch(/font: var\(--ch-type-headline\);/);
     expect(rule('  .ch-pbar__title.is-start {')).not.toMatch(/font(-size)?:|letter-spacing:/);
-    expect(rule('  .ch-topbar__ptitle {')).toMatch(/font: var\(--ch-type-bar-title\);/);
+    expect(rule('  .ch-topbar__ptitle {')).toMatch(/font: var\(--ch-type-headline\);/);
   });
 
-  it('every desktop hero is 52 (Rounds was 50)', () => {
-    expect(tokens).toMatch(/--ch-type-hero: 400 calc\(52 \* var\(--ch-type-k\)\)/);
+  it('every desktop page title is the large title role (MOTION-AND-VISUAL 4.3: 30/36 700)', () => {
+    expect(tokens).toMatch(/--ch-type-large-title: 700 calc\(30 \* var\(--ch-type-k\)\)\/calc\(36 \* var\(--ch-type-k\)\)/);
     for (const [f, sel] of [['shell.css', '.ch-hero__title {'], ['qualifiers.css', '.ch-qf-head h1 {'], ['rounds.css', '.ch-rd-h h2 {'], ['classes.css', '.ch-cl-h h1 {']] as const) {
       const src = read(f);
-      expect(src.slice(src.indexOf(sel), src.indexOf('}', src.indexOf(sel))), f).toMatch(/font: var\(--ch-type-hero\);/);
+      expect(src.slice(src.indexOf(sel), src.indexOf('}', src.indexOf(sel))), f).toMatch(/font: var\(--ch-type-large-title\);/);
     }
   });
 });
@@ -242,7 +243,7 @@ const RAW_LEAD: Record<string, number> = {
 const RAW_LONGHAND: Record<string, number> = {
   'styles/auth.css': 22,
   'styles/base.css': 3,
-  'styles/calendar.css': 20,
+  'styles/calendar.css': 19,
   'styles/classes.css': 12,
   'styles/coachhelm-ask.css': 7,
   'styles/coachhelm-brief.css': 2,
@@ -254,10 +255,10 @@ const RAW_LONGHAND: Record<string, number> = {
   'styles/coachhelm-views.css': 2,
   'styles/coachhelm.css': 9,
   'styles/command.css': 2,
-  'styles/controls.css': 18,
+  'styles/controls.css': 17,
   'styles/hero-tones.css': 2,
-  'styles/home.css': 47,
-  'styles/hub.css': 45,
+  'styles/home.css': 46,
+  'styles/hub.css': 44,
   'styles/messages.css': 10,
   'styles/messages-details.css': 2,
   'styles/onboard.css': 22,
@@ -279,8 +280,7 @@ const OFF_TRACK: Record<string, number> = {
   'styles/auth.css': 7,
   'styles/base.css': 2,
   'styles/classes.css': 1,
-  'styles/coachhelm-dive.css': 2,
-  'styles/coachhelm-standing.css': 1,
+  'styles/coachhelm-dive.css': 1,
   'styles/coachhelm.css': 1,
   'styles/hero-tones.css': 1,
   'styles/home.css': 11,
@@ -307,8 +307,8 @@ describe('section and card titles (row 32)', () => {
   it('the primitives are the roles', () => {
     const ui = read('ui.css');
     const rule = (sel: string) => ui.slice(ui.indexOf(`\n${sel} {`), ui.indexOf('}', ui.indexOf(`\n${sel} {`)));
-    expect(rule('.ch-sec__title')).toMatch(/font: var\(--ch-type-section\);\s*letter-spacing: var\(--ch-track-section\);/);
-    expect(rule('.ch-surface__title')).toMatch(/font: var\(--ch-type-card-title\);\s*letter-spacing: var\(--ch-track-card-title\);/);
+    expect(rule('.ch-sec__title')).toMatch(/font: var\(--ch-type-title\);\s*letter-spacing: var\(--ch-track-title\);/);
+    expect(rule('.ch-surface__title')).toMatch(/font: var\(--ch-type-headline\);\s*letter-spacing: 0;/);
   });
   it('no section head or card title hand-sets the same step', () => {
     const off: string[] = [];
@@ -325,14 +325,14 @@ describe('section and card titles (row 32)', () => {
 
 describe('eyebrows (CONS-30)', () => {
   it('every eyebrow and kicker is the one role, 13/500 with no tracking, or sets no type at all', () => {
-    expect(tokens).toMatch(/--ch-type-eyebrow: 500 calc\(13 \* var\(--ch-type-k\)\)/);
+    expect(tokens).toMatch(/--ch-type-footnote: 500 calc\(13 \* var\(--ch-type-k\)\)\/calc\(18 \* var\(--ch-type-k\)\)/);
     const off: string[] = [];
     for (const f of readdirSync(dir).filter((x) => x.endsWith('.css') && x !== 'auth.css')) {
       const src = read(f).replace(/\/\*[\s\S]*?\*\//g, '');
       for (const [, sel, body] of src.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
         if (!/eyebrow|kicker/.test(sel!)) continue;
         for (const d of body!.match(/(?:font|font-size|letter-spacing):\s*[^;]+;/g) ?? []) {
-          if (d !== 'font: var(--ch-type-eyebrow);' && d !== 'letter-spacing: var(--ch-track-eyebrow);') off.push(`${f} ${sel!.trim()}: ${d}`);
+          if (d !== 'font: var(--ch-type-footnote);' && d !== 'letter-spacing: 0;') off.push(`${f} ${sel!.trim()}: ${d}`);
         }
       }
     }

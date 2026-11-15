@@ -43,7 +43,7 @@ describe('Team Hub’s tiles are the white raised card Home uses (owner, 11 Nov)
     const tile = rule('.ch-hw');
     expect(tile).toContain('background: var(--ch-card-bg)');
     expect(tile).toContain('box-shadow: var(--ch-card-shadow)');
-    expect(tile).toContain('border-radius: var(--ch-radius-card)');
+    expect(tile).toContain('border-radius: var(--ch-radius-lg)');
     expect(tile).not.toContain('--ch-ledger-rule-strong');
   });
 

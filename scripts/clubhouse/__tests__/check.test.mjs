@@ -188,8 +188,8 @@ test('a z-index is a ladder step, a step plus or minus 1 to 5, or a local -1 to 
 
 test('a card, panel or tile takes its corner from the radius scale; its children do not count (CONS-32)', () => {
   const css = (decl, sel = '.ch-x-card') => checkSource('src/clubhouse/styles/x.css', `${sel} { ${decl} }`);
-  assert.deepEqual(css('border-radius: var(--ch-radius-card);'), []);
-  assert.deepEqual(css('border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;'), []);
+  assert.deepEqual(css('border-radius: var(--ch-radius-lg);'), []);
+  assert.deepEqual(css('border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;'), []);
   assert.deepEqual(css('border-radius: 999px;'), []);
   assert.ok(css('border-radius: 22px;').some((x) => x.includes('CONS-32')));
   assert.ok(css('border-top-left-radius: 18px;', '.ch-a .ch-stm-panel:hover').some((x) => x.includes('CONS-32')));

@@ -26,7 +26,10 @@ const DARK = "html[data-fw-theme='dark'] [data-ui='clubhouse']";
 export function readTokens(css) {
   const light = new Map();
   const dark = new Map();
-  postcss.parse(css).each((node) => {
+  // The type roles' phone values (MOTION-AND-VISUAL 4.3): the light root's type tokens redefined in the phone block.
+  const phoneType = new Map();
+  const root = postcss.parse(css);
+  root.each((node) => {
     if (node.type !== 'rule') return;
     const into = node.selector === LIGHT ? light : node.selector === DARK ? dark : null;
     if (!into) return;
@@ -34,7 +37,16 @@ export function readTokens(css) {
       if (d.type === 'decl' && d.prop.startsWith('--')) into.set(d.prop, d.value.replace(/\s+/g, ' ').trim());
     });
   });
-  return { light, dark };
+  root.each((node) => {
+    if (node.type !== 'atrule' || node.name !== 'media' || !node.params.startsWith('(max-width: 820px)')) return;
+    node.walkRules((rule) => {
+      if (rule.selector !== LIGHT) return;
+      rule.each((d) => {
+        if (d.type === 'decl' && d.prop.startsWith('--ch-type-')) phoneType.set(d.prop, d.value.replace(/\s+/g, ' ').trim());
+      });
+    });
+  });
+  return { light, dark, phoneType };
 }
 
 /** A token's value in a theme after following plain var() aliases (dark falls back to light). */
@@ -146,22 +158,20 @@ const TOGGLE = [
   ['--ch-seg-on-ink', 'The pill label'],
 ];
 const ELEVATION = [
-  ['--ch-elevation-card', 'Rest: every card (S1.5)'],
-  ['--ch-elevation-raised', 'Raised: menus, popovers, the floating compose key, toasts (S1.5b)'],
-  ['--ch-elevation-sheet', 'Overlay: sheets and dialogs, over the scrim (S1.5c)'],
+  ['--ch-elevation-card', 'Card: every card (MOTION-AND-VISUAL 4.6). Flat, the page, is none'],
+  ['--ch-elevation-raised', 'Raised: sheets, menus, the palette, pins, toasts (MOTION-AND-VISUAL 4.6)'],
+  ['--ch-scrim', 'The scrim under a sheet or dialog'],
 ];
 const TYPE = [
-  ['--ch-type-large-title', 'Large title'],
-  ['--ch-type-bar-title', 'Bar title'],
-  ['--ch-type-card-title', 'Card title'],
-  ['--ch-type-body-l', 'Body, large'],
-  ['--ch-type-body', 'Body (16 on phone)'],
-  ['--ch-type-row', 'Row title'],
-  ['--ch-type-meta', 'Meta, notes, subtitles (15 on phone)'],
-  ['--ch-type-label', 'Label'],
-  ['--ch-type-caption', 'Caption: axes, timestamps'],
-  ['--ch-type-figure-hero', 'Hero figure, tabular'],
-  ['--ch-type-figure', 'Row figure, tabular'],
+  ['--ch-type-large-title', 'Large title: the page title'],
+  ['--ch-type-title', 'Title: card hero titles, a hole number'],
+  ['--ch-type-headline', 'Headline: card heads, bar titles, row titles that lead'],
+  ['--ch-type-body', 'Body: prose, CoachHelm answers'],
+  ['--ch-type-callout', 'Callout: row titles, controls, secondary prose'],
+  ['--ch-type-footnote', 'Footnote: row meta, eyebrows, captions under figures'],
+  ['--ch-type-caption', 'Caption: axis labels, legends, chips'],
+  ['--ch-type-figure-hero', 'Hero figure, tabular: the one number a screen leads with'],
+  ['--ch-type-figure', 'Row figure, tabular: scores and averages in rows'],
 ];
 
 function colourOf(tokens, name, theme) {
@@ -216,14 +226,17 @@ function radiusTable(tokens) {
 }
 
 function typeTable(tokens) {
-  const head = '| Role | Token | Weight | Size / leading at default Text Size |\n|---|---|---|---|';
+  const head = '| Role | Token | Desktop: weight, size / leading | Phone: weight, size / leading |\n|---|---|---|---|';
+  const cell = (v) => {
+    const m = (v ?? '').match(/^(\d{3}) calc\((\d+) \* var\(--ch-type-k\)\)\/(?:calc\((\d+) \* var\(--ch-type-k\)\)|([\d.]+))/);
+    return m ? `${m[1]}, ${m[2]} / ${m[3] ?? m[4]}` : '—';
+  };
   const rows = TYPE.map(([name, role]) => {
-    const v = resolve(tokens, name, 'light') ?? '';
-    const m = v.match(/^(\d{3}) calc\((\d+) \* var\(--ch-type-k\)\)\/(?:calc\((\d+) \* var\(--ch-type-k\)\)|([\d.]+))/);
-    const size = m ? `${m[2]} / ${m[3] ?? m[4]}` : '—';
-    return `| ${role} | \`${name}\` | ${m ? m[1] : '—'} | ${size} |`;
+    const desk = cell(resolve(tokens, name, 'light'));
+    const phone = tokens.phoneType?.has(name) ? cell(tokens.phoneType.get(name)) : 'same';
+    return `| ${role} | \`${name}\` | ${desk} | ${phone} |`;
   });
-  return [head, ...rows].join('\n');
+  return [head, ...rows, '', 'Sizes are at the default Text Size: every role multiplies by `--ch-type-k`, so text follows iPhone Text Size.'].join('\n');
 }
 
 /** The generated block, without its markers. */

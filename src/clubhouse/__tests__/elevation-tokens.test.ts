@@ -92,13 +92,13 @@ describe('elevation tokens (B4)', () => {
     }
   });
 
-  it('three levels: reading, raised and overlay, in light and dark; floating folds into raised', () => {
+  it('three levels: reading, raised and overlay, in light and dark; floating is gone (MOTION-AND-VISUAL 4.6)', () => {
     const t = css('tokens.css');
     // The reading level is the one card (styles/__tests__/depth.test.ts): --ch-elevation-card holds its light and dark
     // values and --ch-elevation-reading is its older name.
     for (const level of ['card', 'raised', 'overlay']) expect(t.match(new RegExp(`--ch-elevation-${level}:`, 'g'))?.length, level).toBeGreaterThanOrEqual(2);
     expect(t).toMatch(/--ch-elevation-reading: var\(--ch-elevation-card\);/);
-    expect(t).toMatch(/--ch-elevation-floating: var\(--ch-elevation-raised\);/);
+    expect(t).not.toMatch(/--ch-elevation-floating:/);
     for (const file of walk(join(ROOT, 'styles'), /\.css$/)) expect(css(basename(file)), basename(file)).not.toMatch(/var\(--ch-elevation-floating\)/);
   });
 
@@ -126,13 +126,12 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/auth.css': 6,
   'styles/calendar.css': 28,
   'styles/classes.css': 13,
-  'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-profile.css': 5,
   'styles/coachhelm-standing.css': 1,
   'styles/coachhelm-thread.css': 1,
   'styles/coachhelm.css': 1,
   'styles/controls.css': 12,
-  'styles/home.css': 15,
+  'styles/home.css': 13,
   'styles/hub.css': 8,
   'styles/messages.css': 7,
   'styles/onboard.css': 17,
@@ -140,7 +139,7 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/recruiting.css': 1,
   'styles/roster.css': 6,
   'styles/rounds-setup.css': 17,
-  'styles/rounds-track.css': 17,
+  'styles/rounds-track.css': 16,
   'styles/rounds.css': 20,
   'styles/settings.css': 3,
   'styles/shell.css': 16,
@@ -152,12 +151,10 @@ const RAW_SHADOW: Record<string, number> = {
 const RAW_DROP: Record<string, number> = {
   'styles/auth.css': 2,
   'styles/classes.css': 1,
-  'styles/coachhelm-ask.css': 1,
   'styles/controls.css': 2,
-  'styles/home.css': 3,
+  'styles/home.css': 1,
   'styles/onboard.css': 6,
   'styles/rounds-setup.css': 1,
-  'styles/rounds-track.css': 1,
   'styles/rounds.css': 1,
   'styles/settings.css': 1,
   'styles/shell.css': 1,

@@ -10,7 +10,7 @@
 }
 .ch-aks {
   /* The one large figure: 40px and up is free of the step scale, so it is a role of this sheet. */
-  --ch-type-aks-figure: 500 calc(64 * var(--ch-type-k)) / 0.8 var(--ch-font-sans);
+  --ch-type-aks-figure: 600 calc(64 * var(--ch-type-k)) / 0.8 var(--ch-font-sans);
   display: flex;
   flex-direction: column;
   gap: var(--ch-space-3);
@@ -343,7 +343,7 @@
 }
 .ch-aks-hole__name {
   fill: var(--ch-text-primary);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
 }
 .ch-aks-hole__part.is-on .ch-aks-hole__name {
   font: var(--ch-type-12-strong);
@@ -434,7 +434,7 @@
 }
 .ch-aks-ruled__first {
   fill: var(--ch-text-secondary);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
 }
 .ch-aks-ruled__last {
   fill: var(--ch-text-primary);
@@ -696,7 +696,7 @@
   gap: var(--ch-space-2);
   padding-block: var(--ch-space-1);
   color: var(--ch-text-secondary);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
 }
 .ch-aks-board__cut::before,
 .ch-aks-board__cut::after {
@@ -840,7 +840,7 @@
   cursor: pointer;
 }
 .ch-aks-compass__word {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-aks-compass__n {

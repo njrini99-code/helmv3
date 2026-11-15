@@ -15540,7 +15540,7 @@
         },
         {
           "name": "--ch-type-look-figure-a",
-          "value": "500 calc(64 * var(--ch-type-k))/0.8 var(--ch-font-sans)",
+          "value": "600 calc(64 * var(--ch-type-k))/0.8 var(--ch-font-sans)",
           "scope": ".ch-look"
         },
         {
@@ -15703,7 +15703,7 @@
       "tokens": [
         {
           "name": "--ch-type-aks-figure",
-          "value": "500 calc(64 * var(--ch-type-k)) / 0.8 var(--ch-font-sans)",
+          "value": "600 calc(64 * var(--ch-type-k)) / 0.8 var(--ch-font-sans)",
           "scope": ".ch-aks"
         },
         {
@@ -17507,7 +17507,7 @@
       "tokens": [
         {
           "name": "--ch-type-answer",
-          "value": "400 calc(16 * var(--ch-type-k))/1.65 var(--ch-font-sans)",
+          "value": "400 calc(16 * var(--ch-type-k))/calc(24 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": ".ch-th"
         },
         {
@@ -17914,6 +17914,7 @@
         "ch-seg",
         "ch-seg--block",
         "ch-seg--lg",
+        "ch-seg--md",
         "ch-seg--sm",
         "ch-seg__b",
         "ch-seg__l",
@@ -18379,8 +18380,6 @@
         "ch-rviz--sg",
         "ch-scoreboard",
         "ch-seg",
-        "ch-seg__b",
-        "ch-seg__pill",
         "ch-sheet",
         "ch-skel",
         "ch-was",
@@ -18782,7 +18781,7 @@
         },
         {
           "name": "--ch-type-live-figure",
-          "value": "500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans)",
+          "value": "600 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -23071,21 +23070,6 @@
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → .ch-topbar:has(.ch-qck) .ch-pbar__title"
         },
         {
-          "name": "--ch-type-serif-l",
-          "value": "600 34px/1.1 var(--ch-font-sans)",
-          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → [data-ui='clubhouse'] main[data-canopy]"
-        },
-        {
-          "name": "--ch-type-serif-m",
-          "value": "600 22px/1.15 var(--ch-font-sans)",
-          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → [data-ui='clubhouse'] main[data-canopy]"
-        },
-        {
-          "name": "--ch-type-serif-s",
-          "value": "600 20px/1.2 var(--ch-font-sans)",
-          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → [data-ui='clubhouse'] main[data-canopy]"
-        },
-        {
           "name": "--ch-medallion-rings",
           "value": "rgb(107 187 140 / 0.12)",
           "scope": "html[data-fw-theme='dark'] .ch-empty-page,\nhtml[data-fw-theme='dark'] .ch-es--page"
@@ -23150,7 +23134,6 @@
         "ch-root",
         "ch-seg",
         "ch-seg__b",
-        "ch-seg__pill",
         "ch-sf",
         "ch-sf__bar",
         "ch-sf__chips",
@@ -25615,81 +25598,6 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-type-figure-40-500",
-          "value": "500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-figure-44-500",
-          "value": "500 calc(44 * var(--ch-type-k))/1 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-serif-l",
-          "value": "600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-serif-m",
-          "value": "600 calc(22 * var(--ch-type-k))/1.15 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-serif-s",
-          "value": "600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-display-l",
-          "value": "600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-display-s",
-          "value": "600 calc(22 * var(--ch-type-k))/1.2 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-title",
-          "value": "600 calc(15 * var(--ch-type-k))/1.35 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-body-l",
-          "value": "400 calc(16 * var(--ch-type-k))/1.55 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-body",
-          "value": "400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-body-s",
-          "value": "400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-label",
-          "value": "500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-label-s",
-          "value": "500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-caption",
-          "value": "400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-figure-l",
-          "value": "500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-type-mono",
           "value": "500 calc(11 * var(--ch-type-k))/1 var(--ch-font-mono)",
           "scope": "[data-ui='clubhouse']"
@@ -25966,82 +25874,67 @@
         },
         {
           "name": "--ch-type-large-title",
-          "value": "600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans)",
+          "value": "700 calc(30 * var(--ch-type-k))/calc(36 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-track-large-title",
-          "value": "-0.038em",
+          "value": "-0.02em",
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-type-bar-title",
-          "value": "600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans)",
+          "name": "--ch-type-title",
+          "value": "600 calc(22 * var(--ch-type-k))/calc(28 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-track-bar-title",
-          "value": "var(--ch-track-17)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-hero",
-          "value": "400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-track-hero",
+          "name": "--ch-track-title",
           "value": "-0.01em",
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-type-section",
-          "value": "600 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans)",
+          "name": "--ch-type-headline",
+          "value": "600 calc(16 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-track-section",
-          "value": "var(--ch-track-20)",
+          "name": "--ch-type-body",
+          "value": "400 calc(15 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-type-eyebrow",
+          "name": "--ch-type-callout",
+          "value": "500 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-footnote",
           "value": "500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-track-eyebrow",
-          "value": "0",
+          "name": "--ch-type-caption",
+          "value": "500 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-type-card-title",
-          "value": "600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-row",
-          "value": "500 calc(16 * var(--ch-type-k))/calc(21 * var(--ch-type-k)) var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-meta",
-          "value": "400 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
+          "name": "--ch-track-caption",
+          "value": "0.01em",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-type-figure-hero",
-          "value": "500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans)",
+          "value": "600 calc(56 * var(--ch-type-k))/1 var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-track-figure-hero",
+          "value": "-0.025em",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-type-figure",
-          "value": "600 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-track-card-title",
-          "value": "var(--ch-track-17)",
+          "value": "600 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26301,7 +26194,7 @@
         },
         {
           "name": "--ch-sidebar-w",
-          "value": "240px",
+          "value": "232px",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26445,11 +26338,6 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-radius-xs",
-          "value": "4px",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-radius-sm",
           "value": "8px",
           "scope": "[data-ui='clubhouse']"
@@ -26470,23 +26358,28 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-radius-mark",
-          "value": "2px",
+          "name": "--ch-radius-full",
+          "value": "999px",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-seg-inset",
+          "value": "3px",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-radius-xs",
+          "value": "4px",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-radius-bubble",
+          "value": "18px",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-radius-tail",
           "value": "6px",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-radius-card",
-          "value": "16px",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-radius-sheet",
-          "value": "20px",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26546,7 +26439,7 @@
         },
         {
           "name": "--ch-glass-bg",
-          "value": "rgb(250 248 241 / 0.7)",
+          "value": "color-mix(in oklab, var(--ch-workspace) 78%, transparent)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26556,17 +26449,7 @@
         },
         {
           "name": "--ch-glass-saturate",
-          "value": "110%",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-blur-msg",
-          "value": "24px",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-saturate-msg",
-          "value": "170%",
+          "value": "140%",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26606,12 +26489,12 @@
         },
         {
           "name": "--ch-elevation-reading-hover",
-          "value": "0 0 0 1px rgb(28 25 18 / 0.14), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-reading-accent",
-          "value": "0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26621,17 +26504,12 @@
         },
         {
           "name": "--ch-elevation-control",
-          "value": "0 1px 2px rgb(28 25 18 / 0.06)",
+          "value": "0 0 0 0 transparent",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-raised",
           "value": "0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-floating",
-          "value": "var(--ch-elevation-raised)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26661,27 +26539,27 @@
         },
         {
           "name": "--ch-elevation-framed",
-          "value": "var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12), inset 1px 0 0 rgb(11 58 37 / 0.12)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-on-frame",
-          "value": "0 0 0 1px rgb(176 149 96 / 0.45), var(--ch-light-drift-near) 1px 2px rgb(2 18 10 / 0.3)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-nav-well-bg",
-          "value": "linear-gradient(180deg, var(--ch-ivory-25), var(--ch-on-green-plate))",
+          "value": "var(--ch-card-bg)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-nav-well-shadow",
-          "value": "0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(0 0 0 / 0.25), 0 6px 14px -8px rgb(0 0 0 / 0.45), inset 0 1px 0 #fff",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-on-frame-hover",
-          "value": "0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 6px rgb(2 18 10 / 0.35)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26975,11 +26853,6 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-bubble-radius",
-          "value": "19px",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-type-msg-bubble",
           "value": "400 calc(16 * var(--ch-type-k))/1.32 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
@@ -27076,12 +26949,12 @@
         },
         {
           "name": "--ch-glass",
-          "value": "rgb(253 251 247 / 0.78)",
+          "value": "var(--ch-glass-bg)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-glass-strong",
-          "value": "rgb(253 251 247 / 0.9)",
+          "value": "var(--ch-glass-bg)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27106,7 +26979,7 @@
         },
         {
           "name": "--ch-scrim-msg",
-          "value": "rgb(28 30 24 / 0.22)",
+          "value": "var(--ch-scrim)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27266,37 +27139,37 @@
         },
         {
           "name": "--ch-elevation-feature",
-          "value": "0 1px 2px rgb(8 43 28 / 0.2), 0 14px 30px -18px rgb(8 43 28 / 0.6)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-board",
-          "value": "0 14px 22px -16px rgb(8 43 28 / 0.8)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-board-hover",
-          "value": "0 14px 20px -12px rgb(8 43 28 / 0.85)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-mark",
-          "value": "0 4px 8px -4px rgb(21 90 57 / 0.6)",
+          "value": "var(--ch-elevation-raised)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-mark-warn",
-          "value": "0 6px 12px -8px rgb(148 96 14 / 0.6)",
+          "value": "var(--ch-elevation-raised)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-mark-ink",
-          "value": "0 5px 10px -6px rgb(28 25 18 / 0.45)",
+          "value": "var(--ch-elevation-raised)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-plate",
-          "value": "0 18px 28px -24px rgb(28 25 18 / 0.5)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27331,27 +27204,27 @@
         },
         {
           "name": "--ch-elevation-field-hover",
-          "value": "0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.05)",
+          "value": "0 0 0 1px var(--ch-border-strong)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-chip-hover",
-          "value": "inset 0 0 0 1px rgb(28 25 18 / 0.24), 0 2px 6px -2px rgb(28 25 18 / 0.18)",
+          "value": "inset 0 0 0 1px var(--ch-border-control)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-choice-hover",
-          "value": "0 0 0 1.5px var(--ch-green-600), 0 10px 20px -14px rgb(11 58 37 / 0.4)",
+          "value": "0 0 0 1.5px var(--ch-green-600)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-row-card-hover",
-          "value": "0 0 0 1px rgb(21 90 57 / 0.25), 0 14px 28px -18px rgb(11 58 37 / 0.4)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-on-frame-card-hover",
-          "value": "0 0 0 1px rgb(176 149 96 / 0.6), 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 #fff",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27411,7 +27284,7 @@
         },
         {
           "name": "--ch-elevation-sheet",
-          "value": "0 -1px 0 rgb(28 25 18 / 0.06)",
+          "value": "var(--ch-elevation-raised)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27421,22 +27294,22 @@
         },
         {
           "name": "--ch-elevation-strip",
-          "value": "0 18px 30px -18px rgb(6 20 12 / 0.45)",
+          "value": "0 0 0 0 transparent",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-strip-plate",
-          "value": "0 4px 12px rgb(0 0 0 / 0.18)",
+          "value": "0 0 0 0 transparent",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-glass-card",
-          "value": "0 12px 28px rgb(0 0 0 / 0.2)",
+          "value": "var(--ch-elevation-raised)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-glass-edge",
-          "value": "0 8px 18px rgb(0 0 0 / 0.16)",
+          "value": "var(--ch-elevation-raised)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27596,7 +27469,7 @@
         },
         {
           "name": "--ch-scrim",
-          "value": "rgb(20 20 18 / 0.36)",
+          "value": "rgb(28 25 18 / 0.24)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27940,16 +27813,6 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-glass",
-          "value": "rgb(22 27 23 / 0.74)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-strong",
-          "value": "rgb(27 32 28 / 0.88)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-glass-rule",
           "value": "rgb(237 231 216 / 0.1)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -27967,11 +27830,6 @@
         {
           "name": "--ch-switch-off-ring",
           "value": "var(--ch-border-control)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-scrim-msg",
-          "value": "rgb(0 0 0 / 0.45)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -28216,12 +28074,7 @@
         },
         {
           "name": "--ch-nav-well-bg",
-          "value": "linear-gradient(180deg, #24432f, #1a3524)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-nav-well-shadow",
-          "value": "0 0 0 1px rgb(205 187 142 / 0.32), 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 14px -8px rgb(0 0 0 / 0.6),\n    inset 0 1px 0 rgb(255 255 255 / 0.1)",
+          "value": "#24432f",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -28820,11 +28673,6 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-glass-bg",
-          "value": "rgb(22 27 23 / 0.74)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-edge",
           "value": "rgb(255 255 255 / 0.07)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -28885,43 +28733,8 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-elevation-reading-hover",
-          "value": "0 0 0 1px rgb(241 236 223 / 0.14)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-reading-accent",
-          "value": "0 1px 3px rgb(0 0 0 / 0.35), 0 4px 12px -6px rgb(0 0 0 / 0.45)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-control",
-          "value": "0 1px 2px rgb(0 0 0 / 0.35)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-floating",
-          "value": "var(--ch-elevation-raised)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-elevation-raised",
           "value": "0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-framed",
-          "value": "0 1px 3px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.04), inset 1px 0 0 rgb(255 255 255 / 0.03)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-on-frame",
-          "value": "0 0 0 1px rgb(201 173 116 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-on-frame-hover",
-          "value": "0 0 0 1px rgb(201 173 116 / 0.55), 0 2px 6px rgb(0 0 0 / 0.55)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -28965,41 +28778,6 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-elevation-feature",
-          "value": "0 0 0 1px rgb(107 187 140 / 0.14), 0 14px 28px -18px rgb(0 0 0 / 0.8)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-board",
-          "value": "0 14px 22px -16px rgb(0 0 0 / 0.8)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-board-hover",
-          "value": "0 14px 20px -12px rgb(0 0 0 / 0.85)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-mark",
-          "value": "0 4px 8px -4px rgb(0 0 0 / 0.6)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-mark-warn",
-          "value": "0 6px 12px -8px rgb(0 0 0 / 0.6)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-mark-ink",
-          "value": "0 5px 10px -6px rgb(0 0 0 / 0.6)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-plate",
-          "value": "0 18px 28px -24px rgb(0 0 0 / 0.7)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-seg-on-shadow",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.5),\n    0 3px 8px -2px rgb(0 0 0 / 0.45)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -29012,31 +28790,6 @@
         {
           "name": "--ch-ledger-avatar-ring",
           "value": "0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(0 0 0 / 0.6)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-field-hover",
-          "value": "0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(0 0 0 / 0.3)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-chip-hover",
-          "value": "inset 0 0 0 1px rgb(237 231 216 / 0.24), 0 2px 6px -2px rgb(0 0 0 / 0.5)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-choice-hover",
-          "value": "0 0 0 1.5px var(--ch-green-600), 0 10px 20px -14px rgb(0 0 0 / 0.6)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-row-card-hover",
-          "value": "0 0 0 1px rgb(107 187 140 / 0.3), 0 14px 28px -18px rgb(0 0 0 / 0.6)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-on-frame-card-hover",
-          "value": "0 0 0 1px rgb(201 173 116 / 0.55), 0 10px 22px -10px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.06)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -29092,31 +28845,6 @@
         {
           "name": "--ch-elevation-overlay",
           "value": "var(--ch-elevation-raised)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-sheet",
-          "value": "0 0 0 1px rgb(241 236 223 / 0.1)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-strip",
-          "value": "0 18px 30px -16px rgb(0 0 0 / 0.6)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-strip-plate",
-          "value": "0 4px 12px rgb(0 0 0 / 0.4)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-glass-card",
-          "value": "0 12px 28px rgb(0 0 0 / 0.45)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-glass-edge",
-          "value": "0 8px 18px rgb(0 0 0 / 0.38)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -29271,11 +28999,6 @@
         },
         {
           "name": "--ch-phone-tabbar-bg",
-          "value": "rgb(243 240 231 / 0.84)",
-          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-bg",
           "value": "rgb(243 240 231 / 0.84)",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
         },
@@ -29590,43 +29313,33 @@
           "scope": "@supports (transition-timing-function: linear(0, 1)) → html:has([data-ui='clubhouse'])"
         },
         {
-          "name": "--ch-type-title",
-          "value": "600 calc(16 * var(--ch-type-k))/1.35 var(--ch-font-sans)",
+          "name": "--ch-type-large-title",
+          "value": "700 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-type-body-l",
-          "value": "400 calc(17 * var(--ch-type-k))/1.5 var(--ch-font-sans)",
+          "name": "--ch-type-headline",
+          "value": "600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
         },
         {
           "name": "--ch-type-body",
-          "value": "400 calc(16 * var(--ch-type-k))/1.5 var(--ch-font-sans)",
+          "value": "400 calc(17 * var(--ch-type-k))/calc(24 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-type-body-s",
-          "value": "400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans)",
+          "name": "--ch-type-callout",
+          "value": "500 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-type-label",
-          "value": "500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans)",
+          "name": "--ch-type-figure-hero",
+          "value": "600 calc(44 * var(--ch-type-k))/1 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-type-label-s",
-          "value": "500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans)",
-          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-caption",
-          "value": "400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans)",
-          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-type-meta",
-          "value": "400 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
+          "name": "--ch-type-figure",
+          "value": "600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
         },
         {
@@ -29647,11 +29360,6 @@
         {
           "name": "--ch-glass-strong",
           "value": "var(--ch-bg-page)",
-          "scope": "@media (prefers-reduced-transparency: reduce) → [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-blur-msg",
-          "value": "0px",
           "scope": "@media (prefers-reduced-transparency: reduce) → [data-ui='clubhouse']"
         },
         {
@@ -29690,11 +29398,6 @@
           "scope": "@media (prefers-reduced-transparency: reduce) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-glass-blur-msg",
-          "value": "0px",
-          "scope": "@media (prefers-reduced-transparency: reduce) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-scrim-blur-msg",
           "value": "0px",
           "scope": "@media (prefers-reduced-transparency: reduce) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -29727,11 +29430,6 @@
         {
           "name": "--ch-glass-strong",
           "value": "var(--ch-bg-page)",
-          "scope": ":root[data-reduce-transparency] [data-ui='clubhouse'],\n:root[data-reduce-transparency][data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-blur-msg",
-          "value": "0px",
           "scope": ":root[data-reduce-transparency] [data-ui='clubhouse'],\n:root[data-reduce-transparency][data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -29763,6 +29461,16 @@
           "name": "--ch-hairline-w",
           "value": "0.333px",
           "scope": "@media (min-resolution: 3dppx) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-glass-bg",
+          "value": "var(--ch-bg-page)",
+          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-glass-blur",
+          "value": "0px",
+          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
         },
         {
           "name": "--ch-hairline-w",
@@ -29817,31 +29525,6 @@
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-600)",
-          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-bg",
-          "value": "var(--ch-bg-page)",
-          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-blur",
-          "value": "0px",
-          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass",
-          "value": "var(--ch-bg-page)",
-          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-strong",
-          "value": "var(--ch-bg-page)",
-          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-blur-msg",
-          "value": "0px",
           "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
         },
         {
@@ -29900,6 +29583,16 @@
           "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
         },
         {
+          "name": "--ch-glass-bg",
+          "value": "var(--ch-bg-page)",
+          "scope": "@media (prefers-contrast: more) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-glass-blur",
+          "value": "0px",
+          "scope": "@media (prefers-contrast: more) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-border-hairline",
           "value": "rgb(237 231 216 / 0.24)",
           "scope": "@media (prefers-contrast: more) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -29947,31 +29640,6 @@
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-600)",
-          "scope": "@media (prefers-contrast: more) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-bg",
-          "value": "var(--ch-bg-page)",
-          "scope": "@media (prefers-contrast: more) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-blur",
-          "value": "0px",
-          "scope": "@media (prefers-contrast: more) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass",
-          "value": "var(--ch-bg-page)",
-          "scope": "@media (prefers-contrast: more) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-strong",
-          "value": "var(--ch-bg-page)",
-          "scope": "@media (prefers-contrast: more) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-glass-blur-msg",
-          "value": "0px",
           "scope": "@media (prefers-contrast: more) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -30062,6 +29730,21 @@
         {
           "name": "--ch-type-15-medium",
           "value": "560 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-footnote",
+          "value": "560 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-caption",
+          "value": "560 calc(13 * var(--ch-type-k))/calc(17 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-callout",
+          "value": "560 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
         }
       ]

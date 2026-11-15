@@ -65,10 +65,10 @@
   margin: 0;
   padding: 6px 16px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-900);
   color: #f4f2ec;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   text-overflow: ellipsis;
   white-space: nowrap;
   box-shadow: var(--ch-drop-ink);
@@ -120,7 +120,7 @@
 }
 .ch-st-card {
   padding: 6px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -133,7 +133,7 @@
 }
 .ch-st-card__head h2 {
   margin-bottom: 4px;
-  font: var(--ch-type-serif-s);
+  font: var(--ch-type-title);
   letter-spacing: -0.004em;
   color: var(--ch-text-primary);
 }
@@ -286,7 +286,7 @@
   position: absolute;
   inset: 2px 0 auto;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.07);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.1);
 }
@@ -294,7 +294,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-fg__track i.is-gain {
   background: var(--ch-chart-gain);
@@ -316,14 +316,14 @@
   width: 1.5px;
   height: 12px;
   margin-left: -0.75px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-700);
 }
 .ch-fg__gauge em {
   position: absolute;
   top: 14px;
   transform: translateX(-50%);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -348,7 +348,7 @@
 }
 .ch-fg__gauge--holes i {
   height: 8px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: linear-gradient(90deg, var(--ch-chart-gain) var(--ch-fg-part, 100%), rgb(28 25 18 / 0.08) var(--ch-fg-part, 100%));
 }
 .ch-fg__gauge--holes em {
@@ -477,7 +477,7 @@
 .ch-sgt,
 .ch-lg {
   padding: 6px 6px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -491,7 +491,7 @@
 }
 .ch-sgt__head h2 {
   margin-bottom: 4px;
-  font: var(--ch-type-serif-s);
+  font: var(--ch-type-title);
   letter-spacing: -0.004em;
   color: var(--ch-text-primary);
 }
@@ -521,7 +521,7 @@
   margin-right: 6px;
   vertical-align: 3px;
   border-top: 3px solid var(--ch-st-team-line);
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-sgt__legend i.is-sel {
   border-top: 2px solid var(--ch-green-600);
@@ -575,7 +575,7 @@
   padding: 4px 8px;
   margin-bottom: 4px;
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -599,7 +599,7 @@
   border-radius: var(--ch-radius-sm);
   background: none;
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   text-align: left;
   cursor: pointer;
@@ -721,7 +721,7 @@
   justify-content: space-between;
 }
 .ch-sgm__l {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
 }
 .ch-sgm__v {
@@ -812,7 +812,7 @@
 }
 .ch-lg__r--h {
   padding-block: 0 8px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
   box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
@@ -900,7 +900,7 @@
   top: 2px;
   height: 6px;
   min-width: 2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-lg__bar.is-gain {
   background: var(--ch-chart-gain);
@@ -938,7 +938,7 @@
   display: inline-block;
   width: 14px;
   height: 6px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-lg__k--gain {
   background: var(--ch-chart-gain);
@@ -962,7 +962,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
@@ -1014,12 +1014,12 @@
 /* The card's title in the display serif, as the trend card and every page's panels (words only; its digits, if any,
    in the sans through SerifText). */
 .ch-yb__head h2 {
-  font: var(--ch-type-serif-s);
+  font: var(--ch-type-title);
   letter-spacing: -0.006em;
   color: var(--ch-ink-900);
 }
 .ch-yb__meta {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-ink-500);
   white-space: nowrap;
@@ -1071,7 +1071,7 @@
 }
 .ch-pg-band,
 .ch-pg-pct {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   font-variant-numeric: tabular-nums;
 }
 .ch-pg-band {
@@ -1165,7 +1165,7 @@
   height: max-content;
   margin-top: 16px;
   border-radius: 50%;
-  box-shadow: 0 0 0 4px var(--ch-ivory-25), 0 0 0 5px rgb(21 90 57 / 0.28), 0 12px 26px -12px rgb(11 58 37 / 0.45);
+  box-shadow: 0 0 0 4px var(--ch-ivory-25), 0 0 0 5px rgb(21 90 57 / 0.28);
 }
 .ch-pf-hero__av .ch-avatar {
   font-size: calc(34 * var(--ch-type-k));
@@ -1192,10 +1192,10 @@
   /* Grows with Text Size instead of clipping its word (visual pass 2026-10-28). */
   min-height: 22px;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(253 252 248 / 0.85);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.16);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-800);
 }
@@ -1215,7 +1215,7 @@
   letter-spacing: var(--ch-track-34);
 }
 .ch-pf-hero__id p {
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 .ch-pf-hero__act {
@@ -1248,7 +1248,7 @@
   box-shadow: var(--ch-seam-y);
 }
 .ch-pf-hero__figs dt {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -1329,7 +1329,7 @@
   bottom: -1px;
   left: 8px;
   height: var(--ch-tab-bar-h);
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   /* --ch-tab-bar: green-600 at night (7.8:1 on the workspace); the fill green it used was 2.99:1 (H9). */
   background: var(--ch-tab-bar);
 }
@@ -1360,7 +1360,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   box-shadow: inset 0 0 0 1px rgb(148 96 14 / 0.16);
 }
 .ch-tbl {
@@ -1383,7 +1383,7 @@
   margin-bottom: 2px;
   border-bottom: 0;
   background: var(--ch-ivory-100);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
@@ -1408,7 +1408,7 @@
 .ch-tr__link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-n {
   font: var(--ch-type-15-medium);
@@ -1423,7 +1423,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-topar {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
@@ -1453,14 +1453,14 @@
 .ch-pf-bar {
   height: 6px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-200);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
 }
 .ch-pf-bar span {
   display: block;
   height: 100%;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-fill-600);
 }
 .ch-pf-goal {
@@ -1532,7 +1532,7 @@
 }
 .ch-gm__t h2 {
   margin-bottom: 6px;
-  font: var(--ch-type-serif-m);
+  font: var(--ch-type-title);
   letter-spacing: -0.006em;
 }
 .ch-gm__t p {
@@ -1567,7 +1567,7 @@
   box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-border-hairline);
 }
 .ch-gm__figs dt {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-gm__figs dd {
@@ -1610,7 +1610,7 @@
   color: var(--ch-green-700);
 }
 .ch-gm-p__empty {
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 
@@ -1629,7 +1629,7 @@
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-par3__l {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -1640,7 +1640,7 @@
   letter-spacing: var(--ch-track-28);
 }
 .ch-par3__to {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
@@ -1678,7 +1678,7 @@
   font-variant-numeric: tabular-nums;
 }
 .ch-fws__z em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   opacity: 0.8;
@@ -1727,14 +1727,14 @@
 .ch-cmp__bar {
   height: 8px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-200);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.07);
 }
 .ch-cmp__bar span {
   display: block;
   height: 100%;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-green-fill-600);
 }
 .ch-cmp__r b {
@@ -1766,7 +1766,7 @@
   width: 100%;
   max-width: 56px;
   height: 130px;
-  border-radius: var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-xs) var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-sm);
   background: var(--ch-ivory-100);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
@@ -1775,7 +1775,7 @@
   right: 0;
   bottom: 0;
   left: 0;
-  border-radius: var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-xs) var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-sm);
   transform-origin: bottom;
 }
 .ch-lad__fill.is-gain {
@@ -1797,7 +1797,7 @@
   border-top: 2px dashed var(--ch-champagne-500);
 }
 .ch-lad__b {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -1920,7 +1920,7 @@
   gap: 8px;
 }
 .ch-cup__st {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -1936,7 +1936,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 0 12px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
 }
 .ch-cup__split b {
@@ -1956,7 +1956,7 @@
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-cup__side p {
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 
@@ -2133,7 +2133,7 @@
     grid-auto-columns: minmax(0, 1fr);
     margin: 0;
     padding: 16px 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-sheet-bg);
     box-shadow: var(--ch-sheet-shadow);
   }
@@ -2148,7 +2148,7 @@
     border-left: var(--ch-hairline-w) solid var(--ch-border-hairline);
   }
   .ch-stm-figs dt {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
     overflow-wrap: anywhere;
   }
@@ -2165,7 +2165,7 @@
   }
   .ch-stm-figs dd + dd {
     min-height: 1em;
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     font-variant-numeric: tabular-nums;
   }
   .ch-stm-figs:not(.is-three) dd + dd {
@@ -2219,7 +2219,7 @@
     flex-direction: column;
     gap: 12px;
     padding: 16px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-sheet-bg);
     box-shadow: var(--ch-sheet-shadow);
   }
@@ -2312,7 +2312,7 @@
     grid-template-columns: 96px minmax(0, 1fr) 44px;
     align-items: center;
     gap: 8px;
-    font: var(--ch-type-body-s);
+    font: var(--ch-type-callout);
     color: var(--ch-text-secondary);
   }
   .ch-stm-putt__r {
@@ -2337,7 +2337,7 @@
 .ch-stm-putt__bar {
     position: relative;
     height: 8px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-bg-inset);
   }
   .ch-stm-leg__z {
@@ -2352,7 +2352,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
   }
   .ch-stm-leg__v.is-gain {
     background: var(--ch-chart-gain);
@@ -2405,7 +2405,7 @@
   .ch-stm-putt__bar i {
     position: absolute;
     inset: 0 auto 0 0;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-green-fill-600);
   }
   .ch-stm-putt__bar i.is-low {
@@ -2417,7 +2417,7 @@
     bottom: -3px;
     width: 2px;
     margin-left: -1px;
-    border-radius: var(--ch-radius-mark);
+    border-radius: var(--ch-radius-full);
     background: var(--ch-text-primary);
   }
   .ch-stm-list {
@@ -2675,7 +2675,7 @@
     display: none;
   }
   .ch-gd.is-phone .ch-gm {
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
   }
   .ch-gd.is-phone .ch-gm__head {
     grid-template-columns: 32px minmax(0, 1fr);
@@ -2820,7 +2820,7 @@
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-gx-tiles dt {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-gx-tiles dd {
@@ -2859,7 +2859,7 @@
 .ch-gx-tbl thead th {
   padding-top: 0;
   border-top: 0;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-gx-tbl tbody th {
@@ -2908,7 +2908,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-gx-sec__c em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-secondary);
@@ -3047,7 +3047,7 @@
 .ch-sf__n {
   min-width: 18px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
   font: var(--ch-type-11-strong);
@@ -3070,7 +3070,7 @@
   height: 28px;
   padding: 0 8px 0 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: #edf4ef;
   color: var(--ch-green-700);
   font: var(--ch-type-13-strong);
@@ -3095,7 +3095,7 @@
   border: 0;
   background: transparent;
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -3108,14 +3108,14 @@
 }
 .ch-sf__count {
   margin: 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 /* How a 9-hole round counts, said under the figures whenever the filter lets one in. */
 .ch-sf__note {
   margin: 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 .ch-sf-sheet {
@@ -3166,7 +3166,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-primary);
 }
 .ch-sf-row__date {
@@ -3309,7 +3309,7 @@
     margin: 0 16px;
   }
   .ch-gd.is-phone .ch-gm__figs dt {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
   }
   .ch-gd.is-phone .ch-gm__figs dd:not(.ch-gm__sub) {
@@ -3321,7 +3321,7 @@
   }
   .ch-gd.is-phone .ch-gm__figs dd.ch-gm__sub {
     padding-top: 0;
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
     white-space: normal;
   }
@@ -3375,7 +3375,7 @@
     gap: 4px;
     min-height: calc(3 * 1.45em + 28px);
     padding: 12px 8px 16px;
-    font: var(--ch-type-body-s);
+    font: var(--ch-type-callout);
     color: var(--ch-text-secondary);
   }
   .ch-stm-overview__meta > [role='note'] {
@@ -3563,7 +3563,7 @@
    its labels wrap): the band, a bar on a track, the exact value and, where the source keeps it, the shots. */
 .ch-brows__axis {
   margin: 0 0 8px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
@@ -3587,13 +3587,13 @@
 .ch-brow__bar {
   position: relative;
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-inset);
 }
 .ch-brow__bar i {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-fill-600);
 }
 .ch-brow__bar i.is-loss {
@@ -3605,7 +3605,7 @@
   bottom: -4px;
   width: 2px;
   margin-left: -1px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-text-primary);
 }
 .ch-brow__v {
@@ -3635,7 +3635,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-brow__v.is-none {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
 }
 
@@ -3851,11 +3851,11 @@
     border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule);
   }
   .ch-stm .ch-stm-figs dt {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
   .ch-stm .ch-stm-figs dd:first-of-type {
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
@@ -4170,7 +4170,7 @@
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-stm .ch-par3__v {
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
@@ -4503,7 +4503,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     border-radius: var(--ch-radius-md);
     background: var(--ch-ink-900);
     color: var(--ch-bg-surface);
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     box-shadow: var(--ch-elevation-overlay);
   }
   .ch-stm.is-team .ch-stm-tip b {
@@ -4573,7 +4573,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     padding-right: 4px;
   }
   .ch-stm.is-team .ch-stm-panel__h h2 {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     letter-spacing: 0;
     font-variation-settings: normal;
     color: var(--ch-text-secondary);
@@ -4828,7 +4828,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     font-variant-numeric: tabular-nums;
   }
   .ch-stm.is-team .ch-stm-row__v span {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     font-variant-numeric: tabular-nums;
   }
   /* Putting by distance: a bar per band in the group, the Tour's make rate as a mark. */
@@ -4981,7 +4981,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
 }
 .ch-st[data-canopy] .ch-tp__l {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
 }
@@ -5152,7 +5152,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-sgt__chg {
   padding: 4px 8px 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(255 255 255 / 0.08);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
 }
@@ -5177,7 +5177,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-sgt__facts dt {
   margin-bottom: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-ivory-300);
 }
@@ -5186,7 +5186,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   align-items: baseline;
   gap: 8px;
   margin: 0;
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
@@ -5211,7 +5211,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-sgt__pips i {
   width: 7px;
   height: 14px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: rgb(255 255 255 / 0.16);
 }
 .ch-st[data-canopy] .ch-sgt__pips i.is-gain {
@@ -5474,14 +5474,14 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   display: block;
   height: 4px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(255 255 255 / 0.1);
 }
 .ch-st[data-canopy] .ch-sgt__bar::after {
   position: absolute;
   inset: 0 auto 0 0;
   width: var(--ch-bar, 0%);
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-champagne-300);
   content: '';
 }
@@ -5640,7 +5640,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-fm__head h2 {
   margin: 0 0 4px;
-  font: var(--ch-type-serif-s);
+  font: var(--ch-type-title);
   letter-spacing: -0.004em;
   color: var(--ch-forest-800);
 }
@@ -5656,7 +5656,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-fm__facts dt {
   margin-bottom: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
 }
@@ -5708,7 +5708,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   height: calc(var(--ch-bar, 0%) * 0.82 * 0.5);
   min-height: 3px;
   transform: translateX(-50%);
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
 }
 .ch-st[data-canopy] .ch-fm__c.is-gain .ch-fm__bar {
   bottom: 50%;
@@ -5815,7 +5815,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   width: 9px;
   height: 9px;
   margin-right: 6px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   content: '';
 }
 .ch-st[data-canopy] .ch-fm__key .is-gain::before {
@@ -5871,7 +5871,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   gap: 2px;
 }
 .ch-st[data-canopy] .ch-lb__who b {
-  font: var(--ch-type-title);
+  font: var(--ch-type-headline);
   color: var(--ch-text-primary);
 }
 .ch-st[data-canopy] .ch-lb__who span {
@@ -5928,7 +5928,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   bottom: 0;
   width: 3px;
   margin-left: -1.5px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-700);
   text-decoration: none;
 }
@@ -5952,7 +5952,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   display: inline-block;
   width: 3px;
   height: 14px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-700);
 }
 
@@ -5961,7 +5961,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-sv-read {
   min-height: 22px;
   margin: 0 0 8px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -6075,7 +6075,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   min-height: 44px;
   margin: -12px 0 -8px;
   padding: 0 4px 0 12px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   font-weight: 600;
   color: var(--ch-green-600);
   text-decoration: none;
@@ -6164,7 +6164,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   /* The size container for its ticks, which move along it by `translate` in container units. */
   container-type: inline-size;
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-inset);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
 }
@@ -6174,7 +6174,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   bottom: 0;
   left: 0;
   width: 100%;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-500);
   /* The span from --ch-z-a to --ch-z-a + --ch-z-w (0 to 1 of the track), drawn by transform so a change glides without
      relayout. */
@@ -6203,7 +6203,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   translate: calc(var(--ch-z-x, 0) * 1cqw) 0;
   width: 3px;
   margin-left: -1.5px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   text-decoration: none;
 }
 .ch-st[data-canopy] .ch-ztrack__tick.is-team {
@@ -6237,7 +6237,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   height: 12px;
   margin-right: 8px;
   vertical-align: -2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-st[data-canopy] .ch-zlegend i.is-team {
   background: var(--ch-text-primary);
@@ -6618,7 +6618,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-dv__top em {
   flex: none;
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-inset);
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
@@ -6635,14 +6635,14 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   container-type: inline-size;
   height: 12px;
   margin: 32px 6px 40px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-inset);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
 }
 .ch-st[data-canopy] .ch-dv__done {
   position: absolute;
   inset: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-600));
   transform: scaleX(var(--ch-dv-p, 0));
   transform-origin: left center;
@@ -6674,7 +6674,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-dv__end {
   position: absolute;
   top: 22px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-st[data-canopy] .ch-dv__end b {
@@ -6967,7 +6967,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   width: 20px;
   height: 2px;
   margin: -1px 0 0 -8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-champagne-500);
   text-decoration: none;
 }
@@ -7101,7 +7101,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-sv-pb__kline {
   width: 16px;
   height: 2px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-champagne-500);
   text-decoration: none;
 }
@@ -7228,14 +7228,14 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   align-items: center;
   gap: 6px;
   min-width: 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-sv-mix-name i {
   flex: none;
   width: 9px;
   height: 9px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-sv-mix-fill);
 }
 .ch-sv-mix-key .is-par .ch-sv-mix-name i {
@@ -7294,7 +7294,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 }
 .ch-sv-mix-none {
   margin: 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 /* A narrow mix (the phone, a half-width panel): the key becomes a short table, one result a row (name, share, a round), and the
@@ -7338,7 +7338,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
    every figure. Each row is one hit target (44px on the phone); the row tint is the guide to the readout above. Prefix .ch-sv-tr. */
 .ch-sv-tr:not(.is-phone) {
   padding: 6px 6px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -7445,7 +7445,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 }
 .ch-sv-tr__rank {
   padding-left: 8px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -7648,7 +7648,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 }
 .ch-dv-loop .ch-dv-loop__w {
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
   background: var(--ch-ivory-150);
@@ -7690,7 +7690,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 .ch-lb__open:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 @media print {
   .ch-lb__open,

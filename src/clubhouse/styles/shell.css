@@ -237,7 +237,7 @@
 }
 .ch-nav__section {
   padding: 16px 8px 6px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
 }
 .ch-navitem {
@@ -292,7 +292,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -604,14 +604,14 @@
 .ch-empty-page__seg i {
   width: 34px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.1);
 }
 .ch-empty-page__seg i.is-on {
   background: var(--ch-green-fill-600);
 }
 .ch-empty-page__prog-t {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -711,7 +711,7 @@
 .ch-empty__title {
   max-width: 60ch;
   margin: 0;
-  font: var(--ch-type-title);
+  font: var(--ch-type-headline);
   letter-spacing: -0.012em;
   color: var(--ch-text-primary);
   text-wrap: balance;
@@ -719,7 +719,7 @@
 .ch-empty__body {
   max-width: 56ch;
   margin: 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -784,7 +784,7 @@
 }
 .ch-notice .ch-notice__body {
   margin: 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-notice-body);
   text-wrap: pretty;
 }
@@ -998,7 +998,7 @@
   left: 0;
   z-index: var(--ch-z-overlay);
   padding: 0 16px calc(16px + env(safe-area-inset-bottom));
-  border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
+  border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-sheet);
   touch-action: pan-y;
@@ -1050,7 +1050,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
 }
@@ -1149,7 +1149,7 @@ button.ch-more__row[disabled] {
   gap: 12px;
   margin-bottom: 12px;
   padding: 12px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
   color: var(--ch-text-tertiary);
@@ -1178,7 +1178,7 @@ button.ch-more__row[disabled] {
 }
 .ch-more__cap {
   padding: 0 4px 6px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-more__row[aria-current='true'] {
@@ -1229,9 +1229,9 @@ button.ch-more__row[disabled] {
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font: var(--ch-type-bar-title);
+    font: var(--ch-type-headline);
     line-height: var(--ch-lead-tight);
-    letter-spacing: var(--ch-track-bar-title);
+    letter-spacing: 0;
     color: var(--ch-text-primary);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1496,9 +1496,9 @@ button.ch-more__row[disabled] {
     /* The bar title, pushed or at a tab's root: 17/600, as iOS draws both (B1; it was 16 pushed). Its own tracking, not
        the app's global h1 rule: the shell's stand-in draws the title as plain text (CH-1402), and the two must match to
        the pixel. */
-    font: var(--ch-type-bar-title);
+    font: var(--ch-type-headline);
     line-height: var(--ch-lead-tight);
-    letter-spacing: var(--ch-track-bar-title);
+    letter-spacing: 0;
     color: var(--ch-text-primary);
     white-space: nowrap;
   }
@@ -1643,7 +1643,7 @@ button.ch-more__row[disabled] {
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-fill-600);
   box-shadow: 0 0 0 2px var(--ch-phone-bar-bg, var(--ch-bg-page));
   font: var(--ch-type-12-strong);
@@ -1734,7 +1734,7 @@ button.ch-more__row[disabled] {
 .ch-bellp__day {
   /* .ch-popover__label */
   padding: 8px 8px 6px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -1823,7 +1823,7 @@ button.ch-more__row[disabled] {
   max-width: 100%;
   overflow: hidden;
   padding: 1px 8px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-chip-flat-bg);
   color: var(--ch-text-secondary);
   font: var(--ch-type-12-strong);
@@ -1884,7 +1884,7 @@ button.ch-more__row[disabled] {
   padding: 8px 16px;
   border-bottom: 1px solid rgb(148 96 14 / 0.18);
   background: var(--ch-warning-100);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-warning-600);
   text-align: center;
 }
@@ -2254,8 +2254,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   /* P001-D5: not tracked (letterspaced mixed case read as a mistake); colour and the double rule carry the hierarchy. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] :is(.ch-h-head__date, .ch-hl-role, .ch-hero__eyebrow) {
-    font: var(--ch-type-eyebrow);
-    letter-spacing: var(--ch-track-eyebrow);
+    font: var(--ch-type-footnote);
+    letter-spacing: 0;
     color: var(--ch-ledger-eyebrow);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] p {
@@ -2290,19 +2290,14 @@ html[data-ch-ua-pop] .ch-pscreen::after {
    section headings take the head's heavy sans in ink. A real object (the scorecard, a well, a form field, a
    dialog) keeps its own material. Phone keeps its approved boards. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  [data-ui='clubhouse'] main[data-canopy] {
-    --ch-type-serif-l: 600 34px/1.1 var(--ch-font-sans);
-    --ch-type-serif-m: 600 22px/1.15 var(--ch-font-sans);
-    --ch-type-serif-s: 600 20px/1.2 var(--ch-font-sans);
-  }
   /* Only a default for a heading that sets no tracking of its own: at no weight, so a heading's role tracking (its
      --ch-track-<n> beside its --ch-type-<n>) wins. It was a (0,2,2) -0.022em that overrode every role (visual pass
      2026-10-28, rubric §4.5). */
   :where([data-ui='clubhouse'] main[data-canopy]) :where(h2) {
-    letter-spacing: var(--ch-track-section);
+    letter-spacing: var(--ch-track-title);
   }
   :where([data-ui='clubhouse'] main[data-canopy]) :where(h3) {
-    letter-spacing: var(--ch-track-card-title);
+    letter-spacing: 0;
   }
   /* A section's title is near-black, as the page's title is (owner, 11 Nov 2026): the page's primary ink, which the phone's
      section titles and Qualifiers' already were. It was the forest ink, so a page's sections were green on a desk and ink
@@ -2413,8 +2408,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     background:
       radial-gradient(55% 100% at 0% 0%, rgb(11 58 37 / 0.22), rgb(11 58 37 / 0.07) 50%, transparent 78%),
       radial-gradient(45% 80% at 100% 100%, rgb(110 140 100 / 0.18), transparent 75%);
-    -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent);
-    mask-image: linear-gradient(180deg, #000 60%, transparent);
+    -webkit-mask-image: linear-gradient(180deg, black 60%, transparent);
+    mask-image: linear-gradient(180deg, black 60%, transparent);
     content: '';
     pointer-events: none;
   }
@@ -2444,14 +2439,14 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   grid-column: 1;
 }
 .ch-hero__eyebrow {
-  font: var(--ch-type-eyebrow);
+  font: var(--ch-type-footnote);
   line-height: 1;
   color: var(--ch-text-tertiary);
 }
 .ch-hero__title {
   margin: 2px 0;
-  font: var(--ch-type-hero);
-  letter-spacing: var(--ch-track-hero);
+  font: var(--ch-type-large-title);
+  letter-spacing: var(--ch-track-large-title);
   color: var(--ch-text-primary);
 }
 .ch-hero__line {
@@ -2656,7 +2651,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     left: 11.75px;
     width: 2.5px;
     height: 7px;
-    border-radius: var(--ch-radius-mark);
+    border-radius: var(--ch-radius-full);
     background: var(--ch-on-green-ink);
     opacity: 0;
     transform-origin: 1.25px 13px;
@@ -2898,7 +2893,7 @@ html[data-fw-theme='dark'] .ch-offline {
     gap: 4px;
     min-height: 48px;
     padding: 6px 6px 6px 6px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-sheet-bg);
     color: var(--ch-text-primary);
     box-shadow: var(--ch-elevation-raised), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle), var(--ch-highlight);
@@ -2962,13 +2957,13 @@ html[data-fw-theme='dark'] .ch-offline {
     min-width: 0;
   }
   .ch-resume__t b {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-label);
     color: var(--ch-text-tertiary);
   }
   .ch-resume__m {
     overflow: hidden;
-    font: var(--ch-type-title);
+    font: var(--ch-type-headline);
     color: var(--ch-forest-800);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3033,7 +3028,7 @@ html[data-fw-theme='dark'] .ch-offline {
 .ch-asks__title {
   flex: 1;
   margin: 0;
-  font: var(--ch-type-display-s);
+  font: var(--ch-type-title);
   color: var(--ch-text-primary);
 }
 .ch-root .ch-asks__title:focus {
@@ -3047,10 +3042,10 @@ html[data-fw-theme='dark'] .ch-offline {
   align-self: flex-start;
   margin: 4px 20px 8px;
   padding: 4px 8px 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-inset);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
 }
@@ -3084,7 +3079,7 @@ html[data-fw-theme='dark'] .ch-offline {
   align-self: center;
   gap: 4px;
   min-height: 32px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-green-700);
   text-decoration: none;
@@ -3107,7 +3102,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-asks__panel {
     height: 56dvh;
     max-height: none;
-    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
+    border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
     box-shadow: var(--ch-elevation-sheet);
     /* A bottom sheet on the phone: it rises on the smooth spring as every sheet does, not the desktop dialog's pop. */
     animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
@@ -3628,7 +3623,7 @@ html[data-fw-theme='dark'] .ch-offline {
     touch-action: none;
   }
   .ch-bst__head b {
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     letter-spacing: -0.02em;
   }
@@ -3762,7 +3757,7 @@ html[data-fw-theme='dark'] .ch-offline {
     width: 100%;
     padding: 12px 16px 16px;
     border: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-sheet-bg);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), var(--ch-elevation-glass-card);
     color: var(--ch-text-primary);
@@ -3837,7 +3832,7 @@ html[data-fw-theme='dark'] .ch-offline {
     min-width: 0;
     overflow: hidden;
     padding: 1px 8px;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-chip-flat-bg);
     color: var(--ch-text-secondary);
     font: var(--ch-type-12-strong);
@@ -3876,7 +3871,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-bst-card__more {
     margin-top: 4px;
     color: var(--ch-text-tertiary);
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
   }
   /* What a swipe uncovers behind the card. */
   .ch-bst-clear {
@@ -3886,7 +3881,7 @@ html[data-fw-theme='dark'] .ch-offline {
     align-items: center;
     justify-content: flex-end;
     padding-right: 24px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     color: var(--ch-champagne-300);
     font: var(--ch-type-14-strong);
     pointer-events: none;
@@ -3895,7 +3890,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-bst-shell {
     position: absolute;
     inset: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: color-mix(in oklab, var(--ch-sheet-bg) 74%, var(--ch-frame));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), var(--ch-elevation-glass-edge);
     transform-origin: 50% 100%;
@@ -3949,7 +3944,7 @@ html[data-fw-theme='dark'] .ch-offline {
     display: block;
     height: 11px;
     margin: 4px 0;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: color-mix(in oklab, var(--ch-text-primary) 9%, transparent);
   }
 }
@@ -4315,7 +4310,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     min-width: 15px;
     height: 15px;
     padding: 0 4px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-hero-mint);
     color: var(--ch-green-800);
     font: 600 11px/1 var(--ch-font-sans);
@@ -4461,7 +4456,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
   .ch-app[data-ch-refresh='on'] .ch-large-title__context {
     margin: 4px 0 0;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-secondary);
   }
   /* S1.9: at rest the controls sit on the canvas itself, so the light reads through with no second ivory band. Once
@@ -4519,7 +4514,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-elevated);
   box-shadow: var(--ch-shadow-float);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-primary);
 }
 .ch-stale__go,

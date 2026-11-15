@@ -29,7 +29,7 @@
   gap: 6px 20px;
 }
 .ch-hg-sec h2 {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   letter-spacing: -0.02em;
 }
 .ch-hg-sec__h p {
@@ -60,7 +60,7 @@
   text-wrap: pretty;
 }
 .ch-hg-lede__k {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-hg-grid {
@@ -103,13 +103,13 @@
   justify-content: space-between;
   gap: 8px;
   min-height: 22px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hg-tag {
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
   background: var(--ch-ivory-150);
@@ -158,7 +158,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hg-m__edge {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-chart-loss-on-tint);
 }
 .ch-hg-m__mean {
@@ -219,7 +219,7 @@
 .ch-hg-m__how summary:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-hg-m__how p {
   margin: 0 0 8px;
@@ -245,14 +245,14 @@
 .ch-hg-sc__t {
   position: relative;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.08);
 }
 .ch-hg-sc__f {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-hg-tone);
   opacity: 0.38;
 }
@@ -262,7 +262,7 @@
   bottom: -5px;
   width: 2px;
   margin-left: -1px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-400);
 }
 .ch-hg-sc__d {
@@ -273,9 +273,7 @@
   margin: -8px 0 0 -8px;
   border-radius: 50%;
   background: var(--ch-ivory-25);
-  box-shadow:
-    0 0 0 3px var(--ch-hg-tone),
-    0 2px 6px rgb(0 0 0 / 0.2);
+  box-shadow: 0 0 0 3px var(--ch-hg-tone);
 }
 .ch-hg-sc__e {
   display: flex;
@@ -340,8 +338,8 @@
     align-items: flex-end;
   }
   main[data-canopy] .ch-hg-sec h2 {
-    font: var(--ch-type-section);
-    letter-spacing: var(--ch-track-section);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
   }
   /* The measures: one table. A cell's figures align to the section's edge; columns split on a soft rule and rows on a
      soft seam, as the profile's figure line does. One column on a narrow canvas. */
@@ -412,8 +410,8 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-hg-sec h2 {
-    font: var(--ch-type-section);
-    letter-spacing: var(--ch-track-section);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -506,7 +504,7 @@
   min-width: 22px;
   height: 22px;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-fill-600);
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
@@ -562,12 +560,12 @@ html[data-fw-theme='dark'] .ch-hg-grid.is-locked > .ch-hg-m {
 /* Bars you can see, as on Standing: a green-tinted track, the fill at full strength, the marker a solid dot. */
 [data-ui='clubhouse'] .ch-hg-sc__t {
   height: 10px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: color-mix(in srgb, var(--ch-green-fill-600) 14%, var(--ch-bg-surface));
   box-shadow: inset 0 1px 2px rgb(11 58 37 / 0.12);
 }
 [data-ui='clubhouse'] .ch-hg-sc__f {
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   opacity: 0.9;
 }
 [data-ui='clubhouse'] .ch-hg-sc__a {

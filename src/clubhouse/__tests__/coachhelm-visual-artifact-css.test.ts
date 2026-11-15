@@ -80,7 +80,7 @@ describe('CH-13853: what an answer shows is styled', () => {
     const fonts = [...css.matchAll(/(?<![-\w])font: ([^;]+);/g)].map((m) => m[1]!);
     expect(fonts.length).toBeGreaterThan(20);
     expect(fonts.filter((f) => !/^var\(--ch-type-[a-z0-9-]+\)$/.test(f))).toEqual([]);
-    expect(rule('.ch-aks')).toMatch(/--ch-type-aks-figure: 500 calc\(64 \* var\(--ch-type-k\)\) \/ 0\.8 var\(--ch-font-sans\);/);
+    expect(rule('.ch-aks')).toMatch(/--ch-type-aks-figure: 600 calc\(64 \* var\(--ch-type-k\)\) \/ 0\.8 var\(--ch-font-sans\);/);
     expect(rule('.ch-aks-fig[data-one] .ch-aks-fig__value')).toMatch(/font: var\(--ch-type-aks-figure\);/);
   });
 

@@ -97,19 +97,13 @@
 [data-ch-ms-v2] .ch-inb .ch-seg {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ch-space-1);
   align-self: stretch;
   margin: var(--ch-space-3) 0 var(--ch-inb-14);
-  padding: var(--ch-space-1);
-  border-radius: var(--ch-radius-lg);
 }
 [data-ch-ms-v2] .ch-inb .ch-seg .ch-seg__b {
   flex: none;
   min-width: 0;
-  height: calc(30 * var(--ch-type-k));
   padding: 0 var(--ch-space-3);
-  border-radius: var(--ch-radius-md);
-  font: var(--ch-type-13-medium);
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
@@ -305,7 +299,7 @@
 }
 [data-ch-ms-v2] .ch-inb--phone .ch-msv-pin__l {
   max-width: 100%;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-primary);
 }
@@ -319,7 +313,7 @@
   background: var(--ch-card-bg);
   /* MSG-106: a hairline ring and the shared bubblet drop, nothing lifted. */
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   letter-spacing: var(--ch-track-12);
   color: var(--ch-inb-ink-2);
   transform: translateX(-12%);
@@ -372,14 +366,14 @@
 [data-ch-ms-v2] .ch-inb .ch-swipe[data-side] .ch-swipe__c {
   background: var(--ch-card-bg);
 }
-[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann)[data-ch-pressed] {
-  background: var(--ch-press-wash);
-  box-shadow: none;
-}
 /* The open conversation: the selected fill plus the control edge, not a grey wash (audit S1.8b, MSG-D-07). */
 [data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann).is-sel {
   background: var(--ch-bg-selected);
   box-shadow: inset 0 0 0 1px var(--ch-border-control);
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann, .is-sel)[data-ch-pressed] {
+  background: var(--ch-press-wash);
+  box-shadow: none;
 }
 @media (hover: hover) {
   [data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann, .is-sel):hover,
@@ -537,7 +531,7 @@
 }
 [data-ch-ms-v2] .ch-inb--rail .ch-ms-rail__ctx {
   margin: var(--ch-inb-2) 0 var(--ch-space-3);
-  font: var(--ch-type-meta);
+  font: var(--ch-type-footnote);
   color: var(--ch-inb-ink-2);
 }
 [data-ch-ms-v2] .ch-inb--rail .ch-ms-rail__head > .ch-search {
@@ -749,7 +743,7 @@
 .ch-inb-sk {
   height: calc(11 * var(--ch-type-k));
   margin: calc(var(--ch-space-1) - 1px) 0;
-  border-radius: var(--ch-radius-tail);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-inb-sk.is-small {
   height: calc(9 * var(--ch-type-k));
@@ -816,7 +810,7 @@
   height: calc(20 * var(--ch-type-k));
   margin: var(--ch-inb-2) 0 var(--ch-space-3);
   border-block: calc(5 * var(--ch-type-k)) solid transparent;
-  border-radius: var(--ch-radius-tail);
+  border-radius: var(--ch-radius-sm);
   background-clip: padding-box;
 }
 .ch-inb-skel.is-rail .ch-ms-sec__l {

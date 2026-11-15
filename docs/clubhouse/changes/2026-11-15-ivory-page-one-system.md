@@ -18,7 +18,7 @@ Held items: Nick's open calls: red for scores (PL-HOME-05), Wave 3 designs F and
 - One toggle, the Practice style: `Segmented` has no weights; the 11 Nov "filter" weight, its CSS and 27 call sites are gone, and page paints of `.ch-seg__b:not(.is-on)` were deleted.
 - Solid keys: the primary key is `--ch-primary-bg` with one shadow; hover and press step the fill. The four-stop gradients are deleted.
 - Three elevations: card, raised and overlay per S1.5 to S1.5c. Bubbles, badges, pills and bubblets are flat; three dead elevation tokens deleted.
-- Container radii on 8, 12, 16, 20 and full: the Quick chat and Ask panels (26 and 32) and bubbles (19) take 20, and their tokens are deleted. Meta is 14 on a desktop board (never larger than body), 15 on phone. The 650 weight is 600. One definition of `--ch-phone-bar-bg`.
+- Container radii on 8, 12, 16, 20 and full: the Quick chat and Ask panels (26 and 32) take 20 and their tokens are deleted; bubbles end at 18 with a 6 corner (the motion and visual entry, same day). Meta never reads larger than body (it is the footnote role now, the same entry). The 650 weight is 600. One definition of `--ch-phone-bar-bg`.
 - Player Home: under par is one colour in the scoring chart (the dots match the labels), the interim for PL-HOME-05.
 - The design system: DESIGN_LANGUAGE.md rewritten (law 2, colour, surfaces and elevation, the one toggle, keys, charts, banned list, open calls) with token tables generated from tokens.css by `scripts/clubhouse/design-language.mjs`; `clubhouse:check` fails on drift.
 

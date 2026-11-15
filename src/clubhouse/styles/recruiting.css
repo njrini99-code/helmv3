@@ -74,7 +74,7 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
@@ -95,7 +95,7 @@
   top: 27px;
   width: calc(25% - 64px);
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
 }
 .ch-rec-pipe__seg.is-1 {
   left: calc(12.5% + 32px);
@@ -140,7 +140,7 @@
   --ch-rec-ring: var(--ch-ivory-400);
   background: var(--ch-ivory-25);
   color: var(--ch-text-primary);
-  box-shadow: 0 0 0 2px var(--ch-rec-ring), 0 6px 14px -10px rgb(28 25 18 / 0.35);
+  box-shadow: 0 0 0 2px var(--ch-rec-ring);
   transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot {
@@ -170,7 +170,7 @@
 }
 /* Pressed: the stage the list is showing. A second ring, so it is seen without colour. */
 .ch-rec-pipe__stage[aria-pressed='true'] .ch-rec-pipe__dot {
-  box-shadow: 0 0 0 2px var(--ch-rec-ring), 0 0 0 6px rgb(21 90 57 / 0.16), 0 6px 14px -10px rgb(28 25 18 / 0.35);
+  box-shadow: 0 0 0 2px var(--ch-rec-ring), 0 0 0 6px rgb(21 90 57 / 0.16);
 }
 .ch-rec-pipe__txt {
   display: flex;
@@ -222,7 +222,7 @@
 }
 .ch-rec-tb th[scope='col'] {
   padding: 8px 12px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   text-align: left;
   color: var(--ch-text-tertiary);
 }
@@ -508,7 +508,7 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
@@ -552,7 +552,7 @@
   overflow-wrap: anywhere;
 }
 .ch-rec-row__a {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
 }
@@ -616,7 +616,7 @@
   padding: 4px 8px;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-ivory-150);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-ink-600);
 }
 .ch-rec-doc__x {
@@ -675,7 +675,7 @@
 .ch-rec-up__bar {
   height: 6px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-150);
 }
 /* The fill is the track's full width, slid in from the left by the share sent: it moves by transform, never by width,
@@ -961,7 +961,7 @@
     justify-content: space-between;
   }
   .ch-recm-count > span {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
@@ -1231,8 +1231,8 @@
   }
   .ch-recm-det .ch-rec-sec > h2,
   .ch-recm-det .ch-rec-sec__head h2 {
-    font: var(--ch-type-section);
-    letter-spacing: var(--ch-track-section);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-text-primary);
   }
@@ -1437,7 +1437,7 @@
   .ch-rec-form.is-phone .ch-rec-f--notes .ch-field__label {
     width: auto;
     padding: 0 16px;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
   }
   .ch-rec-form.is-phone .ch-textarea {
@@ -1461,7 +1461,7 @@
      fields' text, so the form's two headers share one edge and one voice. */
   .ch-rec-form.is-phone .ch-rec-field > .ch-field__label {
     padding: 0 16px;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
   }
 
@@ -1926,7 +1926,7 @@
   padding: 0 8px;
   border-radius: var(--ch-radius-sm);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
@@ -2034,7 +2034,7 @@
   }
   .ch-recm-row__b .ch-rec-plate {
     margin-top: 4px;
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);

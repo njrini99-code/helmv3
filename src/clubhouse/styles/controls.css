@@ -1,34 +1,25 @@
 /* Clubhouse controls: segmented, pills, search, fields, menu, modal. */
 
-/* Segmented: recessed well with a raised, pressed chip that slides. */
+/* Segmented: the Practice style, the one toggle (Nick, 15 Nov 2026; MOTION-AND-VISUAL 4.2). A recessed linen well and a
+   raised green thumb 3px in, both capsules, at three sizes: lg 44 (a page-level toggle on a phone), md 36 (desktop and
+   inside a card), sm 32 (a dense card). Heights follow Text Size through --ch-type-k. */
 .ch-seg {
   display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: var(--ch-radius-lg);
-}
-.ch-seg--sm {
-  padding: 4px;
-}
-/* CoachHelm's view switch (FID-TEAM-9): 41 tall, 15/500, and its radius the track's less its padding. The same recessed
-   well and green chip as every toggle (one toggle, Nick 15 Nov 2026). */
-.ch-seg--lg {
-  gap: 2px;
-  padding: 2px;
-  border-radius: var(--ch-radius-md);
+  gap: 0;
+  padding: var(--ch-seg-inset);
+  border-radius: var(--ch-radius-full);
 }
 .ch-seg__b {
   position: relative;
-  height: 30px;
+  height: calc(30 * var(--ch-type-k));
   padding: 0 16px;
   border: 0;
-  /* Concentric with the track: its radius less its padding. */
-  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
+  border-radius: var(--ch-radius-full);
   background: transparent;
   /* The unselected label sits on the well's gradient: #6f6a5f measured 4.1:1 there, on every segmented control in
      Clubhouse (aesthetic audit X-1); secondary ink holds 5.4:1 and still reads lighter than the selected green. */
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
   white-space: nowrap;
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
@@ -40,16 +31,20 @@
     background-color var(--ch-dur-press) var(--ch-ease);
 }
 .ch-seg--lg .ch-seg__b {
-  height: calc(35 * var(--ch-type-k));
-  border-radius: var(--ch-radius-sm);
-  font: var(--ch-type-15-medium);
+  height: calc(38 * var(--ch-type-k));
+  padding: 0 16px;
+  font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
 }
 .ch-seg--sm .ch-seg__b {
-  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
-  height: 26px;
+  height: calc(26 * var(--ch-type-k));
   padding: 0 12px;
-  font-size: calc(13 * var(--ch-type-k));
+}
+/* On a phone the page's toggle is a thumb's height, 44 (lg's): Home's and every page-level md. A dense card keeps sm. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-seg--md .ch-seg__b {
+    height: calc(38 * var(--ch-type-k));
+  }
 }
 @media (hover: hover) {
   .ch-seg__b:hover {
@@ -114,10 +109,10 @@
   height: 30px;
   padding: 0 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: transparent;
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-variant-numeric: tabular-nums;
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   cursor: pointer;
@@ -214,7 +209,7 @@
   min-width: 0;
 }
 .ch-field__label {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-primary);
 }
 /* An optional field says so once, in one tag at the label's end (wave-6 #13: qualifier, class and hub forms). */
@@ -225,7 +220,7 @@
 }
 .ch-field__opt {
   margin-left: auto;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-green-700);
 }
 .ch-field__help {
@@ -486,7 +481,7 @@
 }
 .ch-modal__titles p {
   margin: 4px 0 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 .ch-modal__body {
@@ -556,7 +551,7 @@
     --ch-modal-max-h: 92dvh;
     max-height: var(--ch-modal-max-h);
     padding-bottom: env(safe-area-inset-bottom);
-    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
+    border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
     /* It rises on the smooth spring, as More and the bell do (CH-1602, CH-1612): a soft start and a settle with no
        overshoot; the ease-out over base where linear() is missing. */
     animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
@@ -579,14 +574,11 @@
       animation-name: ch-fade;
     }
   }
-  /* Owner, 2026-09-30: small controls are drawn bigger on the phone. Segments are at least 44 wide and
-     36 tall (34 for the small ones), pills 36 tall; the hit area below still reaches 44 around them. */
+  /* Owner, 2026-09-30: small controls are drawn bigger on the phone. Segments are at least 44 wide (their heights are
+     the Practice style's, above: 44 at page level, 32 in a dense card), pills 36 tall; the hit area below still reaches
+     44 around them. */
   .ch-root .ch-seg .ch-seg__b {
     min-width: 44px;
-    height: 36px;
-  }
-  .ch-root .ch-seg--sm .ch-seg__b {
-    height: 34px;
   }
   .ch-root .ch-pill {
     height: 36px;
@@ -736,7 +728,7 @@
   place-items: center;
   width: 18px;
   height: 18px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
   color: var(--ch-text-on-accent);
   transition: background-color var(--ch-dur-quick) var(--ch-ease);
@@ -747,7 +739,7 @@
 }
 .ch-pp__empty {
   padding: 16px 8px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 
@@ -773,7 +765,7 @@
   flex: none;
   width: 40px;
   height: 23px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-switch-track-bg);
   box-shadow: var(--ch-switch-track-shadow);
   transition: background-color var(--ch-dur-base) var(--ch-ease);
@@ -913,13 +905,13 @@
 }
 .ch-slider input::-webkit-slider-runnable-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: linear-gradient(90deg, var(--ch-green-600) var(--ch-fill), #ddd8cc var(--ch-fill));
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.25);
 }
 .ch-slider input::-moz-range-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: linear-gradient(90deg, var(--ch-green-600) var(--ch-fill), #ddd8cc var(--ch-fill));
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.25);
 }
@@ -1188,7 +1180,7 @@
 }
 .ch-df-cal__h {
   height: 24px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
   text-align: center;
 }
@@ -1516,7 +1508,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   width: 36px;
   height: 5px;
   margin-inline: auto;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-grab-bg);
   touch-action: none;
 }
@@ -1567,7 +1559,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     max-height: calc(100dvh - 54px);
     padding: 8px 16px max(40px, calc(16px + env(safe-area-inset-bottom)));
     overflow: hidden;
-    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
+    border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
     background: var(--ch-bg-page);
     box-shadow: var(--ch-elevation-sheet);
     animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
@@ -1685,7 +1677,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: rgb(253 252 248 / 0.97);
   }
   .ch-fsheet-act__msg {
@@ -1733,7 +1725,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   }
   .ch-fsheet-act__cancel {
     flex: none;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     font-weight: 600;
     color: var(--ch-green-600);
@@ -1806,7 +1798,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   width: 100%;
   padding: 0 8px;
   border: 0;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   cursor: pointer;
 }
 .ch-swipe__act.is-accent {
@@ -1833,7 +1825,7 @@ main[data-ch-crh='on'] .ch-modal__titles h2 {
   font: var(--ch-type-17-strong);
   color: var(--ch-text-primary); letter-spacing: var(--ch-track-17); }
 main[data-ch-crh='on'] .ch-modal__titles p {
-  font: var(--ch-type-meta);
+  font: var(--ch-type-footnote);
   color: var(--ch-crh-ink2);
 }
 main[data-ch-crh='on'] .ch-modal .ch-input,
@@ -1846,7 +1838,7 @@ main[data-ch-crh='on'] .ch-modal .ch-textarea {
   color: var(--ch-text-primary);
   font: var(--ch-type-17); letter-spacing: var(--ch-track-17); }
 main[data-ch-crh='on'] .ch-modal .ch-field__label {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-crh-ink2);
 }
 main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
@@ -1869,14 +1861,14 @@ main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
     padding-bottom: 8px;
   }
   main[data-ch-crh='on'] .ch-modal__panel {
-    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
+    border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
     box-shadow: var(--ch-crh-sheet-shadow);
   }
   main[data-ch-crh='on'] .ch-modal__panel > .ch-grab {
     width: 36px;
     height: 5px;
     margin-top: 6px;
-    border-radius: var(--ch-radius-mark);
+    border-radius: var(--ch-radius-full);
     background: color-mix(in srgb, var(--ch-ink-900) 22%, transparent);
   }
   main[data-ch-crh='on'] .ch-modal__head {

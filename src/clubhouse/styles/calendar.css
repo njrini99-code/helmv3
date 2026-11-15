@@ -69,7 +69,7 @@
 }
 .ch-cal-sub {
   margin-top: 6px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 .ch-cal-tools {
@@ -279,7 +279,7 @@
   height: 26px;
   min-width: 26px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-inset);
   font: 600 11px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
@@ -331,7 +331,7 @@
 }
 .ch-pp__label {
   padding: 8px 8px 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -423,7 +423,7 @@
   outline-offset: 2px;
 }
 .ch-wk__d {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -614,7 +614,7 @@
   top: -9px;
   transform: translateY(-100%);
   padding: 2px 4px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-surface);
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
@@ -672,7 +672,7 @@
   padding-block: var(--ch-space-1);
 }
 .ch-dd-pill__clash {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-on-ink-warning);
 }
 /* The resize grips (P-4 4.3): a full-width strip at each edge takes the pointer; a 20 by 4 pill shows inside it on
@@ -701,7 +701,7 @@
   width: 20px;
   height: 4px;
   translate: -50% 0;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: currentColor;
   opacity: 0;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
@@ -803,7 +803,7 @@
 }
 .ch-ev-bar__t {
   flex: none;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   font-style: normal;
 }
 .ch-ev-bar--span.is-clip-start {
@@ -861,7 +861,7 @@
   width: 4px;
   height: 14px;
   translate: 0 -50%;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: currentColor;
   opacity: 0;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
@@ -936,7 +936,7 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
 }
 /* A sliver (under 24px drawn): one row, a 12px title and its start, no glyph, the smaller corner. */
 .ch-ev--sliver {
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-ev--sliver .ch-ev__t {
   font: var(--ch-type-12-strong);
@@ -1201,7 +1201,7 @@ html[data-fw-theme='dark'] .ch-cg__head {
 .ch-cg__count {
   min-width: 28px;
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(255 255 255 / 0.16);
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
@@ -1416,7 +1416,7 @@ html[data-fw-theme='dark'] .ch-cg__head {
 }
 .ch-ev.is-sel {
   z-index: 5;
-  box-shadow: 0 0 0 2px var(--ch-green-600), 0 6px 16px -6px rgb(11 58 37 / 0.35);
+  box-shadow: 0 0 0 2px var(--ch-green-600);
 }
 /* The green ring is 1.25:1 on the solid fill (CON-10): a selected tournament takes champagne; a qualifier keeps its own. */
 .ch-ev--tournament.is-sel {
@@ -1476,7 +1476,7 @@ html[data-fw-theme='dark'] .ch-cg__head {
 }
 .ch-mo__dow span {
   padding: 4px 8px 8px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -1581,7 +1581,7 @@ button.ch-mo__ev:not(.is-major) {
   padding: 0 var(--ch-space-2);
   overflow: hidden;
   border: 0;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   font: var(--ch-type-12-strong);
   text-align: left;
   white-space: nowrap;
@@ -1608,7 +1608,7 @@ button.ch-mo__ev:not(.is-major) {
 }
 .ch-mo__lift .ch-mo__ev {
   padding: 2px var(--ch-space-2);
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-surface);
   scale: 1.02;
   box-shadow: var(--ch-elevation-overlay);
@@ -1668,7 +1668,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   min-width: 0;
   /* A 24px pointer target (WCAG 2.5.8; F-0022): the chips sit 4px apart, too close for the spacing exception. */
   min-height: 24px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 /* W44: the start leads a timed chip, in the chip's own weight, then the name (gap 8 from the dot, 4 to the name). */
@@ -1740,7 +1740,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 .ch-mo__more {
   margin-top: 1px;
   padding-left: 12px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -1883,7 +1883,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   position: relative;
   margin-left: auto;
   padding: 4px 8px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-green-fill-600);
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
@@ -1934,7 +1934,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 }
 .ch-in__title {
   margin: 0;
-  font: var(--ch-type-display-s);
+  font: var(--ch-type-title);
   font-size: calc(22 * var(--ch-type-k));
   letter-spacing: var(--ch-track-22);
   font-variation-settings: 'wdth' 96;
@@ -1951,7 +1951,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   grid-template-columns: 18px minmax(0, 1fr);
   gap: 8px;
   align-items: start;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 .ch-in__fact > svg {
@@ -1974,7 +1974,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 .ch-in__trip:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 @media (hover: hover) {
   .ch-in__trip:hover b {
@@ -1993,12 +1993,12 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-in__sechead b {
-  font: var(--ch-type-title);
+  font: var(--ch-type-headline);
   font-size: calc(14 * var(--ch-type-k));
   color: var(--ch-text-primary);
 }
@@ -2021,7 +2021,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 }
 .ch-in__resp dt {
   order: 2;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -2124,7 +2124,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 }
 .ch-in__quiet {
   margin: 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 .ch-in__next {
@@ -2305,7 +2305,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
 }
 .ch-in__chip {
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(0 0 0 / 0.22);
   font: var(--ch-type-12-strong);
   color: var(--ch-stage-ink);
@@ -2314,7 +2314,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   display: flex;
   align-items: center;
   gap: 8px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: rgb(255 255 255 / 0.84);
 }
 /* The course code is one key: it never breaks across lines ("STAT" over "201" in a broken box), and it sits in the
@@ -2365,9 +2365,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   color: var(--ch-text-tertiary);
 }
 .ch-in__att .ch-seg__b {
-  height: 26px;
   padding: 0 8px;
-  font-size: calc(12 * var(--ch-type-k));
 }
 /* On the green chip the chosen mark is ivory whatever it is (amber ink on green was unreadable); absent keeps its strike. */
 .ch-in__att .ch-seg__b.is-on.is-absent .ch-seg__l {
@@ -2390,7 +2388,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
 }
 .ch-lanes__who {
   overflow: hidden;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -2533,7 +2531,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   border: 0;
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-subtle);
   background: transparent;
-  font: var(--ch-type-display-s);
+  font: var(--ch-type-title);
   font-size: calc(22 * var(--ch-type-k));
   letter-spacing: var(--ch-track-22);
   font-variation-settings: 'wdth' 96;
@@ -2559,7 +2557,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
 .ch-ed__lbl {
   display: block;
   margin-bottom: 6px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
 }
@@ -2643,7 +2641,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   position: relative;
   width: 40px;
   height: 24px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   /* The shared switch's track (controls.css), so its edge holds 3:1 in both themes. */
   background: var(--ch-switch-track-bg);
   box-shadow: var(--ch-switch-track-shadow);
@@ -2676,7 +2674,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   display: flex;
   align-items: center;
   gap: 8px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
 }
 .ch-verify__ic {
@@ -2716,7 +2714,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
 }
 .ch-rcpt dd {
   margin: 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -2914,7 +2912,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
 }
 .ch-cal-warn p {
   margin: 2px 0 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 
@@ -3355,7 +3353,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   /* An overlap, in words under the row's place ("Overlaps Short-game block"): the amber triangle leads the line it
      used to stand in for, alone at the row's end. Amber ink, never red (red is under par). */
   .ch-calm-ev__b span.ch-calm-ev__clash {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-caption);
     color: var(--ch-warning-600);
   }
@@ -3437,7 +3435,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-calm-month__h span {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
     color: var(--ch-text-tertiary);
     text-align: center;
@@ -4147,17 +4145,17 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   align-items: center;
   gap: 6px;
   margin-bottom: 2px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-evpeek__t {
-  font: var(--ch-type-title);
+  font: var(--ch-type-headline);
   color: var(--ch-text-primary);
   overflow-wrap: anywhere;
 }
 .ch-evpeek__m {
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -4165,7 +4163,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   margin-top: 6px;
   padding-top: 8px;
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -4337,7 +4335,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   .ch-tl__grip i {
     width: 28px;
     height: 5px;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
     background: currentColor;
   }
   .ch-tl__bar {
@@ -4350,7 +4348,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
     height: 56px;
     margin-top: 16px;
     padding: 0 6px;
-    border-radius: var(--ch-radius-sheet);
+    border-radius: var(--ch-radius-xl);
     background: var(--ch-sheet-bg);
     box-shadow: var(--ch-elevation-overlay);
   }
@@ -4426,7 +4424,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   align-items: baseline;
 }
 .ch-change-note__rows dt {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-ink-600);
 }
 .ch-change-note__rows dd {
@@ -4631,7 +4629,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   min-height: 16px;
   padding: 0 var(--ch-space-1);
   background: color-mix(in oklab, #000 22%, var(--ch-green-fill-700));
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   font: var(--ch-type-11-medium);
   letter-spacing: var(--ch-track-11);
   color: var(--ch-on-fill-100);
@@ -4683,7 +4681,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   height: 32px;
   background: var(--ch-bg-surface);
   border-radius: var(--ch-radius-sm);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-green-700);
 }

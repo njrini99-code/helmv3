@@ -12,7 +12,7 @@
   background: var(--ch-workspace);
   color: var(--ch-text-primary);
   /* The one large figure: 40px and up is free of the step scale, so it is a role of this page. */
-  --ch-type-look-figure-a: 500 calc(64 * var(--ch-type-k))/0.8 var(--ch-font-sans);
+  --ch-type-look-figure-a: 600 calc(64 * var(--ch-type-k))/0.8 var(--ch-font-sans);
 }
 .ch-look[data-long] {
   height: auto;
@@ -58,7 +58,7 @@
   max-width: min(86%, 560px);
   margin: 0 0 var(--ch-space-2);
   padding: var(--ch-space-2) var(--ch-space-4);
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-bubble);
   border-bottom-right-radius: var(--ch-radius-tail);
   background: var(--ch-card-bg);
   box-shadow: 0 0 0 1px var(--ch-card-ring);
@@ -191,7 +191,7 @@
   min-height: 36px;
   padding: 0 var(--ch-space-3) 0 var(--ch-space-2);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-14-medium);
   letter-spacing: var(--ch-track-14);
   cursor: pointer;
@@ -302,7 +302,7 @@
   align-self: stretch;
   box-sizing: border-box;
   padding: var(--ch-space-4) var(--ch-space-5) var(--ch-space-2);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-chart-paper);
   box-shadow: var(--ch-elevation-card);
 }
@@ -484,7 +484,7 @@
 }
 .ch-look-a-hole__name {
   fill: var(--ch-text-primary);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
 }
 .ch-look-a-hole__zero {
   stroke: var(--ch-chart-zero);
@@ -551,7 +551,7 @@
 }
 .ch-look-a-trend__first {
   fill: var(--ch-text-secondary);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
 }
 .ch-look-a-trend__last {
   fill: var(--ch-gain);
@@ -712,7 +712,7 @@
   gap: var(--ch-space-2);
   margin: 0 0 var(--ch-space-1);
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
 }
 .ch-look .ch-look-a-task__goal {
   margin: 0;

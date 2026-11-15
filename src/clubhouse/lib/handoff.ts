@@ -46,7 +46,7 @@ export function dropHandoffCurtain(): void {
   // The dashboard draws its sidebar folded to the rail when this browser last folded it (RailToggle), so the curtain's
   // canvas starts where the dashboard's will.
   const folded = document.cookie.split('; ').includes(`${CH_RAIL_COOKIE}=1`);
-  const sidebarW = folded ? token(from, '--ch-rail-w', '56px') : token(from, '--ch-sidebar-w', '240px');
+  const sidebarW = folded ? token(from, '--ch-rail-w', '56px') : token(from, '--ch-sidebar-w', '232px');
   const phone = window.matchMedia(PHONE).matches;
   // At night the fold's strip is the flat frame (auth.css, onboard.css), so the curtain is too.
   const dark = document.documentElement.getAttribute('data-fw-theme') === 'dark';

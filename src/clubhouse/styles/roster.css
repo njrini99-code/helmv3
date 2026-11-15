@@ -29,7 +29,7 @@
   font-variation-settings: normal;
 }
 .ch-rs-head p {
-  font: var(--ch-type-body-l);
+  font: var(--ch-type-body);
   color: var(--ch-text-secondary);
 }
 .ch-rs-head__act {
@@ -76,7 +76,7 @@
   color: var(--ch-forest-800);
 }
 .ch-rs-req__head > span:last-child {
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
 
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -124,7 +124,7 @@
 }
 .ch-rs-attn__l {
   margin-right: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -135,7 +135,7 @@
   height: 34px;
   padding: 0 12px 0 4px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-control);
   cursor: pointer;
@@ -152,7 +152,7 @@
   color: var(--ch-text-primary);
 }
 .ch-rs-attn__n {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
 }
 .ch-rs-attn__n.is-warning,
@@ -200,7 +200,7 @@
 /* The player's roster of one (CH-3309): one quiet line under their own row. */
 .ch-rs-solo {
   margin: 16px 2px 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 
@@ -264,7 +264,7 @@
   gap: 6px;
   padding: 16px 16px 16px;
   border: 0;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   color: inherit;
   text-align: center;
@@ -309,7 +309,7 @@
   align-items: center;
   gap: 6px;
   margin-left: auto;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -446,13 +446,13 @@
 /* W25: "a round" after the SG figure, in the caption's size and ink. */
 .ch-rs-fig__u {
   margin-left: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   letter-spacing: 0;
   color: var(--ch-text-tertiary);
 }
 .ch-rs-fig__m {
   grid-area: m;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -462,7 +462,7 @@
   position: relative;
   grid-area: viz;
   height: 10px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: rgb(28 25 18 / 0.06);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
 }
@@ -496,7 +496,7 @@
   position: absolute;
   top: 2px;
   bottom: 2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-rs-sgbar i.is-gain {
   background: var(--ch-chart-gain-fill);
@@ -510,7 +510,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -522,7 +522,7 @@
 }
 .ch-rs-face__note {
   margin-top: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
 }
 /* Injured or away (P003, availability): plain ink, one line, the whole of it in the title. No colour of its own: red is
    under par, amber a slide, green a gain (D-42); the word carries the meaning (CH-3809). */
@@ -565,7 +565,7 @@
 .ch-rs-row--head {
   margin-bottom: 2px;
   border-bottom: 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
@@ -579,7 +579,7 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: inherit;
   cursor: pointer;
@@ -674,8 +674,8 @@
   gap: 6px;
   height: 26px;
   padding: 0 8px;
-  border-radius: 999px;
-  font: var(--ch-type-13-medium);
+  border-radius: var(--ch-radius-full);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
 }
 .ch-rs-status i {
@@ -709,7 +709,7 @@
   gap: 16px;
   padding: 0 0 20px;
   overflow: hidden;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -739,19 +739,19 @@
 .ch-rs-peek__av {
   margin-bottom: 8px;
   border-radius: 50%;
-  box-shadow: 0 0 0 5px var(--ch-ivory-25), 0 0 0 6px rgb(176 149 96 / 0.55), 0 14px 30px -12px rgb(28 25 18 / 0.4);
+  box-shadow: 0 0 0 5px var(--ch-ivory-25), 0 0 0 6px rgb(176 149 96 / 0.55);
 }
 .ch-rs-peek__av .ch-avatar {
   font-size: 28px;
 }
 .ch-rs-peek__hero h2 {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 96;
 }
 .ch-rs-peek__sub {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-forest-800);
 }
 .ch-rs-peek__quick {
@@ -775,7 +775,7 @@
   align-items: center;
   gap: 6px;
   margin-bottom: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -808,7 +808,7 @@
   box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-border-hairline);
 }
 .ch-rs-peek__figs dt {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-rs-peek__figs dd {
@@ -820,7 +820,7 @@
 }
 /* F-0005: a figure's window under it ("Last 8 · Jun–Jul"), in its label's size and ink. */
 .ch-rs-peek__figs dd.ch-rs-peek__f {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   letter-spacing: 0;
   color: var(--ch-text-tertiary);
 }
@@ -870,7 +870,7 @@
   text-align: right;
 }
 .ch-rs-topar {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -882,7 +882,7 @@
 .ch-rs-peek__dev {
   display: flex;
   gap: 16px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 .ch-rs-peek__dev b {
@@ -1049,10 +1049,10 @@ a.ch-rs-peek__dev:focus-visible,
   gap: 4px;
   max-width: 100%;
   padding: 4px 4px 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-100);
   color: var(--ch-forest-800);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   animation: ch-rs-em-in var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rs-em__chip > span:first-child {
@@ -1076,7 +1076,7 @@ a.ch-rs-peek__dev:focus-visible,
   width: 22px;
   height: 22px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: none;
   color: inherit;
   cursor: pointer;
@@ -1175,7 +1175,7 @@ a.ch-rs-peek__dev:focus-visible,
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 
@@ -1257,8 +1257,8 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* 12px, the phone text floor (F09), as the kit's PageIntro eyebrow. */
   .ch-rsm-kicker {
-    font: var(--ch-type-eyebrow);
-    letter-spacing: var(--ch-track-eyebrow);
+    font: var(--ch-type-footnote);
+    letter-spacing: 0;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-rsm-sort {
@@ -1268,7 +1268,7 @@ a.ch-rs-peek__dev:focus-visible,
     gap: 12px;
   }
   .ch-rsm-sort > span {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
   }
   /* Drawn at 26px; the hit area reaches 44. */
@@ -1301,8 +1301,8 @@ a.ch-rs-peek__dev:focus-visible,
     margin: 16px 0 -20px;
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
-    font: var(--ch-type-section);
-    letter-spacing: var(--ch-track-section);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-text-primary);
   }
@@ -1399,7 +1399,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rsm-row__v > span {
     min-width: 6ch;
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
@@ -1504,12 +1504,12 @@ a.ch-rs-peek__dev:focus-visible,
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsm-figs dt {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
   .ch-rsm-figs dd {
     margin: 0;
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
@@ -1552,7 +1552,7 @@ a.ch-rs-peek__dev:focus-visible,
     margin: -12px -8px -12px 0;
     padding: 0 8px;
     border-radius: var(--ch-radius-md);
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-green-700);
@@ -1600,7 +1600,7 @@ a.ch-rs-peek__dev:focus-visible,
     color: var(--ch-chart-loss);
   }
   .ch-rsm-trend__empty {
-    font: var(--ch-type-body-s);
+    font: var(--ch-type-callout);
     color: var(--ch-text-secondary);
   }
   .ch-rsm-rd {
@@ -1785,7 +1785,7 @@ a.ch-rs-peek__dev:focus-visible,
     height: 28px;
     margin-inline: 6px;
     padding: 0 8px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-green-fill-700);
     color: var(--ch-on-green-ink);
     font: 600 14px/1 var(--ch-font-sans);
@@ -1909,7 +1909,7 @@ a.ch-rs-peek__dev:focus-visible,
     gap: 4px;
   }
   .ch-rsm-code > span > span {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
     color: var(--ch-text-tertiary);
   }
@@ -2168,7 +2168,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rs[data-canopy] .ch-rs-face,
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
     padding: 24px 20px 24px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
     transition:
@@ -2444,7 +2444,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   margin: 8px 0 24px;
   padding: 24px 24px 8px;
   overflow-x: clip;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   /* Visual pass 2026-10-28: no accent rule across the card's top edge (the owner's Oct 2 no-rails revision); the
      champagne hairline ring alone frames the plate. */
@@ -2499,7 +2499,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
   transition: translate var(--ch-dur-base) var(--ch-ease);
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-champagne-500);
   /* Dark ink on the gold in both themes: the gold stays light at night, where --ch-ink-950 turns ivory (1.9:1). */
   color: #141412;
@@ -2562,7 +2562,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   letter-spacing: -0.02em;
 }
 .ch-rs-sp__coins em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -2790,7 +2790,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   align-items: center;
   gap: var(--ch-space-1);
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
 }
 .ch-rs-peek__class small {
   color: var(--ch-text-tertiary);
@@ -2804,7 +2804,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   display: grid;
   gap: 12px;
   padding: 16px 16px 12px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-feature-shadow);
   color: var(--ch-on-green-plate);
@@ -2844,7 +2844,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   letter-spacing: var(--ch-track-34);
 }
 [data-ch-crh='on'] .ch-rs-tcard__n span {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-on-green-3);
 }
@@ -2856,7 +2856,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ch-crh='on'] .ch-rs-mix i {
   display: block;
   flex-basis: 0;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-rs-y);
   box-shadow: var(--ch-roster-x1);
 }
@@ -2864,7 +2864,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 12px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
 
   color: var(--ch-on-green-2);
 }
@@ -2876,7 +2876,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ch-crh='on'] .ch-rs-mix__lg i {
   width: 9px;
   height: 9px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-rs-y);
 }
 [data-ch-crh='on'] .ch-rs-mix__lg b {
@@ -2889,7 +2889,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   gap: 8px;
   padding-top: 12px;
   border-top: var(--ch-hairline-w) solid var(--ch-on-green-rule);
-  font: var(--ch-type-meta);
+  font: var(--ch-type-footnote);
   color: var(--ch-on-green-2);
 }
 [data-ch-crh='on'] .ch-rs-tcard__coins {
@@ -2944,7 +2944,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 [data-ch-crh='on'] .ch-rs-ldr__v small {
   margin-left: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
 
   letter-spacing: 0;
   color: var(--ch-crh-ink2);
@@ -3014,7 +3014,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     margin-top: 6px;
     padding: 12px 16px;
     border: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
     color: var(--ch-text-primary);
@@ -3089,14 +3089,14 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-row__b > b {
     overflow: hidden;
-    font: var(--ch-type-row);
+    font: var(--ch-type-callout);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
   [data-ch-crh='on'] .ch-rsx-row__b > span {
     overflow: hidden;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -3164,13 +3164,13 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     margin-right: 6px;
   }
   [data-ch-crh='on'] .ch-rsx-meta {
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     white-space: nowrap;
   }
   [data-ch-crh='on'] .ch-rsx-link {
     position: relative;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-accent-ink);
     white-space: nowrap;
   }
@@ -3202,7 +3202,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     max-width: 100%;
     margin: 0;
     overflow: hidden;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3245,7 +3245,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-figs dd {
     margin: 0;
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
 
     letter-spacing: var(--ch-track-22);
     color: var(--ch-text-primary);
@@ -3269,7 +3269,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-none {
     margin: 0;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
   }
   [data-ch-crh='on'] .ch-rsx-well {
@@ -3323,14 +3323,14 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-facts dd {
     margin: 0;
-    font: var(--ch-type-row);
+    font: var(--ch-type-callout);
     color: var(--ch-text-primary);
   }
   /* Availability, Coach's note and CoachHelm keep today's panels, each on the card surface. */
   [data-ch-crh='on'] .ch-rsx-panel > * {
     padding: 12px 16px;
     border: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
   }
@@ -3343,7 +3343,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-reqs__none {
     margin: 0;
     padding: 20px 20px;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     text-align: center;
   }
@@ -3386,7 +3386,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   gap: 6px;
   margin-top: 6px;
   padding: 6px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: color-mix(in srgb, var(--ch-rs-y, var(--ch-accent-ink)) 14%, transparent);
   color: color-mix(in srgb, var(--ch-rs-y, var(--ch-accent-ink)) 62%, var(--ch-ink-900));
   font: var(--ch-type-13-strong);
@@ -3437,7 +3437,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     margin-top: 6px;
     padding: 12px 16px;
     border: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
     color: var(--ch-text-primary);
@@ -3486,14 +3486,14 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-row__b > b {
     overflow: hidden;
-    font: var(--ch-type-row);
+    font: var(--ch-type-callout);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
   [data-ch-crh='on'] .ch-rsx-row__b > span {
     overflow: hidden;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -3513,7 +3513,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-reqs__none {
     margin: 0;
     padding: 20px 20px;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     text-align: center;
   }
@@ -3592,7 +3592,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'].ch-rsd .ch-rs-list {
     overflow: auto;
     padding: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
   }
@@ -3695,7 +3695,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-peek {
     gap: 12px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
   }
@@ -3867,7 +3867,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   min-width: 0;
   padding: 12px 16px;
   border: 0;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 4%, var(--ch-card-bg));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 34%, transparent);
   color: var(--ch-text-primary);

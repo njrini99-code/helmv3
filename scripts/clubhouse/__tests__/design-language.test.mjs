@@ -12,14 +12,15 @@ const css = `
   --ch-card-ring: rgb(28 25 18 / 0.08);
   --ch-elevation-card: 0 0 0 1px var(--ch-card-ring);
   --ch-radius-card: 16px;
-  --ch-type-meta: 400 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-footnote: 500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-body: 400 calc(15 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
 }
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-workspace: #131814;
   --ch-card-bg: #212722;
   --ch-ink-900: #f1ecdf;
 }
-@media (max-width: 820px) { [data-ui='clubhouse'] { --ch-card-bg: #ffffff; } }
+@media (max-width: 820px) { [data-ui='clubhouse'] { --ch-card-bg: #ffffff; --ch-type-body: 400 calc(17 * var(--ch-type-k))/calc(24 * var(--ch-type-k)) var(--ch-font-sans); } }
 `;
 
 test('reads only the light and dark roots, never a media block', () => {
@@ -41,7 +42,9 @@ test('tables resolve aliases per theme and measure the card on the page', () => 
   assert.match(md, /\| `--ch-card-bg` \| `#faf7ef` \| `#212722` \|.*\| 1\.20 \| 1\.18 \|/);
   assert.match(md, /\| `--ch-text-primary` \| `#1c1b18` \| `#f1ecdf` \|/);
   assert.match(md, /`--ch-elevation-card` \| `0 0 0 1px rgb\(28 25 18 \/ 0\.08\)`/);
-  assert.match(md, /\| Meta, notes, subtitles \(15 on phone\) \| `--ch-type-meta` \| 400 \| 14 \/ 20 \|/);
+  // A type role shows its desktop value and, when the phone block redefines it, its phone value.
+  assert.match(md, /\| `--ch-type-footnote` \| 500, 13 \/ 18 \| same \|/);
+  assert.match(md, /\| `--ch-type-body` \| 400, 15 \/ 22 \| 400, 17 \/ 24 \|/);
   assert.doesNotMatch(md, /#ffffff/);
 });
 

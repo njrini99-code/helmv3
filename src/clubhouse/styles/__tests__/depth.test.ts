@@ -77,11 +77,8 @@ describe('the one feature card', () => {
     }
   });
 
-  it('has one shadow, a green cast with no ring and no white edge by day', () => {
+  it('sits on the card elevation, one of the three (MOTION-AND-VISUAL 4.6): no green cast of its own, by day or at night', () => {
     expect(decls('--ch-feature-shadow')).toEqual(['var(--ch-elevation-feature)']);
-    const [day, night] = decls('--ch-elevation-feature');
-    expect(day).toBe('0 1px 2px rgb(8 43 28 / 0.2), 0 14px 30px -18px rgb(8 43 28 / 0.6)');
-    // Night: shadows carry little on a dark page, so a faint green ring marks the edge.
-    expect(night).toContain('0 0 0 1px');
+    expect(decls('--ch-elevation-feature')).toEqual(['var(--ch-elevation-card)']);
   });
 });

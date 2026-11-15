@@ -83,7 +83,7 @@
   background: var(--ch-glass-strong);
   -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--ch-glass-blur)) saturate(160%);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
   transition: opacity var(--ch-dur-msg-pill-out) linear;
 }
@@ -120,7 +120,7 @@
 /* MSG-212 / MSG-213 Typing bubble: a received bubble, radius 19 and a 6 corner, padding 13 15, 7 px dots; the typer's name sits inside it. */
 [data-ch-ms-v2] .ch-msv-typing {
   padding: var(--ch-ms-px-13) var(--ch-ms-px-15);
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-bubble);
   border-bottom-left-radius: var(--ch-radius-tail);
 }
 [data-ch-ms-v2] .ch-msv-typing.has-name {
@@ -136,7 +136,7 @@
   padding: var(--ch-ms-px-3) var(--ch-ms-px-9);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-flag);
 }
