@@ -3,8 +3,9 @@
  *
  * WHY (launch readiness DATA-01, 2026-11-15): production's edge logs showed about 3,000 failed calls a day with a
  * `node` user agent on `golf_round_live`, `golf_round_live_prefs` and `golf_rounds?player_id=eq.player-1`. They were
- * unit runs. CI's workflow env hands every job the real `NEXT_PUBLIC_SUPABASE_URL` and anon key (ci.yml and
- * nightly.yml, top-level `env`), vitest passes the shell's environment through to tests, and seven round-entry suites
+ * unit runs. CI's workflow env handed every job the real `NEXT_PUBLIC_SUPABASE_URL` and anon key (ci.yml and
+ * nightly.yml, top-level `env`; their unit-test jobs now override both with the stand-ins below), vitest passes the
+ * shell's environment through to tests, and seven round-entry suites
  * mounted `browserSharePorts` (src/clubhouse/live/share-ports.ts) on the real browser client. A canary run of those
  * suites against a local listener replays the production pattern request for request. They only failed because the
  * anon key has no session; one test with a valid session would have written. Vitest itself never reads `.env.local`

@@ -76,9 +76,9 @@ const SCRIPT_UNIT_TESTS: string[] = globSync('scripts/**/*.{test,spec}.{mjs,ts}'
   .sort();
 
 /**
- * Tests never see the shell's Supabase target (launch readiness DATA-01, 2026-11-15). CI's workflow env hands every
- * job the real project URL and anon key, and vitest passes the shell's environment through, so unit runs were sending
- * about 3,000 failed calls a day to production. `env` pins a local, keyless stand-in for every project; setup pins it
+ * Tests never see the shell's Supabase target (launch readiness DATA-01, 2026-11-15). CI's workflow env handed every
+ * job the real project URL and anon key (the unit-test jobs now override both), and vitest passes the shell's
+ * environment through, so unit runs were sending about 3,000 failed calls a day to production. `env` pins a local, keyless stand-in for every project; setup pins it
  * again per file, removes the server-side secrets and refuses the network (src/test/network-isolation.ts).
  */
 if (namesHostedSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL)) {
