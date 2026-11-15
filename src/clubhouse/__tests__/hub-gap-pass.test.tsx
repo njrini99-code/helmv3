@@ -1,6 +1,8 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -174,6 +176,15 @@ describe('GAP-H-20 · a page of the trip pager is said once', () => {
     await user.click(within(trip).getByRole('button', { name: 'Next trip' }));
     const later = screen.getByRole('region', { name: 'Later trip' });
     expect(later.querySelector('[aria-live]')!.textContent).toBe('Trip 2 of 2: Seahawk Intercollegiate, Fri 14 – Sun 16 Nov');
+  });
+
+  it('the arrows are 36 on the desk with a 44 hit area, and a 44 key on the phone', () => {
+    const css = readFileSync(join(__dirname, '../styles/hub.css'), 'utf8');
+    const rule = (sel: string) => css.match(new RegExp(`^${sel.replace(/[.:]/g, '\\$&')} \\{([^}]*)\\}`, 'm'))?.[1] ?? '';
+    expect(rule('.ch-hw-pager button')).toMatch(/width: 36px;\s*height: 36px;/);
+    expect(rule('.ch-hw-pager button')).toContain('position: relative;');
+    expect(rule('.ch-hw-pager button::after')).toContain('inset: min(0px, calc(50% - 22px));');
+    expect(css).toMatch(/ {2}\.ch-hw-pager button \{\s*width: 44px;\s*height: 44px;/);
   });
 });
 

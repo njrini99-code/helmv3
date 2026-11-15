@@ -29,8 +29,8 @@ Held items:     none
   the queue and focuses it (GAP-H-13).
 - Files list newest first (GAP-H-14). Folder headings get unique ids
   (GAP-H-15). The player's finished tasks fold under "Done (N)" (GAP-H-16).
-  The trip pager announces each trip once, politely (GAP-H-20, part; the arrow
-  hit area is left to the 44pt sweep).
+  The trip pager announces each trip once, politely, and its arrows are 36 on
+  the desk with a 44 hit area (44 keys on the phone, as before) (GAP-H-20).
 - The route skeleton draws the tab the link names (`?tab=`) (GAP-S-17).
 - The one failure line on the hub's notices (GAP-S-33).
 

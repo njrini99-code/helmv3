@@ -3096,17 +3096,24 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   align-items: center;
   gap: 4px;
 }
+/* GAP-H-20: 36 on the desk, with a 44 hit area around it (the `.ch-hw-more::after` way); the phone draws a 44 key below. */
 .ch-hw-pager button {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: rgb(255 255 255 / 0.1);
   color: var(--ch-on-green-ink);
   cursor: pointer;
+}
+.ch-hw-pager button::after {
+  position: absolute;
+  inset: min(0px, calc(50% - 22px));
+  content: '';
 }
 .ch-hw-pager button:disabled {
   opacity: 0.35;

@@ -17,6 +17,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { PracticePlanSheet } from '../screens/coachhelm/plan/sheet/PracticePlanSheet';
 import { PlanPageActions } from '../screens/coachhelm/plan/PlanPageActions';
 import { NoTeam } from '../ui/NoTeam';
+import { SectionBoundary } from '../ui/SectionBoundary';
 import { resolveClubhouseTeam } from './team';
 import { loadCoachPracticeHome, loadPlayerPracticeHome, loadPlanForBuilder } from '../data/practice-home';
 import { PracticeHome } from '../screens/practice/PracticeHome';
@@ -189,11 +190,21 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
     const practice = await loadPlayerPractice(planId, player.id);
     if (practice.status === 'ready') return <PlayerPractice data={practice.data} planId={planId} everyone={<>{load.formatFailed && FORMAT_UNREAD}<PlanPageActions plan={load.plan} playerPlanId={null} inPage /><PracticePlanSheet plan={load.plan} /></>} />;
   }
+  // Each part fails on its own (GAP-S-10, CH-13204): the coach's bar (status, Seen by, the live run) crashing keeps the
+  // sheet, and the sheet crashing keeps the head and the bar.
+  const coachBar =
+    !player && load.coach ? (
+      <SectionBoundary surface="practice.plan.bar" label="Status and sharing" code="CH-13204">
+        <CoachPlanBar status={load.coach.status} after={load.coach.start && load.coach.status.status === 'published' ? <PlanRun planId={planId} title={load.coach.status.title} version={load.coach.status.version} body={load.coach.body} start={load.coach.start} zone={load.coach.zone} serverNow={Date.now()} /> : null} />
+      </SectionBoundary>
+    ) : null;
   return (
     <main className="ch-page ch-prc-planpage" data-ch="practice-plan" aria-labelledby="ch-prc-plan-title">
       {load.formatFailed && FORMAT_UNREAD}
-      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} printHref={player ? null : `/golf/dashboard/practice/print/${planId}`} coachBar={!player && load.coach ? <CoachPlanBar status={load.coach.status} after={load.coach.start && load.coach.status.status === 'published' ? <PlanRun planId={planId} title={load.coach.status.title} version={load.coach.status.version} body={load.coach.body} start={load.coach.start} zone={load.coach.zone} serverNow={Date.now()} /> : null} /> : null} />
-      <PracticePlanSheet plan={load.plan} />
+      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} printHref={player ? null : `/golf/dashboard/practice/print/${planId}`} coachBar={coachBar} />
+      <SectionBoundary surface="practice.plan.sheet" label="The plan" code="CH-13204">
+        <PracticePlanSheet plan={load.plan} />
+      </SectionBoundary>
     </main>
   );
 }

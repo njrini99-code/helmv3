@@ -28,7 +28,9 @@ Held items:     none
   visual change (GAP-H-12, the real target; the cited rule matched nothing).
 - Each card on the coach's Team board, the player file and Your week, and each
   part of the Practice pages, is its own section (CH-13204, GAP-S-10). On the
-  phone, Your week has one boundary for now.
+  phone, Your week has one boundary for now. A plan's page: the sheet ("The
+  plan") and the coach's bar ("Status and sharing") fail apart; a player's
+  "Your stops" and "Your sheet" each fail under the head and Documents.
 - A player file and Your week with no rounds use the shared empty state, "No
   rounds yet" (CH-13386, GAP-S-23). TeamBoard's dark hero empty is left for the
   look thread.
@@ -45,4 +47,5 @@ Held items:     none
   `player-file.test.tsx`, `coachhelm-dive.test.tsx`, `team-panels.test.tsx`,
   `screens/coachhelm/file/__tests__/section-boundaries.test.tsx`,
   `screens/practice/__tests__/section-boundaries.test.tsx`,
+  `screens/coachhelm/plan/__tests__/plan-section-boundaries.test.tsx`,
   `src/clubhouse/__tests__/coachhelm-no-rounds.test.tsx` (CH-13386).
