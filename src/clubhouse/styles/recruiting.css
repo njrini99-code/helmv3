@@ -1888,9 +1888,8 @@
   color: var(--ch-text-secondary);
 }
 
-/* B1: under a committed prospect's stage, a 1px gilt rule. On the move to Committed it draws left to right over the
-   reveal duration (clip-path), then stays. Waiting (the phone's sheet still open), it is not drawn yet. The reduced-motion
-   and Animations-off tokens make the reveal 0ms, and the screen skips the animation there. */
+/* B1: under a committed prospect's stage, a 1px gilt rule, there at once (content never moves on its own,
+   MOTION-AND-VISUAL 3.1, 3.12: the left-to-right draw is gone). Waiting (the phone's sheet still open), it is not shown yet. */
 .ch-rec-commit {
   display: block;
   height: 1px;
@@ -1899,17 +1898,6 @@
 }
 .ch-rec-commit.is-waiting {
   clip-path: inset(0 100% 0 0);
-}
-.ch-rec-commit.is-drawing {
-  animation: ch-rec-commit-draw var(--ch-dur-reveal) var(--ch-ease-io) both;
-}
-@keyframes ch-rec-commit-draw {
-  from {
-    clip-path: inset(0 100% 0 0);
-  }
-  to {
-    clip-path: inset(0 0 0 0);
-  }
 }
 /* The committed coin's gilt rim, set off from the coin by the surface's own colour. */
 .ch-rec-av.is-gilt {

@@ -73,7 +73,7 @@
   white-space: nowrap;
   box-shadow: var(--ch-drop-ink);
   pointer-events: none;
-  animation: ch-fade var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-press) backwards;
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios) var(--ch-dur-press) backwards;
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-st-updating {
@@ -637,12 +637,8 @@
 }
 .ch-sgt__front {
   pointer-events: none;
-  animation: ch-sgt-front var(--ch-dur-quick) var(--ch-ease);
-}
-@keyframes ch-sgt-front {
-  from {
-    opacity: 0;
-  }
+  /* The line a tap lit crossfades in over the quick beat (motion.css ch-in; MOTION-AND-VISUAL 3.12). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-sgt__hit {
   fill: none;
