@@ -632,7 +632,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
    */
   private async checkedCoachCopy(composed: ComposedContent): Promise<{ coach_copy?: InsightCoachCopy }> {
     if (!composed.coach) return {};
-    const issues = coachCopyIssues(composed, composed.coach);
+    const issues = coachCopyIssues(composed, composed.coach, composed.names);
     if (issues.length === 0) return { coach_copy: composed.coach };
     await logServerEvent(`${this.name}: coach copy not stored (${issues.join('; ')})`, {
       action: `v3.generator.${this.name}.coach_copy`,

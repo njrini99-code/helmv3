@@ -889,7 +889,10 @@ entries are history. The tool list and the prompt are described where the tools 
   template per read renders both voices (`v3/engine/coach-voice.ts`
   `inBothVoices`); the player's `title`/`content` are unchanged. The base and
   the composite runner store the copy only when `coachCopyIssues` passes,
-  else log it and store none. Rule-based, no LLM, no flag or migration; rows
+  else log it and store none. Course names the copy quotes
+  (`ComposedContent.names`) are left out of the club-word and second-person
+  checks, so a course called "... Country Club" no longer costs the coach
+  copy (incident 4fb650c5, 2026-11-15). Rule-based, no LLM, no flag or migration; rows
   get it on their next re-analyze. Contract:
   `docs/architecture/coachhelm-evidence-contract.md` "Coach voice".
 
