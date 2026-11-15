@@ -1,8 +1,7 @@
-import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { DEFAULT_MIN_PLAYS, rankHoleAnalyses } from '@/lib/golf/worst-hole-ranking';
 import type { HoleAnalysis } from '@/app/golf/actions/stats-data-types';
 import { shortDate, type ChRound } from './season';
-import { holeRounds } from './round-scope';
+import { holeRounds, roundKindOf } from './round-scope';
 import { pooledRate, roundCount, roundRate } from './figure-window';
 import type { ChRoundCache } from './stats-common';
 import { effectiveCount, hasScore, per18, weightedMean, windowChangeSe } from './stats-weight';
@@ -184,8 +183,10 @@ export function pressureGap(rounds: ChRound[]): ChPressure {
   const press: ChRound[] = [];
   const prac: ChRound[] = [];
   for (const r of rounds.filter(hasScore)) {
-    if (r.round_type == null || r.score_to_par == null) continue;
-    (roundTypeFromDb(r.round_type) === 'practice' ? prac : press).push(r);
+    // DF-C-18: a round with no type counts in the averages but is neither a named competition nor practice (`roundKindOf`).
+    const kind = roundKindOf(r);
+    if (kind == null || r.score_to_par == null) continue;
+    (kind === 'practice' ? prac : press).push(r);
   }
   const toPar = (r: ChRound) => r.score_to_par;
   const pressWhole = effectiveCount(press, toPar);

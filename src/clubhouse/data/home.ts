@@ -1,5 +1,4 @@
 import 'server-only';
-import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -17,7 +16,7 @@ import { legRows } from './leg-rows';
 import { loadCoachQueue, type ChCoachQueue } from './home-queue';
 import { teamRankRows, type TeamRankMetric, type TeamRankRow } from '../screens/stats/team-rank';
 import type { ChSgTour } from '../lib/sg';
-import { holeRounds, recordedPutts } from './round-scope';
+import { holeRounds, recordedPutts, roundKindOf } from './round-scope';
 import { loadRoundCache, previousInFilter, readTourBenchmarks, roundsInFilter, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
 import { filterFor } from './stats-filter';
 import { effectiveCount, weightedMean, windowChangeSe } from './stats-weight';
@@ -587,7 +586,8 @@ export async function latestWithHoles(
       date: r.round_date.slice(0, 10),
       course: r.course_name,
       day,
-      kind: r.round_type ? roundTypeFromDb(r.round_type) : 'practice',
+      // DF-C-18: a round with no type is no named kind (it counts in the averages and never folds into an event's row), not practice.
+      kind: roundKindOf(r) ?? undefined,
       score: r.total_score ?? 0,
       toPar: r.score_to_par,
       holes: holes && holes.length === 18 ? holes : null,

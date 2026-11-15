@@ -1,8 +1,7 @@
-import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { averageArc, COMPARE_MIN_ROUNDS } from './course-history-shape';
 import { groupCourseRounds } from './course-key';
 import { recordMarks, sameTees, type ChMarkRound, type ChRecordMark } from './record-marks';
-import { isScoreCountable } from './round-scope';
+import { countsInAverages, isScoreCountable } from './round-scope';
 import { baseline, baselineWords, type ChPlayHole } from './stats-extra';
 
 /*
@@ -59,7 +58,7 @@ const countable = (r: ChHistoryRoundRow) => isScoreCountable({ holes_played: r.h
  * A round a record chip may read: countable in a score and not practice, as every figure on Stats, Home and the Roster reads (DF-C-12:
  * "Season low" once named a practice round, and a scoring round's low was measured against practice rounds).
  */
-const scoring = (r: ChHistoryRoundRow) => countable(r) && (r.round_type == null || roundTypeFromDb(r.round_type) !== 'practice');
+const scoring = (r: ChHistoryRoundRow) => countable(r) && countsInAverages({ round_type: r.round_type ?? null });
 const before = (a: { round_date: string; id: string }, b: { round_date: string; id: string }) =>
   a.round_date.slice(0, 10) < b.round_date.slice(0, 10) || (a.round_date.slice(0, 10) === b.round_date.slice(0, 10) && a.id < b.id);
 /** Every hole of an 18-hole round scored. */

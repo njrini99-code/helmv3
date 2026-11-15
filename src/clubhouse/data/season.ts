@@ -3,13 +3,12 @@ import type { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
-import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { seasonLabelOf } from '../lib/season-start';
 import { deltaTone, halvesChange } from '../lib/stats-signal';
-import { hasHoleScores, isTotalOnlyCountable } from './round-scope';
+import { countsInAverages, hasHoleScores, isTotalOnlyCountable } from './round-scope';
 import { spanKeepsPractice, spanKeepsTotalOnly, type ChSpan } from './span';
 
 /**
@@ -59,12 +58,12 @@ const ROUND_COLUMNS =
   'id, player_id, course_id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
 
 /**
- * Whether a round counts in averages (START_HERE's shared values table): true when `round_type` is null or
- * `roundTypeFromDb(round_type) !== 'practice'`. Roster, Home and Stats loaders call it under their lane flags. Latest rounds
- * lists every round; Stats' pressure gap and by-type row keep the uncut window. `roundTypeFromDb` reads an unknown type as practice.
+ * Whether a round counts in averages (START_HERE's shared values table): true when `round_type` is null or names anything but
+ * practice. The rule is `countsInAverages` (round-scope.ts, DF-C-18), which every reader shares. Latest rounds lists every round;
+ * Stats' pressure gap and by-type row keep the uncut window. An unknown type reads as practice.
  */
 export function countsForScoring(r: { round_type: string | null }): boolean {
-  return r.round_type == null || roundTypeFromDb(r.round_type) !== 'practice';
+  return countsInAverages(r);
 }
 
 /**
