@@ -3252,26 +3252,20 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
     opacity: 1;
   }
 }
+/* A photo on its way: a static block (MOTION-AND-VISUAL 3.9, no pulse) that waits the busy delay (shell.css ch-busy-wait). */
 [data-ch-ms-v2] .ch-msv-sk {
   display: block;
   border-radius: var(--ch-radius-tail);
   background: color-mix(in srgb, var(--ch-text-primary) 9%, transparent);
-  animation: ch-msv-skel var(--ch-dur-sweep) ease-in-out infinite;
-}
-@keyframes ch-msv-skel {
-  50% {
-    opacity: 0.55;
-  }
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-ch-ms-v2] .ch-ms-typing-mini i,
-  [data-ch-ms-v2] .ch-msv-sk {
+  [data-ch-ms-v2] .ch-ms-typing-mini i {
     animation: none;
     opacity: 1;
   }
 }
-[data-motion='off'] [data-ch-ms-v2] .ch-ms-typing-mini i,
-[data-motion='off'] [data-ch-ms-v2] .ch-msv-sk {
+[data-motion='off'] [data-ch-ms-v2] .ch-ms-typing-mini i {
   animation: none;
   opacity: 1;
 }

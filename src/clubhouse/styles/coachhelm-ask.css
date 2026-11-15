@@ -1140,8 +1140,9 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
 }
 
-/* A switch (use-view-switch.ts): the strip or the chosen chat has already moved, so what is changing dims and stops answering
-   taps until the next view lands. To the Board the whole chat dims; to another chat the list of chats stays crisp. */
+/* A switch (use-view-switch.ts): the strip or the chosen chat has already moved, so what is changing stops answering taps until
+   the next view lands, and dims once the switch has taken the busy delay, held at least the busy hold (data-ch-busy,
+   lib/use-busy.ts; MOTION-AND-VISUAL 3.9). To the Board the whole chat dims; to another chat the list of chats stays crisp. */
 .ch-ask-body {
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
@@ -1151,8 +1152,12 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 .ch-ask[aria-busy='true'][data-switch='view']:not([aria-label^='Loading']) > .ch-ask-body,
 .ch-ask[aria-busy='true']:not([aria-label^='Loading']) > .ch-ask-plain,
 .ch-ask[aria-busy='true'][data-switch='chat']:not([aria-label^='Loading']) > .ch-ask-body > :not(.ch-ask-hist) {
-  opacity: 0.55;
   pointer-events: none;
+}
+.ch-ask[data-ch-busy='skeleton'][data-switch='view'] > .ch-ask-body,
+.ch-ask[data-ch-busy='skeleton'] > .ch-ask-plain,
+.ch-ask[data-ch-busy='skeleton'][data-switch='chat'] > .ch-ask-body > :not(.ch-ask-hist) {
+  opacity: 0.55;
 }
 
 /* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy"). On the phone Ask sits on the parchment (the canvas

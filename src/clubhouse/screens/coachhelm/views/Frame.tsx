@@ -12,7 +12,7 @@ import { Button } from '../../../ui/Button';
 import { EmptyState } from '../../../ui/States';
 import { Head } from '../parts';
 import { useViewSwitch } from '../use-view-switch';
-import { PlayerHelmTabs } from './PlayerHelmTabs';
+import { PlayerHelmTabs, playerHelmTabHref, type PlayerHelmTab } from './PlayerHelmTabs';
 
 /**
  * The page every view of the player's CoachHelm is drawn in: the shell's phone top bar, the sub-navigation, and the page's own
@@ -34,15 +34,16 @@ export function PlayerHelmFrame({ view, line, off = false, covered = false, afte
   const phone = useChPhone();
   const router = useRouter();
   const coach = voice.role === 'coach' ? voice : null;
-  // A switch of view moves the strip at once and dims the page (aria-busy) until the next view is ready.
-  const sw = useViewSwitch(view, (v) => helmViewHref(v, voice), coach ? COACH_PLAYER_VIEWS : PLAYER_HELM_VIEWS);
+  // A switch of view (Ask included, P1-57) moves the strip at once, marks the page busy and, after the busy delay, dims it until
+  // the next view is ready. Ask is not fetched ahead: only the views are.
+  const sw = useViewSwitch<PlayerHelmTab>(view, (v) => playerHelmTabHref(v, (x) => helmViewHref(x, voice)), coach ? COACH_PLAYER_VIEWS : PLAYER_HELM_VIEWS);
   // As Stats does for a coach's player: the top bar reads "CoachHelm › Jonah Okafor".
   usePageCrumbs(coach ? ['CoachHelm', coach.name] : null);
   const tabs = off ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} coach={!!coach} />;
   const board = coach ? coachBoardFor(coach.playerId) : null;
   return (
     <>
-      <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined} inert={covered || undefined} {...sw.enter}>
+      <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined} data-ch-busy={sw.busy} inert={covered || undefined} {...sw.enter}>
         {phone && (coach && board ? <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(board) }} title={coach.name} /> : <PhoneTop start title="CoachHelm" />)}
         {phone && tabs}
         {coach && board ? (
