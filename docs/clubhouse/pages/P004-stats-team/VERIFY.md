@@ -312,6 +312,8 @@ before, after, baseline or evidence.
 | `P004__team-stats__coach__1440x932__default__before__c882964.png` | before | c882964 | team-stats (coach), 1440x932px, default; /clubhouse-preview/stats |
 | `P004__team-stats__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | team-stats (coach), 402px, default; /clubhouse-preview/stats |
 | `P004__team-stats__coach__402__default__before__c882964.png` | before | c882964 | team-stats (coach), 402px, default; /clubhouse-preview/stats |
+| `P004__team-stats__coach__1440x932__default__after__1b69702.png` | after | 1b69702 | team-stats (coach), 1440x932px, default; /clubhouse-preview/stats |
+| `P004__team-stats__coach__402__default__after__1b69702.png` | after | 1b69702 | team-stats (coach), 402px, default; /clubhouse-preview/stats |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

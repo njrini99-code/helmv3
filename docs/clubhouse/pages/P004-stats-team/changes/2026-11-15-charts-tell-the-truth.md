@@ -26,9 +26,10 @@ Held items:     the loader's to-par series (data thread, PR #2534); colours and 
   the stretched drawing so it stays round (CH-06, CH-11, CH-15, CH-23).
 - Figure gauges (`charts.tsx`): strokes gained and par on one fixed ±6 scale;
   putts carry no gain or loss colour (CH-13).
-- Putting rings: graded on the Putting bands chart's rule (30 putts, the rate
-  against the Tour), every band drawn; the note under them uses the same rule
-  (CH-18).
+- Putting rings and the Team putting bars: graded on the Putting bands chart's
+  rule (30 putts, the rate against the Tour), every band drawn (the bars cut
+  the sixth, 25+ ft, while the note named it); the note under them uses the
+  same rule (CH-18).
 - Phone (`StatsTeamPhoneShs.tsx`, `ScoringFeatureChart.tsx` TeamFeatureChart,
   `ShsBlocks.tsx` Ribbon): round days sit by date; against par per 18 with a
   Par line when every day has a figure against par, strokes against the days'
