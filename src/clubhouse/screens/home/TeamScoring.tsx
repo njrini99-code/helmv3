@@ -37,6 +37,11 @@ export function teamDays(form: Pick<ChTeamForm, 'line' | 'lineDays' | 'lineCount
   return best >= 0 && worst >= 0 && pts[best] !== pts[worst] ? { best, worst } : null;
 }
 
+/** Under a figure's dash: why there is none, so totals-only rounds read as what they are and not as a gap. */
+export function figureMissing(rounds: number, needs?: string): string {
+  return rounds > 0 ? (needs ?? 'Too few rounds') : 'Totals only so far';
+}
+
 /** A change's figure and words, the signed figure only when the change clears its standard error (HOME-P-09, HOME-P-14). */
 function changeLine(delta: number | null, tone: DeltaTone, signed: (d: number) => string, against: string): string | null {
   if (delta == null) return null;
@@ -84,14 +89,14 @@ export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean 
     {
       k: 'Greens',
       v: form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : <NoData />,
-      m: changeLine(form.gir.delta, girTone, (d) => `${formatSigned(d, 0)} pts`, against) ?? (form.gir.pct == null ? (form.basis.girRounds > 0 ? (form.gir.needs ?? 'Too few rounds') : 'Totals only so far') : partOf(form.basis.girRounds)),
-      tone: '',
+      m: changeLine(form.gir.delta, girTone, (d) => `${formatSigned(d, 0)} pts`, against) ?? (form.gir.pct == null ? figureMissing(form.basis.girRounds, form.gir.needs) : partOf(form.basis.girRounds)),
+      tone: form.gir.pct != null ? girTone : '',
     },
     {
       k: 'Putts',
       v: form.putts.avg != null ? formatFixed(form.putts.avg) : <NoData />,
-      m: changeLine(form.putts.delta, puttsTone, (d) => formatSigned(d), against) ?? (form.putts.avg == null ? (form.basis.puttsRounds > 0 ? 'Too few rounds' : 'Totals only so far') : partOf(form.basis.puttsRounds)),
-      tone: '',
+      m: changeLine(form.putts.delta, puttsTone, (d) => formatSigned(d), against) ?? (form.putts.avg == null ? figureMissing(form.basis.puttsRounds) : partOf(form.basis.puttsRounds)),
+      tone: form.putts.avg != null ? puttsTone : '',
     },
     { k: 'Rounds', v: String(form.basis.rounds), m: span, tone: '' },
   ];

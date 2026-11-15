@@ -2,7 +2,7 @@
 
 import { Fragment } from 'react';
 import type { ChLegPeople, ChTeamLeg, ChTeamLegs } from '../../data/home';
-import { changeTone, formatSigned } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned } from '../../lib/format';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { NoData } from '../../ui/NoData';
 import { legChange, NoHoleRounds, NOBODY_RANKED, Notices, People } from './TeamLegs';
@@ -51,7 +51,7 @@ export function TeamGame({ legs, phone, covered = false }: { legs: ChTeamLegs; p
               {NOBODY_RANKED}
             </p>
           ) : worst.length ? (
-            <p className="ch-ph-note">{`${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the team the most.`}</p>
+            <p className="ch-ph-note">{`${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most.`}</p>
           ) : null}
         </>
       )}
@@ -62,7 +62,7 @@ export function TeamGame({ legs, phone, covered = false }: { legs: ChTeamLegs; p
 function TeamLeg({ leg, tour }: { leg: ChTeamLeg; tour: ChSgTour }) {
   const { stat } = leg;
   const lowerIsBetter = stat.label === 'Putts';
-  const fmt = (v: number) => (stat.unit === '%' ? `${Math.round(v)}%` : v.toFixed(stat.digits));
+  const fmt = (v: number) => (stat.unit === '%' ? `${Math.round(v)}%` : formatFixed(v, stat.digits));
   // The player's benchmark bar: a share of the scale for rates, or a putts band (fewer is further right).
   const pos = (v: number) => (stat.unit === '%' ? Math.max(0, Math.min(100, v)) : Math.max(0, Math.min(100, ((36 - v) / (36 - 26)) * 100)));
   // Against the Tour as the two figures print; level is neither, and an early read is never toned (A2, A7).

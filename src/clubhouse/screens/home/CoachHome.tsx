@@ -17,6 +17,7 @@ import { LiveNowCard } from './LiveNowCard';
 import type { LiveSnapshot } from '../../live/model';
 import { HomeActions } from './HomeActions';
 import { DeskNext } from './PlayerHome';
+import { DeskNextBeyond } from './NextBeyond';
 import { TeamGame } from './TeamGame';
 import { TeamScoring, TeamScoringFailed } from './TeamScoring';
 import { Week } from './Week';
@@ -50,6 +51,8 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
   const failed = coachFailedParts(data, true);
   const covered = failed.length > 1;
   const next = data.phone.next;
+  // Up next leads the latest round, as on Player Home; with nothing left this week, what comes after it (CH-2316, F-0006).
+  const lead = next ? <DeskNext e={next} frozen={now} /> : data.phone.after ? <DeskNextBeyond e={data.phone.after} /> : null;
   return (
     <main className="ch-h-main ch-h-main--desk" data-canopy="">
       <DeskHead data={data} />
@@ -71,7 +74,7 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
             <Week week={data.week} events={data.phone.today} covered={covered} />
           </SectionBoundary>
           <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-            <LatestRound data={data.latestRounds} lead={next ? <DeskNext e={next} frozen={now} /> : null} covered={covered} />
+            <LatestRound data={data.latestRounds} lead={lead} covered={covered} />
           </SectionBoundary>
         </div>
         {data.phone.form ? (

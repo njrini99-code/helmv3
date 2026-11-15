@@ -23,7 +23,7 @@ import { CrumbProvider } from '../../../shell/crumbs';
 import { ToastProvider } from '../../../ui/Toast';
 import { StatsPlayer } from '../StatsPlayer';
 import { StatsTeam } from '../StatsTeam';
-import { Form } from '../../home/HomePhone';
+import { TeamScoring } from '../../home/TeamScoring';
 import type { ChTeamForm } from '../../../data/home';
 import type { ChTeamStats } from '../../../data/stats-team';
 import type { ChPlayerProfile } from '../../../data/stats-player';
@@ -150,12 +150,12 @@ describe('Coach Home’s Team scoring card', () => {
     gir: { pct: 60, delta: null }, putts: { avg: 31, delta: null },
   };
   it('names the window it shows: each player’s last 10 by default, every round on All time', () => {
-    render(shell(<Form form={form} />));
+    render(shell(<TeamScoring form={form} phone />));
     expect(screen.getByText(/each player’s last 10/)).not.toBeNull();
     // F-0002: the pill names the same window as the figure under it.
     expect(radio('Last 10')!.getAttribute('aria-checked')).toBe('true');
     cleanup();
-    render(shell(<Form form={{ ...form, span: 'all' }} />));
+    render(shell(<TeamScoring form={{ ...form, span: 'all' }} phone />));
     expect(screen.getByText(/every round, all time/)).not.toBeNull();
     expect(radio('All time')!.getAttribute('aria-checked')).toBe('true');
   });

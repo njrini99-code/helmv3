@@ -68,7 +68,8 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
   const failed = coachFailedParts(data, true);
   const covered = failed.length > 1;
   const until = phone.next ? countdownTo(phone.next) : null;
-  const rounds = data.latestRounds.error ? [] : data.latestRounds.rounds;
+  // A malformed read is CoachLatest's to contain (CH-2206); what changed since you looked reads no rounds from it.
+  const rounds = (data.latestRounds.error ? null : data.latestRounds.rounds) ?? [];
   const thisWeek = phone.form?.roundsThisWeek ?? 0;
 
   return (
@@ -292,10 +293,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
 const SHORT_DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 const shortDay = (ymd: string) => SHORT_DAY.format(new Date(`${ymd}T12:00:00Z`));
 
-/** Under a figure's dash on the card: why there is none, so totals-only rounds read as what they are and not as a gap. */
-export function figureMissing(rounds: number, needs?: string): string {
-  return rounds > 0 ? (needs ?? 'Too few rounds') : 'Totals only so far';
-}
+export { figureMissing } from './TeamScoring';
 
 /** What the average, greens and putts rest on: "3 rounds · Aug 2", "24 rounds · Sep 1 – Sep 28". */
 export function formBasis(b: ChTeamForm['basis']): string {
