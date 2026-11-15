@@ -32,9 +32,8 @@ The default `parkPolicy` is `PARK_IF_REPRODUCIBLE`; `--keep` selects `KEEP`.
 
 `npm run dev` uses Webpack. Production builds with Turbopack (`npm run build`),
 so dev and production use different bundlers. Turbopack's worktree-local
-filesystem root rejects the shared `node_modules` symlink, so the default dev
-command must support that shared dependency layout; for the same reason a
-production build in such a worktree may need `npm run build:webpack`.
+filesystem root rejects a symlinked `node_modules`; a cloned one (below) is a
+real directory, so `npm run build` works in a worktree too.
 
 `npm run dev` (scripts/dev.mjs) picks the port from the worktree directory name,
 in 3001..3099, so several worktrees can run a dev server at once; the canonical
@@ -47,10 +46,28 @@ There is no cron; run it when the machine feels slow.
 
 ## Dependencies and local environment
 
-By default, `node_modules` links to the canonical checkout and `.node-version`
-is copied. Use `--install` or `node scripts/ensure-worktree-deps.mjs <dir>`
-when the task's lockfile differs or dependencies are unavailable. Tests must
-use dependencies matching their checkout.
+Every checkout gets `node_modules` as an APFS clone (`cp -c`) of the deps store
+entry for its own `package-lock.json` (`scripts/lib/deps-store.mjs`). A clone is
+a real directory: about 25 MiB and 10-20 s for a 2 GiB tree, and writes into it
+never reach the source. `.node-version` is copied.
+
+- **Store:** `~/.helm/deps-store/<key>/node_modules` (`HELM_DEPS_STORE`),
+  keyed by the lockfile with the Node ABI, platform and arch. An entry is
+  filled only by a fresh `npm ci` against that lockfile, or by an install whose
+  `node_modules/.package-lock.json` matches it entry by entry.
+- **Who clones:** `.githooks/post-checkout` on every `git worktree add` (and any
+  checkout that has no `node_modules`), `create-workspace.mjs`, and the
+  `deps-hygiene` SessionStart hook as a backstop. None of them runs `npm ci` or
+  touches an existing tree.
+- **By hand:** `node scripts/ensure-worktree-deps.mjs <dir>` clones on a store
+  hit and otherwise runs the one `npm ci` that fills the store. `--refresh`
+  replaces a tree installed for another lockfile (only when nothing runs from
+  it), `--check` changes nothing, `--gc` removes store entries no checkout uses
+  (it keeps main's and the newest 3).
+- **Disk:** an install needs 12 GiB reserve + 5 GiB; a clone needs 2 + 0.5 GiB
+  (`ensure-worktree-deps.mjs` says why the floors differ).
+- **Never** a symlinked `node_modules`: it resolves whatever the donor has,
+  Turbopack refuses it, and an npm write through it changes the donor's tree.
 
 The creator links canonical ignored environment files (`.env`, `.env.local`,
 and environment-specific local files), `.vercel/project.json`, and
@@ -131,7 +148,7 @@ npx vitest run --project unit src/test/scripts/worktree-lifecycle.test.ts \
 ```
 
 Fixtures cover existing-name refusals, advisory default counts, enforced
-explicit caps, disk reserve, marker contents, dependency links, shared runtime links and
+explicit caps, disk reserve, marker contents, dependency clones (never links), shared runtime links and
 environment updates, and the hook's path-only stdout contract.
 
 The Supabase CLI also shares canonical `supabase/.temp/project-ref` and
@@ -156,27 +173,28 @@ on `origin/main`, not to overlay canonical settings (excluding the project
 source also drops CLAUDE.md, rules, skills and commands). The launcher never
 fetches and never changes the checkout.
 
-## Shared dependencies and on-demand tools (`deps-hygiene`)
+## Dependency checks and on-demand tools (`deps-hygiene`)
 
-Most worktrees symlink the canonical checkout's `node_modules` ("deps: symlinked"),
-so one `npm` write is felt by every worktree sharing it. `.claude/hooks/deps-hygiene.mjs`
-is advisory only (it never blocks, per `AGENTS.md`) and runs on SessionStart and after
-every Bash call (PostToolUse on purpose: this repo keeps no PreToolUse hook
-outside an audit session, see
+`.claude/hooks/deps-hygiene.mjs` is advisory (it never blocks, per
+`AGENTS.md`) and runs on SessionStart and after every Bash call (PostToolUse on
+purpose: this repo keeps no PreToolUse hook outside an audit session, see
 `src/test/scripts/control-plane-enforcement.test.ts`):
 
-- **SessionStart:** reports a broken `node_modules` link, a borrowed `node_modules` whose
-  donor `package-lock.json` differs from this checkout's, and a Node major that differs
-  from `.nvmrc`. Silent when healthy. A branch that deliberately changes the lockfile
-  will see the skew note; that is expected until its own install.
-- **After Bash:** warns when `npm ci|install|uninstall|dedupe|…` would write through a
+- **SessionStart:** clones a missing `node_modules` from the deps store (or names the
+  one command that fills the store), reports a symlinked or broken `node_modules` as
+  unsupported, flags a tree installed for a different lockfile (never replacing it: a
+  dev server may run from it), and a Node major that differs from `.nvmrc`. Silent
+  when healthy.
+- **After Bash:** warns when `npm ci|install|uninstall|dedupe|…` wrote through a
   symlinked `node_modules` (this includes `--package-lock-only`, which still rewrites
-  `node_modules/.package-lock.json`; detach the link first), or when the canonical
-  checkout just installed while other worktrees share it and `next dev|build` is
-  running. It also points a bare `promptfoo` / `momentic` call at its pinned form.
+  `node_modules/.package-lock.json`), or when a checkout others still link to just
+  installed while `next dev|build` is running. It also points a bare `promptfoo` /
+  `momentic` call at its pinned form.
 - **On-demand tools** (not dependencies, so they do not bloat every install):
   `npm run evals` / `npx --yes promptfoo@0.124.0 <cmd>`; `npx --yes momentic@3.63.1 <cmd>`.
   The pins live in `ON_DEMAND_TOOLS` in the hook, `package.json` and
   `.circleci/config.yml`; bump them together.
 
-Tests: `scripts/__tests__/hooks/deps-hygiene.test.mjs`.
+Tests: `scripts/__tests__/hooks/deps-hygiene.test.mjs`,
+`scripts/__tests__/deps-store.test.ts`,
+`scripts/__tests__/ensure-worktree-deps-floors.test.ts`.

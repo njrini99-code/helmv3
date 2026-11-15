@@ -1,0 +1,25 @@
+#!/bin/sh
+# post-checkout: give a checkout that has no node_modules an APFS clone of the
+# deps store (scripts/lib/deps-store.mjs). Git runs this after `git checkout`,
+# `git switch` and `git worktree add`, so every new worktree gets a real tree
+# for its own lockfile however it was created: new-worktree.sh, the
+# WorktreeCreate hook, an agent's plain `git worktree add`, a Desktop session.
+#
+# It only acts when node_modules is MISSING: an existing tree (the canonical
+# checkout's included) is never touched, so a running dev server is safe. A
+# store miss prints one line naming the install command; it never runs npm ci.
+# It never fails the checkout.
+#   $1 previous HEAD   $2 new HEAD   $3 1 = branch checkout, 0 = file checkout
+[ "$3" = "1" ] || exit 0
+root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+[ -f "$root/package-lock.json" ] || exit 0
+[ -e "$root/node_modules" ] || [ -L "$root/node_modules" ] && exit 0
+# The helper next to THIS hook, not the checkout's own copy: core.hooksPath
+# points at the canonical checkout's .githooks, and a checkout of an older
+# branch carries an older helper that would run a full npm ci here.
+script="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)/scripts/ensure-worktree-deps.mjs"
+[ -f "$script" ] || exit 0
+grep -q -- '--clone-only' "$script" 2>/dev/null || exit 0
+command -v node >/dev/null 2>&1 || exit 0
+node "$script" "$root" --clone-only --quiet || true
+exit 0
