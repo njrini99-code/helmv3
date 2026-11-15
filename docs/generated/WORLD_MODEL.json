@@ -9481,6 +9481,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/roster.ts",
           "anchor": "src/lib/golf/player-private-fields"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/supabase/middleware.ts",
+          "anchor": "src/lib/golf/player-redirects"
         }
       ]
     },
