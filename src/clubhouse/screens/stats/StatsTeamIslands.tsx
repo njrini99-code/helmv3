@@ -27,6 +27,7 @@ import { useChSessionState } from '../../lib/session-state';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
+import { useBusy } from '../../lib/use-busy';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { changeInk, changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { deltaTone, deltaWords, halvesTone } from '../../lib/stats-signal';
@@ -119,6 +120,9 @@ export function StatsTeamFrame({
   const toast = useToast();
   const delayedToast = useDelayedToast();
   const [pending, start] = useTransition();
+  // A window or filter change dims the figures only once it has taken the busy delay, and keeps them dimmed at least the busy
+  // hold, so a change that lands at once never flickers (MOTION-AND-VISUAL 3.9, A11; lib/use-busy.ts).
+  const busy = useBusy(pending) === 'skeleton' ? 'skeleton' : undefined;
   const here = statsHref('/golf/dashboard/stats', current);
   // The filter being loaded; cleared when the server answers with a new address.
   const [loading, setLoading] = useState<ChFilter | null>(null);
@@ -150,7 +154,7 @@ export function StatsTeamFrame({
   };
   return (
     <GoFilter.Provider value={{ filter: current, go, shown: rangeOf(loading ?? current), span: (loading ?? current).span ?? 'season' }}>
-      <main className={'ch-st' + (isPhone ? ' is-phone' : isBento ? ' ch-st--shs' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
+      <main className={'ch-st' + (isPhone ? ' is-phone' : isBento ? ' ch-st--shs' : '')} aria-busy={pending} data-ch-busy={busy} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{isBento ? desk : children}</div>}
       </main>
