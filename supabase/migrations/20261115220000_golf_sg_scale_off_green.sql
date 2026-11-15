@@ -131,4 +131,3 @@ BEGIN
   RETURN v_es * COALESCE(p_scale, 1.0);
 END;
 $$;
-
