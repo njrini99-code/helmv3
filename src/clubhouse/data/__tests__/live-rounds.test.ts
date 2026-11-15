@@ -99,7 +99,8 @@ describe('loadOwnLegs', () => {
     tables.current = { golf_shots: { data: SHOTS }, golf_holes: { data: [HOLE] }, 'rpc:sg_scale_for_player': { data: 1 } };
     const legs = await loadOwnLegs(legsInput);
     expect(legs).not.toBeNull();
-    expect(legs!.tee).toBeCloseTo(0.04, 1);
+    // Off the tee on Broadie's Table B.1 (SC-03): tee 420 yd 4.02, fairway 175 yd 3.055, so 4.02 − 3.055 − 1.
+    expect(legs!.tee).toBeCloseTo(-0.035, 3);
     expect(legs!.putting).not.toBeNull();
   });
   it('is null before any shot is recorded, and when a read fails (logged, never thrown)', async () => {

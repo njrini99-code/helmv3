@@ -23,7 +23,9 @@ describe("'other' and 'recovery' curves stay in lockstep", () => {
   });
 
   it('matches the migration VERIFY anchors and equals rough at 50 yd and in', () => {
-    expect(getExpectedStrokes('other', 200)).toBeCloseTo(3.65, 6);
+    // 20261023170000 checked 3.65 on the old rough knots; on Table B.1's rows
+    // (20261115210000) the same rule gives (3.42 + 3.87) / 2 = 3.645.
+    expect(getExpectedStrokes('other', 200)).toBeCloseTo(3.645, 6);
     expect(getExpectedStrokes('recovery', 100)).toBeCloseTo(3.8, 6);
     for (const d of [20, 35, 50]) expect(getExpectedStrokes('other', d)).toBeCloseTo(getExpectedStrokes('rough', d), 2);
   });

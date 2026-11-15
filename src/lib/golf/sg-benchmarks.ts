@@ -20,6 +20,7 @@
  */
 
 import type { BaselineData, LieType } from './strokes-gained';
+import { SG_TOUR_BASELINE } from './sg-tour-baseline';
 
 // ============================================================================
 // BENCHMARK LEVEL TYPE
@@ -151,58 +152,13 @@ function scaleBaseline(pgaData: BaselineData, scaleFactor: number, puttingScale:
   return scaled as BaselineData;
 }
 
-// PGA Tour baseline (Broadie "Every Shot Counts" / ShotLink expected strokes).
-// MUST stay identical to PGA_BASELINE_DATA in strokes-gained.ts and the DB
-// function public.sg_expected_strokes(). Anchors only — getExpectedStrokes()
-// interpolates linearly between them. See migration
-// 20260606140000_fix_sg_expected_strokes_baseline_calibration.sql for the
-// recalibration rationale (prior values were mis-calibrated and inconsistent:
-// tee too high with no data <260yd, fairway/rough ~0.3-0.5 low, green too low).
+// PGA Tour baseline: the one Tour curve (src/lib/golf/sg-tour-baseline.ts,
+// Broadie's Table B.1 and the putting row), equal to the DB function
+// public.sg_expected_strokes() (migration 20261115210000, held). The putting
+// row here also ends at 0 ft = 0 strokes (holed), as the DB row does.
 const PGA_TOUR_BASELINE: BaselineData = {
-  tee: {
-    600: 4.85, 540: 4.65, 400: 3.99, 300: 3.71, 240: 3.25,
-    200: 3.12, 150: 2.95, 120: 2.88, 100: 2.82, 80: 2.78,
-  },
-  fairway: {
-    540: 4.78, 400: 4.11, 300: 3.78, 240: 3.45, 200: 3.19,
-    180: 3.08, 140: 2.91, 100: 2.80, 80: 2.75, 20: 2.40,
-  },
-  rough: {
-    540: 4.97, 400: 4.30, 300: 3.90, 240: 3.64, 200: 3.42,
-    100: 3.02, 20: 2.59,
-  },
-  sand: {
-    540: 5.36, 400: 4.69, 300: 4.04, 240: 3.84, 200: 3.55,
-    100: 3.23, 20: 2.53,
-  },
-  // 'other' and 'recovery' match sg_expected_strokes() once the held migration
-  // 20261023170000_golf_sg_other_lie_curve.sql is applied (TS twin:
-  // STROKES_GAINED_BENCHMARKS in src/lib/utils/golf-stats-calculator-shots.ts).
-  // 'other' is the rough curve to 50 yd, halfway between rough and recovery
-  // from 100 yd, and a straight blend between.
-  other: {
-    540: 5.19, 520: 5.10, 500: 5.00, 480: 4.91, 460: 4.81, 440: 4.72,
-    420: 4.62, 400: 4.53, 380: 4.44, 360: 4.35, 340: 4.25, 320: 4.14,
-    300: 4.05, 280: 3.96, 260: 3.88, 240: 3.81, 220: 3.73, 200: 3.65,
-    180: 3.58, 160: 3.54, 140: 3.49, 120: 3.44, 100: 3.41, 90: 3.31,
-    80: 3.19, 70: 3.06, 60: 2.91, 50: 2.751, 20: 2.59,
-  },
-  // Broadie's recovery column (Interfaces 42(2), Appendix A, Table 9): only for
-  // a shot the player marked blocked, never inferred from the lie.
-  recovery: {
-    600: 5.70, 580: 5.60, 560: 5.51, 540: 5.41, 520: 5.32, 500: 5.22,
-    480: 5.13, 460: 5.03, 440: 4.94, 420: 4.84, 400: 4.75, 380: 4.66,
-    360: 4.56, 340: 4.44, 320: 4.31, 300: 4.20, 280: 4.10, 260: 4.03,
-    240: 3.97, 220: 3.92, 200: 3.87, 180: 3.82, 160: 3.81, 140: 3.80,
-    120: 3.78, 100: 3.80, 90: 3.82, 80: 3.84, 70: 3.84, 60: 3.83,
-    50: 3.79, 40: 3.71, 30: 3.57, 20: 3.51,
-  },
-  green: {
-    90: 2.40, 60: 2.21, 50: 2.14, 40: 2.06, 30: 1.98,
-    20: 1.87, 15: 1.78, 10: 1.61, 9: 1.56, 8: 1.50,
-    7: 1.42, 6: 1.34, 5: 1.23, 4: 1.13, 3: 1.04,
-    2: 1.00, 1: 1.00, 0: 0,
-  },
+  ...SG_TOUR_BASELINE,
+  green: { 0: 0, ...SG_TOUR_BASELINE.green },
 };
 
 /**
