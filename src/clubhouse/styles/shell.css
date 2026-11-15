@@ -2395,6 +2395,13 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-nav--plate .ch-navitem svg {
   transition: color var(--ch-dur-base) var(--ch-ease);
 }
+/* The hand-over itself is one frame: the row's plate goes and this one is there, with no crossfade between them, which
+   read as a dim current row on page load. NavPlate drops the attribute a frame later. */
+.ch-nav[data-ch-plate-first] .ch-nav__plate,
+.ch-nav[data-ch-plate-first] .ch-navitem,
+.ch-nav[data-ch-plate-first] .ch-navitem svg {
+  transition: none;
+}
 
 /* The phone chassis (owner, 2026-10-08: the Coach Home "Mobile clubhouse pass" board, carried to every phone screen):
    the bar under the status bar is the frame's green, its type ivory, and the page below is the parchment sheet, its
