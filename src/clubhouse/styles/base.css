@@ -279,8 +279,9 @@ svg .ch-num {
   }
 }
 
-/* Route skeletons (every one is a main[aria-busy] labelled "Loading ..."): whole in the first frame (production audit
-   2026-11-15, S4.4), so a tab, a push and a pop show the next screen's shape at once, never a fade up from blank. Only
+/* Route skeletons (every one is a main[aria-busy] labelled "Loading ..."): their frame (the bar, the title, the strip) is
+   in the first frame (production audit 2026-11-15, S4.4), so a tab, a push and a pop show the next screen's shape at once,
+   never a fade up from blank; their static blocks wait the busy delay (MOTION-AND-VISUAL 3.9, shell.css ch-busy-wait). Only
    onto a desktop crossfade (RouteFrame sets data-ch-vt-hold while it runs) does a skeleton wait: --ch-dur-vt-hold with
    the old page still up, so a load that finishes sooner never flashes one (native-feel audit 2026-10-08, P0-2), then the
    old page's fade out (--ch-dur-vt-out), and it fades in over base after the old page has gone, never through it. */

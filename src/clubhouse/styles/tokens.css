@@ -1008,9 +1008,9 @@
   --ch-reveal-offset: 40ms;
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
+  /* No skeleton reads it any more (3.9: skeletons are static). Its last users are the CoachHelm wheel's turn, the thread's
+     step dot and the Classes scan, which go with the delete list (3.12); then this goes too. */
   --ch-dur-shimmer: 1.9s;
-  /* Messages v2 skeleton pulse (MSG-112, MSG-003): stops under Reduce Motion and with Animations off. */
-  --ch-dur-skeleton: 1.4s;
   /* A live marker's slow breath (the calendar's now line): one cycle, ambient, never a call to act. */
   --ch-dur-live: 2.8s;
   /* The pending hairline's sweep (LinkPending, shell.css). */
@@ -1440,10 +1440,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-reveal-offset: 0ms;
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;
-  /* The loops too, so a skeleton's shimmer, the calendar's live pulse and the pending sweep hold still from the first
+  /* The loops too, so the wheel's turn, the calendar's live pulse and the pending sweep hold still from the first
      frame: ThemeScript marks <html> before hydration, ahead of the rules that stop them by name. */
   --ch-dur-shimmer: 0ms;
-  --ch-dur-skeleton: 0ms;
   --ch-dur-live: 0ms;
   --ch-dur-sweep: 0ms;
   --ch-dur-marks: 0ms;
@@ -1470,7 +1469,7 @@ html:has([data-ui='clubhouse']) {
   --ch-dur-vt-fade: 180ms;
   /* How long a crossfade onto a route skeleton keeps the old page up before the skeleton shows (P0-2, halved by S4.4): a
      load that finishes sooner never shows a skeleton. base.css delays the skeleton by the same. A swap, a push and a pop
-     never hold: their skeleton is whole in the first frame. */
+     never hold: their skeleton's frame is in the first frame, and its blocks wait --ch-dur-busy-delay (3.9). */
   --ch-dur-vt-hold: 150ms;
   /* A list row sliding to its new place (a roster reorder, a qualifier rank change; S3.10): the one curve, on base. */
   --ch-dur-vt-move: 260ms;
