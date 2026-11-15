@@ -139,6 +139,8 @@ describe('the suppressed migrations are still HELD', () => {
   ])('%s is listed as HOLD', (file) => {
     const row = held.split('\n').find((line) => line.startsWith(`| \`${file}\``));
     expect(row, `${file} has no row in HELD.md`).toBeDefined();
-    expect(row!.split('|')[2]!.trim()).toBe('**HOLD**');
+    // A status cell annotated while the file is still held (`**HOLD — waiting on Step 7**`) is still HOLD; only a
+    // status that no longer starts with HOLD (APPLIED, DROPPED, ...) means the ignore pattern hides a live object.
+    expect(row!.split('|')[2]!.trim().startsWith('**HOLD')).toBe(true);
   });
 });
