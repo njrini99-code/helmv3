@@ -55,7 +55,8 @@ Held items: over-par hole chips keep the scorecard's squares; champagne is not y
 ### Verification
 
 - Unit: check.mjs (red context), hole strip, score flow band, hole-map contrast,
-  contrast tokens; the design-language tables now list the under-par, attention,
-  flag and error tokens with their ratios.
+  contrast tokens, live bead steps (a birdie bead is the lighter step, an eagle
+  the full gain fill); the design-language tables now list the under-par,
+  attention, flag and error tokens with their ratios.
 - Before and after screenshots, phone 393 and desktop 1440, light and dark,
   Chromium (tier C), in the PR.
