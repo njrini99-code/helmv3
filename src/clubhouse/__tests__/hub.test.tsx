@@ -2500,6 +2500,30 @@ describe('Team Hub · New announcement offers only files players can open (Q-83)
     await waitFor(() => expect(post).toHaveBeenCalledWith({ title: 'Hotel is booked', body: 'Details in the app.', requiresAck: true, playerIds: null, documentIds: ['d2'] }));
   });
 
+  it('N-10 a practice plan filed in Documents is not a file: never offered, never counted as coach-only, and only plans reads as no documents yet', async () => {
+    const user = userEvent.setup();
+    const f = formatters('America/New_York', new Date('2026-10-14T18:00:00Z'));
+    // The loader's own output for a published plan's row (N-00 010400: practice_plan_id set, no file), shown to players.
+    const [plans] = folders([{ practice_plan_id: 'pp1', id: 'p1', title: 'Tuesday practice', folder: 'Practice plans', file_type: null, file_url: null, file_size: null, updated_at: '2026-10-12T12:00:00Z', created_at: null, is_public: true }], f);
+    expect(plans!.files[0]).toMatchObject({ id: 'p1', planId: 'pp1', isPublic: true });
+    const post = vi.fn(ok);
+    show(withDocuments({ ...PREVIEW_HUB_COACH.documents, folders: [plans!, ...PREVIEW_HUB_COACH.documents.folders] }), writes({ postAnnouncement: post }), 'ann');
+    const dialog = await openCompose(user);
+    await user.click(dialog.getByRole('button', { name: 'Attach from Documents' }));
+    expect(dialog.queryByRole('group', { name: 'Practice plans' })).toBeNull();
+    expect(dialog.queryByRole('button', { name: /^Tuesday practice/ })).toBeNull();
+    expect(dialog.getAllByRole('button', { name: /, (PDF|XLS)$/ })).toHaveLength(6);
+    // The coach-only line still counts the one coach-only file, not the plan.
+    await expectCode('CH-10314', /1 coach-only file isn’t offered: players couldn’t open it\./);
+    cleanup();
+    // Only plans: nothing to attach, and the sheet says no documents yet rather than calling the plan coach-only.
+    show(withDocuments({ error: false, folders: [plans!] }), writes({ postAnnouncement: post }), 'ann');
+    const only = await openCompose(user);
+    await expectCode('CH-10311', /No documents yet\./);
+    expect(code('CH-10314')).toBeNull();
+    expect(only.queryByRole('button', { name: 'Attach from Documents' })).toBeNull();
+  });
+
   it('the loader marks a file players can open only when the document says is_public is true, and a player is never sent a coach-only one', async () => {
     const f = formatters('America/New_York', new Date('2026-10-14T18:00:00Z'));
     const row = (id: string, is_public?: boolean | null) => ({ id, title: id, folder: null, file_type: 'pdf', file_url: `x/${id}.pdf`, file_size: 10, updated_at: '2026-10-10T12:00:00Z', created_at: null, is_public });
