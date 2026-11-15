@@ -627,3 +627,18 @@ items:
       - src/test/api/cron/coachhelm-calibration.test.ts
     queued_for_release: false
     first_seen: '2026-10-24T03:40:43Z'
+  - id: thread-day-key-collision-2026-11-15
+    feature_id: team_communications
+    root_cause: >-
+      Clubhouse Messages keyed each day separator on the day alone, so a thread
+      whose list comes back round to a day rendered two children with one React
+      key (Sentry JAVASCRIPT-NEXTJS-1EH / 1MG, development).
+    incident_id: memory/incidents/team_communications/INC-2026-11-15-thread-day-key-collision.md
+    status: verified
+    risk: R1
+    sha: 92f0b8d161d15a757962528636a73a3e10539fcb
+    pr: null
+    regression_tests:
+      - src/clubhouse/screens/messages/__tests__/thread-model.test.ts
+    queued_for_release: false
+    first_seen: '2026-11-04T06:57:02Z'
