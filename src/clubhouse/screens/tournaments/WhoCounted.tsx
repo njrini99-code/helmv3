@@ -4,6 +4,7 @@ import { Avatar } from '../../ui/Avatar';
 import { SideScroll } from '../../ui/SideScroll';
 import { byTotal, notCounted, scoreWords, type DeskRow } from './desk-model';
 import { NoData } from '../../ui/NoData';
+import { pluralWord } from '../../lib/plural';
 import { formatToPar, plural } from './format';
 import { ToPar } from './parts';
 import type { ChTourEvent, ChTourPlayerRound } from './types';
@@ -53,10 +54,14 @@ export function WhoCounted({
   const result = event.team.result;
   const shown = event.rounds.map((r, i) => ({ r, i })).filter(({ r }) => round === 'all' || r.number === round);
   const single = round !== 'all';
-  const team = rows.filter((x) => !x.individual);
-  const ind = rows.filter((x) => x.individual);
+  // An alternate who played none of the rounds shown folds into one line under the table (coach audit, 13 Nov 2026: each had a
+  // row of four "No data").
+  const idle = rows.filter((x) => x.alternate && shown.every(({ i }) => !x.cells[i]));
+  const listed = rows.filter((x) => !idle.includes(x));
+  const team = listed.filter((x) => !x.individual);
+  const ind = listed.filter((x) => x.individual);
   const flat = view === 'players';
-  const body = flat ? byTotal(rows) : [...team];
+  const body = flat ? byTotal(listed) : [...team];
   const par = result?.total != null && result.toPar != null ? result.total - result.toPar : null;
 
   const line = (x: DeskRow) => (
@@ -186,6 +191,11 @@ export function WhoCounted({
         {teamRow}
         {!flat && ind.map(line)}
       </SideScroll>
+      {idle.length > 0 && (
+        <p className="ch-tour-desk-ct__alts">
+          {pluralWord(idle.length, 'Alternate')}: {idle.map((x) => x.player?.first ?? 'Player').join(', ')}
+        </p>
+      )}
       <p className="ch-tour-desk-key">
         <span>
           <span className="ch-tour-desk-sc is-nc ch-num">

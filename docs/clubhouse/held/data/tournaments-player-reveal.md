@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-tournaments-player-reveal
-Status: HELD
+Status: RELEASED
 Pages: Tournaments (P016)
 Feature: calendar_events
 Migration: supabase/migrations/20261024100300_golf_tournament_player_reveal.sql
@@ -52,7 +52,10 @@ the app from those, with the scoring engine.
 
 ## SQL preparation status
 
-WRITTEN — HOLD — NOT APPLIED
+APPLIED — in the production ledger (verified 2026-11-15 with `list_migrations`;
+when and how it was applied is not recorded). Mirrored in `supabase/schemas/**`.
+The file keeps its original `-- STATUS: WRITTEN — HOLD — NOT APPLIED` first
+line: an applied migration is never edited.
 
 ## Rollback
 

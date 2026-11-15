@@ -16,7 +16,7 @@ import { useToast } from '../../ui/Toast';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
-import { fmtHour, type ChCalEvent, type ChCalPerson } from './model';
+import { fmtHour, listedCount, type ChCalEvent, type ChCalPerson } from './model';
 import { roundLabel } from './round-label';
 import { TournamentSaveNotice } from './editor-tournament';
 import { roundStartAt, shortDay, teeMinutes, type ChTourStartType } from '../tournaments/fields/rounds-model';
@@ -347,7 +347,7 @@ export function RoundEditor({
             <fieldset className="ch-ed__col ch-red__fields" disabled={readOnly || pending}>
               <div>
                 <div className="ch-in__sechead">
-                  <span className="ch-ed__lbl">{peopleError && !people.length ? 'Invite' : `Invite · ${d.invited.length} of ${people.length}`}</span>
+                  <span className="ch-ed__lbl">{peopleError && !people.length ? 'Invite' : `Invite · ${listedCount(d.invited, people)} of ${people.length}`}</span>
                   <Button size="sm" variant="ghost" onClick={() => set({ invited: allOn ? [] : people.map((p) => p.id).sort() })}>
                     {allOn ? 'Clear' : 'Select all'}
                   </Button>

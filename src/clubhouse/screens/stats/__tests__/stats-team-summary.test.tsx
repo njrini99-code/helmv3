@@ -165,6 +165,9 @@ describe('Team Stats, figures outside the big values are tabular too', () => {
     expect(foot.every((b) => b.classList.contains('ch-num'))).toBe(true);
     const metas = [...document.querySelectorAll('.ch-shs-ah__meta')];
     expect(metas.length).toBeGreaterThanOrEqual(3);
+    // The scoring figure is each player's last 10 rounds, not the team's last 10 round days the chart draws (coach audit 13 Nov).
+    const score = await painted('tscore');
+    expect(score.querySelector('.ch-shs-ah__meta')!.textContent).toBe('Each player’s last 10');
     expect(metas.every((m) => m.classList.contains('ch-num'))).toBe(true);
   });
 });
@@ -175,8 +178,16 @@ describe('Team Stats, The round’s note', () => {
     showTeam(TEAM);
     await waitFor(() => expect([...document.querySelectorAll('.ch-shs-anote')].some((p) => p.textContent!.startsWith('Chips:'))).toBe(true));
     const note = [...document.querySelectorAll('.ch-shs-anote')].find((p) => p.textContent!.startsWith('Chips:'))!;
-    expect(note.textContent).toMatch(/^Chips: the change vs the previous \d+ round days, grey when it is inside its likely error\./);
+    expect(note.textContent).toMatch(/^Chips: the change vs each player’s previous \d+ rounds, grey when it is inside its likely error\./);
     expect(note.textContent).not.toContain('countable rounds only');
     expect(note.textContent).not.toContain('Varsity');
+  });
+
+  it('Team putting names the window its putts come from', async () => {
+    asDesktop();
+    showTeam(TEAM);
+    await waitFor(() => expect(document.getElementById('ch-stm-putt')).not.toBeNull());
+    const meta = document.getElementById('ch-stm-putt')!.parentElement!.querySelector('.ch-num')!;
+    expect(meta.textContent).toMatch(/^Make rate by distance · \d+ putts · each player’s last 10$/);
   });
 });

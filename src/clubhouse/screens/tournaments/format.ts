@@ -109,3 +109,37 @@ export function andList(names: readonly string[]): string {
 
 /** "1 event", "3 events": lib/plural's, re-exported for the tournament views. */
 export { plural } from '../../lib/plural';
+
+/** "Finish round 1" for a round left live after its day, "Score round 1" for one that never started. */
+export function closeLabel(close: { round: number; live: boolean }): string {
+  return `${close.live ? 'Finish' : 'Score'} round ${close.round}`;
+}
+
+/**
+ * The coach's word for an event now, on the team's day: "Needs closing" past its day and not final, "Live now" in play
+ * today, "Today" on its first day before play, else how far off it is.
+ */
+export function showChip(e: { show: 'upcoming' | 'today' | 'live' | 'needs_closing' | 'final'; startDate: string }, today: string): string {
+  if (e.show === 'needs_closing') return 'Needs closing';
+  if (e.show === 'live') return 'Live now';
+  if (e.show === 'today') return 'Today';
+  return inDays(today, e.startDate);
+}
+
+/** The player's word for an event now: a past event the coach hasn't closed is "Scores pending" (closing is the coach's job). */
+export function playerShowChip(e: { show: 'upcoming' | 'today' | 'live' | 'needs_closing' | 'final'; startDate: string }, today: string): string {
+  return e.show === 'needs_closing' ? 'Scores pending' : showChip(e, today);
+}
+
+/**
+ * A finish's "of": the teams with a score, and the field too when it is larger (coach audit, 13 Nov 2026: "4 of 4" against a
+ * field of 12). The place is among the teams scored, so it is never said "of 12" alone.
+ */
+export function finishOf(f: { of: number; field?: number | null }): string {
+  return f.field != null && f.field > f.of ? `of ${f.of} scored · ${f.field} teams` : `of ${f.of}`;
+}
+
+/** The desk's "of 14 teams", or the scored and the field when they differ ("of 4 scored · 12 teams"). */
+export function finishTeams(f: { of: number; field?: number | null }): string {
+  return f.field != null && f.field > f.of ? finishOf(f) : `of ${f.of} teams`;
+}

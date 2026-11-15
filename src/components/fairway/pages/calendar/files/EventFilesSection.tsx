@@ -165,7 +165,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
               className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-2', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}
             >
               <a
-                href={document.file_url}
+                href={document.file_url ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`Open ${document.title} (opens in a new tab)`}

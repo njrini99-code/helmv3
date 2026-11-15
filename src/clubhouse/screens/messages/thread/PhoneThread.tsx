@@ -16,7 +16,7 @@ import { useThreadMakeRoom, useSpringToEnd, useReplyFromTyping, useFaceFlight, u
 import { haptic } from '../../../lib/haptics';
 import { PhoneScreen } from '../../../shell/PhoneScreen';
 import { PhoneBar, PhoneIconAction } from '../../../ui/PhoneBar';
-import { GroupMark, convAvatarId, convYear } from '../shared/conv-ui';
+import { GroupMark, convAvatarId, convAvatarName, convYear } from '../shared/conv-ui';
 import { Avatar } from '../../../ui/Avatar';
 import { ThreadClassSub } from '../ThreadClassSub';
 import { personOf } from '../person-of';
@@ -141,7 +141,7 @@ export function PhoneThread({
           // the key inside it: a key focused by script on a fresh load (a notification, a link) draws its keyboard ring.
           <span className="ch-msp-whobox" id={titleId} tabIndex={-1}>
           <button type="button" className="ch-msp-who" onClick={onDetails} aria-label={`Details for ${conv.group ? conv.title : firstName(conv.title)}`}>
-            {conv.group ? <GroupMark size="md" flag={!!conv.channel} /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size="md" year={convYear(api, conv)} />}
+            {conv.group ? <GroupMark size="md" flag={!!conv.channel} /> : <Avatar name={convAvatarName(conv)} id={convAvatarId(api, conv)} size="md" year={convYear(api, conv)} />}
             <span>
               <b>{!conv.group ? firstName(conv.title) : conv.title}</b>
               <em>

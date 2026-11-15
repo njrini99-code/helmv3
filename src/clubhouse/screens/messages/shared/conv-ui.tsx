@@ -11,6 +11,11 @@ import { Flag, Users } from 'lucide-react';
 
 /** B19: a direct conversation's coin takes the other person's tone, from the id their coin has everywhere (a player's
  *  player id, else a coach's user id); a group has none. */
+/** The name a conversation's coin is drawn from: none for a former member, whose initials would mean nothing ("FM"; it was "CM"). */
+export function convAvatarName(c: Pick<ChConv, 'title' | 'former'>): string {
+  return c.former ? '' : c.title;
+}
+
 export const convAvatarId = (api: ChMessagesApi, c: ChConv): string | null => {
   if (c.group) return null;
   const other = c.memberIds.find((id) => id !== api.viewer.userId);

@@ -714,6 +714,10 @@ features:
         - supabase/migrations/*sync_golf_rounds*.sql
         - supabase/migrations/*golf_round_lifecycle*.sql
         - supabase/migrations/*golf_round_totals*.sql
+        # The recompute's total_score / score_to_par patch and backfill (audit
+        # F-0003). Named without "golf_round" so golf_round_lifecycle's
+        # *golf_round* glob does not sweep it up.
+        - supabase/migrations/*round_totals_follow_holes*.sql
         - supabase/migrations/*golf_shot*.sql
         - supabase/migrations/*helm_flight_recorder*.sql
         - supabase/migrations/*helm_debug_retention.sql
@@ -1171,6 +1175,8 @@ features:
         - supabase/migrations/20261021100000_golf_player_hub_rpcs_staff_gate.sql
         - supabase/migrations/20261105090000_golf_player_hub_events_class_rows.sql
         - supabase/migrations/20261105100000_golf_players_coach_reads_inactive_members.sql
+        # Its narrowed body again, for databases that ran the first version (HELD.md).
+        - supabase/migrations/20261114090000_golf_players_coach_inactive_member_narrowed.sql
         # Messaging security (held, PR #2498). The name carries none of
         # "messag", "conversation" or "chat_": the participants column grants.
         - supabase/migrations/20261107090000_golf_participants_column_grants.sql

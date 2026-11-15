@@ -54,6 +54,7 @@ const baseDoc: GolfDocument = {
   current_version_id: null,
   version_count: 1,
   folder: null,
+  practice_plan_id: null,
 };
 
 describe('DocumentPreview (#w4-document-preview)', () => {

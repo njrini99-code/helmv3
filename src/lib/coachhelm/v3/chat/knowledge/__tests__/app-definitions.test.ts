@@ -191,9 +191,9 @@ describe('the app definitions the golf block states', () => {
     expect(read('src/lib/coachhelm/v3/chat/benchmark-reads.ts')).toMatch(/export const SOURCED_LEVEL_FIGURES: Record<string, Partial<Record<TableLevel, LevelFigureSource>>> = \{\};/);
   });
 
-  it('toughest holes are grouped by hole number, whatever the course', () => {
-    says('Toughest holes here are grouped by hole number across whatever courses were played');
-    expect(read('src/clubhouse/data/stats-figures.ts')).toMatch(/grouped by hole number as production does \(each play keeps its own\s+\* par: a hole number is a different hole at each course\)/);
+  it('toughest holes keep each hole on its own course', () => {
+    says('Toughest holes here keep each hole on its own course, because the same hole number is a different hole at another course');
+    expect(read('src/clubhouse/data/stats-figures.ts')).toMatch(/each hole on its own course \(hole 8 at one course is not hole 8 at\s+\* another\)/);
   });
 });
 

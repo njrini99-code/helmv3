@@ -9,7 +9,7 @@ import { useMuteAction, detailsLine, QuickActions, ConversationSearch, MembersCa
 import { PhoneScreen } from '../../../shell/PhoneScreen';
 import { PhoneBar } from '../../../ui/PhoneBar';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
-import { GroupMark, convAvatarId, convYear } from '../shared/conv-ui';
+import { GroupMark, convAvatarId, convAvatarName, convYear } from '../shared/conv-ui';
 import { Avatar } from '../../../ui/Avatar';
 import { ThreadClassSection } from '../ThreadClassSection';
 import Link from 'next/link';
@@ -65,7 +65,7 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
         <SectionBoundary surface="messages.details" label="Details" code="CH-7213">
           <div className="ch-msp-page">
             <section className="ch-msp-prof">
-              {conv.group ? <GroupMark size="lg" flag={!!conv.channel} /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={84} year={convYear(api, conv)} />}
+              {conv.group ? <GroupMark size="lg" flag={!!conv.channel} /> : <Avatar name={convAvatarName(conv)} id={convAvatarId(api, conv)} size={84} year={convYear(api, conv)} />}
               <h2>{conv.title}</h2>
               <p className="ch-num">
                 {detailsLine(conv, api.teamName, muted)}

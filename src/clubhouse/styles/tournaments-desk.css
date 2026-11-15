@@ -377,6 +377,14 @@ button.ch-tour-desk-sc:focus-visible {
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--ch-ink-400);
 }
+/* Alternates who played none of the rounds shown: one line under the table, not a row of No data each (coach audit, 13 Nov 2026). */
+.ch-tour-desk-ct__alts {
+  margin: 0;
+  padding: 8px 8px 0;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
 .ch-tour-desk-key {
   display: flex;
   flex-wrap: wrap;

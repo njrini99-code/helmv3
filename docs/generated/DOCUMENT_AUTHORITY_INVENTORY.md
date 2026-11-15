@@ -406,6 +406,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/messages-v2/PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-06-practice-plan-row.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-06-practice-plan-rows.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-15-plan-rows-file-url.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-22-player-course-plan.md` | current | - | - | - | 1 |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-24-course-plan-send.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-04-practice-plan-end-to-end.md` | current | - | - | - | - |
@@ -512,6 +513,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/audit/2026-11-13/writes.md` | current | - | - | - | - |
 | `docs/clubhouse/audit/WRITES-ON-OPEN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-coach-audit-figures.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-coach-audit-figures.md` | current | - | - | - | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 4 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
 | `docs/security/S4_TEAMMATE_READ_AUDIT_2026-10-21.md` | current | - | - | - | - |
@@ -950,7 +953,7 @@ them would bury everything above.
 | `docs/clubhouse/QUEUE.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
-| `docs/clubhouse/STATUS.md` | current | - | - | yes | - |
+| `docs/clubhouse/STATUS.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
 | `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |
 | `docs/clubhouse/ask-v2/GAP.md` | current | - | - | - | 2 |
@@ -1086,7 +1089,9 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-13-a11y-names-focus.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-data-honesty.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-phone-type-floor-and-week-strip.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-13-practice-builder-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-practice-craft.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-13-quick-chat-new-key.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-span-switch-labels.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
@@ -1218,7 +1223,12 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-11-fix-wave.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-12-practice-left-edge.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-bell-teams.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-builder-fits-desk.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-from-section.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-label-in-name.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-quick-chat-team.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-search-ranking.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-type-scale-upward-only.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
@@ -1312,6 +1322,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-12-season-card-track.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-craft-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-13-roster-truths.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-row-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-sg-window-and-past-class.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
@@ -1361,6 +1372,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-12-one-change-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-12-wide-detail.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-back-to-roster.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-heading-and-tiles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-round-day-avg-key.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
@@ -1411,6 +1423,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-12-one-change-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-12-wide-detail.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-back-to-roster.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-heading-and-tiles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-shared-chart-file.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
@@ -1455,7 +1468,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-12-sources-no-classes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-12-week-fills.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-label-in-name.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-set-up-lands.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-attendance-counts-typed.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1510,6 +1525,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-12-poll-add-choice.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-12-reactions-above-text.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-12-thread-spans-pane.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-13-former-member.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-13-time-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-13-unread-conversations.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
@@ -1578,6 +1594,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-12-review-and-close.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-12-upcoming-by-date-one-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-first-render-formatters.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-past-last-day.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
@@ -1613,6 +1630,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-head-figures.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-next-7-days.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-waiting-on-late-column.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-13-active-assignees.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-13-updates-this-team.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-13-week-day-names.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
@@ -1673,6 +1692,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-12-review-score-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-12-tees-column-only-tees.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-12-type-chips-one-weight.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-live-now-today-only.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-one-round-score.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-round-link-target.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-row-name.md` | current | - | - | - | - |
@@ -1773,6 +1793,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-miss-compass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-preview-walk-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-team-spot-scale.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-ask-own-failures.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-read-drawer-truth.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-shell-and-ask.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-story-focus.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-team-board-first-paint.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-team-week-tiles-and-map.md` | current | - | - | - | - |
@@ -1850,6 +1873,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-12-history-one-filter.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-12-live-round-empty-real.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-12-live-round-phone-one-primary.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-13-needs-closing.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-13-row-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-13-setup-span.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
@@ -1982,7 +2006,7 @@ them would bury everything above.
 | `src/lib/coachhelm/v3/chat/knowledge/SOURCES.md` | current | - | - | - | - |
 | `src/lib/coachhelm/v3/chat/tasks/INVENTORY.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 3 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |

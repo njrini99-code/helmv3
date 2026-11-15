@@ -36,8 +36,8 @@ export function teamSwitchFor(user: GolfUserData): ChTeamSwitch | null {
   };
 }
 
-/** Why the server refused, in the coach's words. None of these is fixed by trying again. */
-const REFUSED: Record<string, string> = {
+/** Why the server refused, in the coach's words. None of these is fixed by trying again. Also the bell's (CH-1003). */
+export const TEAM_SWITCH_REFUSED: Record<string, string> = {
   unauthenticated: 'Your session ended. Sign in again.',
   'switching-not-permitted': 'Only a head coach staffed on more than one team can switch.',
   unauthorized: 'You aren’t staffed on that team.',
@@ -71,7 +71,7 @@ export function useTeamSwitch({ choices, activeId }: ChTeamSwitch, onSwitched?: 
         const res = await setActiveTeam(teamId);
         if (!res.success) {
           setPicked(null);
-          return { success: false, error: REFUSED[res.reason] };
+          return { success: false, error: TEAM_SWITCH_REFUSED[res.reason] };
         }
         startRefresh(() => router.refresh());
         landed.current = true;

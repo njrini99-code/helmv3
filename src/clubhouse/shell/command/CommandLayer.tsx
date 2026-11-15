@@ -5,8 +5,8 @@ import { isNativeApp } from '@/lib/utils/capacitor';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chTrail } from '../../lib/track';
 import { CH_SETTINGS_ITEM, type ChNavFeatures, type ChRole } from '../nav';
-import type { ChPerson, ChRecent } from './commands';
-import { getPalettePeople } from '../../data/palette-people';
+import type { ChPaletteEvent, ChPerson, ChRecent } from './commands';
+import { getPaletteEvents, getPalettePeople } from '../../data/palette-people';
 import { clearPeople, seedPeople, setPeopleScope, usePeople } from './people';
 import { CH_PALETTE_EVENT, useCommandDesktop } from './palette-open';
 import { Palette, type ChPeopleState } from './Palette';
@@ -23,6 +23,8 @@ import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForDigit, itemF
  * the players it has already loaded (people.ts), which it empties when it unmounts (sign-out, the idle timeout). Its keys never fire while typing in a field or inside a dialog, a
  * menu or a list (shortcuts.ts); the sidebar's Cmd or Ctrl \ and Home's N keep their own handlers.
  */
+const NO_EVENTS: readonly ChPaletteEvent[] = [];
+
 export function CommandLayer({
   role,
   features,
@@ -30,6 +32,7 @@ export function CommandLayer({
   userId,
   teamId,
   loadPeople = getPalettePeople,
+  loadEvents = getPaletteEvents,
 }: {
   role: ChRole;
   /** The flagged sections this team has, as the sidebar lists them. */
@@ -42,6 +45,8 @@ export function CommandLayer({
    * they stay in memory (people.ts) and never ride a cached page or a phone's payload. Injected in tests.
    */
   loadPeople?: () => Promise<readonly ChPerson[] | null>;
+  /** A coach's tournaments and qualifiers by name, read with the players (coach audit 13 Nov 2026, §2). Injected in tests. */
+  loadEvents?: () => Promise<readonly ChPaletteEvent[] | null>;
 }) {
   const router = useRouter();
   const desktop = useCommandDesktop();
@@ -103,6 +108,27 @@ export function CommandLayer({
       })
       .catch(failed);
   }, [role, peopleScope, loadPeople]);
+  // The team's tournaments and qualifiers, held for the scope they were read for: another team's are never searched. Read
+  // once per scope when the palette opens; one that didn't come is asked for at the next opening.
+  const [events, setEvents] = useState<{ scope: string; list: readonly ChPaletteEvent[] }>({ scope: '', list: [] });
+  const eventsFor = useRef<string | null>(null);
+  const seedEventsOnOpen = useCallback(() => {
+    if (role !== 'coach' || eventsFor.current === peopleScope) return;
+    eventsFor.current = peopleScope;
+    const forScope = peopleScope;
+    const failed = () => {
+      if (eventsFor.current === forScope) eventsFor.current = null;
+    };
+    void Promise.resolve()
+      .then(loadEvents)
+      .then((list) => {
+        if (eventsFor.current !== forScope) return;
+        if (!list) return failed();
+        setEvents({ scope: forScope, list });
+      })
+      .catch(failed);
+  }, [role, peopleScope, loadEvents]);
+  const teamEvents = events.scope === peopleScope ? events.list : NO_EVENTS;
   useEffect(() => {
     setRecent(noteVisit(userId, role, pathname));
   }, [userId, role, pathname]);
@@ -114,8 +140,9 @@ export function CommandLayer({
     setUsed((u) => ({ ...u, palette: true }));
     setPalette(true);
     seedOnOpen();
+    seedEventsOnOpen();
     chTrail('command palette open');
-  }, [userId, seedOnOpen]);
+  }, [userId, seedOnOpen, seedEventsOnOpen]);
 
   useEffect(() => {
     if (!desktop) return;
@@ -210,7 +237,7 @@ export function CommandLayer({
   return (
     <>
       {waiting && <GoHint role={role} features={features} />}
-      {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} features={features} pathname={pathname} people={people} peopleState={peopleState} recent={recent} keyword={opens} />}
+      {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} features={features} pathname={pathname} people={people} peopleState={peopleState} events={teamEvents} recent={recent} keyword={opens} />}
       {used.help && <ShortcutsSheet open={help} onClose={() => setHelp(false)} role={role} features={features} apple={apple} />}
     </>
   );

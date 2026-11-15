@@ -114,12 +114,17 @@ describe('isHeldInRegister', () => {
         status: cells[1].trim(),
       }))
       .filter(({ status }) => /\bHOLD\b|NOT APPLIED/i.test(status) && !/^\*\*(VERIFIED )?APPLIED\b/i.test(status));
-    expect(rows.length).toBeGreaterThan(40);
+    // A floor so a parse that matches nothing cannot pass. 2026-11-15: 52 rows moved to APPLIED after the Clubhouse
+    // release (33 applied that night, 19 found already in the production ledger), leaving 26 held.
+    expect(rows.length).toBeGreaterThan(20);
     const leaks = rows.flatMap(({ names, status }) =>
       names.filter((name) => !isHeldInRegister(register, name)).map((name) => `${name}: ${status}`),
     );
     expect(leaks).toEqual([]);
-    expect(isHeldInRegister(register, '20261031150000_golf_conversation_pins.sql')).toBe(true);
+    // Locked on a fixture: the pins row was applied on 2026-11-15, so the real register no longer carries its
+    // held status. This is that row's status as it stood until then.
+    const pinsRow = '| `20261031150000_golf_conversation_pins.sql` | **HOLD — WRITTEN, NOT APPLIED** | Pins. |';
+    expect(isHeldInRegister(pinsRow, '20261031150000_golf_conversation_pins.sql')).toBe(true);
   });
 
   it('the old regex missed it — this is the regression being locked', () => {

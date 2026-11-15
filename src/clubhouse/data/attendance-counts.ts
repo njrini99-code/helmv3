@@ -1,7 +1,6 @@
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
-import { rpcAttendanceCounts } from '@/lib/golf/attendance-counts-rpc';
 
 /**
  * RSVP counts for a player's screens, without reading teammates' rows.
@@ -11,8 +10,10 @@ import { rpcAttendanceCounts } from '@/lib/golf/attendance-counts-rpc';
  * `golf_event_attendance_counts(p_event_ids)` instead, which returns numbers only, for the caller's own teams. The
  * buckets mirror `rsvpOf` (data/calendar.ts): maybe/tentative count in `invited` only.
  *
- * Until the migration is applied the function does not exist (PostgREST PGRST202, Postgres 42883): the result is
- * `missing` and each caller keeps today's direct read unchanged. Any other failure is a failed read (`error`).
+ * The migration is applied in production (2026-11-15). Should the function go missing (PostgREST PGRST202, Postgres
+ * 42883) the result is still `missing` and each caller falls back to the direct read, which since the migration
+ * returns a player only their own rows; Sentry pages on that error (no ignore any more). Any other failure is a
+ * failed read (`error`).
  */
 export interface ChAttendanceCounts {
   invited: number;
@@ -80,7 +81,7 @@ export async function loadAttendanceCounts(supabase: Client, eventIds: string[])
   const ids = [...new Set(eventIds)];
   if (!ids.length) return { kind: 'ok', byEvent: new Map() };
   // One POST body, not a query string, so no .in() URL-length chunking is needed.
-  const { data, error } = await rpcAttendanceCounts(supabase, ids);
+  const { data, error } = await supabase.rpc('golf_event_attendance_counts', { p_event_ids: ids });
   if (error) {
     const code = (error as { code?: string }).code;
     return code && NOT_DEPLOYED.has(code) ? { kind: 'missing' } : { kind: 'error', error };

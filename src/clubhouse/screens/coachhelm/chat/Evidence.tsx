@@ -8,6 +8,7 @@ import { coachReadHref } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { Icon } from '../../../ui/Icon';
 import { Studio, fillComposer, fromEvidence, fromRead } from './studio';
+import { useLightPlace } from '../../../shell/light';
 
 /** The table of a read's figures: the studio's (chat/studio/table.tsx), named here for the files that read it from the thread. */
 export { DataTable } from './studio/table';
@@ -27,11 +28,13 @@ type Roster = ReadonlyArray<{ id: string }>;
  */
 export function AskEvidenceView({ envelope, roster = [], ask = true }: { envelope: ToolEnvelope; roster?: Roster; ask?: boolean }) {
   const phone = useChPhone();
+  // "computed Nov 12" is that day in the team's zone (coach audit 13 Nov 2026, §3c).
+  const zone = useLightPlace().timeZone;
   // A read that is a thing the app has a screen for is drawn as that thing: the calendar's days, a qualifier's board, a
   // round's scorecard. It stands in for the table of the same rows (and, for a board, the ranking of the same players).
   const thing = fromRead(envelope);
   const stoodFor: ReadonlyArray<AskEvidence['kind']> = !thing ? [] : thing.kind === 'qualifier_board' ? ['table', 'ranking', 'compare'] : ['table'];
-  const blocks = evidenceBlocks(envelope).filter((b) => !stoodFor.includes(b.kind));
+  const blocks = evidenceBlocks(envelope, zone).filter((b) => !stoodFor.includes(b.kind));
   if (!thing && blocks.length === 0) return null;
   return (
     <div className="ch-th-evidence ch-aks-ev">

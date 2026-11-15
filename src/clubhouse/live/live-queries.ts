@@ -85,15 +85,29 @@ export async function readTrackedRoundIds(supabase: LiveClient, roundIds: readon
   return new Set(((data ?? []) as Array<{ round_id: string | null }>).flatMap((r) => (r.round_id ? [r.round_id] : [])));
 }
 
-/** One row per tournament with a round live right now; the Home card links each to the tournament's live view. */
-export async function readLiveEvents(supabase: LiveClient, teamId: string): Promise<LiveEventRow[] | null> {
-  const rounds = await tourTable(supabase, 'golf_tournament_rounds').select('tournament_id').eq('team_id', teamId).eq('status', 'live');
+/**
+ * One row per tournament with a round live right now; the Home card links each to the tournament's live view. "Right now"
+ * is the round's own day on the team's clock: a round left `live` after its day (Tar Heel R1, 25 Oct, coach audit 13 Nov
+ * 2026) is not live, it needs closing, and Tournaments says so. A round whose day can't be read keeps the stored status.
+ */
+export async function readLiveEvents(supabase: LiveClient, teamId: string, on?: { today: string; zone: string }): Promise<LiveEventRow[] | null> {
+  const rounds = await tourTable(supabase, 'golf_tournament_rounds').select('tournament_id, event:golf_events(start_time, all_day)').eq('team_id', teamId).eq('status', 'live');
   if (rounds.error && !isMissing(rounds.error)) return null;
-  const ids = [...new Set(((rounds.data ?? []) as Array<{ tournament_id: string | null }>).flatMap((r) => (r.tournament_id ? [r.tournament_id] : [])))];
+  type Row = { tournament_id: string | null; event?: { start_time: string | null; all_day: boolean | null } | null };
+  const dayOf = (r: Row): string | null => {
+    const start = r.event?.start_time;
+    if (!start || !on) return null;
+    return r.event?.all_day ? start.slice(0, 10) : isoDay(start, on.zone);
+  };
+  const today = ((rounds.data ?? []) as unknown as Row[]).filter((r) => {
+    const day = dayOf(r);
+    return day == null || day === on?.today;
+  });
+  const ids = [...new Set(today.flatMap((r) => (r.tournament_id ? [r.tournament_id] : [])))];
   if (!ids.length) return [];
   const names = await tourTable(supabase, 'golf_tournaments').select('id, name').in('id', ids);
   if (names.error) return null;
-  return ((names.data ?? []) as Array<{ id: string; name: string | null }>).map((t) => ({ tournamentId: t.id, name: (t.name ?? '').trim() || 'Tournament' }));
+  return ((names.data ?? []) as Array<{ id: string; name: string | null }>).filter((t) => ids.includes(t.id)).map((t) => ({ tournamentId: t.id, name: (t.name ?? '').trim() || 'Tournament' }));
 }
 
 /** Names for the players in a set of lanes, through the one function a teammate may use (security review S4). */
@@ -168,6 +182,6 @@ export async function fetchLiveSnapshot(supabase: LiveClient, a: SnapshotArgs): 
   // The privacy rule, in the open: a player with a round on the course sees no teammates' lanes (RLS already withholds them).
   const own = a.playerId ? lanes.find((l) => l.playerId === a.playerId) : undefined;
   const viewerOnCourse = a.role === 'player' && viewerWithheld(own, a.now.getTime());
-  const events = a.role === 'coach' ? await readLiveEvents(supabase, a.teamId) : [];
+  const events = a.role === 'coach' ? await readLiveEvents(supabase, a.teamId, { today, zone: a.zone }) : [];
   return { teamId: a.teamId, lanes, events: events ?? [], roster, zone: a.zone, fetchedAt: nowIso, source, viewerOnCourse, error: failed || events === null };
 }

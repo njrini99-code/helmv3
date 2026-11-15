@@ -20,6 +20,8 @@ import { Menu } from '../../../ui/Menu';
 import { InlineNotice } from '../../../ui/Notices';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { PracticePlanSheet } from './sheet/PracticePlanSheet';
+// The card brings its own sheet, so it is styled wherever it is drawn: quick chat on Home had none (coach audit, 13 Nov 2026).
+import '../../../styles/coachhelm-plan.css';
 import { useToast } from '../../../ui/Toast';
 import { printPlan, sharePlanPdf } from './PrintPlan';
 import { toSheetModel } from './sheet/plan-sheet-model';

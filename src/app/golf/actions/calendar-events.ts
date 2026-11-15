@@ -16,7 +16,6 @@ import { loadInvitedMeetingIds } from '@/lib/calendar/meeting-invites';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
-import { rpcAttendanceCounts } from '@/lib/golf/attendance-counts-rpc';
 import { fanOutEventCancelled, fanOutEventInvitation } from '@/lib/calendar/fan-out';
 import { resolveTeamTimeZone } from '@/lib/calendar/availability';
 import { formatNoticeWhen } from '@/lib/calendar/timezone';
@@ -2018,11 +2017,11 @@ async function getEventRSVPImpl(eventId: string): Promise<ActionResult<RSVPStats
     const { getEventRSVPStats } = await import('@/lib/calendar/rsvp');
     const stats = await getEventRSVPStats(eventId, supabase);
 
-    // Once migration 20261017102000 limits a player to their own attendance row, the rows above are only theirs;
-    // the totals come from golf_event_attendance_counts, which returns numbers for the caller's own teams. Before the
-    // migration the function is missing (PGRST202 / 42883) and the row totals stand; for a coach both agree.
+    // Migration 20261017102000 (applied 2026-11-15) limits a player to their own attendance row, so the rows above are
+    // only theirs; the totals come from golf_event_attendance_counts, which returns numbers for the caller's own teams.
+    // A failed counts read keeps the row totals and never fails the load; for a coach both agree.
     const row = await Promise.resolve()
-      .then(() => rpcAttendanceCounts(supabase, [eventId]))
+      .then(() => supabase.rpc('golf_event_attendance_counts', { p_event_ids: [eventId] }))
       .then(({ data, error }) => (error ? undefined : data?.[0]))
       .catch(() => undefined);
     if (row && row.invited > stats.summary.total) {

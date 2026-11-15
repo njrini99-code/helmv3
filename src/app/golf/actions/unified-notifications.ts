@@ -41,7 +41,10 @@ import {
   normalizeCalendarNotificationRow,
   partitionExpiredReceipts,
   normalizeNotificationRow,
+  notificationTeamRef,
   type NotificationSource,
+  type NotificationTeam,
+  type NotificationTeamRef,
   type RawCalendarNotificationRow,
   type RawNotificationRow,
   type UnifiedNotificationItem,
@@ -123,6 +126,49 @@ async function expiredReceipts(
   } catch {
     return none;
   }
+}
+
+/**
+ * The team each item is for (coach audit 13 Nov 2026, §2 and §7: with Guilford active, the bell showed Demo University's
+ * messages with nothing to say whose they were). Neither table has a team column: a message's team is its conversation's,
+ * read with the team's name in one embedded read, beside the names of teams a row's data names. Never fails the feed: a
+ * read that errors or throws leaves every item with no team, and is logged.
+ */
+async function withTeams(
+  supabase: ServerClient,
+  items: UnifiedNotificationItem[],
+  refs: ReadonlyMap<string, NotificationTeamRef>,
+): Promise<UnifiedNotificationItem[]> {
+  const keyOf = (i: Pick<UnifiedNotificationItem, 'source' | 'id'>) => `${i.source}:${i.id}`;
+  const wanted = items.map((i) => refs.get(keyOf(i))).filter((r): r is NotificationTeamRef => !!r);
+  if (!wanted.length) return items.map((i) => ({ ...i, team: null }));
+  const conversationIds = [...new Set(wanted.filter((r) => r.kind === 'conversation').map((r) => r.id))];
+  const teamIds = [...new Set(wanted.filter((r) => r.kind === 'team').map((r) => r.id))];
+  const byConversation = new Map<string, NotificationTeam | null>();
+  const byTeam = new Map<string, NotificationTeam>();
+  try {
+    const [conversations, teams] = await Promise.all([
+      conversationIds.length
+        ? supabase.from('golf_conversations').select('id, team:golf_teams(id, name)').in('id', conversationIds)
+        : Promise.resolve({ data: [], error: null }),
+      teamIds.length ? supabase.from('golf_teams').select('id, name').in('id', teamIds) : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (conversations.error) throw conversations.error;
+    if (teams.error) throw teams.error;
+    for (const c of conversations.data ?? []) byConversation.set(c.id, c.team ? { id: c.team.id, name: c.team.name } : null);
+    for (const t of teams.data ?? []) byTeam.set(t.id, { id: t.id, name: t.name });
+  } catch (error) {
+    await logServerError(`getUnifiedNotifications: team lookup failed: ${describeError(error)}`, {
+      action: 'getUnifiedNotifications',
+      featureArea: 'notifications',
+    });
+    return items.map((i) => ({ ...i, team: null }));
+  }
+  return items.map((i) => {
+    const ref = refs.get(keyOf(i));
+    const team = !ref ? null : ref.kind === 'team' ? byTeam.get(ref.id) : byConversation.get(ref.id);
+    return { ...i, team: team ?? null };
+  });
 }
 
 // ============================================================================
@@ -207,10 +253,18 @@ async function getUnifiedNotificationsImpl(
     const notificationItems = notificationRows
       .filter((row) => !expired.has(row.id))
       .map((row) => normalizeNotificationRow(row));
-    const calendarItems = (calendarResult.data ?? []).map((row) =>
-      normalizeCalendarNotificationRow(row as RawCalendarNotificationRow),
-    );
-    const items = before
+    const calendarRows = (calendarResult.data ?? []) as RawCalendarNotificationRow[];
+    const calendarItems = calendarRows.map((row) => normalizeCalendarNotificationRow(row));
+    const teamRefs = new Map<string, NotificationTeamRef>();
+    for (const row of notificationRows) {
+      const ref = notificationTeamRef(row);
+      if (ref) teamRefs.set(`notifications:${row.id}`, ref);
+    }
+    for (const row of calendarRows) {
+      const ref = notificationTeamRef(row);
+      if (ref) teamRefs.set(`golf_calendar_notifications:${row.id}`, ref);
+    }
+    const page = before
       ? mergeAndSortNotifications(notificationItems, calendarItems, limit)
       : composeFirstPage({
           notifications: notificationItems,
@@ -218,6 +272,7 @@ async function getUnifiedNotificationsImpl(
           staleCalendarCount: staleCalendar.count ?? 0,
           limit,
         });
+    const items = await withTeams(supabase, page, teamRefs);
 
     const unreadCount =
       Math.max(0, (notificationsUnread.count ?? 0) - expiredUnread) + (calendarUnread.count ?? 0);

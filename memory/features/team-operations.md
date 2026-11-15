@@ -207,6 +207,17 @@ unpublished,
 - The builder saves by id with the version it read, 800ms after an edit
   (`useAutosave`). `savePracticePlan` takes a null version only for a first save
   by event, and a save on a plan another coach changed is stale, never merged.
+- Every save sends `toSaveBody(body)` (`lib/coachhelm/v3/practice-plan/model.ts`):
+  a Stations block whose grid is automatic (`grid: null` in the client) goes
+  without a `grid` key, because the save function reads a null grid as one empty
+  cell and refused the save (coach audit, 13 Nov 2026). `parsePlanBody` reads a
+  missing grid back as `null`.
+- After three failed saves the head says why ("Couldn’t save: <the action's
+  message> · Try again"), and Back asks before leaving edits that did not save
+  or CoachHelm suggestions not yet kept (`useAutosave().unsaved()`, `Builder`).
+- Practice groups (`savePracticeGroup`, `deletePracticeGroup`) show in the
+  Groups list as soon as the action answers; the page's next server render
+  replaces that list.
 - CoachHelm's Fill the draft runs the Ask stream
   and `draft_practice_plan`, which writes nothing. Its blocks are suggestions
   until kept; a kept Why reaches `coach_why` through `savePracticePlanDraft`.

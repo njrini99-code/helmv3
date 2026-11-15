@@ -1817,6 +1817,19 @@ button.ch-more__row[disabled] {
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
+/* Another team's item names its team (coach audit 13 Nov 2026, §2): a flat chip under the title. */
+.ch-bellp__team {
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 1px 8px;
+  border-radius: var(--ch-radius-xs);
+  background: var(--ch-chip-flat-bg);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-12-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .ch-bellp__txt {
   display: -webkit-box;
   overflow: hidden;
@@ -2174,6 +2187,12 @@ html[data-ch-ua-pop] .ch-pscreen::after {
      page at 1920, so its title jumped between tabs). */
   [data-ui='clubhouse'] main:is([data-canopy], [data-ch-crh='on'], .ch-prc):not([data-ch='your-week']) {
     margin-inline: max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) auto;
+  }
+  /* The plan builder fills the frame like the CoachHelm file and is left out: with the edge's margin its full width ran 160px
+     past a 1920 window and Publish was off-screen (coach audit, 13 Nov 2026). It keeps Practice's own margin (practice.css
+     .ch-prc). The same weight as the rule above and after it, so it wins. */
+  [data-ui='clubhouse'] main.ch-prc[data-ch='practice-builder'] {
+    margin-inline: 0 auto;
   }
 }
 
@@ -3794,6 +3813,18 @@ html[data-fw-theme='dark'] .ch-offline {
     border-radius: var(--ch-radius-sm);
     background: var(--ch-green-fill-600);
     color: var(--ch-text-on-accent);
+  }
+  /* Another team's item names its team (coach audit 13 Nov 2026, §2): a flat chip that gives way to the time. */
+  .ch-bst-card__team {
+    min-width: 0;
+    overflow: hidden;
+    padding: 1px 8px;
+    border-radius: var(--ch-radius-xs);
+    background: var(--ch-chip-flat-bg);
+    color: var(--ch-text-secondary);
+    font: var(--ch-type-12-strong);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .ch-bst-card__when {
     display: inline-flex;

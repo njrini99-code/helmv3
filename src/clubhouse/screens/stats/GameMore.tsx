@@ -1,3 +1,4 @@
+import { roundShares } from '../../lib/shares';
 import type { ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChPuttBand } from '../../data/stats-common';
@@ -119,15 +120,15 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           ]}
         />
       </Panel>
-      <Panel title="Toughest holes" wide note={`Average to par by hole number across these rounds. A hole needs ${x.toughest?.minPlays ?? 3} plays to be ranked.`}>
+      <Panel title="Toughest holes" wide note={`Average to par by course and hole. A hole needs ${x.toughest?.minPlays ?? 3} plays on its course to be ranked.`}>
         <Shots error={x.holesError} code="CH-5209" what="Toughest holes" onRetry={onRetry}>
           {x.toughest && x.toughest.holes.length > 0 ? (
             <ol className="ch-gx-rank">
               {x.toughest.holes.map((h, i) => (
-                <li key={h.hole}>
+                <li key={`${h.course}#${h.hole}`}>
                   <span className="ch-gx-rank__n ch-num">{i + 1}</span>
                   <b>
-                    Hole {h.hole} · Par {h.par}
+                    Hole {h.hole} · {h.course} · Par {h.par}
                   </b>
                   <em className="ch-num">
                     {h.plays} plays · {h.doublePlus} double or worse
@@ -137,7 +138,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
               ))}
             </ol>
           ) : x.toughest?.belowFloor ? (
-            <Empty code="CH-5311">Need {x.toughest.minPlays}+ plays of a hole before it can be ranked. No hole has been played that often in this window yet.</Empty>
+            <Empty code="CH-5311">Need {x.toughest.minPlays}+ plays of a hole on one course before it can be ranked. No hole has been played that often in this window yet.</Empty>
           ) : (
             <Empty code={NOTHING}>No hole-by-hole scores in this window.</Empty>
           )}
@@ -342,6 +343,8 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
   const rec = s as unknown as Record<string, number | null>;
   const nine = x.puttBandsNine;
   const hasPutts = s.totalPutts > 0;
+  // First putts from each band are shares of one whole, so they are rounded together and add to 100 (it read 102%).
+  const firstShares = roundShares(BANDS.map(([, key]) => s.firstPuttDistanceByBand?.[key] ?? 0));
   const rows = BANDS.map(([label, key, field, effKey, proxKey], i) => {
     const b = nine?.[i];
     // Shot-level counts when they loaded (every band has an exact count); the calculator's own rate otherwise (counts only for the first five).
@@ -354,7 +357,7 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
     return {
       key,
       head: label,
-      cells: [make, n == null ? NO_DATA : String(n), share == null ? NO_DATA : pct(share), leave == null ? NO_DATA : ft(leave), num(rec[effKey], 2), ft(rec[proxKey])],
+      cells: [make, n == null ? NO_DATA : String(n), share == null ? NO_DATA : `${firstShares[i]}%`, leave == null ? NO_DATA : ft(leave), num(rec[effKey], 2), ft(rec[proxKey])],
     };
   });
   const cell = (brk: (typeof BREAKS)[number][0], field: string) => {

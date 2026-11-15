@@ -19,7 +19,7 @@ import { Section } from '../../ui/Section';
 import { SideScroll } from '../../ui/SideScroll';
 import { EmptyState, SkelLine, SkelRows, Skeleton } from '../../ui/States';
 import { TrustChip } from '../../ui/TrustChip';
-import { daysUntil, inDays, teamToday, tourDay, tourDayTime, tourRange } from './format';
+import { daysUntil, inDays, playerShowChip, teamToday, tourDay, tourDayTime, tourRange } from './format';
 import { cardLine, HoleSheet } from './HoleSheet';
 import { STATUS_WORDS } from './score-entry';
 import { TourChip, TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, ToPar, tourGate, useTourPhone } from './parts';
@@ -172,7 +172,7 @@ function ListPage({ data, phone }: { data: ChTourPlayerData; phone: boolean }) {
  * the foot can hold a second one, the single event that follows (`then`).
  */
 function NextCard({ row: x, today, timezone, href, phone, then }: { row: ListRow; today: string; timezone: string; href: string; phone: boolean; then?: { row: ListRow; href: string } }) {
-  const live = x.status === 'live';
+  const live = x.show === 'live';
   const days = daysUntil(today, x.startDate);
   return (
     <FeatureCard
@@ -180,7 +180,7 @@ function NextCard({ row: x, today, timezone, href, phone, then }: { row: ListRow
       href={phone ? undefined : href}
       label={phone ? `Up next: ${x.name}` : undefined}
       kicker={<Bits items={[tourRange(x.startDate, x.endDate), x.courseName]} />}
-      chip={live ? 'Live now' : inDays(today, x.startDate)}
+      chip={playerShowChip(x, today)}
       soon={live || (days >= 0 && days <= 1)}
       title={
         phone ? (
@@ -201,7 +201,7 @@ function NextCard({ row: x, today, timezone, href, phone, then }: { row: ListRow
             <span className="ch-tour-pl-next__then-t">
               <span className="ch-sr-only">Also coming up: </span>
               <b>{then.row.name}</b>
-              <Bits items={[tourRange(then.row.startDate, then.row.endDate), then.row.courseName, then.row.status === 'live' ? 'Live now' : inDays(today, then.row.startDate)]} />
+              <Bits items={[tourRange(then.row.startDate, then.row.endDate), then.row.courseName, playerShowChip(then.row, today)]} />
             </span>
             <Icon icon={ChevronRight} size={16} />
           </Link>

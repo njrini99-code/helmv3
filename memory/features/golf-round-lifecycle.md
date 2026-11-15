@@ -177,6 +177,16 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   taken-rounds or entries read fails, instead of showing every round free.
   Held `20261017110000` makes `recompute_golf_round_totals` keep unrecorded
   putts NULL (apply after `20260708141000`).
+- Stored totals follow holes (audit F-0003, `20261114090100`, held: applied on
+  staging 2026-11-14, production pending): on a COMPLETED round whose hole rows
+  number `holes_played` and are all scored, `recompute_golf_round_totals` also
+  sets `total_score` = SUM(score) and `score_to_par` = SUM(score) - SUM(par),
+  the same sums `round-submit.ts` writes. An in-progress round, a completed
+  round missing a hole row or a score, and the middle of submit's hole rewrite
+  keep what is stored. The same file backfills the 15 rounds whose total was a
+  stroke off, archiving each first (see its HELD.md row). Until production
+  runs it, read a round's total through
+  `src/lib/golf/round-total.ts` (front + back nine first), as today.
 - Test rounds (OD-03, 2026-09-27): `golf_rounds.is_test = true` marks a QA or
   demo round. List and aggregate reads (the rounds list, home, recent
   courses) filter `.eq('is_test', false)`; by-id reads (round detail, review,
