@@ -699,6 +699,21 @@
 .ch-hsw.is-phone .ch-seg__b {
   flex: 1;
 }
+/* Ask under the phone row (N13C-67): its own heights (coachhelm-ask.css) less the 52px row, so the chat still ends at the tab
+   bar or the keyboard and the page does not scroll under it. Here, with the class that owns the row: a page stylesheet anchors
+   only its own classes (scripts/clubhouse/css-owners.mjs). */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-hsw.is-phone + .ch-ask {
+    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--ch-tabbar-h) - env(safe-area-inset-bottom) - var(--keyboard-height, 0px) - 52px);
+  }
+  /* With the tabs hidden the dock carries the home indicator's inset (ASK-13), so no bottom inset here. */
+  .ch-root[data-phone-notabs] .ch-hsw.is-phone + .ch-ask {
+    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--keyboard-height, 0px) - 52px);
+  }
+  .ch-hsw.is-phone + .ch-ask[data-ch-vv] {
+    height: calc(var(--ch-vv-h) + var(--ch-vv-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - 52px);
+  }
+}
 
 /* A switch of view (the strip's own pending state, screens/coachhelm/use-view-switch.ts): the strip has already moved, so the
    header and the strip stay crisp and what is changing stops answering taps until the next view is ready, then is replaced in

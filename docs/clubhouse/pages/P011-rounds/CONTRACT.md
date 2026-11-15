@@ -332,11 +332,11 @@ success haptic.
 A posted round opens its review with `?just=submitted` (the submit path's own
 navigation and its link). The review's round card (CH-11920 to CH-11924,
 `screens/rounds/card/`) is whole in its first frame (MOTION-AND-VISUAL 3.12) and
-says one quiet line about the round, using only figures the page shows; the success haptic was
-fired by the submit path and the card fires none. The parameter is taken out of
-the address after it is read, so a reload does not replay it. Share draws the
-card as a 1200px picture on the device (Canvas 2D) and hands it to the share
-sheet, or downloads it; nothing goes to a server.
+says one quiet line about the round, using only figures the page shows; the
+success haptic was fired by the submit path and the card fires none. The
+parameter is taken out of the address after it is read, so a reload does not
+replay it. Share draws the card as a 1200px picture on the device (Canvas 2D)
+and hands it to the share sheet, or downloads it; nothing goes to a server.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
