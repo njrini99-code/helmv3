@@ -10783,6 +10783,12 @@ BEGIN
       END IF;
     END LOOP;
   END IF;
+  -- The team's baseline scale prices the off-green game only (SC-04): a putt
+  -- keeps the Tour putting curve, so a holed 1-foot putt gains 0.00 on every
+  -- baseline instead of +0.083 on the women's.
+  IF p_lie = 'green' THEN
+    RETURN v_es;
+  END IF;
   RETURN v_es * COALESCE(p_scale, 1.0);
 END;
 $$;

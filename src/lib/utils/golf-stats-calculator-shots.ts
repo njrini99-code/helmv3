@@ -716,8 +716,9 @@ export function getExpectedStrokes(lie: string | null, distanceYards: number, di
   if (!lie) return 0;
   if (lie === 'green' && distanceFeet !== undefined) {
     // Putting — distance is feet, never converted (see normalizePuttFeet), and
-    // interpolated across the green make-rate curve.
-    return interpolateBenchmark(STROKES_GAINED_BENCHMARKS.green, distanceFeet) * scale;
+    // interpolated across the green make-rate curve. Never scaled (SC-04): a
+    // holed 1-foot putt gains 0.00 on every baseline, as in the DB.
+    return interpolateBenchmark(STROKES_GAINED_BENCHMARKS.green, distanceFeet);
   }
 
   // DC-SG-3: tee shots use a single continuous tee curve (100-600yd). The old
@@ -738,11 +739,12 @@ export function getExpectedStrokes(lie: string | null, distanceYards: number, di
     benchmarkTable = STROKES_GAINED_BENCHMARKS.fairway;
   }
 
-  // Per-team SG baseline scale (women's 1.083, NCAA D1/D2/D3, etc.) multiplies the
-  // expected-strokes curve, mirroring the DB sg_expected_strokes(...,p_scale)
-  // (RETURN v_es * COALESCE(p_scale,1.0)). The -1 stroke charged per shot stays
-  // UNSCALED (applied by the caller), so SG = scale·E_before − 1 − scale·E_after.
-  return interpolateBenchmark(benchmarkTable, distanceYards) * scale;
+  // Per-team SG baseline scale (the women's estimate, 1.083) multiplies the
+  // off-green expected-strokes curve, mirroring the DB sg_expected_strokes(...,
+  // p_scale), which leaves the putting value unscaled (20261115220000, SC-04).
+  // The -1 stroke charged per shot stays UNSCALED (applied by the caller), so
+  // SG = scale·E_before − 1 − scale·E_after off the green.
+  return interpolateBenchmark(benchmarkTable, distanceYards) * (lie === 'green' ? 1 : scale);
 }
 
 // Calculate Strokes Gained for a shot

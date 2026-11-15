@@ -23,6 +23,7 @@ import {
   AROUND_GREEN_THRESHOLD_YARDS,
 } from '../golf-stats-calculator-shots';
 import type { GolfStats, RawShot, HoleInfo } from '../golf-stats-calculator-shots';
+import { sgBaselineScale } from '@/lib/golf/sg-benchmarks';
 import {
   makeRawShot,
   makeHoleInfo,
@@ -1137,6 +1138,29 @@ describe('calculateStrokesGainedForShot edge cases', () => {
     expect(sg).not.toBeNull();
     // SG = expected(30yd sand) - (1 + expected(10ft green)) = 2.66 - (1 + 1.61) = 0.05
     expect(sg).toBeCloseTo(0.05, 2);
+  });
+
+  it('a holed 1-foot putt gains 0.00 on the Tour baseline and on the women\'s estimate (SC-04)', () => {
+    const shot = makeRawShot({
+      lie_before: 'green', distance_to_hole_before: 1, distance_unit_before: 'feet',
+      result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+    });
+    for (const key of ['pga_tour', 'womens'] as const) {
+      expect(calculateStrokesGainedForShot(shot, sgBaselineScale(key)), key).toBeCloseTo(0, 6);
+    }
+  });
+
+  it('the women\'s estimate scales the off-green curve and leaves putts on the Tour putting curve (SC-04)', () => {
+    const womens = sgBaselineScale('womens');
+    expect(womens).toBe(1.083);
+    expect(getExpectedStrokes('fairway', 100, undefined, womens)).toBeCloseTo(2.80 * 1.083, 6);
+    expect(getExpectedStrokes('green', 0, 10, womens)).toBeCloseTo(1.61, 6);
+    // An approach to 10 ft from 150 yd in the fairway: 1.083 × 2.945 − 1 − 1.61.
+    const approach = makeRawShot({
+      lie_before: 'fairway', distance_to_hole_before: 150, distance_unit_before: 'yards',
+      result: 'green', distance_to_hole_after: 10, distance_unit_after: 'feet',
+    });
+    expect(calculateStrokesGainedForShot(approach, womens)).toBeCloseTo(1.083 * 2.945 - 1 - 1.61, 6);
   });
 });
 

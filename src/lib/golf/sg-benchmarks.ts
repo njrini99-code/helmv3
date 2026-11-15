@@ -55,6 +55,10 @@ export type BenchmarkLevel =
  * (migration 20260607170000), keyed off golf_teams.gender (20260607160000).
  * This constant mirrors the DB factor so any TS-side SG recompute or benchmark
  * display agrees. KEEP IN SYNC with the DB `v_womens_scale` constant.
+ *
+ * It is an estimate on the men's curve, not an LPGA dataset, and it scales the
+ * off-green curve only: a putt reads the Tour putting curve, so a holed 1-foot
+ * putt gains 0.00 on every baseline (SC-04, migration 20261115220000).
  */
 export const WOMENS_SG_SCALE = 1.083;
 
@@ -94,7 +98,8 @@ export interface SgBaselineOption {
 
 export const SG_BASELINE_OPTIONS: SgBaselineOption[] = [
   { key: 'pga_tour', label: 'PGA Tour', scale: 1.0,            description: 'Men’s professional (Broadie / ShotLink), the reference for men’s teams.' },
-  { key: 'womens',   label: 'LPGA',     scale: WOMENS_SG_SCALE, description: 'Women’s Tour baseline, the reference for women’s teams.' },
+  // Not an LPGA dataset (SC-04): the men's Tour curve raised 8.3% off the green, putts unscaled.
+  { key: 'womens',   label: 'Men’s Tour, women’s estimate', scale: WOMENS_SG_SCALE, description: 'The men’s Tour curve raised 8.3% off the green for women’s teams; putting uses the Tour putting curve.' },
 ];
 
 const SG_BASELINE_SCALE_BY_KEY: Record<SgBaselineKey, number> = SG_BASELINE_OPTIONS.reduce(
