@@ -21,7 +21,7 @@ export interface SegOption<V extends string> {
 /**
  * The recessed well with a raised, pressed chip: the owner's "depth like the
  * toggles". The chip slides between options over the base beat (260 ms) on the iOS curve, with no overshoot, and the
- * content under it swaps at once (MOTION-AND-VISUAL 3.3, 4.2's motion line). A change ticks the selection haptic, by tap
+ * content under it swaps at once (MOTION-AND-VISUAL 3.3, 4.2's motion line; CH-1615). A change ticks the selection haptic, by tap
  * or by the arrow keys, which move the selection like a native segmented control. Under Reduce Motion the chip fades in
  * at its new place over 180 ms (3.11); Animations off moves it at once.
  *

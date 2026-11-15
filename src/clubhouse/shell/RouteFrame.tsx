@@ -26,7 +26,7 @@ import { useRouteSwipe } from './use-route-swipe';
  * - With motion on, a section switch (the tab bar, a sidebar item) and every phone navigation swap at once, with no view
  *   transition at all: the boundary keeps its key, so React starts no document transition and snapshots nothing. A
  *   phone drill-in pushes and Back pops on the live page instead (lib/nav-motion.ts, use-route-swipe.ts).
- * - Settings › Animations off renders without a boundary: the page swaps at once.
+ * - Settings › Animations off renders without a boundary: the page swaps at once. CH-1601.
  * A page that arrives after its route skeleton fades in over it (useSkeletonReveal, CH-1619); a skeleton marked
  * data-ch-arrive="crossfade" crossfades with it on the quick beat instead (READ-S4). The skeleton itself is whole in its
  * first frame, except onto a crossfade, where it waits out the hold.
