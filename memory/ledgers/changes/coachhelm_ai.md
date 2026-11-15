@@ -682,3 +682,20 @@
   `typecheck`/`lint`/`docs:check` clean on touched files. Not wired into
   any generator, composite, route, or page — pure core + tests only, same
   posture as A0–A6.
+
+## 2026-11-15 — a course name is not a club word in the coach copy
+
+- SHA: a308b9f8c8 (PR #2486, the health routine's PR).
+- Change: `ComposedContent.names` lists the proper nouns a read quotes
+  (`CourseMgmtGenerator`: its worst holes' course names). `BaseGenerator`
+  passes them to `coachCopyIssues`, whose club-word and second-person checks
+  now read the coach copy without them; the number check still reads the
+  whole text. Nothing new is stored.
+- Why: incident `4fb650c5` ("CourseMgmtGenerator: coach copy not stored
+  (content: club word)", both course-management variants, 2026-11-15 02:01Z).
+  "Oak Hollow Country Club" tripped `CLUB_WORDS`, and 21 of 79 production
+  course names contain "Club", so those players' coaches read the player's
+  second-person text instead of the coach copy.
+- Test: `src/lib/coachhelm/v3/engine/__tests__/coach-copy-course-names.test.ts`
+  (fails on the parent commit, passes on the fix); replay manifest
+  `replay/manifests/coach-copy-course-name-club-word-2026-11-15.yml`.

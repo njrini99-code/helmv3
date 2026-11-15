@@ -133,6 +133,12 @@ export interface ComposedContent {
    * "you", no club). Omitted → coaches see `title`/`content`.
    */
   coach?: { title: string; content: string };
+  /**
+   * Proper nouns the copy quotes as written (course names). `coachCopyIssues`
+   * reads the coach copy without them, so "Oak Hollow Country Club" is not a
+   * club word (incident 4fb650c5). Never stored.
+   */
+  names?: readonly string[];
 }
 
 /** Convenience re-exports for generator authors. */

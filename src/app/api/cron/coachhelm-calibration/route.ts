@@ -20,20 +20,13 @@ import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 const LOOKBACK_DAYS = 90;
-/**
- * PostgREST caps every response at 1000 rows, so 5000 here was a number that
- * lied — it returned 1000. Calibration is a statistical aggregate, so a
- * truncated, unordered sample would skew the curve silently. 661 validations
- * existed on 2026-10-24 (633 in the 90-day window), so this bound is close:
- * if it can bite, paginate with fetchAllRowsResult rather than raising it.
- */
-const BATCH_LIMIT = 1000;
 
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
@@ -50,12 +43,17 @@ async function handleCalibration(): Promise<NextResponse> {
   // so fetch validations and parent predictions separately and zip in memory.
   // (An FK now links the two tables; doing two queries keeps the type system
   // honest while still allowing a future migration to push this into a view.)
-  const { data: validations, error: vErr } = await supabase
-    .from('golf_prediction_validations')
-    .select('prediction_id, within_interval')
-    .gte('validated_at', sinceIso)
-    .not('prediction_id', 'is', null)
-    .limit(BATCH_LIMIT);
+  // Paginated: the window held 1253 validations on 2026-11-08, so a single
+  // capped read dropped about a fifth of them. Ordered by id so pages are stable.
+  const { data: validations, error: vErr } = await fetchAllRowsResult((from, to) =>
+    supabase
+      .from('golf_prediction_validations')
+      .select('prediction_id, within_interval')
+      .gte('validated_at', sinceIso)
+      .not('prediction_id', 'is', null)
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
 
   if (vErr) {
     await logServerError(

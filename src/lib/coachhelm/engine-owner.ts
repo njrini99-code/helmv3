@@ -27,7 +27,9 @@ export async function resolveEngineOwner(admin: AdminClient, playerId: string): 
     .eq('player_id', playerId)
     .eq('status', 'active')
     .limit(1)
-    .single();
+    // maybeSingle, not single: zero rows is an expected answer (the engine parks the player), and .single() turns it into an
+    // HTTP 406 (PGRST116) that the reliability collector files as a roster-sweep failure (rel:7d52f412).
+    .maybeSingle();
   if (!membership?.team_id) return { kind: 'no_team' };
 
   const teamId = membership.team_id;
@@ -48,7 +50,7 @@ export async function resolveEngineOwner(admin: AdminClient, playerId: string): 
     .order('created_at', { ascending: true, nullsFirst: true })
     .order('id', { ascending: true })
     .limit(1)
-    .single();
+    .maybeSingle();
   if (!coach) return { kind: 'no_coach', teamId };
   const coachId = coach.id as string;
 

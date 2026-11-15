@@ -1,0 +1,36 @@
+schema_version: 1
+replay_id: sentry-held-migration-ignore-2026-11-15
+incident_id: sentry:JAVASCRIPT-NEXTJS-1M6
+feature_id: observability_sentry
+title: >-
+  The Supabase integration captured PostgREST's "Could not find the function
+  public.refresh_player_standing_season" at the driver every 5 minutes
+  although standing-refresh-dirty treats it as skipped: 'season-not-applied'
+  (its migration is HELD); the server ignoreErrors now names that RPC, the
+  held season table and the held extended performance columns exactly.
+bad_version: 8bdc7c36a05c0773ae24c3fa9d9999942b6b749b
+fixed_version: e20cd37ce7aeb5a9416a3ebc61c3039c0088ed1f
+fixture:
+  - source: instrumentation-held-migration-ignore.test.ts
+    target: src/__tests__/instrumentation-held-migration-ignore.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/__tests__/instrumentation-held-migration-ignore.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    The test holds PostgREST's generic error wording with schema object
+    names from the repository's own migrations; no production rows, user
+    data, tokens or Sentry payloads. The event count (119 in 24h) is
+    described here and in the commit, not stored.
+source_incident_status: open
+created_at: "2026-11-15"
+notes: >-
+  On bad_version 6 of 10 tests fail (the three "drops ..." cases on the
+  nodejs and edge runtimes, "expected false to be true"); the live-object
+  negatives and the two HELD.md guards pass on both versions. Related but
+  not fixed: rel:09079093, the reliability collector's filing of the same
+  5-minute PostgREST 404, which stops only when Step 7b is applied.

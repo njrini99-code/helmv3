@@ -24540,6 +24540,7 @@ export type Database = {
         Args: { p: Json; p_expected_version: number; p_round_event_id: string }
         Returns: Json
       }
+      golf_typing_topic_allowed: { Args: { p_topic: string }; Returns: boolean }
       golf_user_in_conversation_team_audience: {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
