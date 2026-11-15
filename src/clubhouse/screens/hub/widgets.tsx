@@ -15,7 +15,7 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { WeekStrip } from '../../ui/WeekStrip';
 import { EmptyState } from '../../ui/States';
-import { firstBusyDay, lateBy, ledgerSorted, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
+import { dayHolds, firstBusyDay, lateBy, ledgerSorted, tripStay, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
 import { Acknowledgement, ReplyChoices, repliesLine, useTaskSave } from './parts';
 import { plural } from '../../lib/plural';
 
@@ -123,7 +123,7 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
     const word = t.inDays != null ? countLabel(t.inDays) : null;
     const stops = [
       { k: 'Leaves', v: keepTokens(clk(t.depart ?? t.dates)), s: t.from },
-      { k: 'Stays', v: t.hotel ?? 'Hotel not set', s: t.destination ? t.destination.replace(/ · /g, '\u00a0· ') : null },
+      { k: 'Stays', v: tripStay(t), s: t.destination ? t.destination.replace(/ · /g, '\u00a0· ') : null },
       { k: 'Home', v: keepTokens(clk(t.back ?? 'Not set')), s: null },
     ];
     const names = t.travelers ?? [];
@@ -306,7 +306,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
               dots: d.events.length,
               flag: d.trip ? 'trip' : undefined,
               // F-0011: the name opens with the face, "Today 14" or "Wed 15" (WeekStrip's weekDayName).
-              label: `${i === 0 ? `Today ${d.day}, ${d.weekday}` : `${d.weekday} ${d.day}`}: ${d.events.length ? plural(d.events.length, 'event') : 'nothing on'}${d.trip ? `, on the road (${d.trip})` : ''}`,
+              label: `${i === 0 ? `Today ${d.day}, ${d.weekday}` : `${d.weekday} ${d.day}`}: ${dayHolds(d)}`,
             }))}
             selected={day.date}
             onSelect={(date) => pick(days.findIndex((d) => d.date === date))}
@@ -318,10 +318,13 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
                 On the road · {day.trip}
               </p>
             )}
+            {/* A trip day is not empty (N13P-40): the trip line above says what is on, so no "Nothing on" under it. */}
             {!day.events.length ? (
-              <p className="ch-hw-agenda__none">
-                Nothing on {day.weekday} {day.day}.
-              </p>
+              !day.trip && (
+                <p className="ch-hw-agenda__none">
+                  Nothing on {day.weekday} {day.day}.
+                </p>
+              )
             ) : (
               <ol>
                 {day.events.map((e) => {
