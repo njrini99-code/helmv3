@@ -539,7 +539,7 @@ export function monthSparkBars(toPars: readonly number[]): { zero: number; bars:
 
 /**
  * A month's rounds as a row of small bars from a par line, oldest to newest: under par rises above the line, over par hangs below
- * it, on one range at least ten strokes wide (`monthSparkBars`, CH-09), and red is under par; better is up, as the season ribbon
+ * it, on one range at least ten strokes wide (`monthSparkBars`, CH-09), in the under-par tone above the line; better is up, as the season ribbon
  * above reads (stats visuals Q1). Skipped for fewer than two rounds with a par to read against.
  */
 export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {

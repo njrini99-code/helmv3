@@ -313,11 +313,11 @@
 }
 .ch-tour-rev-bar i[data-side='worse'] {
   right: calc((1 - var(--ch-tour-rev-zero, 0.5)) * 100%);
-  border-radius: var(--ch-radius-sm) var(--ch-radius-mark) var(--ch-radius-mark) var(--ch-radius-sm);
+  border-radius: var(--ch-radius-sm) 0 0 var(--ch-radius-sm);
 }
 .ch-tour-rev-bar i[data-side='better'] {
   left: calc(var(--ch-tour-rev-zero, 0.5) * 100%);
-  border-radius: var(--ch-radius-mark) var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-mark);
+  border-radius: 0 var(--ch-radius-sm) var(--ch-radius-sm) 0;
 }
 .ch-tour-rev-bar.is-now i {
   background: var(--ch-green-600);

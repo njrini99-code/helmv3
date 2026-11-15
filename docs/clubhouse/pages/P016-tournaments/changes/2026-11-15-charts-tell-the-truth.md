@@ -17,7 +17,8 @@ Held items:     none
   `barAxis`): each event's bar runs from a zero rule, better than the mark to
   the right and worse to the left, every bar on one shared scale with no floor;
   the subtitle says "right of the line beats" the mark. The side is a
-  `data-side` attribute, not a tone class (CH-02).
+  `data-side` attribute, not a tone class (CH-02). A bar is square where it
+  meets the zero rule and rounded at its far end.
 - Compare (`compare/CompareGrid.tsx` Strip): better is to the right in every
   row, so a lower-is-better row runs high to low, and each metric says
   "better to the right" (CH-14).

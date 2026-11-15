@@ -2130,7 +2130,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   left: 0;
   right: 0;
   height: 2px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-xs); /* a 2px line: the corners clamp to round ends */
   background: color-mix(in srgb, var(--ch-feature-ink) 25%, transparent);
 }
 .ch-htb .sto-axis i,
