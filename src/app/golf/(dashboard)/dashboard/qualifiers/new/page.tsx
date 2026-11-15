@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
+// Only this address's own screen: a page loads every client component it imports on first paint (MAC-11).
+import { QualifierForm } from '@/clubhouse/screens/qualifiers/QualifierForm';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 
 export const metadata: Metadata = {
@@ -12,5 +14,5 @@ export default async function NewQualifierPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
   // Clubhouse Qualifiers: a coach's form; a player gets the coach-only state (D-23, D-30).
-  return <ClubhouseQualifiersRoute view="new" />;
+  return <ClubhouseQualifiersRoute view="new" screens={{ form: QualifierForm }} />;
 }
