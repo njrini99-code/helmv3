@@ -13,14 +13,22 @@ Held items:     none
 
 ### Changed
 
-- The coach Home page and the phone sparkline sit on the page paint; Player Home's scoring chart gives under par one colour (the dots match the red labels, PL-HOME-05 interim) and draws straight segments between rounds instead of curves (PL-HOME-06); its toggle loses the page's own unselected ink rule.
-- The shared change (page, cards, ink, charts, toggle, keys, elevations, radii) is logged once in
+- The coach Home page and the phone sparkline sit on the page paint; Player
+  Home's scoring chart gives under par one colour (the dots match the red
+  labels, PL-HOME-05 interim) and draws straight segments between rounds instead
+  of curves (PL-HOME-06); its toggle loses the page's own unselected ink rule.
+- The shared change (page, cards, ink, charts, toggle, keys, elevations, radii)
+  is logged once in
   [docs/clubhouse/changes/2026-11-15-ivory-page-one-system.md](../../../changes/2026-11-15-ivory-page-one-system.md).
 
 ### Why
 
-- Nick's 15 Nov calls ("Bring the ivory gradient back", "Ivory cards, deeper page", "The Practice-style toggle everywhere") and the production audit's specs S1.1 to S2.8.
+- Nick's 15 Nov calls ("Bring the ivory gradient back", "Ivory cards, deeper
+  page", "The Practice-style toggle everywhere") and the production audit's
+  specs S1.1 to S2.8.
 
 ### Verification
 
-- Unit tests for tokens, page colour, contrast, toggles and ratchets; before and after screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.
+- Unit tests for tokens, page colour, contrast, toggles and ratchets; before and
+  after screenshots at 393 and 1440, light and dark, Chromium (tier C), in the
+  PR.

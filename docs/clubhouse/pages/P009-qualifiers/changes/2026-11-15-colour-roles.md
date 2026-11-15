@@ -13,7 +13,8 @@ Held items:     none
 
 ### Changed
 
-- To par under par is the gain: the feature gain on the green scoreboard, the hero plates and the round shape; the counts' birdie chip is a green wash.
+- To par under par is the gain: the feature gain on the green scoreboard, the
+  hero plates and the round shape; the counts' birdie chip is a green wash.
 - The shared change is logged once in
   [docs/clubhouse/changes/2026-11-15-colour-roles.md](../../../changes/2026-11-15-colour-roles.md).
 
@@ -23,4 +24,5 @@ Held items:     none
 
 ### Verification
 
-- Unit tests for the red check and the under-par tokens; before and after screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.
+- Unit tests for the red check and the under-par tokens; before and after
+  screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.
