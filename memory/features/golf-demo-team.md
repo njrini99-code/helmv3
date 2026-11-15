@@ -63,7 +63,7 @@ with pruning off.
 | Daily cron, 09:35 UTC | `src/app/api/cron/golf-demo-refresh/route.ts` | only with `golf_demo_refresh_v1` on; 500 when the check fails |
 | By hand | `npm run golf:demo:refresh` (dry run), `-- --apply`, `-- --full`, `-- --no-db --today YYYY-MM-DD` | with `--apply` |
 | Read-only check | `npm run golf:demo:verify` | never |
-| Owner SQL | `scripts/sql/strip-demo-seed-tags.sql`, `scripts/sql/golf-demo-cleanup.sql` (part A any time, part B after the first run) | when the owner flips ROLLBACK to COMMIT |
+| Owner SQL | `scripts/sql/strip-demo-seed-tags.sql`, `scripts/sql/golf-demo-cleanup.sql` (part A any time, part B after the first run, part C optional: player logins off the demo roster) | when the owner flips ROLLBACK to COMMIT |
 
 Both scripts refuse a production Supabase URL unless `HELM_ALLOW_PRODUCTION=1`.
 

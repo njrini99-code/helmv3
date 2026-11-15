@@ -3,8 +3,8 @@
 -- readiness DD-02, DD-08, DD-13, DD-17, DATA-02, DATA-03. For the owner to
 -- apply; nothing here runs on its own.
 --
--- Two parts, each its own transaction ending in ROLLBACK, so running the file
--- as it stands only prints counts. Run each part on staging first, then on
+-- Three parts, each its own transaction ending in ROLLBACK, so running the
+-- file as it stands only prints counts. Run each part on staging first, then on
 -- production, in the Supabase SQL editor (role postgres: the round guard
 -- honours the owner mark for that role only). Read the counts, change that
 -- part's ROLLBACK to COMMIT and run that part again.
@@ -20,6 +20,13 @@
 --     qualifiers, team-channel messages), and anything a coach account wrote
 --     there before the write guard. It refuses to run while the generator's
 --     ledger is empty.
+--   Part C, optional, recommended: every player with a sign-in comes off the
+--     demo team roster. This is the part that takes the owner's own player
+--     login off the demo team (one of the DD-13 causes); the owner's coach
+--     login stays head coach. Leave Part C out to keep that player login on
+--     the roster. Part B still removes, as it does for everything the
+--     generator did not write, any rounds, events or team messages that
+--     login left on the demo team, and the write guard stops new ones.
 --
 -- What it never touches: golf_players rows (a player is only taken off the
 -- roster), coach accounts and staff rows, other teams, direct messages other
@@ -228,9 +235,11 @@ SELECT pg_catalog.set_config('helm.round_live_off', 'on', true);
 
 -- B0. What Part B will change, per table. Read this before COMMIT; a row a
 --     coach wrote on purpose shows up here too.
-SELECT 'B1 roster rows taken off (player rows kept)' AS step, count(*) AS rows_found
+SELECT 'B1 cloned roster taken off (no sign-in; player rows kept)' AS step, count(*) AS rows_found
   FROM public.golf_team_members AS t
+  JOIN public.golf_players AS p ON p.id = t.player_id
  WHERE t.team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163' AND t.status = 'active'
+   AND p.user_id IS NULL
    AND NOT EXISTS (SELECT 1 FROM helm_private.golf_demo_ledger AS l
                     WHERE l.team_id = t.team_id AND l.table_name = 'golf_team_members' AND l.row_key = t.id::text)
 UNION ALL
@@ -296,12 +305,15 @@ SELECT 'B4 open CoachHelm insights from before the generator (archived)', count(
    AND t.created_at < (SELECT min(l.written_at) FROM helm_private.golf_demo_ledger AS l
                         WHERE l.team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163');
 
--- B1. The old roster leaves the team: every active membership the generator
---     did not write. That includes any of the owner's own player logins on the
---     demo team (one of the DD-13 causes); the coach staff rows stay.
+-- B1. The cloned roster leaves the team: every active membership the
+--     generator did not write whose player has no sign-in. Players who can
+--     sign in (the owner's own player login among them) are Part C's.
 UPDATE public.golf_team_members AS t
    SET status = 'inactive'
- WHERE t.team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163' AND t.status = 'active'
+  FROM public.golf_players AS p
+ WHERE p.id = t.player_id
+   AND t.team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163' AND t.status = 'active'
+   AND p.user_id IS NULL
    AND NOT EXISTS (SELECT 1 FROM helm_private.golf_demo_ledger AS l
                     WHERE l.team_id = t.team_id AND l.table_name = 'golf_team_members' AND l.row_key = t.id::text);
 
@@ -369,11 +381,19 @@ DELETE FROM public.golf_rounds AS t
    AND NOT EXISTS (SELECT 1 FROM helm_private.golf_demo_ledger AS l
                     WHERE l.team_id = t.team_id AND l.table_name = 'golf_rounds' AND l.row_key = t.id::text);
 
--- After: the roster is the generator's, and no round, event or message on
--- the team is outside its ledger. Expect generated_roster 9 (8 before the
--- transfer joins in November) and 0 in the other columns.
-SELECT (SELECT count(*) FROM public.golf_team_members
-         WHERE team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163' AND status = 'active') AS generated_roster,
+-- After: no round, event or message on the team is outside the generator's
+-- ledger. Expect generated_roster 9 (8 before the transfer joins in
+-- November), signed_in_players as many as Part C will take off, and 0 in the
+-- other columns.
+SELECT (SELECT count(*) FROM public.golf_team_members AS t
+         WHERE t.team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163' AND t.status = 'active'
+           AND EXISTS (SELECT 1 FROM helm_private.golf_demo_ledger AS l
+                        WHERE l.team_id = t.team_id AND l.table_name = 'golf_team_members'
+                          AND l.row_key = t.id::text)) AS generated_roster,
+       (SELECT count(*) FROM public.golf_team_members AS t
+          JOIN public.golf_players AS p ON p.id = t.player_id
+         WHERE t.team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163' AND t.status = 'active'
+           AND p.user_id IS NOT NULL) AS signed_in_players,
        (SELECT count(*) FROM public.golf_rounds AS t
          WHERE t.team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163'
            AND NOT EXISTS (SELECT 1 FROM helm_private.golf_demo_ledger AS l
@@ -387,3 +407,41 @@ SELECT (SELECT count(*) FROM public.golf_team_members
 
 ROLLBACK; -- Part B: change to COMMIT once the counts above look right,
           -- then run npm run golf:demo:verify.
+
+-- =========================================================================
+-- Part C, optional (recommended): player logins off the demo roster (DD-13)
+-- Leave this part out to keep the owner's own player login on the demo
+-- team roster. Any time after Part A; nothing in Parts A or B depends on it.
+-- =========================================================================
+
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '60s';
+
+-- C0. Who comes off the roster. Every active demo team player who can sign
+--     in: the generator's players never can, and Part A has already taken
+--     the test player off. Names show in this output only, never in this
+--     file. Their player rows, logins and other teams stay as they are.
+SELECT p.id AS player_id, p.first_name, p.last_name, t.status
+  FROM public.golf_team_members AS t
+  JOIN public.golf_players AS p ON p.id = t.player_id
+ WHERE t.team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163' AND t.status = 'active'
+   AND p.user_id IS NOT NULL;
+
+-- C1. Take them off the demo team roster.
+UPDATE public.golf_team_members AS t
+   SET status = 'inactive'
+  FROM public.golf_players AS p
+ WHERE p.id = t.player_id
+   AND t.team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163' AND t.status = 'active'
+   AND p.user_id IS NOT NULL;
+
+-- After: expect 0.
+SELECT count(*) AS signed_in_players_on_roster
+  FROM public.golf_team_members AS t
+  JOIN public.golf_players AS p ON p.id = t.player_id
+ WHERE t.team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163' AND t.status = 'active'
+   AND p.user_id IS NOT NULL;
+
+ROLLBACK; -- Part C: change to COMMIT to take them off; leave Part C out to
+          -- keep them on the roster.
