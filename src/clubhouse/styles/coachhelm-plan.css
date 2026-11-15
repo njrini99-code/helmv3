@@ -1922,5 +1922,5 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 }
 .ch-cpv .flist { animation: ch-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
 @media (hover: hover) {
-  .ch-cpv .fr:hover { background-color: var(--ch-press-wash, var(--ch-well-bg-flat)); }
+  .ch-cpv .fr:hover { background-color: var(--ch-sel); transition-duration: 0s; }
 }

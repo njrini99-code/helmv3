@@ -2131,7 +2131,8 @@ a.ch-rs-peek__dev:focus-visible,
 
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rs[data-canopy] .ch-rs-face.is-sel {
@@ -2261,7 +2262,8 @@ a.ch-rs-peek__dev:focus-visible,
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-row:not(.ch-rs-row--head):hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rs[data-canopy] .ch-rs-row.is-sel {

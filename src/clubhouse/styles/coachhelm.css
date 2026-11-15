@@ -752,7 +752,8 @@
   }
   @media (hover: hover) {
     .ch-hl[data-canopy] .ch-hl-row:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-hl[data-canopy] .ch-hl-row[data-ch-pressed] {

@@ -1404,8 +1404,9 @@
 }
 @media (hover: hover) {
   .ch-ox-nextstep:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
     color: var(--ch-text-secondary);
+    transition-duration: 0s;
   }
   .ch-ox-nextstep:hover > svg {
     transform: translateX(2px);

@@ -142,7 +142,8 @@
 }
 @media (hover: hover) {
   .ch-ms-row:hover {
-    background: rgb(28 25 18 / 0.045);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-ms-row[data-ch-pressed] {
@@ -303,7 +304,8 @@
 }
 @media (hover: hover) {
   .ch-ms-row:hover {
-    background: rgb(28 25 18 / 0.05);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-ms-row[data-ch-pressed] {
@@ -2698,7 +2700,8 @@
    chips lift to the text greens, and ivory type on a filled green takes the on-green ink. */
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-ms-row:hover {
-    background: rgb(237 231 216 / 0.045);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
   html[data-fw-theme='dark'] .ch-ms-tool:hover {
     background: rgb(237 231 216 / 0.06);

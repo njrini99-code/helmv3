@@ -1076,7 +1076,8 @@
 }
 @media (hover: hover) {
   .ch-df__open:hover:not(:disabled) {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-df__open[data-ch-pressed]:not(:disabled) {
@@ -1172,7 +1173,8 @@
 }
 @media (hover: hover) {
   .ch-df-nav:hover:not(:disabled) {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-df-nav[data-ch-pressed]:not(:disabled) {
@@ -1232,7 +1234,8 @@
 }
 @media (hover: hover) {
   .ch-df-day:hover:not(:disabled):not(.is-on) {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-df-day[data-ch-pressed]:not(:disabled):not(.is-on) {
@@ -1329,7 +1332,8 @@
 }
 @media (hover: hover) {
   .ch-tf__row:hover:not(:disabled):not(.is-on) {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-tf__row[data-ch-pressed]:not(:disabled):not(.is-on) {

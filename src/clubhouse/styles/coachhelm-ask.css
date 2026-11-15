@@ -285,7 +285,8 @@
 @media (hover: hover) {
   /* The ledger's row tint over the key's own face, so it stays a key on the rail. */
   .ch-ask-hist__new:hover {
-    background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-bg-surface);
+    background: linear-gradient(var(--ch-sel), var(--ch-sel)), var(--ch-bg-surface);
+    transition-duration: 0s;
   }
 }
 .ch-ask-hist__new[data-ch-pressed] {

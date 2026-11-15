@@ -771,8 +771,9 @@
 }
 @media (hover: hover) {
   .ch-backlink:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
     color: var(--ch-forest-800);
+    transition-duration: 0s;
   }
 }
 .ch-backlink:focus-visible {
@@ -835,7 +836,8 @@
 /* Hover first: a row pressed under the pointer is also hovered, and the press must win. */
 @media (hover: hover) {
   .ch-lgr__row.is-link:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-lgr__row.is-link[data-ch-pressed] {

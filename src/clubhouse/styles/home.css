@@ -2646,7 +2646,8 @@
   }
   @media (hover: hover) {
     .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   /* The row's chevron sits in its 12px end padding, clear of the SG figure. */

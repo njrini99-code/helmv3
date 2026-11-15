@@ -310,7 +310,8 @@
 }
 @media (hover: hover) {
   .ch-tour-pl-res__row:has(.ch-tour-pl-res__open):hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-tour-pl-res__n {

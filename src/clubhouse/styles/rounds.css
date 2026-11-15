@@ -1932,7 +1932,8 @@ a.ch-trd-open:focus-visible {
 }
 @media (hover: hover) {
   .ch-trd-tr.is-link:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-trd-tr.is-link:has(a.ch-trd-open[data-ch-pressed]) {
@@ -2818,7 +2819,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   @media (hover: hover) {
     .ch-rv[data-canopy] .ch-rv-back:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rv[data-canopy] .ch-rv-hero {
@@ -3330,8 +3332,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   @media (hover: hover) {
     .ch-rd[data-canopy] a.ch-rd-sc:hover {
       transform: none;
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
       box-shadow: none;
+      transition-duration: 0s;
     }
   }
   @media (hover: hover) {

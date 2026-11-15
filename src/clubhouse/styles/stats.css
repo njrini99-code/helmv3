@@ -796,7 +796,8 @@
 }
 @media (hover: hover) {
   .ch-lg__r:has(.ch-lg__a):hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
@@ -864,7 +865,8 @@
 }
 @media (hover: hover) {
   .ch-lg__cell:has(.ch-lg__cl:hover) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-lg__cell.is-col {

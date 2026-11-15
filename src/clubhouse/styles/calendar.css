@@ -3783,7 +3783,8 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   }
   @media (hover: hover) {
     .ch-cal[data-canopy] .ch-mo__cell:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
 
@@ -3824,7 +3825,8 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   }
   @media (hover: hover) {
     .ch-cal[data-canopy] .ch-ag__row:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   /* A press deepens an agenda row's tint over the press beat (the shell's CH-1606: a row never scales). */

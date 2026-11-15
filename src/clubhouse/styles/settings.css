@@ -77,7 +77,8 @@
 }
 @media (hover: hover) {
   .ch-set-rail__i:hover {
-    background: rgb(28 25 18 / 0.05);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 @media (hover: hover) {
@@ -1725,7 +1726,8 @@
    ivory, never the dark ivory ramp), and the action sheet's light card and scrim. */
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-set-rail__i:hover {
-    background: rgb(237 231 216 / 0.05);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
   html[data-fw-theme='dark'] .ch-set-rail__i.is-on:hover {
     background: rgb(107 187 140 / 0.13);
