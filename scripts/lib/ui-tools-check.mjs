@@ -162,4 +162,3 @@ export function printUiTools(rows, log = console.log) {
   const by = (s) => rows.filter((r) => r.status === s).length;
   log(`  ${by('AVAILABLE')} available, ${by('MISSING')} missing, ${by('NOT CONNECTED')} not connected, ${by('NEEDS NICK')} need Nick.`);
 }
-
