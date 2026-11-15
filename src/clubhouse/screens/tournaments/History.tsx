@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type CSSProperties } from 'react';
 import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
+import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Section } from '../../ui/Section';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
@@ -125,7 +126,7 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
       ) : (
         <>
           {/* The roster or the season profiles failed (GAP-S-08): the results still show, the names and seasons may be short. */}
-          {data.errors.profiles && <InlineNotice code="CH-TODO" title="Player names didn’t load" body="The results below are unaffected. Try again." onRetry={refresh} retrying={refreshing} />}
+          {data.errors.profiles && <InlineNotice code="CH-16295" title="Player names didn’t load" body="The results below are unaffected. Try again." onRetry={refresh} retrying={refreshing} />}
           <Section
             id="ch-tour-hist-across"
             title="Across seasons"
@@ -144,15 +145,18 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
           >
             {data.errors.trend ? (
               <InlineNotice code="CH-16236" title="The trend didn’t load" body="The events below are unaffected. Try again." onRetry={refresh} retrying={refreshing} />
-            ) : phone ? (
-              <TrendBars points={points} data={data} state={state} note={note} />
             ) : (
-              <Trend points={points} state={state} note={note} />
+              // GAP-S-10: the chart is its own section, so a crash in it leaves every event below.
+              <SectionBoundary surface="tournaments.history.trend" label="The trend" code="CH-16294">
+                {phone ? <TrendBars points={points} data={data} state={state} note={note} /> : <Trend points={points} state={state} note={note} />}
+              </SectionBoundary>
             )}
           </Section>
           {!phone && (
             <Section id="ch-tour-hist-every" title="Every event" meta="Graduated players stay with the events they played">
-              <SeasonLedger events={data.events} seasons={data.seasons} players={data.players} courseName={courseName} currentSeasonId={current} phone={false} />
+              <SectionBoundary surface="tournaments.history.ledger" label="Every event" code="CH-16294">
+                <SeasonLedger events={data.events} seasons={data.seasons} players={data.players} courseName={courseName} currentSeasonId={current} phone={false} />
+              </SectionBoundary>
             </Section>
           )}
         </>

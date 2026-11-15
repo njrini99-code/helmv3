@@ -135,7 +135,7 @@ function LiveViewDesk({ v }: { v: LiveViewState }) {
       ) : (
         <div className="ch-lv-split" data-panel={narrow ? 'sheet' : 'side'}>
           {/* The lanes and the panel are sections (GAP-S-10): one that throws is named in place, and the other keeps working. */}
-          <SectionBoundary surface="live.lanes" label="Players on the course" code="CH-TODO">
+          <SectionBoundary surface="live.lanes" label="Players on the course" code="CH-16294">
             <LiveGroupsList v={v} density="full" onOpen={(l) => v.select(l.roundId)} />
             {/* Inside the boundary, so the rows it walks are the ones drawn; the loaded desk, never its skeleton (live/loading.tsx). */}
             <RovingRows selector=".ch-lv-hit" within=".ch-lv--desk[aria-labelledby]" />
@@ -143,7 +143,7 @@ function LiveViewDesk({ v }: { v: LiveViewState }) {
           {!narrow && (
             <aside className="ch-lv-panel" data-lenis-prevent="" aria-label={v.selected ? `${v.selected.name}, round` : LIVE_COPY.everyone}>
               {v.selected ? (
-                <SectionBoundary key={v.selected.roundId} surface="live.panel" label={`${v.selected.name}’s round`} code="CH-TODO">
+                <SectionBoundary key={v.selected.roundId} surface="live.panel" label={`${v.selected.name}’s round`} code="CH-16294">
                   <PlayerPanelHead lane={v.selected} />
                   <PlayerLiveBody lane={v.selected} moments={v.live.moments} now={v.now} coach hours={v.hours} />
                 </SectionBoundary>
@@ -152,7 +152,7 @@ function LiveViewDesk({ v }: { v: LiveViewState }) {
                   <h2 className="ch-lv-panel__title" data-ch-code="CH-16618">
                     {LIVE_COPY.everyone}
                   </h2>
-                  <SectionBoundary surface="live.ribbon" label={LIVE_COPY.everyone} code="CH-TODO">
+                  <SectionBoundary surface="live.ribbon" label={LIVE_COPY.everyone} code="CH-16294">
                     <CourseRibbon lanes={v.everyone} label={LIVE_COPY.everyone} />
                   </SectionBoundary>
                 </>

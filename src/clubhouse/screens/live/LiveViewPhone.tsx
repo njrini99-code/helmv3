@@ -38,7 +38,7 @@ export function LiveViewPhone({ v }: { v: LiveViewState }) {
         <LiveEmpty />
       ) : (
         // One lane that throws takes the list, not the page: the feed, the tools and the sheet keep working (GAP-S-10).
-        <SectionBoundary surface="live.lanes" label="Players on the course" code="CH-TODO">
+        <SectionBoundary surface="live.lanes" label="Players on the course" code="CH-16294">
           <LiveGroupsList v={v} density="full" onOpen={(l) => v.select(l.roundId)} />
         </SectionBoundary>
       )}
