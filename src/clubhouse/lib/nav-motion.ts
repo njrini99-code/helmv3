@@ -94,15 +94,20 @@ export function chNavKind(): ChNavKind {
 
 /**
  * Whether the navigation under way crossfades: RouteFrame keys its `<ViewTransition>` to the route only then (S4.8). A
- * desktop page change does, and a phone one under Reduce Motion. A section switch never does, nor any phone navigation
- * with motion on (a push and a pop are drawn on the live page here, anything else swaps at once), nor a Back iOS already
- * played. Mapping the boundary to 'none' by a transition type is not enough: React 19.3 starts a document view
- * transition, and snapshots the whole page, for any `<ViewTransition>` that mounts in a transition, whatever its class.
+ * desktop page change does, and on a phone under Reduce Motion every page change does, a section switch included: a
+ * push, a pop and a switch all become the 180 ms opacity fade (MOTION-AND-VISUAL 3.3, 3.11). With motion on, a section
+ * switch never does, nor any phone navigation (a push and a pop are drawn on the live page here, anything else swaps at
+ * once), nor a Back iOS already played. Mapping the boundary to 'none' by a transition type is not enough: React 19.3
+ * starts a document view transition, and snapshots the whole page, for any `<ViewTransition>` that mounts in a
+ * transition, whatever its class.
  */
 export function chNavCrossfades(): boolean {
   if (typeof window === 'undefined') return true;
-  if (navTab || poppedByUA()) return false;
-  return !(phoneNow() && chMotionModeNow() === 'full');
+  if (poppedByUA()) return false;
+  const mode = chMotionModeNow();
+  if (phoneNow() && mode === 'fade') return true;
+  if (navTab) return false;
+  return !(phoneNow() && mode === 'full');
 }
 
 /**

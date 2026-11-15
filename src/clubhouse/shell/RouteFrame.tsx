@@ -21,9 +21,9 @@ import { useRouteSwipe } from './use-route-swipe';
  * Which navigations animate, and how (production audit 2026-11-15, S4.1, S4.4, S4.8, S4.9):
  * - A desktop page change crossfades (owner decision 3, A10): React's `<ViewTransition>` keyed by route makes the old
  *   page and the new one an exit/enter pair, and `.ch-page` (shell.css) fades them, 120ms out and 180ms in together; the
- *   sidebar and top bar are anchored and never move. Under the OS Reduce Motion setting a phone page change crossfades
- *   the same way over 180ms (owner decision 2, OQ-15).
- * - A section switch (the tab bar, a sidebar item) and every phone navigation with motion on swap at once, with no view
+ *   sidebar and top bar are anchored and never move. Under the OS Reduce Motion setting every phone page change, a
+ *   section switch included, crossfades the same way over 180ms (owner decision 2, OQ-15; MOTION-AND-VISUAL 3.3, 3.11).
+ * - With motion on, a section switch (the tab bar, a sidebar item) and every phone navigation swap at once, with no view
  *   transition at all: the boundary keeps its key, so React starts no document transition and snapshots nothing. A
  *   phone drill-in pushes and Back pops on the live page instead (lib/nav-motion.ts, use-route-swipe.ts).
  * - Settings › Animations off renders without a boundary: the page swaps at once.
