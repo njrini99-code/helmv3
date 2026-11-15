@@ -99,6 +99,7 @@ vi.mock('../screens/rounds/track/RoundTracking', () => ({
 
 import { emergencySave, loadLatestEmergencySave } from '@/lib/utils/emergency-save';
 import { NewRound } from '../screens/rounds/entry/NewRound';
+import { readSetupQualifiers } from '../screens/rounds/entry/setup-qualifiers';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 
@@ -120,12 +121,17 @@ function stats(index: number) {
   return { holeNumber: index + 1, par: 4, yardage: 380, score: 4, putts: 2, fairwayHit: true, greenInRegulation: true, penaltyStrokes: 0, shots: [] };
 }
 
-function renderNew() {
+/**
+ * The page as the route hands it over: the qualifier list is read first, on the server (data/setup-qualifiers.ts, PMAC-03),
+ * through the same two actions, so a test's first `getNextQualifierRoundNumber` answer is still the list's.
+ */
+async function renderNew() {
   const user = userEvent.setup();
+  const qualifiers = await readSetupQualifiers({ list: mocks.getPlayerQualifiers, next: mocks.getNextQualifierRoundNumber, report: () => {} });
   render(
     <LazyMotion features={domAnimation}>
       <ToastProvider>
-        <NewRound playerId="player-1" />
+        <NewRound playerId="player-1" qualifiers={qualifiers} />
       </ToastProvider>
     </LazyMotion>,
   );
@@ -177,7 +183,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
 
   it('CH-11514 a round already in progress asks what to do, and is not a failed start; Resume opens that round', async () => {
     mocks.savePartialRound.mockResolvedValueOnce(conflict);
-    const user = renderNew();
+    const user = await renderNew();
     await startRound(user);
     await waitFor(() => expect(code('CH-11514')).toHaveAttribute('open'));
     expect(code('CH-11514')).toHaveTextContent('Round already in progress');
@@ -191,7 +197,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
 
   it('CH-11514 New round keeps that round and starts a separate one (confirmSeparateRound)', async () => {
     mocks.savePartialRound.mockResolvedValueOnce(conflict);
-    const user = renderNew();
+    const user = await renderNew();
     await startRound(user);
     await waitFor(() => expect(code('CH-11514')).toHaveAttribute('open'));
     await user.click(within(code('CH-11514')!).getByRole('button', { name: /^New round/ }));
@@ -203,7 +209,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
 
   it('CH-11515 Discard asks first, then deletes the other round and starts this one', async () => {
     mocks.savePartialRound.mockResolvedValueOnce(conflict);
-    const user = renderNew();
+    const user = await renderNew();
     await startRound(user);
     await waitFor(() => expect(code('CH-11514')).toHaveAttribute('open'));
     await user.click(within(code('CH-11514')!).getByRole('button', { name: /^Discard/ }));
@@ -219,7 +225,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
   it('CH-11009 a Discard that fails stays in its question with the reason, and can be tried again', async () => {
     mocks.savePartialRound.mockResolvedValueOnce(conflict);
     mocks.deleteInProgressRound.mockResolvedValueOnce({ success: false, error: 'This round can no longer be discarded.' }).mockResolvedValue({ success: true });
-    const user = renderNew();
+    const user = await renderNew();
     await startRound(user);
     await waitFor(() => expect(code('CH-11514')).toHaveAttribute('open'));
     await user.click(within(code('CH-11514')!).getByRole('button', { name: /^Discard/ }));
@@ -233,7 +239,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
 
   it('110110 111404 CH-11007 a start the server rejects is a toast with Retry, and Retry starts it with the engine as it is now', async () => {
     mocks.savePartialRound.mockResolvedValueOnce({ success: false, error: 'The server is busy' });
-    const user = renderNew();
+    const user = await renderNew();
     await startRound(user);
     await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn’t start your round at Finley GC"));
     await user.click(toastAction('CH-11007', 'Try again')!);
@@ -243,7 +249,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
 
   it('111404 CH-11016 a completed round on this course and day warns once; the toast’s Start anyway is the second Start and goes ahead', async () => {
     mocks.savePartialRound.mockResolvedValueOnce({ success: false, error: 'duplicate_completed_round', completedRoundId: 'done-1' });
-    const user = renderNew();
+    const user = await renderNew();
     await startRound(user);
     await waitFor(() => expect(code('CH-11016')).toHaveTextContent('You already have a completed round for this course on this date'));
     expect(toastAction('CH-11016', 'Try again')).toBeNull();
@@ -257,7 +263,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
     mocks.getNextQualifierRoundNumber
       .mockResolvedValueOnce({ success: true, data: { nextRoundNumber: 1, availableRounds: [1, 2, 3] } })
       .mockResolvedValue({ success: true, data: { nextRoundNumber: 1, availableRounds: [1, 2, 3], activeRoundId: 'q-active' } });
-    const user = renderNew();
+    const user = await renderNew();
     await startQualifierRound(user);
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith('/golf/dashboard/rounds/continue/q-active'));
     expect(code('CH-11907')).toHaveTextContent('You already have a round in progress for this qualifier');
@@ -270,7 +276,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
     mocks.getNextQualifierRoundNumber
       .mockResolvedValueOnce({ success: true, data: { nextRoundNumber: 1, availableRounds: [1, 2, 3] } })
       .mockResolvedValue({ success: true, data: { nextRoundNumber: 2, availableRounds: [2, 3] } });
-    const user = renderNew();
+    const user = await renderNew();
     await startQualifierRound(user);
     await waitFor(() => expect(code('CH-11014')).toHaveTextContent('Round 1 of this qualifier is not open to you now. Your next round is 2.'));
     expect(toastAction('CH-11014', 'Try again')).toBeNull();
@@ -283,7 +289,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
       .mockResolvedValueOnce({ success: true, data: { nextRoundNumber: 1, availableRounds: [1, 2, 3] } })
       .mockResolvedValueOnce({ success: false, error: 'You are not entered in this qualifier' })
       .mockResolvedValue({ success: true, data: { nextRoundNumber: 1, availableRounds: [1, 2, 3] } });
-    const user = renderNew();
+    const user = await renderNew();
     await startQualifierRound(user);
     await waitFor(() => expect(code('CH-11015')).toHaveTextContent('You are not entered in this qualifier'));
     await user.click(toastAction('CH-11015', 'Try again')!);
@@ -291,7 +297,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
   });
 
   it('CH-1903 offline, nothing is sent: the browser and the connection probe both say so', async () => {
-    const user = renderNew();
+    const user = await renderNew();
     await pickCourse(user);
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     mocks.connection.isConnected = false;
@@ -301,7 +307,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
   });
 
   it('CH-1903 the browser says offline but the probe reaches the server (WKWebView): the start goes ahead', async () => {
-    const user = renderNew();
+    const user = await renderNew();
     await pickCourse(user);
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     await user.click(startBtn());
@@ -313,25 +319,45 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
   it('110113 a page opened on a qualifier (?qualifier=) plays that qualifier’s round, and one that is not open is left alone', async () => {
     mocks.getPlayerQualifiers.mockResolvedValue({ success: true, data: [qualifier] });
     mocks.search = new URLSearchParams('qualifier=q1');
-    renderNew();
+    await renderNew();
     await screen.findByText('This counts as round 1 of 3 in Fall qualifier.');
     expect(within(screen.getByRole('radiogroup', { name: 'Round type' })).getByRole('radio', { name: 'Qualifier' })).toHaveAttribute('aria-checked', 'true');
     document.body.innerHTML = '';
     mocks.search = new URLSearchParams('qualifier=other');
-    renderNew();
+    await renderNew();
     await screen.findByRole('button', { name: /Browse courses/ });
     expect(screen.queryByText(/This counts as round/)).toBeNull();
   });
 
-  it('110103 CH-11407 while the day and the qualifiers are read, the page is a skeleton, and then setup opens', async () => {
-    let release: (v: unknown) => void = () => {};
-    mocks.getPlayerQualifiers.mockReturnValue(new Promise((r) => (release = r)));
-    renderNew();
-    await waitFor(() => expect(code('CH-11407')).not.toBeNull());
-    expect(screen.queryByRole('button', { name: /Browse courses/ })).toBeNull();
-    await act(async () => release({ success: true, data: [] }));
-    await screen.findByRole('button', { name: /Browse courses/ });
+  it('110103 CH-11407 PMAC-03 the qualifiers come with the page, so setup opens at once and no read in the browser holds it', async () => {
+    // Was: a skeleton until the browser's qualifier reads answered (about 3 s in production, PMAC-03). The list now comes
+    // from the route's server read; the engine's own legacy read (still in the browser) may hang without holding setup.
+    const user = userEvent.setup();
+    mocks.getPlayerQualifiers.mockReturnValue(new Promise(() => {}));
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <NewRound playerId="player-1" qualifiers={[{ id: 'q1', name: 'Fall qualifier', courseId: null, courseName: 'Finley GC', teeId: null, teeName: null, rounds: 3, completed: 0, nextRound: 1, blocked: null }]} />
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    expect(screen.getByRole('button', { name: /Browse courses/ })).toBeInTheDocument();
     expect(code('CH-11407')).toBeNull();
+    expect(screen.getByRole('button', { name: /Open qualifier/ })).toHaveTextContent('Round 1 of 3');
+    await user.click(screen.getByRole('button', { name: /Open qualifier/ }));
+    expect(screen.getByText('This counts as round 1 of 3 in Fall qualifier.')).toBeInTheDocument();
+  });
+
+  it('CH-11211 a list the route could not read is null: setup opens and says so up front, with Try again', async () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <NewRound playerId="player-1" qualifiers={null} />
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    expect(screen.getByRole('button', { name: /Browse courses/ })).toBeInTheDocument();
+    expect(code('CH-11211')).toHaveTextContent('Your qualifiers didn’t load');
   });
 });
 
@@ -354,7 +380,7 @@ function seedRecovery() {
 describe('Round entry: a round saved on this device is found on opening (CH-11512, CH-11008, CH-11513)', () => {
   it('CH-11512 says what was found, and Restore writes it to the server and opens the round to continue', async () => {
     seedRecovery();
-    const user = renderNew();
+    const user = await renderNew();
     await waitFor(() => expect(code('CH-11512')).toHaveAttribute('open'));
     expect(code('CH-11512')).toHaveTextContent('Finley GC');
     expect(code('CH-11512')).toHaveTextContent('Blue tees · Practice · saved 5 min ago');
@@ -367,7 +393,7 @@ describe('Round entry: a round saved on this device is found on opening (CH-1151
   it('CH-11008 a restore that fails says so inside the dialog, and Restore again finishes it', async () => {
     seedRecovery();
     mocks.savePartialRound.mockResolvedValueOnce({ success: false, error: 'busy' });
-    const user = renderNew();
+    const user = await renderNew();
     await waitFor(() => expect(code('CH-11512')).toHaveAttribute('open'));
     await user.click(within(code('CH-11512')!).getByRole('button', { name: /^Restore round/ }));
     await waitFor(() => expect(code('CH-11008')).toHaveTextContent('Couldn’t restore your saved shots'));
@@ -382,7 +408,7 @@ describe('Round entry: a round saved on this device is found on opening (CH-1151
     seedRecovery();
     let release: (v: unknown) => void = () => {};
     mocks.savePartialRound.mockReturnValueOnce(new Promise((r) => (release = r)));
-    renderNew();
+    await renderNew();
     await waitFor(() => expect(code('CH-11512')).toHaveAttribute('open'));
     const restore = within(code('CH-11512')!).getByRole('button', { name: /^Restore round/ });
     act(() => {
@@ -396,7 +422,7 @@ describe('Round entry: a round saved on this device is found on opening (CH-1151
 
   it('CH-11513 Discard saved shots asks first, warns before it deletes, and removes only the copy on this device', async () => {
     seedRecovery();
-    const user = renderNew();
+    const user = await renderNew();
     await waitFor(() => expect(code('CH-11512')).toHaveAttribute('open'));
     await user.click(within(code('CH-11512')!).getByRole('button', { name: /^Discard saved shots/ }));
     expect(code('CH-11513')).toHaveTextContent('Discard the saved shots?');
@@ -412,7 +438,7 @@ describe('Round entry: a round saved on this device is found on opening (CH-1151
 // ── The round: save, discard, a conflict, an error, a closed qualifier ──
 
 async function playing() {
-  const user = renderNew();
+  const user = await renderNew();
   await startRound(user, { nine: true });
   await screen.findByTestId('tracking');
   mocks.savePartialRound.mockClear();
