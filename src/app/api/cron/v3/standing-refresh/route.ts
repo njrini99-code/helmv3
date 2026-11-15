@@ -70,6 +70,8 @@ interface RefreshSummary {
   focus_areas_progressed?: number;
   // Season Standing rows upserted for the chunk (golf_player_standing_season); null when that RPC was skipped or failed.
   season_rows_upserted?: number | null;
+  // Rows the division cohort rebuild wrote (golf_division_cohort); null when it failed.
+  division_cohort_rows?: number | null;
   // W7 pre-sweep: player caches fully refreshed BEFORE the standing RPCs
   // (is_stale flag or recent completed-round activity), so standing never
   // ranks players on stale shot-derived columns.
@@ -432,6 +434,28 @@ async function handle(): Promise<NextResponse> {
     );
   }
 
+  // The division cohort (golf_division_cohort, migration 20261108100000) is the mean of golf_player_standing.player_value
+  // per gender, level and metric; CoachHelm's division benchmarks read it (lib/coachhelm/v3/chat/benchmark-reads.ts).
+  // Nothing else rebuilds it, so it runs here, once the standings are written and pruned. Whole-table and service-role;
+  // a failure is logged and never fails the standings job.
+  let divisionCohortRows: number | null = null;
+  try {
+    const cohortResult = await supabase.rpc('refresh_division_cohort');
+    if (cohortResult.error) {
+      await logServerError(
+        `standing-refresh division-cohort: ${cohortResult.error.message ?? 'unknown'}`,
+        { action: 'cron.v3.standing-refresh.division-cohort' },
+      );
+    } else if (typeof cohortResult.data === 'number') {
+      divisionCohortRows = cohortResult.data;
+    }
+  } catch (err) {
+    await logServerError(
+      `standing-refresh division-cohort exception: ${describeError(err)}`,
+      { action: 'cron.v3.standing-refresh.division-cohort' },
+    );
+  }
+
   if (pctBefore) {
     try {
       const pctAfter = await loadMeanTeamPct(supabase, shiftPlayerIds);
@@ -521,6 +545,7 @@ async function handle(): Promise<NextResponse> {
     goals_progressed: goalsProgressed,
     focus_areas_progressed: focusAreasProgressed,
     season_rows_upserted: seasonRows,
+    division_cohort_rows: divisionCohortRows,
     duration_ms: Date.now() - startedAt,
   } satisfies RefreshSummary);
 }

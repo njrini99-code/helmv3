@@ -16584,6 +16584,18 @@
     },
     {
       "source": "coachhelm_ai",
+      "target": "refresh_division_cohort",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/api/cron/v3/standing-refresh/route.ts",
+          "anchor": "refresh_division_cohort"
+        }
+      ]
+    },
+    {
+      "source": "coachhelm_ai",
       "target": "refresh_player_standing",
       "kind": "feature_rpc",
       "evidence": [
