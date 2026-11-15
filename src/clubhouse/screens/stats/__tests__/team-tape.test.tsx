@@ -61,6 +61,22 @@ describe('TeamTape · honest small lines', () => {
     expect(d.match(/M/g)).toHaveLength(2);
   });
 
+  it('weeks that alternate with empty ones each keep a dot, so none disappears from the broken line (CH-15)', () => {
+    render(<TeamTape items={[item({ series: [40, null, 50, null, 60] })]} />);
+    const cell = cells()[0]!;
+    // Three measured weeks, none with a neighbour: the line has nothing to draw, so the first two are dots and the newest the end dot.
+    expect([...cell.querySelectorAll('.ch-tp__pt')]).toHaveLength(2);
+    expect(cell.querySelectorAll('.ch-tp__dot')).toHaveLength(1);
+    const lefts = [...cell.querySelectorAll<HTMLElement>('.ch-tp__pt, .ch-tp__dot')].map((e) => parseFloat(e.style.left));
+    expect(lefts).toEqual([...lefts].sort((a, b) => a - b));
+    expect(new Set(lefts).size).toBe(3);
+  });
+
+  it('a week inside a run of two or more takes no extra dot', () => {
+    render(<TeamTape items={[item({ series: [40, 50, null, 60, 55] })]} />);
+    expect(cells()[0]!.querySelectorAll('.ch-tp__pt')).toHaveLength(0);
+  });
+
   it('the end dot is drawn outside the stretched drawing, so it stays round (CH-23)', () => {
     render(<TeamTape items={[item({ series: [40, 50, 60] })]} />);
     const cell = cells()[0]!;

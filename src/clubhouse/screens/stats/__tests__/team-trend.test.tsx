@@ -170,3 +170,29 @@ describe('team trend · the axes never crowd (CH-21)', () => {
     }
   });
 });
+
+describe('team trend · a player who plays every other week stays on the chart (CH-15)', () => {
+  it('each measured week of a player with no two weeks in a row is a dot, and each dot takes the pointer', () => {
+    const data = charts();
+    data.players = [mk('Ava', [1, null, 2, null, 1], [71, 73, 72, 71, 73]), mk('Ben', [-1, -1, -1, -1, -1], [69, 71, 70, 69, 71])];
+    draw(data);
+    const svg = plot();
+    // Ava has no segment to draw: her weeks are three dots, and three discs catch the pointer.
+    expect(svg.querySelectorAll('circle.ch-sgt__pt')).toHaveLength(3);
+    expect(svg.querySelectorAll('circle.ch-sgt__hit.is-pt')).toHaveLength(3);
+    // Ava's path has no segment (it only moves); Ben's unbroken line is drawn and needs no dot.
+    const drawn = [...svg.querySelectorAll('path.ch-sgt__line')].filter((p) => /L/.test(p.getAttribute('d') ?? ''));
+    expect(drawn).toHaveLength(1);
+  });
+
+  it('pointing at a lone week brings that player forward', () => {
+    const data = charts();
+    data.players = [mk('Ava', [1, null, 2, null, 1], [71, 73, 72, 71, 73]), mk('Ben', [-1, -1, -1, -1, -1], [69, 71, 70, 69, 71])];
+    draw(data);
+    const disc = plot().querySelector('circle.ch-sgt__hit.is-pt')!;
+    fireEvent.pointerEnter(disc, { pointerType: 'mouse' });
+    // In front, her lone weeks are drawn over the rest (the newest as the end dot), and the faded dots are gone.
+    expect(plot().querySelectorAll('circle.ch-sgt__front').length).toBeGreaterThanOrEqual(3);
+    expect(plot().querySelectorAll('circle.ch-sgt__pt')).toHaveLength(0);
+  });
+});

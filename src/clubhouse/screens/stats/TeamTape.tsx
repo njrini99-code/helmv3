@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import type { ChGauge, ChTeamStats } from '../../data/stats-team';
-import { gappedArea, gappedPath, lastValue, weekShares } from '../../lib/chart';
+import { gappedArea, gappedPath, lastValue, lonePoints, weekShares } from '../../lib/chart';
 import { changeTone, formatSigned, NO_DATA } from '../../lib/format';
 import { deltaTone, deltaWords, POOLED_SD } from '../../lib/stats-signal';
 
@@ -123,6 +123,8 @@ function TapeCell({ it, against, starts }: { it: TapeItem; against: string; star
   const path = vals.length > 1 ? gappedPath(it.series, x, y) : '';
   const area = path ? gappedArea(it.series, x, y, H) : '';
   const end = lastValue(it.series);
+  // A week between two empty weeks has no segment to sit on: it keeps a dot, or the broken line would drop it (CH-15).
+  const lone = lonePoints(it.series).filter((i) => i !== end?.i);
   const tone = signal === 'is-gain' ? 'is-gain' : signal === 'is-loss' ? 'is-loss' : 'is-flat';
   const gid = useId().replace(/:/g, '');
   const ink = tone === 'is-gain' ? 'var(--ch-chart-gain)' : tone === 'is-loss' ? 'var(--ch-chart-loss)' : 'var(--ch-text-tertiary)';
@@ -159,6 +161,9 @@ function TapeCell({ it, against, starts }: { it: TapeItem; against: string; star
           )}
         </svg>
         {/* The drawing stretches to the cell; the dot sits on it as a box of its own, so it stays round at any width (CH-23). */}
+        {lone.map((i) => (
+          <i key={i} className="ch-tp__pt" style={{ left: `${pct(x(i) / W)}%`, top: `${pct(y(it.series[i]!) / H)}%` }} />
+        ))}
         {end && <i className="ch-tp__dot" style={{ left: `${pct(x(end.i) / W)}%`, top: `${pct(y(end.v) / H)}%` }} />}
       </span>
       {note && !none && <span className="ch-tp__n">{note}</span>}

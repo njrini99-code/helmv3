@@ -1,6 +1,6 @@
 # 2026-11-15 — CoachHelm
 
-## 2026-11-15 — CoachHelm's pictures honour which way is better (stats and charts audit, CH-05, CH-07, CH-08, CH-11, CH-14, CH-17, CH-22, CH-23, CH-24)
+## 2026-11-15 — CoachHelm's pictures honour which way is better
 
 ```text
 Design package: none (owner's stats and charts audit, 15 Nov 2026, section 5)

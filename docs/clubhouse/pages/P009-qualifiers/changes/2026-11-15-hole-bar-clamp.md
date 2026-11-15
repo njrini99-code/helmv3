@@ -1,6 +1,6 @@
 # 2026-11-15 — qualifiers
 
-## 2026-11-15 — A hole past the shape's cap is drawn broken (stats and charts audit, CH-17)
+## 2026-11-15 — A hole past the shape's cap is drawn broken (CH-17)
 
 ```text
 Design package: none (owner's stats and charts audit, 15 Nov 2026, section 5)

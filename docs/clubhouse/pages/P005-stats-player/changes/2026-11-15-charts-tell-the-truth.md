@@ -1,6 +1,6 @@
 # 2026-11-15 — stats (player)
 
-## 2026-11-15 — The player charts tell the truth (stats and charts audit, CH-04 to CH-19)
+## 2026-11-15 — The player charts tell the truth (CH-04 to CH-19)
 
 ```text
 Design package: none (owner's stats and charts audit, 15 Nov 2026, section 5)

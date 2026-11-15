@@ -1,6 +1,6 @@
 # 2026-11-15 — roster
 
-## 2026-11-15 — Form dots on one range, the profile line by date (stats and charts audit, CH-03, CH-05, CH-11)
+## 2026-11-15 — Form dots on one range, the profile line by date
 
 ```text
 Design package: none (owner's stats and charts audit, 15 Nov 2026, section 5)

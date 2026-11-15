@@ -625,16 +625,26 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {lines.map(({ p, v }) => {
                 const d = gappedPath(v, x, y);
                 const on = p.id === litId;
-                return d ? (
-                  <path
-                    key={p.id}
-                    d={d}
-                    className={'ch-sgt__line' + (on ? ' is-on' : '')}
-                    stroke={on ? 'var(--ch-green-600)' : 'var(--ch-st-other-line)'}
-                    strokeOpacity={on ? 1 : litId ? 0.12 : 0.28}
-                    strokeWidth={on ? 2.25 : 1.25}
-                  />
-                ) : null;
+                const fade = on ? 1 : litId ? 0.12 : 0.28;
+                // A week between two empty weeks is a dot in the line's ink, or the player would vanish from it (CH-15). The player in
+                // front has theirs drawn over everything below.
+                const lone = on ? [] : lonePoints(v);
+                return (
+                  <g key={p.id}>
+                    {d && (
+                      <path
+                        d={d}
+                        className={'ch-sgt__line' + (on ? ' is-on' : '')}
+                        stroke={on ? 'var(--ch-green-600)' : 'var(--ch-st-other-line)'}
+                        strokeOpacity={fade}
+                        strokeWidth={on ? 2.25 : 1.25}
+                      />
+                    )}
+                    {lone.map((i) => (
+                      <circle key={i} className="ch-sgt__pt" cx={x(i)} cy={y(v[i]!)} r={2} fill="var(--ch-st-other-line)" fillOpacity={fade} />
+                    ))}
+                  </g>
+                );
               })}
               {/* The player in front, drawn again over the other lines; the team's line stays on top. */}
               {litPath && (
@@ -674,16 +684,20 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {/* A line is 1.25px: each takes the pointer along a wider invisible band, over everything drawn. */}
               {lines.map(({ p, v }) => {
                 const d = gappedPath(v, x, y);
-                return d ? (
-                  <path
-                    key={`hit-${p.id}`}
-                    d={d}
-                    className="ch-sgt__hit"
-                    onPointerEnter={point(p.id)}
-                    onPointerLeave={() => setPeek(null)}
-                    onClick={() => setFocus(p.id === focus ? null : p.id)}
-                  />
-                ) : null;
+                const hit = {
+                  onPointerEnter: point(p.id),
+                  onPointerLeave: () => setPeek(null),
+                  onClick: () => setFocus(p.id === focus ? null : p.id),
+                };
+                // A lone week has no stroke to catch the pointer, so its dot takes it (CH-15).
+                return (
+                  <g key={`hit-${p.id}`}>
+                    {d && <path d={d} className="ch-sgt__hit" {...hit} />}
+                    {lonePoints(v).map((i) => (
+                      <circle key={i} className="ch-sgt__hit is-pt" cx={x(i)} cy={y(v[i]!)} r={6} {...hit} />
+                    ))}
+                  </g>
+                );
               })}
             </svg>
             <div className="ch-sgt__ends">

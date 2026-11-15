@@ -1,6 +1,6 @@
 # 2026-11-15 — rounds
 
-## 2026-11-15 — Month spark from par, one putts direction, a straight course arc (stats and charts audit, CH-05, CH-09, CH-14, CH-15, CH-22)
+## 2026-11-15 — Month spark from par, one putts direction, a straight arc
 
 ```text
 Design package: none (owner's stats and charts audit, 15 Nov 2026, section 5)

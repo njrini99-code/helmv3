@@ -1,6 +1,6 @@
 # 2026-11-15 — stats (team)
 
-## 2026-11-15 — The team charts tell the truth (stats and charts audit, CH-01 to CH-24)
+## 2026-11-15 — The team charts tell the truth (CH-01 to CH-24)
 
 ```text
 Design package: none (owner's stats and charts audit, 15 Nov 2026, section 5)
@@ -16,14 +16,17 @@ Held items:     the loader's to-par series (data thread, PR #2534); colours and 
 - Team trend (`StatsTeamIslands.tsx` TeamTrend): the scoring lens plots each
   week against par per 18 with par at 0, labelled Par; raw strokes stay in the
   readout (CH-01). Lines are straight and break across a week with no rounds
-  (CH-15). A change needs four weeks and the same players on both halves
-  (CH-10). Each player's end bar prints its signed figure, and with no
-  reference there are no bars (CH-20). Week names thin to a least gap, and the
-  axis keeps to about five ticks (CH-21).
+  (CH-15); a player's week between two empty weeks is a dot that takes the
+  pointer, so a player who plays every other week stays on the chart. A
+  change needs four weeks and the same players on both halves (CH-10). Each
+  player's end bar prints its signed figure, and with no reference there are
+  no bars (CH-20). Week names thin to a least gap, and the axis keeps to about
+  five ticks (CH-21).
 - Team tape (`TeamTape.tsx`): a flat series draws at mid-height, every cell of
   a figure shares one scale at least two standard errors of a week wide, weeks
-  sit by date, the line breaks across empty weeks, and the end dot sits outside
-  the stretched drawing so it stays round (CH-06, CH-11, CH-15, CH-23).
+  sit by date, the line breaks across empty weeks with a dot for any week
+  between two empty ones, and the end dot sits outside the stretched drawing
+  so it stays round (CH-06, CH-11, CH-15, CH-23).
 - Figure gauges (`charts.tsx`): strokes gained and par on one fixed ±6 scale;
   putts carry no gain or loss colour (CH-13).
 - Putting rings and the Team putting bars: graded on the Putting bands chart's

@@ -1,6 +1,6 @@
 # 2026-11-15 — one change rule and honest chart helpers
 
-## 2026-11-15 — Shared chart pieces for the stats and charts audit (CH-03, CH-05, CH-09, CH-11, CH-15, CH-23)
+## 2026-11-15 — Shared chart pieces for the stats and charts audit
 
 ```text
 Design package: none (owner's stats and charts audit, 15 Nov 2026, section 5)

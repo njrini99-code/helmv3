@@ -1,6 +1,6 @@
 # 2026-11-15 — tournaments
 
-## 2026-11-15 — History bars from a zero rule, Compare better to the right (stats and charts audit, CH-02, CH-14)
+## 2026-11-15 — History bars from zero, Compare better to the right
 
 ```text
 Design package: none (owner's stats and charts audit, 15 Nov 2026, section 5)
