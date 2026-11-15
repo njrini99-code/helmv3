@@ -160,11 +160,17 @@ $patch$;
 
 -- (2) Backfill, archive first -----------------------------------------------
 
+-- The four score columns stay integer: they mirror golf_rounds.total_score and
+-- golf_rounds.score_to_par, which are integer.
 CREATE TABLE IF NOT EXISTS helm_private.golf_rounds_total_score_fix_20261114 (
     round_id uuid PRIMARY KEY,
+    -- squawk-ignore prefer-bigint-over-int
     old_total_score integer,
+    -- squawk-ignore prefer-bigint-over-int
     new_total_score integer NOT NULL,
+    -- squawk-ignore prefer-bigint-over-int
     old_score_to_par integer,
+    -- squawk-ignore prefer-bigint-over-int
     new_score_to_par integer,
     row_before jsonb NOT NULL,
     stats_cache_before jsonb,
