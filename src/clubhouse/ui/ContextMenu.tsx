@@ -16,7 +16,7 @@ const DESKTOP = '(hover: hover) and (min-width: 821px)';
 /** Text the person can edit keeps the browser's own menu (cut, paste, spelling). */
 const EDITABLE = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
 
-/** A touch held this long without moving opens the menu as a sheet (C8, owner decision 14). */
+/** A touch held this long without moving opens the menu under the row (C8, owner decision 14; OVL-06). */
 export const CTX_HOLD_MS = 500;
 /** A finger that moves further than this before then is scrolling or swiping, not holding. */
 const HOLD_SLOP_PX = 10;
@@ -55,24 +55,25 @@ interface Open<T> {
  * It stays out of the way: Shift+right-click, a text field, and a phone or touch (no hover) keep the browser's menu.
  * Closes on Escape, a pick, a press elsewhere, a scroll, a resize or the window losing focus.
  *
- * `touchHold` (C8, owner decision 14) gives a touch the same menu: a finger held still for `CTX_HOLD_MS` opens it as a
- * sheet with the long-press tick (`press`, D-70), cancelled by a move past 10px or a scroll; the tap it ends in is
- * swallowed. Shift+F10 or the Menu key on a phone (a keyboard on an iPad or iPhone) opens the same sheet, and
- * `openSheet` opens it from a control of the row's own (a VoiceOver button).
+ * `touchHold` (C8, owner decision 14) gives a touch the same menu: a finger held still for `CTX_HOLD_MS` opens it under
+ * the row it pressed, as an iOS context menu is anchored to its item (OVL-06), with the long-press tick (`press`, D-70),
+ * cancelled by a move past 10px or a scroll; the tap it ends in is swallowed. Shift+F10 or the Menu key on a phone (a
+ * keyboard on an iPad or iPhone) opens the rows as a sheet instead, and `openSheet` opens that sheet from a control of
+ * the row's own (a VoiceOver button). `anchored: false` keeps the sheet for a touch hold too.
  */
 export function useContextMenu<T>({
   label,
   items,
   title,
   touchHold = false,
-  anchored = false,
+  anchored = true,
 }: {
   label: (target: T) => string;
   items: (target: T) => MenuItem[];
   /** The sheet's heading; the label when absent. */
   title?: (target: T) => string;
   touchHold?: boolean;
-  /** A touch hold opens the menu under the row instead of a sheet (the Messages redesign's row menu). */
+  /** A touch hold opens the menu under the row (the default, OVL-06); false opens the sheet instead. */
   anchored?: boolean;
 }): { bind: (target: T) => ContextMenuBind; menu: ReactNode; openSheet: (target: T) => void; openAt: (target: T, el: HTMLElement) => void; cancelHold: () => void } {
   const [open, setOpen] = useState<Open<T> | null>(null);

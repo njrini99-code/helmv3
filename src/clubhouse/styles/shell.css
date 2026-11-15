@@ -15,6 +15,8 @@
   min-width: 0;
   margin: 8px 8px 8px 0;
   overflow: auto;
+  /* SYS-09: room for a classic scrollbar is kept whether or not the page scrolls, so the canvas never shifts sideways. */
+  scrollbar-gutter: stable;
   overscroll-behavior: contain;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-canvas-wash), var(--ch-bg-page);

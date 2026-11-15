@@ -354,7 +354,8 @@ export function PickerField(p: PickerFieldProps) {
         (phone
           ? everOpened.current &&
             createPortal(
-              <Modal open={open} onClose={() => setOpen(false)} title={p.label} width={420}>
+              // OVL-05: opened from inside another sheet (a date in a form), it stacks on that sheet's dim at half strength.
+              <Modal open={open} onClose={() => setOpen(false)} title={p.label} width={420} className={target?.tagName === 'DIALOG' ? 'ch-modal--over' : undefined}>
                 {body}
               </Modal>,
               target,

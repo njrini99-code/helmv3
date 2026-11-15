@@ -137,6 +137,20 @@ function Sheet({ onClose }: { onClose: () => void }) {
   );
 }
 
+describe('OVL-02 a sheet rides the keyboard', () => {
+  it('lifts its panel by translate on the keyboard beat and curve, never by a margin that jumps', () => {
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/controls.css'), 'utf8');
+    for (const panel of ['.ch-modal__panel', '.ch-fsheet']) {
+      const esc = panel.replace(/[.]/g, '\\.');
+      expect(css).toMatch(new RegExp(`body\\.keyboard-open ${esc} \\{[^}]*translate: 0 calc\\(-1 \\* var\\(--keyboard-height, 0px\\)\\);`));
+      expect(css).toMatch(new RegExp(`\\n *${esc} \\{[^}]*translate var\\(--ch-dur-keyboard\\) var\\(--ch-ease-sheet\\)`));
+    }
+    // The dialogs themselves keep their translate for the finger (lib/sheet-drag.ts): no keyboard margin on them.
+    expect(css).not.toMatch(/body\.keyboard-open \.ch-modal \{[^}]*margin-bottom/);
+    expect(css).not.toMatch(/body\.keyboard-open \.ch-fsheet-dlg[^{]*\{[^}]*margin-bottom/);
+  });
+});
+
 describe('CH-1611 sheet physics', () => {
   it('pulled up past its open position it gives like a rubber band, over a floor of its own colour', () => {
     vi.useFakeTimers();
