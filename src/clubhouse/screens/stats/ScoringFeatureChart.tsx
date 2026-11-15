@@ -278,7 +278,8 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
 
 /**
  * The team's feature chart (08 criterion 50): 160 tall, its line and area always the gain fill, the mean dashed and named. Not
- * interactive: the card is the tap. Straight segments, and a day one player posted on is a hollow dot off the team's line (W26).
+ * interactive: the card is the tap. Straight segments through every day in the window (S2.4), and a day one player posted on is a
+ * hollow dot on the line (W26).
  * The dashed mean is named in a key under the drawing, never on the line: the scoring line crossed its words there (F-0009).
  */
 export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: string; score: number | null; n?: number }>; mean: number | null }) {
@@ -312,7 +313,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
   for (let q = lo; q <= hi; q++) if ((q - lo) % (hi - lo > 4 ? 2 : 1) === 0) ticks.push(q);
   return (
     <>
-    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.${joined.one.size ? ` ${joined.one.size} ${pluralWord(joined.one.size, 'day', 'days')} with one round ${joined.one.size === 1 ? 'is' : 'are'} drawn apart from the team’s line.` : ''}`}>
+    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.${joined.one.size ? ` ${joined.one.size} ${pluralWord(joined.one.size, 'day', 'days')} with one round ${joined.one.size === 1 ? 'is' : 'are'} marked as hollow points.` : ''}`}>
       <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
         <defs>
           <linearGradient id="ch-shs-tg" x1="0" x2="0" y1="0" y2="1">

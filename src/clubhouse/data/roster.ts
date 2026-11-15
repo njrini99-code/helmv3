@@ -32,7 +32,7 @@ import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { playerStrokesGained, roundsForFigures } from './figure-window';
 import { sgWindowOf, type ChSgWindow } from './sg-window';
 import { tourForGender } from './stats-common';
-import { QUIET_DAYS, daysBetween as daysBetweenDates } from '../screens/home/model';
+import { QUIET_DAYS, quietDaysSince } from '../screens/home/model';
 
 /**
  * Coach Roster (Clubhouse). Server-read, final on first paint, every section
@@ -153,9 +153,9 @@ export interface ChRoster {
 
 export type ChRosterHelm = { status: 'on'; byPlayer: Record<string, ChReadCount> } | { status: 'off' } | { status: 'failed' };
 
-/** Whole team-local days from a round's date (YYYY-MM-DD or an ISO timestamp) to today in the team's zone, as Home counts them (never negative). */
-function quietDaysSince(roundDate: string, now: Date, tz: string) {
-  return Math.max(0, daysBetweenDates(roundDate.slice(0, 10), isoDay(now, tz)));
+/** Whole team-local days from a round's date (YYYY-MM-DD or an ISO timestamp) to today in the team's zone: Home's own count (`quietDaysSince`). */
+function quietDaysFrom(roundDate: string, now: Date, tz: string) {
+  return quietDaysSince(roundDate, isoDay(now, tz));
 }
 
 /**
@@ -175,7 +175,7 @@ export function attentionFor(
 ): ChRosterPlayer['attention'] {
   if (availability !== 'available') return null;
   if (s.lastRoundDate) {
-    const days = quietDaysSince(s.lastRoundDate, now, tz);
+    const days = quietDaysFrom(s.lastRoundDate, now, tz);
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
   }
   if (s.status === 'slipping' && s.formChange != null && s.formChange > 0) {

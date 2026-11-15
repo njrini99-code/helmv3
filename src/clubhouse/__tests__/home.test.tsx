@@ -60,7 +60,7 @@ import { groupByPlayer, seasonStartDate, type ChRound } from '../data/season';
 import { previousInFilter, roundsInFilter } from '../data/stats-common';
 import { filterFor } from '../data/stats-filter';
 import { weightedMean } from '../data/stats-weight';
-import { formBasis } from '../screens/home/HomePhone';
+import { formSpan } from '../screens/home/HomePhone';
 import { CoachHome, CoachHomeNoTeam, isFirstRun } from '../screens/home/CoachHome';
 import { HomeSkeleton } from '../screens/home/HomeSkeleton';
 import { LatestRound } from '../screens/home/LatestRound';
@@ -330,8 +330,12 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(form.textContent).toMatch(/73\.4/);
     expect(form.querySelector('.ch-hm-delta')!.className).not.toMatch(/is-gain|is-loss/);
     expect(form.querySelector('.ch-hm-delta em')!.textContent).toBe('No clear change vs previous 10');
+    // Prod audit 2026-11-15, HOME-P-09: a change inside its error carries no signed number beside "No clear change".
+    expect(form.querySelector('.ch-hm-delta')!.textContent).not.toMatch(/[−+]\d/);
     expect(form.querySelectorAll('dd.is-gain, dd.is-loss')).toHaveLength(0);
-    expect(screen.getByRole('img', { name: /Team scoring, the team’s average on each of its last \d+ round days/ })).toBeTruthy();
+    // HOME-P-14: nor do greens and putts; they say "No clear change".
+    expect([...form.querySelectorAll('.ch-hm-form__figs > div')].slice(1).map((d) => d.querySelectorAll('dd')[1]!.textContent)).toEqual(['No clear change', 'No clear change']);
+    expect(screen.getByRole('img', { name: /Team scoring, the team’s average on each of its \d+ round days/ })).toBeTruthy();
     cleanup();
     // Measured tighter, the same changes clear it: the average down 0.9 is better, putts up 0.3 is worse.
     const f = PREVIEW_HOME.phone.form!;
@@ -340,7 +344,8 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     form = document.querySelector('.ch-hm-form')!;
     expect(form.querySelector('.ch-hm-delta')!.className).toMatch(/is-gain/);
     expect(form.querySelector('.ch-hm-delta em')!.textContent).toBe('Better than previous 10');
-    expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['+0.3']);
+    expect(form.querySelector('.ch-hm-delta')!.textContent).toMatch(/^−0\.9 strokes/);
+    expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['+0.3, worse']);
     expect(form.querySelectorAll('dd.is-gain')).toHaveLength(0);
   });
 
@@ -556,7 +561,7 @@ describe('Home · the team’s form (teamForm)', () => {
     expect(zeros.putts.avg).toBe(30);
     expect(zeros.basis.puttsRounds).toBe(7);
   });
-  it('draws the line as the team’s average on each round day, the last ten days, not a point a round', () => {
+  it('draws the line as the team’s average on each round day the figures rest on, not a point a round', () => {
     // Three players on each of twelve days: thirty-six rounds, but one point a day, and each player's newest ten reach back to day 2.
     const rounds: ChRound[] = [];
     for (let d = 0; d < 12; d++) ['a', 'b', 'c'].forEach((p, i) => rounds.push(r(70 + d + i, 10, 30, { player: p, back: 11 - d })));
@@ -565,6 +570,14 @@ describe('Home · the team’s form (teamForm)', () => {
     expect(f.line).toHaveLength(10);
     // Day d's three scores are 70+d, 71+d and 72+d: a mean of 71+d. Days 2 to 11.
     expect(f.line).toEqual([73, 74, 75, 76, 77, 78, 79, 80, 81, 82]);
+    // Prod audit 2026-11-15, HOME-D-06: every day in the basis, not the last ten. Two players ten rounds each, offset by four days:
+    // fourteen days, and the line covers the dates the card states.
+    const offset: ChRound[] = [];
+    for (let d = 0; d < 10; d++) offset.push(r(72, 10, 30, { player: 'a', back: 13 - d }), r(74, 10, 30, { player: 'b', back: 9 - d }));
+    const wide = teamForm(offset.sort((a, b) => (a.round_date < b.round_date ? 1 : -1)), 0)!;
+    expect(wide.line).toHaveLength(14);
+    expect(wide.lineDays![0]).toBe(wide.basis.from);
+    expect(wide.lineDays![13]).toBe(wide.basis.to);
     // Rounds on one day average into one point.
     expect(teamForm([r(70, 10, 30, { player: 'a', date: day(0) }), r(74, 10, 30, { player: 'b', date: day(0) }), r(71, 10, 30, { player: 'a', date: day(1) })].sort((a, b) => (a.round_date < b.round_date ? 1 : -1)), 0)!.line).toEqual([71, 72]);
   });
@@ -612,18 +625,20 @@ describe('Home · the team’s form (teamForm)', () => {
     expect(f.gir.pct).toBe(100);
     expect(f.putts.avg).toBe(38);
     expect(f.basis).toEqual({ rounds: 3, from: day(0), to: day(0), girRounds: 3, puttsRounds: 3 });
-    expect(formBasis(f.basis)).toMatch(/^3 rounds · [A-Z][a-z]{2} \d{1,2}$/);
+    expect(formSpan(f.basis, 'last10')).toMatch(/^Each player’s last 10 · [A-Z][a-z]{2} \d{1,2}$/);
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
     const form = document.querySelector('.ch-hm-form')!;
-    expect(form.querySelector('.ch-hm-form__basis')!.textContent).toBe(formBasis(f.basis));
+    expect(form.querySelector('.ch-hm-form__basis')!.textContent).toBe(formSpan(f.basis, 'last10'));
+    // The rounds are counted in the row's own window (HOME-P-14), not "this week".
+    expect(form.querySelector('.ch-hm-form__figs > div')!.textContent).toBe('Rounds3last 10 each');
     expect(form.textContent).not.toMatch(/vs previous 10/);
   });
 
   it('the greens change is in percentage points: "+3 pts", never a bare "+3" beside "61%"', () => {
-    const f = { ...PREVIEW_HOME.phone.form!, gir: { pct: 61, delta: 3 } };
+    const f = { ...PREVIEW_HOME.phone.form!, gir: { pct: 61, delta: 3, se: 1 } };
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
     const gir = [...document.querySelectorAll('.ch-hm-form__figs > div')][1]!;
-    expect([...gir.querySelectorAll('dd')].map((d) => d.textContent)).toEqual(['61%', '+3 pts']);
+    expect([...gir.querySelectorAll('dd')].map((d) => d.textContent)).toEqual(['61%', '+3 pts, better']);
   });
 
   it('§10-1 a figure resting on fewer rounds than the average says how many', () => {

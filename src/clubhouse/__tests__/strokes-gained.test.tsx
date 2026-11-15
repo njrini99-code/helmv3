@@ -346,7 +346,7 @@ describe('team stats · desktop', () => {
   it('A1: a change past its standard error is worded as one, from the halves', () => {
     // The halves come from the loader (wp1-honest, `roundHalves`), so the override carries them with the weeks.
     showTeam(team({ team: { ...PREVIEW_TEAM_STATS.team, sg: [-3, -3, -3, 0, 3, 3, 3], sgHalves: { delta: 6, se: 0.5 } } }));
-    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('The team’s strokes gained are up 6.0 a round, newer half vs older half.');
+    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('The team’s strokes gained are up 6.0 a round, same players, newer half vs older half.');
   });
 
   it('a flat line is no clear change, not a change', () => {

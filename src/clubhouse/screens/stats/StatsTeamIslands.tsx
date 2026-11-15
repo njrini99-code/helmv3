@@ -376,11 +376,13 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   // One change rule (A1): the newer half of the weeks against the older half, said as a change only past its standard error, which
   // the loader takes from the rounds behind each half (`roundHalves`: a week's mean of eight rounds is not one round). A change is
   // worded as one ("up 1.0 a round"), never as a level the team has "gained", and the first and last week are never compared.
-  const halvesNote = (subject: string, verb: 'is' | 'are', weeks: Array<number | null>, h: ChHalves | null | undefined) => {
+  const halvesNote = (subject: string, verb: 'is' | 'are', weeks: Array<number | null>, h: ChHalves | null | undefined, team = false) => {
     if (weeks.filter((v) => v != null).length < 3) return null;
+    // A team trend compares each player with themselves (NP-01): with too few of them on both sides there is no change to read.
+    if (!h && team) return `Not enough of the same players on both halves to read a change in ${subject}.`;
     if (!h || halvesTone(h, !isSg) === '') return `No clear change in ${subject} across this window.`;
     const by = `${formatFixed(Math.abs(h.delta))} ${isSg ? 'a round' : 'strokes a round'}`;
-    return `${subject.charAt(0).toUpperCase() + subject.slice(1)} ${verb} ${h.delta > 0 ? 'up' : 'down'} ${by}, newer half vs older half.`;
+    return `${subject.charAt(0).toUpperCase() + subject.slice(1)} ${verb} ${h.delta > 0 ? 'up' : 'down'} ${by}, ${team ? 'same players, ' : ''}newer half vs older half.`;
   };
   const trendNote = (() => {
     if (sel) {
@@ -394,7 +396,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     }
     if (!tFirst || !tLast || tFirst.i === tLast.i) return 'The trend needs rounds in at least two weeks.';
     return (
-      halvesNote(isSg ? 'the team’s strokes gained' : 'team scoring', isSg ? 'are' : 'is', team, isSg ? data.team.sgHalves : data.team.scoreHalves) ??
+      halvesNote(isSg ? 'the team’s strokes gained' : 'team scoring', isSg ? 'are' : 'is', team, isSg ? data.team.sgHalves : data.team.scoreHalves, true) ??
       'The team has two weeks in this window so far; a change needs three.'
     );
   })();
