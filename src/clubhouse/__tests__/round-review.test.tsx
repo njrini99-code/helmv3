@@ -527,16 +527,16 @@ describe('Round review route', () => {
     teamOf.current = { role: 'player', teamId: 'team1', playerId: 'p2' };
     tables.current = { golf_rounds: { data: { ...PREVIEW_REVIEW_ROUND, player_id: 'p1', status: 'completed', is_test: false } } };
     wrap(await ClubhouseRoundReviewRoute({ id: PREVIEW_REVIEW_ROUND.id }));
-    await expectCode('CH-11307', /This round isn’t here.*It may have been deleted, or it isn’t one of your rounds\./);
+    await expectCode('CH-11307', /This round isn’t here.*It may have been deleted, or the link is wrong\./);
     expect(screen.getByRole('link', { name: 'Go to your rounds' }).getAttribute('href')).toBe('/golf/dashboard/rounds');
   });
 
-  it('CH-11307 a coach off the player’s team gets the coach’s wording and a way back to Stats', async () => {
+  it('CH-11307 a coach off the player’s team gets the same one voice (GAP-S-24) and a way back to Stats', async () => {
     session.current = { userId: 'u1', coach: { id: 'c1' }, player: null };
     teamOf.current = { role: 'coach', teamId: 'team2', coachId: 'c1' };
     tables.current = { golf_rounds: { data: { ...PREVIEW_REVIEW_ROUND, player_id: 'p1', status: 'completed', is_test: false } }, golf_team_members: { data: [] } };
     wrap(await ClubhouseRoundReviewRoute({ id: PREVIEW_REVIEW_ROUND.id }));
-    await expectCode('CH-11307', /played by someone who isn’t on your team/);
+    await expectCode('CH-11307', /This round isn’t here.*It may have been deleted, or the link is wrong\./);
     expect(screen.getByRole('link', { name: 'Go to Stats' })).toBeTruthy();
   });
 

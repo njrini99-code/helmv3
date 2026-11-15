@@ -1694,7 +1694,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
     tables.current = { golf_qualifiers: { data: null } };
     noteOpenedFromList(id);
     const stepped = wrap(await ClubhouseQualifiersRoute({ view: 'detail', id }));
-    const back = within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' });
+    const back = within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' });
     expect(back.getAttribute('href')).toBe(LIST_URL);
     await user.click(back);
     expect(router.back).toHaveBeenCalledTimes(1);
@@ -1703,16 +1703,16 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
     // The edit address for the same id is not the page the list opened: Back is the list's address.
     noteOpenedFromList(id);
     const edit = wrap(await ClubhouseQualifiersRoute({ view: 'edit', id }));
-    keepHere(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
-    await user.click(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
+    keepHere(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' }));
+    await user.click(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' }));
     expect(router.back).toHaveBeenCalledTimes(1);
     edit.unmount();
 
     // And so is a detail address nobody opened from the list.
     window.sessionStorage.clear();
     wrap(await ClubhouseQualifiersRoute({ view: 'detail', id }));
-    keepHere(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
-    await user.click(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
+    keepHere(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' }));
+    await user.click(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' }));
     expect(router.back).toHaveBeenCalledTimes(1);
   });
 
@@ -3161,8 +3161,8 @@ describe('Qualifiers · the route (who reaches which address)', () => {
       const views = who === asCoach ? (['detail', 'edit', 'selection'] as const) : (['detail'] as const);
       for (const view of views) {
         const { unmount } = wrap((await route(view, QID)) as never);
-        expect([view, code('CH-09310')!.textContent]).toEqual([view, 'That qualifier isn’t on your teamIt may have been deleted, or the link is from another team.Back to qualifiers']);
-        expect(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }).getAttribute('href')).toBe('/golf/dashboard/qualifiers');
+        expect([view, code('CH-09310')!.textContent]).toEqual([view, 'This qualifier isn’t hereIt may have been deleted, or the link is wrong. Everything else is where you left it.Back to Qualifiers']);
+        expect(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' }).getAttribute('href')).toBe('/golf/dashboard/qualifiers');
         unmount();
       }
     }
