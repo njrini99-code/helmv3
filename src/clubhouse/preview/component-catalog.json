@@ -18789,7 +18789,7 @@
         },
         {
           "name": "--ch-lv-ink",
-          "value": "var(--ch-score-under-fill)",
+          "value": "var(--ch-score-birdie-fill)",
           "scope": ".ch-lv-bead[data-kind='birdie']"
         },
         {
