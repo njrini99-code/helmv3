@@ -128,8 +128,10 @@ export function People({ people, total, label = 'players', everyone = false }: {
     <div className="ch-akc-people">
       {expandable ? (
         // One control for the whole line, as the work line's summary is: the names are the key that opens the names.
-        <button type="button" className="ch-akc-people__line is-key" data-ch-press="" aria-expanded={open} aria-controls={listId} aria-label={`${line}. ${open ? 'Hide the list' : `Show all ${count(people.length)}`}`} onClick={() => setOpen((v) => !v)}>
-          {inner}
+        // Named by what it shows, then what it does (SWP-02, WCAG 2.5.3): Voice Control reaches it by the names on its face.
+        <button type="button" className="ch-akc-people__line is-key" data-ch-press="" aria-expanded={open} aria-controls={listId} onClick={() => setOpen((v) => !v)}>
+          {inner}{' '}
+          <span className="ch-sr-only">{open ? '. Hide the list' : `. Show all ${count(people.length)}`}</span>
           <Icon icon={ChevronDown} size={15} className="ch-akc-people__chev" />
         </button>
       ) : (

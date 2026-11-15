@@ -469,10 +469,12 @@
 /* The ⌘K palette comes up from .96 over the quick beat (motion spec 15 Nov 3.4) and an alert settles from 1.1 (S3.6, the iOS
    alert); both leave by fading over 110ms (lib/dialog-lifetime.ts). Low specificity, so the phone sheet's rise below wins. */
 :where(.ch-modal[data-ch-pop='quick']) .ch-modal__panel {
-  animation: ch-pop-in var(--ch-dur-quick) var(--ch-ease-sheet);
+  --ch-pop-from: scale(0.96);
+  animation: ch-pop var(--ch-dur-quick) var(--ch-ease-sheet);
 }
 :where(.ch-modal[role='alertdialog']) .ch-modal__panel {
-  animation: ch-alert-in var(--ch-dur-quick) var(--ch-ease-sheet);
+  --ch-pop-from: scale(1.1);
+  animation: ch-pop var(--ch-dur-quick) var(--ch-ease-sheet);
 }
 .ch-modal__panel > .ch-grab {
   display: none;
@@ -556,22 +558,11 @@
     box-shadow: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 3px rgb(0 0 0 / 0.25);
   }
 }
+/* One pop for every centred dialog; the palette and the alert start it from their own scale (--ch-pop-from). */
 @keyframes ch-pop {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-}
-@keyframes ch-pop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-}
-@keyframes ch-alert-in {
-  from {
-    opacity: 0;
-    transform: scale(1.1);
+    transform: var(--ch-pop-from, translateY(8px) scale(0.98));
   }
 }
 @keyframes ch-fade {

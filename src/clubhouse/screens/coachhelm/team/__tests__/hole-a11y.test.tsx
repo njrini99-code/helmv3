@@ -4,6 +4,9 @@ import { stationFigures, type ChTeamPlayer } from '../../../../data/coachhelm-te
 import { PREVIEW_TEAM_BOARD } from '../../../../preview/fixtures-coachhelm-team';
 import { TeamHole } from '../TeamHole';
 import { Huddle } from '../Huddle';
+import { StationControl } from '../StationControl';
+import { SpotCard } from '../SpotCard';
+import { accessibleName, expectLabelInName } from '../../../../__tests__/label-in-name';
 
 /**
  * F-0007 (audit, 13 Nov 2026): the course map was role="img" with twelve station buttons inside it. An image's children are
@@ -60,5 +63,28 @@ describe('the Huddle chart’s coins reach a screen reader (SWP-10)', () => {
     expect(svg.getAttribute('role')).toBe('group');
     expect(svg.getAttribute('aria-label')).toMatch(/^Huddle chart/);
     expect(svg.querySelectorAll('[role="button"]').length).toBeGreaterThan(0);
+  });
+});
+
+describe('the Team board’s chips and bars are named by what they show (SWP-04, MAC-09: Voice Control)', () => {
+  it('each station chip’s name starts with its short name and figure; Course with its read words', () => {
+    const { container } = render(<StationControl value="approach" onChange={() => {}} stations={PREVIEW_TEAM_BOARD.stations} courseReads={0} courseTab />);
+    const chips = [...container.querySelectorAll('.stchips button')];
+    expect(chips).toHaveLength(5);
+    for (const chip of chips) expectLabelInName(chip);
+    expect(accessibleName(chips[0]!)).toMatch(/^Tee, .*, off the tee$/);
+    expect(accessibleName(chips[4]!)).toBe('Course, No reads, course and scoring');
+  });
+
+  it('a spot’s player rows have no aria-label to disagree with their face, and open with the first name shown', () => {
+    const { container } = render(<SpotCard data={PREVIEW_TEAM_BOARD} station="approach" onRead={() => {}} onPlayer={() => {}} />);
+    const rows = [...container.querySelectorAll('button.br')];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.hasAttribute('aria-label')).toBe(false);
+      const first = row.querySelector('.bn')!.childNodes;
+      const shown = [...first].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join('').trim();
+      expectLabelInName(row, shown);
+    }
   });
 });

@@ -536,7 +536,7 @@ export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {
 function Meter({ label, value, pct, muted }: { label: string; value: string; pct: number | null; muted?: boolean }) {
   return (
     <span className="ch-rd-meter">
-      <em>{label}</em>
+      <em>{label}</em>{' '}
       <span className={'ch-rd-meter__t' + (muted ? ' is-p' : '')}>{pct != null && <i style={{ '--ch-rd-fill': Math.max(0, Math.min(100, pct)) / 100 } as CSSProperties} />}</span>
       <b className="ch-num">{value}</b>
     </span>
@@ -555,60 +555,63 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
   const body = (
     <>
       <span className="ch-rd-sc__date">
-        <b className="ch-num">{dateOf(r.date).getUTCDate()}</b>
-        <em>{dow(r.date)}</em>
-      </span>
+        <b className="ch-num">{dateOf(r.date).getUTCDate()}</b>{' '}
+        <em>{dow(r.date)}</em>{' '}
+        {/* The month is the section's heading on screen; a screen reader hears it with the day. */}
+        <span className="ch-sr-only">{monthShort(r.date)}</span>
+      </span>{' '}
       <span className="ch-rd-sc__c">
-        <b>{r.course}</b>
+        <b>{r.course}</b>{' '}
         <span>
           <TeeSwatch color={r.teeColor} />
-          {r.tee ?? `${r.holes} holes`}
-          {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
-          <TypePill type={r.type} />
+          {r.tee ?? `${r.holes} holes`}{' '}
+          {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}{' '}
+          <TypePill type={r.type} />{' '}
           {!r.countable && <span className="ch-rd-pill is-nc">Not counted</span>}
         </span>
-      </span>
+      </span>{' '}
       <span role="group" className="ch-rd-sc__grid" aria-label={r.inn != null ? `Out ${r.out ?? NO_DATA}, in ${r.inn}, total ${r.score}` : `${r.holes} holes, total ${r.score}`}>
         {r.holes === 18 ? (
           <>
             <span>
-              <em>Out</em>
+              <em>Out</em>{' '}
               <b className="ch-num">{r.out ?? <NoData />}</b>
-            </span>
+            </span>{' '}
             <span>
-              <em>In</em>
+              <em>In</em>{' '}
               <b className="ch-num">{r.inn ?? <NoData />}</b>
             </span>
           </>
         ) : (
           <span>
-            <em>Holes</em>
+            <em>Holes</em>{' '}
             <b className="ch-num">{r.holes}</b>
           </span>
-        )}
+        )}{' '}
         <span className="is-tot">
-          <em>Tot</em>
+          <em>Tot</em>{' '}
           <b className="ch-num">{r.score}</b>
         </span>
-      </span>
+      </span>{' '}
       <span className="ch-rd-sc__m">
-        <Meter label="Fairways" value={r.fairways ? `${r.fairways.hit}/${r.fairways.of}` : NO_DATA} pct={r.fairways ? (r.fairways.hit / r.fairways.of) * 100 : null} />
-        <Meter label="Greens" value={r.greens ? `${r.greens.hit}/${r.greens.of}` : NO_DATA} pct={r.greens ? (r.greens.hit / r.greens.of) * 100 : null} />
+        <Meter label="Fairways" value={r.fairways ? `${r.fairways.hit}/${r.fairways.of}` : NO_DATA} pct={r.fairways ? (r.fairways.hit / r.fairways.of) * 100 : null} />{' '}
+        <Meter label="Greens" value={r.greens ? `${r.greens.hit}/${r.greens.of}` : NO_DATA} pct={r.greens ? (r.greens.hit / r.greens.of) * 100 : null} />{' '}
         {/* Fewer putts fills more: 36 per 18 is empty, 26 is full (the board's scale). */}
         <Meter label="Putts" value={r.putts == null ? NO_DATA : String(r.putts)} pct={r.putts == null ? null : ((36 - r.putts * (18 / r.holes)) / 10) * 100} muted />
-      </span>
+      </span>{' '}
       <span className={'ch-rd-sc__s' + (under ? ' is-under' : '')}>
-        <b className="ch-num">{formatToPar(r.toPar)}</b>
+        <b className="ch-num">{formatToPar(r.toPar)}</b>{' '}
         <em className="ch-num">{r.score}</em>
       </span>
     </>
   );
   const label = `${shortDay(r.date)}, ${r.course}, ${r.score}${r.toPar != null ? ` (${formatToPar(r.toPar)})` : ''}`;
   return href ? (
+    // Named by what it shows, in the order it is drawn (MAC-09, PMAC-07: Voice Control); its score grid reads "Out 38, in 37,
+    // total 75". The static card keeps its summary label: a group is not a control.
     <Link
       href={href}
       className={'ch-rd-sc' + (under ? ' is-under' : '')}
-      aria-label={label}
       {...bind}
       {...press(href)}
       onClick={(e) => {

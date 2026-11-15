@@ -35,19 +35,27 @@ export function RosterLeaders({ players, statsError, clock, onOpen }: { players:
         const figure = reason ?? (kind === 'look' ? formatSigned(value) : formatFixed(value));
         const unit = reason ? `${formatSigned(value)} ${k.unit}` : k.unit;
         return (
-          <button key={kind} type="button" className="ch-rs-ldr" data-year={year ?? undefined} data-ch-press-scale=".97" aria-label={`${k.label}, ${p.name}, ${figure}. Open profile`} onClick={() => onOpen(p.id)}>
+          // Named by its face, in the order it is drawn (MAC-09, N13C-19: Voice Control): the label, the figure and its unit,
+          // the player; "Open profile" for a screen reader only. No aria-label to disagree with what it shows.
+          <button key={kind} type="button" className="ch-rs-ldr" data-year={year ?? undefined} data-ch-press-scale=".97" onClick={() => onOpen(p.id)}>
             <span className="ch-rs-ldr__k">
               {k.label}
               <Icon icon={k.icon} size={15} />
-            </span>
+            </span>{' '}
             <span className={'ch-rs-ldr__v ch-num' + (kind === 'look' ? ' is-loss' : '') + (reason ? ' is-words' : '')}>
               {figure}
-              {unit && <small>{unit}</small>}
-            </span>
+              {unit && (
+                <>
+                  <span className="ch-sr-only"> </span>
+                  <small>{unit}</small>
+                </>
+              )}
+            </span>{' '}
             <span className="ch-rs-ldr__p">
               <Avatar name={p.name} id={p.id} size="sm" year={year} />
               <b>{p.name}</b>
             </span>
+            <span className="ch-sr-only">. Open profile</span>
             {p.trend.length >= 3 && (
               <span className="ch-rs-ldr__bars">
                 <FormBars data={p.trend} mean={p.avg} />
