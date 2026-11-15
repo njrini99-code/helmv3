@@ -909,7 +909,7 @@ export function fileKind(fileType: string | null, fileUrl: string): string {
 }
 
 /** Folders in first-seen order ("Team" for none), files newest first. */
-export function folders(docs: Array<{ practice_plan_id?: string | null; id: string; title: string; folder: string | null; file_type: string | null; file_url: string; file_size: number | null; updated_at: string | null; created_at: string | null; is_public?: boolean | null }>, f: ReturnType<typeof formatters>) {
+export function folders(docs: Array<{ practice_plan_id?: string | null; id: string; title: string; folder: string | null; file_type: string | null; file_url: string | null; file_size: number | null; updated_at: string | null; created_at: string | null; is_public?: boolean | null }>, f: ReturnType<typeof formatters>) {
   const out = new Map<string, ChHubFile[]>();
   const sorted = [...docs].sort((a, b) => (b.updated_at ?? b.created_at ?? '').localeCompare(a.updated_at ?? a.created_at ?? ''));
   for (const d of sorted) {
