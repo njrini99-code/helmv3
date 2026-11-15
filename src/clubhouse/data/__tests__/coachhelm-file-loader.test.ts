@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FieldRoundInput } from '@/lib/coachhelm/v3/field-day/field';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 
@@ -76,6 +76,13 @@ import { roundsToGo } from '../coachhelm';
 import { readStandingRows } from '../coachhelm-standing';
 import { loadCoachPlayerFile, loadFileField, loadFileIntent, loadFilePlan, loadPlayerYourWeek } from '../coachhelm-file';
 import type { ChCoachPlayerScope } from '../coachhelm-player';
+import { sgPolicy } from '../stats-sg-mix';
+
+// These tests pin figures and reads written for every stored strokes gained figure, so they run under `include`. The shipped policy
+// (`exclude`, SC-07) and what it changes are pinned in src/clubhouse/data/__tests__/sg-mix.test.ts.
+const SG_POLICY_SHIPPED = sgPolicy.estimated;
+beforeEach(() => { sgPolicy.estimated = 'include'; });
+afterEach(() => { sgPolicy.estimated = SG_POLICY_SHIPPED; });
 
 const scope = { coachId: 'coach-1', teamId: 'team-1', playerId: 'p1', head: { first: 'Eli', name: 'Eli Stone' } } as unknown as ChCoachPlayerScope;
 const ready = { status: 'ready', data: { list: [], cleared: [], rounds: 8 } };

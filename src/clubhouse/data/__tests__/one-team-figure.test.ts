@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * One number, one source (owner rule, 10 Nov 2026). A team's strokes gained, and a player's, are drawn on Team stats, on CoachHelm
@@ -34,6 +34,13 @@ import type { ChRound } from '../season';
 import { PREVIEW_TEAM_STATS, PREVIEW_PLAYER } from '../../preview/fixtures-stats';
 import { PREVIEW_TEAM_BOARD } from '../../preview/fixtures-coachhelm-team';
 import { PREVIEW_SG_ROWS, PREVIEW_TEAM_SG } from '../../preview/fixtures-team-sg';
+import { sgPolicy } from '../stats-sg-mix';
+
+// These tests pin figures and reads written for every stored strokes gained figure, so they run under `include`. The shipped policy
+// (`exclude`, SC-07) and what it changes are pinned in src/clubhouse/data/__tests__/sg-mix.test.ts.
+const SG_POLICY_SHIPPED = sgPolicy.estimated;
+beforeEach(() => { sgPolicy.estimated = 'include'; });
+afterEach(() => { sgPolicy.estimated = SG_POLICY_SHIPPED; });
 
 const src = (file: string) => readFileSync(join(process.cwd(), 'src/clubhouse', file), 'utf8');
 const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
