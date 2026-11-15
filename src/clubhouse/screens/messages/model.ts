@@ -217,6 +217,15 @@ export interface ChAnnouncement {
   authorId?: string | null;
 }
 
+/**
+ * The announcements the inbox shows: every row the read returned but the ones a team flagged `is_test` (QA runs leave posts behind),
+ * as Team Hub hides them (`data/hub.ts` `hiddenTestRows`; prod audit 2026-11-15, DM-02, MSG-L-08). The shared read
+ * (getAnnouncementsWithMeta) selects every column, so the flag is on the row.
+ */
+export function shownAnnouncements(rows: readonly GolfAnnouncementMeta[]): ChAnnouncement[] {
+  return rows.filter((a) => (a as { is_test?: boolean | null }).is_test !== true).map(toChAnnouncement);
+}
+
 /** One announcement row from getAnnouncementsWithMeta, as the inbox shows it (the server route and the client share it). */
 export function toChAnnouncement(a: GolfAnnouncementMeta): ChAnnouncement {
   return {

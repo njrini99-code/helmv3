@@ -189,7 +189,8 @@ export async function loadCalendar(input: {
     supabase
       .from('golf_team_members')
       // A coach also sees who is injured or away beside a name; a player's page never carries it (availability, v1).
-      .select(input.role === 'coach' ? 'availability, player:golf_players(id, first_name, last_name, graduation_year)' : 'player:golf_players(id, first_name, last_name, graduation_year)')
+      // `is_test`: a QA account is never offered as an invitee (prod audit 2026-11-15, PV-41), as Ask's roster leaves it out.
+      .select(input.role === 'coach' ? 'availability, player:golf_players(id, first_name, last_name, graduation_year, is_test)' : 'player:golf_players(id, first_name, last_name, graduation_year, is_test)')
       .eq('team_id', input.teamId)
       .eq('status', 'active')
       .limit(200),
@@ -210,10 +211,10 @@ export async function loadCalendar(input: {
   const anchor = parseDate(input.date ?? eventDate, today);
   const range = windowFor(anchor);
 
-  type PlayerRow = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
+  type PlayerRow = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null; is_test?: boolean | null };
   const people: ChCalPerson[] = (membersRes.data ?? [])
     .map((m) => m as unknown as { availability?: string | null; player: PlayerRow | null })
-    .filter((m): m is { availability?: string | null; player: PlayerRow } => !!m.player)
+    .filter((m): m is { availability?: string | null; player: PlayerRow } => !!m.player && m.player.is_test !== true)
     .map((m) => ({
       id: m.player.id,
       name: fullName(m.player),
