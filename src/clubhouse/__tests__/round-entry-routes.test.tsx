@@ -116,7 +116,8 @@ describe('Round entry: the pages', () => {
     mocks.session.current = { userId: 'u2', role: 'coach', player: null, coach: { id: 'c1' } };
     const el = (await NewRoundPage()) as ReactElement<{ title: string; actionHref: string }>;
     expect(el.type).not.toBe(ClubhouseNewRoundRoute);
-    expect(el.props).toMatchObject({ title: 'Log a Round', actionHref: '/golf/dashboard/stats/team' });
+    // Team stats is /stats itself (GAP-R-10): no redirect hop.
+    expect(el.props).toMatchObject({ title: 'Log a Round', actionHref: '/golf/dashboard/stats' });
   });
 
   const roundRow = { id: ID, player_id: 'p1', status: 'in_progress', course_name: 'Finley GC', course_id: null, tee_id: null, holes_played: 9, current_hole: 4, round_type: 'practice', round_date: '2026-10-14', updated_at: '2026-10-14T12:00:00.000Z', qualifier_id: null, qualifier_round_number: null, back_nine: null, draft_data: null, notes: null };

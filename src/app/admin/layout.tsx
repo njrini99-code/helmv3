@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { checkSuperAdminAccess } from '@/lib/admin/require-super-admin';
 import { fetchBridgeErrorBadge } from '@/lib/admin/data/overview';
@@ -8,6 +9,9 @@ import { AdminShell } from './_components/AdminShell';
 import { ThemeApplier } from '@/components/theme/ThemeApplier';
 
 export const dynamic = 'force-dynamic';
+
+// Every admin tab names its page (GAP-R-17), so an operator with several open can tell them apart.
+export const metadata: Metadata = { title: { template: '%s · Admin', default: 'Admin' } };
 
 export default async function AdminLayout({
   children,

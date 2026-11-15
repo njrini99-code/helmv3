@@ -20,7 +20,7 @@ describe('push payload deep links (NAV-IA3)', () => {
   it('falls back to the list without an id, and ignores ids that are not plain tokens', () => {
     expect(url('event_rsvp_reminder', {})).toBe('/golf/dashboard/calendar');
     expect(url('qualifier_created', { qualifierId: '../x?y' })).toBe('/golf/dashboard/qualifiers');
-    expect(url('round_submitted', {})).toBe('/golf/dashboard/stats/team');
+    expect(url('round_submitted', {})).toBe('/golf/dashboard/stats');
   });
 
   it('opens the exact task for an assignment or reminder when the sender gives its id, else the task list', () => {

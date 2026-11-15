@@ -19,6 +19,9 @@ import { ACTIVITY_KIND_META, kindMeta } from './kind-meta';
 import { ActivityKindFilterChips, type ActivityKindChip } from './ActivityKindFilterChips';
 import { TeamFilterControl, type TeamFilterOption } from './TeamFilterControl';
 import { ActivityFeed } from './ActivityFeed';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Activity' };
 
 export const dynamic = 'force-dynamic';
 

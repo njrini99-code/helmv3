@@ -346,6 +346,15 @@ const nextConfig = {
         permanent: false,
       },
       {
+        // Team stats is Stats (GAP-R-10, 15 Nov 2026): one address for one
+        // screen. A coach lands on the team view and a player on their own
+        // Stats, as the old page did; ?area= (and every other key) passes
+        // through, so a saved area link still opens that area.
+        source: '/golf/dashboard/stats/team',
+        destination: '/golf/dashboard/stats',
+        permanent: false,
+      },
+      {
         // A round's review is the round page.
         source: '/golf/dashboard/rounds/:id/review',
         destination: '/golf/dashboard/rounds/:id',

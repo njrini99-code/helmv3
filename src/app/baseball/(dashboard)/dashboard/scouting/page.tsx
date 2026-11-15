@@ -32,7 +32,7 @@ import { SectionMasthead, PaperCard, Eyebrow } from '@/components/baseball/livin
 import { IconChevronRight } from '@/components/icons';
 
 export const metadata = {
-  title: 'Scouting · BaseballHelm',
+  title: 'Scouting',
 };
 
 const SCOUTING_CARD_IDS: readonly {

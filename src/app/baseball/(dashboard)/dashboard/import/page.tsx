@@ -30,6 +30,9 @@ import type { BaseballImportSourceConfig } from '@/lib/types/baseball-settings';
 import type { BaseballSourceKey } from '@/lib/types/baseball-stat-events';
 import type { BaseballStatUpload } from '@/lib/types';
 import type { RegisteredSourceOption } from '@/components/baseball/import-center/ImportCenterShell';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Import Data' };
 
 /**
  * Build the file-input accept list from the source's REAL supported formats so the

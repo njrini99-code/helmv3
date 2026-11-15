@@ -13,6 +13,9 @@ import { resolveLiftingAccess, resolveLiftingOrgIdForUser } from '@/lib/lifting/
 import { SessionListClient } from '@/components/lifting/sessions/SessionListClient';
 import type { HelmLiftingSessionRow } from '@/lib/types/helm-lifting-data';
 import type { HelmLiftingAthleteRow } from '@/lib/types/helm-lifting';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Sessions' };
 
 export interface SessionListItem extends HelmLiftingSessionRow {
   athlete_first_name: string | null;

@@ -493,13 +493,8 @@ async function createFocusAreaImpl(
   // Notify the player (fire-and-forget)
   await notifyPlayerOfProposedFocus(supabase, data.player_id, data.title, data.area_type, coach.full_name, 'development.createFocusArea');
 
-  revalidatePath('/golf/dashboard/development');
-  revalidatePath('/golf/dashboard/my-development');
-  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
-  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
-  // destinations too so a coach/player landed there already sees this write
-  // (pattern: v3/goals.ts createGoal/createTeamGoal).
-  revalidatePath('/golf/dashboard/intelligence');
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
 
   return { success: true };
@@ -598,13 +593,9 @@ async function createPlayerFocusAreaImpl(
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
 
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/development');
-  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
-  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
-  // destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -715,13 +706,9 @@ async function acceptFocusAreaImpl(
     return { success: false, error: 'Focus area not found or no longer pending' };
   }
 
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/development');
-  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
-  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
-  // destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -774,13 +761,9 @@ async function declineFocusAreaImpl(
     return { success: false, error: 'Focus area not found or no longer pending' };
   }
 
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/development');
-  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
-  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
-  // destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -880,16 +863,9 @@ async function updateFocusAreaImpl(
     return { success: false, error: 'Focus area not found or not permitted' };
   }
 
-  revalidatePath('/golf/dashboard/development');
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/insights');
-  revalidatePath('/golf/dashboard/analytics/coachhelm');
-  // Defense-in-depth: /development, /insights, and /my-development are all
-  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
-  // Task 9) — revalidate the canonical destinations too (pattern: v3/goals.ts
-  // createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -967,13 +943,9 @@ async function deleteFocusAreaImpl(id: string): Promise<DevelopmentActionResult>
     return { success: false, error: 'Focus area not found or not permitted' };
   }
 
-  revalidatePath('/golf/dashboard/development');
-  revalidatePath('/golf/dashboard/my-development');
-  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
-  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
-  // destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -1103,16 +1075,9 @@ async function updateFocusAreaProgressImpl(
     return { success: false, error: 'Focus area not found or not permitted' };
   }
 
-  revalidatePath('/golf/dashboard/development');
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/insights');
-  revalidatePath('/golf/dashboard/analytics/coachhelm');
-  // Defense-in-depth: /development, /insights, and /my-development are all
-  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
-  // Task 9) — revalidate the canonical destinations too (pattern:
-  // v3/goals.ts createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -1199,16 +1164,9 @@ async function completeFocusAreaImpl(
     return { success: false, error: 'Focus area not found or not permitted' };
   }
 
-  revalidatePath('/golf/dashboard/development');
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/insights');
-  revalidatePath('/golf/dashboard/analytics/coachhelm');
-  // Defense-in-depth: /development, /insights, and /my-development are all
-  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
-  // Task 9) — revalidate the canonical destinations too (pattern:
-  // v3/goals.ts createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -1287,16 +1245,9 @@ async function reactivateFocusAreaImpl(
     return { success: false, error: 'Focus area not found or not permitted' };
   }
 
-  revalidatePath('/golf/dashboard/development');
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/insights');
-  revalidatePath('/golf/dashboard/analytics/coachhelm');
-  // Defense-in-depth: /development, /insights, and /my-development are all
-  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
-  // Task 9) — revalidate the canonical destinations too (pattern:
-  // v3/goals.ts createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }
@@ -1540,13 +1491,9 @@ async function createFocusAreaFromReviewImpl(
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
 
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/development');
-  // Defense-in-depth: both legacy routes are permanent-redirect shims onto the
-  // Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the canonical
-  // destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true, focusAreaId: row.id };
 }
@@ -1717,15 +1664,9 @@ async function createFocusAreaFromInsightV2Impl(
     metadata: { focus_area_id: row.id },
   });
 
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/development');
-  revalidatePath('/golf/dashboard/insights');
-  // Defense-in-depth: /my-development, /development, and /insights are all
-  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
-  // Task 9) — revalidate the canonical destinations too (pattern:
-  // v3/goals.ts createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true, focusAreaId: row.id };
 }
@@ -2002,17 +1943,10 @@ async function createFocusAreaFromInsightImpl(
     metadata: { focus_area_id: focusArea.id },
   });
 
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
   revalidatePath('/golf/dashboard');
-  revalidatePath('/golf/dashboard/development');
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/insights');
-  revalidatePath('/golf/dashboard/alerts');
-  // Defense-in-depth: /development, /my-development, /insights, and /alerts
-  // are all permanent-redirect shims onto the Spine & Stage homes
-  // (2026-07-19, plan Task 9) — revalidate the canonical destinations too
-  // (pattern: v3/goals.ts createGoal/createTeamGoal).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true, data: { focusAreaId: focusArea.id } };
 }
@@ -2141,13 +2075,9 @@ async function recordFocusAreaOutcomeImpl(
 
   // No source insight → nothing to credit. Soft-notice, still a success.
   if (!focusArea.from_insight_id) {
-    revalidatePath('/golf/dashboard/development');
-    revalidatePath('/golf/dashboard/my-development');
-    // Defense-in-depth: both legacy routes are permanent-redirect shims onto
-    // the Spine & Stage homes (2026-07-19, plan Task 9) — revalidate the
-    // canonical destinations too (pattern: v3/goals.ts createGoal/createTeamGoal).
+    // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+    revalidatePath('/golf/dashboard/stats');
     revalidatePath('/golf/dashboard/coachhelm');
-    revalidatePath('/golf/dashboard/intelligence');
     return {
       success: true,
       notice: 'Outcome recorded on this focus area. (No source insight to also credit.)',
@@ -2171,16 +2101,9 @@ async function recordFocusAreaOutcomeImpl(
     return { success: false, error: 'Outcome saved on the focus area, but crediting the source insight failed. Please try again.' };
   }
 
-  revalidatePath('/golf/dashboard/development');
-  revalidatePath('/golf/dashboard/my-development');
-  revalidatePath('/golf/dashboard/insights');
-  revalidatePath('/golf/dashboard/analytics/coachhelm');
-  // Defense-in-depth: /development, /insights, and /my-development are all
-  // permanent-redirect shims onto the Spine & Stage homes (2026-07-19, plan
-  // Task 9) — revalidate the canonical destinations too (pattern:
-  // v3/goals.ts createGoal/createTeamGoal).
+  // Clubhouse shows focus areas on Stats (the Development tab, both roles) and CoachHelm; the Fairway addresses only redirect (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true };
 }

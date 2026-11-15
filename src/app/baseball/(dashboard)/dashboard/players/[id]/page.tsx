@@ -13,6 +13,9 @@ import { resolveTeamTimezone, todayIsoInTz } from '@/lib/baseball/daily-contract
 import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Player' };
 
 interface PageProps {
   params: Promise<{ id: string }>;

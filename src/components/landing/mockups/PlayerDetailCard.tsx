@@ -10,10 +10,10 @@ export function PlayerDetailCard() {
   return (
     <div style={{ background: M.surface, borderRadius: 20, boxShadow: M.softShadow, padding: 20, fontFamily: M.sans, color: M.ink, lineHeight: 1.5 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ width: 40, height: 40, borderRadius: '50%', background: M.accentDeep, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 14 }}>TP</span>
+        <span style={{ width: 40, height: 40, borderRadius: '50%', background: M.accentDeep, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 14 }}>MC</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 620, color: M.ink }}>Test Player</div>
-          <div style={{ fontSize: 11.5, color: M.ink3 }}>Senior · Demo University Golf</div>
+          <div style={{ fontSize: 15, fontWeight: 620, color: M.ink }}>Maya Chen</div>
+          <div style={{ fontSize: 11.5, color: M.ink3 }}>Senior · Coastal State Golf</div>
         </div>
         <span style={{ ...monoLabel(9.5), letterSpacing: '0.08em' }}>Player detail</span>
       </div>

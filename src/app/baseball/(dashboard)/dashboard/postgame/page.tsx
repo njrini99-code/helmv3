@@ -26,6 +26,9 @@ import { getPostgameReview } from '@/lib/baseball/read-models/postgame';
 import { PostgameReviewClient } from '@/components/baseball/postgame/PostgameReviewClient';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Postgame' };
 
 interface PostgamePageProps {
   searchParams: Promise<{ game?: string }>;

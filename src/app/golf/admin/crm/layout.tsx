@@ -1,3 +1,8 @@
+import type { Metadata } from 'next';
+
+// The CRM page is a client component, so its tab title lives here: 'Coach CRM · Admin' (GAP-R-17).
+export const metadata: Metadata = { title: 'Coach CRM' };
+
 export default async function CRMLayout({
   children,
 }: {

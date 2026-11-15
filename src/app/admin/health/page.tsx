@@ -17,6 +17,9 @@ import { ViewRail } from '../_components/ViewRail';
 import { SectionLabel } from '../_components/SectionLabel';
 import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
 import { parseView, type AdminViewOf } from '@/lib/admin/views';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Health' };
 
 export const dynamic = 'force-dynamic';
 

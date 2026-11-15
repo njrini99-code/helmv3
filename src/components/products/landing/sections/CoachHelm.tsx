@@ -276,7 +276,7 @@ export function CoachHelm() {
 
           <div data-reveal data-reveal-delay="90">
             <div style={eyebrow}>Step 2 · Development plan</div>
-            <h3 style={rowH3}>Development plans track your improvement.</h3>
+            <h3 style={rowH3}>Focus areas track your improvement.</h3>
             <p style={rowP}>
               Promote any root cause into a focus area with a real target. Every logged session updates the
               trend line, so the coach and player watch the leak close round over round — not guess whether

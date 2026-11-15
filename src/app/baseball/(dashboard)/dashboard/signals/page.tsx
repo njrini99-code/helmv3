@@ -18,6 +18,9 @@ import { getSignalInbox } from '@/lib/baseball/read-models/signal-inbox';
 import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 import { SignalInboxClient } from '@/components/baseball/signals';
 import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Signals' };
 
 export default async function SignalsPage() {
   const supabase = await createClient();

@@ -10,6 +10,9 @@ import { getCoachDailyContracts } from '@/lib/baseball/read-models/coach-daily-c
 import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 import { Button } from '@/components/fairway';
 import { EditorsLetter } from '@/components/baseball/living-annual';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Command Center' };
 
 export default async function CommandCenterPage() {
   const supabase = await createClient();

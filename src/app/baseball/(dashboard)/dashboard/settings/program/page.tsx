@@ -23,7 +23,7 @@ import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized'
 import { ProgramSettingsClient } from '@/components/baseball/settings/ProgramSettingsClient';
 
 export const metadata = {
-  title: 'Program Settings | Helm Baseball',
+  title: 'Program Settings',
   description: 'Configure program type, access policy, AI, imports, and integrations.',
 };
 

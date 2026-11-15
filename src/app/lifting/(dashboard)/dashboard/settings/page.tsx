@@ -8,6 +8,9 @@ import type {
   HelmLiftingOrgViewerRow,
   HelmLiftingCoachInviteRow,
 } from '@/lib/types/helm-lifting';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Settings' };
 
 interface OrgInfo {
   id: string;

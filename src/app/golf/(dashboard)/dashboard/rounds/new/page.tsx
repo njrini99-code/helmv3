@@ -24,7 +24,7 @@ export default async function NewRoundPage() {
             ? 'Only players submit rounds. As a coach you can review submitted rounds from Team Stats.'
             : 'No player profile found. Please complete onboarding before logging a round.'
         }
-        actionHref={coach ? '/golf/dashboard/stats/team' : '/golf/dashboard'}
+        actionHref={coach ? '/golf/dashboard/stats' : '/golf/dashboard'}
         actionLabel={coach ? 'Team Stats' : 'Back to Dashboard'}
       />
     );

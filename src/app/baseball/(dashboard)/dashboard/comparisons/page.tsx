@@ -12,6 +12,9 @@ import { getSavedComparisons } from '../compare/actions';
 import { SavedComparisonsList } from '@/components/features/saved-comparisons-list';
 import { SectionMasthead, PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Saved Comparisons' };
 
 const PAGE_SHELL = 'mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6';
 

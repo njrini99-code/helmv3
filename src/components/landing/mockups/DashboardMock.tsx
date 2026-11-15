@@ -11,11 +11,11 @@ import { M, monoLabel, num } from './mock-tokens';
 
 const NAV_ITEMS: Array<{ label: string; icon: ReactNode; active?: boolean }> = [
   {
-    label: 'Dashboard',
+    label: 'Home',
     active: true,
     icon: <path d="M3 10.5L12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
   },
-  { label: 'CoachHelm AI', icon: <path d="M12 3l2.1 5.4L20 9.3l-4.2 3.7L17 19l-5-3-5 3 1.2-6L4 9.3l5.9-.9z" /> },
+  { label: 'CoachHelm', icon: <path d="M12 3l2.1 5.4L20 9.3l-4.2 3.7L17 19l-5-3-5 3 1.2-6L4 9.3l5.9-.9z" /> },
   {
     label: 'Roster',
     icon: (
@@ -34,7 +34,7 @@ const NAV_ITEMS: Array<{ label: string; icon: ReactNode; active?: boolean }> = [
       </>
     ),
   },
-  { label: 'Development', icon: <path d="M4 19V5M4 19h16M8 16v-4M12 16V8M16 16v-6" /> },
+  { label: 'Team Hub', icon: <path d="M9 3h6v3H9zM7 4.5H5V21h14V4.5h-2M9 11h6M9 15h4" /> },
   {
     label: 'Calendar',
     icon: (
@@ -59,14 +59,14 @@ const ROUNDS: Array<{
   parAccent: boolean;
   date: string;
 }> = [
-  { initials: 'TP', featured: true, player: 'Test Player', course: 'Sea Island – Seaside', score: '70', toPar: '−1', parAccent: true, date: 'Feb 7' },
-  { initials: 'TP', featured: true, player: 'Test Player', course: 'King & Bear', score: '66', toPar: '−5', parAccent: true, date: 'Feb 5' },
+  { initials: 'MC', featured: true, player: 'Maya Chen', course: 'Sea Island – Seaside', score: '70', toPar: '−1', parAccent: true, date: 'Feb 7' },
+  { initials: 'MC', featured: true, player: 'Maya Chen', course: 'King & Bear', score: '66', toPar: '−5', parAccent: true, date: 'Feb 5' },
   { initials: 'JM', featured: false, player: 'J. Marsh', course: 'Sea Island – Plantation', score: '73', toPar: '+1', parAccent: false, date: 'Feb 5' },
   { initials: 'RD', featured: false, player: 'R. Diaz', course: 'TPC Sawgrass', score: '74', toPar: '+2', parAccent: false, date: 'Feb 3' },
 ];
 
 const PERFORMERS = [
-  { rank: '1', name: 'Test Player', avg: '70.5', rounds: '12 rd', lead: true },
+  { rank: '1', name: 'Maya Chen', avg: '70.5', rounds: '12 rd', lead: true },
   { rank: '2', name: 'J. Marsh', avg: '72.1', rounds: '9 rd', lead: false },
   { rank: '3', name: 'R. Diaz', avg: '73.4', rounds: '10 rd', lead: false },
 ];
@@ -151,14 +151,14 @@ export function DashboardMock() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px', marginBottom: 6, borderRadius: 12, background: 'oklch(1 0 0 / 0.05)' }}>
           <span style={{ width: 34, height: 34, borderRadius: '50%', background: M.accentDeep, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 12.5 }}>DC</span>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>Demo Coach</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>Dana Reyes</div>
             <div style={{ fontSize: 11, color: 'oklch(0.72 0.008 85)', display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: M.accent }} />
-              Demo University Golf
+              Coastal State Golf
             </div>
           </div>
         </div>
-        <div style={{ ...monoLabel(9.5, 'oklch(0.6 0.008 85)'), letterSpacing: '0.14em', padding: '8px 10px 4px' }}>Team Management</div>
+        <div style={{ ...monoLabel(9.5, 'oklch(0.6 0.008 85)'), letterSpacing: '0.14em', padding: '8px 10px 4px' }}>Team</div>
         {NAV_ITEMS.map((item) => (
           <div
             key={item.label}
@@ -194,10 +194,10 @@ export function DashboardMock() {
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20 }}>
             <div>
               <div style={{ ...monoLabel(10.5), letterSpacing: '0.14em' }}>Coach Dashboard</div>
-              <div style={{ margin: '8px 0 0', fontSize: 29, fontWeight: 640, letterSpacing: '-0.02em', color: M.ink }}>Good afternoon, Demo</div>
+              <div style={{ margin: '8px 0 0', fontSize: 29, fontWeight: 640, letterSpacing: '-0.02em', color: M.ink }}>Good afternoon, Dana</div>
               <div style={{ marginTop: 7, fontSize: 13.5, color: M.ink2, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: M.accent }} />
-                Demo University Golf · 8 players · 1 upcoming event
+                Coastal State Golf · 8 players · 1 upcoming event
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -229,7 +229,7 @@ export function DashboardMock() {
               </div>
               <span style={{ fontSize: 12.5, color: M.accent700, fontWeight: 560 }}>Calendar →</span>
             </div>
-            <div style={{ marginTop: 6, fontSize: 11, color: M.ink3 }}>Tuesday, March 10</div>
+            <div style={{ marginTop: 6, fontSize: 11, color: M.ink3 }}>Tuesday</div>
             <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', fontFamily: M.mono, fontSize: 9.5, color: M.ink3, padding: '0 2px' }}>
               {['12P', '1', '2', '3', '4', '5', '6', '7', '8P'].map((t) => <span key={t}>{t}</span>)}
             </div>
