@@ -37,8 +37,9 @@ beforeAll(() => {
     writeFileSync(join(base, n, 'package.json'), '{"name":"x","private":true}');
     writeFileSync(join(base, n, 'package-lock.json'), LOCK);
   }
-  mkdirSync(join(base, 'healthy/node_modules'));
+  mkdirSync(join(base, 'healthy/node_modules/a'), { recursive: true });
   writeFileSync(join(base, 'healthy/node_modules/.package-lock.json'), LOCK);
+  writeFileSync(join(base, 'healthy/node_modules/a/package.json'), '{"name":"a","version":"1.0.0"}');
   mkdirSync(join(base, 'stale/node_modules'));
   writeFileSync(
     join(base, 'stale/node_modules/.package-lock.json'),

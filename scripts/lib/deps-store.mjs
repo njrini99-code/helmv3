@@ -116,16 +116,58 @@ export function installMatchesLock(lock, hidden) {
   return { ok: mismatches.length === 0, mismatches };
 }
 
-/** installMatchesLock for a checkout on disk. */
+/**
+ * Does a checkout's node_modules hold its lockfile's tree? Both the install
+ * record (node_modules/.package-lock.json) AND each installed package.json
+ * must agree: on 2026-11-15 a write through a symlink rewrote the record to
+ * list versions that were not installed, so the record alone is not proof.
+ * About 1,000 small reads.
+ */
 export function dirMatchesLock(dir) {
+  let lock;
   try {
-    return installMatchesLock(
-      JSON.parse(readFileSync(join(dir, 'package-lock.json'), 'utf-8')),
-      JSON.parse(readFileSync(join(dir, 'node_modules', '.package-lock.json'), 'utf-8')),
-    );
+    lock = JSON.parse(readFileSync(join(dir, 'package-lock.json'), 'utf-8'));
+    const record = installMatchesLock(lock, JSON.parse(readFileSync(join(dir, 'node_modules', '.package-lock.json'), 'utf-8')));
+    if (!record.ok) return record;
   } catch {
     return { ok: false, mismatches: ['unreadable lockfile or install record'] };
   }
+  const mismatches = [];
+  for (const [path, entry] of Object.entries(lock.packages || {})) {
+    if (!path.startsWith('node_modules/') || entry.link) continue;
+    let installed;
+    try {
+      installed = JSON.parse(readFileSync(join(dir, path, 'package.json'), 'utf-8')).version;
+    } catch {
+      if (!entry.optional) mismatches.push(`missing ${path}/package.json`);
+      continue;
+    }
+    // npm records the cleaned semver: a package.json "v0.0.10" is "0.0.10" in the lockfile.
+    const clean = (v) => String(v ?? '').trim().replace(/^[v=]+/, '');
+    if (clean(installed) !== clean(entry.version)) mismatches.push(`${path} installed ${installed} != ${entry.version}`);
+  }
+  return { ok: mismatches.length === 0, mismatches };
+}
+
+/** Build caches that must not travel from one checkout into the store. */
+export const CACHE_DIRS = Object.freeze(['.cache', '.vite']);
+
+/** Remove leftover clone temp dirs (a killed hook) older than STALE_LOCK_MS. */
+export function clearStaleTemps(dir, now = Date.now()) {
+  let removed = 0;
+  try {
+    for (const name of readdirSync(dir)) {
+      if (!name.startsWith('node_modules.tmp-')) continue;
+      const p = join(dir, name);
+      if (now - statSync(p).mtimeMs > STALE_LOCK_MS) {
+        rmSync(p, { recursive: true, force: true });
+        removed += 1;
+      }
+    }
+  } catch {
+    /* nothing to clear */
+  }
+  return removed;
 }
 
 /**
@@ -229,6 +271,7 @@ export function seedStore({ key, fromNodeModules, root = storeRoot(), copier = c
     const r = copier(fromNodeModules, join(tmp, 'node_modules'));
     if (!r.ok) return r;
     rmSync(join(tmp, 'node_modules', MARKER), { force: true });
+    for (const cache of CACHE_DIRS) rmSync(join(tmp, 'node_modules', cache), { recursive: true, force: true });
     rmSync(entry, { recursive: true, force: true });
     renameSync(tmp, entry);
     writeFileSync(join(entry, COMPLETE), `${JSON.stringify({ key, source, at: new Date().toISOString() }, null, 2)}\n`);

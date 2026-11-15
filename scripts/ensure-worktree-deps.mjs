@@ -43,8 +43,9 @@
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, renameSync, rmSync, unlinkSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import {
+  clearStaleTemps,
   depsKey,
   depsPlan,
   dirMatchesLock,
@@ -150,7 +151,13 @@ function refuse(reason) {
   done('refused', 1);
 }
 
+/** Add a checkout's tree to the store, only after its installed files prove it is this lockfile's tree. */
 function seedQuietly(key, fromNodeModules, source) {
+  const proof = dirMatchesLock(dirname(fromNodeModules));
+  if (!proof.ok) {
+    console.error(`deps store: not adding ${key} from ${source}: ${proof.mismatches.slice(0, 2).join('; ')}`);
+    return;
+  }
   const r = seedStore({ key, fromNodeModules, source });
   if (r.ok && !r.already) say(`deps store: added ${key} (${source}) at ${entryDir(key)}`);
   else if (!r.ok && !r.busy) console.error(`deps store: could not add ${key}: ${r.error}`);
@@ -188,6 +195,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(2);
   }
 
+  if (!CHECK) clearStaleTemps(DIR);
   const key = keyForDir(DIR);
   let kind = nodeModulesKind(DIR);
   const marker = kind === 'dir' ? readMarker(DIR) : null;

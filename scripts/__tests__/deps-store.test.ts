@@ -9,6 +9,7 @@ import {
   COMPLETE,
   depsKey,
   depsPlan,
+  dirMatchesLock,
   gcPlan,
   installMatchesLock,
   MARKER,
@@ -75,6 +76,28 @@ describe('installMatchesLock', () => {
   });
   it('fails closed on unreadable input', () => {
     expect(installMatchesLock(null, {}).ok).toBe(false);
+  });
+});
+
+describe('dirMatchesLock reads the installed package.json files, not only the install record', () => {
+  const lock = { lockfileVersion: 3, packages: { '': {}, 'node_modules/a': { version: '1.0.0' } } };
+  function checkout(installed: string) {
+    const dir = join(tmp, `c-${installed}`);
+    mkdirSync(join(dir, 'node_modules/a'), { recursive: true });
+    writeFileSync(join(dir, 'package-lock.json'), JSON.stringify(lock));
+    // The install record claims what the lockfile pins (2026-11-15: a write through a
+    // symlink rewrote this file to list versions that were not installed).
+    writeFileSync(join(dir, 'node_modules/.package-lock.json'), JSON.stringify(lock));
+    writeFileSync(join(dir, 'node_modules/a/package.json'), JSON.stringify({ name: 'a', version: installed }));
+    return dir;
+  }
+  it('matches when the record and the installed files agree', () => {
+    expect(dirMatchesLock(checkout('1.0.0'))).toEqual({ ok: true, mismatches: [] });
+  });
+  it('does not match when an installed package.json disagrees with a record that claims a match', () => {
+    const r = dirMatchesLock(checkout('0.9.0'));
+    expect(r.ok).toBe(false);
+    expect(r.mismatches).toEqual(['node_modules/a installed 0.9.0 != 1.0.0']);
   });
 });
 

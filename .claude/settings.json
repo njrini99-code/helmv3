@@ -61,7 +61,7 @@
           {
             "type": "command",
             "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
-            "timeout": 10
+            "timeout": 60
           }
         ]
       },
@@ -83,7 +83,7 @@
           {
             "type": "command",
             "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs",
-            "timeout": 60
+            "timeout": 90
           }
         ]
       }

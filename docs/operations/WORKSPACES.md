@@ -148,7 +148,7 @@ npx vitest run --project unit src/test/scripts/worktree-lifecycle.test.ts \
 ```
 
 Fixtures cover existing-name refusals, advisory default counts, enforced
-explicit caps, disk reserve, marker contents, dependency links, shared runtime links and
+explicit caps, disk reserve, marker contents, dependency clones (never links), shared runtime links and
 environment updates, and the hook's path-only stdout contract.
 
 The Supabase CLI also shares canonical `supabase/.temp/project-ref` and
