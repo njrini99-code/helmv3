@@ -47,7 +47,7 @@ const BARE_NO_DATA: Record<string, number> = {
   'screens/home/PlayerGame.tsx': 2,
   'screens/home/TeamLegs.tsx': 2,
   'screens/roster/Roster.tsx': 2,
-  'screens/roster/RosterPeek.tsx': 2,
+  'screens/roster/RosterPeek.tsx': 1,
   'screens/rounds/card/card-model.ts': 2,
   'screens/rounds/card/draw-card.ts': 1,
   'screens/rounds/card/RoundCard.tsx': 1,
