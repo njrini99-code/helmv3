@@ -1235,6 +1235,10 @@ CREATE TABLE IF NOT EXISTS "public"."golf_pga_standards" (
     "source" "text",
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "tour" "text" DEFAULT 'pga'::"text" NOT NULL,
+    "source_url" "text",
+    "as_of" "date",
+    CONSTRAINT "golf_pga_standards_source_dated" CHECK ((("source_url" IS NULL) OR ("as_of" IS NOT NULL))),
+    CONSTRAINT "golf_pga_standards_source_url_https" CHECK ((("source_url" IS NULL) OR ("source_url" ~ '^https://[^[:space:]]+$'::"text"))),
     CONSTRAINT "golf_pga_standards_tour_check" CHECK (("tour" = ANY (ARRAY['pga'::"text", 'lpga'::"text"])))
 );
 

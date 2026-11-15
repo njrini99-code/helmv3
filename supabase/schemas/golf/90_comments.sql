@@ -138,6 +138,10 @@ COMMENT ON COLUMN "public"."golf_pga_standards"."pga_p50" IS 'PGA Tour median (5
 
 COMMENT ON COLUMN "public"."golf_pga_standards"."source" IS 'Free-text citation pointing into docs/v3-research-golf-domain.md or the source URL. Required per master plan Part V — every causal claim and PGA baseline must trace back to a source.';
 
+COMMENT ON COLUMN "public"."golf_pga_standards"."source_url" IS 'The https page that publishes pga_tour_value (SC-08). Clubhouse grades a figure against this row only when it is set; a row without one shows the figure with no Tour grade.';
+
+COMMENT ON COLUMN "public"."golf_pga_standards"."as_of" IS 'The date pga_tour_value was read from source_url. Required whenever source_url is set.';
+
 COMMENT ON COLUMN "public"."golf_player_classes"."semester" IS 'Academic term the class belongs to, e.g. "Fall 2026" (P231). Persisted on create/edit so semester is never re-derived from the current date.';
 
 COMMENT ON COLUMN "public"."golf_player_focus_areas"."outcome_status" IS 'Outcome of the focus area once evaluated: improved | no_change | worsened | inconclusive (null = not yet evaluated). Source for the Dev-Plans outcome tally (P094).';

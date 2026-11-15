@@ -2,6 +2,7 @@ import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { PUTT_MAKE_BANDS, PUTT_REPORT_BAND_OF, puttMakeBandFor, type PuttMakeBandId, type PuttReportBandId } from '@/lib/golf/putt-make';
+import { puttBandTourRate } from '@/lib/golf/benchmarks/putting';
 import { fetchAllRowsTogether } from './paging';
 import { chLogServer } from '../lib/track-server';
 import { lastTenFloor, seasonStartDate, type ChRound } from './season';
@@ -245,17 +246,41 @@ export async function loadTourBenchmarks(supabase: Supabase, tour: ChTour, surfa
 
 /** `loadTourBenchmarks` with its failure told apart from a tour with no rows: `error` when the read failed (logged). */
 export async function readTourBenchmarks(supabase: Supabase, tour: ChTour, surface: string): Promise<{ bench: Map<string, number>; error: boolean }> {
-  const bench = new Map<string, number>();
-  const { data, error } = await supabase.from('golf_pga_standards').select('metric_id, pga_tour_value').eq('tour', tour);
+  const { values, error } = await readTourStandards(supabase, tour, surface);
+  return { bench: values, error };
+}
+
+/** A golf_pga_standards row as a grade reads it; `source_url` exists once migration 20261115223000 is applied. */
+type TourStandardRow = { metric_id: string; pga_tour_value: number | string | null; source_url?: string | null };
+
+/**
+ * Whether a standards row may grade a figure (SC-08): only one that names the page its value comes from. A null `source_url` is
+ * a row nobody has sourced, so its figure shows without a grade. A row read before the column existed has no `source_url` key
+ * at all and grades as it always has, so the app can ship before the migration.
+ */
+export function gradesAgainstTour(row: { source_url?: string | null }): boolean {
+  if (row.source_url === undefined) return true;
+  return typeof row.source_url === 'string' && row.source_url.startsWith('https://');
+}
+
+/**
+ * The Tour's value for each metric that may grade a figure, for one tour: the one read behind every Tour grade in Clubhouse
+ * (Stats, Home, CoachHelm). `select('*')` so it never names a column that may not be there yet (recruiting.ts does the same).
+ * `error` when the read failed (logged under `surface`).
+ */
+export async function readTourStandards(supabase: Supabase, tour: ChTour, surface: string): Promise<{ values: Map<string, number>; error: boolean }> {
+  const values = new Map<string, number>();
+  const { data, error } = await supabase.from('golf_pga_standards').select('*').eq('tour', tour);
   if (error) {
     chLogServer(surface, 'tourBenchmarks', error);
-    return { bench, error: true };
+    return { values, error: true };
   }
-  for (const r of data ?? []) {
+  for (const r of (data ?? []) as TourStandardRow[]) {
+    if (!gradesAgainstTour(r)) continue;
     const v = r.pga_tour_value == null ? null : Number(r.pga_tour_value);
-    if (v != null && Number.isFinite(v)) bench.set(r.metric_id, v);
+    if (v != null && Number.isFinite(v)) values.set(r.metric_id, v);
   }
-  return { bench, error: false };
+  return { values, error: false };
 }
 
 export function tourForGender(gender: string | null | undefined): ChTour {
@@ -334,11 +359,20 @@ export const PUTT_BANDS: PuttBandDef[] = (Object.keys(TOUR_METRIC_OF) as PuttRep
  */
 export const PUTT_BANDS_NINE: PuttBandDef[] = PUTT_MAKE_BANDS.map((b) => bandDef([b.id], TOUR_METRIC_OF[PUTT_REPORT_BAND_OF[b.id]]));
 
-/** The putts in `rows` counted into the bands, with each band's Tour make rate where there is one. */
+/**
+ * The putts in `rows` counted into the bands, with each band's Tour make rate where there is one: the Tour's rate at the
+ * distances these putts were from, putt by putt (SC-08, `puttBandTourRate`), not the band's plain average.
+ */
 export function bandPutts(rows: ChPuttRow[], bench: Map<string, number>, bands: PuttBandDef[] = PUTT_BANDS): ChPuttBand[] {
   return bands.map((b) => {
     const inBand = rows.filter((r) => b.fine.includes(puttMakeBandFor(r.feet)));
-    return { label: b.label, attempts: inBand.length, made: inBand.filter((r) => r.made).length, bench: b.metric ? (bench.get(b.metric) ?? null) : null };
+    const tour = b.metric ? (bench.get(b.metric) ?? null) : null;
+    return {
+      label: b.label,
+      attempts: inBand.length,
+      made: inBand.filter((r) => r.made).length,
+      bench: tour == null || !b.metric ? null : puttBandTourRate(b.metric, tour, inBand.map((r) => r.feet)),
+    };
   });
 }
 

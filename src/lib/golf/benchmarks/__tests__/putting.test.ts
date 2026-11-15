@@ -5,6 +5,7 @@ import {
   buildPuttingBenchmarkRows,
   puttingBenchmark,
   puttingTourForGender,
+  puttBandTourRate,
   type PuttingBandSample,
 } from '@/lib/golf/benchmarks/putting';
 import { cohortAnchor } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
@@ -113,5 +114,32 @@ describe('audit rows 9/32 — a withheld leak-map band reads small sample, not n
     expect(row.verdict).toBe('small_sample');
     expect(row.sampleN).toBe(4);
     expect(row.makePct).toBeNull();
+  });
+});
+
+describe('a band\'s Tour rate is weighted by the putts in it (SC-08)', () => {
+  it('3-5 ft: the Tour rate at each putt\'s distance, not the plain mean of 3, 4 and 5 ft', () => {
+    // The row is (99.4 + 91.4 + 80.7) / 3 = 90.5. A band of two 4-footers and one 5-footer reads (2 x 91.4 + 80.7) / 3.
+    expect(puttBandTourRate('putts_made_3_5ft_pct', 90.5, [4, 4, 5])).toBeCloseTo((2 * 91.4 + 80.7) / 3, 6);
+    // Only 5-footers: 80.7, ten points under the plain mean.
+    expect(puttBandTourRate('putts_made_3_5ft_pct', 90.5, [5, 5, 5, 5])).toBeCloseTo(80.7, 6);
+    // Nearest foot: 3.4 ft reads the 3-ft rate, 4.6 ft the 5-ft rate.
+    expect(puttBandTourRate('putts_made_3_5ft_pct', 90.5, [3.4, 4.6])).toBeCloseTo((99.4 + 80.7) / 2, 6);
+  });
+
+  it('10-15 ft and 15-25 ft weight their two cited sub-bands the same way', () => {
+    expect(puttBandTourRate('putts_made_10_15ft_pct', 35.7, [12, 14])).toBeCloseTo(30.1, 6);
+    expect(puttBandTourRate('putts_made_10_15ft_pct', 35.7, [10.2, 12])).toBeCloseTo((41.3 + 30.1) / 2, 6);
+    expect(puttBandTourRate('putts_made_15_25ft_pct', 15.4, [16, 18, 22])).toBeCloseTo((2 * 18.3 + 12.5) / 3, 6);
+  });
+
+  it('keeps the row\'s value where there is nothing to weight', () => {
+    expect(puttBandTourRate('putts_made_3_5ft_pct', 90.5, [])).toBe(90.5);
+    // No cited breakdown for 5-10 ft or 25+ ft.
+    expect(puttBandTourRate('putts_made_5_10ft_pct', 62.2, [6, 9])).toBe(62.2);
+    expect(puttBandTourRate('putts_made_25_plus_ft_pct', 5.5, [30])).toBe(5.5);
+    // The LPGA row cites only its band value, and a row updated since is no longer the mean of these points.
+    expect(puttBandTourRate('putts_made_3_5ft_pct', 86, [4, 5])).toBe(86);
+    expect(puttBandTourRate('putts_made_3_5ft_pct', 88.2, [4, 5])).toBe(88.2);
   });
 });
