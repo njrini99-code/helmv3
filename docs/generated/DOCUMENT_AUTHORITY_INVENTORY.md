@@ -657,6 +657,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md` | current | - | - | - | - |
 | `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md` | current | - | - | - | - |
 | `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md` | current | - | - | - | - |
+| `memory/incidents/team_communications/INC-2026-11-15-thread-day-key-collision.md` | current | - | - | - | - |
 
 ### `ADR`
 
