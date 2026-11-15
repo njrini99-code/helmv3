@@ -433,10 +433,13 @@
   margin-top: 8px;
 }
 .ch-rd-rib line {
-  stroke: rgb(28 25 18 / 0.07);
+  /* Gridlines (audit S2.2): the chart separator, dashed 2 4, 3:1 on the card. */
+  stroke: var(--ch-separator-chart);
+  stroke-dasharray: 2 4;
 }
 .ch-rd-rib line.is-par {
-  stroke: rgb(28 27 24 / 0.45);
+  stroke: var(--ch-chart-zero);
+  stroke-dasharray: none;
 }
 .ch-rd-rib line.ch-rd-rib__avg {
   stroke: var(--ch-green-500);
@@ -461,7 +464,7 @@
 }
 /* A qualifier is a second channel: a gilt outline on whatever its score is (data gilt, 3.97:1). */
 .ch-rd-rib rect.is-q {
-  stroke: #927840;
+  stroke: var(--ch-chart-gilt);
   stroke-width: 2.5;
   paint-order: stroke;
 }
@@ -519,7 +522,7 @@
 }
 .ch-rd-season__lg i.is-q {
   background: none;
-  box-shadow: inset 0 0 0 2px #927840;
+  box-shadow: inset 0 0 0 2px var(--ch-chart-gilt);
 }
 
 /* More unfinished rounds */
@@ -2662,12 +2665,6 @@ html[data-fw-theme='dark'] .ch-rd-unf__cta {
     inset 0 1px 0 rgb(255 255 255 / 0.4),
     var(--ch-elevation-control);
 }
-html[data-fw-theme='dark'] .ch-rd-rib line {
-  stroke: var(--ch-border-hairline);
-}
-html[data-fw-theme='dark'] .ch-rd-rib line.is-par {
-  stroke: rgb(237 231 216 / 0.45);
-}
 html[data-fw-theme='dark'] .ch-rd-rib__chip {
   stroke: rgb(107 187 140 / 0.3);
 }
@@ -2677,12 +2674,6 @@ html[data-fw-theme='dark'] .ch-rd-season__lg i.is-over,
 :where(html[data-fw-theme='dark']) .ch-rv-dist__t i {
   fill: #8a8373;
   background: #8a8373;
-}
-html[data-fw-theme='dark'] .ch-rd-rib rect.is-q {
-  stroke: var(--ch-champagne-500);
-}
-html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
-  box-shadow: inset 0 0 0 2px var(--ch-champagne-500);
 }
 html[data-fw-theme='dark'] .ch-rd-more__go {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.28);
@@ -4413,7 +4404,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rd .ch-rd-stage .ch-rd-rib line.ch-rd-rib__avg {
   stroke: var(--ch-rd-gold);
   stroke-dasharray: 2 6;
-  stroke-opacity: 0.9;
   stroke-width: 2;
 }
 .ch-rd .ch-rd-stage .ch-rd-rib__chip {
@@ -4534,9 +4524,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   --ch-rd-over-b: var(--ch-ink-500);
   --ch-rd-ink: var(--ch-text-primary);
   --ch-rd-soft: var(--ch-text-secondary);
-  --ch-rd-rule: rgb(110 98 62 / 0.14);
-  --ch-rd-par: rgb(28 27 24 / 0.5);
-  --ch-rd-gold: var(--ch-champagne-500);
+  --ch-rd-rule: var(--ch-separator-chart);
+  --ch-rd-par: var(--ch-chart-zero);
+  --ch-rd-gold: var(--ch-chart-gilt);
   --ch-rd-avg-ink: var(--ch-green-500);
   --ch-rd-chip: var(--ch-green-50);
   --ch-rd-chip-ring: rgb(21 90 57 / 0.25);

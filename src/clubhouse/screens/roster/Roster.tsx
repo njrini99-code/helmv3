@@ -624,7 +624,7 @@ export function Roster({ data }: { data: ChRoster; }) {
             <SearchField className="ch-rs-search" value={q} onChange={setQ} placeholder="Search players by name" label="Search players" />
             <div className="ch-rs-bar__r">
               <>
-                  <Segmented<Show> weight="filter"
+                  <Segmented<Show>
                     size="sm"
                     label="Status"
                     value={show}
@@ -646,7 +646,7 @@ export function Roster({ data }: { data: ChRoster; }) {
                     ]}
                   />
                 </>
-              <Segmented<Sort> weight="filter"
+              <Segmented<Sort>
                 size="sm"
                 label="Sort players"
                 value={sortBy}

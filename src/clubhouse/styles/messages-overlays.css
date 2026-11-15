@@ -367,13 +367,13 @@
 .ch-ms-reacts.on-theirs .ch-ms-react {
   background: var(--ch-bubble-mine-fill);
   color: var(--ch-bubble-mine-ink);
-  box-shadow: var(--ch-mso-rx-page), var(--ch-elevation-badge);
+  box-shadow: var(--ch-mso-rx-page);
   transform-origin: 100% 100%;
 }
 .ch-ms-reacts.on-mine .ch-ms-react {
   background: var(--ch-card-bg);
   color: var(--ch-accent-ink);
-  box-shadow: var(--ch-mso-rx-page), 0 0 0 3px var(--ch-mso-rx-pale), var(--ch-elevation-badge);
+  box-shadow: var(--ch-mso-rx-page), 0 0 0 3px var(--ch-mso-rx-pale);
   transform-origin: 0% 100%;
 }
 /* YOUR reaction carries the champagne ring on a 4 px page-colour halo. */
@@ -385,7 +385,7 @@
   box-shadow: var(--ch-mso-rx-page-own);
 }
 .ch-ms-reacts.on-mine .ch-ms-react.is-mine {
-  box-shadow: var(--ch-mso-rx-page-own), 0 0 0 5px var(--ch-mso-rx-pale), var(--ch-elevation-badge);
+  box-shadow: var(--ch-mso-rx-page-own), 0 0 0 5px var(--ch-mso-rx-pale);
 }
 .ch-ms-react svg {
   fill: none;
@@ -503,7 +503,7 @@
   border-radius: 999px;
   background: var(--ch-card-bg);
   /* A pill is too small for the card recipe's ambient layer: a hairline ring and the shared badge drop. */
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   color: var(--ch-text-tertiary);
   font: var(--ch-type-13-medium);
 }

@@ -13,11 +13,12 @@ const read = (f: string) => readFileSync(join(dir, f), 'utf8');
 const tokens = read('tokens.css');
 
 describe('placeholder text', () => {
-  it('has its own token in the light and the dark theme', () => {
-    const dark = tokens.indexOf("html[data-fw-theme='dark'] [data-ui='clubhouse'] {");
-    expect(dark).toBeGreaterThan(-1);
-    expect(tokens.slice(0, dark)).toMatch(/--ch-text-placeholder:\s*#[0-9a-f]{6};/i);
-    expect(tokens.slice(dark)).toMatch(/--ch-text-placeholder:\s*#[0-9a-f]{6};/i);
+  it('is one token on the tertiary ink step, in the light and the dark theme (audit spec S1.7)', () => {
+    // One ink for placeholders and tertiary words (#55524b by day, #c4bdad at night), defined once on the ink step
+    // so it follows the theme; contrast-tokens.test.ts holds it at 4.5:1 on a field.
+    expect(tokens.match(/--ch-text-placeholder:\s*([^;]+);/g)).toEqual(['--ch-text-placeholder: var(--ch-ink-500);']);
+    expect(tokens).toMatch(/--ch-ink-500:\s*#55524b;/);
+    expect(tokens).toMatch(/--ch-ink-500:\s*#c4bdad;/);
   });
 
   it('never sits on a faint ink: every placeholder reads at the placeholder token or darker', () => {

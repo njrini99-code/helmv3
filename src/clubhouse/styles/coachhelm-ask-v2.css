@@ -188,7 +188,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-out .rs { display: flex; align-items: center; gap: 8px; font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-ak-out .rs i { flex: 1; height: 4px; border-radius: 999px; background: var(--ch-chart-track); }
 .ch-ak-out .keep { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); font: var(--ch-type-14); color: var(--ch-text-secondary); }
-.ch-ak-out .keep svg { flex: none; color: var(--ch-accent); }
+.ch-ak-out .keep svg { flex: none; color: var(--ch-accent-ink); }
 .ch-ak-out .ask { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); font: var(--ch-type-14); color: var(--ch-text-primary); }
 .ch-ak-out .ask.is-off { opacity: 0.5; }
 @media (prefers-reduced-motion: no-preference) {
@@ -408,7 +408,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   min-height: 44px;
   gap: var(--ch-space-2);
   padding: 0 var(--ch-space-4);
-  border-radius: var(--ch-radius-panel);
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-card-bg);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-control);
   font: var(--ch-type-14-medium);
@@ -708,7 +708,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-wk .wh > span { display: grid; justify-items: center; gap: 1px; padding-bottom: 4px; color: var(--ch-text-secondary); }
 .ch-ak-wk .wh small { font: var(--ch-type-11-strong); letter-spacing: var(--ch-track-11); }
 .ch-ak-wk .wh b { font: var(--ch-type-15-strong); color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
-.ch-ak-wk .wh .on small, .ch-ak-wk .wh .on b { color: var(--ch-accent); }
+.ch-ak-wk .wh .on small, .ch-ak-wk .wh .on b { color: var(--ch-accent-ink); }
 .ch-ak-wk .wh em { width: 7px; height: 7px; border-radius: 50%; background: var(--ch-chart-track); }
 .ch-ak-wk .wh em.is-busy { background: var(--ch-chart-loss-fill); }
 .ch-ak-wk .wh em.is-free { background: var(--ch-chart-gain-fill); }
@@ -748,7 +748,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-qual .rds { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
 .ch-ak-qual .rd { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); }
 .ch-ak-qual .tile { display: grid; justify-items: center; flex: none; width: 40px; padding: 4px 0; border-radius: var(--ch-radius-sm); background: var(--ch-card-bg); }
-.ch-ak-qual .tile small { font: var(--ch-type-11-strong); color: var(--ch-accent); letter-spacing: var(--ch-track-11); }
+.ch-ak-qual .tile small { font: var(--ch-type-11-strong); color: var(--ch-accent-ink); letter-spacing: var(--ch-track-11); }
 .ch-ak-qual .tile b { font: var(--ch-type-17-strong); color: var(--ch-text-primary); letter-spacing: var(--ch-track-17); }
 .ch-ak-qual .rd > span:last-child b { font: var(--ch-type-14-strong); color: var(--ch-text-primary); }
 .ch-ak-qual .sts { display: flex; align-items: center; gap: 12px; font: var(--ch-type-13); color: var(--ch-text-secondary); }
@@ -1326,7 +1326,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-th[data-v3] .ch-th-user p {
   margin: 0;
   padding: var(--ch-space-2) var(--ch-space-4);
-  border-radius: var(--ch-radius-bubble);
+  border-radius: var(--ch-radius-xl);
   border-bottom-right-radius: var(--ch-radius-tail);
   background: var(--ch-card-bg);
   box-shadow: 0 0 0 1px var(--ch-card-ring);

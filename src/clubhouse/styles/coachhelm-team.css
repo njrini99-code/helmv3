@@ -499,6 +499,7 @@
   height:14px;
   border-radius: var(--ch-radius-tail);
   background:var(--ch-chart-track);
+  box-shadow:var(--ch-chart-track-ring);
 }
 .ch-htb .br .bt .z {
   position:absolute;
@@ -1130,6 +1131,7 @@
   height:10px;
   border-radius: var(--ch-radius-xs);
   background:var(--ch-chart-track);
+  box-shadow:var(--ch-chart-track-ring);
 }
 .ch-htb .lv .t i {
   position:absolute;
@@ -1265,6 +1267,7 @@
   height:12px;
   border-radius: var(--ch-radius-tail);
   background:var(--ch-chart-track);
+  box-shadow:var(--ch-chart-track-ring);
   position:relative;
   overflow:hidden;
 }

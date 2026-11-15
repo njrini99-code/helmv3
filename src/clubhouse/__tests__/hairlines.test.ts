@@ -34,7 +34,7 @@ const ALLOW_LINES: Record<string, number> = {
   'styles/rounds.css': 3,
   'styles/shell.css': 4,
   'styles/stats.css': 2,
-  'styles/ui.css': 5,
+  'styles/ui.css': 4,
 };
 const ALLOW_ELEMENTS: Record<string, number> = {
   'styles/auth.css': 4,

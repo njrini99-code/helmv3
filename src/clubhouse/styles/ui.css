@@ -51,31 +51,28 @@
   letter-spacing: var(--ch-track-15);
 }
 /* One green (owner, 2026-10-06: "it's not even the same green"): the primary action is the field green the sidebar
-   selection, the canopy and the scoreboard use, its words in the warm on-green ink, engraved. A faint lift at the top
-   edge keeps it reading as a key; no second, brighter green. */
+   selection, the canopy and the scoreboard use, its words in the warm on-green ink, engraved. A solid face (audit
+   Batch 5 item 6: the 4-stop gradient read as a sticker); hover and press change its colour, which glides. */
 .ch-btn--primary {
   color: var(--ch-on-green-ink);
   text-shadow: var(--ch-on-green-text-shadow-s);
-  /* Hover glides rather than snaps (owner, 2026-10-07: premium motion): one gradient twice the key's height holds the
-     hover face above the resting one, and hover slides it into view. A gradient itself cannot be transitioned. */
-  background: linear-gradient(180deg, #124b2e 0%, #0d3f28 50%, #0f4429 50%, var(--ch-field-green) 100%) 0 100% / 100% 200%;
-  box-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(12 65 40 / 0.22),
-    0 4px 10px -6px rgb(12 65 40 / 0.4);
+  background: var(--ch-primary-bg);
+  box-shadow: var(--ch-primary-shadow);
 }
 @media (hover: hover) {
   .ch-btn--primary:hover:not(:disabled):not(:focus-visible) {
-    background-position: 0 0;
+    background: var(--ch-primary-bg-hover);
     box-shadow: var(--ch-elevation-primary-hover);
   }
 }
 .ch-btn--primary[data-ch-pressed]:not(:disabled) {
-  background: #08301e;
-  box-shadow: 0 0 0 1px #0e462c, inset 0 1px 3px rgb(0 0 0 / 0.25);
+  background: var(--ch-primary-bg-press);
+  box-shadow: var(--ch-primary-shadow-press);
 }
 @media (hover: hover) {
   .ch-btn--primary:active:not(:disabled) {
-    background: #08301e;
-    box-shadow: 0 0 0 1px #0e462c, inset 0 1px 3px rgb(0 0 0 / 0.25);
+    background: var(--ch-primary-bg-press);
+    box-shadow: var(--ch-primary-shadow-press);
   }
 }
 /* Off, the primary key is unlit (owner, 2026-10-07; as Sign in, CH-15607): the same shape pressed into the paper with
@@ -93,25 +90,26 @@
   filter: none;
   cursor: progress;
 }
+/* The secondary key is the raised ivory paper, solid, never white (Nick, 15 Nov 2026: nothing white). */
 .ch-btn--secondary {
   color: var(--ch-text-primary);
-  background: linear-gradient(180deg, #fefdfa 0%, #f3f1ea 50%, #fefdfa 50%, #f7f5ef 100%) 0 100% / 100% 200%;
+  background: var(--ch-btn-secondary-bg);
   box-shadow: var(--ch-btn-secondary-shadow);
 }
 @media (hover: hover) {
   .ch-btn--secondary:hover:not(:disabled):not(:focus-visible) {
-    background-position: 0 0;
+    background: var(--ch-btn-secondary-bg-hover);
     box-shadow: var(--ch-btn-secondary-hover-shadow);
   }
 }
 .ch-btn--secondary[data-ch-pressed]:not(:disabled) {
-  background: #f5f3ec;
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 1px 2px rgb(28 25 18 / 0.12);
+  background: var(--ch-btn-secondary-bg-press);
+  box-shadow: var(--ch-btn-secondary-shadow-press);
 }
 @media (hover: hover) {
   .ch-btn--secondary:active:not(:disabled) {
-    background: #f5f3ec;
-    box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 1px 2px rgb(28 25 18 / 0.12);
+    background: var(--ch-btn-secondary-bg-press);
+    box-shadow: var(--ch-btn-secondary-shadow-press);
   }
 }
 .ch-btn--ghost {
@@ -1123,34 +1121,10 @@ button.ch-feat {
    the toast and popover a raised surface above the page (the toast's ink ramp flips, so it can't stay ink-900), the
    tonal coins and badges deep tints with light inks, and the scorecard marks keep their shapes in night finishes, the
    double's solid tile turning ivory. White lit tops drop to a whisper; the focus ring's token turns light green itself. */
-/* B21 (X-6, 4.32.1): at night the primary key is a lighter Augusta face than the cards' green, so it stands off them
-   (3.2:1 against the page); ivory words read 5:1 at rest and 4.5:1 on the hover's top stop. The same sliding face. */
-:where(html[data-fw-theme='dark']) .ch-btn--primary {
-  background: linear-gradient(180deg, #2c7a52 0%, #25734d 50%, #25734d 50%, #1d613f 100%) 0 100% / 100% 200%;
-}
-html[data-fw-theme='dark'] .ch-btn--primary[data-ch-pressed]:not(:disabled) {
-  background: #17543a;
-}
-@media (hover: hover) {
-  html[data-fw-theme='dark'] .ch-btn--primary:active:not(:disabled) {
-    background: #17543a;
-  }
-}
+/* B21 (X-6, 4.32.1): at night the primary key is a lighter Augusta face than the cards' green (tokens.css
+   --ch-primary-bg), so it stands off them; ivory words read 4.5:1 at rest and on hover. */
 html[data-fw-theme='dark'] .ch-btn--primary:disabled:not([aria-busy='true']) {
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.4);
-}
-:where(html[data-fw-theme='dark']) .ch-btn--secondary {
-  background: linear-gradient(180deg, #313932 0%, #29302a 50%, #2a312b 50%, #232a24 100%) 0 100% / 100% 200%;
-}
-html[data-fw-theme='dark'] .ch-btn--secondary[data-ch-pressed]:not(:disabled) {
-  background: #1f2520;
-  box-shadow: 0 0 0 1px rgb(237 231 216 / 0.1), inset 0 1px 2px rgb(0 0 0 / 0.35);
-}
-@media (hover: hover) {
-  html[data-fw-theme='dark'] .ch-btn--secondary:active:not(:disabled) {
-    background: #1f2520;
-    box-shadow: 0 0 0 1px rgb(237 231 216 / 0.1), inset 0 1px 2px rgb(0 0 0 / 0.35);
-  }
 }
 :where(html[data-fw-theme='dark']) .ch-btn--ink {
   color: var(--ch-ink-950);
@@ -1867,16 +1841,19 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
+/* The one chart line's marks (audit spec S2.2 and S2.4, SYS-01): sparse dashed gridlines in the chart separator and a
+   reference line in the zero ink, each 3:1 or more on the card; the series line is the chart green, 2px, round joins. */
 .ch-line__grid {
-  stroke: var(--ch-border-hairline);
+  stroke: var(--ch-separator-chart);
   stroke-width: 1;
+  stroke-dasharray: 2 4;
 }
 .ch-line__ref {
-  stroke: var(--ch-border-strong);
+  stroke: var(--ch-chart-zero);
   stroke-width: 1;
 }
 .ch-line__ref.is-dashed {
-  stroke-dasharray: 3 4;
+  stroke-dasharray: 2 4;
 }
 /* A baseline's words: beside it where the line leaves room, else a key under the chart (P013 D3). */
 .ch-line__key {
@@ -1889,7 +1866,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-line__key > i {
   width: 16px;
-  border-top: 1px dashed var(--ch-border-strong);
+  border-top: 1px dashed var(--ch-chart-zero);
 }
 .ch-line__t {
   font: var(--ch-type-11-medium);
@@ -1905,21 +1882,21 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   }
 }
 .ch-line__path {
-  stroke: var(--ch-line-ink, var(--ch-text-primary));
+  stroke: var(--ch-line-ink, var(--ch-chart-line));
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 .ch-line__wash-top {
-  stop-color: var(--ch-line-ink, var(--ch-text-primary));
+  stop-color: var(--ch-line-ink, var(--ch-chart-line));
   stop-opacity: 0.16;
 }
 .ch-line__wash-end {
-  stop-color: var(--ch-line-ink, var(--ch-text-primary));
+  stop-color: var(--ch-line-ink, var(--ch-chart-line));
   stop-opacity: 0;
 }
 .ch-line__wash.is-flat {
-  fill: var(--ch-line-ink, var(--ch-text-primary));
+  fill: var(--ch-line-ink, var(--ch-chart-line));
   opacity: 0.08;
 }
 .ch-line__guide {
@@ -1927,13 +1904,13 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   stroke-width: 1;
 }
 .ch-line__dot {
-  fill: var(--ch-line-ink, var(--ch-text-primary));
-  stroke: var(--ch-bg-surface);
-  stroke-width: 1.5;
+  fill: var(--ch-line-ink, var(--ch-chart-line));
+  stroke: var(--ch-card-bg);
+  stroke-width: 2;
 }
 .ch-line__dot.is-hollow {
-  fill: var(--ch-bg-surface);
-  stroke: var(--ch-line-ink, var(--ch-text-primary));
+  fill: var(--ch-card-bg);
+  stroke: var(--ch-line-ink, var(--ch-chart-line));
 }
 .ch-line__dot.is-active {
   stroke-width: 2;
@@ -2981,7 +2958,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-shs-scale > span:nth-child(2),
 .ch-shs-score,
 .ch-shs-strip .v,
-.ch-shs-tbl,
+.ch-shs-tbl td,
 .ch-shs-tp,
 /*@7@*/
 .ch-shs-pill {

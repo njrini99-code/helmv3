@@ -1,6 +1,6 @@
 /* CoachHelm file. Ported from design-refresh/coachhelm-lenses/redesign/redesign.css; every value is the page's. */
 .ch-hf {
-  --ch-hf-a-page: var(--ch-grouped-bg);
+  --ch-hf-a-page: transparent;
   --ch-hf-a-card: var(--ch-card-bg);
   --ch-hf-a-well: var(--ch-well-bg-flat);
   --ch-hf-a-ink: var(--ch-text-primary);
@@ -185,7 +185,7 @@
 .ch-hf .sg__row span { font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
 .ch-hf .sg__row b { text-align: right; font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
 .ch-hf .sg__row b.loss { color: var(--ch-hf-a-loss); } .ch-hf .sg__row b.gain { color: var(--ch-hf-a-gain); }
-.ch-hf .sg__trk { position: relative; height: 22px; border-radius: var(--ch-radius-tail); background: var(--ch-hf-c-track); }
+.ch-hf .sg__trk { position: relative; height: 22px; border-radius: var(--ch-radius-tail); background: var(--ch-hf-c-track); box-shadow: var(--ch-chart-track-ring); }
 .ch-hf .sg__trk::after { content: ""; position: absolute; left: 50%; top: -4px; bottom: -4px; width: 1.5px; margin-left: -1px; background: var(--ch-hf-c-zero); }
 .ch-hf .sg__bar { position: absolute; top: 3px; bottom: 3px; border-radius: var(--ch-radius-xs); transform-origin: var(--ch-hf-o) 50%; }
 .ch-hf .sg__bar.loss { background: var(--ch-hf-c-loss); right: 50%; --ch-hf-o: 100%; }
@@ -317,10 +317,10 @@
   --ch-file-shadow-1: var(--ch-hf-a-shadow);
   --ch-file-shadow-2: var(--ch-hf-a-shadow), inset 0 0 0 999px var(--ch-hf-a-press);
   --ch-file-shadow-3: var(--ch-feature-shadow);
-  --ch-file-shadow-4: 0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring), var(--ch-elevation-bubblet);
+  --ch-file-shadow-4: 0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring);
   --ch-file-shadow-5: inset 0 0 0 999px color-mix(in srgb, var(--ch-ivory-0) 5%, transparent), var(--ch-feature-shadow);
   --ch-file-shadow-6: var(--ch-crh-btn-shadow);
-  --ch-file-shadow-7: var(--ch-elevation-pill-on);
+  --ch-file-shadow-7: none;
 }
 .ch-hf.is-phone .dmain { display: block; }
 .ch-hf .empty .ch-btn {

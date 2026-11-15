@@ -58,7 +58,7 @@
   max-width: min(86%, 560px);
   margin: 0 0 var(--ch-space-2);
   padding: var(--ch-space-2) var(--ch-space-4);
-  border-radius: var(--ch-radius-bubble);
+  border-radius: var(--ch-radius-xl);
   border-bottom-right-radius: var(--ch-radius-tail);
   background: var(--ch-card-bg);
   box-shadow: 0 0 0 1px var(--ch-card-ring);

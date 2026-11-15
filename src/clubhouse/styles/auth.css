@@ -469,7 +469,7 @@
 }
 .ch-au-lock span,
 .ch-au-mark span {
-  font: 650 28px/1 var(--ch-font-sans);
+  font: 600 28px/1 var(--ch-font-sans);
   letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 96;
   color: #1c1b18;
@@ -1010,7 +1010,7 @@
   filter: drop-shadow(0 1px 0 rgb(255 255 255 / 0.5));
 }
 .ch-au-wl-mark span {
-  font: 650 17px/1 var(--ch-font-sans);
+  font: 600 17px/1 var(--ch-font-sans);
   letter-spacing: -0.022em;
   /* The wordmark's display width, as the 28px mark (B1: two widths). */
   font-variation-settings: 'wdth' 96;

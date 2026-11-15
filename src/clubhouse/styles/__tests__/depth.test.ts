@@ -38,14 +38,15 @@ describe('the one card', () => {
     }
   });
 
-  it('takes its three drops from depth.css’s sheet, with the card’s own ring and a lit top edge', () => {
-    const sheet = read('design/handoff/depth.css').match(/--dp-sheet-shadow:([^;]+);/)?.[1] ?? '';
-    // depth.css: contact 0 1px 2px .06, near 0 6px 14px -6px .12, ambient 0 22px 40px -22px .22.
-    expect(drops(sheet)).toEqual(['1px 2px 0.06', '6px 14px -6px 0.12', '22px 40px -22px 0.22']);
-    const card = decls('--ch-elevation-card')[0]!;
-    expect(drops(card)).toEqual(drops(sheet));
-    expect(card).toContain('0 0 0 1px var(--ch-card-ring)');
-    expect(card).toMatch(/^inset var\(--ch-light-rim-x\) 1px 0 var\(--ch-light-rim\)/);
+  it('is the ring and two soft layers by day, and the ring alone at night (audit spec S1.5, Nick 15 Nov 2026)', () => {
+    // Ivory paper on the linen: one hairline edge and one soft shadow, no lit inset rim, no sun drift and no third
+    // ambient layer (the 5-layer recipe from depth.css's sheet read as a floating panel on every card).
+    const [day, night] = decls('--ch-elevation-card');
+    expect(day).toBe('0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08)');
+    expect(drops(day!)).toEqual(['1px 2px 0.05', '4px 12px -4px 0.08']);
+    expect(day).not.toMatch(/inset|--ch-light-(rim|drift)/);
+    // Dark cards are carried by tone and ring: a shadow does not read on near-black.
+    expect(night).toBe('0 0 0 1px var(--ch-card-ring)');
   });
 
   it('casts the same drops with no ring or lit edge on a dark or branded surface', () => {

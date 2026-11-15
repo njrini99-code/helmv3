@@ -95,10 +95,10 @@
 
 /* A message is drawn as Messages draws it: the bubbles are the thing, and nothing frames them. */
 .ch-akc-thread { display: flex; flex-direction: column; gap: 8px; }
-.ch-akc-thread__before { align-self: flex-start; max-width: 84%; margin: 0; padding: 8px 12px; border-radius: var(--ch-radius-bubble); background: var(--ch-bubble-theirs-bg); color: var(--ch-text-secondary); font: var(--ch-type-14); overflow-wrap: anywhere; }
+.ch-akc-thread__before { align-self: flex-start; max-width: 84%; margin: 0; padding: 8px 12px; border-radius: var(--ch-radius-xl); background: var(--ch-bubble-theirs-bg); color: var(--ch-text-secondary); font: var(--ch-type-14); overflow-wrap: anywhere; }
 .ch-akc-thread__mine { align-items: flex-end; }
 .ch-akc-thread__mine > .ch-btn { align-self: flex-end; }
-.ch-akc-clamp__t.ch-akc-bubble { align-self: flex-end; max-width: 84%; padding: 8px 12px; border-radius: var(--ch-radius-bubble); border-end-end-radius: var(--ch-radius-tail); background: var(--ch-bubble-mine-fill); color: var(--ch-bubble-mine-ink); }
+.ch-akc-clamp__t.ch-akc-bubble { align-self: flex-end; max-width: 84%; padding: 8px 12px; border-radius: var(--ch-radius-xl); border-end-end-radius: var(--ch-radius-tail); background: var(--ch-bubble-mine-fill); color: var(--ch-bubble-mine-ink); }
 
 .ch-akc-delivery > .ch-seg, .ch-akc-delivery > .ch-select { align-self: flex-start; max-width: 100%; }
 

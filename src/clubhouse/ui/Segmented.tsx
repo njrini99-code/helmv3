@@ -30,11 +30,9 @@ export interface SegOption<V extends string> {
  * shows the choice; once it lands it follows `value` again, so a caller that refuses the change puts it back. A caller
  * that runs its own loading for a change (Stats' window) leaves it off.
  *
- * Two weights (owner, 11 Nov 2026). A mode switch, which swaps what the page is (Team / Ask, Day / Month / List, a round's
- * type, Tournaments' Events / Compare / History, Practice's tabs), is the heavy one: the green chip in the recessed well.
- * A filter or sort, which narrows or orders the same list (Last 5 / 10 / 20, Avg / SG / Name, a window, a status, a
- * grouping), is the light one, `weight="filter"`: a lifted ivory chip in ink on a pale flat track. A form field's choice
- * keeps the default.
+ * One toggle (Nick, 15 Nov 2026, audit SYS-10 and spec S4.5): the Practice style everywhere, for a mode, a filter, a
+ * sort or a form field's choice alike. A recessed linen well and a raised green chip with ivory words and a soft shadow.
+ * The 11 Nov light `filter` weight is gone, and no page draws its own selected state (ui/__tests__/segmented-weight-css).
  */
 export function Segmented<V extends string>({
   label,
@@ -46,7 +44,6 @@ export function Segmented<V extends string>({
   block = false,
   hook,
   plate,
-  weight = 'mode',
 }: {
   label: string;
   value: V;
@@ -61,8 +58,6 @@ export function Segmented<V extends string>({
   hook?: string;
   /** `thumb` (Messages' filter, MOT-X-2): the chip slides for 360 ms on the overshooting CSS spring instead of the settle spring. */
   plate?: 'thumb';
-  /** `filter`: the light chip on a pale track, for a filter or sort; `mode` (the default): the green chip (see above). */
-  weight?: 'mode' | 'filter';
 }) {
   const reduced = useChReducedMotion();
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -94,7 +89,7 @@ export function Segmented<V extends string>({
     refs.current[n]?.focus();
   };
   return (
-    <div ref={well} className={`ch-seg ch-well ch-seg--${size}${block ? ' ch-seg--block' : ''}${weight === 'filter' ? ' ch-seg--filter' : ''}`} role="radiogroup" aria-label={label}>
+    <div ref={well} className={`ch-seg ch-well ch-seg--${size}${block ? ' ch-seg--block' : ''}`} role="radiogroup" aria-label={label}>
       {options.map((o, i) => {
         const on = o.value === shown;
         return (

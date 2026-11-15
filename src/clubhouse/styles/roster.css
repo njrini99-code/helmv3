@@ -236,8 +236,7 @@
 }
 
 /* Roster controls (owner, 2026-10-08: "ivory buttons ... need to be green"): the grid and list toggle is the green chip
-   every mode switch draws (controls.css, 2026-10-16), as the coach's is. The sorts and the status filter take the light
-   chip of a filter (ui/Segmented weight="filter"; owner, 11 Nov 2026). */
+   every toggle draws (controls.css; one toggle, Nick 15 Nov 2026), the sorts and the status filter included. */
 .ch-rs .ch-pill[aria-pressed='true'],
 .ch-rs .ch-rs-vt__b[aria-pressed='true'] {
   background: var(--ch-seg-on-bg);
@@ -330,7 +329,7 @@
 .ch-rs-face__av {
   margin: 2px 0 4px;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px var(--ch-card-bg), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 3px var(--ch-card-bg);
 }
 .ch-rs-face.is-sel .ch-rs-face__av {
   box-shadow: 0 0 0 3px var(--ch-card-bg), 0 0 0 5px var(--ch-green-600);
@@ -3851,7 +3850,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 /* A player's page sits on the same page colour as the Roster it came from. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ch-crh='on'] .ch-rsx-screen {
-    background: var(--ch-grouped-bg);
+    background: var(--ch-page-paint);
   }
 }
 
@@ -3870,7 +3869,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   border: 0;
   border-radius: var(--ch-radius-card);
   background: color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 4%, var(--ch-card-bg));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 34%, transparent), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 34%, transparent);
   color: var(--ch-text-primary);
   text-align: left;
   cursor: pointer;

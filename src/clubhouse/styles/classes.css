@@ -1805,7 +1805,8 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
 .ch-cl.is-phone[data-ch-crh='on'] {
   gap: 12px;
   padding: 0 var(--ch-page-x-phone) 48px;
-  background: var(--ch-grouped-bg);
+  /* The page is the canvas: its light shows between the cards (DESIGN_LANGUAGE law 2). */
+  background: transparent;
 }
 [data-ch-crh='on'] .ch-cl-h {
   padding: 0;
@@ -2292,7 +2293,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
 .ch-cl[data-ch-crh='on']:not(.is-phone) {
   gap: 20px;
   padding: var(--ch-page-top-crh) var(--ch-page-gutter) 40px;
-  background: var(--ch-grouped-bg);
+  background: transparent;
 }
 .ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-h {
   align-items: flex-end;
@@ -2558,7 +2559,7 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
 }
 .ch-cl-card__week > span.is-on {
   background: var(--ch-card-bg);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb);
 }
 .ch-cl-card__week > span.is-on em {
   color: var(--ch-text-primary);
@@ -2568,10 +2569,10 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
   box-shadow: 0 0 0 2px var(--ch-cl-ring-today);
 }
 .ch-cl-card__week > span.is-on.is-today {
-  box-shadow: 0 0 0 2px var(--ch-cl-ring-today), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 2px var(--ch-cl-ring-today);
 }
 .ch-cl-card__week > span.is-on.is-clash:not(.is-today) {
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-warn-icon), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-warn-icon);
 }
 .ch-cl-card__flex {
   padding: 12px;

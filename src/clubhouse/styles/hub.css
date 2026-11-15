@@ -2883,7 +2883,9 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   height: 4px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgb(28 25 18 / 0.12);
+  /* The chart track and its ring (audit S2.6), one pair in both themes. */
+  background: var(--ch-chart-track);
+  box-shadow: var(--ch-chart-track-ring);
 }
 .ch-hb-prog i::after {
   position: absolute;
@@ -2893,9 +2895,6 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   transform: scaleX(var(--ch-hb-p, 0));
   transform-origin: left center;
   transition: transform var(--ch-dur-base) var(--ch-ease);
-}
-html[data-fw-theme='dark'] .ch-hb-prog i {
-  background: rgb(237 231 216 / 0.14);
 }
 html[data-fw-theme='dark'] .ch-hb-prog i::after {
   background: var(--ch-green-600);

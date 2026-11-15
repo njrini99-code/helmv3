@@ -1333,7 +1333,7 @@ html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F
   width: 100%;
   max-width: none;
   padding: 0;
-  background: var(--ch-grouped-bg);
+  background: transparent;
 }
 .ch-prb-head {
   display: flex;

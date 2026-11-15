@@ -23,6 +23,7 @@ Where things live:
 | What | Where |
 | --- | --- |
 | Current state, how to turn on, rollback, remaining work, open owner decisions | [`STATUS.md`](STATUS.md) |
+| The design system: laws, surfaces, colour, type, the one toggle, charts, banned list, generated token tables | [`DESIGN_LANGUAGE.md`](../../design-refresh/DESIGN_LANGUAGE.md) |
 | Which screens exist, and which are rebuilt | `SCREENS.md` |
 | Gates, decisions (latest: D-72 to D-79, 2026-10-19), questions, data gaps, verification log | `PROGRESS.md` (the overview) |
 | Which handoff files are current | `design/handoff/VERSIONS.md` |

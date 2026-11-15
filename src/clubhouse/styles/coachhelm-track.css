@@ -148,6 +148,7 @@
   border-radius: 999px;
   /* The warm track every CoachHelm bar sits on (the Team view's), not a cool grey rule colour. */
   background: var(--ch-chart-track);
+  box-shadow: var(--ch-chart-track-ring);
 }
 .ch-htr-bar__fill {
   position: absolute;

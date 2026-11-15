@@ -18,18 +18,21 @@ const darkBlock = () => {
 const hexOf = (block: string, name: string) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6});`).exec(block)?.[1];
 
 describe('elevation tokens (B4)', () => {
-  it('in dark, the elevated steps are lighter than the surface and differ from each other', () => {
+  // Audit spec S1.3 and S1.6 (Nick, 15 Nov 2026): one raised step. #2c322d over the #212722 card at night, and by day
+  // #fcfaf5 over the #faf7ef card, the one step that floats, carried by --ch-elevation-raised. The unused second step
+  // (--ch-bg-elevated-2) is gone.
+  it('in dark, the raised step is lighter than the card', () => {
     const dark = darkBlock();
-    const [surface, e1, e2] = ['ch-bg-surface', 'ch-bg-elevated', 'ch-bg-elevated-2'].map((n) => hexOf(dark, n));
-    expect(surface).toBeTruthy();
-    expect(e1).not.toBe(surface);
-    expect(e2).not.toBe(e1);
+    const [surface, raised] = ['ch-bg-surface', 'ch-bg-elevated'].map((n) => hexOf(dark, n));
+    expect(surface).toBe('#212722');
+    expect(raised).toBe('#2c322d');
+    expect(css('tokens.css')).not.toContain('--ch-bg-elevated-2');
   });
 
-  it('in light, the elevated steps are the surface', () => {
+  it('in light, the raised step is a hair lighter than the ivory card, and not white', () => {
     const light = css('tokens.css');
-    expect(hexOf(light, 'ch-bg-elevated')).toBe(hexOf(light, 'ch-bg-surface'));
-    expect(hexOf(light, 'ch-bg-elevated-2')).toBe(hexOf(light, 'ch-bg-surface'));
+    expect(hexOf(light, 'ch-bg-surface')).toBe('#faf7ef');
+    expect(hexOf(light, 'ch-bg-elevated')).toBe('#fcfaf5');
   });
 
   it.each([
@@ -138,11 +141,11 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/roster.css': 6,
   'styles/rounds-setup.css': 17,
   'styles/rounds-track.css': 17,
-  'styles/rounds.css': 21,
+  'styles/rounds.css': 20,
   'styles/settings.css': 3,
   'styles/shell.css': 16,
   'styles/stats.css': 30,
-  'styles/ui.css': 19,
+  'styles/ui.css': 15,
 };
 
 /** Raw drop shadows per stylesheet on 2026-10-24 (row 40): tinted lifts under green and ink surfaces. Only falls. */
@@ -158,5 +161,5 @@ const RAW_DROP: Record<string, number> = {
   'styles/rounds.css': 1,
   'styles/settings.css': 1,
   'styles/shell.css': 1,
-  'styles/ui.css': 2,
+  'styles/ui.css': 1,
 };

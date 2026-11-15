@@ -28,22 +28,28 @@
   --ch-shs-s-loss-fill: var(--ch-chart-loss-fill);
   --ch-shs-s-flat: var(--ch-chart-flat);
   --ch-shs-s-track: var(--ch-chart-track);
+  --ch-shs-s-track-ring: var(--ch-chart-track-ring);
   --ch-shs-s-zero: var(--ch-chart-zero);
   --ch-shs-s-shadow: var(--ch-elevation-reading);
-  background: var(--ch-shs-s-bg);
+  /* The page is the canvas: its light shows between the cards (DESIGN_LANGUAGE law 2; WHITE-01, WHITE-07). */
+  background: transparent;
   color: var(--ch-shs-s-ink);
 }
 .ch-shs-home {
   background: transparent;
 }
 
-/* Sticky window switch: page colour behind it, no blur, no hairline. */
+/* Sticky window switch, no blur, no hairline (S1.9): on the canvas itself at rest, the scrolled canvas (paper over the
+   linen) once content goes under the bar. */
 .ch-shs .ch-shs-ctl {
   position: sticky;
   top: calc(var(--ch-phone-topbar-h, 0px) + env(safe-area-inset-top));
   z-index: var(--ch-z-raised);
   padding: 2px var(--ch-page-x-phone) 8px;
-  background: var(--ch-shs-s-bg);
+  background: transparent;
+}
+.ch-app:has(.ch-topbar[data-scrolled]) .ch-shs .ch-shs-ctl {
+  background: var(--ch-light-paper), var(--ch-workspace);
 }
 /* The switch as the page's first line (Team stats, whose title is for screen readers; the skeleton the same): at rest it
    stands clear of the sheet's top edge as every page's first line does. A sticky box's margin is not kept once it sticks,
@@ -264,6 +270,7 @@
   --ch-shs-s-loss-fill: var(--ch-feature-loss-fill);
   --ch-shs-s-sep: var(--ch-feature-sep);
   --ch-shs-s-track: var(--ch-feature-track);
+  --ch-shs-s-track-ring: none;
   --ch-shs-s-zero: var(--ch-feature-ink-3);
   --ch-shs-s-gain-tint: var(--ch-feature-gain-tint);
   --ch-shs-s-loss-tint: var(--ch-feature-loss-tint);
@@ -460,6 +467,7 @@
   height: calc(14 * var(--ch-type-k));
   border-radius: 999px;
   background: var(--ch-shs-s-track);
+  box-shadow: var(--ch-shs-s-track-ring);
   overflow: hidden;
 }
 .ch-shs-cmp-track i {
@@ -640,6 +648,7 @@
   height: calc(12 * var(--ch-type-k));
   border-radius: 999px;
   background: var(--ch-shs-s-track);
+  box-shadow: var(--ch-shs-s-track-ring);
 }
 .ch-shs-mrow .ch-shs-rail {
   height: calc(10 * var(--ch-type-k));
@@ -752,6 +761,7 @@
   height: calc(12 * var(--ch-type-k));
   border-radius: 999px;
   background: var(--ch-shs-s-track);
+  box-shadow: var(--ch-shs-s-track-ring);
 }
 .ch-shs-mr .ch-shs-hrail {
   height: calc(10 * var(--ch-type-k));
@@ -1089,7 +1099,7 @@
 
 /* The pushed detail. */
 .ch-shs-screen {
-  background: var(--ch-shs-s-bg);
+  background: var(--ch-page-paint);
   box-shadow: var(--ch-stats-redesign-shadow-3);
 }
 .ch-shs-screen .ch-pbar__back {
@@ -1874,6 +1884,7 @@ li + li > .ch-shs-rrow::before {
   margin-top: 8px;
   border-radius: 999px;
   background: var(--ch-shs-s-track);
+  box-shadow: var(--ch-shs-s-track-ring);
   overflow: hidden;
 }
 .ch-shs-prog i {
@@ -2672,6 +2683,7 @@ p.ch-shs-mini-cap {
   height: calc(10 * var(--ch-type-k));
   border-radius: 999px;
   background: var(--ch-shs-s-track);
+  box-shadow: var(--ch-shs-s-track-ring);
 }
 .ch-shs-desk__det .ch-stm-putt__bar i {
   position: absolute;

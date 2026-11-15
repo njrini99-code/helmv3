@@ -1866,8 +1866,10 @@
   stroke: var(--ch-green-600);
   stroke-width: 1.8;
 }
+/* Under par is one colour in this chart, the label's (PL-HOME-05 interim, DESIGN_LANGUAGE open call 1). */
 .ch-ph-chart__dot.is-under {
-  fill: var(--ch-green-600);
+  fill: var(--ch-chart-flag);
+  stroke: var(--ch-chart-flag);
 }
 .ch-ph-pinflag line {
   stroke: var(--ch-text-primary);
@@ -2154,7 +2156,8 @@
    round. Ink when steady, green when it moved the good way, amber when not. */
 .ch-ph-spark {
   margin: 4px 0 0;
-  --ch-spark: var(--ch-ink-400);
+  /* Steady is ink at 3:1 or more on the card and the linen (audit PMAC-10; ink-400 was 2.98:1). */
+  --ch-spark: var(--ch-ink-500);
 }
 .ch-ph-spark.is-gain {
   --ch-spark: var(--ch-chart-gain);
@@ -2363,9 +2366,6 @@
   font-size: calc(14 * var(--ch-type-k));
 }
 /* Only the options off the chip take the quieter ink: the chosen one keeps the chip's own ink (controls.css). */
-.ch-ph-game.is-phone .ch-seg .ch-seg__b:not(.is-on) {
-  color: var(--ch-ink-600);
-}
 /* The chip is the green every switcher draws (controls.css, owner 2026-10-16), on this switch's tighter corner. */
 .ch-ph-game.is-phone .ch-seg .ch-seg__pill {
   border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
@@ -3461,7 +3461,7 @@
     fill: var(--ch-workspace);
   }
   .ch-hm--player .ch-ph-chart__dot.is-under {
-    fill: var(--ch-green-600);
+    fill: var(--ch-chart-flag);
   }
   /* The four figures as the Ledger's figure row, two by two: hairlines above and below, soft rules between. */
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs {
@@ -3600,7 +3600,7 @@ html[data-fw-theme='dark'] .ch-ph-chart__dot {
   fill: var(--ch-workspace);
 }
 html[data-fw-theme='dark'] .ch-ph-chart__dot.is-under {
-  fill: var(--ch-green-600);
+  fill: var(--ch-chart-flag);
 }
 html[data-fw-theme='dark'] .ch-ph-chart__hatch {
   stroke: rgb(107 187 140 / 0.08);
@@ -4553,8 +4553,9 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 /* Coach Home, phone (clubhouse_classes_roster_home_v1; 06 §11). The one phone block for the lane: every rule is under its attribute,
    so player Home and flag-off screens never see it. No hex colours here but the token-free ivory rings. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  /* The page is the canvas: its light shows between the cards (DESIGN_LANGUAGE law 2; WHITE-03). */
   .ch-hm[data-ch-crh='on'] {
-    background: var(--ch-grouped-bg);
+    background: transparent;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-hero {
     display: grid;

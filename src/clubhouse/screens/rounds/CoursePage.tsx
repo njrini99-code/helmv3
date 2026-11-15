@@ -83,7 +83,7 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
       {h.lastTime && <LastTime t={h.lastTime} who={who} />}
       {h.windows && (
         <div className="ch-ch-win">
-          <Segmented weight="filter"
+          <Segmented
             label="Which rounds"
             size="sm"
             value={h.window}

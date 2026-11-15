@@ -652,7 +652,7 @@
   display: block;
   width: 242px;
   height: 176px;
-  border-radius: var(--ch-radius-bubble);
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-well-bg-flat);
 }
 [data-ch-ms-v2] .ch-msd-file {

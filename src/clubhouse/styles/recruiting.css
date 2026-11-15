@@ -2071,7 +2071,7 @@
 }
 :where(html[data-fw-theme='dark']) .ch-rec-pipe__dot {
   --ch-rec-ring: var(--ch-ivory-400);
-  box-shadow: 0 0 0 2px var(--ch-rec-ring), var(--ch-elevation-bubble);
+  box-shadow: 0 0 0 2px var(--ch-rec-ring);
 }
 :where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot {
   --ch-rec-ring: #3d7a56;
@@ -2080,7 +2080,7 @@
   --ch-rec-ring: var(--ch-green-400);
 }
 :where(html[data-fw-theme='dark']) .ch-rec-pipe__stage[aria-pressed='true'] .ch-rec-pipe__dot {
-  box-shadow: 0 0 0 2px var(--ch-rec-ring), 0 0 0 6px rgb(107 187 140 / 0.2), var(--ch-elevation-bubble);
+  box-shadow: 0 0 0 2px var(--ch-rec-ring), 0 0 0 6px rgb(107 187 140 / 0.2);
 }
 :where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot,
 :where(html[data-fw-theme='dark']) .ch-rec-chip.is-offered {

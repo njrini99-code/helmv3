@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { tokenHex } from './_tokens';
 
 /**
  * P-14 change marks on the Calendar: a changed event shows the new value with the old one struck and a small badge;
@@ -418,12 +419,7 @@ describe('contrast and the banned stripe (P-14 7.3)', () => {
     const [hi, lo] = [lum(x), lum(y)].sort((p, q) => q - p);
     return (hi! + 0.05) / (lo! + 0.05);
   };
-  const token = (name: string, theme: 'light' | 'dark'): RGB => {
-    const from = theme === 'light' ? 0 : tokens.indexOf("[data-fw-theme='dark']");
-    const m = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`).exec(tokens.slice(from));
-    if (!m) throw new Error(`--${name} (${theme}) is not a hex`);
-    return hex(m[1]!);
-  };
+  const token = (name: string, theme: 'light' | 'dark'): RGB => hex(tokenHex(name, theme));
 
   it.each(['light', 'dark'] as const)('the struck value and the panel text read at 4.5:1 or more on every surface they sit on (%s)', (theme) => {
     for (const bg of ['ch-sheet-bg', 'ch-workspace', 'ch-bg-subtle', 'ch-bg-page']) {
@@ -677,8 +673,8 @@ describe('the feature’s contrast on the surfaces it sits on, from the tokens (
     const t = (n: string) => tokenOf(n, theme);
     expect(ratio(t('ch-ink-500'), t('ch-bg-surface')), 'label').toBeGreaterThanOrEqual(4.5);
     expect(ratio(t('ch-ink-500'), t('ch-workspace')), 'ring on the workspace').toBeGreaterThanOrEqual(3);
-    // The phone page, which the moved-away ring sits on in light (tokens.css, the phone page ground).
-    if (theme === 'light') expect(ratio(t('ch-ink-500'), [237, 233, 223, 1]), 'ring on the phone page').toBeGreaterThanOrEqual(3);
+    // The page's linen, which the moved-away ring sits on at every width.
+    expect(ratio(t('ch-ink-500'), t('ch-bg-page')), 'ring on the page').toBeGreaterThanOrEqual(3);
   });
 });
 
