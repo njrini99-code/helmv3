@@ -159,6 +159,22 @@ describe('Round entry: loading (CH-11407)', () => {
       inside.unmount();
     }
   });
+
+  it('a round to continue loads in the tracking screen’s boxes, not the entry form’s (GAP-S-18)', async () => {
+    const Continue = (await import('@/app/golf/(dashboard)/dashboard/rounds/continue/[id]/loading')).default;
+    const { container } = render(
+      <ClubhouseMarker {...{ role: 'player' as const }}>
+        <Continue />
+      </ClubhouseMarker>,
+    );
+    const main = container.querySelector('main[data-ch-code="CH-11407"]')!;
+    expect(main.classList.contains('ch-rt')).toBe(true);
+    expect(main.getAttribute('aria-busy')).toBe('true');
+    expect(main.querySelector('.ch-rt-top')).not.toBeNull();
+    expect(main.querySelector('.ch-rt-body .ch-rt-hero')).not.toBeNull();
+    expect(main.querySelector('.ch-rt-panel .ch-rt-bar')).not.toBeNull();
+    expect(container.querySelector('.ch-rd')).toBeNull();
+  });
 });
 
 // ── useAction: what a round action needs beyond a plain toast ──

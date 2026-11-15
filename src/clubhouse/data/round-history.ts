@@ -4,7 +4,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { deriveRoundTotal } from '@/lib/golf/round-total';
 import { chLogServer } from '../lib/track-server';
-import { historyHoleIds, toReviewHistory, type ChHistoryRound, type ChHistoryRoundRow, type ChReviewHistory } from './round-history-shape';
+import { HISTORY_FAILED, historyHoleIds, toReviewHistory, type ChHistoryRound, type ChHistoryRoundRow, type ChReviewHistory } from './round-history-shape';
 import { loadTeamZone, SEASON_DEFAULT_TZ, seasonStartDate } from './season';
 import type { ChPlayHole } from './stats-extra';
 
@@ -38,8 +38,8 @@ export function historyTeam(viewer: { role: string; teamId?: string | null }, ro
 }
 
 /**
- * The route's streamed read (P-7 4.8): the history for a review already drawn. It never rejects: a failure is null, logged, and the
- * review says nothing about it.
+ * The route's streamed read (P-7 4.8): the history for a review already drawn. It never rejects: a failure is logged and comes back
+ * as HISTORY_FAILED, which the review names once (GAP-S-27); null stays "no history".
  */
 export async function loadReviewHistory(input: ChReviewHistoryInput): Promise<ChReviewHistory | null> {
   try {
@@ -47,7 +47,7 @@ export async function loadReviewHistory(input: ChReviewHistoryInput): Promise<Ch
     return await startReviewHistory(supabase, input)(input.round);
   } catch (err) {
     log('history', err);
-    return null;
+    return HISTORY_FAILED;
   }
 }
 
@@ -77,7 +77,7 @@ export function startReviewHistory(
       const listRes = l.res;
       if (listRes.error) {
         log('history-list', listRes.error);
-        return null;
+        return HISTORY_FAILED;
       }
       // The record chips compare this round's canonical total (the review draws it) with the others', so the others use the same
       // total: front plus back where both are stored, as the library and the course page do (round-total.ts: ~5% drift by one).
@@ -92,7 +92,7 @@ export function startReviewHistory(
         );
         if (res.error) {
           log('history-holes', res.error);
-          return null;
+          return HISTORY_FAILED;
         }
         for (const h of res.data ?? []) {
           if (h.par == null) continue;
@@ -106,7 +106,7 @@ export function startReviewHistory(
       return toReviewHistory({ round, list, holes, seasonStart: seasonStartDate(new Date(), z.tz) });
     } catch (err) {
       log('history', err);
-      return null;
+      return HISTORY_FAILED;
     }
   };
 }

@@ -6,6 +6,7 @@ import { FreshnessChip } from '../../live/FreshnessChip';
 import { LiveAnnouncer } from '../../live/LiveAnnouncer';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
+import { SectionBoundary } from '../../ui/SectionBoundary';
 import { PlayerLiveSheet } from './PlayerLiveSheet';
 import { LiveEmpty, LiveFilter, LiveGroupsList, LiveSortMenu, UpdatedPill } from './live-parts';
 import type { LiveViewState } from './use-live-view';
@@ -36,7 +37,10 @@ export function LiveViewPhone({ v }: { v: LiveViewState }) {
       ) : total === 0 ? (
         <LiveEmpty />
       ) : (
-        <LiveGroupsList v={v} density="full" onOpen={(l) => v.select(l.roundId)} />
+        // One lane that throws takes the list, not the page: the feed, the tools and the sheet keep working (GAP-S-10).
+        <SectionBoundary surface="live.lanes" label="Players on the course" code="CH-TODO">
+          <LiveGroupsList v={v} density="full" onOpen={(l) => v.select(l.roundId)} />
+        </SectionBoundary>
       )}
       <LiveAnnouncer moments={v.live.moments} enabled={v.announce} />
       <PlayerLiveSheet lane={v.selected} moments={v.live.moments} now={v.now} coach hours={v.hours} onClose={() => v.select(null)} />

@@ -124,6 +124,8 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
         />
       ) : (
         <>
+          {/* The roster or the season profiles failed (GAP-S-08): the results still show, the names and seasons may be short. */}
+          {data.errors.profiles && <InlineNotice code="CH-TODO" title="Player names didn’t load" body="The results below are unaffected. Try again." onRetry={refresh} retrying={refreshing} />}
           <Section
             id="ch-tour-hist-across"
             title="Across seasons"

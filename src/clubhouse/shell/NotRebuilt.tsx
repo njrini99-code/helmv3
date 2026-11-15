@@ -1,6 +1,6 @@
 'use client';
 
-import { Hourglass, House, Lock } from 'lucide-react';
+import { ChevronLeft, Hourglass, House, Lock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
@@ -30,6 +30,33 @@ export function NotRebuilt({ label, coachOnly = false }: { label: string; coachO
           <div className="ch-empty-page__a">
             <Button variant="primary" leftIcon={House} href="/golf/dashboard">
               Back to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/**
+ * A coach on a player's own round flow (/rounds/new, /rounds/recover, /rounds/continue/[id]) (CH-11390, GAP-R-12): the
+ * page empty's anatomy, as NotRebuilt, saying whose page it is and the way back to the team's rounds.
+ */
+export function PlayersOnlyRounds() {
+  return (
+    <main className="ch-notyet" data-ch-code="CH-11390">
+      <div className="ch-empty-page">
+        <div className="ch-empty-page__in">
+          <span className="ch-empty-page__art" aria-hidden="true">
+            <span className="ch-empty-page__ic">
+              <Icon icon={Lock} size={26} />
+            </span>
+          </span>
+          <h1 className="ch-empty-page__title">Only players log rounds</h1>
+          <p className="ch-empty-page__body">Your team’s rounds are in Rounds.</p>
+          <div className="ch-empty-page__a">
+            <Button variant="primary" leftIcon={ChevronLeft} href="/golf/dashboard/rounds">
+              Back to Rounds
             </Button>
           </div>
         </div>

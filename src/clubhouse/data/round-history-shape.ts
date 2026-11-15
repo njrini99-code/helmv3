@@ -44,7 +44,12 @@ export interface ChReviewHistory {
     /** The lowest other 18-hole round here from the same tees with every hole. */
     best: { cum: number[]; score: number; date: string } | null;
   };
+  /** The read failed (GAP-S-27): the review says so once, instead of reading as a player with no history. */
+  failed?: true;
 }
+
+/** The history whose read failed: nothing to compare with, and flagged so the review can say so. */
+export const HISTORY_FAILED: ChReviewHistory = { failed: true, course: null, records: [], usual: null, hereBefore: {}, ghosts: { average: null, best: null } };
 
 /** The usual reads the last this-many countable 18-hole rounds with hole scores before this one, at any course. */
 export const USUAL_WINDOW = 20;

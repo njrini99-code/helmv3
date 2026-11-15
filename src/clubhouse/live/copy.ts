@@ -21,8 +21,8 @@ export const LIVE_COPY = {
   cantRefresh: 'Can’t refresh right now',
   /** CH-16605 */
   offline: 'You’re offline',
-  /** CH-16609 */
-  noAccess: 'You don’t have access to this team’s live rounds.',
+  /** CH-16609: the restricted page's title (GAP-S-12); a coach with no team gets NoTeam's. */
+  noAccess: 'Live isn’t available for this team',
   /** CH-16610 */
   viewTitle: 'Live',
   /** CH-16611 */

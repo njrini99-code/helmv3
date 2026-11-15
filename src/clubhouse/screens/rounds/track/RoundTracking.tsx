@@ -14,6 +14,7 @@ import { haptic } from '../../../lib/haptics';
 import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
+import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { Spinner } from '../../../ui/Spinner';
 import { Swap } from '../../../ui/Swap';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
@@ -314,10 +315,14 @@ export function RoundTracking(props: RoundTrackingProps) {
           <section className="ch-rt-hero" aria-label={`Hole ${hole.number}`}>
             {/* Board 3: the drawn hole is the hero; tapping it opens the course view (board 3b). */}
             <div className="ch-rt-hero__stage" ref={stageEl} style={stageHeld != null ? { flex: `0 0 ${stageHeld}px` } : undefined}>
+            {/* The map and the shot log are sections (GAP-S-10): a drawing that throws is named in place and scoring goes on.
+                Never ShotEntry, whose card and keys must always be there. Keyed by hole, so the next hole draws afresh. */}
+            <SectionBoundary key={hole.number} surface="rounds.track.map" label="The hole map" code="CH-11291">
             <button type="button" className="ch-rt-hero__map" aria-haspopup="dialog" aria-label={`Course view of hole ${hole.number}`} onClick={() => setCourseOpen(true)}>
               <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} frame="wide" />
               <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} frame="tall" />
             </button>
+            </SectionBoundary>
             <div className="ch-rt-hero__main">
               <div className="ch-rt-hero__k">
                 <b className="ch-rt-hno">
@@ -376,6 +381,7 @@ export function RoundTracking(props: RoundTrackingProps) {
             </div>
             </div>
             {/* Mid-hole a recorded shot opens from the log (Fairway's shot pills); once holed, the hole review is the one way in. */}
+            <SectionBoundary key={hole.number} surface="rounds.track.shots" label="The shots on this hole" code="CH-11291">
             <ShotLog
               onOpenChange={(open) => setStageHeld(open ? (stageRef.current?.getBoundingClientRect().height ?? null) : null)}
               shots={t.shotHistory}
@@ -384,6 +390,7 @@ export function RoundTracking(props: RoundTrackingProps) {
               editDisabled={t.undoSaving || t.editSaving}
               saved={savedNote?.index === viewIndex ? savedNote.words : null}
             />
+            </SectionBoundary>
           </section>
           </Swap>
 

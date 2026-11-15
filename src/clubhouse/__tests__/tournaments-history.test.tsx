@@ -210,6 +210,14 @@ describe.each([
     if (!phone) expect(c.querySelector('[role="table"]')).not.toBeNull();
   });
 
+  it('names a failed roster read once and keeps the trend and the events (GAP-S-08)', () => {
+    const c = draw({ ...data, players: [], errors: { profiles: true } }, search(), { phone });
+    const notices = [...c.querySelectorAll('[role="alert"]')].filter((n) => plain(n as HTMLElement).includes('Player names didn’t load'));
+    expect(notices).toHaveLength(1);
+    expect(c.querySelector('[data-ch-code="CH-16236"]')).toBeNull();
+    if (!phone) expect(c.querySelector('[role="table"]')).not.toBeNull();
+  });
+
   it('asks for the first event when nothing is finished, with that as the only primary (CH-16340)', () => {
     const c = draw({ ...data, events: [], trend: [] }, search(), { phone });
     expect(plain(c.querySelector('[data-ch-code="CH-16340"]'))).toContain('No results to compare yet');

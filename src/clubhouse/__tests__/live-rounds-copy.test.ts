@@ -68,7 +68,7 @@ const EXPECTED: Record<string, string> = {
   'CH-16603': 'Open live view',
   'CH-16604': 'Can’t refresh right now',
   'CH-16605': 'You’re offline',
-  'CH-16609': 'You don’t have access to this team’s live rounds.',
+  'CH-16609': 'Live isn’t available for this team',
   'CH-16610': 'Live',
   'CH-16611': 'All / Qualifier / Practice / Tournament',
   'CH-16612': 'On the course · 4',
