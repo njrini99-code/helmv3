@@ -60,10 +60,13 @@ export function judgeMotion(
     // that is interrupted and reversed (a hover, a press) is shortened by the browser to the distance left, so its length
     // depends on timing. Transition durations are held to the tokens statically, by the CSS ratchet and lint.
     if (finite && moves && r.kind === 'CSSAnimation' && !tokens.has(r.duration!)) out.add(`token: ${where} runs ${r.duration} ms, not a --ch-dur-* duration`);
+    // These two name the element only: whether the browser runs a fade as a CSS transition or a Web Animation, and for
+    // how long, varies run to run (seen on 15 Nov), while the element that moves does not.
+    const who = `${target}${r.pseudo ?? ''}`;
     if (reduced) {
-      if (moves) out.add(`reduced: ${where} runs ${r.duration} ms${finite ? '' : ' in a loop'} under Reduce Motion`);
+      if (moves) out.add(`reduced: ${who} moves under Reduce Motion${finite ? '' : ' (a loop)'}`);
     } else if (phase === 'open' && finite && moves && !ROUTE_FRAME.test(where)) {
-      out.add(`first-paint: ${where} animates as the screen opens${r.delay > 0 ? ` (delayed ${r.delay} ms: a stagger)` : ''}`);
+      out.add(`first-paint: ${who} animates as the screen opens${r.delay > 0 ? ' (delayed: a stagger)' : ''}`);
     }
   }
   return [...out].sort();

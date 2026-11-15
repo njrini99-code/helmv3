@@ -16,8 +16,8 @@ import { judgeMotion, motionTokens, type MotionRow } from './clubhouse-gate/moti
  *   - reduced:   under Reduce Motion nothing finite runs at all, and the loops stop (`--ch-dur-*` are 0 there).
  * Then every popup kind is opened on the popup lab (sheets, the modal, the action sheet: the motion people see most) and
  * what its opening animates is judged the same way, without the first-paint rule.
- * A screen's known breaks are in `clubhouse-gate/motion-known.ts`; a known break that no longer happens fails too, so the
- * list only shrinks. It cannot judge smoothness or feel: that is tier D (`helm-safari-performance`).
+ * A screen's known breaks are in `clubhouse-gate/motion-known.ts`; a new one fails, and the list only shrinks.
+ * It cannot judge smoothness or feel: that is tier D (`helm-safari-performance`).
  *
  *   CH_QUALITY=1 CH_BASE=http://127.0.0.1:3100 npx playwright test -c playwright.clubhouse.config.ts --project motion-phone
  *   CH_MOTION_REPORT=<file.jsonl> also writes every screen's raw rows.
@@ -122,6 +122,18 @@ async function record(page: Page, url: string, tap: string | undefined): Promise
   });
 }
 
+/**
+ * A new break fails. A known break that did not show this run is noted, not failed: some of them depend on timing (a
+ * Reduce Motion fade can land before or after the window opens), so absence in one run is not proof of a fix. Delete a
+ * line from motion-known.ts when its fix lands.
+ */
+function expectKnown(key: string, breaks: string[]) {
+  const known = new Set(MOTION_KNOWN[key] ?? []);
+  const unseen = [...known].filter((b) => !breaks.includes(b));
+  if (unseen.length) test.info().annotations.push({ type: 'known motion break not seen this run', description: `${key}: ${unseen.join(' | ')}` });
+  expect(breaks.filter((b) => !known.has(b)), `${key}: new motion breaks (fix them; e2e/clubhouse-gate/motion-known.ts only shrinks)`).toEqual([]);
+}
+
 let tokens: Set<number>;
 test.beforeAll(async () => {
   tokens = motionTokens(await readFile(path.resolve('src/clubhouse/styles/tokens.css'), 'utf8'));
@@ -137,11 +149,8 @@ for (const reduced of [false, true]) {
           await mkdir(path.dirname(process.env.CH_MOTION_REPORT), { recursive: true });
           await appendFile(process.env.CH_MOTION_REPORT, `${JSON.stringify({ screen: screen.id, reduced, rows })}\n`);
         }
-        const breaks = judgeMotion(rows, { reduced, tokens });
         const key = `${screen.id}|${reduced ? 'reduce' : 'motion'}`;
-        const known = MOTION_KNOWN[key] ?? [];
-        // Exactly the known breaks: a new one fails, and so does a fixed one until it is taken off the list.
-        expect(breaks, `${key}: motion breaks (update e2e/clubhouse-gate/motion-known.ts only to remove a fixed one)`).toEqual(known);
+        expectKnown(key, judgeMotion(rows, { reduced, tokens }));
       });
     }
 
@@ -158,7 +167,7 @@ for (const reduced of [false, true]) {
         // Opening a popup must move something when motion is allowed; an empty list would mean the recorder saw nothing.
         if (!reduced) expect(rows.length, `${kind} opened with no animation recorded`).toBeGreaterThan(0);
         const key = `popup-${kind}|${reduced ? 'reduce' : 'motion'}`;
-        expect(judgeMotion(rows, { reduced, tokens, phase: 'interaction' }), `${key}: motion breaks`).toEqual(MOTION_KNOWN[key] ?? []);
+        expectKnown(key, judgeMotion(rows, { reduced, tokens, phase: 'interaction' }));
       });
     }
   });

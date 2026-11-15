@@ -46,7 +46,7 @@ describe('judgeMotion', () => {
     expect(out.some((b) => /^token: div\.ch-odd .* 137 ms/.test(b))).toBe(true);
     // An interrupted transition is shortened by the browser, so its length is not judged at run time.
     expect(judgeMotion([row({ duration: 155, name: 'background-color', props: ['background-color'] })], { reduced: false, tokens, phase: 'interaction' })).toEqual([]);
-    expect(out.some((b) => /^first-paint: li\.ch-row ch-rise .*stagger/.test(b))).toBe(true);
+    expect(out.some((b) => /^first-paint: li\.ch-row animates .*stagger/.test(b))).toBe(true);
   });
   it('fails anything that runs under Reduce Motion, loops included', () => {
     const out = judgeMotion([row({ at: 2000 }), row({ iterations: 'infinite', duration: 1900, name: 'ch-shimmer' })], { reduced: true, tokens });
