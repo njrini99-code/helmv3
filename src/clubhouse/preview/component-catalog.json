@@ -26663,6 +26663,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-field-ring",
+          "value": "0 0 0 1px var(--ch-border-control)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-separator-chart",
           "value": "#8a867c",
           "scope": "[data-ui='clubhouse']"
