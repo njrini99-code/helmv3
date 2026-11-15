@@ -260,6 +260,16 @@ describe('Coach Home · 20104 what’s waiting on the coach (spec B §2)', () =>
     expect(await queue()).toEqual({ joinRequests: 2, replies: { missing: 1, events: [{ id: 'e1', date: '2026-10-02', missing: 1 }] }, overdueTasks: 1, unackedPosts: 1 });
   });
 
+  it('DD-14: a QA run’s task and post wait on no one (both are hidden on every screen)', async () => {
+    const asked: Array<Array<[string, unknown[]]>> = [];
+    tables.current = { ...answered(), golf_tasks: (f) => (asked.push(f), { data: [{ id: 't1', due_date: '2026-09-20' }] }) };
+    announcements.current = async () => ({ success: true, data: [{ id: 'n1', requires_acknowledgement: true }, { id: 'qa', requires_acknowledgement: true, is_test: true }] });
+    const q = await queue();
+    expect(asked[0]).toContainEqual(['eq', ['is_test', false]]);
+    // n1 waits on Bo (Ada acknowledged it); the QA post, acknowledged by no one, is not counted.
+    expect(q.unackedPosts).toBe(1);
+  });
+
   it('a part that fails is null and logged, never 0, and the others still count', async () => {
     tables.current = { ...answered(), golf_tasks: { error: { message: 'boom' } } };
     const q = await queue();

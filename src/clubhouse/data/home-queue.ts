@@ -96,6 +96,8 @@ export async function loadCoachQueue(
       .from('golf_tasks')
       .select('id, due_date')
       .eq('team_id', teamId)
+      // DD-14: a QA run's task is never overdue on a coach's Home (Team Hub hides it too).
+      .eq('is_test', false)
       .is('parent_task_id', null)
       .order('due_date', { ascending: false, nullsFirst: true })
       .limit(HUB_TASK_CAP);
@@ -114,7 +116,8 @@ export async function loadCoachQueue(
     const anns = res.data ?? [];
     const names = await input.names;
     if (!names) throw new Error('roster did not load');
-    const asking = anns.filter((a) => a.requires_acknowledgement);
+    // A post marked `is_test` is shown nowhere (Messages, Team Hub), so it waits on no one here either (DD-14).
+    const asking = anns.filter((a) => a.requires_acknowledgement && (a as { is_test?: boolean | null }).is_test !== true);
     const waiting = await notAckedFor(supabase, asking.map((a) => a.id), names);
     if (!waiting) throw new Error('acknowledgements did not load');
     return unackedPostCount(asking.map((a) => ({ needAck: true, notAcked: waiting.get(a.id) ?? [] })));
