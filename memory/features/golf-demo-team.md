@@ -55,7 +55,8 @@ Launch readiness DD-01 to DD-18 (15 Nov 2026), except DD-14.
    sums, one shot per stroke, no shared scorecards, and believable putting
    (within the real teams' range: 31.2 to 34.4 per 18, three-putts 4.3%
    to 14.2%). They also cover seed tags,
-   weekdays in copy, upcoming events, tournaments and lineups, qualifiers
+   weekdays in copy, upcoming events (relaxed in the last ten days of a
+   term, when the calendar runs out on purpose), tournaments and lineups, qualifiers
    closed and scored, practice plans, attendance, and the season row
    (DATA-04).
 

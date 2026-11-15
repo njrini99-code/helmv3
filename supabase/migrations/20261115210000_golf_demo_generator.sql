@@ -267,7 +267,7 @@ CREATE TABLE IF NOT EXISTS helm_private.golf_demo_ledger (
   table_name text NOT NULL,
   row_key text NOT NULL,
   row_hash text NOT NULL,
-  generator_version integer NOT NULL,
+  generator_version bigint NOT NULL,
   written_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT golf_demo_ledger_pkey PRIMARY KEY (team_id, table_name, row_key)
 );

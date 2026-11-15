@@ -71,6 +71,12 @@ export function inTerm(today: string): boolean {
   return (md >= '08-25' && md <= '11-20') || (md >= '01-20' && md <= '04-30');
 }
 
+/** True in the last ten days of a term, when the calendar runs out of events on purpose. */
+export function termTapering(today: string): boolean {
+  const md = today.slice(5);
+  return (md >= '11-11' && md <= '11-20') || (md >= '04-21' && md <= '04-30');
+}
+
 /**
  * Weekday names in copy that disagree with their date (DD-18). The year is the
  * one that puts the date nearest the row's own timestamp.
@@ -245,7 +251,7 @@ export function checkDemoCoverage(snap: DemoSnapshot): CoverageReport {
   // ------------------------------------------------- events and practice
   const events = rows('golf_events').filter((e) => str(e, 'status') !== 'cancelled');
   const nextTwoWeeks = events.filter((e) => day(e, 'start_time') >= today && day(e, 'start_time') <= addDays(today, 14));
-  add('upcoming-events', 'DD-03', inTerm(today) ? 'error' : 'warn', !inTerm(today) || nextTwoWeeks.length >= 3, `${nextTwoWeeks.length} events in the next two weeks`);
+  add('upcoming-events', 'DD-03', inTerm(today) && !termTapering(today) ? 'error' : 'warn', !inTerm(today) || termTapering(today) || nextTwoWeeks.length >= 3, `${nextTwoWeeks.length} events in the next two weeks`);
 
   const eventDay = new Map(events.map((e) => [str(e, 'id')!, day(e, 'start_time')]));
   // Published plans for recent sessions, or plans (draft or published) for the coming ones.

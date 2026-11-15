@@ -6,16 +6,16 @@
  * run, on every machine. Each entity derives its own stream from its own key,
  * so adding a round on one day never shifts the numbers of any other round.
  *
- * Pure: no I/O. `node:crypto` is used only for SHA-1, which is deterministic.
+ * Pure: no I/O. `node:crypto` is used only for SHA-256, which is deterministic.
  */
 import { createHash } from 'node:crypto';
 
 /** A namespace for every demo id, so a demo id can never equal an id minted elsewhere by the same scheme. */
 const ID_NAMESPACE = 'helm.golf.demo-generator';
 
-/** A version-5-shaped uuid from a key: SHA-1 of namespace and key, with the version and variant bits set. */
+/** A version-5-shaped uuid from a key: SHA-256 of namespace and key (first 16 bytes), with the version and variant bits set. */
 export function stableUuid(seed: string, key: string): string {
-  const h = createHash('sha1').update(`${ID_NAMESPACE}\u0000${seed}\u0000${key}`).digest();
+  const h = createHash('sha256').update(`${ID_NAMESPACE}\u0000${seed}\u0000${key}`).digest();
   const b = Buffer.from(h.subarray(0, 16));
   b[6] = (b[6]! & 0x0f) | 0x50;
   b[8] = (b[8]! & 0x3f) | 0x80;

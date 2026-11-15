@@ -23,7 +23,7 @@ function gen(over: Partial<GenerateInput> = {}): DemoDataset {
   return d;
 }
 
-const hash = (x: unknown) => createHash('sha1').update(JSON.stringify(x)).digest('hex');
+const hash = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
 const ids = (rows: DemoRow[], k = 'id') => new Set(rows.map((r) => String(r[k])));
 const name = (d: DemoDataset, key: string) => {
   const s = DEMO_ROSTER.find((p) => p.key === key)!;
@@ -162,7 +162,8 @@ describe('generateDemoTeam', () => {
   });
 
   it('passes the coverage check on every kind of day, for several seeds', () => {
-    const days = ['2026-08-01', '2026-08-26', '2026-10-10', '2026-11-15', '2026-12-24', '2027-01-20', '2027-02-10', '2027-03-17', '2027-05-15', '2027-11-15'];
+    // 19 and 20 Nov and 29 and 30 Apr are the end-of-term taper, when fewer than three events remain.
+    const days = ['2026-08-01', '2026-08-26', '2026-10-10', '2026-11-15', '2026-11-19', '2026-11-20', '2026-12-24', '2027-01-20', '2027-02-10', '2027-03-17', '2027-04-29', '2027-04-30', '2027-05-15', '2027-11-15'];
     for (const seed of [undefined, 'seed-a', 'seed-b']) {
       for (const today of days) {
         const report = checkDemoCoverage({ today, tables: gen({ today, seed }).tables });

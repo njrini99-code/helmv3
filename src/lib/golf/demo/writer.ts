@@ -116,7 +116,7 @@ function stableJson(value: unknown): string {
 }
 
 export function rowHash(row: DemoRow | unknown[]): string {
-  return createHash('sha1').update(stableJson(row)).digest('hex').slice(0, 24);
+  return createHash('sha256').update(stableJson(row)).digest('hex').slice(0, 24);
 }
 
 /** A ledger key back to the primary-key object the remove call takes. */
