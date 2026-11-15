@@ -33,22 +33,22 @@
 .ch-st {
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-st[aria-busy='true'] {
+/* The dim is useBusy's (MOTION-AND-VISUAL 3.9, A11; lib/use-busy.ts): data-ch-busy comes on only once a change has taken the
+   busy delay, so a window that lands within 150 ms never flickers, and stays at least the busy hold; then it lifts over
+   the quick beat. aria-busy is the request itself, for assistive tech, from the tap. */
+.ch-st[data-ch-busy='skeleton'] {
   opacity: 0.6;
-  /* The dim waits a beat (A11): a window that lands within 150ms never flickers. Leaving busy clears at once (delay 0). */
-  transition-delay: var(--ch-dur-busy-delay);
 }
 /* The phone keeps its header and the window switch crisp while the figures below wait (F-55): the switch has
    already moved, so only what is changing dims, and it eases rather than snapping. */
-.ch-st.is-phone[aria-busy='true'] {
+.ch-st.is-phone[data-ch-busy='skeleton'] {
   opacity: 1;
 }
 .ch-st.is-phone .ch-stm > * {
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-st.is-phone[aria-busy='true'] .ch-stm > :not(.ch-stm-head):not(.ch-spm-head):not(.ch-stm-controls) {
+.ch-st.is-phone[data-ch-busy='skeleton'] .ch-stm > :not(.ch-stm-head):not(.ch-spm-head):not(.ch-stm-controls) {
   opacity: 0.55;
-  transition-delay: var(--ch-dur-busy-delay);
 }
 /* A window or filter change in flight (CH-4903, CH-5903): the figures stay, dimmed, and this names which ones they are, so the
    switch (already on the new choice) never labels the old figures with the new period. Fixed under the top bar, so it moves
@@ -796,17 +796,18 @@
 }
 @media (hover: hover) {
   .ch-lg__r:has(.ch-lg__a):hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
 .ch-lg__r:has(.ch-lg__a[data-ch-pressed]) {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
   transition-duration: var(--ch-dur-press);
 }
 @media (hover: hover) {
   .ch-lg__r:has(.ch-lg__a:active) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
 }
@@ -864,7 +865,8 @@
 }
 @media (hover: hover) {
   .ch-lg__cell:has(.ch-lg__cl:hover) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-lg__cell.is-col {
@@ -2581,11 +2583,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-spm-round.is-link[data-ch-pressed] {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-spm-round.is-link:active {
-      background-color: var(--ch-ledger-row-press);
+      background-color: var(--ch-sel);
     }
   }
   .ch-spm-round.is-link:focus-visible {
@@ -3961,13 +3963,11 @@
   }
   /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it (CH-1606). */
   .ch-stm .ch-stm-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-stm .ch-stm-row:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-stm .ch-stm-row:focus-visible {
@@ -4003,13 +4003,11 @@
   /* All N rounds and the Message key answer a press as a ghost button and a key do: a tint, and the shrink every
      button takes (`data-ch-press`, CH-1606). */
   .ch-stm .ch-spm-more[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-stm .ch-spm-more:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-stm .ch-spm-head__msg {
@@ -4017,12 +4015,10 @@
   }
   .ch-stm .ch-spm-head__msg[data-ch-pressed] {
     background: var(--ch-green-50);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-stm .ch-spm-head__msg:active {
       background: var(--ch-green-50);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-stm .ch-spm-dev li + li {
@@ -4101,13 +4097,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-stm .ch-gd.is-phone .ch-gm-how > summary[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-stm .ch-gd.is-phone .ch-gm-how > summary:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-stm .ch-gd.is-phone .ch-gm__body {
@@ -4732,13 +4726,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   /* The press tint waits a beat, as a row's does (CH-1606); the chosen row has nothing to change. */
   .ch-stm.is-team .ch-stm-leg:not([data-active])[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-stm.is-team .ch-stm-leg:not([data-active]):active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-stm.is-team .ch-stm-leg:focus-visible {
@@ -7702,10 +7694,10 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 /* B6 (last, so a fill set by a state rule above still takes the tint): a filter chip shows a quick tap
    (lib/press.ts), the row-press tint over its fill. */
 .ch-sf__chip[data-ch-pressed] {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
 }
 @media (hover: hover) {
   .ch-sf__chip:active {
-    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+    background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
   }
 }

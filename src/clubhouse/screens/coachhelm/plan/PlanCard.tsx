@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { safeSave } from './safe-save';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { flyPageToFolder, squashFolder } from '../chat/ask-flight';
+import { haptic } from '../../../lib/haptics';
 import { plural } from '../../../lib/plural';
 import { useChPhone } from '../../../lib/use-phone';
 import { type DrillRef, type PlanBlock, type PlanDraft } from '@/lib/coachhelm/v3/practice-plan/model';
@@ -634,11 +635,28 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                   <span className="v ch-num">{open.len} min</span>
                 ) : (
                   <span className="stepper">
-                    <button type="button" aria-label="Shorter" disabled={open.len <= 5} onClick={() => setBlockLen(Math.max(5, open.len - 5))}>
+                    {/* A stepper's change is a selection tick (MOTION-AND-VISUAL 3.10, D-70). */}
+                    <button
+                      type="button"
+                      aria-label="Shorter"
+                      disabled={open.len <= 5}
+                      onClick={() => {
+                        haptic('select');
+                        setBlockLen(Math.max(5, open.len - 5));
+                      }}
+                    >
                       <Icon icon={Minus} size={14} />
                     </button>
                     <span className="len ch-num">{open.len} min</span>
-                    <button type="button" aria-label="Longer" disabled={open.len >= 360} onClick={() => setBlockLen(Math.min(360, open.len + 5))}>
+                    <button
+                      type="button"
+                      aria-label="Longer"
+                      disabled={open.len >= 360}
+                      onClick={() => {
+                        haptic('select');
+                        setBlockLen(Math.min(360, open.len + 5));
+                      }}
+                    >
                       <Icon icon={Plus} size={14} />
                     </button>
                   </span>

@@ -771,8 +771,9 @@
 }
 @media (hover: hover) {
   .ch-backlink:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
     color: var(--ch-forest-800);
+    transition-duration: 0s;
   }
 }
 .ch-backlink:focus-visible {
@@ -835,17 +836,16 @@
 /* Hover first: a row pressed under the pointer is also hovered, and the press must win. */
 @media (hover: hover) {
   .ch-lgr__row.is-link:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-lgr__row.is-link[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
-  transition-delay: var(--ch-dur-press-delay);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-lgr__row.is-link:active {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
 }
 .ch-lgr__row.is-link:focus-visible {
@@ -989,12 +989,10 @@
 }
 .ch-feat.is-link[data-ch-pressed]::after {
   opacity: 1;
-  transition-delay: var(--ch-dur-press-delay);
 }
 @media (hover: hover) {
   .ch-feat.is-link:active::after {
     opacity: 1;
-    transition-delay: var(--ch-dur-press-delay);
   }
 }
 /* The card as a button (FeatureCard onClick): the card's own face, not the browser's button. */
@@ -1996,11 +1994,11 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   cursor: pointer;
 }
 :is(button, a).ch-wks__d[data-ch-pressed]:not(.is-on) {
-  background-color: var(--ch-ledger-row-press);
+  background-color: var(--ch-sel);
 }
 @media (hover: hover) {
   :is(button, a).ch-wks__d:active:not(.is-on) {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
   }
 }
 @media (hover: hover) {
@@ -2368,7 +2366,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   content: '';
 }
 .ch-group__row[data-ch-pressed] {
-  background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+  background: var(--ch-sel);
 }
 
 /* The last five rounds as bars (ui/FormLine FormBars): green beat the team average, amber more than 2 over, ink otherwise. */
@@ -2444,7 +2442,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   content: '';
 }
 [data-ch-crh='on'] .ch-group__row[data-ch-pressed] {
-  background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+  background: var(--ch-sel);
 }
 [data-ch-crh='on'] .ch-avatar[data-year='sr'] {
   --y: var(--ch-yr-sr);

@@ -1932,15 +1932,16 @@ a.ch-trd-open:focus-visible {
 }
 @media (hover: hover) {
   .ch-trd-tr.is-link:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-trd-tr.is-link:has(a.ch-trd-open[data-ch-pressed]) {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-trd-tr.is-link:has(a.ch-trd-open:active) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-trd-tr > .ch-trd-td--who {
@@ -2298,11 +2299,11 @@ a.ch-trd-open:focus-visible {
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-rd.is-phone a.ch-rd-sc[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rd.is-phone a.ch-rd-sc:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rd.is-phone .ch-rd-sc__date {
@@ -2416,12 +2417,12 @@ a.ch-trd-open:focus-visible {
      the hole are keys and compress, data-ch-press). */
   .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel)[data-ch-pressed],
 .ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel)[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel):active,
     .ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rv.is-phone .ch-rv-cols {
@@ -2818,7 +2819,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   @media (hover: hover) {
     .ch-rv[data-canopy] .ch-rv-back:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rv[data-canopy] .ch-rv-hero {
@@ -3330,8 +3332,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   @media (hover: hover) {
     .ch-rd[data-canopy] a.ch-rd-sc:hover {
       transform: none;
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
       box-shadow: none;
+      transition-duration: 0s;
     }
   }
   @media (hover: hover) {
@@ -3342,12 +3345,12 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   /* CH-11601: a press deepens the tint over the press beat (the shell's CH-1606: a row never scales). */
   .ch-rd[data-canopy] a.ch-rd-sc[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-rd[data-canopy] a.ch-rd-sc:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -5639,11 +5642,11 @@ a.ch-rd-grp__h.is-link {
   text-decoration: none;
 }
 a.ch-rd-grp__h.is-link[data-ch-pressed] {
-  background: var(--ch-bg-subtle);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   a.ch-rd-grp__h.is-link:active {
-    background: var(--ch-bg-subtle);
+    background: var(--ch-sel);
   }
 }
 a.ch-rd-grp__h.is-link:focus-visible {
@@ -6080,11 +6083,11 @@ a.ch-rd-grp__h.is-link:focus-visible {
   letter-spacing: var(--ch-track-15);
 }
 button.ch-hip__row[data-ch-pressed] {
-  background: var(--ch-bg-subtle);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   button.ch-hip__row:active {
-    background: var(--ch-bg-subtle);
+    background: var(--ch-sel);
   }
 }
 button.ch-hip__row:focus-visible,

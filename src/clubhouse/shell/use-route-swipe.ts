@@ -3,9 +3,9 @@
 import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { useEffect } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
-import { haptic } from '../lib/haptics';
-import { chHandPop, chPushTiming, chTapTiming, cssNum, chShownPath, chUnderLook, grabPush, underFor, underVeil, type ChUnder } from '../lib/nav-motion';
-import { CH_EDGE_ZONE_PX, claimWebSwipe, createEdgeSwipe, edgeSwipeAllowed, findScreenBack, overlayIsOpen, type EdgeFrame, type EdgeRelease } from './edge-swipe';
+import { CH_SWIPE } from '../lib/motion';
+import { chHandPop, chTapTiming, cssNum, chShownPath, chUnderLook, grabPush, underFor, underVeil, type ChUnder } from '../lib/nav-motion';
+import { claimWebSwipe, createEdgeSwipe, edgeSwipeAllowed, findScreenBack, overlayIsOpen, swipeFinish, type EdgeFrame, type EdgeRelease } from './edge-swipe';
 
 const PHONE = CH_PHONE_QUERY;
 /** How long a committed swipe waits for the page it uncovered to arrive before it lets the copy go anyway. */
@@ -23,8 +23,10 @@ function routeBack(): HTMLButtonElement | null {
  * The edge swipe back for a pushed route page (C1, rows 2 and 89; docs/clubhouse/phone/shell-gestures.md). The rules are
  * the pushed screen's (edge-swipe.ts): a finger landing within the left 20px that first travels right drags the page,
  * the copy of the page beneath draws back with it, past half the width or a flick (0.7 px/ms) lets it go and the bar's own Back
- * runs, and anything else springs home. It also takes a push still sliding in, where it stands (`grabPush`): there is
- * no wait for the push to settle. The bars never move; only the page and the copy beneath it do.
+ * runs, and anything else goes home. Either way the page finishes from where the finger left it, over 520 ms times the
+ * share of the way still to go with a 35% floor, on the iOS curve (MOTION-AND-VISUAL 3.3, `swipeFinish`), and no haptic
+ * marks any of it, as on iOS. It also takes a push still sliding in, where it stands (`grabPush`): there is no wait for
+ * the push to settle. The bars never move; only the page and the copy beneath it do.
  *
  * A tap on the bar's Back pops the same way (S4.1, MOT-13), at the tap's pace: 520ms on the iOS curve. Neither takes a
  * copy of the page that leaves: the live page slides off, and Back is pressed once it is off, so the page the router
@@ -32,8 +34,8 @@ function routeBack(): HTMLButtonElement | null {
  *
  * It listens on the document, because a finger at the edge while the page is part way in lands on the copy, not the
  * page. It only runs where a copy of the page beneath exists (the page was pushed in this tab), with no pushed screen
- * up (PhoneScreen runs its own), on a phone, with motion on, and where `edgeSwipeAllowed` says the native swipe is not
- * already doing it. In the iOS app the page asks the shell for the swipe while it can be swiped back (`claimWebSwipe`);
+ * up (PhoneScreen runs its own), on a phone, with motion on (under Reduce Motion the back swipe is off and the bar's
+ * Back stays, 3.11), and where `edgeSwipeAllowed` says the native swipe is not already doing it. In the iOS app the page asks the shell for the swipe while it can be swiped back (`claimWebSwipe`);
  * an older shell ignores the ask and keeps its own.
  */
 export function useRouteSwipe(on: boolean, routeKey: string): void {
@@ -98,11 +100,13 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       lifted = false;
     };
 
-    const springHome = (r: Pick<EdgeRelease, 'offset' | 'speed'>) => {
+    /** Home from where it was let go: the way home is the share of the width it had come, on the finish's curve. */
+    const goHome = (r: Pick<EdgeRelease, 'offset'>) => {
       const p = page;
       const u = entry;
       if (!p || !u || r.offset < 0.5 || typeof p.animate !== 'function') return rest();
-      const { curve, timing } = chPushTiming({ velocity: (-r.speed * 1000) / r.offset, rest: 0.5 / r.offset, hold: true });
+      const curve = swipeFinish(r.offset / Math.max(1, width));
+      const timing = { duration: curve.ms, easing: curve.easing };
       p.style.translate = '';
       const anims = [
         p.animate([{ translate: `${cssNum(r.offset)}px 0` }, { translate: '0px 0' }], timing),
@@ -176,7 +180,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
             for (const a of anims) a.cancel();
             u.onArrive = undefined;
             place({ offset: width, progress: 1 });
-            springHome({ offset: width, speed: 0 });
+            goHome({ offset: width });
           });
         });
       };
@@ -189,10 +193,9 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
 
     const commit = (r: EdgeRelease) => {
       const back = routeBack();
-      if (!page || !entry || !back || typeof page.animate !== 'function') return springHome(r);
-      const travel = Math.max(1, width - r.offset);
-      const { curve, timing } = chPushTiming({ velocity: Math.max(0, r.speed) * (1000 / travel), rest: 0.5 / travel, hold: true });
-      popOff(back, r.offset, timing, curve.ms);
+      if (!page || !entry || !back || typeof page.animate !== 'function') return goHome(r);
+      const finish = swipeFinish(1 - r.offset / Math.max(1, width));
+      popOff(back, r.offset, { duration: finish.ms, easing: finish.easing }, finish.ms);
     };
 
     /** A tap on the bar's Back while the page beneath is kept: the same pop, on the tap's 520ms iOS curve. */
@@ -227,7 +230,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
     const disarm = () => document.removeEventListener('touchmove', onMove, MOVE);
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
-      if (machine || ending || !t || e.touches.length !== 1 || t.clientX > CH_EDGE_ZONE_PX) return;
+      if (machine || ending || !t || e.touches.length !== 1 || t.clientX > CH_SWIPE.edge) return;
       if (!window.matchMedia?.(PHONE).matches || document.querySelector('.ch-pscreen')) return;
       if (!edgeSwipeAllowed({ inApp }) || !routeBack()) return;
       const el = document.getElementById('ch-content');
@@ -248,7 +251,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       else el.style.willChange = 'transform';
       const m = createEdgeSwipe(width, offset);
       if (!m.start(t.clientX, t.clientY, e.timeStamp)) {
-        if (grabbed) springHome({ offset, speed: 0 });
+        if (grabbed) goHome({ offset });
         else rest();
         return;
       }
@@ -265,13 +268,12 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
         if (machine.phase === 'refused') {
           machine = null;
           disarm();
-          if (grabbed) springHome({ offset, speed: 0 });
+          if (grabbed) goHome({ offset });
           else rest();
         }
         return;
       }
       if (e.cancelable) e.preventDefault();
-      if (move.crossed) haptic('select');
       if (!lifted) lift();
       place(move.frame);
     };
@@ -281,12 +283,12 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       const release = machine.end(e.timeStamp);
       if (!release) {
         machine = null;
-        if (grabbed) springHome({ offset, speed: 0 });
+        if (grabbed) goHome({ offset });
         else rest();
         return;
       }
       if (release.outcome === 'commit') commit(release);
-      else springHome(release);
+      else goHome(release);
     };
     /** The system took the touch: everything back where it rests, at once. */
     const abort = () => {

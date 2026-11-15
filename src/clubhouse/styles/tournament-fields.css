@@ -373,11 +373,11 @@
   transition: background-color var(--ch-dur-press) var(--ch-ease);
 }
 .ch-tfx-card[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
 .ch-tfx-card:active {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 }
 .ch-tfx-card:focus-visible {

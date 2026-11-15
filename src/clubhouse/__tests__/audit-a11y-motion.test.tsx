@@ -64,13 +64,16 @@ describe('A-11/A-12: reduced motion reaches the review scroll and dialog scrims'
   });
 });
 
-describe('A-13: skeletons sweep on the compositor at every width', () => {
-  it('no skeleton animates background-position, and the sheen slides by transform', () => {
+// A-13 moved the sheen onto the compositor; MOTION-AND-VISUAL 3.9 and 3.12 then retired the sheen and the pulse: a
+// skeleton is static, and its one animation is the busy wait (no frames run, it only keeps the block hidden for 150 ms).
+describe('A-13, 3.9: skeletons are static at every width', () => {
+  it('no skeleton sweeps, breathes or animates background-position', () => {
     const shell = css('shell.css');
-    expect(shell).not.toMatch(/@keyframes ch-shimmer \{/);
-    expect(shell).not.toMatch(/animation: ch-shimmer var/);
-    expect(shell).toMatch(/\.ch-skel::before \{[^}]*transform: translateX\(-100%\);[^}]*animation: ch-shimmer-x/);
-    expect(shell).toMatch(/@keyframes ch-skel-breathe \{\s*50% \{\s*opacity: 0\.55;/);
+    expect(shell).not.toMatch(/@keyframes ch-shimmer/);
+    expect(shell).not.toMatch(/@keyframes ch-skel-breathe/);
+    expect(shell).not.toMatch(/\.ch-skel::before \{/);
+    expect(shell).not.toMatch(/200vw 100% fixed/);
+    expect(shell).toMatch(/@keyframes ch-busy-wait \{\s*from \{\s*visibility: hidden;\s*\}\s*\}/);
   });
 });
 

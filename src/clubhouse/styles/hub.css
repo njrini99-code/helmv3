@@ -492,13 +492,11 @@
   }
 }
 .ch-hb-reads--open[data-ch-pressed] {
-  background-color: var(--ch-ledger-row-press);
-  transition-delay: var(--ch-dur-press-delay);
+  background-color: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-hb-reads--open:active {
-    background-color: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background-color: var(--ch-sel);
   }
 }
 .ch-hb-reads--open[aria-expanded='true'] svg {
@@ -1392,13 +1390,13 @@
   }
   /* The event's line opens it in Calendar: a press tints it a little past its words, without moving them. */
   .ch-hb-rsvp__b[data-ch-pressed] {
-    background-color: var(--ch-ledger-row-press);
-    box-shadow: 0 0 0 6px var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
+    box-shadow: 0 0 0 6px var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hb-rsvp__b:active {
-      background-color: var(--ch-ledger-row-press);
-      box-shadow: 0 0 0 6px var(--ch-ledger-row-press);
+      background-color: var(--ch-sel);
+      box-shadow: 0 0 0 6px var(--ch-sel);
     }
   }
   .ch-hb-rsvp__b b {
@@ -1656,11 +1654,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hb-feed li > a[data-ch-pressed] {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hb-feed li > a:active {
-      background-color: var(--ch-ledger-row-press);
+      background-color: var(--ch-sel);
     }
   }
   .ch-hb-feed li.is-new::after {
@@ -1711,11 +1709,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hb-file__open[data-ch-pressed] {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hb-file__open:active {
-      background-color: var(--ch-ledger-row-press);
+      background-color: var(--ch-sel);
     }
   }
   .ch-hb-file__b b {
@@ -2081,17 +2079,18 @@
   }
   @media (hover: hover) {
     .ch-hb[data-canopy] .ch-hb-file__open:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   /* A press deepens a file row's tint over the press beat (the shell's CH-1606: a row never scales). */
   .ch-hb[data-canopy] .ch-hb-file__open[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-hb[data-canopy] .ch-hb-file__open:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2463,7 +2462,8 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 @media (hover: hover) {
   .ch-hb-rsvp__list li:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 
@@ -3563,7 +3563,8 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 @media (hover: hover) {
   .ch-hw-led tbody tr:not(.ch-hw-led__more):hover > * {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 /* The note sits before the figure, so every figure lines up under its heading with or without one. */
@@ -4123,12 +4124,12 @@ html[data-fw-theme='dark'] .ch-hw--dark {
    (lib/press.ts), the row-press tint over their fill. */
 .ch-hb-picks button[data-ch-pressed],
 .ch-hb-chip[data-ch-pressed] {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
 }
 @media (hover: hover) {
   .ch-hb-picks button:active,
   .ch-hb-chip:active {
-    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+    background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
   }
 }
 

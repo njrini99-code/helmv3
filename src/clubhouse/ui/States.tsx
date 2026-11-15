@@ -221,7 +221,8 @@ export function EmptyState({
 const BLOCK_FROM = 56;
 
 /**
- * CH-1609: a placeholder while the page is on its way; one shared shimmer, still when motion is off (shell.css). A bar
+ * CH-1609: a placeholder while the page is on its way: a static block (MOTION-AND-VISUAL 3.9, no shimmer) that shows only
+ * once the busy delay has passed (shell.css ch-busy-wait), so a load that lands within 150 ms never draws one. A bar
  * stands for a line of type or a control. A fluid placeholder 56px or taller stands for a block, and in the Ledger it
  * is drawn as the Ledger draws one: a rule along its top and two lines of type under it, never a filled card (states
  * audit, 2026-10-08). It keeps its box either way, so nothing moves when the page lands. `shape="solid"` keeps a real

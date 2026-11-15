@@ -71,11 +71,11 @@
   }
 }
 .ch-ca-row.is-button[data-ch-pressed] {
-  background: var(--ch-bg-hover);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ca-row.is-button:active {
-    background: var(--ch-bg-hover);
+    background: var(--ch-sel);
   }
 }
 .ch-ca-row.is-button:focus-visible {

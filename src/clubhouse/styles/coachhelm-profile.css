@@ -439,11 +439,11 @@
     border-top-color: var(--ch-ledger-rule-soft);
   }
   .ch-hg-m__how summary[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hg-m__how summary:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
 }

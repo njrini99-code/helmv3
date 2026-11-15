@@ -216,41 +216,42 @@ export function placeUnderlay(parts: HTMLElement[], progress: number): void {
   }
 }
 
-/** The spring a hand-thrown pop hands on to the page beneath: the throw's speed and rest, in progress of the distance left. */
-export interface ChUnderlaySpring {
-  /** Progress per second toward the mark at the moment the finger let go. */
-  velocity?: number;
-  rest?: number;
-  hold?: boolean;
+/** A released swipe's finish, handed to the page beneath so it moves on the screen's own timing (shell/edge-swipe.ts swipeFinish). */
+export interface ChUnderlayTiming {
+  ms: number;
+  easing: string;
 }
 
 /**
- * What a swipe-back leaves for the page beneath it: the screen leaves on a spring that starts at the finger's speed, and
- * the page, whose own slide begins a frame later with the screen's exit, takes the same one so the two edges stay
- * together (use-edge-swipe.ts). Taken once, and only if it is fresh.
+ * What a swipe-back leaves for the page beneath it: the screen finishes from where the finger let go over its share of
+ * the reveal beat on the iOS curve (MOTION-AND-VISUAL 3.3), and the page, whose own slide begins a frame later with the
+ * screen's exit, takes the same timing so the two edges stay together (use-edge-swipe.ts). Taken once, and only if it
+ * is fresh.
  */
-let releaseSpring: { spring: ChUnderlaySpring; at: number } | null = null;
+let releaseTiming: { timing: ChUnderlayTiming; at: number } | null = null;
 const RELEASE_TTL_MS = 1000;
-export function handUnderlaySpring(spring: ChUnderlaySpring): void {
-  releaseSpring = { spring, at: performance.now() };
+export function handUnderlayTiming(timing: ChUnderlayTiming): void {
+  releaseTiming = { timing, at: performance.now() };
 }
-function takeUnderlaySpring(): ChUnderlaySpring | undefined {
-  const held = releaseSpring;
-  releaseSpring = null;
-  return held && performance.now() - held.at < RELEASE_TTL_MS ? held.spring : undefined;
+function takeUnderlayTiming(): ChUnderlayTiming | undefined {
+  const held = releaseTiming;
+  releaseTiming = null;
+  return held && performance.now() - held.at < RELEASE_TTL_MS ? held.timing : undefined;
 }
 
 /**
  * Slides `parts` to drawn back (1) or rest (0) on the compositor, on the smooth spring the pushed screen rides, from
  * wherever each one is now (mid slide included), so a pop that cuts a push short reverses from there. Returns the
- * running animations; at the end each part is placed for good and its animation let go. `spring` carries a finger's
- * speed into it (a swipe back that was thrown).
+ * running animations; at the end each part is placed for good and its animation let go. `hand` is a released swipe's
+ * finish, which it rides instead.
  */
-export function slideUnderlay(parts: HTMLElement[], to: 0 | 1, running: Animation[] = [], spring?: ChUnderlaySpring): Animation[] {
-  const curve = chSupportsLinear() ? chSpringCurve('smooth', spring) : null;
-  const timing: KeyframeAnimationOptions = curve
-    ? { duration: curve.ms, easing: curve.linear, fill: 'forwards' }
-    : { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})`, fill: 'forwards' };
+export function slideUnderlay(parts: HTMLElement[], to: 0 | 1, running: Animation[] = [], hand?: ChUnderlayTiming): Animation[] {
+  const curve = hand ? null : chSupportsLinear() ? chSpringCurve('smooth') : null;
+  const timing: KeyframeAnimationOptions = hand
+    ? { duration: hand.ms, easing: hand.easing, fill: 'forwards' }
+    : curve
+      ? { duration: curve.ms, easing: curve.linear, fill: 'forwards' }
+      : { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})`, fill: 'forwards' };
   const target = to ? `${(-CH_UNDERLAY_SHIFT * 100).toFixed(3)}vw 0` : '0px 0px';
   // Read every start before any new animation begins: one style pass, not one per part.
   const from = parts.map((el) => {
@@ -335,7 +336,7 @@ export function PhoneUnderlay() {
         const next = underlayParts();
         placeUnderlay(parts.current.filter((el) => !next.includes(el)), 0);
         parts.current = next;
-        running.current = slideUnderlay(next, on ? 1 : 0, running.current, on ? undefined : takeUnderlaySpring());
+        running.current = slideUnderlay(next, on ? 1 : 0, running.current, on ? undefined : takeUnderlayTiming());
       }}
     />
   );

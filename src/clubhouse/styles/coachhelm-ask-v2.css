@@ -388,7 +388,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 }
 /* The press controller's mark (B6): the pressed look on touch, where :active is not read. */
 .ch-ak-home:not(.is-phone) .sugg button[data-ch-pressed] {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
 }
 @media (hover: hover) {
   .ch-ak-home:not(.is-phone) .sugg button:hover {
@@ -396,7 +396,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
     color: var(--ch-text-primary);
   }
   .ch-ak-home:not(.is-phone) .sugg button:active {
-    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+    background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
   }
 }
 /* The foot: what moved since Monday (a player's focus, and their meter), a quiet ruled list in the page's ink rather than
@@ -872,7 +872,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* A press answers on every control (MOT-31). */
 .ch-ak-th .opt[data-ch-pressed],
 .ch-ak-th .lk[data-ch-pressed] {
-  background-color: var(--ch-press-wash, var(--ch-well-bg-flat));
+  background-color: var(--ch-sel);
 }
 
 /* Save draft (S-ASK.save): the card docked above an artifact's footer, in the pane and above the phone dock. Its receipt shares the kit's rules above. */

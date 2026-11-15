@@ -5,8 +5,9 @@ import { CH_DUR, CH_EASE_IOS } from '../motion';
 import { bezierEase, CH_THUMB, useSlidePlate } from '../slide-plate';
 
 /**
- * MOT-X-2 / MOT-LIST-4: Messages' filter thumb slides for 360 ms on the overshooting CSS spring `(.34, 1.3, .64, 1)`,
- * and jumps under Reduce Motion.
+ * MOT-X-2 / MOT-LIST-4, then MOTION-AND-VISUAL 3.3 and 4.2: every segmented thumb slides over the base beat (260 ms) on
+ * the iOS curve, with no overshoot. Under Reduce Motion it fades in at its new place over 180 ms (3.11; it jumped before);
+ * with Animations off it is simply there.
  */
 type Played = { keyframes: Keyframe[]; options: KeyframeAnimationOptions };
 let played: Played[] = [];
@@ -72,10 +73,24 @@ describe('the filter thumb', () => {
     expect(Math.max(...samples)).toBeLessThanOrEqual(1);
   });
 
-  it('jumps under Reduce Motion', async () => {
+  it('fades in at its new place under Reduce Motion, over 180 ms, with no travel (3.11)', async () => {
     const { rerender } = render(<Thumb chosen="a" reduced />);
     await settle();
     rerender(<Thumb chosen="c" reduced />);
-    expect(played).toHaveLength(0);
+    expect(played).toHaveLength(1);
+    expect(played[0]!.keyframes).toEqual([{ opacity: 0 }, { opacity: 1 }]);
+    expect(played[0]!.options).toMatchObject({ duration: 180, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' });
+  });
+
+  it('jumps with Animations off', async () => {
+    document.documentElement.setAttribute('data-motion', 'off');
+    try {
+      const { rerender } = render(<Thumb chosen="a" reduced />);
+      await settle();
+      rerender(<Thumb chosen="c" reduced />);
+      expect(played).toHaveLength(0);
+    } finally {
+      document.documentElement.removeAttribute('data-motion');
+    }
   });
 });
