@@ -81,10 +81,10 @@ export function ThreadScroller({
             <EmptyState compact kind="first-run" code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
             )
           ) : (
-            // B7: a deleted message closes in place; one that arrives rises in at its full height, so the thread above it
-            // never moves (owner, 2026-10-31, as Fairway's thread does). The scroll stays with useThreadAnchor (no FLIP), and
-            // another conversation is a new list, whose messages never arrive.
-            <ListPresence key={conv.id} flip={false} arrive="rise">
+            // B7, 3.5: a deleted message closes in place; one that arrives (yours or theirs) rises 8 px in at its full height,
+            // and the thread above it moves up to make room (useThreadMakeRoom). The scroll stays with useThreadAnchor (no
+            // FLIP), and another conversation is a new list, whose messages never arrive.
+            <ListPresence key={conv.id} flip={false}>
               {items.flatMap<ReactNode>((it) =>
                 it.kind === "day"
                   ? [

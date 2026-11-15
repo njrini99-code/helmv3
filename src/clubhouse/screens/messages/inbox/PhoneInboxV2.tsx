@@ -30,7 +30,7 @@ export function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew
   const [filter, setFilter] = useState<ChConvFilter>(api.designFilter ?? "all");
   const [q, setQ] = useState("");
   const list = filterConvs(api.convs, filter, q);
-  // A filter or search change cuts its leaving rows in one frame (M-MSG-03b); a row leaving the list fades (M-MSG-CP-11).
+  // A filter or search change swaps the list at once (M-MSG-03b, 3.3); a row leaving the list fades and shrinks (M-MSG-CP-11, 3.5).
   const scope = `${filter}\u0000${q}`;
   const lastScope = useRef(scope);
   const changedScope = lastScope.current !== scope;
@@ -82,7 +82,7 @@ export function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew
               <h2 className="ch-msv-card__h">
                 {recentTitle} <small className="ch-num">{recent.length}</small>
               </h2>
-              <ListPresence arrive="inbox" cut={changedScope}>
+              <ListPresence cut={changedScope}>
                 {recent.map((c) => (
                   <ConvRow key={c.id} api={api} c={c} phone />
                 ))}

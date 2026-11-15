@@ -10,7 +10,7 @@ import { useAddAttachments, useAutosize, AttachChips, CharsLeft } from './compos
 import { useComposerInset } from '../composer-inset';
 import { CH_MS } from '../../../lib/motion';
 import { msAnimate } from '../motion/messages-motion';
-import { HOUSE_EASE, playArrowLeave, playFieldReturn } from '../motion/messages-beats';
+import { HOUSE_EASE, playArrowLeave } from '../motion/messages-beats';
 import { chTrail } from '../../../lib/track';
 import { haptic } from '../../../lib/haptics';
 import { useClassText } from '../../../ui/ClassStatusLine';
@@ -230,10 +230,9 @@ export function Composer({
     }
     setSending(true);
     onSendingChange?.(true);
-    // MOT-SEND-6, -8: the arrow leaves the key upward, and the field's placeholder fades back last.
+    // MOT-SEND-6: the arrow leaves the key upward; the field simply clears (3.5: the sent message is an insert, not a flight).
     const arrow = footer.current?.querySelector<HTMLElement>(".ch-msv-sendkey .ch-ms-send svg");
     if (arrow) playArrowLeave(arrow, composerReduced);
-    if (ta.current) playFieldReturn(ta.current, composerReduced);
     // Recovery retries clear the visible original, while the later ordinary draft stays durable.
     if (unconfirmed || recoveredRequest) setDraftState("");
     else setDraft("");
