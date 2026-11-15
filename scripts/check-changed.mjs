@@ -27,7 +27,8 @@
  *
  * Dependencies: if node_modules is present nothing is installed. If it is
  * missing the run stops with the exact command, unless --install is passed,
- * which runs scripts/ensure-worktree-deps.mjs (disk preflight included).
+ * which runs scripts/ensure-worktree-deps.mjs: an APFS clone of the deps store
+ * for this lockfile, or one npm ci that fills the store (disk preflight included).
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';

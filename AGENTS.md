@@ -71,9 +71,12 @@ Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with
   asked to move again.
 - Worktrees share canonical env files, local credentials and the Vercel
   project. Never print credential values.
-- Disk is limited (a worktree with its own `node_modules` is about 4 GB). Prefer
-  sharing `node_modules`; run `node scripts/ensure-worktree-deps.mjs <dir>` when
-  dependencies differ or are missing.
+- Every checkout's `node_modules` is an APFS clone of the deps store entry for
+  its own lockfile (about 25 MB, 10-20 s), made by the `post-checkout` hook on
+  any `git worktree add`. Never symlink `node_modules` (Turbopack refuses it and
+  npm writes through it). If one is missing or stale: `node
+  scripts/ensure-worktree-deps.mjs <dir>` (`--refresh` for a stale tree). A new
+  lockfile costs one `npm ci`, which fills the store for every later checkout.
 - Stage explicit paths and push an explicit branch. Use `--force-with-lease`
   after rebasing your own branch. Fix red checks instead of bypassing them; if
   a check is broken by infrastructure, say so in the PR.
