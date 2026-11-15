@@ -37,6 +37,7 @@ import { breakBias, penalties, slope } from '../preview/fixtures-coachhelm';
 import { figure, groupOf, MIN_PROJECTION_ROUNDS, toChStanding, versus } from '../data/coachhelm-standing-shape';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { underSwitch } from '../screens/coachhelm/__tests__/under-switch';
 import {
   PREVIEW_STANDING,
   PREVIEW_STANDING_EARLY,
@@ -545,8 +546,9 @@ describe('the Standing screen', () => {
 
   it('CH-13204 a section that crashes while drawing is contained: the page’s head and view strip stay, and it says so', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    // A ladder that can't be read throws inside the standing's own boundary only.
-    show(standingLoad({ ...PREVIEW_STANDING, ladder: null as never }));
+    // A ladder that can't be read throws inside the standing's own boundary only. The page as the route composes it: the switch is
+    // the route's, above the view (N13P-18, production audit 2026-11-15 P1-19).
+    render(wrap(underSwitch('standing', <Standing load={standingLoad({ ...PREVIEW_STANDING, ladder: null as never })} />)));
     await waitFor(() => expect(code('CH-13204')).not.toBeNull());
     expect(code('CH-13204')!.textContent).toMatch(/couldn’t be shown/);
     expect(screen.getByRole('heading', { level: 1, name: 'Standing' })).toBeTruthy();
@@ -669,12 +671,12 @@ describe('the Standing screen', () => {
     expect(code('CH-13930')).toBeNull();
   });
 
-  it('CH-13470 loading: the page’s own shape, busy and named, with the sub-navigation’s place held', () => {
+  it('CH-13470 loading: the page’s own shape, busy and named; the switch is not in it (the route holds it above the view, N13P-18)', () => {
     render(wrap(<StandingSkeleton />));
     const main = screen.getByRole('main', { name: 'Loading your standing' });
     expect(main.getAttribute('aria-busy')).toBe('true');
     expect(code('CH-13470')).not.toBeNull();
-    expect(main.querySelector('.ch-hv-sk-tabs')).not.toBeNull();
+    expect(main.querySelector('.ch-hv-sk-tabs')).toBeNull();
     expect(main.querySelectorAll('.ch-hs-sk__g').length).toBeGreaterThanOrEqual(3);
   });
 
@@ -728,7 +730,8 @@ describe('the Standing screen', () => {
 
   it('on the phone it is its own layout: the same page under the top bar, the views as chips', () => {
     phoneState.on = true;
-    show();
+    // The chips are the route's switch, a row above the view (N13P-18).
+    render(wrap(underSwitch('standing', <Standing load={standingLoad(PREVIEW_STANDING)} />)));
     expect(document.querySelector('.ch-hl.is-phone')).not.toBeNull();
     expect(document.querySelector('.ch-hv-tabs.is-phone .ch-hv-chips')).not.toBeNull();
   });

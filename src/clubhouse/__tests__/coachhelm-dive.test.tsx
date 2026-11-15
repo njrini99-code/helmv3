@@ -58,6 +58,7 @@ import { toChInsight } from '../data/coachhelm-map';
 import { speak } from '../data/coachhelm-voice';
 import { DeepDive, heroLine } from '../screens/coachhelm/views/DeepDive';
 import { DiveSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { underSwitch } from '../screens/coachhelm/__tests__/under-switch';
 import { PREVIEW_TOUR, puttBalanced } from '../preview/fixtures-coachhelm';
 import { ENGINE_CLEARED, PREVIEW_DIVE_CLEARED, PREVIEW_DIVE_MANY_CLEARED } from '../preview/fixtures-coachhelm-engine';
 import {
@@ -878,7 +879,8 @@ describe('the Deep dive screen', () => {
   });
 
   it('CH-13280 insights that did not load say so, with Try again, never the first run', async () => {
-    render(wrap(<DeepDive load={{ status: 'failed' }} />));
+    // The page as the route composes it: the switch is the route's, above the view (N13P-18, production audit 2026-11-15 P1-19).
+    render(wrap(underSwitch('deep-dive', <DeepDive load={{ status: 'failed' }} />)));
     expect(code('CH-13280')!.textContent).toMatch(/Your insights didn’t load.*Nothing is lost/);
     expect(code('CH-13380')).toBeNull();
     expect(code('CH-13381')).toBeNull();
@@ -918,18 +920,19 @@ describe('the Deep dive screen', () => {
     expect(code('CH-13930')).toBeNull();
   });
 
-  it('CH-13480 loading: the page’s own shape, busy and named, with the sub-navigation’s place held', () => {
+  it('CH-13480 loading: the page’s own shape, busy and named; the switch is not in it (the route holds it above the view, N13P-18)', () => {
     render(wrap(<DiveSkeleton />));
     const main = screen.getByRole('main', { name: 'Loading your deep dive' });
     expect(main.getAttribute('aria-busy')).toBe('true');
     expect(code('CH-13480')).not.toBeNull();
-    expect(main.querySelector('.ch-hv-sk-tabs')).not.toBeNull();
+    expect(main.querySelector('.ch-hv-sk-tabs')).toBeNull();
     expect(main.querySelector('.ch-hd-sk__dos')).not.toBeNull();
     expect(main.querySelectorAll('.ch-hd-sk__it').length).toBeGreaterThanOrEqual(5);
   });
 
   it('CH-13930 the sub-navigation has Deep dive as the current view, and a choice is a route change', async () => {
-    show();
+    // The switch is the route's, mounted once above the view (N13P-18, production audit 2026-11-15 P1-19).
+    render(wrap(underSwitch('deep-dive', <DeepDive load={diveLoad(PREVIEW_DIVE)} initialId={null} />)));
     const radios = within(screen.getByRole('radiogroup', { name: 'CoachHelm view' })).getAllByRole('radio');
     expect(radios.map((r) => [r.textContent, r.getAttribute('aria-checked')])).toEqual([
       ['Board', 'false'],
@@ -972,7 +975,8 @@ describe('the Deep dive on the phone', () => {
   const show = (initialId: string | null = null) => render(wrap(<DeepDive load={diveLoad(PREVIEW_DIVE)} initialId={initialId} />));
 
   it('its own layout: the same page under the top bar, the views as chips, and the list with no read beside it', () => {
-    show();
+    // The chips are the route's switch, a row above the view (N13P-18).
+    render(wrap(underSwitch('deep-dive', <DeepDive load={diveLoad(PREVIEW_DIVE)} initialId={null} />)));
     expect(document.querySelector('.ch-hl.is-phone')).not.toBeNull();
     expect(document.querySelector('.ch-hv-tabs.is-phone .ch-hv-chips')).not.toBeNull();
     expect(screen.queryByRole('article')).toBeNull();

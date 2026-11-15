@@ -15,8 +15,8 @@ import { sgBaseline } from '../../../lib/sg';
 import { Notice, ReadWorthContext } from './parts';
 import { rebuiltHref } from '../../../shell/nav';
 import { CoachHelmOffNotice } from '../CoachHelmOffNotice';
-import { CoachHelmTabs, COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
-import { useViewSwitch } from '../use-view-switch';
+import { COACHHELM_HREF } from '../chat/SubTabs';
+import { useCoachHelmSwitchOff } from '../SwitchStrip';
 import { Modal } from '../../../ui/Modal';
 import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
@@ -197,7 +197,8 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   const { refresh } = useRefresh();
   const retry = onRetry ?? refresh;
   const phone = useChPhone();
-  const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
+  // The switch is the route's, above this page (SwitchFrame, N13C-67); CoachHelm off hides it, as this page did.
+  useCoachHelmSwitchOff(!!data.off);
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
   // Kept across a trip to a player or a read and back (MOB-TEAM-17).
   const [station, setStation] = useChSessionState<TeamStation>('team.station', initialStation ?? leak);
@@ -266,9 +267,8 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   };
   const list: ChTeamPlayer[] = data.players.list;
   const noRounds = data.teamTotal.rounds === 0;
-  const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
   const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)} · ${plural(readsDrawn(list), 'open read')}`;
-  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)}` : undefined} tabs={tabs} />;
+  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)}` : undefined} />;
   const course = courseReads(list).length;
   const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
   const today = (
@@ -452,7 +452,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
 
   return (
     <ReadWorthContext.Provider value={worth}>
-    <main ref={top} {...sw.enter} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-busy={sw.busy} data-ch-screen="coachhelm-team">
+    <main ref={top} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} data-ch-screen="coachhelm-team">
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone ? (
         <div className="sheet">

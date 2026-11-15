@@ -679,6 +679,37 @@
   }
 }
 
+/* The CoachHelm view switch's one place (screens/coachhelm/SwitchStrip.tsx; N13C-67, N13P-18): mounted once above every view of
+   the page, so it stands still while the view under it changes. On a desk it is the first thing in the glass top bar (a view's
+   own scope line follows it there); on the phone a 52px row at the top of the page, under the bar, the control spanning it (the
+   coach's Team and Ask) or the player's chip row scrolling across it. Ask's phone height leaves this row out (coachhelm-ask.css). */
+.ch-hsw {
+  display: flex;
+  flex: none;
+  align-items: center;
+  min-width: 0;
+  order: -1;
+}
+.ch-hsw > [data-ch-strip] {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+}
+.ch-hsw.is-phone {
+  box-sizing: border-box;
+  height: 52px;
+  padding: 0 var(--ch-page-x-phone);
+}
+.ch-hsw.is-phone > [data-ch-strip] {
+  flex: 1;
+  min-width: 0;
+}
+.ch-hsw.is-phone .ch-seg {
+  display: flex;
+}
+.ch-hsw.is-phone .ch-seg__b {
+  flex: 1;
+}
+
 /* A switch of view (the strip's own pending state, screens/coachhelm/use-view-switch.ts): the strip has already moved, so the
    header and the strip stay crisp and what is changing stops answering taps until the next view is ready, then is replaced in
    one swap (no skeleton: the route's Suspense is not keyed by view). Skeletons are aria-busy too; they are excluded. It dims

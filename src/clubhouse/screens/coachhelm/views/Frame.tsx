@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { COACH_PLAYER_VIEWS, coachBoardFor, helmViewHref, PLAYER_HELM_TAB_LABEL, PLAYER_HELM_VIEWS, PLAYER_VOICE, type ChViewVoice, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import { COACH_PLAYER_VIEWS, coachBoardFor, helmViewHref, PLAYER_HELM_TAB_LABEL, PLAYER_VOICE, type ChViewVoice, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { usePageCrumbs } from '../../../shell/crumbs';
 import { rebuiltHref } from '../../../shell/nav';
@@ -11,14 +11,15 @@ import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
 import { EmptyState } from '../../../ui/States';
 import { Head } from '../parts';
+import { useCoachHelmSwitchOff } from '../SwitchStrip';
 import { useViewSwitch } from '../use-view-switch';
 import { PlayerHelmTabs, playerHelmTabHref, type PlayerHelmTab } from './PlayerHelmTabs';
 
 /**
- * The page every view of the player's CoachHelm is drawn in: the shell's phone top bar, the sub-navigation, and the page's own
- * header (the view's own name, as the strip names it, and one line), as Your week names itself. It read "CoachHelm" under the
- * strip's "Standing" or "Deep dive", naming the section and not the page (G5, G12; one title per screen). The sub-navigation sits above the header on the phone and
- * below it on desktop, as the coach's does. With CoachHelm off nothing is read and nothing leads anywhere, so it is not drawn
+ * The page every view of the player's CoachHelm is drawn in: the shell's phone top bar and the page's own header (the view's own
+ * name, as the switch names it, and one line), as Your week names itself. It read "CoachHelm" under the strip's "Standing" or
+ * "Deep dive", naming the section and not the page (G5, G12; one title per screen). The player's switch is not drawn here: it is the
+ * route's, mounted once above every view (SwitchFrame, N13P-18). With CoachHelm off nothing is read and nothing leads anywhere, so it is not drawn
  * (CH-13304, as CH-13305 for the coach). The main landmark is labelled by the page's h1 (CH-13801).
  *
  * `voice`: a coach's view of one player (spec A) draws the player's header instead: "CoachHelm" as the eyebrow (a link back to the
@@ -34,12 +35,14 @@ export function PlayerHelmFrame({ view, line, off = false, covered = false, afte
   const phone = useChPhone();
   const router = useRouter();
   const coach = voice.role === 'coach' ? voice : null;
-  // A switch of view (Ask included, P1-57) moves the strip at once, marks the page busy and, after the busy delay, dims it until
-  // the next view is ready. Ask is not fetched ahead: only the views are.
-  const sw = useViewSwitch<PlayerHelmTab>(view, (v) => playerHelmTabHref(v, (x) => helmViewHref(x, voice)), coach ? COACH_PLAYER_VIEWS : PLAYER_HELM_VIEWS);
+  // The player's own views are under the route's one switch, above this page (SwitchFrame, N13P-18), which CoachHelm off hides. A
+  // coach's view of one player keeps its own strip (Deep dive and Standing): a switch moves it at once, marks the page busy and, after
+  // the busy delay, dims it until the next view is ready.
+  useCoachHelmSwitchOff(off && !coach);
+  const sw = useViewSwitch<PlayerHelmTab>(view, (v) => playerHelmTabHref(v, (x) => helmViewHref(x, voice)), coach ? COACH_PLAYER_VIEWS : []);
   // As Stats does for a coach's player: the top bar reads "CoachHelm › Jonah Okafor".
   usePageCrumbs(coach ? ['CoachHelm', coach.name] : null);
-  const tabs = off ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} coach={!!coach} />;
+  const tabs = off || !coach ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} coach />;
   const board = coach ? coachBoardFor(coach.playerId) : null;
   return (
     <>

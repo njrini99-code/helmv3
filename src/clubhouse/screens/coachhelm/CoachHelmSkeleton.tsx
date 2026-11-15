@@ -9,8 +9,7 @@ import { useChPhone } from '../../lib/use-phone';
 import '../../styles/coachhelm.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { AskSkeleton } from './chat/AskSkeleton';
-import { CoachHelmTabs, type CoachHelmView } from './chat/SubTabs';
-import { PlayerHelmTabs } from './views/PlayerHelmTabs';
+import { CoachHelmHeldSwitch } from './SwitchStrip';
 import { DiveSkeleton, StandingSkeleton } from './views/Skeletons';
 
 /** One text line's box at its loaded height, with the bar centred in it (the phone intro's lines). */
@@ -57,21 +56,6 @@ function FocusSkeleton() {
       <Skeleton width="70%" height={13} />
       <Skeleton width="100%" height={140} radius={16} />
       <Skeleton width="100%" height={90} radius={16} />
-    </div>
-  );
-}
-
-/**
- * The view strip (the player's Board, Standing and Deep dive; the coach's Board and Ask) in the place and at the
- * height the page draws it: the phone's 44px (the 36px chips or segments and the room their tap area keeps). Without it the
- * strip arrived with the page and pushed everything below it down. On desktop it is the strip itself, held (inert, hidden from
- * assistive tech), so it is exactly as wide and placed as the page's and does not turn from a bar into the control on landing.
- */
-function StripSkeleton({ coach, phone, active = 'board' }: { coach: boolean; phone: boolean; active?: CoachHelmView }) {
-  if (!phone) return coach ? <CoachHelmTabs active={active} held /> : <PlayerHelmTabs active="board" held />;
-  return (
-    <div className="ch-hl-sk__tabs" style={{ height: 44 }}>
-      <Skeleton width="100%" height={36} radius={18} />
     </div>
   );
 }
@@ -143,7 +127,7 @@ function CoachBoardBody(): ReactNode {
  * were last here" line, then the players beside the focus. CH-13401 (player) and CH-13402 (coach). `chained`: the page's own Suspense draws it after the route's
  * `loading.tsx` skeleton, in the same place, so it does not fade in again over it (a second fade would dip the page).
  */
-export function CoachHelmSkeleton({ view, chained, active }: { view: 'coach' | 'player'; chained?: boolean; active?: CoachHelmView }) {
+export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player'; chained?: boolean }) {
   const coach = view === 'coach';
   const phone = useChPhone();
   return (
@@ -152,7 +136,6 @@ export function CoachHelmSkeleton({ view, chained, active }: { view: 'coach' | '
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code={coach ? 'CH-13402' : 'CH-13401'} data-canopy={phone ? undefined : ''}>
       {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
       <h1 className="ch-sr-only">CoachHelm</h1>
-      {phone && <StripSkeleton coach={coach} phone active={active} />}
       {phone ? (
         // The phone's intro at its loaded line heights: the coach's eyebrow, the large title and the live line under the double rule.
         <header className="ch-hl-h" data-canopy-head="">
@@ -174,17 +157,14 @@ export function CoachHelmSkeleton({ view, chained, active }: { view: 'coach' | '
         </header>
       ) : (
         // Each line at the loaded line's height (the role 18, the title 48, the line 21, "Since you were last here" 32), so the
-        // head is the loaded head's 195px (coach) and the strip sits where the page puts it.
+        // head is the loaded head's 195px (coach). The switch is not drawn here: it is the route's, above the view (SwitchFrame).
         // A player's head is the tight one on the page's canvas, as the loaded page's (Head's `tight`).
-        <header className="ch-hl-h has-aside" data-canopy-head={coach ? '' : 'tight'}>
+        <header className="ch-hl-h" data-canopy-head={coach ? '' : 'tight'}>
           {/* The role line is the coach's only (Head). */}
           {coach && <SkelLine line={18} bar={11} width={40} />}
           <SkelLine line={48} bar={38} width={196} />
           <SkelLine line={21} bar={13} width={coach ? 210 : 360} />
           {coach && <SkelLine line={32} bar={13} width={196} />}
-          <div className="ch-hl-h__aside">
-            <StripSkeleton coach={coach} phone={false} active={active} />
-          </div>
         </header>
       )}
       {phone ? (
@@ -269,12 +249,17 @@ export function CoachHelmRouteSkeleton() {
   const role = useGolfUserOptional()?.role;
   const params = useSearchParams();
   const which = routeSkeletonFor(role, params);
-  if (which === 'ask') return <AskSkeleton />;
+  const view = params?.get('view') ?? null;
+  // The views under the switch (N13C-67, N13P-18) draw it held, where the route's switch stands, so it is in the first frame and
+  // does not move when the page lands: the coach's Team page (no view) and Ask; the player's Board, Standing, Deep dive and Ask.
+  if (which === 'ask') return <CoachHelmHeldSwitch who="coach" active="ask"><AskSkeleton /></CoachHelmHeldSwitch>;
   if (which === 'coach-standing' || which === 'coach-deep-dive') {
     // The player's name is not known until the page checks the address against the team, as the route's first skeleton says.
     return which === 'coach-standing' ? <StandingSkeleton coach={{ first: null }} /> : <DiveSkeleton coach={{ first: null }} />;
   }
-  if (which === 'standing') return <StandingSkeleton />;
-  if (which === 'deep-dive') return <DiveSkeleton />;
-  return <CoachHelmSkeleton view={which} />;
+  if (which === 'standing') return <CoachHelmHeldSwitch who="player" active="standing"><StandingSkeleton /></CoachHelmHeldSwitch>;
+  if (which === 'deep-dive') return <CoachHelmHeldSwitch who="player" active="deep-dive"><DiveSkeleton /></CoachHelmHeldSwitch>;
+  if (which === 'coach') return view ? <CoachHelmSkeleton view="coach" /> : <CoachHelmHeldSwitch who="coach" active="board"><CoachHelmSkeleton view="coach" /></CoachHelmHeldSwitch>;
+  if (view === 'ask') return <CoachHelmHeldSwitch who="player" active="ask"><AskSkeleton player /></CoachHelmHeldSwitch>;
+  return view && view !== 'board' ? <CoachHelmSkeleton view="player" /> : <CoachHelmHeldSwitch who="player" active="board"><CoachHelmSkeleton view="player" /></CoachHelmHeldSwitch>;
 }
