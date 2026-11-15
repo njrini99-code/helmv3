@@ -688,16 +688,10 @@
      space left above it, and scrolls its body, so the focused field and the footer's Save stay visible.
      OVL-02: it rides up with the keys, on their own beat and curve, instead of jumping there the moment they start: the
      panel lifts by `translate` (the dialog's own translate is the finger's, lib/sheet-drag.ts, and its transform is the
-     rise's), and the cap shrinks on the same timing, so a tall sheet's top edge holds still while its bottom edge
-     follows the keyboard. The panel, not the dialog: menus and tooltips portal into the dialog at fixed coordinates. */
-  .ch-modal {
-    transition: max-height var(--ch-dur-keyboard) var(--ch-ease-sheet);
-  }
+     rise's). Only the lift rides: the height cap and the bottom padding change at once, since a transition of either
+     would lay the sheet out on every frame (clubhouse/no-layout-motion). The panel, not the dialog: menus and tooltips portal into the dialog at fixed coordinates. */
   .ch-modal__panel {
-    transition:
-      translate var(--ch-dur-keyboard) var(--ch-ease-sheet),
-      max-height var(--ch-dur-keyboard) var(--ch-ease-sheet),
-      padding-bottom var(--ch-dur-keyboard) var(--ch-ease-sheet);
+    transition: translate var(--ch-dur-keyboard) var(--ch-ease-sheet);
   }
   body.keyboard-open .ch-modal {
     max-height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px);
@@ -1618,9 +1612,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
 }
 /* OVL-02: as the sheet above, the form sheet's panel rides up with the keys on their beat rather than jumping. */
 .ch-fsheet {
-  transition:
-    translate var(--ch-dur-keyboard) var(--ch-ease-sheet),
-    max-height var(--ch-dur-keyboard) var(--ch-ease-sheet);
+  transition: translate var(--ch-dur-keyboard) var(--ch-ease-sheet);
 }
 body.keyboard-open .ch-fsheet {
   translate: 0 calc(-1 * var(--keyboard-height, 0px));
