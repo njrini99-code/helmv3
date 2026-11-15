@@ -13348,6 +13348,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-import.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-import.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/tournaments-player.ts",
           "anchor": "src/lib/admin/observed-action"
         },
@@ -13401,6 +13411,21 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/tournaments-holes.ts",
+          "anchor": "src/lib/auth/get-golf-dashboard-role"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-import.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-import.ts",
+          "anchor": "src/lib/auth/session"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-import.ts",
           "anchor": "src/lib/auth/get-golf-dashboard-role"
         },
         {
@@ -13666,6 +13691,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/tournaments-holes.ts",
+          "anchor": "src/lib/golf/dashboard-request-cache"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-import.ts",
           "anchor": "src/lib/golf/dashboard-request-cache"
         },
         {
