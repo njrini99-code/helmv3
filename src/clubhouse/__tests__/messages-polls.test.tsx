@@ -377,7 +377,8 @@ describe('PollCard, MSG-501 to MSG-503: the Nov 7 card and its states', () => {
     expect(n(/Van A/)).toBe('4');
   });
 
-  it('MOT-POLL-1/3: only the tapped row plays the check and your face pop', async () => {
+  // MOTION-AND-VISUAL 3.12: the pop is gone, so no row carries data-pop, before the tap or after it.
+  it('MOT-POLL-1/3: no row plays a pop, drawn voted or tapped', async () => {
     const user = userEvent.setup();
     const a = api([{ message_id: 'm1', user_id: 'me', choice: 'o1' }]);
     render(<PollCard api={a} messageId="m1" poll={poll()} mine={false} />);
@@ -386,6 +387,7 @@ describe('PollCard, MSG-501 to MSG-503: the Nov 7 card and its states', () => {
     expect(document.querySelector('.ch-msd-poll__faces > span[data-pop]')).toBeNull();
     await user.click(screen.getByRole('radio', { name: /Van B/ }));
     expect(a.polls!.vote).toHaveBeenLastCalledWith('m1', expect.anything(), ['o2']);
+    expect(document.querySelector('[data-pop]')).toBeNull();
   });
 });
 

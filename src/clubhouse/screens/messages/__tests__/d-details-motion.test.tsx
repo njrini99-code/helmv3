@@ -173,10 +173,11 @@ describe('the sheet: layout and motion pins', () => {
     expect(css).toMatch(/\.ch-msd-poll__fill \{[^}]*transform: scaleX\(var\(--ch-poll-share, 0\)\);[^}]*transform-origin: 0 50%;[^}]*transition: transform var\(--ch-dur-spring-smooth\) var\(--ch-ease-spring-smooth\);/);
     expect(css).toMatch(/prefers-reduced-motion: reduce\) \{[^@]*\.ch-msd-poll__fill \{\s*transition: none;/);
   });
-  it('MOT-POLL-1/3: the disc pops from .6 and the check draws from 20; your face from .4', () => {
-    expect(css).toMatch(/@keyframes ch-msd-ring-pop \{\s*from \{\s*transform: scale\(0\.6\)/);
-    expect(css).toMatch(/@keyframes ch-msd-tick-draw \{\s*from \{\s*stroke-dashoffset: 20/);
-    expect(css).toMatch(/@keyframes ch-msd-face-pop \{\s*from \{\s*opacity: 0;\s*transform: scale\(0\.4\)/);
+  // MOTION-AND-VISUAL 3.12 changes MOT-POLL-1/3 on purpose: the pop spring retires, so the tapped disc, its check and your
+  // face are there at once.
+  it('MOT-POLL-1/3: the disc, its check and your face take their state at once, with no pop or draw', () => {
+    expect(css).not.toMatch(/@keyframes/);
+    expect(css).not.toMatch(/ch-msd-(?:ring-pop|tick-draw|face-pop)|\[data-pop\]/);
   });
   it('MOT-X-7: the switch is 44 x 26 with a 22 knob travelling 18', () => {
     expect(css).toMatch(/\.ch-msd-sw \.ch-switch__track \{\s*width: 44px;\s*height: 26px;/);
