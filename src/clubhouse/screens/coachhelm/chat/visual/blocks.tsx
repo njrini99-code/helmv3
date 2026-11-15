@@ -13,7 +13,7 @@ const said = (direction: string) => direction.replace('_', ' ');
 
 /**
  * Eight wedges by miss direction (shots store a direction and a distance, so nothing is placed on a map), in the yardage
- * book's hand: a ruled ring around the pin, each wedge as long as its share of the misses, the commonest one in the loss
+ * book's hand: a ruled ring around the pin, each wedge's area its share of the misses, the commonest one in the loss
  * ink, and a dot for how far those shots finished. The four sides are named at the ring, so nothing has to be decoded.
  */
 export function MissPattern({ block }: { block: MissPatternBlock }) {
@@ -28,8 +28,10 @@ export function MissPattern({ block }: { block: MissPatternBlock }) {
       <svg viewBox="-14 0 236 208" role="img" aria-label={`${block.total} shots by miss direction: ${block.wedges.map((w) => `${said(w.direction)} ${w.count}`).join(', ')}`}>
         <circle cx={C} cy={C} r={R} className="ch-aks-miss__ring" />
         <circle cx={C} cy={C} r={R / 2} className="ch-aks-miss__ring is-minor" />
-        {block.wedges.map((w) => (
-          <path key={w.direction} d={wedge(ANGLE[w.direction] ?? 0, 14 + (w.count / max) * (R - 14))} className={'ch-aks-miss__wedge' + (w.count === max && w.count > 0 ? ' is-most' : '')} role="button" tabIndex={0} aria-label={`Ask about ${said(w.direction)} misses, ${w.count}`} onClick={() => askAbout(`${said(w.direction)} misses, ${w.count} shots`)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); askAbout(`${said(w.direction)} misses, ${w.count} shots`); } }} />
+        {/* A wedge's area is its count (stats and charts audit 2026-11-15, CH-22): its radius goes with the square root, from nothing,
+            so four misses draw four times the area of one, and a direction with none draws no wedge. */}
+        {block.wedges.filter((w) => w.count > 0).map((w) => (
+          <path key={w.direction} d={wedge(ANGLE[w.direction] ?? 0, R * Math.sqrt(w.count / max))} className={'ch-aks-miss__wedge' + (w.count === max && w.count > 0 ? ' is-most' : '')} role="button" tabIndex={0} aria-label={`Ask about ${said(w.direction)} misses, ${w.count}`} onClick={() => askAbout(`${said(w.direction)} misses, ${w.count} shots`)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); askAbout(`${said(w.direction)} misses, ${w.count} shots`); } }} />
         ))}
         {/* Dots by distance left: the wedge says how often, the dot how far (ASK_REDESIGN 3.4). */}
         {block.wedges.map((w) => {

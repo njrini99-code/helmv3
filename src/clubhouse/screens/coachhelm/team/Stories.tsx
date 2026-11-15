@@ -33,18 +33,54 @@ const shortOf = (s: ChTeamStory) => (s.kind === 'theme' ? `${s.word}: ${s.line}`
 
 const holeTone = (d: number | null) => (d == null ? '' : d < 0 ? ' is-birdie' : d === 1 ? ' is-bogey' : d >= 2 ? ' is-double' : '');
 
+/** A focus's before, now and target on one axis: where each sits across it, 0 to 100, and where zero sits for a signed measure. */
+export interface StoryAxis {
+  from: number;
+  now: number;
+  target: number;
+  /** Zero's place when the measure is signed (strokes gained either side of it); null when every value is on one side. */
+  zero: number | null;
+  /** Which way Now went from Before, as the target asks: towards it, away from it, or not at all. */
+  way: 'towards' | 'away' | 'level';
+}
+
+/**
+ * The focus story's picture (stats and charts audit 2026-11-15, CH-08): the before, now and target figures as positions on one
+ * axis, turned so the target's side is the right, better to the right as everywhere. Bars of each value's size lost the sign
+ * (strokes gained −0.4 to +0.3 drew a shorter bar as the player improved) and Now was always the gain colour; the marks here are
+ * ink, and the words say which way Now went. The focus row carries no spread, so nothing here claims a clear change.
+ */
+export function storyAxis(p: { from: number; now: number; target: number }): StoryAxis {
+  const signed = p.from < 0 || p.now < 0 || p.target < 0;
+  const vals = [p.from, p.now, p.target, ...(signed ? [0] : [])];
+  const lo = Math.min(...vals);
+  const hi = Math.max(...vals);
+  const pad = (hi - lo || 1) * 0.08;
+  // The target's side is the right: a lower-is-better target (fewer three-putts) runs high to low.
+  const flip = p.target < p.from;
+  const at = (v: number) => Math.round((((flip ? hi + pad - v : v - (lo - pad)) / (hi - lo + 2 * pad)) * 100) * 10) / 10;
+  const asked = Math.sign(p.target - p.from);
+  const moved = Math.sign(p.now - p.from);
+  const way = moved === 0 ? 'level' : asked === 0 || moved === asked ? 'towards' : 'away';
+  return { from: at(p.from), now: at(p.now), target: at(p.target), zero: signed ? at(0) : null, way };
+}
+
+const WAY_WORDS: Record<StoryAxis['way'], string> = { towards: 'Moved towards the target', away: 'Moved away from the target', level: 'No change yet' };
+
 function TileVisual({ story, round }: { story: ChTeamStory; round: ChStoryRound | null }) {
   // The only pictures with a source: a focus's before, now and target, and a theme's direction (no invented figures, 03 section 6).
   const p = story.kind === 'working' ? story.progress : null;
   if (p) {
-    const top = Math.max(Math.abs(p.from), Math.abs(p.now), Math.abs(p.target)) || 1;
-    const w = (v: number) => Math.max(8, (Math.abs(v) / top) * 108);
+    const a = storyAxis(p);
+    const x = (share: number) => 4 + (share / 100) * 100;
     return (
-      <svg viewBox="0 0 108 40" aria-hidden="true">
-        <rect x="0" y="4" width={w(p.from)} height="12" rx="6" fill="var(--ch-chart-track)" />
-        <rect x="0" y="24" width={w(p.now)} height="12" rx="6" fill="var(--ch-chart-gain-fill)" />
-        {/* The target is a line through both bars, as the story's: beside the lower bar alone it read as a divider (W10). */}
-        <rect x={w(p.target) - 1} y="0" width="2" height="40" fill="var(--ch-ink-900)" />
+      <svg viewBox="0 0 108 40" aria-hidden="true" className="tv-axis">
+        <rect x="0" y="19" width="108" height="2" rx="1" fill="var(--ch-chart-track)" />
+        {a.zero != null && <rect x={x(a.zero) - 0.5} y="12" width="1" height="16" fill="var(--ch-chart-zero)" />}
+        {/* The target is a line through the axis; before is an open mark, now a filled one. */}
+        <rect x={x(a.target) - 1} y="4" width="2" height="32" fill="var(--ch-ink-900)" />
+        <circle cx={x(a.from)} cy="20" r="5" fill="var(--ch-chart-paper)" stroke="var(--ch-ink-700)" strokeWidth="2" className="tv-from" />
+        <circle cx={x(a.now)} cy="20" r="5" fill="var(--ch-ink-900)" className="tv-now" />
       </svg>
     );
   }
@@ -66,10 +102,10 @@ export const weekdayOf = (iso: string) => formatWith(new Date(`${iso}T12:00:00Z`
 const storyWhen = (s: ChTeamStory, week: string, round: ChStoryRound | null) => (round ? [weekdayOf(round.date), round.course].filter(Boolean).join(' at ') : whenOf(s, week));
 const actionOf = (s: ChTeamStory) => (s.kind === 'working' ? 'See Working on' : s.kind === 'read' ? 'Open the read' : 'Open this');
 
-/** A story's picture and words (AC-STORY-03): the round's holes, or before and now against the target; nothing invented. */
+/** A story's picture and words (AC-STORY-03): the round's holes, or before and now against the target on one axis; nothing invented. */
 function StoryBody({ story, round }: { story: ChTeamStory; round: ChStoryRound | null }) {
   const p = story.kind === 'working' ? story.progress : null;
-  const top = p ? Math.max(Math.abs(p.from), Math.abs(p.now), Math.abs(p.target)) || 1 : 1;
+  const a = p ? storyAxis(p) : null;
   return (
     <>
       <h3>{shortOf(story)}</h3>
@@ -82,19 +118,26 @@ function StoryBody({ story, round }: { story: ChTeamStory; round: ChStoryRound |
           ))}
         </div>
       )}
-      {p && (
+      {p && a && (
         <div className="sto-bars">
           <div className="sto-bar">
             <span>Before the focus</span>
             <b className="ch-num">{signed(p.from)}</b>
-            <i style={{ width: `${(Math.abs(p.from) / top) * 100}%` }} />
           </div>
           <div className="sto-bar is-now">
             <span>Now</span>
             <b className="ch-num">{signed(p.now)}</b>
-            <i style={{ width: `${(Math.abs(p.now) / top) * 100}%` }} />
           </div>
-          <span className="src ch-num">Line: the {signed(p.target)} target</span>
+          {/* One axis, the target's side to the right: before an open mark, now a filled one, the target a line (CH-08). */}
+          <div className="sto-axis" aria-hidden="true">
+            {a.zero != null && <em style={{ left: `${a.zero}%` }} />}
+            <s style={{ left: `${a.target}%` }} />
+            <i className="is-from" style={{ left: `${a.from}%` }} />
+            <i className="is-now" style={{ left: `${a.now}%` }} />
+          </div>
+          <span className="src ch-num">
+            {WAY_WORDS[a.way]} · line: the {signed(p.target)} target{a.zero != null ? ', tick: zero' : ''}
+          </span>
         </div>
       )}
       {story.kind === 'read' && story.body && <p>{story.body}</p>}

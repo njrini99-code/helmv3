@@ -129,7 +129,7 @@ export interface ChTeamStats {
   /** Each week's first day (YYYY-MM-DD), beside `weeks`, so the week chart spaces weeks by real time (row 119). */
   weekStarts?: string[];
   /** The phone's scoring trend (m-stats.jsx: "Team avg · 10 rounds"): the team's average on each of its last ten round days, oldest first. */
-  days: Array<{ label: string; score: number | null; n?: number; date?: string }>;
+  days: Array<{ label: string; score: number | null; n?: number; date?: string; toPar?: number | null }>;
   /**
    * The round days' newer half against their older half (A1), from the rounds behind each half (`roundHalves`), never one round's
    * spread set on a day's mean. Null under three days; absent, unmeasured, so no change is claimed.
@@ -140,8 +140,8 @@ export interface ChTeamStats {
    * `sgHalves` and `scoreHalves`: the weeks' newer half against their older half, from the rounds behind each half (A1); null under
    * three weeks, absent when unmeasured (no change is then claimed).
    */
-  team: { sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null; sgHalves?: ChHalves | null; scoreHalves?: ChHalves | null };
-  players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null; sgHalves?: ChHalves | null; scoreHalves?: ChHalves | null }>;
+  team: { sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null; sgHalves?: ChHalves | null; scoreHalves?: ChHalves | null; toPar?: Array<number | null>; toParMean?: number | null };
+  players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null; sgHalves?: ChHalves | null; scoreHalves?: ChHalves | null; toPar?: Array<number | null>; toParMean?: number | null }>;
   legWeeks: Record<ChLeg, Array<number | null>>;
   /** Each leg's weeks, newer half against older half, from the rounds behind each half (A1), as `team.sgHalves`. */
   legHalves?: Partial<Record<ChLeg, ChHalves | null>>;

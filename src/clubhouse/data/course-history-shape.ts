@@ -1,4 +1,4 @@
-import { meanSe, diffSe, POOLED_SD, sampleSd } from '../lib/stats-signal';
+import { meanSe, diffSe, POOLED_SD, sampleSd, SIGNAL_Z } from '../lib/stats-signal';
 import type { ChPlayHole } from './stats-extra';
 
 /*
@@ -13,17 +13,17 @@ import type { ChPlayHole } from './stats-extra';
 export const FALLBACK_HOLE_SD = POOLED_SD.score / Math.sqrt(18);
 /** The player's own pooled within-hole spread replaces the fallback from this many degrees of freedom. */
 export const OWN_HOLE_SD_MIN_DF = 30;
-/** A hole's average shows from two plays; it takes colour only from five (`FLOORS.score.early`), past two standard errors. */
+/** A hole's average shows from two plays; it takes colour only from five (`FLOORS.score.early`), past two standard errors (the app's one `SIGNAL_Z`). */
 export const HOLE_SHOW = 2;
 export const HOLE_EARLY = 5;
-export const HOLE_TINT_Z = 2;
+export const HOLE_TINT_Z = SIGNAL_Z;
 /**
  * A three-hole stretch is said from five 18-hole rounds with every hole scored, and only past 2.6 standard errors of its
  * excess: about six independent three-hole windows, so Bonferroni at 5% two-sided asks 2.64.
  */
 export const STRETCH_MIN_ROUNDS = 5;
 export const STRETCH_Z = 2.6;
-/** "How it plays for you" needs three rounds each side; a difference inside one SE reads "about the same" only when that SE is a shot or less. */
+/** "How it plays for you" needs three rounds each side; a difference inside `SIGNAL_Z` SEs reads "about the same" only when that SE is a shot or less. */
 export const COMPARE_MIN_ROUNDS = 3;
 export const SAME_MAX_SE = 1;
 /** The average arc needs two complete rounds; its spread band, five. */
@@ -151,9 +151,10 @@ export function stretches(rounds: readonly (readonly ChPlayHole[])[]): { worst: 
 
 /**
  * Whether the course plays harder or easier for the player than their other courses: the difference of mean score to par
- * per 18-hole round, here against elsewhere, said only when it is at least one standard error of the difference (the
- * player's own spread from five rounds, the pooled 3.6 before). Inside one SE it is "about the same" only when the SE is a
- * shot or less; a wider one has not seen enough to say, so it is "No clear difference yet" (`'unclear'`).
+ * per 18-hole round, here against elsewhere, said only when it is at least `SIGNAL_Z` (two) standard errors of the difference
+ * (the player's own spread from five rounds, the pooled 3.6 before), the rule every change in the app follows (stats and charts
+ * audit 2026-11-15, CH-05). Inside that it is "about the same" only when the SE is a shot or less; a wider one has not seen
+ * enough to say, so it is "No clear difference yet" (`'unclear'`).
  */
 export function playsCompared(here: readonly number[], elsewhere: readonly number[]): { diff: number; se: number; words: 'harder' | 'easier' | 'same' | 'unclear' } | { needs: 'here' | 'elsewhere' } {
   if (here.length < COMPARE_MIN_ROUNDS) return { needs: 'here' };
@@ -161,7 +162,7 @@ export function playsCompared(here: readonly number[], elsewhere: readonly numbe
   const m = (xs: readonly number[]) => xs.reduce((a, x) => a + x, 0) / xs.length;
   const diff = m(here) - m(elsewhere);
   const se = diffSe(meanSe([...here], 'score'), meanSe([...elsewhere], 'score')) ?? Infinity;
-  return { diff, se, words: Math.abs(diff) < se ? (se <= SAME_MAX_SE ? 'same' : 'unclear') : diff > 0 ? 'harder' : 'easier' };
+  return { diff, se, words: Math.abs(diff) < SIGNAL_Z * se ? (se <= SAME_MAX_SE ? 'same' : 'unclear') : diff > 0 ? 'harder' : 'easier' };
 }
 
 /**

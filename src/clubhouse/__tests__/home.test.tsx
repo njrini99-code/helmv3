@@ -333,9 +333,10 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(form.querySelectorAll('dd.is-gain, dd.is-loss')).toHaveLength(0);
     expect(screen.getByRole('img', { name: /Team scoring, the team’s average on each of its last \d+ round days/ })).toBeTruthy();
     cleanup();
-    // Measured tighter, the same changes clear it: the average down 0.9 is better, putts up 0.3 is worse.
+    // Measured tighter, the same changes clear two errors (stats and charts audit, CH-05): the average down 0.9 is better, putts up
+    // 0.3 is worse.
     const f = PREVIEW_HOME.phone.form!;
-    const sharp = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: { ...f, deltaSe: 0.5, gir: { ...f.gir, se: 4 }, putts: { ...f.putts, se: 0.2 } } } };
+    const sharp = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: { ...f, deltaSe: 0.4, gir: { ...f.gir, se: 4 }, putts: { ...f.putts, se: 0.12 } } } };
     wrap(<CoachHome data={sharp} now={PREVIEW_HOME_NOW} />);
     form = document.querySelector('.ch-hm-form')!;
     expect(form.querySelector('.ch-hm-delta')!.className).toMatch(/is-gain/);

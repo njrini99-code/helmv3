@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { FigureGauge, SgChangeChip } from '../charts';
+import { FigureGauge, GAUGE_END, SgChangeChip } from '../charts';
 import { OverviewZones } from '../OverviewZones';
 import { FormLine } from '../../../ui/FormLine';
 import { POOLED_SD } from '../../../lib/stats-signal';
@@ -10,25 +10,28 @@ import type { ChPlayerProfile } from '../../../data/stats-player';
 
 afterEach(cleanup);
 
-/** Stats visuals 4.6 and decision Q4: a change is green or amber only when it clears one standard error of the difference. */
+/** Stats visuals 4.6 and decision Q4: a change is green or amber only when it clears two standard errors of the difference (CH-05). */
 describe('SgChangeChip', () => {
   const chip = (se: number | null | undefined, delta: number | null = -1.3, context = 'vs previous 10', subject?: string) => {
     const { container } = render(<SgChangeChip change={{ delta, context, se }} subject={subject} code="CH-5310" />);
     return container.querySelector('.ch-sgchg')!;
   };
 
-  it('is neutral ink with the signed number and "No clear change" inside its standard error', () => {
+  it('is neutral ink with the signed number and "No clear change" inside two standard errors', () => {
+    // −1.3 on an error of 0.9 clears one standard error but not two (CH-05: one painted a third of steady changes).
+    expect(chip(0.9).querySelector('.ch-delta')!.className).toContain('is-flat');
+    cleanup();
     const c = chip(1.7);
     expect(c.querySelector('.ch-delta')!.className).toContain('is-flat');
     expect(c.querySelector('.ch-delta')!.textContent).toBe('−1.3');
     expect(c.lastElementChild!.textContent).toBe('No clear change vs previous 10');
   });
 
-  it('is amber or green, and says worse or better, once the change clears it', () => {
-    expect(chip(0.9).querySelector('.ch-delta')!.className).toContain('is-loss');
-    expect(chip(0.9).lastElementChild!.textContent).toBe('Worse than previous 10');
+  it('is amber or green, and says worse or better, once the change clears two standard errors', () => {
+    expect(chip(0.6).querySelector('.ch-delta')!.className).toContain('is-loss');
+    expect(chip(0.6).lastElementChild!.textContent).toBe('Worse than previous 10');
     cleanup();
-    const up = chip(0.9, 1.3);
+    const up = chip(0.6, 1.3);
     expect(up.querySelector('.ch-delta')!.className).toContain('is-gain');
     expect(up.lastElementChild!.textContent).toBe('Better than previous 10');
   });
@@ -52,18 +55,23 @@ describe('SgChangeChip', () => {
 describe('FigureGauge', () => {
   const fill = (el: Element) => el.querySelector('.ch-fg__track i') as HTMLElement;
 
-  it('draws strokes gained on a scale its value sets, so nothing clamps at ±3', () => {
-    // −0.9 on a scale of 1: 45% of the half-track; −4.6 on a scale of 5: 46%, not a full bar.
-    let { container } = render(<FigureGauge gauge={{ kind: 'sg' }} n={-0.9} />);
-    expect(fill(container).style.width).toBe('45%');
-    expect(fill(container).className).toBe('is-loss');
+  it('draws strokes gained on one fixed scale, so a worse value draws a longer loss (CH-13)', () => {
+    // Every figure on ±6 (GAUGE_END): −0.9 is 7.5% of the track, −3.4 is 28.3%, −4.6 is 38.3%; none clamps.
+    const width = (n: number) => {
+      cleanup();
+      const { container } = render(<FigureGauge gauge={{ kind: 'sg' }} n={n} />);
+      return { w: parseFloat(fill(container).style.width), tone: fill(container).className };
+    };
+    expect(width(-0.9)).toEqual({ w: (0.9 / GAUGE_END) * 50, tone: 'is-loss' });
+    expect(width(-3.4).w).toBeGreaterThan(width(-0.9).w);
+    expect(width(-4.6).w).toBeCloseTo((4.6 / GAUGE_END) * 50, 5);
+    expect(width(2.4)).toEqual({ w: (2.4 / GAUGE_END) * 50, tone: 'is-gain' });
+  });
+
+  it('putts carry no gain or loss colour: two-putting is a reference mark, not a grade (CH-13)', () => {
     cleanup();
-    ({ container } = render(<FigureGauge gauge={{ kind: 'sg' }} n={-4.6} />));
-    expect(fill(container).style.width).toBe('46%');
-    cleanup();
-    ({ container } = render(<FigureGauge gauge={{ kind: 'sg' }} n={2.4} />));
-    expect(fill(container).style.width).toBe('40%');
-    expect(fill(container).className).toBe('is-gain');
+    const { container } = render(<FigureGauge gauge={{ kind: 'putts' }} n={31} />);
+    expect(fill(container).className).toBe('is-neutral');
   });
 
   it('colours a rate only against its mark: at or above green, below amber, no mark neutral', () => {
@@ -89,11 +97,14 @@ describe('FormLine', () => {
   });
 
   it('is green when scoring clearly fell and amber when it clearly rose', () => {
-    // Three rounds a half on the pooled 3.6: a standard error of about 2.9, cleared by a five-stroke move.
+    // Three rounds a half on the pooled 3.6: a standard error of about 2.9, so two of them (CH-05) are cleared by a seven-stroke
+    // move and not by five.
     const se = Math.sqrt(2 * (POOLED_SD.score ** 2 / 3));
-    expect(se).toBeLessThan(5);
-    expect(tone([78, 78, 78, 73, 73, 73])).toBe('ch-form ch-form--gain');
-    expect(tone([72, 72, 72, 77, 77, 77])).toBe('ch-form ch-form--loss');
+    expect(2 * se).toBeLessThan(7);
+    expect(2 * se).toBeGreaterThan(5);
+    expect(tone([80, 80, 80, 73, 73, 73])).toBe('ch-form ch-form--gain');
+    expect(tone([72, 72, 72, 79, 79, 79])).toBe('ch-form ch-form--loss');
+    expect(tone([78, 78, 78, 73, 73, 73])).toBe('ch-form ch-form--flat');
   });
 
   it('draws lower scores higher, as its comment says', () => {

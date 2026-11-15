@@ -25,6 +25,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { TeamRank } from './TeamRank';
 import { puttingNote } from './notes';
+import { puttBelowTour } from './putt-bands';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { holeCoverage } from '../../data/round-scope';
 import { nineRoundsInWindow } from '../../data/stats-filter';
@@ -505,8 +506,8 @@ export function Putting({ data, covered }: { data: ChTeamStats; covered: boolean
       <div className="ch-stm-putt ch-stm-group">
         {bands.map((b) => {
           const rate = b.attempts ? (b.made / b.attempts) * 100 : null;
-          // Below the Tour as the two print (whole percents): 69.6 against 70 is level, never amber (A2).
-          const low = rate != null && b.bench != null && b.attempts >= 10 && Math.round(rate) < Math.round(b.bench);
+          // Below the Tour as the two print (whole percents): 69.6 against 70 is level, never amber (A2); from 30 putts, the rings' rule (CH-18).
+          const low = puttBelowTour(b);
           return (
             <div key={b.label} className="ch-stm-putt__r">
               <span className="ch-num">{b.label}</span>

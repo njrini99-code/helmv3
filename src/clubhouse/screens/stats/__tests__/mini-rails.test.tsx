@@ -15,9 +15,10 @@ describe('MiniRails', () => {
 });
 
 describe('RoundTicker', () => {
-  it('makes a lower score taller, on one range', () => {
+  it('puts a lower score higher, every mark one size (CH-09: a position, not a length)', () => {
     const [a, b] = tickerBars([{ id: 'a', score: 70 }, { id: 'b', score: 80 }]);
-    expect(a!.h).toBeGreaterThan(b!.h);
+    expect(a!.y).toBeLessThan(b!.y);
+    expect(a!.h).toBe(b!.h);
     expect(a!.best).toBe(true);
     expect(b!.best).toBe(false);
   });

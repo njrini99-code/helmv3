@@ -13,7 +13,7 @@ import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/Sect
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { PuttingRings, YardagePage } from './charts';
 import { PrintHead } from './PrintHead';
-import { TeamTape } from './TeamTape';
+import { TAPE_MIN_SPAN, TeamTape } from './TeamTape';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
 import { LinkPending } from '../../shell/LinkPending';
@@ -163,7 +163,7 @@ export function StatsTeam({
               <TeamCharts
                 tape={
                   <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
-                    <TeamFigures figures={data.figures} cacheError={data.cacheError} covered={covered} against={previousWords(data.last)} />
+                    <TeamFigures figures={data.figures} starts={data.weekStarts} cacheError={data.cacheError} covered={covered} against={previousWords(data.last)} />
                   </SectionBoundary>
                 }
                 data={{
@@ -204,7 +204,20 @@ export function StatsTeam({
  * contains everything it computes: a crash in one never reaches the page.
  */
 
-function TeamFigures({ figures, cacheError, covered, against }: { figures: ChTeamStats['figures']; cacheError: boolean; covered: boolean; against: string }) {
+function TeamFigures({
+  figures,
+  starts,
+  cacheError,
+  covered,
+  against,
+}: {
+  figures: ChTeamStats['figures'];
+  /** Each week's first day, so the tape's weeks sit where the trend's do (CH-11). */
+  starts?: string[];
+  cacheError: boolean;
+  covered: boolean;
+  against: string;
+}) {
   // A note repeated under two or more cards is said once under the row; a card's own note stays on the card.
   const counts = new Map<string, number>();
   for (const x of figures) if (x.note) counts.set(x.note, (counts.get(x.note) ?? 0) + 1);
@@ -222,6 +235,7 @@ function TeamFigures({ figures, cacheError, covered, against }: { figures: ChTea
       {/* Strokes gained is the trend's headline above; the tape holds the other five, each with its own weekly line. */}
       <TeamTape
         against={against}
+        starts={starts}
         items={figures.filter((x) => x.key !== 'sg').map((x) => ({
           label: x.label,
           value: x.value == null ? NO_DATA : x.signed ? formatSigned(x.value, x.digits) : x.value.toFixed(x.digits),
@@ -234,6 +248,7 @@ function TeamFigures({ figures, cacheError, covered, against }: { figures: ChTea
           note: x.note && shared.includes(x.note) ? undefined : x.note,
           code: x.state === 'empty' ? 'CH-4311' : x.state === 'no-comparison' ? 'CH-4312' : undefined,
           series: x.series,
+          minSpan: TAPE_MIN_SPAN[x.key],
           gauge: x.gauge,
           n: x.value,
         }))}
@@ -257,8 +272,8 @@ function TeamPutting({ putting, failed, covered }: { putting: ChTeamStats['putti
         <EmptyState code="CH-4306" compact title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />
       </div>
     );
-  // The count covers only the bands the rings draw.
-  const drawn = putting.bands.slice(0, 5).reduce((a, b) => a + b.attempts, 0);
+  // The rings draw every band (CH-18), so the count is every putt.
+  const drawn = putting.bands.reduce((a, b) => a + b.attempts, 0);
   return (
     <YardagePage title="Team putting" meta={`Make rate by distance · ${drawn} putts`} note={puttingNote(putting.bands)}>
       <PuttingRings bands={putting.bands} />

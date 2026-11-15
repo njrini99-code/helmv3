@@ -12,7 +12,7 @@ import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
 import { useRefresh } from '../../lib/use-refresh';
 import { NoData } from '../../ui/NoData';
 import { formatSigned, tourDay } from './format';
-import { seasonRuns, trendNote, trendPoints, trendScale, trendX, trendY, type TrendPoint } from './history-model';
+import { barAxis, barLength, seasonRuns, trendNote, trendPoints, trendScale, trendX, trendY, type TrendPoint } from './history-model';
 import { TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, TourViewSwitch, tourGate, useTourPhone } from './parts';
 import { useTourPaths } from './paths';
 import { SeasonLedger } from './SeasonLedger';
@@ -165,6 +165,8 @@ const WHAT: Record<ChTourHistorySearch['adjust'], { title: string; line: string 
 };
 const lineup = (s: ChTourHistorySearch) => (s.adjust === 'field' || s.mode === 'actual' ? 'actual lineups' : 'returning players only');
 const label = (p: TrendPoint) => `${p.event.name}: ${p.value == null ? 'no figure' : `${formatSigned(p.value, 1)} a round`}${p.scorecardsOnly ? ', scorecards only' : ''}`;
+/** A share of the track, to three places, for a bar's CSS length. */
+const share = (v: number) => Math.round(v * 1000) / 1000;
 const when = (p: TrendPoint) => `${p.event.short} · ${tourDay(p.event.startDate, { month: 'short', year: '2-digit' })}`;
 
 /** The desktop chart (board `Trend`): a line a season, a dashed mean, a point per event that opens it, the figure under it. */
@@ -227,25 +229,27 @@ function Trend({ points, state, note }: { points: TrendPoint[]; state: ChTourHis
   );
 }
 
-/** How much of the track the shortest bar still fills, so the weakest figure is a bar and not a sliver. */
-const BAR_MIN = 0.14;
-
 /**
  * The phone's History (board `MHistory`): one bar a finished event, down the page in the order they were played. The
- * event's full name stands at the left, the bar runs from it, longer the closer to the mark, and the figure sits at the
- * bar's end. A season is named over its events and this season's bars are the green ones. (Upright bars left each
- * name a seventh of the card, so every one was cut to a stub.)
+ * event's full name stands at the left, its bar beside it and the figure at the row's end. A season is named over its events
+ * and this season's bars are the green ones. (Upright bars left each name a seventh of the card, so every one was cut to a
+ * stub.)
+ *
+ * The bars run from a zero rule, the rating or the field, on one scale (stats and charts audit 2026-11-15, CH-02): better than
+ * the mark to the right, worse to the left, the length the figure itself. They once ran from a seventh of the track to all of it
+ * across the season's own range, so +5.0 against +5.4 drew as one against seven.
  */
 function TrendBars({ points, data, state, note }: { points: TrendPoint[]; data: ChTourHistoryData; state: ChTourHistorySearch; note: string | null }) {
   const paths = useTourPaths();
-  // No room either side of the range: the best figure's bar is the whole track, the weakest the least a bar may be.
-  const { lo, hi } = trendScale(points, 0);
+  const bars = barLength(points);
+  const { zero, unit } = barAxis(points);
   const current = data.seasons[0]?.id;
   const runs = seasonRuns(points);
+  const mark = state.adjust === 'field' ? 'the field' : 'the rating';
   return (
     <div className="ch-tour-rev-trend is-phone">
       <p className="ch-tour-rev-trend__t">{WHAT[state.adjust].title}</p>
-      <p className="ch-tour-rev-trend__s">Per round · lower is better · {lineup(state)}</p>
+      <p className="ch-tour-rev-trend__s">Per round · right of the line beats {mark} · {lineup(state)}</p>
       <div className="ch-tour-rev-bars">
         {runs.map((r) => {
           const season = data.seasons.find((x) => x.id === r.seasonId)?.label;
@@ -253,17 +257,22 @@ function TrendBars({ points, data, state, note }: { points: TrendPoint[]; data: 
             <section key={r.from} className="ch-tour-rev-bars__g" aria-label={season}>
               {season && runs.length > 1 && <p className="ch-tour-rev-bars__k ch-num">{season}</p>}
               <ol>
-                {points.slice(r.from, r.to + 1).map((p) => (
-                  <li key={p.event.id}>
-                    <Link href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
-                      <span className="ch-tour-rev-bar__n">{p.event.name}</span>
-                      <span className="ch-tour-rev-bar__t">
-                        <i style={{ '--ch-tour-rev-len': p.value == null ? 0 : Math.round((BAR_MIN + (1 - trendY(p.value, lo, hi)) * (1 - BAR_MIN)) * 1000) / 1000 } as CSSProperties} />
-                        <b className="ch-num">{p.value == null ? <NoData /> : formatSigned(p.value, 1)}</b>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
+                {points.slice(r.from, r.to + 1).map((p, k) => {
+                  const bar = bars[r.from + k];
+                  return (
+                    <li key={p.event.id}>
+                      <Link href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
+                        <span className="ch-tour-rev-bar__n">{p.event.name}</span>
+                        <span className="ch-tour-rev-bar__t" style={{ '--ch-tour-rev-zero': share(zero) } as CSSProperties}>
+                          <span className="ch-tour-rev-bar__track">
+                            {bar && bar.side !== 'even' && <i data-side={bar.side} style={{ '--ch-tour-rev-len': share(bar.len * unit) } as CSSProperties} />}
+                          </span>
+                          <b className="ch-num">{p.value == null ? <NoData /> : formatSigned(p.value, 1)}</b>
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ol>
             </section>
           );

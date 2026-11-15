@@ -217,6 +217,11 @@ export interface ChPlayerSeason {
   toPar: number | null;
   /** Oldest to newest, up to seven 18-hole scores. */
   trend: number[];
+  /**
+   * Each trend score's date (YYYY-MM-DD), beside `trend`, so its line spaces rounds by real time (stats and charts audit, CH-11).
+   * Optional: a window's season (`stats-weight`) and older fixtures leave it out, and the line then spaces rounds evenly.
+   */
+  trendDates?: string[];
   /** Newer half minus older half of the trend; negative is better. */
   formChange: number | null;
   sgPerRound: number | null;
@@ -237,6 +242,7 @@ export function summarizePlayer(all: ChRound[]): ChPlayerSeason {
   const holeNums = (pick: (r: ChRound) => number | null) => list.filter(hasHoleScores).map(pick).filter((v): v is number => v != null);
   const sg = holeNums((r) => r.strokes_gained_total);
   const trend = scores.slice(0, TREND_LENGTH).reverse();
+  const trendDates = list.slice(0, TREND_LENGTH).reverse().map((r) => r.round_date.slice(0, 10));
   const half = Math.floor(trend.length / 2);
   const legs = (pick: (r: ChRound) => number | null) => {
     const v = holeNums(pick);
@@ -247,6 +253,7 @@ export function summarizePlayer(all: ChRound[]): ChPlayerSeason {
     avg: mean(scores),
     toPar: mean(nums((r) => r.score_to_par)),
     trend,
+    trendDates,
     formChange: trend.length >= 3 ? (mean(trend.slice(trend.length - half)) ?? 0) - (mean(trend.slice(0, half)) ?? 0) : null,
     sgPerRound: sg.length >= MIN_SG_ROUNDS ? mean(sg) : null,
     sgRounds: sg.length,

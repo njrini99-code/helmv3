@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { deltaTone, halvesChange } from '../lib/stats-signal';
+import { deltaTone, halvesChange, POOLED_SD } from '../lib/stats-signal';
 import { Line } from './charts/Line';
 import { formBarTone } from './form-range';
 
@@ -89,22 +89,40 @@ export function FormLine({
 }
 
 /**
- * The last five rounds as bars, on the range its list shares (`FormRange`) or its own: a lower score draws taller, from a 30% floor
- * (06 7.6) so the team's highest scores still read as bars, not slivers, when one player stretches the range. Hidden from VoiceOver;
- * the row's own label carries the figures.
+ * The least range the form dots are drawn on, in strokes: about a round's usual spread either side (twice the pooled round
+ * standard deviation, `POOLED_SD.score`, each way), so a player whose rounds sit within a stroke or two draws a nearly flat row,
+ * on a team whose scores happen to sit close together as well as alone on a leader card (CH-03).
+ */
+export const FORM_MIN_SPAN = Math.round(4 * POOLED_SD.score);
+
+/**
+ * The last five rounds as dots, each at its score's height (stats and charts audit 2026-11-15, CH-03): a row of rounds is a
+ * position chart, so a lower score sits higher, on the range its list shares (`FormRange`, the same height the same score down
+ * the list) or its own, never narrower than `FORM_MIN_SPAN`, with the player's mean as a rule. The bars this replaced ran from a
+ * 30% floor across each player's own best to worst, so 72, 73, 72 drew as different as 68, 84, 70. Hidden from VoiceOver; the
+ * row's own label carries the figures.
  */
 export function FormBars({ data, mean, n = 5 }: { data: readonly number[]; mean?: number | null; n?: number }) {
   const shared = useContext(FormRangeContext);
   const shown = data.slice(-n);
   const domain = shared?.domain ?? formDomain([shown]);
   if (!domain || shown.length === 0) return null;
-  const [lo, hi] = domain;
-  const span = hi - lo || 1;
+  const [lo, hi] = widen(domain, FORM_MIN_SPAN);
+  // Where a score sits, as a share of the strip from its foot: the lowest score of the range at the top.
+  const up = (score: number) => Math.round(((hi - score) / (hi - lo)) * 1000) / 10;
   return (
-    <span className="ch-formbars" aria-hidden="true">
+    <span className="ch-formbars is-dots" aria-hidden="true">
+      {mean != null && mean >= lo && mean <= hi && <b style={{ bottom: `${up(mean)}%` }} />}
       {shown.map((score, i) => (
-        <i key={i} data-tone={formBarTone(score, mean)} style={{ height: `${Math.round(30 + ((hi - score) / span) * 70)}%` }} />
+        <i key={i} data-tone={formBarTone(score, mean)} style={{ bottom: `${up(score)}%` }} />
       ))}
     </span>
   );
+}
+
+/** A range widened about its middle to at least `min`. */
+function widen([lo, hi]: [number, number], min: number): [number, number] {
+  if (hi - lo >= min) return [lo, hi];
+  const mid = (lo + hi) / 2;
+  return [mid - min / 2, mid + min / 2];
 }

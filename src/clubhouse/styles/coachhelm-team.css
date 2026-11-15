@@ -1275,6 +1275,15 @@
   background:var(--ch-chart-flat);
   transition:transform var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
 }
+/* A signed figure's zero rule: a loss runs left of it (CH-23). */
+.ch-htb .ld .t b {
+  position:absolute;
+  top:0;
+  bottom:0;
+  z-index:1;
+  width:var(--ch-hairline-w);
+  background:var(--ch-chart-zero);
+}
 .ch-htb .ld .t i.you {
   background:var(--ch-chart-loss-fill);
 }
@@ -2109,15 +2118,51 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
 }
-.ch-htb .sto-bar i {
-  grid-column: 1 / -1;
-  height: 12px;
-  min-width: 8px;
+.ch-htb .sto-axis {
+  position: relative;
+  height: 20px;
+  margin-top: 4px;
+}
+.ch-htb .sto-axis::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 0;
+  right: 0;
+  height: 2px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--ch-feature-ink) 25%, transparent);
 }
-.ch-htb .sto-bar.is-now i {
-  background: color-mix(in srgb, var(--ch-feature-gain) 80%, transparent);
+.ch-htb .sto-axis i,
+.ch-htb .sto-axis s,
+.ch-htb .sto-axis em {
+  position: absolute;
+  translate: -50% 0;
+}
+.ch-htb .sto-axis i {
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.ch-htb .sto-axis i.is-from {
+  border: 2px solid var(--ch-feature-ink-2);
+  background: var(--ch-feature-bg);
+}
+.ch-htb .sto-axis i.is-now {
+  background: var(--ch-feature-ink);
+}
+.ch-htb .sto-axis s {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ch-feature-ink);
+}
+.ch-htb .sto-axis em {
+  top: 5px;
+  bottom: 5px;
+  width: var(--ch-hairline-w);
+  background: var(--ch-feature-ink-2);
 }
 .ch-htb > .story {
   z-index: var(--ch-z-sheet);

@@ -76,12 +76,19 @@ export function personalBests(rounds: ChRound[]): ChBests {
 export interface ChSeriesPoint {
   label: string;
   value: number;
+  /** The round's date (YYYY-MM-DD), so a line spaces rounds by real time (stats and charts audit 2026-11-15, CH-11). */
+  at?: string;
 }
 export interface ChSeries {
   score: ChSeriesPoint[];
   gir: ChSeriesPoint[];
   fairway: ChSeriesPoint[];
   putts: ChSeriesPoint[];
+  /**
+   * The window's own figure for each line's dashed average, worked out as the headline is (CH-12): rates pooled (greens hit over
+   * greens played, never a mean of each round's percentage), scores and putts per 18 with a nine weighing half. Absent on older data.
+   */
+  avg?: { score: number | null; gir: number | null; fairway: number | null; putts: number | null };
 }
 
 /** One point per round, oldest first, a score or putt count per 18 holes (a nine-hole round's doubled); a round with no value for a figure has no point in it. */
@@ -90,9 +97,11 @@ export function perRoundSeries(rounds: ChRound[]): ChSeries {
   const points = (pick: (r: ChRound) => number | null): ChSeriesPoint[] =>
     list.flatMap((r) => {
       const v = pick(r);
-      return v == null ? [] : [{ label: shortDate(r.round_date), value: v }];
+      return v == null ? [] : [{ label: shortDate(r.round_date), value: v, at: r.round_date.slice(0, 10) }];
     });
+  const window = periodFigures(list);
   return {
+    avg: { score: window.avg, gir: window.gir, fairway: window.fairways, putts: window.putts },
     score: points((r) => (r.total_score == null ? null : per18(r.total_score, r.holes_played))),
     gir: points(girPct),
     fairway: points(fairwayPct),
