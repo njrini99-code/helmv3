@@ -24,4 +24,5 @@ Held items:     none
 
 ### Verification
 
-- `route-skeleton-address.test.tsx`, `settings-server.test.tsx`, `settings.test.tsx`.
+- `route-skeleton-address.test.tsx`, `settings-server.test.tsx`,
+  `settings.test.tsx`.

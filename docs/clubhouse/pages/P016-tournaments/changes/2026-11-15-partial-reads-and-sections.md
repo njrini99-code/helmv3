@@ -1,9 +1,10 @@
 # P016 Tournaments — 2026-11-15
 
-## 2026-11-15 — Partial reads said in place, per-view skeletons, contained sections, one not-found voice
+## 2026-11-15 — Partial reads said in place, contained sections
 
 ```text
-Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-08, GAP-S-10, GAP-S-15, GAP-S-24)
+Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-08, GAP-S-10,
+GAP-S-15, GAP-S-24)
 PR/commit:      claude/project-thread-pryzf0
 Contract IDs:   160690 (CH-16294), 160691 (CH-16295); CH-16304 row updated
 Actions:        none new
@@ -30,5 +31,7 @@ Held items:     none
 
 ### Verification
 
-- `tournaments-history.test.tsx` (CH-16295), `tournaments-live-section-boundaries.test.tsx`
-  (CH-16294), `tournaments-wired.test.tsx` (CH-16304), the per-view `loading.tsx` files (CH-16401).
+- `tournaments-history.test.tsx` (CH-16295),
+  `tournaments-live-section-boundaries.test.tsx`
+  (CH-16294), `tournaments-wired.test.tsx` (CH-16304), the per-view
+  `loading.tsx` files (CH-16401).

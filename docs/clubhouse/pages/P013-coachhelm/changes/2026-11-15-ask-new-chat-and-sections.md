@@ -1,9 +1,10 @@
 # P013 CoachHelm — 2026-11-15
 
-## 2026-11-15 — New chat waits for a reply and can be undone; each card and Practice part fails on its own; no-rounds is the shared empty state
+## 2026-11-15 — New chat waits and can be undone; parts fail alone
 
 ```text
-Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-H-08, GAP-H-10, GAP-H-12, GAP-H-17, GAP-H-24, GAP-S-10, GAP-S-23, GAP-S-33)
+Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-H-08, GAP-H-10,
+GAP-H-12, GAP-H-17, GAP-H-24, GAP-S-10, GAP-S-23, GAP-S-33)
 PR/commit:      claude/project-thread-pryzf0
 Contract IDs:   130790 (CH-13925), 130491 (CH-13386); CH-13204 row updated
 Actions:        none new

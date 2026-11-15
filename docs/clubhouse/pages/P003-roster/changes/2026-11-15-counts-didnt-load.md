@@ -26,4 +26,5 @@ Held items:     none
 
 ### Verification
 
-- `roster.test.tsx` › CH-3212 (the case was changed on purpose to the new words).
+- `roster.test.tsx` › CH-3212 (the case was changed on purpose to the new
+  words).

@@ -1,9 +1,10 @@
 # P001 Shell — 2026-11-15
 
-## 2026-11-15 — The shell keeps what it knew over a failed read, old links draw where they go, and wrong-role pages speak plainly
+## 2026-11-15 — The shell keeps what it knew over a failed read
 
 ```text
-Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-14, GAP-S-19, GAP-S-25, GAP-R-03, GAP-R-06, GAP-R-11, GAP-R-12, GAP-S-34)
+Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-14, GAP-S-19,
+GAP-S-25, GAP-R-03, GAP-R-06, GAP-R-11, GAP-R-12, GAP-S-34)
 PR/commit:      claude/project-thread-pryzf0
 Contract IDs:   110490 (CH-11390); CH-1301 row updated
 Actions:        none new
@@ -35,7 +36,8 @@ Held items:     none
 
 ### Why
 
-- GAP-S-14: one failed read demoted a head coach and hid their round in progress.
+- GAP-S-14: one failed read demoted a head coach and hid their round in
+  progress.
 - GAP-S-19: an old link drew a blank canvas, then "not rebuilt" on a slow line.
 - GAP-R-03, R-11, R-12: malformed ids and wrong-role pages fell to Fairway
   leftovers or "isn’t available here", which read as broken.

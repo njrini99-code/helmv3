@@ -1,9 +1,11 @@
 # P010 Team Hub — 2026-11-15
 
-## 2026-11-15 — Each part of the player’s hub fails on its own; trips, replies, files and tasks read right
+## 2026-11-15 — Each part of the player’s hub fails on its own
 
 ```text
-Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-H-02, GAP-H-03, GAP-H-04, GAP-H-13, GAP-H-14, GAP-H-15, GAP-H-16, GAP-H-20, GAP-H-25, GAP-S-17, GAP-S-26, GAP-S-33)
+Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-H-02, GAP-H-03,
+GAP-H-04, GAP-H-13, GAP-H-14, GAP-H-15, GAP-H-16, GAP-H-20, GAP-H-25, GAP-S-17,
+GAP-S-26, GAP-S-33)
 PR/commit:      claude/project-thread-pryzf0
 Contract IDs:   100490 (CH-10390), 100491 (CH-10391); CH-10405 row updated
 Actions:        none new
@@ -42,6 +44,8 @@ Held items:     none
 ### Verification
 
 - `src/clubhouse/__tests__/hub-gap-pass.test.tsx` (new), `hub.test.tsx`,
-  `hub-redesign.test.tsx`, `src/test/golf/actions/player-hub-read-failure.test.ts`,
+  `hub-redesign.test.tsx`,
+  `src/test/golf/actions/player-hub-read-failure.test.ts`,
   `route-skeleton-address.test.tsx`.
-- `npm run build` needed before landing (`player-hub-data.ts` is `'use server'`).
+- `npm run build` needed before landing (`player-hub-data.ts` is `'use
+  server'`).

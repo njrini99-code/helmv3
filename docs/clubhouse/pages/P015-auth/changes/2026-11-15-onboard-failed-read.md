@@ -1,13 +1,14 @@
 # P015 Auth — 2026-11-15
 
-## 2026-11-15 — A failed profile read on /golf/player is said, and one role rule with the dashboard (GAP-S-04, GAP-R-04)
+## 2026-11-15 — A failed profile read on /golf/player is said
 
 ```text
 Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-04, GAP-R-04)
 PR/commit:      claude/project-thread-pryzf0
 Contract IDs:   150690 (CH-15290)
 Actions:        completePlayerOnboarding (guard added, no new action)
-Data impact:    none (no schema change; the action now refuses to write a player profile for an onboarded coach)
+Data impact:    none (no schema change; the action now refuses to write a player
+profile for an onboarded coach)
 Held items:     none
 ```
 

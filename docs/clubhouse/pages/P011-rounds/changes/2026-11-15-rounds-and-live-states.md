@@ -1,11 +1,13 @@
 # P011 Rounds — 2026-11-15
 
-## 2026-11-15 — Round history failure said, course page asks for a player, continue loads as the course, tracking sections contained, Live speaks plainly
+## 2026-11-15 — Rounds and Live: failed, empty and waiting states
 
 ```text
-Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-10, GAP-S-12, GAP-S-18, GAP-S-20, GAP-S-24, GAP-S-27, GAP-S-32, GAP-R-03, GAP-R-11, GAP-R-12)
+Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-10, GAP-S-12,
+GAP-S-18, GAP-S-20, GAP-S-24, GAP-S-27, GAP-S-32, GAP-R-03, GAP-R-11, GAP-R-12)
 PR/commit:      claude/project-thread-pryzf0
-Contract IDs:   110690 (CH-11290), 110691 (CH-11291), 110491 (CH-11391), 110490 (CH-11390); CH-11307, CH-11330, CH-11331, CH-11407, CH-16609 rows updated
+Contract IDs:   110690 (CH-11290), 110691 (CH-11291), 110491 (CH-11391), 110490
+(CH-11390); CH-11307, CH-11330, CH-11331, CH-11407, CH-16609 rows updated
 Actions:        none new
 Data impact:    none
 Held items:     none

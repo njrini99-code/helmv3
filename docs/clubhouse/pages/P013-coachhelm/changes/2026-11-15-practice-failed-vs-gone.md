@@ -1,6 +1,6 @@
 # P013 CoachHelm — 2026-11-15
 
-## 2026-11-15 — Practice tells a failed read from a plan that is gone (GAP-S-03, GAP-S-07, GAP-S-16, GAP-S-21, GAP-S-28, GAP-S-37)
+## 2026-11-15 — Practice tells a failed read from a plan that is gone
 
 ```text
 Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md)

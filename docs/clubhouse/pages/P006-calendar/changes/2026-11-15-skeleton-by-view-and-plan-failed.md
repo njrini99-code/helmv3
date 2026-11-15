@@ -1,6 +1,6 @@
 # P006 Calendar — 2026-11-15
 
-## 2026-11-15 — The skeleton draws the view the link asks for, and a plan that didn’t load is said
+## 2026-11-15 — Skeleton by view; a plan that didn’t load is said
 
 ```text
 Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-17, GAP-S-28)

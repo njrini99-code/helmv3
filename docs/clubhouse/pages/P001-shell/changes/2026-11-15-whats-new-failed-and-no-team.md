@@ -1,11 +1,13 @@
 # P001 Shell — 2026-11-15
 
-## 2026-11-15 — What’s new says a failed or partial read, and no team (GAP-S-02, GAP-S-36), and one not-found voice (GAP-S-24)
+## 2026-11-15 — What’s new says a failed read and no team
 
 ```text
-Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-02, GAP-S-24, GAP-S-36)
+Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-02, GAP-S-24,
+GAP-S-36)
 PR/commit:      claude/project-thread-pryzf0
-Contract IDs:   130490 (CH-13385), 130690 (CH-13285); CH-13231, CH-13330, CH-1306 rows updated
+Contract IDs:   130490 (CH-13385), 130690 (CH-13285); CH-13231, CH-13330,
+CH-1306 rows updated
 Actions:        none new
 Data impact:    none
 Held items:     none
@@ -13,7 +15,8 @@ Held items:     none
 
 ### Changed
 
-- `data/whats-new.ts`, `data/whats-new-shape.ts`, `src/app/golf/actions/whats-new.ts`:
+- `data/whats-new.ts`, `data/whats-new-shape.ts`,
+  `src/app/golf/actions/whats-new.ts`:
   each kind's read (insights, patterns with the roster behind them, focus
   areas) reports its own failure, and someone with no organization or team
   gets `noTeam`. They no longer get an empty week.

@@ -1,11 +1,13 @@
 # Shared pieces — 2026-11-15
 
-## 2026-11-15 — Offline route error, slow saves that give up, one failure line, an inert phone-bar key
+## 2026-11-15 — Offline error, slow saves give up, one failure line
 
 ```text
-Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-05, GAP-S-30, GAP-S-31, GAP-S-33, GAP-S-35, GAP-H-08)
+Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-05, GAP-S-30,
+GAP-S-31, GAP-S-33, GAP-S-35, GAP-H-08)
 PR/commit:      claude/project-thread-pryzf0
-Contract IDs:   10690 (CH-1290), 10790 (CH-1990), 10791 (CH-1991); CH-1905 row updated
+Contract IDs:   10690 (CH-1290), 10790 (CH-1990), 10791 (CH-1991); CH-1905 row
+updated
 Actions:        none new
 Data impact:    none
 Held items:     none

@@ -13,7 +13,9 @@ Held items:     none
 
 ### Changed
 
-- `RecruitingDesktop.tsx`, `RecruitingPhone.tsx`, `Documents.tsx`: the generic failure bodies are the one line, "Nothing you saved is lost. Try again." (`FAILURE_COPY.page`).
+- `RecruitingDesktop.tsx`, `RecruitingPhone.tsx`, `Documents.tsx`: the generic
+  failure bodies are the one line, "Nothing you saved is lost. Try again."
+  (`FAILURE_COPY.page`).
 
 ### Why
 

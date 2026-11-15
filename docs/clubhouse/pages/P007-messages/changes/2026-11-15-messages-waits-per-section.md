@@ -25,4 +25,5 @@ Held items:     none
 
 ### Verification
 
-- `src/clubhouse/__tests__/messages-announcements-wait.test.tsx` (CH-7490), `use-golf-messages` tests.
+- `src/clubhouse/__tests__/messages-announcements-wait.test.tsx` (CH-7490),
+  `use-golf-messages` tests.

@@ -19,8 +19,10 @@ Held items:     none
 
 ### Why
 
-- GAP-S-22: the phone drew its own empty block with different words and no action.
+- GAP-S-22: the phone drew its own empty block with different words and no
+  action.
 
 ### Verification
 
-- `screens/stats/__tests__/stats-states.test.tsx` (rewritten on purpose to assert CH-4310; an Invite players case added).
+- `screens/stats/__tests__/stats-states.test.tsx` (rewritten on purpose to
+  assert CH-4310; an Invite players case added).

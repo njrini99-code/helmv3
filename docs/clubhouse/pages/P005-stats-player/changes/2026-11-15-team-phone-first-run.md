@@ -1,6 +1,6 @@
 # P005 Stats (player) — 2026-11-15
 
-## 2026-11-15 — No change to the player’s page; the team phone file it shares now draws the shared first run
+## 2026-11-15 — No change here; the shared team phone file changed
 
 ```text
 Design package: none (Nov 15 gap pass, GAP-PASS-FINDINGS.md, GAP-S-22)
@@ -13,7 +13,8 @@ Held items:     none
 
 ### Changed
 
-- `screens/stats/StatsTeamPhoneShs.tsx` is listed under both Stats pages. The change is the team page's (P004); the player's page is unchanged.
+- `screens/stats/StatsTeamPhoneShs.tsx` is listed under both Stats pages. The
+  change is the team page's (P004); the player's page is unchanged.
 
 ### Why
 
