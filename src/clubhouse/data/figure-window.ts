@@ -144,6 +144,7 @@ export interface ChFigureSet {
   sand: ChRateFigure;
   putts: ChPer18Figure;
   threePutts: ChPer18Figure;
+  onePutts: ChPer18Figure;
   penalties: ChPer18Figure;
 }
 
@@ -203,16 +204,19 @@ export function pooledRate(rounds: readonly { id: string; total_only?: boolean }
   return { pct: chances > 0 ? (made / chances) * 100 : null, made, chances, rounds: n };
 }
 
-/** A hole round's putts, three-putts or penalty strokes from its cache row: putts only when recorded (`cachedPutts`). */
-export function roundCount(r: { id: string; total_only?: boolean }, cache: CacheRead, kind: 'putts' | 'threePutts' | 'penalties'): number | null {
+type ChCountKind = 'putts' | 'threePutts' | 'onePutts' | 'penalties';
+
+/** A hole round's putts, three-putts, one-putts or penalty strokes from its cache row: putt counts only when its putts were recorded (`cachedPutts`). */
+export function roundCount(r: { id: string; total_only?: boolean }, cache: CacheRead, kind: ChCountKind): number | null {
   if (r.total_only) return null;
   const c = cache.get(r.id);
   if (kind === 'putts') return cachedPutts(c, 'total_putts');
   if (kind === 'threePutts') return cachedPutts(c, 'three_putts');
+  if (kind === 'onePutts') return cachedPutts(c, 'one_putts');
   return typeof c?.penalty_strokes === 'number' ? c.penalty_strokes : null;
 }
 
-function per18Over(holes: readonly ChRound[], cache: CacheRead, kind: 'putts' | 'threePutts' | 'penalties'): ChPer18Figure {
+function per18Over(holes: readonly ChRound[], cache: CacheRead, kind: ChCountKind): ChPer18Figure {
   const pick = (r: ChRound) => roundCount(r, cache, kind);
   return { value: weightedMean(holes as ChRound[], pick), rounds: effectiveCount(holes as ChRound[], pick) };
 }
@@ -237,6 +241,7 @@ export function figureSetOver(window: readonly ChRound[], cache: CacheRead): ChF
     sand: pooledRate(holes, cache, 'sand'),
     putts: per18Over(holes, cache, 'putts'),
     threePutts: per18Over(holes, cache, 'threePutts'),
+    onePutts: per18Over(holes, cache, 'onePutts'),
     penalties: per18Over(holes, cache, 'penalties'),
   };
 }
