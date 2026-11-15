@@ -155,9 +155,9 @@ describe('the edge swipe on a pushed screen', () => {
     expect(el.style.translate).toBe('');
   });
 
-  it('lets go past 35% and the screen leaves on its own spring while its Back runs', () => {
+  it('lets go past half the width and the screen leaves on its own spring while its Back runs', () => {
     const { el, exit, onBack, page } = mount();
-    swipeTo(el, 170);
+    swipeTo(el, 220);
     now += 200;
     touch(el, 'touchend', 0, 0, now);
     expect(onBack).toHaveBeenCalledTimes(1);
@@ -174,7 +174,7 @@ describe('the edge swipe on a pushed screen', () => {
     expect(exit.current.done).toHaveBeenCalledTimes(1);
   });
 
-  it('lets go short of 35% slowly and it springs back: no Back, the page returns to drawn back', () => {
+  it('lets go short of half slowly and it springs back: no Back, the page returns to drawn back', () => {
     const { el, exit, onBack } = mount();
     swipeTo(el, 100);
     now += 300;
@@ -199,10 +199,10 @@ describe('the edge swipe on a pushed screen', () => {
     touch(el, 'touchstart', 8, 400, now);
     touch(el, 'touchmove', 20, 400, now + 16);
     expect(haptics.haptic).not.toHaveBeenCalled();
-    touch(el, 'touchmove', 160, 400, now + 32);
+    touch(el, 'touchmove', 220, 400, now + 32);
     expect(haptics.haptic).toHaveBeenCalledTimes(1);
     expect(haptics.haptic).toHaveBeenLastCalledWith('select');
-    touch(el, 'touchmove', 170, 400, now + 48);
+    touch(el, 'touchmove', 230, 400, now + 48);
     expect(haptics.haptic).toHaveBeenCalledTimes(1);
     touch(el, 'touchmove', 100, 400, now + 64);
     expect(haptics.haptic).toHaveBeenCalledTimes(2);
@@ -276,7 +276,7 @@ describe('the edge swipe on a pushed screen', () => {
   // finger; the page beneath stays put (no parallax); a commit pops it, and a let-go short of the mark puts it back at once.
   it('with reduced motion the screen follows the finger, the page beneath stays, and a commit pops it', () => {
     const { el, onBack, page } = mount({ reduced: true });
-    const move = swipeTo(el, 170);
+    const move = swipeTo(el, 220);
     expect(move.prevented()).toBe(true);
     expect(el.style.translate).toMatch(/^\d+(\.\d+)?px 0$/);
     expect(parseFloat(el.style.translate)).toBeGreaterThan(0);
@@ -299,7 +299,7 @@ describe('the edge swipe on a pushed screen', () => {
     vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'setTimeout', 'clearTimeout'] });
     render(<Harness exit={exit} onBack={refused} />);
     const el = screen.getByTestId('screen');
-    swipeTo(el, 170);
+    swipeTo(el, 220);
     now += 200;
     touch(el, 'touchend', 0, 0, now);
     expect(exit.current.holding).toBe(true);
@@ -315,7 +315,7 @@ describe('the edge swipe on a pushed screen', () => {
     const exit = exitHold();
     vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'setTimeout', 'clearTimeout'] });
     const view = render(<Harness exit={exit} onBack={vi.fn()} />);
-    swipeTo(screen.getByTestId('screen'), 170);
+    swipeTo(screen.getByTestId('screen'), 220);
     now += 200;
     touch(screen.getByTestId('screen'), 'touchend', 0, 0, now);
     expect(exit.current.holding).toBe(true);

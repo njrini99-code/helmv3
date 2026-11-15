@@ -94,7 +94,7 @@ describe('the edge swipe state machine', () => {
     expect(moves.map((mv) => mv.frame?.past)).toEqual([false, true, true, false, false]);
   });
 
-  it('lets go past 35% of the width, slowly, and the screen pops', () => {
+  it('lets go past half the width, slowly, and the screen pops', () => {
     const mark = W * CH_EDGE_COMMIT;
     const slow = (to: number) => {
       const d = drag([[10 + to * 0.5, 400], [10 + to, 400]], { dt: 200 });

@@ -83,6 +83,12 @@ export const CH_SPRINGS = {
   launch: { visualDuration: 0.5, bounce: 0.2 },
   /** The quick chat panel pouring out of the Helm key (2026-10-31): a native sheet's settle, no bounce. */
   pour: { visualDuration: 0.42, bounce: 0 },
+  /**
+   * The one spring a released gesture finishes on (production audit 2026-11-15, S3.1, S4.2): Apple's 0.5 s with no
+   * bounce, mass 1, stiffness 157.9, damping 25.13, seeded with the finger's speed. framer reads a visual duration as
+   * 1.2 times shorter than Apple's, so 0.5 s is written as 0.5 / 1.2. The back swipe's commit and its spring home ride it.
+   */
+  gesture: { visualDuration: 0.5 / 1.2, bounce: 0 },
 } as const;
 /** Messages v2 send easings (MOT-SEND-6): the green fill coming up under the typed words, and the arrow leaving the send key. */
 export const CH_FILL_EASE_POINTS = [0.3, 0, 0.5, 1] as const;

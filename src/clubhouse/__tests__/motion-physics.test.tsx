@@ -47,7 +47,7 @@ afterEach(() => {
 describe('D-64 springs (extension, 2026-10-08)', () => {
   it('keep the D-64 base duration (the drop\'s reveal spring: D-64\'s reveal) with a bounce of 0 to 0.1, handed to framer as stiffness and damping so velocity carries', () => {
     // Named, signed-off exceptions: Messages' send, pop and lift (owner, 31 Oct 2026, "as long as it's smooth"; messages 02 §2.2), Messages v2's launch (Q-04 default, bounce 0.2, owner to confirm) and the quick chat's pour (coachhelm 07).
-    const named = new Set(['send', 'pop', 'lift', 'launch', 'pour']);
+    const named = new Set(['send', 'pop', 'lift', 'launch', 'pour', 'gesture']);
     for (const [kind, { visualDuration, bounce }] of Object.entries(CH_SPRINGS)) {
       if (named.has(kind)) continue;
       expect(visualDuration).toBe(kind === 'reveal' ? CH_DUR.reveal : CH_DUR.base);
@@ -60,6 +60,8 @@ describe('D-64 springs (extension, 2026-10-08)', () => {
     expect(chSpring('settle')).toMatchObject({ stiffness: root * root, damping: 2 * 0.9 * root });
     expect(chSpring('smooth', false, 900)).toMatchObject({ velocity: 900 });
     expect(chSpring('settle', true)).toEqual({ duration: 0 });
+    // The one gesture-release spring (S3.1): Apple's 0.5 s, bounce 0.
+    expect(chSpring('gesture')).toMatchObject({ stiffness: expect.closeTo(157.9, 1), damping: expect.closeTo(25.13, 2), mass: 1 });
   });
 
   it('the four Messages springs keep the values the owner signed off', () => {

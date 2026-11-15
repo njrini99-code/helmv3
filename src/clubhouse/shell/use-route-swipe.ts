@@ -22,7 +22,7 @@ function routeBack(): HTMLButtonElement | null {
 /**
  * The edge swipe back for a pushed route page (C1, rows 2 and 89; docs/clubhouse/phone/shell-gestures.md). The rules are
  * the pushed screen's (edge-swipe.ts): a finger landing within the left 20px that first travels right drags the page,
- * the copy of the page beneath draws back with it, past 35% of the width or a flick lets it go and the bar's own Back
+ * the copy of the page beneath draws back with it, past half the width or a flick (0.7 px/ms) lets it go and the bar's own Back
  * runs, and anything else springs home. It also takes a push still sliding in, where it stands (`grabPush`): there is
  * no wait for the push to settle. The bars never move; only the page and the copy beneath it do.
  *

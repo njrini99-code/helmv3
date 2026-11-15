@@ -234,11 +234,11 @@ export interface ChNavCurve {
 }
 
 /**
- * A released swipe's finish (S4.2): the smooth spring as WAAPI timing (a linear() curve where the engine has one), with
+ * A released swipe's finish (S4.2): the one gesture spring (CH_SPRINGS.gesture) as WAAPI timing (a linear() curve where the engine has one), with
  * the finger's speed in it.
  */
 export function chPushTiming(spring?: { velocity?: number; rest?: number; hold?: boolean }): { curve: ChNavCurve; timing: KeyframeAnimationOptions } {
-  const curve = chSpringCurve('smooth', spring);
+  const curve = chSpringCurve('gesture', spring);
   const linear = typeof CSS !== 'undefined' && CSS.supports?.('transition-timing-function', 'linear(0, 1)');
   return { curve, timing: { duration: curve.ms, easing: linear ? curve.linear : CH_EASE_IOS_CSS } };
 }

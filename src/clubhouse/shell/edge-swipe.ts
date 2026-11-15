@@ -11,10 +11,10 @@ import { releaseSpeed } from '../lib/sheet-drag';
 
 /** The gesture starts only within this many pixels of the left edge, where iOS's own back swipe begins. */
 export const CH_EDGE_ZONE_PX = 20;
-/** Past this share of the width at the moment of release the screen pops. */
-export const CH_EDGE_COMMIT = 0.35;
-/** So does a flick faster than this (px per ms), once it has moved a little: the sheet's own flick (sheet-drag). */
-export const CH_EDGE_FLICK_PX_PER_MS = 0.5;
+/** Past half the width at the moment of release the screen pops (S4.2, Tusker's measured system values). */
+export const CH_EDGE_COMMIT = 0.5;
+/** So does a flick faster than this (px per ms), once it has moved a little: 700 points a second, as UIKit's (S4.2). */
+export const CH_EDGE_FLICK_PX_PER_MS = 0.7;
 /** A finger must travel this far before the gesture decides whether it is a swipe or a scroll. */
 export const CH_EDGE_SLOP_PX = 8;
 /** …and a flick counts only after the screen has moved this much. */

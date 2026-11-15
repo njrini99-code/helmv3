@@ -24,7 +24,7 @@ const COVERED_SHIFT = CH_UNDERLAY_SHIFT;
 /**
  * The iPhone's edge swipe back for a pushed screen (docs/clubhouse/phone/shell-gestures.md). A finger that lands within
  * the left 20px and travels right follows the screen (CSS `translate`, which composes with the transform its push and
- * pop use), and the page beneath it draws back with it (the same parallax the pop uses). Let go past 35% of the width, or
+ * pop use), and the page beneath it draws back with it (the same parallax the pop uses). Let go past half the width, or
  * flicked, and the screen leaves on the smooth spring from where it is, at the speed it had, while its Back runs; sooner
  * and it springs back. A first travel that is vertical belongs to the scroll for the rest of the touch. The selection
  * haptic ticks as the commit mark is crossed. With reduced motion the gesture still works and only its settle changes
