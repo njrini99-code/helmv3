@@ -282,6 +282,15 @@
 .ch-ask-hist__new svg {
   color: var(--ch-green-600);
 }
+/* GAP-H-08: New chat waits while a reply is on its way (Stop ends it first), in the ink the phone bar's inert text action uses. */
+.ch-ask-hist__new[aria-disabled='true'],
+.ch-ask-hist__new[aria-disabled='true'] svg,
+.ch-ask-hist__iconbtn[aria-disabled='true'],
+.ch-ask-head__btn[aria-disabled='true'],
+.ch-ask .ch-pbar__icon[aria-disabled='true'] {
+  color: var(--ch-text-tertiary);
+  cursor: default;
+}
 @media (hover: hover) {
   /* The ledger's row tint over the key's own face, so it stays a key on the rail. */
   .ch-ask-hist__new:hover {

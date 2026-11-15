@@ -92,6 +92,8 @@ search or filter, so it has no filtered empty state.
 | 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step) |
 | 100415 | CH-10314 | `NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN` | New announcement: files that players can't open are left out of the attach list |
 | 100416 | CH-10315 | `PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A` | Plan a trip: nobody chosen has a class during the trip |
+| 100490 | CH-10390 | `A_LINK_TO_A_TASK_THAT_ISNT` | A link to a task (`?task=`) that isn't on the loaded list, when the list is complete and read without error (GAP-S-26) |
+| 100491 | CH-10391 | `A_LINK_TO_A_TRIP_THAT_ISNT` | A link to a trip (`?trip=`) that isn't loaded (GAP-S-26) |
 
 ## 05 — Validation
 

@@ -12,7 +12,7 @@ vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 const track = vi.hoisted(() => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('../lib/track', () => track);
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }));
-vi.mock('next/navigation', () => ({ useRouter: () => router }));
+vi.mock('next/navigation', () => ({ useRouter: () => router, useSearchParams: () => new URLSearchParams() }));
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
@@ -187,6 +187,8 @@ describe('Team Hub · player', () => {
   it('CH-10410 a failed completion restores a loaded completed task that was already reopened this visit', async () => {
     const user = userEvent.setup();
     const w = show(PREVIEW_HUB_PLAYER, writes({ completeTask: refuse() }), 'tasks');
+    // A loaded completed task sits in the collapsed Done section (GAP-H-16).
+    await user.click(screen.getByRole('button', { name: 'Done (1)' }));
     const schedule = () => screen.getByRole('button', { name: /^Upload class schedule/ });
     await user.click(schedule());
     await waitFor(() => expect(schedule()).toHaveAttribute('aria-pressed', 'false'));

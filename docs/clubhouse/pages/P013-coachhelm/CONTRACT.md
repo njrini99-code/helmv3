@@ -195,6 +195,7 @@ filter, so it has no filtered empty state.
 | 130437 | CH-13396 | `PRACTICE_A_COACHS_FIRST_PLAN_OR_NO` | Practice: a coach's first plan, or no practice this week |
 | 130438 | CH-13397 | `PRACTICE_A_PLAYER_WITH_NOTHING_PUBLISHED` | Practice: a player with nothing published |
 | 130490 | CH-13385 | `WHATS_NEW_SOMEONE_WITH_NO_TEAM` | What’s new: someone with no team (no organization, or no team resolved; GAP-S-36) |
+| 130491 | CH-13386 | `A_PLAYER_FILE_OR_YOUR_WEEK_FOR` | A player file or Your week for a player with no rounds (GAP-S-23) |
 
 ## 05 — Validation
 
@@ -337,6 +338,7 @@ its own.
 | 130783 | CH-13986 | `BRIEF_HOW_THE_READS_HAVE_HELD` | Brief: how the reads have held |
 | 130784 | CH-13987 | `BRIEF_GOALS_AND_STANDING` | Brief: goals and standing |
 | 130788 | CH-13998 | `INTELLIGENCE_AND_ITS_OLD_SUB_LINKS` | /intelligence and its old sub-links |
+| 130790 | CH-13925 | `ASK_NEW_CHAT_WHILE_THE_OPEN_CHAT` | Ask: New chat while the open chat has messages (GAP-H-08) |
 
 ## 08 — Permission / authorization
 

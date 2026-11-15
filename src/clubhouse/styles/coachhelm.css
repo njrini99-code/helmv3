@@ -1446,6 +1446,18 @@ html:not([data-fw-theme='dark']) .ch-hl {
   align-self: center;
   flex-shrink: 0;
 }
+/* GAP-H-12: the text keys beside the chips (No reason, Change, Keep my answer) reach 44 on the phone the way the chips do: the
+   same 4px hit area above and below, inside the rows' 8px gap, with nothing drawn. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-hl-cx__chg {
+    position: relative;
+  }
+  .ch-hl-cx__chg::after {
+    content: '';
+    position: absolute;
+    inset: -4px 0;
+  }
+}
 .ch-hl-cx__chg:disabled {
   cursor: default;
   opacity: 0.55;

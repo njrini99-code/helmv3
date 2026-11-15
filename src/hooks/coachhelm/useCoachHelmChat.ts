@@ -110,6 +110,11 @@ export interface UseCoachHelmChatResult {
   stop: () => void;
   retry: () => void;
   newConversation: () => void;
+  /**
+   * Put back a thread that `newConversation` cleared (Ask's Undo, CH-13925): its messages and its conversation, as they stood.
+   * Nothing is sent, and it does nothing once a question in the new chat is on its way. Optional in the type as `revise` is.
+   */
+  restore?: (snapshot: { conversationId: string | null; messages: ChatUIMessage[] }) => void;
 
   /**
    * Answer a waiting card. The argument is the card's approval id
@@ -439,6 +444,18 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     setStatus('ready');
   }, []);
 
+  const restore = React.useCallback((snapshot: { conversationId: string | null; messages: ChatUIMessage[] }) => {
+    // A question in the new chat is on its way: that chat is the coach's latest choice, and it stays.
+    if (inFlight.current) return;
+    conversation.current = snapshot.conversationId;
+    thread.current = snapshot.messages;
+    setConversationId(snapshot.conversationId);
+    setMessages(snapshot.messages);
+    setError(undefined);
+    setPhase(null);
+    setStatus('ready');
+  }, []);
+
   const addContext = React.useCallback((chip: ChatContextChip) => {
     setContext((prev) => (prev.some((c) => c.id === chip.id) ? prev : [...prev, chip]));
   }, []);
@@ -516,6 +533,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     stop,
     retry,
     newConversation,
+    restore,
     approve,
     deny,
     revise,

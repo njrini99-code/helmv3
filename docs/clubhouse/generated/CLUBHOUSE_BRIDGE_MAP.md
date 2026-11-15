@@ -158,14 +158,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P006 | 4 | 5 | 3 | 10 | 14 | 58 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 146 |
+| P006 | 4 | 5 | 3 | 10 | 14 | 59 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 147 |
 | P007 | 2 | 12 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 |  | 2 | 1 |  | 122 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
 | P009 | 7 | 7 | 4 | 12 | 14 | 34 | 8 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
-| P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
+| P010 | 3 | 10 |  | 18 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 92 |
 | P011 | 16 | 15 |  | 28 | 11 | 46 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 214 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
-| P013 | 6 | 13 |  | 32 | 3 | 44 | 62 | 7 | 3 |  | 3 | 1 |  | 3 | 3 | 4 | 10 | 19 | 1 |  | 1 |  | 1 |  |  | 216 |
+| P013 | 6 | 13 |  | 33 | 3 | 44 | 63 | 7 | 3 |  | 3 | 1 |  | 3 | 3 | 4 | 10 | 19 | 1 |  | 1 |  | 1 |  |  | 218 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 22 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 116 |
 | P016 | 31 | 1 | 1 | 26 |  | 37 | 1 | 1 |  | 2 | 4 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 115 |
@@ -744,6 +744,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60656 | CH-6044 | 06 Server / system error | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | implemented | A round or the tournament is restored |
 | 60657 | CH-6040 | 06 Server / system error | `A_TOURNAMENT_IS_SET_UP_FROM_THE` | implemented | A tournament is set up from the editor (P-5, `golf_tournaments_v1`) |
 | 60658 | CH-6024 | 06 Server / system error | `OPENING_A_FILE_ATTACHED_TO_AN_EVENT` | implemented | Opening a file attached to an event fails (the signed link can't be made, or the file has no stored copy) |
+| 60690 | CH-6290 | 06 Server / system error | `A_PRACTICES_PLAN_READ_FAILS` | implemented | A practice's plan read fails (`readEventPlans` answers an error that is not "table missing"; GAP-S-28) |
 | 60701 |  | 07 Network / offline | `FILE_REMOVAL_REFUSES_OFFLINE` | implemented | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 | 60801 |  | 08 Permission / authorization | `PLAYER_HAS_NO_PLANNING_TOOLS` | implemented | A player is never given a planning tool: no New event (button, N key or an editor from ?new=1), no Add busy time or Overlaps in More, no people filter, no responses, attendance, Edit event, Cancel event, Attach or Remove file, and no schedule-overlap marks. The same address for a coach has all of them. Hiding them is a courtesy; every write is checked again by its server action (60806). |
 | 60802 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_THEIR_OWN_CLASSES` | implemented | The loader gives a player only their own classes (another player's class, and one whose owner cannot be resolved, are dropped before they reach the browser) and only themselves as a person; a coach gets every rostered player's classes, each with its owner. |
@@ -1242,6 +1243,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100414 | CH-10313 | 04 Empty | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | implemented | Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step) |
 | 100415 | CH-10314 | 04 Empty | `NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN` | implemented | New announcement: files that players can't open are left out of the attach list |
 | 100416 | CH-10315 | 04 Empty | `PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A` | implemented | Plan a trip: nobody chosen has a class during the trip |
+| 100490 | CH-10390 | 04 Empty | `A_LINK_TO_A_TASK_THAT_ISNT` | implemented | A link to a task (`?task=`) that isn't on the loaded list, when the list is complete and read without error (GAP-S-26) |
+| 100491 | CH-10391 | 04 Empty | `A_LINK_TO_A_TRIP_THAT_ISNT` | implemented | A link to a trip (`?trip=`) that isn't loaded (GAP-S-26) |
 | 100501 | CH-10101 | 05 Validation | `POSTING_WITH_A_HEADLINE_UNDER_THREE_CHARACTERS` | implemented | Posting or saving an edit with a headline under three characters |
 | 100502 | CH-10102 | 05 Validation | `POSTING_TO_CHOSEN_PLAYERS_WITH_NONE_CHOSEN` | implemented | Posting to chosen players with none chosen |
 | 100503 | CH-10103 | 05 Validation | `A_TRIP_WITH_A_NAME_UNDER_THREE` | implemented | A trip with a name under three characters |
@@ -1679,6 +1682,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130437 | CH-13396 | 04 Empty | `PRACTICE_A_COACHS_FIRST_PLAN_OR_NO` | implemented | Practice: a coach's first plan, or no practice this week |
 | 130438 | CH-13397 | 04 Empty | `PRACTICE_A_PLAYER_WITH_NOTHING_PUBLISHED` | implemented | Practice: a player with nothing published |
 | 130490 | CH-13385 | 04 Empty | `WHATS_NEW_SOMEONE_WITH_NO_TEAM` | implemented | What’s new: someone with no team (no organization, or no team resolved; GAP-S-36) |
+| 130491 | CH-13386 | 04 Empty | `A_PLAYER_FILE_OR_YOUR_WEEK_FOR` | implemented | A player file or Your week for a player with no rounds (GAP-S-23) |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
 | 130502 | CH-13180 | 05 Validation | `PRACTICE_A_DRILL_RUNS_PAST_ITS_TURN` | implemented | Practice: a drill runs past its turn |
 | 130503 | CH-13181 | 05 Validation | `PRACTICE_AN_ALL_DAY_PRACTICE_IN_NEW` | implemented | Practice: an all-day practice in New plan |
@@ -1788,6 +1792,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130787 | CH-13997 | 07 Network / offline | `BRIEF_A_READ_IT_IS_MADE_FROM` | deprecated | Retired 2026-11-07 (Dashboard cuts). Brief: a read it is made from failed |
 | 130788 | CH-13998 | 07 Network / offline | `INTELLIGENCE_AND_ITS_OLD_SUB_LINKS` | reserved | /intelligence and its old sub-links |
 | 130789 | CH-13999 | 07 Network / offline | `BRIEF_COACHHELM_IS_OFF_FOR_THE_TEAM` | deprecated | Retired 2026-11-07 (Dashboard cuts). Brief: CoachHelm is off for the team |
+| 130790 | CH-13925 | 07 Network / offline | `ASK_NEW_CHAT_WHILE_THE_OPEN_CHAT` | implemented | Ask: New chat while the open chat has messages (GAP-H-08) |
 | 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's pages. A player's CoachHelm (Your week) is never drawn Assign, Dismiss, Undo or Share: the one thing a player writes is their answer to a proposal, Accept or Decline. No page has a Share button: no action sits behind it. |
 | 130802 |  | 08 Permission / authorization | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | implemented | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 |  | 08 Permission / authorization | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | implemented | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |

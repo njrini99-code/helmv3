@@ -44,7 +44,7 @@ describe('CH-16294 a Tournaments or Live section that throws is named in place',
     const notices = container.querySelectorAll('[data-ch-code="CH-16294"]');
     expect(notices).toHaveLength(1);
     expect(plain(notices[0])).toContain('Every event couldn’t be shown');
-    expect(notices[0].querySelector('button')?.textContent).toMatch(/Try again/);
+    expect(notices[0]?.querySelector('button')?.textContent).toMatch(/Try again/);
     expect(container.querySelector('.ch-tour-rev-trend')).not.toBeNull();
   });
 

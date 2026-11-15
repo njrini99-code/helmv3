@@ -15,7 +15,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock('server-only', () => ({}));
-vi.mock('next/navigation', () => ({ redirect: vi.fn(), useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }), useSearchParams: () => new URLSearchParams() }));
+vi.mock('next/navigation', () => ({ redirect: vi.fn(), notFound: () => { throw new Error('NEXT_NOT_FOUND'); }, useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }), useSearchParams: () => new URLSearchParams() }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({}) }));
 vi.mock('@/lib/coachhelm/v3/chat/context', () => ({ resolveCoachChatContext: async () => null }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: async () => ({ role: state.role, player: state.role === 'player' ? { id: 'pl-1' } : null }) }));
@@ -30,6 +30,8 @@ vi.mock('../../data/practice-home', () => ({ loadCoachPracticeHome: vi.fn(), loa
 vi.mock('../../data/practice-library', () => ({ loadDrill: vi.fn(), loadDrills: vi.fn(), loadGroups: vi.fn(), loadTemplates: vi.fn() }));
 
 const { PracticePlanRoute, PracticePrintRoute } = await import('../practice');
+/** A well-formed id: a malformed one is the not-found page before any read (GAP-S-21). */
+const PLAN = '00000000-0000-4000-8000-000000000001';
 
 const show = async (node: Promise<ReactElement>) => render(await node);
 
@@ -42,33 +44,31 @@ beforeEach(() => {
 
 describe('Practice is not on this database yet', () => {
   it('the coach’s plan page says so, and never that the plan was removed', async () => {
-    await show(PracticePlanRoute({ planId: 'p1' }));
+    await show(PracticePlanRoute({ planId: PLAN }));
     expect(screen.getByText('Practice isn’t on yet')).toBeTruthy();
     expect(screen.queryByText(/isn’t available|removed/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Go to Calendar' })).toBeTruthy();
   });
   it('the player’s plan page says the same', async () => {
     state.role = 'player';
-    await show(PracticePlanRoute({ planId: 'p1' }));
+    await show(PracticePlanRoute({ planId: PLAN }));
     expect(screen.getByText('Practice isn’t on yet')).toBeTruthy();
     expect(screen.queryByText(/removed|published yet/)).toBeNull();
   });
   it('print says the same, even when the drills read fails with it', async () => {
     state.drills.mockRejectedValue(new Error('unread'));
-    await show(PracticePrintRoute({ planId: 'p1' }));
+    await show(PracticePrintRoute({ planId: PLAN }));
     expect(screen.getByText('Practice isn’t on yet')).toBeTruthy();
     expect(screen.queryByText(/isn’t available|removed/)).toBeNull();
   });
 });
 
 describe('a plan that really is gone still says so', () => {
+  // One not-found voice (GAP-S-24): a gone plan is Practice's not-found page ("This plan isn’t here", CH-1306, drawn by
+  // the segment's not-found.tsx), never "Practice isn’t on yet".
   it('on the plan page and on print', async () => {
     state.coach = { status: 'gone' };
-    const page = await show(PracticePlanRoute({ planId: 'p1' }));
-    expect(screen.getByText('This plan isn’t available')).toBeTruthy();
-    expect(screen.queryByText('Practice isn’t on yet')).toBeNull();
-    page.unmount();
-    await show(PracticePrintRoute({ planId: 'p1' }));
-    expect(screen.getByText('This plan isn’t available')).toBeTruthy();
+    await expect(PracticePlanRoute({ planId: PLAN })).rejects.toThrow('NEXT_NOT_FOUND');
+    await expect(PracticePrintRoute({ planId: PLAN })).rejects.toThrow('NEXT_NOT_FOUND');
   });
 });

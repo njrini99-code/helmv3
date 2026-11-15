@@ -23,6 +23,7 @@ import { noteSendSource } from './send-source';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
+import { useToast } from '../../../ui/Toast';
 import { Tooltip } from '../../../ui/Tooltip';
 import { PhoneTop, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { AskComposer, useRefuseOffline } from './Composer';
@@ -230,6 +231,9 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   // FID-ASK-7: read once, then off the address (below), and taken once: the first send ends it.
   const [seededQuestion, consumeSeed] = useSeedOnce(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q'));
   const send = (text: string, about?: { evidence_ref: string; key: string }) => {
+    // A question in the new chat makes it the coach's choice: the Undo that would bring the last chat back goes.
+    undoNew.current?.abort();
+    undoNew.current = null;
     consumeSeed();
     setStoppedTurn(null);
     lastSent.current = text;
@@ -247,9 +251,18 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   };
   // `send`, for the composer, is the same without the gate: it already refused offline and blocked sends.
 
+  const toast = useToast();
+  // GAP-H-08: the chat a New chat left, kept for five seconds behind an Undo (CH-13925). A player has no chats list to find it in.
+  const undoNew = useRef<AbortController | null>(null);
+  useEffect(() => () => undoNew.current?.abort(), []);
   const newChat = () => {
-    // A reply still on its way belongs to the chat being left: stop it (silent, as Stop is), and an id that arrives for it later is not adopted.
-    if (chat.busy) chat.stop();
+    // GAP-H-08: a reply still on its way belongs to this chat, and New chat waits for it (its buttons are inert; Stop ends the reply
+    // first). An id that arrives later for a chat the coach has left is still not adopted (`epoch`).
+    if (chat.busy) return;
+    const left = !gone && chat.messages.length > 0 ? { messages: chat.messages, conversationId: openId ?? chat.conversationId ?? null, title, stoppedTurn } : null;
+    const restore = chat.restore;
+    undoNew.current?.abort();
+    undoNew.current = null;
     epoch.current += 1;
     expecting.current = null;
     chat.newConversation();
@@ -260,6 +273,29 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
     setDrawer(false);
     setArtifact(null);
     window.history.replaceState(window.history.state, '', COACHHELM_HREF.ask);
+    if (!left || !restore) return;
+    const notice = new AbortController();
+    undoNew.current = notice;
+    toast({
+      title: 'New chat started',
+      code: 'CH-13925',
+      holdMs: 5000,
+      signal: notice.signal,
+      action: {
+        label: 'Undo',
+        run: () => {
+          if (undoNew.current !== notice || !alive.current) return;
+          undoNew.current = null;
+          epoch.current += 1;
+          expecting.current = null;
+          restore({ messages: left.messages, conversationId: left.conversationId });
+          setOpenId(left.conversationId);
+          setTitle(left.title);
+          setStoppedTurn(left.stoppedTurn);
+          window.history.replaceState(window.history.state, '', left.conversationId ? conversationHref(left.conversationId) : COACHHELM_HREF.ask);
+        },
+      },
+    });
   };
 
   // A reply that ends on its own (not a failure) needs nothing here; a thread that finished and then closed the evidence for a
@@ -278,6 +314,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
     nowIso: data.nowIso,
     timezone: data.timezone,
     onNew: newChat,
+    newWaits: chat.busy,
     onOpen: chatSw.go,
   };
 
@@ -413,7 +450,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
             action={
               <>
                 {data.knows && !player && <PhoneIconAction icon={Settings2} label="Chat settings" onClick={() => setSettingsOpen(true)} />}
-                <PhoneIconAction icon={SquarePen} label="New chat" onClick={newChat} />
+                <PhoneIconAction icon={SquarePen} label="New chat" disabled={chat.busy} onClick={newChat} />
               </>
             }
           />
@@ -454,7 +491,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
                     </Tooltip>
                   )}
                   <Tooltip>
-                    <button type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" onClick={newChat}>
+                    <button type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" aria-disabled={chat.busy || undefined} onClick={newChat}>
                       <Icon icon={SquarePen} size={19} />
                     </button>
                   </Tooltip>

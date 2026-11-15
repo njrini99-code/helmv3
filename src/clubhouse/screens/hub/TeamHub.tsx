@@ -11,6 +11,7 @@ import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { FAILURE_COPY } from '../../ui/Notices';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
+import { InlineNotice } from '../../ui/Notices';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -483,14 +484,40 @@ export function TeamHub({
     coach && data.playersError && 'the team list',
   ].filter((part): part is string => !!part);
   const covered = failedParts.length > 1;
+  // GAP-S-26: a link to a task or a trip that isn't here any more (a notification's ?task=, Calendar's ?trip=) opened its
+  // tab with nothing said. The tab says so at its top, only when its list loaded whole: a failed read says that instead,
+  // and a coach's capped task list may hold the task past its cap. A trip can also be older than the trips the hub reads.
+  const taskGone = !!taskToFocus && !data.tasks.error && !(data.tasks.total != null && data.tasks.total > data.tasks.rows.length) && !tasks.rows.some((t) => t.id === taskToFocus);
+  const tripGone = !!tripToFocus && !data.trips.error && !tripRows.some((t) => t.id === tripToFocus);
 
   // CH-10701: a tab, a reply or a chip ticks; the current one is silent.
   const pick = (t: ChHubTab) => {
     if (t === tab) return;
     haptic('select');
     chTrail(`hub tab ${t}`);
+    // Leaving the tab a link named a missing task or trip on forgets the link, and its notice with it (GAP-S-26).
+    if (tab === 'tasks' && taskGone) setTaskToFocus(null);
+    if (tab === 'travel' && tripGone) setTripToFocus(null);
     setTab(t);
   };
+  // GAP-H-13: "N replies due" opens Home, the tab it counts, and on Home it did nothing. It goes to the tile that asks for
+  // them (a player's queue, a coach's week) and puts focus on its heading, once Home is the panel shown.
+  const repliesAsked = useRef(false);
+  const [askReplies, setAskReplies] = useState(0);
+  const onStrip = (t: ChHubTab) => {
+    if (t !== 'home') return pick(t);
+    if (tab === 'home') haptic('select');
+    else pick('home');
+    repliesAsked.current = true;
+    setAskReplies((n) => n + 1);
+  };
+  useEffect(() => {
+    if (!repliesAsked.current || shownTab !== 'home') return;
+    repliesAsked.current = false;
+    const head = document.getElementById(coach ? 'ch-hw-week' : 'ch-hw-queue');
+    head?.closest('section')?.scrollIntoView?.({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
+    head?.focus({ preventScroll: true });
+  }, [askReplies, shownTab, coach, reduced]);
   // P010 D2: the tab is in the URL (?tab=), so a reload, Back from a page it opened and a shared link land on it.
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -589,7 +616,7 @@ export function TeamHub({
             {primary.label}
           </Button>
         )}
-        <HubStrip items={strip} onOpen={pick} />
+        <HubStrip items={strip} onOpen={onStrip} />
       </header>
 
       <PageRefreshNotice parts={failedParts} />
@@ -668,7 +695,7 @@ export function TeamHub({
                 </SectionBoundary>
                 {!coach && <SectionBoundary surface="hub.queue" label="Your queue" code="CH-10205">{queueTile}</SectionBoundary>}
                 <SectionBoundary surface="hub.week" label="Next 7 days" code="CH-10205">
-                  <WeekTile week={data.week} role={data.role} rsvps={data.rsvps} replies={replies} isPending={replyPending} onReply={onReply} covered={covered} span={coach ? 5 : 7} />
+                  <WeekTile week={data.week} role={data.role} rsvps={data.rsvps} replies={replies} covered={covered} span={coach ? 5 : 7} />
                 </SectionBoundary>
                 {coach && (
                   <SectionBoundary surface="hub.waiting" label="Waiting on" code="CH-10205">
@@ -741,6 +768,7 @@ export function TeamHub({
           {shownTab === 'travel' && (
             <SectionBoundary surface="hub.travel" label="Travel" code="CH-10205">
               <div className="ch-hb-travel">
+                {tripGone && <InlineNotice code="CH-10391" title="That trip isn’t here" body="It may have been removed, or it’s too far past to show in Team Hub." />}
                 {data.trips.error ? (
                   <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again." covered={covered} />
                 ) : !tripRows.length ? (
@@ -768,6 +796,7 @@ export function TeamHub({
           {shownTab === 'tasks' && (
             <SectionBoundary surface="hub.tasks" label="Tasks" code="CH-10205">
               <div className={'ch-hb-list' + (coach ? ' is-board' : '')}>
+                {taskGone && <InlineNotice code="CH-10390" title="That task was removed" body={coach ? 'It’s no longer on the team’s list.' : 'It’s no longer on your list.'} />}
                 {figures && <TaskBoard figures={figures} />}
                 <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} onDelete={coach ? (t) => askDelete({ kind: 'task', t }) : undefined} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
               </div>

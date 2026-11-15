@@ -32,6 +32,7 @@ import { StoriesCard, StoryDeskPanel, weekdayOf } from './Stories';
 import { Inspector } from './Inspector';
 import { CourseSheet, GonePanel, PlayerPanel, ReadPanel } from './panels';
 import { SpotCard } from './SpotCard';
+import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { StationControl } from './StationControl';
 import { TeamHole } from './TeamHole';
 import { sgIsEstimate, sgMixShort, sgMixWords } from '../../../data/stats-sg-mix';
@@ -271,7 +272,9 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)}` : undefined} tabs={tabs} />;
   const course = courseReads(list).length;
   const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
+  // GAP-S-10: each card is its own read and its own drawing, so a crash in one says so in its place (CH-13204); the board stays.
   const today = (
+    <SectionBoundary surface="coachhelm.team.week" label="This week" code="CH-13204">
     <Part value={data.brief} fallback={skeletonCard}>
       {(b) => {
         const card = (themes: Record<string, Record<string, ChDiveTheme>> | null) => (
@@ -299,28 +302,44 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
         );
       }}
     </Part>
+    </SectionBoundary>
   );
   const proposed = list.flatMap((player) => player.reads.needs.filter((read) => fa.assigned[read.id] || read.assigned === 'proposed').map((read) => ({ player, read })));
   const working = (
-    <Part value={data.brief} fallback={skeletonCard}>
-      {(b) => <WorkingCard working={b.status === 'ok' ? b.value.working : []} proposed={proposed} failed={b.status === 'failed'} onRetry={retry} />}
-    </Part>
+    <SectionBoundary surface="coachhelm.team.working" label="Working on" code="CH-13204">
+      <Part value={data.brief} fallback={skeletonCard}>
+        {(b) => <WorkingCard working={b.status === 'ok' ? b.value.working : []} proposed={proposed} failed={b.status === 'failed'} onRetry={retry} />}
+      </Part>
+    </SectionBoundary>
   );
-  const huddle = <Huddle data={data} onPlayer={openPlayer} />;
-  const roster = <RosterCard players={list} phone={phone} onPlayer={openPlayer} />;
+  const huddle = (
+    <SectionBoundary surface="coachhelm.team.huddle" label="The huddle" code="CH-13204">
+      <Huddle data={data} onPlayer={openPlayer} />
+    </SectionBoundary>
+  );
+  const roster = (
+    <SectionBoundary surface="coachhelm.team.roster" label="Your players" code="CH-13204">
+      <RosterCard players={list} phone={phone} onPlayer={openPlayer} />
+    </SectionBoundary>
+  );
   // In the record card's footer (AC-RECORD-04), and with no record to sit in, in a card of its own under the board: never loose on the page (QA-9).
   const recheck = !data.off && data.roster.count > 0 ? <RecheckReads players={data.roster.count} /> : null;
   const record = (
-    <Part value={data.record} fallback={skeletonCard}>
-      {(r) => <RecordCard part={r} desk={!phone} recheck={recheck} />}
-    </Part>
+    <SectionBoundary surface="coachhelm.team.record" label="How often CoachHelm is right" code="CH-13204">
+      <Part value={data.record} fallback={skeletonCard}>
+        {(r) => <RecordCard part={r} desk={!phone} recheck={recheck} />}
+      </Part>
+    </SectionBoundary>
   );
-  const spot =
-    station === 'course' ? (
-      <CourseCard data={data} initialAll={initialAll} onRead={openRead} onCourse={openCourse} onRetry={retry} />
-    ) : (
-      <SpotCard data={data} station={station} onRead={openRead} onPlayer={openPlayer} onRetry={retry} />
-    );
+  const spot = (
+    <SectionBoundary key={station === 'course' ? 'course' : 'spot'} surface={station === 'course' ? 'coachhelm.team.course' : 'coachhelm.team.spot'} label={station === 'course' ? 'Course and scoring' : 'The reads at this spot'} code="CH-13204">
+      {station === 'course' ? (
+        <CourseCard data={data} initialAll={initialAll} onRead={openRead} onCourse={openCourse} onRetry={retry} />
+      ) : (
+        <SpotCard data={data} station={station} onRead={openRead} onPlayer={openPlayer} onRetry={retry} />
+      )}
+    </SectionBoundary>
+  );
   const failedHole = (
     <section className="card ch-htb-failed" role="alert" data-ch-team-card="hole">
       <Notice title="The team’s reads didn’t load" body="Nothing here is wrong with your players’ rounds. Try again." onRetry={retry} />

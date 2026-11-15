@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '../../../ui/Button';
+import { EmptyState } from '../../../ui/States';
 import { formatWith } from '../../../lib/dates';
 
 import { useRefresh } from '../../../lib/use-refresh';
@@ -29,6 +30,19 @@ import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
 import {  CoachActions, EarlyFeature, FeatureCard, FieldCard, IntentCard, PlanCard, ReadsCard, SgCard, TrackCard, WorkingCard, type FileLens } from './cards';
 import { Avatar } from '../../../ui/Avatar';
+import { SectionBoundary } from '../../../ui/SectionBoundary';
+
+/** What each card of the file is called when it cannot be drawn ("… couldn’t be shown", CH-13204). */
+const FILE_PART: Record<string, string> = {
+  feat: 'The main read',
+  plan: 'The plan',
+  field: 'Last round in context',
+  reads: 'The other reads',
+  sg: 'Where the strokes go',
+  working: 'What’s working',
+  intent: 'Your plan for this player',
+  track: 'The track record',
+};
 import { IntentSheet, LIVE_SAVE_INTENT } from './IntentSheet';
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
@@ -236,18 +250,21 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
   const isEmpty = none && data.rounds === 0;
   const isEarly = none && !isEmpty;
 
-  const card: Record<string, ReactNode> = {
+  const drawn: Record<string, ReactNode> = {
     feat: isEmpty ? (
       <section className="card">
-        <div className="empty">
-          <b>No rounds yet</b>
-          <p>Reads start after 4 full rounds in the last 90 days.</p>
-          {lens === 'coach' && (
-            <Button variant="secondary" size="lg" href={messageHref}>
-              Message {first}
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          code="CH-13386"
+          title="No rounds yet"
+          body="Reads start after 4 full rounds in the last 90 days."
+          action={
+            lens === 'coach' ? (
+              <Button variant="secondary" size="lg" href={messageHref}>
+                Message {first}
+              </Button>
+            ) : undefined
+          }
+        />
       </section>
     ) : shown.feat ? (
       <Swap swapKey={lens}>
@@ -270,6 +287,10 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
     intent: <Fold show={lens === 'coach'}>{data.failed.intent ? <PartFailed title={`Your plan for ${first}`} /> : <IntentCard intent={intent} first={first} onEdit={() => setIntentOpen(true)} />}</Fold>,
     track: <Fold show={lens === 'coach'}>{data.failed.track ? <PartFailed title={`Track record with ${first}`} /> : data.cards.track ? <TrackCard track={data.cards.track} first={first} /> : null}</Fold>,
   };
+  // GAP-S-10: each card draws on its own, so a crash in one says so in its place (CH-13204) and the rest of the file stays.
+  const card: Record<string, ReactNode> = Object.fromEntries(
+    Object.entries(drawn).map(([k, node]) => [k, node ? <SectionBoundary key={k} surface={`coachhelm.file.${k}`} label={FILE_PART[k] ?? 'This part'} code="CH-13204">{node}</SectionBoundary> : node]),
+  );
   void isEarly;
 
   const pill = (

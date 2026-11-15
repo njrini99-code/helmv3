@@ -196,9 +196,9 @@ export function ClubhouseFrame({
                           <RouteFrame routeKey={`${chNavPath(pathname, search)}\u0000${userData.teamId ?? ''}${relink ? `\u0000${relink}` : ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
                             {rebuilt || !known || dynamicChild ? children : (
                               <>
-                                {/* An old address on its way somewhere draws a blank canvas, not "not rebuilt" (A30). */}
+                                {/* An old address on its way somewhere draws where it is going (its skeleton, GAP-S-19), not "not rebuilt" (A30). */}
                                 {aliased ? (
-                                  <AliasWait label={item?.label ?? routeLabel(pathname) ?? 'This page'} coachOnly={coachOnly} />
+                                  <AliasWait label={item?.label ?? routeLabel(pathname) ?? 'This page'} coachOnly={coachOnly} path={pathname} role={role} />
                                 ) : playersOnly ? (
                                   <PlayersOnlyRounds />
                                 ) : (

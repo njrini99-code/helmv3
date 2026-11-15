@@ -248,6 +248,7 @@ that landed (C-17; busy time 2026-10-17).
 | 60656 | CH-6044 | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | A round or the tournament is restored |
 | 60657 | CH-6040 | `A_TOURNAMENT_IS_SET_UP_FROM_THE` | A tournament is set up from the editor (P-5, `golf_tournaments_v1`) |
 | 60658 | CH-6024 | `OPENING_A_FILE_ATTACHED_TO_AN_EVENT` | Opening a file attached to an event fails (the signed link can't be made, or the file has no stored copy) |
+| 60690 | CH-6290 | `A_PRACTICES_PLAN_READ_FAILS` | A practice's plan read fails (`readEventPlans` answers an error that is not "table missing"; GAP-S-28) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10609 CH-1208,

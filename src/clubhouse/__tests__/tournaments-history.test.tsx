@@ -214,7 +214,7 @@ describe.each([
     const c = draw({ ...data, players: [], errors: { profiles: true } }, search(), { phone });
     const notices = [...c.querySelectorAll('[role="alert"]')].filter((n) => plain(n as HTMLElement).includes('Player names didn’t load'));
     expect(notices).toHaveLength(1);
-    expect(notices[0].closest('[data-ch-code]')?.getAttribute('data-ch-code')).toBe('CH-16295');
+    expect(notices[0]?.closest('[data-ch-code]')?.getAttribute('data-ch-code')).toBe('CH-16295');
     expect(c.querySelector('[data-ch-code="CH-16236"]')).toBeNull();
     if (!phone) expect(c.querySelector('[role="table"]')).not.toBeNull();
   });

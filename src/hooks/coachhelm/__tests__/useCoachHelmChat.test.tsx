@@ -551,4 +551,17 @@ describe('useCoachHelmChat', () => {
     act(() => result.current.newConversation());
     expect(result.current).toMatchObject({ messages: [], conversationId: null, status: 'ready', error: undefined });
   });
+
+  it('GAP-H-08 restore puts back the thread a new chat cleared, and the next question goes into that conversation', async () => {
+    const earlier: ChatUIMessage[] = [{ id: 'old', role: 'assistant', parts: [{ type: 'text', text: 'Earlier.' }] }];
+    const { result } = renderHook(() => useCoachHelmChat({ conversationId: CONVERSATION, initialMessages: earlier }));
+    act(() => result.current.newConversation());
+    expect(result.current.messages).toEqual([]);
+    act(() => result.current.restore!({ conversationId: CONVERSATION, messages: earlier }));
+    expect(result.current).toMatchObject({ messages: earlier, conversationId: CONVERSATION, status: 'ready' });
+    fetchMock.mockResolvedValueOnce(sse(answer('Back in the same chat.')));
+    act(() => result.current.send('And now?'));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(JSON.parse(String(fetchMock.mock.calls[0]![1]!.body)).conversation_id).toBe(CONVERSATION);
+  });
 });

@@ -35,7 +35,8 @@ function Head({ lead, name, line, onClose }: { lead: React.ReactNode; name: stri
       {lead}
       <span className="c">
         <b>{name}</b>
-        <span>{line}</span>
+        {/* GAP-H-24: no line is no row, never an empty one under the name. */}
+        {line && <span>{line}</span>}
       </span>
       <button type="button" className="xb" aria-label="Close" onClick={onClose}>
         <Icon icon={X} size={16} />
@@ -209,20 +210,24 @@ export function ReadPanel({
           </div>
         </section>
       ) : (
-        <section className="card">
-          <div className="drill">
-            <span className="dicon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="8" />
-                <path d="M12 8v4l3 2" />
-              </svg>
-            </span>
-            <span>
-              <b>Still gathering</b>
-              {read.week?.text && <span>{read.week.text}</span>}
-            </span>
-          </div>
-        </section>
+        // GAP-H-24: no drill is no drill card. The read's own next step, when it has one, keeps the slot under its own name; with
+        // neither, the slot closes rather than holding a "Still gathering" filler.
+        read.week?.text && (
+          <section className="card">
+            <div className="drill">
+              <span className="dicon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="8" />
+                  <path d="M12 8v4l3 2" />
+                </svg>
+              </span>
+              <span>
+                <b>What to work on</b>
+                <span>{read.week.text}</span>
+              </span>
+            </div>
+          </section>
+        )
       )}
       {cx && (
         <section className="card ch-hf-cx">

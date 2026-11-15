@@ -2,7 +2,7 @@
 
 import { Bus, Check, ChevronDown, ChevronRight, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, Ellipsis, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
 import { isProvisional } from '../../data/hub-shape';
 import { Avatar } from '../../ui/Avatar';
@@ -91,7 +91,8 @@ export function Acknowledgement({ a, acked, pending, onAck }: {
   const save = useAction('hub.acknowledge', onAck, (post) => ({ done: '', failed: `Couldn’t acknowledge “${post.title}”`, code: 'CH-10002' }), quietBusy);
   if (pending) return <span className="ch-hb-saving" role="status" data-ch-code="CH-10409">Acknowledging {a.title}…</span>;
   if (acked) return <span className="ch-hb-acked"><Icon icon={Check} size={13} />Acknowledged</span>;
-  return <Button size="sm" variant="primary" onClick={() => void save.run(a)}>Got it</Button>;
+  // A row's own action, never a filled primary (GAP-H-04): Home lists several posts, and at most one filled key is on screen.
+  return <Button size="sm" variant="secondary" onClick={() => void save.run(a)}>Got it</Button>;
 }
 
 export function Announcement({
@@ -538,6 +539,15 @@ export function Tasks({
 }) {
   const coach = role === 'coach';
   const open = data.rows.filter((t) => !isDone(t)).length;
+  // GAP-H-16: a player's finished tasks sit in a collapsed "Done (N)" under the open ones, as Reminders keeps completed items
+  // behind a press. Split by what loaded, so a task ticked this visit stays where it is, under the pointer, until the next read.
+  const listed = coach ? data.rows : data.rows.filter((t) => t.status !== 'completed');
+  const finished = coach ? [] : data.rows.filter((t) => t.status === 'completed');
+  const [doneOpen, setShowDone] = useState(false);
+  // A notification naming a finished task opens the section, so its row can be lit, and it stays open once the row is.
+  if (!doneOpen && focusTask && finished.some((t) => t.id === focusTask)) setShowDone(true);
+  const doneId = useId();
+  const row = (t: ChHubTask) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} focus={focusTask === t.id} onFocused={onFocused} />;
   return (
     <section className="ch-hb-card" aria-labelledby="ch-hb-tasks">
       <div className="ch-hb-card__h">
@@ -556,7 +566,30 @@ export function Tasks({
         <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned' : 'No tasks right now'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
       ) : (
         <div className="ch-hb-tasks">
-          <ListPresence>{data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} focus={focusTask === t.id} onFocused={onFocused} />)}</ListPresence>
+          <ListPresence>{listed.map(row)}</ListPresence>
+          {!listed.length && <p className="ch-hb-muted">Every task is done.</p>}
+          {finished.length > 0 && (
+            <>
+              <button
+                type="button"
+                className="ch-hw-more ch-hw-q__all"
+                aria-expanded={doneOpen}
+                aria-controls={doneId}
+                onClick={() => {
+                  haptic('select');
+                  setShowDone(!doneOpen);
+                }}
+              >
+                Done ({finished.length})
+                <Icon icon={ChevronDown} size={13} />
+              </button>
+              {doneOpen && (
+                <div id={doneId} role="group" aria-label="Done">
+                  {finished.map(row)}
+                </div>
+              )}
+            </>
+          )}
           {data.total != null && data.total > data.rows.length && (
             // C-20: the list is capped; it says so rather than passing for every task.
             <p className="ch-hb-muted ch-num">
@@ -688,6 +721,7 @@ export function Documents({
 }) {
   const coach = role === 'coach';
   const phone = useChPhone();
+  const folderIds = useId();
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!picker || !coach) return;
@@ -749,10 +783,11 @@ export function Documents({
       ) : !data.folders.length ? (
         <EmptyState size="page" icon={Folder} code="CH-10304" shape="rows" shapeCount={3} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
       ) : (
-        data.folders.map((f) => (
-          <section key={f.name} className="ch-hb-card ch-hb-folder" aria-labelledby={`ch-hb-f-${f.name}`}>
+        data.folders.map((f, i) => (
+          // GAP-H-15: an id built from the folder's name broke on a space ("Travel forms" named two ids), so the section lost its name.
+          <section key={f.name} className="ch-hb-card ch-hb-folder" aria-labelledby={`${folderIds}-${i}`}>
             <div className="ch-hb-card__h">
-              <h2 id={`ch-hb-f-${f.name}`}>
+              <h2 id={`${folderIds}-${i}`}>
                 <Icon icon={Folder} size={16} />
                 {f.name}
               </h2>

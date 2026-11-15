@@ -1,5 +1,6 @@
-import { SettingsSkeleton } from '@/clubhouse/screens/settings/SettingsSkeleton';
+import { SettingsRouteSkeleton } from '@/clubhouse/screens/settings/SettingsSkeleton';
 
 export default function SettingsLoading() {
-  return <SettingsSkeleton />;
+  // The address's `?section=` decides the section the skeleton draws (GAP-S-17).
+  return <SettingsRouteSkeleton />;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, ChartColumn, Flag, Medal } from 'lucide-react';
+import { AlertTriangle, ChartColumn, Medal } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { Button } from '../../ui/Button';
 import { sgBaseline } from '../../lib/sg';
@@ -34,6 +34,7 @@ import { divergeBar, filterKey, scoreChangeChip, sgTone, windowShort, type ShsTo
 import { useStuck, WindowCrossfade } from './shs-motion';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
+import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { figureValue, Players, Putting, reference, teamDaysMean, teamTrendReading, type ChLegPick } from './StatsTeamPhone';
 import { TeamInsight } from './StatsInsight';
@@ -175,13 +176,8 @@ export function StatsTeamPhoneShs({
                 <TeamFilterEmpty />
               </section>
             ) : firstRun ? (
-              <section className="ch-shs-card ch-shs-empty" suppressHydrationWarning>
-                <span className="ch-shs-empty__ic">
-                  <Icon icon={Flag} size={22} />
-                </span>
-                <h2>No team rounds yet</h2>
-                <p>When players finish rounds with shot tracking, this page fills in: the team scoring average, strokes gained by leg, and who gains and loses.</p>
-              </section>
+              // CH-4310: the designed first run the desktop page draws, with its one step (the roster, or Invite players) (GAP-S-22).
+              <StatsTeamFirstRun invite={data.activeCount === 0} />
             ) : noRounds ? (
               <section className="ch-shs-card" suppressHydrationWarning>
                 <EmptyState

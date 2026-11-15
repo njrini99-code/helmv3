@@ -6199,6 +6199,17 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60690,
+    "page": "P006",
+    "category": 6,
+    "item": 90,
+    "name": "A_PRACTICES_PLAN_READ_FAILS",
+    "chCode": "CH-6290",
+    "meaning": "A practice's plan read fails (`readEventPlans` answers an error that is not \"table missing\"; GAP-S-28)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -11702,6 +11713,28 @@
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
+    "id": 100490,
+    "page": "P010",
+    "category": 4,
+    "item": 90,
+    "name": "A_LINK_TO_A_TASK_THAT_ISNT",
+    "chCode": "CH-10390",
+    "meaning": "A link to a task (`?task=`) that isn't on the loaded list, when the list is complete and read without error (GAP-S-26)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100491,
+    "page": "P010",
+    "category": 4,
+    "item": 91,
+    "name": "A_LINK_TO_A_TRIP_THAT_ISNT",
+    "chCode": "CH-10391",
+    "meaning": "A link to a trip (`?trip=`) that isn't loaded (GAP-S-26)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 100501,
     "page": "P010",
     "category": 5,
@@ -16561,6 +16594,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130491,
+    "page": "P013",
+    "category": 4,
+    "item": 91,
+    "name": "A_PLAYER_FILE_OR_YOUR_WEEK_FOR",
+    "chCode": "CH-13386",
+    "meaning": "A player file or Your week for a player with no rounds (GAP-S-23)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130501,
     "page": "P013",
     "category": 5,
@@ -17761,6 +17805,17 @@
     "chCode": "CH-13999",
     "meaning": "Retired 2026-11-07 (Dashboard cuts). Brief: CoachHelm is off for the team",
     "status": "deprecated",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130790,
+    "page": "P013",
+    "category": 7,
+    "item": 90,
+    "name": "ASK_NEW_CHAT_WHILE_THE_OPEN_CHAT",
+    "chCode": "CH-13925",
+    "meaning": "Ask: New chat while the open chat has messages (GAP-H-08)",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

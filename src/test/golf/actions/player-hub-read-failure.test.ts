@@ -46,6 +46,7 @@ function chain(table: string) {
   Object.assign(node, {
     select: self,
     eq: self,
+    in: self,
     gte: self,
     order: self,
     limit: self,
@@ -108,22 +109,27 @@ describe('getPlayerHubSummaryData — an unreadable hub must not look like an em
     expect(data.events).toEqual([]);
     expect(data.trips).toEqual([]);
     expect(data.tasks).toEqual([]);
+    expect(data.failed).toEqual({ events: false, travel: false, tasks: false });
     expect(logServerError).not.toHaveBeenCalled();
   });
 
-  it('throws rather than hiding a mandatory event when the events read fails', async () => {
+  // GAP-H-03 (15 Nov 2026): a failed leg is named in `failed` instead of throwing the whole summary, so the sections fed by
+  // the other legs still stand. What these tests pinned is kept: a failed read never passes for an empty one.
+  it('names the events leg as failed, never an empty list, when the events read fails', async () => {
     rpcOutcome = { data: null, error: { message: 'statement timeout', code: '57014' } };
 
-    await expect(hub()).rejects.toThrow(/load your hub/i);
+    const data = await hub();
+    expect(data.failed).toEqual({ events: true, travel: false, tasks: false });
+    expect(data.events).toEqual([]);
     expect(
       logServerError.mock.calls.some((call) => /events read failed/.test(String((call as unknown[])[0]))),
     ).toBe(true);
   });
 
-  it('throws when the events RPC answers with something other than its documented array', async () => {
+  it('names the events leg as failed when the events RPC answers with something other than its documented array', async () => {
     rpcOutcome = { data: { unexpected: true }, error: null };
 
-    await expect(hub()).rejects.toThrow(/load your hub/i);
+    expect((await hub()).failed.events).toBe(true);
     expect(
       logServerError.mock.calls.some((call) => /events read failed.*unexpected get_player_hub_events shape/.test(String((call as unknown[])[0]))),
     ).toBe(true);
@@ -143,22 +149,40 @@ describe('getPlayerHubSummaryData — an unreadable hub must not look like an em
     ]);
   });
 
-  it('throws rather than hiding the bus time when the travel read fails', async () => {
+  it('names the travel leg as failed rather than hiding the bus time, and keeps the events', async () => {
     outcomes.set('golf_travel_itineraries', { data: null, error: { message: 'permission denied', code: '42501' } });
+    rpcOutcome = {
+      data: [{ id: 'e1', event_id: 'e1', title: 'Qualifier', event_type: 'tournament', start_time: '2026-10-05T12:00:00Z', end_time: null, location: null, is_mandatory: true, rsvp_status: null, going_count: 0, maybe_count: 0 }],
+      error: null,
+    };
 
-    await expect(hub()).rejects.toThrow(/load your hub/i);
+    const data = await hub();
+    expect(data.failed).toEqual({ events: false, travel: true, tasks: false });
+    expect(data.trips).toEqual([]);
+    expect(data.events.map((e) => e.title)).toEqual(['Qualifier']);
     expect(
       logServerError.mock.calls.some((call) => /travel read failed/.test(String((call as unknown[])[0]))),
     ).toBe(true);
   });
 
-  it('throws rather than hiding assigned tasks when the tasks read fails', async () => {
+  it('names the tasks leg as failed rather than hiding assigned tasks', async () => {
     outcomes.set('golf_task_assignments', { data: null, error: { message: 'connection terminated' } });
 
-    await expect(hub()).rejects.toThrow(/load your hub/i);
+    const data = await hub();
+    expect(data.failed).toEqual({ events: false, travel: false, tasks: true });
+    expect(data.tasks).toEqual([]);
     expect(
       logServerError.mock.calls.some((call) => /tasks read failed/.test(String((call as unknown[])[0]))),
     ).toBe(true);
+  });
+
+  it('names the tasks leg as failed when the task details read fails after the assignments loaded', async () => {
+    outcomes.set('golf_task_assignments', { data: [{ task_id: 'k1', status: 'pending', completed_at: null }], error: null });
+    outcomes.set('golf_tasks', { data: null, error: { message: 'statement timeout' } });
+
+    const data = await hub();
+    expect(data.failed).toEqual({ events: false, travel: false, tasks: true });
+    expect(data.tasks).toEqual([]);
   });
 });
 
