@@ -32,8 +32,9 @@ export const CH_SWIPE_FINISH_FLOOR = 0.35;
  * A released back swipe's finish (MOTION-AND-VISUAL 3.3): from where the finger let go, over 520 ms times the share of
  * the way still to go (`left`, 0 to 1), never under 35% of it, on the iOS curve. A commit's way is what is left to the
  * right edge; a cancel's is the way home, on the same curve. The finger's speed decides commit or cancel and nothing
- * more: the iOS curve leaves at 2.25 times its mean speed, at least 0.75 px/ms over the shortest way home here, so a
- * page let go at a flick's 0.7 px/ms never slows down as it is handed over.
+ * more: above the floor the finish averages the width per 520 ms (0.75 px/ms on a 390 px phone) and the iOS curve
+ * leaves at 2.25 times that, about 1.7 px/ms, so a page let go at a flick's 0.7 px/ms does not slow as it is handed
+ * over. Only a page let go within 35% of its end starts slower, over the floor's 182 ms.
  */
 export function swipeFinish(left: number): { ms: number; easing: string; ease: (p: number) => number } {
   const share = Math.max(CH_SWIPE_FINISH_FLOOR, Math.min(1, Number.isFinite(left) ? left : 1));
