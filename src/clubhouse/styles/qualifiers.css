@@ -327,7 +327,7 @@
 .ch-qf-empty {
   padding: 12px;
 }
-/* The live leaders on the green scoreboard (a tournament board): ivory names and positions, red under par. */
+/* The live leaders on the green scoreboard (a tournament board): ivory names and positions, the feature gain under par. */
 .ch-qf-lead.ch-scoreboard {
   padding: 16px 16px;
 }
@@ -338,7 +338,7 @@
   color: var(--ch-on-green-ink);
 }
 .ch-scoreboard .ch-qf-tp.is-under {
-  color: #ff8b7d;
+  color: var(--ch-score-under-on-green);
 }
 /* Concluded qualifiers: a ledger on the page, not a grid of cards (owner: no card soup). One row each, ruled by seams. */
 .ch-qf-grid.is-ledger {
@@ -2493,8 +2493,8 @@
 }
 
 /* P009-A1: to par on a hand-hung plate. A fixed-aspect ivory plate (the page's lightest paper, a dark plate at night)
-   with a keyline and a short drop, the numeral in the condensed cell role: 600, 86% width, tabular. Red only under par;
-   even and over par are ink. On the live card's green scoreboard the plate is the board's ivory with green ink. */
+   with a keyline and a short drop, the numeral in the condensed cell role: 600, 86% width, tabular. The gain only under
+   par; even and over par are ink. On the live card's green scoreboard the plate is the board's ivory with green ink. */
 .ch-qf-plate {
   display: inline-grid;
   place-items: center;
@@ -2719,7 +2719,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   .ch-qf-hero .ch-qf-lead .ch-qf-plate.is-under,
   .ch-qf-hero .ch-qf-mine .ch-qf-plate.is-under {
-    color: #ff8b7d;
+    color: var(--ch-score-under-on-green);
   }
   .ch-qf-hero .ch-qf-lead .ch-qf-plate.is-none,
   .ch-qf-hero .ch-qf-mine .ch-qf-plate.is-none {
@@ -3318,7 +3318,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 
 
 /* The leaderboard (P009), set as a printed tournament sheet: a heavy rule over the title, no avatars, no plates, one hairline a row.
-   To par is the loudest figure on the row (red under par), the position quiet beside the name, the leader and the cut carried by
+   To par is the loudest figure on the row (the gain under par), the position quiet beside the name, the leader and the cut carried by
    weight and a rule rather than colour. Rows past the travel cut set in the quiet ink. Presentation only; same rows, same trays. */
 .ch-qf[data-canopy] .ch-qf-board {
   border-top: 2px solid var(--ch-ink-900);
@@ -3784,7 +3784,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   color: var(--ch-text-primary);
 }
 .ch-qf-prounds__big b.is-under {
-  color: #ff8b7d;
+  color: var(--ch-score-under-on-green);
 }
 .ch-qf-prounds__big span {
   font: var(--ch-type-footnote);
@@ -4125,7 +4125,7 @@ button.ch-qf-prounds__r.is-open {
   vector-effect: non-scaling-stroke;
 }
 .ch-qf-rv__shape .is-under {
-  fill: #ff8b7d;
+  fill: var(--ch-score-under-on-green);
 }
 .ch-qf-rv__shape .is-over {
   fill: #e3b45c;
@@ -4200,7 +4200,7 @@ button.ch-qf-prounds__r.is-open {
 }
 .ch-qf-rv__counts li.is-eagle,
 .ch-qf-rv__counts li.is-birdie {
-  background: rgb(255 139 125 / 0.18);
+  background: rgb(143 211 170 / 0.18);
 }
 .ch-qf-rv__counts li.is-bogey,
 .ch-qf-rv__counts li.is-double {

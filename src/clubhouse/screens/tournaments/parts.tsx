@@ -19,7 +19,7 @@ import '../../styles/tournaments.css';
 /**
  * The pieces every Tournaments view shares (base-owned, `.ch-tour-*` in styles/tournaments.css): the view's root and
  * head, the Events / Compare / History switch, the loading and failed page states, the crumb back to the season, and the
- * small marks (chips, coverage, a to-par that is red only under par).
+ * small marks (chips, coverage, a to-par in the gain only under par).
  */
 
 /** The layout a view draws: the prop when a caller forces one (a test, the preview), else the viewport's. */
@@ -200,7 +200,7 @@ export function TourChip({ tone, dot = false, children }: { tone?: 'ok' | 'warn'
   );
 }
 
-/** A to-par in the team's ink, red only under par (D-42). */
+/** A to-par in the team's ink, the gain only under par (MOTION-AND-VISUAL 4.7). */
 export function ToPar({ value, className }: { value: number | null | undefined; className?: string }) {
   const under = value != null && value < 0;
   return <span className={'ch-num' + (under ? ' ch-tour-under' : '') + (className ? ` ${className}` : '')}>{formatToPar(value)}</span>;

@@ -142,7 +142,12 @@ const DATA = [
   ['--ch-chart-track', 'Bar and progress tracks, ringed with `--ch-chart-track-ring` (S2.6)', ['--ch-card-bg']],
   ['--ch-chart-par', 'Par segments, ringed like the track', ['--ch-card-bg']],
   ['--ch-chart-gilt', 'Qualifying line and its legend key', ['--ch-card-bg']],
-  ['--ch-flag', 'Errors and alerts (S2.5); see open call PL-HOME-05', ['--ch-card-bg']],
+  ['--ch-score-under', 'Under par, text and rings: the gain (MOTION-AND-VISUAL 4.7)', ['--ch-card-bg']],
+  ['--ch-score-under-fill', 'A filled under-par mark or hole chip, under `--ch-score-fill-ink` (4.7)', ['--ch-card-bg', '--ch-score-fill-ink']],
+  ['--ch-score-birdie-fill', 'The scoring mix and live beads: birdie, a step lighter than eagle or better', ['--ch-card-bg', '--ch-score-eagle-fill']],
+  ['--ch-champagne-100', 'Attention (4.7): a due date and the personal-best badge, with `--ch-champagne-ink`', ['--ch-card-bg', '--ch-champagne-ink']],
+  ['--ch-chart-flag', 'The pin flag, drawn as on the course', ['--ch-card-bg']],
+  ['--ch-flag', 'Errors and destructive actions: red means nothing else (4.7)', ['--ch-card-bg']],
 ];
 const KEYS = [
   ['--ch-primary-bg', 'Primary key, solid (no gradient)', ['--ch-card-bg']],

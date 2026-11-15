@@ -3351,7 +3351,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     color: var(--ch-text-tertiary);
   }
   /* An overlap, in words under the row's place ("Overlaps Short-game block"): the amber triangle leads the line it
-     used to stand in for, alone at the row's end. Amber ink, never red (red is under par). */
+     used to stand in for, alone at the row's end. Amber ink, never red (red is for errors). */
   .ch-calm-ev__b span.ch-calm-ev__clash {
     font: var(--ch-type-footnote);
     line-height: var(--ch-lead-caption);

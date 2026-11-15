@@ -21,9 +21,13 @@ test('flags unscoped CSS selectors and literal durations', () => {
   assert.equal(v.filter((x) => x.includes('.ch-ok')).length, 0);
 });
 
-test('red is allowed for under par only', () => {
-  assert.equal(checkSource('src/clubhouse/a.css', '.ch-topar.is-under{color:var(--ch-score-under)}').length, 0);
-  assert.equal(checkSource('src/clubhouse/a.css', '.ch-badge{color:var(--ch-score-under)}').length, 1);
+test('red is for errors only (MOTION-AND-VISUAL 4.7): an error, a destructive key, the pin flag or a penalty', () => {
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-form.is-error{color:var(--ch-danger-600)}').length, 0);
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-map__flag{fill:var(--ch-chart-flag)}').length, 0);
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-badge{color:var(--ch-danger-600)}').length, 1);
+  // Under par is the gain now: red under par is flagged, and the under-par token (green) reads anywhere.
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-topar.is-under{color:var(--ch-chart-flag)}').length, 1);
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-badge{color:var(--ch-score-under)}').length, 0);
 });
 
 test('a gain or loss tone paints only with the chart gain and loss family (CONS-20)', () => {

@@ -322,7 +322,7 @@ export interface ChSinceChip {
   changeId?: string;
   /** The row's second line (a schedule change: what it was, when, who). */
   meta?: string;
-  /** The figure's under-par part, shown in the under-par red (D-42). */
+  /** The figure's under-par part, shown in the under-par gain (MOTION-AND-VISUAL 4.7). */
   toPar?: { text: string; under: boolean };
   label: string;
   round?: ChLatestRound;

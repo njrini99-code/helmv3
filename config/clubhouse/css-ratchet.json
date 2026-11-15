@@ -234,7 +234,7 @@
     "keyframes": 0
   },
   "src/clubhouse/styles/home.css": {
-    "hex": 29,
+    "hex": 28,
     "svg-overflow-visible": 3,
     "crh-negative-margin": 3,
     "raw-radius": 1,
@@ -252,7 +252,7 @@
     "keyframes": 1
   },
   "src/clubhouse/styles/live.css": {
-    "hex": 1,
+    "hex": 0,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
@@ -333,7 +333,7 @@
     "keyframes": 3
   },
   "src/clubhouse/styles/qualifiers.css": {
-    "hex": 10,
+    "hex": 6,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
@@ -378,20 +378,20 @@
     "keyframes": 2
   },
   "src/clubhouse/styles/rounds-track.css": {
-    "hex": 34,
+    "hex": 33,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 59,
+    "raw-shadow": 57,
     "raw-motion": 2,
     "keyframes": 9
   },
   "src/clubhouse/styles/rounds.css": {
-    "hex": 56,
+    "hex": 45,
     "svg-overflow-visible": 1,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 82,
+    "raw-shadow": 81,
     "raw-motion": 0,
     "keyframes": 2
   },
@@ -513,7 +513,7 @@
     "keyframes": 0
   },
   "src/clubhouse/styles/ui.css": {
-    "hex": 75,
+    "hex": 61,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,

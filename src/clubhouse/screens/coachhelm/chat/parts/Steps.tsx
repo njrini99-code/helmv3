@@ -9,7 +9,7 @@ import { useChReducedMotion } from '../../../../lib/reduced-motion';
 import { Icon } from '../../../../ui/Icon';
 
 function Glyph({ state, active }: { state: AskStep['state']; active: boolean }) {
-  // An amber ring with a bar (the board's step states); red means under par and nothing else.
+  // An amber ring with a bar (the board's step states); red means an error and nothing else.
   if (state === 'failed')
     return (
       <span className="ic is-fail" aria-hidden="true">

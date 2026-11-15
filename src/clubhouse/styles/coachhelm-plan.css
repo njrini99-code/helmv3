@@ -4,7 +4,7 @@
 .ch-cp-sheet .g-B { --ch-pl-g: var(--ch-pl-gB); --ch-pl-gt: var(--ch-pl-gB-t); }
 .ch-cp-sheet .g-C { --ch-pl-g: var(--ch-pl-gC); --ch-pl-gt: var(--ch-pl-gC-t); }
 /* The groups' tones are the app's own (owner, 11 Nov 2026): green, ochre, slate, clay, stone and ink, never blue or purple, and never the red that
-   means under par. B is Roster's Sophomore ochre; slate, clay and stone are the plan's group tokens; the sixth is paper's soft ink. Each holds
+   means an error. B is Roster's Sophomore ochre; slate, clay and stone are the plan's group tokens; the sixth is paper's soft ink. Each holds
    4.5:1 under its white letter, and A to C stay apart for a reader who cannot tell red from green.
    A tint is its tone at 12% on white, written out: Share PDF draws the sheet with html2canvas, which cannot read color-mix() and gave up on the whole file. */
 .ch-cp-sheet .g-D { --ch-pl-g: var(--ch-plan-group-f); --ch-pl-gt: #EFE9E7; }

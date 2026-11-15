@@ -4,7 +4,7 @@ The one source for how Clubhouse (the GolfHelm coach and player UI) looks: the l
 
 Bar: Apple's own iOS apps. Smooth, accurate motion. Handcrafted, not basic.
 
-Last change: 15 Nov 2026, the production audit (`clubhouse-handoff/prod-audit-2026-11-15/CLUBHOUSE-PROD-AUDIT-FINAL.md`, specs S1.1 to S2.8), Nick's calls of that day ("Bring the ivory gradient back", "Ivory cards, deeper page", "The Practice-style toggle everywhere") and the visual half of his motion and visual system (`clubhouse-handoff/launch-readiness-2026-11-15/MOTION-AND-VISUAL.md` §4.1 to §4.8: one bar material, the Practice style's three sizes, nine type roles, five radii, three elevations). Where that file differs from the audit (the hero figure's weight, the bubble radius), it wins. It replaces the 31 Oct flat page (#2497, law 2 then read "The page is one flat color").
+Last change: 15 Nov 2026, the production audit (`clubhouse-handoff/prod-audit-2026-11-15/CLUBHOUSE-PROD-AUDIT-FINAL.md`, specs S1.1 to S2.8), Nick's calls of that day ("Bring the ivory gradient back", "Ivory cards, deeper page", "The Practice-style toggle everywhere") and the visual half of his motion and visual system (`clubhouse-handoff/launch-readiness-2026-11-15/MOTION-AND-VISUAL.md` §4.1 to §4.8: one bar material, the Practice style's three sizes, nine type roles, five radii, three elevations, and colour roles: red for errors only, under par in the gain). Where that file differs from the audit (the hero figure's weight, the bubble radius), it wins. It replaces the 31 Oct flat page (#2497, law 2 then read "The page is one flat color").
 
 Companions, each generated or owned elsewhere:
 - Values: `src/clubhouse/styles/tokens.css` (light root, dark root, phone, Increase Contrast and Reduce Transparency blocks).
@@ -42,7 +42,10 @@ Rules:
 - Target 4.9:1 for all text, floor 4.5:1, 3:1 for chart marks, icons that must be seen and control borders (`--ch-border-control`), checked in light and dark against the surface the text actually sits on, at the light's darkest point.
 - Colours come from tokens only. A page stylesheet names `var(--ch-*)`; a literal colour lives in tokens.css with a dark value. `src/clubhouse/styles/__tests__/raw-colour.test.ts` counts the literals left in page stylesheets and lets the count only fall.
 - Gain means better and loss means worse, in every chart and stat: green for gains, amber for losses, ink for a change within noise ("No clear change"). Every gain or loss mark and number carries a sign or arrow (S2.5).
-- Red (`--ch-flag`, `--ch-chart-flag`) means under par, the pin flag, an error or a destructive action (D-42) until Nick settles open call 1 below. Over par on a scoreboard is ink.
+- **Red is for errors only** (MOTION-AND-VISUAL 4.7, Nick 15 Nov 2026; this retires D-42's "red means under par"). `--ch-flag` and the danger family mark an error or a destructive action; the pin flag (`--ch-chart-flag`) and a penalty stake keep their red because they are drawn as they stand on the course. `RED_TOKENS` in `scripts/clubhouse/check.mjs` flags any other red.
+- **Under par is the gain.** `--ch-score-under` reads `--ch-chart-gain` (`#0f5233` text), `--ch-score-under-fill` the gain fill (`#0b3a25`, ivory numeral), `--ch-score-under-bg` the gain tint. In the scoring mix and the live beads birdie is a step lighter (`--ch-score-birdie-fill`) than eagle or better (the full gain fill). On the deep green (a stage, a board, the shot screen's strip) under par is the feature gain: `#8fd3aa` text, the `#6fc096` mint disc under the deep green numeral.
+- **Hole chips** (4.7): under par a solid gain fill with an ivory numeral, par ivory, over par an amber wash with loss text, the current hole a 2px green-500 ring. No thick left borders. Over par on a scoreboard is ink.
+- **Attention** is champagne, `--ch-champagne-100` with `--ch-champagne-ink` (`#efe6d2` / `#725b2c`): a due date and the personal-best badge. Nothing else should use it, so it means "look here"; the older champagne rules and gilt are still to be retired.
 - The selected fill (`--ch-bg-selected`) always comes with a non-colour cue: a check, a bold label or the focus ring. Never a thick left border (S1.8b).
 - No pale mint highlight fills. A summary row is a summary by weight and a top rule, not by tint.
 
@@ -102,7 +105,12 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 | `--ch-chart-track` | `#e3ddcf` | `#2c322d` | Bar and progress tracks, ringed with `--ch-chart-track-ring` (S2.6) | 1.26 on card-bg | 1.16 on card-bg |
 | `--ch-chart-par` | `#c9c2b1` | `#3a403b` | Par segments, ringed like the track | 1.66 on card-bg | 1.43 on card-bg |
 | `--ch-chart-gilt` | `#927840` | `#c9ad74` | Qualifying line and its legend key | 3.94 on card-bg | 7.05 on card-bg |
-| `--ch-flag` | `#b3261e` | `#f28b7d` | Errors and alerts (S2.5); see open call PL-HOME-05 | 6.11 on card-bg | 6.36 on card-bg |
+| `--ch-score-under` | `#0f5233` | `#a9e0c0` | Under par, text and rings: the gain (MOTION-AND-VISUAL 4.7) | 8.62 on card-bg | 10.24 on card-bg |
+| `--ch-score-under-fill` | `#0b3a25` | `#c2f2d3` | A filled under-par mark or hole chip, under `--ch-score-fill-ink` (4.7) | 11.92 on card-bg, 11.92 on score-fill-ink | 12.29 on card-bg, 12.45 on score-fill-ink |
+| `--ch-score-birdie-fill` | `#2a7d53` | `#5fa57a` | The scoring mix and live beads: birdie, a step lighter than eagle or better | 4.72 on card-bg, 2.53 on score-eagle-fill | 5.19 on card-bg, 2.37 on score-eagle-fill |
+| `--ch-champagne-100` | `#efe6d2` | `#2b2619` | Attention (4.7): a due date and the personal-best badge, with `--ch-champagne-ink` | 1.16 on card-bg, 5.21 on champagne-ink | 1.01 on card-bg, 7.96 on champagne-ink |
+| `--ch-chart-flag` | `#b03a2e` | `#ef8576` | The pin flag, drawn as on the course | 5.62 on card-bg | 6.01 on card-bg |
+| `--ch-flag` | `#b3261e` | `#f28b7d` | Errors and destructive actions: red means nothing else (4.7) | 6.11 on card-bg | 6.36 on card-bg |
 
 #### Keys
 
@@ -163,7 +171,7 @@ Sizes are at the default Text Size: every role multiplies by `--ch-type-k`, so t
 
 ### Open calls (Nick's)
 
-1. **Red for scores (PL-HOME-05, S2.5).** The audit's spec says red is for errors and alerts only, never a score; D-42 and this file say red marks under par. Interim, shipped 15 Nov: D-42 holds, and a chart uses one under-par colour (Player Home's dots now match its red labels). If Nick drops red for scores, under par becomes a gain mark with a sign, `--ch-chart-flag` keeps errors and alerts, and `RED_TOKENS` in `scripts/clubhouse/check.mjs` narrows with it.
+1. **Red for scores (PL-HOME-05, S2.5): settled 15 Nov by MOTION-AND-VISUAL 4.7.** Red is for errors only and under par is the gain (rules above). The change is its own commit, so it can be dropped on its own.
 2. **Wave 3 design F (colour, surfaces, switches) and J (Practice look, Documents, Stats categories, Roster trends).** Rows that wait on these keep today's look; nothing in this file pre-empts them.
 
 ## 4. Surfaces and elevation
@@ -311,7 +319,7 @@ A year-coloured surface (leader card) is the year colour at 11% over `--ch-card-
 
 **Chart marks**: superseded on 15 Nov by spec S2.5 and S2.6; the values are the "Data marks" table in §3. Steady sparklines use the neutral ink, turning green or amber only when the change is past its likely error.
 
-**Feature card text** on the green: primary `#F4F1E8`, secondary `#D3D9CB`, gain `#8FD3AA`, loss `#EDB867`, under par `#F49A8D`.
+**Feature card text** on the green: primary `#F4F1E8`, secondary `#D3D9CB`, gain and under par `#8FD3AA` (4.7), loss `#EDB867`.
 
 **Home**: player and coach Home both keep the green bar and the flat deep green hero under it (no glow behind text), greeting at 34pt, hero bottom radius 24, and an ivory lip into the page. On Home the bar takes `--ch-frame` too (the hero-mode bar rule in shell.css), so bar and hero read as one green. Every other section keeps the same green bar with its switcher and bell.
 

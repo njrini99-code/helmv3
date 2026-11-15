@@ -352,7 +352,8 @@
 }
 /* Scorecard marks (owner, 2026-10-06): one physical token in four finishes, so a card of them reads as a set. Each has
    a lit face, a defined 1px edge, a top highlight and a contact shadow; only colour and shape change. The convention
-   stays: a circle under par, a square over it, red only for under par (D-42), solid for eagle and double or worse. */
+   stays: a circle under par, a square over it, the gain green under par (MOTION-AND-VISUAL 4.7; red is for errors only),
+   solid for eagle and double or worse. */
 .ch-score--birdie,
 .ch-score--eagle,
 .ch-score--bogey,
@@ -360,15 +361,15 @@
   font-weight: 600;
 }
 .ch-score--birdie {
-  color: #962e23;
+  color: var(--ch-score-under);
   border-radius: 50%;
-  background: linear-gradient(180deg, #fdeeeb 0%, #f3d3cd 100%);
+  background: var(--ch-score-under-bg);
   box-shadow: var(--ch-score-birdie-shadow);
 }
 .ch-score--eagle {
-  color: #fff7f4;
+  color: var(--ch-score-fill-ink);
   border-radius: 50%;
-  background: linear-gradient(180deg, #c4493b 0%, #a1342a 100%);
+  background: var(--ch-score-under-fill);
   box-shadow: var(--ch-score-eagle-shadow);
 }
 .ch-score--bogey {
@@ -387,14 +388,12 @@
 .ch-score--sm.ch-score--double {
   border-radius: var(--ch-radius-xs);
 }
-/* On the scoreboard the marks take board finishes: red discs under par (an eagle ringed twice), an ivory outline over
-   par, a solid ivory tile for double or worse. */
+/* On the scoreboard the marks take board finishes: the feature gain's mint discs under par (an eagle ringed twice), an
+   ivory outline over par, a solid ivory tile for double or worse. The deep green numeral holds 7.0:1 on the mint. */
 .ch-scoreboard .ch-score--birdie,
 .ch-scoreboard .ch-score--eagle {
-  color: #fff8f5;
-  /* The top stop is the eagle's #c4493b, so the ivory numeral holds 4.5:1 across the whole disc (4.58 at the top; the
-     old #d0574a was 3.89). Visual pass 2026-10-28. */
-  background: linear-gradient(180deg, #c4493b 0%, #a8372b 100%);
+  color: var(--ch-green-900);
+  background: var(--ch-feature-gain-fill);
   box-shadow: var(--ch-board-birdie-shadow);
 }
 .ch-scoreboard .ch-score--eagle {
@@ -1205,10 +1204,6 @@ html[data-fw-theme='dark'] .ch-badge--info {
   color: var(--ch-info-600);
   box-shadow: inset 0 0 0 1px rgb(134 182 212 / 0.18);
 }
-html[data-fw-theme='dark'] .ch-score--birdie {
-  color: var(--ch-score-under);
-  background: linear-gradient(180deg, #462320 0%, #3a1c1a 100%);
-}
 html[data-fw-theme='dark'] .ch-score--bogey {
   background: linear-gradient(180deg, #2e352f 0%, #252b26 100%);
 }
@@ -1217,10 +1212,6 @@ html[data-fw-theme='dark'] .ch-score--double {
   background: linear-gradient(180deg, var(--ch-ink-900) 0%, var(--ch-ink-700) 100%);
 }
 /* The board's own finishes come back over the night ones above. */
-html[data-fw-theme='dark'] .ch-scoreboard .ch-score--birdie {
-  color: #fff8f5;
-  background: linear-gradient(180deg, #c4493b 0%, #a8372b 100%);
-}
 html[data-fw-theme='dark'] .ch-scoreboard .ch-score--bogey {
   background: transparent;
 }

@@ -145,11 +145,11 @@
   color: var(--ch-on-fill-100);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
 }
-/* The disc starts at the eagle's red (ui.css), so its numeral holds 4.5:1 at the top stop too (4.58; #d0574a was 3.89). */
+/* Under par on the green: the board's mint disc (ui.css) under the deep green numeral, 7.0:1 (MOTION-AND-VISUAL 4.7). */
 .ch-rd-strip span.is-under {
   border-radius: 50%;
-  background: linear-gradient(180deg, #c4493b 0%, #a1342a 100%);
-  color: #fff8f5;
+  background: var(--ch-feature-gain-fill);
+  color: var(--ch-green-900);
   box-shadow: var(--ch-board-birdie-shadow);
 }
 .ch-rd-strip span.is-over {
@@ -932,7 +932,7 @@ a.ch-rd-sc:focus-visible {
   color: var(--ch-text-tertiary);
 }
 .ch-rd-sc__s.is-under {
-  background: #fff;
+  background: var(--ch-score-under-bg);
   box-shadow: inset 0 0 0 2px var(--ch-score-under);
 }
 .ch-rd-sc__s.is-under b {
@@ -1145,7 +1145,7 @@ a.ch-rd-sc:focus-visible {
   color: #e7b866;
 }
 .ch-rv-hero__s em.is-under {
-  color: #ff9b8f;
+  color: var(--ch-stage-gain);
 }
 .ch-rv-hero__s span {
   font: var(--ch-type-caption);
@@ -2705,10 +2705,6 @@ html[data-fw-theme='dark'] .ch-rd-meter__t i {
 html[data-fw-theme='dark'] .ch-rd-sc__s {
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
 }
-html[data-fw-theme='dark'] .ch-rd-sc__s.is-under {
-  background: var(--ch-score-under-bg);
-  box-shadow: inset 0 0 0 2px var(--ch-score-under);
-}
 html[data-fw-theme='dark'] .ch-rv-back,
 html[data-fw-theme='dark'] .ch-rv-step button {
   background: var(--ch-ivory-50);
@@ -2738,10 +2734,6 @@ html[data-fw-theme='dark'] .ch-rv-shots li:not(:last-child)::before {
   background: rgb(107 187 140 / 0.22);
 }
 
-/* A filled under-par disc carries an ivory numeral: the deeper filled red holds it at 4.5:1. */
-html[data-fw-theme='dark'] .ch-rd-strip span.is-under {
-  background: var(--ch-score-under-fill);
-}
 html[data-fw-theme='dark'] .ch-rd-sc__date {
   color: var(--ch-green-700);
 }
@@ -4306,8 +4298,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 
 /* ---- The chart: every round against par ---- */
 .ch-rd .ch-rd-stage {
-  --ch-rd-under-a: #ff9d8e;
-  --ch-rd-under-b: #c4493b;
+  --ch-rd-under-a: var(--ch-stage-line);
+  --ch-rd-under-b: var(--ch-feature-gain-fill);
   --ch-rd-over-a: rgb(244 238 221 / 0.36);
   --ch-rd-over-b: rgb(244 238 221 / 0.9);
   --ch-rd-ink: var(--ch-stage-ink);
@@ -4318,7 +4310,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   --ch-rd-avg-ink: var(--ch-stage-gold);
   --ch-rd-chip: rgb(231 184 102 / 0.16);
   --ch-rd-chip-ring: rgb(231 184 102 / 0.5);
-  --ch-rd-under-ink: var(--ch-stage-red);
+  --ch-rd-under-ink: var(--ch-stage-gain);
   position: relative;
   margin-top: 32px;
   padding: 16px 24px 8px;
@@ -4516,8 +4508,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 
 /* On the phone the chart stays on the page, as the Mobile pass has it (one green card there): the same picture in the page's own inks. */
 .ch-rd.is-phone .ch-rd-stage {
-  --ch-rd-under-a: #d9665a;
-  --ch-rd-under-b: #a8372b;
+  --ch-rd-under-a: var(--ch-score-birdie-fill);
+  --ch-rd-under-b: var(--ch-score-under-fill);
+  --ch-rd-under-ink: var(--ch-score-under);
   --ch-rd-over-a: var(--ch-ink-400);
   --ch-rd-over-b: var(--ch-ink-500);
   --ch-rd-ink: var(--ch-text-primary);
@@ -4634,7 +4627,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   background: linear-gradient(180deg, var(--ch-ink-400), var(--ch-ink-600));
 }
 .ch-rd-grp__spark i.is-under {
-  background: linear-gradient(180deg, #d9665a, #a8372b);
+  background: linear-gradient(180deg, var(--ch-score-birdie-fill), var(--ch-score-under-fill));
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rd[data-canopy] .ch-rd-sc {
@@ -4762,8 +4755,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 
 /* -- The round card (P011; docs/clubhouse/phone/round-card.md) --------------------------------------------------------
    A scorecard on ledger paper: the thing a player keeps, shares as a picture and prints. Outline marks (a circle is a
-   birdie, a double circle an eagle or better, a square a bogey, a double square a double bogey or worse): red for under
-   par only, ink for squares. Gains are green and losses amber (D-42). Every figure is the review's own. */
+   birdie, a double circle an eagle or better, a square a bogey, a double square a double bogey or worse): the gain green
+   for under par, ink for squares. Gains are green and losses amber (MOTION-AND-VISUAL 4.7). Every figure is the review's own. */
 .ch-rcard-wrap {
   display: flex;
   flex-direction: column;

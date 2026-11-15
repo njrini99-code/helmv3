@@ -75,12 +75,14 @@ describe('the phone strip draws both (rounds-track.css)', () => {
     expect(base.body).not.toMatch(/border-radius: 0/);
     const under = of(/^\.ch-rt-strip \.ch-rt-strip__h \.ch-score--birdie,\s*\.ch-rt-strip \.ch-rt-strip__h \.ch-score--eagle$/)[0]!;
     expect(under.body).toMatch(/border-radius: 50%;/);
-    expect(under.body).toMatch(/var\(--ch-score-under-on-green\)/);
+    // Under par is a solid gain chip (MOTION-AND-VISUAL 4.7): the feature gain's mint fill under the deep green numeral.
+    expect(under.body).toMatch(/background: var\(--ch-feature-gain-fill\);/);
+    expect(under.body).toMatch(/color: var\(--ch-green-900\);/);
     const over = of(/^\.ch-rt-strip \.ch-rt-strip__h \.ch-score--bogey$/)[0]!;
     expect(over.body).toMatch(/border-radius: var\(--ch-radius-xs\);/);
     expect(over.body).toMatch(/box-shadow: var\(--ch-board-bogey-shadow\);/);
-    // Red only under par (D-42): no over-par or par mark takes the under-par ink.
-    for (const r of of(/ch-score--(bogey|double)/)) expect(r.body, r.sel).not.toMatch(/score-under/);
+    // Only under par takes the gain: no over-par or par mark reads the under-par or gain inks.
+    for (const r of of(/ch-score--(bogey|double)/)) expect(r.body, r.sel).not.toMatch(/score-under|feature-gain/);
   });
 
   it('the chip is drawn 40px tall inside its 44px hit area, so the number and the mark both fit', () => {

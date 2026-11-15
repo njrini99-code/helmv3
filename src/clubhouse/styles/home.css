@@ -1618,9 +1618,9 @@
     font-style: normal;
     color: var(--ch-ink-600);
   }
-  /* Red only under par (D-42). */
+  /* Under par is the gain (MOTION-AND-VISUAL 4.7). */
   .ch-hm-score.is-under em {
-    color: var(--ch-chart-flag);
+    color: var(--ch-score-under);
   }
   .ch-hm-sheet {
     display: flex;
@@ -1836,7 +1836,7 @@
   fill: var(--ch-text-secondary);
 }
 .ch-ph-chart__val.is-under {
-  fill: var(--ch-chart-flag);
+  fill: var(--ch-score-under);
 }
 .ch-ph-chart__par {
   stroke: var(--ch-text-primary);
@@ -1866,10 +1866,10 @@
   stroke: var(--ch-green-600);
   stroke-width: 1.8;
 }
-/* Under par is one colour in this chart, the label's (PL-HOME-05 interim, DESIGN_LANGUAGE open call 1). */
+/* An under-par round is a filled dot in the gain, the label's colour; the rest are hollow (PL-HOME-05, MOTION-AND-VISUAL 4.7). */
 .ch-ph-chart__dot.is-under {
-  fill: var(--ch-chart-flag);
-  stroke: var(--ch-chart-flag);
+  fill: var(--ch-score-under);
+  stroke: var(--ch-score-under);
 }
 .ch-ph-pinflag line {
   stroke: var(--ch-text-primary);
@@ -2853,7 +2853,7 @@
     box-shadow:inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule-soft);
   }
   .ch-hm-score.is-under em {
-    color:#9E3B2E;
+    color: var(--ch-score-under);
   }
   .ch-hm .ch-well-soft {
     background:rgb(110 98 62/.035);
@@ -3443,7 +3443,7 @@
     fill: var(--ch-workspace);
   }
   .ch-hm--player .ch-ph-chart__dot.is-under {
-    fill: var(--ch-chart-flag);
+    fill: var(--ch-score-under);
   }
   /* The four figures as the Ledger's figure row, two by two: hairlines above and below, soft rules between. */
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs {
@@ -3582,7 +3582,7 @@ html[data-fw-theme='dark'] .ch-ph-chart__dot {
   fill: var(--ch-workspace);
 }
 html[data-fw-theme='dark'] .ch-ph-chart__dot.is-under {
-  fill: var(--ch-chart-flag);
+  fill: var(--ch-score-under);
 }
 html[data-fw-theme='dark'] .ch-ph-chart__hatch {
   stroke: rgb(107 187 140 / 0.08);
@@ -5321,7 +5321,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   color: var(--ch-text-secondary);
 }
 .ch-dh-score.is-under em {
-  color: var(--ch-chart-flag);
+  color: var(--ch-score-under);
 }
 /* An empty week sits in the middle of the room the card keeps beside its partner. */
 .ch-dh-card > .ch-es {

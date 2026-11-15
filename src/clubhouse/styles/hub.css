@@ -2501,7 +2501,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
    Owner: "no contrast and not enough detail". The text already read (8.7:1); the page had no value structure: surfaces
    differed 1.10:1 and rules 1.24:1. So the page now has one dark surface per tab (Home's band, the Announcements lead,
    the Travel pass, the coach's task board), section rules at 1.8:1 (they were 1.2:1), and a one-line strip under the title
-   that says what the team is waiting on. Overdue is amber, never red (red is under par). Tokens only. */
+   that says what the team is waiting on. Overdue is amber, never red (red is for errors). Tokens only. */
 
 /* The strip: what the team owes, as figures that open the tab they count. W20 (12 Nov): it was five figures in a run of
    13px text, separated by bars and underlined, a sentence of links; now at most three, each a figure over its words,
@@ -3577,7 +3577,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
-/* W22: a late task, or no rounds in 30 days, takes the warning ink (never red; red is under par). */
+/* W22: a late task, or no rounds in 30 days, takes the warning ink (never red; red is for errors). */
 .ch-hw-led__n b.is-warn {
   color: var(--ch-warning-600);
 }

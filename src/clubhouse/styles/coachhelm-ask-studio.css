@@ -705,7 +705,7 @@
   border-top: var(--ch-hairline-w) dashed var(--ch-ink-500);
 }
 
-/* A round hole by hole, to par: two ruled lines of figures under their hole numbers. Red only under par (D-42). */
+/* A round hole by hole, to par: two ruled lines of figures under their hole numbers. The gain only under par (MOTION-AND-VISUAL 4.7). */
 .ch-aks-strip {
   display: grid;
   min-width: 0;

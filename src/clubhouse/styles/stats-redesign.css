@@ -14,7 +14,7 @@
   --ch-shs-s-ink-3: var(--ch-ink-500);
   --ch-shs-s-gain: var(--ch-gain);
   --ch-shs-s-loss: var(--ch-loss);
-  --ch-shs-s-under: var(--ch-flag);
+  --ch-shs-s-under: var(--ch-score-under);
   --ch-shs-s-accent: var(--ch-stats-accent);
   --ch-border-focus: var(--ch-stats-accent);
   --ch-shs-s-sep: var(--ch-separator);
@@ -22,7 +22,7 @@
   --ch-shs-s-press: var(--ch-press-wash);
   --ch-shs-s-gain-tint: var(--ch-chip-gain-bg);
   --ch-shs-s-loss-tint: var(--ch-chip-loss-bg);
-  --ch-shs-s-under-tint: var(--ch-chip-flag-bg);
+  --ch-shs-s-under-tint: var(--ch-chip-gain-bg);
   --ch-shs-s-flat-tint: var(--ch-chip-flat-bg);
   --ch-shs-s-gain-fill: var(--ch-chart-gain-fill);
   --ch-shs-s-loss-fill: var(--ch-chart-loss-fill);
@@ -254,7 +254,7 @@
   --ch-shs-s-ink-3: var(--ch-feature-ink-3);
   --ch-shs-s-gain: var(--ch-feature-gain);
   --ch-shs-s-loss: var(--ch-feature-loss);
-  --ch-shs-s-under: var(--ch-feature-under);
+  --ch-shs-s-under: var(--ch-feature-gain);
   --ch-shs-s-flat: var(--ch-feature-flat);
   --ch-shs-s-gain-fill: var(--ch-feature-gain-fill);
   --ch-shs-s-loss-fill: var(--ch-feature-loss-fill);

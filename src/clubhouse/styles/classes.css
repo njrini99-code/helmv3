@@ -67,7 +67,7 @@
   flex-wrap: wrap;
 }
 
-/* Amber, never red: an overlap is a loss to plan around, not under par, the flag or a destructive action (D-42). */
+/* Amber, never red: an overlap is a loss to plan around, not an error (MOTION-AND-VISUAL 4.7). */
 .ch-cl-flag {
   display: inline-flex;
   align-items: center;

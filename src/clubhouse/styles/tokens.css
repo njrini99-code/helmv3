@@ -81,6 +81,8 @@
   --ch-stage-bg: linear-gradient(160deg, #0f4430 0%, #0a3322 55%, #082b1c 100%);
   --ch-stage-line: #9fe0b6;
   --ch-stage-gold: #e7b866;
+  /* Under par on the stage: the feature gain (4.7). Red on the stage is an error, a penalty stake or the pin. */
+  --ch-stage-gain: #8fd3aa;
   --ch-stage-red: #ff8a7a;
   --ch-stage-ink: #f4eedd;
   --ch-stage-ink-soft: rgb(244 238 221 / 0.62);
@@ -122,30 +124,35 @@
   --ch-danger-elevation: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 10px -4px rgb(142 44 34 / 0.45);
   --ch-info-600: #2d5c77;
   --ch-info-100: #e6eef3;
-  /* Scoring. Red means under par, and nothing else. */
-  --ch-score-under: #b03a2e;
-  --ch-score-under-bg: #fbe9e6;
+  /* Scoring (MOTION-AND-VISUAL 4.7, Nick 15 Nov 2026): under par is the gain, green; red is for errors only. Every under-par
+     token reads the gain family, so a theme or contrast change to the gain moves the scores with it. */
+  --ch-score-under: var(--ch-chart-gain);
+  --ch-score-under-bg: var(--ch-chart-gain-tint);
   --ch-score-over-bg: #efece4;
   --ch-score-double: #1c1b18;
-  /* P-7 hole map tints (D-42: the red family under par, amber over, plain level). The 1 px ring carries the 3:1, so the
-     tint can stay quiet; tile text is ink-600 and ink-900 on every tint (P-7 7.5). */
-  --ch-hm-under-2: #edd4cd;
+  /* P-7 hole map tints (4.7: the gain family under par, amber over, plain level). The 1 px ring carries the 3:1 (green-400,
+     3.81:1 on the card), so the tint can stay quiet; tile text is ink-600 and ink-900 on every tint (P-7 7.5). */
+  --ch-hm-under-2: #cde3d4;
   --ch-hm-under-1: var(--ch-score-under-bg);
   --ch-hm-level: var(--ch-bg-subtle);
   --ch-hm-over-1: #ebe3d4;
   --ch-hm-over-2: #dbccb3;
-  --ch-hm-ring-under: #c46c62;
+  --ch-hm-ring-under: #4f8a64;
   --ch-hm-ring-level: var(--ch-ink-400);
   --ch-hm-ring-over: #a7844a;
-  /* A filled under-par mark under a light numeral; the same red in light. */
-  --ch-score-under-fill: #b03a2e;
-  /* Eagle or better as a fill (the scoring mix): a deeper red than the birdie's, so the two under-par results read apart. */
-  --ch-score-eagle-fill: #7f2a21;
-  /* A bare under-par numeral on the feature green (the shot screen's hole strip): lifted so it holds 4.5:1 on
-     green-900 and on a played chip's faint ivory wash; and the same numeral on the ivory current-hole chip. Both are
+  /* A filled under-par mark (the eagle disc, an under-par hole chip): the solid gain fill under --ch-score-fill-ink, ivory
+     in light (11.9:1) and the deep green at night, where the gain fill is the light mint (12.5:1). */
+  --ch-score-under-fill: var(--ch-chart-gain-fill);
+  --ch-score-fill-ink: #faf7ef;
+  /* The scoring mix and the live beads go out from par: birdie is the lighter gain step, eagle or better the full gain
+     fill, 2.53:1 apart in light and 2.37:1 at night, both under --ch-score-fill-ink. */
+  --ch-score-birdie-fill: #2a7d53;
+  --ch-score-eagle-fill: var(--ch-chart-gain-fill);
+  /* A bare under-par numeral on the feature green (the shot screen's hole strip): the feature gain, 8.8:1 on green-900
+     and 6.7:1 on a played chip's faint ivory wash; and the same numeral on the ivory current-hole chip (8.2:1). Both are
      surfaces that do not change at night, so neither is redefined in the dark block. */
-  --ch-score-under-on-green: #ff8b7d;
-  --ch-score-under-on-ivory: #b03a2e;
+  --ch-score-under-on-green: #8fd3aa;
+  --ch-score-under-on-ivory: #0f5233;
   /* Charts (yardage book) */
   /* A chart sits on the card it lives in (S2.1): its paper is the card. */
   --ch-chart-paper: var(--ch-card-bg);
@@ -269,8 +276,8 @@
   /* The selected sidebar row: a green key with a lit top and a green-cast lift. */
   --ch-nav-selected-shadow: inset 0 1px 0 rgb(210 244 221 / 0.14), 0 1px 2px rgb(11 58 37 / 0.3), 0 6px 14px -8px rgb(11 58 37 / 0.55);
   --ch-board-rule: rgb(210 244 221 / 0.14);
-  --ch-board-birdie-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(60 10 6 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4);
-  --ch-board-eagle-shadow: 0 0 0 2px #0c3522, 0 0 0 3.5px #d0574a, 0 1px 3px rgb(0 0 0 / 0.4);
+  --ch-board-birdie-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(4 30 18 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4);
+  --ch-board-eagle-shadow: 0 0 0 2px #0c3522, 0 0 0 3.5px #6fc096, 0 1px 3px rgb(0 0 0 / 0.4);
   --ch-board-bogey-shadow: inset 0 0 0 1.5px rgb(250 248 240 / 0.72);
   --ch-board-double-shadow: inset 0 1px 0 #fff, 0 1px 3px rgb(0 0 0 / 0.45);
   /* Component materials (raised keys, buttons, score marks), kept here so pages use tokens, not raw shadows. */
@@ -288,9 +295,9 @@
   /* Secondary button hover: a touch more ring and lift. */
   --ch-btn-secondary-hover-shadow: 0 0 0 1px var(--ch-border-strong), var(--ch-elevation-cast);
   /* Score mark (birdie): edge, lit top, contact shadow. */
-  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(150 46 35 / 0.38), inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(120 36 28 / 0.2);
+  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(15 82 51 / 0.38), inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(11 58 37 / 0.2);
   /* Score mark (eagle): edge, lit top, contact shadow. */
-  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(110 30 22 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(110 30 22 / 0.35);
+  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(6 34 21 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(6 34 21 / 0.35);
   /* Score mark (bogey): edge, lit top, contact shadow. */
   --ch-score-bogey-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.24), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.16);
   /* Score mark (double): edge, lit top, contact shadow. */
@@ -725,10 +732,8 @@
   --ch-feature-ink-2: #d3d9cb;
   --ch-feature-gain: #8fd3aa;
   --ch-feature-loss: #edb867;
-  --ch-feature-flag: #f49a8d;
   /* The phone Stats redesign (clubhouse_stats_redesign_v1; stats-home 04 section 2 and 06). Additive: only .ch-shs reads them. */
   --ch-feature-ink-3: #b4c0b3;
-  --ch-feature-under: #f49a8d;
   --ch-feature-flat: #bcc5b9;
   --ch-feature-gain-fill: #6fc096;
   --ch-feature-loss-fill: #e5a445;
@@ -743,7 +748,6 @@
   --ch-press-wash: rgb(28 27 24 / 0.05);
   --ch-chip-gain-bg: #e8eee8;
   --ch-chip-loss-bg: #f7f0e6;
-  --ch-chip-flag-bg: #f7e8e5;
   --ch-chip-flat-bg: #f2f1ee;
   --ch-chip-danger-bg: #f7e8e5;
   --ch-chart-bogey: #b3884a;
@@ -1079,7 +1083,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-press-wash: rgb(241 236 223 / 0.06);
   --ch-chip-gain-bg: #29392f;
   --ch-chip-loss-bg: #3a3524;
-  --ch-chip-flag-bg: #3c2f2a;
   --ch-chip-flat-bg: #292d28;
   --ch-chip-danger-bg: #3c2f2a;
   --ch-chart-bogey: #c9a46a;
@@ -1150,10 +1153,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-green-fill-700: #1d613f;
   /* Darker than the page, or the frame reads as raised above the workspace; a hairline marks the join. */
   --ch-frame: #08150e;
-  /* A filled under-par mark (birdie, eagle) under an ivory numeral: 4.6:1. Text and strokes stay --ch-score-under. */
-  --ch-score-under-fill: #c2473a;
-  /* At night birdie is the light salmon, so eagle steps darker than it: the mix keeps its order by lightness as well as hue. */
-  --ch-score-eagle-fill: #b0473a;
+  /* At night the gain fill is the light mint, so a filled under-par mark carries the deep green numeral (12.5:1), and the
+     mix's birdie step is green-400 (5.2:1 under it, 5.2:1 on the card). */
+  --ch-score-fill-ink: var(--ch-green-900);
+  --ch-score-birdie-fill: var(--ch-green-400);
   /* S1.1: the canvas base at night, under the night light. */
   --ch-workspace: #131814;
   --ch-champagne-100: #2b2619;
@@ -1169,14 +1172,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-danger-ring: rgb(239 133 118 / 0.45);
   --ch-info-600: #86b6d4;
   --ch-info-100: #172632;
-  --ch-score-under: #ef8576;
-  --ch-score-under-bg: #3a1c1a;
   --ch-score-over-bg: #272c27;
   --ch-score-double: #ede7d8;
-  --ch-hm-under-2: #5b3e37;
+  --ch-hm-under-2: #284636;
   --ch-hm-over-1: #3b3624;
   --ch-hm-over-2: #57492b;
-  --ch-hm-ring-under: #9e5f54;
+  --ch-hm-ring-under: #5fa57a;
   --ch-hm-ring-level: #827d71;
   --ch-hm-ring-over: #97753c;
   --ch-chart-paper: var(--ch-card-bg);
@@ -1232,8 +1233,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-seg-pill-lift-shadow: var(--ch-elevation-control), 0 2px 6px -2px rgb(0 0 0 / 0.5);
   --ch-btn-secondary-shadow: 0 0 0 1px var(--ch-border-subtle);
   --ch-btn-secondary-hover-shadow: 0 0 0 1px var(--ch-border-strong);
-  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(239 133 118 / 0.45), 0 1px 2px rgb(0 0 0 / 0.4);
-  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(239 133 118 / 0.7), 0 1px 2px rgb(0 0 0 / 0.45);
+  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(169 224 192 / 0.45), 0 1px 2px rgb(0 0 0 / 0.4);
+  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(169 224 192 / 0.7), 0 1px 2px rgb(0 0 0 / 0.45);
   --ch-score-bogey-shadow: inset 0 0 0 1px rgb(237 231 216 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4);
   --ch-score-double-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5);
   --ch-border-focus: #6bbb8c;
@@ -1616,14 +1617,6 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-chart-loss-on-tint: #f3c77e;
     --ch-chart-flag: #f6a294;
   }
-}
-
-/* The refresh's under-par ink (DESIGN_LANGUAGE §3). The chart fills it once scoped are the base values now (S2.5). */
-.ch-root[data-ch-refresh='on'], [data-ui='clubhouse'] [data-ch-refresh='on'] {
-  --ch-score-under: #9e3b2e;
-}
-html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='dark'] [data-ui='clubhouse'] [data-ch-refresh='on'] {
-  --ch-score-under: #f28b7d;
 }
 
 /* W1 (owner's preview walk, 11 Nov 2026: "not a lot of contrast", "the text density makes it hard to read"; owner, 12 Nov:

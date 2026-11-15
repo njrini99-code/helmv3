@@ -2571,7 +2571,7 @@
     padding: 8px 16px;
   }
   .ch-spm-round .ch-topar.is-under {
-    color: var(--ch-chart-flag);
+    color: var(--ch-score-under);
   }
   /* A round opens its review (B14): the row is the link, and answers a press with the Ledger's row tint (CH-1606). */
   .ch-spm-round.is-link {
@@ -7115,8 +7115,9 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
     inset 0 -1px 0 var(--ch-text-tertiary);
 }
 /* Stats visuals, the scoring mix (ScoreMixBar; spec 4.4, decision Q11). One 100% bar of every scored hole by result, par in the
-   middle: going out from it, birdie then eagle or better to the left, bogey then double or worse to the right. Red is under par;
-   par, bogey and double are the scorecard's ivory, gray and ink, every fill a token. A segment prints its share only when it is
+   middle: going out from it, birdie then eagle or better to the left, bogey then double or worse to the right. Under par is the
+   gain, a lighter step for birdie and the full gain fill for eagle (MOTION-AND-VISUAL 4.7); par, bogey and double are the
+   scorecard's ivory, gray and ink, every fill a token. A segment prints its share only when it is
    at least 30px wide (a container query on the segment itself); the key carries every share. Prefix .ch-sv-mix-. */
 .ch-sv-mix {
   container: ch-sv-mix / inline-size;
@@ -7128,11 +7129,11 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-sv-mix .is-eagle {
   --ch-sv-mix-fill: var(--ch-score-eagle-fill);
-  --ch-sv-mix-ink: var(--ch-text-on-accent);
+  --ch-sv-mix-ink: var(--ch-score-fill-ink);
 }
 .ch-sv-mix .is-birdie {
-  --ch-sv-mix-fill: var(--ch-chart-flag);
-  --ch-sv-mix-ink: var(--ch-text-on-accent);
+  --ch-sv-mix-fill: var(--ch-score-birdie-fill);
+  --ch-sv-mix-ink: var(--ch-score-fill-ink);
 }
 .ch-sv-mix .is-par {
   --ch-sv-mix-fill: var(--ch-ivory-300);

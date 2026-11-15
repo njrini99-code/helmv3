@@ -653,7 +653,7 @@ button.ch-tour-desk-sc:focus-visible {
   background: color-mix(in oklab, var(--ch-warning-600) 26%, var(--ch-warning-100));
   color: var(--ch-chart-loss-on-tint);
 }
-/* Under par is red in golf (D-42): the score-under family, never the chart's gain green. */
+/* Under par is the gain (MOTION-AND-VISUAL 4.7): the score-under family, which reads the gain family. */
 .ch-tour-desk-heat.is-under {
   background: var(--ch-score-under-bg);
   color: var(--ch-score-under);

@@ -32,7 +32,11 @@ import { checkScreenshotLog } from './shots.mjs';
 import { checkLinks } from './links.mjs';
 import { checkDesignLanguage } from './design-language.mjs';
 
-const RED_TOKENS = /var\(--ch-(score-under|chart-flag|danger-600)\)/;
+/**
+ * Red is for errors only (MOTION-AND-VISUAL 4.7, Nick 15 Nov 2026): a red token paints an error, a destructive action,
+ * the pin flag or a penalty stake. Under par is the gain and reads --ch-score-under, which is green, so it is not here.
+ */
+const RED_TOKENS = /var\(--ch-(chart-flag|flag|stage-red|danger-600)\)/;
 /**
  * CONS-20: a gain or loss tone (`.is-gain`, `.is-loss`) paints only with the chart's gain and loss tokens: the ink
  * (--ch-chart-gain, --ch-chart-loss) and its family (-fill for bars and marks, -tint under a chip, -on-tint), so one
@@ -60,7 +64,7 @@ export function offToneDeclarations(selector, body) {
   }
   return out;
 }
-const RED_ALLOWED_CONTEXT = /under|birdie|eagle|flag|danger|error|invalid/i;
+const RED_ALLOWED_CONTEXT = /flag|pin|danger|error|invalid|penalty|destructive|fail/i;
 /** v2 motion (D-64): press, quick, base, release, reveal, in seconds. */
 const ALLOWED_DURATIONS_S = new Set(['0', '0.11', '.11', '0.18', '.18', '0.26', '.26', '0.28', '.28', '0.52', '.52']);
 const STATUSES = /^(todo|doing|done|blocked \(.+\))$/;
@@ -188,7 +192,7 @@ export function checkSource(file, raw) {
         }
       }
       if (RED_TOKENS.test(body) && !RED_ALLOWED_CONTEXT.test(selector)) {
-        add(m.index, `red token outside an under-par/flag/danger context in "${selector}"`);
+        add(m.index, `red token outside an error, destructive, flag or penalty context in "${selector}"`);
       }
       for (const d of offToneDeclarations(selector, body)) {
         add(m.index, `a gain or loss tone paints outside --ch-chart-gain/--ch-chart-loss (CONS-20): "${d}" in "${selector}"`);
@@ -208,7 +212,7 @@ export function checkSource(file, raw) {
     if (RED_TOKENS.test(src)) {
       for (const m of src.matchAll(new RegExp(RED_TOKENS.source, 'g'))) {
         const line = src.split('\n')[lineOf(src, m.index) - 1] ?? '';
-        if (!RED_ALLOWED_CONTEXT.test(line)) add(m.index, 'red token used outside an under-par/flag/danger context');
+        if (!RED_ALLOWED_CONTEXT.test(line)) add(m.index, 'red token used outside an error, destructive, flag or penalty context');
       }
     }
   }

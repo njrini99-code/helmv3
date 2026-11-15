@@ -234,8 +234,8 @@ phone (the Mobile clubhouse pass, 2026-10-08) the opener is the view's one green
 card and every section after it is flush on the parchment under the double
 rule, its rows between soft seams.
 Numbers are never plain ink where they say something: green for ahead or
-working, amber for behind or worth watching (red stays for under par and the
-flag, D-42), tertiary ink only for a number that is neutral. Hierarchy is one
+working, amber for behind or worth watching (red is for errors only and under
+par is the gain, MOTION-AND-VISUAL 4.7), tertiary ink only for a number that is neutral. Hierarchy is one
 big figure per card, then its words, then the proof.
 
 **How you play (once the Game profile).** The Game profile folded into

@@ -56,7 +56,7 @@ export function readPalette(doc: Document = document): CardPalette {
     frame: t('--ch-champagne-500', '#b09560'),
     rule: t('--ch-ledger-rule', 'rgb(110 98 62 / 0.16)'),
     ruleSoft: t('--ch-ledger-rule-soft', 'rgb(110 98 62 / 0.09)'),
-    under: t('--ch-score-under', '#b03a2e'),
+    under: t('--ch-score-under', '#0f5233'),
     gain: t('--ch-chart-gain', '#155a39'),
     loss: t('--ch-chart-loss', '#865608'),
     band: t('--ch-ledger-row-hover', 'rgb(110 98 62 / 0.05)'),

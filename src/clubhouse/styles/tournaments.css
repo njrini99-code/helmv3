@@ -187,7 +187,7 @@
   box-shadow: none;
 }
 
-/* Red only under par (D-42), and the figure always carries its sign. */
+/* The gain only under par (MOTION-AND-VISUAL 4.7), and the figure always carries its sign. */
 .ch-tour-under {
   color: var(--ch-score-under);
 }

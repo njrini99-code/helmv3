@@ -525,7 +525,7 @@
   font: var(--ch-type-caption);
 }
 /* Injured or away (P003, availability): plain ink, one line, the whole of it in the title. No colour of its own: red is
-   under par, amber a slide, green a gain (D-42); the word carries the meaning (CH-3809). */
+   an error, amber a slide, green a gain (MOTION-AND-VISUAL 4.7); the word carries the meaning (CH-3809). */
 .ch-rs-face__note.is-availability {
   max-width: 100%;
   overflow: hidden;
@@ -3294,7 +3294,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     color: var(--ch-crh-ink2);
   }
   [data-ch-crh='on'] .ch-rsx-well span.is-under {
-    color: var(--ch-flag);
+    color: var(--ch-score-under);
   }
   [data-ch-crh='on'] .ch-rsx-facts {
     display: grid;
@@ -3751,7 +3751,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 :is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='fr'] {
   --ch-rs-y: var(--ch-yr-fr);
 }
-/* G4 (preview grade): red reads as a warning (D-42 keeps red for under par, the pin flag and destructive acts), so inside
+/* G4 (preview grade): red reads as a warning (red is kept for errors and destructive acts, MOTION-AND-VISUAL 4.7), so inside
    Roster the Freshmen tone is a muted violet; the bar, legend, avatars and year chips here move together. The shared
    --ch-yr-fr token, read by other screens, is left as it is. The tone is mixed from the year tokens (Juniors' blue with the
    shared Freshmen tone): no raw colour, and the dark theme follows on its own (about #625b66 light, #6b6675 dark; white on it

@@ -192,7 +192,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -1566,7 +1565,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
@@ -1631,7 +1629,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -3782,7 +3779,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
@@ -5728,7 +5724,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
@@ -5935,7 +5930,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -6151,7 +6145,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -6216,7 +6209,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
@@ -6331,7 +6323,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
@@ -9488,7 +9479,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
@@ -11305,7 +11295,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -11413,7 +11402,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/tournaments-lineup.css",
@@ -11620,7 +11608,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
@@ -11730,7 +11717,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -11760,7 +11746,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -11940,7 +11925,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -12283,7 +12267,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -12469,7 +12452,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -12759,7 +12741,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -12967,7 +12948,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -13024,7 +13004,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -13532,7 +13511,6 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -18790,11 +18768,6 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-live-bead-eagle",
-          "value": "#b84d3f",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-lv-bead",
           "value": "8px",
           "scope": ".ch-lv-lane"
@@ -22346,12 +22319,12 @@
         },
         {
           "name": "--ch-rd-under-a",
-          "value": "#ff9d8e",
+          "value": "var(--ch-stage-line)",
           "scope": ".ch-rd .ch-rd-stage"
         },
         {
           "name": "--ch-rd-under-b",
-          "value": "#c4493b",
+          "value": "var(--ch-feature-gain-fill)",
           "scope": ".ch-rd .ch-rd-stage"
         },
         {
@@ -22406,17 +22379,22 @@
         },
         {
           "name": "--ch-rd-under-ink",
-          "value": "var(--ch-stage-red)",
+          "value": "var(--ch-stage-gain)",
           "scope": ".ch-rd .ch-rd-stage"
         },
         {
           "name": "--ch-rd-under-a",
-          "value": "#d9665a",
+          "value": "var(--ch-score-birdie-fill)",
           "scope": ".ch-rd.is-phone .ch-rd-stage"
         },
         {
           "name": "--ch-rd-under-b",
-          "value": "#a8372b",
+          "value": "var(--ch-score-under-fill)",
+          "scope": ".ch-rd.is-phone .ch-rd-stage"
+        },
+        {
+          "name": "--ch-rd-under-ink",
+          "value": "var(--ch-score-under)",
           "scope": ".ch-rd.is-phone .ch-rd-stage"
         },
         {
@@ -23379,7 +23357,7 @@
         },
         {
           "name": "--ch-shs-s-under",
-          "value": "var(--ch-flag)",
+          "value": "var(--ch-score-under)",
           "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
         },
         {
@@ -23419,7 +23397,7 @@
         },
         {
           "name": "--ch-shs-s-under-tint",
-          "value": "var(--ch-chip-flag-bg)",
+          "value": "var(--ch-chip-gain-bg)",
           "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
         },
         {
@@ -23489,7 +23467,7 @@
         },
         {
           "name": "--ch-shs-s-under",
-          "value": "var(--ch-feature-under)",
+          "value": "var(--ch-feature-gain)",
           "scope": ".ch-shs-feature"
         },
         {
@@ -24444,17 +24422,17 @@
         },
         {
           "name": "--ch-sv-mix-ink",
-          "value": "var(--ch-text-on-accent)",
+          "value": "var(--ch-score-fill-ink)",
           "scope": ".ch-sv-mix .is-eagle"
         },
         {
           "name": "--ch-sv-mix-fill",
-          "value": "var(--ch-chart-flag)",
+          "value": "var(--ch-score-birdie-fill)",
           "scope": ".ch-sv-mix .is-birdie"
         },
         {
           "name": "--ch-sv-mix-ink",
-          "value": "var(--ch-text-on-accent)",
+          "value": "var(--ch-score-fill-ink)",
           "scope": ".ch-sv-mix .is-birdie"
         },
         {
@@ -24558,8 +24536,7 @@
       "file": "src/clubhouse/styles/tokens.css",
       "classes": [
         "ch-au",
-        "ch-ox",
-        "ch-root"
+        "ch-ox"
       ],
       "tokens": [
         {
@@ -24833,6 +24810,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-stage-gain",
+          "value": "#8fd3aa",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-stage-red",
           "value": "#ff8a7a",
           "scope": "[data-ui='clubhouse']"
@@ -24979,12 +24961,12 @@
         },
         {
           "name": "--ch-score-under",
-          "value": "#b03a2e",
+          "value": "var(--ch-chart-gain)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-score-under-bg",
-          "value": "#fbe9e6",
+          "value": "var(--ch-chart-gain-tint)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -24999,7 +24981,7 @@
         },
         {
           "name": "--ch-hm-under-2",
-          "value": "#edd4cd",
+          "value": "#cde3d4",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -25024,7 +25006,7 @@
         },
         {
           "name": "--ch-hm-ring-under",
-          "value": "#c46c62",
+          "value": "#4f8a64",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -25039,22 +25021,32 @@
         },
         {
           "name": "--ch-score-under-fill",
-          "value": "#b03a2e",
+          "value": "var(--ch-chart-gain-fill)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-score-fill-ink",
+          "value": "#faf7ef",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-score-birdie-fill",
+          "value": "#2a7d53",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-score-eagle-fill",
-          "value": "#7f2a21",
+          "value": "var(--ch-chart-gain-fill)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-score-under-on-green",
-          "value": "#ff8b7d",
+          "value": "#8fd3aa",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-score-under-on-ivory",
-          "value": "#b03a2e",
+          "value": "#0f5233",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -25444,12 +25436,12 @@
         },
         {
           "name": "--ch-board-birdie-shadow",
-          "value": "inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(60 10 6 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4)",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(4 30 18 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-board-eagle-shadow",
-          "value": "0 0 0 2px #0c3522, 0 0 0 3.5px #d0574a, 0 1px 3px rgb(0 0 0 / 0.4)",
+          "value": "0 0 0 2px #0c3522, 0 0 0 3.5px #6fc096, 0 1px 3px rgb(0 0 0 / 0.4)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -25494,12 +25486,12 @@
         },
         {
           "name": "--ch-score-birdie-shadow",
-          "value": "inset 0 0 0 1px rgb(150 46 35 / 0.38), inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(120 36 28 / 0.2)",
+          "value": "inset 0 0 0 1px rgb(15 82 51 / 0.38), inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(11 58 37 / 0.2)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-score-eagle-shadow",
-          "value": "inset 0 0 0 1px rgb(110 30 22 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(110 30 22 / 0.35)",
+          "value": "inset 0 0 0 1px rgb(6 34 21 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(6 34 21 / 0.35)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26698,18 +26690,8 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-feature-flag",
-          "value": "#f49a8d",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-feature-ink-3",
           "value": "#b4c0b3",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-feature-under",
-          "value": "#f49a8d",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26780,11 +26762,6 @@
         {
           "name": "--ch-chip-loss-bg",
           "value": "#f7f0e6",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-chip-flag-bg",
-          "value": "#f7e8e5",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27948,11 +27925,6 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-chip-flag-bg",
-          "value": "#3c2f2a",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-chip-flat-bg",
           "value": "#292d28",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -28263,13 +28235,13 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-score-under-fill",
-          "value": "#c2473a",
+          "name": "--ch-score-fill-ink",
+          "value": "var(--ch-green-900)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-score-eagle-fill",
-          "value": "#b0473a",
+          "name": "--ch-score-birdie-fill",
+          "value": "var(--ch-green-400)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -28338,16 +28310,6 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-score-under",
-          "value": "#ef8576",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-score-under-bg",
-          "value": "#3a1c1a",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-score-over-bg",
           "value": "#272c27",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -28359,7 +28321,7 @@
         },
         {
           "name": "--ch-hm-under-2",
-          "value": "#5b3e37",
+          "value": "#284636",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -28374,7 +28336,7 @@
         },
         {
           "name": "--ch-hm-ring-under",
-          "value": "#9e5f54",
+          "value": "#5fa57a",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -28614,12 +28576,12 @@
         },
         {
           "name": "--ch-score-birdie-shadow",
-          "value": "inset 0 0 0 1px rgb(239 133 118 / 0.45), 0 1px 2px rgb(0 0 0 / 0.4)",
+          "value": "inset 0 0 0 1px rgb(169 224 192 / 0.45), 0 1px 2px rgb(0 0 0 / 0.4)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-score-eagle-shadow",
-          "value": "inset 0 0 0 1px rgb(239 133 118 / 0.7), 0 1px 2px rgb(0 0 0 / 0.45)",
+          "value": "inset 0 0 0 1px rgb(169 224 192 / 0.7), 0 1px 2px rgb(0 0 0 / 0.45)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -29681,16 +29643,6 @@
           "name": "--ch-chart-flag",
           "value": "#f6a294",
           "scope": "@media (prefers-contrast: more) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-score-under",
-          "value": "#9e3b2e",
-          "scope": ".ch-root[data-ch-refresh='on'], [data-ui='clubhouse'] [data-ch-refresh='on']"
-        },
-        {
-          "name": "--ch-score-under",
-          "value": "#f28b7d",
-          "scope": "html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='dark'] [data-ui='clubhouse'] [data-ch-refresh='on']"
         },
         {
           "name": "--ch-type-12",

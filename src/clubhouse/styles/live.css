@@ -14,9 +14,6 @@
   /* The 34 px figure of the player's own card (600, on the 34 step). */
   --ch-type-live-own: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
 }
-html[data-fw-theme='dark'] [data-ui='clubhouse'] {
-  --ch-live-bead-eagle: #b84d3f;
-}
 
 /* ---- The static live dot ---- */
 .ch-lv-dot {

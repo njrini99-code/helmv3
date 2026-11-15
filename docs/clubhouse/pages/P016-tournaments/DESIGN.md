@@ -15,7 +15,7 @@ Rules every view keeps (plan 0.4 and sections 8 and 9):
 - Clubhouse tokens and `ui/*` primitives only, `.ch-tour-*` classes; Instrument
   Sans, sentence case, tabular figures, the true minus, `E` for even, `—` for no
   data.
-- Red only for under par and destructive actions. Gain and loss are close in
+- Red only for errors and destructive actions; under par is the gain (MOTION-AND-VISUAL 4.7). Gain and loss are close in
   lightness, so a signed mark always carries a side, a sign triangle or a word
   (DeltaChip draws the triangle).
 - Motion: durations 0, 110, 180, 260, 280, 520 ms from `lib/motion.ts`; nothing

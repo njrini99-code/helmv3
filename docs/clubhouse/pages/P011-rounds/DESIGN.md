@@ -234,8 +234,8 @@ A coach's note on a round needs a column or a small table the owner approves
 
 ### Owner decisions
 
-D-22 (phone), D-26 (season), D-31 (a closed qualifier is closed), D-42 (red
-means under par), D-53 (Stats rounds), D-64 (motion), D-66 (navigation), D-67
+D-22 (phone), D-26 (season), D-31 (a closed qualifier is closed), D-42 as amended by MOTION-AND-VISUAL
+4.7 (red is for errors only; under par is the gain), D-53 (Stats rounds), D-64 (motion), D-66 (navigation), D-67
 (build order), D-70 (haptics), D-71 (page empty state); Q-72 is open, and the
 page is built on its recommendations (a to h).
 
