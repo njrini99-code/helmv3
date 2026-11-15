@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Team Hub, the Nov 15 gap pass (GAP-H-02, -03, -04, -13, -14, -15, -16, -20, -25, GAP-S-26): what each fix does, on the
+ * Team Hub, the Nov 15 gap pass (GAP-H-02, -03, -04, -13, -14, -15, -16, -20, -25; GAP-S-26 is in hub.test.tsx): what each fix does, on the
  * preview fixtures and through the loader.
  */
 
@@ -72,10 +72,6 @@ function show(data: ChTeamHub, opts: { tab?: ChHubTab; focusTask?: string; focus
   );
   return { user };
 }
-
-// A swap's leaving copy (ui/Swap.tsx) never finishes its fade in jsdom: read the live copy only.
-const LEAVING = '.ch-swap__body[aria-hidden]';
-const code = (c: string) => [...document.querySelectorAll<HTMLElement>(`[data-ch-code="${c}"]`)].find((e) => !e.closest(LEAVING)) ?? null;
 
 const [CFI, SEA] = PREVIEW_HUB_PLAYER.trips.rows as [ChHubTrip, ChHubTrip];
 
@@ -259,39 +255,5 @@ describe('GAP-H-16 · a player’s finished tasks are in a collapsed Done sectio
   it('a coach’s list is unchanged: no Done section', () => {
     show(PREVIEW_HUB_COACH, { tab: 'tasks' });
     expect(screen.queryByRole('button', { name: /^Done \(/ })).toBeNull();
-  });
-});
-
-describe('GAP-S-26 · a link to a removed task or trip says so', () => {
-  it('a task that is gone: its tab opens with "That task was removed"', async () => {
-    const { user } = show(PREVIEW_HUB_PLAYER, { focusTask: 'gone' });
-    expect(screen.getByRole('tab', { name: 'Tasks', selected: true })).toBeTruthy();
-    expect(code('CH-10390')!.textContent).toContain('That task was removed');
-    expect(code('CH-10390')!.textContent).toContain('It’s no longer on your list.');
-    // Leaving the tab forgets the link.
-    await user.click(screen.getByRole('tab', { name: 'Home' }));
-    await user.click(screen.getByRole('tab', { name: 'Tasks' }));
-    expect(code('CH-10390')).toBeNull();
-  });
-
-  it('a trip that is gone: Travel says it isn’t here', () => {
-    show(PREVIEW_HUB_PLAYER, { tab: 'travel', focusTrip: 'gone' });
-    expect(code('CH-10391')!.textContent).toMatch(/That trip isn’t here.*It may have been removed, or it’s too far past to show in Team Hub\./);
-  });
-
-  it('says nothing for a task or trip that is there, or when the list failed to load', () => {
-    show(PREVIEW_HUB_PLAYER, { focusTask: 't1' });
-    expect(code('CH-10390')).toBeNull();
-    cleanup();
-    show({ ...PREVIEW_HUB_PLAYER, tasks: { rows: [], error: true } }, { focusTask: 'gone' });
-    expect(code('CH-10390')).toBeNull();
-    cleanup();
-    show(PREVIEW_HUB_PLAYER, { tab: 'travel', focusTrip: CFI.id });
-    expect(code('CH-10391')).toBeNull();
-  });
-
-  it('a coach’s capped task list never calls a task past its cap removed', () => {
-    show({ ...PREVIEW_HUB_COACH, tasks: { ...PREVIEW_HUB_COACH.tasks, total: 140 } }, { focusTask: 'gone' });
-    expect(code('CH-10390')).toBeNull();
   });
 });
