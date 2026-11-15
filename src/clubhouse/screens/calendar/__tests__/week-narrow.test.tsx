@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { accessibleName } from '../../../__tests__/label-in-name';
 
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
 
@@ -94,8 +95,8 @@ describe('a busy block under an event comes out as a tile of its own', () => {
     expect(b.style.top).toBe('338px');
     expect(b.style.height).toBe('24px');
     expect(b.className).toContain('ch-ev--under');
-    // Its name keeps its real hours.
-    expect(b.getAttribute('aria-label')).toMatch(/^Busy · staff, 12:00 – 1:00 PM/);
+    // Its name keeps its real hours. It opens with the title drawn on it, then says busy (SWP-03: label in name).
+    expect(accessibleName(b)).toMatch(/^staff, busy, 12:00 – 1:00 PM/);
   });
 
   // Owner, 2026-11-11: "Busy · Staff meeting" was cut in the week's column (136px of words in 129).
@@ -106,7 +107,7 @@ describe('a busy block under an event comes out as a tile of its own', () => {
     expect(b.className).not.toContain('ch-ev--two');
     expect(b.querySelector('.ch-ev__t')!.textContent).toBe('staff');
     expect(b.querySelector('.ch-ev__t .ch-ev__g')).not.toBeNull();
-    expect(b.getAttribute('aria-label')).toMatch(/^Busy · staff, /);
+    expect(accessibleName(b)).toMatch(/^staff, busy, /);
   });
 
   it('with a row for its time, or two lines for its title, it keeps the word', () => {

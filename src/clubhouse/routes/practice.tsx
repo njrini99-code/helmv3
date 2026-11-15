@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/States';
 import { RefreshNotice } from '../ui/RefreshNotice';
@@ -93,6 +94,33 @@ export async function PracticeHomeRoute({ newPlan, template, event }: { newPlan?
   return <PracticeHome data={load.data} openNew={!!newPlan} newEvent={event ?? null} template={from} templateFailed={templateFailed} />;
 }
 
+/** GAP-R-08: one read of a plan or a drill per request, shared by the page and its tab title (generateMetadata). */
+const coachPlanOnce = cache(loadCoachPlan);
+const playerPlanOnce = cache(loadPlayerPlan);
+const drillOnce = cache(loadDrill);
+
+/**
+ * GAP-R-08: the tab and the app switcher name the plan itself ("Tuesday short game"), as the page's title does, not
+ * "Practice plan" on every plan. The generic name stands when the plan can't be read; the page says why.
+ */
+export async function practicePlanTitle(planId: string, fallback = 'Practice plan'): Promise<string> {
+  const session = await getGolfSessionProfile().catch(() => null);
+  if (!session) return fallback;
+  const player = session.role === 'player' ? session.player : null;
+  const load = await (player ? playerPlanOnce(planId, player.id) : coachPlanOnce(planId)).catch(() => null);
+  return (load?.status === 'ready' && load.plan.title.trim()) || fallback;
+}
+
+/** GAP-R-08: a drill's tab names the drill ("Ladder putting"), or "Drill" when it can't be read. Drills are a coach's. */
+export async function practiceDrillTitle(drillId: string): Promise<string> {
+  const session = await getGolfSessionProfile().catch(() => null);
+  if (!session || session.role === 'player') return 'Drill';
+  const team = await resolveClubhouseTeam(session).catch(() => null);
+  if (!team || team.role === 'player') return 'Drill';
+  const load = await drillOnce(team.teamId, drillId).catch(() => null);
+  return (load?.status === 'ready' && load.data?.name.trim()) || 'Drill';
+}
+
 /** The coach's team for a Practice tab; a player goes to their own Practice. */
 async function coachTeam(): Promise<{ teamId: string } | null> {
   const session = await getGolfSessionProfile();
@@ -120,7 +148,7 @@ export async function PracticeDrillRoute({ drillId }: { drillId: string }) {
   idOrNotFound(drillId);
   const team = await coachTeam();
   if (!team) return NO_TEAM;
-  const load = await loadDrill(team.teamId, drillId);
+  const load = await drillOnce(team.teamId, drillId);
   if (load.status === 'unavailable') return OFF;
   if (load.status === 'failed') return failed('This drill');
   // No such drill on this team: the Practice not-found page (one not-found voice, GAP-S-24).
@@ -152,7 +180,7 @@ export async function PracticePrintRoute({ planId }: { planId: string }) {
   const team = await coachTeam();
   if (!team) return NO_TEAM;
   // A drills read that fails is not "this plan has no drills": the studio says the appendix is missing instead of printing a plan that looks whole.
-  const [load, drills] = await Promise.all([loadCoachPlan(planId), loadPlanDrills(planId).then((list) => ({ list, unread: false }), () => ({ list: [], unread: true }))]);
+  const [load, drills] = await Promise.all([coachPlanOnce(planId), loadPlanDrills(planId).then((list) => ({ list, unread: false }), () => ({ list: [], unread: true }))]);
   if (load.status === 'unavailable') return OFF;
   // A read that failed is never "it may have been removed" (GAP-S-03); only a plan that answered with nothing is not found.
   if (load.status === 'failed') return failed('This plan');
@@ -179,7 +207,7 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
   if (!session) redirect('/golf/dashboard/calendar');
   // A coach who also has a player row is a coach, as the session says.
   const player = session.role === 'player' ? session.player : null;
-  const load = player ? await loadPlayerPlan(planId, player.id) : await loadCoachPlan(planId);
+  const load = player ? await playerPlanOnce(planId, player.id) : await coachPlanOnce(planId);
   // Practice not on this database yet is its own state, the one the tab shows: never "it may have been removed".
   if (load.status === 'unavailable') return OFF;
   // A failed read is "didn't load" with Try again (GAP-S-03); only an answer of no plan (deleted, another team's, or not

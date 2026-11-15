@@ -43,10 +43,15 @@ export function markGlyph(change: Pick<ChCalChange, 'kind' | 'badge' | 'was'>): 
 }
 
 /** Neutral with a glyph: a change is not a loss, so it is not amber. A cancellation keeps the existing warning badge, no glyph. */
-export function MarkBadge({ change }: { change: Pick<ChCalChange, 'kind' | 'badge' | 'was'> }) {
-  if (change.kind === 'cancel') return <Badge tone="warning">Cancelled</Badge>;
+export function MarkBadge({ change, decorative }: { change: Pick<ChCalChange, 'kind' | 'badge' | 'was'>; decorative?: boolean }) {
+  if (change.kind === 'cancel')
+    return (
+      <Badge tone="warning" decorative={decorative}>
+        Cancelled
+      </Badge>
+    );
   return (
-    <Badge tone="neutral">
+    <Badge tone="neutral" decorative={decorative}>
       <Icon icon={markGlyph(change)} size={11} />
       {change.badge}
     </Badge>

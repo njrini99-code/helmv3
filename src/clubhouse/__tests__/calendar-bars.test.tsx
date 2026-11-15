@@ -7,6 +7,7 @@ vi.mock('../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
 import type { ChCalEvent } from '../screens/calendar/model';
 import { laneBars, respan } from '../screens/calendar/drag-model';
 import { TimeGrid } from '../screens/calendar/views';
+import { accessibleName } from './label-in-name';
 
 /** P-4 4.5: all-day events and runs over several days are one bar each in the week's lane, moved and stretched by day. */
 
@@ -86,7 +87,7 @@ describe('the lane', () => {
     expect((bars[0] as HTMLElement).style.gridColumn).toBe('5 / 8');
     expect([...bars[0]!.querySelectorAll('.ch-ev-bar__t')].map((t) => t.textContent)).toEqual(['6:00 AM', '8:00 PM']);
     expect(container.querySelector('.ch-wk__grid .ch-ev')).toBeNull();
-    expect(bars[0]!.getAttribute('aria-label')).toMatch(/^Pinehurst trip, Wed 21 to Fri 23\./);
+    expect(accessibleName(bars[0]!)).toMatch(/^Pinehurst trip, Wed 21 to Fri 23\./);
   });
 
   it('stacks overlapping bars in rows; one that began last week is cut with a chevron and has no start grip', () => {
