@@ -198,7 +198,9 @@ describe('the loaders read only the scope’s player', () => {
     const out = await loadCoachPlayerDeepDive({ scope });
     expect(delivery.coach).toHaveBeenCalledWith(COACH, { player_id: PID, limit: PLAYER_FEED_LIMIT, includeMore: true, drawnLater: expect.any(Function) });
     expect(delivery.player).not.toHaveBeenCalled();
-    expect(delivery.coachThemes).toHaveBeenCalledWith({ player_id: PID });
+    expect(delivery.coachThemes).toHaveBeenCalledWith(expect.objectContaining({ player_id: PID }));
+    // SC-01: this season's strokes gained by category is handed in (null here: this fake's rounds are not a list), never left to a cache read.
+    expect(delivery.coachThemes.mock.calls[0]![0]).toHaveProperty('sg');
     expect(delivery.playerThemes).not.toHaveBeenCalled();
     if (out.status !== 'ready') throw new Error(out.status);
     expect(out.data.list.map((i) => i.base.id).sort()).toEqual(['in-pen', 'in-slope']);

@@ -396,7 +396,8 @@ describe('the loader reads the signed-in player’s own deep dive, and says what
   it('ready: the delivery feed, the category reads and both goal reads for the player id it was given, and only that id', async () => {
     const out = await loadPlayerDeepDive({ playerId: 'pl-jonah' });
     expect(delivery.insights).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawnLater: expect.any(Function), includeMore: true });
-    expect(delivery.themes).toHaveBeenCalledWith('pl-jonah');
+    // SC-01: the themes are graded on this season's strokes gained by category, read here and handed in (never the lifetime cache).
+    expect(delivery.themes).toHaveBeenCalledWith('pl-jonah', { sg: expect.objectContaining({ tee: null, approach: null, short_game: null, putting: null }) });
     expect(goals.active).toHaveBeenCalledWith('pl-jonah');
     expect(goals.achieved).toHaveBeenCalledWith('pl-jonah');
     expect(out.status).toBe('ready');
