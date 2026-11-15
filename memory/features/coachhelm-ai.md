@@ -380,6 +380,21 @@ entries are history. The tool list and the prompt are described where the tools 
   Anything else outside a scope reads the flag as off during a canary, which
   is today's production state. A team read that fails also reads as off. To widen, add ids; to finish, unset the
   variable. Never used for auth, RLS or the Clubhouse release flag.
+- Player reads are scoped to the player's current teams (2026-11-15, prod
+  audit N13P-16): `getInsightsForPlayer` and `getTopInsightForPlayer` read the
+  player's active `golf_team_members` teams beside the access check and add
+  `team_id in (those) or team_id is null`
+  (`src/lib/coachhelm/delivery/team-scope.ts`), so a former team's reads never
+  show on the new team's CoachHelm or Team Hub. A failed team read keeps the
+  unscoped read. Coach feeds are unchanged (RLS scopes them to the coach's
+  teams).
+- Causality runs leave `hub_signal` exposures out (2026-11-15, PMAC-01,
+  `src/lib/coachhelm/v3/causality/exposure-scope.ts`): until then the strip
+  fetched Team Hub ahead of the tap and its loader recorded the card as shown,
+  so those rows are not evidence of a view. The cron's bulk first-exposure
+  read, `computeComparableAttribution` and `detectConfoundingInterventions`
+  read `surface is null or surface not in (hub_signal)`. Team Hub is now in
+  the prefetch guard (`src/clubhouse/lib/prefetch-guard.ts`).
 - Support and the claim ladder (Slice 1, 2026-10-20, flag
   `coachhelm_support_v1`, off): after the generators and composites write a
   player's rows for a run, `v3/support/run-pass.ts` adds `support` (gap to the

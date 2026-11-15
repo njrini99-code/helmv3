@@ -65,6 +65,7 @@ import {
 import { recordInsightExposure } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { describeError } from '@/lib/utils/describe-error';
 import { projectInsightForPlayer, projectInsightsForPlayer } from '@/lib/coachhelm/delivery/player-projection';
+import { playerInsightTeamFilter, scopeToTeams } from '@/lib/coachhelm/delivery/team-scope';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -341,7 +342,12 @@ async function getTopInsightForPlayerImpl(
 
   // Self or coach-staffing-team access. `verifyPlayerAccess` performs its own
   // auth check + logs failures centrally, so we just branch on its result.
-  const access = await verifyPlayerAccess(playerId, user.id, supabase);
+  // Beside it, the teams the player is on now: the card shows a read from one
+  // of them, never a former team's (N13P-16, `team-scope.ts`).
+  const [access, teamFilter] = await Promise.all([
+    verifyPlayerAccess(playerId, user.id, supabase),
+    playerInsightTeamFilter(supabase, playerId),
+  ]);
   if (!access.allowed) return null;
 
   // P1-09: the player's feedback overlay — used to hide a player-dismissed row
@@ -395,12 +401,15 @@ async function getTopInsightForPlayerImpl(
   // cannot, so it is not read at all.
   const { data: urgent, error: urgentError } = plan.fold
     ? { data: null, error: null }
-    : await applyInsightVisibility(
-        supabase
-          .from('golf_coach_insights')
-          .select(INSIGHT_SELECT)
-          .eq('player_id', playerId)
-          .not('evidence', 'is', null),
+    : await scopeToTeams(
+        applyInsightVisibility(
+          supabase
+            .from('golf_coach_insights')
+            .select(INSIGHT_SELECT)
+            .eq('player_id', playerId)
+            .not('evidence', 'is', null),
+        ),
+        teamFilter,
       )
         .eq('priority', 'urgent')
         .order('created_at', { ascending: false })
@@ -451,12 +460,15 @@ async function getTopInsightForPlayerImpl(
   //    collapse + dedupe the feed applies, so the single-pick is literally the
   //    feed's head.
   const { data, error } = await fetchAllRowsResult((from, to) =>
-    applyInsightVisibility(
-      supabase
-        .from('golf_coach_insights')
-        .select(INSIGHT_SELECT)
-        .eq('player_id', playerId)
-        .not('evidence', 'is', null),
+    scopeToTeams(
+      applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select(INSIGHT_SELECT)
+          .eq('player_id', playerId)
+          .not('evidence', 'is', null),
+      ),
+      teamFilter,
     )
       .order('id', { ascending: true })
       .range(from, to),
@@ -576,7 +588,12 @@ async function getInsightsForPlayerImpl(
     throw err;
   }
 
-  const access = await verifyPlayerAccess(playerId, user.id, supabase);
+  // The teams the player is on now, read beside the access check: the feed is
+  // their reads from those teams, never a former team's (N13P-16, `team-scope.ts`).
+  const [access, teamFilter] = await Promise.all([
+    verifyPlayerAccess(playerId, user.id, supabase),
+    playerInsightTeamFilter(supabase, playerId),
+  ]);
   if (!access.allowed) return [];
 
   const limit = Math.min(Math.max(opts.limit ?? 10, 1), 50);
@@ -590,12 +607,15 @@ async function getInsightsForPlayerImpl(
   // Order by `id` for stable paging — the shared composite reorders in-app.
   const runQuery = () =>
     fetchAllRowsResult((from, to) => {
-      let query = applyInsightVisibility(
-        supabase
-          .from('golf_coach_insights')
-          .select(INSIGHT_SELECT)
-          .eq('player_id', playerId)
-          .not('evidence', 'is', null),
+      let query = scopeToTeams(
+        applyInsightVisibility(
+          supabase
+            .from('golf_coach_insights')
+            .select(INSIGHT_SELECT)
+            .eq('player_id', playerId)
+            .not('evidence', 'is', null),
+        ),
+        teamFilter,
       ).order('id', { ascending: true });
 
       if (opts.categories && opts.categories.length > 0) {

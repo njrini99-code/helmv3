@@ -22,6 +22,11 @@ Held items:     a coach-wide default tone needs a migration (Nick's call)
   (no practice, no round without a score) (PL-CH-03). The newest day and the focus report a failed read instead of "none" (PL-CH-04).
   The current focus, on the player's week and the coach's file alike, is one made, started or changed this season (from 1 August in
   the team's zone): last season's focus is not "your focus" now (N13P-16, interim; closing the old rows is a data change for Nick).
+- `app/golf/actions/insight-delivery.ts`, `lib/coachhelm/delivery/team-scope.ts`: a player's Board, Deep dive, Standing ladder and Team
+  Hub card read their insights from the teams they are on now (plus rows with no team), never a former team's (N13P-16: Guilford's reads
+  showed on Demo University's CoachHelm). A failed team read keeps the old, unscoped read.
+- Penalties stay a player's own rounds on every team, as Home and My stats count them: a team filter on penalties alone would make
+  them disagree again (N13P-16 asked for one; not added, said in the PR).
 
 ### Why
 
@@ -30,5 +35,5 @@ Held items:     a coach-wide default tone needs a migration (Nick's call)
 
 ### Verification
 
-- `chat/parts/__tests__/knows-tone.test.tsx` (new), `file/__tests__/your-week-states.test.tsx` (new), `file/__tests__/player-file.test.tsx`.
+- `lib/coachhelm/delivery/__tests__/team-scope.test.ts` (new), `chat/parts/__tests__/knows-tone.test.tsx` (new), `file/__tests__/your-week-states.test.tsx` (new), `file/__tests__/player-file.test.tsx`.
 - Not checked in a browser or on a device in this change.

@@ -31,6 +31,15 @@ export function lastTenRounds<T extends { round_type: string | null; status?: st
 }
 
 /**
+ * The rounds a Last 10 hole-level figure reads (fairways, greens, putts, scrambling, each part's strokes gained): the ones with their holes
+ * among the newest ten. One definition for Home's Your game and My stats' Last 10 (prod audit 2026-11-15, N13P-64: Home read the newest ten
+ * rounds that had holes, back past the ten, and printed 42% fairways against My stats' 43%).
+ */
+export function lastTenHoleRounds<T extends { round_type: string | null; status?: string | null; round_date: string; id: string; holes_played?: number | null; total_only?: boolean }>(rounds: readonly T[]): T[] {
+  return holeRounds(lastTenRounds(rounds));
+}
+
+/**
  * A player's strokes gained, the one source (QA-1): Team view, their Home, Roster and Stats' default all read this, so a player's
  * number is the same wherever it is drawn. Baseline: the stored per-round figures. Filter: `roundsForFigures`. Window: `lastTenRounds`.
  */
