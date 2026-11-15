@@ -976,6 +976,17 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   .ch-ask[data-ch-vv] {
     height: calc(var(--ch-vv-h) + var(--ch-vv-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-top));
   }
+  /* Under the CoachHelm switch's 52px row (coachhelm.css .ch-hsw, N13C-67), which used to sit inside the chat: the same heights
+     less that row, so the chat still ends at the tab bar (or the keyboard) and the page does not scroll under it. */
+  .ch-hsw.is-phone + .ch-ask {
+    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--ch-tabbar-h) - env(safe-area-inset-bottom) - var(--keyboard-height, 0px) - 52px);
+  }
+  .ch-root[data-phone-notabs] .ch-hsw.is-phone + .ch-ask {
+    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--keyboard-height, 0px) - 52px);
+  }
+  .ch-hsw.is-phone + .ch-ask[data-ch-vv] {
+    height: calc(var(--ch-vv-h) + var(--ch-vv-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - 52px);
+  }
   .ch-ask-scroll {
     padding: 0 var(--ch-page-x-phone) 12px;
   }

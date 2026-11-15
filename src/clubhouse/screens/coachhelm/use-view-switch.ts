@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition, type CSSProperties } from 'react';
 import { fetchAhead, prefetchAllowed, whenIdle } from '../../shell/use-prefetch-tabs';
 import { CH_BUSY } from '../../lib/motion';
+import { fullPrefetchAllowed } from '../../lib/prefetch-guard';
 import { useBusy } from '../../lib/use-busy';
 
 /**
@@ -16,9 +17,10 @@ import { useBusy } from '../../lib/use-busy';
  * `active` is the view the server last drew. Choosing the one already shown does nothing; choosing the one on screen while
  * another is loading sends the page back to it.
  *
- * The other `views` are fetched whole once the page is idle, as the phone's tabs are (use-prefetch-tabs): a default prefetch
- * stops at the route's loading boundary, so every switch waited on the server for the whole page (owner, desktop Safari,
- * 2026-10-16). Skipped with Data Saver on or offline; Next prefetches only in production builds.
+ * The other `views` are prefetched once the page is idle, as the phone's tabs are (use-prefetch-tabs): whole where the address
+ * allows it, and otherwise (every CoachHelm address, whose loaders record what they return as shown: CH-R1, lib/prefetch-guard.ts)
+ * with the route's own prefetch, which stops at its loading boundary and runs no loader (N13C-67, N13P-18). Skipped with Data Saver
+ * on or offline; Next prefetches only in production builds.
  *
  * `enter`: the view that lands from a switch settles in instead of snapping (owner, desktop, 2026-10-29: "the transition in the
  * CoachHelm tabs and subtabs is not good"). The view it replaces was dimming (coachhelm.css) from the tap on, so the new one starts at
@@ -33,7 +35,10 @@ export function useViewSwitch<V extends string>(active: V, hrefOf: (view: V) => 
   useEffect(() => {
     if (!others || !prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
     return whenIdle(() => {
-      for (const href of others.split('|')) fetchAhead(router, href, Date.now());
+      for (const href of others.split('|')) {
+        if (fullPrefetchAllowed(href)) fetchAhead(router, href, Date.now());
+        else router.prefetch(href);
+      }
     });
   }, [others, router]);
   const [pending, start] = useTransition();
