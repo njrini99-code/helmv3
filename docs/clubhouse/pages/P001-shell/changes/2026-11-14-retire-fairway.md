@@ -26,6 +26,8 @@ Held items:     none
   nothing.
 - `shell/OfflineSync.tsx` registers `public/sw.js` and turns the worker's
   Background Sync message into a sync pass (only Fairway did before).
+- Fairway is archived in the tag `archive/fairway-2026-11-15` (`0d73e96a65`,
+  the `main` this change starts from); all 905 deleted files are in it.
 
 ### Why
 

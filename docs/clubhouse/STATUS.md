@@ -22,11 +22,13 @@ log). What is left, and who has it: [QUEUE.md](QUEUE.md).
   them.
 - **The retirement change** (`agent/retire-fairway`, below) lands after that
   deploy has been watched; it deletes Fairway and the switches.
-- **Rollback until the retirement change lands:** promote
-  `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc` (2026-10-21, `d0f467a73`). Promoting it
-  stops being clean once the team-channel migrations
-  (`20261110090200` to `20261110090500`) are applied, and once a practice plan
-  draft is saved (Documents rows with no file; RELEASE_DAY_RUNBOOK section 6).
+- **Rollback until the retirement change lands:** turn `golf_clubhouse_ui`
+  off for production in `config/feature-flags.yml`, run
+  `npm run flags:generate` and deploy, or set `HELM_CLUBHOUSE_TEAMS` to an
+  unused team id and deploy. Promoting
+  `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc` (2026-10-21, `d0f467a73`) is no longer
+  clean: the team-channel migrations (`20261110090200` to `20261110090500`)
+  were applied on 2026-11-15.
 - Fairway's coach and player screens are deleted: `FairwayDashboardShell`,
   `src/components/fairway/pages/**`, the Fairway-only `src/components/golf/**`
   (BaseballHelm's calendar and document previews stay) and the Fairway branch
@@ -50,6 +52,10 @@ log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 - Rollback after the retirement change lands: there is no flag. Promote the
   production deployment before it (`docs/setup/DEPLOY.md`) or revert the change
   and deploy.
+- **Fairway is archived, not lost:** the tag `archive/fairway-2026-11-15`
+  points at `0d73e96a65`, the `main` this change starts from, and holds every
+  file it deletes. `git show archive/fairway-2026-11-15:<path>` reads one;
+  `git checkout archive/fairway-2026-11-15 -- <path>` brings one back.
 - **Expected, not a fault:** the 5-minute standings cron reports
   `season-not-applied` until the numbers-day migrations (`20261024151000` and
   its chain) are applied.
