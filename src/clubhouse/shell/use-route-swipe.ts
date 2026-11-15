@@ -4,12 +4,14 @@ import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { useEffect } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { haptic } from '../lib/haptics';
-import { chHandPop, chPushTiming, cssNum, chShownPath, chUnderLook, grabPush, pageLayer, underFor, underVeil, type ChUnder } from '../lib/nav-motion';
+import { chHandPop, chPushTiming, chTapTiming, cssNum, chShownPath, chUnderLook, grabPush, underFor, underVeil, type ChUnder } from '../lib/nav-motion';
 import { CH_EDGE_ZONE_PX, claimWebSwipe, createEdgeSwipe, edgeSwipeAllowed, findScreenBack, overlayIsOpen, type EdgeFrame, type EdgeRelease } from './edge-swipe';
 
 const PHONE = CH_PHONE_QUERY;
 /** How long a committed swipe waits for the page it uncovered to arrive before it lets the copy go anyway. */
 const ARRIVE_MS = 2500;
+/** Set while the pop presses the bar's Back itself, so its own click is not taken for a tap. */
+let pressing = false;
 
 /** The bar's own Back for the page showing: the swipe presses it, so every refusal and prompt still applies. */
 function routeBack(): HTMLButtonElement | null {
@@ -23,6 +25,10 @@ function routeBack(): HTMLButtonElement | null {
  * the copy of the page beneath draws back with it, past 35% of the width or a flick lets it go and the bar's own Back
  * runs, and anything else springs home. It also takes a push still sliding in, where it stands (`grabPush`): there is
  * no wait for the push to settle. The bars never move; only the page and the copy beneath it do.
+ *
+ * A tap on the bar's Back pops the same way (S4.1, MOT-13), at the tap's pace: 520ms on the iOS curve. Neither takes a
+ * copy of the page that leaves: the live page slides off, and Back is pressed once it is off, so the page the router
+ * brings back takes the place of the copy beneath in one commit. A push still sliding in reverses from where it stands.
  *
  * It listens on the document, because a finger at the edge while the page is part way in lands on the copy, not the
  * page. It only runs where a copy of the page beneath exists (the page was pushed in this tab), with no pushed screen
@@ -44,7 +50,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
     let entry: ChUnder | null = null;
     let page: HTMLElement | null = null;
     let grabbed = false;
-    let live = false;
+    let lifted = false;
     let width = 0;
     let offset = 0;
     /** What is still moving after a release; the cleanup ends it. */
@@ -62,6 +68,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
     /** The page and the copy beneath, ready to move: the copy in the document under the page, the page above it. */
     const lift = () => {
       if (!page || !entry) return;
+      lifted = true;
       page.setAttribute('data-ch-pushing', '');
       page.style.transition = 'none';
       if (!entry.layer.isConnected) {
@@ -76,6 +83,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
         page.removeAttribute('data-ch-pushing');
         page.style.translate = '';
         page.style.transition = '';
+        page.style.willChange = '';
       }
       if (entry) {
         entry.pinned = false;
@@ -87,7 +95,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       entry = null;
       page = null;
       grabbed = false;
-      live = false;
+      lifted = false;
     };
 
     const springHome = (r: Pick<EdgeRelease, 'offset' | 'speed'>) => {
@@ -116,27 +124,24 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       ending = finish;
     };
 
-    const commit = (r: EdgeRelease) => {
+    /**
+     * The pop's finish, after a swipe let go past its mark or a tap on the bar's Back: the live page slides off to the
+     * right edge over the copy beneath, which comes back from the parallax mark as its dim lifts. Back is pressed once the
+     * page is off; the copy stays until the page it shows is really there, so no frame shows the page that left. A Back
+     * that is refused (a prompt opens instead) brings the page home again.
+     */
+    const popOff = (back: HTMLButtonElement, from: number, timing: KeyframeAnimationOptions, ms: number) => {
       const p = page;
       const u = entry;
-      const back = routeBack();
-      if (!p || !u || !back || typeof p.animate !== 'function') return springHome(r);
-      const overlay = pageLayer('ch-frame-popping');
-      if (!overlay) return springHome(r);
-      overlay.style.left = '0px';
-      document.body.appendChild(overlay);
+      if (!p || !u) return rest();
       p.style.translate = '';
-      p.removeAttribute('data-ch-pushing');
-      const travel = Math.max(1, width - r.offset);
-      const { curve, timing } = chPushTiming({ velocity: Math.max(0, r.speed) * (1000 / travel), rest: 0.5 / travel, hold: true });
       const anims = [
-        overlay.animate([{ transform: `translateX(${cssNum(r.offset)}px)` }, { transform: `translateX(${width}px)` }], { ...timing, fill: 'forwards' }),
+        p.animate([{ transform: `translateX(${cssNum(from)}px)` }, { transform: `translateX(${cssNum(width)}px)` }], { ...timing, fill: 'forwards' }),
         u.layer.animate([{ transform: u.layer.style.transform || 'none' }, { transform: 'none' }], { ...timing, fill: 'forwards' }),
         underVeil(u.layer).animate([{ opacity: underVeil(u.layer).style.opacity || '1' }, { opacity: 0 }], { ...timing, fill: 'forwards' }),
       ];
       machine = null;
-      let arrived = false;
-      let slid = false;
+      let pressed = false;
       let frame = 0;
       let done = false;
       const finish = () => {
@@ -147,48 +152,73 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
         window.clearTimeout(wait);
         cancelAnimationFrame(frame);
         for (const a of anims) a.cancel();
-        overlay.remove();
+        u.onArrive = undefined;
         rest();
       };
-      // The copy of the page beneath stays until that page is really there, so no frame shows the page that left.
-      const maybeDone = () => {
-        if (slid && arrived) finish();
-      };
-      u.onArrive = () => {
-        arrived = true;
-        maybeDone();
-      };
-      const timer = window.setTimeout(() => {
-        slid = true;
-        overlay.remove();
-        maybeDone();
-      }, curve.ms + 80);
-      const wait = window.setTimeout(finish, curve.ms + ARRIVE_MS);
-      anims[0]?.finished.then(() => {
-        slid = true;
-        overlay.remove();
-        maybeDone();
-      }, () => {});
-      ending = finish;
-      const before = chShownPath();
-      chHandPop();
-      back.click();
-      // A Back that was refused (a prompt opened instead) brings the page home again.
-      frame = requestAnimationFrame(() => {
+      u.onArrive = finish;
+      const press = () => {
+        if (pressed || done) return;
+        pressed = true;
+        const before = chShownPath();
+        chHandPop();
+        pressing = true;
+        try {
+          back.click();
+        } finally {
+          pressing = false;
+        }
         frame = requestAnimationFrame(() => {
-          if (done || arrived || chShownPath() !== before || !overlayIsOpen()) return;
-          done = true;
-          ending = null;
-          window.clearTimeout(timer);
-          window.clearTimeout(wait);
-          for (const a of anims) a.cancel();
-          overlay.remove();
-          u.onArrive = undefined;
-          p.setAttribute('data-ch-pushing', '');
-          place({ offset: r.offset, progress: r.offset / width });
-          springHome({ offset: r.offset, speed: 0 });
+          frame = requestAnimationFrame(() => {
+            if (done || chShownPath() !== before || !overlayIsOpen()) return;
+            done = true;
+            ending = null;
+            window.clearTimeout(wait);
+            for (const a of anims) a.cancel();
+            u.onArrive = undefined;
+            place({ offset: width, progress: 1 });
+            springHome({ offset: width, speed: 0 });
+          });
         });
-      });
+      };
+      // A slide whose frames were starved still presses Back.
+      const timer = window.setTimeout(press, ms + 80);
+      const wait = window.setTimeout(finish, ms + ARRIVE_MS);
+      anims[0]?.finished.then(press, () => {});
+      ending = finish;
+    };
+
+    const commit = (r: EdgeRelease) => {
+      const back = routeBack();
+      if (!page || !entry || !back || typeof page.animate !== 'function') return springHome(r);
+      const travel = Math.max(1, width - r.offset);
+      const { curve, timing } = chPushTiming({ velocity: Math.max(0, r.speed) * (1000 / travel), rest: 0.5 / travel, hold: true });
+      popOff(back, r.offset, timing, curve.ms);
+    };
+
+    /** A tap on the bar's Back while the page beneath is kept: the same pop, on the tap's 520ms iOS curve. */
+    const onBackTap = (e: MouseEvent) => {
+      if (pressing || machine || ending || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const back = routeBack();
+      const target = e.target instanceof Element ? e.target.closest('.ch-pbar__back') : null;
+      if (!back || target !== back) return;
+      if (!window.matchMedia?.(PHONE).matches || document.querySelector('.ch-pscreen')) return;
+      const el = document.getElementById('ch-content');
+      if (!el || typeof el.animate !== 'function') return;
+      const taken = grabPush();
+      const u = taken?.entry ?? underFor();
+      if (!u) return;
+      e.preventDefault();
+      e.stopPropagation();
+      page = el;
+      entry = u;
+      u.pinned = true;
+      grabbed = !!taken;
+      width = el.getBoundingClientRect().width || window.innerWidth;
+      offset = taken?.offset ?? 0;
+      lift();
+      place({ offset, progress: offset / width });
+      const { curve, timing } = chTapTiming();
+      popOff(back, offset, timing, curve.ms);
     };
 
     // The one listener that can hold up a scroll (it may preventDefault) is on only while a touch that landed at the edge is
@@ -211,7 +241,11 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       grabbed = !!taken;
       width = el.getBoundingClientRect().width || window.innerWidth;
       offset = taken?.offset ?? 0;
+      // The page is promoted before the finger moves (MOT-03), so the first move only sets a transform. The copy beneath
+      // joins the document on the first move that claims the touch: a tap on the bar's Back lands in this zone too, and
+      // laying the copy out for every such tap would cost the tap a frame.
       if (grabbed) lift();
+      else el.style.willChange = 'transform';
       const m = createEdgeSwipe(width, offset);
       if (!m.start(t.clientX, t.clientY, e.timeStamp)) {
         if (grabbed) springHome({ offset, speed: 0 });
@@ -238,10 +272,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       }
       if (e.cancelable) e.preventDefault();
       if (move.crossed) haptic('select');
-      if (!live) {
-        live = true;
-        lift();
-      }
+      if (!lifted) lift();
       place(move.frame);
     };
     const onEnd = (e: TouchEvent) => {
@@ -268,8 +299,10 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
     document.addEventListener('touchstart', onStart, { passive: true, capture: true });
     document.addEventListener('touchend', onEnd, { capture: true });
     document.addEventListener('touchcancel', abort, { capture: true });
+    document.addEventListener('click', onBackTap, { capture: true });
     return () => {
       document.removeEventListener('touchstart', onStart, { capture: true });
+      document.removeEventListener('click', onBackTap, { capture: true });
       disarm();
       document.removeEventListener('touchend', onEnd, { capture: true });
       document.removeEventListener('touchcancel', abort, { capture: true });

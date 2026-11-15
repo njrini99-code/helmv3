@@ -41,6 +41,8 @@ const median = (xs) => {
   return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
 };
 const r1 = (x) => (x == null ? null : Math.round(x * 10) / 10);
+/** The CPU throttle (CDP): 4x by default; HELM_PERF_CPU=1 for an unthrottled run (the audit's budgets are given at 1x and 4x). */
+const CPU_RATE = Number(process.env.HELM_PERF_CPU ?? 4) || 4;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Installed before any page script runs. Plain function: Playwright serialises it. */
@@ -290,7 +292,7 @@ async function openPage(browser, base, stateFile, viewport, problems, phoneHint 
   if (phone && phoneHint) await ctx.addCookies([{ name: 'ch_phone', value: '1', url: base }]);
   const page = await ctx.newPage();
   const cdp = await ctx.newCDPSession(page);
-  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_RATE });
   page.on('pageerror', (e) => problems.push(`pageerror: ${String(e.message).slice(0, 160)}`));
   page.on('response', (r) => {
     if (r.status() >= 400 && r.url().startsWith(base) && !r.url().includes('/_next/image')) problems.push(`${r.status()} ${r.request().method()} ${r.url().slice(base.length, base.length + 100)}`);
@@ -354,6 +356,8 @@ function summarise(runs) {
     cls: Math.max(...runs.map((r) => r.cls)),
     clsRaw: Math.max(...runs.map((r) => r.clsRaw)),
     longCount: pick((r) => r.long.count),
+    longMax: r1(pick((r) => r.long.max)),
+    longMaxRange: range((r) => r.long.max),
     tbt: r1(pick((r) => r.long.tbt)),
     inp: r1(pick((r) => r.inp)),
     reads: pick((r) => r.server.reads),
@@ -413,7 +417,10 @@ export async function measure(opts) {
 
   const machineAtStart = machineNow();
   console.log(`machine at start: load ${machineAtStart.load.join(' / ')} (1, 5, 15 min), swap ${machineAtStart.swapUsedMB}/${machineAtStart.swapTotalMB} MB`);
-  const browser = await chromium.launch({ headless: true });
+  // HELM_PERF_CHROMIUM: a Chromium binary to use instead of Playwright's own (a container whose preinstalled browser
+  // belongs to another Playwright version).
+  const executablePath = process.env.HELM_PERF_CHROMIUM || undefined;
+  const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath, args: ['--no-sandbox'] } : {}) });
   const people = { coach: seed.coach, player: seed.players[0] };
   const all = [];
   const geo = [];
@@ -557,6 +564,60 @@ export async function measure(opts) {
             }
           }
         }
+        // ── phone navigations (production audit 2026-11-15, MAC-01, MOT-01, PMAC-02, N13C-67): from a settled phone page, a tap on the
+        //    section strip or a view switch; what matters is the longest task from the tap (budget: under 50 ms at 1x, 200 ms at 4x) ──
+        if (wants('phone') && viewport < 700) {
+          const strip = role === 'coach'
+            ? [['rounds', 'home', '/golf/dashboard/rounds', '/golf/dashboard'], ['home', 'team-hub', '/golf/dashboard', '/golf/dashboard/team-hub'], ['home', 'rounds', '/golf/dashboard', '/golf/dashboard/rounds'], ['home', 'calendar', '/golf/dashboard', '/golf/dashboard/calendar'], ['stats', 'home', '/golf/dashboard/stats', '/golf/dashboard']]
+            : [['rounds', 'home', '/golf/dashboard/rounds', '/golf/dashboard'], ['classes', 'home', '/golf/dashboard/classes', '/golf/dashboard'], ['home', 'rounds', '/golf/dashboard', '/golf/dashboard/rounds']];
+          for (const [from, to, fromPath, toPath] of strip) {
+            for (let i = 0; i < runsN; i++) {
+              const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems, !opts['first-visit']);
+              try {
+                await loadCold(page, base, fromPath, readsFile);
+                await sleep(1500);
+                // The strip opens first; time zero is the tap on the section, not on the title that opens the strip.
+                const { snap, trace } = await step(page, readsFile, {
+                  target: toPath,
+                  click: async () => {
+                    await page.locator('.ch-topbar .ch-sw').locator('visible=true').first().click().catch(() => undefined);
+                    await sleep(400);
+                    await page.evaluate((t) => window.__perf.arm(t), toPath);
+                    await page.locator(`#ch-strip a[href="${toPath}"]`).click();
+                  },
+                });
+                record(`phone ${from} -> ${to}`, 'nav', i, { kind: 'nav', ...figures(snap, trace, false) });
+              } catch (e) {
+                problems.push(`phone ${from} -> ${to}: ${String(e.message).slice(0, 120)}`);
+              } finally {
+                await ctx.close();
+              }
+            }
+          }
+          // CoachHelm's views (N13C-67, N13P-18): Team and Ask for a coach, Board and Standing for a player.
+          const views = role === 'coach' ? ['Ask', 'Team'] : ['Standing', 'Board'];
+          for (let i = 0; i < runsN; i++) {
+            const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems, !opts['first-visit']);
+            try {
+              await loadCold(page, base, '/golf/dashboard/coachhelm', readsFile);
+              await sleep(1500);
+              for (const v of views) {
+                const control = page.getByRole('link', { name: new RegExp(`^${v}$`) }).or(page.getByRole('tab', { name: new RegExp(`^${v}$`) })).or(page.getByRole('radio', { name: new RegExp(`^${v}$`) })).locator('visible=true').first();
+                if (!(await control.count())) {
+                  problems.push(`coachhelm view ${v}: no control`);
+                  continue;
+                }
+                const { snap, trace } = await step(page, readsFile, { click: () => control.click() });
+                record(`phone coachhelm -> ${v}`, 'switch', i, { kind: 'switch', ...figures(snap, trace, false) });
+              }
+            } catch (e) {
+              problems.push(`coachhelm views: ${String(e.message).slice(0, 120)}`);
+            } finally {
+              await ctx.close();
+            }
+          }
+        }
+
         if (problems.length) all.push({ role, viewport, scenario: '(problems)', kind: 'problems', problems: [...new Set(problems)].slice(0, 20) });
       }
     }
@@ -571,13 +632,13 @@ export async function measure(opts) {
     groups.set(k, [...(groups.get(k) ?? []), r]);
   }
   const rows = [...groups].map(([k, runs]) => ({ key: k, ...summarise(runs) }));
-  const out = { label, at: new Date().toISOString(), runsPerCase: runsN, throttle: '4x CPU (CDP)', machineAtStart, machineAtEnd: machineNow(), rows, runs: all, geometry: geo };
+  const out = { label, at: new Date().toISOString(), runsPerCase: runsN, throttle: `${CPU_RATE}x CPU (CDP)`, machineAtStart, machineAtEnd: machineNow(), rows, runs: all, geometry: geo };
   const file = join(stateDir, 'results', `${label}.json`);
   writeFileSync(file, JSON.stringify(out, null, 2));
-  const head = '| case | skeleton ms | content ms | LCP ms | CLS | CLS raw | long tasks | TBT ms | INP ms | reads | read ms | waves | server ms | doc KB | JS KB | flash |';
+  const head = '| case | skeleton ms | content ms | LCP ms | CLS | CLS raw | long tasks | longest ms | TBT ms | INP ms | reads | read ms | waves | server ms | doc KB | JS KB | flash |';
   console.log(head);
   console.log(head.replace(/[^|]/g, '-'));
-  for (const r of rows) console.log(`| ${r.key} | ${r.skeleton ?? '-'} | ${r.content ?? '-'} | ${r.lcp ?? '-'} | ${r.cls} | ${r.clsRaw} | ${r.longCount} | ${r.tbt} | ${r.inp ?? '-'} | ${r.reads} | ${r.readMs} | ${r.waves} | ${r.serverMs} | ${r.docKB ?? '-'} | ${r.jsKB ?? '-'} | ${r.flash ? 'YES' : ''} |`);
+  for (const r of rows) console.log(`| ${r.key} | ${r.skeleton ?? '-'} | ${r.content ?? '-'} | ${r.lcp ?? '-'} | ${r.cls} | ${r.clsRaw} | ${r.longCount} | ${r.longMax ?? '-'} | ${r.tbt} | ${r.inp ?? '-'} | ${r.reads} | ${r.readMs} | ${r.waves} | ${r.serverMs} | ${r.docKB ?? '-'} | ${r.jsKB ?? '-'} | ${r.flash ? 'YES' : ''} |`);
   if (geo.length) {
     console.log('\nSkeleton geometry against the loaded page (top / height in px from the page top; delta = loaded - skeleton)\n');
     console.log('| case | landmark | skeleton | loaded | top delta | height delta |');

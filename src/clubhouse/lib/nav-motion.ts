@@ -1,16 +1,16 @@
 'use client';
 
 import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
-import { CH_EASE, CH_FADE_MS, chSpringCurve } from './motion';
+import { CH_EASE_IOS, CH_EASE_IOS_CSS, CH_FADE_MS, CH_PUSH_MS, chBezier, chSpringCurve } from './motion';
 import { chMotionModeNow } from './reduced-motion';
-import { markHandPop } from './ua-pop';
+import { markHandPop, poppedByUA } from './ua-pop';
 
 /**
- * Which way a phone navigation moves (native-feel audit 2026-10-08, P1-1 and P1-2). Changing tabs swaps the page at
- * once (`data-ch-tab`, below; other crossfades are RouteFrame's); a drill-in (a row in More, a link from a page into its detail) pushes, as a pushed phone
- * screen does; Back from a pushed page pops. The kind is set on <html> as `data-ch-nav` when the tap or the Back
- * happens, before the router starts the navigation, and shell.css picks the view-transition keyframes by it. RouteFrame
- * clears it once the new page has committed and its transition has played. Desktop never sets it.
+ * Which way a phone navigation moves (native-feel audit 2026-10-08, P1-1 and P1-2; production audit 2026-11-15, S4.1 to
+ * S4.8). A drill-in (a row in More, a link from a page into its detail) pushes, as a pushed phone screen does; Back from a
+ * pushed page pops; everything else on a phone, a section switch above all, swaps at once. The kind is read here when
+ * the tap or the Back happens, before the router starts the navigation, and kept in this module, not on <html> (MOT-20:
+ * an attribute on <html> restyled the whole document three to five times a navigation). Desktop never pushes.
  */
 export type ChNavKind = 'push' | 'pop' | 'fade';
 
@@ -31,7 +31,7 @@ const strip = (p: string) => {
 const within = (child: string, parent: string) => parent !== '/' && child.startsWith(parent + '/');
 
 /**
- * `from` and `to` are paths; `tabRoots` the phone's section roots (the section strip's links). A tap on the strip always crossfades. A
+ * `from` and `to` are paths; `tabRoots` the phone's section roots (the section strip's links). A tap on the strip always swaps. A
  * Back (or a back link) from a page that is not a tab root pops; Forward onto one pushes. A tap onto a page that is not
  * a tab root pushes, unless it goes up to a page above this one, which pops.
  */
@@ -47,42 +47,39 @@ export function classifyNav({ from, to, tabRoots, tabBar = false, back = false }
 }
 
 const PHONE = CH_PHONE_QUERY;
+const phoneNow = () => !!window.matchMedia?.(PHONE).matches;
 /** How long a kind waits for its navigation to commit before it lapses (a tap that never navigated). */
 const LAPSE_MS = 3000;
-/** How long after the commit the kind stays: past the push's 462ms spring. */
+/** How long after the commit the kind stays: past the push's 520ms. */
 const SETTLE_MS = 700;
 let shownPath = '';
 let shownKey = '';
 let lapse = 0;
+/** The navigation under way: its kind, and whether it switches section. */
+let navKind: ChNavKind = 'fade';
 /**
- * A section switch: a tap on the phone's tab bar or on a desktop sidebar item (motion pass 2026-10-22, mot-03). It
- * swaps the page at once, as a tab bar and a sidebar do on iOS and macOS, rather than fade through: the fade-through's
- * old page fading out before the new one fades in left a beat with neither on screen, every time a coach changed
- * section. Set on <html> as `data-ch-tab` with the kind, on phone and desktop alike; shell.css drops the page's
- * keyframes by it. A navigation onto a route skeleton still holds the old page up (RouteFrame's hold), so a quick load
- * goes straight from the old page to the new one.
+ * A section switch: a tap on the phone's tab bar or on a desktop sidebar item (motion pass 2026-10-22, mot-03; S4.4). It
+ * swaps the page at once, as a tab bar and a sidebar do on iOS and macOS, with no view transition and no hold onto a
+ * skeleton: the route's skeleton is there in the first frame, whole.
  */
-const TAB = 'data-ch-tab';
+let navTab = false;
 
 function tabRoots(): string[] {
   return Array.from(document.querySelectorAll<HTMLAnchorElement>('.ch-strip a[href]')).map((a) => new URL(a.href, location.href).pathname);
 }
 
 function clear() {
-  const root = document.documentElement;
-  root.removeAttribute('data-ch-nav');
-  root.removeAttribute(TAB);
+  navKind = 'fade';
+  navTab = false;
   dropHeld();
 }
 
 function mark(kind: ChNavKind, tab = false) {
-  const root = document.documentElement;
   window.clearTimeout(lapse);
-  root.toggleAttribute(TAB, tab);
-  // Under Reduce Motion a drill-in or a Back crossfades instead of sliding (owner decision 2, OQ-15; shell.css).
-  if (kind === 'fade' || !window.matchMedia?.(PHONE).matches || chMotionModeNow() !== 'full') root.removeAttribute('data-ch-nav');
-  else root.setAttribute('data-ch-nav', kind);
-  if (tab || root.hasAttribute('data-ch-nav')) lapse = window.setTimeout(clear, LAPSE_MS);
+  navTab = tab;
+  // A push and a pop slide only on a phone with motion on: under Reduce Motion they crossfade (owner decision 2, OQ-15).
+  navKind = kind !== 'fade' && phoneNow() && chMotionModeNow() === 'full' ? kind : 'fade';
+  lapse = window.setTimeout(clear, LAPSE_MS);
 }
 
 /** Whether a link switches section: the phone's tab bar or the desktop sidebar's main list. */
@@ -90,10 +87,22 @@ export function isSectionLink(a: Element): boolean {
   return !!a.closest('.ch-strip, .ch-nav');
 }
 
-/** The kind currently set, if any. */
+/** The kind of the navigation under way, if any. */
 export function chNavKind(): ChNavKind {
-  const k = typeof document === 'undefined' ? null : document.documentElement.getAttribute('data-ch-nav');
-  return k === 'push' || k === 'pop' ? k : 'fade';
+  return navKind;
+}
+
+/**
+ * Whether the navigation under way crossfades: RouteFrame keys its `<ViewTransition>` to the route only then (S4.8). A
+ * desktop page change does, and a phone one under Reduce Motion. A section switch never does, nor any phone navigation
+ * with motion on (a push and a pop are drawn on the live page here, anything else swaps at once), nor a Back iOS already
+ * played. Mapping the boundary to 'none' by a transition type is not enough: React 19.3 starts a document view
+ * transition, and snapshots the whole page, for any `<ViewTransition>` that mounts in a transition, whatever its class.
+ */
+export function chNavCrossfades(): boolean {
+  if (typeof window === 'undefined') return true;
+  if (navTab || poppedByUA()) return false;
+  return !(phoneNow() && chMotionModeNow() === 'full');
 }
 
 /**
@@ -110,7 +119,7 @@ export function chNavShown(path: string, key: string = path): void {
   if (!changed) return;
   const copy = held;
   held = null;
-  if (copy && copy.from === before && chNavKind() === 'push') playPush(before, path, copy.layer);
+  if (copy && copy.from === before && navKind === 'push') playPush(before, path, copy.layer);
   else {
     copy?.layer.remove();
     settleUnders(path);
@@ -138,16 +147,6 @@ function onClick(e: MouseEvent) {
   holdForPush(from);
 }
 
-
-/**
- * Back from a pushed page (P1-2). React commits a Back synchronously inside the popstate event, and a synchronous
- * commit never starts a view transition, so the pop is drawn here: a copy of the leaving page, taken before the router
- * acts, slides off to the right edge on top while the page it uncovers comes in from the parallax mark, both on the
- * smooth spring a pushed screen pops on. The copy is inert, hidden from assistive tech, under the bars, and gone when
- * the slide ends. Not when iOS already played the Back with its edge swipe (data-ch-ua-pop), with Animations off, or on
- * desktop. Transform only; under the OS Reduce Motion setting the copy fades out over the quick beat instead, in opacity
- * only, and the page beneath stays still (owner decision 2, 2026-10-24, OQ-15).
- */
 /**
  * A copy of `el` for the pop's slide without what lies below the window: a block wholly under it can't move anything in
  * view, so it is left out, and the page is cloned and laid out only as far down as the screen reaches. Cloning a long
@@ -228,17 +227,31 @@ export function pageLayer(className: string): HTMLElement | null {
   return copy;
 }
 
-/** The smooth spring as WAAPI timing (a linear() curve where the engine has one), with a finger's speed in it if thrown. */
-export function chPushTiming(spring?: { velocity?: number; rest?: number; hold?: boolean }): { curve: ReturnType<typeof chSpringCurve>; timing: KeyframeAnimationOptions } {
-  const curve = chSpringCurve('smooth', spring);
-  const linear = typeof CSS !== 'undefined' && CSS.supports?.('transition-timing-function', 'linear(0, 1)');
-  return { curve, timing: { duration: curve.ms, easing: linear ? curve.linear : `cubic-bezier(${CH_EASE.join(', ')})` } };
+/** A push's or a pop's place along its curve: its length, and how far along it is at a share of that length. */
+export interface ChNavCurve {
+  ms: number;
+  ease: (p: number) => number;
 }
 
-/** The page beneath a push: how far it draws back (--ch-vt-parallax), from tokens.css. */
+/**
+ * A released swipe's finish (S4.2): the smooth spring as WAAPI timing (a linear() curve where the engine has one), with
+ * the finger's speed in it.
+ */
+export function chPushTiming(spring?: { velocity?: number; rest?: number; hold?: boolean }): { curve: ChNavCurve; timing: KeyframeAnimationOptions } {
+  const curve = chSpringCurve('smooth', spring);
+  const linear = typeof CSS !== 'undefined' && CSS.supports?.('transition-timing-function', 'linear(0, 1)');
+  return { curve, timing: { duration: curve.ms, easing: linear ? curve.linear : CH_EASE_IOS_CSS } };
+}
+
+/** A tapped push and its pop (S4.1): 520ms on the iOS curve, as UIKit's own push moves. */
+export function chTapTiming(): { curve: ChNavCurve; timing: KeyframeAnimationOptions } {
+  return { curve: { ms: CH_PUSH_MS, ease: chBezier(CH_EASE_IOS) }, timing: { duration: CH_PUSH_MS, easing: CH_EASE_IOS_CSS } };
+}
+
+/** The page beneath a push: how far it draws back (--ch-push-parallax, S4.1: UIKit's 30%), from tokens.css. */
 export function chUnderLook(): { parallax: string } {
   const css = getComputedStyle(document.documentElement);
-  return { parallax: css.getPropertyValue('--ch-vt-parallax').trim() || '-30%' };
+  return { parallax: css.getPropertyValue('--ch-push-parallax').trim() || '-30%' };
 }
 
 /**
@@ -259,8 +272,8 @@ export function underVeil(layer: HTMLElement): HTMLElement {
  * The grabbable push (C1, rows 2 and 89). A drill-in on a phone no longer slides by a view transition, whose snapshots
  * can be neither grabbed nor reversed: the tap holds a copy of the page it leaves (`holdForPush`), the view transition
  * swaps at once (shell.css), and in the commit that shows the new page that page itself (`#ch-content`, under the bars,
- * which never move) slides in from the right edge over the copy, which draws back by the parallax share and dims, on
- * the smooth spring (`--ch-dur-vt-push`, 462ms): the copy-and-slide Back already used. Because the live page is what
+ * which never move) slides in from the right edge over the copy, which draws back by the parallax share under a black
+ * dim, over 520ms on the iOS curve (S4.1): the copy-and-slide Back already used. Because the live page is what
  * moves, a finger can take it at any point (`grabPush`, use-route-swipe.ts) and a Back can reverse it from where it
  * stands (`takeRunningPush`).
  *
@@ -282,7 +295,7 @@ export interface ChUnder {
 const unders: ChUnder[] = [];
 const UNDERS_MAX = 4;
 let held: { layer: HTMLElement; from: string } | null = null;
-let pushing: { page: HTMLElement; anims: Animation[]; entry: ChUnder; curve: ReturnType<typeof chSpringCurve> } | null = null;
+let pushing: { page: HTMLElement; anims: Animation[]; entry: ChUnder; curve: ChNavCurve } | null = null;
 
 let holdFrame = 0;
 
@@ -293,10 +306,10 @@ let holdFrame = 0;
  */
 function holdForPush(from: string) {
   dropHeld();
-  if (document.documentElement.getAttribute('data-ch-nav') !== 'push') return;
+  if (navKind !== 'push') return;
   holdFrame = requestAnimationFrame(() => {
     holdFrame = 0;
-    if (document.documentElement.getAttribute('data-ch-nav') === 'push' && (shownPath || location.pathname) === from) takeHold(from);
+    if (navKind === 'push' && (shownPath || location.pathname) === from) takeHold(from);
   });
 }
 
@@ -345,7 +358,7 @@ function endPush(run: NonNullable<typeof pushing>) {
 
 function playPush(from: string, to: string, layer: HTMLElement) {
   const page = document.getElementById('ch-content');
-  if (!page || typeof page.animate !== 'function' || !window.matchMedia?.(PHONE).matches || chMotionModeNow() !== 'full') {
+  if (!page || typeof page.animate !== 'function' || !phoneNow() || chMotionModeNow() !== 'full') {
     // Held at the tap, in the document: no slide, so it goes.
     layer.remove();
     return;
@@ -358,16 +371,22 @@ function playPush(from: string, to: string, layer: HTMLElement) {
   while (unders.length > UNDERS_MAX) unders.shift()?.layer.remove();
   if (!layer.isConnected) document.body.appendChild(layer);
   layer.style.visibility = '';
-  const { curve, timing } = chPushTiming();
+  const { curve, timing } = chTapTiming();
   const { parallax } = chUnderLook();
   page.setAttribute('data-ch-pushing', '');
+  // Both ends are in place from this frame (fill backwards), but the clock starts a frame later (S4.1): this commit's
+  // frame lays out the whole new page, and a slide started inside it lost its first frames to that work.
   const anims = [
-    page.animate([{ transform: 'translateX(100%)' }, { transform: 'none' }], timing),
-    layer.animate([{ transform: 'none' }, { transform: `translateX(${parallax})` }], { ...timing, fill: 'forwards' }),
-    underVeil(layer).animate([{ opacity: 0 }, { opacity: 1 }], { ...timing, fill: 'forwards' }),
+    page.animate([{ transform: 'translateX(100%)' }, { transform: 'none' }], { ...timing, fill: 'backwards' }),
+    layer.animate([{ transform: 'none' }, { transform: `translateX(${parallax})` }], { ...timing, fill: 'both' }),
+    underVeil(layer).animate([{ opacity: 0 }, { opacity: 1 }], { ...timing, fill: 'both' }),
   ];
+  for (const a of anims) a.pause();
   const run = { page, anims, entry, curve };
   pushing = run;
+  requestAnimationFrame(() => {
+    if (pushing === run) for (const a of anims) a.play();
+  });
   anims[0]?.finished.then(
     () => endPush(run),
     () => {},
@@ -423,19 +442,29 @@ export function chHandPop(): void {
   markHandPop();
 }
 
+/**
+ * Back from a pushed page (P1-2) that came by the browser's own Back, not the bar's (the bar's is drawn on live layers,
+ * shell/use-route-swipe.ts). React commits a Back synchronously inside the popstate event, and a synchronous commit
+ * never starts a view transition, so the pop is drawn here: a copy of the leaving page, taken before the router acts,
+ * slides off to the right edge on top while the page it uncovers comes in from the parallax mark, both on the push's
+ * curve. The copy is inert, hidden from assistive tech, under the bars, and gone when the slide ends. Not when iOS already
+ * played the Back with its edge swipe (data-ch-ua-pop), with Animations off, or on desktop. Transform only; under the OS
+ * Reduce Motion setting the copy fades out over the quick beat instead, in opacity only, and the page beneath stays
+ * still (owner decision 2, 2026-10-24, OQ-15).
+ */
 function playPop(from = 1) {
   const frame = document.getElementById('ch-content');
   const mode = chMotionModeNow();
-  if (!frame || document.documentElement.hasAttribute('data-ch-ua-pop') || mode === 'off') return;
+  if (!frame || poppedByUA() || mode === 'off') return;
   const copy = pageLayer('ch-frame-popping');
   if (!copy) return;
   document.body.appendChild(copy);
-  const { timing } = chPushTiming();
+  const { timing } = chTapTiming();
   const { parallax } = chUnderLook();
   // The next frame, once the router's synchronous commit has put the page beneath in place.
   requestAnimationFrame(() => {
     if (mode === 'fade') {
-      const gone = copy.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: CH_FADE_MS, easing: `cubic-bezier(${CH_EASE.join(', ')})` });
+      const gone = copy.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: CH_FADE_MS, easing: CH_EASE_IOS_CSS });
       if (!gone) return copy.remove();
       gone.finished.then(() => copy.remove(), () => copy.remove());
       return;
@@ -454,14 +483,14 @@ function onPopState() {
   if (!shownPath) return;
   const kind = classifyNav({ from: shownPath, to: location.pathname + location.search, tabRoots: tabRoots(), back: true });
   // Drawn here rather than by a view transition (playPop), so the keyframes never run as well.
-  if (kind === 'pop' && window.matchMedia?.(PHONE).matches) {
+  if (kind === 'pop' && phoneNow()) {
     const from = takeRunningPush();
     mark('fade');
     playPop(from);
   } else mark(kind);
 }
 
-// Capture, so the kind is on <html> before Next's Link handler and the router's popstate start the navigation.
+// Capture, so the kind is known before Next's Link handler and the router's popstate start the navigation.
 if (typeof window !== 'undefined') {
   document.addEventListener('click', onClick, true);
   window.addEventListener('popstate', onPopState, true);

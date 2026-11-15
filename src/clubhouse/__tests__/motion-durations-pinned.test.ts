@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
  * The live Clubhouse duration set, decided 2026-10-18 (complete-and-elevate pass, owner delegation): the code is
  * the truth, and `.claude/rules/clubhouse.md` (D-64) and `docs/clubhouse/CHECKLIST_TEMPLATE.md` say the same.
  * The 2026-10-12 note reported two competing duration sets; what had actually drifted was the rule text, which
- * still said skeletons wait 150ms while the code moved the wait into the page transition's 300ms hold. A change
+ * still said skeletons wait 150ms while the code moved the wait into the page transition's 300ms hold (since
+ * halved to 150ms and kept only for a crossfade: production audit 2026-11-15, S4.4). A change
  * here is a design decision: change the rules and the checklist in the same commit.
  */
 const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8');
@@ -23,25 +24,21 @@ describe('Clubhouse motion durations (D-64 as built)', () => {
     expect(['press', 'quick', 'base', 'release', 'reveal'].map((s) => token(`ch-dur-${s}`))).toEqual(['110ms', '180ms', '260ms', '280ms', '520ms']);
   });
 
-  it('the phone page fade-through: 120ms out, a gap as long as the out, 220ms in, skeleton held 300ms', () => {
+  // Production audit 2026-11-15 (S4.4, S4.8): no phone fade-through. A phone page change with motion on swaps, pushes or
+  // pops on the live page; only the desktop crossfades (owner decision 3, OQ-14 / A10), 120ms out and 180ms in together.
+  it('the desktop crossfade: 120ms out and 180ms in together, no gap; a crossfade onto a skeleton holds 150ms', () => {
     expect(token('ch-dur-vt-out')).toBe('120ms');
-    expect(token('ch-dur-vt-gap')).toBe('var(--ch-dur-vt-out)');
-    expect(token('ch-dur-vt-in')).toBe('220ms');
-    expect(token('ch-dur-vt-hold')).toBe('300ms');
+    expect(token('ch-dur-vt-in')).toBe('180ms');
+    expect(token('ch-dur-vt-hold')).toBe('150ms');
+    expect(css).not.toContain('--ch-dur-vt-gap');
+    expect(css).not.toContain("@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {\n  html:has([data-ui='clubhouse']) {");
   });
 
-  // Owner decision 3 (Nick, 2026-10-24; OQ-14 / A10): a desktop drill-in crossfades with no gap, out 120ms and in
-  // 180ms together. Only the desktop block changes; the phone keeps the fade-through above.
-  it('the desktop drill-in crossfade: no gap, 180ms in, over the same 120ms out (decision 3, A10)', () => {
-    const at = css.indexOf('@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {\n  html:has([data-ui=\'clubhouse\']) {');
-    expect(at, 'the desktop vt block').toBeGreaterThan(-1);
-    const desk = css.slice(at, css.indexOf('}', at));
-    expect(token('ch-dur-vt-gap', desk)).toBe('0ms');
-    expect(token('ch-dur-vt-in', desk)).toBe('180ms');
-    expect(desk).not.toMatch(/--ch-dur-vt-out:/);
-    // The phone root block still reads 120 / 220 / a gap as long as the out.
-    const root = css.slice(css.indexOf("html:has([data-ui='clubhouse']) {"));
-    expect(root.slice(0, root.indexOf('}'))).toMatch(/--ch-dur-vt-out: 120ms;\s*--ch-dur-vt-in: 220ms;\s*--ch-dur-vt-gap: var\(--ch-dur-vt-out\);/);
+  it('the push and the pop: the reveal beat on the one curve, a third of parallax under a 0.075 dim (S4.1)', () => {
+    expect(token('ch-ease-ios')).toBe('cubic-bezier(0.32, 0.72, 0, 1)');
+    expect(token('ch-push-parallax')).toBe('-30%');
+    expect(token('ch-push-dim')).toBe('rgb(0 0 0 / 0.075)');
+    expect(css).not.toMatch(/--ch-(dur|ease)-vt-push|--ch-vt-parallax/);
   });
 
   it('the Stats busy dim holds off 150ms (A11), named in the rules and the checklist', () => {
@@ -51,13 +48,12 @@ describe('Clubhouse motion durations (D-64 as built)', () => {
     }
   });
 
-  it('skeletons show at once (the wait lives in the transition hold, not a skeleton delay)', () => {
-    expect(token('ch-skel-delay')).toBe('0ms');
+  it('skeletons show at once, whole (the only wait is a crossfade\'s hold, not a skeleton delay)', () => {
+    expect(css).not.toContain('--ch-skel-delay');
   });
 
-  it('the smooth spring settles in 462ms where linear() is supported (pushes and sheets)', () => {
+  it('the smooth spring settles in 462ms where linear() is supported (sheets)', () => {
     expect(css).toMatch(/--ch-dur-spring-smooth:\s*462ms;/);
-    expect(css).toMatch(/--ch-dur-vt-push:\s*462ms;/);
   });
 
   it('the loops: shimmer 1.9s, live pulse 2.8s, sweep 900ms', () => {
@@ -76,8 +72,11 @@ describe('Clubhouse motion durations (D-64 as built)', () => {
     const checklist = readFileSync(join(process.cwd(), 'docs/clubhouse/CHECKLIST_TEMPLATE.md'), 'utf8');
     for (const doc of [rules, checklist]) {
       expect(doc).toMatch(/120\s*ms out/);
-      expect(doc).toMatch(/300\s*ms/);
+      expect(doc).toMatch(/180\s*ms in/);
+      expect(doc).toMatch(/back 150\s*ms/);
+      expect(doc).toMatch(/520\s*ms on the one curve/);
       expect(doc).toMatch(/462\s*ms/);
+      expect(doc).not.toMatch(/fade(s)? through/i);
       expect(doc).not.toMatch(/wait 150\s*ms/i);
     }
   });

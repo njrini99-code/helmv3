@@ -1909,12 +1909,13 @@ button.ch-more__row[disabled] {
 }
 
 /* -- Page crossfade (RouteFrame's <ViewTransition>, owner 2026-10-01) ------------------------------------------------
-   The view-transition pseudo-elements hang off :root, outside [data-ui='clubhouse'], so their timings are tokens set on <html>
-   (tokens.css, --ch-dur-vt-*). The old and new pages crossfade together, in opacity
-   only: no slide, no blur, nothing that costs a phone a frame. The shell (root) is anchored: its new snapshot shows at
-   once and the old one is hidden, so the sidebar, top bar and tab bar never fade. Taps pass through to the live page
-   while it runs. Reduced motion and Animations off never start one (RouteFrame renders without it); the media query
-   below is the backstop. Every rule is scoped to a document showing Clubhouse, so Fairway pages are untouched. */
+   Only a desktop page change and a phone page change under Reduce Motion crossfade (production audit 2026-11-15, S4.8):
+   a section switch, and every phone navigation with motion on, start no view transition at all (RouteFrame), so nothing
+   full-page is snapshotted on a tap. The view-transition pseudo-elements hang off :root, outside [data-ui='clubhouse'],
+   so their timings are tokens set on <html> (tokens.css, --ch-dur-vt-*). The old and new pages crossfade together, in
+   opacity only. The shell (root) is anchored: its new snapshot shows at once and the old one is hidden, so the sidebar,
+   top bar and tab bar never fade. Taps pass through to the live page while it runs. Animations off never starts one
+   (RouteFrame renders without it). Every rule is scoped to a document showing Clubhouse, so Fairway pages are untouched. */
 @keyframes ch-vt-out {
   to {
     opacity: 0;
@@ -1941,7 +1942,7 @@ html:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
   animation: var(--ch-dur-vt-out) var(--ch-ease-vt-out) both ch-vt-out;
 }
 html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-  animation: var(--ch-dur-vt-in) var(--ch-ease-vt-in) var(--ch-dur-vt-gap) both ch-vt-in;
+  animation: var(--ch-dur-vt-in) var(--ch-ease-vt-in) both ch-vt-in;
 }
 /* The bars never fade or move during a page change (native-feel audit 2026-10-08, P0-3). As part of root they sat under
    the page's group, so the fading old page and the new page's skeleton drew over the tab bar. Named, each is its own
@@ -1969,92 +1970,53 @@ html:has([data-ui='clubhouse'])::view-transition-old(ch-strip) {
 html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
   animation-delay: var(--ch-dur-vt-hold);
 }
-/* A section switch (the tab bar, a sidebar item; lib/nav-motion.ts sets data-ch-tab; motion pass 2026-10-22, mot-03)
-   swaps at once, as a tab bar and a sidebar do on iOS and macOS: the new page is there in the first frame and the old
-   one is gone. The fade-through's dip, the old page out before the new one in, read as a blank beat on every section
-   change. Onto a route skeleton the old page still stays up through the hold and the skeleton's own delay, then goes in
-   one step as the skeleton fades in; a page that arrives sooner takes the hold off, and the old page goes with it. */
-html[data-ch-tab]:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-  animation: none;
-}
-html[data-ch-tab]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-  display: none;
-}
-html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-  display: block;
-  animation: calc(var(--ch-dur-vt-hold) + var(--ch-dur-vt-out)) step-end both ch-vt-out;
-}
-/* A drill-in pushes and Back pops (P1-1, P1-2; lib/nav-motion.ts sets data-ch-nav), as a pushed phone screen does
-   (PhoneScreen): the new page slides in from the right edge on the smooth spring while the one under it draws back by
-   a parallax share, and Back plays it in reverse with the leaving page on top. Transform on the snapshot, no layout and
-   no filter. Phone only: desktop keeps the crossfade. */
-@keyframes ch-vt-pop-in {
-  from {
-    transform: translateX(var(--ch-vt-parallax));
-  }
-}
-@keyframes ch-vt-pop-out {
-  to {
-    transform: translateX(100%);
-  }
-}
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  /* The pages are opaque while they slide, so neither shows through the other. */
-  html[data-ch-nav] [data-ui='clubhouse'] .ch-frame-route {
-    background: var(--ch-bg-page);
-  }
-  /* C1: a drill-in is drawn by the live page sliding over a copy of the one it left (lib/nav-motion.ts playPush), so a
-     finger can take it mid-flight; the view transition swaps at once, so the two never both slide. */
-  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-old(ch-page),
-  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-    animation: none;
-  }
-  html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-    z-index: 1;
-    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-pop-out;
-  }
-  html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-pop-in;
-  }
-  /* Back's pop (lib/nav-motion.ts playPop): the copy of the leaving page, over the page and under the bars. */
+  /* Back's pop from the browser's own toolbar (lib/nav-motion.ts playPop, the popstate fallback): the copy of the leaving
+     page, over the page and under the bars. A Back tap and the edge swipe slide the live page instead. */
   .ch-root.ch-frame-popping {
     z-index: calc(var(--ch-z-sticky) - 1);
     min-height: 0;
     overflow: hidden;
     background: var(--ch-bg-page);
     pointer-events: none;
+    will-change: transform;
   }
-  /* C1: the copy of the page beneath a pushed one (lib/nav-motion.ts unders): below the page, which slides over it, and
-     under the bars. Inert; only drawn while a push plays or a finger drags the page back. */
+  /* The copy of the page beneath a pushed one (lib/nav-motion.ts unders, S4.1): below the page, which slides over it, and
+     under the bars. Inert, and in the document only while a push plays or a finger or Back takes the page off it, so it
+     is promoted for exactly that long. */
   .ch-root.ch-frame-under {
     z-index: calc(var(--ch-z-sticky) - 2);
     min-height: 0;
     overflow: hidden;
     background: var(--ch-bg-page);
     pointer-events: none;
+    will-change: transform;
   }
-  /* The page moving over that copy, by the push or under a finger: opaque, and above it. */
+  /* The page moving over that copy, by the push, a Back or a finger: opaque, above it, promoted while it moves, and
+     edged by a hairline where it meets the page beneath (S4.1; Apple's edge shadow is unpublished, the hairline is the
+     quiet version). */
   [data-ui='clubhouse'] .ch-frame-route[data-ch-pushing] {
     position: relative;
     z-index: calc(var(--ch-z-sticky) - 1);
     background: var(--ch-bg-page);
+    box-shadow: -1px 0 0 var(--ch-card-ring);
+    will-change: transform;
   }
 }
 /* Reduce Motion (owner decision 2, 2026-10-24, OQ-15): a page change crossfades, the old page out and the new one in
-   together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades. No push, pop, parallax,
-   dim or hold; the bars stay put and a section switch still swaps at once. Settings › Animations off never starts a
-   transition (RouteFrame renders without one). */
+   together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades (S4.9). No push, pop,
+   parallax, dim or hold; the bars stay put and a section switch still swaps at once (RouteFrame starts no transition for
+   it). Settings › Animations off never starts a transition (RouteFrame renders without one). */
 @media (prefers-reduced-motion: reduce) {
   html:has([data-ui='clubhouse'])::view-transition-group(*),
   html:has([data-ui='clubhouse'])::view-transition-old(*),
   html:has([data-ui='clubhouse'])::view-transition-new(*) {
     animation: none !important;
   }
-  html:not([data-ch-tab], [data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-    z-index: auto;
+  html:not([data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-old(ch-page) {
     animation: var(--ch-dur-vt-fade) var(--ch-ease-vt-out) both ch-vt-out !important;
   }
-  html:not([data-ch-tab], [data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-new(ch-page) {
+  html:not([data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     animation: var(--ch-dur-vt-fade) var(--ch-ease-vt-in) both ch-vt-in !important;
   }
 }

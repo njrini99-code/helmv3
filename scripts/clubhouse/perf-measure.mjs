@@ -217,7 +217,7 @@ function run(cmd, argv, opts = {}) {
   return new Promise((res, rej) => spawn(cmd, argv, { stdio: 'inherit', ...opts }).on('exit', (c) => (c === 0 ? res() : rej(new Error(`${cmd} ${argv.join(' ')} exited ${c}`)))));
 }
 
-/** Exports `ref` of this repo to SNAPSHOT (keeping its `.next`) and links the checkout's node_modules. Returns the commit. */
+/** Exports `ref` of this repo to SNAPSHOT (keeping its `.next`) and copies the checkout's node_modules in by hard link or clone. Returns the commit. */
 async function snapshotOf(ref) {
   const sha = execFileSync('git', ['rev-parse', '--verify', `${ref}^{commit}`], { cwd: ROOT, encoding: 'utf8' }).trim();
   const tmp = join(homedir(), '.helm-perf', 'extract');
@@ -234,13 +234,27 @@ async function snapshotOf(ref) {
   await run('rsync', ['-a', '--delete', '--exclude=node_modules', '--exclude=.next', `${tmp}/`, `${SNAPSHOT}/`]);
   rmSync(tmp, { recursive: true, force: true });
   const link = join(SNAPSHOT, 'node_modules');
-  let linked = false;
+  let present = false;
   try {
-    linked = lstatSync(link).isSymbolicLink();
+    const st = lstatSync(link);
+    // `npm run build` is a Turbopack build, and Turbopack refuses a symlinked node_modules ("Could not find the Next.js
+    // package", 2026-11-15), so a symlink left by an older snapshot is replaced by a real tree.
+    if (st.isSymbolicLink()) rmSync(link);
+    else present = st.isDirectory();
   } catch {
     /* not there yet */
   }
-  if (!linked) symlinkSync(realpathSync(join(ROOT, 'node_modules')), link);
+  if (!present) {
+    const from = realpathSync(join(ROOT, 'node_modules'));
+    // A copy that costs no disk: hard links on Linux, an APFS clone on macOS. A plain symlink only where neither works.
+    const copy = process.platform === 'darwin' ? ['-cR', from, link] : ['-al', from, link];
+    try {
+      execFileSync('cp', copy, { stdio: 'ignore' });
+    } catch {
+      rmSync(link, { recursive: true, force: true });
+      symlinkSync(from, link);
+    }
+  }
   return sha;
 }
 

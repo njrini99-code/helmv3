@@ -122,11 +122,11 @@ describe('A-18: three sheets leave on their exit instead of unmounting', () => {
   });
 });
 
-describe('review 2026-10-15: a section change fades through, and a faded bar hides its buttons', () => {
-  it('the new page waits for the whole fade out, so the two snapshots never overlap', () => {
+describe('review 2026-10-15: a page change never shows two pages, and a faded bar hides its buttons', () => {
+  it('only the desktop crossfades, old and new together; the phone fade-through is gone (S4.4, S4.8)', () => {
     const tokens = css('tokens.css');
-    expect(tokens).toContain('--ch-dur-vt-gap: var(--ch-dur-vt-out);');
-    expect(css('shell.css')).toMatch(/::view-transition-new\(ch-page\) \{\s*animation: var\(--ch-dur-vt-in\) var\(--ch-ease-vt-in\) var\(--ch-dur-vt-gap\) both ch-vt-in;/);
+    expect(tokens).not.toContain('--ch-dur-vt-gap');
+    expect(css('shell.css')).toMatch(/::view-transition-new\(ch-page\) \{\s*animation: var\(--ch-dur-vt-in\) var\(--ch-ease-vt-in\) both ch-vt-in;/);
   });
   it('switching or a route skeleton takes the old bar buttons out of Tab and VoiceOver, after their fade', () => {
     const shell = css('shell.css');

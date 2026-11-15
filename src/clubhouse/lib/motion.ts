@@ -87,8 +87,50 @@ export const CH_SPRINGS = {
 /** Messages v2 send easings (MOT-SEND-6): the green fill coming up under the typed words, and the arrow leaving the send key. */
 export const CH_FILL_EASE_POINTS = [0.3, 0, 0.5, 1] as const;
 export const CH_ARROW_EASE_POINTS = [0.4, 0, 0.9, 0.3] as const;
-/** The iOS sheet curve: the quick chat's close, live pill out, and the down half of press dips. */
-export const CH_EASE_SHEET = [0.32, 0.72, 0, 1] as const;
+/**
+ * The iOS curve (--ch-ease-ios; audit spec S3.1, 15 Nov 2026): UIKit's own page push, sheet and keyboard curve, as the
+ * best web replicas measure it. Every tap-started enter and exit rides it: a push and its pop over the reveal beat
+ * (CH_PUSH_MS), a sheet, the keyboard.
+ */
+export const CH_EASE_IOS = [0.32, 0.72, 0, 1] as const;
+/** The iOS curve as a CSS easing string. */
+export const CH_EASE_IOS_CSS = `cubic-bezier(${CH_EASE_IOS.join(', ')})`;
+/** The iOS sheet curve: the quick chat's close, live pill out, and the down half of press dips. The iOS curve itself. */
+export const CH_EASE_SHEET = CH_EASE_IOS;
+/** A tapped push and its pop (S4.1): the reveal beat, on the iOS curve. A released swipe finishes on a spring instead. */
+export const CH_PUSH_MS = CH_DUR.reveal * 1000;
+
+/**
+ * A cubic-bezier easing as a function of progress, `x` to `y` (the curve a CSS `cubic-bezier()` draws): where a running
+ * WAAPI animation on that curve stands, read from its time. Newton's method, then bisection where it stalls.
+ */
+export function chBezier([x1, y1, x2, y2]: readonly [number, number, number, number]): (p: number) => number {
+  const at = (a: number, b: number, t: number) => ((1 - 3 * b + 3 * a) * t + (3 * b - 6 * a)) * t * t + 3 * a * t;
+  const slope = (a: number, b: number, t: number) => 3 * (1 - 3 * b + 3 * a) * t * t + 2 * (3 * b - 6 * a) * t + 3 * a;
+  return (p) => {
+    if (p <= 0) return 0;
+    if (p >= 1) return 1;
+    let t = p;
+    for (let i = 0; i < 8; i++) {
+      const dx = at(x1, x2, t) - p;
+      if (Math.abs(dx) < 1e-6) return at(y1, y2, t);
+      const d = slope(x1, x2, t);
+      if (Math.abs(d) < 1e-6) break;
+      t -= dx / d;
+    }
+    let lo = 0;
+    let hi = 1;
+    t = p;
+    for (let i = 0; i < 30; i++) {
+      const x = at(x1, x2, t);
+      if (Math.abs(x - p) < 1e-6) break;
+      if (x < p) lo = t;
+      else hi = t;
+      t = (lo + hi) / 2;
+    }
+    return at(y1, y2, t);
+  };
+}
 export type ChSpringKind = keyof typeof CH_SPRINGS;
 
 /**
