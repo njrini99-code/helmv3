@@ -43,11 +43,6 @@ vi.mock('@/components/fairway', () => ({
     return <i data-fairway-skeleton />;
   },
 }));
-vi.mock('@/components/fairway/pages/rounds-recover', () => ({
-  FairwayRecoverRound: function FairwayRecoverRound() {
-    return null;
-  },
-}));
 vi.mock('@/clubhouse/routes/round-recover', () => ({
   ClubhouseRoundRecoverRoute: function ClubhouseRoundRecoverRoute() {
     return null;
@@ -162,25 +157,19 @@ describe('Round recovery: the address (swap audit F-02)', () => {
     expect(isRebuilt('/golf/dashboard/rounds/recover/x', 'player')).toBe(false);
   });
 
-  it('the page draws Clubhouse’s screen for a player when the flag is on, and Fairway’s when it is off', async () => {
+  it('the page draws Clubhouse’s screen for a player', async () => {
     const on = (await RecoverRoundPage()) as ReactElement<{ playerId: string }>;
     expect(on.type).toBe(ClubhouseRoundRecoverRoute);
     expect(on.props.playerId).toBe('p1');
-    mocks.flag.on = false;
-    const off = (await RecoverRoundPage()) as ReactElement<{ children: ReactElement }>;
-    expect(off.type).not.toBe(ClubhouseRoundRecoverRoute);
-    expect(nameOf(off.props.children)).toBe('FairwayRecoverRound');
   });
 
-  it('the page keeps Fairway’s message for a session with no player, flag on or off (a coach has no rounds to recover)', async () => {
+  it('the page keeps its message for a session with no player (a coach has no rounds to recover)', async () => {
     mocks.session.current = { userId: 'u2', role: 'coach', player: null, coach: { id: 'c1' } };
     const on = (await RecoverRoundPage()) as ReactElement;
     expect(nameOf(on)).toBe('FeatureUnavailable');
-    mocks.flag.on = false;
-    expect(nameOf((await RecoverRoundPage()) as ReactElement)).toBe('FeatureUnavailable');
   });
 
-  it('CH-11408 the route loads with Clubhouse’s skeleton inside Clubhouse, and Fairway’s everywhere else', () => {
+  it('CH-11408 the route loads with the recovery skeleton', () => {
     const inside = render(
       <ClubhouseMarker>
         <RecoverRoundLoading />
@@ -188,10 +177,6 @@ describe('Round recovery: the address (swap audit F-02)', () => {
     );
     expect(code('CH-11408')).not.toBeNull();
     expect(inside.container.querySelector('[data-fairway-skeleton]')).toBeNull();
-    inside.unmount();
-    const outside = render(<RecoverRoundLoading />);
-    expect(code('CH-11408')).toBeNull();
-    expect(outside.container.querySelector('[data-fairway-skeleton]')).not.toBeNull();
   });
 });
 

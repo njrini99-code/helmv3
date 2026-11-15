@@ -106,7 +106,6 @@ export function localEnv(extra = {}) {
     ...extra,
   };
   for (const k of BLANKED) env[k] = '';
-  delete env.HELM_CLUBHOUSE_TEAMS;
   return env;
 }
 

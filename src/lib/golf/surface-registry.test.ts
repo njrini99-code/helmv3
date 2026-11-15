@@ -1,14 +1,12 @@
 // @vitest-environment jsdom
 //
 // GOLF IA REORG — FOUNDATION (docs/golf-ia-plan.json final_migrations #1-#3).
-// Locks in the registry's own invariants, then proves the three real
-// consumers (rail, CoachHelmSubNav, CommandPalette) resolve the SAME
-// canonical name per surface id — the "structurally impossible to disagree"
-// contract surface-registry.ts exists to enforce.
+// Locks in the registry's own invariants, then proves the rail resolves the
+// SAME canonical name per surface id — the "structurally impossible to
+// disagree" contract surface-registry.ts exists to enforce. (CoachHelmSubNav
+// and the golf CommandPalette were retired with Fairway, 2026-11-14.)
 
-import { createElement } from 'react';
-import { render, screen, within, fireEvent } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   GOLF_SURFACES,
   getSurface,
@@ -22,7 +20,6 @@ import {
   GOLF_COACH_HUBS,
   type GolfNavBadgeCounts,
 } from './nav-registry';
-import { CoachHelmSubNav } from '@/components/fairway/pages/coachhelm/CoachHelmSubNav';
 
 const ZERO_BADGES: GolfNavBadgeCounts = {
   messages: 0,
@@ -123,102 +120,15 @@ describe('surface-registry — rail resolves the registry canonical name', () =>
   });
 });
 
-describe('surface-registry — CoachHelmSubNav resolves the registry canonical name', () => {
-  it('coach strip renders Brief and Ask exactly as the registry names them', () => {
-    // Spine & Stage (2026-07-19, plan Task 9): Signals / Players / Effectiveness
-    // are legacy+hidden `?view=` drills of the Brief home now — the strip no
-    // longer carries their tabs (mirroring the player strip's consolidation).
-    //
-    // Ask is NOT one of those. It carries neither `legacy` nor `hidden` and
-    // owns its own route (`/golf/dashboard/coachhelm/chat`), but it was dropped
-    // from the strip along with them — which left the floating FAB as the only
-    // way into the chat while the breadcrumb kept printing "CoachHelm AI / Ask".
-    // This assertion is the registry↔renderer contract that let that drift
-    // through, so it now pins BOTH live tabs rather than just the first.
-    render(createElement(CoachHelmSubNav, { active: 'brief', role: 'coach' }));
-    const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
-    const labels = within(nav).getAllByRole('link').map((a) => a.textContent);
-
-    expect(labels).toEqual([surfaceName('brief'), surfaceName('ask')]);
-  });
-
-  it('player gets no strip: its one consolidated Overview tab is not a choice (DASH-06)', () => {
-    // Development / Game Profile / Standing are legacy+hidden (?view= drills
-    // of the Overview home now), which leaves the player a single tab, and a
-    // one-item tab strip is chrome with nothing to switch between.
-    render(createElement(CoachHelmSubNav, { active: 'brief', role: 'player' }));
-    expect(screen.queryByRole('navigation', { name: 'CoachHelm sections' })).toBeNull();
-  });
-});
-
-// CommandPalette fetches dynamic (players/rounds/insights) data via a server
-// action on first open — stub it so this test exercises only the STATIC
-// quick-action rows the registry feeds, with no Supabase dependency.
-vi.mock('@/app/golf/actions/command-palette', () => ({
-  getCommandPaletteData: vi.fn().mockResolvedValue({
-    players: [],
-    recentRounds: [],
-    recentInsights: [],
-  }),
-}));
-
-// jsdom has no layout engine, so it doesn't implement scrollIntoView — cmdk
-// calls it when the highlighted item changes. Stub it (same as cmdk's own
-// test suite does) so mounting <CommandPalette> under jsdom doesn't throw.
-if (!Element.prototype.scrollIntoView) {
-  Element.prototype.scrollIntoView = () => {};
-}
-
-describe('surface-registry — CommandPalette resolves the registry canonical name', () => {
-  it('coach palette entries for the CoachHelm cluster match the registry', async () => {
-    const { CommandPalette } = await import('@/components/golf/CommandPalette');
-    render(createElement(CommandPalette, { isCoach: true }));
-
-    // The palette only mounts its content while open — it listens for its own
-    // Cmd/Ctrl+K shortcut, the same one a real user would press.
-    fireEvent.keyDown(window, { key: 'k', metaKey: true });
-
-    expect(screen.getByRole('dialog', { name: 'Command palette' })).toBeInTheDocument();
-    expect(screen.getByText(surfaceName('rail-coachhelm-ai-coach'))).toBeInTheDocument();
-    expect(screen.getByText(surfaceName('signals'))).toBeInTheDocument();
-    expect(screen.getByText(surfaceName('insights'))).toBeInTheDocument();
-    expect(screen.getByText(surfaceName('patterns'))).toBeInTheDocument();
-    expect(screen.getByText(surfaceName('effectiveness'))).toBeInTheDocument();
-    expect(screen.getByText(surfaceName('development'))).toBeInTheDocument();
-  });
-
-  it('player palette entries for the CoachHelm cluster match the registry', async () => {
-    const { CommandPalette } = await import('@/components/golf/CommandPalette');
-    render(createElement(CommandPalette, { isCoach: false }));
-
-    fireEvent.keyDown(window, { key: 'k', metaKey: true });
-
-    expect(screen.getByRole('dialog', { name: 'Command palette' })).toBeInTheDocument();
-    expect(screen.getByText(surfaceName('rail-coachhelm-ai-player'))).toBeInTheDocument();
-    expect(screen.getByText(surfaceName('rail-my-stats-player'))).toBeInTheDocument();
-    expect(screen.getByText(surfaceName('my-development-tab'))).toBeInTheDocument();
-  });
-});
-
-// Replaces scripts/__tests__/coachhelm-hub.test.mjs (deleted with the
-// SurfaceHubGrid it guarded — the grid was one of three disagreeing nav
-// systems the surface registry retired). The contract it protected survives
-// in registry terms: every live (non-hidden) surface must be reachable from
-// at least one real nav consumer, so retiring the grid can never silently
-// re-orphan a CoachHelm route (2026-05-28 ultra-audit discoverability gap).
 describe('surface discoverability — no live surface is nav-orphaned', () => {
   it('every non-hidden surface href appears in at least one nav consumer source', async () => {
     const { readFile } = await import('node:fs/promises');
     const consumers = await Promise.all(
       [
+        // The Fairway consumers (CoachHelmSubNav, the golf CommandPalette and
+        // TriageDesk) were retired with Fairway (2026-11-14); the rail registry
+        // is the one left.
         'src/lib/golf/nav-registry.ts',
-        'src/components/fairway/pages/coachhelm/CoachHelmSubNav.tsx',
-        'src/components/golf/CommandPalette.tsx',
-        // FairwayCoachHelmSignals.tsx (the legacy monolith this list used to
-        // read) was deleted 2026-07-22 (dead code purge — zero live-route
-        // imports); TriageDesk.tsx is its live replacement for the Signals
-        // surface's discoverability text.
-        'src/components/golf/coachhelm/triage/TriageDesk.tsx',
       ].map((p) => readFile(p, 'utf8')),
     );
     const combined = consumers.join('\n');

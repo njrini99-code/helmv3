@@ -407,7 +407,7 @@
     "category": 8,
     "item": 1,
     "name": "CLUBHOUSE_GATE",
-    "meaning": "Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check.",
+    "meaning": "Clubhouse renders for a coach or a player (isClubhouseFor); it is the only coach and player UI since Fairway's retirement (owner, 2026-11-14). Anyone with no dashboard role gets no Clubhouse screen, and held server actions refuse them through the same check.",
     "status": "implemented",
     "where": "src/clubhouse/gate.ts#isClubhouseFor",
     "tests": [
@@ -11281,7 +11281,7 @@
     "category": 23,
     "item": 2,
     "name": "HELD_SETUP_ACTIONS_REFUSE_OFF",
-    "meaning": "The squad-size and entrants actions refuse before any read unless the Clubhouse UI is on for the caller (D-61).",
+    "meaning": "The squad-size and entrants actions refuse before any read unless the dashboard draws the caller as a coach (D-61). The Clubhouse-UI condition they also had is always met since Fairway's retirement (2026-11-14).",
     "status": "implemented",
     "where": "src/app/golf/actions/qualifier-setup.ts#coachOfQualifier",
     "tests": [
@@ -12538,7 +12538,7 @@
     "category": 1,
     "item": 14,
     "name": "ROUND_ENTRY_FOLLOWS_THE_FLAG",
-    "meaning": "/golf/dashboard/rounds/new and /golf/dashboard/rounds/continue/[id] draw Clubhouse's screens for a player when golf_clubhouse_ui is on: the pages branch on isClubhouseFor('player'), Continue's page loads the round once (its owner, that it is still in progress, its holes, shots and yardages, the qualifier round numbers left to choose) and hands it to Clubhouse, and each route's loading is Clubhouse's skeleton inside the shell (CH-11407). With the flag off the Fairway client renders exactly as before, with its round-type editor. A coach on /rounds/new keeps the legacy message. The Fairway-only type editor is not passed to Clubhouse.",
+    "meaning": "/golf/dashboard/rounds/new and /golf/dashboard/rounds/continue/[id] draw Clubhouse's screens for a player (the dashboard layout's role): Continue's page loads the round once (its owner, that it is still in progress, its holes, shots and yardages, the qualifier round numbers left to choose) and hands it to Clubhouse, and each route's loading is Clubhouse's skeleton inside the shell (CH-11407). A coach on /rounds/new keeps the legacy message. Fairway's round entry was retired (2026-11-14).",
     "status": "implemented",
     "where": "src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx; src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx; src/clubhouse/routes/round-new.tsx#ClubhouseNewRoundRoute; src/clubhouse/routes/round-continue.tsx#ClubhouseContinueRoundRoute",
     "tests": [
@@ -12632,9 +12632,9 @@
     "category": 2,
     "item": 6,
     "name": "REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON",
-    "meaning": "A round's review loads under the Clubhouse review skeleton (CH-11406) inside the shell, at /rounds/[id] and at the old /rounds/[id]/review address (which redirects there inside Clubhouse); outside the shell both keep Fairway's skeleton.",
+    "meaning": "A round's review loads under the Clubhouse review skeleton (CH-11406) at /rounds/[id]; the old /rounds/[id]/review address is a next.config redirect there, so it has no loading of its own.",
     "status": "implemented",
-    "where": "src/app/golf/(dashboard)/dashboard/rounds/[id]/loading.tsx; src/app/golf/(dashboard)/dashboard/rounds/[id]/review/loading.tsx",
+    "where": "src/app/golf/(dashboard)/dashboard/rounds/[id]/loading.tsx; next.config.mjs#redirects",
     "tests": [
       "src/clubhouse/__tests__/round-review.test.tsx"
     ]
@@ -17700,9 +17700,9 @@
     "category": 8,
     "item": 5,
     "name": "THE_PAGE_GIVES_CLUBHOUSE_ONLY_BEHIND_THE_FLAG",
-    "meaning": "With golf_clubhouse_ui on, a signed-in coach or player gets the Clubhouse route, drawn in place with no redirect, and ?view= is handed to it. With it off, everyone keeps the Fairway page (a coach gets its pointer to the Brief), and no session goes to sign in.",
+    "meaning": "A signed-in coach or player gets the Clubhouse route, drawn in place with no redirect, and ?view= is handed to it; no session goes to sign in. (Fairway's CoachHelm page was retired, 2026-11-14.)",
     "status": "implemented",
-    "where": "src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage; src/clubhouse/gate.ts#isClubhouseFor",
+    "where": "src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#CoachHelmPage; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
     "tests": [
       "src/clubhouse/__tests__/coachhelm.test.tsx"
     ]

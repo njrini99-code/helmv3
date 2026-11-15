@@ -51,18 +51,3 @@ describe('ModalShell', () => {
     expect(src).toContain('data-fw-keyboard-aware');
   });
 });
-
-describe('CoachHelm phone drawer', () => {
-  it('lifts by the keyboard height and drops the home-indicator pad while the keyboard is up', () => {
-    const drawer = read('src/components/golf/coachhelm/chat/CoachHelmDrawer.tsx');
-    expect(drawer).toContain('bottom-[var(--keyboard-height,0px)]');
-    expect(drawer).toContain('data-fw-keyboard-aware');
-    const composer = read('src/components/golf/coachhelm/chat/PromptComposer.tsx');
-    expect(composer).toContain('[.keyboard-open_&]:pb-0');
-  });
-
-  it('re-pins the transcript to the newest answer when its box shrinks', () => {
-    const chat = read('src/components/golf/coachhelm/chat/CoachHelmChat.tsx');
-    expect(chat).toMatch(/new ResizeObserver\([\s\S]*?el\.scrollTop = el\.scrollHeight/);
-  });
-});

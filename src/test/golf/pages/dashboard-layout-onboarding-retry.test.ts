@@ -40,19 +40,6 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerEvent: vi.fn(async () => {}),
 }));
 
-// The client shell and the theme boot are irrelevant here — stub them so the
-// layout's returned tree is cheap to inspect.
-vi.mock('@/app/golf/(dashboard)/FairwayDashboardShell', () => ({
-  FairwayDashboardShell: function FairwayDashboardShell() {
-    return null;
-  },
-}));
-vi.mock('@/components/theme/ThemeApplier', () => ({
-  ThemeApplier: function ThemeApplier() {
-    return null;
-  },
-}));
-
 // Team resolution is a separate concern with its own coverage
 // (resolve-team-failure-vs-finding.test.ts). Pin it so these cases isolate the
 // retry branch.
@@ -145,7 +132,7 @@ const client = {
   rpc: async () => ({ data: null, error: null }),
 };
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => client }));
-// The Clubhouse branch reads the phone-layout, rail and clock cookies (F-36); outside a request there is no cookie store.
+// The Clubhouse shell reads the phone-layout, rail and clock cookies (F-36); outside a request there is no cookie store.
 vi.mock('@/clubhouse/lib/phone-hint', () => ({ phoneHint: async () => false, railHint: async () => false, clockHint: async () => '12' }));
 
 // --- helpers -----------------------------------------------------------------

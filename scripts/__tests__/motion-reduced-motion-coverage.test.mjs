@@ -134,8 +134,6 @@ const SAFE_DELEGATES = new Map([
   ['useRouteRevealMotion', 'src/lib/motion/route-motion.ts'],
   // Clubhouse's hydration-safe gate: the OS media query or Settings > Animations off.
   ['useChReducedMotion', 'src/clubhouse/lib/reduced-motion.ts'],
-  // CoachHelm chat figures (Fairway): live answers animate, Reduce Motion draws them final.
-  ['useEvidenceMotion', 'src/components/golf/coachhelm/chat/EvidenceMotion.tsx'],
 ]);
 
 function honorsReducedMotion(rawSrc) {

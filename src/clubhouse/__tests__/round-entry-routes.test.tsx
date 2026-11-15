@@ -53,10 +53,7 @@ vi.mock('@/app/golf/actions/course-library', () => ({
   getCourseDetail: (...args: unknown[]) => mocks.getCourseDetail(...args),
   getTeeWithHoles: (...args: unknown[]) => mocks.getTeeWithHoles(...args),
 }));
-// The pages hand off to the screens, and to the Fairway clients: only which one, and with what, is read here.
-vi.mock('@/app/golf/(dashboard)/dashboard/rounds/new/new-round-client', () => ({ default: function NewRoundClient() { return null; } }));
-vi.mock('@/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client', () => ({ default: function ContinueRoundClient() { return null; } }));
-vi.mock('@/components/fairway/pages/rounds/RoundTypeEditor', () => ({ RoundTypeEditor: function RoundTypeEditor() { return null; } }));
+// The pages hand off to the screens: only which one, and with what, is read here.
 vi.mock('@/clubhouse/routes/round-new', () => ({ ClubhouseNewRoundRoute: function ClubhouseNewRoundRoute() { return null; } }));
 vi.mock('@/clubhouse/routes/round-continue', () => ({ ClubhouseContinueRoundRoute: function ClubhouseContinueRoundRoute() { return null; } }));
 vi.mock('../screens/rounds/track/RoundTracking', () => ({
@@ -65,7 +62,6 @@ vi.mock('../screens/rounds/track/RoundTracking', () => ({
 
 import NewRoundPage from '@/app/golf/(dashboard)/dashboard/rounds/new/page';
 import ContinueRoundPage from '@/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page';
-import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import { ClubhouseContinueRoundRoute } from '@/clubhouse/routes/round-continue';
 import { ClubhouseNewRoundRoute } from '@/clubhouse/routes/round-new';
 import { isRebuilt, rebuiltHref } from '../shell/nav';
@@ -109,21 +105,18 @@ describe('112401 Round entry: the addresses (110105, 110109)', () => {
   });
 });
 
-describe('Round entry: the pages (golf_clubhouse_ui)', () => {
-  it('110114 /rounds/new draws Clubhouse’s round for a player when the flag is on, and Fairway’s client when it is off', async () => {
-    const on = (await NewRoundPage()) as ReactElement<{ playerId: string }>;
-    expect(on.type).toBe(ClubhouseNewRoundRoute);
-    expect(on.props.playerId).toBe('p1');
-    mocks.flag.on = false;
-    const off = (await NewRoundPage()) as ReactElement;
-    expect(off.type).toBe(AnimatedPage);
+describe('Round entry: the pages', () => {
+  it('110114 /rounds/new draws Clubhouse’s round for a player', async () => {
+    const el = (await NewRoundPage()) as ReactElement<{ playerId: string }>;
+    expect(el.type).toBe(ClubhouseNewRoundRoute);
+    expect(el.props.playerId).toBe('p1');
   });
 
-  it('/rounds/new keeps the Fairway message for a coach, flag on or off (only players log rounds)', async () => {
+  it('/rounds/new tells a coach that only players log rounds', async () => {
     mocks.session.current = { userId: 'u2', role: 'coach', player: null, coach: { id: 'c1' } };
-    const on = (await NewRoundPage()) as ReactElement;
-    expect(on.type).not.toBe(ClubhouseNewRoundRoute);
-    expect(on.type).not.toBe(AnimatedPage);
+    const el = (await NewRoundPage()) as ReactElement<{ title: string; actionHref: string }>;
+    expect(el.type).not.toBe(ClubhouseNewRoundRoute);
+    expect(el.props).toMatchObject({ title: 'Log a Round', actionHref: '/golf/dashboard/stats/team' });
   });
 
   const roundRow = { id: ID, player_id: 'p1', status: 'in_progress', course_name: 'Finley GC', course_id: null, tee_id: null, holes_played: 9, current_hole: 4, round_type: 'practice', round_date: '2026-10-14', updated_at: '2026-10-14T12:00:00.000Z', qualifier_id: null, qualifier_round_number: null, back_nine: null, draft_data: null, notes: null };
@@ -137,7 +130,7 @@ describe('Round entry: the pages (golf_clubhouse_ui)', () => {
     };
   }
 
-  it('110114 /rounds/continue/[id] hands the loaded round to Clubhouse, without the Fairway-only type editor or its qualifier reads, when the flag is on', async () => {
+  it('110114 /rounds/continue/[id] hands the loaded round to Clubhouse, without a type editor or the qualifier reads', async () => {
     loaded();
     const el = (await ContinueRoundPage({ params: Promise.resolve({ id: ID }) })) as ReactElement<Record<string, unknown>>;
     expect(el.type).toBe(ClubhouseContinueRoundRoute);
@@ -148,21 +141,12 @@ describe('Round entry: the pages (golf_clubhouse_ui)', () => {
     expect(qualifierEntries).not.toHaveBeenCalled();
   });
 
-  it('110114 /rounds/continue/[id] with the flag off renders Fairway’s client, with its type editor, as it always did', async () => {
-    loaded();
-    mocks.flag.on = false;
-    const el = (await ContinueRoundPage({ params: Promise.resolve({ id: ID }) })) as ReactElement<{ children: ReactElement<Record<string, unknown>> }>;
-    expect(el.type).toBe(AnimatedPage);
-    expect(el.props.children.props.roundTypeEditor).toBeTruthy();
-    expect(qualifierEntries).toHaveBeenCalled();
-  });
-
-  // A round that is no longer in progress is the Fairway page's own case,
-  // decided before any UI branch: rounds/continue/[id]/page.completed-round.test.tsx.
+  // A round that is no longer in progress is the page's own case, decided before it draws anything:
+  // rounds/continue/[id]/page.completed-round.test.tsx.
 });
 
 describe('Round entry: loading (CH-11407)', () => {
-  it('CH-11407 each entry route’s loading is Clubhouse’s skeleton inside the Clubhouse shell, and Fairway’s everywhere else', async () => {
+  it('CH-11407 each entry route’s loading is Clubhouse’s skeleton', async () => {
     const New = (await import('@/app/golf/(dashboard)/dashboard/rounds/new/loading')).default;
     const Continue = (await import('@/app/golf/(dashboard)/dashboard/rounds/continue/[id]/loading')).default;
     for (const Loading of [New, Continue]) {
@@ -173,9 +157,6 @@ describe('Round entry: loading (CH-11407)', () => {
       );
       expect(code('CH-11407')).not.toBeNull();
       inside.unmount();
-      const outside = render(<Loading />);
-      expect(code('CH-11407')).toBeNull();
-      outside.unmount();
     }
   });
 });

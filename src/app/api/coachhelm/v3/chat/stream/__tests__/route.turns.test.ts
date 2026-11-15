@@ -25,7 +25,6 @@ const h = vi.hoisted(() => ({
   suggestions: false,
   modelId: null as string | null,
   notes: null as null | { tone: 'straight' | 'detailed' | 'team_talk'; facts: Array<{ id: string; text: string }> },
-  clubhouse: true,
   flags: new Set<string>(),
   loadRoundReview: vi.fn(async (..._args: unknown[]): Promise<unknown> => ({ kind: 'notFound' })),
   loadTournamentsHome: vi.fn(async (..._args: unknown[]): Promise<unknown> => ({ kind: 'not_set_up' })),
@@ -52,7 +51,7 @@ vi.mock('@/lib/auth/rate-limit', () => ({ checkRateLimit: vi.fn(async () => ({ a
 vi.mock('@/lib/coachhelm/v3/llm/budget', () => ({ checkBudget: h.checkBudget, recordSpend: vi.fn(async () => {}) }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: h.logServerError, logServerEvent: h.logServerEvent }));
 vi.mock('@/lib/observability/metrics', () => ({ recordAi: vi.fn() }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: vi.fn(async () => true), isClubhouseForTeam: vi.fn(() => h.clubhouse) }));
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: vi.fn(async () => true) }));
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (flag: string) => h.flags.has(flag) }));
 vi.mock('@/clubhouse/data/round-review', () => ({ loadRoundReview: h.loadRoundReview }));
 vi.mock('@/clubhouse/data/rounds', () => ({ loadRoundsLibrary: h.loadRoundsLibrary }));
@@ -145,7 +144,6 @@ function setup(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColu
   h.suggestions = false;
   h.modelId = null;
   h.notes = null;
-  h.clubhouse = true;
   h.flags = new Set();
   const coachTools: ChatTool[] = asTools(
     readTool('get_player_stats', log, 71.4),
@@ -2543,28 +2541,11 @@ describe('the screens the tools read through', () => {
 describe('find_in_app, which answers with Clubhouse addresses', () => {
   const names = (model: FakeModel) => (model.requests[0]!.tools as Array<{ name: string }>).map((t) => t.name);
 
-  it('is offered to a team with Clubhouse on, and the screen the chat was opened from is told to the model', async () => {
+  it('is offered to every team (Clubhouse is the only UI), and the screen the chat was opened from is told to the model', async () => {
     const model = script({ content: [text('It is on Roster.')] });
     await ask('Where do I set the lineup?', null, { screen: { screen: 'Roster' } });
     expect(names(model)).toContain('find_in_app');
     expect(lastRequestMessages(model)[1]!.content).toBe('Today is Tuesday 10 November 2026. The coach is on Roster.');
-  });
-
-  it('is not offered to a team without it; a call naming it is answered as an error, not a crash; and the screen is not named', async () => {
-    h.clubhouse = false;
-    const model = script({ content: [toolUse('tu_1', 'find_in_app', {})] }, { content: [text('Look under Roster.')] });
-    const { events } = await ask('Where do I set the lineup?', null, { screen: { screen: 'Roster' } });
-    expect(names(model)).toEqual(['get_player_stats', 'get_team_stats', 'create_focus_area', 'get_rounds', 'get_round', 'code_execution']);
-    expect(done(events)?.status).toBe('complete');
-    expect(log.reads).toHaveLength(0);
-    expect((lastRequestMessages(model)[3]!.content as unknown[])[0]).toEqual({ type: 'tool_result', tool_use_id: 'tu_1', content: 'There is no tool named find_in_app.', is_error: true });
-    // The place names are Clubhouse's: without it the line is the date alone, and nothing is echoed for a chip.
-    expect(lastRequestMessages(model)[1]!.content).toBe(TODAY);
-    expect((events[0] as { context?: unknown }).context).toBeNull();
-    // The list without the tool is the same bytes on every request, so it caches on its own.
-    const again = script({ content: [text('74.2.')] });
-    await ask('Team?');
-    expect(again.requests[0]!.tools).toEqual(model.requests[0]!.tools);
   });
 });
 

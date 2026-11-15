@@ -1,24 +1,13 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-/** The one switch between Fairway and Clubhouse (src/clubhouse/gate.ts). */
-
-const flag = vi.hoisted(() => ({ on: false }));
-vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (id: string) => id === 'golf_clubhouse_ui' && flag.on }));
+/** The dashboard role check (src/clubhouse/gate.ts). Clubhouse is the only coach and player UI (Fairway retired, 2026-11-14). */
 
 vi.mock('server-only', () => ({}));
-vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: async () => null }));
 
 import { isClubhouseFor } from '../gate';
 
 describe('Shell · gate (P001)', () => {
-  afterEach(() => {
-    flag.on = false;
-  });
-
-  it('10801 Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on', async () => {
-    expect(await isClubhouseFor('coach')).toBe(false);
-    expect(await isClubhouseFor('player')).toBe(false);
-    flag.on = true;
+  it('10801 Clubhouse renders for a coach or a player, and for no other role', async () => {
     expect(await isClubhouseFor('coach')).toBe(true);
     expect(await isClubhouseFor('player')).toBe(true);
     expect(await isClubhouseFor(null)).toBe(false);

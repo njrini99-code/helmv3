@@ -61,7 +61,6 @@ const teamOf = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(teamOf.current) }));
 const flag = vi.hoisted(() => ({ on: true }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: () => flag.on }));
-vi.mock('@/app/golf/(dashboard)/dashboard/classes/LegacyClassesPage', () => ({ default: () => <p>The current classes page</p> }));
 
 import GolfClassesPage from '@/app/golf/(dashboard)/dashboard/classes/page';
 import ClassesLoading from '@/app/golf/(dashboard)/dashboard/classes/loading';
@@ -551,20 +550,16 @@ describe('Classes route and page', () => {
     expect(names()).toEqual(['Intermediate Macroeconomics', 'Writing in the Disciplines', 'Probability and Statistics', 'Corporate Finance', 'Golf Performance Lab']);
   });
 
-  it('the page gives a Clubhouse player the new screen and everyone else the current page', async () => {
+  it('the page gives a player the Classes screen; a coach gets nothing from it (the frame shows a coach its not-rebuilt state)', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'p1' } };
-    flag.on = true;
     expect((await GolfClassesPage()) as { type: unknown }).toMatchObject({ type: ClubhouseClassesRoute });
-    flag.on = false;
-    expect((await GolfClassesPage()) as { type: unknown }).not.toMatchObject({ type: ClubhouseClassesRoute });
-    flag.on = true;
     session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1' }, player: null };
-    expect((await GolfClassesPage()) as { type: unknown }).not.toMatchObject({ type: ClubhouseClassesRoute });
+    expect(await GolfClassesPage()).toBeNull();
     // A coach who also has a player profile is still a coach here: Classes is the player's page.
     session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1' }, player: { id: 'p9' } };
-    expect((await GolfClassesPage()) as { type: unknown }).not.toMatchObject({ type: ClubhouseClassesRoute });
+    expect(await GolfClassesPage()).toBeNull();
     session.current = null;
-    expect((await GolfClassesPage()) as { type: unknown }).not.toMatchObject({ type: ClubhouseClassesRoute });
+    expect(await GolfClassesPage()).toBeNull();
   });
 
   it('CH-12401 the route skeleton holds the page shape and says it is loading', async () => {
@@ -2258,23 +2253,15 @@ describe('Classes, review fixes on screen', () => {
     expect(save.mock.calls[3]![2]).not.toBe(ids[0]);
   });
 
-  it('CH-12401 the route’s loading skeleton is the player’s inside Clubhouse; a coach there, and anyone outside it, gets the Fairway one', () => {
-    const inShell = (shellRole: 'coach' | 'player') => (
+  it('CH-12401 the route’s loading skeleton is the player’s (a coach on Classes gets the frame’s not-rebuilt state instead)', () => {
+    const shellRole = 'player' as const;
+    render(
       <ClubhouseMarker role={shellRole}>
         <ClassesLoading />
-      </ClubhouseMarker>
+      </ClubhouseMarker>,
     );
-    const player = render(inShell('player'));
     expect(code('CH-12401')).not.toBeNull();
     expect(screen.queryByText('Loading classes…')).toBeNull();
-    player.unmount();
-    const coach = render(inShell('coach'));
-    expect(code('CH-12401')).toBeNull();
-    expect(screen.getByText('Loading classes…')).toBeTruthy();
-    coach.unmount();
-    render(<ClassesLoading />);
-    expect(code('CH-12401')).toBeNull();
-    expect(screen.getByText('Loading classes…')).toBeTruthy();
   });
 });
 

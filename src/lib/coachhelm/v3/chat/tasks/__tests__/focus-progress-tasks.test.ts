@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -55,7 +55,7 @@ describe('log_focus_progress', () => {
     expect(p.summary).toBe('Set Avery Lane’s focus area “Lag putting” to 31, with a note.');
     expect([fact(p, 'Player'), fact(p, 'Now'), fact(p, 'After'), fact(p, 'Target'), fact(p, 'Note')]).toEqual(['Avery Lane', '34', '31', '30', 'Pace was much better on Tuesday']);
     expect(fact(p, 'Tracking')).toBe('By hand. The value stays until someone changes it.');
-    expect(fact(p, 'The player sees')).toBe('The value 31 on this focus area on their own page. The note is saved with the entry; the focus area card shows an entry’s value and date, not its note. No notification is sent.');
+    expect(fact(p, 'The player sees')).toBe('The value 31 on this focus area on their own page. The note is saved with the entry; their pages show the value, not the note. No notification is sent.');
     expect([p.recipients, p.delivery, p.notifications, p.visible_note]).toEqual([[], null, [], fact(p, 'The player sees')]);
     expect(a.verifyPlayerAccess).toHaveBeenCalledWith(AVERY, COACH_USER, sb);
   });
@@ -126,12 +126,13 @@ describe('log_focus_progress', () => {
   });
 
   it('what the card says a player sees is what the app’s pages draw', () => {
-    // The player's plan board prints the value.
-    expect(source('src/components/golf/coachhelm/home/HubPlanBoard.tsx')).toContain('`Now ${area.current_value}`');
-    // The focus area card reads an entry's date and value, and no entry's note.
-    const card = source('src/components/fairway/pages/coachhelm/FocusAreaCard.tsx');
-    expect(card).toContain('for (const e of focusArea.progressHistory ?? []) add(e.at, e.value);');
-    expect(card).not.toMatch(/\be\.note\b|entry\.note\b/);
+    // The player's Stats page reads the value, and the focus area track draws it.
+    expect(source('src/clubhouse/data/stats-player.ts')).toContain('current: f.current_value,');
+    expect(source('src/clubhouse/screens/stats/StatsPlayer.tsx')).toContain('current={f.current}');
+    // No Clubhouse source reads the entries a note is stored with.
+    const files = (readdirSync(join(process.cwd(), 'src/clubhouse'), { recursive: true }) as string[]).filter((f) => /\.tsx?$/.test(f) && !f.includes('__tests__'));
+    expect(files.length).toBeGreaterThan(100);
+    expect(files.filter((f) => source(join('src/clubhouse', f)).includes('progress_notes'))).toEqual([]);
   });
 });
 

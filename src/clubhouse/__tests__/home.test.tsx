@@ -46,9 +46,6 @@ vi.mock('@/lib/golf/dashboard-request-cache', () => ({
 }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn() }));
 vi.mock('@/lib/redesign/flag', () => ({ fairwayScope: (c: string) => c }));
-// The existing dashboards are stubs named for what they stand in for; the test only asks which one the page chose.
-vi.mock('@/components/fairway/pages/dashboard/FairwayCoachDashboard', () => ({ FairwayCoachDashboard: Object.assign(() => null, { displayName: 'ExistingCoachDashboard' }) }));
-vi.mock('@/components/fairway/pages/dashboard/FairwayPlayerDashboard', () => ({ FairwayPlayerDashboard: Object.assign(() => null, { displayName: 'ExistingPlayerDashboard' }) }));
 vi.mock('@/app/golf/actions/dashboard-data', () => ({
   getCachedCoachDashboardData: async () => ({ teamName: 'Varsity', joinCode: 'ABC', stats: {}, recentRounds: [], topPlayers: [], calendarEvents: [], teamScoringTrend: [], timezone: 'America/New_York' }),
   getCachedPlayerDashboardData: async () => ({ teamName: 'Varsity', stats: { handicap: null }, recentRounds: [], timezone: 'America/New_York' }),
@@ -667,8 +664,6 @@ describe('Home · the loader', () => {
 // The page is the real one; only the session, the flag and the request-scoped team resolvers are faked.
 
 type PageEl = ReactElement<{ data: { greeting: string }; children: ReactElement }>;
-/** Which existing dashboard a page element wraps (the stubs above carry a displayName). */
-const existing = (el: PageEl) => (el.props.children.type as { displayName?: string }).displayName;
 const visit = async (params: { range?: string } = {}) => (await GolfDashboardPage({ searchParams: Promise.resolve(params) })) as PageEl;
 const coachSession = (over: Record<string, unknown> = {}) => ({ userId: 'u-coach', coach: { id: 'c1', organization_id: 'o1', full_name: 'Maya Reyes', avatar_url: null, ...over }, player: null });
 const playerSession = { userId: 'u-player', coach: null, player: { id: 'p-1', first_name: 'Theo', last_name: 'Marchetti', avatar_url: null } };
@@ -696,37 +691,26 @@ describe('Home · which Home a viewer gets', () => {
     redirectSpy.mockClear();
   });
 
-  it('20801 a coach with the Clubhouse flag on gets Coach Home, and the existing dashboard with it off', async () => {
+  it('20801 a coach gets Coach Home', async () => {
     session.current = coachSession();
     requestCache.coachTeam.mockResolvedValue('t-coach');
     const el = await visit();
     expect(el.type).toBe(CoachHome);
     expect(el.props.data.greeting).toMatch(/, Maya$/);
-    flag.coach = false;
-    const old = await visit();
-    expect(old.type).not.toBe(CoachHome);
-    expect(existing(old)).toBe('ExistingCoachDashboard');
   });
 
-  it('20801 a player with the Clubhouse flag on gets Player Home, and the existing dashboard with it off', async () => {
+  it('20801 a player gets Player Home', async () => {
     session.current = playerSession;
     requestCache.playerTeam.mockResolvedValue({ data: { team_id: 't-player' }, error: null });
     const el = await visit();
     expect(el.type).toBe(PlayerHome);
     expect(el.props.data.greeting).toMatch(/, Theo$/);
-    flag.player = false;
-    const old = await visit();
-    expect(old.type).not.toBe(PlayerHome);
-    expect(existing(old)).toBe('ExistingPlayerDashboard');
   });
 
-  it('20801 a session holding both profiles gets the coach’s Home and never Player Home, even with the coach flag off', async () => {
+  it('20801 a session holding both profiles gets the coach’s Home and never Player Home', async () => {
     session.current = { ...coachSession(), player: playerSession.player };
     requestCache.coachTeam.mockResolvedValue('t-coach');
     expect((await visit()).type).toBe(CoachHome);
-    flag.coach = false;
-    const old = await visit();
-    expect(existing(old)).toBe('ExistingCoachDashboard');
     expect(requestCache.playerTeam).not.toHaveBeenCalled();
   });
 

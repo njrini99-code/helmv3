@@ -1,50 +1,5 @@
-/**
- * v3 Qualifying selection workspace (W29 — Part XV.0 new route).
- *
- * Coach-only. The existing /dashboard/qualifiers/[id] keeps owning
- * scoring + the real-time leaderboard; this route owns "who's going to
- * the tournament" — top-N auto-lock + coach-pick reasoning + final
- * confirmation flip.
- */
-
-import { redirect, notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { getGolfSessionProfile } from '@/lib/auth/session';
-import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
-import { fairwayScope } from '@/lib/redesign/flag';
-import { FairwayQualifyingWorkspace } from '@/components/fairway/pages/qualifiers/FairwayQualifyingWorkspace';
-import type { Metadata } from 'next';
-
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('golf_qualifiers')
-    .select('name')
-    .eq('id', id)
-    .maybeSingle();
-  return {
-    title: data?.name ? `${data.name} · Selection` : 'Selection',
-  };
-}
-
-export default async function QualifyingWorkspacePage({ params }: PageProps) {
-  const { id } = await params;
-  const session = await getGolfSessionProfile();
-  if (!session) redirect('/golf/login');
-  if (!session.coach) redirect(`/golf/dashboard/qualifiers/${id}`);
-
-  const supabase = await createClient();
-  const workspace = await loadQualifyingWorkspace(supabase, id);
-  if (!workspace) notFound();
-
-  return (
-    <div className={fairwayScope('min-h-full bg-canvas')}>
-      <FairwayQualifyingWorkspace workspace={workspace} />
-    </div>
-  );
+// An old address: its layout sends each role to its Clubhouse screen (src/clubhouse/routes/alias.ts), and the Clubhouse
+// frame shows a role it does not send on its coach-only state. Nothing renders here.
+export default function AliasPage() {
+  return null;
 }

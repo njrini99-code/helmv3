@@ -73,14 +73,15 @@ describe('dataPromptsV2ForShotEntry', () => {
   });
 });
 
-describe('the round entry pages read the flag through the canary', () => {
+describe('the round entry routes read the flag through the canary', () => {
   // A bare isFlagEnabled read would ignore HELM_COACHHELM_TEAMS and show the
-  // prompts to every team once the flag is on (the #2258 class of bug).
-  const pages = ['src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx', 'src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx'];
-  it.each(pages)('%s', async (path) => {
+  // prompts to every team once the flag is on (the #2258 class of bug). Round
+  // entry is Clubhouse's (Fairway retired, 2026-11-14): its two routes read it.
+  const routes = ['src/clubhouse/routes/round-new.tsx', 'src/clubhouse/routes/round-continue.tsx'];
+  it.each(routes)('%s', async (path) => {
     const { readFileSync } = await import('node:fs');
     const src = readFileSync(path, 'utf8');
-    expect(src).toContain('await dataPromptsV2ForShotEntry(player.id)');
+    expect(src).toMatch(/dataPromptsV2ForShotEntry\((?:props\.)?playerId\)/);
     expect(src).not.toMatch(/isFlagEnabled\(\s*DATA_PROMPTS_FLAG/);
   });
 });

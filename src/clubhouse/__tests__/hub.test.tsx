@@ -1958,7 +1958,7 @@ describe('Team Hub · roles, states and layout', () => {
     expect(await reopen(user, 'New announcement', 'New announcement', 'Headline')).toBe('Bus leaves at 6');
   });
 
-  it('CH-10405 the route shows the Clubhouse skeleton inside the shell and the Fairway one outside it', () => {
+  it('CH-10405 the route shows the Team Hub skeleton', () => {
     render(
       <ClubhouseMarker>
         <Loading />
@@ -1966,10 +1966,6 @@ describe('Team Hub · roles, states and layout', () => {
     );
     expect(code('CH-10405')!.getAttribute('aria-busy')).toBe('true');
     expect(screen.getByLabelText('Loading Team Hub')).toBeTruthy();
-    cleanup();
-    render(<Loading />);
-    expect(code('CH-10405')).toBeNull();
-    expect(screen.getByRole('status')).toBeTruthy();
     cleanup();
     render(<HubSkeleton />);
     expect(code('CH-10405')).not.toBeNull();

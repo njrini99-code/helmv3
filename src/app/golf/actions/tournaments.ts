@@ -19,7 +19,7 @@ import type { ActionResult } from './golf-action-shared';
  * P016 Tournaments server actions. The writes are held migration 20261024100200's RPCs (SECURITY INVOKER, so the
  * 100100 policies decide every row) plus four plain writes the policies already allow a coach (link a round, enter a
  * score, dismiss a link candidate, save the review). Every action:
- *   - asks golf_tournaments_v1 and golf_clubhouse_ui first: an export is callable without its route, so with the
+ *   - asks golf_tournaments_v1 first: an export is callable without its route, so with the
  *     flag off nothing reaches a tournament table;
  *   - is coach only (the player's writes, a reflection or a link of their own round, are held file 4's);
  *   - returns `{ success: false, error, code }` on a refusal, where `code` is a `TourRefusalCode`
@@ -54,7 +54,7 @@ async function refused<T>(action: string, error: { code?: string | null; message
 async function asCoach<T>(run: (c: Coach) => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
   // The routes' gate is src/clubhouse/gate.ts (isTournamentsFor), which code outside src/clubhouse may not import: the
   // same two flags here; the Clubhouse team allowlist is the routes', and RLS admits only a coach of the team either way.
-  if (!isFlagEnabled('golf_tournaments_v1') || !isFlagEnabled('golf_clubhouse_ui')) return refuse('off');
+  if (!isFlagEnabled('golf_tournaments_v1')) return refuse('off');
   const role = await getGolfDashboardRole();
   if (role !== 'coach') return refuse('not_coach');
   const session = await getGolfSessionProfile();

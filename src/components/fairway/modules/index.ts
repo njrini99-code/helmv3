@@ -4,7 +4,6 @@ export * from './logic';
 export * from './Bento';
 export * from './BentoCell';
 export * from './MatrixBoard';
-export * from './Filmstrip';
 export * from './Spine';
 export * from './frosted';
 export * from './StandingTrack';

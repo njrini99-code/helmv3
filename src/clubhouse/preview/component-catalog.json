@@ -11591,16 +11591,6 @@
       "fixture": "Contextual module"
     },
     {
-      "file": "src/clubhouse/shell/ClubhouseSwitch.tsx",
-      "group": "shell",
-      "exports": [
-        "ClubhouseSwitch"
-      ],
-      "styles": [],
-      "examples": [],
-      "fixture": "Contextual module"
-    },
-    {
       "file": "src/clubhouse/shell/DeepLinks.tsx",
       "group": "shell",
       "exports": [

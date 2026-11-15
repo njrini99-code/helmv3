@@ -161,7 +161,7 @@ export const CH_NAV = CH_NAV_COACH;
 /**
  * A readable name for a dashboard route with no nav item (a page not rebuilt
  * for this role), so its top bar never says "Home" (swap audit F-39):
- * /golf/dashboard/my-qualifiers -> "My qualifiers".
+ * /golf/dashboard/courses -> "Courses".
  */
 export function routeLabel(pathname: string): string | null {
   const seg = pathname.replace(/^\/golf\/dashboard\/?/, '').split('/')[0];
@@ -269,7 +269,7 @@ export const CH_ALIASED_ROUTES: Readonly<Record<ChRole, readonly RegExp[]>> = ((
   // Each row with the roles its layout sends on (its `redirectToClubhouse({ coach, player })` keys; a guard test reads
   // them). A role with no target is not waiting on a redirect: it sees its own page at once (F-0055).
   const rows: Array<[RegExp, ChRole[]]> = [
-    [/^\/golf\/dashboard\/(tasks|announcements|team|documents|travel)$/, both],
+    [/^\/golf\/dashboard\/team$/, both],
     [/^\/golf\/dashboard\/(intelligence|courses)$/, ['coach']],
     [/^\/golf\/dashboard\/roster\/[^/]+$/, both],
     // A player's old pages and everything under them: next.config sends /players/<id> on to /players/<id>/game, and an old
@@ -277,10 +277,6 @@ export const CH_ALIASED_ROUTES: Readonly<Record<ChRole, readonly RegExp[]>> = ((
     [/^\/golf\/dashboard\/players\/[^/]+(\/.*)?$/, ['coach']],
     [/^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+)$/, both],
     [/^\/golf\/dashboard\/coachhelm\/genome\/[^/]+$/, ['coach']],
-    [/^\/golf\/dashboard\/rounds\/[^/]+\/review$/, both],
-    // My qualifiers is retired in Clubhouse (owner, 2026-11-11): players have one Qualifiers page with their own listed
-    // first, so the address opens Qualifiers for both roles.
-    [/^\/golf\/dashboard\/my-qualifiers$/, both],
     // Rebuilt for one role and moved for the other (a player's Team stats to their Stats, What's new and Live to Home):
     // the segment must render for its redirect to run.
     [/^\/golf\/dashboard\/(stats\/team|whats-new|live)$/, ['player']],
@@ -301,17 +297,13 @@ export function isAliased(pathname: string, role?: ChRole): boolean {
  * guard test keeps this in step with src/app/golf/(dashboard)/dashboard.
  */
 export const CH_DASHBOARD_SEGMENTS: readonly string[] = [
-  'announcements',
   'calendar',
   'classes',
   'coachhelm',
   'courses',
-  'dev',
-  'documents',
   'intelligence',
   'live',
   'messages',
-  'my-qualifiers',
   'players',
   'practice',
   'qualifiers',
@@ -320,11 +312,9 @@ export const CH_DASHBOARD_SEGMENTS: readonly string[] = [
   'rounds',
   'settings',
   'stats',
-  'tasks',
   'team',
   'team-hub',
   'tournaments',
-  'travel',
   'whats-new',
 ];
 

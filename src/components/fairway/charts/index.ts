@@ -140,10 +140,6 @@ export type { StrokesGainedTornadoProps, SGCategory } from './StrokesGainedTorna
 export { LeakMap } from './LeakMap';
 export type { LeakMapProps, LeakMapBucket } from './LeakMap';
 
-// ── Fairway-native standing strip (flat matte PGA·team·you comparison) ───────
-export { StandingStrip } from './StandingStrip';
-export type { StandingStripProps } from './StandingStrip';
-
 // ── Fairway-native green-ruled leader stat (W6 polish — owner's "green
 // rules, green leaders" ask; ports the RuledStatLine CONCEPT, not the code) ──
 export { RuledLeaderStat } from './RuledLeaderStat';

@@ -1,6 +1,3 @@
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { readFlagsFile } from './flags/lib.mjs';
 import {
   PUBLISHABLE_KEY_ENV,
   LEGACY_ANON_KEY_ENV,
@@ -46,38 +43,7 @@ const PRODUCTION_REQUIRED = ['CRON_SECRET', 'SENTRY_AUTH_TOKEN'];
 // the webhook secret takes payments it cannot reconcile.
 const STRIPE_PAIR = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'];
 
-const CLUBHOUSE_TEAMS_ENV = 'HELM_CLUBHOUSE_TEAMS';
-const FLAGS_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'config', 'feature-flags.yml');
-
-/** Ids of the active clubhouse flags that are on for this Vercel environment. */
-export function clubhouseFlagsOn(vercelEnv, flags) {
-  return flags
-    .filter(
-      (flag) =>
-        typeof flag?.feature_id === 'string' &&
-        flag.feature_id.includes('clubhouse') &&
-        flag.status === 'active' &&
-        flag.environment?.[vercelEnv] === true
-    )
-    .map((flag) => flag.feature_id);
-}
-
-function loadFlags() {
-  try {
-    return readFlagsFile(FLAGS_PATH);
-  } catch (err) {
-    // Without the registry the clubhouse rule cannot be evaluated. The flag
-    // checker (npm run flags:check) owns a malformed registry; do not fail the
-    // build here for it, but say so, so a skipped rule is visible in the log.
-    process.stderr.write(
-      `[check-required-env] could not read config/feature-flags.yml (${err instanceof Error ? err.message : err}); ` +
-        `the ${CLUBHOUSE_TEAMS_ENV} rule was skipped\n`
-    );
-    return [];
-  }
-}
-
-export function checkRequiredEnv(env = process.env, { flags, warn } = {}) {
+export function checkRequiredEnv(env = process.env) {
   const vercelEnv = env['VERCEL_ENV'];
   if (vercelEnv !== 'production' && vercelEnv !== 'preview') return;
 
@@ -101,24 +67,7 @@ export function checkRequiredEnv(env = process.env, { flags, warn } = {}) {
     );
   }
 
-  // The clubhouse canary. An unset HELM_CLUBHOUSE_TEAMS means EVERY team gets
-  // Clubhouse (src/clubhouse/gate.ts), so while a clubhouse flag is on the
-  // value has to be a deliberate choice: team ids, or * for everyone. A
-  // production build fails without it; a preview build only warns, because a
-  // preview that is missing it still works and blocking previews would stall
-  // UI verification.
-  const activeClubhouseFlags = clubhouseFlagsOn(vercelEnv, flags ?? loadFlags());
-  const clubhouseMissing = activeClubhouseFlags.length > 0 && !isSet(env, CLUBHOUSE_TEAMS_ENV);
-
-  if (vercelEnv !== 'production') {
-    if (clubhouseMissing) {
-      (warn ?? ((message) => process.stderr.write(`${message}\n`)))(
-        `[check-required-env] ${CLUBHOUSE_TEAMS_ENV} is unset while ${activeClubhouseFlags.join(', ')} ` +
-          `is on in preview, so every team gets Clubhouse. Set team ids, or * to mean everyone.`
-      );
-    }
-    return;
-  }
+  if (vercelEnv !== 'production') return;
 
   // Production-only requirements. Every problem is reported in one message so a
   // failed deploy is fixed in one pass, not one variable per build.
@@ -132,12 +81,6 @@ export function checkRequiredEnv(env = process.env, { flags, warn } = {}) {
   const stripeSet = STRIPE_PAIR.filter((key) => isSet(env, key));
   if (stripeSet.length > 0 && stripeSet.length < STRIPE_PAIR.length) {
     problems.push(`${STRIPE_PAIR.find((key) => !isSet(env, key))} (set together with ${stripeSet[0]})`);
-  }
-  if (clubhouseMissing) {
-    problems.push(
-      `${CLUBHOUSE_TEAMS_ENV} (${activeClubhouseFlags.join(', ')} is on in production; ` +
-        `unset means every team gets Clubhouse — set team ids, or * to mean everyone)`
-    );
   }
   if (problems.length > 0) {
     throw new Error(`Missing required env var for a production build: ${problems.join('; ')}`);

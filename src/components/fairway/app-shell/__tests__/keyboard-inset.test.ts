@@ -6,6 +6,8 @@
  * provider publishes — `--keyboard-height` and `body.keyboard-open` — or the
  * keys cover it. Shenandoah, 2026-09-01/02: "I can't see what I'm typing" in
  * the messages composer, and the same on the round-entry distance box.
+ * (Fairway's messages column and composer, pinned here until Fairway retired
+ * on 2026-11-14, are gone; Clubhouse's Messages owns its own composer.)
  *
  * These are contract tests over the source: each surface that must consume
  * the hooks, does.
@@ -34,36 +36,6 @@ describe('keyboard inset — who publishes it', () => {
 });
 
 describe('keyboard inset — who consumes it', () => {
-  it('the messages column always gives up room for the keyboard, in both mobile modes', () => {
-    const src = read('src/components/fairway/pages/messages/FairwayMessages.tsx');
-
-    // The guarantee this test exists for: a column that keeps its full height
-    // while the keyboard covers the composer is the bug.
-    expect(src).not.toContain('100dvh-4rem-56px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)');
-    expect(src).not.toMatch(/h-\[calc\(100dvh-4rem-env\(safe-area-inset-top,0px\)\)\]/);
-  });
-
-  it('the composer drops its home-indicator pad while the keyboard covers the home indicator', () => {
-    const src = read('src/components/fairway/pages/messages/MessageComposer.tsx');
-
-    // Argument-agnostic about the step, deliberately. This used to pin
-    // `[.keyboard-open_&]:pb-4` exactly, which is a pixel value this test does
-    // not own — G-47 moved the composer's gutter from pb-4 to pb-3 to match
-    // the artboard's dock, and that broke a test about something else.
-    //
-    // The property this test DOES own: the keyboard-open override replaces the
-    // resting pad with a plain one, dropping the env(safe-area-inset-bottom)
-    // term — because the keyboard is already covering the home indicator, and
-    // paying for it twice is the "I can't see what I'm typing" bug.
-    const override = src.match(/\[\.keyboard-open_&\]:pb-[\w.[\]()+-]*/);
-    expect(override, 'expected a keyboard-open bottom-padding override').not.toBeNull();
-    expect(override![0]).not.toContain('safe-area-inset-bottom');
-
-    // …and the RESTING pad does carry it, so the override is a real drop
-    // rather than two classes that happen to agree.
-    expect(src).toMatch(/pb-\[calc\([^\]]*env\(safe-area-inset-bottom\)[^\]]*\)\]/);
-  });
-
   it('<body> grows by the keyboard height so a focused field on ANY page can be scrolled above it', () => {
     const css = read('src/app/globals.css');
     expect(css).toMatch(/body\.keyboard-open\s*\{\s*padding-bottom:\s*var\(--keyboard-height\);/);

@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * The continue page's loader (the field screen's server read, shared by both UIs), under the owner's rules of 2026-10-01: a read that
+ * The continue page's loader (the field screen's server read), under the owner's rules of 2026-10-01: a read that
  * failed is an error with the route boundary's retry, never "not found", and never a round opened on yardages that were not read (a
  * hole with no yardage is a 1-yard tee shot to the state machine). The page itself is otherwise unchanged; the cases that open
  * normally are here to say so.
@@ -25,11 +25,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(mocks.session.current) }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(mocks.tables));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: mocks.logServerError }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: () => Promise.resolve(true) }));
 vi.mock('@/clubhouse/routes/round-continue', () => ({ ClubhouseContinueRoundRoute: function ClubhouseContinueRoundRoute() { return null; } }));
-vi.mock('@/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client', () => ({ default: function ContinueRoundClient() { return null; } }));
-vi.mock('@/components/fairway/pages/rounds/RoundTypeEditor', () => ({ RoundTypeEditor: function RoundTypeEditor() { return null; } }));
-vi.mock('@/components/golf/layout/AnimatedPage', () => ({ AnimatedPage: function AnimatedPage() { return null; } }));
 
 import ContinueRoundPage from '@/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page';
 import { ClubhouseContinueRoundRoute } from '@/clubhouse/routes/round-continue';
@@ -68,7 +64,7 @@ function tables(over: Record<string, unknown> = {}, round: Record<string, unknow
     ...over,
   } as import('./supabase-fake').ChFakeTables;
 }
-const load = () => ContinueRoundPage({ params: Promise.resolve({ id: ID }) });
+const load = async () => (await ContinueRoundPage({ params: Promise.resolve({ id: ID }) }))!;
 const props = (el: unknown) => (el as ReactElement<Record<string, unknown>>).props;
 const yardages = (el: unknown) => (props(el).holes as Array<{ yardage: number }>).map((h) => h.yardage);
 

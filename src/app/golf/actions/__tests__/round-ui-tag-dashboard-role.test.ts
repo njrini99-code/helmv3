@@ -1,24 +1,19 @@
 /**
  * @vitest-environment node
  *
- * The `ui` tag on the autosave and submit traces (swap audit §18) says which UI wrote the round. It is 'clubhouse'
- * only when the gate is on for the player AND the dashboard layout's role (getGolfDashboardRole) is the player's, so
- * a user with an unfinished coach row beside their player profile is tagged with the shell they actually see.
- * The tag is computed before the flight recorder exists, so a failed role read must tag 'fairway', never throw:
- * that would fail the save itself. With the gate off, no session is read for it.
+ * The `ui` tag on the autosave and submit traces (swap audit §18) says which UI wrote the round. Clubhouse is the only
+ * UI since Fairway's retirement (2026-11-14), so it is always 'clubhouse', whatever the dashboard role. The tag is
+ * computed before the flight recorder exists and reads no session for it, so a failed session read can never fail the
+ * save itself.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const state = vi.hoisted(() => ({
-  clubhouse: true,
   session: null as unknown,
   sessionFails: false,
   recorderInputs: [] as Array<{ workflow: string; metadata?: Record<string, unknown> }>,
 }));
 
-vi.mock('@/clubhouse/gate', () => ({
-  isClubhouseFor: vi.fn(async (role: string | null | undefined) => (role === 'coach' || role === 'player') && state.clubhouse),
-}));
 vi.mock('@/lib/auth/session', () => ({
   getGolfSessionProfile: vi.fn(async () => {
     if (state.sessionFails) throw new Error('session read failed');
@@ -64,7 +59,6 @@ async function uiTags(): Promise<unknown[]> {
 }
 
 beforeEach(() => {
-  state.clubhouse = true;
   state.session = playerDashboard;
   state.sessionFails = false;
   vi.mocked(getGolfSessionProfile).mockClear();
@@ -75,21 +69,14 @@ describe('round trace ui tag', () => {
     expect(await uiTags()).toEqual(['clubhouse', 'clubhouse']);
   });
 
-  it('is fairway for a dual-profile user on the coach dashboard', async () => {
+  it('is clubhouse on the coach dashboard too: there is no other UI', async () => {
     state.session = coachDashboard;
-    expect(await uiTags()).toEqual(['fairway', 'fairway']);
+    expect(await uiTags()).toEqual(['clubhouse', 'clubhouse']);
   });
 
-  it('is fairway, without throwing, when the role read fails', async () => {
+  it('reads no session for it, so a failed session read cannot fail the save', async () => {
     state.sessionFails = true;
-    expect(await uiTags()).toEqual(['fairway', 'fairway']);
-  });
-
-  it('is fairway with the gate off, and reads no session for it', async () => {
-    state.clubhouse = false;
-    state.recorderInputs = [];
-    await (savePartialRound as (...a: unknown[]) => Promise<unknown>)({}).catch(() => undefined);
-    expect(state.recorderInputs.map((i) => i.metadata?.ui)).toEqual(['fairway']);
+    expect(await uiTags()).toEqual(['clubhouse', 'clubhouse']);
     expect(getGolfSessionProfile).not.toHaveBeenCalled();
   });
 });

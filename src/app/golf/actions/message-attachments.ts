@@ -486,7 +486,7 @@ async function getGolfConversationFilesImpl(conversationId: string): Promise<{
 
     const session = await getGolfSessionProfile();
     // The dashboard layout's role (golf-dashboard-role.ts), not session.role ("has a coach row"): a user the layout
-    // draws Clubhouse for, as coach or player, gets the files; one it draws Fairway for is refused as before.
+    // draws Clubhouse for, as coach or player, gets the files; a session with neither role is refused.
     if (!(await isClubhouseFor(session ? pickGolfDashboardRole(session) : null))) {
       return { error: 'Not available' };
     }

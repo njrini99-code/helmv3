@@ -30,7 +30,6 @@ import { loadTeamStats } from '@/clubhouse/data/stats-team';
 import { loadTeamRounds } from '@/clubhouse/data/team-rounds';
 import { loadTeamStrokesGained } from '@/clubhouse/data/team-sg';
 import { loadTournamentsHome, tourContext } from '@/clubhouse/data/tournaments';
-import { isClubhouseFor, isClubhouseForTeam } from '@/clubhouse/gate';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/rate-limit';
@@ -275,7 +274,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     // A player has no coach row: their own read-only Ask, on this route, with the role from the session. Only that denial comes here,
     // and the player turn confirms a player row and runs the team gate itself.
-    if (err instanceof CoachContextError && err.reason === 'not_a_coach' && (await isClubhouseFor('player'))) {
+    if (err instanceof CoachContextError && err.reason === 'not_a_coach') {
       const body = Body.safeParse(await req.json().catch(() => null));
       if (!body.success || body.data.input.kind !== 'message') return refuse(400, 'Bad request', null);
       return runPlayerTurn(supabase, { text: body.data.input.text, clientTurnId: body.data.client_turn_id, screen: body.data.screen }, req.signal, (who) => playerScreenLoaders(supabase, who));
@@ -358,14 +357,13 @@ export async function POST(req: NextRequest) {
   // answered turn) the coach's standing notes go to the model as a system message after the coach's own, and are stored with the turn.
   // A decision request sends none: its turn already has its line.
   const blocks = instructionBlocks(surface, ctx);
-  // Clubhouse for this coach's team, by the check its pages use. It decides two things here, both because the names are Clubhouse's:
-  // whether the screen the browser names is told to the model, and whether `find_in_app` (which answers with Clubhouse addresses) is offered.
-  const clubhouseOn = isClubhouseForTeam(ctx.team_id);
+  // Clubhouse is the only coach UI (Fairway retired, 2026-11-14), so the screen the browser names is told to the model and `find_in_app`
+  // (which answers with Clubhouse addresses) is offered to every team.
   let turnNote: string | null = null;
   let screenEcho: ChatScreenEcho | null = null;
   if (input.kind === 'message') {
     // Neither read throws; without the notes migration there are simply no notes and no tone.
-    const [where, knows] = await Promise.all([turnContext(supabase, ctx, clubhouseOn ? parsed.data.screen : null), readStandingNotes(supabase, ctx, isNewConversation ? null : convId)]);
+    const [where, knows] = await Promise.all([turnContext(supabase, ctx, parsed.data.screen), readStandingNotes(supabase, ctx, isNewConversation ? null : convId)]);
     screenEcho = where.screen?.place ? { screen: where.screen.screen, label: where.screen.place.name } : null;
     // "First" is the first turn that stays in the stored history: a failed first attempt leaves only its question behind, so its retry
     // still carries the notes.
@@ -375,9 +373,8 @@ export async function POST(req: NextRequest) {
   }
   // The model this surface runs on. A coach's three surfaces share one, so a conversation never changes model between them.
   const profile = profileFor(surface);
-  // The registry registers `find_in_app` for everyone; a team without Clubhouse is not offered it. That is two tool lists per surface,
-  // each the same bytes on every request, so each is cached on its own.
-  const tools = toolsFor(surface, ctx).filter((tool) => clubhouseOn || tool.name !== 'find_in_app');
+  // One tool list per surface, the same bytes on every request, so it is cached.
+  const tools = toolsFor(surface, ctx);
 
   // Opaque and server-generated, never derived from who the coach or their players are: safe as Sentry's conversation key.
   Sentry.setConversationId(convId);

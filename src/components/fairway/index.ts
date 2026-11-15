@@ -322,9 +322,6 @@ export {
   LeakMap,
   type LeakMapProps,
   type LeakMapBucket,
-  // StandingStrip: flat matte PGA·team·you comparison (Fairway-native StandingBar).
-  StandingStrip,
-  type StandingStripProps,
   // RuledLeaderStat: green-ruled leader stat atom (W6 polish).
   RuledLeaderStat,
   type RuledLeaderStatProps,
@@ -455,82 +452,3 @@ export {
   type ReadoutDelta,
 } from './instrument';
 
-// ── pages · dashboard ─────────────────────────────────────────────────────--
-export {
-  FairwayPlayerDashboard,
-  type PlayerDashboardData,
-} from './pages/dashboard';
-
-// ── pages · coachhelm (Phase-2 shell composites + lifted shared modules) ─────
-// The keystone shell + sub-nav, the ONE focus-area vocabulary, the lifted
-// AREA_TYPES vocabulary, and the shared optimistic chat-send hook. ADDITIVE +
-// GATED — consumed only behind isRedesignEnabled() forks in the surfaces wave.
-export {
-  CoachHelmShell,
-  type CoachHelmShellProps,
-  type CoachHelmCrumb,
-  CoachHelmSubNav,
-  type CoachHelmSubNavProps,
-  type CoachHelmTab,
-  type CoachHelmRole,
-  FocusAreaCard,
-  type FocusAreaCardProps,
-  type FocusAreaCardData,
-  type FocusAreaRole,
-  type FocusAreaProgressEntry,
-  // ── Players surface (coach "Players" tab + per-player genome detail/compare) ─
-  PlayersGridView,
-  type PlayersGridViewProps,
-  type PlayersGridPlayer,
-  type PlayersGridFocusArea,
-  type PlayersGridStats,
-  GenomeDetailView,
-  type GenomeDetailViewProps,
-  GenomeCompareView,
-  type GenomeCompareViewProps,
-  type ComparePlayerOption,
-  type CompareSeries,
-  AREA_TYPES,
-  getAreaType,
-  suggestedMetrics,
-  getAreaAutoFill,
-  getMetricCurrentValue,
-  isLowerIsBetter,
-  getProgressPercent,
-  LOWER_IS_BETTER_KEYWORDS,
-  type AreaTypeValue,
-  type AreaTypeConfig,
-  type AreaAutoFillStats,
-  type AreaAutoFill,
-  // ── Ask surface ────────────────────────────────────────────────────────────
-  // Removed with the streaming rebuild. The one chat system now lives at
-  // `@/components/golf/coachhelm/chat` and is mounted by both the Ask page and
-  // the global drawer — there is no Fairway-barrel surface for it.
-  // ── Effectiveness surface (coach "Effectiveness" tab over analytics/coachhelm) ─
-  FairwayEffectiveness,
-  type FairwayEffectivenessProps,
-  // ── Signals surface (coach "Signals" tab over alerts/insights/patterns) ─────
-  // The monolithic FairwayCoachHelmSignals was deleted 2026-07-22 (dead code
-  // purge) — all three routes are permanent-redirect shims onto TriageDesk's
-  // Signals drill (SignalQueue/SignalDossier). SignalsToolbar/ScanTeamControl
-  // followed on 2026-08-15 — the "remain live, reused elsewhere" note here had
-  // gone stale, the drill absorbed both. The adapter below is still live.
-  //
-  // Keep this comment free of semicolons. It sits INSIDE the multi-line
-  // `export { … } from './pages/coachhelm'` statement below, and
-  // route-reachability.test.ts matches that statement with `[^;]*?` — a `;`
-  // anywhere in here truncates the match, the barrel edge is never followed,
-  // and every component under pages/coachhelm/ is reported unreachable.
-  insightToSignalRow,
-  patternToSignalRow,
-  insightsToSignalRows,
-  patternsToSignalRows,
-  type SignalRow,
-  type SignalSource,
-  type SignalEvidenceLine,
-  // ── Player-path surfaces (phase 5 · the PLAYER shell variant) ──────────────
-  // FairwayPlayerCoachHelm and the two components only it imported
-  // (HeroNarrativeCard, FocusAreasGrid) were deleted together 2026-08-18, and
-  // FairwayMyDevelopment was deleted 2026-09-22 (its route permanently
-  // redirects) — see the notes in ./pages/coachhelm/index.ts.
-} from './pages/coachhelm';

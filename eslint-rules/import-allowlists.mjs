@@ -7,26 +7,21 @@
 //
 // Never add a file here to make lint pass. New code uses the replacement.
 
-// TODO(phase-7b): 10 files outside src/clubhouse import it without being a route file. Pass the gate answer in from the route file instead.
+// TODO(phase-7b): 6 files outside src/clubhouse import it without being a route file. Pass the gate answer in from the route file instead.
 export const CLUBHOUSE_IMPORT_ALLOWLIST = [
   'src/app/clubhouse-preview/auth/PreviewAuth.tsx',
   'src/app/clubhouse-preview/auth/PreviewGate.tsx',
   'src/app/clubhouse-preview/entry/PreviewEntry.tsx',
   'src/app/clubhouse-preview/entry/fixtures.ts',
-  'src/app/golf/actions/development.ts',
   'src/app/golf/actions/message-attachments.ts',
-  'src/app/golf/actions/qualifier-setup.ts',
-  'src/app/golf/actions/round-partial.ts',
-  'src/app/golf/actions/round-submit.ts',
   'src/components/errors/RouteErrorBoundary.tsx',
 ];
 
-// TODO(phase-7b): 45 files import src/lib/error-logging.ts. Migrate to server-error-logger (logServerError / logServerEvent) or observed-action.
+// TODO(phase-7b): 40 files import src/lib/error-logging.ts. Migrate to server-error-logger (logServerError / logServerEvent) or observed-action.
 export const ERROR_LOGGING_ALLOWLIST = [
   'src/app/admin/_components/PanelBoundary.tsx',
   'src/app/baseball/(dashboard)/dashboard/roster/RosterClient.tsx',
   'src/app/global-error.tsx',
-  'src/app/golf/(dashboard)/dashboard/classes/sync-class-safely.ts',
   'src/app/golf/admin/crm/components/EmailTrackingView.tsx',
   'src/app/golf/admin/crm/components/QuickActionsPanel.tsx',
   'src/app/golf/admin/crm/components/ScheduleEventModal.tsx',
@@ -43,14 +38,10 @@ export const ERROR_LOGGING_ALLOWLIST = [
   'src/components/baseball/staff-decision-room/StaffDecisionRoomFairway.tsx',
   'src/components/coach/discover/DiscoverView.tsx',
   'src/components/errors/RouteErrorBoundary.tsx',
-  'src/components/fairway/pages/messages/FairwayMessages.tsx',
-  'src/components/fairway/pages/rounds-new/FairwayCoursePicker.tsx',
-  'src/components/fairway/pages/settings/FairwaySettingsGeneral.tsx',
   'src/components/features/video-upload.tsx',
   'src/components/golf/calendar/EventDetailModal.tsx',
   'src/components/golf/calendar/EventDocumentsSection.tsx',
   'src/components/golf/calendar/PremiumCalendarClient.tsx',
-  'src/components/golf/messages/AttachmentButton.tsx',
   'src/components/lifting/groups/StrengthGroupsClient.tsx',
   'src/components/lifting/nutrition/NutritionPlanUploader.tsx',
   'src/components/lifting/sessions/LiveWeightRoomClient.tsx',

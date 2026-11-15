@@ -8,8 +8,7 @@ import { chunkIds } from '@/lib/supabase/chunk-ids';
 /**
  * CoachHelm's one-team canary (turn-on plan: each wave runs on one team
  * first). The v3 flags in `config/feature-flags.yml` are global booleans;
- * `HELM_COACHHELM_TEAMS` narrows them to a list of golf_teams ids, the same way
- * `HELM_CLUBHOUSE_TEAMS` narrows Clubhouse (`src/clubhouse/gate.ts`).
+ * `HELM_COACHHELM_TEAMS` narrows them to a list of golf_teams ids.
  *
  * - Unset, empty or `*`: no limit. `isCoachHelmFlagEnabled` is exactly
  *   `isFlagEnabled`, and no team is ever read.
@@ -17,8 +16,8 @@ import { chunkIds } from '@/lib/supabase/chunk-ids';
  *   (`runWithCoachHelmTeams`) that holds a listed team. No scope, or a team
  *   that could not be read, reads as off: today's production state.
  *
- * Only the CoachHelm v3 engine and delivery flags go through this. Never auth,
- * RLS or `golf_clubhouse_ui`.
+ * Only the CoachHelm v3 engine and delivery flags go through this. Never auth
+ * or RLS.
  */
 
 type AnyClient = SupabaseClient<any, any, any>; // eslint-disable-line @typescript-eslint/no-explicit-any

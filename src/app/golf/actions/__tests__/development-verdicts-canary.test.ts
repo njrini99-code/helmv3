@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/lib/notifications', () => ({ notifyDevPlanAssigned: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseForTeam: () => false }));
 vi.mock('@/lib/coachhelm/v3/effectiveness/event-ledger', () => ({ recordInsightAction: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (id: string) => id === 'coachhelm_verdicts_v1' }));
 const stamp = vi.hoisted(() => vi.fn().mockResolvedValue({ status: 'stamped', criterion: true, reason: null }));

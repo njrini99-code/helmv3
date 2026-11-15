@@ -1,6 +1,6 @@
 /**
  * Shot entry parity: the Clubhouse shot screen records exactly what the Fairway
- * (production) shot screen records.
+ * (production) shot screen recorded.
  *
  * Both screens run useShotTracking (src/hooks/golf/use-shot-tracking.ts) and
  * hand its rows to the same round engine (lib/golf/round-session) and the same
@@ -15,13 +15,17 @@
  * columns with the server's own helpers and checked against the live CHECK
  * constraints.
  *
- * Lives outside src/clubhouse: Clubhouse code may not import Fairway UI
- * (eslint no-restricted-imports), and this test must render both.
+ * Fairway's shot screen was retired with Fairway (2026-11-14). Its captured
+ * writes for every scenario here were recorded from that screen the same day,
+ * before it was deleted (fixtures/shot-entry-fairway-captures.json); each
+ * scenario now plays through Clubhouse's controls and must write exactly that.
+ * A new scenario has no Fairway recording and asserts its own values.
  */
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import FairwayShotTracking from '@/components/fairway/pages/rounds-tracking/FairwayShotTracking';
 import { RoundTracking } from '@/clubhouse/screens/rounds/track/RoundTracking';
 import { ToastProvider } from '@/clubhouse/ui/Toast';
 import '@/clubhouse/__tests__/dialog-polyfill';
@@ -39,7 +43,6 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({ resolveCoachTeamIdWithCookie:
 // jsdom has no layout: the state machine scrolls the distance box into view.
 Element.prototype.scrollIntoView ??= function () {};
 
-type Renderer = 'fairway' | 'clubhouse';
 type Result = 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other';
 type Step =
   | { do: 'result'; v: Result }
@@ -66,22 +69,16 @@ interface Captured {
 
 const ROUND = { course: 'Parity GC', teeLabel: 'Blue', teeColor: 'blue' as const, type: 'practice' as const };
 
-const RESULT_WORD: Record<Renderer, Record<Result, string>> = {
-  fairway: { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Hole', other: 'Other' },
-  clubhouse: { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', other: 'Other' },
-};
+const RESULT_WORD: Record<Result, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', other: 'Other' };
 const PENALTY_WORD = { ob: 'Out of bounds', water: 'Water hazard', unplayable: 'Unplayable lie', lost: 'Lost ball' };
-const TAG_WORD: Record<Renderer, Record<PuttMissTag, string>> = {
-  fairway: { short: 'Short', long: 'Long', low: 'Low', high: 'High' },
-  clubhouse: { short: 'Short', long: 'Long', low: 'Low side', high: 'High side' },
-};
+const TAG_WORD: Record<PuttMissTag, string> = { short: 'Short', long: 'Long', low: 'Low side', high: 'High side' };
 const BREAK_WORD = { left_to_right: 'L → R', straight: 'Straight', right_to_left: 'R → L', multiple: 'Mult.' };
-// Fairway's slope key reads "Down"; Clubhouse's reads "Downhill" to match the saved line (2026-10-18).
-const SLOPE_WORD = { uphill: /^Uphill$/i, level: /^Level$/i, downhill: /^Down(?:hill)?$/i, severe: /^Severe$/i };
+// Clubhouse's slope key reads "Downhill" to match the saved line (2026-10-18).
+const SLOPE_WORD = { uphill: /^Uphill$/i, level: /^Level$/i, downhill: /^Downhill$/i, severe: /^Severe$/i };
 const exact = (s: string) => new RegExp(`^${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 const starts = (s: string) => new RegExp(`^${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
 
-function mount(r: Renderer, holes: RoundHole[], index: number, initialShots: ShotRecord[] = []): Captured {
+function mount(holes: RoundHole[], index: number, initialShots: ShotRecord[] = []): Captured {
   const cap: Captured = { saved: [], completed: [], statsUpdates: [], autosaves: [] };
   const props: ShotTrackingProps = {
     holes,
@@ -105,13 +102,9 @@ function mount(r: Renderer, holes: RoundHole[], index: number, initialShots: Sho
     onNavigateToHole: vi.fn(),
   };
   render(
-    r === 'fairway' ? (
-      <FairwayShotTracking {...props} />
-    ) : (
-      <ToastProvider>
-        <RoundTracking {...props} round={ROUND} />
-      </ToastProvider>
-    ),
+    <ToastProvider>
+      <RoundTracking {...props} round={ROUND} />
+    </ToastProvider>,
   );
   return cap;
 }
@@ -121,29 +114,24 @@ const sheetGone = () => waitFor(() => expect(screen.queryByRole('dialog')).toBeN
 const resultGroup = () => screen.getByRole('radiogroup', { name: /^(Shot|Putt) result$/ });
 const nextButton = () => screen.getByRole('button', { name: /^(Record next shot|Complete hole with score \d+)$/ });
 
-async function openEdit(r: Renderer, user: UserEvent, shot: number) {
-  if (r === 'fairway') {
-    await user.click(screen.getByRole('button', { name: `View shot ${shot}` }));
-    return;
-  }
+async function openEdit(user: UserEvent, shot: number) {
   const log = document.querySelector<HTMLButtonElement>('.ch-rt-log__h')!;
   if (log.getAttribute('aria-expanded') !== 'true') await user.click(log);
   // Before hole-out the open log is the way in; after it, the hole's review.
   await user.click(screen.getByRole('button', { name: starts(`Change shot ${shot}:`) }));
 }
 
-async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) {
+async function play(user: UserEvent, cap: Captured, steps: Step[]) {
   // Clubhouse keeps a putt's break and slope in one optional row, closed until it is opened (owner, 2026-11-11): the
   // same two fields, reached through that row.
   const openPuttRead = async () => {
-    if (r === 'fairway') return;
     const row = screen.getByRole('button', { name: /^Break and slope/ });
     if (row.getAttribute('aria-expanded') !== 'true') await user.click(row);
   };
   for (const step of steps) {
     switch (step.do) {
       case 'result':
-        await user.click(within(resultGroup()).getByRole('radio', { name: starts(RESULT_WORD[r][step.v]) }));
+        await user.click(within(resultGroup()).getByRole('radio', { name: starts(RESULT_WORD[step.v]) }));
         break;
       case 'club':
         await user.click(
@@ -154,15 +142,15 @@ async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) 
         await user.click(within(screen.getByRole('radiogroup', { name: 'Miss direction' })).getByRole('radio', { name: new RegExp(step.v, 'i') }));
         break;
       case 'approachMiss':
-        await user.click(screen.getByRole(r === 'fairway' ? 'button' : 'radio', { name: exact(step.v.replace('_', ' ')) }));
+        await user.click(screen.getByRole('radio', { name: exact(step.v.replace('_', ' ')) }));
         break;
       case 'puttTag':
-        await user.click(screen.getByRole('button', { name: exact(TAG_WORD[r][step.v]) }));
+        await user.click(screen.getByRole('button', { name: exact(TAG_WORD[step.v]) }));
         break;
       case 'break':
         await openPuttRead();
         await user.click(
-          within(screen.getByRole('radiogroup', { name: r === 'fairway' ? 'Putt break direction' : 'Putt break' })).getByRole('radio', { name: exact(BREAK_WORD[step.v]) }),
+          within(screen.getByRole('radiogroup', { name: 'Putt break' })).getByRole('radio', { name: exact(BREAK_WORD[step.v]) }),
         );
         break;
       case 'slope':
@@ -170,7 +158,7 @@ async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) 
         await user.click(within(screen.getByRole('radiogroup', { name: 'Putt slope' })).getByRole('radio', { name: SLOPE_WORD[step.v] }));
         break;
       case 'dist': {
-        const box = document.getElementById(r === 'fairway' ? 'fw-distance-after' : 'ch-rt-dist') as HTMLInputElement;
+        const box = document.getElementById('ch-rt-dist') as HTMLInputElement;
         await user.clear(box);
         await user.type(box, step.v);
         break;
@@ -178,7 +166,7 @@ async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) 
       case 'next': {
         const holes = nextButton().getAttribute('aria-label')!.startsWith('Complete');
         const before = cap.completed.length;
-        // A gate one screen keeps closed and the other opens is a difference: fail on it.
+        // A gate Clubhouse keeps closed where Fairway's was open is a difference: fail on it.
         expect(nextButton()).toBeEnabled();
         await user.click(nextButton());
         if (holes) await waitFor(() => expect(cap.completed.length).toBe(before + 1));
@@ -186,11 +174,11 @@ async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) 
       }
       case 'penalty':
         await user.click(screen.getByRole('button', { name: 'Add penalty stroke' }));
-        await user.click(screen.getByRole(r === 'fairway' ? 'button' : 'radio', { name: starts(PENALTY_WORD[step.v]) }));
+        await user.click(screen.getByRole('radio', { name: starts(PENALTY_WORD[step.v]) }));
         if (step.origin) {
           await user.click(screen.getByRole('radio', { name: step.origin === 'here' ? /^My next shot from here/ : /^Shot \d+ that I entered/ }));
         }
-        await user.click(screen.getByRole('button', { name: r === 'fairway' ? 'Add +1 Stroke' : 'Add 1 stroke' }));
+        await user.click(screen.getByRole('button', { name: 'Add 1 stroke' }));
         await sheetGone();
         break;
       case 'tapIn': {
@@ -200,21 +188,21 @@ async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) 
         break;
       }
       case 'editAfter': {
-        await openEdit(r, user, step.shot);
-        const box = screen.getByLabelText(r === 'fairway' ? 'Distance to hole after shot' : 'Distance after') as HTMLInputElement;
+        await openEdit(user, step.shot);
+        const box = screen.getByLabelText('Distance after') as HTMLInputElement;
         await user.clear(box);
         await user.type(box, step.v);
         const before = cap.autosaves.length;
-        await user.click(screen.getByRole('button', { name: r === 'fairway' ? 'Save changes' : 'Save shot' }));
+        await user.click(screen.getByRole('button', { name: 'Save shot' }));
         await waitFor(() => expect(cap.autosaves.length).toBeGreaterThan(before));
         await sheetGone();
         break;
       }
       case 'delete': {
-        await openEdit(r, user, step.shot);
-        await user.click(screen.getByRole('button', { name: r === 'fairway' ? 'Delete shot' : 'Delete' }));
+        await openEdit(user, step.shot);
+        await user.click(screen.getByRole('button', { name: 'Delete' }));
         const before = cap.autosaves.length;
-        await user.click(screen.getByRole('button', { name: r === 'fairway' ? 'Delete Shot' : 'Delete shot' }));
+        await user.click(screen.getByRole('button', { name: 'Delete shot' }));
         await waitFor(() => expect(cap.autosaves.length).toBeGreaterThan(before));
         await sheetGone();
         break;
@@ -222,7 +210,7 @@ async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) 
       case 'undo': {
         await user.click(screen.getAllByRole('button', { name: 'Undo last shot' })[0]!);
         const before = cap.autosaves.length;
-        await user.click(screen.getByRole('button', { name: r === 'fairway' ? 'Confirm' : 'Undo' }));
+        await user.click(screen.getByRole('button', { name: 'Undo' }));
         await waitFor(() => expect(cap.autosaves.length).toBeGreaterThan(before));
         break;
       }
@@ -230,17 +218,19 @@ async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) 
   }
 }
 
-async function both(holes: RoundHole[], index: number, steps: Step[], initialShots: ShotRecord[] = []) {
-  const out = {} as Record<Renderer, Captured>;
-  for (const r of ['fairway', 'clubhouse'] as const) {
-    const user = userEvent.setup();
-    const cap = mount(r, holes, index, initialShots);
-    await play(r, user, cap, steps);
-    out[r] = cap;
-    cleanup();
-  }
-  expect(out.clubhouse).toEqual(out.fairway);
-  return out.fairway;
+/** Fairway's captured writes per scenario, recorded from its shot screen before it was retired (2026-11-14). */
+const FAIRWAY: Record<string, Captured[]> = JSON.parse(readFileSync(join(__dirname, 'fixtures', 'shot-entry-fairway-captures.json'), 'utf8'));
+
+/** Plays the scenario through Clubhouse's controls; what it writes must be what Fairway's screen wrote. */
+async function asFairwayRecorded(holes: RoundHole[], index: number, steps: Step[], initialShots: ShotRecord[] = []) {
+  const user = userEvent.setup();
+  const cap = mount(holes, index, initialShots);
+  await play(user, cap, steps);
+  cleanup();
+  const recorded = FAIRWAY[expect.getState().currentTestName ?? '']?.[0];
+  expect(recorded, 'the Fairway recording for this scenario').toBeDefined();
+  expect(JSON.parse(JSON.stringify(cap))).toEqual(recorded);
+  return cap;
 }
 
 // ── The stored columns, as round-partial.ts / round-submit.ts write them ─────
@@ -292,7 +282,7 @@ afterEach(() => {
 
 describe('Shot entry parity: Clubhouse records what Fairway records', () => {
   it('par 3, green in regulation, two putts with a read and a miss tag', async () => {
-    const cap = await both([hole(1, 3, 170)], 0, [
+    const cap = await asFairwayRecorded([hole(1, 3, 170)], 0, [
       { do: 'result', v: 'green' },
       { do: 'dist', v: '25' },
       { do: 'next' },
@@ -318,7 +308,7 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
   });
 
   it('par 4, fairway missed left, bunker, up and down', async () => {
-    const cap = await both([hole(1, 4, 400)], 0, [
+    const cap = await asFairwayRecorded([hole(1, 4, 400)], 0, [
       { do: 'result', v: 'rough' },
       { do: 'club', driver: true },
       { do: 'teeMiss', v: 'left' },
@@ -343,7 +333,7 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
   });
 
   it('par 5, out of bounds off the tee (the entered shot), then a water hazard from the fairway', async () => {
-    const cap = await both([hole(1, 5, 540)], 0, [
+    const cap = await asFairwayRecorded([hole(1, 5, 540)], 0, [
       { do: 'result', v: 'other' },
       { do: 'club', driver: true },
       { do: 'teeMiss', v: 'right' },
@@ -373,7 +363,7 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
   });
 
   it('a stroke hit from here and lost (not entered) is recorded with its penalty', async () => {
-    const cap = await both([hole(1, 4, 410)], 0, [
+    const cap = await asFairwayRecorded([hole(1, 4, 410)], 0, [
       { do: 'result', v: 'fairway' },
       { do: 'club', driver: true },
       { do: 'dist', v: '150' },
@@ -390,7 +380,7 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
   });
 
   it('holed out from off the green', async () => {
-    const cap = await both([hole(1, 4, 380)], 0, [
+    const cap = await asFairwayRecorded([hole(1, 4, 380)], 0, [
       { do: 'result', v: 'fairway' },
       { do: 'club', driver: false },
       { do: 'dist', v: '140' },
@@ -408,7 +398,7 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
   });
 
   it('three putts with breaks, slopes and paired miss tags', async () => {
-    const cap = await both([hole(1, 4, 400)], 0, [
+    const cap = await asFairwayRecorded([hole(1, 4, 400)], 0, [
       { do: 'result', v: 'fairway' },
       { do: 'club', driver: true },
       { do: 'dist', v: '160' },
@@ -444,7 +434,7 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
 
   it('the last hole of a 9-hole round, finished with a tap in', async () => {
     const holes = Array.from({ length: 9 }, (_, i) => ({ ...hole(i + 1, 4, 360), score: i < 8 ? 4 : null }));
-    const cap = await both(holes, 8, [
+    const cap = await asFairwayRecorded(holes, 8, [
       { do: 'result', v: 'fairway' },
       { do: 'club', driver: true },
       { do: 'dist', v: '120' },
@@ -461,7 +451,7 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
 
   it('a meters player: typed meters are stored in yards and feet', async () => {
     localStorage.setItem('golf_distance_unit_pref', 'meters');
-    const cap = await both([hole(1, 4, 400)], 0, [
+    const cap = await asFairwayRecorded([hole(1, 4, 400)], 0, [
       { do: 'result', v: 'fairway' },
       { do: 'club', driver: true },
       { do: 'dist', v: '140' },
@@ -485,7 +475,7 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
   });
 
   it('changing a shot mid-hole (before the hole is holed) writes the same history', async () => {
-    const cap = await both([hole(1, 4, 400)], 0, [
+    const cap = await asFairwayRecorded([hole(1, 4, 400)], 0, [
       { do: 'result', v: 'fairway' },
       { do: 'club', driver: true },
       { do: 'dist', v: '150' },
@@ -514,7 +504,7 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
       S(4, { shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 3, distanceUnitBefore: 'feet', result: 'hole', distanceToHoleAfter: 0, shotDistance: 1, puttDistanceFeet: 3 }),
     ];
     const holes = [{ ...hole(1, 4, 400), score: 4 }, hole(2, 4, 380)];
-    const cap = await both(holes, 0, [{ do: 'editAfter', shot: 2, v: '12' }], played);
+    const cap = await asFairwayRecorded(holes, 0, [{ do: 'editAfter', shot: 2, v: '12' }], played);
     expect(cap.statsUpdates.at(-1)![1]).toMatchObject({ score: 4, putts: 2, approachProximity: 12 });
     expect(cap.autosaves.at(-1)!.map((s) => [s.shotNumber, s.distanceToHoleBefore, s.distanceToHoleAfter])).toEqual([
       [1, 400, 150],
@@ -526,7 +516,7 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
   });
 
   it('deleting a shot mid-hole, and undoing the last one, renumber the same way', async () => {
-    const cap = await both([hole(1, 4, 400)], 0, [
+    const cap = await asFairwayRecorded([hole(1, 4, 400)], 0, [
       { do: 'result', v: 'fairway' },
       { do: 'club', driver: true },
       { do: 'dist', v: '150' },
@@ -554,19 +544,19 @@ describe('Shot entry parity: Clubhouse records what Fairway records', () => {
   it('Clubhouse reads a comma as the decimal point and refuses a distance that is not a number', async () => {
     localStorage.setItem('golf_distance_unit_pref', 'meters');
     const user = userEvent.setup();
-    const cap = mount('clubhouse', [hole(1, 4, 400)], 0, [
+    const cap = mount([hole(1, 4, 400)], 0, [
       { shotNumber: 1, shotType: 'tee', clubType: 'driver', lieBefore: 'tee', distanceToHoleBefore: 400, distanceUnitBefore: 'yards', result: 'green', distanceToHoleAfter: 16, distanceUnitAfter: 'feet', shotDistance: 395, isPenalty: false },
     ]);
-    await play('clubhouse', user, cap, [
+    await play(user, cap, [
       { do: 'result', v: 'green' },
       { do: 'dist', v: '1,5' },
     ]);
     expect((document.getElementById('ch-rt-dist') as HTMLInputElement).value).toBe('1.5');
-    await play('clubhouse', user, cap, [{ do: 'next' }]);
+    await play(user, cap, [{ do: 'next' }]);
     // 1.5 m is 5 ft, as Fairway stores a typed 1.5 (the meters test above); parseFloat('1,5') would have stored 3.
     expect(cap.saved.at(-1)).toMatchObject({ distanceToHoleAfter: 5, distanceUnitAfter: 'feet' });
 
-    await play('clubhouse', user, cap, [
+    await play(user, cap, [
       { do: 'result', v: 'green' },
       { do: 'dist', v: '2ft' },
     ]);

@@ -95,13 +95,15 @@ coachTest.describe('GolfHelm — Coach critical paths', () => {
     await expect(page.getByText(/this page couldn't load|application error/i)).toHaveCount(0);
   });
 
-  coachTest('an unavailable round review leaves its loading skeleton for a designed error state', async ({ page }) => {
+  coachTest('an unavailable round review, at its old /review address, leaves its loading skeleton for a designed state', async ({ page }) => {
+    // The old address is a next.config redirect to the review (Fairway retired, 2026-11-14).
     await page.goto('/golf/dashboard/rounds/00000000-0000-4000-8000-000000000000/review', {
       waitUntil: 'domcontentloaded',
     });
 
-    await expect(page.getByText("We couldn't load this review")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole('status')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/golf\/dashboard\/rounds\/00000000-0000-4000-8000-000000000000$/);
+    await expect(page.locator('[data-ch-code="CH-11307"]')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-ch-code="CH-11406"]')).toHaveCount(0);
     await expect(page.getByText(/this page couldn't load|application error/i)).toHaveCount(0);
   });
 });

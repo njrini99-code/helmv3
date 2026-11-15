@@ -1,7 +1,7 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, renderHook, screen, waitFor, within, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { StrictMode, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
@@ -3100,18 +3100,18 @@ describe('Qualifiers · the route (who reaches which address)', () => {
     expect((sel.props.data as unknown as ChQSelectionData).candidates.map((c) => c.name)).toEqual(['Ann X', 'Bea X']);
   });
 
-  it('90106 My qualifiers is retired: the one list puts a player’s own first, and the old address is on its way to Qualifiers for both roles', async () => {
+  it('90106 My qualifiers is retired: the one list puts a player’s own first, and next.config sends the old address to Qualifiers for both roles', async () => {
     const twoQualifiers = { golf_qualifiers: { data: [{ ...Q, id: OTHER, name: 'Other', start_date: '2026-10-05' }, Q] }, golf_qualifier_entries: { data: [entries[1], entries[2]] } };
     // Bea (p2) is entered in the first only; Ann (p1) in the second. Bea's own comes first, whatever the list order.
     asPlayer();
     seed(twoQualifiers);
     const all = (await route('list')).props.data as unknown as ChQList;
     expect(all.items.map((i) => [i.id, i.mine?.entered])).toEqual([[QID, true], [OTHER, false]]);
-    // The old address is no screen of its own for either role: the frame treats it as an address on its way (nav.ts), and the page redirects.
-    for (const role of ['player', 'coach'] as const) expect([role, isRebuilt('/golf/dashboard/my-qualifiers', role), isAliased('/golf/dashboard/my-qualifiers', role)]).toEqual([role, false, true]);
-    const page = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/my-qualifiers/page.tsx'), 'utf8');
-    expect(page).toContain("redirectToClubhouse({ coach: '/golf/dashboard/qualifiers', player: '/golf/dashboard/qualifiers' })");
-    expect(page).not.toContain('ClubhouseQualifiersRoute');
+    // The old address is no screen of its own for either role and no route folder: next.config.mjs redirects it before any
+    // route runs (Fairway retirement, 2026-11-14), so the frame never waits on it.
+    for (const role of ['player', 'coach'] as const) expect([role, isRebuilt('/golf/dashboard/my-qualifiers', role), isAliased('/golf/dashboard/my-qualifiers', role)]).toEqual([role, false, false]);
+    expect(existsSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/my-qualifiers'))).toBe(false);
+    expect(readFileSync(join(process.cwd(), 'next.config.mjs'), 'utf8')).toMatch(/source: '\/golf\/dashboard\/my-qualifiers',\s*destination: '\/golf\/dashboard\/qualifiers'/);
   });
 
   it('90803 CH-09311 a player on /new, /edit or /selection gets the coach-only page with a way back, and nothing is read for them', async () => {
@@ -3191,16 +3191,10 @@ describe('Qualifiers · the route (who reaches which address)', () => {
     expect(seen).toContainEqual(['eq', ['is_test', false]]);
   });
 
-  it('90107 outside the Clubhouse /selection sends a coach to the CoachHelm workspace and a player to the qualifier; signed out goes to login; inside, the route gets the address', async () => {
+  it('90107 /selection: signed out goes to login; signed in, the route gets the address', async () => {
     const page = (id = QID) => QualifierSelectionPage({ params: Promise.resolve({ id }) });
-    gate.on = false;
-    vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: { id: 'c1' }, player: null } as never);
-    await expect(page()).rejects.toThrow(`redirect:/golf/dashboard/coachhelm/qualifying/${QID}`);
-    vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: null, player: { id: 'p2' } } as never);
-    await expect(page()).rejects.toThrow(`redirect:/golf/dashboard/qualifiers/${QID}`);
     vi.mocked(getGolfSessionProfile).mockResolvedValue(null);
     await expect(page()).rejects.toThrow('redirect:/golf/login');
-    gate.on = true;
     vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: { id: 'c1' }, player: null } as never);
     const el = (await page()) as ReactElement<{ view: string; id: string }>;
     expect([el.type, el.props.view, el.props.id]).toEqual([ClubhouseQualifiersRoute, 'selection', QID]);

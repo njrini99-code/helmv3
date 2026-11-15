@@ -1240,7 +1240,7 @@ describe('CoachHelm route', () => {
   });
 
   const noView = { searchParams: Promise.resolve({}) };
-  it('130805 the page gives a Clubhouse coach or player the new screen, and Fairway’s page is unchanged everywhere else', async () => {
+  it('130805 the page gives a coach or player the CoachHelm screen; no session goes to sign in', async () => {
     const isRoute = (el: unknown) => (el as { type?: unknown } | null)?.type === ClubhouseCoachHelmRoute;
     gate.on = true;
     session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1', organization_id: 'org1' }, player: null };
@@ -1248,31 +1248,18 @@ describe('CoachHelm route', () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
     expect(isRoute(await GolfCoachHelmPage(noView))).toBe(true);
     expect(((await GolfCoachHelmPage({ searchParams: Promise.resolve({ view: 'development' }) })) as { props: { view?: string } }).props.view).toBe('development');
-    // Off: a coach still gets Fairway's pointer to the Brief, and no session still goes to sign in.
-    gate.on = false;
-    session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1', organization_id: 'org1' }, player: null };
-    const legacy = (await GolfCoachHelmPage(noView)) as { props: { title: string; actionLabel: string } };
-    expect(isRoute(legacy)).toBe(false);
-    expect(legacy.props.title).toBe('CoachHelm');
-    expect(legacy.props.actionLabel).toMatch(/^Open /);
     session.current = null;
-    await expect(GolfCoachHelmPage(noView)).rejects.toThrow('redirect:/golf/login');
-    gate.on = true;
     await expect(GolfCoachHelmPage(noView)).rejects.toThrow('redirect:/golf/login');
   });
 
-  it('the loading file is the Clubhouse skeleton inside Clubhouse, and Fairway’s everywhere else', async () => {
+  it('the loading file is the CoachHelm skeleton', async () => {
     const Loading = (await import('@/app/golf/(dashboard)/dashboard/coachhelm/loading')).default;
-    const { unmount } = render(
+    render(
       <ClubhouseMarker>
         <Loading />
       </ClubhouseMarker>,
     );
     expect(code('CH-13401')).not.toBeNull();
-    unmount();
-    render(<Loading />);
-    expect(code('CH-13401')).toBeNull();
-    expect(screen.getByText('Loading CoachHelm…')).toBeTruthy();
   });
 });
 

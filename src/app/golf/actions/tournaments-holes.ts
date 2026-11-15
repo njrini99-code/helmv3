@@ -48,7 +48,7 @@ async function saveTournamentHoleImpl(raw: TourHoleInput): Promise<ActionResult<
   const parsed = input.safeParse(raw);
   if (!parsed.success) return refuse('invalid');
   const i = parsed.data;
-  if (!isFlagEnabled('golf_tournaments_v1') || !isFlagEnabled('golf_clubhouse_ui')) return refuse('off');
+  if (!isFlagEnabled('golf_tournaments_v1')) return refuse('off');
   const role = await getGolfDashboardRole();
   const session = await getGolfSessionProfile();
   if (!session) return refuse('not_signed_in');

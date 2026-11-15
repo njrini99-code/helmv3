@@ -2,7 +2,7 @@
 // never executed. Promoted to vitest (issue #1194).
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { checkRequiredEnv, clubhouseFlagsOn } from '../check-required-env.mjs';
+import { checkRequiredEnv } from '../check-required-env.mjs';
 
 // What a production build needs on top of Supabase (2026-10-07): the cron
 // secret, a KV/Upstash endpoint and token, a Sentry DSN and upload token.
@@ -13,10 +13,7 @@ const PROD_EXTRAS = {
   KV_REST_API_TOKEN: 'kv-token-value',
   NEXT_PUBLIC_SENTRY_DSN: 'https://key@o1.ingest.sentry.io/1',
   SENTRY_AUTH_TOKEN: 'sentry-auth-token-value',
-  // Clubhouse is on in production (config/feature-flags.yml), so a complete production env names its teams.
-  HELM_CLUBHOUSE_TEAMS: '*',
 };
-const { HELM_CLUBHOUSE_TEAMS: _teams, ...PROD_EXTRAS_NO_TEAMS } = PROD_EXTRAS;
 
 test('passes when all canonical Supabase vars set and URL is real', () => {
   assert.doesNotThrow(() =>
@@ -190,11 +187,10 @@ const PROD_SUPABASE = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
   SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
 };
-const NO_FLAGS = [];
 
 test('a production build with only Supabase vars names every missing production var at once', () => {
   assert.throws(
-    () => checkRequiredEnv(PROD_SUPABASE, { flags: NO_FLAGS }),
+    () => checkRequiredEnv(PROD_SUPABASE),
     (err) =>
       /CRON_SECRET/.test(err.message) &&
       /SENTRY_AUTH_TOKEN/.test(err.message) &&
@@ -205,7 +201,7 @@ test('a production build with only Supabase vars names every missing production 
 });
 
 test('production passes with the full set', () => {
-  assert.doesNotThrow(() => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS }, { flags: NO_FLAGS }));
+  assert.doesNotThrow(() => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS }));
 });
 
 test('production accepts the UPSTASH_* names and the server-side SENTRY_DSN instead of the first choices', () => {
@@ -217,109 +213,41 @@ test('production accepts the UPSTASH_* names and the server-side SENTRY_DSN inst
     UPSTASH_REDIS_REST_TOKEN: 'u-token',
     SENTRY_DSN: 'https://key@o1.ingest.sentry.io/1',
   };
-  assert.doesNotThrow(() => checkRequiredEnv(env, { flags: NO_FLAGS }));
+  assert.doesNotThrow(() => checkRequiredEnv(env));
 });
 
 test('a whitespace-only CRON_SECRET counts as missing', () => {
   assert.throws(
-    () => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS, CRON_SECRET: '   ' }, { flags: NO_FLAGS }),
+    () => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS, CRON_SECRET: '   ' }),
     /CRON_SECRET/
   );
 });
 
 test('preview does not need the production-only vars', () => {
   assert.doesNotThrow(() =>
-    checkRequiredEnv({ ...PROD_SUPABASE, VERCEL_ENV: 'preview' }, { flags: NO_FLAGS })
+    checkRequiredEnv({ ...PROD_SUPABASE, VERCEL_ENV: 'preview' })
   );
 });
 
 test('Stripe is not required, but half of the pair is rejected', () => {
   const base = { ...PROD_SUPABASE, ...PROD_EXTRAS };
-  assert.doesNotThrow(() => checkRequiredEnv(base, { flags: NO_FLAGS }));
+  assert.doesNotThrow(() => checkRequiredEnv(base));
   assert.doesNotThrow(() =>
-    checkRequiredEnv({ ...base, STRIPE_SECRET_KEY: 'sk', STRIPE_WEBHOOK_SECRET: 'whsec' }, { flags: NO_FLAGS })
+    checkRequiredEnv({ ...base, STRIPE_SECRET_KEY: 'sk', STRIPE_WEBHOOK_SECRET: 'whsec' })
   );
   assert.throws(
-    () => checkRequiredEnv({ ...base, STRIPE_SECRET_KEY: 'sk' }, { flags: NO_FLAGS }),
+    () => checkRequiredEnv({ ...base, STRIPE_SECRET_KEY: 'sk' }),
     /STRIPE_WEBHOOK_SECRET/
   );
   assert.throws(
-    () => checkRequiredEnv({ ...base, STRIPE_WEBHOOK_SECRET: 'whsec' }, { flags: NO_FLAGS }),
+    () => checkRequiredEnv({ ...base, STRIPE_WEBHOOK_SECRET: 'whsec' }),
     /STRIPE_SECRET_KEY/
   );
 });
 
-// --- HELM_CLUBHOUSE_TEAMS (plan phase 6, item 6.11) -------------------------
-
-const clubhouseOnInProduction = [
-  { feature_id: 'golf_clubhouse_ui', status: 'active', environment: { production: true, preview: true, development: true } },
-];
-const clubhouseOnlyInPreview = [
-  { feature_id: 'golf_clubhouse_ui', status: 'active', environment: { production: false, preview: true, development: true } },
-];
-
-test('clubhouseFlagsOn reads only active clubhouse flags that are on for the environment', () => {
-  const flags = [
-    ...clubhouseOnlyInPreview,
-    { feature_id: 'golf_clubhouse_front_door', status: 'archived', environment: { preview: true } },
-    { feature_id: 'golf_other_flag', status: 'active', environment: { preview: true } },
-  ];
-  assert.deepEqual(clubhouseFlagsOn('preview', flags), ['golf_clubhouse_ui']);
-  assert.deepEqual(clubhouseFlagsOn('production', flags), []);
-});
-
-test('production fails when a clubhouse flag is on and HELM_CLUBHOUSE_TEAMS is unset', () => {
-  assert.throws(
-    () => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS_NO_TEAMS }, { flags: clubhouseOnInProduction }),
-    /HELM_CLUBHOUSE_TEAMS.*every team/
-  );
-  assert.throws(
-    () =>
-      checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS_NO_TEAMS, HELM_CLUBHOUSE_TEAMS: '  ' }, { flags: clubhouseOnInProduction }),
-    /HELM_CLUBHOUSE_TEAMS/
-  );
-});
-
-test('production passes with team ids or * once a clubhouse flag is on', () => {
-  for (const value of ['6e0b0a5c-1111-4222-8333-444455556666', 'a,b', '*']) {
-    assert.doesNotThrow(() =>
-      checkRequiredEnv(
-        { ...PROD_SUPABASE, ...PROD_EXTRAS, HELM_CLUBHOUSE_TEAMS: value },
-        { flags: clubhouseOnInProduction }
-      )
-    );
-  }
-});
-
-test('production does not need HELM_CLUBHOUSE_TEAMS while every clubhouse flag is off there', () => {
-  assert.doesNotThrow(() =>
-    checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS_NO_TEAMS }, { flags: clubhouseOnlyInPreview })
-  );
-});
-
-test('preview only warns when a clubhouse flag is on and HELM_CLUBHOUSE_TEAMS is unset', () => {
-  const warnings = [];
-  assert.doesNotThrow(() =>
-    checkRequiredEnv(
-      { ...PROD_SUPABASE, VERCEL_ENV: 'preview' },
-      { flags: clubhouseOnlyInPreview, warn: (m) => warnings.push(m) }
-    )
-  );
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /HELM_CLUBHOUSE_TEAMS/);
-
-  const quiet = [];
-  checkRequiredEnv(
-    { ...PROD_SUPABASE, VERCEL_ENV: 'preview', HELM_CLUBHOUSE_TEAMS: '*' },
-    { flags: clubhouseOnlyInPreview, warn: (m) => quiet.push(m) }
-  );
-  assert.equal(quiet.length, 0);
-});
-
-test('the real flag registry loads and drives the default', () => {
-  // No injected flags: this reads config/feature-flags.yml. golf_clubhouse_ui
-  // is on in production there (the canary), so a complete production env
-  // passes and one without HELM_CLUBHOUSE_TEAMS is refused.
+// HELM_CLUBHOUSE_TEAMS (plan phase 6, item 6.11) is gone: Clubhouse is the only coach and player UI for every team
+// (Fairway retired, 2026-11-14), so no build reads or requires it.
+test('no build asks for HELM_CLUBHOUSE_TEAMS any more', () => {
   assert.doesNotThrow(() => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS }));
-  assert.throws(() => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS_NO_TEAMS }), /HELM_CLUBHOUSE_TEAMS/);
+  assert.doesNotThrow(() => checkRequiredEnv({ ...PROD_SUPABASE, VERCEL_ENV: 'preview' }));
 });

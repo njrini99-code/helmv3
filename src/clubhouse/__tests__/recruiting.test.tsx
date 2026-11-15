@@ -43,7 +43,6 @@ vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.reso
 const flag = vi.hoisted(() => ({ on: true }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: () => flag.on }));
 vi.mock('@/components/fairway', () => ({ Button: () => null, EmptyState: () => null }));
-vi.mock('@/components/fairway/pages/recruiting', () => ({ FairwayRecruitingPage: () => <p>The current recruiting page</p> }));
 vi.mock('@/lib/redesign/flag', () => ({ fairwayScope: (c: string) => c }));
 // The page with film on, as it is once the held film migration is applied (data/recruiting-film.ts); film off, the default
 // until then, is recruiting-film-off.test.tsx.
@@ -293,21 +292,13 @@ describe('Recruiting · the loader, the route and the page', () => {
     expect(actions.getRecruits).not.toHaveBeenCalled();
   });
 
-  it('CH-14902 a player who opens Recruiting is sent Home, flag on or off; a coach gets Clubhouse with the flag on and the current page with it off', async () => {
+  it('CH-14902 a player who opens Recruiting is sent Home; a coach gets Recruiting', async () => {
     session.current = { role: 'player', player: { id: 'p1' }, coach: null };
-    await expect(RecruitingPage()).rejects.toThrow('REDIRECT:/golf/dashboard');
-    flag.on = false;
     await expect(RecruitingPage()).rejects.toThrow('REDIRECT:/golf/dashboard');
     expect(actions.getRecruits).not.toHaveBeenCalled();
 
     session.current = { role: 'coach', coach: { id: 'c1' } };
     actions.getRecruits.mockResolvedValue({ success: true, data: [row()] });
-    flag.on = false;
-    const legacy = await RecruitingPage();
-    render(legacy);
-    expect(screen.getByText('The current recruiting page')).toBeTruthy();
-
-    flag.on = true;
     const element = (await RecruitingPage()) as { type: unknown };
     expect(element.type).toBe(ClubhouseRecruitingRoute);
     render(
@@ -319,11 +310,9 @@ describe('Recruiting · the loader, the route and the page', () => {
     expect(screen.getAllByText('Ada Lovelace').length).toBeGreaterThan(0);
   });
 
-  it('CH-14401 the route skeleton is the Clubhouse one inside the shell and the existing one outside it', () => {
+  it('CH-14401 the route skeleton is the Recruiting one', () => {
     render(<RecruitingSkeleton />);
     expect(code('CH-14401')?.getAttribute('aria-busy')).toBe('true');
-    const { container } = render(<RecruitingLoading />);
-    expect(container.querySelector('[data-ch-code="CH-14401"]')).toBeNull();
     render(
       <ClubhouseMarker {...COACH}>
         <RecruitingLoading />

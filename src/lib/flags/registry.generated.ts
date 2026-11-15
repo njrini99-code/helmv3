@@ -540,23 +540,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "When the owner turns production on and the old entrance pages are retired, delete them, the layout branch that chooses between them, and this flag in the same change.",
   },
   {
-    feature_id: "golf_clubhouse_ui",
-    owner: "golf/clubhouse",
-    purpose: "Renders the Clubhouse shell and rebuilt screens (src/clubhouse) in place of the Fairway dashboard shell for coaches and players. Routes without a Clubhouse version redirect to the closest rebuilt screen; retired ones (course management, the printable report, genome compare) keep their redirects. HELM_CLUBHOUSE_TEAMS limits it to listed teams. Status and rollout: docs/clubhouse/STATUS.md.",
-    type: "release",
-    status: "active",
-    created_at: "2026-09-29",
-    expires_at: null,
-    default: false,
-    environment: {
-      production: true,
-      preview: true,
-      development: true,
-    },
-    kill_switch_behavior: null,
-    cleanup_plan: "Not on the day production is turned on. Retire the Fairway shell and this flag in their own reviewed change, only after every coach and player route in docs/clubhouse/SWAP_AUDIT.md has a Clubhouse destination, no local round recovery depends on Fairway, and an observation window with a known rollback deployment has passed.",
-  },
-  {
     feature_id: "golf_tournaments_v1",
     owner: "golf/clubhouse",
     purpose: "Draws the Clubhouse Tournaments pages (season home, event desk, review, history, comparison, link inbox, event form, lineup and live round) and their nav entry for coaches and players, and lets the tournament server actions run. Off: the routes answer not found and the nav entry is hidden.",

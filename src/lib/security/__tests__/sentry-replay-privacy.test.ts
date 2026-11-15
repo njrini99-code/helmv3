@@ -49,21 +49,5 @@ describe('Session Replay privacy options', () => {
   });
 });
 
-describe('data-sentry-mask is actually applied to identifying containers', () => {
-  const playerCard = readFileSync(
-    join(ROOT, 'src/components/fairway/pages/roster/FairwayPlayerCard.tsx'),
-    'utf8',
-  );
-  const recruitCard = readFileSync(
-    join(ROOT, 'src/components/fairway/pages/recruiting/FairwayRecruitCard.tsx'),
-    'utf8',
-  );
-
-  it('FairwayPlayerCard (roster identity) carries data-sentry-mask', () => {
-    expect(playerCard).toContain('data-sentry-mask=""');
-  });
-
-  it('FairwayRecruitCard (name + email + phone) carries data-sentry-mask', () => {
-    expect(recruitCard).toContain('data-sentry-mask=""');
-  });
-});
+// Fairway's roster and recruit cards carried `data-sentry-mask` on top of maskAllText; they were retired with Fairway
+// (2026-11-14). Clubhouse's cards rely on maskAllText and maskAllInputs above.

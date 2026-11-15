@@ -3,19 +3,21 @@
  * (`supabase-eval-fake.ts`), and pairs their figures metric by metric. Used by stats-production-parity.test.ts (fixtures,
  * always) and by its real-data pass (a read-only dump, only when CH_STATS_REALDATA names one).
  *
- * Production's side is production's own code, not a copy:
- *   - Team: the Fairway Team stats page (`dashboard/stats/team/page.tsx`) is rendered as a server component and the props it
- *     hands `TeamStatsBoard` (each player's figures) are read; the team's pooled figures are `buildTeamBoardViewModel`'s.
- *   - Player: `getDetailedStats` (the shot-level calculator behind the Fairway player page) on the round ids Clubhouse read.
+ * Production's side:
+ *   - Team: the figures the Fairway Team stats page (`dashboard/stats/team/page.tsx`, the props it handed `TeamStatsBoard`, and
+ *     `buildTeamBoardViewModel`'s pooled figures) computed for each fixture here. That page was retired with Fairway
+ *     (2026-11-14); its output for every fixture was recorded from the page itself the same day, before it was deleted, and
+ *     is read back from `fixtures/stats-fairway-team-oracle.json`. A changed fixture has no oracle any more and fails loudly.
+ *   - Player: `getDetailedStats` (the shot-level calculator behind the player stats) on the round ids Clubhouse read.
  *
  * The caller's test file registers the mocks (auth, the server and admin clients, the page's unrelated reads); this file
  * only drives them through `parityState`.
  */
-import type { ReactElement } from 'react';
-import { isValidElement } from 'react';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
-import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
-import { buildTeamBoardViewModel, type TeamBoardPlayerInput } from '@/components/golf/stats/team-board/buildTeamBoardViewModel';
+import type { SgPerRound } from '@/lib/golf/countable-round-stats';
 import type { EvalDb, Row } from './supabase-eval-fake';
 import { parityState } from './parity-state';
 import { loadTeamStats, type ChTeamStats } from '../data/stats-team';
@@ -46,18 +48,19 @@ export function subsetDb(db: EvalDb, roundIds: Iterable<string>): EvalDb {
   };
 }
 
-// ---------- production (Fairway) ----------
+// ---------- production (Fairway, frozen) ----------
 
-function findBoardProps(node: unknown): Record<string, unknown> | null {
-  if (!isValidElement(node)) return null;
-  const el = node as ReactElement<Record<string, unknown>>;
-  if (typeof el.type === 'function' && (el.type as { parityBoard?: boolean }).parityBoard) return el.props;
-  const kids = el.props?.children;
-  for (const k of Array.isArray(kids) ? kids : [kids]) {
-    const hit = findBoardProps(k);
-    if (hit) return hit;
-  }
-  return null;
+/** One player's row as the Fairway Team stats page computed it (the fields the pairs read). */
+export interface TeamPlayerStats {
+  id: string;
+  rounds_played: number;
+  rounds_played_18: number;
+  scoring_average_18: number | null;
+  fairway_pct: number | null;
+  gir_pct: number | null;
+  putts_per_round: number | null;
+  scrambling_pct: number | null;
+  sg_countable?: SgPerRound | null;
 }
 
 export interface FairwayTeam {
@@ -68,58 +71,24 @@ export interface FairwayTeam {
   fundamentals: { fairwayPct: number | null; girPct: number | null; scramblingPct: number | null; puttsPerRound: number | null; birdiesPerRound: number | null };
 }
 
-/** The Fairway Team stats page over `db`, for `teamId`: each player's row and the team's pooled figures, as production computes them. */
+const ORACLE = join(__dirname, 'fixtures', 'stats-fairway-team-oracle.json');
+
+/** The fixture a figure was recorded for: the team, the (faked) clock and every row. */
+function oracleKey(db: EvalDb, teamId: string): string {
+  return createHash('sha256').update(JSON.stringify([teamId, Date.now(), db.tables])).digest('hex').slice(0, 16);
+}
+
+/** What the Fairway Team stats page computed over `db` for `teamId`: each player's row and the team's pooled figures. */
 export async function fairwayTeam(db: EvalDb, teamId: string): Promise<FairwayTeam> {
-  parityState.db = db;
-  parityState.teamId = teamId;
-  const { default: TeamStatsPage } = await import('@/app/golf/(dashboard)/dashboard/stats/team/page');
-  const el = await TeamStatsPage();
-  const props = findBoardProps(el);
-  if (!props) throw new Error('parity: the Fairway team page did not render its board');
-  const players = props.players as TeamPlayerStats[];
-  // The board's own mapping (TeamStatsBoard.tsx), the fields the KPIs read.
-  const input: TeamBoardPlayerInput[] = players.map((p) => ({
-    id: p.id,
-    name: p.id,
-    classYear: null,
-    roundsPlayed: p.rounds_played,
-    scoringAverage: p.scoring_average,
-    roundsPlayed18: p.rounds_played_18,
-    scoringAverage18: p.scoring_average_18,
-    fairwayPct: p.fairway_pct,
-    fairwayHits: p.fairway_hits,
-    fairwayAttempts: p.fairway_attempts,
-    girPct: p.gir_pct,
-    girHits: p.gir_hits,
-    girAttempts: p.gir_attempts,
-    scramblingPct: p.scrambling_pct,
-    scramblesMade: p.scrambles_made,
-    scrambleAttempts: p.scramble_attempts,
-    puttsPerRound: p.putts_per_round,
-    totalPutts: p.total_putts,
-    holesWithPutts: p.holes_with_putts,
-    birdiesPerRound: p.birdies_per_round,
-    totalBirdies: p.total_birdies,
-    holesWithScore: p.holes_with_score,
-    scoringTrend: p.scoring_trend,
-    lastRoundScore: p.last_round_score ?? null,
-    sgTotalPerRound: p.sg_countable?.total ?? null,
-    sgRounds: p.sg_countable?.rounds ?? 0,
-    recentScores: p.recent_scores ?? [],
-    form: null,
-    topInsightTitle: null,
-    topInsightPriority: null,
-  }));
-  const vm = buildTeamBoardViewModel({ players: input, standingByPlayer: new Map(), intelligenceSampleSize: 0, rounds30d: 0 });
-  let sum = 0;
-  let n = 0;
-  for (const p of players) {
-    if (p.scoring_average_18 != null && p.rounds_played_18 > 0) {
-      sum += p.scoring_average_18 * p.rounds_played_18;
-      n += p.rounds_played_18;
-    }
+  const key = oracleKey(db, teamId);
+  const hit = (JSON.parse(readFileSync(ORACLE, 'utf8')) as Record<string, FairwayTeam>)[key];
+  if (!hit) {
+    throw new Error(
+      `parity: no recorded Fairway Team stats figures for this fixture (${key}). The page was retired on 2026-11-14 and its ` +
+        'figures were recorded for the fixtures that existed then; a new or changed fixture has no production oracle.',
+    );
   }
-  return { players, teamScoring18: n ? sum / n : null, teamSg: vm.kpis.teamSgRaw, fundamentals: vm.fundamentals };
+  return hit;
 }
 
 /** The shot-level calculator behind the Fairway player page, on exactly these rounds (what the Fairway page reads when a coach scopes it to them). */

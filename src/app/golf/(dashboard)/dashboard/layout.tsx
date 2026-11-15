@@ -1,104 +1,12 @@
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { getGolfSessionProfile } from '@/lib/auth/session';
-import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
-import { CoachHelmDrawer } from '@/components/golf/coachhelm/chat/CoachHelmDrawer';
-import { suggestionsFromPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
-import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
-import { SmoothScrollMount } from '@/components/golf/layout/SmoothScrollMount';
-import { isClubhouseFor } from '@/clubhouse/gate';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
   description: 'Your golf team dashboard: performance tracking, team management, and coaching tools.',
 };
 
-/**
- * The floating CoachHelm launcher's data, isolated behind its own Suspense
- * boundary.
- *
- * This used to be awaited in the layout BODY, directly in front of
- * `{children}`. That is roughly a dozen round trips — six serial ones to
- * resolve the chat context, then the program pulse's own query wave (including
- * a `golf_rounds` read capped at 400 rows) — and a layout cannot return until
- * its own awaits finish, so the real dashboard could not render behind them. It
- * ran on every `/golf/dashboard/*` navigation, not only the one after sign-in.
- *
- * None of it is first-paint content: `CoachHelmDrawer` mounts CLOSED
- * (`useState(false)`), so this is the data behind a button nobody has pressed
- * yet. Streaming it in its own boundary lets the dashboard paint on its own
- * schedule; the launcher appears whenever its data lands.
- *
- * `fallback={null}` because there is nothing honest to placehold. The drawer is
- * a floating affordance in the corner, not a reserved region of the page, so a
- * skeleton for it would reserve a shape that never settles anywhere.
- */
-async function CoachHelmDrawerMount() {
-  // Degrades to no drawer rather than an error: CoachHelm being unavailable
-  // must never take the calendar or the roster down with it.
-  try {
-    const ctx = await getCoachChatContext();
-    const pulse = await getCoachProgramPulse();
-    return (
-      <CoachHelmDrawer
-        players={ctx.roster.map((p) => ({ id: p.id, name: p.name }))}
-        suggestions={pulse ? suggestionsFromPulse(pulse, ctx.team_name) : []}
-        teamName={ctx.team_name}
-      />
-    );
-  } catch {
-    return null;
-  }
-}
-
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // The ONLY await left in this layout, and it is free: `getGolfSessionProfile`
-  // is React.cache()-wrapped and the parent `(dashboard)/layout.tsx` has
-  // already called it this request, so this is a cache hit, not a query.
-  const session = await getGolfSessionProfile();
-  const isCoach = !!session?.coach;
-
-  // Clubhouse renders its own frame: no Lenis sweep, no Fairway CoachHelm
-  // launcher, no launcher clearance.
-  if ((await isClubhouseFor(await getGolfDashboardRole()))) return <>{children}</>;
-
-  return (
-    <>
-      {/* v3 design language: Lenis-powered smooth scroll (continuity of
-          perception). The hook gates itself on coarse-pointer + reduced
-          motion, so mobile + accessibility-first users keep native
-          inertia; only desktop pointer users get the inertial sweep. */}
-      <SmoothScrollMount />
-      {/* CLEARANCE FOR THE FIXED LAUNCHER (#1478).
-          The Ask CoachHelm button below is `position: fixed` at `bottom-6`
-          with `h-14`, so it owns the bottom 80px of the viewport and nothing
-          scrolls out from under it. On /dashboard/stats/team that put it on
-          top of the Signal column — measured in production 2026-08-17, the
-          `Top performer` and `▲ Most improved` badges both sat beneath it,
-          which is the one column a coach reads first.
-
-          Its z-index does not rescue this: the class says
-          `z-[var(--fw-z-nav,40)]`, but `--fw-z-nav` is defined as 20, so the
-          fallback never applies and the launcher sits on the nav layer, over
-          content. Reserving the space is the fix; raising z-index would only
-          change which thing is hidden.
-
-          Gated on `isCoach` and `md:` to mirror the launcher exactly — players
-          never get one, and below `md` it is hidden because the bottom tab bar
-          owns that corner and carries its own CoachHelm destination
-          (nav-registry.ts:461). Padding either of those would be dead space. */}
-      <div className={isCoach ? 'md:pb-24' : undefined}>{children}</div>
-      {/* The global CoachHelm drawer — coach-only, and the same shared chat
-          system the full Ask page runs on. Streamed; see the note above. */}
-      {isCoach && (
-        <Suspense fallback={null}>
-          <CoachHelmDrawerMount />
-        </Suspense>
-      )}
-    </>
-  );
+// The Clubhouse shell (the parent (dashboard)/layout.tsx) draws the frame, the CoachHelm launcher and the route
+// transition; this segment only carries the metadata.
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return children;
 }
