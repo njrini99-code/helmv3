@@ -65,10 +65,6 @@ class GolfBridgeViewController: CAPBridgeViewController {
         ) { [weak self] _ in self?.applyReduceTransparency() }
     }
 
-    deinit {
-        if let observer = reduceTransparencyObserver { NotificationCenter.default.removeObserver(observer) }
-    }
-
     /// Tells the page now, and installs the value for the next page load (a document-start script).
     private func applyReduceTransparency() {
         let on = UIAccessibility.isReduceTransparencyEnabled
@@ -264,6 +260,7 @@ class GolfBridgeViewController: CAPBridgeViewController {
     }
 
     deinit {
+        if let observer = reduceTransparencyObserver { NotificationCenter.default.removeObserver(observer) }
         urlObservation?.invalidate()
         loadingObservation?.invalidate()
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: Self.navMessageName)
