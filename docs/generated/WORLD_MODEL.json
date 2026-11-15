@@ -13392,6 +13392,18 @@
     },
     {
       "source": "calendar_events",
+      "target": "golf_event_attendance_counts",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/golf/actions/calendar-events.ts",
+          "anchor": "golf_event_attendance_counts"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
       "target": "golf_import_player_classes",
       "kind": "feature_rpc",
       "evidence": [
@@ -13444,11 +13456,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/attendance.ts",
           "anchor": "src/lib/golf/player-profiles"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/calendar-events.ts",
-          "anchor": "src/lib/golf/attendance-counts-rpc"
         },
         {
           "kind": "import_graph",
@@ -13901,6 +13908,18 @@
           "kind": "rpc_call",
           "path": "src/clubhouse/data/coachhelm-track-record.ts",
           "anchor": "golf_coachhelm_shown_reads"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
+      "target": "golf_event_attendance_counts",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/clubhouse/data/attendance-counts.ts",
+          "anchor": "golf_event_attendance_counts"
         }
       ]
     },
@@ -18967,18 +18986,6 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260611000000_create_golf_demo_sessions.sql"
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
-      "target": "golf_event_attendance_counts",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/lib/golf/attendance-counts-rpc.ts",
-          "anchor": "golf_event_attendance_counts"
         }
       ]
     },

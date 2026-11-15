@@ -95,7 +95,8 @@ try {
   die(2, `release-status: could not reach ${site} (${err.message}).`);
 }
 
-const chunks = [...new Set([...html.matchAll(/\/_next\/static\/chunks\/[^"']+?\.js/g)].map((m) => m[0]))];
+// Turbopack builds (#2193) serve chunks under /_next/static/immutable/chunks/.
+const chunks = [...new Set([...html.matchAll(/\/_next\/static\/(?:immutable\/)?chunks\/[^"']+?\.js/g)].map((m) => m[0]))];
 if (chunks.length === 0) die(2, 'release-status: no JS chunks found in the served page.');
 
 const candidates = (sh('git', ['rev-list', ...(depth > 0 ? [`--max-count=${depth}`] : []), 'origin/main']) ?? '').split('\n').filter(Boolean);
