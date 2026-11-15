@@ -16,6 +16,7 @@ import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
 import { homeClock } from './home-clock';
 import { currentSeasonLabel, fullName, loadSeasonRounds } from './season';
+import { roundsForFigures } from './figure-window';
 import { isoDay } from '../lib/dates';
 
 /**
@@ -582,20 +583,26 @@ function rosterNames(data: unknown): Map<string, string> {
   return new Map(rosterPlayers(data).map((p) => [p.id, fullName(p)]));
 }
 
-/** Exported for its test. The windows are exactly 30 and 14 days counting today: dates after today - 30 and after today - 14 (a `>=` on today - 30 read 31 days). */
+/**
+ * Exported for its test. The windows are exactly 30 and 14 days counting today: dates after today - 30 and after today - 14 (a `>=` on today - 30 read 31 days).
+ * The rounds are the ones Home's "days since a round" and Roster's count read (`roundsForFigures`: scoring rounds of either length, practice
+ * out). DF-C-03: the Hub head and Home's Waiting on counted every round type, so a player who only played practice read as active here
+ * and as quiet on Home and Roster.
+ */
 export async function rosterPulse(supabase: Awaited<ReturnType<typeof createClient>>, names: Map<string, string>, today: string): Promise<NonNullable<ChTeamHub['pulse']> | null> {
   const playerIds = [...names.keys()];
   if (!playerIds.length) return { rounds30: 0, active14: 0, players: 0, byPlayer: [] };
   const res = await loadSeasonRounds(supabase, playerIds, { surface: 'hub', since: addDays(today, -29) });
   if (res.error) return null;
+  const counted = roundsForFigures(res.rounds);
   const since14 = addDays(today, -13);
-  const active = new Set(res.rounds.filter((r) => r.round_date.slice(0, 10) >= since14).map((r) => r.player_id));
+  const active = new Set(counted.filter((r) => r.round_date.slice(0, 10) >= since14).map((r) => r.player_id));
   const count = new Map<string, number>();
-  for (const r of res.rounds) count.set(r.player_id, (count.get(r.player_id) ?? 0) + 1);
+  for (const r of counted) count.set(r.player_id, (count.get(r.player_id) ?? 0) + 1);
   const byPlayer = playerIds
     .map((id) => ({ id, name: names.get(id) ?? 'Player', rounds: count.get(id) ?? 0, recent: active.has(id) }))
     .sort((a, b) => b.rounds - a.rounds || a.name.localeCompare(b.name));
-  return { rounds30: res.rounds.length, active14: active.size, players: playerIds.length, byPlayer };
+  return { rounds30: counted.length, active14: active.size, players: playerIds.length, byPlayer };
 }
 
 /**
