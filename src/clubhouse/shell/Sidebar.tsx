@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { LinkPending } from "./LinkPending";
+import { navLinkPrefetch } from "./link-prefetch";
 import type { GolfUserData } from "@/contexts/golf-user-context";
 import { useNotificationBadges } from "@/contexts/notification-badge-context";
 import { Avatar } from "../ui/Avatar";
@@ -89,6 +90,8 @@ export function Sidebar({
                   <Link
                     key={i.id}
                     href={i.href}
+                    // The page on screen is never prefetched (MAC-12, link-prefetch.ts).
+                    prefetch={navLinkPrefetch(i.href, pathname, search)}
                     // RouteFrame restores the scroll (SectionStrip says why Next's is off).
                     scroll={false}
                     className="ch-navitem"

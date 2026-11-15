@@ -10,6 +10,7 @@ import { haptic } from '../lib/haptics';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useSlidePlate } from '../lib/slide-plate';
 import { LinkPending } from './LinkPending';
+import { navLinkPrefetch } from './link-prefetch';
 import { CH_PHONE_TABS, isRebuilt, type ChRole } from './nav';
 import { usePhoneChromeState } from './phone-chrome';
 import { useSectionSwitch } from './section-switch';
@@ -135,6 +136,8 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
               <Link
                 key={s.id}
                 href={s.href}
+                // The page on screen is never prefetched: that was a second request for its own address (MAC-12, link-prefetch.ts).
+                prefetch={navLinkPrefetch(s.href, pathname)}
                 // RouteFrame puts the page's scroll back (or at the top) itself; Next's own handling read the arriving page's
                 // layout inside the commit on every switch (getClientRects, 22ms at 4x CPU, Chromium, 2026-10-16).
                 scroll={false}
