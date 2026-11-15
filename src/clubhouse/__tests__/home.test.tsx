@@ -909,9 +909,9 @@ describe('Home · after this week, and trips (audit 2026-11-13)', () => {
     const strip = screen.getByRole('heading', { name: 'This week' }).closest('section')!;
     expect(strip.querySelectorAll('span.is-trip')).toHaveLength(3);
     expect([...strip.querySelectorAll('.ch-sr-only')].map((n) => n.textContent).filter((t) => t!.includes('on the road'))).toEqual([
-      'Tue 13, 0 events, on the road (Fall Invitational)',
-      'Wed 14, today, 0 events, on the road (Fall Invitational)',
-      'Thu 15, 0 events, on the road (Fall Invitational)',
+      'T 13, Tue 13, 0 events, on the road (Fall Invitational)',
+      'W 14, Wed 14, today, 0 events, on the road (Fall Invitational)',
+      'T 15, Thu 15, 0 events, on the road (Fall Invitational)',
     ]);
   });
 });

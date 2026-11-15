@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { isDemoEmail } from '../session.mjs';
+import { PROD_REF } from '../staging-guard.mjs';
 
 const SCRIPT = resolve(process.cwd(), 'scripts/clubhouse/audit/session.mjs');
 const run = (...args) => spawnSync('node', [SCRIPT, ...args], { encoding: 'utf8', env: { ...process.env, SUPABASE_BIN: '/nonexistent' } });
@@ -42,7 +43,8 @@ describe('the command line', () => {
   });
 
   it('refuses arguments that name the production project', () => {
-    const r = run('--role', 'coach', '--base', 'https://qmnssrrolpinvwjjnufo.supabase.co');
+    // Built from the guard's own constant: scripts never hold the production URL as a literal (scripts-no-committed-secrets).
+    const r = run('--role', 'coach', '--base', `https://${PROD_REF}.supabase.co`);
     expect(r.status).toBe(1);
     expect(r.stderr).toMatch(/REFUSED: production appears in the arguments/);
   });

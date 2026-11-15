@@ -85,9 +85,13 @@ function len(expr: string, pct: number, max?: number, gap?: string): number {
  */
 describe('week strip days stay 44 wide at 375 (F-0017)', () => {
   const ui = css('ui.css');
-  const gap = decl(ui, '.ch-wks', '--ch-wks-gap');
+  // The day's floor is the 44 pt target token; read its value so the arithmetic below runs on numbers.
+  const target = /--ch-target-min:\s*([^;]+);/.exec(css('tokens.css'))?.[1]?.trim() ?? '';
+  const sized = (v: string) => v.replaceAll('var(--ch-target-min)', target);
+  const gap = sized(decl(ui, '.ch-wks', '--ch-wks-gap'));
 
   it('the grid spaces its days by the shrinking gap', () => {
+    expect(target).toBe('44px');
     expect(gap).not.toBe('');
     expect(decl(ui, '.ch-wks', 'column-gap')).toBe('var(--ch-wks-gap)');
   });
@@ -111,7 +115,7 @@ describe('week strip days stay 44 wide at 375 (F-0017)', () => {
   it('the chosen plate covers each day exactly, at every width', () => {
     const sel = '.ch-wks[data-chosen]::before';
     expect(decl(ui, sel, 'transform')).toBe('translateX(calc(var(--ch-wks-at, 0) * 100%))');
-    const clip = /^inset\(0 0 0 (.+) round var\(--ch-radius-md\)\)$/.exec(decl(ui, sel, 'clip-path'))?.[1] ?? '';
+    const clip = sized(/^inset\(0 0 0 (.+) round var\(--ch-radius-md\)\)$/.exec(decl(ui, sel, 'clip-path'))?.[1] ?? '');
     expect(clip).not.toBe('');
     for (const w of [313, 316, 320, 343, 390]) {
       const g = len(gap, w);

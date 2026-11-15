@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { TERMS } from '../../../lib/glossary';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -34,7 +35,8 @@ describe('Roster craft pass', () => {
   });
 
   it('a card with no place to show labels its figure "Scoring avg" on one line, with no lone "Avg" caption under it', () => {
-    expect(figures).toContain("placed ? 'Scoring' : 'Scoring avg'");
+    expect(figures).toContain("placed ? 'Scoring' : TERMS.scoringAvg.short");
+    expect(TERMS.scoringAvg.short).toBe('Scoring avg');
     expect(figures).not.toContain(": 'Avg'");
     expect(figures).toMatch(/\{placed && <span className="ch-rs-fig__m">/);
     // With nothing drawn under it, the figure is its one row, not two empty rows' gaps.

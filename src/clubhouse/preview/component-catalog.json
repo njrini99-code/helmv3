@@ -26394,6 +26394,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-target-min",
+          "value": "44px",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-tabbar-h",
           "value": "0px",
           "scope": "[data-ui='clubhouse']"
@@ -31210,7 +31215,7 @@
         },
         {
           "name": "--ch-wks-gap",
-          "value": "clamp(0px, calc((100% - 7 * 44px) / 6), var(--ch-wks-gap-max, 2px))",
+          "value": "clamp(0px, calc((100% - 7 * var(--ch-target-min)) / 6), var(--ch-wks-gap-max, 2px))",
           "scope": ".ch-wks"
         },
         {

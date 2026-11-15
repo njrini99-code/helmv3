@@ -104,7 +104,7 @@ async function shotWithout(page, css) {
   const hide = await page.addStyleTag({ content: css });
   const bare = PNG.sync.read(await page.screenshot({ animations: 'disabled' }));
   await hide.evaluate((el) => el.remove());
-  await page.evaluate(() => getComputedStyle(document.documentElement).color);
+  await page.evaluate('getComputedStyle(document.documentElement).color'); // a style flush, run in the page
   await still.evaluate((el) => el.remove());
   return bare;
 }
