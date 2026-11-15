@@ -25,6 +25,8 @@ import { describe, expect, it } from 'vitest';
  */
 const ROOT = process.cwd();
 const RATCHET = join(ROOT, 'config/clubhouse/motion-ratchet.json');
+/** The one stylesheet that holds the keyframes Clubhouse keeps (MOTION-AND-VISUAL 3.12). */
+const MOTION_CSS = 'src/clubhouse/styles/motion.css';
 const COMPOSITOR = /^(?:transform|translate|scale|rotate|opacity|offset|animation-timing-function|stroke-dashoffset|stroke-dasharray|visibility)$/;
 const TIMED = /^(?:transition|animation|transition-duration|animation-duration|transition-delay|animation-delay)$/;
 /** Motion tokens outside the 3.2 vocabulary. The working dots' own beat (--ch-dur-typing, its step and curve) and a story's dwell are not motion vocabulary and stay. */
@@ -106,7 +108,12 @@ describe('motion gate (production audit 2026-11-15, Batch 4 item 7)', () => {
       const held = Object.fromEntries(Object.entries(counts).filter(([, n]) => n));
       if (Object.keys(held).length) current[file] = held;
     };
-    for (const { file, css } of sheets) keep(file, motionCounts(css));
+    for (const { file, css } of sheets) {
+      const counts = motionCounts(css);
+      // styles/motion.css is where a kept keyframe lives (3.12), so its keyframes are the collection, not a leftover.
+      if (file === MOTION_CSS) counts.keyframes = 0;
+      keep(file, counts);
+    }
     for (const path of files(join(ROOT, 'src/clubhouse'), /\.(?:ts|tsx)$/).filter((p) => !p.includes('__tests__'))) {
       keep(relative(ROOT, path), { 'retired-token': retiredUses(readFileSync(path, 'utf8')) });
     }

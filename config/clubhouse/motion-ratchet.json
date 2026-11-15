@@ -13,47 +13,34 @@
   },
   "src/clubhouse/styles/base.css": {
     "off-token-duration": 2,
-    "retired-token": 10,
-    "keyframes": 2,
-    "infinite": 1
+    "retired-token": 9,
+    "keyframes": 2
   },
   "src/clubhouse/styles/calendar.css": {
-    "retired-token": 34,
-    "keyframes": 4,
-    "infinite": 2
+    "retired-token": 27
   },
   "src/clubhouse/styles/class-awareness.css": {
     "retired-token": 1,
     "keyframes": 1
   },
   "src/clubhouse/styles/classes.css": {
-    "retired-token": 7,
-    "keyframes": 1,
-    "infinite": 1
+    "retired-token": 5
   },
   "src/clubhouse/styles/coachhelm-ask-cards.css": {
     "retired-token": 1,
     "keyframes": 1
   },
-  "src/clubhouse/styles/coachhelm-ask-studio.css": {
-    "retired-token": 3,
-    "keyframes": 3
-  },
   "src/clubhouse/styles/coachhelm-ask-v2.css": {
-    "paint-keyframes": 2,
     "off-token-duration": 3,
-    "retired-token": 177,
-    "keyframes": 36,
+    "retired-token": 33,
     "infinite": 1
   },
   "src/clubhouse/styles/coachhelm-ask.css": {
-    "retired-token": 19,
+    "retired-token": 17,
     "keyframes": 3
   },
   "src/clubhouse/styles/coachhelm-ball.css": {
-    "retired-token": 10,
-    "keyframes": 7,
-    "infinite": 3
+    "infinite": 1
   },
   "src/clubhouse/styles/coachhelm-brief.css": {
     "retired-token": 1
@@ -62,10 +49,7 @@
     "retired-token": 4
   },
   "src/clubhouse/styles/coachhelm-file.css": {
-    "off-token-duration": 2,
-    "retired-token": 9,
-    "keyframes": 1,
-    "infinite": 1
+    "retired-token": 4
   },
   "src/clubhouse/styles/coachhelm-plan.css": {
     "retired-token": 4,
@@ -83,14 +67,12 @@
     "retired-token": 1
   },
   "src/clubhouse/styles/coachhelm-team.css": {
-    "retired-token": 38,
-    "keyframes": 12,
-    "infinite": 1
+    "retired-token": 32,
+    "keyframes": 10
   },
   "src/clubhouse/styles/coachhelm-thread.css": {
-    "retired-token": 14,
-    "keyframes": 5,
-    "infinite": 2
+    "retired-token": 6,
+    "infinite": 1
   },
   "src/clubhouse/styles/coachhelm-views.css": {
     "retired-token": 4
@@ -106,15 +88,15 @@
     "retired-token": 1
   },
   "src/clubhouse/styles/controls.css": {
-    "retired-token": 34,
+    "retired-token": 30,
     "keyframes": 3
   },
   "src/clubhouse/styles/home.css": {
-    "retired-token": 37
+    "retired-token": 17
   },
   "src/clubhouse/styles/hub.css": {
     "paint-keyframes": 4,
-    "retired-token": 17,
+    "retired-token": 15,
     "keyframes": 1
   },
   "src/clubhouse/styles/live.css": {
@@ -125,11 +107,6 @@
     "retired-token": 13,
     "keyframes": 3
   },
-  "src/clubhouse/styles/messages-inbox.css": {
-    "retired-token": 1,
-    "keyframes": 1,
-    "infinite": 1
-  },
   "src/clubhouse/styles/messages-overlays.css": {
     "retired-token": 1,
     "keyframes": 1
@@ -139,9 +116,9 @@
     "keyframes": 1
   },
   "src/clubhouse/styles/messages.css": {
-    "retired-token": 25,
-    "keyframes": 6,
-    "infinite": 3
+    "retired-token": 22,
+    "keyframes": 3,
+    "infinite": 2
   },
   "src/clubhouse/styles/onboard.css": {
     "paint-keyframes": 5,
@@ -149,8 +126,8 @@
     "infinite": 1
   },
   "src/clubhouse/styles/practice.css": {
-    "retired-token": 7,
-    "keyframes": 3,
+    "retired-token": 5,
+    "keyframes": 2,
     "infinite": 1
   },
   "src/clubhouse/styles/qualifiers.css": {
@@ -159,26 +136,24 @@
   },
   "src/clubhouse/styles/quick-chat.css": {
     "off-token-duration": 1,
-    "retired-token": 13,
-    "keyframes": 2,
+    "retired-token": 7,
     "infinite": 2
   },
   "src/clubhouse/styles/recruiting.css": {
     "paint-keyframes": 2,
-    "retired-token": 21,
+    "retired-token": 19,
     "keyframes": 1
   },
   "src/clubhouse/styles/roster.css": {
-    "retired-token": 24,
+    "retired-token": 22,
     "keyframes": 1
   },
   "src/clubhouse/styles/rounds-setup.css": {
-    "retired-token": 23,
+    "retired-token": 19,
     "keyframes": 2
   },
   "src/clubhouse/styles/rounds-track.css": {
-    "retired-token": 24,
-    "keyframes": 9
+    "retired-token": 18
   },
   "src/clubhouse/styles/rounds.css": {
     "retired-token": 47,
@@ -191,23 +166,19 @@
   },
   "src/clubhouse/styles/shell.css": {
     "paint-keyframes": 4,
-    "retired-token": 77,
-    "keyframes": 15,
-    "infinite": 4
+    "retired-token": 70,
+    "keyframes": 12,
+    "infinite": 1
   },
   "src/clubhouse/styles/spinner.css": {
-    "retired-token": 1,
-    "keyframes": 1,
     "infinite": 1
   },
   "src/clubhouse/styles/stats-redesign.css": {
-    "off-token-duration": 1,
-    "retired-token": 5,
-    "keyframes": 3,
-    "infinite": 1
+    "retired-token": 4,
+    "keyframes": 1
   },
   "src/clubhouse/styles/stats.css": {
-    "retired-token": 47,
+    "retired-token": 37,
     "keyframes": 1
   },
   "src/clubhouse/styles/tournament-fields.css": {
@@ -220,15 +191,14 @@
     "retired-token": 1
   },
   "src/clubhouse/styles/tournaments-player.css": {
-    "retired-token": 3
+    "retired-token": 1
   },
   "src/clubhouse/styles/tournaments.css": {
     "retired-token": 1
   },
   "src/clubhouse/styles/ui.css": {
-    "retired-token": 22,
-    "keyframes": 4,
-    "infinite": 1
+    "retired-token": 14,
+    "keyframes": 1
   },
   "src/clubhouse/ui/FormSheet.tsx": {
     "retired-token": 1
