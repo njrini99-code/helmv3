@@ -1290,6 +1290,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-14-retire-fairway.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-15-hole-rates-from-stats-rows.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-15-player-figure-windows.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-15-quietest-players-named.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-15-team-scoring-window.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-15-test-tasks-and-posts.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
@@ -1340,6 +1341,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-sg-window-and-past-class.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-15-leaders-one-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-15-nines-count-and-season-link.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-15-quietest-players-named.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
