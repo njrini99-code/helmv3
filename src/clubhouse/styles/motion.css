@@ -31,6 +31,14 @@
   }
 }
 
+/* A drawer a tap opens from the leading edge (Ask's chat history), on `translate`, which lib/sheet-drag.ts reads to catch
+   it mid-flight. */
+@keyframes ch-drawer-in {
+  from {
+    translate: -100% 0;
+  }
+}
+
 /* A countdown that is a real clock (Ask's Undo window): the ring drains over the time left. Its length is the ring's own
    dash length, `--ch-drain` (100 for a pathLength of 100). */
 @keyframes ch-drain {
@@ -73,7 +81,9 @@
 
 /* Something that arrives where it will stay, once, in the two owner exceptions: a live Ask visual's sections rise
    (--ch-arrive-t: translateY(8px)), the course view's hole settles (opacity 0.4, scale 1.06) and a landing number pops
-   (scale 0.4). Opacity and transform only; a rule names its own start. */
+   (scale 0.4). Outside them, only what a tap opens or swaps: a menu from its anchor (Ask's picker, scale 0.96, 3.4) and a
+   CoachHelm view switch, which rises from the opacity the old view dimmed to (--ch-arrive-o, no transform). Opacity and
+   transform only; a rule names its own start. */
 @keyframes ch-arrive {
   from {
     opacity: var(--ch-arrive-o, 0);

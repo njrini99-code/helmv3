@@ -223,7 +223,8 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hl-rck__s:not(:empty) {
-  animation: ch-hl-rise var(--ch-dur-base) var(--ch-ease);
+  /* The line a Re-check tap brings crossfades in over the quick beat, with no rise (motion.css ch-in; 3.5, 3.12). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-hl-rck__s [data-ch-code='CH-13406'] {
   font-weight: 600;
@@ -422,7 +423,6 @@
   color: var(--ch-green-700);
   font: var(--ch-type-14-strong);
   line-height: var(--ch-lead-tight);
-  animation: ch-hl-rise var(--ch-dur-base) var(--ch-ease);
 }
 .ch-hl-dis {
   display: flex;
@@ -434,7 +434,6 @@
   box-shadow: var(--ch-elevation-reading);
   color: var(--ch-text-secondary);
   font: var(--ch-type-14);
-  animation: ch-hl-rise var(--ch-dur-base) var(--ch-ease);
 }
 .ch-hl-dis > span {
   flex: 1;
@@ -447,17 +446,8 @@
   flex: none;
   color: var(--ch-text-tertiary);
 }
-/* CH-13601: the Assigned chip and the dismissed notice rise in (base); still with reduced motion or Animations off. */
-[data-ui='clubhouse'][data-motion='off'] .ch-hl-done,
-[data-ui='clubhouse'][data-motion='off'] .ch-hl-dis {
-  animation: none;
-}
-@keyframes ch-hl-rise {
-  from {
-    opacity: 0;
-    translate: 0 var(--ch-reveal-rise);
-  }
-}
+/* CH-13601: the Assigned chip and the dismissed notice take their place at once (their rise is gone: an Assigned chip
+   could rise on first paint, and content never moves on its own, MOTION-AND-VISUAL 3.1, 3.12). */
 
 /* Route skeleton: the page's own shape */
 .ch-hl-sk {
@@ -699,16 +689,13 @@
 /* ...and the view that lands settles in rather than snapping (use-view-switch.ts `enter`): it starts at the opacity the view it
    replaces had dimmed to (--ch-enter-from), so the two read as one cross-fade with no dip and no blank, and rises to full over the
    quick beat. The same parts as the dim: the header and the strip, which did not change, stay still. Ask's are its body or its
-   plain state. Animations off zeroes the beat and reduced motion shortens it to nothing (base.css), so the view swaps at once. */
-@keyframes ch-view-enter {
-  from {
-    opacity: var(--ch-enter-from, 0.55);
-  }
-}
+   plain state. Animations off zeroes the beat and reduced motion shortens it to nothing (base.css), so the view swaps at once.
+   The keyframe is motion.css's ch-arrive, starting at that opacity (a kept keyframe lives there, MOTION-AND-VISUAL 3.12). */
 /* Desktop only (the brief is desktop's): the phone keeps its approved swap, and its top bar is drawn inside the same main. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-hl[data-ch-enter]:not(.is-phone) > :not(.ch-hl-h):not([data-ch-strip]) {
-    animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
+    --ch-arrive-o: var(--ch-enter-from, 0.55);
+    animation: ch-arrive var(--ch-dur-quick) var(--ch-ease-ios) backwards;
   }
 }
 

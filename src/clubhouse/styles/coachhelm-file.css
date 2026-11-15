@@ -52,12 +52,13 @@
 /* A switch of view from Your week (P1-56; use-view-switch.ts), the same rule as every CoachHelm view root (coachhelm.css): the
    strip has already moved and stays crisp, the cards stop answering taps from the tap on, and dim only once the switch has taken
    the busy delay, held at least the busy hold (data-ch-busy, lib/use-busy.ts; MOTION-AND-VISUAL 3.9). The view that lands
-   settles in from that dim on a desk (ch-view-enter, coachhelm.css). Reduced motion shortens the beat to nothing (base.css). */
+   settles in from that dim on a desk (motion.css ch-arrive from --ch-enter-from, as coachhelm.css's view roots). Reduced
+   motion shortens the beat to nothing (base.css). */
 .ch-hf .ch-hf-flow { transition: opacity var(--ch-dur-quick) var(--ch-ease-out); }
 .ch-hf[aria-busy='true'] .ch-hf-flow { pointer-events: none; }
 .ch-hf[data-ch-busy='skeleton'] .ch-hf-flow { opacity: 0.55; }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  .ch-hf[data-ch-enter]:not(.is-phone) .ch-hf-flow { animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease-out) backwards; }
+  .ch-hf[data-ch-enter]:not(.is-phone) .ch-hf-flow { --ch-arrive-o: var(--ch-enter-from, 0.55); animation: ch-arrive var(--ch-dur-quick) var(--ch-ease-out) backwards; }
 }
 .ch-hf .dhead.is-week { margin-bottom: 24px; }
 /* Your week on a desk (fix wave 2026-11-11): the page's own measure and gutters, and the player's CoachHelm head over the

@@ -2013,15 +2013,11 @@ p.ch-shs-mini-cap {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  animation: ch-shs-ghost var(--ch-dur-base) var(--ch-ease) forwards;
+  /* motion.css ch-out (a kept keyframe lives there, MOTION-AND-VISUAL 3.12); shs-motion.tsx removes it on animationend. */
+  animation: ch-out var(--ch-dur-base) var(--ch-ease-out) forwards;
 }
 .ch-shs-xfade-ghost .ch-shs-feature {
   visibility: hidden;
-}
-@keyframes ch-shs-ghost {
-  to {
-    opacity: 0;
-  }
 }
 .ch-shs-d-sheet--body {
   padding: 0;

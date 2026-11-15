@@ -11361,7 +11361,7 @@
     "category": 1,
     "item": 3,
     "name": "TASK_LINK_OPENS_THE_TASK",
-    "meaning": "?task={id} (a task notification, carried through the old /tasks address, a next.config.mjs redirect) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it.",
+    "meaning": "?task={id} (a task notification, carried through the old /tasks address, a next.config.mjs redirect) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it with a still wash until the row is used (first paint is still, MOTION-AND-VISUAL 3.5; the fade it once played is gone). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it.",
     "status": "implemented",
     "where": "src/clubhouse/screens/hub/parts.tsx#TaskRow; src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute; next.config.mjs#redirects",
     "tests": [
