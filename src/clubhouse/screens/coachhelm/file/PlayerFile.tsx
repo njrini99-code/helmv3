@@ -255,6 +255,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
       <section className="card">
         <EmptyState
           code="CH-13386"
+          kind="first-run"
           title="No rounds yet"
           body="Reads start after 4 full rounds in the last 90 days."
           action={

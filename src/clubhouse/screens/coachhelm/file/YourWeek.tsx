@@ -98,6 +98,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
             <section className="card">
               <EmptyState
                 code="CH-13386"
+                kind="first-run"
                 title="No rounds yet"
                 body="Reads start after 4 full rounds in the last 90 days."
                 action={

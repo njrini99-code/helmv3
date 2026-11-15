@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { RoundReviewSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 
 /**
  * Continue Round for a round that is no longer in progress.
@@ -19,18 +18,19 @@ import { RoundReviewSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
  * Rendering a client-side replace instead works in every render context and
  * lands on the same page the success overlay navigates to.
  */
-export function CompletedRoundRedirect({ href }: { href: string }) {
+export function CompletedRoundRedirect({ href, skeleton }: { href: string; skeleton: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
     router.replace(href);
   }, [href, router]);
 
-  // The review's own skeleton while the replace lands (GAP-R-11): never a flash of the retired Fairway look. The line and
-  // the link stay for a screen reader, and for the rare browser where the replace doesn't run.
+  // The review's own skeleton while the replace lands (GAP-R-11), passed in by the route file: never a flash of the
+  // retired Fairway look. The line and the link stay for a screen reader, and for the rare browser where the replace
+  // doesn't run.
   return (
     <>
-      <RoundReviewSkeleton />
+      {skeleton}
       <p className="ch-sr-only" role="status" aria-live="polite">
         This round is complete. Opening your round…{' '}
         <Link href={href} replace>

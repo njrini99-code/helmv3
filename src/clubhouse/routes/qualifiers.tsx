@@ -145,3 +145,6 @@ function SelectionDidNotLoad() {
     </Frame>
   );
 }
+
+/** The route's own states, for the preview's fixtures (GAP-S-29). */
+export { NotFound as QualifierNotFound, CoachOnly as QualifierCoachOnly, SelectionDidNotLoad as QualifierSelectionFailed };

@@ -1,6 +1,5 @@
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/States';
-import { FAILURE_COPY } from '../ui/Notices';
 import { RefreshNotice } from '../ui/RefreshNotice';
 import { notFound, redirect } from 'next/navigation';
 import { isUuid } from '@/lib/utils/uuid';
@@ -40,9 +39,12 @@ const OFF = (
  * no action of its own. The danger EmptyState brings PageRetry, which re-runs this page in place; a second "Try again"
  * that went to Practice home was the old shape.
  */
+// FAILURE_COPY.page, written out: ui/Notices is a client module, and a server route can't read a value from one (it
+// would get a client reference, not the string). __tests__/client-boundary.test.ts guards the import.
+const FAILED_BODY = 'Nothing you saved is lost. Try again.';
 const failed = (what: string, className = 'ch-page') => (
   <main className={className} data-ch="practice">
-    <EmptyState size="page" tone="danger" title={`${what} didn’t load`} body={FAILURE_COPY.page} />
+    <EmptyState size="page" tone="danger" title={`${what} didn’t load`} body={FAILED_BODY} />
   </main>
 );
 
@@ -230,3 +232,6 @@ export async function PlanFormatRoute() {
     />
   );
 }
+
+/** The route's own states, for the preview's fixtures (GAP-S-29): the same markup, never a copy. */
+export { OFF as PRACTICE_OFF, NO_TEAM as PRACTICE_NO_TEAM, failed as practiceFailed };

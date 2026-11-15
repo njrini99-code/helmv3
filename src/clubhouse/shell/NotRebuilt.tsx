@@ -98,8 +98,10 @@ export function aliasSkeletonFor(pathname: string, role: string | null | undefin
 function AliasSkeleton({ which, role }: { which: ChAliasSkeleton | null; role: 'coach' | 'player' }) {
   switch (which) {
     case 'settings-team':
+      // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
       return <SettingsSkeleton role="coach" section="team" opened />;
     case 'settings-golf':
+      // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
       return <SettingsSkeleton role="player" section="golf" opened />;
     case 'coachhelm':
       return <CoachHelmSkeleton view={role} />;

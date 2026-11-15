@@ -30,6 +30,7 @@ vi.mock('../../data/practice-home', () => ({ loadCoachPracticeHome: vi.fn(), loa
 vi.mock('../../data/practice-library', () => ({ loadDrill: vi.fn(), loadDrills: vi.fn(), loadGroups: vi.fn(), loadTemplates: vi.fn() }));
 
 const { PracticePlanRoute, PracticePrintRoute } = await import('../practice');
+const { FAILURE_COPY } = await import('../../ui/Notices');
 /** A well-formed id: a malformed one is the not-found page before any read (GAP-S-21). */
 const PLAN = '00000000-0000-4000-8000-000000000001';
 
@@ -70,5 +71,16 @@ describe('a plan that really is gone still says so', () => {
     state.coach = { status: 'gone' };
     await expect(PracticePlanRoute({ planId: PLAN })).rejects.toThrow('NEXT_NOT_FOUND');
     await expect(PracticePrintRoute({ planId: PLAN })).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+});
+
+describe('a plan whose read failed (GAP-S-06)', () => {
+  // The route writes FAILURE_COPY.page out (a server route can't read a value from the client Notices module): this
+  // keeps the two the same words.
+  it('says this plan didn’t load, with the one failure line', async () => {
+    state.coach = { status: 'failed' };
+    await show(PracticePlanRoute({ planId: PLAN }));
+    expect(screen.getByText('This plan didn’t load')).toBeTruthy();
+    expect(screen.getByText(FAILURE_COPY.page)).toBeTruthy();
   });
 });

@@ -41,28 +41,30 @@ export async function ClubhouseRoundReviewRoute({ id, hole = null, fromRounds = 
     redirect(`/golf/dashboard/rounds/continue/${id}`);
   }
   if (result.kind === 'error') return <ReviewLoadFailed />;
-  if (result.kind === 'notFound') {
-    const coach = viewer?.role === 'coach';
-    return (
-      <main className="ch-rv" aria-labelledby="ch-rv-nf">
-        <EmptyState
-          size="page"
-          code="CH-11307"
-          icon={Flag}
-          title="This round isn’t here"
-          body="It may have been deleted, or the link is wrong. Everything else is where you left it."
-          action={
-            <Button variant="primary" href={coach ? '/golf/dashboard/stats' : '/golf/dashboard/rounds'}>
-              {coach ? 'Go to Stats' : 'Go to your rounds'}
-            </Button>
-          }
-        />
-        <span id="ch-rv-nf" className="ch-sr-only">
-          Round not found
-        </span>
-      </main>
-    );
-  }
+  if (result.kind === 'notFound') return <RoundNotFound coach={viewer?.role === 'coach'} />;
   // P-7 stage 3 streams in after the review (the promise never rejects), so the review is not held for its two reads.
   return <RoundReview review={result.review} history={loadReviewHistory(result.historyFrom)} typeEdit={result.typeEdit} initialHole={hole} fromRounds={fromRounds} />;
+}
+
+/** CH-11307: a round that answered with nothing (deleted, or a wrong link). Exported for the preview (GAP-S-29). */
+export function RoundNotFound({ coach }: { coach: boolean }) {
+  return (
+    <main className="ch-rv" aria-labelledby="ch-rv-nf">
+      <EmptyState
+        size="page"
+        code="CH-11307"
+        icon={Flag}
+        title="This round isn’t here"
+        body="It may have been deleted, or the link is wrong. Everything else is where you left it."
+        action={
+          <Button variant="primary" href={coach ? '/golf/dashboard/stats' : '/golf/dashboard/rounds'}>
+            {coach ? 'Go to Stats' : 'Go to your rounds'}
+          </Button>
+        }
+      />
+      <span id="ch-rv-nf" className="ch-sr-only">
+        Round not found
+      </span>
+    </main>
+  );
 }

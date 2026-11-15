@@ -280,3 +280,5 @@ const failed = (d: ChTeamHub): ChTeamHub => ({
 });
 export const PREVIEW_HUB_PLAYER_FAILED = failed(PREVIEW_HUB_PLAYER);
 export const PREVIEW_HUB_COACH_FAILED = failed(PREVIEW_HUB_COACH);
+/** Some reads failed and the rest answered: Announcements and Tasks say so in place, the rest of the Hub draws. */
+export const PREVIEW_HUB_COACH_PARTIAL: ChTeamHub = { ...PREVIEW_HUB_COACH, announcements: { rows: [], error: true }, tasks: { rows: [], error: true } };

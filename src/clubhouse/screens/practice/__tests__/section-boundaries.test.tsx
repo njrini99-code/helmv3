@@ -53,7 +53,7 @@ describe('Practice sections fail one at a time (GAP-S-10)', () => {
     expect(screen.queryByText(/couldn’t be shown/)).toBeNull();
   });
 
-  it("keeps Published and the week when Up next crashes, and names what didn't draw", () => {
+  it('keeps Published and the week when Up next crashes, and names what didn’t draw', () => {
     crash.on = true;
     const { container } = render(<PracticeHome data={HOME} />);
     const notice = container.querySelector('[data-ch-code="CH-13204"]');

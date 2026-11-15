@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/aria-role -- role is a component prop (ClubhouseMarker, AliasWait), not an ARIA role */
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
