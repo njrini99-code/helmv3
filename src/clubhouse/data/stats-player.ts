@@ -362,6 +362,8 @@ export async function loadPlayerProfile(input: {
   const ownByPlayer = groupByPlayer(ownRes.rounds);
   const ownWin = roundsInFilter(counted(ownByPlayer.get(input.playerId) ?? []), f, start);
   const ownHole = holeRounds(ownWin);
+  // The window before this one, for My stats' compare card: its greens, fairways and putts read the same stats rows (DF-P-01).
+  const ownPrevHole = holeRounds(previousInFilter(counted(ownByPlayer.get(input.playerId) ?? []), f, start) ?? []);
   // Every shot-level figure counts exactly the window's own rounds with their holes (the ones the Rounds table lists, of the lengths the filter chose),
   // newest 100 at most: the detail read is given these ids instead of a date preset, which would count a different set.
   const scopeIds = ownHole.slice(0, DETAIL_MAX_ROUNDS).map((r) => r.id);
@@ -375,7 +377,7 @@ export async function loadPlayerProfile(input: {
           },
         )
       : Promise.resolve({ stats: null, error: false }),
-    loadRoundCache(supabase, ownHole.map((r) => r.id), 'stats'),
+    loadRoundCache(supabase, [...new Set([...ownHole, ...ownPrevHole].map((r) => r.id))], 'stats'),
     // The same shot-level bands as Team stats, so the make-rate curve reaches 25+ feet with exact counts.
     loadPutts(supabase, scopeIds),
     loadHoles(supabase, scopeIds),
@@ -623,11 +625,11 @@ export async function loadPlayerProfile(input: {
     puttBands,
     extra: {
       // An 18-hole score and a 9-hole score are not the same best: each length is listed on its own.
-      bests: personalBests(winRounds.filter((r) => (r.holes_played ?? 18) === 18)),
-      bests9: winRounds.some((r) => r.holes_played === 9) ? personalBests(winRounds.filter((r) => r.holes_played === 9)) : null,
+      bests: personalBests(winRounds.filter((r) => (r.holes_played ?? 18) === 18), cacheOwn.byRound),
+      bests9: winRounds.some((r) => r.holes_played === 9) ? personalBests(winRounds.filter((r) => r.holes_played === 9), cacheOwn.byRound) : null,
       nineRounds: winRounds.filter((r) => r.holes_played === 9).length,
-      series: perRoundSeries(winRounds),
-      compare: windowCompare(winRounds, prevList),
+      series: perRoundSeries(winRounds, cacheOwn.byRound),
+      compare: windowCompare(winRounds, prevList, cacheOwn.byRound),
       pressure,
       opening,
       toughest,
