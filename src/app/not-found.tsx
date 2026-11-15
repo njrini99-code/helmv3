@@ -53,7 +53,7 @@ export default function NotFound() {
           Need help?{' '}
           <Link
             href="mailto:admin@helmsportslabs.com"
-            className="text-accent-700 hover:underline"
+            className="py-3 text-accent-700 hover:underline"
           >
             Contact support
           </Link>

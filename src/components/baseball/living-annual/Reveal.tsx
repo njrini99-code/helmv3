@@ -33,8 +33,9 @@
  */
 import type { ReactNode } from 'react';
 import type { TargetAndTransition, Variants } from 'motion/react';
-import { m, useReducedMotion } from 'motion/react';
+import { m } from 'motion/react';
 import { inkSettles, STAGGER_STEP } from './motion';
+import { useLivingReducedMotion } from './reduced-motion';
 
 export interface RevealProps {
   children: ReactNode;
@@ -47,7 +48,7 @@ export interface RevealProps {
 }
 
 export function Reveal({ children, staggerIndex = 0, className }: RevealProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
 
   // A component-level `transition` prop would be ignored — framer-motion
   // resolves the transition embedded IN a variant target ahead of the prop —

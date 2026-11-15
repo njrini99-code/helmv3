@@ -25,10 +25,11 @@
  * pulse fires.
  */
 import { useEffect, useRef, useState } from 'react';
-import { m, useReducedMotion } from 'motion/react';
+import { m } from 'motion/react';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
 import { EASE_GLIDE } from './motion';
+import { useLivingReducedMotion } from './reduced-motion';
 
 export interface StatReadoutProps {
   /** The figure. Numbers roll on the odometer; strings render statically. */
@@ -61,7 +62,7 @@ export function StatReadout({
   className,
   ariaLabel,
 }: StatReadoutProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
   const isNumber = typeof value === 'number';
 
   const [flash, setFlash] = useState<Flash | null>(null);

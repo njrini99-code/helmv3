@@ -154,7 +154,8 @@ function MarketingHeader() {
   return (
     <header className="border-b border-[color:var(--hairline)] bg-[var(--paper)]">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2">
+        {/* SWP-25: the home link stands the full 44 tall. */}
+        <Link href="/" className="flex min-h-11 items-center gap-2">
           <HelmMark sport="baseball" size={32} className="h-8 w-8" unoptimized />
           <span className="font-annual text-h3 font-semibold text-text-primary">Helm</span>
         </Link>

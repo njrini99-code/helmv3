@@ -279,7 +279,7 @@ function LoginContent() {
               Don&apos;t have an account?{' '}
               <Link
                 href={signupHref}
-                className="text-primary-600 font-semibold hover:text-primary-700 transition-colors"
+                className="py-3 text-primary-600 font-semibold hover:text-primary-700 transition-colors"
               >
                 Sign up
               </Link>
