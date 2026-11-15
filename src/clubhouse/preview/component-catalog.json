@@ -1735,7 +1735,8 @@
         "BusyDetail",
         "BusySheet",
         "EventFiles",
-        "LinkedTrip"
+        "LinkedTrip",
+        "TripLink"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -3629,6 +3630,7 @@
       "group": "screens",
       "exports": [
         "FileFailed",
+        "PartFailed",
         "PlayerFile"
       ],
       "styles": [
@@ -4806,7 +4808,9 @@
       "exports": [
         "HomeSpanSwitch"
       ],
-      "styles": [],
+      "styles": [
+        "src/clubhouse/styles/controls.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -21402,6 +21406,7 @@
         "ch-rs-ldr__k",
         "ch-rs-ldr__p",
         "ch-rs-ldr__v",
+        "ch-rs-ldr__why",
         "ch-rs-ldrs",
         "ch-rs-ldrs__rule",
         "ch-rs-list",
