@@ -43,7 +43,7 @@ import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, seedThreadFiles, takePrefill } from './prefill';
 import { seedPollDraft } from './polls';
 import { attachmentKindOf, useAttachmentFacts } from './attachment-facts';
-import { directWith, firstName, groupLacksPlayer, isDirect, isGroupRow, isNamedForOneOfTwo, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { directWith, firstName, FORMER_MEMBER, groupLacksPlayer, isDirect, isFormerMember, isGroupRow, isNamedForOneOfTwo, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = isGroupRow;
 
@@ -114,12 +114,15 @@ export function Messages({ data }: { data: ChMessagesData }) {
         const dir = otherId ? people.get(otherId) : undefined;
         // A player's 1:1 with the coach reads as the coach, never "Cole Bennett · 2 members" and the group mark.
         const group = isGroup(c) && !isNamedForOneOfTwo(c, [data.viewerName, dir?.name, other?.name]);
+        // Someone with no profile who is not on the team: "Former member", and the thread is read-only (coach audit 13 Nov 2026, §6).
+        const former = isFormerMember({ group, other, known: !!dir });
         return {
           id: c.id,
           group,
           channel: c.is_team_channel === true,
-          title: group ? c.title?.trim() || 'Group' : dir?.name ?? other?.name ?? 'Conversation',
-          subtitle: group ? '' : dir?.subtitle ?? other?.subtitle ?? '',
+          title: former ? FORMER_MEMBER : group ? c.title?.trim() || 'Group' : dir?.name ?? other?.name ?? 'Conversation',
+          subtitle: former ? 'No longer on the team' : group ? '' : dir?.subtitle ?? other?.subtitle ?? '',
+          ...(former ? { former: true } : {}),
           memberIds: group ? (c.participant_ids ?? []).filter((id) => id !== data.viewerUserId) : otherId ? [otherId] : [],
           memberCount: c.participant_count ?? c.participant_ids?.length ?? 2,
           unread: c.unread_count ?? 0,

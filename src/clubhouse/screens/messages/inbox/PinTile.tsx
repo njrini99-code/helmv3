@@ -5,7 +5,7 @@ import type { ChConv } from '../model';
 import { Flag, Users } from 'lucide-react';
 import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
-import { convAvatarId, convYear } from '../shared/conv-ui';
+import { convAvatarId, convAvatarName, convYear } from '../shared/conv-ui';
 import { TypingMini, typingLabel } from './TypingMini';
 import { bubbletLine, pinLabel } from './model';
 import { useConvActions } from './ConvRow';
@@ -36,7 +36,7 @@ export function PinTile({ api, c, place }: { api: ChMessagesApi; c: ChConv; plac
               <Icon icon={c.channel ? Flag : Users} size={31} />
             </span>
           ) : (
-            <Avatar name={c.title} id={convAvatarId(api, c)} size="xl" year={convYear(api, c)} />
+            <Avatar name={convAvatarName(c)} id={convAvatarId(api, c)} size="xl" year={convYear(api, c)} />
           )}
           <span className="ch-msv-pin__l">{pinLabel(c)}</span>
         </button>

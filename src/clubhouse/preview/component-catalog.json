@@ -7430,6 +7430,18 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/qualifiers/RulesText.tsx",
+      "group": "screens",
+      "exports": [
+        "RulesText"
+      ],
+      "styles": [
+        "src/clubhouse/styles/qualifiers.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/qualifiers/SkeletonCoachActions.tsx",
       "group": "screens",
       "exports": [
@@ -20345,6 +20357,7 @@
       "classes": [
         "ch-backlink",
         "ch-btn",
+        "ch-btn--primary",
         "ch-btn--secondary",
         "ch-cp-sheet",
         "ch-field__help",
@@ -20557,6 +20570,46 @@
       ],
       "tokens": [
         {
+          "name": "--ch-prb-table",
+          "value": "var(--ch-ivory-200)",
+          "scope": ".ch-prb.is-desk"
+        },
+        {
+          "name": "--ch-prb-stub",
+          "value": "84px",
+          "scope": ".ch-prb.is-desk"
+        },
+        {
+          "name": "--ch-prb-table",
+          "value": "var(--ch-grouped-bg)",
+          "scope": "html[data-fw-theme='dark'] .ch-prb.is-desk"
+        },
+        {
+          "name": "--ch-well-bg",
+          "value": "rgb(244 241 232 / 0.08)",
+          "scope": ".ch-prb.is-desk .ch-prb-head"
+        },
+        {
+          "name": "--ch-well-shadow",
+          "value": "inset 0 0 0 var(--ch-hairline-w) var(--ch-feature-sep)",
+          "scope": ".ch-prb.is-desk .ch-prb-head"
+        },
+        {
+          "name": "--ch-seg-on-bg",
+          "value": "var(--ch-on-green-plate)",
+          "scope": ".ch-prb.is-desk .ch-prb-head"
+        },
+        {
+          "name": "--ch-seg-on-shadow",
+          "value": "0 1px 2px rgb(2 18 10 / 0.4)",
+          "scope": ".ch-prb.is-desk .ch-prb-head"
+        },
+        {
+          "name": "--ch-seg-on-ink",
+          "value": "var(--ch-green-800)",
+          "scope": ".ch-prb.is-desk .ch-prb-head"
+        },
+        {
           "name": "--ch-hs-fade",
           "value": "44px",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → .ch-hscroll.ch-prc-areas"
@@ -20696,6 +20749,8 @@
         "ch-qf-row--flat",
         "ch-qf-row--head",
         "ch-qf-rowbtn",
+        "ch-qf-rules",
+        "ch-qf-rules__more",
         "ch-qf-rv",
         "ch-qf-rv__avg",
         "ch-qf-rv__counts",
@@ -22745,6 +22800,7 @@
         "ch-bellp__skel",
         "ch-bellp__skelrow",
         "ch-bellp__stitle",
+        "ch-bellp__team",
         "ch-bellp__tools",
         "ch-bellp__top",
         "ch-bellp__txt",
@@ -22769,6 +22825,7 @@
         "ch-bst-card__ic",
         "ch-bst-card__more",
         "ch-bst-card__t",
+        "ch-bst-card__team",
         "ch-bst-card__when",
         "ch-bst-cardwrap",
         "ch-bst-clear",
@@ -30310,6 +30367,7 @@
         "ch-sec__head",
         "ch-tour-desk",
         "ch-tour-desk-ct",
+        "ch-tour-desk-ct__alts",
         "ch-tour-desk-ct__c",
         "ch-tour-desk-ct__cnt",
         "ch-tour-desk-ct__fin",

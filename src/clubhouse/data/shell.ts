@@ -4,6 +4,7 @@ import { chLogServer } from '../lib/track-server';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { ChHelmViews } from '../shell/context';
+import type { ChPaletteEvent } from '../shell/command/commands';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { fullName } from './season';
 import { toParOf } from '../live/model';
@@ -108,6 +109,23 @@ export async function loadPalettePeople(supabase: Awaited<ReturnType<typeof crea
   }
   type P = { id: string; first_name: string | null; last_name: string | null };
   return ((data ?? []) as Array<{ player: P | null }>).flatMap((m) => (m.player?.id ? [{ id: m.player.id, name: fullName(m.player) }] : []));
+}
+
+/**
+ * A coach's tournaments and qualifiers for the palette, by name (coach audit 13 Nov 2026, §2: "tar" did not find the Tar
+ * Heel Shootout). Names, ids, kinds and first days only, newest first; test qualifiers left out as their list leaves them
+ * out. Read with the players when the palette first opens, never with the shell. Null only when both reads fail.
+ */
+export async function loadPaletteEvents(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<ChPaletteEvent[] | null> {
+  const [tournaments, qualifiers] = await Promise.all([
+    supabase.from('golf_tournaments').select('id, name, start_date').eq('team_id', teamId).order('start_date', { ascending: false }).limit(300),
+    supabase.from('golf_qualifiers').select('id, name, start_date').eq('team_id', teamId).eq('is_test', false).order('start_date', { ascending: false }).limit(300),
+  ]);
+  if (tournaments.error) chLogServer('shell', 'paletteEvents', tournaments.error, 'tournaments');
+  if (qualifiers.error) chLogServer('shell', 'paletteEvents', qualifiers.error, 'qualifiers');
+  if (tournaments.error && qualifiers.error) return null;
+  const of = (kind: ChPaletteEvent['kind']) => (r: { id: string; name: string; start_date: string | null }): ChPaletteEvent => ({ id: r.id, name: r.name, kind, date: r.start_date });
+  return [...(tournaments.data ?? []).map(of('tournament')), ...(qualifiers.data ?? []).map(of('qualifier'))];
 }
 
 export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {

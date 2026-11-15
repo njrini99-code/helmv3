@@ -69,6 +69,13 @@ export type ChTourEntryRole = 'lineup' | 'alternate' | 'individual';
 export type ChTourSquad = 'A' | 'B';
 /** The event desk's emphasis across the week (principle 3). */
 export type ChTourMood = 'prep' | 'live' | 'result' | 'review';
+
+/**
+ * What the coach is told about a round or an event on the team's calendar day (coach audit, 13 Nov 2026). The stored
+ * status can be stale: a round left `live` after its day, or never started, needs closing; it is never "Live now" or
+ * "Upcoming". `live` is a round in play today.
+ */
+export type ChRoundShow = 'upcoming' | 'today' | 'live' | 'needs_closing' | 'final';
 /** A player's score in a round, as Who counted draws it. */
 export type ChTourCount = 'counted' | 'dropped' | 'tie' | 'individual' | 'none';
 export type ChTourDivision = 'd1' | 'd2' | 'd3' | 'naia' | 'njcaa';
@@ -262,6 +269,10 @@ export interface ChTourEvent {
   kind: ChTourEventKind;
   tiebreak: ChTourTiebreak;
   status: 'upcoming' | 'live' | 'complete';
+  /** What a coach is told now, on the team's day: `status` stays for logic, this is for words and chips. */
+  show: ChRoundShow;
+  /** The first round to close when `show` is `needs_closing`, and whether it was left live (Finish it) or never started. */
+  close: { round: number; live: boolean } | null;
   trust: ChTourTrust;
   mood: ChTourMood;
   rounds: ChTourRound[];
@@ -269,7 +280,8 @@ export interface ChTourEvent {
   playerRounds: ChTourPlayerRound[];
   team: { rounds: ChTourTeamRound[]; result: TeamEventResult | null };
   field: ChTourField | null;
-  finish: { place: string; placeN: number; of: number } | null;
+  /** `of` counts the teams with a score; `field` is the field size the coach entered, when set (it can be larger). */
+  finish: { place: string; placeN: number; of: number; field?: number | null } | null;
   /** The W-L-T this event added to the season (2.3), A squad only. */
   record: ChTourRecord | null;
   coverage: { scorecards: number; withShots: number };
@@ -306,7 +318,8 @@ export interface ChTourNextUp {
   ticks: ChTourWeekTick[];
   alsoThisWeek: Array<{ eventId: string; label: string }>;
   /** The hero's one primary action by state (5.1.1). */
-  action: 'build' | 'publish' | 'open' | 'follow' | 'review';
+  /** `close`: the event is past its day and not final (`ChTourEvent.close` names the round). */
+  action: 'build' | 'publish' | 'open' | 'follow' | 'review' | 'close';
 }
 
 export interface ChTourFinishPlace {
@@ -506,6 +519,11 @@ export interface ChTourDeskData {
    * read: the menu then offers nothing rather than a write that would be refused.
    */
   track?: ChTourTrack | null;
+  /**
+   * This event's rounds waiting in Link rounds (players' GolfHelm rounds matched to its rounds), for the coach's "Link rounds
+   * (n)": null when the count didn't load, left out for a player.
+   */
+  links?: number | null;
 }
 
 export interface ChTourTrack {
@@ -598,6 +616,8 @@ export interface ChTourHistorySearch {
 
 export interface ChTourHistoryData {
   now: string;
+  /** The team's name for the eyebrow, as the other tabs say it (coach audit, 13 Nov 2026: History said "Varsity"). */
+  teamName?: string;
   seasons: ChTourSeason[];
   players: ChTourPlayer[];
   courses: Record<string, ChTourCourse>;
@@ -936,6 +956,8 @@ export interface ChTourPlayerData {
     endDate: string;
     courseName: string;
     status: ChTourEvent['status'];
+    /** What the player is told now, on the team's day (`ChTourEvent.show`). */
+    show: ChTourEvent['show'];
     /** The event's days in round order, each with its first tee where one is set: the card for the next event reads them. */
     days: Array<{ number: number; date: string; firstTeeAt: string | null }>;
     /**

@@ -7,6 +7,7 @@ import { sourceLine } from '../../../../data/coachhelm-chat-thread';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
 import { useChPhone } from '../../../../lib/use-phone';
 import { Studio, fillComposer, fromBlock } from '../studio';
+import { useLightPlace } from '../../../../shell/light';
 
 /**
  * A model-designed visual (`ValidatedComposition`, visuals/composition.ts; docs/architecture/coachhelm-visual-playbook.md):
@@ -76,19 +77,20 @@ function entitiesOf(ms: Measurement[], series: MeasurementSeries[]): Array<{ kin
 }
 
 /** The one provenance line: the largest sample in words, the window and when it was computed. */
-function provenanceOf(ms: Measurement[], series: MeasurementSeries[]): string | null {
+function provenanceOf(ms: Measurement[], series: MeasurementSeries[], zone: string): string | null {
   const rounds = Math.max(0, ...ms.filter((m) => m.sample_unit === 'rounds').map((m) => m.sample_size), ...series.filter((s) => s.points.every((p) => p.bucket === null)).map((s) => s.points.length));
   const first = ms[0] ?? series[0];
   if (!first) return null;
   const attempts = rounds === 0 ? Math.max(0, ...ms.map((m) => m.sample_size), ...series.map((s) => s.points.reduce((a, p) => a + p.sample_size, 0))) : 0;
   const unit: Measurement['sample_unit'] = rounds > 0 ? 'rounds' : (ms[0]?.sample_unit ?? 'attempts');
   const asOf = [...ms.map((m) => m.as_of), ...series.map((s) => s.as_of)].sort().pop() ?? first.as_of;
-  return sourceLine({ sample_size: rounds || attempts, sample_unit: unit, window_start: first.window_start, window_end: first.window_end, as_of: asOf }) || null;
+  return sourceLine({ sample_size: rounds || attempts, sample_unit: unit, window_start: first.window_start, window_end: first.window_end, as_of: asOf }, zone) || null;
 }
 
 export function CoachComposition({ composition, live = false }: { composition: ValidatedComposition; live?: boolean }) {
   const reduced = useChReducedMotion();
   const phone = useChPhone();
+  const zone = useLightPlace().timeZone;
   // Whether it arrived in the live answer is decided once, at mount: one restored with the thread never moves, and the answer
   // finishing does not replay or snap anything. Reduced motion is read on every render, so a setting that resolves after
   // hydration (its server snapshot is "off") or is turned on mid-answer still draws the visual final.
@@ -96,7 +98,7 @@ export function CoachComposition({ composition, live = false }: { composition: V
   const animate = arrivedLive && !reduced;
   const { ms, series } = figuresOf(composition.blocks);
   const who = entitiesOf(ms, series);
-  const provenance = provenanceOf(ms, series);
+  const provenance = provenanceOf(ms, series, zone);
   const pages = pagesOf(composition.blocks, composition.layout);
   const beat = (i: number) => ({ '--ch-b': `${Math.min(i, 6) * BLOCK_STEP_MS}ms` }) as CSSProperties;
   const first = composition.blocks[0]!.type;

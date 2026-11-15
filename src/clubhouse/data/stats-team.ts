@@ -529,7 +529,25 @@ export function teamGrid(players: Array<{ id: string; first_name: string | null;
     .filter((g) => g.rounds > 0);
 }
 
-function seasonBests(
+/**
+ * Most improved: each player's first five rounds of the season against their latest five, at least ten rounds; the
+ * player whose average came down the most. `rounds` are oldest first, as Season bests holds them (a tie goes to the
+ * earliest round), so the latest five are the list's end. `change` is latest minus first: negative is better.
+ */
+export function mostImproved(rounds: ChRound[]): { id: string; change: number } | null {
+  let best: { id: string; change: number } | null = null;
+  for (const [id, list] of groupByPlayer(rounds)) {
+    if (list.length < 10) continue;
+    const first = mean(list.slice(0, 5).map((r) => r.total_score as number));
+    const latest = mean(list.slice(-5).map((r) => r.total_score as number));
+    if (first == null || latest == null) continue;
+    const change = latest - first;
+    if (change < 0 && (!best || change < best.change)) best = { id, change };
+  }
+  return best;
+}
+
+export function seasonBests(
   rounds: ChRound[],
   players: Array<{ id: string; first_name: string | null; last_name: string | null }>,
   cache: Map<string, ChRoundCache>,
@@ -575,16 +593,7 @@ function seasonBests(
     const r = top ? roundById.get(top.roundId) : undefined;
     if (top && r) out.push({ label: 'Longest putt made', playerId: r.player_id, name: name.get(r.player_id)!, value: `${Math.round(top.feet)} ft`, meta: meta(r) });
   }
-  // Most improved: first five rounds of the season against the latest five, at least ten rounds.
-  let best: { id: string; change: number } | null = null;
-  for (const [id, list] of groupByPlayer(valid)) {
-    if (list.length < 10) continue;
-    const newest = mean(list.slice(0, 5).map((r) => r.total_score as number));
-    const oldest = mean(list.slice(-5).map((r) => r.total_score as number));
-    if (newest == null || oldest == null) continue;
-    const change = newest - oldest;
-    if (change < 0 && (!best || change < best.change)) best = { id, change };
-  }
+  const best = mostImproved(valid);
   if (best) {
     out.push({ label: 'Most improved', playerId: best.id, name: name.get(best.id)!, value: `−${formatFixed(Math.abs(best.change), 1)}`, meta: 'Scoring avg, first five rounds to latest five' });
   }

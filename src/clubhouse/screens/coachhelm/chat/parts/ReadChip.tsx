@@ -7,6 +7,7 @@ import { readBasis, readRows } from '../../../../data/coachhelm-chat-thread';
 import { rebuiltHref } from '../../../../shell/nav';
 import { haptic } from '../../../../lib/haptics';
 import { usePopoverFit } from '../../../../lib/use-popover-fit';
+import { useLightPlace } from '../../../../shell/light';
 
 /** Where a read's figures live: this player's Stats, or the team's. Null where Stats isn't rebuilt, and then no link is drawn. */
 export function readStatsHref(read: AskTurnRead): string | null {
@@ -21,6 +22,7 @@ export function readStatsHref(read: AskTurnRead): string | null {
  */
 export function ReadChip({ read, n, onSources, onOpen, selected = false }: { read: AskTurnRead; /** Its place in the answer's sources, from 1. */ n: number; /** Opens this answer's list of every read. */ onSources?: () => void; /** Chat v3: opens the read in the evidence sheet or panel; the chip stays selected while it is open. */ onOpen?: () => void; selected?: boolean }) {
   const [open, setOpen] = useState(false);
+  const zone = useLightPlace().timeZone;
   const btn = useRef<HTMLButtonElement>(null);
   const pop = useRef<HTMLSpanElement>(null);
   // ASK-6: beside its chip and inside the screen, flipping above when there's no room below.
@@ -43,7 +45,7 @@ export function ReadChip({ read, n, onSources, onOpen, selected = false }: { rea
       document.removeEventListener('pointerdown', onDown);
     };
   }, [open]);
-  const rows = readRows(read);
+  const rows = readRows(read, zone);
   const stats = readStatsHref(read);
   if (onOpen)
     return (

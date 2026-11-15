@@ -500,7 +500,7 @@ export function Putting({ data, covered }: { data: ChTeamStats; covered: boolean
     <section className="ch-stm-panel" aria-labelledby="ch-stm-putt">
       <div className="ch-stm-panel__h">
         <h2 id="ch-stm-putt">Team putting</h2>
-        <span className="ch-num">Make rate by distance · {drawn} putts</span>
+        <span className="ch-num">Make rate by distance · {drawn} putts{data.window === 'last10' && !isFiltered(data.filter) ? ` · each player’s last ${data.last}` : ''}</span>
       </div>
       <div className="ch-stm-putt ch-stm-group">
         {bands.map((b) => {

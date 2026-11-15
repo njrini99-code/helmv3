@@ -186,6 +186,17 @@ export function phoneRootName(pathname: string): string | null {
   return PHONE_ROOT_NAMES[pathname.replace(/\/$/, '')] ?? null;
 }
 
+/**
+ * The section to light for an address and its query: a page opened from a section (`from=roster`) keeps that section lit
+ * (coach audit 13 Nov 2026, §8 #7: a player opened from Roster lit Stats). A `from` that names no section of the role is
+ * ignored.
+ */
+export function activeNavItemFrom(pathname: string, search: string, role: ChRole = 'coach', features?: ChNavFeatures | null): ChNavItem | undefined {
+  const from = new URLSearchParams(search).get('from');
+  const named = from ? navFor(role, features).find((i) => i.id === from) : undefined;
+  return named ?? activeNavItem(pathname, role, features);
+}
+
 export function activeNavItem(pathname: string, role: ChRole = 'coach', features?: ChNavFeatures | null): ChNavItem | undefined {
   let best: ChNavItem | undefined;
   for (const item of navFor(role, features)) {

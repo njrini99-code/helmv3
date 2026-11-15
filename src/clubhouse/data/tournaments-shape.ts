@@ -28,6 +28,7 @@ import type {
   ChTourHoleLedger,
   ChTourLineupState,
   ChTourMood,
+  ChRoundShow,
   ChTourPlayer,
   ChTourPlayerRound,
   ChTourRecord,
@@ -151,6 +152,35 @@ const EVENT_KIND: Record<TourDbEventKind, ChTourEventKind> = {
   ncaa_championship: 'national',
   exhibition: 'exhibition',
 };
+
+export type { ChRoundShow };
+
+/**
+ * What a round shows on the team's day (`todayInTeamZone`, yyyy-mm-dd): `live` only when it is live and dated today; a
+ * round not final on a past day needs closing, whether it was left live, suspended or never started; one dated today
+ * that is not in play is `today`. The stored status is never rewritten here.
+ */
+export function roundShow(r: { status: string; date: string }, todayInTeamZone: string): ChRoundShow {
+  if (r.status === 'final' || r.status === 'official') return 'final';
+  if (r.date < todayInTeamZone) return 'needs_closing';
+  if (r.date > todayInTeamZone) return 'upcoming';
+  return r.status === 'live' ? 'live' : 'today';
+}
+
+/** An event's state from its rounds (a cancelled round never holds it open), and the first round to close. */
+export function eventShow(
+  rounds: ReadonlyArray<{ number: number; status: string; date: string; cancelled?: boolean }>,
+  todayInTeamZone: string,
+): { show: ChRoundShow; close: ChTourEvent['close'] } {
+  const played = [...rounds].filter((r) => !r.cancelled).sort((a, b) => a.number - b.number);
+  const shows = played.map((r) => roundShow(r, todayInTeamZone));
+  const first = shows.indexOf('needs_closing');
+  if (first >= 0) return { show: 'needs_closing', close: { round: played[first]!.number, live: played[first]!.status === 'live' } };
+  if (played.length > 0 && shows.every((s) => s === 'final')) return { show: 'final', close: null };
+  if (shows.includes('live')) return { show: 'live', close: null };
+  if (shows.includes('today')) return { show: 'today', close: null };
+  return { show: played.length ? 'upcoming' : 'final', close: null };
+}
 
 export function roundStatusOf(status: TourDbRoundStatus, official: boolean): ChTourRoundStatus {
   if (status === 'suspended_weather' || status === 'suspended_other') return 'suspended';
@@ -289,7 +319,8 @@ export function eventShortName(name: string): string {
   return full.split(/\s+/).slice(0, 2).join(' ');
 }
 
-export function shapeEvent(raw: TourRawEvent, now: string): ChTourEvent {
+/** `today` is the team's calendar day (the loader passes it); without one, the UTC day of `now`. */
+export function shapeEvent(raw: TourRawEvent, now: string, today: string = now.slice(0, 10)): ChTourEvent {
   const { t } = raw;
   const format: TourFormat = formatOf(t.format, t.players_per_team, t.counting, t.holes_per_round);
   const official = t.official_at != null;
@@ -372,12 +403,13 @@ export function shapeEvent(raw: TourRawEvent, now: string): ChTourEvent {
   const suspended = rounds.some((r) => r.status === 'suspended_weather' || r.status === 'suspended_other');
   const trust: ChTourTrust = official ? 'official' : allFinal ? 'final' : suspended ? 'suspended' : anyStarted ? 'live' : 'upcoming';
   const mood: ChTourMood = status === 'upcoming' ? 'prep' : status === 'live' ? 'live' : 'result';
+  const shown = eventShow(rounds.map((r) => ({ number: r.round_number, status: r.status, date: r.date, cancelled: r.cancelled })), today);
 
   const field = shapeField(raw, teamRounds, format, viewRounds);
   const us = field?.teams.find((x) => x.us) ?? null;
   // The place is among the teams with an entered score, so it is "of" them: "T2 of 10" with five entered claimed a place
   // among teams nobody had scored.
-  const finish = us && us.placeN != null && us.place ? { place: us.place, placeN: us.placeN, of: field!.entered } : null;
+  const finish = us && us.placeN != null && us.place ? { place: us.place, placeN: us.placeN, of: field!.entered, field: raw.t.field_size ?? null } : null;
   const team = playerRounds.filter((p) => p.role !== 'individual' && p.total != null);
 
   return {
@@ -393,6 +425,8 @@ export function shapeEvent(raw: TourRawEvent, now: string): ChTourEvent {
     kind: EVENT_KIND[t.event_kind],
     tiebreak: t.tiebreak,
     status,
+    show: allFinal ? 'final' : shown.show,
+    close: allFinal ? null : shown.close,
     cancelled,
     trust,
     mood,

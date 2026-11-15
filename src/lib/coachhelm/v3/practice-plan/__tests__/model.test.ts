@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { autoGrid, diffVersions, parsePlanBody, pathFor, splitEvenly, stationsLen, toPlayerPlan, validatePlan, type PlanBodyV2 } from '../model';
+import { autoGrid, diffVersions, parsePlanBody, pathFor, splitEvenly, stationsLen, toPlayerPlan, toSaveBody, validatePlan, type PlanBodyV2, type StationsBlock } from '../model';
 
 const body = (over: Partial<PlanBodyV2> = {}): PlanBodyV2 => ({
   v: 2,
@@ -84,5 +84,43 @@ describe('plan model', () => {
     const copy = toPlayerPlan(body(), 'p1', start);
     expect(JSON.stringify(copy)).not.toMatch(/why|aim|because/i);
     expect(copy.group).toBe('A');
+  });
+});
+
+/**
+ * golf_practice_plan_save walks `lax $.blocks[*].grid[*][*]`: a null grid (the automatic one) yields a null "cell" that names no
+ * group, so every Stations block on its automatic grid was refused as practice_plan_block_group (coach audit 13 Nov). A body
+ * with no grid key yields no cells, and the save already allows a missing grid.
+ */
+describe('the body a save sends', () => {
+  const stationsOf = (b: unknown) => ((b as PlanBodyV2).variants.main.blocks.find((x) => x.kind === 'stations') ?? null) as unknown as Record<string, unknown>;
+
+  it('leaves out the grid of a Stations block on its automatic grid', () => {
+    const sent = toSaveBody(body());
+    expect('grid' in stationsOf(sent)).toBe(false);
+  });
+
+  it('keeps a grid the coach set, cell for cell', () => {
+    const own: StationsBlock['grid'] = [['A', 'B'], ['B', '']];
+    const b = body();
+    const set = { ...b, variants: { ...b.variants, main: { blocks: b.variants.main.blocks.map((x) => (x.kind === 'stations' ? { ...x, grid: own } : x)) } } };
+    expect(stationsOf(toSaveBody(set)).grid).toEqual(own);
+  });
+
+  it('does the same in the rain layout', () => {
+    const b = body();
+    const sent = toSaveBody({ ...b, variants: { main: b.variants.main, rain: { blocks: b.variants.main.blocks } } }) as PlanBodyV2;
+    expect(sent.variants.rain!.blocks.some((x) => x.kind === 'stations' && 'grid' in x)).toBe(false);
+  });
+
+  it('reads back as the same plan: a missing grid is the automatic one', () => {
+    expect(parsePlanBody(toSaveBody(body()))).toEqual(body());
+  });
+
+  it('changes nothing else', () => {
+    const b = body();
+    const sent = toSaveBody(b) as PlanBodyV2;
+    expect(sent.variants.main.blocks[0]).toBe(b.variants.main.blocks[0]);
+    expect(sent.groups).toBe(b.groups);
   });
 });

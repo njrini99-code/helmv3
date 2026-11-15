@@ -100,7 +100,7 @@ Make rate by distance: the share of putts holed from each distance band. Higher 
 Penalty strokes: fewer is better. A penalty usually costs more than the one stroke, because the next shot is a recovery.
 Big numbers: holes at double bogey or worse. For most players, cutting these moves the average more than making more birdies.
 Scoring by par: the average score on par 3s, par 4s and par 5s. Par 5s are the scoring chances; par 3s test iron play.
-Toughest holes here are grouped by hole number across whatever courses were played, so they mean most when the rounds are at one course.
+Toughest holes here keep each hole on its own course, because the same hole number is a different hole at another course; a round with no course is left out.
 Pressure gap: tournament and qualifier rounds against practice rounds, in strokes to par a round. Positive means the competitive rounds are worse. Opening hole: the first hole against the rest.
 Consistency is the spread of a player's scores. Two players with the same average can differ in how often they post a round that hurts the team.
 

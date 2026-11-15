@@ -18,7 +18,7 @@ import { IconButton } from '../../../ui/Button';
 import { ChevronLeft, Users, Search, CalendarPlus, Info } from 'lucide-react';
 import { Icon } from '../../../ui/Icon';
 import { Avatar } from '../../../ui/Avatar';
-import { convAvatarId } from '../shared/conv-ui';
+import { convAvatarId, convAvatarName } from '../shared/conv-ui';
 import { ThreadClassSub } from '../ThreadClassSub';
 import { Tooltip } from '../../../ui/Tooltip';
 import { ConversationSearch } from '../details-v2';
@@ -152,7 +152,7 @@ export function Thread({
               <Icon icon={Users} size={17} />
             </span>
           ) : (
-            <Avatar name={conv.title} id={convAvatarId(api, conv)} size={36} />
+            <Avatar name={convAvatarName(conv)} id={convAvatarId(api, conv)} size={36} />
           )}
           <div style={{ minWidth: 0 }}>
             <b>{conv.title}</b>

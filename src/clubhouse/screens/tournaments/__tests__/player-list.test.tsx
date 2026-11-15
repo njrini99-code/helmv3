@@ -282,3 +282,15 @@ describe('the player’s Tournaments · the page’s focus rings outrank the she
     expect(decls('.ch-tour-pl .ch-tour-pl-res__open:focus-visible::after')).toMatchObject({ outline: '2px solid var(--ch-border-focus)', 'outline-offset': '-2px' });
   });
 });
+
+/** Coach audit 13 Nov 2026: an event past its day that the coach hasn't closed is never "Live now" or "in N days" to a player. */
+describe('the player’s next event, past its day and not closed', () => {
+  it('says Scores pending, not Live now', () => {
+    const first = fx.list.list.find((r) => r.status !== 'complete')!;
+    const list = fx.list.list.map((r) => (r.eventId === first.eventId ? { ...r, status: 'live' as const, show: 'needs_closing' as const } : r));
+    const c = draw({ ...fx.list, list });
+    const card = c.querySelector('.ch-tour-pl-next') as HTMLElement;
+    expect(card.textContent).toContain('Scores pending');
+    expect(card.textContent).not.toContain('Live now');
+  });
+});
