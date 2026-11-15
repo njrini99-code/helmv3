@@ -526,7 +526,8 @@ describe('Team Hub · coach', () => {
     await user.click(within(post).getByRole('button', { name: 'Jonah Okafor' }));
     expect(within(post).getByText('Jonah Okafor hasn’t acknowledged it yet.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
-    expect(within(screen.getByRole('region', { name: 'Tasks' })).getByLabelText('3 of 5 done')).toBeTruthy();
+    // MAC-20: the count is the row's words, not an image inside its button.
+    expect(within(screen.getByRole('region', { name: 'Tasks' })).getByRole('button', { name: /, 3 of 5 done$/ })).toBeTruthy();
     await tab('Tasks');
     expect(screen.getAllByLabelText('3 of 5 done').length).toBeGreaterThan(0);
   });

@@ -718,6 +718,7 @@
   border-top: var(--ch-hairline-w) solid var(--ch-separator);
 }
 .ch-aks-strip__hole {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: var(--ch-space-0_5);
@@ -730,6 +731,13 @@
   color: var(--ch-text-primary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+/* Nine holes share a phone row, 38 wide each: the touch area reaches out to meet its neighbours' (SWP-06), and the
+   44 high the hole already has. Nine at 44 would not fit 342. */
+.ch-aks-strip__hole::after {
+  position: absolute;
+  inset: 0 -3px;
+  content: '';
 }
 .ch-aks-strip__hole > small {
   color: var(--ch-text-tertiary);

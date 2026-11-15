@@ -367,7 +367,7 @@ function Board({
                 <em className="ch-qfm-lb__tot ch-num">{r.total ?? '—'}</em>
               </span>
               <span className="ch-qfm-lb__thru ch-num">
-                <ThruDots played={r.played} total={data.numRounds} />
+                <ThruDots played={r.played} total={data.numRounds} hidden />
               </span>
             </>
           );

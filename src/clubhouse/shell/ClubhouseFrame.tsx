@@ -178,10 +178,14 @@ export function ClubhouseFrame({
                 <CrumbProvider>
                   <QuickChatProvider plans pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
                     <DockProvider>
-                      {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
-                      <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
-                        Skip to content
-                      </a>
+                      {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view).
+                          In a landmark of its own (MAC-20): a link outside every landmark is content a screen reader's
+                          landmark list never reaches. */}
+                      <nav className="ch-skipnav" aria-label="Skip">
+                        <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
+                          Skip to content
+                        </a>
+                      </nav>
                       <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined} data-ch-refresh="on">
                         <Sidebar userData={userData} shell={shell} pathname={pathname} search={search} teamSwitch={teamSwitch} folded={folded} />
                         <RailToggle folded={folded} onFold={setFolded} />

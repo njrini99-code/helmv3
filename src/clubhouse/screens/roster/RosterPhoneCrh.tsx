@@ -3,6 +3,7 @@
 import { ChartColumn, Check, ChevronRight, CircleAlert, Copy, Ellipsis, RotateCw, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { DocumentTitle } from '../../lib/document-title';
 import { useRouter } from 'next/navigation';
 import { Component, useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { chReport } from '../../lib/track';
@@ -284,6 +285,8 @@ export function RosterPhoneCrh({
         {open && (
           <PhoneScreen key={`player-${open.id}`} keyboardAware immersive={false} labelledBy="ch-rsm-prof-title" className="ch-rsm-screen ch-rsx-screen">
             <PhoneBar back={{ label: 'Roster', onBack: guardedClose }} title={open.name} titleId="ch-rsm-prof-title" action={<PhoneIconAction icon={Ellipsis} label="Player actions" onClick={() => setActing(true)} />} />
+            {/* The tab and the app switcher read the player while the profile is up, and "Roster" again as it closes (PLAYER-04). */}
+            <DocumentTitle title={open.name} />
             <div className="ch-rsm-scroll" onClickCapture={onProfileClick}>
               <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
                 <RosterProfileCrh
@@ -355,7 +358,7 @@ function ProfilePresence({ atRest, children }: { atRest: boolean; children: Reac
 /** The two neutral stubs under three rounds: an honest "not enough rounds" where the bars would be. */
 export function FormStubs() {
   return (
-    <span className="ch-formbars is-stub" role="img" aria-label={STUB_LABEL}>
+    <span className="ch-formbars is-stub" aria-hidden="true">
       <i />
       <i />
     </span>
@@ -399,7 +402,7 @@ export function RosterRowCrh({
     bySg ? (sg != null ? `strokes gained ${formatSigned(sg)} a round` : 'no strokes gained yet') : null,
     p.avg != null ? `average ${formatFixed(p.avg)}` : null,
     !bySg && p.handicap != null ? `handicap ${formatHcp(p.handicap).replace('+', 'plus ')}` : null,
-    kind !== 'inactive' && p.trend.length >= 3 ? `last five rounds: ${shown.join(', ')}` : null,
+    kind !== 'inactive' && p.trend.length >= 3 ? `last five rounds: ${shown.join(', ')}` : kind === 'active' && p.trend.length > 0 ? STUB_LABEL.toLowerCase() : null,
   ]
     .filter(Boolean)
     .join(', ');

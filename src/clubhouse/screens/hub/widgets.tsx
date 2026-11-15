@@ -2,7 +2,7 @@
 
 import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Pencil, Plane, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import type { ChHubTab } from '../../lib/hub-tabs';
 import { initials } from '../../lib/format';
@@ -469,6 +469,9 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
   const phone = useChPhone();
   const [sort, setSort] = useState<{ key: LedgerKey; flipped: boolean }>({ key: 'owed', flipped: false });
   const [open, setOpen] = useState<string | null>(null);
+  // One id per copy of the tile, and a key points at its panel only while the panel is there (MAC-08, PMAC-13).
+  const uid = useId();
+  const panel = (id: string) => `${uid}-owe-${id}`;
   const lateRows = rows.filter((r) => lateBy(r) > 0).length;
   const sorted = ledgerSorted(rows, sort.key, sort.flipped);
   const by = (key: LedgerKey) => {
@@ -510,7 +513,7 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
             ].filter(Boolean);
             return (
               <li key={r.id} className={open === r.id ? 'is-open' : undefined}>
-                <button type="button" aria-expanded={open === r.id} aria-controls={`ch-hw-owe-${r.id}`} onClick={() => toggle(r.id)}>
+                <button type="button" aria-expanded={open === r.id} aria-controls={open === r.id ? panel(r.id) : undefined} onClick={() => toggle(r.id)}>
                   <b>{r.name}</b>
                   <span className={'ch-num' + (late(r) ? ' is-warn' : '')}>
                     {parts.length ? parts.join(' · ') : 'All square'}
@@ -520,7 +523,7 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
                   <Icon icon={ChevronDown} size={15} />
                 </button>
                 {open === r.id && (
-                  <div id={`ch-hw-owe-${r.id}`}>
+                  <div id={panel(r.id)}>
                     <Owed row={r} onOpen={onOpen} />
                   </div>
                 )}
@@ -547,7 +550,7 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
           </thead>
           <tbody>
             {sorted.map((r) => (
-              <LedgerRow key={r.id} r={r} open={open === r.id} onToggle={() => toggle(r.id)} late={late(r)} onOpen={onOpen} />
+              <LedgerRow key={r.id} r={r} panelId={panel(r.id)} open={open === r.id} onToggle={() => toggle(r.id)} late={late(r)} onOpen={onOpen} />
             ))}
           </tbody>
         </table>
@@ -561,12 +564,12 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
   );
 }
 
-function LedgerRow({ r, open, onToggle, late, onOpen }: { r: ChHubLedgerRow; open: boolean; onToggle: () => void; late: number; onOpen: (tab: ChHubTab) => void }) {
+function LedgerRow({ r, panelId, open, onToggle, late, onOpen }: { r: ChHubLedgerRow; panelId: string; open: boolean; onToggle: () => void; late: number; onOpen: (tab: ChHubTab) => void }) {
   return (
     <>
       <tr className={open ? 'is-open' : undefined}>
         <th scope="row">
-          <button type="button" aria-expanded={open} aria-controls={`ch-hw-owe-${r.id}`} onClick={onToggle}>
+          <button type="button" aria-expanded={open} aria-controls={open ? panelId : undefined} onClick={onToggle}>
             <Icon icon={ChevronDown} size={14} />
             {r.name}
           </button>
@@ -588,7 +591,7 @@ function LedgerRow({ r, open, onToggle, late, onOpen }: { r: ChHubLedgerRow; ope
         </td>
       </tr>
       {open && (
-        <tr className="ch-hw-led__more" id={`ch-hw-owe-${r.id}`}>
+        <tr className="ch-hw-led__more" id={panelId}>
           <td colSpan={COLUMNS.length}>
             <Owed row={r} onOpen={onOpen} />
           </td>
@@ -761,8 +764,9 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
                       <em className={'ch-num' + (t.status === 'overdue' ? ' is-warn' : '')}>{t.status === 'overdue' ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
                     </span>
                     {t.done && (
-                      <span role="img" className="ch-hw-mini" aria-label={`${t.done[0]} of ${t.done[1]} done`}>
-                        <b className="ch-num">
+                      <span className="ch-hw-mini">
+                        <span className="ch-sr-only">{`, ${t.done[0]} of ${t.done[1]} done`}</span>
+                        <b className="ch-num" aria-hidden="true">
                           {t.done[0]}/{t.done[1]}
                         </b>
                         <i style={{ '--ch-hw-p': t.done[1] ? t.done[0] / t.done[1] : 0 } as CSSProperties} aria-hidden="true" />

@@ -101,7 +101,8 @@ export function PhoneDock({ round, pathname }: { round: ChRoundInProgress | null
   }, [shown]);
 
   return (
-    <div ref={ref} className="ch-dock" data-ch-code="CH-1820" hidden={!shown}>
+    // A landmark (MAC-20): the page's thumb actions and the resume card sit outside the page's main, fixed over it.
+    <div ref={ref} className="ch-dock" data-ch-code="CH-1820" role="region" aria-label="Actions" hidden={!shown}>
       <div ref={setSlot} className="ch-dock__slot" />
       {href && round && (
         <div className="ch-resume">

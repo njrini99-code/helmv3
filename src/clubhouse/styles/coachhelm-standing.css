@@ -681,12 +681,24 @@
   gap: 4px;
   padding: 8px 0;
 }
+/* Open, nothing in the list is clipped: a read's link reaches 44 under a finger past its row (SWP-32). */
+.ch-hs-ld__b[data-open='true'] > ul {
+  overflow: visible;
+}
 .ch-hs-ld__b a {
+  position: relative;
   font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
   text-decoration: underline;
   text-decoration-color: var(--ch-border-hairline);
   text-underline-offset: 3px;
+}
+@media (pointer: coarse) {
+  .ch-hs-ld__b a::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 22px)) 0;
+    content: '';
+  }
 }
 .ch-hs-ld__b a:focus-visible {
   outline: 2px solid var(--ch-border-focus);

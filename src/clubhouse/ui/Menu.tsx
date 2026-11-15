@@ -49,7 +49,7 @@ export function Menu({
   open: controlledOpen,
   onOpenChange,
 }: {
-  trigger: (props: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string }) => ReactNode;
+  trigger: (props: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string | undefined }) => ReactNode;
   items: MenuItem[];
   align?: 'start' | 'end';
   /** On touch, don't move focus into the menu: a composer behind it keeps its keyboard (MOB-ASK-11). */
@@ -169,7 +169,8 @@ export function Menu({
         onClick: () => setOpen(!open),
         'aria-expanded': open,
         'aria-haspopup': 'menu',
-        'aria-controls': id,
+        // Only while the menu is there to point at: a closed menu is not mounted (PMAC-13).
+        'aria-controls': open ? id : undefined,
       })}
       {typeof document !== 'undefined' &&
         createPortal(

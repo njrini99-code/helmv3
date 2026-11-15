@@ -1839,7 +1839,10 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv .refine button,
 .ch-cpv .saverow,
 .ch-cpv .qo { min-height: 44px; }
-.ch-cpv .srcb { position: relative; }
+/* SWP-29: a one-letter option ("A") was 43 wide. SWP-07: the source key is drawn 24 high at least, so a mouse's reach
+   and the finger's (the ::after) agree with what axe measures. */
+.ch-cpv .qo { min-width: 44px; }
+.ch-cpv .srcb { position: relative; min-height: 24px; }
 .ch-cpv .srcb::after { content: ''; position: absolute; inset: -12px -4px; }
 .ch-cpv-sheet .ask-in button { position: relative; }
 .ch-cpv-sheet .ask-in button::before { content: ''; position: absolute; inset: -8px; }

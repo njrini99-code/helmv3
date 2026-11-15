@@ -137,17 +137,20 @@ export function qualifierPeek(r: ChQRow, numRounds: number): ChPlayerPeek {
  * Thru as dots (owner, 2026-10-16): one per scheduled round, green for each one played. A long qualifier (more than
  * eight rounds) keeps the figure, since a row of dots that long stops being countable at a glance.
  */
-export function ThruDots({ played, total }: { played: number; total: number }) {
+export function ThruDots({ played, total, hidden = false }: { played: number; total: number; hidden?: boolean }) {
   const label = `${played} of ${plural(total, 'round')}`;
+  // MAC-20: inside a button the row's own name already says it, and a button's children are presentational, so the
+  // dots are drawn only: an image role there is an invalid descendant.
+  const named = hidden ? ({ 'aria-hidden': true } as const) : ({ role: 'img', 'aria-label': label } as const);
   if (total > 8) {
     return (
-      <span role="img" className="ch-num" aria-label={label}>
+      <span className="ch-num" {...named}>
         {played}/{total}
       </span>
     );
   }
   return (
-    <span className="ch-qf-dots" role="img" aria-label={label}>
+    <span className="ch-qf-dots" {...named}>
       {Array.from({ length: total }, (_, i) => (
         <i key={i} className={i < played ? 'is-on' : undefined} />
       ))}

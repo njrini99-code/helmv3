@@ -4,7 +4,7 @@ import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { animate, m, useMotionValue, useTransform, type AnimationPlaybackControls, type MotionValue } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import type { ChShellData } from '../data/shell';
 import { haptic } from '../lib/haptics';
@@ -310,6 +310,9 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
     watch.observe(label);
     return () => watch.disconnect();
   }, [key, reduced]);
+  // The dot's words describe the switch rather than name it: inside the bar's h1, a name would make every page's heading
+  // "Practice, something new in another section" (PMAC-13). A hidden element still describes.
+  const newsId = useId();
   if (!sw?.enabled) return <>{children}</>;
   return (
     <button
@@ -318,6 +321,7 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
       data-ch-code="CH-1816"
       aria-expanded={sw.open}
       aria-controls="ch-strip"
+      aria-describedby={sw.attention ? newsId : undefined}
       onClick={() => sw.setOpen(!sw.open)}
     >
       <m.span className="ch-sw__track" style={{ x: sw.dragX, opacity: fade }}>
@@ -336,7 +340,11 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
         </m.span>
         {sw.attention && <span className="ch-sw__dot" aria-hidden="true" />}
       </span>
-      {sw.attention && <span className="ch-sr-only">, something new in another section</span>}
+      {sw.attention && (
+        <span id={newsId} hidden>
+          Something new in another section
+        </span>
+      )}
     </button>
   );
 }
