@@ -256,11 +256,11 @@
   }
 }
 .ch-ask-hist__iconbtn[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ask-hist__iconbtn:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-ask-hist__new {
@@ -285,15 +285,16 @@
 @media (hover: hover) {
   /* The ledger's row tint over the key's own face, so it stays a key on the rail. */
   .ch-ask-hist__new:hover {
-    background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-bg-surface);
+    background: linear-gradient(var(--ch-sel), var(--ch-sel)), var(--ch-bg-surface);
+    transition-duration: 0s;
   }
 }
 .ch-ask-hist__new[data-ch-pressed] {
-  background: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press)), var(--ch-bg-surface);
+  background: linear-gradient(var(--ch-sel), var(--ch-sel)), var(--ch-bg-surface);
 }
 @media (hover: hover) {
   .ch-ask-hist__new:active {
-    background: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press)), var(--ch-bg-surface);
+    background: linear-gradient(var(--ch-sel), var(--ch-sel)), var(--ch-bg-surface);
   }
 }
 .ch-ask-hist__scroll {
@@ -342,11 +343,11 @@
 }
 /* After the open chat's fill, so pressing it shows too. */
 .ch-ask-hist__row[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ask-hist__row:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 /* Inset: the history scroller clips a ring drawn outside the row. */
@@ -601,11 +602,11 @@
   }
 }
 .ch-ask-cmp__chip[data-ch-pressed] {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
 }
 @media (hover: hover) {
   .ch-ask-cmp__chip:active {
-    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+    background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
   }
 }
 .ch-ask-cmp__send {
@@ -756,7 +757,7 @@
 }
 .ch-ask-cmp.is-dock .ch-ask-cmp__round[data-ch-pressed],
 .ch-ask-cmp.is-phone .ch-ask-cmp__round[data-ch-pressed] {
-  background: var(--ch-press-wash);
+  background: var(--ch-sel);
 }
 .ch-ask-cmp.is-dock .ch-ask-cmp__send,
 .ch-ask-cmp.is-phone .ch-ask-cmp__send {
@@ -849,11 +850,11 @@
   background: var(--ch-bg-inset);
 }
 .ch-ask-pick__row[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ask-pick__row:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-ask-pick__name {
@@ -1067,13 +1068,11 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-ask-card[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-ask-card:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-ask-card:focus-visible {

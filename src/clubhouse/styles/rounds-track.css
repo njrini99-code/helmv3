@@ -1111,11 +1111,11 @@ path.ch-rt-map__shot {
   outline-offset: 2px;
 }
 .ch-rt-read__h[data-ch-pressed] {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
 }
 @media (hover: hover) {
   .ch-rt-read__h:active {
-    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+    background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
   }
 }
 
@@ -1674,7 +1674,8 @@ path.ch-rt-map__shot {
 /* Desktop hover: the face takes the ledger's row tint; the green and red choices also step their ring. */
 @media (hover: hover) {
   .ch-rt-xopt:not(:disabled):not(.is-primary):hover {
-    background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-ivory-0);
+    background: linear-gradient(var(--ch-sel), var(--ch-sel)), var(--ch-ivory-0);
+    transition-duration: 0s;
   }
   .ch-rt-xopt.is-danger:not(:disabled):hover {
     box-shadow: var(--ch-elevation-control), 0 0 0 1px color-mix(in srgb, var(--ch-danger-600) 35%, transparent);
@@ -3646,13 +3647,13 @@ path.ch-rt-map__shot {
 .ch-rt-opt[data-ch-pressed]:not(:disabled),
 .ch-rt-xopt[data-ch-pressed]:not(:disabled),
 .ch-rt-rs[data-ch-pressed]:not(:disabled) {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
 }
 @media (hover: hover) {
   .ch-rt-opt:active:not(:disabled),
   .ch-rt-xopt:active:not(:disabled),
   .ch-rt-rs:active:not(:disabled) {
-    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+    background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
   }
 }
 

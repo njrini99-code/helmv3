@@ -1290,11 +1290,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-cl.is-phone .ch-cl-today__row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-cl.is-phone .ch-cl-today__row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-cl.is-phone .ch-cl-today__n {

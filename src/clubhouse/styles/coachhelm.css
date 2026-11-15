@@ -752,16 +752,17 @@
   }
   @media (hover: hover) {
     .ch-hl[data-canopy] .ch-hl-row:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-hl[data-canopy] .ch-hl-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-hl[data-canopy] .ch-hl-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -931,11 +932,11 @@
     border-top-color: var(--ch-ledger-rule-soft);
   }
   .ch-hl.is-phone .ch-hl-why[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hl.is-phone .ch-hl-why:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
 
@@ -969,11 +970,11 @@
     border-top-color: var(--ch-ledger-rule-soft);
   }
   .ch-hl.is-phone .ch-hl-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hl.is-phone .ch-hl-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
 

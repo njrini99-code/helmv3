@@ -60,8 +60,9 @@ describe('CH-1606 press', () => {
     fireEvent.pointerUp(getByText('Save'));
     expect(animate).toHaveBeenCalledTimes(2);
     expect((animate.mock.calls[1] as unknown as [unknown, KeyframeAnimationOptions])[1].duration).toBe(CH_DUR.release * 1000);
-    // Both ways on the iOS curve: the release never overshoots (MOT-08, S3.11).
-    expect(opts.easing).toBe('cubic-bezier(0.32, 0.72, 0, 1)');
+    // MOTION-AND-VISUAL 3.8 (replaces S3.11's iOS curve both ways): down on ease-out, back on the iOS curve, which never
+    // overshoots (MOT-08).
+    expect(opts.easing).toBe('cubic-bezier(0.22, 1, 0.36, 1)');
     expect((animate.mock.calls[1] as unknown as [unknown, KeyframeAnimationOptions])[1].easing).toBe('cubic-bezier(0.32, 0.72, 0, 1)');
   });
 

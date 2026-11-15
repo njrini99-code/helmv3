@@ -109,11 +109,11 @@ section.ch-lv-card {
   min-width: 0;
 }
 .ch-lv-eventrow[data-ch-pressed] {
-  background: var(--ch-bg-subtle);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-lv-eventrow:active {
-    background: var(--ch-bg-subtle);
+    background: var(--ch-sel);
   }
 }
 
@@ -941,11 +941,11 @@ section.ch-lv-card {
   min-width: 0;
 }
 .ch-lv-evrow[data-ch-pressed] {
-  background: var(--ch-bg-selected);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-lv-evrow:active {
-    background: var(--ch-bg-selected);
+    background: var(--ch-sel);
   }
 }
 .ch-lv-evdot {
