@@ -63,6 +63,46 @@
   }
 }
 
+/* A line drawn along its own length (pathLength 1, stroke-dasharray 1): the two owner exceptions only, a live Ask
+   visual's trend line and the course view's shots (.claude/rules/clubhouse.md). */
+@keyframes ch-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+/* Something that arrives where it will stay, once, in the two owner exceptions: a live Ask visual's sections rise
+   (--ch-arrive-t: translateY(8px)), the course view's hole settles (opacity 0.4, scale 1.06) and a landing number pops
+   (scale 0.4). Opacity and transform only; a rule names its own start. */
+@keyframes ch-arrive {
+  from {
+    opacity: var(--ch-arrive-o, 0);
+    transform: var(--ch-arrive-t, none);
+  }
+}
+
+/* The course view's ball: in, along its shot, and gone as it lands (opacity only; HoleMap moves it). */
+@keyframes ch-pass {
+  0% {
+    opacity: 0;
+  }
+  10%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* A state, not a movement: for one beat a hidden cover shows over what has just arrived under the thumb, so it takes no
+   tap (the shot card's turned face, PL-TRK-03) and the second tap of a double tap lands on nothing. */
+@keyframes ch-hold {
+  from {
+    visibility: visible;
+  }
+}
+
 /* A busy ring's turn while work runs (ui/Spinner, Ask's working ring, Quick chat's): one turn per working beat. Still
    under Reduce Motion (3.11: the working sign is static) and under Animations off (--ch-dur-typing is 0). */
 @keyframes ch-spinner-turn {
