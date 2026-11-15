@@ -45,6 +45,10 @@ on:
         description: Workflow run containing clubhouse-quality-baselines artifact for matching Linux/browser version
         type: string
         required: false
+      screens:
+        description: Also open every public page and every Clubhouse fixture state, phone and desk, light and dark, into one gallery
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -74,7 +78,7 @@ jobs:
     # (`gh workflow run clubhouse-quality.yml --ref <branch>`).
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -165,6 +169,20 @@ jobs:
           CH_PIXELS: '1'
           CH_VISUAL_BASELINES: ${{ github.workspace }}/.helm/screenshots/clubhouse/pixel-baselines
         run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project pixels-phone --project pixels-desktop
+      # Every screen that needs no session: the public pages of all three products and every Clubhouse fixture state
+      # (scripts/screens/sweep.mjs, its own next dev with the env blanked). Mock data only, so the gallery is safe to upload.
+      - name: Every public and fixture screen (gallery)
+        if: ${{ !cancelled() && inputs.screens }}
+        timeout-minutes: 60
+        run: node scripts/screens/sweep.mjs --start-dev --access public,fixture --out screens-gallery
+      - name: Upload the screen gallery
+        if: ${{ !cancelled() && inputs.screens }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: screens-gallery-${{ github.run_id }}
+          path: screens-gallery/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload diagnostic screenshots, reports and failure traces
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2

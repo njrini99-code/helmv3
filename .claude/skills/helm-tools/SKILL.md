@@ -6,9 +6,21 @@ description: "Which tools this repo gives an agent and how to use each: browsers
 # Helm tools: what you have and how to use it
 
 Check, don't assume. Start every session that touches a browser, database or
-phone with: `claude mcp list` (what's connected), and for the phone `xcrun
-devicectl list devices` and `xcrun simctl list devices booted`. Write what you
-found as AVAILABLE / NOT CONNECTED / NEEDS NICK before you measure. Authority
+phone with `npm run doctor -- --ui`: every UI tool (Playwright WebKit and
+Chromium, Safari and its remote-automation setting, the Simulator, the cabled
+iPhone, Appium, axe, Lighthouse, each MCP server and its sign-in, staging
+sessions, where the env files point, disk) as AVAILABLE / MISSING / NOT
+CONNECTED / NEEDS NICK with one fix each. Copy its NEEDS NICK lines into your
+report before you measure.
+
+To look at every screen of every product: `node scripts/screens/list.mjs`
+lists them from the filesystem (GolfHelm, BaseballHelm, Lift Lab, admin, the
+public site, every Clubhouse fixture state), and `node scripts/screens/sweep.mjs`
+opens each in W phone and C desk, light and dark, into one filterable gallery
+with probe and axe findings (`--start-dev` for public pages and fixtures;
+`--session golf:coach=<state.json>` for signed-in ones on local or staging data;
+never production). In CI: dispatch `clubhouse-quality.yml` or
+`clubhouse-journeys.yml` with `screens: true`. Authority
 between connector namespaces: `docs/TOOL_AUTHORITY_MATRIX.md`.
 
 ## 1. Databases: which project each tool reaches

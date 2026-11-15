@@ -16,6 +16,8 @@ export default defineConfig({
     'clubhouse-round.spec.ts',
     'clubhouse-journeys.spec.ts',
     ...(process.env.CH_ROUTE_SHOTS === '1' ? ['clubhouse-route-shots.spec.ts'] : []),
+    // Every signed-in GolfHelm screen into one gallery (scripts/screens/sweep.mjs), opt-in: CH_SCREENS=1.
+    ...(process.env.CH_SCREENS === '1' ? ['screens-signed-in.spec.ts'] : []),
   ],
   fullyParallel: false,
   workers: 1,

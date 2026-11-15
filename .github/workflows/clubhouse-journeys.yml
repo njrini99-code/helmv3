@@ -34,6 +34,11 @@ on:
   schedule:
     - cron: '47 9 * * *'
   workflow_dispatch:
+    inputs:
+      screens:
+        description: Also open every signed-in GolfHelm screen as a coach and a player (seeded team) into one gallery
+        type: boolean
+        default: false
 
 concurrency:
   group: clubhouse-journeys-${{ github.ref }}
@@ -139,6 +144,26 @@ jobs:
       - name: Write journeys in Chromium and WebKit
         timeout-minutes: 20
         run: ./node_modules/.bin/playwright test --config playwright.clubhouse-journeys.config.ts
+
+      # Every signed-in GolfHelm screen, coach and player, on its own seeded team against the same production build
+      # (e2e/screens-signed-in.spec.ts). Dispatch only, so the nightly cost is unchanged. Synthetic data, safe to upload.
+      - name: Every signed-in GolfHelm screen (gallery)
+        if: ${{ !cancelled() && inputs.screens }}
+        timeout-minutes: 100
+        env:
+          CH_SCREENS: '1'
+          CH_SCREENS_OUT: ${{ github.workspace }}/screens-signed-in
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse-journeys.config.ts screens-signed-in --project webkit
+      - name: Upload the signed-in screen gallery
+        if: ${{ !cancelled() && inputs.screens }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: screens-signed-in-${{ github.run_id }}
+          path: |
+            screens-signed-in/
+            !screens-signed-in/.state-*.json
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Stop the production server, start next dev for the scan
         if: success() || failure()
