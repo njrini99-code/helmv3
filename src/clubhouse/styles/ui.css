@@ -1374,11 +1374,11 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
 .ch-peek__act[data-ch-pressed] {
-  background: var(--ch-bg-hover);
+  background: var(--ch-sel, var(--ch-bg-hover));
 }
 @media (hover: hover) {
   .ch-peek__act:active {
-    background: var(--ch-bg-hover);
+    background: var(--ch-sel, var(--ch-bg-hover));
   }
 }
 .ch-peek__act svg {

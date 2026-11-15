@@ -49,7 +49,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-mso-menu > button[data-ch-pressed] {
-  background: var(--ch-press-wash, var(--ch-selected-tint));
+  background: var(--ch-sel, var(--ch-press-wash, var(--ch-selected-tint)));
 }
 @media (hover: hover) {
   .ch-mso-menu > button:hover {
@@ -451,7 +451,7 @@
   cursor: pointer;
 }
 .ch-msv-attach > button[data-ch-pressed] {
-  background: var(--ch-press-wash, var(--ch-well-bg-flat));
+  background: var(--ch-sel, var(--ch-press-wash, var(--ch-well-bg-flat)));
 }
 @media (hover: hover) {
   .ch-msv-attach > button:hover {

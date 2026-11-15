@@ -22,6 +22,9 @@ Held items:     none
   `ui/Peek.tsx`): open over 180ms from .96 at the anchor corner, leave over 110ms to .98; a menu opened by its key
   focuses the list (MENU-01); `aria-controls` only while the menu is mounted (PMAC-13). A long press opens the shared
   context menu under the row it pressed, not a sheet (`ui/ContextMenu.tsx`, OVL-06).
+- Menu rows, action-sheet buttons, the Messages menu and attach rows and the peek actions take the press wash
+  (`--ch-sel`, motion 3.8) on a press; a menu row reached by the keys shows the wash and a 2px focus ring (MENU-04).
+  Until the motion branch lands `--ch-sel`, the wash is today's press well.
 - The palette and alerts come in over 180ms and leave over 110ms through the one `ch-pop` keyframe (`--ch-pop-from`).
 - Toasts (`ui/Toast.tsx`): rise 8px over 260ms, leave over 180ms, stay 2.4s; an Undo or Retry 10s; an error until
   closed (NP-06).

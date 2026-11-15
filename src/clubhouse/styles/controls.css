@@ -372,22 +372,34 @@
   text-align: left;
   text-decoration: none;
   cursor: pointer;
+  /* The press wash (motion 3.8): in over the press beat; --ch-sel and --ch-ease-out land with the motion branch, and
+     until then the wash is today's press well on the base curve. */
+  transition: background-color var(--ch-dur-press) var(--ch-ease-out, var(--ch-ease));
 }
 .ch-menu__item svg {
   flex: none;
   color: var(--ch-green-600);
 }
+/* A row reached by the keys shows the wash and a ring, so a row focused from the list reads as the active one (MENU-04). */
 .ch-menu__item:focus-visible {
-  outline: none;
-  background: #ece8de;
-  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+  background: var(--ch-sel, var(--ch-press-well));
+  box-shadow: none;
 }
 @media (hover: hover) {
   .ch-menu__item:hover {
     outline: none;
-    background: #ece8de;
-    box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+    background: var(--ch-sel, var(--ch-press-well));
+    box-shadow: none;
+    transition-duration: 0s;
   }
+  .ch-menu__item:active {
+    background: var(--ch-sel, var(--ch-press-well));
+  }
+}
+.ch-menu__item[data-ch-pressed] {
+  background: var(--ch-sel, var(--ch-press-well));
 }
 .ch-menu__item.is-danger,
 .ch-menu__item.is-danger svg {
@@ -1433,16 +1445,15 @@
     background: rgb(237 231 216 / 0.08);
   }
   html[data-fw-theme='dark'] .ch-menu__item:hover {
-    background: var(--ch-ivory-200);
-    box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
+    background: var(--ch-sel, var(--ch-ivory-200));
   }
   html[data-fw-theme='dark'] .ch-pp__row:hover {
     background: rgb(237 231 216 / 0.05);
   }
 }
-html[data-fw-theme='dark'] .ch-menu__item:focus-visible {
-  background: var(--ch-ivory-200);
-  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
+html[data-fw-theme='dark'] .ch-menu__item:focus-visible,
+html[data-fw-theme='dark'] .ch-menu__item[data-ch-pressed] {
+  background: var(--ch-sel, var(--ch-ivory-200));
 }
 html[data-fw-theme='dark'] .ch-input:focus,
 html[data-fw-theme='dark'] .ch-textarea:focus,
@@ -1801,12 +1812,12 @@ body.keyboard-open .ch-fsheet__body > * {
 }
 .ch-fsheet-act__btn[data-ch-pressed],
 .ch-fsheet-act__cancel[data-ch-pressed] {
-  background: var(--ch-bg-hover);
+  background: var(--ch-sel, var(--ch-bg-hover));
 }
 @media (hover: hover) {
   .ch-fsheet-act__btn:active,
   .ch-fsheet-act__cancel:active {
-    background: var(--ch-bg-hover);
+    background: var(--ch-sel, var(--ch-bg-hover));
   }
 }
 .ch-fsheet-act__btn:focus-visible,
