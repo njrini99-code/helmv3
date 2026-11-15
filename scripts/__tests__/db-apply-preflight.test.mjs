@@ -114,7 +114,9 @@ describe('isHeldInRegister', () => {
         status: cells[1].trim(),
       }))
       .filter(({ status }) => /\bHOLD\b|NOT APPLIED/i.test(status) && !/^\*\*(VERIFIED )?APPLIED\b/i.test(status));
-    expect(rows.length).toBeGreaterThan(40);
+    // A floor so a parse that matches nothing cannot pass. 2026-11-15: 52 rows moved to APPLIED after the Clubhouse
+    // release (33 applied that night, 19 found already in the production ledger), leaving 26 held.
+    expect(rows.length).toBeGreaterThan(20);
     const leaks = rows.flatMap(({ names, status }) =>
       names.filter((name) => !isHeldInRegister(register, name)).map((name) => `${name}: ${status}`),
     );
