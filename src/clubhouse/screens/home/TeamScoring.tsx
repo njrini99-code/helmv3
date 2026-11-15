@@ -8,14 +8,14 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { NoData } from '../../ui/NoData';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { formatWith } from '../../lib/dates';
 import { formatFixed, formatSigned } from '../../lib/format';
 import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
 import { rebuiltHref } from '../../shell/nav';
 import { HomeSpanSwitch } from './HomeSpanSwitch';
 import { ScoreChart } from './PlayerGame';
 
-const SHORT_DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
-const shortDay = (ymd: string) => SHORT_DAY.format(new Date(`${ymd}T12:00:00Z`));
+const shortDay = (ymd: string) => formatWith(new Date(`${ymd}T12:00:00Z`), { timeZone: 'UTC', month: 'short', day: 'numeric' });
 
 /**
  * The team's best and toughest day on the line: the lowest and highest team average among days with two rounds or more,

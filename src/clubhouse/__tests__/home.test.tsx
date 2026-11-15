@@ -1221,8 +1221,8 @@ describe('Home · the page’s contracts on the redesign', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     expect(document.querySelector('.ch-h-main--desk')).toBeNull();
     const heads = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    // Player Home's phone order (lay-01): Up next in the hero, the week with today in it, the latest round, scoring, the game.
-    expect(heads).toEqual(['Short-game block', 'This week', 'Today', 'Latest rounds', 'Team scoring', 'The team’s game']);
+    // Player Home's phone order (lay-01): Up next in the hero, what changed since you looked, the week with today in it, the latest round, scoring, the game.
+    expect(heads).toEqual(['Short-game block', 'Since you last looked', 'This week', 'Today', 'Latest rounds', 'Team scoring', 'The team’s game']);
   });
 
   it('22101 a failed read never throws: the page still loads, each section says it failed, and every read is logged', async () => {
