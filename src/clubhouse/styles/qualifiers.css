@@ -3238,7 +3238,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 }
 .ch-qf-sp__plot li.is-short.is-score > span {
   border-color: var(--ch-green-700);
-  color: var(--ch-green-800);
+  /* Forest ink: the ring's surface goes dark at night, where the palette's green-800 is a surface colour too. */
+  color: var(--ch-forest-800);
 }
 .ch-qf-sp__plot li.is-short.is-pick > span,
 .ch-qf-sp__plot li.is-short.is-bubble > span {

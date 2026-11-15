@@ -13,6 +13,7 @@ import { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema'
 import { changeTone, formatFixed, formatSG, formatToPar, MINUS, NO_DATA } from '../lib/format';
 import { formatWallClock, zoneWallParts } from '../lib/dates';
 import { plural } from '../lib/plural';
+import { zoneFormat } from '../lib/zone-format';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 
@@ -78,7 +79,7 @@ export function fmtDay(iso: string | null | undefined, zone?: string | null): st
     const at = new Date(iso);
     if (!Number.isNaN(at.getTime())) {
       try {
-        return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: zone }).format(at);
+        return zoneFormat('en-US', zone, 'chat-day', { month: 'short', day: 'numeric' }).format(at);
       } catch {
         // An unknown zone: read the digits, as below.
       }

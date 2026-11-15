@@ -7,6 +7,7 @@ import { getMetricDirection } from '@/lib/coachhelm/v3/metrics/registry';
 import { confidenceLabel, confidenceTier, type ConfidenceTier } from '@/lib/coachhelm/confidence-label';
 import { buildInsightUnit, fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import { MINUS } from '../lib/format';
+import { plural } from '../lib/plural';
 import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refreshedDay, staleSince, tourValueFor } from './coachhelm-classify';
 import { isMeasuredZero, withoutZeroImpact } from './coachhelm-strokes';
 import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChKind, type ChStale, type ChTourBaseline } from './coachhelm-shape';
@@ -243,7 +244,7 @@ function spanFor(ev: InsightEvidence): string | null {
   const named = Array.isArray(ev.source_round_ids) ? ev.source_round_ids.length : 0;
   const rounds = num(ev.rounds_n) ?? (named > 0 ? named : null);
   if (rounds == null || rounds <= 0) return null;
-  const count = `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`;
+  const count = plural(rounds, 'round');
   const lifetime = ev.window_basis === 'lifetime' || ev.detail?.window_kind === 'lifetime';
   const since = lifetime || typeof ev.window_start !== 'string' ? null : fmtShortDate(ev.window_start.slice(0, 10));
   return since ? `${count} since ${since}` : count;

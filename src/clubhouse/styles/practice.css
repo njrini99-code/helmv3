@@ -1464,7 +1464,8 @@ html[data-fw-theme='dark'] .ch-prb.is-desk {
   border-bottom: 0;
   background: var(--ch-feature-bg);
   color: var(--ch-feature-ink);
-  box-shadow: 0 1px 0 rgb(2 18 10 / 0.24), 0 6px 16px -10px rgb(2 18 10 / 0.5);
+  /* The feature green's own cast (tokens.css), as every green band has: a contact shadow and an ambient fall. */
+  box-shadow: var(--ch-feature-shadow);
   /* The step control on green: a faint ivory track and an ivory chip, the way the sidebar marks where you are. */
   --ch-well-bg: rgb(244 241 232 / 0.08);
   --ch-well-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-feature-sep);
@@ -1558,13 +1559,14 @@ html[data-fw-theme='dark'] .ch-prb.is-desk {
 /* Preview is an outline on the green; Publish is the ivory plate, the brightest thing in the head. */
 .ch-prb.is-desk .ch-prb-head > .ch-btn--secondary {
   background: rgb(244 241 232 / 0.08);
-  box-shadow: inset 0 0 0 1px rgb(244 241 232 / 0.32);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-feature-ink) 32%, transparent);
   color: var(--ch-feature-ink);
   text-shadow: none;
 }
 .ch-prb.is-desk .ch-prb-head > .ch-btn--primary {
   background: var(--ch-on-green-plate);
-  box-shadow: 0 1px 2px rgb(2 18 10 / 0.4), inset 0 -1px 0 rgb(28 25 18 / 0.1);
+  /* The ivory key on green, as Tournaments' and the qualifier's are: a lit top and a green-cast lift. */
+  box-shadow: var(--ch-on-dark-primary-shadow);
   color: var(--ch-green-800);
   text-shadow: none;
 }
@@ -1602,7 +1604,7 @@ html[data-fw-theme='dark'] .ch-prb.is-desk {
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-separator);
 }
 .ch-prb.is-desk .ch-prb-rail .ch-pill[aria-pressed='true'] {
-  background: var(--ch-feature-bg);
+  background: var(--ch-selected-strong);
   box-shadow: none;
   color: var(--ch-feature-ink);
 }
@@ -1624,7 +1626,7 @@ html[data-fw-theme='dark'] .ch-prb.is-desk {
   align-content: start;
   justify-items: center;
   width: var(--ch-prb-stub);
-  padding-top: 15px;
+  padding-top: 16px;
   border-start-start-radius: var(--ch-radius-lg);
   border-end-start-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
@@ -1686,10 +1688,11 @@ html[data-fw-theme='dark'] .ch-prb.is-desk {
   align-content: start;
   justify-items: center;
   width: calc(var(--ch-prb-stub) - 2px);
-  padding-top: 13px;
+  /* The filled stub's 16 and the card's corner, each less the 2px it stands inside, so both stubs' times sit on one line. */
+  padding-top: calc(var(--ch-space-4) - var(--ch-space-0_5));
   border-inline-end: 2px dashed color-mix(in srgb, var(--ch-accent-ink) 55%, transparent);
-  border-start-start-radius: calc(var(--ch-radius-lg) - 2px);
-  border-end-start-radius: calc(var(--ch-radius-lg) - 2px);
+  border-start-start-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-0_5)));
+  border-end-start-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-0_5)));
   background: var(--ch-accent-tint);
   color: var(--ch-accent-ink);
   font: var(--ch-type-20-strong);

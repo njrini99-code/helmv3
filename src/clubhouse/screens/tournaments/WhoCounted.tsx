@@ -4,6 +4,7 @@ import { Avatar } from '../../ui/Avatar';
 import { SideScroll } from '../../ui/SideScroll';
 import { byTotal, notCounted, scoreWords, type DeskRow } from './desk-model';
 import { NoData } from '../../ui/NoData';
+import { pluralWord } from '../../lib/plural';
 import { formatToPar, plural } from './format';
 import { ToPar } from './parts';
 import type { ChTourEvent, ChTourPlayerRound } from './types';
@@ -192,7 +193,7 @@ export function WhoCounted({
       </SideScroll>
       {idle.length > 0 && (
         <p className="ch-tour-desk-ct__alts">
-          {idle.length === 1 ? 'Alternate' : 'Alternates'}: {idle.map((x) => x.player?.first ?? 'Player').join(', ')}
+          {pluralWord(idle.length, 'Alternate')}: {idle.map((x) => x.player?.first ?? 'Player').join(', ')}
         </p>
       )}
       <p className="ch-tour-desk-key">

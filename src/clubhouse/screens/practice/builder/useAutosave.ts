@@ -98,7 +98,8 @@ export function useAutosave({ planId, version, snapshot, folder = 'Practice plan
       } catch {
         tries.current += 1;
         if (tries.current >= MAX_TRIES) {
-          setError({ code: 'CH-13080', message: 'The connection dropped.' });
+          // A throw has no reason of its own to give (a catch-all guesses: error copy, row 62), so the head says only that the save failed.
+          setError(null);
           setStatus('failed');
         }
         else timer.current = window.setTimeout(() => void run(), 2000);

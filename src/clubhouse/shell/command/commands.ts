@@ -1,6 +1,7 @@
 import { ChartColumn, Flag, GraduationCap, Medal, Megaphone, MessageSquarePlus, CalendarPlus, Sparkles, Trophy, type LucideIcon } from 'lucide-react';
 import { activeNavItem, CH_SETTINGS_ITEM, navFor, rebuiltHref, type ChNavFeatures, type ChNavItem, type ChRole } from '../nav';
 import { letterFor } from './shortcuts';
+import { zoneFormat } from '../../lib/zone-format';
 
 export type ChCmdGroup = 'recent' | 'goto' | 'people' | 'events' | 'actions';
 
@@ -114,12 +115,13 @@ export function peopleCommands(role: ChRole, people: readonly ChPerson[]): ChCom
   });
 }
 
-const EVENT_DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
-
 /** "Tournament · Oct 25, 2026": the kind, and the first day as stored (a calendar date, so read in UTC). */
 function eventDetail(e: ChPaletteEvent): string {
   const kind = e.kind === 'tournament' ? 'Tournament' : 'Qualifier';
-  const day = e.date && /^\d{4}-\d{2}-\d{2}$/.test(e.date) ? EVENT_DAY.format(new Date(`${e.date}T12:00:00Z`)) : null;
+  const day =
+    e.date && /^\d{4}-\d{2}-\d{2}$/.test(e.date)
+      ? zoneFormat('en-US', 'UTC', 'palette-event-day', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(`${e.date}T12:00:00Z`))
+      : null;
   return day ? `${kind} · ${day}` : kind;
 }
 
