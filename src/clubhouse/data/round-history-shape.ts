@@ -1,3 +1,4 @@
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { averageArc, COMPARE_MIN_ROUNDS } from './course-history-shape';
 import { groupCourseRounds } from './course-key';
 import { recordMarks, sameTees, type ChMarkRound, type ChRecordMark } from './record-marks';
@@ -23,6 +24,8 @@ export interface ChHistoryRoundRow {
   front_nine: number | null;
   back_nine: number | null;
   total_putts: number | null;
+  /** The round's type; a practice round never sets or meets a record (DF-C-12). Absent in older fixtures, which then count. */
+  round_type?: string | null;
 }
 
 /** The round under review, in the same terms. */
@@ -52,6 +55,11 @@ export const USUAL_WINDOW = 20;
 export const HERE_BEFORE_MIN = 2;
 
 const countable = (r: ChHistoryRoundRow) => isScoreCountable({ holes_played: r.holes_played, total_score: r.total_score, front_nine: r.front_nine, back_nine: r.back_nine, total_putts: r.total_putts });
+/**
+ * A round a record chip may read: countable in a score and not practice, as every figure on Stats, Home and the Roster reads (DF-C-12:
+ * "Season low" once named a practice round, and a scoring round's low was measured against practice rounds).
+ */
+const scoring = (r: ChHistoryRoundRow) => countable(r) && (r.round_type == null || roundTypeFromDb(r.round_type) !== 'practice');
 const before = (a: { round_date: string; id: string }, b: { round_date: string; id: string }) =>
   a.round_date.slice(0, 10) < b.round_date.slice(0, 10) || (a.round_date.slice(0, 10) === b.round_date.slice(0, 10) && a.id < b.id);
 /** Every hole of an 18-hole round scored. */
@@ -89,10 +97,10 @@ export function toReviewHistory(input: {
   const name = group ? group.name || round.course_name?.trim() || null : null;
   const course = group && groupKey && name ? { key: groupKey, name, rounds: group.rounds.filter(countable).length } : null;
 
-  const records = countable(round)
+  const records = scoring(round)
     ? recordMarks(
         mark(round, groupKey),
-        others.filter(countable).map((r) => mark(r, groupOf.get(r.id) ?? null)),
+        others.filter(scoring).map((r) => mark(r, groupOf.get(r.id) ?? null)),
         { seasonStart, courseName: name },
       )
     : [];
