@@ -13,13 +13,15 @@ Held items:     none
 
 ### Changed
 
-- `src/clubhouse/ui/Badge.tsx` takes `decorative`: the badge is `aria-hidden`, for a control that already says its
-  state in words. Calendar's `MarkBadge` passes it through. Off by default; nothing else changes.
+- `src/clubhouse/ui/Badge.tsx` takes `decorative`: the badge is `aria-hidden`,
+  for a control that already says its state in words. Calendar's `MarkBadge`
+  passes it through. Off by default; nothing else changes.
 
 ### Why
 
-- SWP-03 (WCAG 2.5.3): a phone Calendar row is named by its title, then hidden words with its state; its Reply,
-  Cancelled, Moved or Now badge would have said the state a second time.
+- SWP-03 (WCAG 2.5.3): a phone Calendar row is named by its title, then hidden
+  words with its state; its Reply, Cancelled, Moved or Now badge would have said
+  the state a second time.
 
 ### Verification
 
