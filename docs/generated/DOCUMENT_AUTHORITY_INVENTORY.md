@@ -1851,6 +1851,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-read-per-18.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-season-not-lifetime-cache.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-shown-means-drawn.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-brief-week-team-clock.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
