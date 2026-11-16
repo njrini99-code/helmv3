@@ -17,6 +17,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult } from '@/lib/utils/shot-helpers';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
+import { holeScramble } from '@/lib/golf/stat-formulas';
 import { createSafeFlightRecorder, isTransientAuthCheckFailure, toDbLieType } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
@@ -923,6 +924,12 @@ async function getRoundShotDetailsImpl(
     // Combine holes with their shots
     const holesWithShots: HoleReviewData[] = (holes || []).map((hole) => {
       const holeShots = shotsByHole[hole.hole_number] || [];
+      const scramble = holeScramble({
+        missedGreen: hole.gir === false,
+        score: hole.score,
+        par: hole.par,
+        sandSave: hole.sand_save,
+      });
       const teeShot = holeShots.find(shot => shot.shot_type === 'tee');
       const firstPutt = holeShots.find(shot => shot.shot_type === 'putting');
 
@@ -950,13 +957,14 @@ async function getRoundShotDetailsImpl(
         approach_distance: null,
         approach_proximity: null,
         first_putt_distance: firstPuttDistance,
-        // Canonical scramble definition (matches the DB round-stats trigger):
-        // attempt = missed GIR with a recorded score (gir=false AND score IS
-        // NOT NULL); made = that attempt scored par or better. The old
-        // up_and_down-based flag counted "has an up/down entry" as an attempt,
-        // which both over- and under-counted vs every stats surface.
-        scramble_attempt: hole.gir === false && hole.score !== null,
-        scramble_made: hole.gir === false && hole.score !== null && hole.score <= hole.par,
+        // Canonical scramble definition (holeScramble, the DB round-stats
+        // trigger's rule): a chance is a missed green or a greenside-bunker
+        // visit, with a recorded score; made is par or better after the miss,
+        // or a sand save. The old up_and_down-based flag counted "has an
+        // up/down entry" as an attempt, which both over- and under-counted vs
+        // every stats surface.
+        scramble_attempt: scramble.attempt,
+        scramble_made: scramble.made,
         sand_save_attempt: hole.sand_save !== null,
         sand_save_made: hole.sand_save === true,
         shots: holeShots,

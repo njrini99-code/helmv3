@@ -93,6 +93,12 @@ export interface GenomeHoleScore {
    * rather than guessing (a null read as "missed" would invent attempts).
    */
   gir: boolean | null;
+  /**
+   * golf_holes.sand_save (Tour rule): null = no greenside-bunker visit, true =
+   * holed in two from the bunker. Optional so older fixtures read as "no
+   * bunker"; `scrambling_rate` counts a visit as a scramble chance.
+   */
+  sand_save?: boolean | null;
 }
 
 export interface GenomeShot {

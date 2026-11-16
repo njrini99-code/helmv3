@@ -40,7 +40,7 @@ const anyLength = playerFiguresOver(rounds, withHoles(filterFor('season'), 'all'
 describe('Ask reads every catalogue metric over the window (DF-P-11)', () => {
   it('this season: G1 and G3, G4 never, and the rates pool G1’s chances (G3 has scores only)', () => {
     expect(season.round_ids).toEqual([G3_ID, G1_ID]);
-    expect([season.scramble_chances, season.scrambling_pct]).toEqual([G1_EXPECTED.scrambling.of, 50]);
+    expect([season.scramble_chances, season.scrambling_pct]).toEqual([G1_EXPECTED.scrambling.of, G1_EXPECTED.scrambling.pct]);
     expect([season.sand_chances, season.sand_pct]).toEqual([G1_EXPECTED.sandSavesTour.of, 75]);
     expect(season.putt_holes).toBe(18);
     expect(season.one_putt_pct).toBeCloseTo((G1_EXPECTED.onePutts / 18) * 100, 9);

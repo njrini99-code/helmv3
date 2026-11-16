@@ -7,6 +7,7 @@ import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { isTourSchemaMissing } from '@/lib/golf/tournament-refusals';
+import { holeScramble } from '@/lib/golf/stat-formulas';
 import { isoDay } from '../lib/dates';
 import { isScoreCountable } from './round-scope';
 import { loadTeamZone } from './season';
@@ -715,11 +716,16 @@ interface PoolHole {
   gir: boolean | null;
   fairway_hit: boolean | null;
   penalty_strokes: number | null;
+  /** golf_holes.sand_save: null = no greenside-bunker visit. Optional for older callers. */
+  sand_save?: boolean | null;
 }
 
 export function holeStats(holes: readonly PoolHole[], round: Pick<PoolRound, 'total_putts' | 'total_penalties'>): ChTourCompareRound['stats'] {
   const played = holes.filter((h) => h.score != null);
-  const missed = played.filter((h) => h.gir === false);
+  // Scrambling on the stats cache's rule (holeScramble): a missed green or a
+  // greenside-bunker visit is a chance; par or better after the miss, or a
+  // sand save, is made.
+  const scrambles = played.map((h) => holeScramble({ missedGreen: h.gir === false, score: h.score, par: h.par, sandSave: h.sand_save ?? null }));
   // A hole with no GIR mark is not a miss, and a hole with no putt count is not zero putts: GIR counts only marked
   // holes, and the putt total stands only when every scored hole has one (else the round's own total, else none).
   const puttsKnown = played.length > 0 && played.every((h) => h.putts != null);
@@ -730,8 +736,8 @@ export function holeStats(holes: readonly PoolHole[], round: Pick<PoolRound, 'to
     fwOf: played.filter((h) => h.par > 3 && h.fairway_hit != null).length,
     putts: puttsKnown ? played.reduce((a, h) => a + (h.putts as number), 0) : played.length ? null : (round.total_putts ?? null),
     threePutts: played.filter((h) => (h.putts ?? 0) >= 3).length,
-    scrMade: missed.filter((h) => h.score! <= h.par).length,
-    scrOf: missed.length,
+    scrMade: scrambles.filter((x) => x.made).length,
+    scrOf: scrambles.filter((x) => x.attempt).length,
     birdiesPlus: played.filter((h) => h.score! <= h.par - 1).length,
     doublesPlus: played.filter((h) => h.score! >= h.par + 2).length,
     penalties: played.length ? played.reduce((a, h) => a + (h.penalty_strokes ?? 0), 0) : (round.total_penalties ?? 0),
@@ -780,7 +786,7 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
       .range(from, to),
   );
   const holes = await allIn<PoolHole>('poolHoles', rounds.map((r) => r.id), (chunk, from, to) =>
-    ctx.supabase.from('golf_holes').select('round_id, par, score, putts, gir, fairway_hit, penalty_strokes').in('round_id', chunk).order('id', { ascending: true }).range(from, to),
+    ctx.supabase.from('golf_holes').select('round_id, par, score, putts, gir, fairway_hit, penalty_strokes, sand_save').in('round_id', chunk).order('id', { ascending: true }).range(from, to),
   );
   const byRound = new Map<string, PoolHole[]>();
   for (const h of holes) byRound.set(h.round_id, [...(byRound.get(h.round_id) ?? []), h]);
