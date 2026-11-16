@@ -15,6 +15,7 @@ import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { rangeText, shortDay } from '@/lib/golf/tournaments/dates';
 import type { ChClock } from '../../../lib/clock-cookie';
 import { addDays, dayNum, dowOf, fmtHour, monthName } from '../../calendar/model';
+import type { ChTourTiebreak } from '../standings';
 
 export type ChTourStartType = 'tee_times' | 'shotgun' | 'two_tees';
 /**
@@ -66,6 +67,8 @@ export interface ChTourState {
   format: ChTourPlay;
   holes: 9 | 18;
   eventKind: ChTourEventKind;
+  /** How tied places are settled (F-04): shared, or the NCAA tiebreakers. A playoff an event already has is kept. */
+  tiebreak: ChTourTiebreak;
   fieldSize: number | null;
   host: string;
   resultsUrl: string;
@@ -116,6 +119,7 @@ export function initialTourState(first: string, last = first, over: Partial<ChTo
     format: 'stroke',
     holes: 18,
     eventKind: 'regular',
+    tiebreak: 'ties_stand',
     fieldSize: null,
     host: '',
     resultsUrl: '',
@@ -255,8 +259,9 @@ export function lockLine(rounds: readonly Pick<ChRoundDraft, 'date' | 'tee' | 'c
   const l = lockAt(rounds, lockMinutes, timeZone);
   if (!l.at || l.date == null || l.minutes == null) return 'Lineup lock is set once R1 has a tee time.';
   const when = `${shortDay(l.date)} at ${fmtHour(l.minutes / 60, true, clock)}`;
-  if (l.r1Cancelled) return `R1 is cancelled. The lineup still locks ${when}, ${lockMinutes} minutes before R1’s first tee.`;
-  return `Lineup locks ${when}, ${lockMinutes} minutes before the first tee.`;
+  const before = lockMinutes >= 1440 && lockMinutes % 1440 === 0 ? (lockMinutes === 1440 ? 'a day' : `${lockMinutes / 1440} days`) : lockMinutes >= 60 && lockMinutes % 60 === 0 ? (lockMinutes === 60 ? 'an hour' : `${lockMinutes / 60} hours`) : `${lockMinutes} minutes`;
+  if (l.r1Cancelled) return `R1 is cancelled. Lock the lineup by ${when}, ${before} before R1’s first tee.`;
+  return `Lock the lineup by ${when}, ${before} before the first tee. It locks itself when round 1 starts.`;
 }
 
 /** "Name · R2", the stored calendar title of a round (D-81). */
@@ -292,6 +297,51 @@ export const EVENT_KIND_OPTIONS: ReadonlyArray<{ value: ChTourEventKind; label: 
   { value: 'ncaa_championship', label: 'NCAA championship' },
   { value: 'exhibition', label: 'Exhibition' },
 ];
+/**
+ * How tied places are settled (F-04). NCAA: the Division I men's and women's golf championships' tie procedure (the
+ * pre-championships manual): a team by its non-counting scores, then each round's lowest, second, third and fourth
+ * counting scores, then seed; a player by the last round, then the round before. A playoff an event already has (set
+ * before this field) keeps its own label so opening and saving it never changes it.
+ */
+export const TIEBREAK_OPTIONS: ReadonlyArray<{ value: ChTourTiebreak; label: string }> = [
+  { value: 'ties_stand', label: 'Tied teams share a place' },
+  { value: 'ncaa', label: 'NCAA tiebreakers' },
+];
+const TIEBREAK_KEPT: Record<'playoff' | 'card_playoff', string> = { playoff: 'Playoff', card_playoff: 'Card-off, then playoff' };
+export function tiebreakOptions(current: ChTourTiebreak): ReadonlyArray<{ value: ChTourTiebreak; label: string }> {
+  return current === 'playoff' || current === 'card_playoff' ? [...TIEBREAK_OPTIONS, { value: current, label: TIEBREAK_KEPT[current] }] : TIEBREAK_OPTIONS;
+}
+/** Said on the saved toast when the event was set up but its tiebreak didn't save (F-04). */
+export const TIEBREAK_NOT_SAVED = 'Its tiebreak didn’t save, so tied places are shared. Set Ties again in Edit.';
+export const LOCK_NOT_SAVED = 'Its lineup lock time didn’t save, so it is 10 minutes before the first tee. Set it again in Edit.';
+
+/**
+ * F-05: how long before round 1's first tee the coach means to lock the lineup. Nothing locks it at that time: the
+ * lineup locks itself when round 1 starts (golf_tournament_set_round_status), so the time is a "lock by".
+ */
+export const LOCK_MINUTE_CHOICES: ReadonlyArray<{ value: number; label: string }> = [
+  { value: 10, label: '10 minutes before' },
+  { value: 30, label: '30 minutes before' },
+  { value: 60, label: '1 hour before' },
+  { value: 120, label: '2 hours before' },
+  { value: 1440, label: 'The day before' },
+];
+
+/** The choices, with the event's own value kept when it is none of them (set elsewhere), so opening Edit changes nothing. */
+export function lockMinuteOptions(current: number): ReadonlyArray<{ value: string; label: string }> {
+  const known = LOCK_MINUTE_CHOICES.some((c) => c.value === current);
+  const list = known ? LOCK_MINUTE_CHOICES : [...LOCK_MINUTE_CHOICES, { value: current, label: `${current} minutes before` }].sort((a, b) => a.value - b.value);
+  return list.map((c) => ({ value: String(c.value), label: c.label }));
+}
+
+/** The sentence under the Ties field. */
+export function tiebreakHelp(t: ChTourTiebreak): string {
+  return t === 'ncaa'
+    ? 'Teams level on total are separated by their non-counting scores, then each round’s lowest, second, third and fourth counting scores, then seed. A player: the last round, then the round before. As the NCAA championships do it.'
+    : t === 'ties_stand'
+      ? 'Teams and players level on total share a place, shown with a T.'
+      : 'A playoff decides it; enter the host’s places when they are posted.';
+}
 const PRESET: Record<Exclude<ChTourCounting, 'custom'>, { play: number; count: number }> = { '5c4': { play: 5, count: 4 }, '6c5': { play: 6, count: 5 }, '6c4': { play: 6, count: 4 } };
 /** The players and counting a counting choice stands for (PR 2354's formatOf: the three presets fix them). */
 export function countingNumbers(counting: ChTourCounting, play: number, count: number): { play: number; count: number } {
@@ -387,6 +437,8 @@ export interface ChCreateFromCalendar {
   counting?: number;
   holesPerRound: 9 | 18;
   eventKind: ChTourEventKind;
+  tiebreak?: ChTourTiebreak;
+  lockMinutes?: number;
   fieldSize?: number;
   host?: string;
   resultsUrl?: string;
@@ -428,6 +480,8 @@ export function toCreatePayload(
     ...cols,
     holesPerRound: s.holes,
     eventKind: s.eventKind,
+    ...(s.tiebreak !== 'ties_stand' ? { tiebreak: s.tiebreak } : {}),
+    ...(s.lockMinutes !== DEFAULT_LOCK_MINUTES ? { lockMinutes: s.lockMinutes } : {}),
     ...(s.fieldSize != null ? { fieldSize: s.fieldSize } : {}),
     ...(s.host.trim() ? { host: s.host.trim() } : {}),
     ...(s.resultsUrl.trim() ? { resultsUrl: s.resultsUrl.trim() } : {}),

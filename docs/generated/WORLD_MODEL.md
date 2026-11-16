@@ -237,9 +237,9 @@ Player Hub · active · criticality high · owner product
 Qualifiers · active · criticality high · owner product
 
 - **Relations:** 1 doc/structurally-evidenced, 8 import-graph-only (weak)
-- **Tables:** `golf_qualifier_round_courses`
+- **Tables:** `golf_qualifier_exemptions`, `golf_qualifier_round_courses`, `golf_qualifier_rules`
 - **RPCs:** `golf_qualifier_selection_reasons`
-- **Test surfaces:** 5
+- **Test surfaces:** 8
 - **Sentry/admin_events signals:** `my_qualifiers`, `qualifiers`
 
 ### `recruiting`
@@ -257,9 +257,9 @@ Recruiting HQ · active · criticality medium · owner product
 Roster And Team · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
-- **Tables:** `baseball_seasons`, `golf_player_availability_coach_notes`, `golf_team_drills`
+- **Tables:** `baseball_seasons`, `golf_hours_adjustments`, `golf_player_availability_coach_notes`, `golf_roster_exemptions`, `golf_team_drills`, `golf_team_hours_settings`, `golf_team_roster_limits`
 - **RPCs:** `get_coach_today_schedule`, `golf_join_team_with_code`, `golf_my_join_requests`, `golf_team_by_join_code`, `sg_scale_for_player`
-- **Test surfaces:** 1
+- **Test surfaces:** 3
 - **Sentry/admin_events signals:** `roster_management`, `team_info`
 
 ### `settings_preferences`

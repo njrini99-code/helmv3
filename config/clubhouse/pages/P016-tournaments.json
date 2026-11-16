@@ -67,7 +67,15 @@
       "src/app/golf/actions/tournaments.ts",
       "src/lib/golf/tournament-refusals.ts",
       "src/clubhouse/data/tournaments-db.ts",
-      "src/clubhouse/styles/tournament-fields.css"
+      "src/clubhouse/styles/tournament-fields.css",
+      "src/clubhouse/screens/tournaments/ImportResults.tsx",
+      "src/clubhouse/screens/tournaments/HoleEntry.tsx",
+      "src/clubhouse/screens/tournaments/import/sheets.ts",
+      "src/clubhouse/screens/tournaments/import/results.ts",
+      "src/clubhouse/screens/tournaments/import/plan.ts",
+      "src/clubhouse/screens/tournaments/import/grid.ts",
+      "src/clubhouse/styles/tournaments-import.css",
+      "src/app/golf/actions/tournaments-import.ts"
     ],
     "tests": [
       "src/clubhouse/__tests__/tournaments-views.test.tsx",
@@ -86,7 +94,15 @@
       "src/clubhouse/data/__tests__/tournaments-shape.test.ts",
       "src/clubhouse/data/__tests__/tournaments.test.ts",
       "src/app/golf/actions/__tests__/tournaments.test.ts",
-      "src/lib/golf/__tests__/tournament-refusals.test.ts"
+      "src/lib/golf/__tests__/tournament-refusals.test.ts",
+      "src/clubhouse/__tests__/tournaments-import.test.tsx",
+      "src/clubhouse/screens/tournaments/import/__tests__/sheets.test.ts",
+      "src/clubhouse/screens/tournaments/import/__tests__/results.test.ts",
+      "src/clubhouse/screens/tournaments/import/__tests__/plan.test.ts",
+      "src/clubhouse/screens/tournaments/import/__tests__/grid.test.ts",
+      "src/app/golf/actions/__tests__/tournaments-import.test.ts",
+      "src/clubhouse/__tests__/exports.test.tsx",
+      "src/clubhouse/screens/tournaments/__tests__/export.test.ts"
     ],
     "loader": "src/clubhouse/data/tournaments.ts",
     "route": "src/clubhouse/routes/tournaments.tsx"
@@ -259,6 +275,48 @@
       ],
       "tests": [
         "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-IMPORT-RESULTS",
+      "label": "Save imported results or typed holes",
+      "component": "src/clubhouse/screens/tournaments/ImportResults.tsx",
+      "handler": "ImportResults (Save) and HoleEntry (Save holes), both through useAction",
+      "service": "src/app/golf/actions/tournaments-import.ts#importTournamentResults",
+      "data": [
+        "golf_rounds",
+        "golf_holes",
+        "golf_tournament_player_rounds",
+        "golf_tournament_field_teams",
+        "golf_tournament_field_scores"
+      ],
+      "bridge": {
+        "loading": 160280,
+        "empty": 160480,
+        "validation": 160580,
+        "failure": 160680
+      },
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments-import.test.ts",
+        "src/clubhouse/__tests__/tournaments-import.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P016-EXPORT-RESULTS",
+      "label": "Export an event's results (teams and our players)",
+      "component": "src/clubhouse/screens/tournaments/EventDesk.tsx#EventDesk",
+      "handler": "ExportButton run",
+      "service": "src/clubhouse/lib/csv.ts#saveCsv",
+      "data": [
+        "a CSV file on the device"
+      ],
+      "bridge": {
+        "success": 160980,
+        "failure": 160682
+      },
+      "tests": [
+        "src/clubhouse/__tests__/exports.test.tsx",
+        "src/clubhouse/screens/tournaments/__tests__/export.test.ts"
       ]
     }
   ],

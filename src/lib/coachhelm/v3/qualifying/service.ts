@@ -23,6 +23,7 @@ import { pushTravelBriefToChat } from './chat-push';
 import { notifyPlayersOfSelectionOutcome } from './player-notify';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { exemptPickReason, readQualifierExemptions } from '@/lib/golf/qualifier-exemptions';
 
 type Sb = SupabaseClient<Database>;
 
@@ -71,6 +72,8 @@ export async function transitionSelectionState(
   supabase: Sb,
   qualifier_id: string,
   target: QualifierSelectionState,
+  /** Who closes: the exempt players' picks (F-06) are written in their name. Left out, none are placed. */
+  user_id?: string,
 ): Promise<ServiceResult> {
   const { data: cur, error: readErr } = await supabase
     .from('golf_qualifiers')
@@ -100,7 +103,47 @@ export async function transitionSelectionState(
   if (writeErr) return { ok: false, error: writeErr.message };
   if (!moved?.length) return { ok: false, error: `illegal transition: the state moved on from ${cur.selection_state}` };
 
+  if (target === 'closed' && user_id) await placeExemptPlayers(supabase, qualifier_id, user_id);
   return { ok: true, data: undefined };
+}
+
+/**
+ * F-06 (owner, 16 Nov 2026: "Exempt before, from coach picks"): when selection closes, each player the coach exempted
+ * before the qualifier, and still entered, becomes one of its coach's picks with the reason. Best effort: the close has
+ * happened, and a pick that didn't write is still the coach's to make (setCoachPick waives Q-115 for an exempt player).
+ * A pick already there for the player is left as it is; never more picks than the qualifier has.
+ */
+async function placeExemptPlayers(supabase: Sb, qualifier_id: string, user_id: string): Promise<void> {
+  try {
+    const read = await readQualifierExemptions(supabase, qualifier_id);
+    if (read.error) throw new Error(read.error.message);
+    if (!read.exemptions.length) return;
+    const [{ data: q, error: qErr }, { data: entries, error: eErr }, { data: picks, error: pErr }] = await Promise.all([
+      supabase.from('golf_qualifiers').select('selection_slots_coach_pick').eq('id', qualifier_id).maybeSingle(),
+      supabase.from('golf_qualifier_entries').select('player_id').eq('qualifier_id', qualifier_id),
+      supabase.from('golf_qualifier_selections').select('player_id').eq('qualifier_id', qualifier_id).eq('selection_type', 'coach_pick'),
+    ]);
+    if (qErr || eErr || pErr || !q) throw new Error(describeError(qErr ?? eErr ?? pErr ?? 'qualifier not found'));
+    const entered = new Set((entries ?? []).map((e) => e.player_id));
+    const picked = new Set((picks ?? []).map((p) => p.player_id));
+    const room = Math.max(0, q.selection_slots_coach_pick - picked.size);
+    const now = new Date().toISOString();
+    const rows = read.exemptions
+      .filter((e) => entered.has(e.playerId) && !picked.has(e.playerId))
+      .slice(0, room)
+      .map((e) => ({
+        qualifier_id,
+        player_id: e.playerId,
+        selection_type: 'coach_pick' as const,
+        coach_reasoning: exemptPickReason(e.reason),
+        selected_by_user_id: user_id,
+        selected_at: now,
+      }));
+    const { error } = await writeSelections(supabase, rows);
+    if (error) throw new Error(error.message);
+  } catch (e) {
+    await logServerError(`qualifying: exempt players not placed at close: ${describeError(e)}`, { action: 'qualifying.placeExempt', featureArea: 'qualifiers' }, 'warning');
+  }
 }
 
 /**
@@ -161,7 +204,12 @@ export async function setCoachPick(
   if (scoredError) {
     return { ok: false, error: 'could not verify the player has a scored round; please try again' };
   }
-  if (!scored) return { ok: false, error: 'player has no scored round in this qualifier' };
+  if (!scored) {
+    // F-06: a player the coach exempted before the qualifier takes a pick without playing (owner, 16 Nov 2026).
+    const exempt = await readQualifierExemptions(supabase, args.qualifier_id);
+    if (exempt.error) return { ok: false, error: 'could not verify the player has a scored round; please try again' };
+    if (!exempt.exemptions.some((e) => e.playerId === args.player_id)) return { ok: false, error: 'player has no scored round in this qualifier' };
+  }
 
   // Enforce the slot ceiling before inserting another coach_pick.
   const { data: existing, error: existingError } = await supabase

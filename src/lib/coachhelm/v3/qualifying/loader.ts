@@ -26,7 +26,8 @@ import {
   type TieAtCut,
 } from './types';
 import { canConfirmSelection, pickableCount } from './state-machine';
-import { rankStandings } from './ranking';
+import { countedRoundIndexes, rankStandings, type QualifierTieRule } from './ranking';
+import { readQualifierRules } from '@/lib/golf/qualifier-rules';
 import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
@@ -66,7 +67,9 @@ export async function loadQualifyingWorkspace(
   if (qErr || !q) return null;
 
   // The pick reasoning comes through the coach-gated reader (D-35), not the column.
-  const [selsRes, reasonsRes, roundsRes] = await Promise.all([
+  // The qualifier's tie rule (F-04) decides who is level at the cut, so a failed read is a failed load; a table that
+  // isn't there yet (migration held) reads as the rule every qualifier had before it.
+  const [selsRes, reasonsRes, roundsRes, rulesRes] = await Promise.all([
     supabase
       .from('golf_qualifier_selections')
       .select('qualifier_id, player_id, selection_type, selected_at, selected_by_user_id')
@@ -85,29 +88,43 @@ export async function loadQualifyingWorkspace(
         .order('id', { ascending: true })
         .range(from, to),
     ),
+    readQualifierRules(supabase, qualifier_id),
   ]);
   // A failed read is a failed load, never a workspace that looks decided on less than it knows. This loader feeds the writes
   // (chooseTiePlace counts `tie.chosen` from it; confirm builds the squad and the picks from it), so a failed selections read
   // that came back as "nobody is selected" would pass the "never more than the places" guard and let a place be given twice,
   // or confirm would rewrite a coach's pick as a top-score place. A failed reasons read would show picks without their notes
   // and refuse a confirm that is allowed. A failed rounds read would be a board of unscored players.
-  if (selsRes.error || reasonsRes.error || roundsRes.error) return null;
+  if (selsRes.error || reasonsRes.error || roundsRes.error || rulesRes.error) return null;
   const sels = selsRes.data;
   const reasons = reasonsRes.reasons;
   // The board's rules (screens/qualifiers/model.ts buildBoard): a round needs a total and a to-par, and a second
   // round in the same qualifier round counts once.
-  const byPlayer = new Map<string, { n: number; total: number; toPar: number; slots: Set<number> }>();
+  // F-06: a qualifier counting each player's best N sums only those, picked by the same helper as the board.
+  const byPlayer = new Map<
+    string,
+    { n: number; total: number; toPar: number; counted: number; slots: Set<number>; bySlot: Array<number | null>; scores: Array<{ toPar: number; total: number }> }
+  >();
   for (const r of roundsRes.data ?? []) {
     if (r.total_score == null || r.score_to_par == null) continue;
-    const agg = byPlayer.get(r.player_id) ?? { n: 0, total: 0, toPar: 0, slots: new Set<number>() };
+    const agg = byPlayer.get(r.player_id) ?? { n: 0, total: 0, toPar: 0, counted: 0, slots: new Set<number>(), bySlot: [], scores: [] };
     if (r.qualifier_round_number != null) {
       if (agg.slots.has(r.qualifier_round_number)) continue;
       agg.slots.add(r.qualifier_round_number);
+      if (r.qualifier_round_number >= 1) {
+        while (agg.bySlot.length < r.qualifier_round_number) agg.bySlot.push(null);
+        agg.bySlot[r.qualifier_round_number - 1] = r.total_score;
+      }
     }
     agg.n += 1;
-    agg.total += r.total_score;
-    agg.toPar += r.score_to_par;
+    agg.scores.push({ toPar: r.score_to_par, total: r.total_score });
     byPlayer.set(r.player_id, agg);
+  }
+  for (const agg of byPlayer.values()) {
+    const keep = countedRoundIndexes(agg.scores, rulesRes.rules.countBest);
+    agg.counted = keep.length;
+    agg.total = keep.reduce((s, i) => s + agg.scores[i]!.total, 0);
+    agg.toPar = keep.reduce((s, i) => s + agg.scores[i]!.toPar, 0);
   }
 
   const selByPlayer = new Map<string, QualifierSelection>();
@@ -126,13 +143,15 @@ export async function loadQualifyingWorkspace(
         player_first_name: player.first_name,
         player_last_name: player.last_name,
         rounds_completed: agg?.n ?? 0,
+        ...(agg && agg.counted < agg.n ? { rounds_counted: agg.counted } : {}),
         total_score: agg ? agg.total : null,
         total_to_par: agg ? agg.toPar : null,
+        rounds_by_slot: agg?.bySlot ?? [],
       };
     });
 
   // Rank with the one order. Unposted (no scored round) → rank null.
-  const ranked = rankCandidates(rawCandidates);
+  const ranked = rankCandidates(rawCandidates, rulesRes.rules.tieRule);
 
   const top_n = Math.max(0, q.selection_slots_total - q.selection_slots_coach_pick);
   const candidates = assignScoreSlots(ranked, selByPlayer, top_n);
@@ -228,8 +247,12 @@ interface RankInput {
   player_first_name: string;
   player_last_name: string;
   rounds_completed: number;
+  /** F-06: the rounds summed when the qualifier counts each player's best N and this player has more in. */
+  rounds_counted?: number;
   total_score: number | null;
   total_to_par: number | null;
+  /** Strokes by qualifier round (index 0 for round 1), for the tie rule's countback (F-04). */
+  rounds_by_slot?: Array<number | null>;
 }
 
 interface RankOutput extends RankInput {
@@ -247,14 +270,19 @@ interface RankOutput extends RankInput {
  * player has goes below every full card. Scored players come first, in that
  * order, with rank and position; the unscored follow in input order.
  */
-export function rankCandidates(input: RankInput[]): RankOutput[] {
+export function rankCandidates(input: RankInput[], tieRule: QualifierTieRule = 'coach'): RankOutput[] {
   const scored = (c: RankInput) => c.rounds_completed > 0 && c.total_to_par !== null && c.total_score !== null;
-  const placed = rankStandings(input.filter(scored), (c) => ({
-    toPar: c.total_to_par as number,
-    total: c.total_score as number,
-    played: c.rounds_completed,
-    name: `${c.player_first_name ?? ''} ${c.player_last_name ?? ''}`.trim(),
-  }));
+  const placed = rankStandings(
+    input.filter(scored),
+    (c) => ({
+      toPar: c.total_to_par as number,
+      total: c.total_score as number,
+      played: c.rounds_counted ?? c.rounds_completed,
+      name: `${c.player_first_name ?? ''} ${c.player_last_name ?? ''}`.trim(),
+      rounds: c.rounds_by_slot,
+    }),
+    tieRule,
+  );
   const ranked: RankOutput[] = placed.map((p) => ({
     ...p.item,
     leaderboard_rank: p.rank,

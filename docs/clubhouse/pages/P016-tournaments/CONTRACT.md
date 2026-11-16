@@ -49,6 +49,8 @@ Status: DEFINED
 | 160129 | CH-16684 | `ROUND_SETUP_OPEN_CALL_VERSION_2` | Round setup, open call (a) version 2 (slice 2) |
 | 160130 | CH-16685 | `COACH_HOME_A_TOURNAMENT_TRACKS_A_LIVE` | Coach Home, a tournament tracks a live round |
 | 160131 | CH-16606 | `MORE_LANES_THAN_THE_CARD_SHOWS` | More lanes than the card shows |
+| 160180 | — | `LINEUP_BUILDER_B_TEAM` | Lineup builder: a B team (launch readiness F-05), offered once the event can hold one (held migration 20261116091000 adds the squad). A Team switch (A team, B team) shows the B spots and the B alternate, with 'The B team plays as individuals: its scores never count in the team's record.' A B player is stored as an individual (or the alternate) of squad B, so every team score, which reads the lineup only, leaves the B team out (D-92). |
+| 160181 | — | `LINEUP_LOCK_BY` | The lineup's lock time is a 'lock by' (F-05): nothing locks a lineup at that time (it locks itself when round 1 starts), so the lineup head says 'Lock by …', past it CH-16382 says so, and the event form's Lineup lock sets it (10, 30 minutes, 1 or 2 hours, or the day before; a value set elsewhere stays a choice). |
 
 ## 02 — Initial loading / skeleton
 
@@ -62,6 +64,7 @@ route skeletons arrive with the routes (Phase 7).
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 160201 | CH-16401 | `A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY` | A Tournaments view is on its way (`load: 'loading'`) |
+| 160280 | CH-16480 | `IMPORT_RESULTS_THE_FILE_IS_BEING_READ` | Import results: the file is being read on the device |
 
 From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
@@ -107,13 +110,26 @@ no rounds to link, and so on) are its lane's rows.
 | 160424 | CH-16391 | `PLAYER_EVENT_THE_EVENT_HAS_NO_ROUNDS` | Player event: the event has no rounds yet |
 | 160425 | CH-16392 | `PLAYER_EVENT_THE_COACH_HAS_SHARED_NOTHING` | Player event: the coach has shared nothing |
 | 160426 | CH-16393 | `PLAYER_EVENT_THE_TEAMS_RESULT_IS_NOT` | Player event: the team’s result is not on the player’s page (teammates’ scores and the lineup are the coach’s until held file 4) |
+| 160480 | CH-16380 | `IMPORT_RESULTS_NONE_OF_OUR_PLAYERS_ARE` | Import results: none of our players are in the file, or the file has team scores only |
+| 160481 | CH-16381 | `ENTER_HOLES_NO_GRID_FOR_THE_ROUND` | Enter holes: no grid for the round (the course has no hole pars, no one is in the round) |
+| 160482 | CH-16382 | `LINEUP_BUILDER_THE_LINEUPS_LOCK_TIME_HAS` | Lineup builder: the lineup's lock time has passed and it is not locked (launch readiness F-05; nothing locks it at that time) |
 
 ## 05 — Validation
 
-Status: N/A — not defined yet: no view is built (each renders the base's
+Status: DEFINED
 
-placeholder) and nothing is wired. The lane that builds the view defines this
-category with its catalog rows (screens/tournaments/README.md).
+Results import and Enter holes on the Event desk (launch readiness F-01). A file
+is read on the device: one that can't be read says why and how to get one that
+can (CH-16180), one that opens with no column read as scores opens the column
+editor (CH-16181), and an empty paste asks for the results (CH-16183). A grid
+cell that can't be saved is named under the grid and keeps Save off (CH-16182).
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 160580 | CH-16180 | `IMPORT_RESULTS_THE_FILE_CANT_BE_READ` | Import results: the file can’t be read (the old binary .xls, a PDF, a picture, another type, a damaged file, over 8 MB, empty) |
+| 160581 | CH-16181 | `IMPORT_RESULTS_THE_FILE_OPENED_BUT_NO` | Import results: the file opened, but no column reads as players with scores |
+| 160582 | CH-16182 | `ENTER_HOLES_A_CELL_CANT_BE_SAVED` | Enter holes: a cell can’t be saved (not a whole number, over 15 strokes, a saved hole emptied) |
+| 160583 | CH-16183 | `IMPORT_RESULTS_READ_RESULTS_WITH_NOTHING_PASTED` | Import results: Read results with nothing pasted |
 
 ## 06 — Server / system error
 
@@ -160,6 +176,9 @@ flags and its lane's rows.
 | 160633 | CH-16292 | `PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS` | Player event: the player’s reflection read fails (`errors.reflection`) |
 | 160634 | CH-16293 | `PLAYER_EVENT_THE_PLAYERS_OWN_SPOT_FAILS` | Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`) |
 | 160635 | CH-16072 | `HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS` | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) |
+| 160680 | CH-16080 | `IMPORT_RESULTS_SAVING_FAILS_OR_IS_REFUSED` | Import results: saving fails or is refused (the results are official, not a coach, a round that isn’t the event’s, a field row that isn’t) |
+| 160681 | CH-16081 | `ENTER_HOLES_SAVING_THE_GRID_FAILS_OR` | Enter holes: saving the grid fails or is refused |
+| 160682 | CH-16082 | `EXPORT_RESULTS_FAILS_THE_BROWSER_REFUSED_THE` | Export results fails: the browser refused the file (launch readiness F-02) |
 | 160690 | CH-16294 | `A_SECTION_OF_THE_LIVE_ROUND_THE` | A section of the live round, the lineup builder, History or Live throws while drawing (GAP-S-10) |
 | 160691 | CH-16295 | `HISTORY_THE_ROSTER_OR_THE_SEASON_PROFILES` | History: the roster or the season profiles read fails (`errors.profiles`, GAP-S-08) |
 
@@ -173,6 +192,8 @@ whole of it today; the live round's outbox (5L.8.5) adds its own.
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 160701 | CH-16605 | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | The device is offline while the card or the live view is open |
+| 160780 | CH-16980 | `IMPORT_RESULTS_A_ROUND_IN_THE_FILE` | Import results: a round in the file differs from the player’s card or submitted round |
+| 160781 | CH-16981 | `LINEUP_BUILDER_THE_ROSTER_IS_OVER_ITS` | Lineup builder: the roster is over its limit (F-05) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
@@ -194,10 +215,16 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 ## 09 — Success
 
-Status: N/A — not defined yet: no view is built (each renders the base's
+Status: DEFINED
 
-placeholder) and nothing is wired. The lane that builds the view defines this
-category with its catalog rows (screens/tournaments/README.md).
+An export of the event's results that lands says so in a toast with the success
+haptic (160980). Other writes on the desk say so in their own flows (import,
+the hole grid, the lineup); they are catalogued with their codes.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 160980 | — | `EXPORT_RESULTS_LANDED` | An export of an event's results that lands says so in a toast ("Results exported · 12 teams, 5 players") with the success haptic: a download on a computer, the share sheet on a phone. |
+| 160981 | — | `LINEUP_B_TEAM_SAVED` | A lineup saved with a B team sends each B player as an individual of squad B with their spot, and the B alternate; the A entries go as before. Before held migration 20261116091000 a B entry is refused ('A B team arrives with the next update. Nothing was saved.') and nothing is written. |
 
 ## 10 — Warning
 
@@ -227,6 +254,8 @@ warning haptic. Restore is the safe direction and doesn't ask.
 | 161102 | CH-16551 | `CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU` | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) |
 | 161103 | CH-16560 | `LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER` | Lock the lineup, from the lineup builder |
 | 161104 | CH-16570 | `FINISH_THE_ROUND_FROM_THE_LIVE_ROUND` | Finish the round, from the live round |
+| 161180 | CH-16580 | `IMPORT_RESULTS_START_OVER_ONCE_CHOICES_ARE` | Import results: Start over once choices are made on the check step |
+| 161181 | CH-16581 | `ENTER_HOLES_CLOSING_WITH_HOLES_TYPED_AND` | Enter holes: closing with holes typed and not saved |
 
 ## 12 — State preservation
 
@@ -300,6 +329,7 @@ DeltaChip and TrustChip speak their meaning in words and never rest on hue alone
 | 161801 | CH-16801 | `A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE` | A signed difference or a trust state is read |
 | 161802 | CH-16641 | `CALENDAR_GRID_BLOCK` | Calendar grid block (slice 4) |
 | 161803 | CH-16850 | `HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE_2` | Home: a tournament arrives while the page is open |
+| 161880 | CH-16880 | `ENTER_HOLES_THE_GRID_BY_KEYBOARD_AND` | Enter holes: the grid by keyboard and screen reader |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

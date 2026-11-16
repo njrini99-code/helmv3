@@ -894,7 +894,7 @@ function events(state: ChTourPreviewState): ChTourEvent[] {
 }
 
 function emptyDesk(now: string, e: ChTourEvent): ChTourDeskData {
-  return { now, event: e, players: PLAYERS, courses: COURSES, holes: null, findings: [], story: null, review: null, travel: null, adviceGivers: [], previous: null, errors: {} };
+  return { now, teamName: TEAM.name, event: e, players: PLAYERS, courses: COURSES, holes: null, findings: [], story: null, review: null, travel: null, adviceGivers: [], previous: null, errors: {} };
 }
 
 /** The upcoming Pinehurst event, kept even in the empty state so the desk, lineup and live views have an event. */

@@ -407,6 +407,11 @@ function Field({ data }: { data: ChTourLiveSnapshot }) {
           ))}
         </ol>
       )}
+      {rows.length > 0 && f.tieNote && (
+        <p className="ch-tour-live-field__none" data-ch-live-field="ties">
+          {f.tieNote}
+        </p>
+      )}
     </Section>
   );
 }

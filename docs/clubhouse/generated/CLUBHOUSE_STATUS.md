@@ -29,7 +29,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 21 of 25 categories have catalog contracts
-- Bridge: reserved; 86 IDs, 81 on an element or in code, 2 reserved
+- Bridge: reserved; 95 IDs, 90 on an element or in code, 2 reserved
 - Data: existing; 1 held plan(s)
 - Verification: partial
 - Docs: current
@@ -59,7 +59,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 23 of 25 categories have catalog contracts
-- Bridge: reserved; 147 IDs, 145 on an element or in code, 2 reserved
+- Bridge: reserved; 172 IDs, 170 on an element or in code, 2 reserved
 - Data: existing; 2 held plan(s)
 - Verification: partial
 - Docs: current
@@ -89,7 +89,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 23 of 25 categories have catalog contracts
-- Bridge: reserved; 137 IDs, 128 on an element or in code, 9 reserved
+- Bridge: reserved; 153 IDs, 144 on an element or in code, 9 reserved
 - Data: existing; 2 held plan(s)
 - Verification: partial
 - Docs: current
@@ -109,7 +109,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 21 of 25 categories have catalog contracts
-- Bridge: reserved; 214 IDs, 212 on an element or in code, 2 reserved
+- Bridge: reserved; 217 IDs, 215 on an element or in code, 2 reserved
 - Data: existing; 2 held plan(s)
 - Verification: partial
 - Docs: current
@@ -158,8 +158,8 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 
 - Design: approved
 - Implementation: in_progress
-- Contract: partial; 13 of 25 categories have catalog contracts
-- Bridge: reserved; 115 IDs, 109 on an element or in code, 4 reserved
+- Contract: partial; 15 of 25 categories have catalog contracts
+- Bridge: reserved; 135 IDs, 129 on an element or in code, 4 reserved
 - Data: held; 5 held plan(s)
 - Verification: partial
 - Docs: current

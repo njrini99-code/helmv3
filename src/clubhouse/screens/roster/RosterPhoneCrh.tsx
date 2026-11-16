@@ -42,6 +42,7 @@ import type { AvailabilityControl, NoteSaved } from './RosterPeek';
 import { RosterLeaders } from './RosterLeaders';
 import { RosterProfileCrh } from './RosterProfileCrh';
 import { RosterTeamCard } from './RosterTeamCard';
+import { RosterLimitLine, type RosterLimitControl } from './RosterLimit';
 import { useRosterSort, type PhoneSort } from './sort';
 import { useFlipRows } from './use-flip-rows';
 import { useGuardedPhoneHistory } from './use-guarded-history';
@@ -72,6 +73,7 @@ export function RosterPhoneCrh({
   classLines = NO_CLASS_LINES,
   hold,
   onRetry,
+  limit,
   children,
 }: {
   data: ChRoster;
@@ -90,6 +92,8 @@ export function RosterPhoneCrh({
   classLines?: RosterClassLines;
   hold?: { onPointerDownCapture: () => void };
   onRetry: () => void;
+  /** F-05: the roster limit's line and the row items (Roster owns its state). Absent: nothing drawn. */
+  limit?: RosterLimitControl;
   children?: ReactNode;
 }) {
   const copy = useCopyText();
@@ -202,6 +206,11 @@ export function RosterPhoneCrh({
         ) : (
           <>
             <RosterTeamCard viewer="coach" season={data.season} players={players} waiting={data.requestsError ? null : jr.reqs.length} statsError={data.statsError} clock={clock} />
+            {limit?.state && (
+              <div className="ch-rsx-sec is-tight ch-rs-limitp">
+                <RosterLimitLine ctl={limit} />
+              </div>
+            )}
             <div className="ch-rsx-sec is-tight">
               <RosterLeaders players={players} statsError={data.statsError} clock={clock} onOpen={onOpen} />
             </div>
@@ -319,6 +328,19 @@ export function RosterPhoneCrh({
           setActing(false);
           onStatus(p);
         }}
+        extra={(p) =>
+          (limit?.menuItems(p) ?? []).map((it) =>
+            'onSelect' in it && it.onSelect
+              ? {
+                  ...it,
+                  onSelect: () => {
+                    setActing(false);
+                    it.onSelect?.();
+                  },
+                }
+              : it,
+          )
+        }
       />
       <SheetGuard>
         <RequestsSheetCrh open={requestsOpen} atRest={link.atRest} onClose={closeRequests} data={data} jr={jr} clock={clock} />
@@ -400,6 +422,7 @@ export function RosterRowCrh({
     p.name,
     p.classYear,
     kind === 'injured' ? 'injured' : kind === 'inactive' ? 'inactive' : null,
+    p.rosterExempt ? 'not counted toward the roster limit' : null,
     note?.text,
     bySg ? (sg != null ? `strokes gained ${formatSigned(sg)} a round` : 'no strokes gained yet') : null,
     p.avg != null ? `average ${formatFixed(p.avg)}${early ? `, early read, ${early.toLowerCase()} to rank` : ''}` : null,
@@ -427,9 +450,9 @@ export function RosterRowCrh({
               </span>
             ) : (
               <span>
-                {classLine ? <ClassStatusLine kind={classLine.kind} text={classLine.text} /> : note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : ' '}
+                {classLine ? <ClassStatusLine kind={classLine.kind} text={classLine.text} /> : note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : p.rosterExempt ? 'Not counted' : ' '}
                 {/* ROSTER-11 (prod audit 2026-11-15): the handicap is spelled out on the subline, not an "HCP" under the average. */}
-                {hcp && <span className="ch-num">{`${note?.text || classLine ? ' \u00b7 ' : ''}${hcp}`}</span>}
+                {hcp && <span className="ch-num">{`${note?.text || classLine || p.rosterExempt ? ' \u00b7 ' : ''}${hcp}`}</span>}
               </span>
             )}
           </span>
@@ -577,13 +600,27 @@ class SheetGuard extends Component<{ children: ReactNode }, { failed: boolean }>
   }
 }
 
-function PlayerActionsCrh({ p, onClose, onRemove, onStatus }: { p: ChRosterPlayer | undefined; onClose: () => void; onRemove: (p: ChRosterPlayer) => void; onStatus: (p: ChRosterPlayer) => void }) {
+function PlayerActionsCrh({
+  p,
+  onClose,
+  onRemove,
+  onStatus,
+  extra,
+}: {
+  p: ChRosterPlayer | undefined;
+  onClose: () => void;
+  onRemove: (p: ChRosterPlayer) => void;
+  onStatus: (p: ChRosterPlayer) => void;
+  /** F-05: the roster limit's item for this player, before Mark inactive. */
+  extra?: (p: ChRosterPlayer) => MenuItem[];
+}) {
   const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season`) : null;
   // The shared sheet of actions (ui MenuSheet), not a list drawn here: its rows, its keys and its destructive row are the app's own.
   const items: MenuItem[] = !p
     ? []
     : [
         ...(statsHref ? [{ label: 'View stats', icon: ChartColumn, href: statsHref } satisfies MenuItem] : []),
+        ...(extra?.(p) ?? []),
         { label: p.status === 'active' ? 'Mark inactive' : 'Mark active', icon: p.status === 'active' ? UserX : UserCheck, onSelect: () => onStatus(p) },
         { label: 'Remove from team', icon: UserMinus, danger: true, onSelect: () => onRemove(p) },
       ];

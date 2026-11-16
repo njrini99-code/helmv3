@@ -63,7 +63,8 @@ describe('Qualifier detail reads', () => {
     const { result, waves: depth } = await waves.run(read());
     // The team's zone (the class year, decision 9) is read in the first wave, beside the qualifier: no extra wave. The entries, rounds
     // and round courses need only the address's id and the team, so they start beside it too (MAC-11, production audit 2026-11-15).
-    expect(depth[0]).toEqual(['golf_qualifier_entries', 'golf_qualifier_round_courses', 'golf_qualifiers', 'golf_rounds', 'golf_team_settings']);
+    // The tie rule (F-04) needs only the id as well.
+    expect(depth[0]).toEqual(['golf_qualifier_entries', 'golf_qualifier_round_courses', 'golf_qualifier_rules', 'golf_qualifiers', 'golf_rounds', 'golf_team_settings']);
     // The squad reads by the qualifier's selection state, so it waits for the qualifier.
     expect(depth[1]).toEqual(['golf_qualifier_selections']);
     expect(depth).toHaveLength(2);
@@ -137,19 +138,20 @@ describe('Qualifier form reads', () => {
       'rpc:golf_player_profiles': { data: [entry.player] },
     };
     const { result, waves: depth } = await waves.run(loadQualifierForm({ teamId: 't1', qualifierId: Q }));
-    expect(depth[0]).toEqual(['golf_qualifiers', 'golf_team_members', 'golf_team_settings']);
+    // The tie rule (F-04) and the exemptions (F-06) are read beside the qualifier: no extra wave.
+    expect(depth[0]).toEqual(['golf_qualifier_exemptions', 'golf_qualifier_rules', 'golf_qualifiers', 'golf_team_members', 'golf_team_settings']);
     expect(depth[1]).toEqual(['golf_qualifier_entries', 'golf_qualifier_round_courses', 'golf_qualifier_selections', 'golf_rounds']);
     expect(depth[2]).toEqual(['golf_course_tees']);
     expect(depth).toHaveLength(3);
     expect(result).toMatchObject({ mode: 'edit', playersError: false, coursesError: false });
   });
 
-  it('creating reads the roster and the team’s zone, in the one wave', async () => {
+  it('creating reads the roster, the team’s zone, and whether the rules and exemptions tables are there, in the one wave', async () => {
     const waves = readWaves();
     tables.gate = waves.gate;
     tables.current = { golf_team_members: { data: [{ player: entry.player }] } };
     const { result, waves: depth } = await waves.run(loadQualifierForm({ teamId: 't1', qualifierId: null }));
-    expect(depth).toEqual([['golf_team_members', 'golf_team_settings']]);
+    expect(depth).toEqual([['golf_qualifier_exemptions', 'golf_qualifier_rules', 'golf_team_members', 'golf_team_settings']]);
     expect(result).toMatchObject({ mode: 'create' });
   });
 });

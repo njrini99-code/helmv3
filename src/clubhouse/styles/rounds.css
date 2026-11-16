@@ -646,6 +646,10 @@
 .ch-rd-tools .ch-search {
   min-width: 260px;
 }
+/* The grouping and Export (F-02) sit together at the end of the row. */
+.ch-rd-tools .ch-seg {
+  margin-left: auto;
+}
 
 /* The book */
 .ch-rd-grp {

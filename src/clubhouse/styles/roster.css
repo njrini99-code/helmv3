@@ -3901,3 +3901,28 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     flex: 0 0 min(72%, calc(208px * var(--ch-type-scale, 1)));
   }
 }
+
+/* F-05: the roster limit's line under the head's counts: the count, the over badge and the limit's sheet, on one wrapping row. */
+.ch-rs-limit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ch-rs .ch-rs-limit__over {
+  color: var(--ch-text-secondary);
+}
+.ch-rs-limitf {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ch-rs-limitp .ch-rs-limit,
+.ch-rs-limitp .ch-rs-limit__over {
+  margin: 0;
+  font: var(--ch-type-callout);
+  color: var(--ch-text-secondary);
+}
+.ch-rs-limitp .ch-rs-limit__over {
+  margin-top: 4px;
+}

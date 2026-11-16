@@ -5,6 +5,8 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
 import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
+import { NEW_QUALIFIER_RULES, readQualifierRules, readQualifierRulesMany, STORED_DEFAULT_RULES } from '@/lib/golf/qualifier-rules';
+import { readQualifierExemptions } from '@/lib/golf/qualifier-exemptions';
 import type { QualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/types';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, currentSeasonLabel, fullName, loadTeamZone } from './season';
@@ -211,6 +213,16 @@ export interface ChQFormData {
   squadLocked: boolean;
   /** The highest round number with a score, which the round count can't go below. */
   minRounds: number;
+  /**
+   * The tie rule's store (F-04): `missing` while migration 20261115240000 is held (the rule shown is the default and can't
+   * be changed), `error` when it didn't load (editing it is blocked so a guess can't overwrite it).
+   */
+  rulesState: 'ok' | 'missing' | 'error';
+  /**
+   * Exemptions (F-06): `missing` while migration 20261116100000 is held, `error` when they didn't load, `started` once the
+   * qualifier is under way (exempting is before it starts; a coach's pick gives a place after). Only `ok` can change them.
+   */
+  exemptState: 'ok' | 'missing' | 'error' | 'started';
 }
 
 function entrantOf(p: PlayerCols, now: Date, tz: string): ChQEntrant {
@@ -366,12 +378,15 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
   const ids = qs.map((q) => q.id);
   const playerId = input.role === 'player' ? input.playerId : null;
   // A player's own squad results and the live qualifiers' round courses read beside the standings (wave 7).
-  const [entries, rounds, mySquad, nextCourses] = await Promise.all([
+  const [entries, rounds, mySquad, nextCourses, rulesRead] = await Promise.all([
     ids.length ? readEntries(supabase, ids, input.teamId, 'qualifiers', profilesRead) : { rows: [], error: false },
     ids.length ? readRounds(supabase, ids, 'qualifiers') : { rows: [] as RoundRow[], error: false },
     playerId ? readOwnSelections(supabase, qs, playerId) : null,
     playerId ? readRoundCourses(supabase, qs.filter((q) => parseStatus(q.status) === 'in_progress').map((q) => q.id)) : null,
+    // Each qualifier's tie rule (F-04): a failed read ranks on the default and is logged; the detail says so.
+    readQualifierRulesMany(supabase, ids),
   ]);
+  if (rulesRead.error) chLogServer('qualifiers', 'rules', rulesRead.error, 'qualifiers');
   const standingsError = entries.error || rounds.error;
 
   const tz = await tzRead;
@@ -387,6 +402,8 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
       selectionState: parseSelectionState(q.selection_state),
       selections: null,
       numRounds: q.num_rounds,
+      tieRule: (rulesRead.byId.get(q.id) ?? STORED_DEFAULT_RULES).tieRule,
+      countBest: (rulesRead.byId.get(q.id) ?? STORED_DEFAULT_RULES).countBest,
     });
     const me = input.playerId ? [...board.rows, ...board.unscored].find((r) => r.playerId === input.playerId) : undefined;
     return {
@@ -510,6 +527,9 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
       supabase.from('golf_qualifier_round_courses').select('round_number, course_name, tee_id').eq('qualifier_id', input.qualifierId).order('round_number', { ascending: true }),
     ),
   );
+  // The tie rule (F-04) needs only the id too: it starts here. A table not there yet is the default rule; a failed read is the
+  // default too, said on the page.
+  const rulesStart = readQualifierRules(supabase, input.qualifierId);
   const qRes = await supabase.from('golf_qualifiers').select(`${Q_COLUMNS}, team_id`).eq('id', input.qualifierId).maybeSingle();
   if (qRes.error) {
     chLogServer('qualifiers', 'qualifier', qRes.error, 'qualifiers');
@@ -522,7 +542,7 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
   const status = parseStatus(q.status);
   const selectionState = parseSelectionState(q.selection_state);
   const secondary = readDetailSecondary({ supabase, input, q, roundsRead, coursesRead });
-  const [entries, rounds, selRes, reasonsRes] = await Promise.all([
+  const [entries, rounds, selRes, reasonsRes, rulesRead] = await Promise.all([
     entriesRead,
     roundsRead,
     selectionState === 'selected'
@@ -532,8 +552,10 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
     selectionState === 'selected' && input.role === 'coach'
       ? readQualifierSelectionReasons(supabase, q.id)
       : Promise.resolve({ reasons: new Map<string, string | null>(), error: null }),
+    rulesStart,
   ]);
   if (selRes.error) chLogServer('qualifiers', 'selections', selRes.error, 'qualifiers');
+  if (rulesRead.error) chLogServer('qualifiers', 'rules', rulesRead.error, 'qualifiers');
   // Without the reasons the squad still shows; only the coach's notes are missing.
   if (reasonsRes.error) chLogServer('qualifiers', 'reasons', reasonsRes.error, 'qualifiers');
 
@@ -556,7 +578,18 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
   const board =
     entries.error || rounds.error
       ? null
-      : buildBoard({ entrants, rounds: qRounds, squad: q.selection_slots_total, picks: q.selection_slots_coach_pick, status, selectionState, selections, numRounds: q.num_rounds });
+      : buildBoard({
+          entrants,
+          rounds: qRounds,
+          squad: q.selection_slots_total,
+          picks: q.selection_slots_coach_pick,
+          status,
+          selectionState,
+          selections,
+          numRounds: q.num_rounds,
+          tieRule: rulesRead.rules.tieRule,
+          countBest: rulesRead.rules.countBest,
+        });
 
   return {
     role: input.role,
@@ -657,6 +690,9 @@ const EMPTY_FORM: ChQFormValues = {
   squad: '5',
   picks: '1',
   playerIds: [],
+  tieRule: NEW_QUALIFIER_RULES.tieRule,
+  countBest: NEW_QUALIFIER_RULES.countBest,
+  exempt: [],
 };
 
 /**
@@ -671,10 +707,18 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
   // The class year turns on 1 August in the team's zone (decision 9); read beside the page's other reads.
   const tzRead = loadTeamZone(supabase, input.teamId, 'qualifiers');
   // The roster is the team's, and the qualifier is read by its id: neither waits on the other.
-  const [rosterRes, qRes] = await Promise.all([
+  const [rosterRes, qRes, rulesRead, exemptRead] = await Promise.all([
     supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
     input.qualifierId ? supabase.from('golf_qualifiers').select(`${Q_COLUMNS}, team_id`).eq('id', input.qualifierId).maybeSingle() : Promise.resolve(null),
+    // The tie rule (F-04). Creating, the read of no row still says whether the table is there yet.
+    readQualifierRules(supabase, input.qualifierId ?? '00000000-0000-0000-0000-000000000000'),
+    // Exemptions (F-06), coach-only; the same read of no row says whether the table is there yet.
+    readQualifierExemptions(supabase, input.qualifierId ?? '00000000-0000-0000-0000-000000000000'),
   ]);
+  if (exemptRead.error) chLogServer('qualifiers', 'exemptions', exemptRead.error, 'qualifiers');
+  const exemptStore: ChQFormData['exemptState'] = exemptRead.missing ? 'missing' : exemptRead.error ? 'error' : 'ok';
+  if (rulesRead.error) chLogServer('qualifiers', 'rules', rulesRead.error, 'qualifiers');
+  const rulesState: ChQFormData['rulesState'] = rulesRead.missing ? 'missing' : rulesRead.error ? 'error' : 'ok';
   if (rosterRes.error) chLogServer('qualifiers', 'roster', rosterRes.error, 'qualifiers');
   const roster = ((rosterRes.data ?? []) as Array<{ player: PlayerCols | null }>).map((m) => m.player).filter((p): p is PlayerCols => !!p);
   const byLast = (a: { name: string }, b: { name: string }) => (a.name.split(' ').slice(-1)[0] ?? '').localeCompare(b.name.split(' ').slice(-1)[0] ?? '') || a.name.localeCompare(b.name);
@@ -686,13 +730,16 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
       mode: 'create',
       id: null,
       name: null,
-      initial: { ...EMPTY_FORM, playerIds: players.map((p) => p.id) },
+      // Without the store a new qualifier ranks as every qualifier did before F-04, and the form says so.
+      initial: { ...EMPTY_FORM, playerIds: players.map((p) => p.id), tieRule: rulesState === 'ok' ? NEW_QUALIFIER_RULES.tieRule : STORED_DEFAULT_RULES.tieRule },
       roundCourses: [],
       players,
       playersError: !!rosterRes.error,
       coursesError: false,
       squadLocked: false,
       minRounds: 1,
+      rulesState,
+      exemptState: exemptStore,
     };
   }
 
@@ -751,6 +798,9 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
       squad: String(q.selection_slots_total),
       picks: String(q.selection_slots_coach_pick),
       playerIds: entered.map((p) => p.id),
+      tieRule: rulesRead.rules.tieRule,
+      countBest: rulesRead.rules.countBest,
+      exempt: exemptRead.exemptions,
     },
     roundCourses: courseRows.map((c) => ({
       number: c.round_number,
@@ -768,6 +818,8 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
     // Only a started or finished round holds a slot: the database refuses a lower count only for those (the round-cap trigger), so an
     // abandoned round at slot 3 must not stop the count going to 2 (audit F10). `used` above still holds every status for the locks.
     minRounds: Math.max(1, ...used.filter((u) => u.status === 'in_progress' || u.status === 'completed').map((u) => u.qualifier_round_number ?? 1)),
+    rulesState,
+    exemptState: exemptStore === 'ok' && q.status != null && q.status !== 'upcoming' ? 'started' : exemptStore,
   };
 }
 

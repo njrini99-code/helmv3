@@ -514,13 +514,13 @@ export function generateDocs({ manifests, bridge, map, tombstones, read, exists,
   bm += '\n## Count by page and category\n\n| Page | ' + Array.from({ length: CATEGORY_COUNT }, (_, i) => pad2(i + 1)).join(' | ') + ' | Total |\n| --- |' + ' --- |'.repeat(CATEGORY_COUNT + 1) + '\n';
   for (const m of pages) {
     const mine = bridge.filter((r) => r.page === m.id);
-    bm += `| ${m.id} | ` + Array.from({ length: CATEGORY_COUNT }, (_, i) => mine.filter((r) => r.category === i + 1).length || '').join(' | ') + ` | ${mine.length} |\n`;
+    bm += `| ${m.id} | ` + Array.from({ length: CATEGORY_COUNT }, (_, i) => mine.filter((r) => r.category === i + 1).length || '—').join(' | ') + ` | ${mine.length} |\n`;
   }
   for (const m of pages) {
     const mine = bridge.filter((r) => r.page === m.id);
     if (!mine.length) continue;
     bm += `\n## ${m.id} ${m.name}\n\n| Bridge ID | Code | Category | Name | Status | Meaning |\n| --- | --- | --- | --- | --- | --- |\n`;
-    for (const r of mine) bm += `| ${r.id} | ${r.chCode ?? ''} | ${pad2(r.category)} ${cats[r.category]} | \`${r.name}\` | ${r.status} | ${cell(r.meaning)} |\n`;
+    for (const r of mine) bm += `| ${r.id} | ${r.chCode ?? '—'} | ${pad2(r.category)} ${cats[r.category]} | \`${r.name}\` | ${r.status} | ${cell(r.meaning)} |\n`;
   }
   // A table, as every other list on this map: a reason runs as long as it needs (a table row is not held to the prose
   // line length), and the columns read the same way as the pages' tables above.

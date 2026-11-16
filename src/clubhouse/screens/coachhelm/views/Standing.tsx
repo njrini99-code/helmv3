@@ -171,6 +171,7 @@ function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice 
   const scoring = !s.scoringAverage ? null : s.scoringRounds != null ? `Scoring average ${s.scoringAverage}${scoringWindow(s.scoringRounds, s.rounds, season)}` : season ? null : `Scoring average ${s.scoringAverage}, practice included`;
   const meta = [
     season && s.window.since ? `${s.window.label} from ${s.window.since.replace(' ', '\u00a0')}` : s.window.label,
+    s.window.testRounds ? 'test rounds included' : null,
     s.rounds != null ? `${plural(s.rounds, 'round')}` : null,
     scoring,
     s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null,

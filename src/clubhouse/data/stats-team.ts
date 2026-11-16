@@ -23,7 +23,8 @@ import {
   roundsInFilter,
   seasonOnly,
   sgChange,
-  tourForGender,
+  teamTour,
+  TEAM_TOUR_COLUMNS,
   weekLabel,
   weekOf,
   type ChRoundCache,
@@ -199,7 +200,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const f = input.filter ?? filterFor(input.window);
   const supabase = await createClient();
   const [teamRes, membersRes, tz] = await Promise.all([
-    supabase.from('golf_teams').select('name, gender').eq('id', input.teamId).maybeSingle(),
+    supabase.from('golf_teams').select(`name, ${TEAM_TOUR_COLUMNS}`).eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
       .select('player:golf_players(id, first_name, last_name)')
@@ -216,7 +217,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const players = ((membersRes.data ?? []) as Array<{ player: P | null }>).map((m) => m.player).filter((p): p is P => !!p);
   // CH-4210: without the team's row its tour is unknown, so no benchmark or baseline is claimed
   // (a women's team must never be graded against the men's Tour values; Q-88: the Tour is the only benchmark).
-  const tour = teamRes.error ? null : tourForGender(teamRes.data?.gender);
+  const tour = teamRes.error ? null : teamTour(teamRes.data);
   const benchPromise = tour ? loadTourBenchmarks(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>());
 
   const seasonRead = players.length

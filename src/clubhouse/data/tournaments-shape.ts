@@ -15,7 +15,7 @@
  *     round's par is not nullable in the view and a round with no course still has to read to par.
  */
 import { formatOf, teamEvent, teamRound, type ChTourPlayerScore, type ChTourTeamRound as EngineTeamRound } from '../screens/tournaments/scoring';
-import { placeField, recordFromFinish, type ChTourRecord as EngineRecord } from '../screens/tournaments/standings';
+import { placeField, recordFromFinish, type ChTourRecord as EngineRecord, type ChTourTiebreak } from '../screens/tournaments/standings';
 import type {
   ChTourAvailability,
   ChTourCount,
@@ -194,6 +194,8 @@ const TRUST_OF_ROUND: Record<ChTourRoundStatus, ChTourTrust> = { upcoming: 'upco
 export interface TourLinkedRound {
   total: number | null;
   completed: boolean;
+  /** Submitted (golf_rounds completed): never changed by the event. A full card still in progress is `completed`, not this. */
+  submitted?: boolean;
   holes: boolean;
   shots: boolean;
 }
@@ -210,7 +212,7 @@ export function linkedRoundOf(
   hasHoles: boolean,
 ): TourLinkedRound {
   const full = r.status !== 'completed' && card != null && card.n >= (r.holes_played ?? 18);
-  return { total: full ? card.sum : r.total_score, completed: r.status === 'completed' || full, holes: hasHoles, shots: r.strokes_gained_total != null };
+  return { total: full ? card.sum : r.total_score, completed: r.status === 'completed' || full, submitted: r.status === 'completed', holes: hasHoles, shots: r.strokes_gained_total != null };
 }
 
 export interface TourRawRound extends TourRoundRow {
@@ -383,6 +385,7 @@ export function shapeEvent(raw: TourRawEvent, now: string, today: string = now.s
         source: row?.entered_total != null ? 'coach' : 'card',
         trust: TRUST_OF_ROUND[view.status],
         roundId: row?.round_id ?? null,
+        ...(row?.round_id && linked ? { cardOpen: !linked.submitted } : {}),
         holesKnown: !!linked?.holes && row?.entered_total == null,
         shotData: !!linked?.shots && row?.entered_total == null,
         officialTotal: null,
@@ -492,7 +495,17 @@ export function shapeField(raw: TourRawEvent, teamRounds: readonly ChTourTeamRou
   });
   const line = raw.t.line_kind && raw.t.line_value ? { kind: raw.t.line_kind, label: lineLabel(raw.t.line_kind, raw.t.line_value), places: raw.t.line_value } : null;
   const asOf = teams.map((x) => x.enteredAt).filter((x): x is string => !!x).sort().at(-1) ?? null;
-  return { size: raw.t.field_size ?? teams.length, entered: teams.filter((x) => x.total != null).length, teams, line, asOf };
+  const shared = teams.some((x) => x.place?.startsWith('T') && raw.fieldTeams.find((ft) => ft.id === x.id)?.final_place == null);
+  const tieNote = shared && raw.t.tiebreak !== 'ties_stand' ? fieldTieNote(raw.t.tiebreak) : null;
+  return { size: raw.t.field_size ?? teams.length, entered: teams.filter((x) => x.total != null).length, teams, line, asOf, tieNote };
+}
+
+/** The field's shared-place note for an event whose tiebreak separates ties (F-04); null when ties stand. */
+export function fieldTieNote(tiebreak: ChTourTiebreak): string | null {
+  if (tiebreak === 'ties_stand') return null;
+  return tiebreak === 'ncaa'
+    ? 'Tied teams share a place here until the results are imported or the host’s places are entered: the NCAA tiebreakers need every player’s scores.'
+    : 'Tied teams share a place here until the host’s places are entered: the playoff decides them.';
 }
 
 function fieldRecord(fieldTeams: readonly TourFieldTeamRow[], field: ChTourField): ChTourRecord | null {

@@ -99,10 +99,14 @@ export function windowRef(key: WindowKey, rounds: readonly CountedRound[]): Wind
   };
 }
 
-/** Where the rounds read starts: twelve months before `now` (season.ts `lastTenFloor`). */
-export function readSince(now: Date): string {
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - READ_BACK_MONTHS, now.getUTCDate()));
-  return d.toISOString().slice(0, 10);
+/**
+ * Where the rounds read starts: twelve months before `now`, counted from today on the clock seasons turn on, as season.ts
+ * `lastTenFloor` does (DF-C-22; an evening in the US is already tomorrow in UTC). The default zone is season.ts's
+ * `SEASON_DEFAULT_TZ`.
+ */
+export function readSince(now: Date, timeZone = 'America/New_York'): string {
+  const [y, m, d] = dayIn(now, timeZone).split('-').map(Number);
+  return new Date(Date.UTC(y!, m! - 1 - READ_BACK_MONTHS, d!)).toISOString().slice(0, 10);
 }
 
 /** `now`'s calendar day in the team's zone (YYYY-MM-DD). */

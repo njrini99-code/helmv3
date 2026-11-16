@@ -101,3 +101,12 @@ describe('one strokes-gained source (QA-1)', () => {
     expect(src('data/season.ts')).toContain(".eq('status', 'completed')");
   });
 });
+
+describe('a window carries its trend dates (#2541)', () => {
+  it('oldest first, one per trend point, so a form line spaces its points by date', () => {
+    const w = summarizeWindow(COLE.map(round) as ChRound[]);
+    expect(w.trendDates).toHaveLength(w.trend.length);
+    expect(w.trendDates![0]! <= w.trendDates![w.trendDates!.length - 1]!).toBe(true);
+    expect(w.trendDates!.at(-1)).toBe('2026-10-21');
+  });
+});

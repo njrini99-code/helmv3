@@ -45,6 +45,7 @@ function wrap(node: ReactNode) {
 const fakeWrites = () => ({
   create: vi.fn(),
   saveEdit: vi.fn(),
+  saveRules: vi.fn(async () => ({ success: true })),
   setStatus: vi.fn(async () => ({ success: true })),
   courses: vi.fn(async () => []),
   tees: vi.fn(async () => []),
@@ -299,7 +300,7 @@ describe('P009-A1 standings on hand-hung plates', () => {
       expect(luca.querySelector('.ch-qf-plate')!.textContent).toBe('+8');
       expect(luca.querySelector('.ch-qfm-lb__tot')!.textContent).toMatch(/^\d+$/);
       // The same ranking sentence as desktop's caption (row 75), with decision 10's order.
-      expect(document.querySelector('.ch-qf-cap')!.textContent).toMatch(/^Complete cards rank first, by total to par, then total strokes, then more rounds played; a card a round short sits below them\. Top \d+ qualify on score/);
+      expect(document.querySelector('.ch-qf-cap')!.textContent).toMatch(/^Complete cards rank first, by total to par, then total strokes, then more rounds played; a card a round short sits below them\. Ties: .+ Top \d+ qualify on score/);
       // During play a card a round short gives its pace, not "Missed a round": it may still play the round (decision 10).
       expect(luca.querySelector('.ch-qf-thin')!.textContent).toBe('1 of 3 rounds');
     } finally {

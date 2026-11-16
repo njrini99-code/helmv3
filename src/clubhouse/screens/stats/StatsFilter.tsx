@@ -16,6 +16,7 @@ import {
   ROUND_KINDS,
   roundsWord,
   sameFilter,
+  filterYear,
   withCourses,
   withHoles,
   withPick,
@@ -96,7 +97,7 @@ export function StatsFilter({
   team?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const year = useMemo(() => new Date().getUTCFullYear(), []);
+  const year = useMemo(() => filterYear(), []);
   const chips = filterChips(filter, year);
   const active = isFiltered(filter);
   return (
@@ -261,7 +262,7 @@ function FilterSheet({
   // The other choices as the page would read them (no picks yet): what can be picked among.
   const base = useMemo(() => withRange(withPick(draft, null), badRange ? null : from || null, badRange ? null : to || null), [draft, from, to, badRange]);
   const pickable = useMemo(() => candidates(options.rounds, base, options.seasonStart, (r) => r), [options, base]);
-  const year = new Date().getUTCFullYear();
+  const year = filterYear();
   const capped = options.total > options.rounds.length;
   const earlier = !!from && from < options.seasonStart;
 

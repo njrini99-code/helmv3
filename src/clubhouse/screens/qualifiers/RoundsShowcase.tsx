@@ -114,6 +114,9 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
                   <small className="ch-num">
                     {dayLabel(rd.date)}
                     {isBest && ' · Best round'}
+                    {row.dropped?.includes(rd.id) && (
+                      <span> · Dropped, not counted</span>
+                    )}
                   </small>
                 </span>
                 <span className="ch-qf-prounds__s ch-num">{rd.total ?? '—'}</span>

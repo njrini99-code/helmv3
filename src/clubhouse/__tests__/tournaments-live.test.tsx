@@ -218,6 +218,17 @@ describe('LiveRound', () => {
     expect(draw({ ...fx, field: null }).querySelector('#ch-tour-live-field-t')).toBeNull();
   });
 
+  it('F-04 under an event that separates ties, a shared place says why it is still shared; ties that stand say nothing', async () => {
+    const { fieldTieNote } = await import('../data/tournaments-shape');
+    expect(fieldTieNote('ties_stand')).toBeNull();
+    const note = fieldTieNote('ncaa')!;
+    expect(note).toBe('Tied teams share a place here until the results are imported or the host’s places are entered: the NCAA tiebreakers need every player’s scores.');
+    const c = draw({ ...fx, field: { ...fx.field!, tieNote: note } });
+    expect(c.querySelector('[data-ch-live-field="ties"]')?.textContent).toBe(note);
+    cleanup();
+    expect(draw().querySelector('[data-ch-live-field="ties"]')).toBeNull();
+  });
+
   it('says some live scores did not load (CH-16271) and keeps the lanes', () => {
     const c = draw({ ...fx, errors: { holes: true } });
     expect(c.querySelector('[data-ch-code="CH-16271"]')?.textContent).toContain('Some live scores didn’t load');

@@ -9,6 +9,7 @@ import { canEmailPlayerInvites } from '@/lib/golf/player-invite-email';
 import { relativeAgo } from '../screens/roster/format';
 import { NOTE_TABLE_MISSING_CODES, parseAvailability, type ChAvailability } from './availability';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { readRosterLimit, type RosterExemptReason, type RosterLimit } from '@/lib/golf/roster-limit';
 import {
   classYearLabel,
   displayHandicap,
@@ -31,7 +32,7 @@ import { isoDay } from '../lib/dates';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { playerStrokesGained, roundsForFigures } from './figure-window';
 import { sgWindowOf, type ChSgWindow } from './sg-window';
-import { tourForGender } from './stats-common';
+import { teamTour, TEAM_TOUR_COLUMNS } from './stats-common';
 import { QUIET_DAYS, quietDaysSince, quietOf } from '../screens/home/model';
 
 /**
@@ -95,6 +96,8 @@ export interface ChRosterPlayer {
   availabilityUpdated: string | null;
   /** The coach-only reason (at most 280 characters). Null when none, or when the notes table is not there yet. */
   availabilityCoachNote?: string | null;
+  /** F-05: why this player doesn't count toward the roster limit (a designated student-athlete, or medical). Null or absent: they count. */
+  rosterExempt?: RosterExemptReason | null;
 }
 
 export type { ChAvailability };
@@ -156,6 +159,21 @@ export interface ChRoster {
   sgVs?: string;
   /** The tour that baseline is, so the page can say once why a college team's strokes gained sits below zero (lib/sg.ts `whyNamed`). */
   sgTour?: ChSgTour;
+  /** F-05: the roster limit. Absent in fixtures (no line is drawn). */
+  rosterLimit?: ChRosterLimit;
+}
+
+/**
+ * F-05: the team's roster limit (NCAA DI Bylaw 17.2: 9 in golf) as the Roster header and the lineup builder state it. `from`
+ * says where it came from (saved by a coach, the team's division, or nothing known: off). `missing`: its tables are not
+ * there yet (held migration 20261115250000), so it can't be changed and nobody is marked. `error`: the read failed, so
+ * the division default is shown and who doesn't count is unknown.
+ */
+export interface ChRosterLimit {
+  limit: RosterLimit;
+  from: 'saved' | 'division' | 'default';
+  missing: boolean;
+  error: boolean;
 }
 
 export type ChRosterHelm = { status: 'on'; byPlayer: Record<string, ChReadCount> } | { status: 'off' } | { status: 'failed' };
@@ -206,7 +224,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
   const now = new Date();
 
   const [teamRes, membersRes, requestsRes, tz] = await Promise.all([
-    supabase.from('golf_teams').select('name, join_code, gender').eq('id', input.teamId).maybeSingle(),
+    supabase.from('golf_teams').select(`name, join_code, ${TEAM_TOUR_COLUMNS}`).eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
       .select('status, jersey_number, joined_at, availability, availability_updated_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
@@ -244,7 +262,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
   const ids = members.map((m) => m.player.id);
 
   // Rounds, focus areas, goals, this coach's notes and CoachHelm's counts, in parallel.
-  const [wide, focus, goals, notes, helm, availNotes] = await Promise.all([
+  const [wide, focus, goals, notes, helm, availNotes, limitRead] = await Promise.all([
     ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster', since: lastTenFloor(now) /* the legs' last ten can start before the season */ }) : Promise.resolve({ rounds: [], error: false }),
     // Open focus areas are `active` or `in_progress`, as Fairway's roster counts them (wiring audit, 2026-10-17).
     countBy('golf_player_focus_areas', ids, (chunk) =>
@@ -254,7 +272,9 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
     loadNotes(supabase, input.coachId, ids),
     loadHelm(supabase, input, ids),
     loadAvailabilityNotes(supabase, input.teamId),
+    readRosterLimit(supabase, input.teamId, { withExemptions: true }),
   ]);
+  if (limitRead.error) chLogServer('roster', 'rosterLimit', 'roster limit read failed', 'teams');
   // The season turns in the team's zone (owner decision 9); strokes gained reads the last ten across it (QA-1).
   const seasonFrom = seasonStartDate(now, tz);
   const season = { ...wide, rounds: wide.rounds.filter((r) => r.round_date.slice(0, 10) >= seasonFrom) };
@@ -320,6 +340,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
       availability,
       availabilityUpdated: m.availability_updated_at,
       availabilityCoachNote: availNotes.notes.get(p.id) ?? null,
+      rosterExempt: limitRead.exemptions[p.id]?.reason ?? null,
     };
   });
 
@@ -369,8 +390,9 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
     requestsError: !requestsRes.success,
     helm,
     clock: { tz, day: isoDay(now, tz) },
-    sgVs: sgBaseline(tourForGender(teamRes.data?.gender)).vs,
-    sgTour: tourForGender(teamRes.data?.gender),
+    sgVs: sgBaseline(teamTour(teamRes.data)).vs,
+    sgTour: teamTour(teamRes.data),
+    rosterLimit: { limit: limitRead.limit, from: limitRead.from, missing: limitRead.missing, error: limitRead.error },
   };
 }
 

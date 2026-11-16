@@ -24,13 +24,14 @@ import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { RankSlot, useRankSlideArmed } from './RankSlot';
-import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
+import { Courses, LiveChip, Pairings, Selections, StaleStandings } from './QualifierSections';
 import { NinesSkeleton, Streamed } from './streamed';
 import { SerifText } from '../../ui/SerifText';
 import { createOpenRow, PlayerRounds as ShowcaseRounds } from './RoundsShowcase';
 import { LiveOnCourse } from './LiveOnCourse';
 import type { ChQOnCourse } from './on-course';
 import { RulesText } from './RulesText';
+import { ExportStandings } from './ExportStandings';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -198,6 +199,12 @@ export function QualifierDetailPhone({
         <Board data={data} status={status} stale={stale} feed={feed} onPeek={setPeek} sheetOpen={!!peeked || actions} />
       </SectionBoundary>
 
+      {coach && data.board && (
+        <SectionBoundary surface="qualifiers.pairings" label="Next round groups" code="CH-09283">
+          <Pairings board={data.board} numRounds={data.numRounds} status={status} />
+        </SectionBoundary>
+      )}
+
       <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
         <Courses data={data} />
       </SectionBoundary>
@@ -223,6 +230,8 @@ export function QualifierDetailPhone({
           <Button leftIcon={Pencil} href={`${LIST}/${data.id}/edit`}>
             Edit details
           </Button>
+          {/* F-02: the standings as a spreadsheet, through the share sheet. */}
+          {b && b.rows.length > 0 && <ExportStandings name={data.name} board={b} numRounds={data.numRounds} label="Export standings" variant="secondary" size="md" />}
           {(status === 'in_progress' || closeDue) && (
             <Button
               leftIcon={Lock}
@@ -442,7 +451,7 @@ function Board({
         ))}
       </ol>
       <p className="ch-qf-cap">
-        {boardCaption(b, data.picks, data.numRounds, status)}
+        {boardCaption(b, data.picks, data.numRounds, status, coach)}
       </p>
     </section>
   );

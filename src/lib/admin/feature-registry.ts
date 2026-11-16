@@ -217,6 +217,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/v3/qualifying.ts': 'ALL',
+      'src/app/golf/actions/qualifier-rules.ts': 'ALL',
       'src/app/golf/actions/qualifier-actions.ts': [
         'createGolfQualifier',
         'getQualifierRoundCourses',
@@ -284,6 +285,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'getExpandedEvents',
       ],
       'src/app/golf/actions/event-documents.ts': 'ALL',
+      'src/app/golf/actions/hours.ts': 'ALL',
     },
     primaryTable: 'golf_events',
     heartbeatTable: 'golf_events',
