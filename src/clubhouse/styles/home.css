@@ -272,6 +272,20 @@
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
+/* The coach's today rows open their event (the player's rows stay plain text). */
+.ch-h-agenda__open {
+  display: block;
+  text-decoration: none;
+  border-radius: var(--ch-radius-sm);
+}
+.ch-h-agenda__open:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ch-h-agenda__open:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
 .ch-h-agenda__row.is-event .ch-h-agenda__a {
   color: var(--ch-green-700);
 }

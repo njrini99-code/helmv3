@@ -32,6 +32,9 @@ Held items:     none
   Best and toughest day count only days with two rounds or more.
 - The loading skeleton no longer swaps in the coach-only lane shape: coaches
   wait on the same page shape as players.
+- Desktop: the coach's today rows in This week open their event (Calendar, or
+  Team Hub's Travel for a trip), as the coach's old Today list did; the
+  player's rows stay text.
 - Team scoring moves a value under its dot where the line comes down into that
   dot (`ScoreChart` `dodge`, coach only): on staging the 79.0 and 80.0 days sat
   on the line. Player Home's chart is unchanged.
