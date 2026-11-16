@@ -134,7 +134,7 @@ const DATA = [
   ['--ch-chart-gain', 'Gain text and signed numbers (S2.5)', ['--ch-card-bg']],
   ['--ch-chart-loss', 'Loss text and signed numbers (S2.5)', ['--ch-card-bg']],
   ['--ch-chart-gain-fill', 'Gain bars and marks', ['--ch-card-bg', '--ch-chart-track']],
-  ['--ch-chart-loss-fill', 'Loss bars and marks; the track ring carries 3:1 (S2.6)', ['--ch-card-bg', '--ch-chart-track']],
+  ['--ch-chart-loss-fill', 'Loss bars and marks; 3:1 on the card and on the track itself', ['--ch-card-bg', '--ch-chart-track']],
   ['--ch-chart-flat', 'Steady or within-noise marks, drawn in ink', ['--ch-card-bg', '--ch-chart-track']],
   ['--ch-chart-line', 'The series line, 2px, one dot on the newest round (S2.4)', ['--ch-card-bg']],
   ['--ch-chart-zero', 'Mean and zero rules, 1px dashed', ['--ch-card-bg']],

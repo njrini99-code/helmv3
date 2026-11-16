@@ -1103,6 +1103,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-chart-mark-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |

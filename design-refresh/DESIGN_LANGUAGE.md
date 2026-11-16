@@ -97,7 +97,7 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 | `--ch-chart-gain` | `#0f5233` | `#a9e0c0` | Gain text and signed numbers (S2.5) | 8.62 on card-bg | 10.24 on card-bg |
 | `--ch-chart-loss` | `#7a4500` | `#f5c982` | Loss text and signed numbers (S2.5) | 7.32 on card-bg | 9.84 on card-bg |
 | `--ch-chart-gain-fill` | `#0b3a25` | `#c2f2d3` | Gain bars and marks | 11.92 on card-bg, 9.42 on chart-track | 12.29 on card-bg, 10.58 on chart-track |
-| `--ch-chart-loss-fill` | `#c58012` | `#b36c10` | Loss bars and marks; the track ring carries 3:1 (S2.6) | 3.03 on card-bg, 2.40 on chart-track | 3.68 on card-bg, 3.17 on chart-track |
+| `--ch-chart-loss-fill` | `#b06e0e` | `#b36c10` | Loss bars and marks; 3:1 on the card and on the track itself | 3.86 on card-bg, 3.05 on chart-track | 3.68 on card-bg, 3.17 on chart-track |
 | `--ch-chart-flat` | `#6b675f` | `#a39d90` | Steady or within-noise marks, drawn in ink | 5.26 on card-bg, 4.16 on chart-track | 5.65 on card-bg, 4.86 on chart-track |
 | `--ch-chart-line` | `#2d6a47` | `#6db488` | The series line, 2px, one dot on the newest round (S2.4) | 6.01 on card-bg | 6.19 on card-bg |
 | `--ch-chart-zero` | `#5f5c55` | `#ada697` | Mean and zero rules, 1px dashed | 6.23 on card-bg | 6.30 on card-bg |

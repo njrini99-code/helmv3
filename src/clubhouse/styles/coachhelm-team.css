@@ -331,6 +331,8 @@
   fill:var(--ch-feature-bg);
 }
 .ch-htb .scn.early circle {
+  /* Hollow on the stage, so the dashed ring carries the coin: the full feature ink, not the solid coin's 55% rim. */
+  stroke:var(--ch-feature-ink);
   stroke-dasharray:3 2.4;
 }
 .ch-htb .scn.early text {
@@ -449,11 +451,13 @@
 .ch-htb .hole .stn {
   transition:transform var(--ch-dur-reveal) var(--ch-ease-spring),opacity var(--ch-dur-base) var(--ch-ease);
 }
+/* Off the hole, a station and a coin step back but stay marks: .6 holds a station core at 3.2:1 and .65 a coin's ink
+   ring at 5.1:1 on the stage's lightest green (charts contrast pass, 16 Nov). */
 .ch-htb .hole.offh .stn {
-  opacity:.38;
+  opacity:.6;
 }
 .ch-htb .hole.offh .scn {
-  opacity:.5;
+  opacity:.65;
   transition:opacity var(--ch-dur-base) var(--ch-ease);
 }
 .ch-htb .stchips button[aria-pressed="true"] {
