@@ -2311,11 +2311,12 @@
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
-/* Both nines in one shallow recess, a hairline between them: the scorecard reads as one instrument, not two boxes. */
+/* Both nines in one shallow recess, a hairline between them: the scorecard reads as one instrument, not two boxes. The hole
+   labels and the total keep 12 off the recess's rounded edge, as every row keeps off its card's (CRH-1: they sat at 8). */
 .ch-ph-nines {
   display: flex;
   flex-direction: column;
-  padding: 2px 4px;
+  padding: 2px 8px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-well-bg-flat);
   box-shadow: var(--ch-well-soft-shadow);
