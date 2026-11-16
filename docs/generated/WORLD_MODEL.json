@@ -3750,7 +3750,9 @@
         "id": "helm_private",
         "definedIn": [
           "supabase/migrations/20261031140000_golf_rounds_tee_id_backfill.sql",
-          "supabase/migrations/20261114090100_round_totals_follow_holes.sql"
+          "supabase/migrations/20261114090100_round_totals_follow_holes.sql",
+          "supabase/migrations/20261115200000_golf_sand_save_tour_definition.sql",
+          "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
         ]
       }
     ],
@@ -4104,8 +4106,20 @@
         "definedIn": "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
       },
       {
+        "id": "golf_hole_gir",
+        "definedIn": "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
+      },
+      {
+        "id": "golf_hole_shot_to_green",
+        "definedIn": "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
+      },
+      {
         "id": "golf_holes_recompute_round_totals_fn",
         "definedIn": "supabase/migrations/20261023152000_round_save_one_totals_write.sql"
+      },
+      {
+        "id": "golf_holes_set_gir_fn",
+        "definedIn": "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
       },
       {
         "id": "golf_import_player_classes",
@@ -4354,6 +4368,10 @@
       {
         "id": "golf_shot_detail_round_ids",
         "definedIn": "supabase/migrations/20261023110000_golf_shot_detail_select_set_based.sql"
+      },
+      {
+        "id": "golf_shots_refresh_hole_gir_fn",
+        "definedIn": "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
       },
       {
         "id": "golf_team_by_join_code",
@@ -4713,7 +4731,7 @@
       },
       {
         "id": "recompute_golf_round_totals",
-        "definedIn": "supabase/migrations/20261017110000_golf_round_totals_null_putts.sql"
+        "definedIn": "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
       },
       {
         "id": "recompute_team_sg",
@@ -4825,7 +4843,7 @@
       },
       {
         "id": "sg_expected_strokes",
-        "definedIn": "supabase/migrations/20261023170000_golf_sg_other_lie_curve.sql"
+        "definedIn": "supabase/migrations/20261115220000_golf_sg_scale_off_green.sql"
       },
       {
         "id": "sg_normalize_lie",
@@ -25812,6 +25830,21 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20261024150000_golf_standing_refresh_queue.sql"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
+      "target": "helm_private",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261115200000_golf_sand_save_tour_definition.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
         }
       ]
     },

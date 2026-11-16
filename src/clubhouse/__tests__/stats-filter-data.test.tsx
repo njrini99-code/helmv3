@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * The round filter on the server: what the loaders read and count under it (team and profile), and how the route turns the
@@ -27,6 +27,13 @@ import { filterFor, PICK_LIST_MAX, withPick, withRange, withTypes, type ChFilter
 import { resolveClubhouseTeam } from '../routes/team';
 import { ClubhouseStatsRoute } from '../routes/stats';
 import { PREVIEW_PLAYER } from '../preview/fixtures-stats';
+import { sgPolicy } from '../data/stats-sg-mix';
+
+// These tests pin figures and reads written for every stored strokes gained figure, so they run under `include`. The shipped policy
+// (`exclude`, SC-07) and what it changes are pinned in src/clubhouse/data/__tests__/sg-mix.test.ts.
+const SG_POLICY_SHIPPED = sgPolicy.estimated;
+beforeEach(() => { sgPolicy.estimated = 'include'; });
+afterEach(() => { sgPolicy.estimated = SG_POLICY_SHIPPED; });
 
 type Filters = Array<[string, unknown[]]>;
 type Row = Record<string, unknown> & { id: string; player_id: string; round_date: string };

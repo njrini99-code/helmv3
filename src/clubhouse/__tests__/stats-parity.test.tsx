@@ -338,7 +338,10 @@ describe('putts by distance', () => {
     expect(sum(['15–20 ft', '20–25 ft'], 'attempts')).toBe(six.find((b) => b.label === '15–25 ft')!.attempts);
     expect(sum(['25–30 ft', '30–35 ft', '35+ ft'], 'made')).toBe(six.find((b) => b.label === '25+ ft')!.made);
     expect(nine.reduce((a, b) => a + b.attempts, 0)).toBe(rows.length);
-    expect(nine.map((b) => b.bench)).toEqual([null, 90.5, null, null, 15.4, 15.4, 5.5, 5.5, 5.5]);
+    // Each band's Tour rate is weighted by its own putts (SC-08): 3–5 ft holds a 4- and a 5-footer, (91.4 + 80.7) / 2, not the
+    // row's plain 3-4-5 mean of 90.5; 15–20 ft reads the Tour's 15-20 ft rate and 20–25 ft its 20-25 ft rate, not 15.4 for both.
+    expect(nine.map((b) => b.bench)).toEqual([null, (91.4 + 80.7) / 2, null, null, 18.3, 12.5, 5.5, 5.5, 5.5]);
+    expect(six.find((b) => b.label === '15–25 ft')!.bench).toBeCloseTo((2 * 18.3 + 2 * 12.5) / 4, 6);
   });
 });
 
@@ -463,8 +466,10 @@ describe('the profile’s extra figures', () => {
     tables.current = loaderTables(ten, { golf_shots: (f) => (f.some(([k, a]) => k === 'eq' && a[0] === 'shot_type') ? { data: [] } : { data: puttRows }), golf_round_stats_cache: { data: cache } });
     const coach = (await load('coach'))!;
     const row = (p: ChPlayerProfile, l: string) => p.comparisons.find((c) => c.label === l)!;
-    // 7 of 10 from 3–5 feet against the Tour's 90.5; 5–10 feet has 9 putts, under the floor: no value, never a rate of 9.
-    expect(row(coach, 'Make 3–5 ft')).toMatchObject({ you: 70, bench: 90.5, unit: '%' });
+    // 7 of 10 from 4 feet against the Tour's 4-ft rate, 91.4 (SC-08: weighted by the putts, not the band's plain 90.5);
+    // 5–10 feet has 9 putts, under the floor: no value, never a rate of 9.
+    expect(row(coach, 'Make 3–5 ft')).toMatchObject({ you: 70, unit: '%' });
+    expect(row(coach, 'Make 3–5 ft').bench).toBeCloseTo(91.4, 6);
     expect(row(coach, 'Make 5–10 ft').you).toBeNull();
     // Two doubles or worse in a round of 18 holes: 11.1%, and the same in the team's rounds.
     expect(row(coach, 'Big numbers')).toMatchObject({ you: (2 / 18) * 100, team: (2 / 18) * 100, bench: 2 });

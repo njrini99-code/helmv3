@@ -23,6 +23,7 @@ import {
   AROUND_GREEN_THRESHOLD_YARDS,
 } from '../golf-stats-calculator-shots';
 import type { GolfStats, RawShot, HoleInfo } from '../golf-stats-calculator-shots';
+import { sgBaselineScale } from '@/lib/golf/sg-benchmarks';
 import {
   makeRawShot,
   makeHoleInfo,
@@ -403,19 +404,19 @@ describe('getExpectedStrokes', () => {
   });
 
   it('uses rough benchmark for rough lie', () => {
-    // 150 yards rough: interp 100=3.02, 200=3.42 → 3.22 (Broadie canonical).
-    expect(getExpectedStrokes('rough', 150)).toBeCloseTo(3.22, 2);
+    // 150 yards rough: Table B.1 rows 140=3.15, 160=3.23 → 3.19 (SC-03).
+    expect(getExpectedStrokes('rough', 150)).toBeCloseTo(3.19, 2);
   });
 
   it('uses sand benchmark for sand lie', () => {
-    // 30 yards sand: interp 20=2.53, 100=3.23 → 2.6175 (Broadie canonical).
-    expect(getExpectedStrokes('sand', 30)).toBeCloseTo(2.62, 2);
+    // 30 yards sand: the Table B.1 row itself, 2.66 (SC-03).
+    expect(getExpectedStrokes('sand', 30)).toBeCloseTo(2.66, 2);
   });
 
   it('uses the continuous tee curve for short tee shots (DC-SG-3)', () => {
-    // Tee at 150yd reads its own continuous tee anchor (2.95), no longer
-    // re-routed to the fairway table.
-    expect(getExpectedStrokes('tee', 150)).toBeCloseTo(2.95, 5);
+    // Tee at 150yd reads its own tee curve (Table B.1 rows 140=2.97,
+    // 160=2.99 → 2.98), no longer re-routed to the fairway table.
+    expect(getExpectedStrokes('tee', 150)).toBeCloseTo(2.98, 5);
   });
 
   it('uses tee benchmark for 400+ yard shots', () => {
@@ -433,18 +434,19 @@ describe('getExpectedStrokes', () => {
   });
 
   it("prices an 'other' lie like rough inside 50 yd and between rough and recovery from 100 yd", () => {
-    // Same anchors as sg_expected_strokes('other', …) in 20261023170000.
+    // The owner's rule of 20261023170000 on the Table B.1 rough and recovery
+    // rows (20261115210000, SC-03).
     // 50 yd and in: the rough curve (to the 0.001 the 50 yd anchor is kept to).
     for (const yards of [5, 10, 20, 25, 30, 40, 45, 50]) {
       expect(getExpectedStrokes('other', yards)).toBeCloseTo(getExpectedStrokes('rough', yards), 3);
     }
     // 100 yd and out: halfway between rough and Broadie's recovery curve.
     expect(getExpectedStrokes('other', 100)).toBeCloseTo(3.41, 5);
-    expect(getExpectedStrokes('other', 200)).toBeCloseTo(3.65, 5);
-    expect(getExpectedStrokes('other', 150)).toBeCloseTo((3.49 + 3.54) / 2, 5);
-    expect(getExpectedStrokes('other', 600)).toBeCloseTo(5.19, 5);
+    expect(getExpectedStrokes('other', 200)).toBeCloseTo(3.645, 5);
+    expect(getExpectedStrokes('other', 150)).toBeCloseTo((3.475 + 3.52) / 2, 5);
+    expect(getExpectedStrokes('other', 600)).toBeCloseTo(5.475, 5);
     // 50 to 100 yd: a straight blend, so no jump at either end.
-    expect(getExpectedStrokes('other', 75)).toBeCloseTo((3.06 + 3.19) / 2, 5);
+    expect(getExpectedStrokes('other', 75)).toBeCloseTo((3.112 + 3.224) / 2, 5);
     for (const yards of [55, 65, 75, 85, 95]) {
       expect(getExpectedStrokes('other', yards)).toBeGreaterThan(getExpectedStrokes('rough', yards));
       expect(getExpectedStrokes('other', yards)).toBeLessThan(getExpectedStrokes('recovery', yards));
@@ -468,7 +470,7 @@ describe('getExpectedStrokes', () => {
   });
 
   it('scales the other curve with the team baseline like every lie', () => {
-    expect(getExpectedStrokes('other', 200, undefined, 1.1)).toBeCloseTo(3.65 * 1.1, 5);
+    expect(getExpectedStrokes('other', 200, undefined, 1.1)).toBeCloseTo(3.645 * 1.1, 5);
   });
 });
 
@@ -1134,8 +1136,31 @@ describe('calculateStrokesGainedForShot edge cases', () => {
     });
     const sg = calculateStrokesGainedForShot(shot);
     expect(sg).not.toBeNull();
-    // SG = expected(30yd sand) - (1 + expected(10ft green)) = 2.60 - (1 + 1.61) = -0.01
-    expect(sg).toBeCloseTo(-0.01, 1);
+    // SG = expected(30yd sand) - (1 + expected(10ft green)) = 2.66 - (1 + 1.61) = 0.05
+    expect(sg).toBeCloseTo(0.05, 2);
+  });
+
+  it('a holed 1-foot putt gains 0.00 on the Tour baseline and on the women\'s estimate (SC-04)', () => {
+    const shot = makeRawShot({
+      lie_before: 'green', distance_to_hole_before: 1, distance_unit_before: 'feet',
+      result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+    });
+    for (const key of ['pga_tour', 'womens'] as const) {
+      expect(calculateStrokesGainedForShot(shot, sgBaselineScale(key)), key).toBeCloseTo(0, 6);
+    }
+  });
+
+  it('the women\'s estimate scales the off-green curve and leaves putts on the Tour putting curve (SC-04)', () => {
+    const womens = sgBaselineScale('womens');
+    expect(womens).toBe(1.083);
+    expect(getExpectedStrokes('fairway', 100, undefined, womens)).toBeCloseTo(2.80 * 1.083, 6);
+    expect(getExpectedStrokes('green', 0, 10, womens)).toBeCloseTo(1.61, 6);
+    // An approach to 10 ft from 150 yd in the fairway: 1.083 × 2.945 − 1 − 1.61.
+    const approach = makeRawShot({
+      lie_before: 'fairway', distance_to_hole_before: 150, distance_unit_before: 'yards',
+      result: 'green', distance_to_hole_after: 10, distance_unit_after: 'feet',
+    });
+    expect(calculateStrokesGainedForShot(approach, womens)).toBeCloseTo(1.083 * 2.945 - 1 - 1.61, 6);
   });
 });
 

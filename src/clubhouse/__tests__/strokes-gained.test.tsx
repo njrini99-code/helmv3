@@ -47,6 +47,13 @@ import './dialog-polyfill';
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_ROUND } from '../preview/fixtures-round-review';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 import { shotsAnswer } from '../data/__tests__/sg-shots-fake';
+import { sgPolicy } from '../data/stats-sg-mix';
+
+// These tests pin figures and reads written for every stored strokes gained figure, so they run under `include`. The shipped policy
+// (`exclude`, SC-07) and what it changes are pinned in src/clubhouse/data/__tests__/sg-mix.test.ts.
+const SG_POLICY_SHIPPED = sgPolicy.estimated;
+beforeEach(() => { sgPolicy.estimated = 'include'; });
+afterEach(() => { sgPolicy.estimated = SG_POLICY_SHIPPED; });
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const ROOT = { className: 'ch-root', 'data-ui': 'clubhouse' } as const;
@@ -920,9 +927,10 @@ describe('the Tour is the only benchmark (Q-88)', () => {
         pga: [{ metric_id: 'gir_pct', pga_tour_value: '66' }, { metric_id: 'scrambling_pct_sand', pga_tour_value: '50' }],
         lpga: [{ metric_id: 'gir_pct', pga_tour_value: '70' }, { metric_id: 'scrambling_pct_rough', pga_tour_value: null }],
       };
-      // The fake ignores a select's columns, so it returns only the ones the loader asked for.
+      // The fake ignores a select's columns, so it returns only the ones the loader asked for (every one for `*`, which the
+      // shared Tour read uses so it never names a column that may not exist yet, SC-08).
       const cols = String(f.find(([k]) => k === 'select')?.[1][0] ?? '');
-      return { data: (rows[String(tour)] ?? []).map((r) => Object.fromEntries(Object.entries(r as Record<string, unknown>).filter(([k]) => cols.includes(k)))) };
+      return { data: (rows[String(tour)] ?? []).map((r) => (cols === '*' ? r : Object.fromEntries(Object.entries(r as Record<string, unknown>).filter(([k]) => cols.includes(k))))) };
     };
     const tablesFor = (gender: string): import('./supabase-fake').ChFakeTables => ({
       golf_teams: { data: { name: 'Varsity', gender } },

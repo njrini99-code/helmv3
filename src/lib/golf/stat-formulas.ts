@@ -11,7 +11,12 @@
  *  - fairway denominator = par-4/5 holes with a RECORDED fairway result
  *    (recompute_golf_round_totals: par>=4 AND fairway_hit IS NOT NULL).
  *  - sand-save denominator = greenside-bunker visits (sand_save IS NOT NULL); do
- *    NOT gate on the `gir` column (mislabeled on real bunker holes).
+ *    NOT gate on the `gir` column (mislabeled on real bunker holes). A save is
+ *    the PGA Tour's definition (SC-02): out of the greenside bunker and holed in
+ *    two strokes or fewer, the bunker shot included, whatever the score (a bogey
+ *    out in two after a penalty counts). Par or better is NOT part of it; a
+ *    "sand par save" would be a separate metric with no Tour grade, never this
+ *    column. golf_pga_standards' 50% benchmark is on the Tour definition.
  *  - putts/round + penalties/round are 18-hole-normalized by total holes played.
  *  - scoring average uses 18-hole rounds only (matches the cache).
  *

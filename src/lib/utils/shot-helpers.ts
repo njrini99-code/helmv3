@@ -238,7 +238,13 @@ export function calculateHoleStats(shots: ShotRecord[], hole: StatsHole): HoleSt
   const scrambleAttempt = !greenInRegulation && greenHitShot !== undefined;
   const scrambleMade = scrambleAttempt && score <= hole.par;
 
-  // SAND SAVE
+  // SAND SAVE, on the PGA Tour's definition (SC-02): out of a greenside
+  // bunker and holed in two strokes or fewer, the bunker shot included,
+  // WHATEVER THE SCORE. A bogey out in two after a penalty is a save; par or
+  // better is not part of it. The Tour's sand-save % and the 50% benchmark in
+  // golf_pga_standards use this definition, so the old extra `score <= par`
+  // read low against them. The same rule backfills golf_holes.sand_save
+  // (supabase/migrations/20261115200000_golf_sand_save_tour_definition.sql).
   let sandSaveAttempt = false;
   let sandSaveMade = false;
   // Sand save only applies to greenside bunker shots, not fairway bunkers.
@@ -250,7 +256,7 @@ export function calculateHoleStats(shots: ShotRecord[], hole: StatsHole): HoleSt
     sandSaveAttempt = true;
     const sandShotIndex = nonPenaltyShots.findIndex(s => s === sandShots[0]);
     const shotsAfterSand = nonPenaltyShots.length - sandShotIndex;
-    sandSaveMade = shotsAfterSand <= 2 && score <= hole.par;
+    sandSaveMade = shotsAfterSand <= 2;
   }
 
   // PUTTING STATS

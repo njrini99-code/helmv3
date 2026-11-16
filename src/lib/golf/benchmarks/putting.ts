@@ -160,3 +160,45 @@ export function buildPuttingBenchmarkRows(
   }
   return rows;
 }
+
+/**
+ * The per-distance make rates three PGA rows were averaged from, as each row's
+ * own `source` text gives them (golf_pga_standards season 2024, tour=pga):
+ * 3-5 ft is the plain mean of 3, 4 and 5 ft, 10-15 ft of 10 ft and 11-15 ft,
+ * 15-25 ft of 15-20 ft and 20-25 ft. Each point covers distances up to `upTo`
+ * feet (the nearest foot for the single-foot rates). 5-10 ft and 25+ ft cite no
+ * breakdown, and the LPGA rows cite none, so those bands keep their row's value.
+ */
+const TOUR_PUTT_RATE_POINTS: Readonly<Record<string, readonly { upTo: number; rate: number }[]>> = {
+  putts_made_3_5ft_pct: [
+    { upTo: 3.5, rate: 99.4 },
+    { upTo: 4.5, rate: 91.4 },
+    { upTo: Infinity, rate: 80.7 },
+  ],
+  putts_made_10_15ft_pct: [
+    { upTo: 10.5, rate: 41.3 },
+    { upTo: Infinity, rate: 30.1 },
+  ],
+  putts_made_15_25ft_pct: [
+    { upTo: 20, rate: 18.3 },
+    { upTo: Infinity, rate: 12.5 },
+  ],
+};
+
+/**
+ * The Tour's make rate for a band, weighted by where these putts were from
+ * (SC-08): each putt counts the Tour's rate at its own distance, so a band of
+ * 4- and 5-footers is not graded against a plain mean that includes 3 ft.
+ * `rowValue` is the band's live `pga_tour_value`. The points are used only
+ * while that value is still their plain mean (the row they were cited from);
+ * an LPGA row, a row updated since, a band with no breakdown or a band with no
+ * putts answers `rowValue` unchanged.
+ */
+export function puttBandTourRate(metricId: string, rowValue: number, feet: readonly number[]): number {
+  const points = TOUR_PUTT_RATE_POINTS[metricId];
+  if (!points || feet.length === 0) return rowValue;
+  const mean = points.reduce((sum, p) => sum + p.rate, 0) / points.length;
+  if (Math.abs(mean - rowValue) > 0.05) return rowValue;
+  const rateAt = (d: number) => (points.find((p) => d <= p.upTo) ?? points[points.length - 1]!).rate;
+  return feet.reduce((sum, d) => sum + rateAt(d), 0) / feet.length;
+}
