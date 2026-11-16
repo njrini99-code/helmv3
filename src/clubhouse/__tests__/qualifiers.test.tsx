@@ -1386,7 +1386,7 @@ describe('Qualifiers · the courses and the cards stream behind the standings (o
       const { core, secondary } = split(detail());
       const later = deferred<ChQDetailSecondary>();
       await pending(page(core, later.promise));
-      await user.click(screen.getByRole('button', { name: /^Sofia Alvarez, 1/ }));
+      await user.click(screen.getByRole('button', { name: /^1, ?Sofia Alvarez,/ }));
       const dialog = await screen.findByRole('dialog', { name: 'Sofia Alvarez' });
       expect(within(dialog).getByText('Finley GC', { exact: false })).toBeTruthy();
       expect(within(dialog).queryByRole('table')).toBeNull();
@@ -2837,7 +2837,7 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
   it('board 03 CH-09701: a row opens that player’s rounds, the latest played round chosen, with Message and Stats', async () => {
     const user = userEvent.setup();
     wrap(<QualifierDetail data={detail('live')} writes={fakeWrites()} live={false} />);
-    await user.click(screen.getByRole('button', { name: /^Sofia Alvarez, 1/ }));
+    await user.click(screen.getByRole('button', { name: /^1, ?Sofia Alvarez,/ }));
     expect(hapticSpy).toHaveBeenCalledWith('select');
     const dialog = await screen.findByRole('dialog', { name: 'Sofia Alvarez' });
     const chips = within(dialog).getAllByRole('button', { name: /^R\d/ });

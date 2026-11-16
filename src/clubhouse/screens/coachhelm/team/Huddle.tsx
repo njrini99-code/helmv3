@@ -103,7 +103,8 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
               data-year={coinYear(p.classYear) ?? undefined}
               role="button"
               tabIndex={0}
-              aria-label={`${p.name}: striking ${formatSigned(at.x)}, scoring ${formatSigned(at.y)}`}
+              // SWP-01 (W scan, 16 Nov): the dot draws initials, so its name starts with them (WCAG 2.5.3, Voice Control).
+              aria-label={`${initials(p.name)}, ${p.name}: striking ${formatSigned(at.x)}, scoring ${formatSigned(at.y)}`}
               onClick={() => onPlayer(p.id)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
