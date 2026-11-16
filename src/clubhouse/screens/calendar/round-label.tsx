@@ -32,7 +32,8 @@ export const ROUND_PILL_MIN_PX = 28;
 
 /**
  * A chip's or bar's title (month, the week's all-day lane): the name, then ` R1` after it, kept whole while the name
- * ellipsizes. No pill at this size (P-5 4.9).
+ * ellipsizes. No pill at this size (P-5 4.9). The control is named by its content (SWP-03): the name, then the caller's
+ * hidden words, which say ", round 1 of 3" (`spokenRound`), so the drawn `R1` is for the eye, as the week block's pill is.
  */
 export function RoundTitle({ e, title }: { e: Pick<ChCalEvent, 'round' | 'cancelled'>; title: string }) {
   const rl = roundLabel(e, title);
@@ -40,7 +41,7 @@ export function RoundTitle({ e, title }: { e: Pick<ChCalEvent, 'round' | 'cancel
   return (
     <>
       <span>{rl.name}</span>
-      <span className="ch-rn ch-num">{`R${rl.round}`}</span>
+      <span className="ch-rn ch-num" aria-hidden="true">{`R${rl.round}`}</span>
     </>
   );
 }

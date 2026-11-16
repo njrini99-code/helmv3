@@ -43,6 +43,7 @@ import { isPastEvent } from '../screens/calendar/views';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR, PREVIEW_CALENDAR_PLAYER } from '../preview/fixtures-calendar';
 import './dialog-polyfill';
+import { accessibleName } from './label-in-name';
 
 function wrap(data: ChCalendarData, props: { initialEvent?: string; initialNew?: boolean } = {}) {
   return render(
@@ -91,10 +92,10 @@ describe.each([
     const { container } = wrap(data);
     const past = [...container.querySelectorAll('.ch-ev.is-past')];
     expect(past.length).toBeGreaterThan(0);
-    for (const b of past) expect(b.getAttribute('aria-label')).toMatch(/, ended/);
+    for (const b of past) expect(accessibleName(b)).toMatch(/, ended/);
     const ahead = [...container.querySelectorAll('.ch-ev:not(.is-past)')].filter((b) => !b.classList.contains('is-ghost'));
     expect(ahead.length).toBeGreaterThan(0);
-    for (const b of ahead) expect(b.getAttribute('aria-label')).not.toMatch(/, ended/);
+    for (const b of ahead) expect(accessibleName(b)).not.toMatch(/, ended/);
     expect(screen.getAllByRole('heading', { level: 1 }).length).toBeGreaterThan(0);
   });
 });

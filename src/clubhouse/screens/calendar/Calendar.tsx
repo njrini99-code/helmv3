@@ -469,16 +469,20 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
   };
   return (
     <div className="ch-pp" ref={ref}>
-      <button ref={trigger} type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${label}`}>
-        <span className="ch-pp__stack">
+      {/* SWP-03 (WCAG 2.5.3 Label in Name): named by its words, "Everyone Team schedule · 6 players", then what it does. An
+          aria-label ("People: Everyone") named it in other words than its face (the faces' initials, the label and the
+          line under it), which axe and Voice Control could not match. The faces are for the eye. */}
+      <button ref={trigger} type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open}>
+        <span className="ch-pp__stack" aria-hidden="true">
           {stack.map((p) => (
             <Avatar key={p.id} name={p.name} id={p.id} size={26} />
           ))}
           {count > 4 && <span className="ch-pp__more">+{count - 4}</span>}
         </span>
         <span className="ch-pp__txt">
-          <b>{label}</b>
+          <b>{label}</b>{' '}
           <span>{detail}</span>
+          <span className="ch-sr-only">, choose people</span>
         </span>
         <Icon icon={ChevronsUpDown} size={14} />
       </button>

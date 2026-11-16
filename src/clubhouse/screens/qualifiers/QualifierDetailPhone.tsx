@@ -358,29 +358,45 @@ function Board({
         {b.rows.map((r, i) => {
           const me = r.playerId === data.viewerPlayerId;
           const note = sampleNote(r, b, data.numRounds);
+          const pace = `${r.played} of ${plural(data.numRounds, 'round')}${r.missed ? ', missed a round' : ''}`;
+          // SWP-01 (W scan, 16 Nov): the row button is named by what it draws, in the order drawn (place, name, state,
+          // to par, strokes), with the separators and the rest as hidden words, so the name starts with the visible words.
+          const sep = <span className="ch-sr-only">, </span>;
           const body = (
             <>
               <Pos position={r.position} tied={r.tied} move={r.move} />
+              {sep}
               <span className="ch-qfm-lb__n">
                 <b>
                   <span className="ch-qfm-lb__nm">{r.name}</span>
-                  {me && <span className="ch-qf-you">You</span>}
+                  {me && (
+                    <>
+                      {sep}
+                      <span className="ch-qf-you">You</span>
+                    </>
+                  )}
                 </b>
                 {(r.state || note) && (
                   <span className="ch-qfm-lb__sub">
+                    {sep}
                     <StateBadge state={r.state} />
+                    {r.state && note && sep}
                     {note && <span className="ch-qf-thin">{note}</span>}
                   </span>
                 )}
               </span>
+              {sep}
               {/* Row 75: the strokes under the plate, as desktop's Total column (they break a tie on to par). */}
               <span className="ch-qfm-lb__score">
                 <ToParPlate value={r.toPar} />
+                {sep}
                 <em className="ch-qfm-lb__tot ch-num">{r.total ?? '—'}</em>
+                {r.total != null && <span className="ch-sr-only"> strokes</span>}
               </span>
               <span className="ch-qfm-lb__thru ch-num">
                 <ThruDots played={r.played} total={data.numRounds} hidden />
               </span>
+              {note !== pace && <span className="ch-sr-only">, {pace}</span>}
             </>
           );
           const label = `${r.name}, ${positionLabel(r)}, ${formatToPar(r.toPar)}${r.total != null ? `, ${r.total} strokes` : ''}, ${r.played} of ${plural(data.numRounds, 'round')}${r.missed ? ', missed a round' : ''}`;
@@ -392,7 +408,6 @@ function Board({
                   data-print-visible=""
                   className={'ch-qfm-lb__row' + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
                   data-state={r.state ?? undefined}
-                  aria-label={`${label}. Show ${me ? 'your' : 'their'} rounds`}
                   onClick={() => {
                     haptic('select');
                     chTrail('qualifiers open rounds sheet');
@@ -400,6 +415,7 @@ function Board({
                   }}
                 >
                   {body}
+                  <span className="ch-sr-only">. Show {me ? 'your' : 'their'} rounds</span>
                 </button>
               ) : (
                 <div className={'ch-qfm-lb__row is-static' + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')} data-state={r.state ?? undefined} role="group" aria-label={label}>

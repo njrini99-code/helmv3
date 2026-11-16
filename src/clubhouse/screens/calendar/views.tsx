@@ -247,13 +247,19 @@ export function EventBlock({
   // say Busy, and with the word the name was cut in the week's column ("Busy · Staff meet…", 136px in 129). The
   // block's accessible name and its peek keep the full words.
   const stub = e.type === 'busy' && short && !two;
+  // SWP-03 (WCAG 2.5.3 Label in Name): the block is named by the title drawn on it, then hidden words with the rest. An
+  // aria-label named it in other words ("Team round, 8:00 – 12:30 PM" over "Team round" and "8:00 AM – 12:30 PM"), which
+  // axe (label-content-name-mismatch, every block on the week) and Voice Control could not match to what is drawn. The
+  // time line, the R pill and the old values are for the eye (aria-hidden); the hidden words say them.
+  const said = `${stub ? ', busy' : ''}${rl.spokenRound}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}${drag ? '. Alt and the arrow keys move it; add Shift to change its length' : ''}`;
   const words = (
     <>
       <span className="ch-ev__t">
         {tier !== 'sliver' && <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />}
         {pill ? rl.name : stub ? e.title : title}
       </span>
-      <span className="ch-ev__m ch-ev__m--fit">
+      <span className="ch-sr-only">{said}</span>
+      <span className="ch-ev__m ch-ev__m--fit" aria-hidden="true">
         {when.map((part, i) => (
           <span key={i}>{part}</span>
         ))}
@@ -275,13 +281,13 @@ export function EventBlock({
     <button
       type="button"
       data-print-visible
-      // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
+      // CH-6801: a button named with its title, time and any overlap (SWP-03: the title drawn, then hidden words). CH-6601:
+      // it lifts on hover and marks its selection.
       className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${two ? ' ch-ev--two' : ''}${pinned ? ' is-pinned' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${pill ? ' has-round' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${marked ? ' has-mark' : ''}${room != null ? ' is-covered' : ''}${past && !state ? ' is-past' : ''}`}
       data-ev-id={state === 'card' ? undefined : e.id}
       // A cascaded block's lane is its inline z-index. The selected one gives it up, so its class brings it forward
       // (calendar.css, .ch-ev.is-sel) and its whole ring shows over the block that lay on it.
       style={{ top, height: h, left: box.left, width: box.width, zIndex: under || state === 'card' || sel ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}), ...(give ? { '--ch-ev-solo': solo } : {}), ...(room != null ? { '--ch-ev-room': `${room}px` } : {}) } as CSSProperties}
-      aria-label={`${rl.name}${rl.spoken}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}${drag ? '. Alt and the arrow keys move it; add Shift to change its length' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'card' || undefined}
       tabIndex={state === 'card' ? -1 : undefined}
@@ -449,7 +455,9 @@ export function TimeGrid({
               }}
               aria-label={`${dowOf(d)} ${dayNum(d)} ${monthName(d)}${d === now.date ? ', today' : ''}. Open the day`}
             >
-              <span className="ch-wk__d">{dowOf(d)}</span>
+              {/* SWP-03: the space between the day and its number is not drawn (a flex column) but keeps them two words, so the
+                  face reads "Sun 11", as the name begins, not "Sun11". */}
+              <span className="ch-wk__d">{dowOf(d)}</span>{' '}
               <span className="ch-wk__n">{dayNum(d)}</span>
             </button>
           ))}
@@ -577,7 +585,6 @@ function LaneBar({
       data-ev-id={state === 'card' ? undefined : e.id}
       className={`ch-ev-bar ch-ev-bar--span ch-ev--${e.type}${e.cancelled ? ' is-cancelled' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${b.clipStart ? ' is-clip-start' : ''}${b.clipEnd ? ' is-clip-end' : ''}`}
       style={state === 'card' ? undefined : { gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: b.row + 1 }}
-      aria-label={`${roundLabel(e, title).name}${roundLabel(e, title).spoken}, ${days}${e.cancelled ? ', cancelled' : ''}${drag ? '. Alt and the arrow keys move it a day; add Shift to change its last day' : ''}`}
       aria-pressed={sel}
       tabIndex={state === 'card' ? -1 : undefined}
       onPointerDown={drag?.onPointerDown}
@@ -589,9 +596,19 @@ function LaneBar({
       }}
     >
       <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />
-      {run && !b.clipStart && <em className="ch-ev-bar__t ch-num">{fmtHour(e.span!.start!, true, clock)}</em>}
+      {/* SWP-03: named by its title, then hidden words for the round, the days and any state (the times are for the eye). */}
+      {run && !b.clipStart && (
+        <em className="ch-ev-bar__t ch-num" aria-hidden="true">
+          {fmtHour(e.span!.start!, true, clock)}
+        </em>
+      )}
       <RoundTitle e={e} title={title} />
-      {run && !b.clipEnd && <em className="ch-ev-bar__t ch-ev-bar__end ch-num">{fmtHour(e.span!.end!, true, clock)}</em>}
+      <span className="ch-sr-only">{`${roundLabel(e, title).spokenRound}, ${days}${e.cancelled ? ', cancelled' : ''}${drag ? '. Alt and the arrow keys move it a day; add Shift to change its last day' : ''}`}</span>
+      {run && !b.clipEnd && (
+        <em className="ch-ev-bar__t ch-ev-bar__end ch-num" aria-hidden="true">
+          {fmtHour(e.span!.end!, true, clock)}
+        </em>
+      )}
       {drag && !state && (
         <>
           {!b.clipStart && <span className="ch-ev-bar__grip is-from" aria-hidden="true" onPointerDown={drag.grip('from')} onClick={(ev) => ev.stopPropagation()} />}
