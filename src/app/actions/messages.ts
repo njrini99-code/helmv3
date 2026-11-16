@@ -802,7 +802,7 @@ async function sendGolfMessageImpl(conversationId: string, content: string, clie
 
 const observedSendGolfMessage = withAdminObserved(
   'sendGolfMessage',
-  { sport: 'golf', feature: 'messaging' },
+  { sport: 'golf', feature: 'messaging', demoSafe: true },
   sendGolfMessageImpl,
 );
 
@@ -816,7 +816,7 @@ async function createGolfConversationImpl(participantUserIds: string[], teamId?:
 
 const observedCreateGolfConversation = withAdminObserved(
   'createGolfConversation',
-  { sport: 'golf', feature: 'messaging' },
+  { sport: 'golf', feature: 'messaging', demoSafe: true },
   createGolfConversationImpl,
 );
 
@@ -1108,7 +1108,7 @@ async function createGolfTeamBroadcastImpl({
 
 const observedCreateGolfTeamBroadcast = withAdminObserved(
   'createGolfTeamBroadcast',
-  { sport: 'golf', feature: 'messaging' },
+  { sport: 'golf', feature: 'messaging', demoSafe: true },
   createGolfTeamBroadcastImpl,
 );
 
@@ -1399,7 +1399,7 @@ async function updateGolfMessageImpl(messageId: string, content: string) {
 
 const observedUpdateGolfMessage = withAdminObserved(
   'updateGolfMessage',
-  { sport: 'golf', feature: 'messaging' },
+  { sport: 'golf', feature: 'messaging', demoSafe: true },
   updateGolfMessageImpl,
 );
 
@@ -1413,7 +1413,7 @@ async function deleteGolfMessageImpl(messageId: string) {
 
 const observedDeleteGolfMessage = withAdminObserved(
   'deleteGolfMessage',
-  { sport: 'golf', feature: 'messaging' },
+  { sport: 'golf', feature: 'messaging', demoSafe: true },
   deleteGolfMessageImpl,
 );
 
@@ -2079,7 +2079,7 @@ async function addGolfGroupMemberImpl(
 
 const observedAddGolfGroupMember = withAdminObserved(
   'addGolfGroupMember',
-  { sport: 'golf', feature: 'messaging' },
+  { sport: 'golf', feature: 'messaging', demoSafe: true },
   addGolfGroupMemberImpl,
 );
 
@@ -2155,7 +2155,7 @@ async function removeGolfGroupMemberImpl(
 
 const observedRemoveGolfGroupMember = withAdminObserved(
   'removeGolfGroupMember',
-  { sport: 'golf', feature: 'messaging' },
+  { sport: 'golf', feature: 'messaging', demoSafe: true },
   removeGolfGroupMemberImpl,
 );
 
@@ -2225,7 +2225,7 @@ async function leaveGolfGroupImpl(
 
 const observedLeaveGolfGroup = withAdminObserved(
   'leaveGolfGroup',
-  { sport: 'golf', feature: 'messaging' },
+  { sport: 'golf', feature: 'messaging', demoSafe: true },
   leaveGolfGroupImpl,
 );
 

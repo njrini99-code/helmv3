@@ -975,6 +975,11 @@
         "category": "api"
       },
       {
+        "id": "api:src/app/api/cron/golf-demo-refresh/**",
+        "pattern": "src/app/api/cron/golf-demo-refresh/**",
+        "category": "api"
+      },
+      {
         "id": "api:src/app/api/cron/log-retention/**",
         "pattern": "src/app/api/cron/log-retention/**",
         "category": "api"
@@ -1759,6 +1764,11 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/golf-demo-refresh.ts",
+        "pattern": "scripts/golf-demo-refresh.ts",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/janitor/**",
         "pattern": "scripts/janitor/**",
         "category": "services"
@@ -1819,8 +1829,23 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/sql/golf-demo-cleanup.sql",
+        "pattern": "scripts/sql/golf-demo-cleanup.sql",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/sql/strip-demo-seed-tags.sql",
+        "pattern": "scripts/sql/strip-demo-seed-tags.sql",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/supabase-error-audit.mjs",
         "pattern": "scripts/supabase-error-audit.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/verify-golf-demo-coverage.ts",
+        "pattern": "scripts/verify-golf-demo-coverage.ts",
         "category": "services"
       },
       {
@@ -2643,6 +2668,11 @@
       {
         "id": "tests:supabase/tests/rls/baseball_*.sql",
         "pattern": "supabase/tests/rls/baseball_*.sql",
+        "category": "tests"
+      },
+      {
+        "id": "tests:supabase/tests/rls/golf_demo_*.sql",
+        "pattern": "supabase/tests/rls/golf_demo_*.sql",
         "category": "tests"
       },
       {
@@ -3750,6 +3780,7 @@
         "id": "helm_private",
         "definedIn": [
           "supabase/migrations/20261031140000_golf_rounds_tee_id_backfill.sql",
+          "supabase/migrations/20261115210000_golf_demo_generator.sql",
           "supabase/migrations/20261114090100_round_totals_follow_holes.sql",
           "supabase/migrations/20261115200000_golf_sand_save_tour_definition.sql",
           "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
@@ -4088,6 +4119,22 @@
       {
         "id": "golf_day_token_dow",
         "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_demo_apply",
+        "definedIn": "supabase/migrations/20261115210000_golf_demo_generator.sql"
+      },
+      {
+        "id": "golf_demo_begin",
+        "definedIn": "supabase/migrations/20261115210000_golf_demo_generator.sql"
+      },
+      {
+        "id": "golf_demo_finish_rounds",
+        "definedIn": "supabase/migrations/20261115210000_golf_demo_generator.sql"
+      },
+      {
+        "id": "golf_demo_remove",
+        "definedIn": "supabase/migrations/20261115210000_golf_demo_generator.sql"
       },
       {
         "id": "golf_event_attendance_counts",
@@ -4984,6 +5031,12 @@
         "kind": "vercel_cron",
         "path": "/api/cron/event-reminders",
         "schedule": "0 * * * *"
+      },
+      {
+        "id": "vercel_cron:/api/cron/golf-demo-refresh",
+        "kind": "vercel_cron",
+        "path": "/api/cron/golf-demo-refresh",
+        "schedule": "35 9 * * *"
       },
       {
         "id": "vercel_cron:/api/cron/helm-debug-prune",
@@ -18131,6 +18184,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/demo/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/player-signal-settings.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -18193,6 +18251,18 @@
           "kind": "import_graph",
           "path": "src/lib/golf/with-golf-action.ts",
           "anchor": "src/lib/admin/feature-registry"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "api:src/app/api/cron/golf-demo-refresh/**",
+      "kind": "feature_api",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/api/cron/golf-demo-refresh/**"
         }
       ]
     },
@@ -18417,6 +18487,18 @@
           "kind": "import_graph",
           "path": "src/lib/golf/upload-course-image.ts",
           "anchor": "src/lib/supabase/client"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "calendar_events",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/demo/refresh.ts",
+          "anchor": "src/lib/calendar/timezone"
         }
       ]
     },
@@ -18690,6 +18772,10 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20261031140000_golf_rounds_tee_id_backfill.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261115210000_golf_demo_generator.sql"
         }
       ]
     },
@@ -18841,6 +18927,16 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/post-round-trigger.ts",
           "anchor": "src/lib/coachhelm/v3/engine/analysis-outcome"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/demo/__tests__/generate.test.ts",
+          "anchor": "src/lib/coachhelm/v3/practice-plan/model"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/demo/generate.ts",
+          "anchor": "src/lib/coachhelm/v3/practice-plan/model"
         },
         {
           "kind": "import_graph",
@@ -19017,6 +19113,54 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "services:scripts/golf-demo-refresh.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/golf-demo-refresh.ts"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "services:scripts/sql/golf-demo-cleanup.sql",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/sql/golf-demo-cleanup.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "services:scripts/sql/strip-demo-seed-tags.sql",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/sql/strip-demo-seed-tags.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "services:scripts/verify-golf-demo-coverage.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/verify-golf-demo-coverage.ts"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "services:src/lib/coachhelm/v2/post-round-trigger.ts",
       "kind": "feature_service",
       "evidence": [
@@ -19143,6 +19287,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/test/coachhelm/v2/post-round-trigger.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "tests:supabase/tests/rls/golf_demo_*.sql",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "supabase/tests/rls/golf_demo_*.sql"
         }
       ]
     },
@@ -27988,6 +28144,17 @@
         {
           "kind": "registry_glob",
           "path": "src/app/api/cron/db-stat-delta/route.ts"
+        }
+      ]
+    },
+    {
+      "source": "vercel_cron:/api/cron/golf-demo-refresh",
+      "target": "golf_round_lifecycle",
+      "kind": "job_feature",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "src/app/api/cron/golf-demo-refresh/route.ts"
         }
       ]
     },

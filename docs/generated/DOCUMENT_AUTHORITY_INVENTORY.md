@@ -214,6 +214,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | - |
+| `memory/features/golf-demo-team.md` | current | yes | - | - | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | - |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | - |
@@ -2068,7 +2069,7 @@ them would bury everything above.
 | `src/lib/coachhelm/v3/chat/knowledge/SOURCES.md` | current | - | - | - | - |
 | `src/lib/coachhelm/v3/chat/tasks/INVENTORY.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 7 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 3 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 4 |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |
 | `tools/QUICK_REFERENCE.md` | current | - | - | - | - |

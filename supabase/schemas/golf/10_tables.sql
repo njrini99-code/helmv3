@@ -777,6 +777,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_events" (
     "requires_rsvp" boolean DEFAULT false,
     "rsvp_deadline" timestamp with time zone,
     "max_attendees" integer,
+    "is_test" boolean DEFAULT false NOT NULL,
     CONSTRAINT "golf_events_end_after_start" CHECK ((("end_time" IS NULL) OR ("start_time" IS NULL) OR ("end_time" >= "start_time")))
 );
 
@@ -1156,6 +1157,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_messages" (
     "pinned_by" "uuid",
     "notify_anyway" boolean DEFAULT false NOT NULL,
     "notify_anyway_pushed_at" timestamp with time zone,
+    "is_test" boolean DEFAULT false NOT NULL,
     CONSTRAINT "golf_messages_kind_check" CHECK (("kind" = ANY (ARRAY['text'::"text", 'system'::"text", 'practice'::"text", 'event'::"text", 'rsvp'::"text", 'poll'::"text", 'travel'::"text"]))),
     CONSTRAINT "golf_messages_payload_matches_kind" CHECK (((("kind" = 'text'::"text") AND ("payload" IS NULL)) OR (("kind" <> 'text'::"text") AND (("payload" IS NOT NULL) OR ("is_deleted" IS TRUE)))))
 );
