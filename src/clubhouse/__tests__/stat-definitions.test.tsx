@@ -1,5 +1,5 @@
 import './dialog-polyfill';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MIN_PLAUSIBLE_STROKES_PER_18 } from '@/lib/golf/round-countable';
 import { isScoreCountable } from '../data/round-scope';
@@ -180,6 +180,21 @@ describe('StatTerm and the sheet (F-07)', () => {
     const sheet = screen.getByRole('dialog', { name: 'How stats are counted' });
     for (const l of COUNTING_RULE) expect(within(sheet).getByText(l.title)).toBeInTheDocument();
     for (const k of STAT_ORDER) expect(within(sheet).getByText(STAT_DEFINITIONS[k].name)).toBeInTheDocument();
+  });
+
+  it('the sheet opened from a card hands focus back to the stat’s name when it closes', async () => {
+    render(
+      <div className="ch-root">
+        <StatTerm label="Sand saves" />
+      </div>,
+    );
+    const name = screen.getByRole('button', { name: 'Sand saves' });
+    fireEvent.click(name);
+    fireEvent.click(screen.getByRole('button', { name: 'How stats are counted' }));
+    const sheet = screen.getByRole('dialog', { name: 'How stats are counted' });
+    // The card's link is gone with the card; the sheet returns focus to the stat's name when it closes.
+    fireEvent.click(within(sheet).getByRole('button', { name: /close/i }));
+    await waitFor(() => expect(document.activeElement).toBe(name));
   });
 
   it('the page link opens the same sheet', () => {

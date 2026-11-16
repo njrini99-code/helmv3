@@ -59,6 +59,9 @@ export function StatTerm({ label, sg = false, children, className }: { label: st
             if (refocus) btn.current?.focus();
           }}
           onRule={() => {
+            // The card (and its focused link) unmounts here, so hand focus to the stat's name first: the sheet takes it as the
+            // opener and returns focus there when it closes.
+            btn.current?.focus();
             setOpen(false);
             setRuleUsed(true);
             setRule(true);
