@@ -1,4 +1,3 @@
-import { getNextQualifierRoundNumber, getPlayerQualifiers } from '@/app/golf/actions/qualifier-actions';
 import { getCourseDetail, getRecentlyPlayedCourses, getTeamSavedCourses, getTeeWithHoles, listCoursesStrict } from '@/app/golf/actions/course-library';
 import { getPlayerSavedCourses, touchSavedCourse, type SavedCourse } from '@/app/golf/actions/saved-courses';
 import type { GolfCourse, GolfCourseTee } from '@/lib/types/golf-course';
@@ -6,8 +5,7 @@ import { resolveRealCourseImage } from '@/lib/golf/course-image-assets';
 import type { NewRoundStartForm, NewRoundStartResult } from '@/lib/golf/round-session/start-form';
 import { teeColorFor } from '../../../data/rounds-shape';
 import { chReport } from '../../../lib/track';
-import { blankHoles, holesForRound, startPosition, yardageRule, type ChResult, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPorts, type ChSetupQualifier, type ChSetupTee, type ChStartFailure } from '../setup/shape';
-import { plural } from '../../../lib/plural';
+import { blankHoles, holesForRound, startPosition, yardageRule, type ChResult, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPorts, type ChSetupTee, type ChStartFailure } from '../setup/shape';
 import { createClient } from '@/lib/supabase/client';
 import { courseGlances, type ChCourseGlance, type ChGlanceRow } from '../../../data/course-glance';
 
@@ -237,58 +235,9 @@ export function teeHolesRead(teeId: string): Promise<ChResult<ChSetupHole[]>> {
   });
 }
 
-/** How long setup waits for the qualifier reads before it says they didn't load (CH-11211), so a slow read never blocks a practice round. */
-export const QUALIFIER_READ_MS = 6000;
-
-/**
- * Why a qualifier has no round to play, from the server's refusal (`getNextQualifierRoundNumber`). Fairway shows the
- * server's own sentence; here each definitive refusal gets one the player can act on, and only a read that failed says
- * to try again. A refusal that is not a read failure never reads as "try again": trying again can't change it.
- */
-export function qualifierBlockedReason(next: { error?: string; code?: string }, numRounds: number): string {
-  const error = next.error ?? '';
-  if (next.code === 'qualifier_round_limit_reached') return `All ${plural(numRounds, 'round is', 'rounds are')} in. Ask your coach to add a round if you need another.`;
-  if (/more than one saved round/i.test(error)) return 'You have more than one saved round in this qualifier. Continue one from Rounds.';
-  if (/not entered in this qualifier/i.test(error)) return 'You’re no longer entered in this qualifier. Ask your coach.';
-  if (/qualifier not found/i.test(error)) return 'This qualifier isn’t there any more. Ask your coach.';
-  return 'We couldn’t check this qualifier. Try again in a moment.';
-}
-
-/**
- * The player's qualifiers that a coach hasn't closed, each with the round they can play now. A closed qualifier is
- * closed (D-31; a round can't be submitted to it, `submit_round_atomic`); one with every round in, or with a round
- * already in progress, is listed with why it can't be played. Null when the list itself didn't load. The engine's own
- * `getPlayerQualifiers` call (its legacy dropdown) is separate.
- *
- * Every open qualifier asks the server for its next round, as Fairway's picker does when one is chosen: the count
- * `getPlayerQualifiers` gives (`roundsCompleted`, which can come from the entry's stored totals or count a round with
- * no round number) is not the rule; `resolveQualifierRoundNumber` is, and a free slot it finds is playable.
- */
-export async function loadSetupQualifiers(): Promise<ChSetupQualifier[] | null> {
-  try {
-    const all = await getPlayerQualifiers();
-    if (!all.success) return null;
-    const open = all.data.filter((q) => q.status !== 'completed');
-    return await Promise.all(
-      open.map(async (q): Promise<ChSetupQualifier> => {
-        const base = { id: q.id, name: q.name, courseId: null, courseName: q.courseName, teeId: null, teeName: null, rounds: q.numRounds, completed: q.roundsCompleted };
-        try {
-          const next = await getNextQualifierRoundNumber(q.id);
-          if (!next.success) return { ...base, nextRound: null, blocked: qualifierBlockedReason(next, q.numRounds) };
-          if (next.data.activeRoundId) return { ...base, nextRound: null, blocked: 'A round is already in progress. Continue it from Rounds.' };
-          const round = next.data.availableRounds.includes(next.data.nextRoundNumber) ? next.data.nextRoundNumber : null;
-          return { ...base, nextRound: round, blocked: round == null ? 'No round is open to you right now.' : null };
-        } catch (err) {
-          chReport(err, { surface: 'rounds', action: 'rounds.qualifiers.next', severity: 'low' });
-          return { ...base, nextRound: null, blocked: 'We couldn’t check this qualifier. Try again in a moment.' };
-        }
-      }),
-    );
-  } catch (err) {
-    chReport(err, { surface: 'rounds', action: 'rounds.qualifiers' });
-    return null;
-  }
-}
+// The qualifier list is read by the route on the server now (data/setup-qualifiers.ts, PMAC-03); its rules live in
+// setup-qualifiers.ts, re-exported here for the callers that read them from this file.
+export { QUALIFIER_READ_MS, qualifierBlockedReason } from './setup-qualifiers';
 
 /** "Pittsboro, NC" back to a city and a state; the last comma splits them, and one part alone is a city. */
 export function placeParts(text: string | null): { city: string; state: string } {

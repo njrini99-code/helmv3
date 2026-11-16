@@ -1213,10 +1213,19 @@ describe('Stats player · what changed (row 70)', () => {
     }
   };
   const LINES = ['−0.8 Putts per round, better than previous 10', '−5.6 pts Greens in regulation, worse than previous 10'];
+  /**
+   * The preview player with each change's error halved: a change is called at two standard errors since the stats and charts audit
+   * (CH-05), and the preview's putts (−0.8 on 0.7) and greens (−5.6 on 5.4) clear one, not two. Halved, they clear two and scoring
+   * (+0.7 on 0.8) and fairways (+1.6 on 3.0) still do not.
+   */
+  const sharp = () => {
+    const p = player();
+    return { ...p, extra: { ...p.extra, compare: { ...p.extra.compare!, rows: p.extra.compare!.rows.map((r) => ({ ...r, se: r.se == null ? null : r.se / 2 })) } } };
+  };
 
   it('desktop: the window against the one before, only past each change’s error, and the Rounds tab tones them alike', async () => {
     const user = userEvent.setup();
-    show(player());
+    show(sharp());
     const box = card()!;
     expect(within(box).getByRole('heading').textContent).toBe('What changed');
     expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(LINES);

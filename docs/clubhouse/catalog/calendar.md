@@ -118,9 +118,10 @@ same way.
 | CH-6280 | Practice hours: the week's events don't load | “The week’s events didn’t load” + “No hours are shown until they do. Nothing was changed.” Try again; no figures at all, never zeros | `PracticeHours`, `loadHours` (`eventsError`) | practice-hours.test › CH-6280 |
 | CH-6281 | Practice hours: attendance doesn't load | “Attendance didn’t load” + “This week is drafted from invitations alone, so a player marked absent may still be counted. Try again.” The week still shows | `loadHours` (`partial`) | practice-hours.test › CH-6281 |
 | CH-6282 | Practice hours: the roster doesn't load (coach) | “The roster didn’t load” + “Hours are drafted for each player, so none are shown until it does.” Try again | `loadHours` (`membersError`) | practice-hours.test › CH-6282 |
-| CH-6283 | Practice hours: the team's hours tables aren't in the database yet (migration 20261115230000 held) | Coach only, a note: “Your own limits and changes can’t be saved yet” + the limits the week is read against (the division from Settings, Team). Limits and Change are hidden; the week still drafts on the defaults | `loadHours` (`storeMissing`, `isHoursStoreMissing`) | practice-hours.test › CH-6283 |
+| CH-6283 | Practice hours: the team's hours tables aren't in the database yet (migration 20261115232000 held) | Coach only, a note: “Your own limits and changes can’t be saved yet” + the limits the week is read against (the division from Settings, Team). Limits and Change are hidden; the week still drafts on the defaults | `loadHours` (`storeMissing`, `isHoursStoreMissing`) | practice-hours.test › CH-6283 |
 | CH-6284 | Practice hours: the week's table or list crashes | “The week couldn’t be shown” in its place; the events and the rules below stay | `SectionBoundary` `calendar.hours.week` | preview |
 | CH-6285 | Practice hours: the team's saved limits don't load (coach; the tables are there) | “Your saved limits didn’t load” + “This week is read against the defaults until they do. Limits and changes can’t be saved yet, so nothing you saved is replaced.” Try again; Limits and Change are hidden, so a save never writes the defaults over the stored seasons and custom limits | `loadHours` (`settingsError`) | practice-hours.test › CH-6285 |
+| CH-6290 | A practice's plan read fails (`readEventPlans` answers an error that is not "table missing"; GAP-S-28) | In the event sheet, where the plan row goes: "The practice plan didn’t load" + "Nothing you saved is lost. Try again." + Try again. Never Build plan and never "No plan": before, a failed read looked like a practice with no plan. A missing plan table still just leaves the row out | `InlineNotice` in `screens/calendar/inspector.tsx`; `plansError` and each practice's `planFailed` from `loadCalendar` (`data/calendar.ts`) | calendar.test › CH-6290 |
 
 ## 63xx Empty
 
@@ -144,7 +145,7 @@ same way.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-6401 | Calendar is loading | Header, toolbar, the week grid and the panel as skeletons. On the phone: the month's opening on its double rule with the view switch, the flush week, the day's heading on its rule and four rows on seams, in the loaded page's geometry (0px shift at 390, WebKit) | `CalendarSkeleton` | calendar.test › CH-6401 |
+| CH-6401 | Calendar is loading | Header, toolbar, the view the address names (`?view=`: the week grid, or the day, month or agenda) and the panel where that view keeps it, as skeletons (GAP-S-17; before, always the week). On the phone: the month's opening on its double rule with the view switch, the flush week, the day's heading on its rule and four rows on seams, in the loaded page's geometry (0px shift at 390, WebKit) | `CalendarSkeleton` (`view`), `calendar/loading.tsx` reading the address | calendar.test › CH-6401, route-skeleton-address.test |
 | CH-6402 | Calendar-app links are loading | Two skeleton rows | `SubscribeSheet` | calendar.test › CH-6402 |
 | CH-6403 | An event's files are loading | A skeleton row | `EventFiles` | calendar.test › CH-6403 |
 | CH-6404 | Documents are loading (attach) | Two skeleton rows | `FilePicker` | calendar.test › CH-6404 |

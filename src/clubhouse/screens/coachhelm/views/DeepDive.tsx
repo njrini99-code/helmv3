@@ -4,7 +4,7 @@ import { splitSentences } from '@/lib/utils/sentences';
 import { AnimatePresence } from 'motion/react';
 import { ChevronRight, Compass, Flag, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { clearedShown, DIVE_AREAS, type ChDeepDive, type ChDeepInsight, type ChDiveCleared, type ChDiveRound, type ChDiveTheme, type ChDiveTone, type ChDiveWhere } from '../../../data/coachhelm-dive-shape';
 import { meaningfulReason, readLines, writeUpFor } from '../../../data/coachhelm-read-shape';
 import { PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_VOICE, type ChViewLoad, type ChViewVoice } from '../../../data/coachhelm-views-shape';
@@ -467,7 +467,7 @@ function Dossier({ i, d, voice = PLAYER_VOICE, fa }: { i: ChDeepInsight; d: ChDe
           <div className="ch-hl-focus__k">
             <span>{b.category}</span>
           </div>
-          <h2 id={`${b.id}-t`}>
+          <h2 id={`${b.id}-t`} tabIndex={-1}>
             <SerifText text={b.title} />
           </h2>
         </header>
@@ -483,7 +483,7 @@ function Dossier({ i, d, voice = PLAYER_VOICE, fa }: { i: ChDeepInsight; d: ChDe
           <span>{b.category}</span>
           <span className={'ch-hl-pri is-' + i.stance.cls}>{i.stance.word}</span>
         </div>
-        <h2 id={`${b.id}-t`}>
+        <h2 id={`${b.id}-t`} tabIndex={-1}>
           <SerifText text={b.title} />
         </h2>
         {/* The four lines are what is read first; the parts below are their evidence. */}
@@ -702,8 +702,16 @@ export function DeepDive({ load, initialId = null, voice = PLAYER_VOICE, writes 
   const popTo = useCallback((level: number) => level < 1 && choose(null), [choose]);
   usePhoneStackHistory(phone && open ? 1 : 0, popTo);
 
+  // GAP-H-17: on a desk a pick swaps the read beside the list, so focus goes to the read's title, as a split view's detail takes it;
+  // a screen reader then reads the new read rather than nothing. Only on a pick, never on the first draw.
+  const [picks, setPicks] = useState(0);
+  useEffect(() => {
+    if (picks === 0 || phone) return;
+    dossier.current?.querySelector<HTMLElement>('.ch-hd-dos__h h2')?.focus({ preventScroll: true });
+  }, [picks, phone]);
   const pick = (id: string) => {
     choose(id);
+    setPicks((n) => n + 1);
     // A narrow desktop stacks the read under the list: bring it into view.
     if (!phone) dossier.current?.scrollIntoView?.({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
   };

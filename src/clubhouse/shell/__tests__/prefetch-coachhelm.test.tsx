@@ -52,3 +52,18 @@ describe('CH-R1 · CoachHelm is never fetched ahead', () => {
     expect([HOME, CAL, '/golf/dashboard/coachhelmish', '/golf/dashboard/stats?tab=coachhelm'].map(fullPrefetchAllowed)).toEqual([true, true, true, true]);
   });
 });
+
+describe('PMAC-01 · Team Hub records nothing since DF-P-02, so it is fetched ahead like any page', () => {
+  const HUB = '/golf/dashboard/team-hub';
+
+  it('is allowed by the guard, with or without a query', () => {
+    expect([HUB, `${HUB}?tab=updates`, `${HUB}/`].map(fullPrefetchAllowed)).toEqual([true, true, true]);
+  });
+
+  it('as a tab, Team Hub is fetched with the other pages', () => {
+    renderHook(() => usePrefetchTabs([HOME, CAL, HUB], HOME, [HOME, CAL, HUB]));
+    act(() => void vi.advanceTimersByTime(5_000));
+    expect(fetched()).toContain(CAL);
+    expect(fetched().some((href) => href.startsWith(HUB))).toBe(true);
+  });
+});

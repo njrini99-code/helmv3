@@ -32,8 +32,9 @@ describe('TeamTape', () => {
     expect(container.querySelector('.ch-tp__n')!.textContent).toBe('Holes scored in 6 of 10 rounds');
   });
 
-  it('colours a change only when it clears its standard error, and keeps the signed number either way', () => {
-    const { container } = render(<TeamTape items={[{ ...base, se: 5 }, { ...base, label: 'Greens', se: 2 }, { ...base, label: 'Putts', delta: 0.6, deltaDigits: 1, lowerIsBetter: true, se: 0.4 }]} />);
+  it('colours a change only when it clears two standard errors, and keeps the signed number either way', () => {
+    // Two standard errors since the stats and charts audit (CH-05): +4 on an error of 5 is no clear change, +4 on 2 is, and so is +0.6 on 0.25.
+    const { container } = render(<TeamTape items={[{ ...base, se: 5 }, { ...base, label: 'Greens', se: 2 }, { ...base, label: 'Putts', delta: 0.6, deltaDigits: 1, lowerIsBetter: true, se: 0.25 }]} />);
     const cells = [...container.querySelectorAll('.ch-tp__c')];
     expect(cells.map((c) => c.className.replace('ch-tp__c ', ''))).toEqual(['is-flat', 'is-gain', 'is-loss']);
     expect(cells.map((c) => c.querySelector('.ch-tp__d em')!.textContent)).toEqual(['No clear change vs previous 10', 'Better than previous 10', 'Worse than previous 10']);

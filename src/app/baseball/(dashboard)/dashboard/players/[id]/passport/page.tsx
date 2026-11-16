@@ -82,7 +82,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export const metadata = {
-  title: 'Player Passport · BaseballHelm',
+  title: 'Player Passport',
 };
 
 interface PageProps {

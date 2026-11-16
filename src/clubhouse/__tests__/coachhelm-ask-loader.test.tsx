@@ -31,6 +31,7 @@ vi.mock('../data/coachhelm', () => ({
 vi.mock('../screens/coachhelm/chat/Ask', () => ({ Ask: () => null }));
 
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
+import { underSwitchFrame } from './route-view';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
 import { loadCoachCoachHelm, loadPlayerCoachHelm } from '../data/coachhelm';
 
@@ -237,7 +238,7 @@ describe('ClubhouseCoachHelmRoute: the Ask sub-tab is the coach\'s alone', () =>
     session.current = coach;
     teamOf.current = { role: 'coach', teamId: 't1', coachId: 'c1' };
     askSpy.mockResolvedValue({ status: 'failed' });
-    const el = (await ClubhouseCoachHelmRoute({ view: 'ask', c: 'abc' })) as ReactElement<{ fallback: ReactElement; children: ReactElement<{ conversationId?: string }> }>;
+    const el = underSwitchFrame(await ClubhouseCoachHelmRoute({ view: 'ask', c: 'abc' })) as ReactElement<{ fallback: ReactElement; children: ReactElement<{ conversationId?: string }> }>;
     expect(el.props.fallback.type).toBe(AskSkeleton);
     const child = el.props.children;
     expect(child.props.conversationId).toBe('abc');

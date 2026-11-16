@@ -158,7 +158,8 @@ describe('HoleBeads', () => {
     const { container } = render(<HoleBeads lane={byName('Sofia Reyes')} density="compact" reduced={false} />);
     expect([...container.querySelectorAll('.ch-lv-bead')].map((b) => b.getAttribute('data-hole'))).toEqual(['6', '7', '8', '9', '10', '11']);
   });
-  it('a hole that just gained a score scales in; under reduced motion it takes a ring for three seconds, then none', () => {
+  // MOTION-AND-VISUAL 3.12: the fresh hole fades in (motion.css ch-in) and no longer scales.
+  it('a hole that just gained a score fades in; under reduced motion it takes a ring for three seconds, then none', () => {
     vi.useFakeTimers();
     try {
       const lane = byName('Sofia Reyes');

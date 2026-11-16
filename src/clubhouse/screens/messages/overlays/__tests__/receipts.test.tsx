@@ -48,6 +48,13 @@ describe('MSG-214 direct receipt', () => {
     expect(screen.getByRole('status').textContent).toBe('Seen 11:30 AM');
   });
 
+  it('DM-05: an older read is dated like the inbox rail, not a bare clock', () => {
+    const { rerender } = render(<DmReceipt api={api([['a', '2026-10-15T09:00:00Z']])} m={m({ seen: true, at: '2026-10-15T08:00:00Z' })} />);
+    expect(screen.getByRole('status').textContent).toBe('Seen Yesterday');
+    rerender(<DmReceipt api={api([['a', '2026-09-03T09:00:00Z']])} m={m({ seen: true, at: '2026-09-03T08:00:00Z' })} />);
+    expect(screen.getByRole('status').textContent).toBe('Seen Sep 3');
+  });
+
   it('Q-44: a player reads plain Seen, no time', () => {
     render(<DmReceipt api={api([['a', read]], 'player')} m={m({ seen: true })} />);
     expect(screen.getByRole('status').textContent).toBe('Seen');

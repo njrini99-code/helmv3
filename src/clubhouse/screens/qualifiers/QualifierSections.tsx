@@ -248,7 +248,7 @@ export function Pairings({ board, numRounds, status }: { board: ChQBoard; numRou
           <h2 id="ch-qf-pairings">Round {pairings.round} groups</h2>
           <p className="ch-num">From the standings · leaders off last</p>
         </div>
-        <Segmented<ChQGroupSize> weight="filter" size="sm" label="Players a group" value={size} onChange={setSize} options={GROUP_SIZES} />
+        <Segmented<ChQGroupSize> size="sm" label="Players a group" value={size} onChange={setSize} options={GROUP_SIZES} />
       </div>
       <ol className="ch-qf-list">
         {pairings.groups.map((g) => (

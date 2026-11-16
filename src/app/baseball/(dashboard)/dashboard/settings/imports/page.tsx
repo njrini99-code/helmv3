@@ -27,7 +27,7 @@ import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized'
 import { ImportSourcesClient } from '@/components/baseball/settings/ImportSourcesClient';
 
 export const metadata = {
-  title: 'Import Sources | Helm Baseball',
+  title: 'Import Sources',
   description:
     'Register import sources with trust levels, review rules, and player matching.',
 };

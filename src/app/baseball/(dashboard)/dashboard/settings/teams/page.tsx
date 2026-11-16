@@ -19,7 +19,7 @@ import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized'
 import { TeamSettingsClient } from '@/components/baseball/settings/TeamSettingsClient';
 
 export const metadata = {
-  title: 'Team Settings | Helm Baseball',
+  title: 'Team Settings',
   description: 'Join code, invite policy, self-join, and coach-approval controls.',
 };
 

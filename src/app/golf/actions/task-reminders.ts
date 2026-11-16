@@ -205,7 +205,8 @@ async function setTaskReminderImpl(
       return { success: false, error: 'Failed to set reminder' };
     }
 
-    revalidatePath('/golf/dashboard/tasks');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true };
   } catch (error) {
     await logServerError(`Error in setTaskReminder: ${describeError(error)}`, { action: 'task_reminders.setTaskReminder' });
@@ -306,7 +307,8 @@ async function cancelTaskReminderImpl(
       .eq('task_id', taskId)
       .eq('sent', false);
 
-    revalidatePath('/golf/dashboard/tasks');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true };
   } catch (error) {
     await logServerError(`Error in cancelTaskReminder: ${describeError(error)}`, { action: 'task_reminders.cancelTaskReminder' });

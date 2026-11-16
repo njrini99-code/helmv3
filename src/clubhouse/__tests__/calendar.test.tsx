@@ -2869,3 +2869,34 @@ describe('Calendar · Publish shows the event at once (F-0029)', () => {
     expect((screen.getByRole('textbox', { name: 'Event title' }) as HTMLInputElement).value).toBe('Short game');
   });
 });
+
+describe('Calendar · a practice whose plan didn’t load (GAP-S-28)', () => {
+  beforeEach(freezeClock);
+  afterEach(() => vi.useRealTimers());
+
+  it('CH-6290 the loader flags a failed plan read on each practice; a missing plan table only leaves the row out', async () => {
+    serve({ ...healthy(), golf_practice_plans: { error: { code: 'XX000', message: 'boom' } } });
+    let d = await load();
+    expect(d.plansError).toBe(true);
+    const practices = d.events.filter((e) => e.type === 'practice');
+    expect(practices.length).toBeGreaterThan(0);
+    expect(practices.every((e) => e.planFailed === true && e.plan === undefined)).toBe(true);
+    serve({ ...healthy(), golf_practice_plan_versions: { error: { code: 'XX000', message: 'boom' } } });
+    expect((await load(asPlayer('p2'))).plansError).toBe(true);
+    serve({ ...healthy(), golf_practice_plans: { error: { code: 'PGRST205', message: 'Could not find the table' } } });
+    d = await load();
+    expect(d.plansError).toBe(false);
+    expect(d.events.some((e) => e.planFailed || e.plan)).toBe(false);
+    serve(healthy());
+    d = await load();
+    expect(d.plansError).toBe(false);
+    expect(d.events.find((e) => e.type === 'practice')?.plan).toEqual({ state: 'none' });
+  });
+
+  it('CH-6290 the event sheet says the plan didn’t load where the plan shows, with Try again, never Build plan', async () => {
+    wrap(cal({ plansError: true, events: PREVIEW_CALENDAR.events.map((e) => (e.id === 'e3' ? { ...e, plan: undefined, planFailed: true as const } : e)) }), { initialEvent: 'e3' });
+    await expectCode('CH-6290', /The practice plan didn’t load/);
+    expect(within(code('CH-6290') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Build plan' })).toBeNull();
+  });
+});

@@ -25,6 +25,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => router, redirect: redirectS
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 vi.mock('../lib/phone-hint', () => ({ marksHint: () => Promise.resolve([]) }));
+// Home's Add event reads the editor's inputs on a press (MAC-03); here they never come, so a click goes to Calendar as before.
+vi.mock('../data/event-editor-inputs', () => ({ getEventEditorInputs: async () => null }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 
@@ -341,9 +343,10 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect([...form.querySelectorAll('.ch-hm-form__figs > div')].slice(1).map((d) => d.querySelectorAll('dd')[1]!.textContent)).toEqual(['No clear change', 'No clear change']);
     expect(screen.getByRole('img', { name: /Team scoring, the team’s average on each of its \d+ round days/ })).toBeTruthy();
     cleanup();
-    // Measured tighter, the same changes clear it: the average down 0.9 is better, putts up 0.3 is worse.
+    // Measured tighter, the same changes clear two errors (stats and charts audit, CH-05): the average down 0.9 is better, putts up
+    // 0.3 is worse.
     const f = PREVIEW_HOME.phone.form!;
-    const sharp = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: { ...f, deltaSe: 0.5, gir: { ...f.gir, se: 4 }, putts: { ...f.putts, se: 0.2 } } } };
+    const sharp = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: { ...f, deltaSe: 0.4, gir: { ...f.gir, se: 4 }, putts: { ...f.putts, se: 0.12 } } } };
     wrap(<CoachHome data={sharp} now={PREVIEW_HOME_NOW} />);
     form = document.querySelector('.ch-hm-form')!;
     expect(form.querySelector('.ch-hm-delta')!.className).toMatch(/is-gain/);

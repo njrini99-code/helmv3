@@ -3,7 +3,7 @@ import type { Database } from '@/lib/types/database';
 
 /**
  * Launch readiness F-03, the practice-hours (CARA) log: what a team stores about its hours and how a coach changes how an
- * event counts (held migration 20261115230000), shared by Clubhouse's Practice hours page and its saves
+ * event counts (held migration 20261115232000), shared by Clubhouse's Practice hours page and its saves
  * (src/app/golf/actions/hours.ts). The checks here are the table's own, so the sheet and the save refuse the same values.
  * The tables are untyped until the migration is applied and the types regenerate: `hoursTables` is the one cast, as
  * Practice's practiceTables is.
@@ -55,7 +55,7 @@ const hoursOk = (v: number, max: number, zero = false) => Number.isFinite(v) && 
 export const roundHours = (v: number): number => Math.round(v * 100) / 100;
 
 /**
- * The limits sheet's checks, the same ones the save runs and the table's own checks hold (held migration 20261115230000):
+ * The limits sheet's checks, the same ones the save runs and the table's own checks hold (held migration 20261115232000):
  * the first problem, with the field it belongs to, or null. A season is both dates, the first on or before the last, and
  * at most a year; the fall and spring seasons can't overlap. Custom limits: up to 24 a day, 168 a week, 0 to 7 days off.
  * The untimed standard is more than 0 and up to 12.

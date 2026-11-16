@@ -21,9 +21,13 @@ test('flags unscoped CSS selectors and literal durations', () => {
   assert.equal(v.filter((x) => x.includes('.ch-ok')).length, 0);
 });
 
-test('red is allowed for under par only', () => {
-  assert.equal(checkSource('src/clubhouse/a.css', '.ch-topar.is-under{color:var(--ch-score-under)}').length, 0);
-  assert.equal(checkSource('src/clubhouse/a.css', '.ch-badge{color:var(--ch-score-under)}').length, 1);
+test('red is for errors only (MOTION-AND-VISUAL 4.7): an error, a destructive key, the pin flag or a penalty', () => {
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-form.is-error{color:var(--ch-danger-600)}').length, 0);
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-map__flag{fill:var(--ch-chart-flag)}').length, 0);
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-badge{color:var(--ch-danger-600)}').length, 1);
+  // Under par is the gain now: red under par is flagged, and the under-par token (green) reads anywhere.
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-topar.is-under{color:var(--ch-chart-flag)}').length, 1);
+  assert.equal(checkSource('src/clubhouse/a.css', '.ch-badge{color:var(--ch-score-under)}').length, 0);
 });
 
 test('a gain or loss tone paints only with the chart gain and loss family (CONS-20)', () => {
@@ -188,8 +192,8 @@ test('a z-index is a ladder step, a step plus or minus 1 to 5, or a local -1 to 
 
 test('a card, panel or tile takes its corner from the radius scale; its children do not count (CONS-32)', () => {
   const css = (decl, sel = '.ch-x-card') => checkSource('src/clubhouse/styles/x.css', `${sel} { ${decl} }`);
-  assert.deepEqual(css('border-radius: var(--ch-radius-card);'), []);
-  assert.deepEqual(css('border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;'), []);
+  assert.deepEqual(css('border-radius: var(--ch-radius-lg);'), []);
+  assert.deepEqual(css('border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;'), []);
   assert.deepEqual(css('border-radius: 999px;'), []);
   assert.ok(css('border-radius: 22px;').some((x) => x.includes('CONS-32')));
   assert.ok(css('border-top-left-radius: 18px;', '.ch-a .ch-stm-panel:hover').some((x) => x.includes('CONS-32')));

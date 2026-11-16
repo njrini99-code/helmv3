@@ -15,6 +15,9 @@ import { PanelBoundary } from '../../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../../_components/PanelSkeletons';
 import { PanelNoData } from '../../../_components/PanelStates';
 import { LocalTime } from '../../../_components/LocalTime';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Thread' };
 
 export const dynamic = 'force-dynamic';
 

@@ -7,7 +7,7 @@ import {
 } from '@/lib/admin/observe-action-result';
 import { createClient } from '@/lib/supabase/server';
 import { runWithRequestContext } from '@/lib/admin/request-context';
-import { assertGolfDemoWritable, isGolfDemoReadOnlyError } from '@/lib/demo/golf-read-only';
+import { assertGolfDemoWritable, isGolfDemoRefusal } from '@/lib/demo/golf-read-only';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
 
 /**
@@ -164,7 +164,7 @@ export function withAdminObserved<Args extends unknown[], R>(
       // A demo read-only rejection is the guard working as designed, not a
       // defect. Reporting it would bury Sentry and admin_events in noise on
       // any night a batch of prospects is touring the demo at once.
-      if (!isNextControlFlowError(err) && !isAdminAuthControlFlowError(err) && !isGolfDemoReadOnlyError(err)) {
+      if (!isNextControlFlowError(err) && !isAdminAuthControlFlowError(err) && !isGolfDemoRefusal(err)) {
         try {
           const throttleKey = throttleKeyFor(name, err);
           if (shouldEmit(throttleKey)) {

@@ -33,6 +33,9 @@ import type {
   HelmLiftingSetResultRow,
   HelmLiftingSessionWithExercises,
 } from '@/lib/types/helm-lifting-data';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Lift Session' };
 
 interface SessionFetchResult {
   session: HelmLiftingSessionWithExercises | null;

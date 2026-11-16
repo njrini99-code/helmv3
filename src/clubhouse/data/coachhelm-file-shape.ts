@@ -11,6 +11,7 @@ import type { ChCoachPlayerHead } from './coachhelm-views-shape';
 import type { ChHelmLifecycle } from './coachhelm-shape';
 import { changeTone, formatSigned, formatFixed } from '../lib/format';
 import { plural } from '../lib/plural';
+import { deltaTone, sampleSd, standardError } from '../lib/stats-signal';
 import type { ChFigures, ChLegKey } from './figure-window';
 import type { ChSgMix } from './stats-sg-mix';
 
@@ -153,11 +154,32 @@ export interface ChFileHandshake {
 export interface ChFileGoal {
   title: string;
   line: string;
-  word: 'Improved' | 'No change' | 'Worse' | null;
+  /**
+   * The check-ins since the goal started, on average, against the baseline (stats and charts audit 2026-11-15, CH-07): "Improved"
+   * or "Worse" only when the change clears two standard errors of the check-ins' own spread (`deltaTone`), else "No clear change";
+   * null with no baseline or no check-in.
+   */
+  word: 'Improved' | 'No clear change' | 'Worse' | null;
   target: number | null;
   points: Array<{ label: string; value: number }>;
   /** The newest check-in is on the wrong side of the goal. */
   worse: boolean;
+  /** A lower value is better (three-putts, scoring): the chart draws it higher, better is up. */
+  lowerBetter: boolean;
+}
+
+/** Check-ins a goal needs before its word reads a change: the spread of fewer says nothing. */
+export const GOAL_WORD_MIN_POINTS = 3;
+
+/** The goal's word from its check-ins against the baseline: their mean's change, past two standard errors of their own spread. */
+export function goalWord(values: readonly number[], base: number | null, lowerBetter: boolean): ChFileGoal['word'] {
+  if (base == null || values.length === 0) return null;
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const sd = values.length >= GOAL_WORD_MIN_POINTS ? sampleSd([...values]) : null;
+  // Check-ins that all read the same have no spread: their mean is exact, so any change from the baseline is clear.
+  const se = sd == null ? null : Math.max(standardError(sd, values.length) ?? 0, 1e-6);
+  const tone = deltaTone(mean - base, se, lowerBetter);
+  return tone === 'is-gain' ? 'Improved' : tone === 'is-loss' ? 'Worse' : 'No clear change';
 }
 
 export interface ChFilePlan {
@@ -222,8 +244,8 @@ function toFileGoal(g: Goal, row: ChFocusRow | null, zone: string): ChFileGoal {
   const target = g.target_value;
   const lowerBetter = target != null && base != null ? target < base : true;
   const worse = last != null && target != null ? (lowerBetter ? last > target : last < target) : false;
-  const word = last == null || base == null ? null : last === base ? 'No change' : (lowerBetter ? last < base : last > base) ? 'Improved' : 'Worse';
-  return { title: g.title, line: `${points.length} check-in${pluralWord(points.length, '', 's')}`, word, target, points, worse };
+  const word = goalWord(points.map((p) => p.value), base, lowerBetter);
+  return { title: g.title, line: `${points.length} check-in${pluralWord(points.length, '', 's')}`, word, target, points, worse, lowerBetter };
 }
 
 export interface ChFileField {

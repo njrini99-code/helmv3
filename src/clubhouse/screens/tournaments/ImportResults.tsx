@@ -940,7 +940,7 @@ function ColumnEditor({
           <thead>
             <tr>
               {Array.from({ length: width }, (_, c) => (
-                <th key={c} scope="col" className={role(c) ? 'is-on' : undefined}>
+                <th key={c} scope="col" className={role(c) ? 'is-mapped' : undefined}>
                   <span>{columnName(c)}</span>
                   {role(c) && <em>{role(c)}</em>}
                 </th>

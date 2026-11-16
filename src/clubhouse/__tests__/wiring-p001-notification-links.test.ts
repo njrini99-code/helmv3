@@ -115,6 +115,7 @@ const LINKS: ReadonlyArray<{ href: string; roles: readonly Role[]; writer: strin
   { href: `/golf/dashboard/rounds/${ID}/review`, roles: ['player'], writer: 'notify.ts round review' },
   { href: `/golf/dashboard/qualifiers/${ID}`, roles: ['coach', 'player'], writer: 'player-notify.ts, notifications/index.ts' },
   { href: '/golf/dashboard/settings?section=notifications', roles: ['coach', 'player'], writer: 'push-subscriptions/test' },
+  { href: `/golf/dashboard/stats?player=${ID}&tab=dev`, roles: ['coach'], writer: 'verdict-job.ts (a focus area got worse, GAP-R-01)' },
 ];
 
 beforeEach(() => {

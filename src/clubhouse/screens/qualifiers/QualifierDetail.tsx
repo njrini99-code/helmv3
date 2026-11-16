@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, ViewTransition, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
@@ -25,6 +25,7 @@ import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
+import { RankSlot, useRankSlideArmed } from './RankSlot';
 import { Courses, LiveChip, Pairings, Selections, StaleStandings } from './QualifierSections';
 import { PrintHead } from './PrintHead';
 import { StandingsSpread } from './StandingsSpread';
@@ -402,6 +403,8 @@ function Leaderboard({
   const order = useMemo(() => (b?.rows ?? []).map((r) => r.playerId), [b]);
   // P009-B1: a refresh that changed the ranks slides the rows to their new places, unless a scorecard tray is open.
   const slide = useRankSlide(order, open !== null);
+  // pa-mot-02: the rows' boundaries mount after the board lands, so a push into the qualifier starts no view transition.
+  const armed = useRankSlideArmed();
 
   const head = (
     <div className="ch-qf-panel__head">
@@ -501,7 +504,7 @@ function Leaderboard({
                 {i === b.topScore && b.topScore > 0 && <CutLine text={`Top-score line · ${b.topScore} qualify on score`} />}
                 {i === b.squad && b.squad !== b.topScore && <CutLine muted text={`Travel cut · top ${b.squad} make the trip`} />}
                 {/* P009-B1: the row slides to a new rank only when a refresh changed the order (`slide`); otherwise it never moves. */}
-                <ViewTransition name={`ch-rank-${r.playerId}`} update={slide ? 'ch-rank' : 'none'} enter="none" exit="none" share="none" default="none">
+                <RankSlot id={r.playerId} slide={slide} armed={armed}>
                   {/* The row is a mouse target too; the keyboard path is the scorecards button in its last cell (44pt on touch). */}
                   {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus */}
                   <div
@@ -573,7 +576,7 @@ function Leaderboard({
                       )}
                     </span>
                   </div>
-                </ViewTransition>
+                </RankSlot>
                 {/* CH-09602: the row turns selected (quick) and its scorecards drop 6px into place as they fade in (base),
                     at their final values; closing takes the tray away at once. */}
                 {isOpen && (

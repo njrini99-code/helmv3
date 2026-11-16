@@ -1,12 +1,12 @@
 'use client';
 
 import { animate, m, useMotionValue, type MotionValue } from 'motion/react';
-import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
-import { chSpring, chTween } from '../../lib/motion';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 
 /**
- * P-7 section 5.1 (M2, M3, M6, M12): the course page's small fades and its one height ease. Never on first paint, and
+ * P-7 section 5.1 (M2, M3, M6, M12): the course page's small fades; nothing on it animates a height. Never on first paint, and
  * instant under reduced motion and Animations off (`reduced`, from useChReducedMotion).
  */
 
@@ -48,51 +48,18 @@ export function FadeNum({ text, className, scope }: { text: string; className?: 
   );
 }
 
+
 /**
- * M12: a block's height eases when what it holds changes size on `key` (a note's "Show all"), on the smooth spring.
- * A line clamp can't animate, so the change lands at once and the frame is pinned at the old height, clipped, then
- * eased to the new one and let go to `auto`. A change mid-ease starts from where the frame is. The resting height is
- * kept by a ResizeObserver (no reads on render).
+ * M12, revised (production audit 2026-11-15, MOT-15): a block whose content changes size on `swap` (a note's "Show all")
+ * takes its new height at once, and its content fades back in over the quick beat. Height is never animated: a height
+ * ease lays the page out again on every frame. Never on first paint; instant under reduced motion and Animations off.
  */
-export function useExpandHeight(key: string | number | boolean): RefObject<HTMLDivElement | null> {
+export function SwapFade({ swap, className, children }: { swap: string | number | boolean; className?: string; children: ReactNode }) {
   const reduced = useChReducedMotion();
-  const frame = useRef<HTMLDivElement | null>(null);
-  const rest = useRef<number | null>(null);
-  const shown = useRef(key);
-  useEffect(() => {
-    const el = frame.current;
-    if (!el) return undefined;
-    rest.current = el.offsetHeight;
-    if (typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(() => {
-      if (!el.style.height) rest.current = el.offsetHeight;
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  useLayoutEffect(() => {
-    if (shown.current === key) return undefined;
-    shown.current = key;
-    const el = frame.current;
-    if (!el || reduced) return undefined;
-    const from = el.style.height ? el.getBoundingClientRect().height : rest.current;
-    el.style.height = '';
-    const to = el.offsetHeight;
-    if (from == null || Math.abs(to - from) < 1) return undefined;
-    el.style.overflow = 'clip';
-    el.style.height = `${from}px`;
-    const run = animate(el, { height: `${to}px` }, chSpring('smooth'));
-    const done = () => {
-      el.style.height = '';
-      el.style.overflow = '';
-      rest.current = el.offsetHeight;
-    };
-    let live = true;
-    run.then(() => live && done());
-    return () => {
-      live = false;
-      run.stop();
-    };
-  }, [key, reduced]);
-  return frame;
+  const o = useFadeOnChange(String(swap), reduced);
+  return (
+    <m.div className={className} style={{ opacity: o }}>
+      {children}
+    </m.div>
+  );
 }

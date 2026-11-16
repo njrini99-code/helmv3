@@ -7,7 +7,7 @@
 --   supabase/migrations/20261115250000_golf_roster_limits.sql
 --   after npm run test:rls passes on a local stack (the pgTAP file is
 --   supabase/tests/rls/golf_roster_limits.sql). Order: after
---   20261115230000 and 20261115240000 (independent of both).
+--   20261115232000 and 20261115240000 (independent of both).
 --
 -- Risk: LOW. Additive only: two new tables, their indexes and policies. No
 --   existing table, column, policy, grant or function changes.

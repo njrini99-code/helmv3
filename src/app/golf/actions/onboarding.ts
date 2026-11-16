@@ -510,6 +510,23 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
       return { success: false, error: 'Session not found. Please try logging in again, or check if email confirmation is required in Supabase settings.' };
     }
 
+    // Who this account already is, read before anything is written (GAP-S-04). A read that failed is not "a new
+    // player": the old shape discarded the error, so a blip read as no player row and the insert below ran for someone
+    // who has one. An onboarded coach never gets a player profile here, and an onboarded player's profile is not
+    // rewritten by a second submit (a retry after a lost response finishes as it did the first time).
+    const [{ data: existingPlayer, error: playerReadError }, { data: existingCoach, error: coachReadError }] = await Promise.all([
+      supabase.from('golf_players').select('id, onboarding_completed').eq('user_id', user.id).maybeSingle(),
+      supabase.from('golf_coaches').select('id, onboarding_completed').eq('user_id', user.id).maybeSingle(),
+    ]);
+    if (playerReadError || coachReadError) {
+      await logServerError(`[Onboarding] Account read failed: ${describeError(playerReadError ?? coachReadError)}`, { action: 'onboarding.completePlayerOnboarding' });
+      return { success: false, error: 'We couldn’t check your account just now. Nothing was changed. Try again.' };
+    }
+    if (existingCoach?.onboarding_completed) {
+      await logServerError('[Onboarding] Refused: a coach account submitted player onboarding', { action: 'onboarding.completePlayerOnboarding' }, 'warning');
+      return { success: false, error: 'This account is set up as a coach, so it can’t become a player here.' };
+    }
+
     // Ensure users table record exists with correct role
     const { error: usersError } = await supabase
       .from('users')
@@ -527,13 +544,6 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
     if (usersError) {
       await logServerError(`[Onboarding] Users upsert warning: ${describeError(usersError)}`, { action: 'onboarding.completePlayerOnboarding' });
     }
-
-    // Check for existing player record
-    const { data: existingPlayer } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
 
     // A PARTIAL update must not write NULL over what it was not given.
     //
@@ -577,7 +587,9 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
 
     let playerId = existingPlayer?.id ?? null;
 
-    if (existingPlayer) {
+    // An onboarded player is neither updated nor inserted: a second submit rewrites nothing, and a join code still lands
+    // them on the team below.
+    if (existingPlayer && !existingPlayer.onboarding_completed) {
       const { error } = await supabase
         .from('golf_players')
         .update(playerData)
@@ -587,7 +599,7 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
         await logServerError(`[Onboarding] Player update failed: ${describeError(error)}`, { action: 'onboarding.completePlayerOnboarding' });
         return { success: false, error: 'Failed to update player profile. Please try again.' };
       }
-    } else {
+    } else if (!existingPlayer) {
       const { data: created, error } = await supabase
         .from('golf_players')
         .insert({

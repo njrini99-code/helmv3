@@ -1,16 +1,14 @@
 import { SkelLine, Skeleton } from "../../../ui/States";
-import { PlayerHelmTabs } from "../views/PlayerHelmTabs";
-import { CoachHelmTabs } from "./SubTabs";
 
 /**
- * The Ask view on its way (CH-13420): the sub-tab strip, the chats, the greeting lines and the composer, in place, so nothing
+ * The Ask view on its way (CH-13420): the chats, the greeting lines and the composer, in place, so nothing
  * moves when the data arrives. `aria-busy`, no spinner. The route shows it while the chat context, the pulse and the chats
  * read (a Suspense boundary inside the route: `coachhelm/loading.tsx` cannot read `?view=`, so it stays the Board's shape).
  * It draws on the server. `chained`: it follows the route's own skeleton (see CoachHelmSkeleton).
  *
+ * The switch is not drawn here: it is the route's, above the view (SwitchFrame, N13C-67), and loading.tsx holds it in that place.
  * Desktop is drawn in the loaded page's own classes (WebKit 1280 and 1440, 2026-10-29), so the existing layout places it: the
- * team at the left of the strip and Board | Ask at the right (the strip itself, held: it was a bar at the left, 1,014px from where
- * the control lands), the chats panel's head, New chat, search and two groups of rows (a coach's; a player has no chats column,
+ * chats panel's head, New chat, search and two groups of rows (a coach's; a player has no chats column,
  * `is-solo`); the chat's "New chat" head, then the new chat's home in its own classes (`.ch-ak-home`, Q2 A): the ball, the
  * greeting and its line in the middle of the pane, the question box, the starter chips, and the quiet list at the foot.
  *
@@ -59,17 +57,6 @@ export function AskSkeleton({
     >
       {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
       <h1 className="ch-sr-only">Ask CoachHelm</h1>
-      <div className="ch-ask-top">
-        {player ? (
-          <PlayerHelmTabs active="ask" held />
-        ) : (
-          <CoachHelmTabs active="ask" held />
-        )}
-        <span className="ch-ask-team ch-ask-sk__desk" aria-hidden="true">
-          <i />
-          <Skeleton width={104} height={12} />
-        </span>
-      </div>
       <div className={'ch-ask-body ' + (player ? 'is-solo' : 'has-panel')}>
         {!player && (
           <aside className="ch-ask-hist" aria-hidden="true">

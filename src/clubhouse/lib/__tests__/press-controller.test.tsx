@@ -2,8 +2,9 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * B6: the pressed look. The control under the finger carries `data-ch-pressed`: a quick tap shows it for at least 90ms,
- * a scroll (a move past 10px) never sets it, and it runs with motion off as well, since it is a state, not a movement.
+ * B6: the pressed look. The control under the finger carries `data-ch-pressed`: a quick tap shows it for at least the
+ * press beat (110ms; MOTION-AND-VISUAL 3.8, was 90ms), a held touch from 50ms (3.8, was 70ms), a scroll (a move past 10px)
+ * never sets it, and it runs with motion off as well, since it is a state, not a movement.
  */
 
 import { PRESS_TAP_SHOW_MS, PRESS_TOUCH_DELAY_MS, useChPress } from '../press';
@@ -43,7 +44,7 @@ afterEach(() => {
 const pressed = (text: string) => screen.getByText(text).hasAttribute('data-ch-pressed');
 
 describe('the pressed look (B6)', () => {
-  it('a 40ms tap shows data-ch-pressed for at least 90ms, then lets go', () => {
+  it('a 40ms tap shows data-ch-pressed for the 110ms press beat, then lets go', () => {
     render(<Harness />);
     const row = screen.getByText('A row');
     act(() => void row.dispatchEvent(pointer('pointerdown', 'touch')));
@@ -56,7 +57,7 @@ describe('the pressed look (B6)', () => {
     expect(pressed('A row')).toBe(false);
   });
 
-  it('a held touch shows it from 70ms and keeps it while held', () => {
+  it('a held touch shows it from 50ms and keeps it while held', () => {
     render(<Harness />);
     const opt = screen.getByText('Fairway');
     act(() => void opt.dispatchEvent(pointer('pointerdown', 'touch')));

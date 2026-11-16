@@ -15,24 +15,44 @@ import { Coin, Notice, readTitle } from './parts';
 import { STATION_SHORT } from './hole-geometry';
 import { sgIsEstimate } from '../../../data/stats-sg-mix';
 
-/** Four bars around a zero line: 20pt is 1.1 strokes, loss down, gain up (AC-ROSTER-03). */
-export function FingerPrint({ player, labels = false }: { player: ChTeamPlayer; labels?: boolean }) {
+/** The fingerprint's height, and its most points a stroke: 20pt is 1.1 strokes (AC-ROSTER-03). */
+const FP_H = 34;
+const FP_PER_STROKE = 20 / 1.1;
+
+/**
+ * One ruler for every fingerprint on the roster (stats and charts audit 2026-11-15, CH-17): the zero line sits where the largest gain
+ * and the largest loss both fit, at the spec's 20pt a 1.1 strokes or less, so no bar is cut short and every player reads on the same
+ * scale. The old zero sat at 9 of 34 for everyone, so a gain stopped at about 0.4 of a stroke and a loss at 1.3, with no mark.
+ */
+export function fingerScale(players: readonly ChTeamPlayer[], h = FP_H): { zero: number; perStroke: number } {
+  const all = players.flatMap((p) => STATIONS.map((s) => p.legs[s].strokes)).filter((v): v is number => v != null);
+  const gain = Math.max(0, ...all);
+  const loss = Math.max(0, ...all.map((v) => -v));
+  const room = h - 4;
+  if (gain + loss === 0) return { zero: h / 2, perStroke: FP_PER_STROKE };
+  const perStroke = Math.min(FP_PER_STROKE, room / (gain + loss));
+  // The spare room is split evenly above and below, so a roster of small gains and losses keeps its zero near the middle.
+  const spare = room - (gain + loss) * perStroke;
+  return { zero: 2 + spare / 2 + gain * perStroke, perStroke };
+}
+
+/** Four bars around a zero line, loss down, gain up, on the roster's one ruler (`fingerScale`), with no floor on a bar's length. */
+export function FingerPrint({ player, labels = false, scale }: { player: ChTeamPlayer; labels?: boolean; scale?: { zero: number; perStroke: number } }) {
   const w = labels ? 78 : 60;
-  const h = 34;
+  const h = FP_H;
   const bw = 10;
   const gap = (w - 4 * bw) / 3;
-  const z = 9;
-  const sc = 20 / 1.1;
+  const { zero: z, perStroke: sc } = scale ?? fingerScale([player]);
   return (
     <svg className="fp" width={w} height={h + (labels ? 14 : 0)} viewBox={`0 0 ${w} ${h + (labels ? 14 : 0)}`} aria-hidden="true">
       <line className="z" x1="0" x2={w} y1={z} y2={z} />
       {STATIONS.map((s, i) => {
         const v = player.legs[s].strokes;
         const x = i * (bw + gap);
-        const hh = v == null ? 0 : Math.max(2, Math.min(Math.abs(v) * sc, v < 0 ? h - z - 2 : z - 2));
+        const hh = v == null ? 0 : Math.abs(v) * sc;
         return (
           <g key={s}>
-            {v != null && (v < 0 ? <rect className="l" x={x} y={z + 1} width={bw} height={hh} rx="2.5" /> : <rect className="g" x={x} y={z - 1 - hh} width={bw} height={hh} rx="2.5" />)}
+            {v != null && hh > 0 && (v < 0 ? <rect className="l" x={x} y={z + 1} width={bw} height={hh} rx="2.5" /> : <rect className="g" x={x} y={z - 1 - hh} width={bw} height={hh} rx="2.5" />)}
             {labels && (
               <ChartText className="lab" size={12} x={x + bw / 2} y={h + 11} textAnchor="middle">
                 {STATION_SHORT[s][0]}
@@ -47,6 +67,7 @@ export function FingerPrint({ player, labels = false }: { player: ChTeamPlayer; 
 
 export function RosterCard({ players, phone, onPlayer }: { players: readonly ChTeamPlayer[]; phone: boolean; onPlayer: (id: string) => void }) {
   const sorted = [...players].sort((a, b) => (a.total ?? Infinity) - (b.total ?? Infinity));
+  const ruler = fingerScale(players);
   return (
     <section className={'card' + (phone ? '' : ' rost')} data-ch-team-card="roster" aria-label="Roster">
       <div className="ch">
@@ -70,7 +91,7 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
             {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">{STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">No rounds yet</span>)}
             {p.rounds ? (
               <>
-                <FingerPrint player={p} labels={!phone} />
+                <FingerPrint player={p} labels={!phone} scale={ruler} />
                 <span className={'tot' + (p.total == null || Math.abs(p.total) < 0.05 ? ' is-even' : p.total > 0 ? ' g' : '')}>
                   {formatSigned(p.total)}
                   <span>{open} open</span>

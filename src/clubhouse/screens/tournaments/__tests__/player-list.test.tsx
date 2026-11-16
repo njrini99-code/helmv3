@@ -64,7 +64,7 @@ describe('the player’s Tournaments list · Played is a table on the sheet', ()
 
   it('keeps the sheet’s face on the Ledger canopy, which flattens it elsewhere', () => {
     expect(decls('.ch-tour-pl:not(.is-phone) .ch-tour-pl-res.ch-sheet')).toEqual({
-      'border-radius': 'var(--ch-radius-card)',
+      'border-radius': 'var(--ch-radius-lg)',
       background: 'var(--ch-sheet-bg)',
       'box-shadow': 'var(--ch-sheet-shadow)',
     });

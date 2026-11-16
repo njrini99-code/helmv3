@@ -41,6 +41,9 @@ import { resolveLiftingAccess } from '@/lib/lifting/access';
 import { ProgramListClient } from '@/components/lifting/programs/ProgramListClient';
 import { EditorsLetter } from '@/components/baseball/living-annual';
 import type { HelmLiftingProgramRow } from '@/lib/types/helm-lifting-data';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Programs' };
 
 interface ProgramWithCounts extends HelmLiftingProgramRow {
   week_count: number;

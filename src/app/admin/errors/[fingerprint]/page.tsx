@@ -39,6 +39,9 @@ import { ReleaseRelationshipLabel } from '@/components/admin/premium';
 import { IncidentGenomePanel } from '../_components/IncidentGenomePanel';
 import { AffectedPeoplePanel } from '../_components/AffectedPeoplePanel';
 import { fetchAffectedPeopleForFingerprint } from '@/lib/admin/data/affected-people';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Incident' };
 export const dynamic = 'force-dynamic';
 
 const SEVERITY_TONE: Record<TriageSeverity, FwStatusTone> = {

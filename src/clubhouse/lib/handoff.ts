@@ -3,6 +3,7 @@
 import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { CH_DUR, CH_EASE } from './motion';
 import { CH_RAIL_COOKIE } from './rail-cookie';
+import { chMotionModeNow } from './reduced-motion';
 
 /**
  * The curtain between the welcome (or the last onboarding screen) and the
@@ -46,7 +47,7 @@ export function dropHandoffCurtain(): void {
   // The dashboard draws its sidebar folded to the rail when this browser last folded it (RailToggle), so the curtain's
   // canvas starts where the dashboard's will.
   const folded = document.cookie.split('; ').includes(`${CH_RAIL_COOKIE}=1`);
-  const sidebarW = folded ? token(from, '--ch-rail-w', '56px') : token(from, '--ch-sidebar-w', '240px');
+  const sidebarW = folded ? token(from, '--ch-rail-w', '56px') : token(from, '--ch-sidebar-w', '232px');
   const phone = window.matchMedia(PHONE).matches;
   // At night the fold's strip is the flat frame (auth.css, onboard.css), so the curtain is too.
   const dark = document.documentElement.getAttribute('data-fw-theme') === 'dark';
@@ -138,7 +139,8 @@ export function liftHandoffCurtain(): void {
     window.clearTimeout(safety);
     safety = null;
   }
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Reduce Motion or Settings › Animations off: the curtain goes at once (MOTION-AND-VISUAL 3.11).
+  const reduced = chMotionModeNow() !== 'full';
   const go = () => {
     // Two frames: the dashboard's first paint is on screen before the curtain starts to move.
     requestAnimationFrame(() =>

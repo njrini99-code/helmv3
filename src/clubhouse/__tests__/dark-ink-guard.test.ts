@@ -27,7 +27,7 @@ describe('ink that holds at night', () => {
     );
   });
   it('forest ink never sits on the page or a tint that goes dark at night', () => {
-    const flips = /^(-|var\(--ch-green-(25|50|100)\)|var\(--ch-ivory-\d+\)|var\(--ch-bg-surface\)|var\(--ch-ledger-row-hover\))$/;
+    const flips = /^(-|var\(--ch-green-(25|50|100)\)|var\(--ch-ivory-\d+\)|var\(--ch-bg-surface\)|var\(--ch-ledger-row-hover\)|var\(--ch-sel\))$/;
     const left = rules
       .filter((r) => /(?<![-\w])color:\s*var\(--ch-green-(800|900)\)/.test(r.body) && flips.test(bgOf(r.body)))
       .filter((r) => !r.sel.includes("data-fw-theme='dark'") && !r.sel.includes('.ch-sgt'))

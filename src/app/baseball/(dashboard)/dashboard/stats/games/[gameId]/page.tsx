@@ -10,6 +10,9 @@ import { mapBattingToInput, mapPitchingToInput } from '@/components/baseball/box
 import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 import type { BaseballGame } from '@/lib/types';
 import { PaperCard } from '@/components/baseball/living-annual';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Game' };
 
 interface PageProps {
   params: Promise<{ gameId: string }>;

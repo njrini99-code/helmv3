@@ -16,9 +16,16 @@ describe('scoreChangeChip', () => {
     expect(c.words).toBe('No clear change vs previous 10');
   });
 
-  it('past its standard error: the arrow, "lower", and the gain tone for a lower score', () => {
-    const c = scoreChangeChip(-0.8, 0.5, true, words);
+  it('past two standard errors (stats and charts audit 2026-11-15, CH-05): the arrow, "lower", and the gain tone for a lower score', () => {
+    const c = scoreChangeChip(-0.8, 0.35, true, words);
     expect(c).toEqual({ chip: '0.8 lower', tone: 'gain', direction: 'down', words: 'than the 10 before' });
+  });
+
+  it('one and a half standard errors is still no clear change', () => {
+    const c = scoreChangeChip(-0.8, 0.5, true, words);
+    expect(c.tone).toBe('flat');
+    expect(c.direction).toBe('flat');
+    expect(c.words).toBe('No clear change vs previous 10');
   });
 
   it('a clear rise in score is a loss, told "higher"', () => {

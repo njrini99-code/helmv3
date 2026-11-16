@@ -34,46 +34,57 @@ describe('404 destinations — the primary action matches where the visitor was'
     // The exact production URL that surfaced this.
     const d = destinationsFor('/golf/dashboard/players/0c82eefb/insight');
     const primary = d.find((x) => x.primary);
-    expect(primary?.label).toBe('Golf Dashboard');
+    expect(primary?.label).toBe('GolfHelm');
     expect(primary?.href).toBe('/golf/dashboard');
   });
 
   it('promotes Baseball for a baseball route', () => {
     const d = destinationsFor('/baseball/dashboard/roster/nope');
     const primary = d.find((x) => x.primary);
-    expect(primary?.label).toBe('Baseball Dashboard');
+    expect(primary?.label).toBe('BaseballHelm');
     expect(primary?.href).toBe('/baseball/dashboard');
   });
 
-  it('still offers the other sport, just not promoted', () => {
-    const labels = destinationsFor('/golf/dashboard/nope').map((x) => x.label);
-    expect(labels).toContain('Baseball Dashboard');
-    expect(labels).toContain('Golf Dashboard');
-    expect(labels).toContain('Go to Home');
+  it('promotes Lift Lab for a Lift Lab route (GAP-R-07)', () => {
+    const primary = destinationsFor('/lifting/dashboard/programs/nope').find((x) => x.primary);
+    expect(primary?.label).toBe('Lift Lab');
+    expect(primary?.href).toBe('/lifting/dashboard');
   });
 
-  it('promotes exactly one destination', () => {
-    for (const p of ['/golf/x', '/baseball/x', '/anything']) {
-      expect(destinationsFor(p).filter((x) => x.primary).length, p).toBeLessThanOrEqual(1);
+  it('still offers the other products, just not promoted', () => {
+    const d = destinationsFor('/golf/dashboard/nope');
+    expect(d.map((x) => x.label)).toEqual(['GolfHelm', 'Home', 'BaseballHelm', 'Lift Lab']);
+    expect(d.filter((x) => !x.primary).map((x) => x.label)).toEqual(['Home', 'BaseballHelm', 'Lift Lab']);
+  });
+
+  it('promotes exactly one destination, and lists it first', () => {
+    for (const p of ['/golf/x', '/baseball/x', '/lifting/x', '/anything', null]) {
+      const d = destinationsFor(p);
+      expect(d.filter((x) => x.primary).length, String(p)).toBe(1);
+      expect(d[0]?.primary, String(p)).toBe(true);
     }
   });
 
-  it('promotes NOTHING when the path gives no signal', () => {
-    // Guessing a sport is what shipped the bug. An unknown route offers both
-    // and lets the visitor choose.
+  it('promotes Home, never a sport, when the path gives no signal', () => {
+    // Guessing a sport is what shipped the bug. One calm primary action
+    // (GAP-M-02, 15 Nov 2026) is the site's home, and every product stays on
+    // offer as a quiet link.
     for (const p of ['/', '/pricing', null, undefined]) {
-      expect(destinationsFor(p).some((x) => x.primary), String(p)).toBe(false);
+      const d = destinationsFor(p);
+      expect(d.find((x) => x.primary)?.href, String(p)).toBe('/');
+      expect(d.filter((x) => !x.primary).map((x) => x.label), String(p)).toEqual(['GolfHelm', 'BaseballHelm', 'Lift Lab']);
     }
   });
 
   it('is not fooled by a sport name appearing later in the path', () => {
     // A marketing page about baseball is not a baseball app route.
     const d = destinationsFor('/blog/why-we-built-baseball');
-    expect(d.some((x) => x.primary)).toBe(false);
+    expect(d.find((x) => x.primary)?.href).toBe('/');
+    expect(destinationsFor('/golfing-tips').find((x) => x.primary)?.href).toBe('/');
   });
 
   it('always offers a way home', () => {
-    for (const p of ['/golf/x', '/baseball/x', '/anything', null]) {
+    for (const p of ['/golf/x', '/baseball/x', '/lifting/x', '/anything', null]) {
       expect(destinationsFor(p).map((x) => x.href), String(p)).toContain('/');
     }
   });

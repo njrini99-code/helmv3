@@ -64,13 +64,16 @@ describe('A-11/A-12: reduced motion reaches the review scroll and dialog scrims'
   });
 });
 
-describe('A-13: skeletons sweep on the compositor at every width', () => {
-  it('no skeleton animates background-position, and the sheen slides by transform', () => {
+// A-13 moved the sheen onto the compositor; MOTION-AND-VISUAL 3.9 and 3.12 then retired the sheen and the pulse: a
+// skeleton is static, and its one animation is the busy wait (no frames run, it only keeps the block hidden for 150 ms).
+describe('A-13, 3.9: skeletons are static at every width', () => {
+  it('no skeleton sweeps, breathes or animates background-position', () => {
     const shell = css('shell.css');
-    expect(shell).not.toMatch(/@keyframes ch-shimmer \{/);
-    expect(shell).not.toMatch(/animation: ch-shimmer var/);
-    expect(shell).toMatch(/\.ch-skel::before \{[^}]*transform: translateX\(-100%\);[^}]*animation: ch-shimmer-x/);
-    expect(shell).toMatch(/@keyframes ch-skel-breathe \{\s*50% \{\s*opacity: 0\.55;/);
+    expect(shell).not.toMatch(/@keyframes ch-shimmer/);
+    expect(shell).not.toMatch(/@keyframes ch-skel-breathe/);
+    expect(shell).not.toMatch(/\.ch-skel::before \{/);
+    expect(shell).not.toMatch(/200vw 100% fixed/);
+    expect(shell).toMatch(/@keyframes ch-busy-wait \{\s*from \{\s*visibility: hidden;\s*\}\s*\}/);
   });
 });
 
@@ -122,11 +125,11 @@ describe('A-18: three sheets leave on their exit instead of unmounting', () => {
   });
 });
 
-describe('review 2026-10-15: a section change fades through, and a faded bar hides its buttons', () => {
-  it('the new page waits for the whole fade out, so the two snapshots never overlap', () => {
+describe('review 2026-10-15: a page change never shows two pages, and a faded bar hides its buttons', () => {
+  it('only the desktop crossfades, old and new together; the phone fade-through is gone (S4.4, S4.8)', () => {
     const tokens = css('tokens.css');
-    expect(tokens).toContain('--ch-dur-vt-gap: var(--ch-dur-vt-out);');
-    expect(css('shell.css')).toMatch(/::view-transition-new\(ch-page\) \{\s*animation: var\(--ch-dur-vt-in\) var\(--ch-ease-vt-in\) var\(--ch-dur-vt-gap\) both ch-vt-in;/);
+    expect(tokens).not.toContain('--ch-dur-vt-gap');
+    expect(css('shell.css')).toMatch(/::view-transition-new\(ch-page\) \{\s*animation: var\(--ch-dur-vt-in\) var\(--ch-ease-vt-in\) both ch-vt-in;/);
   });
   it('switching or a route skeleton takes the old bar buttons out of Tab and VoiceOver, after their fade', () => {
     const shell = css('shell.css');
@@ -165,18 +168,16 @@ describe('overnight polish 2026-10-15: dark mode keeps day-only surfaces whole',
   it('the sidebar plate has its own night material and ink, not a half-flipped day gradient', () => {
     const tokens = css('tokens.css');
     const dark = tokens.slice(tokens.indexOf("html[data-fw-theme='dark'] [data-ui='clubhouse'] {"));
-    expect(dark.slice(0, dark.indexOf('\n}'))).toMatch(/--ch-nav-well-bg: linear-gradient\(180deg, #24432f, #1a3524\);[\s\S]*--ch-nav-well-ink: #f3efe6;/);
+    expect(dark.slice(0, dark.indexOf('\n}'))).toMatch(/--ch-nav-well-bg: #24432f;[\s\S]*--ch-nav-well-ink: #f3efe6;/);
     expect(css('shell.css')).toMatch(/color: var\(--ch-nav-well-ink, var\(--ch-green-800\)\);/);
   });
 });
 
-describe('overnight polish 2026-10-15: the now line reads as live', () => {
-  it('its dot and the phone pill breathe slowly, and Animations off stops both', () => {
+describe('MOTION-AND-VISUAL 3.12 (owner, 15 Nov 2026): the now line is still', () => {
+  it('its dot and the phone pill no longer breathe: the only loop is the working indicator', () => {
     const cal = css('calendar.css');
-    // The rings breathe on their own layers' opacity since F-0047 (compositor, not box-shadow), on the same 2.8 s loop.
-    expect(cal).toMatch(/\.ch-wk__now::after \{[^}]*animation: ch-now-breathe var\(--ch-dur-live\) var\(--ch-ease-io\) infinite;/);
-    expect(cal).toMatch(/animation: ch-now-pill var\(--ch-dur-live\) var\(--ch-ease-io\) infinite;/);
-    expect(cal).toMatch(/\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-wk__now::after,\s*\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-calm-now span::before \{\s*animation: none;/);
+    expect(cal).not.toMatch(/ch-now-breathe|ch-now-pill|--ch-dur-live|\binfinite\b/);
+    expect(cal).not.toMatch(/\.ch-wk__now::after|\.ch-calm-now span::before/);
   });
 });
 

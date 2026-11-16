@@ -1,0 +1,180 @@
+{
+  "src/clubhouse/lib/sheet-drag.ts": {
+    "retired-token": 1
+  },
+  "src/clubhouse/screens/messages/overlays/bubble-actions.tsx": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/auth.css": {
+    "off-token-duration": 2,
+    "retired-token": 16,
+    "keyframes": 15,
+    "infinite": 8
+  },
+  "src/clubhouse/styles/base.css": {
+    "off-token-duration": 2,
+    "retired-token": 7
+  },
+  "src/clubhouse/styles/calendar.css": {
+    "retired-token": 27
+  },
+  "src/clubhouse/styles/classes.css": {
+    "retired-token": 5
+  },
+  "src/clubhouse/styles/coachhelm-ask-cards.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/coachhelm-ask-v2.css": {
+    "off-token-duration": 3,
+    "retired-token": 33,
+    "infinite": 1
+  },
+  "src/clubhouse/styles/coachhelm-ask.css": {
+    "retired-token": 13
+  },
+  "src/clubhouse/styles/coachhelm-ball.css": {
+    "infinite": 1
+  },
+  "src/clubhouse/styles/coachhelm-brief.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/coachhelm-dive.css": {
+    "retired-token": 4
+  },
+  "src/clubhouse/styles/coachhelm-file.css": {
+    "retired-token": 4
+  },
+  "src/clubhouse/styles/coachhelm-plan.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/coachhelm-profile.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/coachhelm-read.css": {
+    "retired-token": 2
+  },
+  "src/clubhouse/styles/coachhelm-standing.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/coachhelm-team.css": {
+    "retired-token": 28
+  },
+  "src/clubhouse/styles/coachhelm-thread.css": {
+    "retired-token": 6,
+    "infinite": 1
+  },
+  "src/clubhouse/styles/coachhelm-views.css": {
+    "retired-token": 4
+  },
+  "src/clubhouse/styles/coachhelm.css": {
+    "retired-token": 5
+  },
+  "src/clubhouse/styles/command.css": {
+    "retired-token": 2
+  },
+  "src/clubhouse/styles/component-playground.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/controls.css": {
+    "retired-token": 30,
+    "keyframes": 3
+  },
+  "src/clubhouse/styles/home.css": {
+    "retired-token": 17
+  },
+  "src/clubhouse/styles/hub.css": {
+    "retired-token": 14
+  },
+  "src/clubhouse/styles/live.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/messages-details.css": {
+    "retired-token": 8
+  },
+  "src/clubhouse/styles/messages-overlays.css": {
+    "retired-token": 1,
+    "keyframes": 1
+  },
+  "src/clubhouse/styles/messages-thread.css": {
+    "retired-token": 7
+  },
+  "src/clubhouse/styles/messages.css": {
+    "retired-token": 17,
+    "infinite": 2
+  },
+  "src/clubhouse/styles/onboard.css": {
+    "paint-keyframes": 5,
+    "keyframes": 17,
+    "infinite": 1
+  },
+  "src/clubhouse/styles/practice.css": {
+    "retired-token": 3,
+    "infinite": 1
+  },
+  "src/clubhouse/styles/qualifiers.css": {
+    "retired-token": 29
+  },
+  "src/clubhouse/styles/quick-chat.css": {
+    "off-token-duration": 1,
+    "retired-token": 7,
+    "infinite": 2
+  },
+  "src/clubhouse/styles/recruiting.css": {
+    "retired-token": 18
+  },
+  "src/clubhouse/styles/roster.css": {
+    "retired-token": 21
+  },
+  "src/clubhouse/styles/rounds-setup.css": {
+    "retired-token": 19
+  },
+  "src/clubhouse/styles/rounds-track.css": {
+    "retired-token": 18
+  },
+  "src/clubhouse/styles/rounds.css": {
+    "retired-token": 43
+  },
+  "src/clubhouse/styles/settings.css": {
+    "retired-token": 12
+  },
+  "src/clubhouse/styles/shell.css": {
+    "paint-keyframes": 4,
+    "retired-token": 64,
+    "keyframes": 11,
+    "infinite": 1
+  },
+  "src/clubhouse/styles/spinner.css": {
+    "infinite": 1
+  },
+  "src/clubhouse/styles/stats-redesign.css": {
+    "retired-token": 3
+  },
+  "src/clubhouse/styles/stats.css": {
+    "retired-token": 35
+  },
+  "src/clubhouse/styles/tournament-fields.css": {
+    "retired-token": 2
+  },
+  "src/clubhouse/styles/tournaments-compare.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/tournaments-desk.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/tournaments-player.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/tournaments.css": {
+    "retired-token": 1
+  },
+  "src/clubhouse/styles/ui.css": {
+    "retired-token": 14,
+    "keyframes": 1
+  },
+  "src/clubhouse/ui/FormSheet.tsx": {
+    "retired-token": 1
+  },
+  "src/clubhouse/ui/Toast.tsx": {
+    "retired-token": 1
+  }
+}

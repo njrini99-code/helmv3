@@ -114,7 +114,7 @@
 .ch-tour-desk-tabs button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 @media (hover: hover) {
   .ch-tour-desk-tabs button:not([aria-selected='true']):hover {
@@ -127,7 +127,7 @@
   bottom: 0;
   left: 0;
   height: 2px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-forest-800);
 }
 .ch-tour-desk-tabs__n {
@@ -137,7 +137,7 @@
   height: 18px;
   margin-left: 8px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-selected);
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
@@ -193,10 +193,10 @@
   height: 32px;
   padding: 0 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   cursor: pointer;
@@ -259,7 +259,7 @@
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
 }
 .ch-tour-desk-ct__row.is-head {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
   box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
@@ -340,7 +340,8 @@ button.ch-tour-desk-sc {
 }
 @media (hover: hover) {
   button.ch-tour-desk-sc:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 button.ch-tour-desk-sc:focus-visible {
@@ -403,14 +404,14 @@ button.ch-tour-desk-sc:focus-visible {
   min-width: 0;
   height: 22px;
   padding: 0 6px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
 }
 
 /* The phone's Who counted (board .tm-ct): a card, first names, three narrow columns. */
 .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__scroll {
   padding: 4px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -461,7 +462,7 @@ button.ch-tour-desk-sc:focus-visible {
   align-items: flex-start;
   gap: 8px;
   padding: 16px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -503,7 +504,7 @@ button.ch-tour-desk-sc:focus-visible {
 .ch-tour-desk-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-tour-desk.is-phone .ch-tour-desk-link {
   min-height: 44px;
@@ -529,7 +530,7 @@ button.ch-tour-desk-sc:focus-visible {
 }
 .ch-tour-desk-hg.is-phone .ch-tour-desk-hg__scroll {
   padding: 6px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -554,7 +555,7 @@ button.ch-tour-desk-sc:focus-visible {
   display: grid;
   place-items: center;
   height: 32px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
 }
 .ch-tour-desk-hg__row > .ch-tour-desk-hg__who {
@@ -578,7 +579,7 @@ button.ch-tour-desk-sc:focus-visible {
 .ch-tour-desk-hg__row.is-par > span,
 .ch-tour-desk-hg__row.is-par .ch-tour-desk-hg__nine > span {
   height: 22px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -608,7 +609,8 @@ button.ch-tour-desk-sc:focus-visible {
 }
 @media (hover: hover) {
   .ch-tour-desk-hg__cell:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-tour-desk-hg__cell:focus-visible {
@@ -616,7 +618,7 @@ button.ch-tour-desk-sc:focus-visible {
   outline-offset: -2px;
 }
 .ch-tour-desk-hg__tp {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
@@ -653,7 +655,7 @@ button.ch-tour-desk-sc:focus-visible {
   background: color-mix(in oklab, var(--ch-warning-600) 26%, var(--ch-warning-100));
   color: var(--ch-chart-loss-on-tint);
 }
-/* Under par is red in golf (D-42): the score-under family, never the chart's gain green. */
+/* Under par is the gain (MOTION-AND-VISUAL 4.7): the score-under family, which reads the gain family. */
 .ch-tour-desk-heat.is-under {
   background: var(--ch-score-under-bg);
   color: var(--ch-score-under);
@@ -678,7 +680,7 @@ button.ch-tour-desk-sc:focus-visible {
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-tour-desk-ev__fig dt {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -708,7 +710,7 @@ button.ch-tour-desk-sc:focus-visible {
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
 .ch-tour-desk-ev__d {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ev__t {
@@ -764,7 +766,7 @@ button.ch-tour-desk-sc:focus-visible {
   grid-template-columns: 40px repeat(9, minmax(22px, 1fr)) 34px;
   align-items: center;
   justify-items: center;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }

@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 /**
- * Audit row 35 (B3): the shape codemod (review-notes codemod/shape.md section 3). The radius scale is four steps, 8 / 12
- * / 16 / 20 (`--ch-radius-sm|md|lg|xl`), with a floor (`xs`, 4), `--ch-radius-mark` (2) for chart marks and thin bars,
+ * Audit row 35 (B3): the shape codemod (review-notes codemod/shape.md section 3). The radius scale is five steps, 8 / 12
+ * / 16 / 20 / full (`--ch-radius-sm|md|lg|xl|full`, MOTION-AND-VISUAL 4.5), with a glyph corner and floor (`xs`, 4)
  * and `--ch-radius-tail` (6) for the Messages bubble tail. For one stylesheet at a time, each raw px corner becomes:
  *
- *   1. `999px` when it is at least half the rule's own px height or min-height (a capsule), and `99px` always;
+ *   1. `var(--ch-radius-full)` when it is at least half the rule's own px height or min-height (a capsule), and `99px` always;
  *   2. the tail token for Messages' 6px corners;
  *   3. a nested inner corner, `max(var(--ch-radius-xs), calc(var(--ch-radius-<outer>) - var(--ch-space-<pad>)))`, where
  *      one was hand-written as `calc(var(--ch-radius-<outer>) - <pad>px)` (the pad on the 4pt scale: 3 -> 4);
- *   4. the mark token for 1-3px;
+ *   4. full for 1-3px (a thin bar or tick takes a round cap);
  *   5. xs for 4-5px;
  *   6. the nearest step for 6px and up, a tie rounding up (6 -> 8, 10 -> 12, 14 -> 16, 22-28 -> 20), and 20 for
  *      anything larger that is not a capsule.
  *
- * Left as written: 0, 50%, 999px, inherit, tokens, percentages, the Messages composer field (a capsule at one line that
+ * Left as written: 0, 50%, inherit, tokens, percentages, the Messages composer field (a capsule at one line that
  * grows), and lane A's selectors. A dry run by default; `--apply` writes.
  *
  *   node scripts/clubhouse/radius-steps.mjs src/clubhouse/styles/stats.css [--apply]
@@ -38,9 +38,9 @@ const SPACE = { 2: '0_5', 3: '1', 4: '1', 5: '1', 6: '1_5', 8: '2', 12: '3' };
 const LANE_A = /\.ch-sidebar|\.ch-brand__fold|data-ch-pressed|:active/;
 
 function corner(v, capsule, tail) {
-  if (v === 99 || (capsule && v >= capsule / 2)) return '999px';
+  if (v === 99 || (capsule && v >= capsule / 2)) return 'var(--ch-radius-full)';
   if (tail && v === 6) return 'var(--ch-radius-tail)';
-  if (v <= 3) return 'var(--ch-radius-mark)';
+  if (v <= 3) return 'var(--ch-radius-full)';
   if (v <= 5) return 'var(--ch-radius-xs)';
   if (v > 20) return 'var(--ch-radius-xl)';
   const [, name] = [...STEP].sort((a, b) => Math.abs(a[0] - v) - Math.abs(b[0] - v) || b[0] - a[0])[0];

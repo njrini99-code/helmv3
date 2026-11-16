@@ -1,6 +1,7 @@
 'use client';
+import { HowStatsCountLink, StatTerm } from '../../ui/StatTerm';
 
-import { AlertTriangle, ChartColumn, Flag, Medal } from 'lucide-react';
+import { AlertTriangle, ChartColumn, Medal } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { Button } from '../../ui/Button';
 import { sgBaseline } from '../../lib/sg';
@@ -28,12 +29,13 @@ import { EmptyState } from '../../ui/States';
 import { hashOf, type StatsDetailId, type StatsTeamDetailId } from './detail-route';
 import { LEGS_LIST } from './legs';
 import { MiniDiverging } from './MiniCharts';
-import { TeamFeatureChart } from './ScoringFeatureChart';
+import { TeamFeatureChart, teamDaysVsPar, type TeamDay } from './ScoringFeatureChart';
 import { Ribbon, SHS_HOW } from './ShsBlocks';
 import { divergeBar, filterKey, scoreChangeChip, sgTone, windowShort, type ShsTone } from './shs-figures';
 import { useStuck, WindowCrossfade } from './shs-motion';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
+import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { figureValue, Players, Putting, reference, teamDaysMean, teamTrendReading, type ChLegPick } from './StatsTeamPhone';
 import { TeamInsight } from './StatsInsight';
@@ -149,7 +151,7 @@ export function StatsTeamPhoneShs({
   const [deskPick, setDeskPick] = useState<StatsTeamDetailId | null>(null);
   const deskDetail: StatsTeamDetailId = deskPick ?? (detail as StatsTeamDetailId | null) ?? 'tscore';
   const go = (id: StatsDetailId) => (desk ? setDeskPick(id as StatsTeamDetailId) : open(id));
-  const days = (data.days ?? []).filter((d): d is { label: string; score: number; n?: number; date?: string } => d.score != null);
+  const days = (data.days ?? []).filter((d): d is TeamDay & { score: number } => d.score != null);
   const mean = days.length ? teamDaysMean(days) : null;
   const few = !data.roundsError && !noRounds && days.length > 0 && days.length < 3;
 
@@ -175,13 +177,8 @@ export function StatsTeamPhoneShs({
                 <TeamFilterEmpty />
               </section>
             ) : firstRun ? (
-              <section className="ch-shs-card ch-shs-empty" suppressHydrationWarning>
-                <span className="ch-shs-empty__ic">
-                  <Icon icon={Flag} size={22} />
-                </span>
-                <h2>No team rounds yet</h2>
-                <p>When players finish rounds with shot tracking, this page fills in: the team scoring average, strokes gained by leg, and who gains and loses.</p>
-              </section>
+              // CH-4310: the designed first run the desktop page draws, with its one step (the roster, or Invite players) (GAP-S-22).
+              <StatsTeamFirstRun invite={data.activeCount === 0} />
             ) : noRounds ? (
               <section className="ch-shs-card" suppressHydrationWarning>
                 <EmptyState
@@ -325,7 +322,7 @@ function TeamFailedCard({ seen }: { /** The page's data: a new copy means the re
  * The Overview card. Its own component, so the boundary around it holds everything it reads: a figures list that is not one crashes
  * this card (CH-4204), never the page. Looking the figure up while the page built the card's props answered /stats with a 500.
  */
-function TeamScoringCard({ data, days, mean, onOpen }: { data: ChTeamStats; days: ReadonlyArray<{ label: string; score: number; n?: number; date?: string }>; mean: number | null; onOpen: () => void }) {
+function TeamScoringCard({ data, days, mean, onOpen }: { data: ChTeamStats; days: ReadonlyArray<TeamDay & { score: number }>; mean: number | null; onOpen: () => void }) {
   const f = scoringFigure(data);
   const par = toPar(data);
   return (
@@ -478,7 +475,9 @@ function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
           const ref = reference(f);
           return (
             <div key={f.label}>
-              <dt>{shortLabel(f.label)}</dt>
+              <dt>
+                <StatTerm label={f.label}>{shortLabel(f.label)}</StatTerm>
+              </dt>
               <dd className="v">{figureValue(f)}</dd>
               {ref && <dd className="m ch-num">{ref}</dd>}
               {f.delta != null && (
@@ -491,6 +490,7 @@ function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
         })}
       </dl>
       <p className="ch-shs-anote">{roundNote(data, rows.some((f) => f.delta != null), coverage, note)}</p>
+      <HowStatsCountLink />
     </ShsCard>
   );
 }
@@ -504,7 +504,7 @@ function TeamScoringDetail({
 }: {
   data: ChTeamStats;
   covered: boolean;
-  days: ReadonlyArray<{ label: string; score: number; n?: number }>;
+  days: ReadonlyArray<TeamDay & { score: number }>;
   mean: number | null;
   /** On a desk the Scoring average card stands beside this drill with the same figure, change and curve, so the drill starts at what the card lacks. */
   beside?: boolean;
@@ -513,13 +513,21 @@ function TeamScoringDetail({
   // The separators keep to the words before them, as the page head's do: a wrapped line never starts with the dot.
   // Today's trend reading, on the card that now draws the trend. One round day is a point, not a trend.
   const trend = days.length >= 2 ? teamTrendReading(data, days.length) : null;
+  const vsPar = teamDaysVsPar(days);
   return (
     <>
       {!beside && <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data), windowDays(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />}
       {!beside && days.length > 0 && (
         <ShsCard title="By round day" meta={mean == null ? undefined : 'Average dashed'}>
-          <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Round-day avg' }} format={(v) => formatFixed(v, 1)} tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'} />
-          <p className="ch-shs-mini-cap">{trend ? `Lower is better. ${trend.reading}` : 'The trend draws once the team has rounds on a second day.'}</p>
+          {/* Against par per 18 when every day has it, par the dashed line (CH-01); strokes against the days' average otherwise. */}
+          <Ribbon
+            points={days.map((d) => ({ label: d.label, value: vsPar ? d.toPar! : d.score, ...(d.date ? { at: d.date } : {}) }))}
+            lowerIsBetter
+            reference={vsPar ? { value: 0, label: 'Par' } : mean == null ? null : { value: mean, label: 'Round-day avg' }}
+            format={(v) => (vsPar ? formatToPar(v, 1) : formatFixed(v, 1))}
+            tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'}
+          />
+          <p className="ch-shs-mini-cap">{trend ? `${vsPar ? 'Against par, per 18 holes. Under par is up.' : 'Lower is better.'} ${trend.reading}` : 'The trend draws once the team has rounds on a second day.'}</p>
         </ShsCard>
       )}
       {/* The page head says the team, its active players and that only countable rounds count; the note doesn't repeat it (W29). */}

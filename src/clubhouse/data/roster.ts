@@ -33,7 +33,7 @@ import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { playerStrokesGained, roundsForFigures } from './figure-window';
 import { sgWindowOf, type ChSgWindow } from './sg-window';
 import { tourForGender } from './stats-common';
-import { QUIET_DAYS, quietDaysSince } from '../screens/home/model';
+import { QUIET_DAYS, quietDaysSince, quietOf } from '../screens/home/model';
 
 /**
  * Coach Roster (Clubhouse). Server-read, final on first paint, every section
@@ -71,6 +71,8 @@ export interface ChRosterPlayer {
    */
   sgWindow?: ChSgWindow | null;
   trend: number[];
+  /** Each trend score's date (YYYY-MM-DD), beside `trend` (CH-11); absent in older fixtures, when the line spaces rounds evenly. */
+  trendDates?: string[];
   form: ChForm;
   recent: Array<{ id: string; course: string; date: string; score: number; toPar: number | null }>;
   focusAreas: number | null;
@@ -184,7 +186,10 @@ function quietDaysFrom(roundDate: string, now: Date, tz: string) {
 /**
  * "Needs a look": deterministic, from data the coach can verify.
  *   quiet     - an active player with no round in QUIET_DAYS+ team-local days (Home's rule and day count), whether or not the
- *               team is posting: Home flags him either way, and the two must agree (coach audit 13 Nov 2026, §8 #6)
+ *               team is posting: Home flags him either way, and the two must agree (coach audit 13 Nov 2026, §8 #6). `quiet` is
+ *               Home's own count (`quietOf`): from the newest counted round in the year's read, or, with none, from the season's
+ *               start or the player's joining, said "No rounds this season" (DF-C-04: a player with no round this season was
+ *               never flagged, so the quietest players were never named). Without it, the season's last round is read.
  *   slipping  - the SE-cleared form status Home's leaderboard uses (`summarizePlayer().status`): "Scoring 4.0 worse" (a rise
  *               in strokes read as worse, never "Scoring up", which read as good news; §8 #5)
  *   hot       - the last four rounds all under their season average
@@ -195,9 +200,12 @@ export function attentionFor(
   now: Date,
   availability: ChAvailability = 'available',
   tz: string = SEASON_DEFAULT_TZ,
+  quiet?: { days: number; none: boolean },
 ): ChRosterPlayer['attention'] {
   if (availability !== 'available') return null;
-  if (s.lastRoundDate) {
+  if (quiet) {
+    if (quiet.days >= QUIET_DAYS) return { tone: 'warning', text: quiet.none ? 'No rounds this season' : `No rounds in ${quiet.days} days` };
+  } else if (s.lastRoundDate) {
     const days = quietDaysFrom(s.lastRoundDate, now, tz);
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
   }
@@ -276,6 +284,13 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
   // Averages, form and the floors read the cut rounds' eighteens; the round count reads the cut rounds of either length (DF-C-05); Recent
   // rounds lists every round the player posted (SHARED: Latest rounds lists every round).
   const everyRound = groupByPlayer(season.rounds);
+  // Days since a round: Home's count, from the year's counted rounds (DF-C-04; `quietOf`).
+  const lastCounted = new Map<string, string>();
+  for (const r of roundsForFigures(wide.rounds)) {
+    const d = r.round_date.slice(0, 10);
+    if (!lastCounted.has(r.player_id) || d > lastCounted.get(r.player_id)!) lastCounted.set(r.player_id, d);
+  }
+  const today = isoDay(now, tz);
 
   const players: ChRosterPlayer[] = members.map((m) => {
     const p = m.player;
@@ -286,6 +301,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
     const sg = playerStrokesGained(wideByPlayer.get(p.id) ?? []);
     const status = m.status === 'inactive' ? 'inactive' : 'active';
     const availability: ChAvailability = parseAvailability(m.availability);
+    const quiet = quietOf(lastCounted.get(p.id) ?? null, { seasonStart: seasonFrom, joined: m.joined_at }, today);
     return {
       id: p.id,
       name: fullName(p),
@@ -307,6 +323,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
       sgLegs: sg.legs,
       sgWindow: sg.total == null ? null : sgWindowOf(wideByPlayer.get(p.id) ?? []),
       trend: s.trend,
+      trendDates: s.trendDates,
       form: s.status,
       recent: latest.slice(0, 3).map((r) => ({
         id: r.id,
@@ -318,8 +335,8 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
       focusAreas: focus.error ? null : (focus.counts.get(p.id) ?? 0),
       goals: goals.error ? null : (goals.counts.get(p.id) ?? 0),
       coachNote: notes.notes.get(p.id) ?? null,
-      attention: status === 'active' && !season.error ? attentionFor(s, now, availability, tz) : null,
-      attentionIfAvailable: status === 'active' && !season.error ? attentionFor(s, now, 'available', tz) : null,
+      attention: status === 'active' && !season.error ? attentionFor(s, now, availability, tz, quiet) : null,
+      attentionIfAvailable: status === 'active' && !season.error ? attentionFor(s, now, 'available', tz, quiet) : null,
       availability,
       availabilityUpdated: m.availability_updated_at,
       availabilityCoachNote: availNotes.notes.get(p.id) ?? null,

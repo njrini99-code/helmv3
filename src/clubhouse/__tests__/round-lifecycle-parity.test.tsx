@@ -348,7 +348,7 @@ describe('112402 Round lifecycle parity: the city and state reach the start thro
     render(
       <LazyMotion features={domAnimation}>
         <ToastProvider>
-          <NewRound playerId="player-1" />
+          <NewRound playerId="player-1" qualifiers={[]} />
         </ToastProvider>
       </LazyMotion>,
     );
@@ -591,7 +591,7 @@ describe('110116 112402 Round lifecycle parity: a saved course through the real 
     render(
       <LazyMotion features={domAnimation}>
         <ToastProvider>
-          <NewRound playerId="player-1" />
+          <NewRound playerId="player-1" qualifiers={[]} />
         </ToastProvider>
       </LazyMotion>,
     );

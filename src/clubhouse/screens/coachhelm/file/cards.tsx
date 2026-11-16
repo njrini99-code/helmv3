@@ -14,6 +14,7 @@ import { FILE_SG_FLOOR, FILE_SIGN, fileAimLabel, fileAlertLabel, fileAreaLabel, 
 import { stanceOf, type ChInsight } from '../../../data/coachhelm-shape';
 import { formatFixed } from '../../../lib/format';
 import { Icon } from '../../../ui/Icon';
+import { lineY } from '../../../ui/charts/Line';
 import type { ChFocusActions } from '../parts';
 import { sgIsEstimate, sgMixWords } from '../../../data/stats-sg-mix';
 
@@ -284,6 +285,11 @@ function Step({ on, label, date, next = false, tone }: { on: boolean; label: str
   );
 }
 
+/**
+ * The goal card: its word, and the check-ins since it started against the goal line, better up (stats and charts audit 2026-11-15,
+ * CH-07): a lower-is-better goal (three-putts) draws a falling figure as a rising line, as every other trend in the app does. The
+ * word is the check-ins' mean against the baseline past its noise (`goalWord`), never one good round.
+ */
 function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
   const W = 320;
   const H = 72;
@@ -292,7 +298,7 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
   const hi = vals.length ? Math.max(...vals) : 1;
   const pad = (hi - lo || 1) * 0.1;
   const x = (i: number) => (goal.points.length < 2 ? W / 2 : 6 + (i * (W - 12)) / (goal.points.length - 1));
-  const y = (v: number) => 8 + ((hi + pad - v) / (hi - lo + 2 * pad)) * (H - 26);
+  const y = lineY([lo - pad, hi + pad], 8, H - 26, goal.lowerBetter);
   const chip = goal.word === 'Improved' ? 'gain' : goal.word === 'Worse' ? 'loss' : 'plain';
   const firstPoint = goal.points[0];
   const lastPoint = goal.points[goal.points.length - 1];

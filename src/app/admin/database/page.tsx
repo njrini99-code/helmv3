@@ -48,6 +48,9 @@ import {
   DriftPanel,
   ChangedSinceYesterdayStrip,
 } from './DatabaseTabPanels';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Database' };
 
 export const dynamic = 'force-dynamic';
 

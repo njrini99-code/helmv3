@@ -57,10 +57,10 @@ export function ZoneBlock({ title, note, id, region = true, children }: { title:
   );
 }
 
-/** The zone's one big reading. `tone` colours it: good is green, bad is gold (D-42: losses are amber, never red). `settle` makes it settle in when it is remounted for a new value (give it a key). */
-export function ZoneBig({ value, unit, tone, settle = false }: { value: string; unit?: string; tone?: 'good' | 'bad'; settle?: boolean }) {
+/** The zone's one big reading. `tone` colours it: good is green, bad is gold (D-42: losses are amber, never red). A new value shows at once (MOTION-AND-VISUAL 3.6). */
+export function ZoneBig({ value, unit, tone }: { value: string; unit?: string; tone?: 'good' | 'bad' }) {
   return (
-    <span className={'ch-znbig ch-num' + (tone ? ` is-${tone === 'good' ? 'gain' : 'loss'}` : '') + (settle ? ' is-settle' : '')}>
+    <span className={'ch-znbig ch-num' + (tone ? ` is-${tone === 'good' ? 'gain' : 'loss'}` : '')}>
       {value}
       {/* A dash has no unit: "— %" read as a figure that had lost its number. */}
       {unit && /\d/.test(value) && <small>{unit}</small>}

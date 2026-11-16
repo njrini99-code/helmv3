@@ -7,8 +7,8 @@ Design package: none (launch readiness findings, 15 Nov 2026, §4 F-03); no owne
 PR/commit:      claude/project-thread-8hytxy (QUEUE lr-f03)
 Contract IDs:   60180–60184, 60980–60982; CH-6080–6082, CH-6180–6181, CH-6280–6285 (60688), CH-6380–6382, CH-6480, CH-6880–6881
 Actions:        ACT-P006-HOURS-LIMITS, ACT-P006-HOURS-ADJUST, ACT-P006-HOURS-EXPORT (new)
-Data impact:    reads golf_events, golf_event_attendance and the roster through RLS; new tables golf_team_hours_settings and golf_hours_adjustments in migration 20261115230000 (HELD, not applied). Until it is applied the page drafts on the division from Settings, Team and says saving waits (CH-6283)
-Held items:     supabase/migrations/20261115230000_golf_team_hours.sql (HELD.md row)
+Data impact:    reads golf_events, golf_event_attendance and the roster through RLS; new tables golf_team_hours_settings and golf_hours_adjustments in migration 20261115232000 (HELD, not applied). Until it is applied the page drafts on the division from Settings, Team and says saving waits (CH-6283)
+Held items:     supabase/migrations/20261115232000_golf_team_hours.sql (HELD.md row)
 ```
 
 ### Changed
@@ -58,3 +58,7 @@ Held items:     supabase/migrations/20261115230000_golf_team_hours.sql (HELD.md 
   applied).
 - Not yet: real-app screenshots on staging (the Mac was offline); the saving
   paths on a database with the migration applied.
+- 16 Nov, merging main: the held migration is renumbered
+  `20261115232000_golf_team_hours.sql` (main's `20261115230000` is the one GIR
+  rule), and `hours.css` moves onto main's nine type roles and radius steps
+  (the card corner is `--ch-radius-lg`, the same 16px).

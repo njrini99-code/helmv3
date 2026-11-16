@@ -7,6 +7,9 @@ import { Surface } from '@/components/fairway';
 import { ViewAsBanner } from '../../../_components/ViewAsBanner';
 import { SportBadge } from '../../../_components/SportBadge';
 import { PanelNoData } from '../../../_components/PanelStates';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'View as' };
 
 export const dynamic = 'force-dynamic';
 

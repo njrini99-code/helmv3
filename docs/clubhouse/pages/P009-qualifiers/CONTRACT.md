@@ -260,7 +260,7 @@ category only because its kind (network and UX) defaults here.
 | 90708 | CH-09909 | `COACH_A_ROUND_NUMBERS_CARDS_MIX_9` | Coach: a round number's cards mix 9 and 18 holes |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 

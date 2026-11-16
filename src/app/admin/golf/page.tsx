@@ -26,6 +26,9 @@ import { ViewRail } from '../_components/ViewRail';
 import { GolfJourneyView } from './_components/GolfJourneyView';
 import { QualifiersView } from './_components/QualifiersView';
 import { SectionLabel } from '../_components/SectionLabel';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Golf' };
 
 export const dynamic = 'force-dynamic';
 

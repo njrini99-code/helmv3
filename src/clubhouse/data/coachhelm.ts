@@ -20,7 +20,7 @@ import { readCorrections } from './coachhelm-corrections';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { speak } from './coachhelm-voice';
 import { boardMissing, firstName, partitionInsights, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChPulse, type ChPulseResult, type ChTourBaseline } from './coachhelm-shape';
-import { tourForGender } from './stats-common';
+import { readTourStandards, tourForGender } from './stats-common';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import { computeTeamPatterns, TEAM_PATTERN_MIN_ROUNDS } from '@/lib/coachhelm/v3/team-pattern/pattern';
@@ -246,25 +246,6 @@ export async function declinedByInsight(supabase: Supabase, insightIds: string[]
   return { ids: out, error: false };
 }
 
-/**
- * The Tour's values for a tour (`golf_pga_standards`), with `error` when the read failed. `loadTourBenchmarks` (stats-common) logs a
- * failed read and answers the same empty map as a tour with no rows, so this page reads it itself: a failed Tour comparison is
- * "Tour comparison unavailable" on the board, not "no comparison".
- */
-async function readTourValues(supabase: Supabase, tour: ChTourBaseline['tour']): Promise<{ values: Map<string, number>; error: boolean }> {
-  const values = new Map<string, number>();
-  const { data, error } = await supabase.from('golf_pga_standards').select('metric_id, pga_tour_value').eq('tour', tour);
-  if (error) {
-    chLogServer('coachhelm', 'tourBenchmarks', error);
-    return { values, error: true };
-  }
-  for (const r of data ?? []) {
-    const v = r.pga_tour_value == null ? null : Number(r.pga_tour_value);
-    if (v != null && Number.isFinite(v)) values.set(r.metric_id, v);
-  }
-  return { values, error: false };
-}
-
 /** What a Tour read answers: the baseline (null when none is claimed) and whether a read failed on the way. */
 export type TourRead = { baseline: ChTourBaseline | null; error: boolean };
 
@@ -275,7 +256,9 @@ export type TourRead = { baseline: ChTourBaseline | null; error: boolean };
 export async function tourBaselineOf(supabase: Supabase, team: { gender: string | null } | null): Promise<TourRead> {
   if (!team) return { baseline: null, error: false };
   const tour = tourForGender(team.gender);
-  const { values, error } = await readTourValues(supabase, tour);
+  // The shared read (stats-common) with its failure told apart: a failed Tour comparison is "Tour comparison unavailable" on
+  // the board, not "no comparison". Only rows that name their source grade (SC-08).
+  const { values, error } = await readTourStandards(supabase, tour, 'coachhelm');
   return { baseline: { tour, values }, error };
 }
 

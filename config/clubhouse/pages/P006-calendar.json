@@ -536,7 +536,7 @@
       "handler": "save (useAction calendar.hours.saveLimits)",
       "service": "src/app/golf/actions/hours.ts#saveHoursSettings",
       "data": [
-        "golf_team_hours_settings (migration 20261115230000, held)"
+        "golf_team_hours_settings (migration 20261115232000, held)"
       ],
       "bridge": {
         "validation": 60580,
@@ -555,7 +555,7 @@
       "handler": "save (useAction calendar.hours.saveAdjustment)",
       "service": "src/app/golf/actions/hours.ts#saveHoursAdjustment",
       "data": [
-        "golf_hours_adjustments (migration 20261115230000, held)"
+        "golf_hours_adjustments (migration 20261115232000, held)"
       ],
       "bridge": {
         "validation": 60581,

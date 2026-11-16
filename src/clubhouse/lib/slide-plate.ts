@@ -1,13 +1,15 @@
 'use client';
 
 import { useLayoutEffect, useRef, type RefObject } from 'react';
-import { CH_DUR, CH_EASE, CH_SPRING, chSpringCurve, type ChSpringKind } from './motion';
+import { CH_DUR, CH_EASE, CH_EASE_IOS, CH_EASE_IOS_CSS, CH_FADE_MS, chSpringCurve, type ChSpringKind } from './motion';
+import { chMotionModeNow } from './reduced-motion';
 
 /**
- * Messages' filter thumb (MOT-X-2, MOT-LIST-4): 360 ms on the overshooting CSS spring `(.34, 1.3, .64, 1)` the artifact
- * draws, not the settle spring. `tween: 'thumb'`; under Reduce Motion the plate jumps like every other.
+ * The thumb of every segmented control and the section strip's pill (MOTION-AND-VISUAL 3.3, 4.2's motion line): the base
+ * beat on the iOS curve, with no overshoot (production audit 2026-11-15, S3.1, MOT-08: the 360 ms overshooting
+ * `(.34, 1.3, .64, 1)` is gone). `tween: 'thumb'`. Under Reduce Motion it fades in at its new place instead (3.11).
  */
-export const CH_THUMB = { ms: 360, ease: CH_SPRING } as const;
+export const CH_THUMB = { ms: CH_DUR.base * 1000, ease: CH_EASE_IOS } as const;
 export type SlidePlateTween = keyof typeof CH_DUR | 'thumb';
 
 /**
@@ -63,8 +65,12 @@ export function useSlidePlate(
         }
       }
     };
-    if (reduced || !to.w || !to.h || (start.x === to.x && start.y === to.y && start.w === to.w && start.h === to.h)) {
+    const moved = !!to.w && !!to.h && !(start.x === to.x && start.y === to.y && start.w === to.w && start.h === to.h);
+    if (reduced || !moved) {
       inkAt(0, 0);
+      // Reduce Motion (MOTION-AND-VISUAL 3.11): the plate does not travel; it fades in where it now is over the quick beat,
+      // so the change still reads. Animations off: it is simply there.
+      if (reduced && moved && chMotionModeNow() !== 'off') el.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS, easing: CH_EASE_IOS_CSS });
       return undefined;
     }
     // Its speed toward the new mark, in progress per second over the distance left (chSpringCurve's units).
@@ -75,7 +81,7 @@ export function useSlidePlate(
     // A tween where the plate's design gives one (CH_DUR on CH_EASE), otherwise the spring.
     const curve = tween
       ? tween === 'thumb'
-        ? { ms: CH_THUMB.ms, linear: `cubic-bezier(${CH_SPRING.join(', ')})`, ease: bezierEase(CH_SPRING) }
+        ? { ms: CH_THUMB.ms, linear: `cubic-bezier(${CH_THUMB.ease.join(', ')})`, ease: bezierEase(CH_THUMB.ease) }
         : { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})`, ease: tweenEase }
       : chSpringCurve(kind, { velocity });
     // Translate and width only: a scale squashed the pill's rounded corners mid-glide (owner, 2026-11-07). The plate may be narrower than its option (an underline), so its width goes by the options' ratio.

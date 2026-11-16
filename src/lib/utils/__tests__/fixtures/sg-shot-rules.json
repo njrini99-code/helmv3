@@ -1,5 +1,5 @@
 {
-  "description": "Shared SG shot-rule fixtures: one hole per case. `expected` is the production SQL function (calculate_round_strokes_gained after migration 20260930150000) computed on these exact shots; the TypeScript engine and the pgTAP test both assert it. `before_migration` is the live function before the migration, kept to show which rules each case exercises.",
+  "description": "Shared SG shot-rule fixtures: one hole per case. `expected` is the production SQL function (calculate_round_strokes_gained after migration 20260930150000, on the Table B.1 curve of 20261115215000) computed on these exact shots; the TypeScript engine and the pgTAP test both assert it. `before_migration` is the live function before the migration, kept to show which rules each case exercises.",
   "cases": [
     {
       "id": "tee-penalty-logged-after-the-shot",
@@ -65,11 +65,11 @@
         }
       ],
       "expected": {
-        "off_tee": -0.974,
-        "approach": 0.134,
+        "off_tee": -1.035,
+        "approach": 0.13,
         "around_green": 0,
         "putting": -0.075,
-        "total": -0.915
+        "total": -0.98
       },
       "before_migration": {
         "off_tee": 0.026,
@@ -143,11 +143,11 @@
         }
       ],
       "expected": {
-        "off_tee": -1.099,
-        "approach": -0.118,
+        "off_tee": -1.17,
+        "approach": -0.098,
         "around_green": 0,
         "putting": 0.678,
-        "total": -0.539
+        "total": -0.59
       },
       "before_migration": {
         "off_tee": -1.099,
@@ -310,11 +310,11 @@
         }
       ],
       "expected": {
-        "off_tee": 0.052,
-        "approach": -0.634,
-        "around_green": -2.161,
+        "off_tee": 0.08,
+        "approach": -0.588,
+        "around_green": -2.21,
         "putting": 0.678,
-        "total": -2.065
+        "total": -2.04
       },
       "before_migration": {
         "off_tee": 0.052,
@@ -389,10 +389,10 @@
       ],
       "expected": {
         "off_tee": 0,
-        "approach": -1.873,
+        "approach": -1.875,
         "around_green": 0,
         "putting": -0.075,
-        "total": -1.948
+        "total": -1.95
       },
       "before_migration": {
         "off_tee": 0,
@@ -477,11 +477,11 @@
         }
       ],
       "expected": {
-        "off_tee": -1.963,
-        "approach": 0.082,
+        "off_tee": -1.955,
+        "approach": 0.075,
         "around_green": 0,
         "putting": -0.13,
-        "total": -2.011
+        "total": -2.01
       },
       "before_migration": {
         "off_tee": -1.963,
@@ -532,11 +532,11 @@
         }
       ],
       "expected": {
-        "off_tee": 0.016,
-        "approach": 0.194,
+        "off_tee": 0.028,
+        "approach": 0.183,
         "around_green": 0,
         "putting": 0.78,
-        "total": 0.99
+        "total": 0.991
       },
       "before_migration": {
         "off_tee": -0.23,

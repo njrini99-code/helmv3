@@ -213,6 +213,10 @@ before, after, baseline or evidence.
 | `P009__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 | `P009__qualifier-detail__coach__1440__exported-toast__after__6e3fc1f.png` | after | 6e3fc1f | qualifier-detail (coach), 1440px, exported-toast; preview |
 | `P009__qualifier-detail__coach__402__actions-export__after__6e3fc1f.png` | after | 6e3fc1f | qualifier-detail (coach), 402px, actions-export; preview |
+| `P009__qualifier-detail__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | qualifier-detail (coach), 1440x932px, default; /clubhouse-preview/qualifier |
+| `P009__qualifier-detail__coach__1440x932__default__before__c882964.png` | before | c882964 | qualifier-detail (coach), 1440x932px, default; /clubhouse-preview/qualifier |
+| `P009__qualifier-detail__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | qualifier-detail (coach), 402px, default; /clubhouse-preview/qualifier |
+| `P009__qualifier-detail__coach__402__default__before__c882964.png` | before | c882964 | qualifier-detail (coach), 402px, default; /clubhouse-preview/qualifier |
 
 ## Historical verification gaps
 

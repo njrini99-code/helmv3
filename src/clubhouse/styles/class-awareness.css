@@ -1,6 +1,6 @@
 /* P-10 class awareness: the pieces several pages share. Everything here is .ch-ca-*. Pages add their own classes in
-   their own stylesheets; a card is --ch-radius-card, a sheet --ch-radius-sheet, a menu or popover --ch-radius-lg, a chip
-   and a hover state --ch-radius-md, a lane --ch-radius-mark. The accent text is --ch-green-600 (7.88:1 light, 7.17:1
+   their own stylesheets; a card is --ch-radius-lg, a sheet --ch-radius-xl, a menu or popover --ch-radius-lg, a chip
+   and a hover state --ch-radius-md, a lane --ch-radius-full. The accent text is --ch-green-600 (7.88:1 light, 7.17:1
    dark on the surface), never --ch-accent, whose dark value is 2.75:1. Nothing here draws a left border or stripe. */
 
 /* The status line. */
@@ -71,11 +71,11 @@
   }
 }
 .ch-ca-row.is-button[data-ch-pressed] {
-  background: var(--ch-bg-hover);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ca-row.is-button:active {
-    background: var(--ch-bg-hover);
+    background: var(--ch-sel);
   }
 }
 .ch-ca-row.is-button:focus-visible {
@@ -177,15 +177,8 @@
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-overlay);
-  animation: ch-ca-in var(--ch-dur-quick) var(--ch-ease);
-}
-@keyframes ch-ca-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  /* Opened by a tap: it fades in on the quick beat (motion.css ch-in; MOTION-AND-VISUAL 3.4, 3.12). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-ca-pop__head {
   display: flex;
@@ -287,13 +280,13 @@
   position: absolute;
   top: 0;
   height: 100%;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-400);
 }
 .ch-ca-strip__slot {
   top: auto;
   bottom: 0;
-  border-radius: var(--ch-radius-xs) var(--ch-radius-xs) 0 0;
+  border-radius: var(--ch-radius-sm) var(--ch-radius-sm) 0 0;
 }
 .ch-ca-strip__block.is-exam {
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ink-600);
@@ -371,7 +364,7 @@
   display: grid;
   gap: var(--ch-space-3);
   padding: var(--ch-space-4);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }

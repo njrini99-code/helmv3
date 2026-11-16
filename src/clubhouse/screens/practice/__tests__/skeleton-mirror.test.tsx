@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PracticeLoading } from '../PracticeLoading';
-import { PlayerPracticeHomeSkeleton, PlayerPracticePlanSkeleton, PracticeHomeSkeleton, PracticeLibrarySkeleton, PracticePlanSkeleton } from '../PracticeSkeletons';
+import { PlayerPracticeHomeSkeleton, PlayerPracticePlanSkeleton, PracticeDrillSkeleton, PracticeHomeSkeleton, PracticeLibrarySkeleton, PracticePlanSkeleton } from '../PracticeSkeletons';
 import { PLAN_STARTERS } from '../starters';
 
 const shell = vi.hoisted(() => ({ inClubhouse: true, role: 'coach' as 'coach' | 'player' | null }));
@@ -34,6 +34,7 @@ describe('Practice in waiting mirrors the loaded pages', () => {
     ['A plan (player)', () => <PlayerPracticePlanSkeleton />, 1],
     // G14: a coach's plan page opens on its large title on a phone too (the bar cut the name); the bar's title waits under it.
     ['A plan (coach)', () => <PracticePlanSkeleton />, 1],
+    ['A drill', () => <PracticeDrillSkeleton />, 1],
   ];
 
   it.each(ROOTS)('%s is one busy page with the large title block in waiting, never a real heading', (_name, skeleton, titles) => {
@@ -152,6 +153,15 @@ describe('a Practice route in waiting picks the page that is coming', () => {
     expect(container.querySelector('main')!.getAttribute('aria-label')).toBe(`Loading ${tab}`);
   });
 
+  it('a drill (MAC-04): the loaded page’s boxes, the head with its two keys, the plan line, then the facts card', () => {
+    const { container } = render(<PracticeLoading page="drill" />);
+    const main = container.querySelector('main.ch-prc-drillpage')!;
+    expect(main.getAttribute('aria-label')).toBe('Loading the drill');
+    expect(classes(main.children)).toEqual(['ch-prc-h', 'ch-prc-none', 'ch-prc-dfacts']);
+    expect(main.querySelectorAll('.ch-prc-h__a.is-page > *').length).toBe(2);
+    expect(main.querySelectorAll('.ch-prc-dfacts > div').length).toBe(3);
+  });
+
   it('outside the Clubhouse shell the page is on its way to a redirect: the plain rows, and no Clubhouse page', () => {
     shell.inClubhouse = false;
     const { container } = render(<PracticeLoading page="home" />);
@@ -198,12 +208,12 @@ describe('the sheets a Practice skeleton stands on', () => {
       expect(read(`src/clubhouse/screens/practice/${file}`)).not.toMatch(/import\s+['"][^'"]+\.css['"]/);
     }
     const dir = 'src/app/golf/(dashboard)/dashboard/practice';
-    for (const file of ['loading.tsx', 'drills/loading.tsx', 'groups/loading.tsx', 'templates/loading.tsx', 'plan/[planId]/loading.tsx']) {
+    for (const file of ['loading.tsx', 'drills/loading.tsx', 'groups/loading.tsx', 'templates/loading.tsx', 'plan/[planId]/loading.tsx', 'drills/[drillId]/loading.tsx']) {
       const src = read(`${dir}/${file}`);
       expect(src).not.toContain("'use client'");
       const sheets = [...src.matchAll(/import\s+'@\/clubhouse\/styles\/([a-z-]+)\.css'/g)].map((m) => m[1]);
       expect(sheets).toEqual(['coachhelm-plan', 'practice']);
-      expect(src).toMatch(/<PracticeLoading page="(home|drills|groups|templates|plan)" \/>/);
+      expect(src).toMatch(/<PracticeLoading page="(home|drills|groups|templates|plan|drill)" \/>/);
     }
   });
 

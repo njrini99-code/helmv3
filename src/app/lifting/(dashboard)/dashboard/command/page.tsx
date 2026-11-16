@@ -35,7 +35,7 @@ import {
 import type { HelmLiftingCoachRow } from '@/lib/types/helm-lifting';
 
 export const metadata = {
-  title: 'Lifting Command · Helm Lifting Lab',
+  title: 'Lifting Command',
 };
 
 // ---------------------------------------------------------------------------

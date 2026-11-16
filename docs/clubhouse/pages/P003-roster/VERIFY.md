@@ -207,6 +207,10 @@ before, after, baseline or evidence.
 | `P003__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
 | `P003__roster-invite__coach__390x844__light-invite-link__after__2faf3cf.png` | after | 2faf3cf | roster-invite (coach), 390x844px, light-invite-link |
 | `P003__roster__coach__390x844__light-r257-state-invite-email-invite-1-s0__before__a9d2b19.png` | before | a9d2b19 | roster (coach), 390x844px, light-r257-state-invite-email-invite-1-s0; /clubhouse-preview/roster?state=invite-email&invite=1; synthetic preview |
+| `P003__roster__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | roster (coach), 1440x932px, default; /clubhouse-preview/roster |
+| `P003__roster__coach__1440x932__default__before__c882964.png` | before | c882964 | roster (coach), 1440x932px, default; /clubhouse-preview/roster |
+| `P003__roster__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | roster (coach), 402px, default; /clubhouse-preview/roster |
+| `P003__roster__coach__402__default__before__c882964.png` | before | c882964 | roster (coach), 402px, default; /clubhouse-preview/roster |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

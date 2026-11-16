@@ -74,3 +74,6 @@ Held items:     none
 - Screenshots: 13 in VERIFY.md (desktop 1440 and phone 402, Chromium from the
   preview fixture, tier C). Not yet: a WebKit pass, and a save against the
   staging tables.
+- 16 Nov, merging main: `tournaments-import.css` moves onto main's nine type
+  roles, radius steps and the iOS curve, and a mapped column in the sheet
+  preview is marked `is-mapped` (a table highlight, not a toggle).

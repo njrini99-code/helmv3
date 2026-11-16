@@ -452,6 +452,19 @@ describe('motion and feedback (CH-15620 to CH-15624)', () => {
     expect(el.getAttribute('data-wet')).toBe('1');
   });
 
+  it('the handicap steppers tick the selection haptic once a step, and stay silent at the end of the scale (MOTION-AND-VISUAL 3.10)', () => {
+    mount(makeWrites(), 'game', { ...PLAYER, accountMade: true, hcp: 8 });
+    hapticSpy.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Higher' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lower' }));
+    expect(hapticSpy.mock.calls).toEqual([['select'], ['select']]);
+    cleanup();
+    mount(makeWrites(), 'game', { ...PLAYER, accountMade: true, hcp: 36 });
+    hapticSpy.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Higher' }));
+    expect(hapticSpy).not.toHaveBeenCalled();
+  });
+
   it('CH-15622 progress: the current section is marked, the sliding thumb is decorative, and the phone count fills', () => {
     mount(makeWrites(), 'grad', PLAYER);
     const nav = screen.getByRole('navigation', { name: 'Progress' });

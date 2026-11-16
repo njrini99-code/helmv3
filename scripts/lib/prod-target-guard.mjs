@@ -8,10 +8,10 @@
  * `golf_holes`, `golf_shots`, `golf_round_reviews` and
  * `golf_round_stats_cache` — with NO target check of any kind:
  *
- *   scripts/refresh-demo-nick-rini.ts        header instructs running it against
- *                                            .vercel/.env.production.local
- *   scripts/seed-demo-team-from-guilford.ts  same
- *   scripts/seed-demo-player.ts              hardcoded demo id, no guard
+ *   three demo-team cloning scripts          headers instructed running them
+ *                                            against production (removed in
+ *                                            2026-11: the demo generator in
+ *                                            src/lib/golf/demo replaced them)
  *   scripts/debug-player-insert.mjs          deletes golf_players, no guard
  *
  * Each is scoped by a hardcoded id today, so the blast radius is small AS
@@ -21,7 +21,7 @@
  * between that and production round data.
  *
  * `scripts/seed-baseball-stats.mjs` already solved this. This module is that
- * pattern extracted so the four scripts above stop each needing to remember it.
+ * pattern extracted so the scripts above stop each needing to remember it.
  *
  * WHAT IT DOES NOT DO
  * -------------------

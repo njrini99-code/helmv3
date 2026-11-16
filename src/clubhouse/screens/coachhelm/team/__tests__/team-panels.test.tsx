@@ -118,3 +118,29 @@ describe('the header names the read’s own rounds', () => {
     expect(screen.getByText(/last 8 rounds/)).toBeTruthy();
   });
 });
+
+describe('GAP-H-24 no empty chrome', () => {
+  it('the player’s sheet has no empty line under the area’s name', () => {
+    const { container } = show({ role: 'player' });
+    const head = container.querySelector('.insh .c') as HTMLElement;
+    expect(head.querySelector('b')).not.toBeNull();
+    expect(head.querySelectorAll('span')).toHaveLength(0);
+  });
+
+  it('a read with no drill and no next step closes the drill slot: no “Still gathering” filler', () => {
+    const { container } = show({ ins: read({ week: null }) });
+    expect(container.querySelector('.drill')).toBeNull();
+    expect(document.body.textContent).not.toContain('Still gathering');
+  });
+
+  it('a read with its own next step and no drill keeps the slot, under its own name', () => {
+    show({ ins: read({ week: { title: null, text: 'Hit ten 7-irons to a 30-foot circle.', meta: null } }) });
+    expect(screen.getByText('What to work on')).toBeTruthy();
+    expect(screen.getByText('Hit ten 7-irons to a 30-foot circle.')).toBeTruthy();
+  });
+
+  it('a drill keeps its card', () => {
+    show({ ins: read({ week: { title: 'Ladder drill', text: null, meta: '12 min · intermediate' } }) });
+    expect(screen.getByText('Ladder drill')).toBeTruthy();
+  });
+});

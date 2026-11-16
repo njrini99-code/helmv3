@@ -14,6 +14,9 @@ import {
   Users,
 } from 'lucide-react';
 import type { HelmLiftingCoachRow, HelmLiftingCoachAssignmentRow, HelmLiftingSport } from '@/lib/types/helm-lifting';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Home' };
 
 // ---------------------------------------------------------------------------
 // Data helpers

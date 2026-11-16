@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { haptic } from '../../lib/haptics';
 import { Segmented } from '../Segmented';
 
 vi.mock('../../lib/haptics', () => ({ haptic: vi.fn() }));
@@ -74,24 +75,37 @@ describe('Segmented (B17)', () => {
     expect(keyframes[1].transform).toBe('none');
     expect(screen.getByRole('radio', { name: 'List' }).querySelector('.ch-seg__pill')).not.toBeNull();
   });
+
+  // MOTION-AND-VISUAL 3.3 and 4.2's motion line: the thumb over the base beat on the iOS curve (translate and width, MAC-17),
+  // the content swapping at once, and a selection haptic on each change, none on a tap of the current option.
+  it('the thumb takes 260 ms on the iOS curve, and each change ticks the selection haptic', async () => {
+    vi.mocked(haptic).mockClear();
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
+    await frame();
+    fireEvent.click(screen.getByRole('radio', { name: 'Day' }));
+    expect(haptic).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('radio', { name: 'Month' }));
+    expect(onChange).toHaveBeenLastCalledWith('month');
+    expect(animate).toHaveBeenCalledTimes(1);
+    const [keyframes, options] = animate.mock.calls[0]!;
+    expect(options).toMatchObject({ duration: 260, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' });
+    expect(Object.keys(keyframes[0])).toEqual(expect.arrayContaining(['transform', 'width']));
+    expect(vi.mocked(haptic).mock.calls).toEqual([['select']]);
+  });
 });
 
-describe('Segmented: two weights (owner, 11 Nov 2026)', () => {
+describe('Segmented: one toggle (Nick, 15 Nov 2026)', () => {
   const opts = [
     { value: 'a', label: 'Last 5' },
     { value: 'b', label: 'Last 10' },
   ] as const;
 
-  it('a mode switch is the default: the green chip, no filter class', () => {
-    render(<Segmented label="View" value="a" options={opts} onChange={() => {}} />);
-    const well = screen.getByRole('radiogroup', { name: 'View' });
-    expect(well.className).not.toContain('ch-seg--filter');
-  });
-
-  it('a filter or sort takes the light weight: the filter class on the well, the same radios', () => {
-    render(<Segmented weight="filter" label="Rounds shown" value="b" options={opts} onChange={() => {}} />);
+  it('is one toggle: the green chip in the recessed well for a filter or sort as for a mode', () => {
+    render(<Segmented label="Rounds shown" value="b" options={opts} onChange={() => {}} />);
     const well = screen.getByRole('radiogroup', { name: 'Rounds shown' });
-    expect(well.className.split(' ')).toEqual(expect.arrayContaining(['ch-seg', 'ch-well', 'ch-seg--filter']));
+    expect(well.className.split(' ')).toEqual(expect.arrayContaining(['ch-seg', 'ch-well']));
+    expect(well.className).not.toContain('ch-seg--filter');
     expect(within(well).getByRole('radio', { name: 'Last 10' })).toHaveAttribute('aria-checked', 'true');
     expect(within(well).getByRole('radio', { name: 'Last 10' }).querySelector('.ch-seg__pill')).not.toBeNull();
   });

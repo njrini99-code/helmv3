@@ -25,6 +25,9 @@ import type {
   HelmLiftingPrRow,
   HelmLiftingReadinessCheckinRow,
 } from '@/lib/types';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Athlete' };
 
 // ---------------------------------------------------------------------------
 // Helpers

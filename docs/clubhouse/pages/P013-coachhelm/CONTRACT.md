@@ -122,6 +122,20 @@ in the signed-in role's shape (130204); a write in flight says so on its button
 (Assigning, Dismissing, Undoing: CH-13403). CoachHelm loads no section on its
 own after the server render, so there are no section skeletons.
 
+The view switch (the coach's Team and Ask; the player's Board, Standing, Deep
+dive and Ask) is one row the route mounts once above the view
+(`screens/coachhelm/SwitchFrame.tsx`, N13C-67, N13P-18): on a desk it is the
+first thing in the glass top bar, on the phone a 52 px row under the bar, in the
+same place for every view, and it is not drawn again when the view changes.
+loading.tsx holds it there, inert, over the view's skeleton. A tap moves the
+switch at once (one selection tick) and the view under it becomes the next
+view's skeleton in the same commit, never the old view held while the server
+renders the next; the skeleton's blocks wait 150 ms and, once shown, hold
+300 ms (`useBusy`). The other views are prefetched when the page is idle, with
+the route's own prefetch only (it stops at the loading boundary), never fetched
+whole (CH-R1). A view that finds CoachHelm off (CH-13304, CH-13305) hides the
+switch.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 130201 | CH-13401 | `THE_PLAYERS_PAGE_IS_ON_ITS_WAY` | The player's page is on its way |
@@ -194,6 +208,8 @@ filter, so it has no filtered empty state.
 | 130436 | CH-13395 | `PRACTICE_NEW_PLAN_AND_SOMEONE_WITH_NO` | Practice: New plan, and someone with no team |
 | 130437 | CH-13396 | `PRACTICE_A_COACHS_FIRST_PLAN_OR_NO` | Practice: a coach's first plan, or no practice this week |
 | 130438 | CH-13397 | `PRACTICE_A_PLAYER_WITH_NOTHING_PUBLISHED` | Practice: a player with nothing published |
+| 130490 | CH-13385 | `WHATS_NEW_SOMEONE_WITH_NO_TEAM` | What’s new: someone with no team (no organization, or no team resolved; GAP-S-36) |
+| 130491 | CH-13386 | `A_PLAYER_FILE_OR_YOUR_WEEK_FOR` | A player file or Your week for a player with no rounds (GAP-S-23) |
 
 ## 05 — Validation
 
@@ -252,7 +268,7 @@ the whole change again, follow-ups included (131401).
 | 130634 | CH-13208 | `A_READ_BESIDE_THE_CARDS_FAILED_THE` | A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round |
 | 130636 | CH-13272 | `STANDING_THE_COHORT_LOOKUP_FAILED` | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130638 | CH-13230 | `WHATS_NEW_A_REFRESH_FAILS_AFTER_THE` | What’s new: a refresh fails after the week loaded |
-| 130639 | CH-13231 | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved) |
+| 130639 | CH-13231 | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | What’s new: the feed doesn’t load (the action fails, or every kind's read fails: insights, patterns with the roster behind them, and focus areas; GAP-S-02) |
 | 130640 | CH-13232 | `WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING` | What’s new: the feed crashes while drawing |
 | 130641 | CH-13209 | `COACH_PLAYER_PAGE_DID_NOT_LOAD_ON` | Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup) |
 | 130642 | CH-13007 | `RECHECK_RATE_LIMITED` | Re-check rate-limited |
@@ -264,6 +280,8 @@ the whole change again, follow-ups included (131401).
 | 130648 | CH-13083 | `PRACTICE_A_NEW_DRILL_SAVED` | Practice: a new drill saved |
 | 130649 | CH-13084 | `PRACTICE_OFFLINE_WHILE_EDITING` | Practice: offline while editing |
 | 130650 | CH-13008 | `REMOVE_FOCUS_ON_A_READ_FAILS` | Remove focus on a read fails (written when its Undo toast goes) |
+| 130690 | CH-13285 | `WHATS_NEW_ONE_OR_TWO_KINDS_DONT` | What’s new: one or two kinds don’t load (insights, patterns or the roster behind them, focus areas) while the rest answered (GAP-S-02) |
+| 130691 | CH-13286 | `PRACTICE_ONE_PART_OF_A_PAGE_DOESNT` | Practice: one part of a page doesn’t load: the team's plan format (on a plan, or on Plan format), a saved template picked for New plan, or part of the drill bank (GAP-S-03, GAP-S-07, GAP-S-28, GAP-S-37) |
 
 ## 07 — Network / offline
 
@@ -334,6 +352,7 @@ its own.
 | 130783 | CH-13986 | `BRIEF_HOW_THE_READS_HAVE_HELD` | Brief: how the reads have held |
 | 130784 | CH-13987 | `BRIEF_GOALS_AND_STANDING` | Brief: goals and standing |
 | 130788 | CH-13998 | `INTELLIGENCE_AND_ITS_OLD_SUB_LINKS` | /intelligence and its old sub-links |
+| 130790 | CH-13925 | `ASK_NEW_CHAT_WHILE_THE_OPEN_CHAT` | Ask: New chat while the open chat has messages (GAP-H-08) |
 
 ## 08 — Permission / authorization
 

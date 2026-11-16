@@ -1,14 +1,15 @@
 'use client';
 import { readTypeK } from '../../lib/type-k';
 import { pluralWord } from '../../lib/plural';
-import { formatFixed } from '../../lib/format';
+import { formatFixed, formatToPar } from '../../lib/format';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_MARKS_MS } from '../../lib/motion';
 import { hapticScrub } from '../../lib/haptics';
 import { meanSeries, parLine, type TrendRound } from './round-trend';
-import { monoPath, straightPath, teamLineDays, type ShsTone } from './shs-figures';
+import { dateShares } from '../../lib/chart';
+import { straightPath, teamLineDays, type ShsTone } from './shs-figures';
 
 const H = 160;
 const BASE_PAD = { l: 4, r: 30, t: 10, b: 26 };
@@ -66,19 +67,24 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   const n = shown.length;
   const scores = shown.map((r) => r.value);
   const par = parLine(shown);
-  let lo = Math.min(...scores, ...(par == null ? [] : [par])) - 1;
-  let hi = Math.max(...scores) + 1;
+  // Par sits inside the range on both sides (CH-16): a player under par in every round shown still sees the line they beat.
+  const marks = par == null ? scores : [...scores, par];
+  let lo = Math.min(...marks) - 1;
+  let hi = Math.max(...marks) + 1;
   const step = hi - lo > 10 ? 4 : hi - lo > 6 ? 2 : 1;
   lo = Math.floor(lo / step) * step;
   hi = Math.ceil(hi / step) * step;
-  const x = (i: number) => PAD.l + (n <= 1 ? (width - PAD.l - PAD.r) / 2 : (i * (width - PAD.l - PAD.r)) / (n - 1));
+  // Rounds sit by the day they were played (CH-11): three rounds in a week then a month off never draw as one even slope.
+  const share = dateShares(shown.map((r) => (r.at == null ? null : new Date(r.at).toISOString())));
+  const x = (i: number) => PAD.l + (n <= 1 ? 0.5 : share[i]!) * (width - PAD.l - PAD.r);
   const y = (v: number) => PAD.t + ((v - lo) / (hi - lo || 1)) * (H - PAD.t - PAD.b);
   const ticks: number[] = [];
   for (let v = lo; v <= hi; v += step) ticks.push(v);
   const avg = meanSeries(shown)
     .map((v, i) => (v == null ? null : ([x(i), y(v)] as const)))
     .filter((p): p is readonly [number, number] => p != null);
-  const line = monoPath(avg);
+  // Straight segments between the rounds (CH-15): a curve drew averages between rounds that were never measured.
+  const line = straightPath(avg);
   const area = line ? `${line}L${avg[avg.length - 1]![0]},${H - PAD.b}L${avg[0]![0]},${H - PAD.b}Z` : '';
   const colour = tone === 'gain' ? 'var(--ch-shs-s-gain-fill)' : tone === 'loss' ? 'var(--ch-shs-s-loss-fill)' : 'var(--ch-shs-s-flat)';
 
@@ -99,7 +105,7 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
     const circles = Array.from(dotsEl.current?.querySelectorAll('circle') ?? []);
     // The shape as the elements hold it: a morph writes them itself, so whoever stops one must leave them on a whole shape.
     const paint = (a: readonly Pt[], d: readonly Pt[]) => {
-      const path = monoPath(a);
+      const path = straightPath(a);
       if (lineEl.current) lineEl.current.setAttribute('d', path);
       if (areaEl.current) areaEl.current.setAttribute('d', path ? `${path}L${a[a.length - 1]![0]},${bottom}L${a[0]![0]},${bottom}Z` : '');
       circles.forEach((c, i) => d[i] && c.setAttribute('cy', String(d[i]![1])));
@@ -276,13 +282,19 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   );
 }
 
+/** A team round day as the phone draws it: the day's average in strokes, and against par per 18 when the loader has it. */
+export type TeamDay = { label: string; score: number | null; n?: number; date?: string; toPar?: number | null };
+
+/** Whether the round days draw against par: only when every day drawn has a figure against par (CH-01). */
+export const teamDaysVsPar = (days: ReadonlyArray<TeamDay>): boolean => days.length > 0 && days.every((d) => d.toPar != null);
+
 /**
  * The team's feature chart (08 criterion 50): 160 tall, its line and area always the gain fill, the mean dashed and named. Not
  * interactive: the card is the tap. Straight segments through every day in the window (S2.4), and a day one player posted on is a
  * hollow dot on the line (W26).
  * The dashed mean is named in a key under the drawing, never on the line: the scoring line crossed its words there (F-0009).
  */
-export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: string; score: number | null; n?: number }>; mean: number | null }) {
+export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<TeamDay>; mean: number | null }) {
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(320);
   useEffect(() => {
@@ -294,16 +306,24 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const known = days.filter((d): d is { label: string; score: number; n?: number } => d.score != null);
+  const known = days.filter((d): d is TeamDay & { score: number } => d.score != null);
   const n = known.length;
   if (!n) return null;
   const R = 30;
   const B = 24;
   const T = 8;
-  const v = known.map((d) => d.score);
-  const lo = Math.floor(Math.min(...v) - 0.5);
-  const hi = Math.ceil(Math.max(...v) + 0.5);
-  const x = (i: number) => (n === 1 ? (width - R) / 2 : (i * (width - R)) / (n - 1));
+  // Against par when every day has it (stats and charts audit 2026-11-15, CH-01): the same golf on a par-70 and a par-72 course is
+  // one level, never two strokes apart, and the dashed line is par. Raw strokes, against the days' own average, otherwise.
+  const vsPar = teamDaysVsPar(known);
+  const v = known.map((d) => (vsPar ? d.toPar! : d.score));
+  const ref = vsPar ? 0 : mean;
+  const marks = ref == null ? v : [...v, ref];
+  const lo = Math.floor(Math.min(...marks) - 0.5);
+  const hi = Math.ceil(Math.max(...marks) + 0.5);
+  const fig = (q: number) => (vsPar ? formatToPar(q, 1) : formatFixed(q, 1));
+  // Round days sit by their dates when every day has one (CH-11), evenly otherwise.
+  const share = dateShares(known.map((d) => d.date));
+  const x = (i: number) => (n === 1 ? 0.5 : share[i]!) * (width - R);
   const y = (q: number) => T + ((q - lo) / (hi - lo || 1)) * (H - T - B);
   const pts = v.map((q, i) => [x(i), y(q)] as const);
   const joined = teamLineDays(known);
@@ -313,7 +333,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
   for (let q = lo; q <= hi; q++) if ((q - lo) % (hi - lo > 4 ? 2 : 1) === 0) ticks.push(q);
   return (
     <>
-    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.${joined.one.size ? ` ${joined.one.size} ${pluralWord(joined.one.size, 'day', 'days')} with one round ${joined.one.size === 1 ? 'is' : 'are'} marked as hollow points.` : ''}`}>
+    <div ref={box} className="ch-shs-chart" role="img" aria-label={`${vsPar ? 'Team score against par, per 18 holes, by round day' : 'Team scoring average by round day'}, from ${fig(v[0]!)} to ${fig(v[n - 1]!)}. ${vsPar ? 'Under par sits higher.' : 'Lower scores sit higher.'}${joined.one.size ? ` ${joined.one.size} ${pluralWord(joined.one.size, 'day', 'days')} with one round ${joined.one.size === 1 ? 'is' : 'are'} marked as hollow points.` : ''}`}>
       <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
         <defs>
           <linearGradient id="ch-shs-tg" x1="0" x2="0" y1="0" y2="1">
@@ -325,11 +345,11 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
           <g key={q}>
             <line className="ch-shs-grid" x1="0" x2={width - R + 4} y1={y(q)} y2={y(q)} />
             <text className="ch-shs-ax" x={width} y={y(q) + 4} textAnchor="end">
-              {q}
+              {vsPar ? formatToPar(q, 0) : q}
             </text>
           </g>
         ))}
-        {mean != null && <line className="ch-shs-parline" x1="0" x2={width - R + 4} y1={y(mean)} y2={y(mean)} />}
+        {ref != null && <line className="ch-shs-parline" x1="0" x2={width - R + 4} y1={y(ref)} y2={y(ref)} />}
         {line && <path d={`${line}L${linePts[linePts.length - 1]![0]},${H - B}L${linePts[0]![0]},${H - B}Z`} fill="url(#ch-shs-tg)" />}
         {line && <path className="ch-shs-avgline" d={line} stroke="var(--ch-shs-s-gain-fill)" />}
         {pts.map((p, i) => (
@@ -345,14 +365,14 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
         )}
       </svg>
     </div>
-    {mean != null && (
-      // Named for what it is, an average of the round days drawn, so it never reads as a second scoring average beside the card's
-      // figure (W26, F-0009). Its mark is the line's own dash.
+    {ref != null && (
+      // Named for what it is, par or an average of the round days drawn, so it never reads as a second scoring average beside the
+      // card's figure (W26, F-0009). Its mark is the line's own dash.
       <p className="ch-shs-mean-key ch-num">
         <svg width="16" height="2" viewBox="0 0 16 2" aria-hidden="true">
           <line className="ch-shs-parline" x1="0" x2="16" y1="1" y2="1" />
         </svg>
-        Round-day avg {formatFixed(mean, 1)}
+        {vsPar ? 'Par' : `Round-day avg ${formatFixed(ref, 1)}`}
       </p>
     )}
     </>

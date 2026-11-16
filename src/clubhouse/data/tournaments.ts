@@ -645,13 +645,26 @@ export async function loadTournamentHistory(ctx: TourCtx): Promise<TourLoad<ChTo
   return guard<ChTourHistoryData>('history', async () => {
     const info = await readTeam(ctx);
     const seasonEnd = Number(seasonIdOf(info.today).slice(0, 4)) + 1;
-    const [read, players, profiles] = await Promise.all([readEvents(ctx, info.team.timezone), readPlayers(ctx, seasonEnd), readSeasonProfiles(ctx)]);
+    // The events are the page; the roster, the season profiles and the trend are its sections (GAP-S-08). A failure in one
+    // flags that section and the events still show, instead of the whole page failing.
+    const [read, roster, seasonRows] = await Promise.all([
+      readEvents(ctx, info.team.timezone),
+      section('history', 'players', () => readPlayers(ctx, seasonEnd)),
+      section('history', 'season_profiles', () => readSeasonProfiles(ctx)),
+    ]);
+    const players = roster.ok ? roster.value : [];
+    const profiles = seasonRows.ok ? seasonRows.value : [];
     const season = seasonIdOf(info.today);
     const complete = read.events.filter((e) => e.status === 'complete');
-    const matched = matchedPlayersOf(read.events, season);
-    const trend = historyTrend(complete, read.courses, matched);
-    const vals = trend.filter((t) => complete.find((e) => e.id === t.eventId)?.seasonId === season && t.actual != null).map((t) => t.actual!).sort((a, b) => a - b);
-    const q = (p: number) => vals[Math.min(vals.length - 1, Math.max(0, Math.round(p * (vals.length - 1))))]!;
+    const figures = await section('history', 'trend', async () => {
+      const matched = matchedPlayersOf(read.events, season);
+      const trend = historyTrend(complete, read.courses, matched);
+      const vals = trend.filter((t) => complete.find((e) => e.id === t.eventId)?.seasonId === season && t.actual != null).map((t) => t.actual!).sort((a, b) => a - b);
+      const q = (p: number) => vals[Math.min(vals.length - 1, Math.max(0, Math.round(p * (vals.length - 1))))]!;
+      // The middle half of this season's results; under four events there is no band to draw.
+      return { matched, trend, band: vals.length >= 4 ? { lo: q(0.25), hi: q(0.75) } : null };
+    });
+    const { matched, trend, band } = figures.ok ? figures.value : { matched: [], trend: [], band: null };
     return {
       kind: 'ready',
       data: {
@@ -662,13 +675,12 @@ export async function loadTournamentHistory(ctx: TourCtx): Promise<TourLoad<ChTo
         courses: read.courses,
         events: complete,
         trend,
-        // The middle half of this season's results; under four events there is no band to draw.
-        band: vals.length >= 4 ? { lo: q(0.25), hi: q(0.75) } : null,
+        band,
         matchedPlayers: matched,
         headToHead: headToHeadOf(read.events, season),
         // Splits by day, kind and start need the standard errors of the metrics engine's pool: not built in this pass.
         splits: [],
-        errors: {},
+        errors: { ...(roster.ok && seasonRows.ok ? {} : { profiles: true as const }), ...(figures.ok ? {} : { trend: true as const }) },
       },
     };
   });

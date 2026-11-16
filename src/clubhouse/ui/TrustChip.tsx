@@ -6,7 +6,7 @@ import { Icon } from './Icon';
  * quieter source label beside it (Card, Coach, Estimate, Pasted). Trust and source are different questions, so the
  * source never changes the chip's tone.
  *
- *   live      - the live dot breathes on the live loop (`--ch-dur-live`), still under reduced motion and Animations off
+ *   live      - a still green dot (MOTION-AND-VISUAL 3.12: no loop but the working indicator)
  *   suspended - amber text on the warning tint
  *   final     - our cards are in; the field can still move
  *   official  - positive ink with a check: the host's published results

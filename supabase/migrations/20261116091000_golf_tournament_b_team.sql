@@ -7,7 +7,7 @@
 --   supabase/migrations/20261116091000_golf_tournament_b_team.sql
 --   after npm run test:rls passes on a local stack (the pgTAP file is
 --   supabase/tests/rls/golf_tournament_b_team.sql). Order: after
---   20261115250000 (independent of it and of 20261115230000/240000).
+--   20261115250000 (independent of it and of 20261115232000/240000).
 --
 -- Risk: MEDIUM. Replaces two live functions (golf_tournament_set_entries
 --   and golf_tournament_lock_lineup) and swaps the entries' slot index for

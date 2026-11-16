@@ -20,7 +20,7 @@ import {
 /**
  * Launch readiness F-03: the Calendar's Practice hours page. The week is drafted from what the calendar loads
  * (`loadCalendar`, so the log and the calendar can never disagree about an event), the attendance marks on those events,
- * and, once the held migration 20261115230000 is applied, the team's limits and the coach's adjustments. Without it the
+ * and, once the held migration 20261115232000 is applied, the team's limits and the coach's adjustments. Without it the
  * week is drafted on the defaults: the division on Settings, Team, else Division I, in season.
  *
  * A player gets their own row only: the calendar already leaves out a meeting they are not on and every teammate's reply,

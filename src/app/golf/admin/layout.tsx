@@ -1,9 +1,13 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { AdminNativeGuard } from '@/components/native/AdminNativeGuard';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { AdminMotionProvider } from './_motion-provider';
+
+// Golf admin tabs read 'Demo sessions · Admin', not the GolfHelm suffix (GAP-R-17).
+export const metadata: Metadata = { title: { template: '%s · Admin', default: 'Admin' } };
 
 export default async function AdminLayout({
   children,

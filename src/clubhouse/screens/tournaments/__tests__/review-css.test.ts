@@ -29,7 +29,7 @@ describe('the review’s notes on a phone', () => {
   it('a desk keeps the notes as their own card', () => {
     const desk = rule('.ch-tour-rev-notes');
     expect(desk).toMatch(/box-shadow:\s*var\(--ch-elevation-reading\)/);
-    expect(desk).toMatch(/border-radius:\s*var\(--ch-radius-card\)/);
+    expect(desk).toMatch(/border-radius:\s*var\(--ch-radius-lg\)/);
   });
 });
 

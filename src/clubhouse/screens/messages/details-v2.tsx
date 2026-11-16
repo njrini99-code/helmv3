@@ -35,7 +35,7 @@ export function usePopIn() {
         el.dataset.chPopped = '1';
       }
       const frames: Keyframe[] = opts.fade ? [{ transform: `scale(${from})`, opacity: 0 }, { transform: 'scale(1)', opacity: 1 }] : [{ transform: `scale(${from})` }, { transform: 'scale(1)' }];
-      return msAnimate(el, frames, 'pop', { reduced, rd: null });
+      return msAnimate(el, frames, 'settle', { reduced, rd: null });
     },
     [reduced],
   );
@@ -125,7 +125,7 @@ export function MuteMenu({ onPick, onClose, anchor }: { onPick: (hours: number |
     const el = menu.current;
     if (!el) return;
     el.style.transformOrigin = anchor?.above ? '0 100%' : '0 0';
-    msAnimate(el, [{ transform: 'scale(0.8)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], 'lift', { reduced });
+    msAnimate(el, [{ transform: 'scale(0.8)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], 'settle', { reduced });
   }, [reduced, anchor]);
   /** Fade out, then say so: the menu never vanishes from under a finger. */
   const leave = (then: () => void) => {

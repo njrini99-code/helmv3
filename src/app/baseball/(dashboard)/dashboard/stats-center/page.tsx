@@ -33,7 +33,7 @@ import { getStatVisualsPayload } from '@/lib/baseball/read-models/stat-visuals';
 import { StatsCenterClient } from '@/components/baseball/stats-center/StatsCenterClient';
 
 export const metadata = {
-  title: 'Stats Center · BaseballHelm',
+  title: 'Stats Center',
 };
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

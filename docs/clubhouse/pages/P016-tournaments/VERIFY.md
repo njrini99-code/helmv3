@@ -48,6 +48,14 @@ Phase is before, after, baseline or evidence.
 | `P016__import-results__coach__402__choose-file__after__d2b1386.png` | after | d2b1386 | import-results (coach), 402px, choose-file; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
 | `P016__event-desk__coach__1440__who-counted-exported__after__6e3fc1f.png` | after | 6e3fc1f | event-desk (coach), 1440px, who-counted-exported; preview |
 | `P016__event-desk__coach__402__who-counted-export__after__6e3fc1f.png` | after | 6e3fc1f | event-desk (coach), 402px, who-counted-export; preview |
+| `P016__compare__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | compare (coach), 1440x932px, default; /clubhouse-preview/tournament-compare |
+| `P016__compare__coach__1440x932__default__before__c882964.png` | before | c882964 | compare (coach), 1440x932px, default; /clubhouse-preview/tournament-compare |
+| `P016__compare__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | compare (coach), 402px, default; /clubhouse-preview/tournament-compare |
+| `P016__compare__coach__402__default__before__c882964.png` | before | c882964 | compare (coach), 402px, default; /clubhouse-preview/tournament-compare |
+| `P016__history__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | history (coach), 1440x932px, default; /clubhouse-preview/tournament-history |
+| `P016__history__coach__1440x932__default__before__c882964.png` | before | c882964 | history (coach), 1440x932px, default; /clubhouse-preview/tournament-history |
+| `P016__history__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | history (coach), 402px, default; /clubhouse-preview/tournament-history |
+| `P016__history__coach__402__default__before__c882964.png` | before | c882964 | history (coach), 402px, default; /clubhouse-preview/tournament-history |
 
 ## Open verification gaps
 

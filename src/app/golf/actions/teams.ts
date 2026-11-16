@@ -522,7 +522,8 @@ async function joinGolfTeamImpl(
   // Revalidate relevant paths
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/roster');
-  revalidatePath('/golf/dashboard/team');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/settings');
 
   return {
     success: true,
@@ -696,7 +697,8 @@ async function createTeamImpl(
 
   // Revalidate relevant paths
   revalidatePath('/golf/dashboard');
-  revalidatePath('/golf/dashboard/team');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/settings');
   revalidatePath('/golf/dashboard/roster');
 
   return {
@@ -790,7 +792,8 @@ async function updateTeamImpl(
 
   // Revalidate relevant paths
   revalidatePath('/golf/dashboard');
-  revalidatePath('/golf/dashboard/team');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/settings');
   revalidatePath('/golf/dashboard/roster');
 
   return {
@@ -872,7 +875,8 @@ async function regenerateJoinCodeImpl(
   }
 
   // Revalidate relevant paths
-  revalidatePath('/golf/dashboard/team');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/settings');
 
   return {
     success: true,
@@ -2011,7 +2015,8 @@ async function addSecondTeamImpl(
   }
 
   revalidatePath('/golf/dashboard');
-  revalidatePath('/golf/dashboard/team');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/settings');
   revalidatePath('/golf/dashboard/roster');
 
   return {
@@ -2384,7 +2389,8 @@ async function redeemStaffInviteImpl(
   }
 
   revalidatePath('/golf/dashboard');
-  revalidatePath('/golf/dashboard/team');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/settings');
   revalidatePath('/golf/dashboard/roster');
 
   const finalTeams = targetTeams.map((t) => ({ id: t.id, name: t.name, gender: t.gender ?? null }));
@@ -2881,7 +2887,8 @@ async function approvePendingAssistantCoachImpl(
     );
   }
 
-  revalidatePath('/golf/dashboard/team');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/settings');
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/coach/pending');
   return { success: true };
@@ -2932,7 +2939,8 @@ async function declinePendingAssistantCoachImpl(
     return { success: false, error: 'We could not decline that request.' };
   }
 
-  revalidatePath('/golf/dashboard/team');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/settings');
   return { success: true };
 }
 

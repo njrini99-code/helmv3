@@ -4,15 +4,16 @@
  * The desktop sidebar folding to its icon rail and opening again (RailToggle, shell.css "The folding sidebar"), as one
  * moment the rest of the page can wait out (motion pass 2026-10-22, mot-01).
  *
- * The fold keeps its spring on the sidebar's width: a transform-only fold would leave the canvas a step behind or
- * ahead of the edge. But the canvas narrows or widens on every frame of it, so every reader of the canvas's size (a
- * chart's ResizeObserver, a zone map, the evidence pane, Lenis's scroll limit) re-measured and re-rendered on every
- * frame, and that, not the width itself, was the stutter. While the fold moves, `data-ch-rail-moving` is on `.ch-app`
- * and `afterRailMove` holds those reads back; they run once, at the size the page settles on. shell.css drops the brand
- * panel's frost for the same frames, since a blur under a box that changes size is redrawn on every one.
+ * Since the 2026-11-15 production audit (S4.4, MOT-11) the sidebar's width takes its new value at once and only
+ * transform and opacity move, so the canvas is laid out once per fold rather than on every frame. Before that, every
+ * reader of the canvas's size (a chart's ResizeObserver, a zone map, the evidence pane, Lenis's scroll limit)
+ * re-measured and re-rendered on every frame of a width transition, and that was the stutter. While the fold moves,
+ * `data-ch-rail-moving` is on `.ch-app` and `afterRailMove` holds those reads back; they run once, at the size the page
+ * settles on. With no width transition the sidebar's computed duration is 0, so the fold settles on the next task.
  *
  * The fold ends when the sidebar's width transition ends, or when its own duration has passed (a transition that was
- * cut short, or never ran with reduced motion or Animations off, fires no transitionend).
+ * cut short, or never ran with reduced motion or Animations off, fires no transitionend). The width path stays so a
+ * sidebar given a width transition again is still waited out.
  */
 const MOVING = 'data-ch-rail-moving';
 /** A little past the transition's own end, for a frame that ran late. */

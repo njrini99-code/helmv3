@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/coachhelm/chat"
       component="CoachHelmChatPage"
-      title="Failed to load chat"
-      message="We couldn't load CoachHelm chat. Please try again."
       homePath="/golf/dashboard/coachhelm"
     />
   );

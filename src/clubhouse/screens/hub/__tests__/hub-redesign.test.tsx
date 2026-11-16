@@ -127,7 +127,9 @@ describe('100101 Team Hub · Home’s widgets', () => {
     expect(within(next).getByRole('button', { name: 'Plan a trip' })).toBeTruthy();
   });
 
-  it('the week steps by day with the arrow keys, and an event that takes replies lets a player answer in place', async () => {
+  // GAP-H-04 (15 Nov 2026): the week offered Going / Maybe / Can’t for the same event the queue asks about. The queue owns
+  // the reply; the week says where it stands.
+  it('the week steps by day with the arrow keys, and an event that takes replies shows the player’s answer, given in the queue', async () => {
     const { user, w } = show(PREVIEW_HUB_PLAYER);
     const week = screen.getByRole('region', { name: 'Next 7 days' });
     // F-0011: today's name opens with its face, "Today 14".
@@ -139,9 +141,15 @@ describe('100101 Team Hub · Home’s widgets', () => {
     expect(thu.getAttribute('aria-pressed')).toBe('true');
     expect(document.activeElement).toBe(thu);
     expect(within(week).getByText('Fall qualifier · round 1')).toBeTruthy();
-    const dinner = within(week).getByRole('radiogroup', { name: 'Your reply for Team dinner' });
+    expect(within(week).queryByRole('radiogroup', { name: 'Your reply for Team dinner' })).toBeNull();
+    const dinnerRow = within(week).getByRole('link', { name: /Team dinner/ }).closest('li')!;
+    expect(dinnerRow.textContent).toContain('Your reply: No reply yet');
+    const queue = screen.getByRole('region', { name: 'Your queue' });
+    const dinner = within(queue).getByRole('radiogroup', { name: 'Your reply for Team dinner' });
     await user.click(within(dinner).getByRole('radio', { name: 'Going' }));
     expect(w.reply).toHaveBeenCalledWith('r2', 'accepted');
+    // The week follows the answer given in the queue.
+    expect(dinnerRow.textContent).toContain('Your reply: Going');
     // Coming up opens its day.
     await user.click(within(week).getByRole('button', { name: /Recovery nine/ }));
     expect(within(week).getByRole('button', { name: 'Fri 17: 1 event' }).getAttribute('aria-pressed')).toBe('true');

@@ -19,7 +19,7 @@ import { ScoutPacketView } from '@/components/baseball/passport/ScoutPacketView'
 import { IconArrowLeft } from '@/components/icons';
 
 export const metadata = {
-  title: 'Scout Packet preview · BaseballHelm',
+  title: 'Scout Packet preview',
 };
 
 interface PageProps {

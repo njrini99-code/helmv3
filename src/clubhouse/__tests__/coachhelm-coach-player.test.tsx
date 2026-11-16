@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GolfSessionProfile } from '@/lib/auth/session';
-import { resolved } from './route-view';
+import { resolved, underSwitchFrame } from './route-view';
 
 /**
  * A coach's views of one player (P013, spec A): `/golf/dashboard/coachhelm?view=deep-dive|standing&player=<id>` (`profile` is Standing at
@@ -154,13 +154,14 @@ describe('130807 130104 the scope check: on this coach’s team, or one page for
   it('CH-13209 a membership read that fails is the page’s "didn’t load", never "not on your team"', async () => {
     tables.current = { ...tables.current, golf_team_members: { error: { message: 'boom' } } };
     render(wrap(await page({ view: 'profile', player: PID })));
-    expect(code('CH-13209')!.textContent).toMatch(/This player’s page didn’t load.*Nothing is lost\. Try again in a moment\./);
+    expect(code('CH-13209')!.textContent).toMatch(/This player’s page didn’t load.*Nothing you saved is lost\. Try again\./);
     expect(code('CH-13311')).toBeNull();
   });
 
   it('a player role with ?player= gets their own view, scoped to the session’s id, never the address’s', async () => {
     session.current = { coach: null, player: { id: 'player-1', onboarding_completed: true } } as unknown as GolfSessionProfile;
-    const out = (await ClubhouseCoachHelmRoute({ view: 'standing', player: OTHER })) as ReactElement<{ children: ReactElement<Record<string, unknown>> }>;
+    // Under the player's one switch, mounted above the view (N13P-18).
+    const out = underSwitchFrame(await ClubhouseCoachHelmRoute({ view: 'standing', player: OTHER })) as ReactElement<{ children: ReactElement<Record<string, unknown>> }>;
     expect(isValidElement(out)).toBe(true);
     const child = out.props.children;
     expect((child.type as { name: string }).name).toBe('PlayerHelmView');
@@ -185,7 +186,8 @@ describe('130807 130104 the scope check: on this coach’s team, or one page for
   });
 
   it('a coach’s ?view= with no player is the board', async () => {
-    const out = (await ClubhouseCoachHelmRoute({ view: 'standing' })) as ReactElement<{ children: ReactElement }>;
+    // Under the coach's one switch, mounted above the view (N13C-67).
+    const out = underSwitchFrame(await ClubhouseCoachHelmRoute({ view: 'standing' })) as ReactElement<{ children: ReactElement }>;
     expect((out.props.children.type as { name: string }).name).toBe('CoachHelmView');
   });
 });

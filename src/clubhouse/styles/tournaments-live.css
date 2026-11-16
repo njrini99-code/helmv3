@@ -32,7 +32,7 @@
   align-items: center;
   gap: 20px;
   padding: 16px 20px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -65,7 +65,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -195,11 +195,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 .ch-tour-live-lane__tap[data-ch-pressed] {
-  background: var(--ch-press-well);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-tour-live-lane__tap:active {
-    background: var(--ch-press-well);
+    background: var(--ch-sel);
   }
 }
 .ch-tour-live-lane__tap:focus-visible {
@@ -246,10 +246,10 @@
   font: var(--ch-type-14-strong);
 }
 .ch-tour-live-field__row.is-us:first-child {
-  border-radius: var(--ch-radius-card) var(--ch-radius-card) 0 0;
+  border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0;
 }
 .ch-tour-live-field__row.is-us:last-child {
-  border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
+  border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg);
 }
 .ch-tour-live-field__none {
   margin: 0;

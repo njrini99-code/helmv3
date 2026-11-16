@@ -328,7 +328,8 @@
   // ---- Filmstrip support: pause every animation (pseudo-elements included) and set them all to one time.
   const pauseAll = () => { const list = document.getAnimations(); list.forEach((a) => a.pause()); return list.length; };
   const seekAll = (ms) => { const list = document.getAnimations(); list.forEach((a) => { a.pause(); a.currentTime = ms; }); return list.length; };
-  const finishAll = () => { document.getAnimations().forEach((a) => { try { a.finish(); } catch { a.cancel(); } }); };
+  // Time-based only: a scroll-driven animation (the phone large title's fade, S4.3) follows the scroll, and finishing it fakes one.
+  const finishAll = () => { document.getAnimations().forEach((a) => { if (a.timeline !== document.timeline) return; try { a.finish(); } catch { a.cancel(); } }); };
 
   // ---- Keyboard: what the on-screen keyboard leaves visible (02 §3f). Call after focusing a field.
   const kbd = () => {

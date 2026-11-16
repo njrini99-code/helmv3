@@ -308,6 +308,21 @@ describe('Settings · 80xx error toasts', () => {
     await expectCode('CH-8021', /for the team/);
   });
 
+  // MOTION-AND-VISUAL 3.12: the moved row's green glow (a paint keyframe that cleared itself on animationend) is gone; the
+  // row takes its new place at once with the select haptic, and nothing waits for an animation to end.
+  it('CH-8606 moving a priority puts the row in its new place at once, with the select haptic and no glow', async () => {
+    const { user } = setup({ section: 'coachhelm' });
+    const list = screen.getByRole('list', { name: 'Priorities, most important first' });
+    const names = () => [...list.querySelectorAll('.ch-set-rank__i b')].map((b) => b.textContent);
+    const [first, second] = names();
+    hapticSpy.mockClear();
+    await user.click(within(list).getByRole('button', { name: `Move ${second} up` }));
+    expect(names().slice(0, 2)).toEqual([second, first]);
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(list.querySelector('.is-moved')).toBeNull();
+    expect([...list.querySelectorAll('.ch-set-rank__i')].every((li) => li.className === 'ch-set-rank__i')).toBe(true);
+  });
+
   it('CH-8022 81302 a CoachHelm setting fails and reverts', async () => {
     const { user } = setup({ section: 'coachhelm', writes: { savePhilosophy: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) } });
     const sw = screen.getByRole('switch', { name: 'Performance plateau' });
@@ -2699,7 +2714,9 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       // Alerts, thresholds, windows and display are all here.
       for (const name of ['Decline threshold', 'Pressure gap', 'Bubble zone', 'Minimum confidence', 'Hole ranking', 'Pattern lookback']) expect(screen.getByRole('slider', { name })).toBeTruthy();
       for (const name of [/^Alert delivery/, /^Stats comparison/, /^Insight detail/]) expect(screen.getByRole('button', { name })).toBeTruthy();
-      for (const name of ['Show strokes gained', 'Show advanced statistics', 'Insights', 'Predictions', 'Patterns']) expect(screen.getByRole('switch', { name })).toBeTruthy();
+      for (const name of ['Insights', 'Predictions', 'Patterns']) expect(screen.getByRole('switch', { name })).toBeTruthy();
+      // DF-C-11: two switches no screen or CoachHelm read are not offered.
+      for (const name of ['Show strokes gained', 'Show advanced statistics']) expect(screen.queryByRole('switch', { name })).toBeNull();
     });
 
     it('81901 CH-8021 an assistant coach sees the team switch locked, with the reason; the head coach can change it', async () => {

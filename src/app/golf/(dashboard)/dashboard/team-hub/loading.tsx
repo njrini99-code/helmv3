@@ -1,5 +1,6 @@
-import { HubSkeleton } from '@/clubhouse/screens/hub/HubSkeleton';
+import { HubRouteSkeleton } from '@/clubhouse/screens/hub/HubSkeleton';
 
 export default function Loading() {
-  return <HubSkeleton />;
+  // The address's `?tab=` decides the panel the skeleton draws (GAP-S-17).
+  return <HubRouteSkeleton />;
 }

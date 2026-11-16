@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/rounds/new"
       component="NewRoundPage"
-      title="Failed to load round entry"
-      message="We couldn't load round entry. Please try again."
       homePath="/golf/dashboard/rounds"
     />
   );

@@ -7,8 +7,8 @@ import { CH_MARKS_COOKIE, CH_MARKS_MAX_AGE, markKey, serializeMarks, showAgain a
  * What this device has seen of the calendar's change marks (P-14), kept in the `ch_marks` cookie so the server paints an
  * already-seen mark right on the first frame. Three things are remembered per change:
  *
- * - seen (`s`): the strike has been drawn once. The draw itself is CSS (a one-shot animation on a pending mark); one
- *   shared IntersectionObserver only records that a mark was 60% on screen, so the next paint is already struck;
+ * - seen (`s`): the mark has been on screen. The strike is drawn still from the first frame (MOTION-AND-VISUAL 3.12); one
+ *   shared IntersectionObserver only records that a mark was 60% on screen;
  * - got it (`g`): the viewer hid the change on this device. Every surface that shows the mark reads it;
  * - show it again: back to seen, without drawing a second time.
  *

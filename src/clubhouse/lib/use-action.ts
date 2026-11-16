@@ -43,6 +43,17 @@ export interface ActionCopy {
 /** After this long, a save that hasn't answered says so once (CH-1902). */
 export const CH_SLOW_SAVE_AFTER = 5000;
 
+/**
+ * After this long, a save still out offers to stop waiting (CH-1990): "This is taking longer than usual" with Cancel. Its
+ * notice stays until the save answers or someone acts on it; closed, it offers again after as long once more.
+ */
+export const CH_SLOW_SAVE_GIVE_UP = 20_000;
+
+/** The give-up notice holds this long at most (a timer needs a number); then it offers again. */
+const GIVE_UP_HOLD_MS = 10 * 60_000;
+/** The slow notices replace one another: never "Still saving…" beside "This is taking longer than usual". */
+const SLOW_SAVE_KEY = 'ch-slow-save';
+
 /** True when the browser says it has no network. */
 export function isOffline(): boolean {
   return typeof navigator !== 'undefined' && navigator.onLine === false;
@@ -71,10 +82,16 @@ export function useAction<A extends unknown[], T>(
   // The gate is a ref, not `pending`: a toast's Retry and a second quick tap both call a `run` made in an earlier render,
   // whose `pending` is stale (true after the action settled, false before it started).
   const inFlight = useRef(false);
+  // A save someone stopped waiting for (CH-1991) that is still out: a second Save would send it twice (a second plan, a
+  // second message), so it waits for that answer and says so.
+  const stoppedOut = useRef(false);
 
   const run = useCallback(
     async (...args: A): Promise<ActionResult<T>> => {
-      if (inFlight.current) return { success: false, error: 'busy' };
+      if (inFlight.current) {
+        if (stoppedOut.current) toast({ title: 'Your last save hasn’t answered yet', body: 'You’ll see here when it does. Then you can save again.', code: 'CH-1991', replace: SLOW_SAVE_KEY });
+        return { success: false, error: 'busy' };
+      }
       let c = typeof copy === 'function' ? copy(...args) : copy;
       chTrail(`action ${name}`);
       if ((c.offline ?? isOffline)()) {
@@ -85,38 +102,84 @@ export function useAction<A extends unknown[], T>(
       }
       inFlight.current = true;
       setPending(true);
-      const stopSlow = delayedToast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }, CH_SLOW_SAVE_AFTER);
-      let result: ActionResult<T>;
-      try {
-        result = normalise(await action(...args));
-      } catch (err) {
-        chReport(err, { surface: name.split('.')[0] ?? name, action: name });
-        result = { success: false, error: undefined };
-      } finally {
-        stopSlow();
-        inFlight.current = false;
-        setPending(false);
-      }
-      if (refine) c = refine(result, c);
-      // Another surface owns this outcome (a dialog, the page that took over): nothing to say twice.
-      if (c.quiet) return result;
-      if (result.success) {
-        // CH-1702: a save or send that lands gives the success pattern; CH-1703: a failure the error pattern (below).
-        haptic('success');
-        if (c.done) toast({ title: c.done });
-      } else {
-        // A handled failure (the action returned success: false) is still tracked, at low severity.
-        if (result.error !== 'busy') chReport(new Error(result.error || 'action failed'), { surface: name.split('.')[0] ?? name, action: name, severity: 'low' });
-        haptic('error');
-        toast({
-          tone: 'error',
-          title: c.failed,
-          body: (refine ? c.hint : undefined) ?? friendlyReason(result.error) ?? c.hint ?? 'Try again.',
-          action: c.retry === false ? undefined : { label: c.retry ?? 'Try again', run: () => void run(...args) },
-          code: c.code,
+      const stopSlow = delayedToast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902', replace: SLOW_SAVE_KEY }, CH_SLOW_SAVE_AFTER);
+      // CH-1990 (GAP-S-31): a save still out after 20 seconds offers Cancel. A server action can't be called back, so
+      // Cancel stops waiting: the button is free again and what was typed stays (the caller sees a failure, so it keeps
+      // its form). Closing the notice keeps waiting, and it offers again later.
+      let settled = false;
+      let stopWaiting = () => {};
+      const stopped = new Promise<'stopped'>((resolve) => (stopWaiting = () => resolve('stopped')));
+      const offers: Array<() => void> = [];
+      const offerCancel = () => {
+        offers.push(
+          delayedToast(
+            {
+              title: 'This is taking longer than usual',
+              body: 'You can keep waiting, or cancel. Your changes are kept.',
+              code: 'CH-1990',
+              replace: SLOW_SAVE_KEY,
+              holdMs: GIVE_UP_HOLD_MS,
+              action: { label: 'Cancel', run: stopWaiting },
+              onExpire: () => {
+                if (!settled) offerCancel();
+              },
+            },
+            CH_SLOW_SAVE_GIVE_UP,
+          ),
+        );
+      };
+      offerCancel();
+      const work = (async (): Promise<ActionResult<T>> => {
+        try {
+          return normalise(await action(...args));
+        } catch (err) {
+          chReport(err, { surface: name.split('.')[0] ?? name, action: name });
+          return { success: false, error: undefined };
+        }
+      })();
+      /** Says how the save ended (the success or the failure pattern), unless another surface owns the outcome. */
+      const tell = (result: ActionResult<T>): ActionResult<T> => {
+        if (refine) c = refine(result, c);
+        // Another surface owns this outcome (a dialog, the page that took over): nothing to say twice.
+        if (c.quiet) return result;
+        if (result.success) {
+          // CH-1702: a save or send that lands gives the success pattern; CH-1703: a failure the error pattern (below).
+          haptic('success');
+          if (c.done) toast({ title: c.done });
+        } else {
+          // A handled failure (the action returned success: false) is still tracked, at low severity.
+          if (result.error !== 'busy') chReport(new Error(result.error || 'action failed'), { surface: name.split('.')[0] ?? name, action: name, severity: 'low' });
+          haptic('error');
+          toast({
+            tone: 'error',
+            title: c.failed,
+            body: (refine ? c.hint : undefined) ?? friendlyReason(result.error) ?? c.hint ?? 'Try again.',
+            action: c.retry === false ? undefined : { label: c.retry ?? 'Try again', run: () => void run(...args) },
+            code: c.code,
+          });
+        }
+        return result;
+      };
+      const first = await Promise.race([work, stopped]);
+      settled = true;
+      stopSlow();
+      for (const stop of offers) stop();
+      setPending(false);
+      if (first === 'stopped') {
+        chTrail(`action ${name} stopped waiting`);
+        toast({ title: 'Stopped waiting', body: 'Your changes are kept. If it saves after all, you’ll see it here.', code: 'CH-1991', replace: SLOW_SAVE_KEY });
+        // Its answer still lands, and is told as any other: saved, or what failed with Try again.
+        // The button is free again, but the gate stays shut until that answer lands, so nothing is sent twice.
+        stoppedOut.current = true;
+        void work.then((late) => {
+          inFlight.current = false;
+          stoppedOut.current = false;
+          tell(late);
         });
+        return { success: false, error: 'cancelled' };
       }
-      return result;
+      inFlight.current = false;
+      return tell(first);
     },
     [action, copy, delayedToast, name, refine, toast],
   );

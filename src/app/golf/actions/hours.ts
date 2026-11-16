@@ -18,7 +18,7 @@ import {
 /**
  * Launch readiness F-03: the Practice hours page's two saves. RLS decides who may write (a coach of the team, through
  * is_golf_team_coach; an adjustment's event must be the same team's), so a player's or another team's write comes back
- * with no row and is refused here. Until the held migration 20261115230000 is applied the tables aren't there: each save
+ * with no row and is refused here. Until the held migration 20261115232000 is applied the tables aren't there: each save
  * answers `unavailable` and the page says saving waits on the update; nothing else is touched.
  */
 

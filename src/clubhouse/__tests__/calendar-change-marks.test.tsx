@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { tokenHex } from './_tokens';
 
 /**
  * P-14 change marks on the Calendar: a changed event shows the new value with the old one struck and a small badge;
@@ -207,28 +208,27 @@ describe('on the phone', () => {
     expect(renamed.querySelector('.ch-calm-ev__sub')!.textContent).toBe('was Travel briefing · Team room');
   });
 
-  it('the strike is pending until this device has seen it, and already done on the first frame after', () => {
+  it('the strike is drawn still from the first frame, seen or not: no draw-in waits on this device (3.12)', () => {
     stubObserver();
     try {
       wrap(withMarks([row()]));
-      expect(rowButton().querySelector('s.ch-was')!.getAttribute('data-draw')).toBe('pending');
+      expect(rowButton().querySelector('s.ch-was')!.hasAttribute('data-draw')).toBe(false);
       cleanup();
       wrap(withMarks([row()], {}, [['6f1c2a90', 's']]));
-      expect(rowButton().querySelector('s.ch-was')!.getAttribute('data-draw')).toBe('done');
+      expect(rowButton().querySelector('s.ch-was')!.hasAttribute('data-draw')).toBe(false);
     } finally {
       vi.unstubAllGlobals();
     }
   });
 
-  it('once a mark has been 60% on screen the device records it (the observer only records; the draw is CSS)', async () => {
+  it('once a mark has been 60% on screen the device records it (the observer only records)', async () => {
     const io = stubObserver();
     try {
       wrap(withMarks([row()]));
       await waitFor(() => expect(io.watched.length).toBeGreaterThan(0));
       expect(document.cookie).not.toContain('ch_marks=6f1c2a90');
       io.callbacks[0]!([{ isIntersecting: true, target: io.watched[0]! }]);
-      await waitFor(() => expect(rowButton().querySelector('s.ch-was')!.getAttribute('data-draw')).toBe('done'));
-      expect(document.cookie).toContain('ch_marks=6f1c2a90:s');
+      await waitFor(() => expect(document.cookie).toContain('ch_marks=6f1c2a90:s'));
     } finally {
       vi.unstubAllGlobals();
     }
@@ -238,7 +238,7 @@ describe('on the phone', () => {
     vi.stubGlobal('IntersectionObserver', undefined);
     try {
       wrap(withMarks([row()]));
-      await waitFor(() => expect(rowButton().querySelector('s.ch-was')!.getAttribute('data-draw')).toBe('done'));
+      await waitFor(() => expect(document.cookie).toContain('ch_marks=6f1c2a90:s'));
     } finally {
       vi.unstubAllGlobals();
     }
@@ -285,9 +285,9 @@ describe('on the phone', () => {
 
     await user.click(screen.getByRole('button', { name: 'Show the change again' }));
     expect(await screen.findByRole('note', { name: 'What changed' })).toBeTruthy();
-    // It was already seen: it comes back without drawing a second time.
+    // It was already seen: it comes back as seen, struck as it always is.
     expect(document.cookie).toContain('ch_marks=6f1c2a90:s');
-    expect(screen.getAllByRole('button', { name: /^Travel briefing/ }).some((b) => b.querySelector('s.ch-was')?.getAttribute('data-draw') === 'done')).toBe(true);
+    expect(screen.getAllByRole('button', { name: /^Travel briefing/ }).some((b) => b.querySelector('s.ch-was') !== null)).toBe(true);
   });
 
   it('a device that cleared the change paints it cleared on the first frame', () => {
@@ -404,7 +404,6 @@ describe('the change panel for several fields', () => {
 
 describe('contrast and the banned stripe (P-14 7.3)', () => {
   const STYLES = join(process.cwd(), 'src/clubhouse/styles');
-  const tokens = readFileSync(join(STYLES, 'tokens.css'), 'utf8');
   type RGB = [number, number, number];
   const hex = (h: string): RGB => [0, 2, 4].map((i) => parseInt(h.replace('#', '').slice(i, i + 2), 16)) as RGB;
   const lum = (c: RGB) => {
@@ -418,12 +417,7 @@ describe('contrast and the banned stripe (P-14 7.3)', () => {
     const [hi, lo] = [lum(x), lum(y)].sort((p, q) => q - p);
     return (hi! + 0.05) / (lo! + 0.05);
   };
-  const token = (name: string, theme: 'light' | 'dark'): RGB => {
-    const from = theme === 'light' ? 0 : tokens.indexOf("[data-fw-theme='dark']");
-    const m = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`).exec(tokens.slice(from));
-    if (!m) throw new Error(`--${name} (${theme}) is not a hex`);
-    return hex(m[1]!);
-  };
+  const token = (name: string, theme: 'light' | 'dark'): RGB => hex(tokenHex(name, theme));
 
   it.each(['light', 'dark'] as const)('the struck value and the panel text read at 4.5:1 or more on every surface they sit on (%s)', (theme) => {
     for (const bg of ['ch-sheet-bg', 'ch-workspace', 'ch-bg-subtle', 'ch-bg-page']) {
@@ -677,8 +671,8 @@ describe('the feature’s contrast on the surfaces it sits on, from the tokens (
     const t = (n: string) => tokenOf(n, theme);
     expect(ratio(t('ch-ink-500'), t('ch-bg-surface')), 'label').toBeGreaterThanOrEqual(4.5);
     expect(ratio(t('ch-ink-500'), t('ch-workspace')), 'ring on the workspace').toBeGreaterThanOrEqual(3);
-    // The phone page, which the moved-away ring sits on in light (tokens.css, the phone page ground).
-    if (theme === 'light') expect(ratio(t('ch-ink-500'), [237, 233, 223, 1]), 'ring on the phone page').toBeGreaterThanOrEqual(3);
+    // The page's linen, which the moved-away ring sits on at every width.
+    expect(ratio(t('ch-ink-500'), t('ch-bg-page')), 'ring on the page').toBeGreaterThanOrEqual(3);
   });
 });
 

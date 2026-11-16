@@ -195,6 +195,10 @@ describe('P009-B2 an honest Live state', () => {
     // 11:00 UTC on Oct 2 is still Oct 1 at UTC−12; noon UTC is Oct 2 everywhere.
     expect(endDayFor(new Date('2026-10-02T11:00:00Z'))).toBe('2026-10-01');
     expect(endDayFor(new Date('2026-10-02T12:00:00Z'))).toBe('2026-10-02');
+    // DF-P-12: with the team's zone, the day is the team's day. 03:00 UTC on 2 Oct is still 1 Oct in New York, and
+    // 11:00 UTC is 2 Oct there, where UTC−12 would still say 1 Oct.
+    expect(endDayFor(new Date('2026-10-02T03:00:00Z'), 'America/New_York')).toBe('2026-10-01');
+    expect(endDayFor(new Date('2026-10-02T11:00:00Z'), 'America/New_York')).toBe('2026-10-02');
   });
 
   it('D3 on the list: a live qualifier past its end says what it waits on on its card; with no day it stays Live', () => {

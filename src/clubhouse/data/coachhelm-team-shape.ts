@@ -100,7 +100,11 @@ export interface ChTeamBoardData {
     /** Of the rounds the hole's figure rests on, how many were shot-tracked and how many estimated from the scorecard (stats-sg-mix.ts); null when unread. */
     sgMix?: ChSgMix | null;
   };
-  course: { history: CourseHistory | null; reads: ChInsight[]; against: ChTourRow[] | null };
+  /**
+   * `against`: the Tour comparison, null when its read failed. The loader hands it over as a promise the board draws in its
+   * own Suspense when it lands (N13-13), so the standings read never holds the hole back; a value where nothing is read.
+   */
+  course: { history: CourseHistory | null; reads: ChInsight[]; against: ChTourRow[] | null | Promise<ChTourRow[] | null> };
   patterns?: ChTeamPatterns | null;
   /** off: nothing is drawn; failed: the card says so, never "no pattern" (W-TEAM-6). */
   patternsStatus?: 'ok' | 'off' | 'failed';

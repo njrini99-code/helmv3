@@ -179,6 +179,8 @@ flags and its lane's rows.
 | 160680 | CH-16080 | `IMPORT_RESULTS_SAVING_FAILS_OR_IS_REFUSED` | Import results: saving fails or is refused (the results are official, not a coach, a round that isn’t the event’s, a field row that isn’t) |
 | 160681 | CH-16081 | `ENTER_HOLES_SAVING_THE_GRID_FAILS_OR` | Enter holes: saving the grid fails or is refused |
 | 160682 | CH-16082 | `EXPORT_RESULTS_FAILS_THE_BROWSER_REFUSED_THE` | Export results fails: the browser refused the file (launch readiness F-02) |
+| 160690 | CH-16294 | `A_SECTION_OF_THE_LIVE_ROUND_THE` | A section of the live round, the lineup builder, History or Live throws while drawing (GAP-S-10) |
+| 160691 | CH-16295 | `HISTORY_THE_ROSTER_OR_THE_SEASON_PROFILES` | History: the roster or the season profiles read fails (`errors.profiles`, GAP-S-08) |
 
 ## 07 — Network / offline
 
@@ -194,7 +196,7 @@ whole of it today; the live round's outbox (5L.8.5) adds its own.
 | 160781 | CH-16981 | `LINEUP_BUILDER_THE_ROSTER_IS_OVER_ITS` | Lineup builder: the roster is over its limit (F-05) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
@@ -206,7 +208,7 @@ shell's gate is the only one, and Tournaments is reachable in the preview only.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 160801 | CH-16609 | `THE_COACH_HAS_NO_TEAM_OR_LOST` | The coach has no team, or lost access to it |
+| 160801 | CH-16609 | `THE_COACH_HAS_NO_TEAM_OR_LOST` | Live: the coach has no active team, or a team they may not read (GAP-S-12) |
 
 From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.

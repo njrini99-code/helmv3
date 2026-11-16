@@ -26,9 +26,10 @@
   --ch-run-group-c: var(--ch-plan-group-c);
   --ch-run-group-on: #ffffff;
   /* Ivory neutrals */
-  --ch-ivory-0: #ffffff;
-  --ch-ivory-25: #fdfcf8;
-  --ch-ivory-50: #f9f7f1;
+  /* Nothing is white (Nick, 15 Nov 2026, audit WHITE-00): the top of the ramp is the ivory paper of a card, #faf7ef. */
+  --ch-ivory-0: #faf7ef;
+  --ch-ivory-25: #f8f5ec;
+  --ch-ivory-50: #f6f2e8;
   --ch-ivory-100: #f4f2ea;
   --ch-ivory-150: #eeebe2;
   --ch-ivory-200: #e7e3d8;
@@ -50,7 +51,8 @@
   --ch-ink-700: #3a3833;
   /* One step darker than the first pass (owner, 2026-10-06: "there's not a lot of contrast"); the phone's values. */
   --ch-ink-600: #46433d;
-  --ch-ink-500: #5f5c55;
+  /* Quiet ink: axis labels, timestamps and the placeholder (S1.7: Lc 71 on the golden-hour top, 6.1:1). */
+  --ch-ink-500: #55524b;
   --ch-ink-400: #8f8b81;
   --ch-ink-300: #b3afa5;
   /* Every owned scroller inherits the same quiet thumb; horizontal strip geometry stays page-owned. */
@@ -79,6 +81,8 @@
   --ch-stage-bg: linear-gradient(160deg, #0f4430 0%, #0a3322 55%, #082b1c 100%);
   --ch-stage-line: #9fe0b6;
   --ch-stage-gold: #e7b866;
+  /* Under par on the stage: the feature gain (4.7). Red on the stage is an error, a penalty stake or the pin. */
+  --ch-stage-gain: #8fd3aa;
   --ch-stage-red: #ff8a7a;
   --ch-stage-ink: #f4eedd;
   --ch-stage-ink-soft: rgb(244 238 221 / 0.62);
@@ -90,10 +94,11 @@
   /* The app shell around the canvas and the sidebar: the Frame (owner, 2026-10-07, replacing the 2026-10-06 ivory
      sidebar). The frame green around the ivory workspace (the Coach Home handoff). */
   --ch-shell: var(--ch-frame);
-  /* The page inside the frame on desktop. One flat page colour everywhere (DESIGN_LANGUAGE law 2): the same value as
-     --ch-grouped-bg and --ch-bg-page, so a sticky bar or a ring that paints "the page" matches the page it sits on.
-     styles/__tests__/page-colour.test.ts holds the three together. */
-  --ch-workspace: #f2f0e9;
+  /* The base of the canvas under the ivory light (DESIGN_LANGUAGE law 2, Nick 15 Nov 2026: "Ivory cards, deeper page").
+     The canvas paints var(--ch-light-canvas), var(--ch-light-paper) and this linen, so the gradient is back over a page
+     deep enough for the ivory card to read (1.20:1). The same value as --ch-grouped-bg and --ch-bg-page, so a sticky bar
+     or a ring that paints "the page" matches the page it sits on. styles/__tests__/page-colour.test.ts holds them. */
+  --ch-workspace: #e8e3d5;
   /* The one Clubhouse green for large fields and the selected nav row: the canopy and the sidebar selection share it. */
   --ch-field-green: var(--ch-green-800);
   /* Champagne: hairline detail only */
@@ -119,42 +124,51 @@
   --ch-danger-elevation: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 10px -4px rgb(142 44 34 / 0.45);
   --ch-info-600: #2d5c77;
   --ch-info-100: #e6eef3;
-  /* Scoring. Red means under par, and nothing else. */
-  --ch-score-under: #b03a2e;
-  --ch-score-under-bg: #fbe9e6;
+  /* Scoring (MOTION-AND-VISUAL 4.7, Nick 15 Nov 2026): under par is the gain, green; red is for errors only. Every under-par
+     token reads the gain family, so a theme or contrast change to the gain moves the scores with it. */
+  --ch-score-under: var(--ch-chart-gain);
+  --ch-score-under-bg: var(--ch-chart-gain-tint);
   --ch-score-over-bg: #efece4;
   --ch-score-double: #1c1b18;
-  /* P-7 hole map tints (D-42: the red family under par, amber over, plain level). The 1 px ring carries the 3:1, so the
-     tint can stay quiet; tile text is ink-600 and ink-900 on every tint (P-7 7.5). */
-  --ch-hm-under-2: #edd4cd;
+  /* P-7 hole map tints (4.7: the gain family under par, amber over, plain level). The 1 px ring carries the 3:1 (green-400,
+     3.81:1 on the card), so the tint can stay quiet; tile text is ink-600 and ink-900 on every tint (P-7 7.5). */
+  --ch-hm-under-2: #cde3d4;
   --ch-hm-under-1: var(--ch-score-under-bg);
   --ch-hm-level: var(--ch-bg-subtle);
   --ch-hm-over-1: #ebe3d4;
   --ch-hm-over-2: #dbccb3;
-  --ch-hm-ring-under: #c46c62;
+  --ch-hm-ring-under: #4f8a64;
   --ch-hm-ring-level: var(--ch-ink-400);
   --ch-hm-ring-over: #a7844a;
-  /* A filled under-par mark under a light numeral; the same red in light. */
-  --ch-score-under-fill: #b03a2e;
-  /* Eagle or better as a fill (the scoring mix): a deeper red than the birdie's, so the two under-par results read apart. */
-  --ch-score-eagle-fill: #7f2a21;
-  /* A bare under-par numeral on the feature green (the shot screen's hole strip): lifted so it holds 4.5:1 on
-     green-900 and on a played chip's faint ivory wash; and the same numeral on the ivory current-hole chip. Both are
+  /* A filled under-par mark (the eagle disc, an under-par hole chip): the solid gain fill under --ch-score-fill-ink, ivory
+     in light (11.9:1) and the deep green at night, where the gain fill is the light mint (12.5:1). */
+  --ch-score-under-fill: var(--ch-chart-gain-fill);
+  --ch-score-fill-ink: #faf7ef;
+  /* The scoring mix and the live beads go out from par: birdie is the lighter gain step, eagle or better the full gain
+     fill, 2.53:1 apart in light and 2.37:1 at night, both under --ch-score-fill-ink. */
+  --ch-score-birdie-fill: #2a7d53;
+  --ch-score-eagle-fill: var(--ch-chart-gain-fill);
+  /* A bare under-par numeral on the feature green (the shot screen's hole strip): the feature gain, 8.8:1 on green-900
+     and 6.7:1 on a played chip's faint ivory wash; and the same numeral on the ivory current-hole chip (8.2:1). Both are
      surfaces that do not change at night, so neither is redefined in the dark block. */
-  --ch-score-under-on-green: #ff8b7d;
-  --ch-score-under-on-ivory: #b03a2e;
+  --ch-score-under-on-green: #8fd3aa;
+  --ch-score-under-on-ivory: #0f5233;
   /* Charts (yardage book) */
-  --ch-chart-paper: #fbf9f3;
-  --ch-chart-gain: #155a39;
+  /* A chart sits on the card it lives in (S2.1): its paper is the card. */
+  --ch-chart-paper: var(--ch-card-bg);
+  /* S2.5: gain and loss text, 8.9:1 and 7.5:1 on the card. Only 1.18:1 apart, so a gain or loss always carries its sign. */
+  --ch-chart-gain: #0f5233;
   /* 4.5:1 on the page tone (#ebe7dc, 5.1) and a soft well; #9a6512 fell to 4.0 once the page darkened (a11y 2026-10-07). */
-  --ch-chart-loss: #744a06;
+  --ch-chart-loss: #7a4500;
   /* The loss amber on a tinted cell: darker so it holds 4.5:1 on the heat fills. */
   --ch-chart-loss-on-tint: #744a06;
   /* CONS-20: the rest of the gain and loss family, so a tone paints only with it (check.mjs). A bar or a mark takes the
      -fill (a graphic, 3:1); a chip's ground takes the -tint and its words the ink. Aliases declared beside the night
      values they read, so each follows the theme. A surface the ink can't sit on (a green stage) redefines the pair. */
-  --ch-chart-gain-fill: var(--ch-green-fill-500);
-  --ch-chart-loss-fill: var(--ch-chart-loss);
+  /* S2.5: a bar or mark holds 3:1 on the card and on the chart track: gain 12.2:1, loss 3.9:1 on the card and 3.05:1 on
+     the track (#e3ddcf; #c58012 was 2.4:1 there, charts contrast pass 16 Nov), and the two 3.1:1 apart. */
+  --ch-chart-gain-fill: #0b3a25;
+  --ch-chart-loss-fill: #b06e0e;
   --ch-chart-gain-tint: var(--ch-positive-100);
   --ch-chart-loss-tint: var(--ch-warning-100);
   --ch-chart-flag: #b03a2e;
@@ -163,21 +177,23 @@
   --ch-chart-rough: #e4e6d6;
 
   /* Semantic */
-  /* The page: one flat colour on the phone, a pushed screen and the desktop canvas (DESIGN_LANGUAGE law 2, 31 Oct,
-     which replaced the deeper lit parchment of 2026-10-06). The same value as --ch-grouped-bg and --ch-workspace. */
-  --ch-bg-page: #f2f0e9;
+  /* The page under the cards: the deeper linen (S1.2, Nick 15 Nov 2026), the base the ivory light is painted over.
+     The same value as --ch-grouped-bg and --ch-workspace. Never a card fill. */
+  --ch-bg-page: #e8e3d5;
   /* A green light falls across the top of the page and a champagne one from the right, so the canvas reads as a
      lit green-and-ivory room rather than flat paper. Scrolls away with the content. */
   /* No wash: large soft gradients band on 8-bit displays (owner, 2026-10-06: the ivory looked grainy). */
-  --ch-canvas-wash: linear-gradient(transparent, transparent);
-  --ch-bg-surface: #fcfaf5;
-  /* B4: what floats above the page (sheets, menus, popovers, the palette). In light, the surface itself; dark lifts. */
+  /* The one card (S1.3): ivory paper, 1.20:1 on the linen page. --ch-card-bg is the same value. Nothing is white. */
+  --ch-bg-surface: #faf7ef;
+  /* B4: what floats above the page (menus, popovers, the palette, toasts): a step lighter than the card (S1.6). */
   --ch-bg-elevated: #fcfaf5;
-  --ch-bg-elevated-2: #fcfaf5;
-  --ch-bg-subtle: #f5f2ea;
+  /* Tiles and wells inside a card (S1.2): one recessed ivory, with a hairline edge where it needs one. */
+  --ch-bg-subtle: #f1ede2;
   --ch-bg-inset: var(--ch-ivory-150);
   --ch-bg-hover: var(--ch-ivory-50);
-  --ch-bg-selected: var(--ch-green-50);
+  /* The selected row, active option or today tile: the linen wash, 1.18:1 on the card, always beside a cue that is not
+     colour (audit S1.8b; MOTION-AND-VISUAL 1). It was green-50, 1.05:1, which read as nothing. */
+  --ch-bg-selected: #ebe4d2;
   /* The selected state (CONS-22): a chosen row, a pressed pill, its ring and its ink. A chosen segment is the seg-on well. */
   --ch-selected-bg: var(--ch-bg-selected);
   --ch-selected-pill-bg: #edf4ef;
@@ -192,11 +208,9 @@
   --ch-text-secondary: var(--ch-ink-700);
   --ch-text-tertiary: var(--ch-ink-600);
   --ch-text-disabled: var(--ch-ink-300);
-  /* Sample text in an empty field (look-and-feel pass 2026-10-22): a clear step under typed ink, so a sample never reads
-     as a value. Placeholders count as text (H8): 4.5:1 or more on every surface a field sits on, the darkest being the
-     phone's inset well (4.6:1; page 4.8, workspace 5.1, card 5.6). It was #736f66, 3.98:1 on the phone inset and 4.05 on
-     the page (visual pass 2026-10-28). Still 3:1 under the typed ink. */
-  --ch-text-placeholder: #69655d;
+  /* Sample text in an empty field: the quiet ink, one token for tertiary and placeholder (S1.7). 4.5:1 or more on every
+     surface a field sits on (6.3:1 on the linen page, 7.4:1 on the card), and a clear step under typed ink. */
+  --ch-text-placeholder: var(--ch-ink-500);
   --ch-text-on-accent: #ffffff;
   --ch-accent: var(--ch-green-600);
   /* Ask's own accent and card (owner, 6 Nov): the design's palette, without moving the app's accent. */
@@ -207,7 +221,7 @@
   --ch-qc-live-ok: #7cc79b;
   --ch-qc-live-ok-ink: #0b3a25;
   --ch-champagne-ink: #725b2c;
-  --ch-ask-on-accent: #fffefb;
+  --ch-ask-on-accent: var(--ch-on-fill-50);
   --ch-ask-card: var(--ch-bubble-theirs-bg);
   --ch-ask-mine-a: var(--ch-bubble-mine-fill);
   --ch-ask-mine-b: color-mix(in oklab, var(--ch-bubble-mine-fill) 82%, black);
@@ -217,7 +231,9 @@
   --ch-border-hairline: rgb(28 25 18 / 0.1);
   /* Row 36 (T3): a step above the hairline, so the ladder stays ordered once the hairline darkened. */
   --ch-border-subtle: rgb(28 25 18 / 0.13);
-  --ch-border-control: rgb(28 25 18 / 0.14);
+  /* An input, a search field or a chip's edge (S1.8): opaque, 3:1 at the darkest point of the canvas (3.04:1) and 3.7:1 on
+     the card, so a control's boundary is seen (WCAG 1.4.11). Also the stroke for an icon that must be seen. */
+  --ch-border-control: #85817a;
   --ch-border-strong: rgb(28 25 18 / 0.24);
   /* A seam between sections of one surface: an ink line with a lit line beside it, so it reads as an engraved join,
      not a faint hairline (owner, 2026-10-06: "add more borders in between the cards"). */
@@ -261,13 +277,12 @@
   /* The selected sidebar row: a green key with a lit top and a green-cast lift. */
   --ch-nav-selected-shadow: inset 0 1px 0 rgb(210 244 221 / 0.14), 0 1px 2px rgb(11 58 37 / 0.3), 0 6px 14px -8px rgb(11 58 37 / 0.55);
   --ch-board-rule: rgb(210 244 221 / 0.14);
-  --ch-board-birdie-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(60 10 6 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4);
-  --ch-board-eagle-shadow: 0 0 0 2px #0c3522, 0 0 0 3.5px #d0574a, 0 1px 3px rgb(0 0 0 / 0.4);
+  --ch-board-birdie-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(4 30 18 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4);
+  --ch-board-eagle-shadow: 0 0 0 2px #0c3522, 0 0 0 3.5px #6fc096, 0 1px 3px rgb(0 0 0 / 0.4);
   --ch-board-bogey-shadow: inset 0 0 0 1.5px rgb(250 248 240 / 0.72);
   --ch-board-double-shadow: inset 0 1px 0 #fff, 0 1px 3px rgb(0 0 0 / 0.45);
   /* Component materials (raised keys, buttons, score marks), kept here so pages use tokens, not raw shadows. */
   /* Desktop week strip today key: frosted, edge, lit top and a real lift. */
-  --ch-key-frost-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(28 25 18 / 0.08), 0 2px 4px rgb(28 25 18 / 0.12), 0 10px 20px -10px rgb(28 25 18 / 0.4);
   /* Phone week strip today key: raised ivory. */
   --ch-key-raised-shadow: var(--ch-elevation-control), 0 0 0 1px rgb(28 25 18 / 0.05), 0 6px 12px -8px rgb(28 25 18 / 0.3);
   /* Primary ivory action on the green hero: green-cast lift. */
@@ -275,19 +290,20 @@
   /* A quiet raised chip in a soft segmented well. */
   --ch-seg-pill-lift-shadow: var(--ch-elevation-control), 0 2px 6px -2px rgb(28 25 18 / 0.16);
   /* Secondary button: soft ring, lit top, shallow lift. */
-  --ch-btn-secondary-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.08), 0 4px 10px -5px rgb(28 25 18 / 0.18);
+  /* The secondary key rests at the card's elevation with a control edge: no lit white rim (S1.5, nothing white). */
+  --ch-btn-secondary-shadow: 0 0 0 1px var(--ch-border-subtle), var(--ch-elevation-cast);
   /* Secondary button hover: a touch more ring and lift. */
-  --ch-btn-secondary-hover-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 2px 4px rgb(28 25 18 / 0.09), 0 8px 16px -8px rgb(28 25 18 / 0.22);
+  --ch-btn-secondary-hover-shadow: 0 0 0 1px var(--ch-border-strong), var(--ch-elevation-cast);
   /* Score mark (birdie): edge, lit top, contact shadow. */
-  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(150 46 35 / 0.38), inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(120 36 28 / 0.2);
+  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(15 82 51 / 0.38), inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(11 58 37 / 0.2);
   /* Score mark (eagle): edge, lit top, contact shadow. */
-  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(110 30 22 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(110 30 22 / 0.35);
+  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(6 34 21 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(6 34 21 / 0.35);
   /* Score mark (bogey): edge, lit top, contact shadow. */
   --ch-score-bogey-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.24), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.16);
   /* Score mark (double): edge, lit top, contact shadow. */
   --ch-score-double-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(28 25 18 / 0.3);
   /* Green, not ink: the owner rejected the black keyboard outline (F-46). */
-  --ch-border-focus: var(--ch-green-600);
+  --ch-border-focus: var(--ch-green-500);
   /* The focus ring on a dark or green surface (CONS-36): the champagne that reads on the hero green and at night. */
   --ch-border-focus-on-dark: var(--ch-champagne-300);
   /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
@@ -314,23 +330,8 @@
   --ch-fw-500: 500;
   --ch-fw-600: 600;
   --ch-fw-700: 700;
-  --ch-type-figure-40-500: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
-  --ch-type-figure-44-500: 500 calc(44 * var(--ch-type-k))/1 var(--ch-font-sans);
   /* Title steps (once the serif titles; the owner moved titles to the heavy sans on 2026-10-07): page and section titles
      only, never data or controls. The names stay so every consumer follows. */
-  --ch-type-serif-l: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
-  --ch-type-serif-m: 600 calc(22 * var(--ch-type-k))/1.15 var(--ch-font-sans);
-  --ch-type-serif-s: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-  --ch-type-display-l: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
-  --ch-type-display-s: 600 calc(22 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-  --ch-type-title: 600 calc(15 * var(--ch-type-k))/1.35 var(--ch-font-sans);
-  --ch-type-body-l: 400 calc(16 * var(--ch-type-k))/1.55 var(--ch-font-sans);
-  --ch-type-body: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
-  --ch-type-body-s: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
-  --ch-type-label: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-  --ch-type-label-s: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-  --ch-type-caption: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
-  --ch-type-figure-l: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
   --ch-type-mono: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-mono);
 
   /* B1: one role per type step (mot-08's 11 sizes), each a whole `font` with its own leading, a 500 `-medium` and a 600 `-strong` form, and a
@@ -398,26 +399,23 @@
   /* Two widths only (B1): 96 for display text, 88 for dense numbers and condensed titles. */
   --ch-wdth-display: 'wdth' 96;
   --ch-wdth-dense: 'wdth' 88;
-  /* Named roles. The large title (34, wdth 88, 600); the bar title, pushed and at a tab's root alike (17/600, as iOS);
-     the desktop hero (52, every section including Rounds); the section header; the card title. */
-  --ch-type-large-title: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-track-large-title: -0.038em;
-  --ch-type-bar-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-track-bar-title: var(--ch-track-17);
-  --ch-type-hero: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-sans);
-  --ch-track-hero: -0.01em;
-  --ch-type-section: 600 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-track-section: var(--ch-track-20);
-  /* CONS-30: every eyebrow and kicker, one role (13/500, no tracking). */
-  --ch-type-eyebrow: 500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-track-eyebrow: 0;
-  --ch-type-card-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
-  /* Clubhouse refresh, PR 1: row title, meta, and the two figures (width and tracking are the caller's; DESIGN_LANGUAGE 6). */
-  --ch-type-row: 500 calc(16 * var(--ch-type-k))/calc(21 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-type-meta: 400 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
-  --ch-type-figure-hero: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
-  --ch-type-figure: 600 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans);
-  --ch-track-card-title: var(--ch-track-17);
+  /* Type: nine roles (MOTION-AND-VISUAL 4.3), scaled by --ch-type-k so text follows iPhone Text Size. Desktop values
+     here; the phone block below sets the phone ones. Large title 30/36 700, title 22/28 600, headline 16/22 600, body
+     15/22 400, callout 14/20 500, footnote 13/18 500, caption 12/16 500, hero figure 56 600, row figure 15/20 600.
+     Figures are tabular wherever they are drawn. */
+  --ch-type-large-title: 700 calc(30 * var(--ch-type-k))/calc(36 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-large-title: -0.02em;
+  --ch-type-title: 600 calc(22 * var(--ch-type-k))/calc(28 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-title: -0.01em;
+  --ch-type-headline: 600 calc(16 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-body: 400 calc(15 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-callout: 500 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-footnote: 500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-caption: 500 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-caption: 0.01em;
+  --ch-type-figure-hero: 600 calc(56 * var(--ch-type-k))/1 var(--ch-font-sans);
+  --ch-track-figure-hero: -0.025em;
+  --ch-type-figure: 600 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
 
   /* Space and layout */
   /* B2: the spacing scale (a 4px grid with 2 and 6 for tight pairs). A stylesheet in spacing-scale.test.ts's MIGRATED
@@ -504,7 +502,7 @@
   --ch-gap-section-phone-snug: var(--ch-space-6);
   --ch-gap-section-phone-tight: var(--ch-space-4);
   --ch-gap-group: var(--ch-space-3);
-  --ch-sidebar-w: 240px;
+  --ch-sidebar-w: 232px; /* MOTION-AND-VISUAL 4.8 */
   /* The sidebar folded to its icon rail (RailToggle): the rows' 16px icons, 20px in from the edge, stay where they are. */
   --ch-rail-w: 56px;
   --ch-topbar-h: 56px;
@@ -574,6 +572,11 @@
     transparent
   );
   --ch-light-paper: linear-gradient(var(--ch-light-paper-tint), var(--ch-light-paper-tint));
+  /* The page (DESIGN_LANGUAGE law 2; Nick, 15 Nov 2026, audit WHITE-00): the ivory light falling across the top, the
+     paper's temperature, over the deeper linen. One paint for the phone page, a pushed screen, a crash screen and a page
+     copy that slides during a push, so a walk through the app crosses one page. The desktop canvas paints the same layers
+     with its own sidebar bleed and mist (shell.css). */
+  --ch-page-paint: var(--ch-light-canvas), var(--ch-light-paper), var(--ch-workspace);
 
   /* Shell literals promoted to tokens (P001-D6), so dark mode and the light can reach them. */
   --ch-on-green-bright: #fbfaf6;
@@ -587,25 +590,22 @@
   --ch-skel-base: #d8d0bb;
   --ch-skel-sheen: #ebe5d6;
   --ch-topbar-paper: #f7f2e6;
-  /* Radius (row 35): four steps, 8 / 12 / 16 / 20. xs is the floor for keycaps, badges, checkboxes and the nested rule,
-     not a step. Capsules are 999px, circles 50%. Inner corner = outer step less the padding between, floored at xs:
-     max(var(--ch-radius-xs), calc(var(--ch-radius-<outer>) - var(--ch-space-<pad>))). Buttons sit on sm and md, the
-     owner's 8 and 12 (decision 7). */
-  --ch-radius-xs: 4px;
+  /* Radius: five steps (MOTION-AND-VISUAL 4.5). sm 8: menu items, small chips, keycaps, chart pins. md 12: buttons,
+     inputs, hole chips, menus. lg 16: cards, toasts, options. xl 20: sheets and the phone lip. full: pills, segmented
+     controls, capsule bars, avatars. Circles are 50%. Two shapes sit outside the steps because the corner is the
+     meaning: xs 4 is the score glyph's square (a bogey is a square, a birdie a circle), a checkbox, and the floor of a
+     nested corner; the Messages bubble is 18 with its tail corner at 6. An inner corner is the outer step less the
+     padding between, floored at xs: max(var(--ch-radius-xs), calc(var(--ch-radius-<outer>) - var(--ch-space-<pad>))). */
   --ch-radius-sm: 8px;
   --ch-radius-md: 12px;
   --ch-radius-lg: 16px;
   --ch-radius-xl: 20px;
-  --ch-radius-mark: 2px; /* chart marks, ticks, thin bars */
-  --ch-radius-tail: 6px; /* the Messages bubble tail corner */
-  --ch-radius-bubble: 19px; /* the Messages bubble (SPEC MSG-204); the third named shape beside the tail */
-  /* B3: a card's corner (X-4: 16, as .ch-surface already drew it) and a bottom sheet's top corners (X-3: 20). An inner
-     corner is the card's less the padding between them, floored at --ch-radius-xs. */
-  --ch-radius-card: 16px;
-  --ch-radius-sheet: 20px;
-  /* The Quick chat panel, as drawn: its own corner, on a Mac and on a phone. */
-  --ch-radius-panel: 26px;
-  --ch-radius-panel-phone: 32px;
+  --ch-radius-full: 999px;
+  /* The Practice style's thumb sits 3px inside its well (MOTION-AND-VISUAL 4.2): the control's own geometry, not spacing. */
+  --ch-seg-inset: 3px;
+  --ch-radius-xs: 4px;
+  --ch-radius-bubble: 18px;
+  --ch-radius-tail: 6px;
   /* CONS-23: the one sheet grab handle's fill (controls.css .ch-grab). */
   --ch-grab-bg: var(--ch-ivory-300);
   /* B4: how far a sideways scroller's clipped edge fades on a phone (ui.css .ch-hscroll), so the edge reads as more. */
@@ -630,19 +630,16 @@
      under the card and never hazes the page. The face is the flat --ch-card-bg: text never sits on a gradient. Every
      card at rest reads this value. --ch-card-shadow is its name; the older names (reading, lifted, the Messages and
      Roster lanes' own) are the same recipe and remain only for the files that still spell them. */
-  --ch-elevation-card: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px var(--ch-card-ring),
-    var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06), var(--ch-light-drift-mid) 6px 14px -6px rgb(28 25 18 / 0.12),
-    var(--ch-light-drift) 22px 40px -22px rgb(28 25 18 / 0.22);
-  --ch-glass-bg: rgb(250 248 241 / 0.7);
+  /* S1.5 (Nov 15 audit): one hairline ring and two soft layers. No lit inset rim, no sun drift, no third ambient fall. */
+  --ch-elevation-card: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08);
+  --ch-glass-bg: color-mix(in oklab, var(--ch-workspace) 78%, transparent);
   /* Glass is for the floating navigation only (top bar, tab bar); 20px reads as frosted without the muddy edge. */
   --ch-glass-blur: 20px;
-  --ch-glass-saturate: 110%;
+  --ch-glass-saturate: 140%;
   /* Messages v2 (docs/clubhouse/messages-v2/SPEC.md tokens): bars, composer and pills blur 24 and saturate 170%; the overlay
-     behind a lifted bubble blurs 14 and saturates 120%. A Messages rule writes blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))),
+     behind a lifted bubble blurs 14 and saturates 120%. A Messages rule writes blur(var(--ch-glass-blur)),
      so the elevation test still finds var(--ch-glass-blur) and a browser without the token falls back to the shared glass.
      Reduce Transparency and Increase Contrast zero all four below. */
-  --ch-glass-blur-msg: 24px;
-  --ch-glass-saturate-msg: 170%;
   --ch-scrim-blur-msg: 14px;
   --ch-scrim-saturate-msg: 120%;
 
@@ -657,20 +654,19 @@
   --ch-elevation-lifted: var(--ch-elevation-card);
   /* The card's three drops alone, for dark and branded surfaces where a white top edge or ink hairline would draw a
      line (the green hero, the green Up next card). */
-  --ch-elevation-cast: var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06),
-    var(--ch-light-drift-mid) 6px 14px -6px rgb(28 25 18 / 0.12), var(--ch-light-drift) 22px 40px -22px rgb(28 25 18 / 0.22);
-  --ch-elevation-reading-hover: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.1),
-    var(--ch-light-drift-near) 2px 4px rgb(28 25 18 / 0.07), var(--ch-light-drift-mid) 12px 24px -12px rgb(28 25 18 / 0.2),
-    var(--ch-light-drift) 28px 48px -26px rgb(28 25 18 / 0.22);
-  --ch-elevation-reading-accent: 0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12);
+  --ch-elevation-cast: 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08);
+  /* A card that opens something, under the pointer: the same card with its ring a step darker, not a new elevation. */
+  --ch-elevation-reading-hover: var(--ch-elevation-card);
+  --ch-elevation-reading-accent: var(--ch-elevation-card);
   /* The page empty's medallion tile, cast on its rings (Tournaments' first run; the route error and every page empty,
      shell.css .ch-empty-page__ic / .ch-es__tile; W19 B). The danger tone casts its own. */
   --ch-medallion-shadow: 0 16px 30px -14px rgb(11 58 37 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.1);
-  --ch-elevation-control: var(--ch-highlight), var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06);
+  /* A control's contact shadow only: no lit white rim and no sun drift (S1.5, nothing white). */
+  --ch-elevation-control: 0 0 0 0 transparent;
   /* Row 40: three elevation levels. Reading (a card at rest, above), raised (a menu, a popover, a lifted control) and
      overlay (a sheet, a dialog, below). Floating was the raised level's old name and folds into it. */
-  --ch-elevation-raised: var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.06), var(--ch-light-drift-mid) 8px 20px -8px rgb(28 25 18 / 0.12);
-  --ch-elevation-floating: var(--ch-elevation-raised);
+  /* S1.5b: menus, popovers, hover cards, toasts and the floating compose button, on --ch-bg-elevated. */
+  --ch-elevation-raised: 0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
     var(--ch-elevation-raised);
   /* Row 40: tinted drops. A surface on the green or ink casts its shadow in its own colour (an ink shadow greys on
@@ -680,18 +676,17 @@
   --ch-drop-green-2: 0 4px 12px -4px rgb(11 58 37 / 0.45);
   --ch-drop-green-3: 0 10px 20px -10px rgb(11 58 37 / 0.8);
   --ch-drop-ink: 0 0 0 1px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.35);
-  /* The phone's floating tab bar: a lit edge, a hairline and a long soft shadow that separates it from the scrolling page. */
-  --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim-soft), 0 0 0 1px rgb(28 25 18 / 0.07),
-    var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 14px 32px -12px rgb(28 25 18 / 0.32);
   /* Depth on the Frame's green (owner, 2026-10-07): the framed dashboard panel, and a plate or card lifted off the
      green (the selected nav row, the next-event card). A gilt ring, then a deeper drop than ivory needs. */
-  --ch-elevation-framed: var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12), inset 1px 0 0 rgb(11 58 37 / 0.12);
-  --ch-elevation-on-frame: 0 0 0 1px rgb(176 149 96 / 0.45), var(--ch-light-drift-near) 1px 2px rgb(2 18 10 / 0.3);
+  --ch-elevation-framed: var(--ch-elevation-card);
+  --ch-elevation-on-frame: var(--ch-elevation-card);
   /* The sidebar's selected row (P001-A2, owner 2026-10-08: "highlight ivory whichever tab you're on, not green"): an ivory
      plate with a champagne hairline and a soft drop, green text and icon on it (shell.css). */
-  --ch-nav-well-bg: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-on-green-plate));
-  --ch-nav-well-shadow: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(0 0 0 / 0.25), 0 6px 14px -8px rgb(0 0 0 / 0.45), inset 0 1px 0 #fff;
-  --ch-elevation-on-frame-hover: 0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 6px rgb(2 18 10 / 0.35);
+  /* The current sidebar item: the ivory pill on green, the phone strip's (MOTION-AND-VISUAL 4.8). Flat paper on the card
+     level; no champagne ring (champagne means attention) and no lit rim. */
+  --ch-nav-well-bg: var(--ch-card-bg);
+  --ch-nav-well-shadow: var(--ch-elevation-card);
+  --ch-elevation-on-frame-hover: var(--ch-elevation-card);
   /* The Ledger (owner, 2026-10-07: "flush, not so card heavy"): inside the framed workspace a section is a rule and a
      heading on the canvas, not a card. Engraved gilt-brown rules, forest ink for headings, the head's eyebrow brown. */
   --ch-ledger-rule: rgb(110 98 62 / 0.16);
@@ -712,26 +707,35 @@
   /* The section rule the phone board draws above a heading: an engraved double hairline. */
   --ch-ledger-rule-double: 3px double rgb(110 98 62 / 0.22);
   /* Clubhouse refresh, PR 1 (design-refresh/DESIGN_LANGUAGE.md 3, 6, "Adopted from threads"). Additive: nothing reads them yet. */
-  --ch-grouped-bg: #f2f0e9;
-  --ch-card-bg: #fffefb;
-  --ch-well-bg-flat: #f6f4ee;
+  --ch-grouped-bg: var(--ch-workspace);
+  /* The one card (S1.3, Nick 15 Nov 2026: "Ivory cards, deeper page"): the same value as --ch-bg-surface. */
+  --ch-card-bg: var(--ch-bg-surface);
+  --ch-well-bg-flat: var(--ch-bg-subtle);
   --ch-separator: rgb(28 27 24 / 0.1);
-  --ch-card-ring: rgb(28 27 24 / 0.07);
+  /* S1.4: the card's edge, 1.28:1 against the card on the canvas. */
+  --ch-card-ring: rgb(28 25 18 / 0.08);
   --ch-card-shadow: var(--ch-elevation-card);
-  --ch-gain: #14613d;
-  --ch-loss: #9a5700;
+  --ch-gain: var(--ch-chart-gain);
+  --ch-loss: var(--ch-chart-loss);
   --ch-flag: #b3261e;
   --ch-chart-flat: #6b675f;
-  --ch-chart-track: #ebe5d8;
+  /* S2.6: track and par stay light; their 1px --ch-border-control ring is what reaches 3:1 (3.72:1). */
+  --ch-chart-track: #e3ddcf;
+  /* A track and a par bar are light fills (1.30:1); their 1px control ring is what holds 3:1 on the card (audit S2.6). */
+  --ch-chart-track-ring: inset 0 0 0 1px var(--ch-border-control);
+  /* A field's 3:1 edge: the outlined capsule of a composer (DM-07), as iMessage draws its field. */
+  --ch-field-ring: 0 0 0 1px var(--ch-border-control);
+  /* S2.2: a gridline, 1px dashed 2 4, at most three, 3.48:1 on the card. */
+  --ch-separator-chart: #8a867c;
+  /* The data gilt: a qualifier's outline and the average line on a chart, 3.97:1 on the card (audit H393-135). */
+  --ch-chart-gilt: #927840;
   --ch-chart-zero: #5f5c55;
   --ch-feature-ink: #f4f1e8;
   --ch-feature-ink-2: #d3d9cb;
   --ch-feature-gain: #8fd3aa;
   --ch-feature-loss: #edb867;
-  --ch-feature-flag: #f49a8d;
   /* The phone Stats redesign (clubhouse_stats_redesign_v1; stats-home 04 section 2 and 06). Additive: only .ch-shs reads them. */
   --ch-feature-ink-3: #b4c0b3;
-  --ch-feature-under: #f49a8d;
   --ch-feature-flat: #bcc5b9;
   --ch-feature-gain-fill: #6fc096;
   --ch-feature-loss-fill: #e5a445;
@@ -744,13 +748,16 @@
   --ch-feature-icon-bg: rgb(244 241 232 / 0.12);
   --ch-separator-strong: rgb(28 27 24 / 0.16);
   --ch-press-wash: rgb(28 27 24 / 0.05);
+  /* The wash (MOTION-AND-VISUAL 3.8): a pressed row, menu item or option, and a hovered row on a desk, take this one linen
+     fill; lib/press.ts runs it in over press and out over release. It is the selected linen, read through
+     --ch-bg-selected so there is one value; the fallback holds until that token carries the linen. */
+  --ch-sel: var(--ch-bg-selected, #ebe4d2);
   --ch-chip-gain-bg: #e8eee8;
   --ch-chip-loss-bg: #f7f0e6;
-  --ch-chip-flag-bg: #f7e8e5;
   --ch-chip-flat-bg: #f2f1ee;
   --ch-chip-danger-bg: #f7e8e5;
   --ch-chart-bogey: #b3884a;
-  --ch-chart-par: #d9d2c3;
+  --ch-chart-par: #c9c2b1;
   --ch-champagne-dot: #e2c98f;
   --ch-stats-accent: #155a39;
   --ch-yr-sr: #1f6b45;
@@ -759,9 +766,8 @@
   --ch-yr-fr: #9a4a35;
   --ch-yr-ink: #ffffff;
   /* Messages redesign, 11a (golf_messages_redesign_v1): nothing in main reads these. Shadows are filters, so the drawn tail casts with the body. */
-  --ch-bubble-theirs-bg: #fffefb;
+  --ch-bubble-theirs-bg: var(--ch-card-bg);
   --ch-bubble-mine-fill: #155a39;
-  --ch-bubble-radius: 19px;
   /* Messages v2 thread roles and measures (SPEC MSG-204 to 222): the artifact's own numbers between the type steps and the spacing scale. */
   --ch-type-msg-bubble: 400 calc(16 * var(--ch-type-k))/1.32 var(--ch-font-sans);
   --ch-type-msg-bubble-desk: 400 calc(15 * var(--ch-type-k))/1.32 var(--ch-font-sans);
@@ -779,21 +785,20 @@
   --ch-bubble-join: 6px;
   --ch-poll-bar: rgb(21 90 57 / 0.1);
   --ch-poll-bar-on: rgb(21 90 57 / 0.2);
-  --ch-bubble-theirs-shadow: drop-shadow(0 0 0.5px rgb(28 27 24 / 0.24)) drop-shadow(0 1px 2px rgb(28 25 18 / 0.05)) drop-shadow(0 6px 8px rgb(28 25 18 / 0.06));
-  --ch-bubble-mine-shadow: drop-shadow(0 1px 1px rgb(11 58 37 / 0.22)) drop-shadow(0 6px 10px rgb(11 58 37 / 0.2));
   --ch-shadow-float: 0 0 0 0.5px rgb(28 25 18 / 0.1), 0 8px 24px -6px rgb(28 25 18 / 0.22), 0 2px 6px rgb(28 25 18 / 0.08);
-  --ch-glass: rgb(253 251 247 / 0.78);
-  --ch-glass-strong: rgb(253 251 247 / 0.9);
+  --ch-glass: var(--ch-glass-bg);
+  --ch-glass-strong: var(--ch-glass-bg);
   --ch-glass-rule: rgb(28 25 18 / 0.1);
   --ch-typing-dot: #7a766c;
   --ch-ring-own: #8c703a;
-  --ch-switch-off-ring: #8e8a80;
+  --ch-switch-off-ring: var(--ch-border-control); /* the one control edge (audit S1.8), 3:1 on the linen */
   /* Messages v2: the lifted-bubble scrim, the one flat card style, and the ivory ink on a sent bubble (the artifact's
      scrim, card-shadow and sent-ink; --ch-scrim, --ch-card-shadow and --ch-text-on-accent are shared app-wide and stay). */
-  --ch-scrim-msg: rgb(28 30 24 / 0.22);
+  --ch-scrim-msg: var(--ch-scrim);
   --ch-card-shadow-flat: var(--ch-elevation-card);
   --ch-bubble-mine-ink: #fdfcf8;
-  --ch-chart-line: #3f7556;
+  /* S2.4: the series line, 2px, 6.2:1 on the card. */
+  --ch-chart-line: #2d6a47;
   --ch-countdown-on-green: #e3f5e9;
   --ch-coin-bg: #e9e3d3;
   --ch-coin-ink: #5a4e36;
@@ -805,8 +810,7 @@
   --ch-crh-ink4: #5f5c55;
   --ch-accent-ink: #155a39;
   --ch-accent-tint: rgb(21 90 57 / 0.1);
-  --ch-card-bg-raised: #f8f6f0;
-  --ch-tile-bg: #fffefb;
+  --ch-card-bg-raised: var(--ch-bg-subtle);
   --ch-warn-bg: rgb(154 87 0 / 0.1);
   --ch-warn-ink: #7a4500;
   --ch-warn-icon: #9a5700;
@@ -827,36 +831,26 @@
      SHARED-2). Its depth is a cast alone, in depth.css's green (rgb 8 43 28): a contact shadow and an ambient fall. No
      white top edge and no ring, which draw an outline on green. --ch-feature-shadow is the same value. */
   --ch-feature-bg: var(--ch-green-800);
-  --ch-elevation-feature: 0 1px 2px rgb(8 43 28 / 0.2), 0 14px 30px -18px rgb(8 43 28 / 0.6);
+  --ch-elevation-feature: var(--ch-elevation-card);
   /* A field-green board hung on the page (a scorecard nine, the round strip, a row's Out/In/Tot): a short green drop,
      a step deeper when its row is hovered. A lit data mark (the best round's dot, the putts bar, a hit green): a small
      green glow under it. Drop only; the caller keeps its own ring or inset edge. */
-  --ch-elevation-board: 0 14px 22px -16px rgb(8 43 28 / 0.8);
-  --ch-elevation-board-hover: 0 14px 20px -12px rgb(8 43 28 / 0.85);
-  --ch-elevation-mark: 0 4px 8px -4px rgb(21 90 57 / 0.6);
+  --ch-elevation-board: var(--ch-elevation-card);
+  --ch-elevation-board-hover: var(--ch-elevation-card);
+  --ch-elevation-mark: var(--ch-elevation-raised);
   /* The same small drop for the other data marks: amber under a loss bar, ink under a neutral mark, number or dot. A
      gold-ringed reading plate on the page (a zone's reading, the round's figures): a long, faint drop. The selected
      segment pill on green: a tight green contact shadow. A portrait card on the roster: a three-step drift that follows
      the light, deeper and with a green falloff when hovered. Drop only; the caller keeps its own ring or inset edge. */
-  --ch-elevation-mark-warn: 0 6px 12px -8px rgb(148 96 14 / 0.6);
-  --ch-elevation-mark-ink: 0 5px 10px -6px rgb(28 25 18 / 0.45);
-  --ch-elevation-plate: 0 18px 28px -24px rgb(28 25 18 / 0.5);
-  --ch-elevation-pill-on: 0 1px 2px rgb(21 90 57 / 0.32);
-  /* Two small drops for things that sit ON a card or the page, never the card recipe (its ambient fall is sized for a
-     card): a count badge or a reaction badge, and a bubblet (a pin's latest-line bubble, a receipt pill). Drop only;
-     the caller keeps its own ring. */
-  --ch-elevation-badge: 0 2px 6px -2px rgb(28 25 18 / 0.25);
-  --ch-elevation-bubblet: 0 4px 10px -4px rgb(28 25 18 / 0.18);
+  --ch-elevation-mark-warn: var(--ch-elevation-raised);
+  --ch-elevation-mark-ink: var(--ch-elevation-raised);
+  --ch-elevation-plate: var(--ch-elevation-card);
   /* The chosen segment of every switcher (owner, 2026-10-16: green, with more depth): a lit green chip raised off its
      well, the light on its top edge, a contact shadow and a soft one under it. */
   --ch-seg-on-bg: linear-gradient(180deg, var(--ch-green-fill-500) 0%, var(--ch-green-fill-700) 100%);
   --ch-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -1px 0 rgb(0 0 0 / 0.12), 0 1px 2px rgb(11 58 37 / 0.35),
     0 3px 8px -2px rgb(11 58 37 / 0.3);
   --ch-seg-on-ink: var(--ch-on-fill-50);
-  --ch-elevation-face: var(--ch-light-drift-near) 1px 3px rgb(28 25 18 / 0.12), var(--ch-light-drift-mid) 8px 16px -6px rgb(28 25 18 / 0.24),
-    var(--ch-light-drift) 20px 32px -16px rgb(28 25 18 / 0.28);
-  --ch-elevation-face-hover: var(--ch-light-drift-near) 3px 6px rgb(28 25 18 / 0.1), var(--ch-light-drift-mid) 22px 36px -12px rgb(28 25 18 / 0.34),
-    var(--ch-light-drift) 40px 56px -24px rgb(21 90 57 / 0.3);
   --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 11%, transparent);
   /* An ink-filled key's pressed tone (Ask's stop key): the ink drawn a step toward the surface, so it reads in both
      themes (near-black lifts by day, ivory dims at night). */
@@ -864,27 +858,35 @@
   /* A portrait set into the page head: a canvas gap, a fine engraved ring, a soft green drop. */
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4);
   /* Hover depth, tokenised when the hover rules moved behind @media (hover: hover) (2026-10-07). */
-  --ch-elevation-field-hover: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.05);
-  --ch-elevation-chip-hover: inset 0 0 0 1px rgb(28 25 18 / 0.24), 0 2px 6px -2px rgb(28 25 18 / 0.18);
-  --ch-elevation-choice-hover: 0 0 0 1.5px var(--ch-green-600), 0 10px 20px -14px rgb(11 58 37 / 0.4);
-  --ch-elevation-row-card-hover: 0 0 0 1px rgb(21 90 57 / 0.25), 0 14px 28px -18px rgb(11 58 37 / 0.4);
-  --ch-elevation-on-frame-card-hover: 0 0 0 1px rgb(176 149 96 / 0.6), 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 #fff;
+  --ch-elevation-field-hover: 0 0 0 1px var(--ch-border-strong);
+  --ch-elevation-chip-hover: inset 0 0 0 1px var(--ch-border-control);
+  --ch-elevation-choice-hover: 0 0 0 1.5px var(--ch-green-600);
+  --ch-elevation-row-card-hover: var(--ch-elevation-card);
+  --ch-elevation-on-frame-card-hover: var(--ch-elevation-card);
+  /* The keys (audit Batch 5 item 6): solid faces, one token per state, so a theme changes values and never rules. */
+  --ch-primary-bg: var(--ch-field-green);
+  --ch-primary-bg-hover: #124b2e;
+  --ch-primary-bg-press: #08301e;
+  --ch-primary-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(12 65 40 / 0.22);
+  --ch-primary-shadow-press: 0 0 0 1px #0e462c, inset 0 1px 3px rgb(0 0 0 / 0.25);
+  --ch-btn-secondary-bg: var(--ch-bg-elevated);
+  --ch-btn-secondary-bg-hover: var(--ch-bg-surface);
+  --ch-btn-secondary-bg-press: var(--ch-bg-subtle);
+  --ch-btn-secondary-shadow-press: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 1px 2px rgb(28 25 18 / 0.12);
   --ch-elevation-primary-hover: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(12 65 40 / 0.22),
     0 8px 16px -8px rgb(12 65 40 / 0.45);
-  --ch-elevation-overlay: var(--ch-light-drift-near) 4px 12px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 16px 36px -12px rgb(28 25 18 / 0.16);
-  --ch-elevation-sheet: inset 0 1px 0 var(--ch-light-rim), var(--ch-light-drift-near) -4px 12px rgb(28 25 18 / 0.06),
-    var(--ch-light-drift-mid) -12px 32px -12px rgb(28 25 18 / 0.12);
-  /* Bubbles carry Fairway's depth (owner, 2026-10-31: "the bubbles had depth and shadow and motion... look at what's in
-     Fairway"): theirs is Fairway's card, a lit top edge over a contact and a soft shadow (--fw-shadow-card); yours is
-     raised like Fairway's own bubble (--fw-shadow-raise), its shadow tinted green, under a faint lit edge. */
-  --ch-elevation-bubble: inset 0 1px 0 rgb(255 255 255 / 0.55), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 10px rgb(28 25 18 / 0.06);
+  /* The floating panels' name in the code (popover, peek, hover card, tooltip, toast): the raised elevation (S1.5b). */
+  --ch-elevation-overlay: var(--ch-elevation-raised);
+  /* S1.5c: a sheet or dialog over the scrim. The scrim separates it; only the top edge draws. */
+  --ch-elevation-sheet: var(--ch-elevation-raised);
+  /* Bubbles, badges, pills and chips are flat (spec S1.5c, the 15 Nov audit; the Oct 21 bubbles): three elevations
+     only, and a bubble is not one of them. Theirs is the card's paper, yours the green fill. */
   --ch-bubble-mine-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 60%, #0f4a2f 100%);
-  --ch-elevation-bubble-mine: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 2px 4px rgb(11 58 37 / 0.1), 0 18px 44px -14px rgb(11 58 37 / 0.34);
   /* The phone section strip and the notification drop's glass (section-strip.md): drop-only, the caller keeps its rim. */
-  --ch-elevation-strip: 0 18px 30px -18px rgb(6 20 12 / 0.45);
-  --ch-elevation-strip-plate: 0 4px 12px rgb(0 0 0 / 0.18);
-  --ch-elevation-glass-card: 0 12px 28px rgb(0 0 0 / 0.2);
-  --ch-elevation-glass-edge: 0 8px 18px rgb(0 0 0 / 0.16);
+  --ch-elevation-strip: 0 0 0 0 transparent;
+  --ch-elevation-strip-plate: 0 0 0 0 transparent;
+  --ch-elevation-glass-card: var(--ch-elevation-raised);
+  --ch-elevation-glass-edge: var(--ch-elevation-raised);
   --ch-control-bg: var(--ch-raised-bg);
   --ch-field-pill-edge: inset 0 0 0 1px rgb(28 25 18 / 0.14);
   --ch-field-pill-edge-focus: inset 0 0 0 1.5px var(--ch-border-focus);
@@ -908,13 +910,11 @@
   --ch-tab-bar: var(--ch-green-fill-600);
   --ch-tab-bar-h: 2px;
   --ch-tab-gap: 24px;
-  --ch-phone-bar-bg: rgb(247 245 239 / 0.9);
   --ch-phone-tabbar-bg: rgb(253 252 248 / 0.92);
   /* Opened in Safari (not the app), the tab bar is a solid shelf on the bottom edge: Safari tints its own floating
      controls from the colour at the page's bottom edge, so the two read as one toolbar. */
   --ch-phone-tabbar-shelf-bg: #f7f4ec;
   --ch-phone-tabbar-shelf-edge: inset 0 1px 0 rgb(28 25 18 / 0.08);
-  --ch-phone-composer-bg: rgb(253 252 248 / 0.94);
   /* The one neutral coin: every avatar on the phone (D-43), and the default tone on desktop. */
   --ch-avatar-neutral-bg: #d9e4d8;
   --ch-avatar-neutral-fg: #23402f;
@@ -929,16 +929,17 @@
   --ch-well-soft-bg: linear-gradient(180deg, #e2ddd0 0%, #e9e5da 60%, #edeae0 100%);
   --ch-well-soft-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12), inset 0 3px 8px -3px rgb(28 25 18 / 0.1),
     inset 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 0 rgb(255 255 255 / 0.9);
-  --ch-raised-bg: linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%);
+  /* Solid: nothing raised is a near-white gradient (S1.3). */
+  --ch-raised-bg: var(--ch-bg-elevated);
   --ch-raised-shadow: var(--ch-elevation-control);
   /* Lit upper edge, warm lower face and a contact shadow, from handoff/depth.css. */
   /* Solid: a tall sheet's gentle gradient banded visibly; the lit top edge is the elevation's inset highlight. */
-  --ch-sheet-bg: #fdfbf7;
+  --ch-sheet-bg: var(--ch-card-bg);
   --ch-sheet-shadow: var(--ch-elevation-reading);
   /* The one tint behind every sheet, dialog and drawer on the native top layer (popup audit 2026-10-13): a solid wash,
      never a blur, which re-blurs the page on every frame of a WebKit open. Read by ::backdrop, which inherits it from
      the dialog; each use keeps the light value as its fallback. */
-  --ch-scrim: rgb(20 20 18 / 0.36);
+  --ch-scrim: rgb(28 25 18 / 0.24); /* the one scrim under sheets and dialogs (MOTION-AND-VISUAL 4.6) */
   /* Materials on the green hero (the content layer is dark there). Raised: a lighter tonal green with a mint-lit top
      edge and a deep green cast shadow (ink shadows vanish on green). Well: one recess darker than the hero. Control: a
      raised green face that compresses on press. */
@@ -956,33 +957,34 @@
   --ch-green-raised-shadow: 0 1px 2px rgb(8 43 28 / 0.2), 0 6px 12px -4px rgb(8 43 28 / 0.36),
     inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.15);
 
-  /* Motion (D-64, the v2 design's gh-polish.css and gh-core.js). No count-ups and no staggers.
-     press: a key (.ch-btn, or [data-ch-press] up to 240px) shrinks about 6px (lib/press.ts) and springs back over
-     release; a row or a wider control deepens its tint instead (--ch-ledger-row-press).
-     quick: hover, toggles, the tab underline. base: sheets, panels, pushes, crossfades and swaps (ui/Swap.tsx).
-     reveal: the sign-in handoff curtain lifting (lib/handoff.ts) and a deliberate single rise (--ch-reveal-rise). The
-     staggered first-paint reveal ended on 2026-10-01: a page is visible at once under the page crossfade. */
-  --ch-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --ch-ease-io: cubic-bezier(0.65, 0, 0.35, 1);
-  --ch-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  /* Motion: the whole vocabulary (MOTION-AND-VISUAL 3.2, production audit 2026-11-15 S3), mirrored in lib/motion.ts.
+     Three things move: the page (push, pop, back swipe), the overlay (sheet, menu, palette, toast) and the control under
+     the finger (press, segment thumb, strip pill). Content never moves on its own: first paint is still, late content
+     crossfades over quick, and nothing overshoots or loops but the working dots while work runs. Reduce Motion turns
+     every travel into a quick opacity fade.
+     press 110: press down, a menu out. quick 180: fades, a menu in, crossfades, Reduce Motion. base 260: the pill, the
+     thumb, a toast in, a list insert, a FLIP. release 280: a press let go, a sheet out. marks 360: chart marks gliding,
+     first-view bars. reveal 520: a push, a pop, a sheet in.
+     ease-ios travels (everything that moves across the screen); ease-out is a press going down and things leaving. */
   --ch-dur-press: 110ms;
   --ch-dur-quick: 180ms;
   --ch-dur-base: 260ms;
   --ch-dur-release: 280ms;
+  --ch-dur-marks: 360ms;
   --ch-dur-reveal: 520ms;
-  /* A row's pressed tint waits this long after the finger lands (UIKit delays a cell's highlight the same way), so a
-     scroll that starts on a row never flashes it; letting go clears it at once. Kept with reduced motion: it isn't motion. */
-  --ch-dur-press-delay: 50ms;
-  /* Stats dims for a window change only after this beat (A11), so a fast answer never flickers; leaving busy clears at
-     once. Kept with reduced motion and Animations off: it is a wait, not motion. */
+  --ch-ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ch-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Loading (3.9): draw nothing new for busy-delay; once a skeleton shows, hold it busy-min so it never flashes
+     (lib/use-busy.ts). A wait, not motion: kept with reduced motion and Animations off. */
   --ch-dur-busy-delay: 150ms;
-  /* The smooth spring (D-64 extension, 2026-10-08; lib/motion.ts CH_SPRINGS, base, no bounce) for a one-shot CSS entry
-     that moves an anchored part, such as a sheet rising. Where linear() is missing it is the ease-out over base. An
-     interruptible state change keeps a curve: a CSS spring would restart from rest when retargeted, so those springs
-     run in script. */
-  --ch-ease-spring-pour: var(--ch-ease);
-  --ch-dur-spring-pour: 420ms;
-  --ch-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --ch-dur-busy-min: 300ms;
+
+  /* Retiring (3.2): every motion token below is outside the vocabulary. Each may only lose uses (the motion gate,
+     src/clubhouse/__tests__/motion-gate.test.ts, holds the count in config/clubhouse/motion-ratchet.json); write the
+     vocabulary token in new code. --ch-ease is --ch-ease-out under its old name; --ch-ease-sheet stays one release. */
+  --ch-ease: var(--ch-ease-out);
+  --ch-ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --ch-ease-sheet: var(--ch-ease-ios);
   /* Messages v2: the iOS keyboard's ride (MOT-KB-1), on --ch-ease-sheet; lib/motion.ts CH_MS.keyboard. */
   --ch-dur-keyboard: 480ms;
   /* Messages v2 thread beats (MSG-208, MSG-202, MSG-210, MSG-211): a hover time, the bar's hairline, the date pill out, the jump key out. */
@@ -990,35 +992,32 @@
   --ch-dur-msg-rule: 200ms;
   --ch-dur-msg-pill-out: 250ms;
   --ch-dur-msg-key-out: 160ms;
-  --ch-ease-spring-smooth: var(--ch-ease);
-  --ch-dur-spring-smooth: var(--ch-dur-base);
-  /* The settle spring for a part CSS moves (a switch thumb): chSpring('settle'). Where linear() is missing, the ease-out over base. */
-  --ch-ease-spring-settle: var(--ch-ease);
+  /* CSS has no spring curves (production audit 2026-11-15, S3.1, MOT-08): a one-shot entry rides the one curve on a
+     D-64 beat, with no overshoot. The names stay for their callers: smooth is an anchored part travelling in (a sheet
+     rising, a pushed title) over the reveal beat; settle is a free part arriving over base; pop is a small tap-opened
+     surface (a reaction, a jump key, a chip) over quick; send is a pane moving on over base. Springs run in script,
+     where a retarget keeps its speed (lib/motion.ts CH_SPRINGS). */
+  --ch-ease-spring-smooth: var(--ch-ease-ios);
+  --ch-dur-spring-smooth: var(--ch-dur-reveal);
+  --ch-ease-spring-settle: var(--ch-ease-ios);
   --ch-dur-spring-settle: var(--ch-dur-base);
+  --ch-ease-spring-pop: var(--ch-ease-ios);
+  --ch-dur-spring-pop: var(--ch-dur-quick);
+  --ch-ease-spring-send: var(--ch-ease-ios);
+  --ch-dur-spring-send: var(--ch-dur-base);
   --ch-reveal-offset: 40ms;
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
-  --ch-dur-shimmer: 1.9s;
-  /* Messages v2 skeleton pulse (MSG-112, MSG-003): stops under Reduce Motion and with Animations off. */
-  --ch-dur-skeleton: 1.4s;
-  /* A live marker's slow breath (the calendar's now line): one cycle, ambient, never a call to act. */
-  --ch-dur-live: 2.8s;
-  /* The pending hairline's sweep (LinkPending, shell.css). */
-  --ch-dur-sweep: 900ms;
-  /* The mockups' own beats: chart marks settling (360), a story's body (420), a typing dot's cycle and its step, a story. */
-  --ch-dur-marks: 360ms;
+  /* The mockups' own beats: a story's body (420), a typing dot's cycle and its step, a story. The typing dot's cycle is
+     the working beat: the one loop (MOTION-AND-VISUAL 3.1, 3.9), the working indicator (motion.css ch-working) and every
+     busy ring and wheel while work runs. */
   --ch-dur-word: 320ms;
   --ch-dur-crossfade-rm: 180ms;
   --ch-dur-story-body: 420ms;
   --ch-dur-typing: 1200ms;
   --ch-dur-typing-step: 160ms;
   --ch-dur-story: 5200ms;
-  /* The selected station's ring on Team's hole (M-TEAM-06): one slow pulse, played twice, then still. */
-  --ch-dur-station-pulse: 2400ms;
   --ch-ease-typing: cubic-bezier(0.45, 0, 0.55, 1);
-  /* Skeletons wait this long before showing, then fade in over base. */
-  /* 0: a route load on a phone runs past any delay, so a delay only added a blank frame before the skeleton (F-37). */
-  --ch-skel-delay: 0ms;
 
   /* Z: the ladder (CONS-35). Values 0 to 5 stay local literals inside one component. */
   --ch-z-raised: 10;
@@ -1049,32 +1048,29 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-run-group-on: #0e120f;
   color-scheme: dark;
   /* Messages redesign, 11a. */
-  --ch-bubble-theirs-bg: #232925;
+  --ch-bubble-theirs-bg: var(--ch-card-bg);
   --ch-bubble-mine-fill: #1f6b45;
   --ch-poll-bar: rgb(124 199 155 / 0.12);
   --ch-poll-bar-on: rgb(124 199 155 / 0.24);
-  --ch-bubble-theirs-shadow: drop-shadow(0 0.5px 0.5px rgb(0 0 0 / 0.4)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.3));
-  --ch-bubble-mine-shadow: drop-shadow(0 1px 1px rgb(0 0 0 / 0.4)) drop-shadow(0 6px 10px rgb(0 0 0 / 0.35));
   --ch-shadow-float: 0 0 0 0.5px rgb(237 231 216 / 0.12), 0 8px 24px -6px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.4);
-  --ch-glass: rgb(22 27 23 / 0.74);
-  --ch-glass-strong: rgb(27 32 28 / 0.88);
   --ch-glass-rule: rgb(237 231 216 / 0.1);
   --ch-typing-dot: #827d71;
   --ch-ring-own: #c9ad74;
-  --ch-switch-off-ring: #827d71;
-  --ch-scrim-msg: rgb(0 0 0 / 0.45);
+  --ch-switch-off-ring: var(--ch-border-control);
   --ch-bubble-mine-ink: #f4eedd;
   /* Clubhouse refresh, PR 1. Dark Sophomore is #8B6B30 (DECISIONS: white reads 4.95:1; the language table's #8F6E31 gives 4.7). */
-  --ch-grouped-bg: #0e120f;
-  --ch-card-bg: #191e1a;
-  --ch-well-bg-flat: #141815;
+  --ch-grouped-bg: var(--ch-workspace);
+  --ch-card-bg: var(--ch-bg-surface);
+  --ch-well-bg-flat: var(--ch-bg-subtle);
   --ch-separator: rgb(241 236 223 / 0.1);
-  --ch-card-ring: rgb(255 255 255 / 0.06);
-  --ch-gain: #7cc79b;
-  --ch-loss: #e7ae57;
+  --ch-card-ring: rgb(241 236 223 / 0.08);
+  --ch-gain: var(--ch-chart-gain);
+  --ch-loss: var(--ch-chart-loss);
   --ch-flag: #f28b7d;
   --ch-chart-flat: #a39d90;
   --ch-chart-track: #2c322d;
+  --ch-separator-chart: #7a7568;
+  --ch-chart-gilt: var(--ch-champagne-500);
   --ch-chart-zero: #ada697;
   /* The phone Stats redesign, dark. */
   --ch-stats-accent: #7cc79b;
@@ -1084,9 +1080,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-feature-flat-tint: #315643;
   --ch-separator-strong: rgb(241 236 223 / 0.16);
   --ch-press-wash: rgb(241 236 223 / 0.06);
+  --ch-sel: var(--ch-bg-selected, #2c322d);
   --ch-chip-gain-bg: #29392f;
   --ch-chip-loss-bg: #3a3524;
-  --ch-chip-flag-bg: #3c2f2a;
   --ch-chip-flat-bg: #292d28;
   --ch-chip-danger-bg: #3c2f2a;
   --ch-chart-bogey: #c9a46a;
@@ -1103,8 +1099,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-crh-ink4: #ada697;
   --ch-accent-ink: #7cc79b;
   --ch-accent-tint: rgb(124 199 155 / 0.12);
-  --ch-card-bg-raised: #1d231f;
-  --ch-tile-bg: rgb(255 255 255 / 0.09);
+  --ch-card-bg-raised: var(--ch-bg-subtle);
   --ch-warn-bg: rgb(231 174 87 / 0.12);
   --ch-warn-ink: #f0c77e;
   --ch-warn-icon: #e7ae57;
@@ -1114,12 +1109,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-on-ink-warning: #8a5a0c;
   /* 4.5:1 or more on every night surface a field or menu sits on, the raised -2 well the darkest (4.7:1; it was #8f897c,
      3.78 there and 4.27 on the raised surface). Visual pass 2026-10-28. */
-  --ch-text-placeholder: #a09a8c;
   /* The sidebar's selected plate at night (overnight polish, 2026-10-15): the day plate's gradient ran from the night
      ivory to the day's, a white bar with dark ink on the dark frame. A raised green plate under ivory ink instead. */
-  --ch-nav-well-bg: linear-gradient(180deg, #24432f, #1a3524);
-  --ch-nav-well-shadow: 0 0 0 1px rgb(205 187 142 / 0.32), 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 14px -8px rgb(0 0 0 / 0.6),
-    inset 0 1px 0 rgb(255 255 255 / 0.1);
+  --ch-nav-well-bg: #24432f;
   --ch-nav-well-ink: #f3efe6;
   --ch-nav-well-icon: #9fe0b6;
   --ch-on-fill-0: #f7f2e6;
@@ -1142,7 +1134,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ink-900: #f1ecdf;
   --ch-ink-700: #e2dccd;
   --ch-ink-600: #d0c9b8;
-  --ch-ink-500: #bab3a4;
+  --ch-ink-500: #c4bdad;
   --ch-ink-400: #827d71;
   --ch-ink-300: #5c584f;
   --ch-green-25: #131d17;
@@ -1161,11 +1153,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-green-fill-700: #1d613f;
   /* Darker than the page, or the frame reads as raised above the workspace; a hairline marks the join. */
   --ch-frame: #08150e;
-  /* A filled under-par mark (birdie, eagle) under an ivory numeral: 4.6:1. Text and strokes stay --ch-score-under. */
-  --ch-score-under-fill: #c2473a;
-  /* At night birdie is the light salmon, so eagle steps darker than it: the mix keeps its order by lightness as well as hue. */
-  --ch-score-eagle-fill: #b0473a;
-  --ch-workspace: #0e120f;
+  /* At night the gain fill is the light mint, so a filled under-par mark carries the deep green numeral (12.5:1), and the
+     mix's birdie step is green-400 (5.2:1 under it, 5.2:1 on the card). */
+  --ch-score-fill-ink: var(--ch-green-900);
+  --ch-score-birdie-fill: var(--ch-green-400);
+  /* S1.1: the canvas base at night, under the night light. */
+  --ch-workspace: #131814;
   --ch-champagne-100: #2b2619;
   --ch-champagne-300: #cdbb8e;
   --ch-champagne-500: #c9ad74;
@@ -1179,19 +1172,19 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-danger-ring: rgb(239 133 118 / 0.45);
   --ch-info-600: #86b6d4;
   --ch-info-100: #172632;
-  --ch-score-under: #ef8576;
-  --ch-score-under-bg: #3a1c1a;
   --ch-score-over-bg: #272c27;
   --ch-score-double: #ede7d8;
-  --ch-hm-under-2: #5b3e37;
+  --ch-hm-under-2: #284636;
   --ch-hm-over-1: #3b3624;
   --ch-hm-over-2: #57492b;
-  --ch-hm-ring-under: #9e5f54;
+  --ch-hm-ring-under: #5fa57a;
   --ch-hm-ring-level: #827d71;
   --ch-hm-ring-over: #97753c;
-  --ch-chart-paper: #171c18;
-  --ch-chart-gain: #6bbb8c;
-  --ch-chart-loss: #e3a94f;
+  --ch-chart-paper: var(--ch-card-bg);
+  --ch-chart-gain: #a9e0c0;
+  --ch-chart-loss: #f5c982;
+  --ch-chart-gain-fill: #c2f2d3;
+  --ch-chart-loss-fill: #b36c10;
   --ch-chart-loss-on-tint: #edb860;
   --ch-chart-flag: #ef8576;
   --ch-chart-fairway: #24412f;
@@ -1201,17 +1194,18 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   /* Not yet the page's #0e120f (--ch-grouped-bg): the night hairline (0.12, owner decision 6) reads 1.328 on #0e120f and
      contrast-tokens.test.ts holds it at 1.33 on this token. The page, a pushed screen and the canvas read --ch-grouped-bg. */
   --ch-bg-page: #111512;
-  --ch-bg-surface: #1b201c;
+  /* S1.3: the night card, 1.18:1 over the canvas (it was #1b201c, 1.09:1). Dark cards carry no shadow. */
+  --ch-bg-surface: #212722;
   /* B4: what floats lifts by lightness, as iOS's elevated base does (Gray6 and Gray5, tinted green): a sheet, a menu
      or a popover sits visibly above the cards. The second step is for a layer on a layer, never under a text field
      (the placeholder ink falls under 4.5:1 there). */
-  --ch-bg-elevated: #232925;
-  --ch-bg-elevated-2: #2b322d;
+  /* S1.6: 1.16:1 over the night card (it was #232925, 1.11:1). */
+  --ch-bg-elevated: #2c322d;
   --ch-grab-bg: rgb(237 231 216 / 0.22);
   --ch-bg-subtle: #181d19;
   --ch-bg-inset: #0e120f;
   --ch-bg-hover: #212722;
-  --ch-bg-selected: #16281d;
+  --ch-bg-selected: #2c322d;
   --ch-selected-pill-bg: var(--ch-green-100);
   --ch-selected-pill-ring: rgb(107 187 140 / 0.3);
   --ch-text-on-accent: #f4eedd;
@@ -1227,23 +1221,22 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-accent-press: #1d613f;
   --ch-border-hairline: rgb(237 231 216 / 0.12); /* decision 6, from 0.08 */
   --ch-border-subtle: rgb(237 231 216 / 0.15); /* row 36 (T4): above the 0.12 hairline */
-  --ch-border-control: rgb(237 231 216 / 0.17);
+  --ch-border-control: #807b6e;
   --ch-border-strong: rgb(237 231 216 / 0.3);
   --ch-seam-ink: rgb(0 0 0 / 0.55);
   --ch-seam-light: rgb(255 255 255 / 0.05);
   --ch-board-shadow: inset 0 2px 4px rgb(0 0 0 / 0.45), inset 0 0 0 1px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.05);
   --ch-board-double-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 1px 3px rgb(0 0 0 / 0.5);
-  --ch-key-frost-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 10px 20px -10px rgb(0 0 0 / 0.6);
   --ch-key-raised-shadow: var(--ch-elevation-control), 0 0 0 1px rgb(255 255 255 / 0.06), 0 6px 12px -8px rgb(0 0 0 / 0.6);
   --ch-on-dark-primary-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6), 0 0 0 1px rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 16px -8px rgb(0 0 0 / 0.6);
   --ch-seg-pill-lift-shadow: var(--ch-elevation-control), 0 2px 6px -2px rgb(0 0 0 / 0.5);
-  --ch-btn-secondary-shadow: 0 0 0 1px rgb(237 231 216 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.06), 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 10px -5px rgb(0 0 0 / 0.5);
-  --ch-btn-secondary-hover-shadow: 0 0 0 1px rgb(237 231 216 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.08), 0 2px 4px rgb(0 0 0 / 0.45), 0 8px 16px -8px rgb(0 0 0 / 0.55);
-  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(239 133 118 / 0.45), 0 1px 2px rgb(0 0 0 / 0.4);
-  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(239 133 118 / 0.7), 0 1px 2px rgb(0 0 0 / 0.45);
+  --ch-btn-secondary-shadow: 0 0 0 1px var(--ch-border-subtle);
+  --ch-btn-secondary-hover-shadow: 0 0 0 1px var(--ch-border-strong);
+  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(169 224 192 / 0.45), 0 1px 2px rgb(0 0 0 / 0.4);
+  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(169 224 192 / 0.7), 0 1px 2px rgb(0 0 0 / 0.45);
   --ch-score-bogey-shadow: inset 0 0 0 1px rgb(237 231 216 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4);
   --ch-score-double-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5);
-  --ch-border-focus: #6bbb8c;
+  --ch-border-focus: var(--ch-green-500);
   --ch-green-ring: rgb(107 187 140 / 0.35);
   --ch-green-rule: rgb(107 187 140 / 0.45);
   --ch-ink-rule: rgb(237 231 216 / 0.22);
@@ -1251,8 +1244,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-champagne-rule: rgb(205 187 142 / 0.28);
   --ch-champagne-rule-strong: rgb(205 187 142 / 0.4);
   --ch-focus-halo: rgb(107 187 140 / 0.2);
-
-  --ch-glass-bg: rgb(22 27 23 / 0.74);
   --ch-edge: rgb(255 255 255 / 0.07);
   /* The night's light is the dark theme's own: a cool moon key, very faint, warming only a touch at golden hour. */
   --ch-light-key: color-mix(in oklab, #b9cbea, #e9c48c calc(var(--ch-sun-warmth, 0) * 45%));
@@ -1282,24 +1273,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-highlight: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim);
   /* The one card at night: a card is lighter than its page, so the ring and the lit edge carry it and the drops
      only deepen it (depth.css has no night values; these are the reading surface's, unchanged). */
-  --ch-elevation-card: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px var(--ch-card-ring),
-    var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),
-    var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5);
-  --ch-elevation-cast: var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.3), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),
-    var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5);
-  --ch-elevation-reading-hover: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.09),
-    var(--ch-light-drift-near) 2px 4px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 12px 24px -12px rgb(0 0 0 / 0.55),
-    var(--ch-light-drift) 28px 48px -26px rgb(0 0 0 / 0.55);
-  --ch-elevation-reading-accent: 0 1px 3px rgb(0 0 0 / 0.35), 0 4px 12px -6px rgb(0 0 0 / 0.45);
-  --ch-elevation-control: var(--ch-highlight), var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35);
-  --ch-elevation-floating: var(--ch-elevation-raised);
-  --ch-elevation-raised: 0 0 0 1px rgb(255 255 255 / 0.06), var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.35),
-    var(--ch-light-drift-mid) 8px 20px -8px rgb(0 0 0 / 0.55);
-  --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.07),
-    var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 14px 32px -12px rgb(0 0 0 / 0.7);
-  --ch-elevation-framed: 0 1px 3px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.04), inset 1px 0 0 rgb(255 255 255 / 0.03);
-  --ch-elevation-on-frame: 0 0 0 1px rgb(201 173 116 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5);
-  --ch-elevation-on-frame-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 2px 6px rgb(0 0 0 / 0.55);
+  /* S1.5: a night card is carried by tone and its ring; shadows do not read on near-black. */
+  --ch-elevation-card: 0 0 0 1px var(--ch-card-ring);
+  --ch-elevation-cast: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px -4px rgb(0 0 0 / 0.4);
+  /* S1.5b at night, on --ch-bg-elevated. */
+  --ch-elevation-raised: 0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55);
   --ch-ledger-rule: rgb(205 187 142 / 0.15);
   --ch-ledger-rule-soft: rgb(205 187 142 / 0.08);
   --ch-ledger-rule-strong: rgb(205 187 142 / 0.42);
@@ -1308,41 +1286,23 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ledger-eyebrow: #c9b88a;
   --ch-ledger-row-hover: rgb(205 187 142 / 0.06);
   --ch-ledger-rule-double: 3px double rgb(205 187 142 / 0.22);
-  --ch-elevation-feature: 0 0 0 1px rgb(107 187 140 / 0.14), 0 14px 28px -18px rgb(0 0 0 / 0.8);
-  --ch-elevation-board: 0 14px 22px -16px rgb(0 0 0 / 0.8);
-  --ch-elevation-board-hover: 0 14px 20px -12px rgb(0 0 0 / 0.85);
-  --ch-elevation-mark: 0 4px 8px -4px rgb(0 0 0 / 0.6);
-  --ch-elevation-mark-warn: 0 6px 12px -8px rgb(0 0 0 / 0.6);
-  --ch-elevation-mark-ink: 0 5px 10px -6px rgb(0 0 0 / 0.6);
-  --ch-elevation-plate: 0 18px 28px -24px rgb(0 0 0 / 0.7);
-  --ch-elevation-pill-on: 0 1px 2px rgb(0 0 0 / 0.4);
-  --ch-elevation-badge: 0 2px 6px -2px rgb(0 0 0 / 0.5);
-  --ch-elevation-bubblet: 0 4px 10px -4px rgb(0 0 0 / 0.45);
   --ch-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.5),
     0 3px 8px -2px rgb(0 0 0 / 0.45);
-  --ch-elevation-face: var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 16px -6px rgb(0 0 0 / 0.5),
-    var(--ch-light-drift) 20px 32px -16px rgb(0 0 0 / 0.5);
-  --ch-elevation-face-hover: var(--ch-light-drift-near) 3px 6px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 22px 36px -12px rgb(0 0 0 / 0.6),
-    var(--ch-light-drift) 40px 56px -24px rgb(0 0 0 / 0.55);
   --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 12%, transparent);
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(0 0 0 / 0.6);
-  --ch-elevation-field-hover: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(0 0 0 / 0.3);
-  --ch-elevation-chip-hover: inset 0 0 0 1px rgb(237 231 216 / 0.24), 0 2px 6px -2px rgb(0 0 0 / 0.5);
-  --ch-elevation-choice-hover: 0 0 0 1.5px var(--ch-green-600), 0 10px 20px -14px rgb(0 0 0 / 0.6);
-  --ch-elevation-row-card-hover: 0 0 0 1px rgb(107 187 140 / 0.3), 0 14px 28px -18px rgb(0 0 0 / 0.6);
-  --ch-elevation-on-frame-card-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 10px 22px -10px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --ch-primary-bg: #25734d;
+  --ch-primary-bg-hover: #2c7a52;
+  --ch-primary-bg-press: #17543a;
+  --ch-primary-shadow: 0 0 0 1px rgb(107 187 140 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(0 0 0 / 0.4);
+  --ch-primary-shadow-press: 0 0 0 1px rgb(107 187 140 / 0.3), inset 0 1px 3px rgb(0 0 0 / 0.35);
+  --ch-btn-secondary-bg: var(--ch-bg-elevated);
+  --ch-btn-secondary-bg-hover: #313932;
+  --ch-btn-secondary-bg-press: #1f2520;
+  --ch-btn-secondary-shadow-press: 0 0 0 1px rgb(237 231 216 / 0.1), inset 0 1px 2px rgb(0 0 0 / 0.35);
   --ch-elevation-primary-hover: 0 0 0 1px rgb(107 187 140 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(0 0 0 / 0.4),
     0 8px 16px -8px rgb(0 0 0 / 0.55);
-  --ch-elevation-overlay: 0 0 0 1px rgb(255 255 255 / 0.07), var(--ch-light-drift-near) 4px 12px rgb(0 0 0 / 0.4),
-    var(--ch-light-drift-mid) 16px 36px -12px rgb(0 0 0 / 0.6);
-  --ch-elevation-sheet: 0 -1px 0 rgb(255 255 255 / 0.06), inset 0 1px 0 var(--ch-light-rim), var(--ch-light-drift-near) -4px 12px rgb(0 0 0 / 0.35),
-    var(--ch-light-drift-mid) -12px 32px -12px rgb(0 0 0 / 0.5);
-  --ch-elevation-bubble: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 10px rgb(0 0 0 / 0.38);
-  --ch-elevation-bubble-mine: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(0 0 0 / 0.38), 0 18px 44px -14px rgb(0 0 0 / 0.52);
-  --ch-elevation-strip: 0 18px 30px -16px rgb(0 0 0 / 0.6);
-  --ch-elevation-strip-plate: 0 4px 12px rgb(0 0 0 / 0.4);
-  --ch-elevation-glass-card: 0 12px 28px rgb(0 0 0 / 0.45);
-  --ch-elevation-glass-edge: 0 8px 18px rgb(0 0 0 / 0.38);
+  --ch-elevation-overlay: var(--ch-elevation-raised);
+  /* S1.5c at night: the sheet's edge. */
   --ch-field-pill-edge: inset 0 0 0 1px rgb(237 231 216 / 0.16);
   --ch-switch-track-bg: #3a423b;
   /* At night the off track's edge is the ivory at 0.3 (3.5:1 on a card, 3.1 on the raised surface; it was 0.05, 1.6:1),
@@ -1362,11 +1322,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   /* The chosen switcher segment starts one fill step deeper at night, and its ink is the brighter ivory, so the label reads 5.6:1 / Lc 79 at its top (F-0040). */
   --ch-seg-on-bg: linear-gradient(180deg, var(--ch-green-fill-600) 0%, var(--ch-green-fill-700) 100%);
   --ch-seg-on-ink: #f9f7f1;
-  --ch-phone-bar-bg: rgb(17 21 18 / 0.92);
   --ch-phone-tabbar-bg: rgb(27 32 28 / 0.86);
   --ch-phone-tabbar-shelf-bg: #161b17;
   --ch-phone-tabbar-shelf-edge: inset 0 1px 0 rgb(255 255 255 / 0.07);
-  --ch-phone-composer-bg: rgb(27 32 28 / 0.94);
   --ch-avatar-neutral-bg: #243a2c;
   --ch-avatar-neutral-fg: #cfe3d4;
   --ch-avatar-neutral-ring: rgb(207 227 212 / 0.16);
@@ -1376,8 +1334,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-well-soft-bg: linear-gradient(180deg, #121613 0%, #141915 60%, #161b17 100%);
   --ch-well-soft-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4), inset 0 3px 8px -3px rgb(0 0 0 / 0.35), inset 0 0 0 1px rgb(0 0 0 / 0.3),
     0 1px 0 rgb(255 255 255 / 0.04);
-  --ch-raised-bg: linear-gradient(180deg, #262d27 0%, #212722 60%, #1d231e 100%);
-  --ch-sheet-bg: #1b201c;
+  --ch-raised-bg: var(--ch-bg-elevated);
+  --ch-sheet-bg: var(--ch-card-bg);
   --ch-scrim: rgb(2 6 4 / 0.58);
   --ch-skel-base: #2f382f;
   --ch-skel-sheen: #3c463d;
@@ -1387,48 +1345,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
    The October 1 Safari review supersedes the darker, flat phone treatment. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] {
-    /* Keep warm ivory faces while restoring the handoff's light and shade. */
-    --ch-ivory-0: #fdfbf7;
-    --ch-ivory-25: #fbf9f4;
-    --ch-ivory-50: #f3efe6;
-    --ch-bg-surface: #fcfaf5;
-    --ch-bg-subtle: #f5f2ea;
-    --ch-bg-hover: #f5f2ea;
+    /* The phone paints the same surfaces as the desktop (Nov 15 audit, WHITE-00 to WHITE-11): the ivory card, the linen
+       page, the recessed tile. Its own near-white faces (#fdfbf7, the raised gradient) are gone. */
+    --ch-bg-hover: var(--ch-bg-subtle);
     --ch-bg-inset: #e9e5da;
-    --ch-raised-bg: linear-gradient(180deg, #fffdf8 0%, #f9f7f0 60%, #f1eee5 100%);
-    --ch-sheet-bg: #fdfbf7;
-    --ch-chart-paper: #fbf9f3;
-    --ch-phone-bar-bg: rgb(237 233 223 / 0.94);
+    /* The bar under the status bar is the frame's green in both themes (owner, 8 Oct; one rule per token, WR-04). */
+    --ch-phone-bar-bg: var(--ch-frame);
     /* Glass, not a lid: the page shows through as it slides under (F-49). */
     --ch-phone-tabbar-bg: rgb(243 240 231 / 0.84);
-    --ch-phone-composer-bg: #fbf9f4;
-    --ch-glass-bg: rgb(243 240 231 / 0.84);
-    /* Tertiary text holds 4.5:1 on the darker page. Raising it to #5f5c55 left secondary and tertiary 1.1 contrast points apart on
-       a card (7.4 against 6.3), so captions, previews and times read as one gray; secondary steps darker to restore the
-       ramp (9.3 against 6.3; the desktop ramp is 7.4 against 5.3). Aesthetic audit M-L1. */
-    --ch-ink-500: #5f5c55;
-    --ch-ink-600: #46433d;
-  }
-}
-
-/* The smooth spring as CSS linear(), sampled from chSpringCurve('smooth') once a frame and cut within 0.1% of the
-   mark (motion-physics.test pins the two together). */
-@supports (transition-timing-function: linear(0, 1)) {
-  [data-ui='clubhouse'] {
-    --ch-ease-spring-smooth: linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1);
-    --ch-dur-spring-smooth: 462ms;
-    --ch-ease-spring-pour: linear(0, 0.0177, 0.0621, 0.1229, 0.1926, 0.2661, 0.3395, 0.4106, 0.4777, 0.5398, 0.5967, 0.6481, 0.6942, 0.7351, 0.7713, 0.8031, 0.8309, 0.8551, 0.8761, 0.8942, 0.9099, 0.9233, 0.9349, 0.9448, 0.9532, 0.9604, 0.9665, 0.9717, 0.9762, 0.9799, 0.9831, 0.9858, 0.988, 0.99, 0.9916, 0.9929, 0.9941, 0.995, 0.9958, 0.9965, 0.9971, 0.9976, 0.998, 0.9983, 0.9986, 0.9988, 1);
-    --ch-dur-spring-pour: 742ms;
-    --ch-ease-spring-send: linear(0, 0.0175, 0.0624, 0.1251, 0.1982, 0.2764, 0.3554, 0.4325, 0.5057, 0.5737, 0.6357, 0.6915, 0.7411, 0.7847, 0.8225, 0.8551, 0.8828, 0.9063, 0.9259, 0.9423, 0.9557, 0.9666, 0.9754, 0.9824, 0.988, 0.9923, 0.9956, 0.9981, 0.9999, 1.0011, 1.002, 1.0025, 1.0028, 1.003, 1.0029, 1.0028, 1.0027, 1.0025, 1.0022, 1.002, 1.0018, 1.0015, 1.0013, 1.0011, 1);
-    --ch-dur-spring-send: 700ms;
-    --ch-ease-spring-pop: linear(0, 0.0483, 0.1654, 0.3163, 0.4756, 0.6259, 0.7569, 0.8635, 0.9448, 1.0024, 1.0394, 1.0598, 1.0676, 1.0666, 1.0599, 1.0502, 1.0394, 1.0288, 1.0194, 1.0116, 1.0055, 1.001, 0.998, 0.9963, 0.9955, 0.9954, 0.9957, 0.9963, 0.9971, 0.9978, 0.9985, 1);
-    --ch-dur-spring-pop: 496ms;
-    --ch-ease-spring-lift: linear(0, 0.0388, 0.1306, 0.2476, 0.3711, 0.4898, 0.5971, 0.6899, 0.7675, 0.8304, 0.88, 0.9182, 0.9469, 0.9678, 0.9826, 0.9926, 0.9991, 1.0031, 1.0053, 1.0062, 1.0063, 1.0059, 1.0052, 1.0045, 1.0037, 1.003, 1.0023, 1.0018, 1.0013, 1);
-    --ch-dur-spring-lift: 471ms;
-    --ch-ease-spring-launch: linear(0, 0.0127, 0.0465, 0.0957, 0.1553, 0.2216, 0.2913, 0.3619, 0.4316, 0.4988, 0.5624, 0.6219, 0.6766, 0.7263, 0.7711, 0.811, 0.8461, 0.8768, 0.9033, 0.9259, 0.945, 0.961, 0.9742, 0.9849, 0.9935, 1.0003, 1.0054, 1.0092, 1.0119, 1.0137, 1.0147, 1.0151, 1.0151, 1.0147, 1.014, 1.0132, 1.0122, 1.0112, 1.0101, 1.009, 1.008, 1.007, 1.0061, 1.0052, 1.0044, 1.0037, 1.0031, 1.0025, 1.002, 1.0016, 1.0012, 1);
-    --ch-dur-spring-launch: 812ms;
-    --ch-ease-spring-settle: linear(0, 0.0429, 0.1419, 0.2645, 0.3907, 0.509, 0.6136, 0.7024, 0.7754, 0.8338, 0.8795, 0.9145, 0.9408, 0.9601, 0.974, 0.9839, 0.9906, 0.9952, 0.9981, 0.9998, 1.0008, 1.0013, 1.0015, 1.0015, 1.0014, 1.0012, 1);
-    --ch-dur-spring-settle: 417ms;
   }
 }
 
@@ -1442,12 +1366,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-release: 0ms;
   --ch-dur-reveal: 0ms;
   --ch-dur-spring-smooth: 0ms;
-  --ch-dur-spring-pour: 0ms;
   --ch-dur-spring-settle: 0ms;
   --ch-dur-spring-send: 0ms;
   --ch-dur-spring-pop: 0ms;
-  --ch-dur-spring-lift: 0ms;
-  --ch-dur-spring-launch: 0ms;
   --ch-dur-keyboard: 0ms;
   --ch-dur-msg-time: 0ms;
   --ch-dur-msg-rule: 0ms;
@@ -1458,65 +1379,40 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-reveal-offset: 0ms;
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;
-  --ch-skel-delay: 0ms;
-  /* The loops too, so a skeleton's shimmer, the calendar's live pulse and the pending sweep hold still from the first
-     frame: ThemeScript marks <html> before hydration, ahead of the rules that stop them by name. */
-  --ch-dur-shimmer: 0ms;
-  --ch-dur-skeleton: 0ms;
-  --ch-dur-live: 0ms;
-  --ch-dur-sweep: 0ms;
+  /* The working beat too (--ch-dur-typing below), so the working sign holds still from the first frame: ThemeScript marks
+     <html> before hydration, ahead of the rules that stop it by name. */
   --ch-dur-marks: 0ms;
   --ch-dur-word: 0ms;
   --ch-dur-story-body: 0ms;
   --ch-dur-typing: 0ms;
   --ch-dur-typing-step: 0ms;
   --ch-dur-story: 0ms;
-  --ch-dur-station-pulse: 0ms;
 }
 
 /* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off
-   <html>, so they read these from there: both pages crossfade together. Scoped to a
-   document showing Clubhouse. */
+   <html>, so they read these from there. Scoped to a document showing Clubhouse. */
 html:has([data-ui='clubhouse']) {
-  /* On the phone, a fade through, not a crossfade (phone test 2026-10-13): the old page clears quickly, then the new
-     one fades in, so two different pages are never on screen at once (a crossfade of two pages read as a washed-out
-     double image). The new page waits for the whole fade out: a shorter gap leaves both snapshots up for its last
-     frames. The desktop crossfades with no gap (below). */
+  /* A desktop page change crossfades with no gap: the old page fades out over 120ms while the new one fades in over
+     180ms, both from the first frame (owner decision 3, 2026-10-24, OQ-14 / A10; S4.4). A phone navigation with motion
+     on never crossfades: it swaps, pushes or pops on the live page (S4.4, S4.8), so the phone's fade-through is gone. */
   --ch-dur-vt-out: 120ms;
-  --ch-dur-vt-in: 220ms;
-  --ch-dur-vt-gap: var(--ch-dur-vt-out);
+  --ch-dur-vt-in: 180ms;
   --ch-ease-vt-out: cubic-bezier(0.4, 0, 1, 1);
   --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
   /* Under the OS Reduce Motion setting a page change is a plain crossfade over the quick beat, old and new together, in
      opacity only: no push, no pop, no parallax (owner decision 2, 2026-10-24, OQ-15; CH_FADE_MS in lib/motion.ts). */
   --ch-dur-vt-fade: 180ms;
-  /* How long a navigation onto a route skeleton keeps the old page up before the skeleton shows (native-feel audit
-     2026-10-08, P0-2): a load that finishes sooner never shows a skeleton. base.css delays the skeleton by the same. */
-  --ch-dur-vt-hold: 300ms;
-  /* A drill-in's push and Back's pop (lib/nav-motion.ts): the smooth spring, as a pushed phone screen moves
-     (PhoneScreen), and how far the page beneath draws back (UIKit's parallax, about a third). */
-  --ch-dur-vt-push: 260ms;
-  --ch-ease-vt-push: cubic-bezier(0.22, 1, 0.36, 1);
-  --ch-vt-parallax: -24%;
-  /* The dim on the page beneath a push (B16, CH-1618): PhoneScreen's scrim, and the same depth as a filter for a route
-     push, whose page beneath is a view-transition snapshot that cannot take an overlay. */
-  --ch-push-dim: rgb(20 18 12 / 0.1);
-}
-/* The desktop drill-in (a player row into a profile) crossfades with no gap: the old page fades out over 120ms while
-   the new one fades in over 180ms, both from the first frame, so there is no blank beat between them (owner decision
-   3, 2026-10-24, OQ-14 / A10). The phone keeps its fade through above. */
-@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  html:has([data-ui='clubhouse']) {
-    --ch-dur-vt-in: 180ms;
-    --ch-dur-vt-gap: 0ms;
-  }
-}
-/* The smooth spring as CSS linear(), as [data-ui='clubhouse'] has it above (motion-physics.test pins the two). */
-@supports (transition-timing-function: linear(0, 1)) {
-  html:has([data-ui='clubhouse']) {
-    --ch-ease-vt-push: linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1);
-    --ch-dur-vt-push: 462ms;
-  }
+  /* How long a crossfade onto a route skeleton keeps the old page up before the skeleton shows (P0-2, halved by S4.4): a
+     load that finishes sooner never shows a skeleton. base.css delays the skeleton by the same. A swap, a push and a pop
+     never hold: their skeleton's frame is in the first frame, and its blocks wait --ch-dur-busy-delay (3.9). */
+  --ch-dur-vt-hold: 150ms;
+  /* A list row sliding to its new place (a roster reorder, a qualifier rank change; S3.10): the one curve, on base. */
+  --ch-dur-vt-move: 260ms;
+  --ch-ease-vt-move: cubic-bezier(0.32, 0.72, 0, 1);
+  /* A phone push and pop (lib/nav-motion.ts, S4.1): how far the page beneath draws back (UIKit's third, as measured by
+     Tusker), and the black dim over it, 0 to 0.075. PhoneScreen's scrim takes the same dim (B16, CH-1618). */
+  --ch-push-parallax: -30%;
+  --ch-push-dim: rgb(0 0 0 / 0.075);
 }
 
 /* The document under Clubhouse (high-fidelity audit F05): the overscroll bounce and the frame before first paint show
@@ -1526,13 +1422,12 @@ html:has([data-ui='clubhouse']),
 html:has([data-ui='clubhouse']) body {
   background: #0a331f;
 }
-/* The phone page itself (--ch-bg-page, one value at every width since 2026-11-10), so a rubber-band past either end
-   shows no other band under the page (it was #ede9df, the phone-only page colour that is gone). The sign-in and
-   onboarding screens keep their own lighter ivory. */
+/* The phone page's linen (--ch-bg-page and --ch-workspace, one value at every width), so a rubber-band past either end
+   shows no other band under the page. The sign-in and onboarding screens keep their own lighter ivory. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   html:has([data-ui='clubhouse']),
   html:has([data-ui='clubhouse']) body {
-    background: #f2f0e9;
+    background: #e8e3d5;
   }
   html:has(:is(.ch-au, .ch-ox)),
   html:has(:is(.ch-au, .ch-ox)) body {
@@ -1546,22 +1441,20 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   html[data-fw-theme='dark']:has([data-ui='clubhouse']),
   html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
-    background: #111512;
+    background: #131814;
   }
 }
 
-/* Phone reading sizes (owner 2026-10-01, high-fidelity audit F09: "Phone 16 / 14"). Per role, never a page scale:
-   reading text 16px, important secondary text 14px, labels 13-14px; captions only to 13px, because chart axes and chips
-   use them. Desktop keeps the compact board sizes for dense tables. */
+/* The nine roles on a phone (MOTION-AND-VISUAL 4.3): large title 34/41, headline 17/22, body 17/24, callout 15/20,
+   hero figure 44, row figure 17/22; title, footnote and caption are the same on both. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] {
-    --ch-type-title: 600 calc(16 * var(--ch-type-k))/1.35 var(--ch-font-sans);
-    --ch-type-body-l: 400 calc(17 * var(--ch-type-k))/1.5 var(--ch-font-sans);
-    --ch-type-body: 400 calc(16 * var(--ch-type-k))/1.5 var(--ch-font-sans);
-    --ch-type-body-s: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
-    --ch-type-label: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-    --ch-type-label-s: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-    --ch-type-caption: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    --ch-type-large-title: 700 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-headline: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-body: 400 calc(17 * var(--ch-type-k))/calc(24 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-callout: 500 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-figure-hero: 600 calc(44 * var(--ch-type-k))/1 var(--ch-font-sans);
+    --ch-type-figure: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
   }
 }
 
@@ -1575,20 +1468,16 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-glass-blur: 0px;
     --ch-glass: var(--ch-bg-page);
     --ch-glass-strong: var(--ch-bg-page);
-    --ch-glass-blur-msg: 0px;
     --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
-    --ch-phone-composer-bg: var(--ch-bg-surface);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-glass-bg: var(--ch-bg-page);
     --ch-glass-blur: 0px;
     --ch-glass: var(--ch-bg-page);
     --ch-glass-strong: var(--ch-bg-page);
-    --ch-glass-blur-msg: 0px;
     --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
-    --ch-phone-composer-bg: var(--ch-bg-surface);
   }
 }
 :root[data-reduce-transparency] [data-ui='clubhouse'],
@@ -1597,10 +1486,8 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
   --ch-glass-blur: 0px;
   --ch-glass: var(--ch-bg-page);
   --ch-glass-strong: var(--ch-bg-page);
-  --ch-glass-blur-msg: 0px;
   --ch-scrim-blur-msg: 0px;
   --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
-  --ch-phone-composer-bg: var(--ch-bg-surface);
 }
 
 /* Increase Contrast (P001-D7): the engraved rules, hairlines and the champagne eyebrow gain definition, and glass is
@@ -1627,10 +1514,12 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 
 @media (prefers-contrast: more) {
   [data-ui='clubhouse'] {
+    --ch-glass-bg: var(--ch-bg-page);
+    --ch-glass-blur: 0px;
     --ch-hairline-w: 1px;
     --ch-border-hairline: rgb(28 25 18 / 0.2);
     --ch-border-subtle: rgb(28 25 18 / 0.28);
-    --ch-border-control: rgb(28 25 18 / 0.4);
+    --ch-border-control: #6b675f;
     --ch-border-strong: rgb(28 25 18 / 0.55);
     --ch-ledger-rule: rgb(28 25 18 / 0.3);
     --ch-ledger-rule-soft: rgb(28 25 18 / 0.2);
@@ -1638,18 +1527,13 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-ledger-rule-double: 3px double rgb(28 25 18 / 0.4);
     --ch-ledger-eyebrow: var(--ch-text-secondary);
     --ch-text-tertiary: var(--ch-ink-600);
-    --ch-glass-bg: var(--ch-bg-page);
-    --ch-glass-blur: 0px;
-    --ch-glass: var(--ch-bg-page);
-    --ch-glass-strong: var(--ch-bg-page);
-    --ch-glass-blur-msg: 0px;
     --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-light-rim: transparent;
     --ch-light-rim-soft: transparent;
     /* B15: chart marks and lines step further from the paper (gain 9.8:1, loss 7.7:1, the flag 7.6:1). */
-    --ch-chart-gain: #0e4a2e;
-    --ch-chart-loss: #6f4706;
+    --ch-chart-gain: #0b3a25;
+    --ch-chart-loss: #5f3600;
     --ch-chart-loss-on-tint: #5f3d05;
     --ch-chart-flag: #922e23;
     /* P-7: the hole map keeps its tints; the rings step up to the strong border. */
@@ -1658,9 +1542,11 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-hm-ring-over: var(--ch-border-strong);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] {
+    --ch-glass-bg: var(--ch-bg-page);
+    --ch-glass-blur: 0px;
     --ch-border-hairline: rgb(237 231 216 / 0.24);
     --ch-border-subtle: rgb(237 231 216 / 0.3);
-    --ch-border-control: rgb(237 231 216 / 0.42);
+    --ch-border-control: #9a9586;
     --ch-border-strong: rgb(237 231 216 / 0.58);
     --ch-ledger-rule: rgb(237 231 216 / 0.32);
     --ch-ledger-rule-soft: rgb(237 231 216 / 0.22);
@@ -1668,32 +1554,15 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-ledger-rule-double: 3px double rgb(237 231 216 / 0.42);
     --ch-ledger-eyebrow: var(--ch-text-secondary);
     --ch-text-tertiary: var(--ch-ink-600);
-    --ch-glass-bg: var(--ch-bg-page);
-    --ch-glass-blur: 0px;
-    --ch-glass: var(--ch-bg-page);
-    --ch-glass-strong: var(--ch-bg-page);
-    --ch-glass-blur-msg: 0px;
     --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-light-rim: transparent;
     --ch-light-rim-soft: transparent;
-    --ch-chart-gain: #8fd0a8;
-    --ch-chart-loss: #f0bd6a;
+    --ch-chart-gain: #c2f2d3;
+    --ch-chart-loss: #fad9a6;
     --ch-chart-loss-on-tint: #f3c77e;
     --ch-chart-flag: #f6a294;
   }
-}
-
-/* The refresh's chart fills (DESIGN_LANGUAGE §3). Scoped so today's --ch-chart-*-fill values stay as they are with the flag off. */
-.ch-root[data-ch-refresh='on'], [data-ui='clubhouse'] [data-ch-refresh='on'] {
-  --ch-score-under: #9e3b2e;
-  --ch-chart-gain-fill: #1f6b45;
-  --ch-chart-loss-fill: #b86f0c;
-}
-html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='dark'] [data-ui='clubhouse'] [data-ch-refresh='on'] {
-  --ch-score-under: #f28b7d;
-  --ch-chart-gain-fill: #4fa877;
-  --ch-chart-loss-fill: #e09a35;
 }
 
 /* W1 (owner's preview walk, 11 Nov 2026: "not a lot of contrast", "the text density makes it hard to read"; owner, 12 Nov:
@@ -1710,5 +1579,8 @@ html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='d
     --ch-type-14-medium: 560 calc(14 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
     --ch-type-15: 450 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
     --ch-type-15-medium: 560 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-footnote: 560 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-caption: 560 calc(13 * var(--ch-type-k))/calc(17 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-callout: 560 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
   }
 }

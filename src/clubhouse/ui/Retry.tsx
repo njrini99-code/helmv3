@@ -1,7 +1,7 @@
 'use client';
 
 import { RotateCw } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Button } from './Button';
 import { haptic } from '../lib/haptics';
 import { isOffline } from '../lib/use-action';
@@ -9,6 +9,23 @@ import { useRefresh } from '../lib/use-refresh';
 
 /** CH-1905: Try again while offline would fail the same way, so it says this instead. */
 export const OFFLINE_LINE = 'You’re offline. Reconnect, then try again.';
+
+const onConnection = (change: () => void) => {
+  window.addEventListener('online', change);
+  window.addEventListener('offline', change);
+  return () => {
+    window.removeEventListener('online', change);
+    window.removeEventListener('offline', change);
+  };
+};
+
+/**
+ * The browser says it has no network, kept current by the `online` and `offline` events (what the offline banner hears,
+ * CH-1901). False on the server and while hydrating, so the first client frame matches the server's.
+ */
+export function useIsOffline(): boolean {
+  return useSyncExternalStore(onConnection, isOffline, () => false);
+}
 
 /**
  * Try again for a failed read, shared by the notice (InlineNotice) and the page failure (EmptyState tone="danger"). A

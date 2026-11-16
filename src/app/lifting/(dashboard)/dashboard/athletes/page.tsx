@@ -16,6 +16,9 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveLiftingAccess } from '@/lib/lifting/access';
 import { AthleteRosterClient } from '@/components/lifting/athletes/AthleteRosterClient';
 import type { HelmLiftingAthleteRow, HelmLiftingCoachAssignmentRow } from '@/lib/types';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Athletes' };
 
 // ---------------------------------------------------------------------------
 // Helper — resolve the org for the current authenticated lifting coach/viewer

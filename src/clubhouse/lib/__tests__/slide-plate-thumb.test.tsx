@@ -1,12 +1,13 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CH_SPRING } from '../motion';
+import { CH_DUR, CH_EASE_IOS } from '../motion';
 import { bezierEase, CH_THUMB, useSlidePlate } from '../slide-plate';
 
 /**
- * MOT-X-2 / MOT-LIST-4: Messages' filter thumb slides for 360 ms on the overshooting CSS spring `(.34, 1.3, .64, 1)`,
- * and jumps under Reduce Motion.
+ * MOT-X-2 / MOT-LIST-4, then MOTION-AND-VISUAL 3.3 and 4.2: every segmented thumb slides over the base beat (260 ms) on
+ * the iOS curve, with no overshoot. Under Reduce Motion it fades in at its new place over 180 ms (3.11; it jumped before);
+ * with Animations off it is simply there.
  */
 type Played = { keyframes: Keyframe[]; options: KeyframeAnimationOptions };
 let played: Played[] = [];
@@ -51,32 +52,45 @@ function Thumb({ chosen, reduced = false }: { chosen: string; reduced?: boolean 
 const settle = () => act(async () => void (await new Promise((r) => setTimeout(r, 40))));
 
 describe('the filter thumb', () => {
-  it('is 360 ms on the (.34, 1.3, .64, 1) curve', async () => {
+  it('is the base beat on the iOS curve (S3.1, MOT-08)', async () => {
     const { rerender } = render(<Thumb chosen="a" />);
     await settle();
     rerender(<Thumb chosen="b" />);
     expect(played).toHaveLength(1);
     expect(played[0]!.options.duration).toBe(CH_THUMB.ms);
-    expect(CH_THUMB.ms).toBe(360);
-    expect(played[0]!.options.easing).toBe(`cubic-bezier(${CH_SPRING.join(', ')})`);
+    expect(CH_THUMB.ms).toBe(CH_DUR.base * 1000);
+    expect(played[0]!.options.easing).toBe('cubic-bezier(0.32, 0.72, 0, 1)');
     // It starts where it was (the old option's left edge) and ends at rest.
     expect(played[0]!.keyframes[0]).toMatchObject({ transform: 'translate(-100px, 0px)' });
     expect(played[0]!.keyframes[1]).toMatchObject({ transform: 'none' });
   });
 
-  it('overshoots once and settles: the curve passes 1 and ends on 1', () => {
-    const ease = bezierEase(CH_SPRING);
+  it('never passes its mark: no overshoot on a tap (S3.11)', () => {
+    const ease = bezierEase(CH_EASE_IOS);
     expect(ease(0)).toBeCloseTo(0, 3);
     expect(ease(1)).toBeCloseTo(1, 3);
     const samples = Array.from({ length: 100 }, (_, i) => ease((i + 1) / 100));
-    expect(Math.max(...samples)).toBeGreaterThan(1.02);
-    expect(Math.max(...samples)).toBeLessThan(1.1);
+    expect(Math.max(...samples)).toBeLessThanOrEqual(1);
   });
 
-  it('jumps under Reduce Motion', async () => {
+  it('fades in at its new place under Reduce Motion, over 180 ms, with no travel (3.11)', async () => {
     const { rerender } = render(<Thumb chosen="a" reduced />);
     await settle();
     rerender(<Thumb chosen="c" reduced />);
-    expect(played).toHaveLength(0);
+    expect(played).toHaveLength(1);
+    expect(played[0]!.keyframes).toEqual([{ opacity: 0 }, { opacity: 1 }]);
+    expect(played[0]!.options).toMatchObject({ duration: 180, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' });
+  });
+
+  it('jumps with Animations off', async () => {
+    document.documentElement.setAttribute('data-motion', 'off');
+    try {
+      const { rerender } = render(<Thumb chosen="a" reduced />);
+      await settle();
+      rerender(<Thumb chosen="c" reduced />);
+      expect(played).toHaveLength(0);
+    } finally {
+      document.documentElement.removeAttribute('data-motion');
+    }
   });
 });

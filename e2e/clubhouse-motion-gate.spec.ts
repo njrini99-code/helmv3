@@ -3,17 +3,21 @@ import { appendFile, mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { GATE_SCREENS } from './clubhouse-gate/screens';
 import { MOTION_KNOWN } from './clubhouse-gate/motion-known';
-import { judgeMotion, motionTokens, type MotionRow } from './clubhouse-gate/motion';
+import { judgeIdle, judgeMotion, motionTokens, type IdleRow, type MotionRow } from './clubhouse-gate/motion';
 
 /**
  * The motion gate: what actually animates on each gate screen in WebKit at phone width (tier W), read from the browser's
  * own animation list on every frame from the first one, and judged against the motion doctrine (D-64,
  * `.claude/rules/clubhouse.md`):
  *   - layout:    nothing animates a layout property (width, height, top, margin, padding, font-size, gap, ...);
- *   - token:     every finite animation runs for a `--ch-dur-*` duration from tokens.css;
+ *   - token:     every finite animation runs for one of the six vocabulary durations (3.2: press 110, quick 180, base 260,
+ *                release 280, marks 360, reveal 520);
  *   - first-paint: a screen opening paints at once: no finite animation other than the whole-page crossfade, and no
  *                stagger (a delayed entrance) on first paint (Q-153, "no routine staggers");
- *   - reduced:   under Reduce Motion nothing finite runs at all, and the loops stop (`--ch-dur-*` are 0 there).
+ *   - reduced:   under Reduce Motion every travel is a 180 ms opacity fade (MOTION-AND-VISUAL 3.11): on first paint nothing
+ *                runs but the page crossfade, on an interaction only that fade, and the loops stop;
+ *   - idle:      after load and a second of idle nothing runs at all, loops included (3.1: content never moves on its own;
+ *                the working dots run only while work runs).
  * Then every popup kind is opened on the popup lab (sheets, the modal, the action sheet: the motion people see most) and
  * what its opening animates is judged the same way, without the first-paint rule.
  * A screen's known breaks are in `clubhouse-gate/motion-known.ts`; a new one fails, and the list only shrinks.
@@ -122,6 +126,33 @@ async function record(page: Page, url: string, tap: string | undefined): Promise
   });
 }
 
+/** What still runs a second after `record` has finished watching (load, hydration and WATCH_MS already passed). */
+async function idleRows(page: Page): Promise<IdleRow[]> {
+  await page.waitForTimeout(1000);
+  return page.evaluate(() => {
+    const describe = (el: Element | null | undefined) => {
+      if (!el || el.nodeType !== 1) return String(el);
+      const cls = (el.getAttribute('class') || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((c) => `.${c}`).join('');
+      return `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ''}${cls}`;
+    };
+    return document
+      .getAnimations()
+      .filter((a) => a.playState === 'running')
+      .map((a) => {
+        const effect = a.effect as KeyframeEffect | null;
+        const named = a as Animation & { animationName?: string; transitionProperty?: string };
+        const iterations = effect?.getComputedTiming?.().iterations;
+        return {
+          kind: a.constructor.name,
+          name: named.animationName || named.transitionProperty || a.id || '',
+          target: describe(effect?.target as Element | null),
+          pseudo: effect?.pseudoElement ?? null,
+          iterations: iterations === Infinity ? ('infinite' as const) : (iterations ?? 1),
+        };
+      });
+  });
+}
+
 /**
  * A new break fails. A known break that did not show this run is noted, not failed: some of them depend on timing (a
  * Reduce Motion fade can land before or after the window opens), so absence in one run is not proof of a fix. Delete a
@@ -150,9 +181,21 @@ for (const reduced of [false, true]) {
           await appendFile(process.env.CH_MOTION_REPORT, `${JSON.stringify({ screen: screen.id, reduced, rows })}\n`);
         }
         const key = `${screen.id}|${reduced ? 'reduce' : 'motion'}`;
-        expectKnown(key, judgeMotion(rows, { reduced, tokens }));
+        const idle = judgeIdle(await idleRows(page));
+        expectKnown(key, [...judgeMotion(rows, { reduced, tokens }), ...idle].sort());
       });
     }
+
+    // A window change on Stats (3.7): the marks glide over 360 ms, the thumb slides over 260; under Reduce Motion only a
+    // 180 ms fade. The player's own Stats fixture, the window switch pressed the way a person presses it.
+    test(`STATS window change ${reduced ? 'reduce' : 'motion'} @motion`, async ({ page }) => {
+      await record(page, '/clubhouse-preview/player', undefined);
+      const choice = page.getByRole('radio', { name: 'Last 5', exact: true }).first();
+      if (!(await choice.count())) test.skip(true, 'the player Stats fixture has no Last 5 choice');
+      const rows = await watch(page, 1200, () => choice.click());
+      if (process.env.CH_MOTION_REPORT) await appendFile(process.env.CH_MOTION_REPORT, `${JSON.stringify({ screen: 'stats-window', reduced, rows })}\n`);
+      expectKnown(`stats-window|${reduced ? 'reduce' : 'motion'}`, judgeMotion(rows, { reduced, tokens, phase: 'interaction' }));
+    });
 
     // The popups, opened the way a person opens them (the button), each in a fresh lab so nothing is mid-exit.
     for (const kind of ['Modal', 'FormSheet', 'ListSheet', 'PickerSheet', 'ActionSheet', 'RecFormSheet', 'RecPickSheet', 'RecActionSheet']) {

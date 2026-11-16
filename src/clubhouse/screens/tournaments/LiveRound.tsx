@@ -15,6 +15,7 @@ import { Menu } from '../../ui/Menu';
 import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
+import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
@@ -191,20 +192,31 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
         </div>
       )}
       {data.errors.holes && <InlineNotice code="CH-16271" title="Some live scores didn’t load" body="Entered totals are unaffected. Holes from GolfHelm rounds are left out for now." onRetry={refresh} retrying={refreshing} />}
-      {!nobody && <TeamLine data={data} />}
+      {!nobody && (
+        // GAP-S-10: each part of the live round is its own section, so one that crashes leaves the lanes and scoring working.
+        <SectionBoundary surface="tournaments.live.team" label="The team line" code="CH-16294">
+          <TeamLine data={data} />
+        </SectionBoundary>
+      )}
       {nobody ? (
         <EmptyState size="page" kind="first-run" code="CH-16370" title="Nobody is in this round yet" body="Set the lineup, then the lanes show here as scores come in." action={<Button href={paths.lineup(e.id)}>Open the lineup</Button>} />
       ) : (
         <div className="ch-tour-live-body">
           <Section id="ch-tour-live-lineup" title="Lineup" meta={`${e.format.counting} of ${e.format.players} count`}>
-            <Lanes lanes={lineup} nameOf={(id) => player(id)?.name ?? 'Player'} phone={phone} onEnter={setEntering} onHoles={canHole ? setByHole : undefined} editable={r.status !== 'official'} />
+            <SectionBoundary surface="tournaments.live.lineup" label="The lineup" code="CH-16294">
+              <Lanes lanes={lineup} nameOf={(id) => player(id)?.name ?? 'Player'} phone={phone} onEnter={setEntering} onHoles={canHole ? setByHole : undefined} editable={r.status !== 'official'} />
+            </SectionBoundary>
           </Section>
           {individuals.length > 0 && (
             <Section id="ch-tour-live-ind" title="Individuals" meta="Play for themselves; never count toward the team">
-              <Lanes lanes={individuals} nameOf={(id) => player(id)?.name ?? 'Player'} phone={phone} onEnter={setEntering} onHoles={canHole ? setByHole : undefined} editable={r.status !== 'official'} />
+              <SectionBoundary surface="tournaments.live.individuals" label="The individuals" code="CH-16294">
+                <Lanes lanes={individuals} nameOf={(id) => player(id)?.name ?? 'Player'} phone={phone} onEnter={setEntering} onHoles={canHole ? setByHole : undefined} editable={r.status !== 'official'} />
+              </SectionBoundary>
             </Section>
           )}
-          <Field data={data} />
+          <SectionBoundary surface="tournaments.live.field" label="The field" code="CH-16294">
+            <Field data={data} />
+          </SectionBoundary>
         </div>
       )}
       {byHole && (

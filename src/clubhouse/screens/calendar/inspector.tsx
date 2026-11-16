@@ -37,7 +37,7 @@ import { Badge, type BadgeTone } from '../../ui/Badge';
 import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
-import { InlineNotice } from '../../ui/Notices';
+import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
 import { PillGroup, Segmented, type SegOption } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
@@ -570,6 +570,11 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         {e.recurring && <Fact icon={Repeat}>{e.recurring}</Fact>}
         {e.notes && <Fact icon={Text}>{e.notes}</Fact>}
       </div>
+      {e.planFailed && (
+        <div className="ch-in__sec">
+          <InlineNotice code="CH-6290" title="The practice plan didn’t load" body={FAILURE_COPY.page} onRetry={ctx.refresh} covered={ctx.covered} />
+        </div>
+      )}
       {e.plan && (coach || e.plan.state !== 'none') && (
         <div className="ch-in__sec ch-in__plan">
           <span className="ch-in__plan-s">{PLAN_WORD[e.plan.state]}</span>

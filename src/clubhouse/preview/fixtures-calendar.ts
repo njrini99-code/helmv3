@@ -155,3 +155,5 @@ export const PREVIEW_CALENDAR_EMPTY: ChCalendarData = { ...PREVIEW_CALENDAR, eve
 export const PREVIEW_CALENDAR_FIRST: ChCalendarData = { ...PREVIEW_CALENDAR, events: [], firstRun: true };
 export const PREVIEW_CALENDAR_FAILED: ChCalendarData = { ...PREVIEW_CALENDAR, events: [], eventsError: true };
 export const PREVIEW_CALENDAR_PARTIAL: ChCalendarData = { ...PREVIEW_CALENDAR, rsvpError: true, classesError: true, events: events.filter((e) => e.type !== 'class').map((e) => ({ ...e, rsvp: {} })) };
+/** GAP-S-28 (CH-6290): the practices' plans didn't read. Each practice's sheet says so where its plan would be (open &event=e3). */
+export const PREVIEW_CALENDAR_PLAN_FAILED: ChCalendarData = { ...PREVIEW_CALENDAR, plansError: true, events: PREVIEW_CALENDAR.events.map((e) => (e.type === 'practice' ? { ...e, planFailed: true as const } : e)) };

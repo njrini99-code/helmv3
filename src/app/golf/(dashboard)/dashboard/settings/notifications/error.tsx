@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/settings/notifications"
       component="NotificationSettingsPage"
-      title="Failed to load notification settings"
-      message="We couldn't load notification settings. Please try again."
       homePath="/golf/dashboard/settings"
     />
   );

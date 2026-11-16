@@ -1,14 +1,44 @@
+'use client';
+
+import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '../../ui/States';
 import '../../styles/settings.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
+import { useClubhouseRole } from '../../shell/context';
+import { parseSection, SECTIONS, type ChSettingsSection } from './model';
+
+/** Each section's cards, as rows per card, so a section's skeleton holds about the room the section takes. */
+const SHAPE: Record<ChSettingsSection, number[]> = {
+  account: [4, 2, 2],
+  notifications: [2, 4],
+  team: [3, 3],
+  golf: [4, 1],
+  coachhelm: [3, 4],
+  preferences: [5],
+};
 
 /**
- * Route skeleton: the header, the rail and two cards, in the page's own geometry. On a phone, the list's title,
- * identity row and rows (switched in CSS, since this renders on the server).
+ * The route's loading.tsx. `?section=` (or the route's own section: Notifications, a coach's CoachHelm) decides which
+ * section the skeleton draws: marked on the desktop's rail with its cards, and on a phone pushed open, as Settings opens a
+ * section the address names, instead of the list (GAP-S-17).
  */
-export function SettingsSkeleton() {
+export function SettingsRouteSkeleton({ section }: { section?: ChSettingsSection } = {}) {
+  const role = useClubhouseRole() === 'player' ? 'player' : 'coach';
+  const query = useSearchParams().get('section');
+  const asked = section ?? query;
+  const parsed = parseSection(asked, role);
+  return <SettingsSkeleton role={role} section={parsed} opened={asked === parsed} />;
+}
+
+/**
+ * Route skeleton: the header, the rail and the section's cards, in the page's own geometry. On a phone, the list's
+ * title, identity row and rows, or the section the address opened (switched in CSS, since this renders on the server).
+ */
+export function SettingsSkeleton({ role = 'coach', section = 'account', opened = false }: { role?: 'coach' | 'player'; section?: ChSettingsSection; opened?: boolean } = {}) {
+  const rail = SECTIONS[role];
+  const cards = SHAPE[section];
   return (
-    <main className="ch-set" data-canopy="" aria-busy="true" aria-label="Loading settings" data-ch-code="CH-8401">
+    <main className="ch-set" data-canopy="" aria-busy="true" aria-label="Loading settings" data-ch-code="CH-8401" data-section={section}>
       <div className="ch-set-skel-desk">
         <header className="ch-set-head" data-canopy-head="tight">
           <Skeleton width={170} height={40} radius={10} />
@@ -16,8 +46,8 @@ export function SettingsSkeleton() {
         </header>
         <div className="ch-set-layout">
           <div className="ch-set-rail ch-set-skel-rail" aria-hidden>
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="ch-set-rail__i">
+            {rail.map((s) => (
+              <div key={s.id} className={'ch-set-rail__i' + (s.id === section ? ' is-on' : '')}>
                 <Skeleton width={16} height={16} radius={5} />
                 <span style={{ display: 'grid', gap: 6, flex: 1 }}>
                   <Skeleton width="60%" height={13} />
@@ -27,7 +57,7 @@ export function SettingsSkeleton() {
             ))}
           </div>
           <div className="ch-set-stack" aria-hidden>
-            {[3, 2].map((rows, i) => (
+            {cards.map((rows, i) => (
               <div key={i} className="ch-surface">
                 <div className="ch-surface__head">
                   <div style={{ display: 'grid', gap: 8 }}>
@@ -53,7 +83,27 @@ export function SettingsSkeleton() {
       </div>
       {/* The phone's list in the live page's own classes (SettingsPhone): the title under its double rule, who you are,
           and the sections on their seams, so nothing moves when the list arrives. */}
-      <div className="ch-setm-skel" aria-hidden>
+      <div className="ch-setm-skel" aria-hidden data-opened={opened ? '' : undefined}>
+        {opened ? (
+          // The section the address opened, pushed as Settings pushes it: its title, then its groups' rows.
+          <div className="ch-setm-page">
+            <LargeTitleSkeleton width={150} className="ch-setm-title" />
+            {cards.map((rows, g) => (
+              <div key={g} className="ch-setm-group">
+                <div className="ch-setm-card">
+                  {Array.from({ length: rows }, (_, i) => (
+                    <div key={i} className="ch-setm-row" style={{ cursor: 'default' }}>
+                      <span className="ch-setm-row__l">
+                        <Skeleton width={130} height={14} />
+                      </span>
+                      <Skeleton width={60} height={12} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="ch-setm-page">
           <LargeTitleSkeleton width={150} className="ch-setm-title" />
           <div className="ch-setm-id" style={{ cursor: 'default' }}>
@@ -77,6 +127,7 @@ export function SettingsSkeleton() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </main>
   );

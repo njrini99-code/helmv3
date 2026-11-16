@@ -17,7 +17,7 @@ vi.mock('../lib/session-state', async () => {
 });
 
 import { passage, toWhatsNew, WHATS_NEW_FAILED } from '../data/whats-new-shape';
-import { PREVIEW_WHATS_NEW, PREVIEW_WHATS_NEW_EMPTY, PREVIEW_WHATS_NEW_TRUNCATED } from '../preview/fixtures-whats-new';
+import { PREVIEW_WHATS_NEW, PREVIEW_WHATS_NEW_EMPTY, PREVIEW_WHATS_NEW_NO_TEAM, PREVIEW_WHATS_NEW_PARTIAL, PREVIEW_WHATS_NEW_TRUNCATED } from '../preview/fixtures-whats-new';
 import { WhatsNew, whatsNewLink } from '../screens/whats-new/WhatsNew';
 import { WhatsNewSkeleton } from '../screens/whats-new/WhatsNewSkeleton';
 
@@ -115,6 +115,28 @@ describe('WhatsNew', () => {
   it('CH-13231 never passes a failed read off as a quiet week', () => {
     render(<WhatsNew data={WHATS_NEW_FAILED} />);
     expect(screen.getByText('What’s new didn’t load')).toBeTruthy();
+    expect(screen.queryByText('Nothing new this week')).toBeNull();
+  });
+
+  it('CH-13285 draws what loaded and names the kind that didn’t, never a 0 count or an empty week (GAP-S-02)', () => {
+    render(<WhatsNew data={PREVIEW_WHATS_NEW_PARTIAL} />);
+    expect(screen.getByText('Some updates didn’t load')).toBeTruthy();
+    expect(screen.getByText(/^Patterns couldn’t be read just now/)).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Patterns —' })).toBeTruthy();
+    expect(screen.getByText('Short putts inside six feet')).toBeTruthy();
+    expect(screen.queryByText('Nothing new this week')).toBeNull();
+  });
+
+  it('CH-13285 with nothing loaded in the kinds that answered still never says the week was quiet', () => {
+    render(<WhatsNew data={toWhatsNew([], { nowMs: NOW, failed: ['insights', 'patterns'] })} />);
+    expect(screen.getByText(/^Insights and patterns couldn’t be read just now/)).toBeTruthy();
+    expect(screen.queryByText('Nothing new this week')).toBeNull();
+  });
+
+  it('CH-13385 a coach with no team gets the shared NoTeam state, not an empty week (GAP-S-36)', () => {
+    render(<WhatsNew data={PREVIEW_WHATS_NEW_NO_TEAM} />);
+    expect(document.querySelector('[data-ch-code="CH-13385"]')).toBeTruthy();
+    expect(screen.getByText('You aren’t on a team yet')).toBeTruthy();
     expect(screen.queryByText('Nothing new this week')).toBeNull();
   });
 

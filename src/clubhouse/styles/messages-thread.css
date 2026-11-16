@@ -81,9 +81,9 @@
   top: var(--ch-ms-pill-top);
   padding: 4px var(--ch-ms-px-10);
   background: var(--ch-glass-strong);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(160%);
-  font: var(--ch-type-13-medium);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
   transition: opacity var(--ch-dur-msg-pill-out) linear;
 }
@@ -136,7 +136,7 @@
   padding: var(--ch-ms-px-3) var(--ch-ms-px-9);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-flag);
 }
@@ -185,15 +185,12 @@
   color: var(--ch-text-tertiary);
 }
 
-/* MOT-R: under Reduce Motion the typing bubble fades in instead of growing; its dots hold still at full opacity (MSG-003). */
+/* MOT-R: under Reduce Motion the typing bubble fades in over the quick beat instead of growing (motion.css ch-in,
+   MOTION-AND-VISUAL 3.11); its dots hold still at full opacity (MSG-003). */
 @media (prefers-reduced-motion: reduce) {
   [data-ch-ms-v2] .ch-msv-typing {
-    animation: ch-msv-fade var(--ch-dur-crossfade-rm) linear both;
-  }
-}
-@keyframes ch-msv-fade {
-  from {
-    opacity: 0;
+    --ch-rm-animation: var(--ch-dur-quick);
+    animation: ch-in var(--ch-dur-quick) linear both;
   }
 }
 
@@ -338,8 +335,8 @@ body [data-ch-ms-v2] .ch-pscreen.ch-msp-thread[data-fw-keyboard-aware][data-ch-v
   padding: 10px 14px;
   border-bottom: 0;
   background: var(--ch-glass);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
-  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
 }
 [data-ch-ms-v2] .ch-ms-thread.is-layered > .ch-ms-th::after {
   content: '';

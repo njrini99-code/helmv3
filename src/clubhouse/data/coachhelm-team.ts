@@ -319,15 +319,19 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     return out;
   });
 
-  // The streamed parts above are started first; the Tour comparison (whose read began with the rounds) is the last thing awaited.
-  const standings = await standingsRead;
-  const against: ChTourRow[] | null = standings
-    ? TOUR_ROWS.map((id) => {
-        const rows = ids.map((pid) => standings.get(pid)?.get(id as never)).filter((s): s is NonNullable<typeof s> => s != null && s.player_value != null);
-        const tourValue = rows.find((s) => s.pga_value != null && !s.pga_omitted)?.pga_value ?? null;
-        return { id, team: rows.length ? rows.reduce((a, s) => a + (s.player_value as number), 0) / rows.length : null, tour: tourValue, n: rows.length };
-      })
-    : null;
+  // The Tour comparison (whose read began with the rounds) is handed over unawaited, like the parts above: the board draws it in
+  // its own Suspense when it lands, so the standings read never holds the hole back (N13-13). A failed read is null (undrawn).
+  const against: Promise<ChTourRow[] | null> = handled(
+    standingsRead.then((standings) =>
+      standings
+        ? TOUR_ROWS.map((id) => {
+            const rows = ids.map((pid) => standings.get(pid)?.get(id as never)).filter((s): s is NonNullable<typeof s> => s != null && s.player_value != null);
+            const tourValue = rows.find((s) => s.pga_value != null && !s.pga_omitted)?.pga_value ?? null;
+            return { id, team: rows.length ? rows.reduce((a, s) => a + (s.player_value as number), 0) / rows.length : null, tour: tourValue, n: rows.length };
+          })
+        : null,
+    ),
+  );
 
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
   return {

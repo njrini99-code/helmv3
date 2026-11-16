@@ -265,14 +265,15 @@ that landed (C-17; busy time 2026-10-17).
 | 60683 | CH-6280 | `PRACTICE_HOURS_THE_WEEKS_EVENTS_DONT_LOAD` | Practice hours: the week's events don't load |
 | 60684 | CH-6281 | `PRACTICE_HOURS_ATTENDANCE_DOESNT_LOAD` | Practice hours: attendance doesn't load |
 | 60685 | CH-6282 | `PRACTICE_HOURS_THE_ROSTER_DOESNT_LOAD_COACH` | Practice hours: the roster doesn't load (coach) |
-| 60686 | CH-6283 | `PRACTICE_HOURS_THE_TEAMS_HOURS_TABLES_ARENT` | Practice hours: the team's hours tables aren't in the database yet (migration 20261115230000 held) |
+| 60686 | CH-6283 | `PRACTICE_HOURS_THE_TEAMS_HOURS_TABLES_ARENT` | Practice hours: the team's hours tables aren't in the database yet (migration 20261115232000 held) |
 | 60687 | CH-6284 | `PRACTICE_HOURS_THE_WEEKS_TABLE_OR_LIST` | Practice hours: the week's table or list crashes |
 | 60688 | CH-6285 | `PRACTICE_HOURS_THE_TEAMS_SAVED_LIMITS_DONT` | Practice hours: the team's saved limits don't load (coach; the tables are there) |
+| 60690 | CH-6290 | `A_PRACTICES_PLAN_READ_FAILS` | A practice's plan read fails (`readEventPlans` answers an error that is not "table missing"; GAP-S-28) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10609 CH-1208,
 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211,
-10615 CH-1270, 10616 CH-1271, 10617 CH-1004.
+10615 CH-1270, 10616 CH-1271, 10617 CH-1004, 10690 CH-1290.
 
 ## 07 — Network / offline
 
@@ -289,7 +290,7 @@ file stays, and the toast says nothing was changed (60701).
 | 60701 | — | `FILE_REMOVAL_REFUSES_OFFLINE` | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
