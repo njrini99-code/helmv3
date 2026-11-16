@@ -8,6 +8,7 @@ import { countsForScoring, type ChRound } from '../data/season';
 import { filterFor } from '../data/stats-filter';
 import { teamStrokesGainedOver } from '../data/team-sg';
 import { playerFiguresOver, teamFiguresOver } from '../data/player-figures';
+import { statsRowsOf } from './stats-rows';
 import { groupByPlayer } from '../data/season';
 import type { ChRoundCache } from '../data/stats-common';
 
@@ -102,7 +103,7 @@ describe('Ask’s team strokes gained is the figure Stats and Home print for the
 // players pooled, as Team Stats pools them; the player's own figure is the same calculation over his rounds, practice cut the same way.
 describe('Ask’s team figures are the pooled ones Stats prints, and a player’s are Stats’ own', () => {
   const f = filterFor('last10');
-  const team = teamFiguresOver(rounds, ids, f, START);
+  const team = teamFiguresOver(rounds, ids, f, START, statsRowsOf(rounds));
   const sg = teamStrokesGainedOver(rounds, ids, f, START);
 
   it('its strokes gained legs are teamStrokesGainedOver’s, to the last digit, and its rounds and players are the same', () => {
@@ -115,7 +116,7 @@ describe('Ask’s team figures are the pooled ones Stats prints, and a player’
 
   it('pools the rounds rather than averaging the players: the team’s number is not the mean of the players’ numbers', () => {
     const byPlayer = groupByPlayer(rounds.filter(countsForScoring));
-    const own = ids.map((id) => playerFiguresOver(byPlayer.get(id) ?? [], f, START)).filter((x) => x.legs.tee !== null);
+    const own = ids.map((id) => playerFiguresOver(byPlayer.get(id) ?? [], f, START, statsRowsOf(rounds))).filter((x) => x.legs.tee !== null);
     const mean = own.reduce((a, x) => a + (x.legs.tee as number), 0) / own.length;
     expect(team.legs.tee).toBeCloseTo((10 * -0.5 + 4 * 1 + 0.4 + 0.2 + 0.6) / 17, 9);
     expect(team.legs.tee).not.toBeCloseTo(mean, 2);
@@ -132,10 +133,10 @@ describe('Ask’s team figures are the pooled ones Stats prints, and a player’
   });
 
   it('a player’s own figure is Stats’: practice left out, the newest ten, nine-hole and total-only rounds as Stats treats them', () => {
-    const p3 = playerFiguresOver(rounds.filter((r) => r.player_id === 'p3'), f, START);
+    const p3 = playerFiguresOver(rounds.filter((r) => r.player_id === 'p3'), f, START, statsRowsOf(rounds));
     // The practice round (all 9s) is out of the window and of the figure.
     expect(p3.legs.tee).toBeCloseTo((0.4 + 0.2 + 0.6) / 3, 9);
-    const p1 = playerFiguresOver(rounds.filter((r) => r.player_id === 'p1'), f, START);
+    const p1 = playerFiguresOver(rounds.filter((r) => r.player_id === 'p1'), f, START, statsRowsOf(rounds));
     expect(p1.legs.tee).toBeCloseTo(-0.5, 9);
     expect(p1.rounds).toBe(10);
   });

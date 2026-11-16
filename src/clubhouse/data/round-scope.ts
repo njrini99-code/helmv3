@@ -1,4 +1,5 @@
 import { deriveRoundTotal, deriveScoreToPar } from '@/lib/golf/round-total';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { plural } from '../lib/plural';
 
 /*
@@ -15,6 +16,21 @@ import { plural } from '../lib/plural';
 
 // The rule itself lives in lib (shared with CoachHelm's program pulse); Clubhouse re-exports it.
 export { isScoreCountable, isTotalOnlyCountable } from '@/lib/golf/round-score-countable';
+
+/**
+ * A round's kind, or null when no type was recorded. One reading for every figure (DF-C-18: Home called a round with no type practice,
+ * the averages counted it and the pressure gap left it out). A round with no type is a scoring round of no named kind: it counts in
+ * the averages, never folds into an event's row, and sits on neither side of the pressure gap (named competition against practice).
+ * A type the app does not know reads as practice (`roundTypeFromDb`).
+ */
+export function roundKindOf(r: { round_type: string | null }): 'practice' | 'tournament' | 'qualifier' | null {
+  return r.round_type == null ? null : roundTypeFromDb(r.round_type);
+}
+
+/** Whether a round counts in the averages: every kind but practice, and a round with no type (`roundKindOf`). */
+export function countsInAverages(r: { round_type: string | null }): boolean {
+  return roundKindOf(r) !== 'practice';
+}
 
 /**
  * A loaded round that counts in the hole-level figures too. `loadSeasonRounds` marks the total-only ones (`total_only`); a round with no

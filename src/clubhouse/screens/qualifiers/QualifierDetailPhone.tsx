@@ -127,7 +127,7 @@ export function QualifierDetailPhone({
       />
       <header className="ch-qfm-head">
         <span className="ch-qfm-head__k">
-          <StatusPill status={status} ended={feed.ended} />
+          <StatusPill status={status} ended={feed.ended} viewer={coach ? 'coach' : 'player'} />
           <span className="ch-num">{shortRange(data.startDate, data.endDate)}</span>
         </span>
         <h1>

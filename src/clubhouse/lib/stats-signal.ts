@@ -24,6 +24,12 @@ export type SpreadKind = keyof typeof POOLED_SD;
 /** Rounds in each window a player needs before their own spread replaces the pooled one. */
 export const OWN_SD_MIN_ROUNDS = 5;
 
+/**
+ * The points with a value a trend needs before it reads a change: two a half (stats and charts audit 2026-11-15, CH-10). With three,
+ * the middle point sat in neither half, so "better over these weeks" was the last week against the first.
+ */
+export const MIN_TREND_POINTS = 4;
+
 /** A spread under this is not a measurement: no player's rounds repeat to a twentieth of a stroke. */
 const MIN_OWN_SD = 0.05;
 

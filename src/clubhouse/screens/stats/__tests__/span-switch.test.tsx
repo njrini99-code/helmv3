@@ -17,7 +17,7 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn() }));
 vi.mock('@/app/golf/actions/stats-data', () => ({ getDetailedStats: vi.fn(), getSprayChartData: vi.fn() }));
 
 import { filterFor, parseFilter, withScope, withSpan, type ChFilter } from '../../../data/stats-filter';
-import { HomeSpanSwitch, spanHref } from '../../home/HomeSpanSwitch';
+import { HomeSpanSwitch, formWindowHref } from '../../home/HomeSpanSwitch';
 import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../../../preview/fixtures-stats';
 import { CrumbProvider } from '../../../shell/crumbs';
 import { ToastProvider } from '../../../ui/Toast';
@@ -50,35 +50,46 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe('the address for a span', () => {
-  it('All time sets ?range=all and keeps the rest; the season removes it and writes nothing for the default', () => {
-    expect(spanHref('/golf/dashboard', '', 'all')).toBe('/golf/dashboard?range=all');
-    expect(spanHref('/golf/dashboard', 'tab=x&range=all', 'season')).toBe('/golf/dashboard?tab=x');
-    expect(spanHref('/golf/dashboard', 'range=all', 'season')).toBe('/golf/dashboard');
-    expect(spanHref('/golf/dashboard', 'tab=x', 'all')).toBe('/golf/dashboard?tab=x&range=all');
+describe('the address for Team scoring’s window', () => {
+  it('Season and All time set ?range= and keep the rest; Last 10 removes it and writes nothing for the default', () => {
+    expect(formWindowHref('/golf/dashboard', '', 'all')).toBe('/golf/dashboard?range=all');
+    expect(formWindowHref('/golf/dashboard', '', 'season')).toBe('/golf/dashboard?range=season');
+    expect(formWindowHref('/golf/dashboard', 'tab=x&range=all', 'last10')).toBe('/golf/dashboard?tab=x');
+    expect(formWindowHref('/golf/dashboard', 'range=season', 'last10')).toBe('/golf/dashboard');
+    expect(formWindowHref('/golf/dashboard', 'tab=x', 'all')).toBe('/golf/dashboard?tab=x&range=all');
   });
 });
 
 describe('Home’s switch', () => {
-  it('shows the span the page was read on, and the default by default: "Last 10", what Team scoring reads (F-0002, never "This season")', () => {
-    render(shell(<HomeSpanSwitch span="season" />));
+  // Prod audit 2026-11-15, HOME-P-10: Last 10, Season and All time, the choices Stats offers for this figure.
+  it('offers Last 10, Season and All time, and shows the window the page was read on (Last 10 by default, never "This season")', () => {
+    render(shell(<HomeSpanSwitch value="last10" />));
+    const group = screen.getByRole('radiogroup', { name: 'Rounds shown' });
+    expect([...group.querySelectorAll('[role="radio"]')].map((r) => r.getAttribute('aria-label') ?? r.textContent)).toEqual(['Last 10', 'Season', 'All time']);
     expect(radio('This season')).toBeNull();
     expect(radio('Last 10')!.getAttribute('aria-checked')).toBe('true');
     expect(radio('All time')!.getAttribute('aria-checked')).toBe('false');
     cleanup();
-    render(shell(<HomeSpanSwitch span="all" />));
+    render(shell(<HomeSpanSwitch value="season" />));
+    expect(radio('Season')!.getAttribute('aria-checked')).toBe('true');
+    cleanup();
+    render(shell(<HomeSpanSwitch value="all" />));
     expect(radio('All time')!.getAttribute('aria-checked')).toBe('true');
   });
 
-  it('choosing All time goes to ?range=all on this page, keeping its other params; choosing Last 10 goes back without it', async () => {
+  it('choosing a window goes to its address on this page, keeping its other params; choosing Last 10 goes back without it', async () => {
     const user = userEvent.setup();
     window.history.replaceState(null, '', '/golf/dashboard?tab=x');
-    const { rerender } = render(shell(<HomeSpanSwitch span="season" />));
+    const { rerender } = render(shell(<HomeSpanSwitch value="last10" />));
     await user.click(radio('All time')!);
     expect(lastPush()).toEqual(['/golf/dashboard?tab=x&range=all', { scroll: false }]);
     // The page answers on the new address; the same switch, now on All time.
     window.history.replaceState(null, '', '/golf/dashboard?tab=x&range=all');
-    rerender(shell(<HomeSpanSwitch span="all" />));
+    rerender(shell(<HomeSpanSwitch value="all" />));
+    await user.click(radio('Season')!);
+    expect(lastPush()).toEqual(['/golf/dashboard?tab=x&range=season', { scroll: false }]);
+    window.history.replaceState(null, '', '/golf/dashboard?tab=x&range=season');
+    rerender(shell(<HomeSpanSwitch value="season" />));
     await user.click(radio('Last 10')!);
     expect(lastPush()).toEqual(['/golf/dashboard?tab=x', { scroll: false }]);
   });
@@ -149,14 +160,21 @@ describe('Coach Home’s Team scoring card', () => {
     avg: 75.6, delta: null, line: [75, 76, 75.5], roundsThisWeek: 2, basis: { rounds: 13, from: '2024-03-01', to: '2026-10-14', girRounds: 13, puttsRounds: 13 },
     gir: { pct: 60, delta: null }, putts: { avg: 31, delta: null },
   };
-  it('names the window it shows: each player’s last 10 by default, every round on All time', () => {
+  // Prod audit 2026-11-15, HOME-P-11: "Average · each player’s last 10" ran lowercase after a dot. The label is "Average" and the
+  // window is said once, as Stats says it, beside the dates.
+  it('names the window it shows: each player’s last 10 by default, this season on Season, every round on All time', () => {
     render(shell(<Form form={form} />));
-    expect(screen.getByText(/each player’s last 10/)).not.toBeNull();
+    expect(document.getElementById('ch-hm-form')!.textContent).toBe('Average');
+    expect(document.querySelector('.ch-hm-form__basis')!.textContent).toMatch(/^Each player’s last 10 · /);
     // F-0002: the pill names the same window as the figure under it.
     expect(radio('Last 10')!.getAttribute('aria-checked')).toBe('true');
     cleanup();
-    render(shell(<Form form={{ ...form, span: 'all' }} />));
-    expect(screen.getByText(/every round, all time/)).not.toBeNull();
+    render(shell(<Form form={{ ...form, window: 'season' }} />));
+    expect(document.querySelector('.ch-hm-form__basis')!.textContent).toMatch(/^This season · /);
+    expect(radio('Season')!.getAttribute('aria-checked')).toBe('true');
+    cleanup();
+    render(shell(<Form form={{ ...form, window: 'all' }} />));
+    expect(document.querySelector('.ch-hm-form__basis')!.textContent).toMatch(/^All time, every round · /);
     expect(radio('All time')!.getAttribute('aria-checked')).toBe('true');
   });
 });

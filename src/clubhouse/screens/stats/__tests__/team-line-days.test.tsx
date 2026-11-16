@@ -14,15 +14,17 @@ describe('the team scoring line (W26)', () => {
     expect(straightPath([[0, 10]])).toBe('');
   });
 
-  it('leaves a one-round day off the team line, as a hollow dot', () => {
+  // Prod audit 2026-11-15, STATS-P-05 (spec S2.4): with one-round days left off the line, only the last three points were joined and
+  // the rest floated. The line joins every day in the window; a one-round day is a hollow dot on it.
+  it('joins every day, and marks a one-round day hollow on the line', () => {
     const r = teamLineDays([{ n: 6 }, { n: 1 }, { n: 5 }, { n: 4 }]);
-    expect(r.line).toEqual([0, 2, 3]);
+    expect(r.line).toEqual([0, 1, 2, 3]);
     expect([...r.one]).toEqual([1]);
   });
 
-  it('joins every day when fewer than two had the team out, and reads a day with no count as a team day', () => {
-    expect(teamLineDays([{ n: 1 }, { n: 1 }, { n: 3 }])).toEqual({ line: [0, 1, 2], one: new Set() });
-    expect(teamLineDays([{}, { n: 1 }, {}]).line).toEqual([0, 2]);
+  it('reads a day with no count as a team day, and a nine-hole round as half', () => {
+    expect(teamLineDays([{ n: 1 }, { n: 1 }, { n: 3 }])).toEqual({ line: [0, 1, 2], one: new Set([0, 1]) });
+    expect(teamLineDays([{}, { n: 1 }, {}])).toEqual({ line: [0, 1, 2], one: new Set([1]) });
     // A day of one nine-hole round counts as half a round: still one player's day.
     expect([...teamLineDays([{ n: 3 }, { n: 0.5 }, { n: 4 }]).one]).toEqual([1]);
   });
@@ -42,7 +44,7 @@ describe('the team scoring line (W26)', () => {
     expect(container.querySelectorAll('.ch-shs-rdot.is-one')).toHaveLength(1);
     const d = container.querySelector('.ch-shs-avgline')!.getAttribute('d')!;
     expect(d).not.toMatch(/[CQS]/);
-    expect(d.match(/L/g)).toHaveLength(2);
+    expect(d.match(/L/g)).toHaveLength(3);
     expect(container.textContent).toContain('Round-day avg 75.3');
   });
 

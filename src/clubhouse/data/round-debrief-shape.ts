@@ -78,8 +78,10 @@ function meanSd(xs: readonly number[]): { mean: number; sd: number } {
 interface Candidate {
   /** This round's value. */
   x: number;
-  /** The same measure on each earlier round that has it. */
+  /** The same measure on each earlier round that has it (the spread is theirs). */
   past: number[];
+  /** A rate's average pooled over the earlier rounds' chances (made over chances, never a mean of each round's percentage); a count's is the mean of `past`. */
+  pooled?: number;
   lowerIsBetter: boolean;
   value: string;
   said: (mean: number) => string;
@@ -94,10 +96,11 @@ export function movedNumber(r: ChRoundReview, history: readonly ChDebriefHistory
   const rows = history.slice(0, DEBRIEF_HISTORY_MAX);
   const over = (n: number) => `Your average over your last ${n} rounds`;
   const cands: Candidate[] = [];
-  if (r.putts != null)
+  // A putt count of 0 is "not recorded", never a round holed in no putts (`cachedPutts`): neither this round's nor an earlier one's counts.
+  if (r.putts != null && r.putts > 0)
     cands.push({
       x: r.putts,
-      past: rows.map((h) => h.total_putts).filter((v): v is number => v != null),
+      past: rows.map((h) => h.total_putts).filter((v): v is number => v != null && v > 0),
       lowerIsBetter: true,
       value: `${r.putts} putts`,
       said: (m) => `: ${fix1(m)}.`,
@@ -110,10 +113,18 @@ export function movedNumber(r: ChRoundReview, history: readonly ChDebriefHistory
       value: `${formatToPar(r.toPar)} to par`,
       said: (m) => `: ${formatToPar(Number(m.toFixed(1)))}.`,
     });
+  const pooledPct = (made: readonly (number | null)[], of: readonly (number | null)[]) => {
+    const m = made.reduce<number>((a, v) => a + (v ?? 0), 0);
+    const o = of.reduce<number>((a, v) => a + (v ?? 0), 0);
+    return o > 0 ? (m / o) * 100 : undefined;
+  };
+  const fwRows = rows.filter((h) => h.total_fairways && h.total_fairways > 0);
+  const girRows = rows.filter((h) => h.total_gir_possible && h.total_gir_possible > 0);
   if (r.fairways && r.fairways.of > 0)
     cands.push({
       x: pctOf(r.fairways.hit, r.fairways.of),
-      past: rows.filter((h) => h.total_fairways && h.total_fairways > 0).map((h) => pctOf(h.total_fairways_hit ?? 0, h.total_fairways as number)),
+      past: fwRows.map((h) => pctOf(h.total_fairways_hit ?? 0, h.total_fairways as number)),
+      pooled: pooledPct(fwRows.map((h) => h.total_fairways_hit), fwRows.map((h) => h.total_fairways)),
       lowerIsBetter: false,
       value: `${r.fairways.hit} of ${r.fairways.of} fairways`,
       said: (m) => `: ${Math.round(m)}% of fairways (${pctOf(r.fairways!.hit, r.fairways!.of)}% today).`,
@@ -121,7 +132,8 @@ export function movedNumber(r: ChRoundReview, history: readonly ChDebriefHistory
   if (r.greens && r.greens.of > 0)
     cands.push({
       x: pctOf(r.greens.hit, r.greens.of),
-      past: rows.filter((h) => h.total_gir_possible && h.total_gir_possible > 0).map((h) => pctOf(h.total_gir ?? 0, h.total_gir_possible as number)),
+      past: girRows.map((h) => pctOf(h.total_gir ?? 0, h.total_gir_possible as number)),
+      pooled: pooledPct(girRows.map((h) => h.total_gir), girRows.map((h) => h.total_gir_possible)),
       lowerIsBetter: false,
       value: `${r.greens.hit} of ${r.greens.of} greens`,
       said: (m) => `: ${Math.round(m)}% of greens (${pctOf(r.greens!.hit, r.greens!.of)}% today).`,
@@ -129,7 +141,9 @@ export function movedNumber(r: ChRoundReview, history: readonly ChDebriefHistory
   let best: { c: Candidate; z: number; mean: number; n: number } | null = null;
   for (const c of cands) {
     if (c.past.length < DEBRIEF_MIN_HISTORY) continue;
-    const { mean, sd } = meanSd(c.past);
+    const spread = meanSd(c.past);
+    const mean = c.pooled ?? spread.mean;
+    const sd = spread.sd;
     if (!(sd > 0)) continue;
     const z = Math.abs(c.x - mean) / sd;
     if (z >= DEBRIEF_MOVED_Z && (!best || z > best.z)) best = { c, z, mean, n: c.past.length };

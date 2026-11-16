@@ -10,7 +10,7 @@ vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: vi.fn(async
 const recorded = vi.hoisted(() => vi.fn(async (_rows: Array<{ insight_id: string; surface: string; rank_position?: number }>) => undefined));
 vi.mock('@/lib/coachhelm/v3/effectiveness/event-ledger', () => ({ recordInsightExposure: recorded, recordInsightAction: vi.fn(async () => undefined) }));
 
-import { getInsightsForPlayer, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { getInsightsForCoachWithMeta, getInsightsForPlayer, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { shapePlayerFeed } from '../player-feed';
 
 const evidence = (over: Record<string, unknown> = {}) => ({
@@ -150,6 +150,30 @@ describe('getInsightsForPlayer after the move', () => {
     const hidden = out.find((i) => i.id === 'hidden')!.evidence as unknown as Record<string, unknown>;
     expect('support' in hidden).toBe(false);
     expect('ladder' in hidden).toBe(false);
+  });
+});
+
+/** Launch readiness DF-P-03 (15 Nov 2026): a coach surface that reads the feed but draws none of it (Standing) or part of it (the dive) records only what it draws. */
+describe('the coach feed with drawnLater', () => {
+  const settled = () => new Promise((r) => setTimeout(r, 0));
+
+  it('without it, records every returned row as coach_feed', async () => {
+    const out = await getInsightsForCoachWithMeta('c-1', { player_id: 'p-1' }, fake() as never);
+    await settled();
+    if (!out.ok) throw new Error(out.error);
+    expect(recorded.mock.calls[0]![0].map((r) => r.insight_id).sort()).toEqual(out.data.map((i) => i.id).sort());
+    expect(new Set(recorded.mock.calls[0]![0].map((r) => r.surface))).toEqual(new Set(['coach_feed']));
+  });
+
+  it('with it, records only the ids drawn, and none when none are drawn', async () => {
+    await getInsightsForCoachWithMeta('c-1', { player_id: 'p-1', drawnLater: async () => ['mid'] }, fake() as never);
+    await settled();
+    expect(recorded.mock.calls[0]![0].map((r) => r.insight_id)).toEqual(['mid']);
+    recorded.mockClear();
+    const out = await getInsightsForCoachWithMeta('c-1', { player_id: 'p-1', drawnLater: async () => [] }, fake() as never);
+    await settled();
+    expect(out.ok && out.data.length).toBeGreaterThan(0);
+    expect(recorded.mock.calls.flatMap((c) => c[0])).toEqual([]);
   });
 });
 

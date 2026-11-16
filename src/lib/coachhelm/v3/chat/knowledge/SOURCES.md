@@ -62,10 +62,10 @@ model to say "the Tour benchmark" and to name a tour only when a read named it.
 | Statement | Proof |
 |---|---|
 | Counts: finished, not a test round, 9 or 18 holes, every hole scored, a plausible total. | `src/lib/golf/round-countable.ts:120-143`; loader filters `src/clubhouse/data/season.ts:139-145` |
-| An 18-hole round posted as a total only counts in scores (average, to par, trend, best) and in nothing hole-level (greens, fairways, putts, scrambling, birdies, strokes gained). | `src/lib/golf/round-score-countable.ts:21-29`; `src/clubhouse/data/round-scope.ts:4-11`, `:36-38` |
-| Practice rounds are left out of Stats and Roster figures by default; they still show in round lists. A round with no type counts; an unknown type reads as practice. | `src/clubhouse/data/season.ts:66-68`; `src/clubhouse/data/stats-common.ts:48-51`; `src/clubhouse/data/figure-window.ts:15-17`; `src/lib/golf/round-type-utils.ts:13-17` |
+| An 18-hole round posted as a total only counts in scores (average, to par, trend, best) and in nothing hole-level (greens, fairways, putts, scrambling, birdies, strokes gained). | `src/lib/golf/round-score-countable.ts:21-29`; `src/clubhouse/data/round-scope.ts:4-11`, `:35-41` |
+| Practice rounds are left out of Stats and Roster figures by default; they still show in round lists. A round with no type counts; an unknown type reads as practice. | `src/clubhouse/data/round-scope.ts:20-33`; `src/clubhouse/data/season.ts:65-67`; `src/clubhouse/data/stats-common.ts:48-51`; `src/clubhouse/data/figure-window.ts:15-17`; `src/lib/golf/round-type-utils.ts:13-17` |
 | Stats figures read 18-hole rounds only by default. | `src/clubhouse/data/stats-filter.ts:99-101` (`holes: '18'`), `:277` |
-| A round's putts of 0 means not recorded, never a round with no putts. | `src/clubhouse/data/stats-common.ts:187-198`; `src/clubhouse/data/round-scope.ts:26-33` |
+| A round's putts of 0 means not recorded, never a round with no putts. | `src/clubhouse/data/stats-common.ts:187-198`; `src/clubhouse/data/round-scope.ts:42-49` |
 
 ### A3. Windows
 | Statement | Proof |
@@ -83,7 +83,7 @@ model to say "the Tour benchmark" and to name a tour only when a read named it.
 | A score only | scoring average, to par, trend, best round | `src/clubhouse/data/round-scope.ts:7-10` |
 | Hole-by-hole scoring | greens, fairways, putts, three-putts, scrambling, sand saves, penalties, birdies and other counts, scoring by par, toughest holes, opening hole | `src/clubhouse/data/round-scope.ts:8-10`; `src/clubhouse/data/stats-figures.ts:42-54`, `:208-222`, `:247-298` |
 | Logged shots | make rate by putt distance, approach proximity by distance, miss direction and lies, measured strokes gained | `src/clubhouse/data/stats-common.ts:343-375` (putts from `golf_shots`); `src/clubhouse/data/stats-detail.ts:83-86` (approach shots); `public.sql:7919-7923` |
-| Floors before a figure is shown (numbers not stated in the prompt; the read says "no figure yet" with the reason) | fairways and greens, scrambling and sand saves, a putt band, an approach band, strokes gained, pressure gap, opening hole | `src/clubhouse/lib/stats-signal.ts:31-44`; `src/clubhouse/data/stats-player.ts:489-494`, `:518-528`, `:557-558`; `src/clubhouse/data/stats-figures.ts:175-177` |
+| Floors before a figure is shown (numbers not stated in the prompt; the read says "no figure yet" with the reason) | fairways and greens, scrambling and sand saves, a putt band, an approach band, strokes gained, pressure gap, opening hole | `src/clubhouse/lib/stats-signal.ts:31-44`; `src/clubhouse/data/stats-player.ts:489-494`, `:518-528`, `:557-558`; `src/clubhouse/data/stats-figures.ts:171-172` |
 
 ### A5. Figures the Stats page defines its own way
 | Statement | Proof |
@@ -92,7 +92,7 @@ model to say "the Tour benchmark" and to name a tour only when a read named it.
 | Scrambling: of the greens missed in regulation, the share still saved for par or better. Sand saves: the same from a greenside bunker. | `src/lib/coachhelm/v3/chat/data-dictionary.ts` (`scramble_attempts`, `scrambles_converted`, `sand_attempts`, `sand_saves`), written from the cache SQL |
 | Three-putts count holes with three or more putts. | `src/lib/coachhelm/v3/chat/readers-direct.ts:71`; dictionary `three_putts` |
 | Big numbers: holes at double bogey or worse, as a share of holes. | `src/clubhouse/data/stats-weight.ts:105-115` |
-| Pressure gap: tournament and qualifier rounds against practice rounds, in strokes to par a round; positive means the competitive rounds are worse. | `src/clubhouse/data/stats-figures.ts:175-199` |
+| Pressure gap: tournament and qualifier rounds against practice rounds, in strokes to par a round; positive means the competitive rounds are worse. | `src/clubhouse/data/stats-figures.ts:171-197`; `src/clubhouse/data/round-scope.ts:20-28` (a round with no type is on neither side) |
 | Opening hole: hole 1 against the other holes, in strokes to par a hole. | `src/clubhouse/data/stats-figures.ts:208-222` |
 | Toughest holes keep each hole on its own course; a round with no course is left out. | `src/clubhouse/data/stats-figures.ts:261-265` |
 | The Tour column is the team's own tour (PGA for a men's team, LPGA for a women's), never a division figure. | `src/clubhouse/data/stats-common.ts:233-261`; `src/clubhouse/data/stats-team.ts:205-208` |

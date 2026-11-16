@@ -6,10 +6,9 @@ import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHome
 import type { MarkEntries } from '../lib/marks-cookie';
 import type { ChHomeChange } from '../screens/home/change-rows';
 import { loadHomeChanges, withChange, withWas } from './home-changes';
-import { playerScoringAverage, playerStrokesGained } from './figure-window';
+import { lastTenHoleRounds, playerScoringAverage, playerStrokesGained } from './figure-window';
 import { countsForScoring, isFull18, lastTenFloor, loadSeasonRounds, mean, roundsForSpan, type ChRound } from './season';
 import { spanSince, type ChSpan } from './span';
-import { holeRounds } from './round-scope';
 import { legRows, type ChPlayerLeg } from './leg-rows';
 import { replyClosedAt } from '../screens/calendar/model';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
@@ -37,7 +36,7 @@ export type { ChLegKey, ChPlayerLeg } from './leg-rows';
  * approximated.
  */
 
-/** Rounds in the leg figures (the newest with their holes scored) and the brief's form. */
+/** Rounds in the leg figures (those with their holes among the newest ten, `lastTenHoleRounds`) and the brief's form. */
 export const LEG_WINDOW = 10;
 /** Scores sent for the scoring chart: 20 shown at most, and 20 before them for "vs previous". */
 const SCORING_MAX = 40;
@@ -137,7 +136,9 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const yearOf = (res: Awaited<typeof roundsRead>) => (input.span === 'all' ? res.rounds.filter((r) => r.round_date.slice(0, 10) >= lastTenFloor(now)) : res.rounds);
   const legFullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : yearOf(res).filter(countsForScoring).filter(isFull18));
   // The leg figures are hole-level: the newest rounds with their holes (a round posted as a total only has none, Q-123). The brief and the scoring chart are scores and count every round.
-  const windowOf = (res: Awaited<typeof roundsRead>) => holeRounds(legFullOf(res)).slice(0, LEG_WINDOW);
+  // My stats' Last 10 reads the same rounds (`lastTenHoleRounds`, N13P-64): never the newest ten that happen to have holes, which reached
+  // back past the ten and printed different figures under the same "Last 10".
+  const windowOf = (res: Awaited<typeof roundsRead>) => lastTenHoleRounds(legFullOf(res));
   // Latest rounds lists every round, practice included.
   const latestRead = roundsRead.then((res) => latestWithHoles(supabase, res.error ? [] : res.rounds.filter(isFull18), () => input.firstName));
   const cacheRead = roundsRead.then((res) => {

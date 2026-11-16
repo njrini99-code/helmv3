@@ -14,6 +14,8 @@ import { classYearLabel, fullName } from './season';
 import { parseAvailability } from './availability';
 import { loadAttendanceCounts } from './attendance-counts';
 import { loadRoundRefs } from './calendar-rounds';
+import { calendarTripRows, tripsInWindowFilter } from './calendar-trips';
+import { HOME_TRIP_COLUMNS, type ChHomeTripRow } from './home-trips';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import {
   addDays,
@@ -189,7 +191,8 @@ export async function loadCalendar(input: {
     supabase
       .from('golf_team_members')
       // A coach also sees who is injured or away beside a name; a player's page never carries it (availability, v1).
-      .select(input.role === 'coach' ? 'availability, player:golf_players(id, first_name, last_name, graduation_year)' : 'player:golf_players(id, first_name, last_name, graduation_year)')
+      // `is_test`: a QA account is never offered as an invitee (prod audit 2026-11-15, PV-41), as Ask's roster leaves it out.
+      .select(input.role === 'coach' ? 'availability, player:golf_players(id, first_name, last_name, graduation_year, is_test)' : 'player:golf_players(id, first_name, last_name, graduation_year, is_test)')
       .eq('team_id', input.teamId)
       .eq('status', 'active')
       .limit(200),
@@ -210,10 +213,10 @@ export async function loadCalendar(input: {
   const anchor = parseDate(input.date ?? eventDate, today);
   const range = windowFor(anchor);
 
-  type PlayerRow = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
+  type PlayerRow = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null; is_test?: boolean | null };
   const people: ChCalPerson[] = (membersRes.data ?? [])
     .map((m) => m as unknown as { availability?: string | null; player: PlayerRow | null })
-    .filter((m): m is { availability?: string | null; player: PlayerRow } => !!m.player)
+    .filter((m): m is { availability?: string | null; player: PlayerRow } => !!m.player && m.player.is_test !== true)
     .map((m) => ({
       id: m.player.id,
       name: fullName(m.player),
@@ -242,7 +245,18 @@ export async function loadCalendar(input: {
       .order('id', { ascending: true })
       .range(from, to),
   );
-  const [eventsRes, classesRes, busyRes, everRes] = await Promise.all([
+  // The team's trips (N13P-24): Team Hub can plan one with no calendar event, and the calendar read only events. A trip that is on
+  // the calendar as an event is drawn once, as that event (calendar-trips.ts).
+  const tripsRead = supabase
+    .from('golf_travel_itineraries')
+    .select(HOME_TRIP_COLUMNS)
+    .eq('team_id', input.teamId)
+    .eq('is_test', false)
+    .lte('departure_date', range.to)
+    .or(tripsInWindowFilter(range.from))
+    .order('departure_date', { ascending: true })
+    .limit(100);
+  const [eventsRes, classesRes, busyRes, everRes, tripsRes] = await Promise.all([
     fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_events')
@@ -271,7 +285,10 @@ export async function loadCalendar(input: {
     // CH-6309: has this team ever scheduled anything? A count, no rows; a coach's question only. Class meetings synced
     // from players' schedules are not the coach scheduling anything, so they do not end the first-run state (audit L7).
     input.role === 'coach' ? supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', input.teamId).neq('event_type', 'class') : null,
+    tripsRead,
   ]);
+  // A failed trip read is reported and draws no trip, as on Home; the events still show.
+  if (tripsRes.error) chLogServer('calendar', 'trips', tripsRes.error, 'calendar');
   if (everRes?.error) chLogServer('calendar', 'eventCount', everRes.error, 'calendar');
   const firstRun = !!everRes && !everRes.error && everRes.count === 0;
   if (eventsRes.error) chLogServer('calendar', 'events', eventsRes.error, 'calendar');
@@ -437,6 +454,12 @@ export async function loadCalendar(input: {
     const end = b.date === a.date ? Math.max(b.hour, a.hour + 0.25) : 24;
     if (a.date < range.from || a.date > range.to) continue;
     events.push({ ...base, date: a.date, start: a.hour, end, allDay: false, span: null });
+  }
+
+  // Trips with no event on the calendar, as all-day Travel rows (N13P-24). Not while the events failed: a trip alone would read as
+  // the team's whole calendar.
+  if (!eventsRes.error && !tripsRes.error) {
+    events.push(...calendarTripRows((tripsRes.data ?? []) as ChHomeTripRow[], new Set(rows.map((r) => r.id)), range));
   }
 
   // The coach's own blocked time. Only the coach sees it; it's labelled as theirs.

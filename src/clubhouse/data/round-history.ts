@@ -17,7 +17,7 @@ type Supabase = Awaited<ReturnType<typeof createClient>>;
  * review still shows the round's own figures and says nothing about an error (P-7 4.8).
  */
 
-const LIST_COLUMNS = 'id, course_id, course_name, tees_played, tee_id, round_date, holes_played, total_score, front_nine, back_nine, total_putts';
+const LIST_COLUMNS = 'id, course_id, course_name, tees_played, tee_id, round_date, round_type, holes_played, total_score, front_nine, back_nine, total_putts';
 const HOLE_COLUMNS = 'round_id, hole_number, par, score, putts, gir, fairway_hit';
 
 type HoleRow = { round_id: string; hole_number: number; par: number | null; score: number | null; putts: number | null; gir: boolean | null; fairway_hit: boolean | null };

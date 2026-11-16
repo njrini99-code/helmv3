@@ -277,6 +277,25 @@ describe('the standing rows as the page draws them', () => {
   });
 });
 
+/**
+ * This season's rounds behind the scoring average (SC-01): 18-hole tournament rounds with both nines on the season's first day,
+ * so every one counts, whatever today is. Five of them average 77.2.
+ */
+const seasonRounds = (scores: number[] = [77, 77, 77, 78, 77]) => ({
+  data: scores.map((score, i) => ({
+    id: `sr${i}`,
+    player_id: 'pl-jonah',
+    round_date: seasonStartDate(new Date(), 'America/New_York'),
+    total_score: score,
+    score_to_par: score - 72,
+    front_nine: Math.ceil(score / 2),
+    back_nine: Math.floor(score / 2),
+    holes_played: 18,
+    status: 'completed',
+    round_type: 'tournament',
+  })),
+});
+
 describe('the loader reads the signed-in player’s own standing, and says when it could not', () => {
   const rows = (id: string): PlayerStanding[] => STANDING_ROWS.map((r) => ({ ...r, player_id: id }));
   const map = (list: PlayerStanding[]) => new Map(list.map((r) => [r.metric_id, r]));
@@ -288,7 +307,37 @@ describe('the loader reads the signed-in player’s own standing, and says when 
         filters.push(f);
         return { data: { rounds_played: 14, scoring_average: 77.2 } };
       },
+      golf_rounds: seasonRounds(),
     };
+  });
+
+  it('SC-01 the scoring average is this season’s rounds, never the lifetime cache’s, and says how many rounds it rests on', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    // Production's lifetime row still counts test rounds (a 37 among them): it says 74.1; this season's six rounds say 78.0.
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 74.1 } }, golf_rounds: seasonRounds([78, 78, 78, 78, 78, 78]) };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data).toMatchObject({ state: 'ready', scoringAverage: '78.0', scoringRounds: 6, rounds: 14, baselineFailed: false });
+    render(wrap(<Standing load={standingLoad(out.data)} />));
+    expect(screen.getByText(/^All time · 14 rounds · Scoring average 78\.0 this season, 6 rounds/)).toBeTruthy();
+  });
+
+  it('SC-01 under five rounds this season is an early read, whatever the lifetime row holds', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 40, scoring_average: 74.1 } }, golf_rounds: seasonRounds([78, 79, 80]) };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data).toMatchObject({ state: 'early', scoringAverage: null, scoringRounds: 3 });
+    render(wrap(<Standing load={standingLoad(out.data)} />));
+    expect(document.querySelector('.ch-hs-early')!.textContent).toMatch(/^3 rounds this season, so this is an early read/);
+  });
+
+  it('SC-01 a season that does not read fails the scoring average, as a failed cache row does', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 77.2 } }, golf_rounds: { error: { message: 'boom' } } };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data).toMatchObject({ baselineFailed: true, scoringAverage: null });
   });
 
   it('ready: the standing map for the player id it was given, and their own cache row, filtered to that id', async () => {
@@ -375,6 +424,7 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
     tables.current = {
       golf_player_stats_cache: { data: { rounds_played: 10, scoring_average: 77.2, putt_attempts_3_5ft: 24, putt_attempts_5_10ft: 0, putt_attempts_10_15ft: 31, sand_attempts: 12 } },
+      golf_rounds: seasonRounds(),
     };
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
     if (out.status !== 'ready') throw new Error('not ready');

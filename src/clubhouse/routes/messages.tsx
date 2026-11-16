@@ -6,7 +6,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { loadMessagesDirectory } from '../data/messages';
 import { Messages } from '../screens/messages/Messages';
-import { toChAnnouncement } from '../screens/messages/model';
+import { shownAnnouncements } from '../screens/messages/model';
 import { MessagesNoTeam } from '../screens/messages/MessagesNoTeam';
 import { chLogServer } from '../lib/track-server';
 import { resolveClubhouseTeam } from './team';
@@ -47,6 +47,6 @@ export async function ClubhouseMessagesRoute() {
       return undefined;
     }),
   ]);
-  const announcements = anns?.success && anns.data ? anns.data.map(toChAnnouncement) : null;
+  const announcements = anns?.success && anns.data ? shownAnnouncements(anns.data) : null;
   return <Messages data={{ ...data, ...(canHide === undefined ? {} : { canHide }), ...(activeIds === undefined ? {} : { activeConversationIds: activeIds }), announcements }} />;
 }

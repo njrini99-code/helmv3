@@ -116,6 +116,9 @@ async function loadTeamOff(supabase: Supabase, teamId: string): Promise<{ reason
  *
  * Reads: the reads shown to the team's active players since the season start (one row each, from `golf_coachhelm_shown_reads`),
  * those reads' family, ladder and lifecycle block, and the corrections on them. The counting is `buildTrackRecord`'s (pure).
+ *
+ * "Shown" is only as good as the exposure rows (launch readiness DF-P-04): `hub_signal` rows are reads nobody saw, and the function
+ * leaves them out once `20261115141500_golf_coachhelm_shown_reads_seen_only.sql` (held) is applied. Apply it before the flag turns on.
  */
 export async function loadCoachTrackRecord(input: { coachId: string; teamId: string; now?: Date }): Promise<ChViewLoad<ChTrackRecord>> {
   const gate = await loadCoachHelmGate(input.coachId);

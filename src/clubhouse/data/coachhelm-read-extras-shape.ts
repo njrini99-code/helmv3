@@ -1,6 +1,7 @@
 import { ALL_SCORING_COLUMNS, lookupMetricSource, type MetricSourceDef } from '@/lib/coachhelm/v3/causality/metric-sources';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { plural } from '../lib/plural';
+import { per18 } from './stats-filter';
 
 /**
  * What the read page reads beside the read itself (7 Nov design): the read's own metric round by round, how many rounds are newer
@@ -59,21 +60,27 @@ export interface ReadPoint {
   /** A share's own counts, so a window is the sum over the sum, never a mean of percentages. */
   num?: number;
   den?: number;
+  /**
+   * A count's weight in whole rounds (a nine is 0.5) and its own value in the round, for a metric that adds up over holes (strokes
+   * gained, score to par, penalties). `value` is then per 18 holes, as Stats plots it (stats and charts audit 2026-11-15, SC-06).
+   */
+  weight?: number;
+  raw?: number;
 }
 
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
+/** A count in one round, per 18 holes, with the round's weight: a nine-hole −2.90 plots as −5.80 and weighs half (SC-06). */
+function countPoint(v: number | null, round: ReadRoundRow): Omit<ReadPoint, 'id' | 'date'> | null {
+  if (v == null) return null;
+  return { value: per18(v, round.holes_played), weight: (round.holes_played ?? 18) / 18, raw: v };
+}
+
 /** The metric's value in one round, by the registry's source for it; null when the round does not carry it. */
 export function perRound(def: MetricSourceDef, round: ReadRoundRow, cache: ReadCacheRow | undefined): Omit<ReadPoint, 'id' | 'date'> | null {
-  if (def.kind === 'rounds') {
-    const v = num(round[def.column]);
-    return v == null ? null : { value: v };
-  }
+  if (def.kind === 'rounds') return countPoint(num(round[def.column]), round);
   if (!cache) return null;
-  if (def.kind === 'round_stats_cache_avg') {
-    const v = num(cache[def.column]);
-    return v == null ? null : { value: v };
-  }
+  if (def.kind === 'round_stats_cache_avg') return countPoint(num(cache[def.column]), round);
   if (def.kind === 'round_stats_cache_ratio') {
     const n = num(cache[def.numerator]);
     const d = num(cache[def.denominator]);
@@ -106,12 +113,19 @@ export function readPoints(metric: string, extras: Pick<ChReadExtras, 'rounds' |
   return { def, points };
 }
 
-/** A window's own figure: the sum over the sum for a share (as the registry aggregates it), else the mean of the rounds. */
+/**
+ * A window's own figure: the sum over the sum for a share (as the registry aggregates it); for a count, per 18 holes with a nine
+ * weighing half (Stats' `weightedMean`, SC-06); else the mean of the rounds.
+ */
 export function windowFigure(def: MetricSourceDef, points: readonly ReadPoint[]): number | null {
   if (points.length === 0) return null;
   if (def.kind === 'round_stats_cache_ratio') {
     const d = points.reduce((a, p) => a + (p.den ?? 0), 0);
     return d > 0 ? (points.reduce((a, p) => a + (p.num ?? 0), 0) / d) * def.scale : null;
+  }
+  if (points.every((p) => p.weight != null)) {
+    const w = points.reduce((a, p) => a + (p.weight as number), 0);
+    return w > 0 ? points.reduce((a, p) => a + p.value * (p.weight as number), 0) / w : null;
   }
   return points.reduce((a, p) => a + p.value, 0) / points.length;
 }
@@ -127,7 +141,9 @@ const SHARE_NOUN: Record<string, string> = { greens_hit: 'greens', fairways_hit:
 export function roundNote(def: MetricSourceDef, p: ReadPoint | undefined): string | null {
   if (!p) return null;
   const penalties = (def.kind === 'round_stats_cache_avg' && def.column === 'penalty_strokes') || (def.kind === 'rounds' && def.column === 'total_penalties');
-  if (penalties) return p.value > 0 ? plural(p.value, 'penalty', 'penalties') : null;
+  // The round's own count, not its per-18 value: a nine with two penalties had two.
+  const count = p.raw ?? p.value;
+  if (penalties) return count > 0 ? plural(count, 'penalty', 'penalties') : null;
   if (def.kind === 'round_stats_cache_ratio' && p.num != null && p.den != null) return `${p.num} of ${p.den} ${SHARE_NOUN[def.numerator] ?? ''}`.trim();
   return null;
 }
