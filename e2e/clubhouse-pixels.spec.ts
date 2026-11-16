@@ -37,7 +37,8 @@ for (const screen of GATE_SCREENS) {
       await expect(page.locator('[data-ui="clubhouse"]').first()).toBeVisible();
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.locator('.ch-root[data-hydrated]').first().waitFor({ state: 'attached', timeout: 30_000 }).catch(() => {});
-      await page.evaluate(() => { for (const a of document.getAnimations()) a.finish?.(); });
+      // Time-based animations only: a scroll-driven one (the phone large title's fade, S4.3) would land as if scrolled.
+      await page.evaluate(() => { for (const a of document.getAnimations()) if (a.timeline === document.timeline) a.finish?.(); });
       await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
       // Live clocks and "n minutes ago" read the fixture's frozen time, so a frame is stable run to run.
       await expect(page).toHaveScreenshot(name, { fullPage: true, animations: 'disabled', caret: 'hide', maxDiffPixels: 0 });
