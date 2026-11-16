@@ -130,12 +130,13 @@ $patch$;
 
 -- (3) The archive and the backfill -------------------------------------------
 
-CREATE TABLE IF NOT EXISTS helm_private.golf_round_cache_scrambling_fix_20261116 (
+CREATE TABLE IF NOT EXISTS
+helm_private.golf_round_cache_scrambling_fix_20261116 (
     round_id uuid PRIMARY KEY,
-    old_scrambles_converted integer,
-    old_scramble_attempts integer,
-    new_scrambles_converted integer NOT NULL,
-    new_scramble_attempts integer NOT NULL,
+    old_scrambles_converted bigint,
+    old_scramble_attempts bigint,
+    new_scrambles_converted bigint NOT NULL,
+    new_scramble_attempts bigint NOT NULL,
     archived_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE helm_private.golf_round_cache_scrambling_fix_20261116
@@ -209,7 +210,8 @@ BEGIN
 END
 $$;
 
-ALTER FUNCTION helm_private.golf_backfill_scrambling_sand_saves() OWNER TO postgres;
+ALTER FUNCTION helm_private.golf_backfill_scrambling_sand_saves()
+OWNER TO postgres;
 REVOKE ALL ON FUNCTION helm_private.golf_backfill_scrambling_sand_saves()
 FROM public, anon, authenticated;
 
