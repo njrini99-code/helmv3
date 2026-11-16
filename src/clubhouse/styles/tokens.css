@@ -165,9 +165,10 @@
   /* CONS-20: the rest of the gain and loss family, so a tone paints only with it (check.mjs). A bar or a mark takes the
      -fill (a graphic, 3:1); a chip's ground takes the -tint and its words the ink. Aliases declared beside the night
      values they read, so each follows the theme. A surface the ink can't sit on (a green stage) redefines the pair. */
-  /* S2.5: a bar or mark (3:1 on the card): gain 12.2:1, loss 3.1:1, and 3.9:1 apart (4.4 deuteranopia, 3.3 protanopia). */
+  /* S2.5: a bar or mark holds 3:1 on the card and on the chart track: gain 12.2:1, loss 3.9:1 on the card and 3.05:1 on
+     the track (#e3ddcf; #c58012 was 2.4:1 there, charts contrast pass 16 Nov), and the two 3.1:1 apart. */
   --ch-chart-gain-fill: #0b3a25;
-  --ch-chart-loss-fill: #c58012;
+  --ch-chart-loss-fill: #b06e0e;
   --ch-chart-gain-tint: var(--ch-positive-100);
   --ch-chart-loss-tint: var(--ch-warning-100);
   --ch-chart-flag: #b03a2e;

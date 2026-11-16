@@ -1125,6 +1125,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-team-hub-prefetch.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-touch-list-presence.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-chart-mark-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-drill-push-skeleton.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-one-reduce-motion-read.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-phone-overlay-push.md` | current | - | - | - | - |
