@@ -393,7 +393,8 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(screen.getByText('Sophomore · Class of 2029')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=jonah');
     expect(screen.getByRole('link', { name: 'Plan 1:1' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1&with=jonah');
-    expect(screen.getByRole('link', { name: 'All 21 rounds this season' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=jonah&window=season&tab=rounds');
+    // DF-C-05: "All N" counts nine-hole rounds too, so the list it opens shows both lengths.
+    expect(screen.getByRole('link', { name: 'All 21 rounds this season' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=jonah&window=season&holes=all&tab=rounds');
     // Real facts only (D-51): no birthday, home course or major.
     expect(screen.getByText('Hometown')).toBeTruthy();
     expect(screen.queryByText(/Birthday|Home course/)).toBeNull();

@@ -4055,7 +4055,7 @@
       },
       {
         "id": "golf_coachhelm_shown_reads",
-        "definedIn": "supabase/migrations/20261021090000_golf_coachhelm_shown_reads.sql"
+        "definedIn": "supabase/migrations/20261115141500_golf_coachhelm_shown_reads_seen_only.sql"
       },
       {
         "id": "golf_conversation_created_by_me",
@@ -23085,18 +23085,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/player-hub-data.ts",
           "anchor": "src/lib/calendar/meeting-invites"
-        }
-      ]
-    },
-    {
-      "source": "player_hub",
-      "target": "coachhelm_ai",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/player-hub-data.ts",
-          "anchor": "src/app/golf/actions/insight-delivery"
         }
       ]
     },

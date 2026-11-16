@@ -43,7 +43,7 @@ import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, seedThreadFiles, takePrefill } from './prefill';
 import { seedPollDraft } from './polls';
 import { attachmentKindOf, useAttachmentFacts } from './attachment-facts';
-import { directWith, firstName, FORMER_MEMBER, groupLacksPlayer, isDirect, isFormerMember, isGroupRow, isNamedForOneOfTwo, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { directWith, firstName, FORMER_MEMBER, groupLacksPlayer, isDirect, isFormerMember, isGroupRow, isNamedForOneOfTwo, shownAnnouncements, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = isGroupRow;
 
@@ -524,7 +524,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       const res = await getAnnouncementsWithMeta(data.teamId, data.viewerUserId, data.role === 'coach', data.viewerPlayerId);
       if (!res.success || !res.data) throw new Error(res.error || 'announcements read failed');
       setAnnError(false);
-      setAnns(res.data.map(toChAnnouncement));
+      setAnns(shownAnnouncements(res.data));
     } catch (err) {
       chReport(err, { surface: 'messages.announcements', severity: 'low' });
       setAnnError(true);

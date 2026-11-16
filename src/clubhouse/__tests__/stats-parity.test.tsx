@@ -34,6 +34,7 @@ import { PUTT_MAKE_BANDS, PUTT_REPORT_BAND_OF, puttMakeBandFor } from '@/lib/gol
 import type { ChRound } from '../data/season';
 import { loadPlayerProfile, type ChPlayerProfile } from '../data/stats-player';
 import { openingDelta, perRoundSeries, personalBests, pressureGap, toughestHoles, windowCompare, type ChHoleRow } from '../data/stats-figures';
+import { statsRowsOf } from './stats-rows';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { FairwayStrip } from '../screens/stats/charts';
 import { CrumbProvider } from '../shell/crumbs';
@@ -123,6 +124,26 @@ const round = (id: string, date: string, over: Partial<ChRound> = {}): ChRound =
   ...over,
 });
 
+// Greens, fairways and putts come from each round's stats row (DF-P-01): these fixtures set them on the round, so the rows copy them.
+const bestsOf = (rs: ChRound[]) => personalBests(rs, statsRowsOf(rs));
+const seriesOf = (rs: ChRound[]) => perRoundSeries(rs, statsRowsOf(rs));
+const compareOf = (last: ChRound[], previous: ChRound[] | null) => windowCompare(last, previous, statsRowsOf([...last, ...(previous ?? [])]));
+
+describe('greens, fairways and putts read the stats row, never the round header (DF-P-01)', () => {
+  it('a round whose header predates the 17 Oct GIR rule reads its stats row', () => {
+    // The header still says 9 greens; the row the rule change rewrote says 12. My stats' table reads the row, so the card does too.
+    const r = round('a', '2026-10-01', { total_gir: 9, total_gir_possible: 18, total_putts: 33 });
+    const rows = statsRowsOf([r]);
+    rows.set('a', { ...rows.get('a')!, greens_hit: 12, total_putts: 30 });
+    expect(personalBests([r], rows).gir!.value).toBe(66.7);
+    expect(perRoundSeries([r], rows).putts.map((p) => p.value)).toEqual([30]);
+    const c = windowCompare([r], [round('b', '2026-09-01')], rows)!;
+    expect(c.rows.find((x) => x.label === 'Greens in regulation')!.last).toBe(66.7);
+    // A round with no stats row has no greens, whatever its header holds.
+    expect(personalBests([round('z', '2026-10-02')], new Map()).gir).toBeNull();
+  });
+});
+
 describe('personal bests', () => {
   it('the lowest score, the lowest to par, the best GIR and the fewest putts, each with its course and date; a tie goes to the earliest round', () => {
     const rounds = [
@@ -130,7 +151,7 @@ describe('personal bests', () => {
       round('b', '2026-09-10', { total_score: 70, score_to_par: -2, total_gir: 16, course_name: 'Early GC', total_putts: 27 }),
       round('a', '2026-09-01', { total_score: 75, score_to_par: 3, total_gir: 9, total_putts: 33 }),
     ];
-    const b = personalBests(rounds);
+    const b = bestsOf(rounds);
     expect(b.score).toEqual({ value: 70, date: 'Sep 10', course: 'Early GC' });
     expect(b.toPar).toEqual({ value: -2, date: 'Sep 10', course: 'Early GC' });
     expect(b.gir).toEqual({ value: 88.9, date: 'Sep 10', course: 'Early GC' });
@@ -142,24 +163,24 @@ describe('personal bests', () => {
       round('a', '2026-09-01', { total_score: 80, score_to_par: null, total_putts: null, total_gir: null, total_gir_possible: null }),
       round('z', '2026-09-03', { total_score: 78, score_to_par: 6, total_putts: 0 }),
     ];
-    const b = personalBests(rounds);
+    const b = bestsOf(rounds);
     expect(b.score!.value).toBe(78);
     expect(b.toPar!.value).toBe(6);
     expect(b.putts).toBeNull();
     expect(b.gir!.value).toBe(50);
-    expect(personalBests([])).toEqual({ score: null, toPar: null, gir: null, putts: null });
+    expect(bestsOf([])).toEqual({ score: null, toPar: null, gir: null, putts: null });
   });
 
   it('takes the rounds it is given, whatever their length: a 9-hole score is its own best, listed apart from the 18-hole ones by the loader', () => {
     const nine = round('nine', '2026-09-02', { total_score: 30, score_to_par: -6, holes_played: 9 });
-    expect(personalBests([nine]).score).toEqual({ value: 30, date: 'Sep 2', course: 'Finley GC' });
-    expect(personalBests([round('a', '2026-09-01', { total_score: 80 }), nine]).score!.value).toBe(30);
+    expect(bestsOf([nine]).score).toEqual({ value: 30, date: 'Sep 2', course: 'Finley GC' });
+    expect(bestsOf([round('a', '2026-09-01', { total_score: 80 }), nine]).score!.value).toBe(30);
   });
 });
 
 describe('the score, GIR, fairways and putts of each round', () => {
   it('one point per round, oldest first, and a round with no value has no point', () => {
-    const s = perRoundSeries([
+    const s = seriesOf([
       round('c', '2026-09-03', { total_score: 71, total_fairways: null, total_fairways_hit: null }),
       round('b', '2026-09-02', { total_score: 75, total_putts: null }),
       round('a', '2026-09-01', { total_score: 73, total_gir: 18, total_gir_possible: 18 }),
@@ -177,10 +198,10 @@ describe('the score, GIR, fairways and putts of each round', () => {
 
 describe('this window against the one before', () => {
   it('summed numerators over summed denominators, never a mean of percentages; none without an earlier window', () => {
-    expect(windowCompare([round('a', '2026-09-01')], null)).toBeNull();
+    expect(compareOf([round('a', '2026-09-01')], null)).toBeNull();
     const last = [round('a', '2026-09-10', { total_gir: 2, total_gir_possible: 4, total_score: 70, total_putts: 28 }), round('b', '2026-09-09', { total_gir: 9, total_gir_possible: 18, total_score: 74, total_putts: 32 })];
     const before = [round('c', '2026-09-01', { total_gir: 18, total_gir_possible: 18, total_score: 76, total_putts: 30 })];
-    const c = windowCompare(last, before)!;
+    const c = compareOf(last, before)!;
     expect(c.lastRounds).toBe(2);
     expect(c.previousRounds).toBe(1);
     const row = (l: string) => c.rows.find((r) => r.label === l)!;
@@ -191,7 +212,7 @@ describe('this window against the one before', () => {
   });
 
   it('each change carries its standard error (A1): the pooled score spread under five rounds; rates and putts none until five rounds measure them', () => {
-    const c = windowCompare(
+    const c = compareOf(
       [round('a', '2026-09-10', { total_gir: 9, total_gir_possible: 18, total_score: 72, total_putts: 30 })],
       [round('b', '2026-09-01', { total_gir: 9, total_gir_possible: 18, total_score: 74, total_putts: 31 })],
     )!;
@@ -201,7 +222,7 @@ describe('this window against the one before', () => {
     expect(se('Greens in regulation')).toBeNull();
     expect(se('Putts per round')).toBeNull();
     const five = (p: string, girs: number[]) => girs.map((g, i) => round(`${p}${i}`, `2026-09-${String(10 + i).padStart(2, '0')}`, { total_gir: g, total_gir_possible: 18, total_score: 72 + i, total_putts: 30 + i }));
-    const both = windowCompare(five('n', [9, 10, 11, 12, 13]), five('o', [6, 7, 8, 9, 10]))!;
+    const both = compareOf(five('n', [9, 10, 11, 12, 13]), five('o', [6, 7, 8, 9, 10]))!;
     expect(both.rows.find((r) => r.label === 'Greens in regulation')!.se).toBeGreaterThan(0);
     expect(both.rows.find((r) => r.label === 'Putts per round')!.se).toBeGreaterThan(0);
   });

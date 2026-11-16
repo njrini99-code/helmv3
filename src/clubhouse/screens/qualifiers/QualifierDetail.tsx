@@ -206,7 +206,7 @@ export function QualifierDetail({
         <header className="ch-qf-head" data-canopy-head="tight">
           <div>
             <span className="ch-qf-eyebrow">
-              <StatusPill status={status} ended={feed.ended} />
+              <StatusPill status={status} ended={feed.ended} viewer={coach ? 'coach' : 'player'} />
               <span>Qualifier</span>
             </span>
             <h1>{data.name}</h1>

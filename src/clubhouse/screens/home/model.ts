@@ -37,6 +37,14 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((t(to) - t(from)) / 86400000);
 }
 
+/**
+ * Whole team-local days from a player's last round (YYYY-MM-DD or an ISO timestamp) to `today` (the team's YYYY-MM-DD), never
+ * negative: the one count Home and Roster both say (prod audit 2026-11-15, HOME-P-01).
+ */
+export function quietDaysSince(roundDate: string, today: string): number {
+  return Math.max(0, daysBetween(roundDate.slice(0, 10), today));
+}
+
 export { firstName };
 
 /**
@@ -111,6 +119,10 @@ function manyFlagged(flagged: ChSublineRow[]): string {
     const floor = since(ranked);
     // F-0016: a longest is named only when one player is strictly longest; all tied, the team's line says the one figure.
     if (longest.quietDays === floor) return `${ranked.length} players haven’t posted a round in ${floor} days.`;
+    // Prod audit 2026-11-15, HOME-P-01: "Mason the longest at 50" while Roster showed four players at 50. Several at the top are
+    // counted, never one of them named.
+    const atTop = ranked.filter((r) => r.quietDays === longest.quietDays).length;
+    if (atTop > 1) return `${ranked.length} players haven’t posted a round in ${floor}+ days, ${atTop} of them for ${longest.quietDays}.`;
     return `${ranked.length} players haven’t posted a round in ${floor}+ days, ${firstName(longest.name)} the longest at ${longest.quietDays}.`;
   }
   const lead = list(ranked.slice(0, 2).map(reason));

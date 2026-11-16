@@ -77,7 +77,7 @@ export const PREVIEW_LEGS: ChTeamLegs = {
   rows: [
     { key: 'tee', label: 'Off the tee', stat: { label: 'Fairways', value: 61, unit: '%', digits: 0, tour: 66 }, sg: 0.4, delta: 0.5, se: 0.3, gains: who(['theo'], ['Theo M.'], 1.1), loses: who(['eli'], ['Eli B.'], -0.8) },
     { key: 'approach', label: 'Approach', stat: { label: 'Greens', value: 61, unit: '%', digits: 0, tour: 67 }, sg: -0.9, delta: -0.1, se: 0.4, gains: who(['sofia'], ['Sofia A.'], 0.3), loses: who(['jonah'], ['Jonah O.'], -1.6) },
-    { key: 'around', label: 'Around green', stat: { label: 'Up and down', value: 52, unit: '%', digits: 0, tour: 59 }, sg: -0.2, delta: -0.6, se: 0.3, gains: who(['ava', 'sofia'], ['Ava L.', 'Sofia A.'], 0.5), loses: who(['jonah'], ['Jonah O.'], -1.0) },
+    { key: 'around', label: 'Around green', stat: { label: 'Scrambling', value: 52, unit: '%', digits: 0, tour: 59 }, sg: -0.2, delta: -0.6, se: 0.3, gains: who(['ava', 'sofia'], ['Ava L.', 'Sofia A.'], 0.5), loses: who(['jonah'], ['Jonah O.'], -1.0) },
     { key: 'putting', label: 'Putting', stat: { label: 'Putts', value: 30.4, unit: '', digits: 1, tour: 29.0 }, sg: -0.5, delta: 0.1, se: 0.4, gains: who(['theo'], ['Theo M.'], 0.6), loses: who(['eli', 'jonah', 'ava'], ['Eli B.', 'Jonah O.', 'Ava L.'], -1.2) },
   ],
 };

@@ -7,7 +7,7 @@ type Day = { label: string; score: number | null; date?: string };
 
 /**
  * The phone's team scoring trend (P004, direction A), on the one line chart (ui/charts/Line, B5): the team's average on
- * each of its last ten round days over a faint wash, the window's mean dashed, lower scores higher (P004-D1), the newest
+ * each round day in the window over a faint wash, the window's mean dashed, lower scores higher (P004-D1), the newest
  * day marked. A day with no rounds is a gap in the line, not a bridge. A finger on the plot reads a round day in a tip.
  * The page writes the summary it is named by (StatsTeamPhone). The value axis is drawn, so the strokes between days read off
  * the plot (row 69). `tone`: the line takes the gain or loss ink only when the summary's noise-tested change says the team got

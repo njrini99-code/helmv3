@@ -480,7 +480,16 @@ describe('nine- and eighteen-hole rounds', () => {
   });
 
   it('bests list 18-hole and 9-hole rounds apart: a 33 over nine holes is not a best score', async () => {
-    profileOf([...[74, 70, 74].map((s, i) => longR(`l${i}`, OWN, inSeason(10 + i), { total_score: s, score_to_par: s - 72, total_putts: 28 + i, total_gir: i === 0 ? 17 : 9 })), ...[38, 33].map((s, i) => shortR(`s${i}`, OWN, inSeason(20 + i), { total_score: s, score_to_par: s - 36, total_putts: 12 + i }))]);
+    const rows = [...[74, 70, 74].map((s, i) => longR(`l${i}`, OWN, inSeason(10 + i), { total_score: s, score_to_par: s - 72, total_putts: 28 + i, total_gir: i === 0 ? 17 : 9 })), ...[38, 33].map((s, i) => shortR(`s${i}`, OWN, inSeason(20 + i), { total_score: s, score_to_par: s - 36, total_putts: 12 + i }))];
+    profileOf(rows);
+    // Bests read greens and putts from each round's stats row (DF-P-01): here the rows carry each round's own figures.
+    const rowOf = (id: string) => rows.find((r) => r.id === id)!;
+    tables.current = {
+      ...tables.current,
+      golf_round_stats_cache: (f: Filters) => ({
+        data: ((f.find(([k]) => k === 'in')?.[1][1] ?? []) as string[]).map((id) => ({ round_id: id, greens_hit: rowOf(id).total_gir, greens_total: rowOf(id).total_gir_possible, total_putts: rowOf(id).total_putts })),
+      }),
+    };
     const both = (await profileLoad(holes('all')))!;
     expect(both.extra.bests.score!.value).toBe(70);
     expect(both.extra.bests.putts!.value).toBe(28);
@@ -497,6 +506,20 @@ describe('nine- and eighteen-hole rounds', () => {
     const long = (await profileLoad(holes('18')))!;
     expect(long.extra.bests.score!.value).toBe(70);
     expect(long.extra.bests9).toBeNull();
+  });
+
+  it('My stats compares the window with the one before on the same stats rows (DF-P-01)', async () => {
+    // Fourteen rounds: Last 10 is the newest ten, and the four before them are the compare card's "previous".
+    const rows = Array.from({ length: 14 }, (_, i) => longR(`l${i}`, OWN, inSeason(10 + i)));
+    profileOf(rows);
+    reads.cacheIds = [];
+    const p = (await profileLoad(holes('18', 'last10')))!;
+    // The earlier window's rows were read with the window's, so its greens and putts are the rows' (12 of 18 and 30 in this fake),
+    // not the round header's 9 of 18.
+    expect(reads.cacheIds).toEqual(expect.arrayContaining(['l0', 'l1', 'l2', 'l3']));
+    const gir = p.extra.compare!.rows.find((r) => r.label === 'Greens in regulation')!;
+    expect(gir.previous).toBeCloseTo((12 / 18) * 100, 1);
+    expect(gir.last).toBeCloseTo((12 / 18) * 100, 1);
   });
 
   it('the calculator\'s per-round counts are restated per 18 when a nine-hole round is in the window, and left alone when none is', async () => {

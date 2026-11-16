@@ -9,7 +9,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
-import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
+import { changeSe, deltaTone, deltaWords, halvesChange, type DeltaTone } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
 import { useChSessionState } from '../../lib/session-state';
@@ -36,6 +36,15 @@ export function PlayerGame({ data, phone = false, part, covered = false }: { dat
 }
 
 /** The par every round in the window was played to, or null when they differ (a par line would be wrong for some). */
+/**
+ * The average's change against the rounds before, after its window: a clear change is signed with its words ("−0.8 · Better than previous
+ * 5"), one inside its standard error says only that (a signed figure beside "No clear change" read as a result; PL-HOME-02, CONS-20).
+ */
+export function averageChange(delta: number, tone: DeltaTone, previous: number): string {
+  const words = deltaWords(delta, tone, `vs previous ${previous}`);
+  return tone === '' ? words : `${formatSigned(delta)} · ${words}`;
+}
+
 function commonPar(points: ChScoringPoint[]): number | null {
   const pars = points.map((p) => p.par).filter((v): v is number => v != null);
   return pars.length > 0 && pars.length === points.length && pars.every((v) => v === pars[0]) ? pars[0]! : null;
@@ -86,10 +95,12 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
     ) : null,
   };
   const figs: Array<[string, string, string, string]> = [
-    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} · ${deltaWords(delta, deltaSignal, `vs previous ${before.length}`)}`, deltaSignal],
-    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
+    // Every figure names its window (prod audit 2026-11-15, PL-HOME-02): the average and under par are the rounds picked below, strokes gained
+    // is always the last ten (figure-window.ts, QA-1; PL-HOME-01) and the handicap is the index.
+    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `Last ${shown.length} · ${averageChange(delta, deltaSignal, before.length)}`, deltaSignal],
+    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Last 10, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
     ['Handicap', formatHcp(data.handicap), 'Index', ''],
-    ['Under par', withPar.length ? `${under} of ${withPar.length}` : NO_DATA, withPar.length < shown.length ? 'Rounds with par recorded' : 'Rounds in this window', ''],
+    ['Under par', withPar.length ? `${under} of ${withPar.length}` : NO_DATA, withPar.length < shown.length ? `In last ${shown.length} with par recorded` : `In last ${shown.length}`, ''],
   ];
   const par = commonPar(shown);
   // The phone's card always offers all three windows, as the board's does; the desktop's only the ones with rounds to fill them.
@@ -318,17 +329,17 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
   return (
     <section className={phone ? 'ch-hm-sec ch-ph-legs-sec is-phone' : 'ch-ph-legs-sec'} aria-labelledby="ch-ph-legs">
       {phone ? (
-        // The board's one-line meta beside the title. The stats are the last 10 rounds and each part's strokes gained is the season's: each pill says so to a screen reader, and the desktop's caption in full.
+        // The board's one-line meta beside the title. The stats and each part's strokes gained are the last 10 rounds (figure-window.ts, QA-1): the meta names the window (PL-HOME-03), each pill says so to a screen reader.
         <div className="ch-hm-sec__h">
           <h2 id="ch-ph-legs">Your game</h2>
-          <span className="ch-hm-meta">Strokes gained {sgBaseline(tour).vs}</span>
+          <span className="ch-hm-meta">Last 10 rounds · strokes gained {sgBaseline(tour).vs}</span>
         </div>
       ) : (
         <div className="ch-ph-game__h">
           <div>
             <h2 id="ch-ph-legs">Your game</h2>
-            {/* The stats are the last 10 rounds; each part's strokes gained is the season's, against the Tour; a stat with a Tour average draws it as a mark. */}
-            <span>Last 10 rounds · strokes gained this season {sgBaseline(tour).vs}</span>
+            {/* The stats and each part's strokes gained are the last 10 rounds, against the Tour (PL-HOME-01); a stat with a Tour average draws it as a mark. */}
+            <span>Last 10 rounds · strokes gained {sgBaseline(tour).vs}</span>
           </div>
         </div>
       )}
@@ -364,7 +375,7 @@ function Leg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
         {g.sg != null && (
           <span className={'ch-ph-leg__sg ch-num ' + (changeTone(g.sg, false) || 'is-flat')}>
             {formatSigned(g.sg)}
-            <span className="ch-sr-only"> strokes gained a round this season</span>
+            <span className="ch-sr-only"> strokes gained a round, last 10 rounds</span>
           </span>
         )}
       </div>

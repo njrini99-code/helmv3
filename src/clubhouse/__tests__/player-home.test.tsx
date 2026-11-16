@@ -21,6 +21,7 @@ vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).f
 
 import { briefFor, legRows, loadPlayerHome, type ChPlayerHome } from '../data/player-home';
 import type { ChRound } from '../data/season';
+import type { ChRoundCache } from '../data/stats-common';
 import { PlayerHome, PlayerHomeNoTeam, isPlayerFirstRun } from '../screens/home/PlayerHome';
 import { PlayerGame } from '../screens/home/PlayerGame';
 import { scoringNote } from '../screens/home/PlayerGame';
@@ -249,7 +250,10 @@ describe('Player Home · the loader', () => {
   });
 
   it('legRows weights by attempts (never a mean of percentages) and trends oldest first', () => {
-    const rows = legRows([round(0, { total_gir: 18, total_gir_possible: 18 }), round(1, { total_gir: 0, total_gir_possible: 2 })], new Map(), null, {
+    // Greens come from each round's stats row, never the round's own columns (DF-P-01): the columns here say otherwise and are not read.
+    const gc = (id: string, hit: number, of: number) => [id, { round_id: id, greens_hit: hit, greens_total: of } as ChRoundCache] as const;
+    const two = [round(0, { total_gir: 3, total_gir_possible: 18 }), round(1, { total_gir: 2, total_gir_possible: 2 })];
+    const rows = legRows(two, new Map([gc(two[0]!.id, 18, 18), gc(two[1]!.id, 0, 2)]), null, {
       tee: null,
       approach: null,
       around: null,

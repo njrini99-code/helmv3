@@ -32,6 +32,7 @@ vi.mock('@/lib/supabase/server', () => ({
         eq: (c: string, v: unknown) => (call.filters.push(['eq', c, v]), chain),
         gte: (c: string, v: unknown) => (call.filters.push(['gte', c, v]), chain),
         in: (c: string, v: unknown) => (call.filters.push(['in', c, v]), chain),
+        or: (expr: string) => (call.filters.push(['or', expr, null]), chain),
         not: () => chain,
         gt: () => chain,
         maybeSingle: async () => {
@@ -367,5 +368,45 @@ describe('Where the strokes go reads the rounds, the one strokes-gained source',
     if (load.status !== 'ready') throw new Error(`expected ready, got ${load.status}`);
     expect(load.data.cards.sg).toBeNull();
     expect(load.data.failed.sg).toBe(true);
+  });
+});
+
+// Prod audit 2026-11-15, PL-CH-03, PL-CH-04, N13P-16: no test round reaches a player's week, a failed read is said, and a focus nobody
+// has touched since last season is not "your focus" now.
+describe('Your week reads only real, current data', () => {
+  const filtersOn = (table: string) => db.calls.filter((c) => c.table === table).map((c) => c.filters);
+
+  it('penalties and the newest round day leave out test rounds', async () => {
+    db.tables.golf_rounds = { data: [], error: null };
+    db.tables.golf_player_focus_areas = { data: [], error: null };
+    await loadPlayerYourWeek({ playerId: 'p1' });
+    const rounds = filtersOn('golf_rounds');
+    expect(rounds.length).toBeGreaterThanOrEqual(2);
+    for (const f of rounds) expect(f).toContainEqual(['eq', 'is_test', false]);
+  });
+
+  it('the focus read is this season’s: made, started or changed since 1 August in the team’s zone', async () => {
+    db.tables.golf_rounds = { data: [], error: null };
+    db.tables.golf_player_focus_areas = { data: [], error: null };
+    await loadPlayerYourWeek({ playerId: 'p1' });
+    const [focus] = filtersOn('golf_player_focus_areas');
+    const or = (focus ?? []).find(([kind]) => kind === 'or');
+    expect(or?.[1]).toMatch(/^created_at\.gte\.\d{4}-08-01,updated_at\.gte\.\d{4}-08-01,started_at\.gte\.\d{4}-08-01$/);
+  });
+
+  it('a failed focus read is flagged for the plan card, not drawn as no focus', async () => {
+    db.tables.golf_rounds = { data: [], error: null };
+    db.tables.golf_player_focus_areas = { data: null, error: { message: 'down' } };
+    const { load } = await loadPlayerYourWeek({ playerId: 'p1' });
+    if (load.status !== 'ready') throw new Error(`expected ready, got ${load.status}`);
+    expect(load.data.failed.plan).toBe(true);
+  });
+
+  it('a failed newest-day read is the field failing, not "no round"', async () => {
+    db.tables.golf_rounds = { data: null, error: { message: 'down' } };
+    db.tables.golf_player_focus_areas = { data: [], error: null };
+    const { load } = await loadPlayerYourWeek({ playerId: 'p1' });
+    if (load.status !== 'ready') throw new Error(`expected ready, got ${load.status}`);
+    expect(load.data.failed.field).toBe(true);
   });
 });

@@ -6,6 +6,7 @@ import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow } fro
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { chLogServer } from '../lib/track-server';
+import { loadTeamZone } from './season';
 import { sheetFormat, toSheetModel, type PlanSheetFormat, type PlanSheetModel } from '../screens/coachhelm/plan/sheet/plan-sheet-model';
 import type { PlayerPracticeData } from '../screens/coachhelm/plan/player/PlayerPractice';
 import type { ChPlanStatus } from '../screens/practice/CoachPlanBar';
@@ -20,25 +21,32 @@ export interface CoachPlanExtras {
 }
 export type PlanPageLoad = { status: 'ready'; plan: PlanSheetModel; stops?: ReturnType<typeof toPlayerPlan>; coach?: CoachPlanExtras } | { status: 'gone' } | { status: 'unavailable' };
 
+/**
+ * The practice a plan is for, its team and the team's clock. The clock is the team's settings zone (`loadTeamZone`), the one every
+ * Clubhouse loader reads (DF-C-07: this read `golf_teams.timezone`, which Settings never writes). `cancelled` is a practice the coach
+ * called off: the event row stays (cancelling is soft), so the caller decides what a cancelled practice's plan shows (DF-P-09).
+ */
 async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: string | null) {
   if (!eventId) return null;
-  const { data: event, error: eventError } = await sb.from('golf_events').select('start_time, end_time, team_id, location').eq('id', eventId).maybeSingle();
+  const { data: event, error: eventError } = await sb.from('golf_events').select('start_time, end_time, team_id, location, status, cancelled_at').eq('id', eventId).maybeSingle();
   if (eventError || !event) return null;
   // Names come through golf_player_profiles, never a golf_players embed: a player's sheet names their group-mates, and a
   // player may not read a teammate's golf_players row once 20261017005000 is applied (every mate would read "—"). The
   // profiles are the team's, read beside the roster; only active members are kept, so a coach's "seen N of M" counts
   // the active roster as before.
-  const [{ data: team, error: teamError }, { data: members, error: membersError }, profiles] = await Promise.all([
-    sb.from('golf_teams').select('name, timezone, organization_id').eq('id', event.team_id).maybeSingle(),
+  const [{ data: team, error: teamError }, { data: members, error: membersError }, profiles, zone] = await Promise.all([
+    sb.from('golf_teams').select('name, organization_id').eq('id', event.team_id).maybeSingle(),
     sb.from('golf_team_members').select('player_id').eq('team_id', event.team_id).eq('status', 'active'),
     readGolfPlayerProfiles(sb, { teamIds: [event.team_id] }),
+    loadTeamZone(sb, event.team_id, 'practice.plan'),
   ]);
   if (teamError || membersError || profiles.error) return null;
   const { data: coaches } = team?.organization_id ? await sb.from('golf_coaches').select('full_name').eq('organization_id', team.organization_id) : { data: [] };
   const active = new Set((members ?? []).map((m) => m.player_id).filter((id): id is string => !!id));
   const names = new Map<string, string>();
   for (const p of profiles.data) if (active.has(p.id)) names.set(p.id, [p.first_name, p.last_name].filter(Boolean).join(' '));
-  return { event, team, names, coaches: (coaches ?? []).map((c) => c.full_name).filter((n): n is string => !!n) };
+  const cancelled = event.status === 'cancelled' || event.cancelled_at != null;
+  return { event, team, zone, cancelled, names, coaches: (coaches ?? []).map((c) => c.full_name).filter((n): n is string => !!n) };
 }
 
 /**
@@ -71,7 +79,7 @@ export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
   if (!ctx) return { status: 'gone' };
   const opens = row.status === 'published' ? await practiceTables(sb).from('golf_practice_plan_opens').select('player_id').eq('plan_id', planId) : null;
   const seen = opens && !opens.error ? { names: ((opens.data ?? []) as Array<{ player_id: string }>).map((o) => ctx.names.get(o.player_id)).filter((n): n is string => !!n), of: ctx.names.size } : null;
-  const zone = ctx.team?.timezone ?? 'America/New_York';
+  const zone = ctx.zone;
   const [format, live] = await Promise.all([
     readFormat(sb, ctx.event.team_id),
     row.status === 'published' && row.published_version != null ? practiceTables(sb).from('golf_practice_plan_versions').select('published_at').eq('plan_id', planId).eq('version', row.published_version).maybeSingle() : Promise.resolve({ data: null, error: null }),
@@ -81,7 +89,7 @@ export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
   if (live.error) chLogServer('practice.plan', 'published at', live.error, 'practice_plans');
   const publishedAt = live.error ? null : ((live.data as { published_at: string } | null)?.published_at ?? null);
   const coach: CoachPlanExtras = { body, zone, start: new Date(ctx.event.start_time), status: { planId, title: row.title ?? 'Practice plan', version: row.version, status: row.status === 'published' ? 'published' : 'draft', edited: editedAfterPublish(row), seen } };
-  return { status: 'ready', coach, plan: toSheetModel({ body, why: (row.coach_why ?? {}) as Record<string, PlanWhy>, title: row.title ?? 'Practice plan', team: ctx.team?.name ?? '', start: new Date(ctx.event.start_time), end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: stateWord(row, zone, publishedAt), format }, 'coach') };
+  return { status: 'ready', coach, plan: toSheetModel({ body, why: (row.coach_why ?? {}) as Record<string, PlanWhy>, title: row.title ?? 'Practice plan', team: ctx.team?.name ?? '', start: new Date(ctx.event.start_time), end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone, coaches: ctx.coaches, names: ctx.names, state: stateWord(row, zone, publishedAt), format }, 'coach') };
 }
 
 /**
@@ -95,7 +103,9 @@ async function liveVersionFor(sb: Awaited<ReturnType<typeof createClient>>, plan
   const parsed = row ? parseVersionBody(row.body) : null;
   if (!row || !parsed) return { status: 'gone' };
   const ctx = await context(sb, row.event_id);
-  if (!ctx) return { status: 'gone' };
+  // A practice the coach called off has no plan for a player to follow (DF-P-09): its live version stays until the coach takes it
+  // down, but the player's Practice and the plan page read it as gone, as Home and Calendar already leave the practice out.
+  if (!ctx || ctx.cancelled) return { status: 'gone' };
   // No lines to read leaves an Own work stop with its title; the plan still opens.
   const { data: lines, error: linesError } = await practiceTables(sb).from('golf_practice_plan_lines').select('block_id, line').eq('plan_id', planId).eq('version', row.version).eq('player_id', playerId);
   const body = withOwnLines(parsed, playerId, linesError ? [] : ((lines ?? []) as Array<{ block_id: string; line: string }>));
@@ -110,7 +120,7 @@ export async function loadPlayerPlan(planId: string, playerId: string): Promise<
   const { row, body, ctx } = live;
   const start = new Date(ctx.event.start_time);
   const format = await readFormat(sb, ctx.event.team_id);
-  return { status: 'ready', plan: toSheetModel({ body, title: row.title || 'Practice plan', team: ctx.team?.name ?? '', start, end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: `Published ${formatWith(new Date(row.published_at), { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: ctx.team?.timezone ?? 'America/New_York' })}`, format }, 'player', playerId), stops: toPlayerPlan(body, playerId, start) };
+  return { status: 'ready', plan: toSheetModel({ body, title: row.title || 'Practice plan', team: ctx.team?.name ?? '', start, end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.zone, coaches: ctx.coaches, names: ctx.names, state: `Published ${formatWith(new Date(row.published_at), { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: ctx.zone })}`, format }, 'player', playerId), stops: toPlayerPlan(body, playerId, start) };
 }
 
 /** A player's Practice page: their own stops only, from the live version. Now and Next by the clock, in the team's zone. */
@@ -120,7 +130,7 @@ export async function loadPlayerPractice(planId: string, playerId: string, now: 
   if (live.status !== 'ready') return live;
   const { row, body, ctx } = live;
   const start = new Date(ctx.event.start_time);
-  const zone = ctx.team?.timezone ?? 'America/New_York';
+  const zone = ctx.zone;
   const mine = toPlayerPlan(body, playerId, start);
   const clockOf = (d: Date) => formatWith(d, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone }).replace(/\s?[AP]M$/, '');
   const group = body.groups.find((g) => g.players.includes(playerId)) ?? null;

@@ -296,6 +296,8 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
       exposureQueriedIds = ids;
       return exposureBuilder;
     }),
+    // The prefetch-era Team Hub rows filter (`exposure-scope.ts`, PMAC-01).
+    or: vi.fn().mockReturnThis(),
     // Two `.order()` calls (shown_at, then the id tiebreaker) chain, and
     // `.range(from, to)` is what actually resolves — mirrors
     // `fetchAllRowsResult`'s pagination contract in route.ts.

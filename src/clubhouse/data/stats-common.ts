@@ -139,6 +139,8 @@ export interface ChRoundCache {
   triple_plus: number | null;
   pars?: number | null;
   bogeys?: number | null;
+  /** Holes finished in one putt; like three-putts, read only when the round's putts were recorded (`cachedPutts`). */
+  one_putts?: number | null;
 }
 
 const HOLE_COUNTS = ['eagles', 'birdies', 'pars', 'bogeys', 'double_bogeys', 'triple_plus'] as const;
@@ -170,7 +172,7 @@ export async function loadRoundCache(
       supabase
         .from('golf_round_stats_cache')
         .select(
-          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts, penalty_strokes, double_bogeys, triple_plus, pars, bogeys',
+          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts, one_putts, penalty_strokes, double_bogeys, triple_plus, pars, bogeys',
         )
         .in('round_id', ids),
     ),
@@ -194,7 +196,7 @@ export async function loadRoundCache(
  * way. The Fairway pages leave such a round out of putts per round (calculatePuttsPerRound, aggregateCountableRounds: putts > 0),
  * so a zero here is "not recorded", never a round holed in no putts. Three-putts follow: no putts recorded, no three-putt count.
  */
-export function cachedPutts(c: ChRoundCache | undefined, key: 'total_putts' | 'three_putts' = 'total_putts'): number | null {
+export function cachedPutts(c: ChRoundCache | undefined, key: 'total_putts' | 'three_putts' | 'one_putts' = 'total_putts'): number | null {
   if (!c || typeof c.total_putts !== 'number' || c.total_putts <= 0) return null;
   const v = c[key];
   return typeof v === 'number' ? v : null;
@@ -226,11 +228,6 @@ export function rateSample(rows: ChRoundCache[], total: keyof ChRoundCache, unit
     if (typeof t === 'number' && t > 0) n += unit === 'round' ? 1 : t;
   }
   return n;
-}
-
-export function perRound(rows: ChRoundCache[], key: keyof ChRoundCache): number | null {
-  const vals = rows.map((r) => r[key]).filter((v): v is number => typeof v === 'number');
-  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
 }
 
 export type ChTour = 'pga' | 'lpga';

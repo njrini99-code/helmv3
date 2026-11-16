@@ -6,7 +6,7 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerEvent: vi.fn(), logServer
 vi.mock('../../lib/track-server', () => ({ chLogServer: vi.fn() }));
 vi.mock('@/lib/golf/player-profiles', () => ({ readGolfPlayerProfiles: async () => ({ data: [], error: null }) }));
 
-import { holeStats, poolRoundPar } from '../tournaments';
+import { holeStats, poolRoundCounts, poolRoundPar } from '../tournaments';
 import { eventRoundPar } from '../tournaments-shape';
 import { tourFixture } from '../../preview/fixtures-tournaments';
 import { metric } from '../../screens/tournaments/metrics';
@@ -92,5 +92,28 @@ describe('a round’s GIR through the comparison', () => {
     const r = data.rounds.find((x) => x.stats != null && !x.totalOnly)!;
     const m = toMetricRound({ ...r, stats: { ...r.stats, gir: 3, girOf: 6 } }, data.events);
     expect(m.cache).toMatchObject({ gir: 3, girOf: 6 });
+  });
+});
+
+describe('which GolfHelm rounds the comparison draws on (DF-P-07)', () => {
+  const card = (n: number) => Array.from({ length: n }, () => ({ score: 4 }));
+  const round = (holes: number, score: number, nines: [number | null, number | null]) => ({ total_score: score, holes_played: holes, front_nine: nines[0], back_nine: nines[1], total_putts: null });
+
+  it('a full 18 or 9, and an 18-hole total, count', () => {
+    expect(poolRoundCounts(round(18, 74, [37, 37]), card(18), null)).toBe(true);
+    expect(poolRoundCounts(round(9, 38, [38, null]), card(9), null)).toBe(true);
+    expect(poolRoundCounts(round(18, 76, [null, null]), [], null)).toBe(true);
+  });
+
+  it('a 14-hole card never reads as 18 holes: its 58 is not −14 to par', () => {
+    expect(poolRoundCounts(round(14, 58, [38, 20]), card(14), null)).toBe(false);
+    // Declared 18 with only 14 holes scored is a partial card too.
+    expect(poolRoundCounts(round(18, 58, [38, 20]), card(14), null)).toBe(false);
+  });
+
+  it('an event round withdrawn from stays, so its evidence can say why; figures leave it out by its status', () => {
+    expect(poolRoundCounts(round(18, 58, [38, 20]), card(14), 'wd')).toBe(true);
+    expect(poolRoundCounts(round(18, 58, [38, 20]), card(14), 'dq')).toBe(true);
+    expect(poolRoundCounts(round(18, 58, [38, 20]), card(14), 'ok')).toBe(false);
   });
 });
