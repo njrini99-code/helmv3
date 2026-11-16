@@ -21,7 +21,7 @@
 .ch-tour-home-feat {
   gap: 12px;
   padding: 20px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
 }
 .ch-tour-home-feat .ch-feat__title {
   font: var(--ch-type-28-strong);
@@ -39,7 +39,7 @@
 .ch-tour-home-feat__t:focus-visible {
   outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-tour-home-feat__p,
 .ch-tour-home-feat__ready {
@@ -86,7 +86,7 @@
   padding: 16px;
 }
 .ch-tour-home.is-phone .ch-tour-home-feat .ch-feat__title {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-22);
 }
@@ -132,14 +132,14 @@
 /* The month at 12, the phone's text floor (Q-141); 11 read as fine print under the day. */
 .ch-tour-home-date span {
   margin-top: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 
 /* P-5 4.11: "Set up today" on a tournament made today (on a fresh load, in place of the arrival wash). */
 .ch-tour-home__today {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   letter-spacing: var(--ch-track-12);
   color: var(--ch-green-700);
   white-space: nowrap;
@@ -156,7 +156,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-tour-home-setup__go {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-green-700);
 }

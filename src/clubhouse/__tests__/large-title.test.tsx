@@ -231,17 +231,20 @@ describe('the CSS that hides and fades the bar title', () => {
     // The title's ink is one token (owner, 11 Nov 2026: page titles are near-black on every page): the deepest forest step by day, the Ledger's ink at night.
     expect(tokens).toMatch(/--ch-title-ink: var\(--ch-green-900\);/);
     expect(tokens).toMatch(/--ch-title-ink: var\(--ch-ledger-ink\);/);
-    expect(tokens).toMatch(/--ch-type-large-title: 600 calc\(34 \* var\(--ch-type-k\)\)\/calc\(41 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);/);
+    // MOTION-AND-VISUAL 4.3: 34/41 700 on the phone, 30/36 700 on the desktop.
+    expect(tokens).toMatch(/--ch-type-large-title: 700 calc\(34 \* var\(--ch-type-k\)\)\/calc\(41 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);/);
+    expect(tokens).toMatch(/--ch-type-large-title: 700 calc\(30 \* var\(--ch-type-k\)\)\/calc\(36 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);/);
     // The screens' old title rules are gone: no stylesheet styles a large title by its own class any more.
     const dir = join(process.cwd(), 'src/clubhouse/styles');
     const old = /\.ch-(rsm|recm|setm)-title\s*\{[^}]*font:|\.ch-hl-h__t\s*\{[^}]*font: var\(--ch-type-34-strong\)|\.ch-stm-head h1\s*\{[^}]*font:|\.ch-ms-rail__title h1\s*\{[^}]*font: var\(--ch-type-34-strong\)/;
     for (const f of ['roster.css', 'recruiting.css', 'settings.css', 'coachhelm.css', 'stats.css']) {
       expect(old.test(readFileSync(join(dir, f), 'utf8')), f).toBe(false);
     }
-    // Only the large-title rule itself reads the role.
+    // Only page titles read the role: the phone's one large title and the desktop page heads (the shell's hero, Classes,
+    // Qualifiers and Rounds), never a card's heading (a card hero title is the title role).
     const all = ['shell.css', 'roster.css', 'recruiting.css', 'settings.css', 'coachhelm.css', 'stats.css', 'hub.css', 'classes.css', 'messages.css', 'qualifiers.css', 'rounds.css'];
     const users = all.filter((f) => readFileSync(join(dir, f), 'utf8').includes('var(--ch-type-large-title)'));
-    expect(users).toEqual(['shell.css']);
+    expect(users).toEqual(['shell.css', 'classes.css', 'qualifiers.css', 'rounds.css']);
   });
   it('fades on opacity and translate at the quick duration, and swaps at once with reduced motion or Animations off', () => {
     expect(block).toMatch(/transition:\s*opacity var\(--ch-dur-quick\) var\(--ch-ease\),\s*translate var\(--ch-dur-quick\) var\(--ch-ease\);/);

@@ -5,7 +5,6 @@ import type { ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { formatFixed, formatSigned } from '../../lib/format';
-import { FormBars } from '../../ui/FormLine';
 import { leaderPicks, ROSTER_EARLY_FLOOR, yearKeyOf, type RosterClock, type RosterLeader } from './format';
 
 const KIND: Record<RosterLeader['kind'], { label: string; icon: LucideIcon; unit: string | null }> = {
@@ -35,7 +34,8 @@ export function RosterLeaders({ players, statsError, clock, onOpen }: { players:
         const figure = reason ?? (kind === 'look' ? formatSigned(value) : formatFixed(value));
         const unit = reason ? `${formatSigned(value)} ${k.unit}` : k.unit;
         return (
-          <button key={kind} type="button" className="ch-rs-ldr" data-year={year ?? undefined} data-ch-press-scale=".97" aria-label={`${k.label}, ${p.name}, ${figure}. Open profile`} onClick={() => onOpen(p.id)}>
+          // A plain card (ROSTER-04): the class year shows on the avatar coin only, not as a tint over the whole card.
+          <button key={kind} type="button" className="ch-rs-ldr" data-ch-press-scale=".97" aria-label={`${k.label}, ${p.name}, ${figure}. Open profile`} onClick={() => onOpen(p.id)}>
             <span className="ch-rs-ldr__k">
               {k.label}
               <Icon icon={k.icon} size={15} />
@@ -48,11 +48,6 @@ export function RosterLeaders({ players, statsError, clock, onOpen }: { players:
               <Avatar name={p.name} id={p.id} size="sm" year={year} />
               <b>{p.name}</b>
             </span>
-            {p.trend.length >= 3 && (
-              <span className="ch-rs-ldr__bars">
-                <FormBars data={p.trend} mean={p.avg} />
-              </span>
-            )}
           </button>
         );
       })}

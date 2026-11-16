@@ -31,6 +31,7 @@ export function HomeSpanSwitch({ span }: { span: ChSpan }) {
   return (
     <SpanSwitch
       hook="home-span"
+      size="md"
       labels={HOME_SPAN_LABELS}
       value={pending && chosen ? chosen : span}
       onChange={(v) => {

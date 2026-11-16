@@ -21,11 +21,15 @@ const scopedRules = (f: string) => {
 };
 
 describe('the refreshed shell', () => {
-  it('the page takes no light or paper', () => {
-    const rules = scopedRules('shell.css').filter((r) => r.selector.includes('.ch-canvas') || r.selector.includes('.ch-app'));
-    expect(rules.length).toBeGreaterThan(0);
-    for (const r of rules) expect(r.props.background ?? '').not.toMatch(/--ch-light-(canvas|paper)/);
-    expect(rules.some((r) => r.props.background === 'var(--ch-grouped-bg)')).toBe(true);
+  it('sticky controls are clear over the lit page, and take its paper and linen once the page scrolls under them', () => {
+    // Nick, 15 Nov 2026 (audit WHITE-00): the ivory light is back on the page, so a sticky bar painted one flat colour
+    // would cut a band across it. At rest the bar shows the page; scrolled, it carries the paper over the linen.
+    const rules = scopedRules('shell.css').filter((r) => /:is\(\[data-ch-sticky-controls\], \.ch-stickybar\)/.test(r.selector));
+    const rest = rules.find((r) => !r.selector.includes('[data-scrolled]'));
+    const scrolled = rules.find((r) => r.selector.includes(':has(.ch-topbar[data-scrolled])'));
+    expect(rest?.props.background).toBe('transparent');
+    expect(scrolled?.props.background).toBe('var(--ch-light-paper), var(--ch-workspace)');
+    for (const r of rules) expect(r.props.background ?? '').not.toBe('var(--ch-grouped-bg)');
   });
 
   it('a feature card is flat at the token, so no scoped rule has to flatten it', () => {

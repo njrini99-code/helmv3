@@ -44,7 +44,7 @@
   gap: 6px;
   height: 36px;
   padding: 0 16px 0 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
   background: var(--ch-ivory-0);
@@ -109,8 +109,8 @@
   gap: 6px;
   margin: 8px 0 0;
   padding: 4px 8px;
-  border-radius: 999px;
-  font: var(--ch-type-12-medium);
+  border-radius: var(--ch-radius-full);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   background: var(--ch-green-50);
   color: var(--ch-green-700);
@@ -271,7 +271,7 @@ button.ch-rt-strip__h {
   gap: 16px;
   min-width: 0;
   padding: 24px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: radial-gradient(90% 70% at 100% 0%, rgb(123 199 154 / 0.1), transparent 60%), var(--ch-bg-surface);
   box-shadow:
     0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule),
@@ -516,7 +516,10 @@ path.ch-rt-map__shot {
 }
 .ch-rt-map__ball {
   fill: var(--ch-on-green-ink);
-  filter: drop-shadow(0 2px 3px rgb(4 20 12 / 0.45));
+  /* A static edge, not a filter, so the moving ball repaints nothing (PL-TRK-07). */
+  stroke: rgb(4 20 12 / 0.45);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
   animation: ch-rt-ball var(--ch-dur-reveal) linear var(--ch-rt-at, 0s) both;
 }
 @keyframes ch-rt-ball {
@@ -762,7 +765,7 @@ path.ch-rt-map__shot {
 }
 .ch-rt-log__r strong {
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: 700 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
@@ -776,11 +779,9 @@ path.ch-rt-map__shot {
      at the panel's foot, clear of the last row, whatever the shot asks (a putt's card is short). */
   align-self: stretch;
   min-width: 0;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow:
-    0 0 0 1px rgb(21 90 57 / 0.18),
-    0 18px 40px -30px rgb(11 58 37 / 0.45);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-rt-sec {
   min-width: 0;
@@ -789,7 +790,7 @@ path.ch-rt-map__shot {
 }
 .ch-rt-card__head > .ch-rt-sec:first-child {
   padding-top: 16px;
-  border-radius: var(--ch-radius-card) var(--ch-radius-card) 0 0;
+  border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0;
 }
 .ch-rt-sec.is-tint {
   background: #f7f5ef;
@@ -814,12 +815,12 @@ path.ch-rt-map__shot {
   content: '';
   width: 3px;
   height: 12px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-fill-600);
 }
 .ch-rt-hint {
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
@@ -838,7 +839,7 @@ path.ch-rt-map__shot {
 .ch-rt-sub > label {
   display: block;
   margin-bottom: 8px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -902,7 +903,7 @@ path.ch-rt-map__shot {
   gap: 8px;
 }
 .ch-rt-amiss__k {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -926,7 +927,7 @@ path.ch-rt-map__shot {
   place-items: center;
   border-radius: var(--ch-radius-md);
   text-align: center;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-ink-700);
   background: rgb(255 255 255 / 0.6);
@@ -961,8 +962,8 @@ path.ch-rt-map__shot {
   cursor: pointer;
   height: 44px;
   padding: 0 16px;
-  border-radius: 999px;
-  font: var(--ch-type-13-medium);
+  border-radius: var(--ch-radius-full);
+  font: var(--ch-type-footnote);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
 }
@@ -1086,12 +1087,12 @@ path.ch-rt-map__shot {
 .ch-rt-read__h > span::before {
   width: 3px;
   height: 12px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-fill-600);
   content: '';
 }
 .ch-rt-read__h > b {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
@@ -1215,7 +1216,7 @@ path.ch-rt-map__shot {
 .ch-rt-error {
   display: block;
   margin: 8px 0 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-danger-600);
 }
 
@@ -1227,7 +1228,7 @@ path.ch-rt-map__shot {
   margin: 8px 0 0;
   padding: 8px 12px;
   border-radius: var(--ch-radius-lg);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   background: var(--ch-green-50);
   color: var(--ch-green-700);
 }
@@ -1500,7 +1501,7 @@ path.ch-rt-map__shot {
 }
 .ch-rt-opts__k {
   margin: 0 0 2px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -1602,7 +1603,7 @@ path.ch-rt-map__shot {
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
 }
 .ch-rt-exitc__n b {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   letter-spacing: var(--ch-track-22);
   line-height: var(--ch-lead-tight);
 }
@@ -1619,13 +1620,13 @@ path.ch-rt-map__shot {
   height: 4px;
   margin-top: 6px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(255 255 255 / 0.14);
 }
 .ch-rt-exitc__bar i {
   display: block;
   height: 100%;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-hero-mint);
 }
 .ch-rt-exit__opts {
@@ -1706,7 +1707,7 @@ path.ch-rt-map__shot {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-control);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
@@ -1836,12 +1837,12 @@ path.ch-rt-map__shot {
   gap: 4px;
 }
 .ch-rt-sum__hero span {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: rgb(244 241 232 / 0.66);
 }
 .ch-rt-sum__hero b {
-  font: 500 64px/0.9 var(--ch-font-sans);
+  font: 600 64px/0.9 var(--ch-font-sans);
   letter-spacing: -0.06em;
   font-variation-settings: 'wdth' 96;
   font-variant-numeric: tabular-nums;
@@ -1854,7 +1855,7 @@ path.ch-rt-map__shot {
   color: #e7b866;
 }
 .ch-rt-sum__hero em.is-under {
-  color: #ff9b8f;
+  color: var(--ch-stage-gain);
 }
 .ch-rt-sum__f {
   display: grid;
@@ -1863,7 +1864,7 @@ path.ch-rt-map__shot {
   margin: 0;
 }
 .ch-rt-sum__f dt {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: rgb(244 241 232 / 0.62);
 }
@@ -2257,10 +2258,8 @@ path.ch-rt-map__shot {
 }
 .ch-rtcv__glass {
   height: 44px;
-  border-radius: 999px;
-  background: rgb(7 38 25 / 0.62);
-  -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.8));
-  backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.8));
+  border-radius: var(--ch-radius-full);
+  background: rgb(7 38 25 / 0.92);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
 }
 .ch-rtcv__back {
@@ -2271,10 +2270,8 @@ path.ch-rt-map__shot {
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 999px;
-  background: rgb(7 38 25 / 0.62);
-  -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.8));
-  backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.8));
+  border-radius: var(--ch-radius-full);
+  background: rgb(7 38 25 / 0.92);
   box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14);
   color: var(--ch-on-green-ink);
 }
@@ -2344,7 +2341,7 @@ path.ch-rt-map__shot {
   /* Folded, only the bar shows; tapped or swiped up, the list rises over the map on the smooth spring. */
   transform: translateY(calc(100% - var(--ch-rtcv-peek)));
   transition: transform var(--ch-dur-release) var(--ch-ease-spring-smooth);
-  border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
+  border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
   background: var(--ch-ivory-100);
   color: var(--ch-ink-900);
   box-shadow: var(--ch-elevation-sheet);
@@ -2477,7 +2474,7 @@ path.ch-rt-map__shot {
   .ch-rt-pill {
     height: 44px;
     padding: 0 16px 0 12px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     font: var(--ch-type-14-strong);
     line-height: var(--ch-lead-tight);
     color: var(--ch-on-green-ink);
@@ -2546,7 +2543,7 @@ path.ch-rt-map__shot {
     white-space: nowrap;
     padding: 0;
     border-radius: 0;
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     text-align: right;
     background: none;
     color: var(--ch-on-green-ink-soft);
@@ -2566,8 +2563,8 @@ path.ch-rt-map__shot {
   }
 
   /* The hole strip (board 3): one row of compact chips. Every chip shows its hole number; a played hole carries its
-     score under it as the scorecard's small mark (a circle under par, a square over it, a plain figure for par; red
-     only under par, D-42), so no chip shows a bare score where a hole's number belongs (owner, 2026-11-11). The hole
+     score under it as the scorecard's small mark (a circle under par, a square over it, a plain figure for par; the
+     gain green under par, MOTION-AND-VISUAL 4.7), so no chip shows a bare score where a hole's number belongs (owner, 2026-11-11). The hole
      you're on is lit ivory, an unplayed hole is an outline with its number in the middle. Each chip is drawn inside a
      44 x 44 hit area; the row scrolls sideways for 18 holes and keeps the current hole in view (TrackStrip). */
   .ch-rt-strip {
@@ -2635,12 +2632,13 @@ path.ch-rt-map__shot {
   }
   /* A played hole: its number steps down a size and stands over its mark. */
   .ch-rt-strip .ch-rt-strip__h.is-done em {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
     color: var(--ch-on-green-ink-soft);
   }
   /* The scorecard's mark at the strip's size, in the strip's inks (ui.css draws it for an ivory card): a plain figure
-     for par, a ring under par (two for an eagle), an outlined square over par, a filled one for a double or worse. */
+     for par, a solid gain disc under par (ringed for an eagle), an outlined square over par, a filled one for a
+     double or worse. */
   .ch-rt-strip .ch-rt-strip__h .ch-score {
     width: 20px;
     height: 20px;
@@ -2652,17 +2650,18 @@ path.ch-rt-map__shot {
     box-shadow: none;
     color: var(--ch-on-green-ink);
   }
+  /* Under par is a solid gain chip (MOTION-AND-VISUAL 4.7): on the green, the feature gain's mint disc under the deep
+     green numeral (7.0:1), an eagle ringed once more. */
   .ch-rt-strip .ch-rt-strip__h .ch-score--birdie,
   .ch-rt-strip .ch-rt-strip__h .ch-score--eagle {
     border-radius: 50%;
-    box-shadow: inset 0 0 0 1.5px var(--ch-score-under-on-green);
-    color: var(--ch-score-under-on-green);
+    background: var(--ch-feature-gain-fill);
+    color: var(--ch-green-900);
   }
   .ch-rt-strip .ch-rt-strip__h .ch-score--eagle {
     box-shadow:
-      inset 0 0 0 1.5px var(--ch-score-under-on-green),
       0 0 0 1.5px var(--ch-green-900),
-      0 0 0 3px var(--ch-score-under-on-green);
+      0 0 0 3px var(--ch-feature-gain-fill);
   }
   .ch-rt-strip .ch-rt-strip__h .ch-score--bogey {
     border-radius: var(--ch-radius-xs);
@@ -2687,14 +2686,14 @@ path.ch-rt-map__shot {
     font-weight: 700;
     color: var(--ch-green-900);
   }
+  /* On the ivory chip the disc is the deep gain under the ivory numeral (8.0:1). */
   .ch-rt-strip .ch-rt-strip__h.is-cur .ch-score--birdie,
   .ch-rt-strip .ch-rt-strip__h.is-cur .ch-score--eagle {
-    box-shadow: inset 0 0 0 1.5px var(--ch-score-under-on-ivory);
-    color: var(--ch-score-under-on-ivory);
+    background: var(--ch-score-under-on-ivory);
+    color: var(--ch-on-green-ink);
   }
   .ch-rt-strip .ch-rt-strip__h.is-cur .ch-score--eagle {
     box-shadow:
-      inset 0 0 0 1.5px var(--ch-score-under-on-ivory),
       0 0 0 1.5px var(--ch-on-green-ink),
       0 0 0 3px var(--ch-score-under-on-ivory);
   }
@@ -3059,7 +3058,7 @@ path.ch-rt-map__shot {
     padding: 16px 16px 12px;
     /* The card's words turn 12px across with a new hole; the card's own edge holds them. */
     overflow-x: clip;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-ivory-100);
     color: var(--ch-ink-900);
     box-shadow:
@@ -3456,7 +3455,7 @@ path.ch-rt-map__shot {
   }
   .ch-rt-bar__row > .ch-btn.ch-rt-bar__go {
     height: 56px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     font: var(--ch-type-17-strong);
     letter-spacing: var(--ch-track-17);
     line-height: var(--ch-lead-tight);

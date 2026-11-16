@@ -12,7 +12,7 @@ export type TurnEnd = { kind: 'stopped' } | { kind: 'failed'; notice: ChatErrorN
 
 /**
  * The turn notice (SPEC Moment 10): the last thing in the turn that failed or was stopped. What arrived stays above it; the way
- * to recover is here, inside the thing that failed. Amber, never red (red means under par and nothing else). "Nothing was
+ * to recover is here, inside the thing that failed. Amber, never red (red means an error, MOTION-AND-VISUAL 4.7). "Nothing was
  * changed." is said only when it is true of this turn.
  */
 export function TurnNotice({ end, offline, changed, onRetry, onNewChat }: { end: TurnEnd; offline: boolean; changed: { changedNothing: boolean; unconfirmedWrite: boolean }; onRetry: () => void; onNewChat: () => void }) {

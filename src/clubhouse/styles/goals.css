@@ -19,7 +19,7 @@
   color: var(--ch-text-primary);
 }
 .ch-gs__h .ch-num {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-gs__list {
@@ -60,7 +60,7 @@
 .ch-gl-st {
   display: block;
   margin-top: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
 }
 .ch-gl-ctl {

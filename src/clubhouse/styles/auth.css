@@ -469,7 +469,7 @@
 }
 .ch-au-lock span,
 .ch-au-mark span {
-  font: 650 28px/1 var(--ch-font-sans);
+  font: 600 28px/1 var(--ch-font-sans);
   letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 96;
   color: #1c1b18;
@@ -523,7 +523,7 @@
 .ch-au-alt a {
   position: relative;
   font-weight: 500;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   outline-offset: 2px;
 }
 /* 44px tall: 19.6px of line plus 12px above and below. */
@@ -648,7 +648,7 @@
 /* Text links take a rounded focus ring a step off the words, not a square box on them. */
 .ch-au-forgot,
 .ch-au-foot a {
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   outline-offset: 2px;
 }
 .ch-au-forgot--below {
@@ -718,7 +718,7 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: flex-start;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-primary);
 }
 .ch-au-notice svg {
@@ -1010,7 +1010,7 @@
   filter: drop-shadow(0 1px 0 rgb(255 255 255 / 0.5));
 }
 .ch-au-wl-mark span {
-  font: 650 17px/1 var(--ch-font-sans);
+  font: 600 17px/1 var(--ch-font-sans);
   letter-spacing: -0.022em;
   /* The wordmark's display width, as the 28px mark (B1: two widths). */
   font-variation-settings: 'wdth' 96;
@@ -1163,7 +1163,7 @@
 }
 .ch-au-wl-hint kbd {
   padding: 4px 6px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   font: var(--ch-type-mono);
   color: var(--ch-text-primary);
   background: rgb(251 250 246 / 0.7);
@@ -1363,7 +1363,7 @@
     right: 0;
     bottom: 0;
     width: auto;
-    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
+    border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
     padding: 24px 20px calc(40px + var(--keyboard-height, 0px));
     box-shadow: 0 -1px 0 rgb(255 255 255 / 0.6) inset, 0 -18px 40px -20px rgb(0 0 0 / 0.5);
     transition: transform var(--ch-au-t-sheet) var(--ch-au-ease), opacity var(--ch-au-t-sheet-fade) linear;
@@ -1833,7 +1833,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
 }
 .ch-au-meter i {
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   /* An empty step is a visible track (3:1 against the paper), not ivory on ivory. */
   background: var(--ch-border-strong);
   transition: background-color var(--ch-dur-quick) var(--ch-ease);
@@ -1893,7 +1893,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   justify-self: center;
   width: 8px;
   height: 2px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-border-strong);
 }
 .ch-au-slot {
@@ -1924,7 +1924,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   content: '';
   width: 2px;
   height: 24px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-text-primary);
   opacity: 0;
 }
@@ -2053,7 +2053,7 @@ html[data-fw-theme='dark'] .ch-au-code[data-focus] .ch-au-slot[data-cur] {
   font: inherit;
   font-weight: 500;
   color: var(--ch-green-700);
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   outline-offset: 2px;
   cursor: pointer;
 }
