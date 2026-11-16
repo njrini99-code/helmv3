@@ -219,6 +219,7 @@ export function ScoreChart({
   label,
   mean: meanAt,
   best: bestAt,
+  dodge = false,
 }: {
   points: ChScoringPoint[];
   phone: boolean;
@@ -229,6 +230,8 @@ export function ScoreChart({
   mean?: number;
   /** The pinned point's index when the best one is chosen by the caller (the team's best day skips one-round days); null pins none. */
   best?: number | null;
+  /** Moves a value under its dot where the line runs down into that dot from both sides (the team's tenths are wide enough to sit on the line). */
+  dodge?: boolean;
 }) {
   const uid = useId().replace(/:/g, '');
   const W = phone ? 340 : 760;
@@ -261,6 +264,13 @@ export function ScoreChart({
   const ticks = scoreTicks(lo, hi, phone ? 6 : 8);
   // Under par against that round's own par, so a dot is green and a label red even where the par line is not drawn.
   const under = (i: number) => points[i]!.par != null && scores[i]! < points[i]!.par!;
+  // Where the line comes down into a dot (no neighbour sits lower on screen and at least one sits higher), the value
+  // above would sit on that line, so it goes below the dot.
+  const below = (i: number) => {
+    if (!dodge) return false;
+    const n = [scores[i - 1], scores[i + 1]].filter((v): v is number => v != null);
+    return n.some((v) => v < scores[i]!) && n.every((v) => v <= scores[i]!);
+  };
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
@@ -305,7 +315,7 @@ export function ScoreChart({
         <g key={points[i]!.id}>
           <circle cx={px} cy={py} r={i === last ? 5 : points.length > 10 ? 2.6 : 3.4} className={'ch-ph-chart__dot' + (under(i) ? ' is-under' : '')} />
           {labelled && (
-            <text x={px} y={py - 10} textAnchor="middle" className={'ch-ph-chart__val' + (under(i) ? ' is-under' : '')}>
+            <text x={px} y={below(i) ? py + 18 : py - 10} textAnchor="middle" className={'ch-ph-chart__val' + (under(i) ? ' is-under' : '')}>
               {format(scores[i]!)}
             </text>
           )}

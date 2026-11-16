@@ -106,7 +106,7 @@ export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean 
     points.length < 2 ? (
       <p className="ch-ph-tm-noline">The line starts with a second round day.</p>
     ) : (
-      <ScoreChart points={points} phone={phone} format={(v) => formatFixed(v)} pin="Best day" label={label} mean={form.avg} best={marks ? marks.best : null} />
+      <ScoreChart points={points} phone={phone} format={(v) => formatFixed(v)} pin="Best day" label={label} mean={form.avg} best={marks ? marks.best : null} dodge />
     );
   const top = (
     <div className="ch-ph-game__top">

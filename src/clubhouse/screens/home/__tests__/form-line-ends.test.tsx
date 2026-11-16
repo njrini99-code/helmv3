@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }), usePathname: () => '/golf/dashboard', useSearchParams: () => new URLSearchParams() }));
 
 import { PREVIEW_HOME } from '../../../preview/fixtures';
+import { ScoreChart } from '../PlayerGame';
 import { TeamScoring, teamDays } from '../TeamScoring';
 
 /**
@@ -45,5 +46,20 @@ describe('Team scoring line', () => {
     const { container } = render(<TeamScoring form={{ ...form, lineDays: undefined }} phone={false} />);
     expect(container.querySelector('.ch-ph-pinflag')).toBeNull();
     expect(container.querySelector('.ch-ph-note')).toBeNull();
+  });
+
+  // Staging, 16 Nov 2026: on the real team the 79.0 and 80.0 days sat on the line that came down into them.
+  it('moves a value under its dot where the line comes down into it, and only when asked', () => {
+    const scores = [77.5, 74, 79, 79, 74.1];
+    const points = scores.map((score, i) => ({ id: `p${i}`, label: `Jul ${i + 1}`, score, par: null }));
+    const valueYs = (dodge: boolean) => {
+      const { container, unmount } = render(<ScoreChart points={points} phone={false} format={(v) => v.toFixed(1)} dodge={dodge} />);
+      const dots = [...container.querySelectorAll('.ch-ph-chart__dot')].map((c) => Number(c.getAttribute('cy')));
+      const vals = [...container.querySelectorAll('.ch-ph-chart__val')].map((t) => Number(t.getAttribute('y')));
+      unmount();
+      return vals.map((v, i) => (v > dots[i]! ? 'below' : 'above'));
+    };
+    expect(valueYs(true)).toEqual(['below', 'above', 'below', 'below', 'above']);
+    expect(valueYs(false)).toEqual(['above', 'above', 'above', 'above', 'above']);
   });
 });

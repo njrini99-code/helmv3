@@ -32,6 +32,9 @@ Held items:     none
   Best and toughest day count only days with two rounds or more.
 - The loading skeleton no longer swaps in the coach-only lane shape: coaches
   wait on the same page shape as players.
+- Team scoring moves a value under its dot where the line comes down into that
+  dot (`ScoreChart` `dodge`, coach only): on staging the 79.0 and 80.0 days sat
+  on the line. Player Home's chart is unchanged.
 - Dropped from the phone: the per-round trend sparks, the round sheet from the
   rows (the card links straight on), and Nudge from Home (Calendar keeps it).
 
@@ -44,6 +47,6 @@ Held items:     none
 
 - Unit: the Home suites (home.test.tsx, screens/home/__tests__, span-switch),
   typecheck (tsgo), lint on the changed files.
-- Screenshots: preview fixtures in Chromium (tier C), coach next to player,
-  phone and desktop, in the PR. Real-team data and the real iPhone are not yet
-  checked.
+- Screenshots: staging, Demo University Golf (16 Nov 2026), phone WebKit (W),
+  desktop Chromium (C), light and dark; every Home figure checked against the
+  staging rows. The real iPhone is not yet checked.
