@@ -315,3 +315,6 @@ ALTER TABLE ONLY "public"."push_subscriptions"
 
 ALTER TABLE ONLY "public"."users"
     ADD CONSTRAINT "users_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "helm_private"."golf_demo_editors"
+    ADD CONSTRAINT "golf_demo_editors_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;

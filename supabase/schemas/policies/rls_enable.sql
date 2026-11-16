@@ -693,3 +693,5 @@ ALTER TABLE "public"."golf_class_hold_dirty" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."golf_conversation_pins" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_division_cohort" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "helm_private"."golf_demo_editors" ENABLE ROW LEVEL SECURITY;
