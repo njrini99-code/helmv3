@@ -119,9 +119,10 @@ export const LAST_TEN_MONTHS = 12;
  * Last 5 and Last 20 read the same year: Last 20 and its previous 20 need forty rounds in it, so a thinner player gets a shorter
  * previous stretch, or none under 23 (a known limit, PR #2257; the read is not widened per cut).
  */
-export function lastTenFloor(now = new Date()): string {
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - LAST_TEN_MONTHS, now.getUTCDate()));
-  return d.toISOString().slice(0, 10);
+export function lastTenFloor(now = new Date(), tz: string = SEASON_DEFAULT_TZ): string {
+  // DF-C-22: today on the clock seasons turn on, as `seasonStartDate`, not the UTC date (an evening in the US is already tomorrow).
+  const [y, m, d] = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now).split('-').map(Number);
+  return new Date(Date.UTC(y!, m! - 1 - LAST_TEN_MONTHS, d!)).toISOString().slice(0, 10);
 }
 
 /** How many id chunks are read at once: the 200-id slices of a big roster go side by side, not one after another (F-0013). */
