@@ -1113,6 +1113,10 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-15-quick-chat-styles-popover.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-rail-fold-transform.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-touch-list-presence.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-drill-push-skeleton.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-one-reduce-motion-read.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-phone-overlay-push.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-story-and-refresh-keyframes.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1305,6 +1309,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-13-week-gap-legs-target.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-14-retire-fairway.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-16-add-event-in-place.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
@@ -1875,6 +1880,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-nav-stepper-haptic.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-switch-and-board-first-paint.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-tour-comparison-streams.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
