@@ -1962,7 +1962,7 @@ html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
     position: relative;
     z-index: calc(var(--ch-z-sticky) - 1);
     background: var(--ch-page-paint);
-    box-shadow: -1px 0 0 var(--ch-card-ring);
+    box-shadow: var(--ch-push-edge);
     will-change: transform;
   }
 }
