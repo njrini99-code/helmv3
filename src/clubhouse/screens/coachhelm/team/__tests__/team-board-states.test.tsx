@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../../../../__tests__/dialog-polyfill';
 
@@ -153,6 +153,34 @@ describe('the board’s counts and windows say only what they are (one number, o
     const text = document.body.textContent ?? '';
     expect(text).toContain('Team against Tour · all time');
     expect(text).not.toContain('Team against Tour · this season');
+  });
+
+  it('the Tour comparison streams on its own (N13-13): the rows wait as their shape, and land without holding the hole', async () => {
+    let land: (rows: ChTeamBoardData['course']['against']) => void = () => {};
+    const against = new Promise<Awaited<ChTeamBoardData['course']['against']>>((r) => {
+      land = r as typeof land;
+    });
+    const rows = await Promise.resolve(PREVIEW_TEAM_BOARD.course.against);
+    await act(async () => {
+      render(ui({ initialStation: 'course', data: { ...PREVIEW_TEAM_BOARD, course: { ...PREVIEW_TEAM_BOARD.course, against } } }));
+    });
+    expect(document.querySelector('[data-ch-team-card="hole"]')).not.toBeNull();
+    expect(screen.getByLabelText('Loading the Tour comparison')).toBeTruthy();
+    await act(async () => {
+      land(rows);
+      await against;
+    });
+    await waitFor(() => expect(screen.queryByLabelText('Loading the Tour comparison')).toBeNull());
+    expect(document.body.textContent).toContain('Team against Tour · all time');
+  });
+
+  it('a Tour comparison whose read failed says so in its own place, not as an empty card', async () => {
+    const against = Promise.resolve(null);
+    await act(async () => {
+      render(ui({ initialStation: 'course', data: { ...PREVIEW_TEAM_BOARD, course: { ...PREVIEW_TEAM_BOARD.course, against } } }));
+      await against;
+    });
+    expect(await screen.findByText('Couldn’t load this part')).toBeTruthy();
   });
 });
 

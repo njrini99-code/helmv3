@@ -23,8 +23,9 @@ describe('a player’s CoachHelm sits on the page canvas', () => {
   it('the player’s views and their skeletons ask for it', () => {
     // The views' frame is also a coach's view of one player, which keeps the full head.
     expect(src('screens/coachhelm/views/Frame.tsx')).toMatch(/<Head phone=\{phone\} tight=\{!coach\} aside=/);
-    expect(src('screens/coachhelm/CoachHelmSkeleton.tsx')).toMatch(/className="ch-hl-h has-aside" data-canopy-head=\{coach \? '' : 'tight'\}/);
-    expect(src('screens/coachhelm/views/Skeletons.tsx')).toMatch(/className="ch-hl-h has-aside" data-canopy-head="tight"/);
+    // The switch is the route's frame now, above the view (N13C-67, N13P-18), so a skeleton's head holds no switch aside.
+    expect(src('screens/coachhelm/CoachHelmSkeleton.tsx')).toMatch(/className="ch-hl-h" data-canopy-head=\{coach \? '' : 'tight'\}/);
+    expect(src('screens/coachhelm/views/Skeletons.tsx')).toMatch(/className="ch-hl-h" data-canopy-head="tight"/);
   });
 
   it('a page with the tight head drops the sheet, opens where a page with no eyebrow does, and its loading head is not held to the full head’s height', () => {
