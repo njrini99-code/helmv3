@@ -152,13 +152,19 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
  */
 export function NoRoundsYet() {
   const classes = rebuiltHref('/golf/dashboard/classes', 'player');
+  // The welcome names the head's New round, so its words point at a button on the page and not only at Add classes.
+  const post = postRoundHref();
   return (
     <EmptyState
       size="page"
       code="CH-2312"
       shape="rows"
       title="Welcome to the team"
-      body="Your stats start with the first round you post. Your latest round, scoring line and game fill in here."
+      body={
+        post
+          ? 'Post your first round with New round, and your latest round, scoring line and game fill in here.'
+          : 'Your stats start with the first round you post. Your latest round, scoring line and game fill in here.'
+      }
       secondaryAction={
         classes ? (
           <Button leftIcon={GraduationCap} href={classes}>
