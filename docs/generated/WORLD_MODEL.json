@@ -3862,9 +3862,11 @@
         "definedIn": [
           "supabase/migrations/20261031140000_golf_rounds_tee_id_backfill.sql",
           "supabase/migrations/20261115211000_golf_demo_generator.sql",
+          "supabase/migrations/20261116150000_golf_demo_owner_editors.sql",
           "supabase/migrations/20261114090100_round_totals_follow_holes.sql",
           "supabase/migrations/20261115200000_golf_sand_save_tour_definition.sql",
-          "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
+          "supabase/migrations/20261115230000_golf_one_gir_rule.sql",
+          "supabase/migrations/20261116200000_golf_scrambling_counts_sand_saves.sql"
         ]
       }
     ],
@@ -18897,6 +18899,10 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20261115211000_golf_demo_generator.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261116150000_golf_demo_owner_editors.sql"
         }
       ]
     },
@@ -22814,6 +22820,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/genome/dimensions/scrambling-rate.ts",
+          "anchor": "src/lib/golf/stat-formulas"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/genome/orchestrator.ts",
           "anchor": "src/lib/golf/round-countable"
         },
@@ -25587,8 +25598,18 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/shot-actions.ts",
+          "anchor": "src/lib/golf/stat-formulas"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/shot-analysis/__tests__/stats-cache-baseline.test.ts",
           "anchor": "src/lib/golf/strokes-gained"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/shot-analysis/scoring-opportunities.ts",
+          "anchor": "src/lib/golf/stat-formulas"
         },
         {
           "kind": "import_graph",
@@ -26268,6 +26289,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/stats-data.ts",
+          "anchor": "src/lib/golf/stat-formulas"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/stats-intelligence.ts",
           "anchor": "src/lib/golf/resolve-team-server"
         },
@@ -26341,6 +26367,10 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261116200000_golf_scrambling_counts_sand_saves.sql"
         }
       ]
     },
