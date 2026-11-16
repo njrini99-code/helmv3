@@ -48,6 +48,7 @@ import { plural } from '../../lib/plural';
 import { ClassHomeLine } from './ClassHomeLine';
 import { HomeSpanSwitch } from './HomeSpanSwitch';
 import { NextBeyond } from './NextBeyond';
+import { NewEventLink } from './NewEventLink';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -231,16 +232,16 @@ function NoEvents() {
       </div>
       <div className="ch-hm-none__q">
         {QUICK.map((t) => (
-          <Link key={t} href={newEventHref(t)} className="ch-hm-none__chip" data-ch-press="">
+          <NewEventLink key={t} href={newEventHref(t)} type={t} className="ch-hm-none__chip">
             <Icon icon={TYPE_ICON[t]} size={13} />
             {TYPE_LABEL[t]}
-          </Link>
+          </NewEventLink>
         ))}
       </div>
-      <Link href={newEventHref()} className="ch-hm-none__add" onClick={() => haptic('press')}>
+      <NewEventLink href={newEventHref()} className="ch-hm-none__add" onTap={() => haptic('press')}>
         <Icon icon={Plus} size={16} />
         Add event
-      </Link>
+      </NewEventLink>
     </div>
   );
 }
