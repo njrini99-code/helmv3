@@ -35,7 +35,7 @@ import { StaffDecisionRoomClient } from '@/components/baseball/staff-decision-ro
 import { fairwayScope } from '@/lib/redesign/flag';
 
 export const metadata = {
-  title: 'Decision Room | Helm Baseball',
+  title: 'Decision Room',
   description: 'Shared coaching intelligence for your staff.',
 };
 

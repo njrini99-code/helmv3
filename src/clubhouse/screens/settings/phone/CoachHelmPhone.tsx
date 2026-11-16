@@ -155,8 +155,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
       </Group>
 
       <Group title="Display" note="What CoachHelm shows on your dashboards. The strokes-gained baseline follows your team: the Tour for men’s teams, the women’s tour for women’s.">
-        <SwitchRow label="Show strokes gained" checked={p.showStrokesGained} onChange={(v) => change({ showStrokesGained: v })} />
-        <SwitchRow label="Show advanced statistics" checked={p.showAdvancedStats} onChange={(v) => change({ showAdvancedStats: v })} />
+        {/* DF-C-11: the strokes gained and advanced statistics switches did nothing anywhere, so they are not offered. */}
         <PickerRow
           label="Insight detail"
           value={p.insightVerbosity}

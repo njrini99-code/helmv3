@@ -14,7 +14,7 @@ import { permanentRedirect } from 'next/navigation';
 import { getBaseballSettingsAliasHref } from '@/lib/baseball/settings-route-aliases';
 
 export const metadata = {
-  title: 'Notification Settings | Helm Baseball',
+  title: 'Notification Settings',
 };
 
 export default function Page() {

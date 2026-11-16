@@ -29,8 +29,8 @@ const NOTHING = 'CH-5317';
 const LINE = 'CH-5314';
 
 /** A per-round line needs two rounds with the figure; with fewer it says what it needs. */
-function ByRound({ points, unit, digits, label, what, lowerIsBetter = false }: { points: Array<{ label: string; value: number }>; unit: string; digits: number; label: string; what: string; lowerIsBetter?: boolean }) {
-  return points.length >= 2 ? <RoundLine points={points} unit={unit} digits={digits} label={label} lowerIsBetter={lowerIsBetter} /> : <Empty code={LINE}>A line needs two rounds with {what}; this window has {points.length}.</Empty>;
+function ByRound({ points, unit, digits, label, what, lowerIsBetter = false, avg }: { points: Array<{ label: string; value: number; at?: string }>; unit: string; digits: number; label: string; what: string; lowerIsBetter?: boolean; /** The window's own figure (CH-12). */ avg?: number | null }) {
+  return points.length >= 2 ? <RoundLine points={points} unit={unit} digits={digits} label={label} lowerIsBetter={lowerIsBetter} avg={avg} /> : <Empty code={LINE}>A line needs two rounds with {what}; this window has {points.length}.</Empty>;
 }
 
 /** A shot read that failed is said, not shown as none logged. */
@@ -177,7 +177,7 @@ export function TeeMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra; on
         </Shots>
       </Panel>
       <Panel title="Fairways by round" wide>
-        <ByRound points={x.series.fairway} unit="%" digits={0} label="Fairways hit by round" what="fairway holes" />
+        <ByRound points={x.series.fairway} unit="%" digits={0} label="Fairways hit by round" what="fairway holes" avg={x.series.avg?.fairway} />
       </Panel>
     </>
   );
@@ -243,7 +243,7 @@ export function ApproachMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtr
         )}
       </Panel>
       <Panel title="Greens by round" wide>
-        <ByRound points={x.series.gir} unit="%" digits={0} label="Greens in regulation by round" what="greens in regulation" />
+        <ByRound points={x.series.gir} unit="%" digits={0} label="Greens in regulation by round" what="greens in regulation" avg={x.series.avg?.gir} />
       </Panel>
       <Panel title="Where approaches finish" wide note="Every approach shot, including lay-ups. Shots with no direction logged count as center.">
         <Shots error={x.sprayError} code="CH-5212" what="Where shots finish" onRetry={onRetry}>
@@ -461,7 +461,7 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
         )}
       </Panel>
       <Panel title="Putts by round" wide>
-        <ByRound points={x.series.putts} unit="" digits={0} label="Putts by round" what="putts" lowerIsBetter />
+        <ByRound points={x.series.putts} unit="" digits={0} label="Putts by round" what="putts" lowerIsBetter avg={x.series.avg?.putts} />
       </Panel>
     </>
   );

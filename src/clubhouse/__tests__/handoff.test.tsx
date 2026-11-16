@@ -26,7 +26,7 @@ describe('the hand-off curtain', () => {
     expect(c.getAttribute('aria-hidden')).toBe('true');
     expect(c.style.pointerEvents).toBe('none');
     const canvas = c.firstElementChild as HTMLElement;
-    expect(canvas.style.left).toBe('240px');
+    expect(canvas.style.left).toBe('232px');
     expect(canvas.style.top).toBe('8px');
     expect(canvas.style.borderRadius).toBe('16px');
   });
@@ -54,6 +54,23 @@ describe('the hand-off curtain', () => {
     liftHandoffCurtain();
     await vi.advanceTimersByTimeAsync(700);
     expect(curtain()).toBeNull();
+  });
+
+  it('lifts at once under Settings › Animations off, with the OS setting on full motion', async () => {
+    media(false, false);
+    const animate = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'animate', { value: animate, configurable: true });
+    document.documentElement.setAttribute('data-motion', 'off');
+    try {
+      dropHandoffCurtain();
+      liftHandoffCurtain();
+      await vi.advanceTimersByTimeAsync(50);
+      expect(curtain()).toBeNull();
+      expect(animate).not.toHaveBeenCalled();
+    } finally {
+      document.documentElement.removeAttribute('data-motion');
+      delete (HTMLElement.prototype as { animate?: unknown }).animate;
+    }
   });
 
   it('holds what waits for the dashboard to be seen while it is up, and lets it go when it lifts', async () => {

@@ -10,7 +10,7 @@
 // own heavy data-fetch (cached dashboard payload, hub summary, join requests)
 // opened an unrelated render path where a real error could surface before the
 // hop finished. This pins the fix: the player (and no-profile) branches now
-// render `<FeatureUnavailable>` IN PLACE — same route, same request, nothing
+// render the coach-only state IN PLACE (Clubhouse's NotRebuilt since GAP-R-11) — same route, same request, nothing
 // new to fetch, message always visible, no redirect at all — matching the
 // proven pattern already used by every other coach-only page (Patterns,
 // Insights, Development).
@@ -41,12 +41,11 @@ vi.mock('@/app/golf/actions/whats-new', () => ({
   getWhatsNewForCoach: mocks.getWhatsNewForCoach,
 }));
 
-function FeatureUnavailableStub() {
+function NotRebuiltStub() {
   return null;
 }
-// The page imports the component's own file, not the Fairway barrel (MAC-11), so the mock sits on that path.
-vi.mock('@/components/fairway/feedback/FeatureUnavailable', () => ({
-  FeatureUnavailable: FeatureUnavailableStub,
+vi.mock('@/clubhouse/shell/NotRebuilt', () => ({
+  NotRebuilt: NotRebuiltStub,
 }));
 
 import WhatsNewPage from '../page';
@@ -64,7 +63,7 @@ describe('WhatsNewPage — #201 player-facing crash / lost redirect message', ()
     expect(mocks.getWhatsNewForCoach).not.toHaveBeenCalled();
   });
 
-  it('renders FeatureUnavailable IN PLACE for a player session — no redirect, no lost message, no second render path to crash on', async () => {
+  it('renders the Clubhouse coach-only state IN PLACE for a player session — no redirect, no lost message, no second render path to crash on (GAP-R-11)', async () => {
     mocks.getGolfSessionProfile.mockResolvedValue({
       userId: 'player-1',
       role: 'player',
@@ -76,14 +75,12 @@ describe('WhatsNewPage — #201 player-facing crash / lost redirect message', ()
 
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(mocks.getWhatsNewForCoach).not.toHaveBeenCalled();
-    expect(element.type).toBe(FeatureUnavailableStub);
-    const props = element.props as { title: string; message: string; actionHref?: string; actionLabel?: string };
-    expect(props.message).toContain('coach-only feature');
-    // Sends the player somewhere real and player-facing, not a dead end.
-    expect(props.actionHref).toBe('/golf/dashboard/coachhelm');
+    expect(element.type).toBe(NotRebuiltStub);
+    // "Only coaches use What’s new", with the way back Home (CH-1301): never the retired Fairway page.
+    expect(element.props).toEqual({ label: 'What’s new', coachOnly: true });
   });
 
-  it('renders FeatureUnavailable IN PLACE when neither a coach nor player profile exists', async () => {
+  it('renders the coach-only state IN PLACE when neither a coach nor player profile exists', async () => {
     mocks.getGolfSessionProfile.mockResolvedValue({
       userId: 'ghost-1',
       role: null,
@@ -94,9 +91,7 @@ describe('WhatsNewPage — #201 player-facing crash / lost redirect message', ()
     const element = (await WhatsNewPage()) as ReactElement;
 
     expect(mocks.redirect).not.toHaveBeenCalled();
-    expect(element.type).toBe(FeatureUnavailableStub);
-    const props = element.props as { message: string };
-    expect(props.message).toContain('complete onboarding');
+    expect(element.type).toBe(NotRebuiltStub);
   });
 
   it('renders the Clubhouse What’s new for a coach (the route reads its own week), and the page reads no feed itself', async () => {

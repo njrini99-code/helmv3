@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FieldDayEntry } from '@/lib/coachhelm/v3/field-day/field';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
-import { FIELD_PLAYER_FLOOR, teamFigureOf, toChFileField, toChFilePlan, toChFileSg, toChFileTrack, type ChFocusRow } from '../coachhelm-file-shape';
+import { FIELD_PLAYER_FLOOR, goalWord, teamFigureOf, toChFileField, toChFilePlan, toChFileSg, toChFileTrack, type ChFocusRow } from '../coachhelm-file-shape';
 import { playerFileHref } from '../coachhelm-views-shape';
 import type { ChLadder } from '../coachhelm-ladder-shape';
 
@@ -71,6 +71,24 @@ describe('the handshake: Shown is earned, never assumed (W-LNS-5)', () => {
     expect(on.stage).toBe('accepted');
     expect(on.goal?.title).toBe('GIR');
     expect(on.practice).toEqual(practice);
+  });
+});
+
+describe('a goal’s word reads its check-ins against their noise (stats and charts audit 2026-11-15, CH-07)', () => {
+  it('three-putts 1.2, 1.3, 0.9 against a baseline of 1.2 is no clear change; one good check-in never says Improved', () => {
+    expect(goalWord([1.2, 1.3, 0.9], 1.2, true)).toBe('No clear change');
+    expect(goalWord([0.6], 1.2, true)).toBe('No clear change');
+  });
+
+  it('a steady fall well past the spread is Improved for a lower-is-better goal and Worse for a higher one', () => {
+    expect(goalWord([0.8, 0.7, 0.75, 0.7], 1.2, true)).toBe('Improved');
+    expect(goalWord([0.8, 0.7, 0.75, 0.7], 1.2, false)).toBe('Worse');
+  });
+
+  it('the plan’s goal carries its direction, from the target against the baseline', () => {
+    const goal = { title: 'Three-putts', snapshots: [{ date: '2026-10-03', value: 1.2 }, { date: '2026-10-10', value: 1.0 }, { date: '2026-10-17', value: 0.8 }], baseline_value: 1.2, target_value: 0.5 } as unknown as Goal;
+    const on = toChFilePlan(row({ status: 'active', started_at: '2026-10-02T15:00:00Z' }), null, goal, null, 'Coach Reed', ZONE);
+    expect(on.goal?.lowerBetter).toBe(true);
   });
 });
 

@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/calendar"
       component="CalendarPage"
-      title="Failed to load calendar"
-      message="We couldn't load your calendar. Please try again."
       homePath="/golf/dashboard"
     />
   );

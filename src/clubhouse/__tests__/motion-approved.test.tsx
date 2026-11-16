@@ -83,15 +83,15 @@ describe('CH-1618 the page draws back under a pushed screen', () => {
     for (const still of ['.ch-pscreen', '.ch-frame-route', 'main.page', '.sheet', '.ch-canvas']) expect(parts).not.toContain(q(still));
   });
 
-  it('draws back a quarter of the width at full progress, in proportion on the way, and clears at rest', () => {
+  it('draws back 30% of the width at full progress, in proportion on the way, and clears at rest', () => {
     const { q } = shellDom();
     const parts = underlayParts();
     placeUnderlay(parts, 1);
-    expect(CH_UNDERLAY_SHIFT).toBe(0.24);
-    expect(q('.list').style.translate).toBe('-24.000vw 0');
+    expect(CH_UNDERLAY_SHIFT).toBe(0.3);
+    expect(q('.list').style.translate).toBe('-30.000vw 0');
     expect(q('.ch-topbar').style.willChange).toBe('transform');
     placeUnderlay(parts, 0.5);
-    expect(q('.ch-offline').style.translate).toBe('-12.000vw 0');
+    expect(q('.ch-offline').style.translate).toBe('-15.000vw 0');
     placeUnderlay(parts, 0);
     for (const el of parts) {
       expect(el.style.translate).toBe('');
@@ -395,7 +395,8 @@ describe('CH-1619 a page fades in over its route skeleton', () => {
       const tokens = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8');
       const shell = readFileSync(join(process.cwd(), 'src/clubhouse/styles/shell.css'), 'utf8');
       expect(tokens).toContain('--ch-dur-vt-hold: 150ms;');
-      expect(base).toMatch(/html\[data-ch-vt-hold\] \[data-ui='clubhouse'\] main\[aria-busy='true'\]\[aria-label\^='Loading'\] \{\s*animation: ch-skel-in var\(--ch-dur-base\) var\(--ch-ease\) calc\(var\(--ch-dur-vt-hold\) \+ var\(--ch-dur-vt-out\)\) backwards;/);
+      // The fade is motion.css's ch-in on the iOS curve: a kept keyframe lives there (MOTION-AND-VISUAL 3.2, 3.12).
+      expect(base).toMatch(/html\[data-ch-vt-hold\] \[data-ui='clubhouse'\] main\[aria-busy='true'\]\[aria-label\^='Loading'\] \{\s*animation: ch-in var\(--ch-dur-base\) var\(--ch-ease-ios\) calc\(var\(--ch-dur-vt-hold\) \+ var\(--ch-dur-vt-out\)\) backwards;/);
       expect(tokens).toContain('--ch-dur-vt-out: 120ms;');
       expect(shell).toMatch(/html\[data-ch-vt-hold\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*animation-delay: var\(--ch-dur-vt-hold\);/);
       // A swap, a push, a pop and a hard load: the skeleton is whole in its first frame (S4.4), with no fade up from blank.

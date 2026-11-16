@@ -5,7 +5,7 @@ import { MyStatsClient } from './MyStatsClient';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'My Stats | Helm',
+  title: 'My Stats',
   description: 'View your personal batting and performance statistics',
 };
 

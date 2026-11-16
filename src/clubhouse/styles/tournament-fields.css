@@ -14,7 +14,7 @@
   padding: var(--ch-space-4);
   background: var(--ch-bg-subtle);
   border: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
 }
 .ch-tfx__head {
   display: flex;
@@ -37,7 +37,7 @@
 }
 .ch-tfx__track {
   margin-left: auto;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
@@ -59,7 +59,7 @@
 }
 .ch-qf-picker__head {
   margin: var(--ch-space-2) 0 var(--ch-space-1);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-tertiary);
 }
@@ -75,7 +75,7 @@
   letter-spacing: var(--ch-track-13);
 }
 .ch-tfx-note b {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
 }
 .ch-tfx-note--error {
@@ -107,7 +107,7 @@
 }
 .ch-tfx__lbl {
   padding-top: var(--ch-space-2);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
@@ -207,7 +207,7 @@
   height: max(32px, calc(32px * var(--ch-type-scale, 1)));
   background: var(--ch-green-50);
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-green-700);
 }
@@ -266,7 +266,7 @@
   padding: 0 var(--ch-space-3);
   background: transparent;
   border: 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-green-700);
   cursor: pointer;
@@ -297,7 +297,7 @@
   padding: 0;
   background: transparent;
   border: 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
   cursor: pointer;
@@ -327,7 +327,7 @@
   padding: var(--ch-space-3);
   background: var(--ch-green-50);
   border: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
 }
 .ch-tfx-banner .ch-tfx__plate {
   background: var(--ch-bg-surface);
@@ -366,7 +366,7 @@
   padding: var(--ch-space-3) var(--ch-space-4);
   background: var(--ch-bg-surface);
   border: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   box-shadow: var(--ch-elevation-reading);
   color: inherit;
   text-decoration: none;

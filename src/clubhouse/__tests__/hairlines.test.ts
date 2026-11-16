@@ -23,9 +23,9 @@ const ALLOW_LINES: Record<string, number> = {
   'styles/coachhelm-views.css': 2,
   'styles/command.css': 1,
   'styles/controls.css': 2,
-  'styles/home.css': 3,
+  'styles/home.css': 2,
   'styles/hub.css': 3,
-  'styles/messages.css': 3,
+  'styles/messages.css': 2,
   'styles/onboard.css': 5,
   'styles/qualifiers.css': 2,
   'styles/recruiting.css': 1,
@@ -34,7 +34,7 @@ const ALLOW_LINES: Record<string, number> = {
   'styles/rounds.css': 3,
   'styles/shell.css': 4,
   'styles/stats.css': 2,
-  'styles/ui.css': 5,
+  'styles/ui.css': 4,
 };
 const ALLOW_ELEMENTS: Record<string, number> = {
   'styles/auth.css': 4,

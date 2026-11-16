@@ -167,8 +167,38 @@ describe('a database with only part of Practice', () => {
     failing.golf_practice_plans = { code, message: 'missing' };
     expect(await loadCoachPlan('plan-1')).toEqual({ status: 'unavailable' });
   });
-  it('any other failure is still "gone": nothing is promised that was not read', async () => {
+  it('any other failure is "failed", never "gone": a timeout does not tell a coach the plan was removed (GAP-S-03)', async () => {
     failing.golf_practice_plans = TIMEOUT;
+    expect(await loadCoachPlan('plan-1')).toEqual({ status: 'failed' });
+    expect(logged).toHaveBeenCalledWith('practice.plan', 'plan', TIMEOUT, 'practice_plans');
+  });
+  it('a failed event or team read is "failed" too; only a plan that answered with no row is "gone"', async () => {
+    failing.golf_events = TIMEOUT;
+    expect(await loadCoachPlan('plan-1')).toEqual({ status: 'failed' });
+    delete failing.golf_events;
+    failing.golf_teams = TIMEOUT;
+    expect(await loadCoachPlan('plan-1')).toEqual({ status: 'failed' });
+    delete failing.golf_teams;
+    tables.golf_practice_plans = [];
     expect(await loadCoachPlan('plan-1')).toEqual({ status: 'gone' });
+  });
+});
+
+describe('the team’s sheet format', () => {
+  it('a format read that fails opens the plan in the standard format and says so (formatFailed), never quietly', async () => {
+    failing.golf_practice_plan_formats = TIMEOUT;
+    const load = await loadCoachPlan('plan-1');
+    if (load.status !== 'ready') throw new Error(`expected ready, got ${load.status}`);
+    expect(load.formatFailed).toBe(true);
+    expect(logged).toHaveBeenCalledWith('practice.plan', 'format', TIMEOUT, 'practice_plans');
+  });
+  it('no format set, or the table not there yet, is the standard sheet with nothing to say', async () => {
+    const load = await loadCoachPlan('plan-1');
+    if (load.status !== 'ready') throw new Error(`expected ready, got ${load.status}`);
+    expect(load.formatFailed).toBe(false);
+    failing.golf_practice_plan_formats = { code: 'PGRST205', message: 'Could not find the table' };
+    const missing = await loadCoachPlan('plan-1');
+    if (missing.status !== 'ready') throw new Error(`expected ready, got ${missing.status}`);
+    expect(missing.formatFailed).toBe(false);
   });
 });

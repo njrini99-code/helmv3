@@ -328,7 +328,7 @@ async function sendGolfMessageWithAttachmentsImpl(
 
 const observedSendGolfMessageWithAttachments = withAdminObserved(
   'sendGolfMessageWithAttachments',
-  { sport: 'golf', feature: 'messaging' },
+  { sport: 'golf', feature: 'messaging', demoSafe: true },
   sendGolfMessageWithAttachmentsImpl,
 );
 
@@ -636,7 +636,7 @@ async function deleteGolfMessageAttachmentImpl(attachmentId: string): Promise<{
 
 const observedDeleteGolfMessageAttachment = withAdminObserved(
   'deleteGolfMessageAttachment',
-  { sport: 'golf', feature: 'messaging' },
+  { sport: 'golf', feature: 'messaging', demoSafe: true },
   deleteGolfMessageAttachmentImpl,
 );
 

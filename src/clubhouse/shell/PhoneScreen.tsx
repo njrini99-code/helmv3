@@ -2,19 +2,19 @@
 
 import { m, usePresence } from 'motion/react';
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { chFade, chSpring } from '../lib/motion';
+import { chFade } from '../lib/motion';
 import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
 import { usePaintedAfter } from '../lib/use-painted';
 import { poppedByUA } from '../lib/ua-pop';
-import { CH_UNDERLAY_SHIFT, usePhoneCover, usePhoneImmersive, usePhonePushed } from './phone-chrome';
+import { CH_PUSH_TWEEN, CH_UNDERLAY_SHIFT, usePhoneCover, usePhoneImmersive, usePhonePushed } from './phone-chrome';
 import { useEdgeSwipeBack, type EdgeExitHold } from './use-edge-swipe';
 import { useOverlayScrollLock } from '../lib/overlay-scroll';
 import { isNativeApp } from '@/lib/utils/capacitor';
 
 /**
- * A pushed phone screen (a thread, details, a new message): it slides in over the page on the smooth spring (base,
- * no bounce) and back out on pop on the same spring, so the page beneath is free again at once; it fades when
- * motion is reduced (CH-1610). The page it covers draws back about a quarter of the width and dims as it comes in, and
+ * A pushed phone screen (a thread, details, a new message): it slides in over the page over 520 ms on the iOS curve
+ * (S4.1, the route push's own beat) and back out on pop on the same timing, so the page beneath is free again at once; it fades when
+ * motion is reduced (CH-1610). The page it covers draws back 30% of the width and dims as it comes in, and
  * returns with it as it pops (PhoneUnderlay, CH-1618); a screen with another pushed over it (`covered`) does the same.
  * When iOS has already played the pop itself (the edge swipe), it leaves at once rather than slide out a second time
  * (CH-1908). While it is up, the shell's top bar is inert and hidden from assistive tech (CH-1809), and focus moves to
@@ -126,13 +126,12 @@ export function PhoneScreen({
         !painted
           ? undefined
           : drawnBack
-            ? { transform: `translateX(${-CH_UNDERLAY_SHIFT * 100}%)`, opacity: 1, transition: chSpring('smooth') }
-            : { transform: 'translateX(0%)', opacity: 1, transition: wasCovered ? (reduced || poppedByUA() ? { duration: 0 } : chSpring('smooth')) : reduced ? chFade(mode) : chSpring('smooth') }
+            ? { transform: `translateX(${-CH_UNDERLAY_SHIFT * 100}%)`, opacity: 1, transition: CH_PUSH_TWEEN }
+            : { transform: 'translateX(0%)', opacity: 1, transition: wasCovered ? (reduced || poppedByUA() ? { duration: 0 } : CH_PUSH_TWEEN) : reduced ? chFade(mode) : CH_PUSH_TWEEN }
       }
       // Read as the pop begins, so a Back that iOS already animated doesn't play again.
       exit="pop"
-      // The pop rides the same smooth spring as the push (native-feel audit 2026-10-08, P1-2: the base ease-out read as a
-      // 183ms jump); it is clear of the screen by about 350ms.
+      // The pop rides the push's own timing (S4.1; native-feel audit 2026-10-08, P1-2: the base ease-out read as a 183ms jump).
       // A swipe back that is carrying the screen out itself (`holding`) leaves the exit to it: nothing here moves.
       variants={{
         pop: () =>
@@ -142,7 +141,7 @@ export function PhoneScreen({
               ? { opacity: 0, transition: { duration: 0 } }
               : reduced
               ? { opacity: 0, transition: chFade(mode) }
-              : { transform: 'translateX(100%)', transition: chSpring('smooth') },
+              : { transform: 'translateX(100%)', transition: CH_PUSH_TWEEN },
       }}
     >
       {children}

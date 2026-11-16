@@ -2,8 +2,8 @@
 
 import { useState, type KeyboardEvent } from 'react';
 import { haptic } from '../../lib/haptics';
-import { formatFixed } from '../../lib/format';
-import { monotonePath } from '../../lib/chart';
+import { formatFixed, formatSigned } from '../../lib/format';
+import { gappedPath } from '../../lib/chart';
 import { useGlide } from '../../lib/motion-glide';
 import { flowGeometry, flowKeyStep } from './RoundZones';
 
@@ -28,6 +28,18 @@ const spoken = (v: number) => (Math.abs(v) < 0.05 ? 'level' : `${v > 0 ? 'plus' 
 /** "Hole 14, average plus 1.9 through 14", and with the best on, "…, best here plus 1 through 14". */
 export function arcValueText(n: number, mean: number, best: number | null): string {
   return `Hole ${n}, average ${spoken(mean)} through ${n}${best == null ? '' : `, best here ${spoken(best)} through ${n}`}`;
+}
+
+/**
+ * The labelled levels beside "E" (stats and charts audit 2026-11-15, CH-22): a round step for the range (2, 5 or 10 strokes) at
+ * every multiple inside it, so the arc can be read off the page and not only from its slider.
+ */
+export function arcLevels(lo: number, hi: number): number[] {
+  const span = hi - lo;
+  const step = span <= 8 ? 2 : span <= 20 ? 5 : 10;
+  const out: number[] = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) if (v !== 0 && v > lo && v < hi) out.push(v);
+  return out;
 }
 
 export function CourseArc({
@@ -56,7 +68,8 @@ export function CourseArc({
     ...(lines.last ? lines.last.cum.map(y) : []),
   ]) as number[];
   const mid = (from: number, len: number) => ys.slice(from, from + len);
-  const path = (vals: readonly number[]) => monotonePath(vals.map((v, i) => [x(i + 1), v]));
+  // Straight segments hole to hole (CH-15): a curve drew running scores between holes that were never measured.
+  const path = (vals: readonly number[]) => gappedPath(vals, (i) => x(i + 1), (v) => v);
   const meanY = mid(0, n);
   const lowY = arc.sd ? mid(n, n) : [];
   const highY = arc.sd ? mid(2 * n, n) : [];
@@ -99,6 +112,14 @@ export function CourseArc({
             onSelect(n);
           }}
         >
+          {arcLevels(lo, hi).map((v) => (
+            <g key={v} className="ch-carc__level">
+              <line x1={X0 - 8} x2={X1 + 10} y1={y(v)} y2={y(v)} stroke="var(--ch-stage-rule)" strokeOpacity={0.5} strokeWidth={1} strokeDasharray="2 4" />
+              <text x={X0 - 14} y={y(v) + 4} textAnchor="end" fontSize={11} fill="var(--ch-stage-ink-soft)" className="ch-num">
+                {formatSigned(v, 0)}
+              </text>
+            </g>
+          ))}
           <line x1={X0 - 8} x2={X1 + 10} y1={y(0)} y2={y(0)} stroke="var(--ch-stage-rule)" strokeWidth={1} />
           <text x={X0 - 14} y={y(0) + 4} textAnchor="end" fontSize={11} fill="var(--ch-stage-ink-soft)" className="ch-num">
             E

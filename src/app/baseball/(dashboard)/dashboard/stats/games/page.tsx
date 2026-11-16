@@ -4,6 +4,9 @@ import { GamesList } from '@/components/baseball/games/GamesList';
 import { getTeamGames, getTeamSeasonRecord } from '@/app/baseball/actions/games';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Games & Scrimmages' };
 
 export default async function GamesPage() {
   const supabase = await createClient();

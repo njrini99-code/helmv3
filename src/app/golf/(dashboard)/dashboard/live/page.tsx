@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-// The component's own file, never the Fairway barrel: the barrel made this page load every Fairway client component (about 240 KB gzipped; MAC-11).
-import { FeatureUnavailable } from '@/components/fairway/feedback/FeatureUnavailable';
+import { NotRebuilt } from '@/clubhouse/shell/NotRebuilt';
 import { ClubhouseLiveRoute } from '@/clubhouse/routes/live';
 
 export const metadata = {
@@ -19,14 +18,8 @@ export default async function LivePage({ searchParams }: { searchParams: Promise
   // Live rounds are a coach's page (a player's address goes to Home from the layout). Every other case renders in
   // place, never a redirect out of a role-conditional branch (the React #310 guard).
   if (!session.coach) {
-    return (
-      <FeatureUnavailable
-        title="Live"
-        message="Live rounds are a coach feature. Your round shows on Home while you play."
-        actionHref="/golf/dashboard"
-        actionLabel="Back to Dashboard"
-      />
-    );
+    // The Clubhouse coach-only page (GAP-R-11), never the retired Fairway one; the layout normally sends a player Home first.
+    return <NotRebuilt label="Live" coachOnly />;
   }
   return <ClubhouseLiveRoute params={await searchParams} />;
 }

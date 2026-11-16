@@ -23,6 +23,8 @@ export interface AskHistoryProps {
   timezone: string;
   /** New chat: a fresh thread, no server trip. */
   onNew: () => void;
+  /** A reply is on its way: New chat waits for it (GAP-H-08), and its keys are inert. */
+  newWaits?: boolean;
   /** A conversation was chosen (closes the phone drawer). */
   onNavigate?: () => void;
   /**
@@ -43,7 +45,7 @@ export function conversationHref(id: string): string {
  * The chats: a search, then Today, This week and Earlier, each row a real link (so it opens in a new tab and the
  * open one is `aria-current`). A failed read is its own notice with Try again, never "No chats yet".
  */
-function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigate, onOpen }: AskHistoryProps) {
+function HistoryList({ conversations, openId, nowIso, timezone, onNew, newWaits, onNavigate, onOpen }: AskHistoryProps) {
   // The search comes back when the coach returns to the page (owner rule 8), restored after mount (`drafts.ts`).
   const [q, setQ] = useAskKept<string>('askHistorySearch', '');
   const groups = useMemo(() => groupConversations(filterConversations(conversations.list, q), nowIso, timezone), [conversations.list, q, nowIso, timezone]);
@@ -59,7 +61,7 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
         </span>
         <b>No chats yet</b>
         <span>Ask your first question and it will be kept here.</span>
-        <Button variant="secondary" onClick={onNew}>
+        <Button variant="secondary" disabled={newWaits} onClick={onNew}>
           New chat
         </Button>
       </div>
@@ -114,7 +116,7 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
  * panel fades in with its content sliding from the edge, and hidden it goes at once (CH-13620, coachhelm-ask.css).
  */
 export function HistoryPanel(props: AskHistoryProps & { open: boolean; onHide: () => void; heading: string }) {
-  const { open, onHide, heading, onNew } = props;
+  const { open, onHide, heading, onNew, newWaits } = props;
   return (
     <aside className={'ch-ask-hist' + (open ? '' : ' is-closed')} aria-label="Chats" inert={!open || undefined} data-ch-code="CH-13820">
       <div className="ch-ask-hist__head">
@@ -125,7 +127,7 @@ export function HistoryPanel(props: AskHistoryProps & { open: boolean; onHide: (
           </button>
         </Tooltip>
       </div>
-      <button type="button" className="ch-ask-hist__new" onClick={onNew}>
+      <button type="button" className="ch-ask-hist__new" aria-disabled={newWaits || undefined} onClick={onNew}>
         <Icon icon={SquarePen} size={17} />
         New chat
       </button>
@@ -141,7 +143,7 @@ export function HistoryPanel(props: AskHistoryProps & { open: boolean; onHide: (
  * Reduced motion draws it without the slide and without the drag.
  */
 export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose: () => void }) {
-  const { open, onClose, onNew } = props;
+  const { open, onClose, onNew, newWaits } = props;
   // The title takes focus as it opens, as a Modal's does: on the first focusable (New chat) WebKit drew a focus ring and its
   // tooltip on a tap-opened drawer, the tip pinned over the search field mid-slide (iPhone WebKit, 12 Nov).
   const { ref, reduced, retainContent } = useDialogLifetime(open, { direction: 'left', surfaceSelector: '.ch-ask-hist', focusSelector: '.ch-ask-hist__title' });
@@ -175,7 +177,9 @@ export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose:
                 type="button"
                 className="ch-ask-hist__iconbtn is-accent"
                 aria-label="New chat"
+                aria-disabled={newWaits || undefined}
                 onClick={() => {
+                  if (newWaits) return;
                   onNew();
                   onClose();
                 }}
@@ -187,6 +191,7 @@ export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose:
           <HistoryList
             {...props}
             onNew={() => {
+              if (newWaits) return;
               onNew();
               onClose();
             }}

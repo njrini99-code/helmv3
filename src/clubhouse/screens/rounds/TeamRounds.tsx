@@ -131,16 +131,21 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
 
 type RoundGroup = ReturnType<typeof groupTeamRounds>[number];
 
-/** A group's count and its average, as its heading's caption: the 18-hole countable rounds, practice left out, as the season's figures. */
-function groupMeta(g: RoundGroup) {
+/**
+ * A group's count and its average, as its heading's caption: the 18-hole countable rounds, practice left out, as the season's figures.
+ * DF-C-14: when that is fewer than the group's rounds, the caption says how many the average is over, so "6 rounds · avg 74.0" never
+ * reads as the average of all six when it is of four.
+ */
+export function groupMetaText(g: Pick<RoundGroup, 'rounds'>): string {
   const full = g.rounds.filter((r) => r.holes === 18 && r.countable && countsTowardAverage(r));
   const avg = full.length ? full.reduce((a, r) => a + r.score, 0) / full.length : null;
-  return (
-    <span className="ch-num">
-      {g.rounds.length} {pluralWord(g.rounds.length, 'round')}
-      {avg != null && ` · avg ${formatFixed(avg, 1)}`}
-    </span>
-  );
+  const count = `${g.rounds.length} ${pluralWord(g.rounds.length, 'round')}`;
+  if (avg == null) return count;
+  return `${count} · avg ${formatFixed(avg, 1)}${full.length < g.rounds.length ? ` over ${full.length}` : ''}`;
+}
+
+function groupMeta(g: RoundGroup) {
+  return <span className="ch-num">{groupMetaText(g)}</span>;
 }
 
 const groupId = (g: RoundGroup) => `ch-trd-${g.key.replace(/\W+/g, '-').toLowerCase()}`;
@@ -388,7 +393,7 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
                 onChange={setPlayer}
                 options={[{ value: ALL_PLAYERS, label: 'All players' }, ...data.players.map((p) => ({ value: p.id, label: p.name }))]}
               />
-              <Segmented weight="filter"
+              <Segmented
                 redraws
                 label="Group rounds"
                 size="sm"

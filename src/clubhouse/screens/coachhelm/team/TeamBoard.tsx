@@ -15,8 +15,8 @@ import { sgBaseline } from '../../../lib/sg';
 import { Notice, ReadWorthContext } from './parts';
 import { rebuiltHref } from '../../../shell/nav';
 import { CoachHelmOffNotice } from '../CoachHelmOffNotice';
-import { CoachHelmTabs, COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
-import { useViewSwitch } from '../use-view-switch';
+import { COACHHELM_HREF } from '../chat/SubTabs';
+import { useCoachHelmSwitchOff } from '../SwitchStrip';
 import { Modal } from '../../../ui/Modal';
 import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
@@ -32,6 +32,7 @@ import { StoriesCard, StoryDeskPanel, weekdayOf } from './Stories';
 import { Inspector } from './Inspector';
 import { CourseSheet, GonePanel, PlayerPanel, ReadPanel } from './panels';
 import { SpotCard } from './SpotCard';
+import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { StationControl } from './StationControl';
 import { TeamHole } from './TeamHole';
 import { sgIsEstimate, sgMixShort, sgMixWords } from '../../../data/stats-sg-mix';
@@ -197,7 +198,8 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   const { refresh } = useRefresh();
   const retry = onRetry ?? refresh;
   const phone = useChPhone();
-  const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
+  // The switch is the route's, above this page (SwitchFrame, N13C-67); CoachHelm off hides it, as this page did.
+  useCoachHelmSwitchOff(!!data.off);
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
   // Kept across a trip to a player or a read and back (MOB-TEAM-17).
   const [station, setStation] = useChSessionState<TeamStation>('team.station', initialStation ?? leak);
@@ -266,12 +268,13 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   };
   const list: ChTeamPlayer[] = data.players.list;
   const noRounds = data.teamTotal.rounds === 0;
-  const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
   const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)} · ${plural(readsDrawn(list), 'open read')}`;
-  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)}` : undefined} tabs={tabs} />;
+  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)}` : undefined} />;
   const course = courseReads(list).length;
   const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
+  // GAP-S-10: each card is its own read and its own drawing, so a crash in one says so in its place (CH-13204); the board stays.
   const today = (
+    <SectionBoundary surface="coachhelm.team.week" label="This week" code="CH-13204">
     <Part value={data.brief} fallback={skeletonCard}>
       {(b) => {
         const card = (themes: Record<string, Record<string, ChDiveTheme>> | null) => (
@@ -299,28 +302,44 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
         );
       }}
     </Part>
+    </SectionBoundary>
   );
   const proposed = list.flatMap((player) => player.reads.needs.filter((read) => fa.assigned[read.id] || read.assigned === 'proposed').map((read) => ({ player, read })));
   const working = (
-    <Part value={data.brief} fallback={skeletonCard}>
-      {(b) => <WorkingCard working={b.status === 'ok' ? b.value.working : []} proposed={proposed} failed={b.status === 'failed'} onRetry={retry} />}
-    </Part>
+    <SectionBoundary surface="coachhelm.team.working" label="Working on" code="CH-13204">
+      <Part value={data.brief} fallback={skeletonCard}>
+        {(b) => <WorkingCard working={b.status === 'ok' ? b.value.working : []} proposed={proposed} failed={b.status === 'failed'} onRetry={retry} />}
+      </Part>
+    </SectionBoundary>
   );
-  const huddle = <Huddle data={data} onPlayer={openPlayer} />;
-  const roster = <RosterCard players={list} phone={phone} onPlayer={openPlayer} />;
+  const huddle = (
+    <SectionBoundary surface="coachhelm.team.huddle" label="The huddle" code="CH-13204">
+      <Huddle data={data} onPlayer={openPlayer} />
+    </SectionBoundary>
+  );
+  const roster = (
+    <SectionBoundary surface="coachhelm.team.roster" label="Your players" code="CH-13204">
+      <RosterCard players={list} phone={phone} onPlayer={openPlayer} />
+    </SectionBoundary>
+  );
   // In the record card's footer (AC-RECORD-04), and with no record to sit in, in a card of its own under the board: never loose on the page (QA-9).
   const recheck = !data.off && data.roster.count > 0 ? <RecheckReads players={data.roster.count} /> : null;
   const record = (
-    <Part value={data.record} fallback={skeletonCard}>
-      {(r) => <RecordCard part={r} desk={!phone} recheck={recheck} />}
-    </Part>
+    <SectionBoundary surface="coachhelm.team.record" label="How often CoachHelm is right" code="CH-13204">
+      <Part value={data.record} fallback={skeletonCard}>
+        {(r) => <RecordCard part={r} desk={!phone} recheck={recheck} />}
+      </Part>
+    </SectionBoundary>
   );
-  const spot =
-    station === 'course' ? (
-      <CourseCard data={data} initialAll={initialAll} onRead={openRead} onCourse={openCourse} onRetry={retry} />
-    ) : (
-      <SpotCard data={data} station={station} onRead={openRead} onPlayer={openPlayer} onRetry={retry} />
-    );
+  const spot = (
+    <SectionBoundary key={station === 'course' ? 'course' : 'spot'} surface={station === 'course' ? 'coachhelm.team.course' : 'coachhelm.team.spot'} label={station === 'course' ? 'Course and scoring' : 'The reads at this spot'} code="CH-13204">
+      {station === 'course' ? (
+        <CourseCard data={data} initialAll={initialAll} onRead={openRead} onCourse={openCourse} onRetry={retry} />
+      ) : (
+        <SpotCard data={data} station={station} onRead={openRead} onPlayer={openPlayer} onRetry={retry} />
+      )}
+    </SectionBoundary>
+  );
   const failedHole = (
     <section className="card ch-htb-failed" role="alert" data-ch-team-card="hole">
       <Notice title="The team’s reads didn’t load" body="Nothing here is wrong with your players’ rounds. Try again." onRetry={retry} />
@@ -452,7 +471,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
 
   return (
     <ReadWorthContext.Provider value={worth}>
-    <main ref={top} {...sw.enter} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-busy={sw.busy} data-ch-screen="coachhelm-team">
+    <main ref={top} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} data-ch-screen="coachhelm-team">
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone ? (
         <div className="sheet">

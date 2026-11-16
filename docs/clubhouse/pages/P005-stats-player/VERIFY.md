@@ -376,6 +376,18 @@ before, after, baseline or evidence.
 | `P005__scoring-mix-by-par__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | Game detail More detail, Outcomes by par, 1440px, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
 | `P005__scoring-mix-by-par__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | Outcomes by par, 1440px, after (compact ScoreMixBar, eagle split from birdie); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
 | `P005__scoring-mix-by-par__coach__1440__eagle-pinned__after__2b3c6f5.png` | after | 2b3c6f5 | Outcomes by par, 1440px, Par 5s eagle pinned (1 of 34 holes); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__player-stats__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | player-stats (coach), 1440x932px, default; /clubhouse-preview/player |
+| `P005__player-stats__coach__1440x932__default__before__c882964.png` | before | c882964 | player-stats (coach), 1440x932px, default; /clubhouse-preview/player |
+| `P005__player-stats__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | player-stats (coach), 402px, default; /clubhouse-preview/player |
+| `P005__player-stats__coach__402__default__before__c882964.png` | before | c882964 | player-stats (coach), 402px, default; /clubhouse-preview/player |
+| `P005__player-stats-game__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | player-stats-game (coach), 1440x932px, default; /clubhouse-preview/player?tab=game |
+| `P005__player-stats-game__coach__1440x932__default__before__c882964.png` | before | c882964 | player-stats-game (coach), 1440x932px, default; /clubhouse-preview/player?tab=game |
+| `P005__player-stats-game__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | player-stats-game (coach), 402px, default; /clubhouse-preview/player?tab=game |
+| `P005__player-stats-game__coach__402__default__before__c882964.png` | before | c882964 | player-stats-game (coach), 402px, default; /clubhouse-preview/player?tab=game |
+| `P005__player-stats-rounds__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | player-stats-rounds (coach), 1440x932px, default; /clubhouse-preview/player?tab=rounds |
+| `P005__player-stats-rounds__coach__1440x932__default__before__c882964.png` | before | c882964 | player-stats-rounds (coach), 1440x932px, default; /clubhouse-preview/player?tab=rounds |
+| `P005__player-stats-rounds__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | player-stats-rounds (coach), 402px, default; /clubhouse-preview/player?tab=rounds |
+| `P005__player-stats-rounds__coach__402__default__before__c882964.png` | before | c882964 | player-stats-rounds (coach), 402px, default; /clubhouse-preview/player?tab=rounds |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

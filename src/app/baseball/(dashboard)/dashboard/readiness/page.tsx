@@ -27,6 +27,9 @@ import {
 } from '@/lib/lifting/adapters/baseball-view-adapter';
 import type { HelmLiftingReadinessCheckinRow } from '@/lib/types/helm-lifting-data';
 import { PlayerReadinessClient } from '@/components/baseball/performance/PlayerReadinessClient';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Readiness' };
 
 export default async function PlayerReadinessPage() {
   const context = await getActiveBaseballContext();

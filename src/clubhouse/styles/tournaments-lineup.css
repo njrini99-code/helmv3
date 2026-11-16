@@ -40,7 +40,7 @@
 }
 .ch-tour-lu-form__lbl,
 .ch-tour-lu-form .ch-tfx__sublbl {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
@@ -229,7 +229,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -281,7 +281,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-tour-lu-lbl {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
 }
 .ch-tour-lu-form-line {
@@ -320,9 +320,9 @@
   align-items: center;
   gap: 4px;
   padding: 2px 4px 2px 12px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-selected);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-primary);
 }
 

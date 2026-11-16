@@ -10,6 +10,7 @@ import type { ChPracticeEvent } from '../../data/practice-home-shape';
 import { PracticeSheet } from './PracticeSheet';
 import { wholeFacts } from './facts';
 import { Icon } from '../../ui/Icon';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 import { useToast } from '../../ui/Toast';
 import { TERMS } from '../../lib/glossary';
 import { Segmented } from '../../ui/Segmented';
@@ -49,7 +50,7 @@ function Option({ on, title, line, disabled, onPick }: { on: boolean; title: str
  * the practice itself): Create puts it on the calendar through the Calendar's own create, then plans it.
  * `preview`: a press closes the sheet and reaches no server.
  */
-export function NewPlanSheet({ open, onClose, events, copies, roster, zone, now, initialEvent, initialStart, preview = false, template = null }: { /** First run's three starts open the sheet on the one picked. */ initialStart?: NewPlanStart; template?: { name: string; body: PlanBodyV2 } | null; open: boolean; onClose: () => void; events: ChPracticeEvent[]; copies: Array<{ id: string; label: string }>; roster: string[]; /** The team's zone: a new practice's day and times are its wall clock. */ zone: string; /** Today, for the new practice's default day; the clock's when omitted. */ now?: Date; initialEvent?: string | null; preview?: boolean }) {
+export function NewPlanSheet({ open, onClose, events, copies, roster, zone, now, initialEvent, initialStart, preview = false, template = null, templateFailed = false }: { /** First run's three starts open the sheet on the one picked. */ initialStart?: NewPlanStart; template?: { name: string; body: PlanBodyV2 } | null; /** Use on a saved template whose read failed (GAP-S-37): the sheet says so instead of opening on another start unsaid. */ templateFailed?: boolean; open: boolean; onClose: () => void; events: ChPracticeEvent[]; copies: Array<{ id: string; label: string }>; roster: string[]; /** The team's zone: a new practice's day and times are its wall clock. */ zone: string; /** Today, for the new practice's default day; the clock's when omitted. */ now?: Date; initialEvent?: string | null; preview?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const ids = useId();
@@ -194,6 +195,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, zone, now,
             </>
           ))}
         <h3>Start from</h3>
+        {templateFailed && !template && <RefreshNotice code="CH-13286" title="Your template didn’t load" body="Pick another way to start, or try again." />}
         <div className="ch-prc-grp" role="radiogroup" aria-label="Start from">
           {template && <Option on={start === 'template'} title={template.name} line="Template. Groups stay empty until you fill them" onPick={() => setStart('template')} />}
           <Option on={start === 'blank'} title="Blank" line="Add blocks yourself" onPick={() => setStart('blank')} />

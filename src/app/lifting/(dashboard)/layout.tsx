@@ -4,6 +4,10 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { LabShell } from '@/components/lifting/shell/LabShell';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import type { HelmLiftingCoachRow } from '@/lib/types/helm-lifting';
+import type { Metadata } from 'next';
+
+// One suffix for every Lift Lab tab (GAP-R-18): pages declare a bare noun ("Programs") and this adds the product name.
+export const metadata: Metadata = { title: { template: '%s · Lift Lab', default: 'Lift Lab' } };
 
 /**
  * Auth-gate layout for all /lifting/dashboard/** routes.

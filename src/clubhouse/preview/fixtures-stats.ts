@@ -123,7 +123,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
   days: ['Aug 30', 'Sep 3', 'Sep 9', 'Sep 14', 'Sep 20', 'Sep 25', 'Sep 29', 'Oct 4', 'Oct 8', 'Oct 12'].map((label, i) => ({ label, score: TEAM_DAYS[i]! })),
   // About six rounds a round day, nine a week (64 rounds), on the team's own spread: scoring's halves clear their standard error.
   daysHalves: halvesOf(TEAM_DAYS, 3.4, 6.4),
-  team: { sg: [...TEAM_SG], score: [...TEAM_SCORE], sgMean: PREVIEW_TEAM_SG.total, scoreMean: 73.6, sgHalves: halvesOf(TEAM_SG, 3.8, 9), scoreHalves: halvesOf(TEAM_SCORE, 3.4, 9) },
+  team: { sg: [...TEAM_SG], score: [...TEAM_SCORE], sgMean: PREVIEW_TEAM_SG.total, scoreMean: 73.6, parMean: 72, sgHalves: halvesOf(TEAM_SG, 3.8, 9), scoreHalves: halvesOf(TEAM_SCORE, 3.4, 9) },
   // A player plays about one and a half rounds a week: no player's halves clear one round's spread over seven weeks.
   players: P.map(([id, name, score, sg]) => ({ id, name, first: name.split(' ')[0]!, score: [...score], sg: [...sg], ...MEANS[id], sgHalves: halvesOf(sg, 3.8, 1.5), scoreHalves: halvesOf(score, 3.6, 1.5) })),
   legWeeks: LEG_WEEKS,

@@ -9,13 +9,10 @@
    so this page carries the lighter value (3.28 / 3.40 / 3.08 on surface, subtle and selected). Light uses the shared fill. */
 [data-ui='clubhouse'] {
   --ch-live-bead-eagle: var(--ch-score-eagle-fill);
-  /* The 40 px figure (above the 11 steps, free by the type rule): the value of --ch-type-figure-l, named as a role. */
-  --ch-type-live-figure: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
-  /* The 34 px figure of the player's own card, the value of --ch-type-display-l named as a role. */
+  /* The 40 px figure (above the steps, free by the type rule), at the hero figure's 600 (MOTION-AND-VISUAL 4.3). */
+  --ch-type-live-figure: 600 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
+  /* The 34 px figure of the player's own card (600, on the 34 step). */
   --ch-type-live-own: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
-}
-html[data-fw-theme='dark'] [data-ui='clubhouse'] {
-  --ch-live-bead-eagle: #b84d3f;
 }
 
 /* ---- The static live dot ---- */
@@ -30,7 +27,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 /* ---- A card of lanes (Home, the live view's groups) ---- */
 .ch-lv-card {
   background: var(--ch-bg-surface);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   box-shadow: var(--ch-elevation-reading);
   overflow: hidden;
 }
@@ -251,9 +248,10 @@ section.ch-lv-card {
   background: var(--ch-live-bead-eagle);
 }
 .ch-lv-bead[data-kind='birdie'] {
-  --ch-lv-ink: var(--ch-score-under-fill);
+  /* A step lighter than the eagle disc (2.5:1 apart), so a birdie and an eagle stay two marks. */
+  --ch-lv-ink: var(--ch-score-birdie-fill);
   border-radius: 50%;
-  background: var(--ch-score-under-fill);
+  background: var(--ch-score-birdie-fill);
 }
 .ch-lv-bead[data-kind='par']::after,
 .ch-lv-bead[data-kind='unknown']::after {
@@ -270,11 +268,11 @@ section.ch-lv-card {
 .ch-lv-bead[data-kind='bogey'] {
   --ch-lv-ink: var(--ch-ink-700);
   border: 1.5px solid var(--ch-ink-700);
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-xs);
 }
 .ch-lv-bead[data-kind='double'] {
   --ch-lv-ink: var(--ch-score-double);
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-xs);
   background: var(--ch-score-double);
 }
 .ch-lv-bead[data-kind='unplayed'] {
@@ -287,18 +285,10 @@ section.ch-lv-card {
   border: 1.5px solid var(--ch-green-600);
   border-radius: 50%;
 }
-@keyframes ch-lv-bead-in {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
+/* A hole that gained a score while you watch fades in over the release beat; it no longer scales (a score that came
+   without you moves nothing, MOTION-AND-VISUAL 3.1, 3.6, 3.12; motion.css ch-in). */
 .ch-lv-bead[data-fresh] {
-  animation: ch-lv-bead-in var(--ch-dur-release) var(--ch-ease) both;
+  animation: ch-in var(--ch-dur-release) var(--ch-ease-ios) both;
 }
 /* Reduced motion and Animations off: no scale, a ring in the mark's own colour for three seconds (set by the component). */
 .ch-lv-bead[data-ring] {
@@ -333,16 +323,8 @@ section.ch-lv-card {
 .ch-lv-spark.is-under .ch-lv-spark__dot {
   fill: var(--ch-score-under);
 }
-@keyframes ch-lv-seg-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
 .ch-lv-spark__seg[data-new] {
-  animation: ch-lv-seg-in var(--ch-dur-release) var(--ch-ease) both;
+  animation: ch-in var(--ch-dur-release) var(--ch-ease-ios) both;
 }
 
 /* ---- To par and thru ---- */
@@ -373,16 +355,10 @@ section.ch-lv-card {
   pointer-events: none;
   content: '';
 }
-@keyframes ch-lv-wash {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
+/* The layer shows at full and fades out on motion.css's ch-out, which holds it gone (forwards). */
 .ch-lv-par[data-wash]::after {
-  animation: ch-lv-wash var(--ch-dur-reveal) var(--ch-ease) both;
+  opacity: 1;
+  animation: ch-out var(--ch-dur-reveal) var(--ch-ease-out) forwards;
 }
 .ch-lv-par[data-wash='under']::after {
   background: var(--ch-score-under-bg);
@@ -456,10 +432,10 @@ section.ch-lv-card {
   gap: var(--ch-space-1_5);
   min-height: 24px;
   padding: 0 var(--ch-space-2);
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-subtle);
   color: var(--ch-ink-600);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   white-space: nowrap;
 }
 .ch-lv-chip__retry {
@@ -529,7 +505,7 @@ section.ch-lv-card {
 .ch-lv-eyebrow {
   display: block;
   margin-bottom: 6px;
-  font: var(--ch-type-eyebrow);
+  font: var(--ch-type-footnote);
   color: var(--ch-ink-500);
 }
 .ch-lv-tools {
@@ -553,7 +529,7 @@ section.ch-lv-card {
   border-radius: var(--ch-radius-md);
   background: transparent;
   color: var(--ch-ink-600);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -573,7 +549,7 @@ section.ch-lv-card {
   min-height: 44px;
   padding: 0 var(--ch-space-3);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-selected-strong);
   color: var(--ch-text-on-accent);
   font: var(--ch-type-13-strong);
@@ -629,7 +605,7 @@ section.ch-lv-card {
   padding: var(--ch-space-4);
   overflow: auto;
   overscroll-behavior: contain;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -733,7 +709,7 @@ section.ch-lv-card {
   place-items: center;
   min-width: 22px;
   height: 22px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-selected-strong);
   color: var(--ch-text-on-accent);
   font: var(--ch-type-11-strong);
@@ -838,7 +814,7 @@ section.ch-lv-card {
   display: grid;
   gap: var(--ch-space-3);
   padding: var(--ch-space-4);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }

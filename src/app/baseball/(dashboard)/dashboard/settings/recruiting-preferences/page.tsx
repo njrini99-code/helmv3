@@ -7,7 +7,7 @@ import type { CoachRecruitingPhilosophy, RecruitingMetricWeights, RecruitingMini
 import { DEFAULT_RECRUITING_WEIGHTS } from '@/lib/types';
 
 export const metadata = {
-  title: 'Recruiting Preferences | Settings | BaseballHelm',
+  title: 'Recruiting Preferences',
   description: 'Configure how you want to match with potential recruits',
 };
 

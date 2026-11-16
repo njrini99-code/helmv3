@@ -14,7 +14,7 @@ import { permanentRedirect } from 'next/navigation';
 import { getBaseballSettingsAliasHref } from '@/lib/baseball/settings-route-aliases';
 
 export const metadata = {
-  title: 'Player Access Settings | Helm Baseball',
+  title: 'Player Access Settings',
 };
 
 export default function Page() {

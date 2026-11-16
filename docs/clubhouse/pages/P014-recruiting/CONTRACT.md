@@ -194,7 +194,7 @@ CH-14203). The shell's frame errors apply too (10603 to 10606).
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10609 CH-1208,
 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211,
-10615 CH-1270, 10616 CH-1271, 10617 CH-1004.
+10615 CH-1270, 10616 CH-1271, 10617 CH-1004, 10690 CH-1290.
 
 ## 07 — Network / offline
 
@@ -215,7 +215,7 @@ Try again on a notice while offline says so instead of failing again (10704).
 | 140704 | CH-14917 | `A_FILE_IS_DRAGGED_OVER_A_PROSPECTS` | A file is dragged over a prospect's documents (desktop) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
@@ -370,9 +370,9 @@ and an empty part's action take the row press tint for the press beat, never a
 scale (141604, CH-14604). A key presses in about 6px and springs back through
 the shell's press (11606), while a prospect row deepens its tint instead; there
 is no first-paint rise; reduced motion and Animations off remove all of it
-(11608). A landed move to Committed draws a 1px gilt rule under the stage, left
-to right over the reveal duration, once per commit (CH-14806); it is at rest on
-every committed prospect and at once with reduced motion. This page's own CSS
+(11608). A landed move to Committed shows a 1px gilt rule under the stage at
+once, with no draw (CH-14806; MOTION-AND-VISUAL 3.1, 3.12); it is at rest on
+every committed prospect. This page's own CSS
 uses only the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
@@ -396,8 +396,8 @@ v2 grammar (D-70): selection when a stage is picked as the filter or as a
 prospect's stage, when a row is opened and when a sort is chosen (141701,
 CH-14701); warning when Delete prospect is tapped, before the question (141702,
 CH-14702); success for a landed save or send (11702), except a move to
-Committed, whose success lands as its gilt rule finishes drawing (CH-14806; at
-once with reduced motion or Animations off); error when a write fails (11703).
+Committed, whose success lands with its gilt rule, once the save has and the
+phone's stage sheet has closed (CH-14806); error when a write fails (11703).
 Every other tap is silent.
 
 | Bridge ID | Code | Name | Meaning |

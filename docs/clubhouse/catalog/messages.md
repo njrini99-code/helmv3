@@ -80,12 +80,12 @@ the thread with Retry (CH-7016), and the draft is never lost.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-7201 | Conversations don't load | "Conversations didn’t load" + "Your messages are safe…" Try again | `Rail` | messages.test › CH-7201 |
+| CH-7201 | Conversations don't load, or the read hasn’t answered in 15 seconds (GAP-S-11) | "Conversations didn’t load" + "Your messages are safe…" Try again | `Rail`, `useGolfConversations` (gives up after 15 s) | messages.test › CH-7201, use-golf-conversations.give-up |
 | CH-7202 | A conversation's messages don't load | "This conversation didn’t load" + "Nothing was lost…" Try again; the composer is off (read-only box, "Replies are off until this loads", Send and Attach disabled, one line under it) | `Thread`, `Composer` | messages.test › CH-7202 |
 | CH-7203 | Message search doesn't load | "Message search didn’t load" + "Conversations above still match by name." Try again | `MessageHits` | messages.test › CH-7203 |
 | CH-7204 | Group members don't load | "Members didn’t load" Try again | `Details` | messages.test › CH-7204 |
 | CH-7205 | The team list doesn't load (New message) | "Your team list didn’t load" Try again | `NewMessage` | messages.test › CH-7205 |
-| CH-7206 | Announcements don't load | "Announcements didn’t load" Try again | `Announcements` | messages.test › CH-7206 |
+| CH-7206 | Announcements don't load, or the read hasn’t answered in 15 seconds (GAP-S-11) | "Announcements didn’t load" Try again; the conversations stay | `Announcements`, `useAnnouncementsRead` | messages.test › CH-7206, announcements-wait |
 | CH-7207 | An announcement's replies, tasks and files don't load | "The details didn’t load" + "The announcement above is complete." Try again | `AnnouncementPane` | messages.test › CH-7207 |
 | CH-7208 | The mute setting doesn't load | "The mute setting didn’t load" Try again | `Details` | messages.test › CH-7208 |
 | CH-7209 | A message's attachments don't load | "Attachment didn’t load" + "Tap to try again" in place of the file tile | `Attachments` | messages.test › CH-7209 |
@@ -107,7 +107,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-7301 | No conversations yet | "No conversations yet" + (coach) "Start one with a player, or create a team group." | `Rail` | messages.test › CH-7301 |
+| CH-7301 | No conversations yet | "No conversations yet" + (coach) "Start one with a player, or create a team group."; the announcements section still draws under it on desktop, and the phone inbox draws the same compact line under its filter when announcements are listed or failed (GAP-S-01) | `Rail`, `PhoneInboxV2` | messages.test › CH-7301, first-run-ann-failed |
 | CH-7302 | A rail search or a filter has nothing | Search: "No conversation names match" + Clear search (message hits may follow below); Groups: "No group conversations yet"; Unread: "Nothing unread" + "You’re caught up." + Show all | `Rail`, `PhoneInbox` (`RailEmpty`) | messages.test › CH-7302, #12 |
 | CH-7303 | A conversation’s own search (Details › Search) finds no message | "No results" + "Try another name or word." The inbox search says it as CH-7302 does when no name matches either, and adds nothing when one does | `MessageHits` (`ConversationSearch`) | messages.test › CH-7303 |
 | CH-7304 | A thread with no messages | "No messages yet" + "Say hello to the group." (or the person’s first name) | `Thread` | messages.test › CH-7304 |
@@ -115,7 +115,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7306 | Nothing has been shared in the conversation (Details) | "No files shared yet." | `FilesPanel`, `FilesSection` | messages.test › CH-7306 |
 | CH-7307 | Everyone on the team is already in the group (Add) | "Everyone on the team is already in this group." | `AddMembersModal` | messages.test › CH-7307 |
 | CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren’t on a team yet" + "Messages open once you’re on a team roster, with your coaches and teammates." + Open team settings (a coach's Team, a player's Golf profile; the route passes the role) | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
-| CH-7309 | Nothing at all yet: no conversation and no announcement (D-71) | The shared page empty state (W19 B: the card with its tinted glyph tile): "No conversations yet" + "Message a player, a coach or the whole team. Everything stays inside {team}." + Start a conversation, and (coach) Message the team; the rail and thread empties (CH-7301, CH-7305) show only once something is listed | `MessagesFirstRun` (desktop and phone) | messages.test › CH-7309 |
+| CH-7309 | Nothing at all yet: no conversation and no announcement (D-71) | The shared page empty state (W19 B: the card with its tinted glyph tile): "No conversations yet" + "Message a player, a coach or the whole team. Everything stays inside {team}." + Start a conversation, and (coach) Message the team; the rail and thread empties (CH-7301, CH-7305) show only once something is listed. Only when both reads answered empty: a failed announcements read keeps the inbox, with "Announcements didn’t load" (CH-7206) and its Try again, never this page (GAP-S-01) | `MessagesFirstRun` (`isMessagesFirstRun`, desktop and phone) | messages.test › CH-7309, first-run-ann-failed |
 | CH-7370 | Notify anyway is offered: a coach, a conversation of their own team, a recipient in class with pushes held (P-10) | Phone: a 450 ms hold on Send opens a menu with one item, "Notify anyway" + "In class until 11:50 AM · skips the class hold" (a group: "3 people here are in class · skips the class hold"). Desktop: a 24 px chevron beside Send opens "Send and notify anyway" with the same caption and the shortcut (Cmd Shift Enter, Ctrl Shift Enter elsewhere), and Cmd or Ctrl + Shift + Enter sends the same way; the hint under the field gains "· Cmd Shift Enter to notify anyway". A plain Send is unchanged. Not offered with files attached, or when nothing is held | `SendCluster`, `sendNotify` | class-awareness-messages.test › CH-7370 |
 | CH-7310 | Nobody has seen a group message yet (the Seen by list) | The sheet stays "Seen by"; one section, "Not seen yet", each row "Hasn’t opened this chat" | `SeenByBody` | messages-seen-by.test › CH-7310 |
 
@@ -131,6 +131,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7406 | An announcement's details are loading | Skeletons where replies and tasks go | `AnnouncementPane` | messages.test › CH-7406 |
 | CH-7407 | The mute setting is loading | A skeleton row | `Details` | messages.test › CH-7407 |
 | CH-7408 | A message's attachments are loading | A skeleton file tile | `Attachments` | messages.test › CH-7408 |
+| CH-7490 | The announcements read hasn’t answered while the conversations have (GAP-S-11) | The conversations draw at once; Announcements waits in its own section with a one-row skeleton (`aria-busy`). After 4 seconds its label adds "· Still loading…" (a status); after 15 seconds it becomes "Announcements didn’t load" (CH-7206) with Try again | `AnnouncementsWait` (announcements.tsx), `useAnnouncementsRead` | announcements-wait.test › CH-7490 |
 | CH-7409 | The shared files are loading (Details) | A skeleton row | `FilesPanel`, `FilesSection` | messages.test › CH-7409 |
 | CH-7410 | The Add sheet's list is loading | Three skeleton rows | `AddMembersModal` | messages.test › CH-7410 |
 | CH-7411 | The Seen by list is loading | Three skeleton rows, `aria-busy`; the title reads "Seen by" alone | `SeenByBody` | messages-seen-by.test › CH-7411 |

@@ -2,5 +2,5 @@ import { TournamentsLoading } from '@/clubhouse/screens/tournaments/TournamentsL
 
 /** /golf/dashboard/tournaments/[id]/lineup: the Tournaments loading state (CH-16401). */
 export default function Loading() {
-  return <TournamentsLoading title="Lineup" />;
+  return <TournamentsLoading title="Lineup" view="lineup" />;
 }

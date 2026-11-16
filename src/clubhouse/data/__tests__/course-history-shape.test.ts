@@ -63,15 +63,25 @@ describe('stretches', () => {
 });
 
 describe('playsCompared', () => {
-  it('needs three rounds a side, then says harder only past one SE of the difference', () => {
+  it('needs three rounds a side, then says harder only past two SEs of the difference (SIGNAL_Z, CH-05)', () => {
     expect(playsCompared([2, 3], [0, 0, 0])).toEqual({ needs: 'here' });
     expect(playsCompared([2, 3, 4], [0, 0])).toEqual({ needs: 'elsewhere' });
-    // Inside one SE with a wide SE (about 1.2 here): no clear difference yet, not "the same".
+    // Inside two SEs with a wide SE (about 1.2 here): no clear difference yet, not "the same".
     expect(playsCompared([2, 3, 4], [1, 2, 3])).toMatchObject({ words: 'unclear' });
     // A tight one (six rounds a side, own spread 0.55, SE about 0.3): about the same.
     expect(playsCompared([2, 2, 3, 3, 2, 3], [2, 3, 2, 3, 3, 2])).toMatchObject({ words: 'same' });
     expect(playsCompared([8, 9, 10], [1, 2, 3])).toMatchObject({ words: 'harder', diff: 7 });
     expect(playsCompared([1, 2, 3], [8, 9, 10])).toMatchObject({ words: 'easier', diff: -7 });
+  });
+
+  it('a difference between one and two SEs is no longer called harder (CH-05)', () => {
+    // Six rounds a side, own spread about 1.05: SE of the difference about 0.6, and a gap of 1.0 sits between one and two of them.
+    const c = playsCompared([3, 4, 2, 4, 3, 5], [2, 3, 1, 3, 2, 4]);
+    expect(c).toMatchObject({ diff: 1 });
+    if (!('se' in c)) throw new Error('compared');
+    expect(c.diff).toBeGreaterThan(c.se);
+    expect(c.diff).toBeLessThan(2 * c.se);
+    expect(c.words).toBe('same');
   });
 });
 

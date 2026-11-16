@@ -147,6 +147,8 @@ export interface ChHubFile {
   size: string | null;
   /** "Oct 10" */
   date: string | null;
+  /** When `date` is, as stored (updated, else created): Home's Files tile lists the newest across every folder by it (GAP-H-14). */
+  at?: string | null;
   /** Players can open it (`is_public`). A coach-only file is not offered in New announcement: the players it goes to couldn't open it (Q-83). */
   isPublic: boolean;
   /** A practice plan's row (held 010400): opens the plan page, deletes the plan. Absent for a file. */
@@ -375,9 +377,14 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     try {
       summary = await getPlayerHubSummaryData(input.teamId, playerId);
     } catch (err) {
-      // The aggregate throws on a failed events, travel or tasks read: those three sections say so.
+      // The aggregate throws only when it can't run at all (no session, not this player): every section it feeds says so.
       log('playerSummary', err);
     }
+    // GAP-H-03: each of its three reads fails on its own (`failed`), and each section reads only its own: a failed travel
+    // read leaves the replies, the week and the tasks standing (the week is the events; its trip days are the trip tile's,
+    // which says travel didn't load, as the coach's week does).
+    // No summary at all (the whole read threw) is every leg failed; a summary from before `failed` existed names none.
+    const legs = summary ? (summary.failed ?? { events: false, travel: false, tasks: false }) : { events: true, travel: true, tasks: true };
     const anns = summary && !summary.announcementsLoadError ? summary.announcements : null;
     const annsFallback = summary ? null : await getPlayerHubAnnouncements(input.teamId, playerId).catch(() => null);
     const annList = ((a) => (a ? without(a, hidden.announcements) : a))(anns ?? (annsFallback?.success ? (annsFallback.data ?? []) : null));
@@ -421,10 +428,10 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
             mine: (e.rsvp_status ?? 'pending') as ChRsvp,
             counts: null,
           })),
-        error: !summary || closed.error,
+        error: legs.events || closed.error,
       },
       announcements: { rows: (annList ?? []).map((a) => announcement(a, authors, f, 'player')), error: !annList },
-      trips: { rows: playerTripRows, error: !summary },
+      trips: { rows: playerTripRows, error: legs.travel },
       // The aggregate's events are the team's (a meeting only when the player is invited); classes are left out.
       week: {
         days: weekOf(
@@ -433,7 +440,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           (summary?.events ?? []).filter((e) => e.event_type !== CLASS_EVENT_TYPE).map((e) => ({ ...e, id: e.event_id, all_day: closed.allDay.has(e.event_id) })),
           playerTripRows,
         ),
-        error: !summary,
+        error: legs.events,
       },
       tasks: {
         rows: taskOrder(without(summary?.tasks ?? [], hidden.tasks).map((t) => ({
@@ -445,7 +452,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           status: t.status as ChHubTask['status'],
           done: null,
         }))),
-        error: !summary,
+        error: legs.tasks,
       },
     };
   }
@@ -469,7 +476,11 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   const anns = annRes.success ? without(annRes.data ?? [], hidden.announcements) : [];
   const owedPosts = new Map<string, string[]>();
   const [attendance, assignments, authors, waiting, pulse] = await Promise.all([
-    attendanceFor(supabase, [...events.map((e) => e.id), ...trips.map((t) => t.event_id).filter((id): id is string => !!id), ...tripEvents.map((e) => e.id)]),
+    attendanceFor(
+      supabase,
+      [...events.map((e) => e.id), ...trips.map((t) => t.event_id).filter((id): id is string => !!id), ...tripEvents.map((e) => e.id)],
+      rosterRes.error ? null : new Set(names.keys()),
+    ),
     assignmentsFor(supabase, tasks.map((t) => t.id), rosterRes.error ? null : new Set(names.keys())),
     authorNames(supabase, anns),
     // An all-team post's audience is the roster: without it, who is left is unknown.
@@ -522,7 +533,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           // golf_events has no mandatory column (get_player_hub_events returns FALSE too); Q-71.
           mandatory: false,
           mine: null,
-          counts: attendance.error ? null : rsvpCounts(rows),
+          // Without the roster a departed player can't be told apart, so the count is unknown, never a long one (DF-C-06).
+          counts: attendance.error || rosterRes.error ? null : rsvpCounts(rows),
         };
       }),
       error: !!eventsRes.error,
@@ -622,7 +634,9 @@ export function weekOf(
       .filter((e) => (e.all_day ? e.start_time.slice(0, 10) : f.day(e.start_time).date) === date)
       .sort((a, b) => a.start_time.localeCompare(b.start_time))
       .map((e) => ({ id: e.id, title: e.title, time: e.all_day ? 'All day' : f.time(e.start_time), place: e.location, kind: e.event_type }));
-    const on = trips.find((t) => t.departDate && t.departDate <= date && (t.returnDate ?? t.departDate) >= date);
+    // A player is on the road only on a trip that may be theirs (GAP-H-02): one they're known not to be on marks no day.
+    // A coach's rows carry no `mine`, so every team trip counts for them.
+    const on = trips.find((t) => t.mine !== false && t.departDate && t.departDate <= date && (t.returnDate ?? t.departDate) >= date);
     return { date, weekday: f.wd(date), day: Number(date.slice(8, 10)), events: todays, trip: on?.name ?? null };
   });
 }
@@ -662,7 +676,11 @@ export function unackedPostCount(rows: ReadonlyArray<Pick<ChHubAnnouncement, 'ne
   return asking.filter((a) => a.notAcked!.length > 0).length;
 }
 
-export async function attendanceFor(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[]) {
+/**
+ * Each event's replies, by event. With `members` (today's roster), a row for anyone else is left out: a player who has
+ * left keeps their attendance rows, and they were counted in "N of M going", "no reply" and the travelers (DF-C-06).
+ */
+export async function attendanceFor(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], members?: ReadonlySet<string> | null) {
   const byEvent = new Map<string, Array<{ player: string; status: ChRsvp }>>();
   for (const ids of chunkIds([...new Set(eventIds)])) {
     // Paged: a season's events times a full roster passes PostgREST's 1000-row cap.
@@ -673,7 +691,7 @@ export async function attendanceFor(supabase: Awaited<ReturnType<typeof createCl
       log('attendance', error);
       return { byEvent, error: true };
     }
-    for (const a of data ?? []) byEvent.set(a.event_id, [...(byEvent.get(a.event_id) ?? []), { player: a.player_id, status: rsvpOf(a.status) as ChRsvp }]);
+    for (const a of data ?? []) if (!members || members.has(a.player_id)) byEvent.set(a.event_id, [...(byEvent.get(a.event_id) ?? []), { player: a.player_id, status: rsvpOf(a.status) as ChRsvp }]);
   }
   return { byEvent, error: false };
 }
@@ -932,6 +950,7 @@ export function folders(docs: Array<{ practice_plan_id?: string | null; id: stri
         type: TYPE_OF[ext] ?? (ext.slice(0, 4).toUpperCase() || 'FILE'),
         size: d.file_size ? bytes(d.file_size) : null,
         date: d.updated_at || d.created_at ? f.short(d.updated_at ?? d.created_at!) : null,
+        at: d.updated_at ?? d.created_at ?? null,
         // The policy reads `is_public = true` for a player: anything else (false, null, not read) is coach-only.
         isPublic: d.is_public === true,
         planId: d.practice_plan_id ?? null,

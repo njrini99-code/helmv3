@@ -34,6 +34,9 @@ import { LiftOnboardingGate } from '@/components/baseball/performance/lift-onboa
 import { EditorsLetter } from '@/components/baseball/living-annual';
 import { resolvePlayerLiftAthleteContext, hasReadinessCheckinToday } from './_lift-athlete-context';
 import type { HelmLiftingSessionRow, HelmLiftingSessionStatus } from '@/lib/types/helm-lifting-data';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Lifts' };
 
 const OPEN_STATUSES: HelmLiftingSessionStatus[] = ['assigned', 'started', 'modified'];
 

@@ -26,11 +26,11 @@
 .ch-hr-page .ch-hd-dos__h > * { position: relative; }
 .ch-hr-page .ch-hd-dos__h .ch-hl-focus__k { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font: var(--ch-type-14-medium); }
 .ch-hr-page .ch-hd-dos__h .ch-hl-focus__k > span:first-child { font: var(--ch-type-14-medium); color: var(--ch-on-green-ink-muted); }
-.ch-hr-page .ch-hd-dos__h .ch-hl-pri { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: var(--ch-radius-tail); font: var(--ch-type-13-strong); background: var(--ch-hr-st-warn-bg); color: var(--ch-hr-st-warn); }
+.ch-hr-page .ch-hd-dos__h .ch-hl-pri { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: var(--ch-radius-sm); font: var(--ch-type-13-strong); background: var(--ch-hr-st-warn-bg); color: var(--ch-hr-st-warn); }
 .ch-hr-page .ch-hd-dos__h .ch-hl-pri:is(.is-ok, .is-done) { background: var(--ch-hr-st-good-bg); color: var(--ch-hr-st-good); }
 .ch-hr-page .ch-hd-dos__h .ch-hl-pri:is(.is-low, .is-stale, .is-note) { background: var(--ch-on-green-rule); color: var(--ch-on-green-ink-soft); }
 .ch-hr-page .ch-hd-dos__h .ch-hl-pri::before { content: none; }
-.ch-hr-page .ch-hd-dos__h h2 { margin: 0 0 8px; font: var(--ch-type-22-strong); line-height: var(--ch-lead-tight); letter-spacing: -0.02em; color: var(--ch-on-green-ink); text-wrap: balance; }
+.ch-hr-page .ch-hd-dos__h h2 { margin: 0 0 8px; font: var(--ch-type-title); line-height: var(--ch-lead-tight); letter-spacing: -0.02em; color: var(--ch-on-green-ink); text-wrap: balance; }
 .ch-hr-page.is-desk .ch-hd-dos__h h2 { line-height: var(--ch-lead-serif-m); }
 /* The good tone on the Deep dive's measure and trend rows, in the one tone vocabulary (CONS-20): is-gain, painted with the
    gain token (the dive's older is-good paints --ch-green-700, a shade darker). */
@@ -93,7 +93,7 @@
 .ch-hr-sec .ch-hd-meas__s { margin: 0; font: var(--ch-type-13); color: var(--ch-text-tertiary); }
 /* evidence sits in the design system's Inset, never a card inside the card */
 .ch-hr-sec .ch-hl-ev { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 12px 16px; border: 0; border-radius: var(--ch-radius-md); background: var(--ch-bg-inset); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); }
-.ch-hr-sec .ch-hl-ev__l { font: var(--ch-type-13-medium); color: var(--ch-text-tertiary); }
+.ch-hr-sec .ch-hl-ev__l { font: var(--ch-type-footnote); color: var(--ch-text-tertiary); }
 .ch-hr-sec .ch-hl-ev__f { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; padding: 12px 0 0; border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); font: var(--ch-type-13); color: var(--ch-text-tertiary); }
 .ch-hr-sec .ch-hl-ev:not(:has(.ch-hl-bars)) .ch-hl-ev__f { padding-top: 0; border-top: 0; }
 
@@ -115,7 +115,7 @@
 .ch-hr-sec .ch-hd-strip__chart svg { display: block; width: 100%; height: auto; }
 .ch-hr-sec .ch-hd-tr { margin: 0; padding: 0; list-style: none; }
 .ch-hr-sec .ch-hd-strip { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 0; border: 0; }
-.ch-hr-sec .ch-hd-tr__k { font: var(--ch-type-13-medium); color: var(--ch-text-tertiary); }
+.ch-hr-sec .ch-hd-tr__k { font: var(--ch-type-footnote); color: var(--ch-text-tertiary); }
 .ch-hr-sec .ch-hd-strip__c { display: flex; flex-direction: column; gap: 2px; font: var(--ch-type-14); }
 .ch-hr-sec .ch-hd-strip__c b { font: var(--ch-type-14-strong); }
 .ch-hr-sec .ch-hd-strip__c em { margin: 0; padding: 0; font: var(--ch-type-12); font-style: normal; color: var(--ch-text-tertiary); }
@@ -149,17 +149,16 @@
 /* how sure: the Surface is the disclosure */
 .ch-hr-surecard { padding: 4px 16px; }
 .ch-hr.is-desk .ch-hr-surecard { padding: 4px 20px; }
-.ch-hr-surecard > .ch-hl-why { width: 100%; min-height: 48px; margin: 0; padding: 0; border: 0; background: none; font: var(--ch-type-card-title); letter-spacing: var(--ch-track-card-title); color: var(--ch-text-primary); }
+.ch-hr-surecard > .ch-hl-why { width: 100%; min-height: 48px; margin: 0; padding: 0; border: 0; background: none; font: var(--ch-type-headline); letter-spacing: 0; color: var(--ch-text-primary); }
 .ch-hr-surekey svg { transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth); }
 .ch-hr-surekey[aria-expanded='true'] svg { transform: rotate(180deg); }
 .ch-hr-sure { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0 0 16px; }
-.ch-hr-sure:not([hidden]) { animation: ch-hr-rise var(--ch-dur-spring-settle) var(--ch-ease-spring-settle); }
 .ch-hr-sure p { margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
-@keyframes ch-hr-rise { from { opacity: 0; transform: translateY(6px); } }
-@keyframes ch-hr-fade { from { opacity: 0; } }
+/* The panel a tap opens crossfades in over the quick beat, with no rise (motion.css ch-in; MOTION-AND-VISUAL 3.5, 3.12);
+   under Reduce Motion the same 180ms fade (3.11). */
+.ch-hr-sure:not([hidden]) { animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios); }
 @media (prefers-reduced-motion: reduce) {
-  /* Reduce Motion: the panel fades over the shared 180ms and moves nowhere. */
-  .ch-hr-sure:not([hidden]) { animation-name: ch-hr-fade; --ch-rm-animation: var(--ch-dur-crossfade-rm); }
+  .ch-hr-sure:not([hidden]) { --ch-rm-animation: var(--ch-dur-quick); }
 }
 .ch-hr-week { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
 .ch-hr-week p { margin: 0; }
@@ -172,7 +171,7 @@
 
 /* more on this player: the board's rows, in one Surface like Home's lists */
 .ch-hr-next { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
-.ch-hr-next__h { margin: 0; font: var(--ch-type-card-title); letter-spacing: var(--ch-track-card-title); color: var(--ch-text-primary); }
+.ch-hr-next__h { margin: 0; font: var(--ch-type-headline); letter-spacing: 0; color: var(--ch-text-primary); }
 .ch-hr-list { overflow: hidden; border-radius: inherit; }
 .ch-hr-list > .ch-hl-row { width: 100%; padding-right: 12px; padding-left: 16px; border-top: 0; border-radius: 0; }
 .ch-hr-list > .ch-hl-row + .ch-hl-row { box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator); }

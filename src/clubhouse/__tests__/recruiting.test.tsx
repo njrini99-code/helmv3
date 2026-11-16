@@ -545,7 +545,7 @@ describe('Recruiting · desktop', () => {
   it('CH-14201 CH-14911 a list that did not load says so with Try again, which asks the server again; it is never "your list starts here"', async () => {
     const user = userEvent.setup();
     const { again } = wrap(PREVIEW_RECRUITING_FAILED);
-    expect(code('CH-14201')?.textContent).toMatch(/Your prospects didn’t load.*Nothing was lost\. Try again\./);
+    expect(code('CH-14201')?.textContent).toMatch(/Your prospects didn’t load.*Nothing you saved is lost\. Try again\./);
     expect(code('CH-14301')).toBeNull();
     expect(screen.queryByRole('group', { name: 'Filter by stage' })).toBeNull();
     // The board keeps New prospect in the header beside the notice.
@@ -635,10 +635,10 @@ describe('Recruiting · desktop', () => {
     await act(async () => save.resolve({ success: true }));
     await waitFor(() => expect(document.querySelector('p[data-ch-code="CH-14803"]')?.textContent).toBe('Mason Reilly is now Committed'));
     expect(document.querySelector('p[data-ch-code="CH-14803"]')?.getAttribute('role')).toBe('status');
-    // P014 B1 (intentional change): a commit's success haptic lands as its gilt rule finishes drawing, not as the save lands.
-    expect(hapticSpy).not.toHaveBeenCalledWith('success');
-    fireEvent.animationEnd(document.querySelector('.ch-rec-commit.is-drawing')!);
-    expect(hapticSpy).toHaveBeenCalledWith('success');
+    // P014 B1: a commit's success haptic lands with its gilt rule, once the save has landed (the rule no longer draws, so
+    // nothing waits for an animationend: MOTION-AND-VISUAL 3.1, 3.12).
+    await waitFor(() => expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1));
+    expect(document.querySelector('.ch-rec-commit')).not.toBeNull();
     // A picked stage is the most recently updated.
     expect(rowNames()[0]).toBe('Mason Reilly');
   });
@@ -965,7 +965,7 @@ describe('Recruiting · desktop', () => {
     const w = fakeWrites();
     w.documents.list.mockImplementation(() => fail('Failed to load documents'));
     wrap(PREVIEW_RECRUITING, w);
-    await expectCode('CH-14202', /Documents didn’t load.*Nothing is lost/);
+    await expectCode('CH-14202', /Documents didn’t load.*Nothing you saved is lost/);
     expect(within(panel('Mason Reilly')).getByText(/Saw Mason at the Carolinas Junior/)).toBeTruthy();
     expect(code('CH-14305')).toBeNull();
     w.documents.list.mockImplementation((id: string) => ok((PREVIEW_DOCUMENTS[id] ?? []).map((d) => ({ ...d }))));
@@ -1311,7 +1311,7 @@ describe('Recruiting · phone', () => {
     expect(within(dlg()).getByRole('heading', { name: 'New prospect' })).toBeTruthy();
     first.unmount();
     wrap(PREVIEW_RECRUITING_FAILED);
-    expect(code('CH-14201')?.textContent).toContain('Nothing was lost. Try again.');
+    expect(code('CH-14201')?.textContent).toContain('Nothing you saved is lost. Try again.');
     expect(top().queryByRole('button', { name: 'New prospect' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
@@ -1457,7 +1457,9 @@ describe('Recruiting · Committed is a moment, once (B1)', () => {
     window.matchMedia = realMatchMedia;
   });
 
-  it('CH-14806 a successful move to Committed draws the gilt rule and the success haptic lands at its end, not on the tap; it never replays', async () => {
+  // MOTION-AND-VISUAL 3.1, 3.12: content never moves on its own, so the rule is there at once and the haptic no longer
+  // waits for its draw's animationend; it lands with the moment, once the save has.
+  it('CH-14806 a successful move to Committed shows the gilt rule and the success haptic lands once the save has, not on the tap; it never replays', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
     const save = deferred<{ success: boolean }>();
@@ -1465,35 +1467,16 @@ describe('Recruiting · Committed is a moment, once (B1)', () => {
     wrap(PREVIEW_RECRUITING, w);
     await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
     expect(hapticSpy).not.toHaveBeenCalledWith('success');
-    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
     await act(async () => save.resolve({ success: true }));
-    const rule = await waitFor(() => {
-      const r = document.querySelector('.ch-rec-commit.is-drawing');
-      expect(r).not.toBeNull();
-      return r!;
-    });
-    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    await waitFor(() => expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1));
     expect(panel('Mason Reilly').querySelector('.ch-rec-av.is-gilt')).not.toBeNull();
-    fireEvent.animationEnd(rule);
-    expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
-    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
     expect(code('CH-14806')).not.toBeNull();
+    expect(code('CH-14806')?.className).toBe('ch-rec-commit');
     // Away and back: the committed prospect shows the rule at rest, with no second beat.
     await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Caleb Nguyen/ }));
     await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }));
-    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
-    expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
-  });
-
-  it('CH-14806 leaving the prospect before the rule finishes drops the moment: coming back never replays it', async () => {
-    const user = userEvent.setup();
-    wrap();
-    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
-    await waitFor(() => expect(document.querySelector('.ch-rec-commit.is-drawing')).not.toBeNull());
-    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Caleb Nguyen/ }));
-    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }));
     expect(panel('Mason Reilly').querySelector('.ch-rec-commit')).not.toBeNull();
-    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
   });
 
   it('a move to another stage, or a commit that fails, has no moment', async () => {
@@ -1509,7 +1492,7 @@ describe('Recruiting · Committed is a moment, once (B1)', () => {
     w.update.mockImplementation(() => fail());
     await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
     await expectCode('CH-14003');
-    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    expect(document.querySelector('.ch-rec-commit')).toBeNull();
     expect(hapticSpy).not.toHaveBeenCalledWith('success');
   });
 
@@ -1520,7 +1503,7 @@ describe('Recruiting · Committed is a moment, once (B1)', () => {
     await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
     await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('success'));
     expect(document.querySelector('.ch-rec-commit')).not.toBeNull();
-    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    expect(document.querySelector('.ch-rec-commit.is-waiting')).toBeNull();
   });
 
   it('on the phone the moment waits under the stage sheet and plays as Done closes it', async () => {
@@ -1540,13 +1523,10 @@ describe('Recruiting · Committed is a moment, once (B1)', () => {
     await waitFor(() => expect(d.querySelector('.ch-rec-commit.is-waiting')).not.toBeNull());
     expect(hapticSpy).not.toHaveBeenCalledWith('success');
     await user.click(within(dlg()).getByRole('button', { name: 'Done' }));
-    const rule = await waitFor(() => {
-      const r = d.querySelector('.ch-rec-commit.is-drawing');
-      expect(r).not.toBeNull();
-      return r!;
-    });
-    fireEvent.animationEnd(rule);
-    expect(hapticSpy).toHaveBeenCalledWith('success');
+    // The moment plays as Done closes the sheet: the rule shows and the haptic lands, with no draw to wait for (3.12).
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('success'));
+    expect(d.querySelector('.ch-rec-commit')).not.toBeNull();
+    expect(d.querySelector('.ch-rec-commit.is-waiting')).toBeNull();
     window.history.replaceState(null, '', '/');
   });
 });

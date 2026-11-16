@@ -17,6 +17,9 @@ any more. Where `design-refresh/<page>/` exists it replaces the handoff for that
 page. Runtime values come from `styles/tokens.css`, `styles/auth-tokens.css` and
 `lib/fonts.ts`; handoff files are references, not a reason to restore behavior
 superseded by owner revisions.
+The design system (laws, surfaces, colour, type, the one toggle, charts, the
+banned list, and token tables generated from `styles/tokens.css`) is
+[`design-refresh/DESIGN_LANGUAGE.md`](../../design-refresh/DESIGN_LANGUAGE.md).
 `DESIGN.md` at the repo root and `docs/clubhouse/UI_OWNERSHIP.md` index these
 owners. Follow the existing approved design; new phone designs still follow
 the phone-design workflow in `.claude/rules/clubhouse.md`.

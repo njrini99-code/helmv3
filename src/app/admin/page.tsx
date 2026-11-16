@@ -23,6 +23,10 @@ import { ChangeTimeline } from './_components/ChangeTimeline';
 import { TabHeader } from './_components/TabHeader';
 import { CommandDeck } from '@/components/admin/command-deck/CommandDeck';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+// The admin layout's '%s · Admin' template reaches child segments only, not this page in its own segment, so the overview spells it out.
+export const metadata: Metadata = { title: { absolute: 'Overview · Admin' } };
 
 export const dynamic = 'force-dynamic';
 

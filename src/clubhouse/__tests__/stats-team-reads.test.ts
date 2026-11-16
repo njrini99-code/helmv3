@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readWaves } from './read-waves';
 
 /**
@@ -14,6 +14,13 @@ vi.mock('@/lib/admin/rls-denial', () => ({ maybeCaptureRlsDenial: vi.fn() }));
 import { loadTeamStats } from '../data/stats-team';
 import { shotsAnswer } from '../data/__tests__/sg-shots-fake';
 import { filterFor } from '../data/stats-filter';
+import { sgPolicy } from '../data/stats-sg-mix';
+
+// These tests pin figures and reads written for every stored strokes gained figure, so they run under `include`. The shipped policy
+// (`exclude`, SC-07) and what it changes are pinned in src/clubhouse/data/__tests__/sg-mix.test.ts.
+const SG_POLICY_SHIPPED = sgPolicy.estimated;
+beforeEach(() => { sgPolicy.estimated = 'include'; });
+afterEach(() => { sgPolicy.estimated = SG_POLICY_SHIPPED; });
 
 type Filters = Array<[string, unknown[]]>;
 const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);

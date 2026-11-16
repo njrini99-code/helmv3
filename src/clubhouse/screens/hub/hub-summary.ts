@@ -16,7 +16,7 @@ export interface StripItem {
   after: string;
   /** The tab the figure opens. */
   tab: ChHubTab;
-  /** Something is late: the figure takes the warning ink (never red; red is under par). */
+  /** Something is late: the figure takes the warning ink (never red; red is for errors). */
   warn?: boolean;
 }
 

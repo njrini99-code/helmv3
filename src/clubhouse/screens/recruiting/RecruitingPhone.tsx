@@ -11,7 +11,7 @@ import { PhoneTop, usePhoneStackHistory } from '../../shell/phone-chrome';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
-import { InlineNotice } from '../../ui/Notices';
+import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
 import { PhoneBar, PhoneIconAction, PhoneTextAction } from '../../ui/PhoneBar';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
@@ -56,7 +56,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
         </LargeTitle>
         {!c.error && !nothing && <CalendarLine c={c} phone />}
         {c.error ? (
-          <InlineNotice code="CH-14201" title="Your prospects didn’t load" body="Nothing was lost. Try again." onRetry={c.tryAgain} />
+          <InlineNotice code="CH-14201" title="Your prospects didn’t load" body={FAILURE_COPY.page} onRetry={c.tryAgain} />
         ) : nothing ? (
           <EmptyState
             size="page"

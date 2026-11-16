@@ -113,12 +113,16 @@ describe('History, phone', () => {
     const bars = c.querySelectorAll('.ch-tour-rev-bar');
     expect(bars).toHaveLength(7);
     expect(c.querySelectorAll('.ch-tour-rev-bar.is-now')).toHaveLength(3);
-    expect(plain(c.querySelector('.ch-tour-rev-trend__s'))).toBe('Per round · lower is better · actual lineups');
+    expect(plain(c.querySelector('.ch-tour-rev-trend__s'))).toBe('Per round · right of the line beats the rating · actual lineups');
     expect(bars[bars.length - 1]).toHaveAttribute('href', '/golf/dashboard/tournaments/e33');
-    // The bars run across. The longest is the best (lowest) figure; the figure is at its end.
-    const lengths = Array.from(bars).map((b) => parseFloat((b.querySelector('i') as HTMLElement).style.getPropertyValue('--ch-tour-rev-len')));
+    // The bars run across from a zero rule on one scale (stats and charts audit 2026-11-15, CH-02): each bar's length is its
+    // figure's size, worse than the rating to the left and better to the right; the figure ends the row.
+    const lengths = Array.from(bars).map((b) => parseFloat((b.querySelector('i') as HTMLElement | null)?.style.getPropertyValue('--ch-tour-rev-len') ?? '0'));
     const nums = Array.from(bars).map((b) => Number((b.querySelector('b')?.textContent ?? '').replace('−', '-')));
-    expect(lengths.indexOf(Math.max(...lengths))).toBe(nums.indexOf(Math.min(...nums)));
+    const top = Math.max(...nums.map(Math.abs));
+    const longest = Math.max(...lengths);
+    nums.forEach((v, i) => expect(lengths[i]! / longest).toBeCloseTo(Math.abs(v) / top, 2));
+    Array.from(bars).forEach((b, i) => expect(b.querySelector('i')?.getAttribute('data-side')).toBe(nums[i]! < 0 ? 'better' : 'worse'));
     expect(lengths.every((l) => l > 0 && l <= 1)).toBe(true);
     // Every bar carries its event's full name, never the short one a column had room for, under its season's name.
     expect(Array.from(bars).map((b) => b.querySelector('.ch-tour-rev-bar__n')?.textContent)).toEqual(data.trend.map((t) => data.events.find((e) => e.id === t.eventId)!.name));
@@ -207,6 +211,15 @@ describe.each([
     expect(notice).toHaveAttribute('role', 'alert');
     expect(plain(notice)).toContain('The trend didn’t load');
     expect(c.querySelector('.ch-tour-rev-trend')).toBeNull();
+    if (!phone) expect(c.querySelector('[role="table"]')).not.toBeNull();
+  });
+
+  it('names a failed roster read once and keeps the trend and the events (CH-16295, GAP-S-08)', () => {
+    const c = draw({ ...data, players: [], errors: { profiles: true } }, search(), { phone });
+    const notices = [...c.querySelectorAll('[role="alert"]')].filter((n) => plain(n as HTMLElement).includes('Player names didn’t load'));
+    expect(notices).toHaveLength(1);
+    expect(notices[0]?.closest('[data-ch-code]')?.getAttribute('data-ch-code')).toBe('CH-16295');
+    expect(c.querySelector('[data-ch-code="CH-16236"]')).toBeNull();
     if (!phone) expect(c.querySelector('[role="table"]')).not.toBeNull();
   });
 

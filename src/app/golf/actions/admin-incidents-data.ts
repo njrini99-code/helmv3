@@ -79,7 +79,8 @@ async function resolveDashboardIncidentImpl(input: {
       return { success: false, resolvedCount: 0, message: `Could not resolve incident: ${updateError.message}` };
     }
 
-    revalidatePath('/golf/admin');
+    // /golf/admin only redirects to /admin (next.config.mjs), GAP-R-14.
+    revalidatePath('/admin');
     return {
       success: true,
       resolvedCount: matchingIds.length,
@@ -118,7 +119,8 @@ async function resolveDashboardIncidentImpl(input: {
     return { success: false, resolvedCount: 0, message: `Could not create resolution record: ${insertError.message}` };
   }
 
-  revalidatePath('/golf/admin');
+  // /golf/admin only redirects to /admin (next.config.mjs), GAP-R-14.
+  revalidatePath('/admin');
   return {
     success: true,
     resolvedCount: 1,

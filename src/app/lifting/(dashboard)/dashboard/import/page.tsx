@@ -22,7 +22,7 @@ import type { HelmLiftingCoachRow, HelmLiftingSport } from '@/lib/types/helm-lif
 import type { HelmLiftingImportRunRow } from '@/lib/types/helm-lifting-data';
 
 export const metadata = {
-  title: 'Import Data · Helm Lifting Lab',
+  title: 'Import Data',
 };
 
 // ---------------------------------------------------------------------------

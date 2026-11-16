@@ -7,7 +7,7 @@ vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), back: vi.fn(), replace: vi.fn() }), usePathname: () => '/golf/dashboard/rounds/x' }));
 
-import type { ChReviewHistory } from '../../../data/round-history-shape';
+import { HISTORY_FAILED, type ChReviewHistory } from '../../../data/round-history-shape';
 import { PREVIEW_REVIEW } from '../../../preview/fixtures-round-review';
 import { ToastProvider } from '../../../ui/Toast';
 import { RoundReview } from '../RoundReview';
@@ -45,9 +45,22 @@ describe('the review history, streamed', () => {
     await waitFor(() => expect(screen.getByRole('list', { name: 'Records' }).textContent).toContain('Season low'));
   });
 
-  it('a stream that fails draws no history and says nothing about it', async () => {
-    wrap(<RoundReview review={{ ...PREVIEW_REVIEW, history: undefined }} history={Promise.reject(new Error('cut off'))} />);
-    await new Promise((r) => setTimeout(r, 0));
+  it('a stream that fails draws no history and says once that it didn’t load (CH-11290, GAP-S-27)', async () => {
+    const { container } = wrap(<RoundReview review={{ ...PREVIEW_REVIEW, history: undefined }} history={Promise.reject(new Error('cut off'))} />);
+    await waitFor(() => expect(container.querySelector('[data-ch-code="CH-11290"]')).not.toBeNull());
+    expect(container.querySelector('[data-ch-code="CH-11290"]')!.textContent).toContain('History didn’t load');
+    expect(container.querySelectorAll('[data-ch-code="CH-11290"]')).toHaveLength(1);
     expect(screen.queryByRole('list', { name: 'Records' })).toBeNull();
+  });
+
+  it('a read that failed on the server is said the same way (CH-11290)', async () => {
+    const { container } = wrap(<RoundReview review={{ ...PREVIEW_REVIEW, history: undefined }} history={Promise.resolve(HISTORY_FAILED)} />);
+    await waitFor(() => expect(container.querySelector('[data-ch-code="CH-11290"]')).not.toBeNull());
+  });
+
+  it('a player with no history yet is not told anything failed', async () => {
+    const { container } = wrap(<RoundReview review={{ ...PREVIEW_REVIEW, history: undefined }} history={Promise.resolve(null)} />);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(container.querySelector('[data-ch-code="CH-11290"]')).toBeNull();
   });
 });

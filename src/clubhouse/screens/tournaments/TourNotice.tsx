@@ -44,7 +44,7 @@ export function TourNotice({ kind, coach = true, title = 'Tournaments', phone: f
       ) : kind === 'no_team' ? (
         <NoTeam code="CH-16303" coach={coach} body={coach ? 'Tournaments fill in once your team is set up.' : 'Your team’s events show here once a coach adds you to a team roster.'} />
       ) : kind === 'not_found' ? (
-        <EmptyState size="page" code="CH-16304" icon={SearchX} title="That event isn’t on your team" body="It may have been deleted, or the link is from another team." action={back('Back to tournaments')} />
+        <EmptyState size="page" code="CH-16304" icon={SearchX} title="This event isn’t here" body="It may have been deleted, or the link is wrong. Everything else is where you left it." action={back('Back to Tournaments')} />
       ) : (
         <EmptyState size="page" code="CH-16305" icon={Lock} title="Only coaches open this page" body="You can see your team’s events and your own results in Tournaments." action={back('See your tournaments')} />
       )}

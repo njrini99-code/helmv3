@@ -13,6 +13,7 @@ import { Button, IconButton } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
+import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Select } from '../../ui/Select';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
 import { formatToPar, tourDayTime, tourRange } from './format';
@@ -242,97 +243,103 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
           <div className="ch-tour-lu-cols">
             <div className="ch-tour-lu-col">
               <Section id="ch-tour-lu-slots" title="Playing" meta={`${set} of ${of} spots set`}>
-                <ol className="ch-tour-lu-slots">
-                  {draft.slots.map((id, i) => (
-                    <li key={i} className="ch-tour-lu-slot">
-                      <span className="ch-tour-lu-slot__n ch-num" aria-hidden="true">
-                        {i + 1}
-                      </span>
-                      <div className="ch-tour-lu-slot__who">
-                        <Select
-                          label={`Spot ${i + 1}`}
-                          value={id ?? EMPTY}
-                          disabled={!editable || busy}
-                          onChange={(v) => (v ? move(v, { kind: 'slot', slot: i + 1 }) : id && move(id, { kind: 'bench' }))}
-                          options={[{ value: EMPTY, label: 'Empty' }, ...roster.map((p) => ({ value: p.id, label: optionLabel(p, draft, availability.get(p.id) ?? p.availability) }))]}
-                        />
-                        {id && <Form candidate={stats.get(id)} />}
-                      </div>
-                      {editable && id && <IconButton icon={X} label={`Take ${player(id)?.first ?? 'player'} out of spot ${i + 1}`} onClick={() => move(id, { kind: 'bench' })} />}
-                    </li>
-                  ))}
-                </ol>
+                <SectionBoundary surface="tournaments.lineup.slots" label="Playing" code="CH-16294">
+                  <ol className="ch-tour-lu-slots">
+                    {draft.slots.map((id, i) => (
+                      <li key={i} className="ch-tour-lu-slot">
+                        <span className="ch-tour-lu-slot__n ch-num" aria-hidden="true">
+                          {i + 1}
+                        </span>
+                        <div className="ch-tour-lu-slot__who">
+                          <Select
+                            label={`Spot ${i + 1}`}
+                            value={id ?? EMPTY}
+                            disabled={!editable || busy}
+                            onChange={(v) => (v ? move(v, { kind: 'slot', slot: i + 1 }) : id && move(id, { kind: 'bench' }))}
+                            options={[{ value: EMPTY, label: 'Empty' }, ...roster.map((p) => ({ value: p.id, label: optionLabel(p, draft, availability.get(p.id) ?? p.availability) }))]}
+                          />
+                          {id && <Form candidate={stats.get(id)} />}
+                        </div>
+                        {editable && id && <IconButton icon={X} label={`Take ${player(id)?.first ?? 'player'} out of spot ${i + 1}`} onClick={() => move(id, { kind: 'bench' })} />}
+                      </li>
+                    ))}
+                  </ol>
+                </SectionBoundary>
               </Section>
               <Section id="ch-tour-lu-extra" title="Alternate and individuals" meta="The alternate is next in; individuals play for themselves and never count toward the team">
-                <div className="ch-tour-lu-extra">
-                  <div className="ch-tour-lu-extra__row">
-                    <span className="ch-tour-lu-lbl">Alternate</span>
-                    <Select
-                      label="Alternate"
-                      value={draft.alternate ?? EMPTY}
-                      disabled={!editable || busy}
-                      onChange={(v) => (v ? move(v, { kind: 'alternate' }) : draft.alternate && move(draft.alternate, { kind: 'bench' }))}
-                      options={[{ value: EMPTY, label: 'None' }, ...roster.map((p) => ({ value: p.id, label: optionLabel(p, draft, availability.get(p.id) ?? p.availability) }))]}
-                    />
-                  </div>
-                  <div className="ch-tour-lu-extra__row">
-                    <span className="ch-tour-lu-lbl">Individuals</span>
-                    <div className="ch-tour-lu-extra__ind">
-                      {draft.individuals.length === 0 && <span className="ch-tour-lu-muted">None</span>}
-                      {draft.individuals.map((id) => (
-                        <span key={id} className="ch-tour-lu-pill">
-                          {player(id)?.name ?? 'Player'}
-                          {editable && <IconButton icon={X} label={`Take ${player(id)?.first ?? 'player'} out of the individuals`} onClick={() => move(id, { kind: 'bench' })} />}
-                        </span>
-                      ))}
-                      {editable && (
-                        <Select
-                          label="Add an individual"
-                          value={EMPTY}
-                          disabled={busy}
-                          onChange={(v) => v && move(v, { kind: 'individual' })}
-                          options={[{ value: EMPTY, label: 'Add an individual' }, ...roster.filter((p) => !whereIs(draft, p.id)).map((p) => ({ value: p.id, label: p.name }))]}
-                        />
-                      )}
+                <SectionBoundary surface="tournaments.lineup.extra" label="Alternate and individuals" code="CH-16294">
+                  <div className="ch-tour-lu-extra">
+                    <div className="ch-tour-lu-extra__row">
+                      <span className="ch-tour-lu-lbl">Alternate</span>
+                      <Select
+                        label="Alternate"
+                        value={draft.alternate ?? EMPTY}
+                        disabled={!editable || busy}
+                        onChange={(v) => (v ? move(v, { kind: 'alternate' }) : draft.alternate && move(draft.alternate, { kind: 'bench' }))}
+                        options={[{ value: EMPTY, label: 'None' }, ...roster.map((p) => ({ value: p.id, label: optionLabel(p, draft, availability.get(p.id) ?? p.availability) }))]}
+                      />
+                    </div>
+                    <div className="ch-tour-lu-extra__row">
+                      <span className="ch-tour-lu-lbl">Individuals</span>
+                      <div className="ch-tour-lu-extra__ind">
+                        {draft.individuals.length === 0 && <span className="ch-tour-lu-muted">None</span>}
+                        {draft.individuals.map((id) => (
+                          <span key={id} className="ch-tour-lu-pill">
+                            {player(id)?.name ?? 'Player'}
+                            {editable && <IconButton icon={X} label={`Take ${player(id)?.first ?? 'player'} out of the individuals`} onClick={() => move(id, { kind: 'bench' })} />}
+                          </span>
+                        ))}
+                        {editable && (
+                          <Select
+                            label="Add an individual"
+                            value={EMPTY}
+                            disabled={busy}
+                            onChange={(v) => v && move(v, { kind: 'individual' })}
+                            options={[{ value: EMPTY, label: 'Add an individual' }, ...roster.filter((p) => !whereIs(draft, p.id)).map((p) => ({ value: p.id, label: p.name }))]}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                </SectionBoundary>
               </Section>
             </div>
             <div className="ch-tour-lu-col ch-tour-lu-side">
               <Section id="ch-tour-lu-roster" title="Roster" meta="Form is the last five team rounds; counts is how often a score counted">
-                <ul className="ch-tour-lu-roster">
-                  {roster.map((p) => {
-                    const c = stats.get(p.id);
-                    const w = whereIs(draft, p.id);
-                    const target = nextOpen(draft);
-                    return (
-                      <li key={p.id} className="ch-tour-lu-r">
-                        <Avatar name={p.name} size="sm" />
-                        <div className="ch-tour-lu-r__who">
-                          <div className="ch-tour-lu-r__n">
-                            <span>
-                              {p.name} <span className="ch-tour-lu-muted">· {p.year}</span>
-                            </span>
-                            {(availability.get(p.id) ?? p.availability) !== 'available' && <TourChip tone="warn">{availabilityLabel(availability.get(p.id) ?? p.availability)}</TourChip>}
+                <SectionBoundary surface="tournaments.lineup.roster" label="Roster" code="CH-16294">
+                  <ul className="ch-tour-lu-roster">
+                    {roster.map((p) => {
+                      const c = stats.get(p.id);
+                      const w = whereIs(draft, p.id);
+                      const target = nextOpen(draft);
+                      return (
+                        <li key={p.id} className="ch-tour-lu-r">
+                          <Avatar name={p.name} size="sm" />
+                          <div className="ch-tour-lu-r__who">
+                            <div className="ch-tour-lu-r__n">
+                              <span>
+                                {p.name} <span className="ch-tour-lu-muted">· {p.year}</span>
+                              </span>
+                              {(availability.get(p.id) ?? p.availability) !== 'available' && <TourChip tone="warn">{availabilityLabel(availability.get(p.id) ?? p.availability)}</TourChip>}
+                            </div>
+                            <Form candidate={c} showCourse />
                           </div>
-                          <Form candidate={c} showCourse />
-                        </div>
-                        <div className="ch-tour-lu-r__act">
-                          {w ? (
-                            <TourChip tone="ok">{whereWords(w)}</TourChip>
-                          ) : (
-                            editable && (
-                              <Button size="sm" leftIcon={UserPlus} disabled={busy || !target} onClick={() => target && move(p.id, target)}>
-                                {target ? 'Add' : 'Full'}
-                              </Button>
-                            )
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+                          <div className="ch-tour-lu-r__act">
+                            {w ? (
+                              <TourChip tone="ok">{whereWords(w)}</TourChip>
+                            ) : (
+                              editable && (
+                                <Button size="sm" leftIcon={UserPlus} disabled={busy || !target} onClick={() => target && move(p.id, target)}>
+                                  {target ? 'Add' : 'Full'}
+                                </Button>
+                              )
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </SectionBoundary>
               </Section>
             </div>
           </div>

@@ -276,12 +276,8 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
       </Card>
 
       <Card id="set-display" title="Display" description="What CoachHelm shows on your dashboards. The strokes-gained baseline follows your team: the Tour for men’s teams, the women’s tour for women’s.">
-        <Row label="Strokes gained" saved={saved.has('showStrokesGained')}>
-          <SettingSwitch label="Show strokes gained" hideLabel checked={p.showStrokesGained} onChange={(v) => change({ showStrokesGained: v })} />
-        </Row>
-        <Row label="Advanced statistics" saved={saved.has('showAdvancedStats')}>
-          <SettingSwitch label="Show advanced statistics" hideLabel checked={p.showAdvancedStats} onChange={(v) => change({ showAdvancedStats: v })} />
-        </Row>
+        {/* DF-C-11: "Show strokes gained" and "Show advanced statistics" were saved but no screen or CoachHelm read either, so
+            turning one off changed nothing. They are gone until a screen honours them; the columns stay. */}
         <Row label="Insight detail" saved={saved.has('insightVerbosity')}>
           <Segmented
             label="Insight detail"
@@ -301,19 +297,18 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
 
 function Priorities({ p, onChange }: { p: Phil; onChange: (order: PriorityKey[]) => void }) {
   const order = priorityOrder(p);
-  const [moved, setMoved] = useState<PriorityKey | null>(null);
   const move = (k: PriorityKey, dir: -1 | 1) => {
     const next = moveOrder(order, k, dir);
     if (next === order) return;
     haptic('select');
-    setMoved(k);
     onChange(next);
   };
   return (
     <ol className="ch-set-rank" aria-label="Priorities, most important first">
       {order.map((k, i) => (
-        // CH-8606: the moved row glows green briefly (on the phone it lifts while held, phone/Reorder.tsx).
-        <li key={k} className={'ch-set-rank__i' + (moved === k ? ' is-moved' : '')} onAnimationEnd={() => setMoved(null)}>
+        // CH-8606: the moved row takes its new place at once, with the select haptic (its green glow, a paint keyframe, is
+        // gone: MOTION-AND-VISUAL 3.12); on the phone it lifts while held, phone/Reorder.tsx.
+        <li key={k} className="ch-set-rank__i">
           <span className="ch-set-rank__n ch-num">{i + 1}</span>
           <span className="ch-set-rank__txt">
             <b>{PRIORITY_LABEL[k].label}</b>

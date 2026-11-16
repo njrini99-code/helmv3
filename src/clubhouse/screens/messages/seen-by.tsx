@@ -14,7 +14,7 @@ import { Icon } from "../../ui/Icon";
 import { MsSheet } from "./overlays/MsSheet";
 import { InlineNotice } from "../../ui/Notices";
 import { Skeleton } from "../../ui/States";
-import { clock, railTime, type ChMsg } from "./model";
+import { railTime, type ChMsg } from "./model";
 import type { ChMessagesApi } from "./MessagesView";
 
 /** The directory lookup MessagesView exports as personOf, kept here so this file only takes types from it (no import cycle). */
@@ -165,7 +165,8 @@ export function SeenByPill({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg; o
 }
 
 /**
- * The receipt under your latest message in a direct thread (MSG-214, MOT-SEND-10): "Delivered", then "Seen 8:15 AM", the words
+ * The receipt under your latest message in a direct thread (MSG-214, MOT-SEND-10): "Delivered", then "Seen 8:15 AM" today,
+ * "Seen Yesterday", "Seen Sat" or "Seen Sep 3" later (DM-05, the inbox rail's own words), as plain text like iMessage's Read line; the words
  * crossfading over 180 ms. The time is the reader's, shown to a coach from the read marks; a player (or no mark yet) reads plain "Seen"
  * (Q-44). Renders nothing for a pending, failed, deleted or poll message.
  */
@@ -176,7 +177,7 @@ export function DmReceipt({ api, m }: { api: ChMessagesApi; m: ChMsg }) {
   if (m.seen) {
     const marks = api.receipts?.marks;
     const readAt = marks && api.viewer.role === "coach" ? (seenBy(m.at, m.senderId, marks).seen.map((id) => marks.get(id)).find((t): t is string => !!t) ?? null) : null;
-    label = readAt ? `Seen ${clock(readAt, api.timeZone, api.clock)}` : "Seen";
+    label = readAt ? `Seen ${railTime(readAt, api.now, api.timeZone, api.clock)}` : "Seen";
   }
   return (
     <span className="ch-msv-seen is-dm" data-ch-code="CH-7608" role="status">

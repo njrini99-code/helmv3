@@ -61,7 +61,8 @@ describe('100103 Team Hub · a notification’s task', () => {
     expect(rowOf('Sign travel waiver').className).not.toMatch(/is-focus/);
   });
 
-  it('a player’s ?task= with no tab opens Tasks: the row is scrolled to; the wash clears when its fade ends', async () => {
+  // MOTION-AND-VISUAL 3.5, 3.12: first paint is still, so the wash no longer fades on its own; it stands until the row is used.
+  it('a player’s ?task= with no tab opens Tasks: the row is scrolled to; the still wash clears when the row is used', async () => {
     render(hub(PREVIEW_HUB_PLAYER, undefined, 't1'));
     expect(screen.getByRole('tab', { name: /^Tasks/ }).getAttribute('aria-selected')).toBe('true');
     await waitFor(() => expect(scrolled).toHaveLength(1));
@@ -69,6 +70,8 @@ describe('100103 Team Hub · a notification’s task', () => {
     expect(scrolled[0]!.el).toBe(row);
     expect(row.className).toMatch(/\bis-focus\b/);
     fireEvent.animationEnd(row);
+    expect(row.className).toMatch(/\bis-focus\b/);
+    fireEvent.pointerDown(row);
     expect(row.className).not.toMatch(/is-focus/);
   });
 
@@ -86,7 +89,7 @@ describe('100103 Team Hub · a notification’s task', () => {
     render(hub(PREVIEW_HUB_COACH, 'tasks', 'not-here'));
     await screen.findAllByText('Post two practice rounds');
     expect(scrolled).toHaveLength(0);
-    expect(document.querySelector('.ch-hb-task.is-focus, .ch-hb-task.is-focus-still')).toBeNull();
+    expect(document.querySelector('.ch-hb-task.is-focus')).toBeNull();
   });
 });
 

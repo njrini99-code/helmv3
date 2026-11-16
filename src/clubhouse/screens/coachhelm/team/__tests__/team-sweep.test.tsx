@@ -97,16 +97,17 @@ describe('the Team lane, what the fixtures hid', () => {
     expect(container.querySelector('.insh')!.firstElementChild!.textContent).toBe(cole.name.split(' ').map((w) => w[0]).join(''));
   });
 
-  it('the switch comes in the 41 tall size without forking the control (FID-TEAM-9)', () => {
+  it('the switch comes in the 44 tall size (Practice style, MOTION-AND-VISUAL 4.2) without forking the control (FID-TEAM-9)', () => {
     const { container } = render(<Segmented label="View" size="lg" value="a" onChange={() => {}} options={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }]} />);
     expect(container.querySelector('.ch-seg--lg')).not.toBeNull();
     const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/controls.css'), 'utf8');
-    expect(css).toMatch(/\.ch-seg--lg \.ch-seg__b \{[^}]*height: calc\(35 \* var\(--ch-type-k\)\)/);
+    expect(css).toMatch(/\.ch-seg--lg \.ch-seg__b \{[^}]*height: calc\(38 \* var\(--ch-type-k\)\)/);
   });
 
-  it('the loading frame keeps the page head in place and the loaded heights (TEAM-28)', () => {
+  it('the loading frame keeps the page head in place and the loaded heights (TEAM-28); the switch is the route’s, above it (N13C-67)', () => {
     const { container } = render(<TeamBoardSkeleton />);
-    expect(container.querySelector('.sheet > .ch-chd.is-phone .ch-chd__sw')).not.toBeNull();
+    expect(container.querySelector('.sheet > .ch-chd.is-phone')).not.toBeNull();
+    expect(container.querySelector('.ch-chd__sw')).toBeNull();
     expect(container.querySelector<HTMLElement>('.sheet > .ch-htb-feat')!.style.minHeight).toBe('406px');
   });
 });

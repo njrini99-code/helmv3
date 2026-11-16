@@ -13,7 +13,7 @@
   gap: 12px;
 }
 .ch-rcv-k {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }

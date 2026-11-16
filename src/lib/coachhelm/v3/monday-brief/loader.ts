@@ -18,6 +18,7 @@ import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import { computeTeamPatterns, TEAM_PATTERN_MIN_ROUNDS, type TeamPatternResult } from '@/lib/coachhelm/v3/team-pattern/pattern';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 import { computeMondayBrief, dayOfIso, type MondayBrief, type MondayBriefRead, type MondayBriefRound } from './brief';
 
 const READ_COLUMNS = 'id, player_id, category, insight_type, title, evidence, metadata, created_at';
@@ -99,6 +100,15 @@ export interface BriefInputs {
   eligible: Set<string>;
   /** Every team pattern over the current reads; null when `coachhelm_team_pattern_v1` is off or the roster is empty. */
   patterns: TeamPatternResult | null;
+  /** The team's time zone, so the brief's week is the team's week (DF-P-10). The default zone when the setting is unset or unread. */
+  tz: string;
+}
+
+/** The team's time zone. A failed read falls back to the default zone and is noted; it does not fail the brief. */
+async function loadZone(supabase: SupabaseClient, teamId: string): Promise<string> {
+  const res = await supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
+  if (res.error) await note('timezone', res.error.message);
+  return getValidTimezone((res.data as { timezone?: string | null } | null)?.timezone ?? null);
 }
 
 /** The inputs of one team's brief at `now`, or null when a read failed. Read only; never throws. */
@@ -122,7 +132,9 @@ export async function loadBriefInputs(supabase: SupabaseClient, teamId: string, 
       }
     }
     const ids = roster.map((p) => p.id);
+    const zone = loadZone(supabase, teamId);
     const [reads, rounds] = ids.length ? await Promise.all([loadReads(supabase, teamId, ids), loadRounds(supabase, ids)]) : [[], []];
+    const tz = await zone;
     if (!reads || !rounds) return null;
 
     const perPlayer = new Map<string, number>();
@@ -147,7 +159,7 @@ export async function loadBriefInputs(supabase: SupabaseClient, teamId: string, 
         now,
       });
     }
-    return { roster, reads, rounds, eligible, patterns };
+    return { roster, reads, rounds, eligible, patterns, tz };
   } catch (err) {
     await note('brief', err);
     return null;
@@ -159,8 +171,8 @@ export async function loadMondayBrief(supabase: SupabaseClient, teamId: string, 
   const inputs = await loadBriefInputs(supabase, teamId, now);
   if (!inputs) return null;
   try {
-    const { roster, reads, rounds, eligible, patterns } = inputs;
-    return computeMondayBrief({ teamId, roster, reads, rounds, teamPattern: patterns?.patterns[0] ?? null, withEnoughRounds: eligible.size, now });
+    const { roster, reads, rounds, eligible, patterns, tz } = inputs;
+    return computeMondayBrief({ teamId, roster, reads, rounds, teamPattern: patterns?.patterns[0] ?? null, withEnoughRounds: eligible.size, now, tz });
   } catch (err) {
     await note('brief', err);
     return null;

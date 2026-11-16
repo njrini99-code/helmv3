@@ -91,7 +91,7 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
           placeholder="Search"
           label="Search conversations and messages"
         />
-        {!firstRun && <Segmented<ChConvFilter> weight="filter" redraws block size="sm" label="Filter conversations" value={filter} onChange={setFilter} options={INBOX_FILTERS} />}
+        {!firstRun && <Segmented<ChConvFilter> redraws block plate="thumb" size="sm" label="Filter conversations" value={filter} onChange={setFilter} options={INBOX_FILTERS} />}
       </div>
       <div className="ch-ms-rail__body" ref={bodyRef}>
         {api.convsError ? (
@@ -107,13 +107,18 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
         ) : shown === "skeleton" ? (
           <InboxSkeleton layout="rail" labelled={!!api.pins?.ids.length} />
         ) : shown === "idle" || firstRun ? null : !api.convs.length ? (
-          <EmptyState
-            code="CH-7301"
-            kind="first-run"
-            compact
-            icon={MessageSquare}
-            title="No conversations yet"
-          />
+          <>
+            <EmptyState
+              code="CH-7301"
+              kind="first-run"
+              compact
+              icon={MessageSquare}
+              title="No conversations yet"
+            />
+            {/* An announcements-only inbox (most players) and a failed announcements read (GAP-S-01, CH-7206) both
+                draw under the empty conversation list, never behind it. */}
+            {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
+          </>
         ) : (
           <>
             <PinnedAndRecent

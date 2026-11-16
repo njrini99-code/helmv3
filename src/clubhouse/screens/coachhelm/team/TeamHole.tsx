@@ -199,7 +199,7 @@ export function TeamHole({
           );
         })}
     </svg>
-    {!bare && <HoleMotion hole={H} stations={stations} station={station} arrive={arrive} picks={picks} />}
+    {!bare && <HoleMotion hole={H} stations={stations} arrive={arrive} picks={picks} />}
     </div>
   );
 }

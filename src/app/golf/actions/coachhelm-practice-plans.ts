@@ -68,8 +68,8 @@ async function listPlanFoldersImpl(): Promise<{ folders: Array<{ name: string; c
   return { folders: [...counts].map(([name, count]) => ({ name, count })) };
 }
 
-const obsSave = withAdminObserved('savePracticePlanDraft', { sport: 'golf', feature: 'practice_plans' }, savePracticePlanDraftImpl);
-const obsUndo = withAdminObserved('undoPracticePlanDraft', { sport: 'golf', feature: 'practice_plans' }, undoPracticePlanDraftImpl);
+const obsSave = withAdminObserved('savePracticePlanDraft', { sport: 'golf', feature: 'practice_plans', demoSafe: true }, savePracticePlanDraftImpl);
+const obsUndo = withAdminObserved('undoPracticePlanDraft', { sport: 'golf', feature: 'practice_plans', demoSafe: true }, undoPracticePlanDraftImpl);
 const obsList = withAdminObserved('listPlanFolders', { sport: 'golf', feature: 'practice_plans' }, listPlanFoldersImpl);
 
 export async function savePracticePlanDraft(input: Parameters<typeof savePracticePlanDraftImpl>[0]) {
@@ -94,7 +94,7 @@ async function postPracticePlanToChatImpl(input: { planId: string }): Promise<{ 
   const sent = await sendMessage({ conversationId: channel.id, content: `${(plan as { title: string }).title} ${getAppBaseUrl()}/golf/dashboard/practice/plan/${input.planId}`, sport: 'golf', createNotifications: false });
   return sent.success ? { success: true } : { success: false, error: 'Couldn’t post to team chat.' };
 }
-const observedPostChat = withAdminObserved('postPracticePlanToChat', { sport: 'golf', feature: 'practice_plans' }, postPracticePlanToChatImpl);
+const observedPostChat = withAdminObserved('postPracticePlanToChat', { sport: 'golf', feature: 'practice_plans', demoSafe: true }, postPracticePlanToChatImpl);
 export async function postPracticePlanToChat(input: { planId: string }) {
   return observedPostChat(input);
 }

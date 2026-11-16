@@ -8,7 +8,13 @@ retries: 0
 parallel: 1
 recordVideo: on-fail
 environments:
-  - name: production-qa
+  # QA runs on staging only (launch readiness DD-13): HELM_QA_BASE_URL must be a
+  # Vercel Preview or local URL backed by the staging Supabase project
+  # (ybmwektreyrwjscxlogv), never helmsportslabs.com. Test runs against
+  # production left "Momentic DM check" rows on the demo team. The QA accounts
+  # belong on a QA team, not on the demo team. The old production-qa
+  # environment in Momentic Cloud is switched off by the owner.
+  - name: staging-qa
     baseUrl: ${HELM_QA_BASE_URL}
     envVariables:
       OWNER_EMAIL: ${HELM_QA_OWNER_EMAIL}

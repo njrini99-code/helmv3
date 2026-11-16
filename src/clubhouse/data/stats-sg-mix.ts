@@ -21,10 +21,12 @@ import type { ChRound } from './season';
  * `include`: every stored figure counts, as it always has; the screens say how many were estimated.
  * `exclude`: an estimated round keeps its score, putts and greens, and gives no strokes gained to any figure, floor or trend.
  *
- * The owner's decision (it moves numbers a coach sees), not made yet: it stays `include` until he says. Every loader reads it through
- * `sgPolicyAtSource` (stats-common.ts), so this line is the whole change.
+ * `exclude` (stats and charts audit SC-07): `sg_estimate_from_holes` credits 1.75 minus the putts on a hole, a 31.5-putt baseline that is
+ * not on the Tour scale, so an estimate mixed into an average moves it by numbers no shot earned. Prepared in its own commit for the
+ * owner to approve in review: it moves numbers a coach sees, and reverting that one commit puts `include` back. Every loader reads it
+ * through `sgPolicyAtSource` (stats-common.ts), so this line is the whole change.
  */
-export const sgPolicy: { estimated: 'include' | 'exclude' } = { estimated: 'include' };
+export const sgPolicy: { estimated: 'include' | 'exclude' } = { estimated: 'exclude' };
 
 /** What the database said about a set of rounds. `error`: the read failed, so nothing is claimed either way. */
 export interface ChSgSourceRead {

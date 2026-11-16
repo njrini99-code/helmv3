@@ -7,7 +7,7 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import { PracticePlanSheet } from '../coachhelm/plan/sheet/PracticePlanSheet';
 import type { PlanSheetModel, SheetRow } from '../coachhelm/plan/sheet/plan-sheet-model';
 import { LETTER_CONTENT, pageCuts } from '../coachhelm/plan/page-cuts';
-import { printNode } from '../coachhelm/plan/PrintPlan';
+import { mountPrintRoot, printNode } from '../coachhelm/plan/PrintPlan';
 import { plural } from '../../lib/plural';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -445,6 +445,32 @@ export function PrintStudio({ plan, drills, planHref, draft = false, drillsUnrea
   const numbers = useMemo(() => sheetNumbers(pages.map((p) => spans[p.key] ?? 1)), [pages, spans]);
   const counted = pages.map((p) => ({ part: p.part, sheets: spans[p.key] ?? 1 }));
   const print = () => void printNode(<PrintPages pages={pages} qr={qr} numbers={numbers} />);
+  // The browser's own Print (Cmd+P, the menu) prints the picked sheets too, not the studio's controls (GAP-R-16): on
+  // `beforeprint` the same print root the Print button uses goes on the page, and it comes off on `afterprint`. The
+  // Print button's root is already there when its own `window.print()` fires `beforeprint`, so it is left alone.
+  const printable = useRef<ReactNode>(null);
+  useLayoutEffect(() => {
+    printable.current = pages.length > 0 ? <PrintPages pages={pages} qr={qr} numbers={numbers} /> : null;
+  }, [pages, qr, numbers]);
+  useEffect(() => {
+    let unmount: (() => void) | null = null;
+    const after = () => {
+      unmount?.();
+      unmount = null;
+    };
+    const before = () => {
+      after();
+      if (!printable.current || document.querySelector('.ch-cp-print-root:not(.ch-cp-pdf-root)')) return;
+      unmount = mountPrintRoot(printable.current);
+    };
+    window.addEventListener('beforeprint', before);
+    window.addEventListener('afterprint', after);
+    return () => {
+      window.removeEventListener('beforeprint', before);
+      window.removeEventListener('afterprint', after);
+      after();
+    };
+  }, []);
   const appendix = counted.filter((p) => p.part === OPTION_NAMES.drills).reduce((sum, p) => sum + p.sheets, 0);
   const spilled = counted.filter((p) => p.sheets > 1).map((p) => p.part).filter((part, i, all) => all.indexOf(part) === i);
   return (

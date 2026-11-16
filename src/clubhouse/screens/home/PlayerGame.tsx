@@ -106,7 +106,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
   // The phone's card always offers all three windows, as the board's does; the desktop's only the ones with rounds to fill them.
   const options = (phone ? SPANS : SPANS.filter((k) => k === 5 || all.length > k / 2)).map((k) => ({ value: `${k}` as `${Span}`, label: `Last ${k}` }));
   const picker = (
-    <Segmented<`${Span}`> weight="filter" redraws size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
+    <Segmented<`${Span}`> redraws size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
   );
   const body = data.scoring.error ? (
     <RefreshNotice code="CH-2215" title="Your rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
@@ -237,11 +237,10 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
   const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
   const pts = scores.map((v, i) => [x(i), y(v)] as const);
   let d = `M${pts[0]![0].toFixed(1)},${pts[0]![1].toFixed(1)}`;
+  // Straight segments between rounds (one chart line, S2.4): a curve invents scores between the dots.
   for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1]!;
     const [x1, y1] = pts[i]!;
-    const cx = (x0 + x1) / 2;
-    d += ` C${cx.toFixed(1)},${y0.toFixed(1)} ${cx.toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`;
+    d += ` L${x1.toFixed(1)},${y1.toFixed(1)}`;
   }
   const best = Math.min(...scores);
   const bi = scores.lastIndexOf(best);

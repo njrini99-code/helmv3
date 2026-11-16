@@ -31,77 +31,8 @@ export type LieType = 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' |
  */
 export type BaselineData = Record<LieType, Record<number, number>>;
 
-// ============================================
-// PGA TOUR BASELINE DATA
-// ============================================
-
-/**
- * Expected strokes to hole out from various lies and distances.
- *
- * Broadie "Every Shot Counts" / PGA Tour ShotLink expected-strokes-to-hole
- * benchmark (2004-2012), the canonical source cited in
- * docs/v3-research-golf-domain.md. Anchors only: getExpectedStrokes()
- * interpolates linearly between them, so values are exact at published points
- * and smooth in between. MUST stay in lockstep with the DB function
- * public.sg_expected_strokes() — see migration
- * 20260606140000_fix_sg_expected_strokes_baseline_calibration.sql.
- *
- * The prior table was internally inconsistent (tee too high + no data below
- * 260 yd so par-3/short tee shots floored at 3.62; fairway/rough ~0.3-0.5 low;
- * green too low in the makeable range), which produced phantom off-the-tee
- * gains that cancelled phantom putting losses and masked the corruption.
- *
- * Distance for tee/fairway/rough/sand is in YARDS; green is in FEET.
- */
-const PGA_BASELINE_DATA: BaselineData = {
-  tee: {
-    // par-5 / par-4 driving range
-    600: 4.85, 540: 4.65, 400: 3.99, 300: 3.71, 240: 3.25,
-    // par-3 / short tee shots (extended below 200 so they aren't floored)
-    200: 3.12, 150: 2.95, 120: 2.88, 100: 2.82, 80: 2.78,
-  },
-  fairway: {
-    540: 4.78, 400: 4.11, 300: 3.78, 240: 3.45, 200: 3.19,
-    180: 3.08, 140: 2.91, 100: 2.80, 80: 2.75, 20: 2.40,
-  },
-  rough: {
-    540: 4.97, 400: 4.30, 300: 3.90, 240: 3.64, 200: 3.42,
-    100: 3.02, 20: 2.59,
-  },
-  sand: {
-    540: 5.36, 400: 4.69, 300: 4.04, 240: 3.84, 200: 3.55,
-    100: 3.23, 20: 2.53,
-  },
-  // 'other' and 'recovery' match sg_expected_strokes() once the held migration
-  // 20261023170000_golf_sg_other_lie_curve.sql is applied (TS twin:
-  // STROKES_GAINED_BENCHMARKS in src/lib/utils/golf-stats-calculator-shots.ts).
-  // 'other' is the rough curve to 50 yd, halfway between rough and recovery
-  // from 100 yd, and a straight blend between.
-  other: {
-    540: 5.19, 520: 5.10, 500: 5.00, 480: 4.91, 460: 4.81, 440: 4.72,
-    420: 4.62, 400: 4.53, 380: 4.44, 360: 4.35, 340: 4.25, 320: 4.14,
-    300: 4.05, 280: 3.96, 260: 3.88, 240: 3.81, 220: 3.73, 200: 3.65,
-    180: 3.58, 160: 3.54, 140: 3.49, 120: 3.44, 100: 3.41, 90: 3.31,
-    80: 3.19, 70: 3.06, 60: 2.91, 50: 2.751, 20: 2.59,
-  },
-  // Broadie's recovery column (Interfaces 42(2), Appendix A, Table 9): only for
-  // a shot the player marked blocked, never inferred from the lie.
-  recovery: {
-    600: 5.70, 580: 5.60, 560: 5.51, 540: 5.41, 520: 5.32, 500: 5.22,
-    480: 5.13, 460: 5.03, 440: 4.94, 420: 4.84, 400: 4.75, 380: 4.66,
-    360: 4.56, 340: 4.44, 320: 4.31, 300: 4.20, 280: 4.10, 260: 4.03,
-    240: 3.97, 220: 3.92, 200: 3.87, 180: 3.82, 160: 3.81, 140: 3.80,
-    120: 3.78, 100: 3.80, 90: 3.82, 80: 3.84, 70: 3.84, 60: 3.83,
-    50: 3.79, 40: 3.71, 30: 3.57, 20: 3.51,
-  },
-  green: {
-    // Putting distances in FEET (Broadie Tour expected putts)
-    90: 2.40, 60: 2.21, 50: 2.14, 40: 2.06, 30: 1.98,
-    20: 1.87, 15: 1.78, 10: 1.61, 9: 1.56, 8: 1.50,
-    7: 1.42, 6: 1.34, 5: 1.23, 4: 1.13, 3: 1.04,
-    2: 1.00, 1: 1.00, 0: 0,
-  },
-};
+// The PGA Tour baseline is src/lib/golf/sg-tour-baseline.ts (Broadie's Table
+// B.1), read here through getBenchmarkData('pga_tour') in sg-benchmarks.ts.
 
 // ============================================
 // HELPER FUNCTIONS
@@ -122,9 +53,9 @@ export function getExpectedStrokes(
   isOnGreen: boolean = false,
   benchmarkLevel?: BenchmarkLevel
 ): number {
-  const benchmarkData = benchmarkLevel
-    ? getBenchmarkData(benchmarkLevel)
-    : PGA_BASELINE_DATA;
+  // The PGA Tour curve (Broadie's Table B.1, src/lib/golf/sg-tour-baseline.ts)
+  // unless a benchmark level is asked for.
+  const benchmarkData = getBenchmarkData(benchmarkLevel ?? 'pga_tour');
   const baseline = benchmarkData[lie];
   if (!baseline) return 3.0; // Default fallback
 

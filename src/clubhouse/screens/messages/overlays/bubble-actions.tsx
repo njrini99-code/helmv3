@@ -16,7 +16,7 @@ import { pollCardActions } from '../polls';
 import { HoldSeenRow, useSeenBy } from '../seen-by';
 import type { MenuItem } from '../../../ui/Menu';
 import { BellRing, CheckCheck, Copy, ListChecks, Lock, Pencil, Reply, Share, Trash2 } from 'lucide-react';
-import { useChReducedMotion } from '../../../lib/reduced-motion';
+import { chMotionModeNow, useChReducedMotion } from '../../../lib/reduced-motion';
 import { AnimatePresence, m as M } from 'motion/react';
 import { Tooltip } from '../../../ui/Tooltip';
 import { HoldLift } from '../hold-lift';
@@ -202,7 +202,7 @@ export function useLongPress(onFire: (() => void) | undefined, onSwipe?: (direct
         if (Math.abs(e.clientY - o.y) > 24) {
           origin.current = null;
           (e.currentTarget as HTMLElement).style.transform = '';
-        } else if (o.x >= 24 && onSwipe && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        } else if (o.x >= 24 && onSwipe && chMotionModeNow() === 'full') {
           // The bubble follows the finger up to the distance that replies, so the swipe shows it's working.
           const dx = e.clientX - o.x;
           (e.currentTarget as HTMLElement).style.transform = `translateX(${Math.max(-64, Math.min(64, dx))}px)`;

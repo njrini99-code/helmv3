@@ -169,9 +169,10 @@ export function calculateShotSG(
  *
  * Each value is the expected strokes to hole out from that lie+distance bucket,
  * taken at the bucket's representative distance from the canonical Broadie
- * "Every Shot Counts" / ShotLink curve — the SAME benchmark as the DB function
- * public.sg_expected_strokes() and PGA_BASELINE_DATA in
- * src/lib/golf/strokes-gained.ts. Previously this used a separate, divergent
+ * "Every Shot Counts" / ShotLink curve as calibrated in 20260606140000. The
+ * per-shot engines now read Broadie's full Table B.1 (src/lib/golf/sg-tour-baseline.ts,
+ * held migration 20261115215000); these buckets still carry the 2026-06 knots
+ * and move to the table separately. Previously this used a separate, divergent
  * "D2/D3 college" table whose tee values were ~0.4 too high and green values
  * too low, which biased the v2 yardage-curve dead-zone detection. Keeping all
  * three SG engines on one benchmark prevents re-divergence. See migration

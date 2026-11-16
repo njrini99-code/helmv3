@@ -78,7 +78,7 @@
   bottom: 0;
   left: 0;
   height: var(--ch-tab-bar-h);
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-tab-bar);
 }
 .ch-hb-tabs button {
@@ -100,10 +100,10 @@
 .ch-hb-tabs button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-hb-card {
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -119,7 +119,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  font: var(--ch-type-serif-s);
+  font: var(--ch-type-title);
   letter-spacing: -0.004em;
   color: var(--ch-text-primary);
 }
@@ -139,7 +139,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: var(--ch-type-eyebrow);
+  font: var(--ch-type-footnote);
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
@@ -223,7 +223,7 @@
 }
 .ch-hb-req {
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-50);
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
@@ -259,7 +259,7 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
   cursor: pointer;
   touch-action: manipulation;
@@ -281,7 +281,7 @@
   gap: 6px;
 }
 .ch-hb-rsvp__c em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   font-style: normal;
@@ -294,7 +294,7 @@
   width: 180px;
   height: 8px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.06);
 }
 .ch-hb-rsvp__bar .is-going {
@@ -317,7 +317,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 24px 32px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -326,9 +326,8 @@
 }
 .ch-hb-ann h3 {
   margin: 2px 0 0;
-  font: var(--ch-type-serif-l);
-  font-size: calc(34 * var(--ch-type-k));
-  letter-spacing: var(--ch-track-34);
+  font: var(--ch-type-title);
+  letter-spacing: var(--ch-track-title);
   text-wrap: balance;
 }
 .ch-hb-ann p {
@@ -469,7 +468,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
@@ -511,7 +510,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-hb-ann__wait em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -519,14 +518,14 @@
   width: 90px;
   height: 6px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.08);
 }
 .ch-hb-reads__t i {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-fill-600);
   /* Full width, slid in from the left by its share (--ch-hb-p, 0 to 1): a change moves on transform and the rounded end
      stays round; the track's clip draws the start. */
@@ -576,7 +575,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -622,7 +621,7 @@
 }
 .ch-hb-pass__f dt {
   margin-bottom: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -669,7 +668,7 @@
   gap: 8px;
   min-height: 34px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
 }
 .ch-hb-plan span {
   color: var(--ch-text-tertiary);
@@ -687,7 +686,7 @@
   white-space: pre-line;
 }
 .ch-hb-pass__line em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -743,7 +742,7 @@
   white-space: nowrap;
 }
 .ch-hb-feed em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -793,26 +792,12 @@
   color: var(--ch-text-tertiary);
   text-decoration: line-through;
 }
-/* A task a notification opened (`?task=`): a selected-row wash that fades once. Reduced motion keeps it still. */
+/* A task a notification opened (`?task=`): a still selected-row wash until the row is used (first paint is still,
+   MOTION-AND-VISUAL 3.5, 3.12: the fade that played as the page opened is gone). */
 .ch-hb-task.is-focus {
-  border-radius: var(--ch-radius-sm);
-  animation: ch-hb-task-focus calc(var(--ch-dur-reveal) * 3) var(--ch-ease) both;
-}
-.ch-hb-task.is-focus-still {
   border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-selected);
   box-shadow: 0 0 0 6px var(--ch-bg-selected);
-}
-@keyframes ch-hb-task-focus {
-  0%,
-  60% {
-    background: var(--ch-bg-selected);
-    box-shadow: 0 0 0 6px var(--ch-bg-selected);
-  }
-  100% {
-    background: transparent;
-    box-shadow: 0 0 0 6px transparent;
-  }
 }
 .ch-hb-check {
   display: grid;
@@ -981,10 +966,10 @@
   height: 34px;
   padding: 0 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -1031,10 +1016,10 @@
   height: 40px;
   padding: 0 12px 0 6px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -1068,10 +1053,10 @@
   height: 36px;
   padding: 0 8px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-50);
   box-shadow: 0 0 0 1.5px var(--ch-green-600);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-forest-800);
   cursor: pointer;
@@ -1294,7 +1279,7 @@
     min-width: 0;
   }
   .ch-hb-h .ch-hb-muted {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
@@ -1419,14 +1404,14 @@
     color: var(--ch-on-green-ink);
   }
   .ch-hb-ann.is-featured .ch-hb-eyebrow {
-    font: var(--ch-type-eyebrow);
+    font: var(--ch-type-footnote);
     line-height: 1;
     font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink-muted);
   }
   .ch-hb-ann.is-featured h3 {
     margin: 2px 0 0;
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     letter-spacing: -0.03em;
     color: var(--ch-on-green-ink);
@@ -1536,7 +1521,7 @@
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   .ch-hb-list > .ch-hb-ann h3 {
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-22);
     color: var(--ch-text-primary);
@@ -1740,7 +1725,7 @@
   align-items: center;
   height: 24px;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
   background: var(--ch-bg-inset);
@@ -1800,7 +1785,7 @@
   gap: 8px;
 }
 .ch-hb-tripsum dt {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-hb-tripsum dd {
@@ -2017,7 +2002,7 @@
     padding: 0;
   }
   .ch-hb[data-canopy] .ch-hb-pass__main > b {
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-22);
     color: var(--ch-text-primary);
@@ -2366,7 +2351,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     left: 0;
     display: block;
     width: 100px;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
@@ -2386,7 +2371,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-hb-margin__k {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-ledger-eyebrow);
   }
   .ch-hb-margin__t {
@@ -2428,7 +2413,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   .ch-hb-ann__fold:focus-visible {
     outline: 2px solid var(--ch-border-focus);
     outline-offset: 2px;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
   }
 }
 
@@ -2436,7 +2421,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
    plate with a gold hairline, and an update row warms under the pointer. Tokens only; presentation only. */
 .ch-hb-rsvp__bar {
   height: 10px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.14);
 }
 .ch-hb-rsvp__bar > * {
@@ -2502,7 +2487,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
    Owner: "no contrast and not enough detail". The text already read (8.7:1); the page had no value structure: surfaces
    differed 1.10:1 and rules 1.24:1. So the page now has one dark surface per tab (Home's band, the Announcements lead,
    the Travel pass, the coach's task board), section rules at 1.8:1 (they were 1.2:1), and a one-line strip under the title
-   that says what the team is waiting on. Overdue is amber, never red (red is under par). Tokens only. */
+   that says what the team is waiting on. Overdue is amber, never red (red is for errors). Tokens only. */
 
 /* The strip: what the team owes, as figures that open the tab they count. W20 (12 Nov): it was five figures in a run of
    13px text, separated by bars and underlined, a sentence of links; now at most three, each a figure over its words,
@@ -2540,7 +2525,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   content: '';
 }
 .ch-hb-strip b {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
@@ -2580,7 +2565,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 .ch-hb-strip button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-hb-strip .is-warn,
 .ch-hb-strip .is-warn b,
@@ -2605,7 +2590,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   height: calc(18 * var(--ch-type-k));
   margin-left: 8px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-50);
   font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
@@ -2765,7 +2750,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     color: var(--ch-on-green-ink-muted);
   }
   .ch-hb-pass__count b {
-    font: 500 calc(56 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: 600 calc(56 * var(--ch-type-k))/1 var(--ch-font-sans);
     letter-spacing: -0.04em;
     color: var(--ch-on-green-ink);
   }
@@ -2810,12 +2795,12 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   gap: 6px;
 }
 .ch-hb-board__f dt {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-on-green-ink-muted);
 }
 .ch-hb-board__f dd {
   margin: 0;
-  font: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 600 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   color: var(--ch-on-green-ink);
@@ -2834,7 +2819,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   align-items: baseline;
   justify-content: space-between;
   gap: 4px 16px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-on-green-ink-muted);
 }
 .ch-hb-board__l b {
@@ -2845,14 +2830,14 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 .ch-hb-board__t {
   height: 6px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(255 255 255 / 0.16);
 }
 .ch-hb-board__t i {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-champagne-300);
   transform: translateX(calc((var(--ch-hb-p, 0) - 1) * 100%));
   transition: transform var(--ch-dur-base) var(--ch-ease);
@@ -2882,8 +2867,10 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   display: block;
   height: 4px;
   overflow: hidden;
-  border-radius: 999px;
-  background: rgb(28 25 18 / 0.12);
+  border-radius: var(--ch-radius-full);
+  /* The chart track and its ring (audit S2.6), one pair in both themes. */
+  background: var(--ch-chart-track);
+  box-shadow: var(--ch-chart-track-ring);
 }
 .ch-hb-prog i::after {
   position: absolute;
@@ -2893,9 +2880,6 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   transform: scaleX(var(--ch-hb-p, 0));
   transform-origin: left center;
   transition: transform var(--ch-dur-base) var(--ch-ease);
-}
-html[data-fw-theme='dark'] .ch-hb-prog i {
-  background: rgb(237 231 216 / 0.14);
 }
 html[data-fw-theme='dark'] .ch-hb-prog i::after {
   background: var(--ch-green-600);
@@ -2976,7 +2960,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   min-width: 0;
   padding: 20px 24px 16px;
   /* The one card recipe, Home's own (owner, 11 Nov): the flat white face and the card's cast, not an outlined ivory tile. */
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
 }
@@ -2995,7 +2979,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   color: var(--ch-text-secondary);
 }
 .ch-hw__k {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -3038,19 +3022,19 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw :focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-hw-track {
   display: block;
   height: 6px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ledger-rule);
 }
 .ch-hw-track i {
   display: block;
   height: 100%;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-fill-600);
   transform: scaleX(var(--ch-hw-p, 0));
   transform-origin: left center;
@@ -3096,11 +3080,13 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   align-items: center;
   gap: 4px;
 }
+/* GAP-H-20: 36 on the desk, with a 44 hit area around it (the `.ch-hw-more::after` way); the phone draws a 44 key below. */
 .ch-hw-pager button {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 0;
   border-radius: var(--ch-radius-sm);
@@ -3108,13 +3094,18 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   color: var(--ch-on-green-ink);
   cursor: pointer;
 }
+.ch-hw-pager button::after {
+  position: absolute;
+  inset: min(0px, calc(50% - 22px));
+  content: '';
+}
 .ch-hw-pager button:disabled {
   opacity: 0.35;
   cursor: default;
 }
 .ch-hw-pager span {
   min-width: 44px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   text-align: center;
   color: var(--ch-on-green-ink-muted);
@@ -3142,7 +3133,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   line-height: 1;
 }
 .ch-hw-count__n small {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-on-green-ink-muted);
 }
 .ch-hw-count__t {
@@ -3150,7 +3141,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-count__t h3 {
   margin: 0;
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
   color: var(--ch-on-green-ink);
@@ -3217,7 +3208,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   box-shadow: none;
 }
 .ch-hw-rail span {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-on-green-ink-muted);
 }
 .ch-hw-rail b {
@@ -3315,7 +3306,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-stack em,
 .ch-hw-you {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-style: normal;
   color: var(--ch-on-green-ink-soft);
 }
@@ -3348,7 +3339,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   padding-top: 2px;
 }
 .ch-hw-agenda time {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
 }
 .ch-hw-agenda a {
@@ -3409,7 +3400,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   width: 88px;
   height: 6px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
 }
 .ch-hw-meter__t .is-going {
   background: var(--ch-green-fill-600);
@@ -3424,7 +3415,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   background: var(--ch-ledger-rule-strong);
 }
 .ch-hw-meter__k {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -3441,7 +3432,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
 }
 .ch-hw-later > span {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-hw-later ol {
@@ -3465,7 +3456,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-later time,
 .ch-hw-later em {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
@@ -3507,7 +3498,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   padding: 4px 0;
   border: 0;
   background: none;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
   cursor: pointer;
 }
@@ -3580,7 +3571,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
-/* W22: a late task, or no rounds in 30 days, takes the warning ink (never red; red is under par). */
+/* W22: a late task, or no rounds in 30 days, takes the warning ink (never red; red is for errors). */
 .ch-hw-led__n b.is-warn {
   color: var(--ch-warning-600);
 }
@@ -3608,7 +3599,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   min-width: 0;
 }
 .ch-hw-owed > div > span {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-hw-owed ul {
@@ -3617,7 +3608,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   list-style: none;
 }
 .ch-hw-owed li {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-primary);
 }
 .ch-hw-owed li em {
@@ -3667,7 +3658,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-ledm button > em {
   grid-row: 1 / span 2;
   grid-column: 2;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-secondary);
@@ -3739,7 +3730,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   gap: 8px;
 }
 .ch-hw-discs__k {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-hw-discs [role='group'] {
@@ -3786,7 +3777,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   gap: 4px;
 }
 .ch-hw-figs dt {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-hw-figs dd {
@@ -3801,7 +3792,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   color: var(--ch-warning-600);
 }
 .ch-hw-figs-note {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-hw-tlist {
@@ -3868,7 +3859,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   width: 100%;
   height: 4px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ledger-rule);
 }
 .ch-hw-mini i::after {

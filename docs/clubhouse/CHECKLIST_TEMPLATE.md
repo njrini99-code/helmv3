@@ -112,8 +112,9 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
   with no shimmer or pulse, and the one loop is the working indicator, only
   while work runs; a dragged sheet settles on the script smooth spring (462 ms),
   and CSS has no spring durations: a one-shot entry rides the iOS curve on a
-  D-64 beat; the Stats busy dim holds off 150 ms and then holds 300 ms, as the
-  CoachHelm view switches do (`--ch-dur-busy-delay`)
+  D-64 beat; the Stats busy dim holds off 150 ms and then holds 300 ms, as
+  Ask's chat switch does (`--ch-dur-busy-delay`); a CoachHelm view switch shows
+  the next view's skeleton instead, its blocks after 150 ms, held 300 ms
 - [ ] Reduce Motion (3.11) turns travel into a 180 ms fade and stills the
   working indicator; Animations off removes every motion (`useChReducedMotion`)
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent

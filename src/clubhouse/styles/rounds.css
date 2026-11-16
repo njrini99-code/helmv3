@@ -11,14 +11,14 @@
   color: var(--ch-text-primary);
 }
 .ch-rd-k {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 /* A refresh with the page on screen: the page stays and says it is updating (an empty status region is not drawn) */
 .ch-rd-upd {
   margin-left: 8px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -35,8 +35,8 @@
 .ch-rd-h h2 {
   margin: 8px 0 0;
   /* The desktop hero, as every other section's (B1: it was 50, the only one off 52). */
-  font: var(--ch-type-hero);
-  letter-spacing: var(--ch-track-hero);
+  font: var(--ch-type-large-title);
+  letter-spacing: var(--ch-track-large-title);
 }
 
 /* The hero: the round in progress beside the season */
@@ -52,7 +52,7 @@
   display: flex;
   flex-direction: column;
   padding: 20px 24px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   color: var(--ch-on-fill-100);
   background: var(--ch-field-green);
   box-shadow: inset 0 1px 0 rgb(210 244 221 / 0.12), var(--ch-elevation-cast);
@@ -145,11 +145,11 @@
   color: var(--ch-on-fill-100);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
 }
-/* The disc starts at the eagle's red (ui.css), so its numeral holds 4.5:1 at the top stop too (4.58; #d0574a was 3.89). */
+/* Under par on the green: the board's mint disc (ui.css) under the deep green numeral, 7.0:1 (MOTION-AND-VISUAL 4.7). */
 .ch-rd-strip span.is-under {
   border-radius: 50%;
-  background: linear-gradient(180deg, #c4493b 0%, #a1342a 100%);
-  color: #fff8f5;
+  background: var(--ch-feature-gain-fill);
+  color: var(--ch-green-900);
   box-shadow: var(--ch-board-birdie-shadow);
 }
 .ch-rd-strip span.is-over {
@@ -242,7 +242,7 @@
 .ch-rd-season {
   position: relative;
   padding: 20px 24px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -258,7 +258,7 @@
 }
 .ch-rd-season__nonebody {
   max-width: 460px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 .ch-rd-season__h {
@@ -274,14 +274,14 @@
   margin-top: 8px;
 }
 .ch-rd-season__big b {
-  font: 500 46px/0.9 var(--ch-font-sans);
+  font: 600 46px/0.9 var(--ch-font-sans);
 
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.05em;
   font-variation-settings: 'wdth' 88;
 }
 .ch-rd-season__big em {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
@@ -361,7 +361,7 @@
   top: -3px;
   bottom: -3px;
   width: 2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-900);
   translate: -50% 0;
 }
@@ -377,7 +377,7 @@
   position: relative;
   height: 8px;
   margin: 4px 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
 }
@@ -385,7 +385,7 @@
 .ch-rd-putts i {
   position: absolute;
   inset: 0;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-600));
   transform: scaleX(var(--ch-rd-fill, 0));
   transform-origin: left center;
@@ -395,7 +395,7 @@
   top: -4px;
   bottom: -4px;
   width: 2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-900);
   translate: -50% 0;
 }
@@ -407,7 +407,7 @@
 }
 .ch-rd-greens i {
   height: 7px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-300);
 }
 .ch-rd-greens i.is-hit {
@@ -433,10 +433,13 @@
   margin-top: 8px;
 }
 .ch-rd-rib line {
-  stroke: rgb(28 25 18 / 0.07);
+  /* Gridlines (audit S2.2): the chart separator, dashed 2 4, 3:1 on the card. */
+  stroke: var(--ch-separator-chart);
+  stroke-dasharray: 2 4;
 }
 .ch-rd-rib line.is-par {
-  stroke: rgb(28 27 24 / 0.45);
+  stroke: var(--ch-chart-zero);
+  stroke-dasharray: none;
 }
 .ch-rd-rib line.ch-rd-rib__avg {
   stroke: var(--ch-green-500);
@@ -461,7 +464,7 @@
 }
 /* A qualifier is a second channel: a gilt outline on whatever its score is (data gilt, 3.97:1). */
 .ch-rd-rib rect.is-q {
-  stroke: #927840;
+  stroke: var(--ch-chart-gilt);
   stroke-width: 2.5;
   paint-order: stroke;
 }
@@ -492,7 +495,7 @@
   display: flex;
   gap: 16px;
   padding-top: 6px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -504,7 +507,7 @@
 .ch-rd-season__lg i {
   width: 9px;
   height: 9px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-rd-season__lg i.is-under {
   background: var(--ch-score-under);
@@ -514,12 +517,12 @@
 }
 .ch-rd-season__lg i.is-even {
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-900);
 }
 .ch-rd-season__lg i.is-q {
   background: none;
-  box-shadow: inset 0 0 0 2px #927840;
+  box-shadow: inset 0 0 0 2px var(--ch-chart-gilt);
 }
 
 /* More unfinished rounds */
@@ -599,7 +602,7 @@
 /* A posted round with no score at all is said, not hidden (CH-11315) */
 .ch-rd-unscored {
   margin: 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 
@@ -662,7 +665,7 @@
 }
 .ch-rd-grp__h h2 {
   margin: 0;
-  font: var(--ch-type-serif-s);
+  font: var(--ch-type-title);
   letter-spacing: -0.004em;
   color: var(--ch-ink-950);
 }
@@ -726,7 +729,7 @@ a.ch-rd-sc:focus-visible {
   box-shadow: var(--ch-key-raised-shadow);
 }
 .ch-rd-sc__date b {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -804,7 +807,7 @@ a.ch-rd-sc:focus-visible {
   align-items: center;
   height: 20px;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
   background: var(--ch-bg-inset);
@@ -882,7 +885,7 @@ a.ch-rd-sc:focus-visible {
   grid-template-columns: 56px minmax(0, 1fr) 42px;
   gap: 8px;
   align-items: center;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -899,7 +902,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-meter__t {
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.08);
   overflow: hidden;
 }
@@ -907,7 +910,7 @@ a.ch-rd-sc:focus-visible {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: linear-gradient(90deg, #3e8a61, var(--ch-green-500));
   transform: scaleX(var(--ch-rd-fill, 0));
   transform-origin: left center;
@@ -934,14 +937,14 @@ a.ch-rd-sc:focus-visible {
   color: var(--ch-ink-950);
 }
 .ch-rd-sc__s em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
 .ch-rd-sc__s.is-under {
-  background: #fff;
+  background: var(--ch-score-under-bg);
   box-shadow: inset 0 0 0 2px var(--ch-score-under);
 }
 .ch-rd-sc__s.is-under b {
@@ -1081,7 +1084,7 @@ a.ch-rd-sc:focus-visible {
   gap: 4px;
   height: 32px;
   padding: 0 12px 0 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
@@ -1101,13 +1104,11 @@ a.ch-rd-sc:focus-visible {
   gap: 20px;
   min-height: 180px;
   padding: 24px 32px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   box-sizing: border-box;
   color: var(--ch-on-fill-100);
   background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
-  box-shadow:
-    0 0 0 1px var(--ch-green-900),
-    0 24px 48px -30px rgb(11 58 37 / 0.8);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-rv-hero__l {
   display: flex;
@@ -1116,7 +1117,7 @@ a.ch-rd-sc:focus-visible {
   min-width: 0;
 }
 .ch-rv-hero__k {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-hero-mint);
 }
 .ch-rv-hero h1,
@@ -1156,10 +1157,10 @@ a.ch-rd-sc:focus-visible {
   color: #e7b866;
 }
 .ch-rv-hero__s em.is-under {
-  color: #ff9b8f;
+  color: var(--ch-stage-gain);
 }
 .ch-rv-hero__s span {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
@@ -1190,7 +1191,7 @@ a.ch-rd-sc:focus-visible {
   border-left: 1px solid rgb(21 90 57 / 0.12);
 }
 .ch-rv-figs dt {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -1209,7 +1210,7 @@ a.ch-rd-sc:focus-visible {
   color: var(--ch-text-tertiary);
 }
 .ch-rv-card {
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow:
     0 0 0 var(--ch-hairline-w) var(--ch-border-hairline),
@@ -1225,9 +1226,9 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-card__h h2,
 .ch-rv-card__h h3 {
   margin: 0 0 4px;
-  font: var(--ch-type-card-title);
+  font: var(--ch-type-headline);
   line-height: var(--ch-lead-tight);
-  letter-spacing: var(--ch-track-card-title);
+  letter-spacing: 0;
 }
 .ch-rv-card__h span {
   font: var(--ch-type-13);
@@ -1238,7 +1239,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-nosg {
   margin: 0;
   padding: 0 4px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 /* Strokes gained: the total, then a bar per leg either side of zero. Gains green, losses amber. */
@@ -1273,7 +1274,7 @@ a.ch-rd-sc:focus-visible {
   grid-template-columns: 96px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 .ch-rv-sg__r dt,
@@ -1302,7 +1303,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-sg__bar {
   position: relative;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-inset);
 }
 .ch-rv-sg__z {
@@ -1317,7 +1318,7 @@ a.ch-rd-sc:focus-visible {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
 }
 .ch-rv-sg__v.is-gain {
   background: var(--ch-chart-gain);
@@ -1339,7 +1340,7 @@ a.ch-rd-sc:focus-visible {
   border-radius: var(--ch-radius-lg);
   background: #fff;
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
@@ -1358,7 +1359,7 @@ a.ch-rd-sc:focus-visible {
   width: 56px;
   padding-left: 8px;
   text-align: left;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -1436,7 +1437,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-yn.is-na {
   width: 8px;
   height: 1.5px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.25);
 }
 .ch-rv-cols {
@@ -1481,7 +1482,7 @@ a.ch-rd-sc:focus-visible {
   margin: 0 20px 16px;
 }
 .ch-rv-none {
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 .ch-rv-shots {
@@ -1557,7 +1558,7 @@ a.ch-rd-sc:focus-visible {
   margin-top: 4px;
   height: 22px;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
   background: var(--ch-bg-inset);
@@ -1581,7 +1582,7 @@ a.ch-rd-sc:focus-visible {
   grid-template-columns: 62px minmax(0, 1fr) 22px;
   gap: 8px;
   align-items: center;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -1594,7 +1595,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-dist__t {
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.06);
   overflow: hidden;
 }
@@ -1625,7 +1626,7 @@ a.ch-rd-sc:focus-visible {
   flex-direction: column;
   gap: 8px;
   padding: 16px 20px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
 }
@@ -1862,7 +1863,7 @@ a.ch-rd-sc:focus-visible {
    player, and a round a row with every value in a cell under its header; a hairline between rows starts at the inset. */
 .ch-trd-tbl {
   overflow: hidden;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
 }
@@ -1891,7 +1892,7 @@ a.ch-rd-sc:focus-visible {
 .ch-trd-tr--head {
   min-height: 0;
   padding-block: var(--ch-space-3);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
 }
 .ch-trd-tr .r {
@@ -2161,7 +2162,7 @@ a.ch-trd-open:focus-visible {
   }
   .ch-rd.is-phone .ch-rd-h .ch-rd-k,
 .ch-rd.is-phone .ch-rd-h .ch-rd-upd {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -2675,12 +2676,6 @@ html[data-fw-theme='dark'] .ch-rd-unf__cta {
     inset 0 1px 0 rgb(255 255 255 / 0.4),
     var(--ch-elevation-control);
 }
-html[data-fw-theme='dark'] .ch-rd-rib line {
-  stroke: var(--ch-border-hairline);
-}
-html[data-fw-theme='dark'] .ch-rd-rib line.is-par {
-  stroke: rgb(237 231 216 / 0.45);
-}
 html[data-fw-theme='dark'] .ch-rd-rib__chip {
   stroke: rgb(107 187 140 / 0.3);
 }
@@ -2690,12 +2685,6 @@ html[data-fw-theme='dark'] .ch-rd-season__lg i.is-over,
 :where(html[data-fw-theme='dark']) .ch-rv-dist__t i {
   fill: #8a8373;
   background: #8a8373;
-}
-html[data-fw-theme='dark'] .ch-rd-rib rect.is-q {
-  stroke: var(--ch-champagne-500);
-}
-html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
-  box-shadow: inset 0 0 0 2px var(--ch-champagne-500);
 }
 html[data-fw-theme='dark'] .ch-rd-more__go {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.28);
@@ -2729,10 +2718,6 @@ html[data-fw-theme='dark'] .ch-rd-meter__t i {
 html[data-fw-theme='dark'] .ch-rd-sc__s {
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
 }
-html[data-fw-theme='dark'] .ch-rd-sc__s.is-under {
-  background: var(--ch-score-under-bg);
-  box-shadow: inset 0 0 0 2px var(--ch-score-under);
-}
 html[data-fw-theme='dark'] .ch-rv-back,
 html[data-fw-theme='dark'] .ch-rv-step button {
   background: var(--ch-ivory-50);
@@ -2762,10 +2747,6 @@ html[data-fw-theme='dark'] .ch-rv-shots li:not(:last-child)::before {
   background: rgb(107 187 140 / 0.22);
 }
 
-/* A filled under-par disc carries an ivory numeral: the deeper filled red holds it at 4.5:1. */
-html[data-fw-theme='dark'] .ch-rd-strip span.is-under {
-  background: var(--ch-score-under-fill);
-}
 html[data-fw-theme='dark'] .ch-rd-sc__date {
   color: var(--ch-green-700);
 }
@@ -2813,7 +2794,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: none;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-green-700);
     transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
@@ -3012,7 +2993,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   height: auto;
   border-radius: 0;
   background: none;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-ink-500);
@@ -3070,7 +3051,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 /* The review's head on the desktop: the eyebrow set plain, not tracked (doctrine; P001-D5). */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rv[data-canopy] .ch-rv-hero__k {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     /* The detail head's eyebrow line, so the course's name is on every detail page's title line. */
     line-height: var(--ch-lead-detail-eyebrow);
     letter-spacing: 0.01em;
@@ -3092,7 +3073,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   /* The head: the eyebrow is set like the framed head's date line, the title is the shell's 44px sans. */
   .ch-rd[data-canopy] .ch-rd-h > div:first-child {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     letter-spacing: 0.01em;
   }
   .ch-rd[data-canopy] .ch-rd-h .ch-rd-k {
@@ -3140,7 +3121,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     box-shadow: none;
   }
   .ch-rd[data-canopy] .ch-rd-unf__t {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
   }
   .ch-rd[data-canopy] .ch-rd-unf__c {
@@ -3482,7 +3463,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rv .ch-rzsvg:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
 }
 .ch-rv .ch-rzmeta {
   margin: 16px 0 0;
@@ -3658,7 +3639,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   width: 12px;
   height: 2px;
   margin: 8px 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-400);
 }
 .ch-rv .ch-rzhit__c em {
@@ -3720,7 +3701,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   width: min(22px, 80%);
   transform: scaleY(var(--ch-rz-p, 0));
   transform-origin: center bottom;
-  border-radius: var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-mark) var(--ch-radius-mark);
+  border-radius: var(--ch-radius-sm) var(--ch-radius-sm) 0 0;
   background: var(--ch-ivory-400);
 }
 .ch-rv .ch-rzpt__c i.is-one {
@@ -3770,7 +3751,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   position: relative;
   height: 12px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-inset);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
 }
@@ -3884,7 +3865,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rv .ch-rzstage,
 .ch-rv .ch-rzplate {
   position: relative;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background:
     radial-gradient(90% 120% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
     radial-gradient(70% 100% at 100% 100%, rgb(231 184 102 / 0.12), transparent 60%),
@@ -3970,7 +3951,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   border-radius: 50%;
 }
 .ch-rv .ch-rzstage__tip em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   font-style: normal;
   color: #55503f;
 }
@@ -4200,7 +4181,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   left: 0;
   width: 44px;
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: linear-gradient(90deg, var(--ch-champagne-500), var(--ch-champagne-300));
   content: '';
   pointer-events: none;
@@ -4249,7 +4230,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rd .ch-rd-range {
   height: 12px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
 }
 .ch-rd .ch-rd-range i {
   width: 6px;
@@ -4272,10 +4253,10 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rd .ch-rd-putts {
   height: 10px;
   margin: 2px 0;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-rd .ch-rd-putts i {
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
   box-shadow: var(--ch-elevation-mark);
   transition: transform var(--ch-dur-base) var(--ch-ease);
@@ -4290,7 +4271,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rd .ch-rd-greens i {
   height: 9px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-300);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.12);
 }
@@ -4315,14 +4296,14 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     width: 36px;
     height: 3px;
     margin: 12px 0 8px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: linear-gradient(90deg, var(--ch-champagne-500), var(--ch-champagne-300));
     content: '';
     order: 2;
   }
   .ch-rd[data-canopy] .ch-rd-season__big em {
     order: 3;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     font-variant-numeric: tabular-nums;
   }
   .ch-rd[data-canopy] .ch-rd-fig + .ch-rd-fig {
@@ -4332,8 +4313,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 
 /* ---- The chart: every round against par ---- */
 .ch-rd .ch-rd-stage {
-  --ch-rd-under-a: #ff9d8e;
-  --ch-rd-under-b: #c4493b;
+  --ch-rd-under-a: var(--ch-stage-line);
+  --ch-rd-under-b: var(--ch-feature-gain-fill);
   --ch-rd-over-a: rgb(244 238 221 / 0.36);
   --ch-rd-over-b: rgb(244 238 221 / 0.9);
   --ch-rd-ink: var(--ch-stage-ink);
@@ -4344,11 +4325,11 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   --ch-rd-avg-ink: var(--ch-stage-gold);
   --ch-rd-chip: rgb(231 184 102 / 0.16);
   --ch-rd-chip-ring: rgb(231 184 102 / 0.5);
-  --ch-rd-under-ink: var(--ch-stage-red);
+  --ch-rd-under-ink: var(--ch-stage-gain);
   position: relative;
   margin-top: 32px;
   padding: 16px 24px 8px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background:
     radial-gradient(90% 120% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
     radial-gradient(70% 100% at 100% 100%, rgb(231 184 102 / 0.12), transparent 60%),
@@ -4387,14 +4368,14 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   justify-content: flex-end;
   gap: 6px 16px;
   padding: 0;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-rd-soft);
 }
 .ch-rd .ch-rd-stage .ch-rd-season__lg i {
   width: 10px;
   height: 10px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-rd .ch-rd-stage .ch-rd-season__lg i.is-under {
   background: linear-gradient(180deg, var(--ch-rd-under-a), var(--ch-rd-under-b));
@@ -4428,7 +4409,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rd .ch-rd-stage .ch-rd-rib line.ch-rd-rib__avg {
   stroke: var(--ch-rd-gold);
   stroke-dasharray: 2 6;
-  stroke-opacity: 0.9;
   stroke-width: 2;
 }
 .ch-rd .ch-rd-stage .ch-rd-rib__chip {
@@ -4543,15 +4523,16 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 
 /* On the phone the chart stays on the page, as the Mobile pass has it (one green card there): the same picture in the page's own inks. */
 .ch-rd.is-phone .ch-rd-stage {
-  --ch-rd-under-a: #d9665a;
-  --ch-rd-under-b: #a8372b;
+  --ch-rd-under-a: var(--ch-score-birdie-fill);
+  --ch-rd-under-b: var(--ch-score-under-fill);
+  --ch-rd-under-ink: var(--ch-score-under);
   --ch-rd-over-a: var(--ch-ink-400);
   --ch-rd-over-b: var(--ch-ink-500);
   --ch-rd-ink: var(--ch-text-primary);
   --ch-rd-soft: var(--ch-text-secondary);
-  --ch-rd-rule: rgb(110 98 62 / 0.14);
-  --ch-rd-par: rgb(28 27 24 / 0.5);
-  --ch-rd-gold: var(--ch-champagne-500);
+  --ch-rd-rule: var(--ch-separator-chart);
+  --ch-rd-par: var(--ch-chart-zero);
+  --ch-rd-gold: var(--ch-chart-gilt);
   --ch-rd-avg-ink: var(--ch-green-500);
   --ch-rd-chip: var(--ch-green-50);
   --ch-rd-chip-ring: rgb(21 90 57 / 0.25);
@@ -4606,7 +4587,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font-variation-settings: 'wdth' 88;
 }
 .ch-rd.is-phone .ch-rd-unf:not(.is-idle) .ch-rd-unf__f b {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
@@ -4640,28 +4621,38 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rd .ch-rd-grp__h {
   align-items: center;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
 }
 .ch-rd .ch-rd-grp__h b {
   font-weight: 600;
   color: var(--ch-text-primary);
 }
-/* A month's trend: one small bar a round, oldest to newest. */
+/* A month's trend: one small bar a round, oldest to newest, from a par line on a fixed-minimum range (CH-09). */
 .ch-rd-grp__spark {
+  position: relative;
   display: inline-flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 4px;
   height: 22px;
 }
+.ch-rd-grp__spark b {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  height: 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-chart-zero);
+}
 .ch-rd-grp__spark i {
+  position: relative;
   display: block;
   width: 5px;
-  border-radius: var(--ch-radius-mark);
+  min-height: 1px;
+  border-radius: var(--ch-radius-full);
   background: linear-gradient(180deg, var(--ch-ink-400), var(--ch-ink-600));
 }
 .ch-rd-grp__spark i.is-under {
-  background: linear-gradient(180deg, #d9665a, #a8372b);
+  background: linear-gradient(180deg, var(--ch-score-birdie-fill), var(--ch-score-under-fill));
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rd[data-canopy] .ch-rd-sc {
@@ -4687,7 +4678,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     font-variation-settings: 'wdth' 88;
   }
   .ch-rd[data-canopy] .ch-rd-sc__date em {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
   }
   .ch-rd[data-canopy] .ch-rd-sc__c > b {
@@ -4789,8 +4780,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 
 /* -- The round card (P011; docs/clubhouse/phone/round-card.md) --------------------------------------------------------
    A scorecard on ledger paper: the thing a player keeps, shares as a picture and prints. Outline marks (a circle is a
-   birdie, a double circle an eagle or better, a square a bogey, a double square a double bogey or worse): red for under
-   par only, ink for squares. Gains are green and losses amber (D-42). Every figure is the review's own. */
+   birdie, a double circle an eagle or better, a square a bogey, a double square a double bogey or worse): the gain green
+   for under par, ink for squares. Gains are green and losses amber (MOTION-AND-VISUAL 4.7). Every figure is the review's own. */
 .ch-rcard-wrap {
   display: flex;
   flex-direction: column;
@@ -4811,21 +4802,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   --ch-rcard-sub: 38px;
   --ch-rcard-mk: 20px;
 }
-/* It arrives once, on the smooth spring: one movement, no count-up, no stagger. Reduced motion and Animations off: none. */
-@keyframes ch-rcard-settle {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-}
-.ch-rcard.is-just {
-  animation: ch-rcard-settle var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) backwards;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-rcard.is-just {
-    animation: none;
-  }
-}
+/* CH-11924: the card opened from Post round is whole in its first frame (MOTION-AND-VISUAL 3.5, 3.12: its settle, a
+   first-paint rise, is gone; the push that brought it is the movement). */
 .ch-rcard-h {
   display: flex;
   align-items: flex-start;
@@ -4842,8 +4820,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rcard-h h2 {
   margin: 0;
-  font: var(--ch-type-card-title);
-  letter-spacing: var(--ch-track-card-title);
+  font: var(--ch-type-headline);
+  letter-spacing: 0;
   color: var(--ch-text-primary);
 }
 .ch-rcard-h__m {
@@ -4984,7 +4962,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   width: var(--ch-rcard-mk);
   height: var(--ch-rcard-mk);
   place-items: center;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
@@ -5045,7 +5023,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   text-align: center;
 }
 .ch-rcard-sg dt {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-rcard-sg .is-total dt {
@@ -5094,7 +5072,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   margin: 0 12px;
   border: var(--ch-hairline-w) solid var(--ch-ledger-rule);
   border-bottom: 0;
-  border-radius: var(--ch-radius-mark) var(--ch-radius-mark) 0 0;
+  border-radius: var(--ch-radius-full) var(--ch-radius-full) 0 0;
   pointer-events: none;
 }
 .ch-rcard-sg dd.is-gain {
@@ -5288,7 +5266,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   color: var(--ch-text-secondary);
 }
 .ch-rv .ch-says__value {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   letter-spacing: var(--ch-track-22);
   color: var(--ch-text-primary);
 }
@@ -5355,9 +5333,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   min-height: 28px;
   padding: 0 12px;
   border: var(--ch-hairline-w) solid var(--ch-stage-rule);
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(244 238 221 / 0.1);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-stage-ink);
 }
 .ch-rv-rec__g {
@@ -5412,13 +5390,13 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   flex-direction: column;
   gap: 16px;
   padding: 20px 20px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   color: var(--ch-stage-ink);
   background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
   box-shadow: 0 0 0 1px var(--ch-green-900);
 }
 .ch-ch-hero__k {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   letter-spacing: var(--ch-track-12);
   color: var(--ch-stage-ink-soft);
 }
@@ -5549,7 +5527,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   color: var(--ch-chart-loss);
 }
 .ch-ch-fig__v {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   letter-spacing: var(--ch-track-22);
   color: var(--ch-text-primary);
 }
@@ -5564,11 +5542,11 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   margin-top: 8px;
   padding: 12px 16px;
   border: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
 }
 .ch-ch-note__l {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-ch-note__b {
@@ -5672,7 +5650,7 @@ a.ch-rd-grp__h.is-link:focus-visible {
 .ch-ch-plate {
   padding: 12px 16px;
   border: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
 }
 .ch-ch-plate b {
@@ -5725,7 +5703,7 @@ a.ch-rd-grp__h.is-link:focus-visible {
 .ch-hmap__cap {
   display: block;
   margin: 8px 0 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-hmap__row {
@@ -5887,7 +5865,7 @@ a.ch-rd-grp__h.is-link:focus-visible {
     justify-content: space-between;
     gap: var(--ch-space-1) var(--ch-space-4);
     margin: var(--ch-space-2) 0 var(--ch-space-1);
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     color: var(--ch-text-secondary);
   }
   .ch-hmap-t {
@@ -5927,7 +5905,7 @@ a.ch-rd-grp__h.is-link:focus-visible {
   text-align: left;
 }
 .ch-hmap-list thead th {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-hmap-list tr.is-sel {
@@ -6000,7 +5978,7 @@ a.ch-rd-grp__h.is-link:focus-visible {
   height: 24px;
   margin-left: auto;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-hm-over-1);
   font: var(--ch-type-13);
   color: var(--ch-ink-900);
@@ -6012,7 +5990,7 @@ a.ch-rd-grp__h.is-link:focus-visible {
   margin: 6px 0 0;
 }
 .ch-hmap-d__v b {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   letter-spacing: var(--ch-track-22);
 }
 .ch-hmap-d__v span,
@@ -6038,7 +6016,7 @@ a.ch-rd-grp__h.is-link:focus-visible {
   min-height: 44px;
   padding: 0 12px;
   border: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: none;
   font: var(--ch-type-13);
   color: var(--ch-text-primary);
@@ -6097,7 +6075,7 @@ button.ch-hip__row:focus-visible,
 }
 .ch-carc {
   padding: 8px 8px 12px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
 }
 .ch-carc__svg {
@@ -6106,7 +6084,7 @@ button.ch-hip__row:focus-visible,
   height: auto;
   /* Vertical pans scroll the page natively; horizontal ones scrub (Lenis is off on touch). */
   touch-action: pan-y;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
 }
 .ch-carc__cap {
   margin: 4px 8px 0;
@@ -6189,25 +6167,17 @@ button.ch-hip__row:focus-visible,
   opacity: 0.5;
 }
 
-/* P-7 5.1 (M4, M8, M9): the course page's CSS fades, all opacity over the quick beat. OS Reduce Motion does not zero the
-   Clubhouse durations (only [data-motion='off'] does), so each has its own override below. */
-@keyframes ch-course-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+/* P-7 5.1 (M4, M8, M9): the course page's CSS fades, all opacity over the quick beat (motion.css ch-in; MOTION-AND-VISUAL
+   3.12). OS Reduce Motion does not zero the Clubhouse durations (only [data-motion='off'] does), so each has its own
+   override below. */
 /* M4: the view the Map / List switch brings in fades in; set only once the reader has switched (never on first paint). */
 .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
 .ch-hmap-sec[data-swapped] .ch-hmap-listv {
-  animation: ch-course-fade var(--ch-dur-quick) var(--ch-ease);
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
-/* M9: the compare rows' circles fade in with the list, and a tick as it is chosen. */
-.ch-cmp-row__c,
+/* M9: a compare row's tick fades in as it is chosen; the circles stand still with the list (first paint is still, 3.5). */
 .ch-cmp-row__c > svg {
-  animation: ch-course-fade var(--ch-dur-quick) var(--ch-ease);
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 /* M8: the best and last overlays fade, they do not pop. */
 .ch-carc__ov {
@@ -6227,7 +6197,6 @@ button.ch-hip__row:focus-visible,
   }
   .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
   .ch-hmap-sec[data-swapped] .ch-hmap-listv,
-  .ch-cmp-row__c,
   .ch-cmp-row__c > svg {
     animation: none;
   }
@@ -6246,8 +6215,6 @@ button.ch-hip__row:focus-visible,
 [data-motion='off'] [data-ui='clubhouse'] .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
 [data-ui='clubhouse'][data-motion='off'] .ch-hmap-sec[data-swapped] .ch-hmap-listv,
 [data-motion='off'] [data-ui='clubhouse'] .ch-hmap-sec[data-swapped] .ch-hmap-listv,
-[data-ui='clubhouse'][data-motion='off'] .ch-cmp-row__c,
-[data-motion='off'] [data-ui='clubhouse'] .ch-cmp-row__c,
 [data-ui='clubhouse'][data-motion='off'] .ch-cmp-row__c > svg,
 [data-motion='off'] [data-ui='clubhouse'] .ch-cmp-row__c > svg {
   animation: none;
@@ -6310,7 +6277,7 @@ button.ch-hip__row:focus-visible,
   color: var(--ch-ink-600);
 }
 .ch-cmp__cell b {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-ink-900);
 }
 .ch-cmp__legend {

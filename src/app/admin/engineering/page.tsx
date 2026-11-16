@@ -13,6 +13,9 @@ import { LocalTime } from '../_components/LocalTime';
 import { SectionLabel } from '../_components/SectionLabel';
 import { FactLine } from '../_components/Row';
 import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Engineering OS' };
 
 export const dynamic = 'force-dynamic';
 

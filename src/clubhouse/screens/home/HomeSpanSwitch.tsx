@@ -33,7 +33,6 @@ export function HomeSpanSwitch({ value: shown }: { value: ChFormWindow }) {
   return (
     <div className="ch-span" data-ch-span={value}>
       <Segmented<ChFormWindow>
-        weight="filter"
         size="sm"
         label="Rounds shown"
         hook="home-span"

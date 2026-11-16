@@ -168,7 +168,7 @@ describe('overnight polish 2026-10-15: dark mode keeps day-only surfaces whole',
   it('the sidebar plate has its own night material and ink, not a half-flipped day gradient', () => {
     const tokens = css('tokens.css');
     const dark = tokens.slice(tokens.indexOf("html[data-fw-theme='dark'] [data-ui='clubhouse'] {"));
-    expect(dark.slice(0, dark.indexOf('\n}'))).toMatch(/--ch-nav-well-bg: linear-gradient\(180deg, #24432f, #1a3524\);[\s\S]*--ch-nav-well-ink: #f3efe6;/);
+    expect(dark.slice(0, dark.indexOf('\n}'))).toMatch(/--ch-nav-well-bg: #24432f;[\s\S]*--ch-nav-well-ink: #f3efe6;/);
     expect(css('shell.css')).toMatch(/color: var\(--ch-nav-well-ink, var\(--ch-green-800\)\);/);
   });
 });

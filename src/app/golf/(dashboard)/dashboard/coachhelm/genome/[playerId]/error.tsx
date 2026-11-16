@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/players/[playerId]/genome"
       component="LegacyCoachGenomePage"
-      title="Failed to load genome"
-      message="We couldn't load this player's genome. Please try again."
       homePath="/golf/dashboard/coachhelm"
     />
   );

@@ -166,6 +166,81 @@ describe('calculateHoleStats', () => {
     });
   });
 
+  // SC-02: the PGA Tour's definition. Out of a greenside bunker and holed in two
+  // strokes or fewer is a save whatever the score; par or better is not part of it.
+  describe('sand save on the Tour definition (SC-02)', () => {
+    const hole = makeRoundHole({ number: 1, par: 4, yardage: 430 });
+    // Tee shot into the water, the drop, approach into the bunker, out to 5 ft, one putt.
+    const bogeyAfterPenalty = () => [
+      makeShotRecord({
+        shotNumber: 1, shotType: 'tee', clubType: 'driver', lieBefore: 'tee',
+        distanceToHoleBefore: 430, distanceUnitBefore: 'yards',
+        result: 'other', distanceToHoleAfter: 210, distanceUnitAfter: 'yards', shotDistance: 220,
+      }),
+      makeShotRecord({
+        shotNumber: 2, shotType: 'penalty', clubType: 'non_driver', lieBefore: 'other',
+        distanceToHoleBefore: 210, distanceUnitBefore: 'yards',
+        result: 'penalty', distanceToHoleAfter: 210, distanceUnitAfter: 'yards', shotDistance: 0,
+        isPenalty: true, penaltyType: 'water',
+      }),
+      makeShotRecord({
+        shotNumber: 3, shotType: 'approach', clubType: 'non_driver', lieBefore: 'rough',
+        distanceToHoleBefore: 210, distanceUnitBefore: 'yards',
+        result: 'sand', distanceToHoleAfter: 15, distanceUnitAfter: 'yards', shotDistance: 195,
+      }),
+      makeShotRecord({
+        shotNumber: 4, shotType: 'around_green', clubType: 'non_driver', lieBefore: 'sand',
+        distanceToHoleBefore: 15, distanceUnitBefore: 'yards',
+        result: 'green', distanceToHoleAfter: 5, distanceUnitAfter: 'feet', shotDistance: 15,
+      }),
+      makeShotRecord({
+        shotNumber: 5, shotType: 'putting', clubType: 'putter', lieBefore: 'green',
+        distanceToHoleBefore: 5, distanceUnitBefore: 'feet',
+        result: 'hole', distanceToHoleAfter: 0, distanceUnitAfter: 'feet', shotDistance: 0,
+      }),
+    ];
+
+    it('a bunker shot and one putt for a bogey after a penalty is a save', () => {
+      const stats = calculateHoleStats(bogeyAfterPenalty(), hole);
+      expect(stats.score).toBe(5);
+      expect(stats.penaltyStrokes).toBe(1);
+      expect(stats.sandSaveAttempt).toBe(true);
+      expect(stats.sandSaveMade).toBe(true);
+      // Scrambling keeps its par-or-better rule: the bogey is not a scramble.
+      expect(stats.scrambleAttempt).toBe(true);
+      expect(stats.scrambleMade).toBe(false);
+    });
+
+    it('three strokes from the bunker is an attempt, not a save', () => {
+      const shots = bogeyAfterPenalty().slice(0, 4);
+      shots.push(
+        makeShotRecord({
+          shotNumber: 5, shotType: 'putting', clubType: 'putter', lieBefore: 'green',
+          distanceToHoleBefore: 5, distanceUnitBefore: 'feet',
+          result: 'green', distanceToHoleAfter: 2, distanceUnitAfter: 'feet', shotDistance: 0,
+        }),
+        makeShotRecord({
+          shotNumber: 6, shotType: 'putting', clubType: 'putter', lieBefore: 'green',
+          distanceToHoleBefore: 2, distanceUnitBefore: 'feet',
+          result: 'hole', distanceToHoleAfter: 0, distanceUnitAfter: 'feet', shotDistance: 0,
+        }),
+      );
+      const stats = calculateHoleStats(shots, hole);
+      expect(stats.score).toBe(6);
+      expect(stats.sandSaveAttempt).toBe(true);
+      expect(stats.sandSaveMade).toBe(false);
+    });
+
+    it('a fairway bunker shot is not a sand-save attempt', () => {
+      const shots = bogeyAfterPenalty().map((s) =>
+        s.shotNumber === 4 ? { ...s, shotType: 'approach' as const } : s,
+      );
+      const stats = calculateHoleStats(shots, hole);
+      expect(stats.sandSaveAttempt).toBe(false);
+      expect(stats.sandSaveMade).toBe(false);
+    });
+  });
+
   describe('hole-out eagle', () => {
     const hole = makeRoundHole({ number: 10, par: 4, yardage: 350 });
     const stats = calculateHoleStats(holeOutShotRecords(), hole);

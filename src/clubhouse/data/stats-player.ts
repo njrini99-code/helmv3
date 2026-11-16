@@ -423,8 +423,10 @@ export async function loadPlayerProfile(input: {
   // Q-123: a round posted as a total only is a score and nothing else. Every hole-level figure reads the window's rounds with their holes.
   const holeWin = holeRounds(winRounds);
 
-  // Team rounds in the same window, for coach comparisons only (scores: all of them; hole-level: those with their holes).
-  const teamWin = coach ? teamIds.flatMap((id) => roundsInFilter(counted(byPlayer.get(id) ?? []), f, start)) : [];
+  // The rest of the team's rounds in the same window, for coach comparisons only (scores: all of them; hole-level: those with their
+  // holes). DF-C-17 (owner, 16 Nov: take the recommendation): the player is left out, so the line is "Rest of team", never an
+  // average that includes the player it is set against.
+  const teamWin = coach ? teamIds.filter((id) => id !== input.playerId).flatMap((id) => roundsInFilter(counted(byPlayer.get(id) ?? []), f, start)) : [];
   const teamHole = holeRounds(teamWin);
   // The player's own cache rows and the teammates' (the comparisons' team column), one lookup as before.
   const cache = { byRound: new Map([...cacheOwn.byRound, ...cacheOthers.byRound]), error: cacheOwn.error || cacheOthers.error };
@@ -518,6 +520,8 @@ export async function loadPlayerProfile(input: {
     const b = band(label);
     return b && b.attempts >= 10 ? (b.made / b.attempts) * 100 : null;
   };
+  // A band's Tour rate at the distances its putts were from (SC-08, bandPutts); with no putts read, the row's own value.
+  const bandBench = (label: string) => band(label)?.bench ?? undefined;
   const prox = (label: string) => approach?.find((b) => b.label === label)?.value ?? null;
   const row = (
     group: string,
@@ -528,13 +532,13 @@ export async function loadPlayerProfile(input: {
     unit: ChComparison['unit'],
     digits: number,
     lowerIsBetter: boolean,
-    opts: { signed?: boolean; floor?: string; early?: string } = {},
+    opts: { signed?: boolean; floor?: string; early?: string; bench?: number | null } = {},
   ): ChComparison => ({
     label,
     group,
     you,
     team,
-    bench: benchMetric ? (bench.get(benchMetric) ?? null) : null,
+    bench: opts.bench !== undefined ? opts.bench : benchMetric ? (bench.get(benchMetric) ?? null) : null,
     unit,
     digits,
     lowerIsBetter,
@@ -575,11 +579,11 @@ export async function loadPlayerProfile(input: {
     row('Short game', 'Sand saves', sand.value, teamRate('sand_saves', 'sand_attempts'), 'scrambling_pct_sand', '%', 0, false, sand.opts),
     row('Putting', 'Putts per round', perPutts(holeWin, 'total_putts'), teamPerPutts('total_putts'), null, '', 1, true),
     row('Putting', '3-putts per round', perPutts(holeWin, 'three_putts'), teamPerPutts('three_putts'), null, '', 2, true),
-    row('Putting', 'Make 3–5 ft', makeRate('3–5 ft'), null, 'putts_made_3_5ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
-    row('Putting', 'Make 5–10 ft', makeRate('5–10 ft'), null, 'putts_made_5_10ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
-    row('Putting', 'Make 10–15 ft', makeRate('10–15 ft'), null, 'putts_made_10_15ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
-    row('Putting', 'Make 15–25 ft', makeRate('15–25 ft'), null, 'putts_made_15_25ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
-    row('Putting', 'Make 25+ ft', makeRate('25+ ft'), null, 'putts_made_25_plus_ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
+    row('Putting', 'Make 3–5 ft', makeRate('3–5 ft'), null, 'putts_made_3_5ft_pct', '%', 0, false, { floor: BAND_FLOOR, bench: bandBench('3–5 ft') }),
+    row('Putting', 'Make 5–10 ft', makeRate('5–10 ft'), null, 'putts_made_5_10ft_pct', '%', 0, false, { floor: BAND_FLOOR, bench: bandBench('5–10 ft') }),
+    row('Putting', 'Make 10–15 ft', makeRate('10–15 ft'), null, 'putts_made_10_15ft_pct', '%', 0, false, { floor: BAND_FLOOR, bench: bandBench('10–15 ft') }),
+    row('Putting', 'Make 15–25 ft', makeRate('15–25 ft'), null, 'putts_made_15_25ft_pct', '%', 0, false, { floor: BAND_FLOOR, bench: bandBench('15–25 ft') }),
+    row('Putting', 'Make 25+ ft', makeRate('25+ ft'), null, 'putts_made_25_plus_ft_pct', '%', 0, false, { floor: BAND_FLOOR, bench: bandBench('25+ ft') }),
     row('Course management', 'Penalty strokes', per(holeWin, 'penalty_strokes'), teamPer('penalty_strokes'), 'penalty_rate_per_round', '', 1, true),
     row('Pressure', 'Pressure gap', pressure.gap, null, 'practice_tournament_delta', '', 1, true, { signed: true, floor: 'Needs 3 tournament or qualifier rounds and 3 practice rounds.' }),
     row('Pressure', 'Opening hole', opening?.delta ?? null, null, 'opening_hole_delta', '', 1, true, { signed: true, floor: 'Needs 5 rounds scored hole by hole.' }),

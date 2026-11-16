@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { fairwayScope } from '@/lib/redesign/flag';
 
 /**
  * Continue Round for a round that is no longer in progress.
@@ -19,23 +18,25 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * Rendering a client-side replace instead works in every render context and
  * lands on the same page the success overlay navigates to.
  */
-export function CompletedRoundRedirect({ href }: { href: string }) {
+export function CompletedRoundRedirect({ href, skeleton }: { href: string; skeleton: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
     router.replace(href);
   }, [href, router]);
 
+  // The review's own skeleton while the replace lands (GAP-R-11), passed in by the route file: never a flash of the
+  // retired Fairway look. The line and the link stay for a screen reader, and for the rare browser where the replace
+  // doesn't run.
   return (
-    <div
-      className={fairwayScope('flex min-h-[50vh] flex-col items-center justify-center gap-3 bg-canvas px-4 text-center')}
-      role="status"
-      aria-live="polite"
-    >
-      <p className="text-sm text-text-secondary">This round is complete. Opening your round…</p>
-      <Link href={href} replace className="text-sm font-medium text-accent-ink underline-offset-4 hover:underline">
-        View round
-      </Link>
-    </div>
+    <>
+      {skeleton}
+      <p className="ch-sr-only" role="status" aria-live="polite">
+        This round is complete. Opening your round…{' '}
+        <Link href={href} replace>
+          View round
+        </Link>
+      </p>
+    </>
   );
 }

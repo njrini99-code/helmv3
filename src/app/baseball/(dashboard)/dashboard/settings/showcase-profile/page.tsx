@@ -14,7 +14,7 @@ import { permanentRedirect } from 'next/navigation';
 import { getBaseballSettingsAliasHref } from '@/lib/baseball/settings-route-aliases';
 
 export const metadata = {
-  title: 'Showcase & Scout Profile Settings | Helm Baseball',
+  title: 'Showcase & Scout Profile Settings',
 };
 
 export default function Page() {

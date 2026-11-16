@@ -5,7 +5,8 @@ import { plural } from './plural';
  *
  * Why these numbers: production's within-player spread is about 3.8 strokes gained and 3.6 strokes of score a round, so a
  * single round moves a player as much as the gap between two players. A change is only worth a color once it is larger than
- * its own standard error (docs in project files: stats-visuals/decisions.md, Q3 and Q4).
+ * two of its own standard errors (`SIGNAL_Z`; docs in project files: stats-visuals/decisions.md, Q3 and Q4, raised from one by the
+ * stats and charts audit 2026-11-15, CH-05).
  */
 
 /** Production's within-player standard deviation of a round (players with five or more rounds): the fallback while a player has too few rounds to measure their own. */
@@ -161,19 +162,26 @@ export function halvesChange(trend: number[], kind: SpreadKind | null = 'score')
 export type DeltaTone = '' | 'is-gain' | 'is-loss';
 
 /**
- * The tone of a change: green or amber only when it is larger than one standard error of the difference, else none (the
+ * How many standard errors a change must clear before it is called one (stats and charts audit 2026-11-15, CH-05): two, about 95%
+ * two-sided. At one standard error a change that is pure noise was painted 32% of the time, so a steady team showed a false
+ * "Better" or "Worse" on nearly every load of a page with eight figures. Course history's hole tint uses the same rule.
+ */
+export const SIGNAL_Z = 2;
+
+/**
+ * The tone of a change: green or amber only when it is larger than `SIGNAL_Z` standard errors of the difference, else none (the
  * signed number is still shown, in neutral ink, with "No clear change"). With no standard error to judge by, no tone: an
  * unmeasured change is never painted.
  */
 export function deltaTone(delta: number | null | undefined, se: number | null | undefined, lowerIsBetter: boolean): DeltaTone {
   if (delta == null || Number.isNaN(delta) || se == null || !(se > 0)) return '';
-  if (Math.abs(delta) < se) return '';
+  if (Math.abs(delta) < SIGNAL_Z * se) return '';
   return delta < 0 === lowerIsBetter ? 'is-gain' : 'is-loss';
 }
 
 /**
  * A trend's halves (A1: the newer half against the older half, with the standard error of the rounds behind them) as a tone: signed
- * only when the change clears its standard error and still prints at `digits`, else '' and the words are "No clear change".
+ * only when the change clears `SIGNAL_Z` standard errors and still prints at `digits`, else '' and the words are "No clear change".
  * Unmeasured halves (null or absent) are never a change.
  */
 export function halvesTone(h: { delta: number; se: number | null } | null | undefined, lowerIsBetter: boolean, digits = 1): DeltaTone {

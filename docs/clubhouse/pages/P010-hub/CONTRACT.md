@@ -31,7 +31,7 @@ Team Hub opens on Home, or on the tab in `?tab=`, for a coach and for a player. 
 | --- | --- | --- | --- |
 | 100101 | — | `HUB_READY` | Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents and Tasks, for a coach and a player; Announcements and Tasks carry a small count when a post waits to be acknowledged or a task is late). Under the title one line says what the team is waiting on (a coach: players, replies due, posts awaiting acknowledgement, days to the next trip, open tasks; a player: replies due, posts to acknowledge, days to their trip, open tasks), each figure opening the tab it counts; a figure that is zero, or whose read failed, is left out. Home is a set of widgets (twelve columns on desktop, one in rank order on a phone): the next trip as the one dark tile (days to go, the plan as a rail, who is traveling, a pager to the next trip, Edit trip for a coach; with no trip ahead, the week's next event); this week as seven days to step through, the chosen day's events with replies as a count for a coach and the reply choices for a player, and what follows later this week; for a coach, Waiting on (each player's replies owed, posts not acknowledged, open tasks with late ones in amber and rounds in 30 days, sortable, a name opening the items), the latest post with its acknowledged count and a disc for each player not yet acknowledged, and the tasks' done, left and overdue with the three soonest; for a player, their queue (replies, posts and tasks answered in place, an answered row staying put), the latest post with Got it, and the newest files. Updates sits on both. A coach also gets New announcement. |
 | 100102 | — | `TAB_LINK_OPENS_A_TAB` | ?tab=home\|ann\|travel\|docs\|tasks opens that tab; a value that is not a tab opens Home. A player's Tasks tab lists their own tasks; the coach's Tasks tab also opens with a board of the team's done, left and overdue. |
-| 100103 | — | `TASK_LINK_OPENS_THE_TASK` | ?task={id} (a task notification, carried through the old /tasks address, a next.config.mjs redirect) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it. |
+| 100103 | — | `TASK_LINK_OPENS_THE_TASK` | ?task={id} (a task notification, carried through the old /tasks address, a next.config.mjs redirect) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it with a still wash until the row is used (first paint is still, MOTION-AND-VISUAL 3.5; the fade it once played is gone). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it. |
 
 ## 02 — Initial loading / skeleton
 
@@ -92,6 +92,8 @@ search or filter, so it has no filtered empty state.
 | 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step) |
 | 100415 | CH-10314 | `NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN` | New announcement: files that players can't open are left out of the attach list |
 | 100416 | CH-10315 | `PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A` | Plan a trip: nobody chosen has a class during the trip |
+| 100490 | CH-10390 | `A_LINK_TO_A_TASK_THAT_ISNT` | A link to a task (`?task=`) that isn't on the loaded list, when the list is complete and read without error (GAP-S-26) |
+| 100491 | CH-10391 | `A_LINK_TO_A_TRIP_THAT_ISNT` | A link to a trip (`?trip=`) that isn't loaded (GAP-S-26) |
 
 ## 05 — Validation
 
@@ -170,7 +172,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 100701 | — | `WRITES_REFUSE_OFFLINE` | Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab. |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 

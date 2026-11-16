@@ -35,7 +35,7 @@
   height: 36px;
   padding: 0 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-25);
   color: var(--ch-text-secondary);
   font: var(--ch-type-14-medium);

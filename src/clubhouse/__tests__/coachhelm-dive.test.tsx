@@ -58,6 +58,7 @@ import { toChInsight } from '../data/coachhelm-map';
 import { speak } from '../data/coachhelm-voice';
 import { DeepDive, heroLine } from '../screens/coachhelm/views/DeepDive';
 import { DiveSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { underSwitch } from '../screens/coachhelm/__tests__/under-switch';
 import { PREVIEW_TOUR, puttBalanced } from '../preview/fixtures-coachhelm';
 import { ENGINE_CLEARED, PREVIEW_DIVE_CLEARED, PREVIEW_DIVE_MANY_CLEARED } from '../preview/fixtures-coachhelm-engine';
 import {
@@ -340,13 +341,15 @@ describe('the deep dive as the page draws it', () => {
     expect(word(node('improving', 1.5, -1.5))).toMatchObject({ word: 'Improving', tone: 'good' });
     expect(word(node('declining', -1.5, 1.5))).toMatchObject({ word: 'Slipping', tone: 'warn' });
     expect(word(node('steady', 0.1, 0.05))).toMatchObject({ word: 'No clear change', tone: 'plain' });
-    // Each leg is judged against its own spread, not the total's (review of #2361): +1.5 on putting clears putting's error (about
-    // 1.3), where against the total's (about 2.4) it would not.
-    expect(word(node('improving', 0.5, -1.0))).toMatchObject({ word: 'Improving', tone: 'good' });
+    // Each leg is judged against its own spread, not the total's (review of #2361): +3.0 on putting clears two of putting's errors
+    // (about 1.3 each, the 2 SE rule of the stats and charts audit, CH-05), where against the total's (about 2.4) it would not.
+    expect(word(node('improving', 1.0, -2.0))).toMatchObject({ word: 'Improving', tone: 'good' });
+    expect(word(node('improving', 0.5, -1.0))).toMatchObject({ word: 'No clear change', tone: 'plain' });
     const tee = (recentAvg: number, priorAvg: number) =>
       themesByCategory({ ...DIVE_THEMES, themes: [{ ...node('improving', recentAvg, priorAvg), category: 'tee' }] }).tee!.trend;
-    // Off the tee the spread is narrower still (1.3, an error of about 0.8): −1.0 is slipping, −0.5 is not yet.
-    expect(tee(-0.5, 0.5)).toMatchObject({ word: 'Slipping', tone: 'warn' });
+    // Off the tee the spread is narrower still (1.3, an error of about 0.8): −2.0 is past two errors and slipping, −1.0 is not yet.
+    expect(tee(-1.5, 0.5)).toMatchObject({ word: 'Slipping', tone: 'warn' });
+    expect(tee(-0.5, 0.5)).toMatchObject({ word: 'No clear change', tone: 'plain' });
     expect(tee(0, 0.5)).toMatchObject({ word: 'No clear change', tone: 'plain' });
     expect(themesByCategory(null)).toEqual({});
   });
@@ -652,6 +655,16 @@ describe('the Deep dive screen', () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
+  it('GAP-H-17 on a desk, choosing a read moves focus to its title (the detail of the split view), and the first draw takes no focus', async () => {
+    show();
+    expect(document.activeElement?.tagName).not.toBe('H2');
+    await userEvent.click(within(rail()).getByRole('button', { name: /Penalty strokes/ }));
+    const read = screen.getByRole('article', { name: 'Penalty strokes: 1.1 per round' });
+    const title = within(read).getByRole('heading', { level: 2 });
+    expect(title).toHaveFocus();
+    expect(title.getAttribute('tabindex')).toBe('-1');
+  });
+
   it('what was measured: the number, the metric, the dates, the evidence the Board draws, and the sample with its confidence word', () => {
     show();
     const part = within(article()).getByRole('region', { name: 'What was measured' });
@@ -879,7 +892,8 @@ describe('the Deep dive screen', () => {
   });
 
   it('CH-13280 insights that did not load say so, with Try again, never the first run', async () => {
-    render(wrap(<DeepDive load={{ status: 'failed' }} />));
+    // The page as the route composes it: the switch is the route's, above the view (N13P-18, production audit 2026-11-15 P1-19).
+    render(wrap(underSwitch('deep-dive', <DeepDive load={{ status: 'failed' }} />)));
     expect(code('CH-13280')!.textContent).toMatch(/Your insights didn’t load.*Nothing is lost/);
     expect(code('CH-13380')).toBeNull();
     expect(code('CH-13381')).toBeNull();
@@ -919,18 +933,19 @@ describe('the Deep dive screen', () => {
     expect(code('CH-13930')).toBeNull();
   });
 
-  it('CH-13480 loading: the page’s own shape, busy and named, with the sub-navigation’s place held', () => {
+  it('CH-13480 loading: the page’s own shape, busy and named; the switch is not in it (the route holds it above the view, N13P-18)', () => {
     render(wrap(<DiveSkeleton />));
     const main = screen.getByRole('main', { name: 'Loading your deep dive' });
     expect(main.getAttribute('aria-busy')).toBe('true');
     expect(code('CH-13480')).not.toBeNull();
-    expect(main.querySelector('.ch-hv-sk-tabs')).not.toBeNull();
+    expect(main.querySelector('.ch-hv-sk-tabs')).toBeNull();
     expect(main.querySelector('.ch-hd-sk__dos')).not.toBeNull();
     expect(main.querySelectorAll('.ch-hd-sk__it').length).toBeGreaterThanOrEqual(5);
   });
 
   it('CH-13930 the sub-navigation has Deep dive as the current view, and a choice is a route change', async () => {
-    show();
+    // The switch is the route's, mounted once above the view (N13P-18, production audit 2026-11-15 P1-19).
+    render(wrap(underSwitch('deep-dive', <DeepDive load={diveLoad(PREVIEW_DIVE)} initialId={null} />)));
     const radios = within(screen.getByRole('radiogroup', { name: 'CoachHelm view' })).getAllByRole('radio');
     expect(radios.map((r) => [r.textContent, r.getAttribute('aria-checked')])).toEqual([
       ['Board', 'false'],
@@ -973,7 +988,8 @@ describe('the Deep dive on the phone', () => {
   const show = (initialId: string | null = null) => render(wrap(<DeepDive load={diveLoad(PREVIEW_DIVE)} initialId={initialId} />));
 
   it('its own layout: the same page under the top bar, the views as chips, and the list with no read beside it', () => {
-    show();
+    // The chips are the route's switch, a row above the view (N13P-18).
+    render(wrap(underSwitch('deep-dive', <DeepDive load={diveLoad(PREVIEW_DIVE)} initialId={null} />)));
     expect(document.querySelector('.ch-hl.is-phone')).not.toBeNull();
     expect(document.querySelector('.ch-hv-tabs.is-phone .ch-hv-chips')).not.toBeNull();
     expect(screen.queryByRole('article')).toBeNull();
