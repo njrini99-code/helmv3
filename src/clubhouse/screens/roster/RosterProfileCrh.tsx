@@ -45,7 +45,7 @@ export function RosterProfileCrh({
   const note = rowNote({ ...p, availability: 'available' }, statsError);
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${p.id}`);
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
-  const roundsHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season&tab=rounds`);
+  const roundsHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season&holes=all&tab=rounds`);
   const year = yearKeyOf(p.gradYear, clock);
   const line = yearLineOf(p.gradYear, clock);
   const out = p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null;

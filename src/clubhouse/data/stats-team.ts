@@ -347,12 +347,18 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const weekKeys = [...new Set(windowRounds.map((r) => weekOf(r.round_date)))].sort().slice(-10);
   const inWeek = (rs: ChRound[], wk: string) => rs.filter((r) => weekOf(r.round_date) === wk);
   const avgOf = (rs: ChRound[], pick: (r: ChRound) => number | null) => weightedMean(rs, pick);
+  // The score lens of the trends is judged against par, per 18 (prod audit 2026-11-15, CH-01): a week at a par-72 course drew two
+  // strokes worse than the same golf at a par-70, so a run of easier courses read as the team improving. Raw strokes stay beside it
+  // (`score`, `scoreMean`) for the tooltip and the scoring average; `toPar`, `toParMean` and every score halves read this.
+  const toParOf = (r: ChRound) => r.score_to_par;
   const weekRows = (wk: string) => rowsFor(inWeek(holeWindow, wk));
   // Scrambling's mark is the team's own earlier period, not a Tour figure: it is named so, and the bar is coloured only when the
   // change clears its standard error (review of #2361), as the change chip beside it is.
-  const scrambleDelta = steady(scramble) ? d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')) : null;
-  const scrambleSe = steady(scramble) ? rateSe('scrambles_converted', 'scramble_attempts') : null;
+  // The chip is the printed rate less the printed "Previous" (prod audit 2026-11-15, STATS-TS-06: 33% against "Previous 29%" with a
+  // "+2" chip, because the chip set the paired players' rate against it). One comparison, the one the card shows.
   const scrambleRef = hasPrev ? rate(prev, 'scrambles_converted', 'scramble_attempts') : null;
+  const scrambleDelta = steady(scramble) ? d(scramble.value, scrambleRef) : null;
+  const scrambleSe = steady(scramble) && hasPrev ? changeSe(roundRates(cur, 'scrambles_converted', 'scramble_attempts'), roundRates(prev, 'scrambles_converted', 'scramble_attempts'), null) : null;
   const scrambleGauge: ChGauge = {
     kind: 'rate',
     ref: scrambleRef,
@@ -411,22 +417,28 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
         first: p.first_name || fullName(p),
         sg: weekKeys.map((wk) => avgOf(inWeek(mineHoles, wk), (r) => r.strokes_gained_total)),
         score: weekKeys.map((wk) => avgOf(inWeek(mine, wk), (r) => r.total_score)),
-        // The note on a chosen player's line (A1): their weeks' halves, from the rounds behind them.
+        toPar: weekKeys.map((wk) => avgOf(inWeek(mine, wk), toParOf)),
+        // The note on a chosen player's line (A1): their weeks' halves, from the rounds behind them, judged against par (CH-01).
         sgHalves: roundHalves(weekKeys.map((wk) => inWeek(mineHoles, wk)), sgOf, 'sg'),
-        scoreHalves: roundHalves(weekKeys.map((wk) => inWeek(mine, wk)), (r) => r.total_score, 'score'),
+        scoreHalves: roundHalves(weekKeys.map((wk) => inWeek(mine, wk)), toParOf, 'score'),
         // The window's own mean (what the list is sorted by), not the last week's: strokes gained needs three rounds, as in the grid.
         sgMean: effectiveCount(mineHoles, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(mineHoles, (r) => r.strokes_gained_total) : null,
         scoreMean: weightedMean(mine, (r) => r.total_score),
+        toParMean: weightedMean(mine, toParOf),
       };
     })
     .filter((s) => s.score.some((v) => v != null));
   // Each leg's weeks read the players at the floor, as the leg totals do (A4).
+  // A team trend compares each player with themselves (NP-01, `roundHalves`).
+  const byPlayerId = (r: ChRound) => r.player_id;
   const legWeeks = Object.fromEntries(
     LEGS.map((leg, i) => [leg, weekKeys.map((wk) => avgOf(inWeek(sgWindow, wk), (r) => sgLegs(r)[i] ?? null))]),
   ) as Record<ChLeg, Array<number | null>>;
-  const legHalves = Object.fromEntries(LEGS.map((leg, i) => [leg, roundHalves(weekKeys.map((wk) => inWeek(sgWindow, wk)), (r) => sgLegs(r)[i] ?? null, 'sg')])) as Record<ChLeg, ChHalves | null>;
-  // The phone's round days: the last ten with a round, and the rounds behind each.
-  const dayKeys = [...new Set(windowRounds.map((r) => r.round_date))].sort().slice(-10);
+  const legHalves = Object.fromEntries(LEGS.map((leg, i) => [leg, roundHalves(weekKeys.map((wk) => inWeek(sgWindow, wk)), (r) => sgLegs(r)[i] ?? null, 'sg', byPlayerId)])) as Record<ChLeg, ChHalves | null>;
+  // The round days: every day in the window with a round, and the rounds behind each. The headline averages the whole window, so the
+  // line and its round-day mean draw the whole window too (prod audit 2026-11-15, STATS-P-04: "75.7" beside "Round-day avg 75.3"
+  // when the line kept only the last ten days).
+  const dayKeys = [...new Set(windowRounds.map((r) => r.round_date))].sort();
   const onDay = (d: string) => windowRounds.filter((r) => r.round_date === d);
 
   // Player x leg grid.
@@ -460,16 +472,18 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     days: dayKeys.map((d) => {
       const on = onDay(d);
       // `n`: the whole rounds the day's average rests on, so the phone's mean weighs a day of six rounds above a day of one (A8.10).
-      return { label: shortDate(d), date: d.slice(0, 10), score: avgOf(on, (r) => r.total_score), n: effectiveCount(on, (r) => r.total_score) };
+      return { label: shortDate(d), date: d.slice(0, 10), score: avgOf(on, (r) => r.total_score), n: effectiveCount(on, (r) => r.total_score), toPar: avgOf(on, toParOf) };
     }),
-    daysHalves: roundHalves(dayKeys.map(onDay), (r) => r.total_score, 'score'),
+    daysHalves: roundHalves(dayKeys.map(onDay), toParOf, 'score', byPlayerId),
     team: {
       sg: weekKeys.map((wk) => avgOf(inWeek(sgWindow, wk), sgOf)),
       score: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)),
       sgMean: sgTotal,
       scoreMean: scoring,
-      sgHalves: roundHalves(weekKeys.map((wk) => inWeek(sgWindow, wk)), sgOf, 'sg'),
-      scoreHalves: roundHalves(weekKeys.map((wk) => inWeek(windowRounds, wk)), (r) => r.total_score, 'score'),
+      sgHalves: roundHalves(weekKeys.map((wk) => inWeek(sgWindow, wk)), sgOf, 'sg', byPlayerId),
+      scoreHalves: roundHalves(weekKeys.map((wk) => inWeek(windowRounds, wk)), toParOf, 'score', byPlayerId),
+      toPar: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), toParOf)),
+      toParMean: toPar,
     },
     players: playerSeries,
     legWeeks,

@@ -46,6 +46,7 @@ import {
 } from '@/lib/coachhelm/v3/insight-visibility';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
+import { trustedExposure } from '@/lib/coachhelm/v3/causality/exposure-scope';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -375,10 +376,8 @@ async function handle(): Promise<NextResponse> {
         insight_id: string;
         shown_at: string;
       }>((from, to) =>
-        sb
-          .from('golf_insight_exposure')
-          .select('insight_id, shown_at')
-          .in('insight_id', shotLevelPageIds)
+        // Prefetch-era Team Hub rows are not evidence of a view (`exposure-scope.ts`, PMAC-01).
+        trustedExposure(sb.from('golf_insight_exposure').select('insight_id, shown_at').in('insight_id', shotLevelPageIds))
           .order('shown_at', { ascending: true })
           .order('id', { ascending: true })
           .range(from, to),

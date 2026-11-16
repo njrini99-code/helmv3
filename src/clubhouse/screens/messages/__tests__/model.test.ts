@@ -87,3 +87,12 @@ describe('isGroupRow (audit L4)', () => {
     expect(directWith(convs, 'p1')).toBeUndefined();
   });
 });
+
+// Prod audit 2026-11-15, DM-02 / MSG-L-08: a QA announcement showed in Messages while Team Hub hid it. Messages leaves out what Team Hub leaves out.
+describe('shownAnnouncements', () => {
+  it('leaves out an announcement marked is_test and keeps the rest in order', async () => {
+    const { shownAnnouncements } = await import('../model');
+    const row = (id: string, is_test: boolean | null) => ({ id, title: id, body: '', created_at: '2026-11-15T12:00:00Z', is_test }) as unknown as Parameters<typeof shownAnnouncements>[0][number];
+    expect(shownAnnouncements([row('a', false), row('qa', true), row('b', null)]).map((a) => a.id)).toEqual(['a', 'b']);
+  });
+});

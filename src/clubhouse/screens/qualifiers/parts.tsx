@@ -11,13 +11,13 @@ import { plural, pluralWord } from '../../lib/plural';
 /**
  * Live, Upcoming or Concluded (the list's own word for a finished one). Live is a static dot: no pulse (D-33). A live
  * qualifier past its last day is "Waiting on n rounds" (or "Past last day"), never Live (P009-D3, F-0068): no dot, since nothing about it is
- * live.
+ * live. A player reads "Closed · awaiting coach’s final" there instead (N13P-51).
  */
-export function StatusPill({ status, ended = null }: { status: ChQStatus; ended?: { outstanding: number | null } | null }) {
+export function StatusPill({ status, ended = null, viewer }: { status: ChQStatus; ended?: { outstanding: number | null } | null; viewer: 'coach' | 'player' }) {
   if (ended) {
     return (
       <span className="ch-qf-status">
-        <Badge tone="neutral">{endedLabel(ended)}</Badge>
+        <Badge tone="neutral">{endedLabel(ended, viewer)}</Badge>
       </span>
     );
   }

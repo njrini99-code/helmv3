@@ -1,8 +1,9 @@
-import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { DEFAULT_MIN_PLAYS, rankHoleAnalyses } from '@/lib/golf/worst-hole-ranking';
 import type { HoleAnalysis } from '@/app/golf/actions/stats-data-types';
 import { shortDate, type ChRound } from './season';
-import { hasHoleScores, holeRounds } from './round-scope';
+import { holeRounds, roundKindOf } from './round-scope';
+import { pooledRate, roundCount, roundRate } from './figure-window';
+import type { ChRoundCache } from './stats-common';
 import { effectiveCount, hasScore, per18, weightedMean, windowChangeSe } from './stats-weight';
 import { changeSe } from '../lib/stats-signal';
 
@@ -18,7 +19,14 @@ import { changeSe } from '../lib/stats-signal';
  *
  * Scores (the best score and to par, the score series, the scoring average) count a round posted as a total only; greens,
  * fairways and putts never do (Q-123): a round marked `total_only` has no value for them, whatever its row holds.
+ *
+ * Greens, fairways and putts come from each round's stats row (`golf_round_stats_cache`, the caller's `rows`), never the round
+ * header's `total_gir` / `total_fairways_hit` / `total_putts` (launch readiness 2026-11-15, DF-P-01): the 17 Oct GIR rule change
+ * rewrote the rows and not the headers, so My stats' table and its compare card printed two GIR figures for the same rounds.
  */
+
+/** Each round's stats row by round id: the one source of a round's greens, fairways and putts. */
+export type ChStatsRows = ReadonlyMap<string, ChRoundCache>;
 
 const COURSE_FALLBACK = 'Course not recorded';
 
@@ -39,22 +47,23 @@ function oldestFirst(rounds: ChRound[]): ChRound[] {
   return rounds.filter(hasScore).sort((a, b) => (a.round_date < b.round_date ? -1 : a.round_date > b.round_date ? 1 : a.id.localeCompare(b.id)));
 }
 
-export function girPct(r: ChRound): number | null {
-  if (!hasHoleScores(r)) return null;
-  return r.total_gir != null && r.total_gir_possible != null && r.total_gir_possible > 0 ? Math.round((r.total_gir / r.total_gir_possible) * 1000) / 10 : null;
+const pct1 = (p: { made: number; total: number } | null): number | null => (p ? Math.round((p.made / p.total) * 1000) / 10 : null);
+
+/** A round's greens in regulation, in percent to one decimal, from its stats row; null for a round posted as a total only or with no row. */
+export function girPct(r: ChRound, rows: ChStatsRows): number | null {
+  return pct1(roundRate(r, rows, 'gir'));
 }
-export function fairwayPct(r: ChRound): number | null {
-  if (!hasHoleScores(r)) return null;
-  return r.total_fairways_hit != null && r.total_fairways != null && r.total_fairways > 0 ? Math.round((r.total_fairways_hit / r.total_fairways) * 1000) / 10 : null;
+export function fairwayPct(r: ChRound, rows: ChStatsRows): number | null {
+  return pct1(roundRate(r, rows, 'fairways'));
 }
 
-/** A round's putts: a hole-level count, so none for a round posted as a total only. */
-function puttsOf(r: ChRound): number | null {
-  return hasHoleScores(r) && r.total_putts != null && r.total_putts > 0 ? r.total_putts : null;
+/** A round's putts from its stats row: a hole-level count, so none for a round posted as a total only or with no putt recorded. */
+function puttsOf(r: ChRound, rows: ChStatsRows): number | null {
+  return roundCount(r, rows, 'putts');
 }
 
 /** Best score, best to par, best GIR and fewest putts over the rounds; a round with no value for a figure is not in it. */
-export function personalBests(rounds: ChRound[]): ChBests {
+export function personalBests(rounds: ChRound[], rows: ChStatsRows): ChBests {
   const list = oldestFirst(rounds);
   const best = (pick: (r: ChRound) => number | null, lowerIsBetter: boolean): ChBest | null => {
     let top: { r: ChRound; v: number } | null = null;
@@ -68,8 +77,8 @@ export function personalBests(rounds: ChRound[]): ChBests {
   return {
     score: best((r) => r.total_score, true),
     toPar: best((r) => r.score_to_par, true),
-    gir: best(girPct, false),
-    putts: best(puttsOf, true),
+    gir: best((r) => girPct(r, rows), false),
+    putts: best((r) => puttsOf(r, rows), true),
   };
 }
 
@@ -92,7 +101,7 @@ export interface ChSeries {
 }
 
 /** One point per round, oldest first, a score or putt count per 18 holes (a nine-hole round's doubled); a round with no value for a figure has no point in it. */
-export function perRoundSeries(rounds: ChRound[]): ChSeries {
+export function perRoundSeries(rounds: ChRound[], rows: ChStatsRows): ChSeries {
   const list = oldestFirst(rounds);
   const points = (pick: (r: ChRound) => number | null): ChSeriesPoint[] =>
     list.flatMap((r) => {
@@ -103,10 +112,10 @@ export function perRoundSeries(rounds: ChRound[]): ChSeries {
   return {
     avg: { score: window.avg, gir: window.gir, fairway: window.fairways, putts: window.putts },
     score: points((r) => (r.total_score == null ? null : per18(r.total_score, r.holes_played))),
-    gir: points(girPct),
-    fairway: points(fairwayPct),
+    gir: points((r) => girPct(r, rows)),
+    fairway: points((r) => fairwayPct(r, rows)),
     putts: points((r) => {
-      const p = puttsOf(r);
+      const p = puttsOf(r, rows);
       return p == null ? null : per18(p, r.holes_played);
     }),
   };
@@ -132,36 +141,23 @@ export interface ChCompare {
 }
 
 /** Scoring average and putts per 18, GIR and fairways over a set of rounds: summed numerators over summed denominators, never a mean of percentages. */
-function periodFigures(rounds: ChRound[]): { avg: number | null; gir: number | null; fairways: number | null; putts: number | null } {
+function periodFigures(rounds: ChRound[], rows: ChStatsRows): { avg: number | null; gir: number | null; fairways: number | null; putts: number | null } {
   const list = rounds.filter(hasScore);
-  let gir = 0;
-  let girOpp = 0;
-  let fw = 0;
-  let fwOpp = 0;
-  for (const r of holeRounds(list)) {
-    if (r.total_gir != null && r.total_gir_possible != null) {
-      gir += r.total_gir;
-      girOpp += r.total_gir_possible;
-    }
-    if (r.total_fairways_hit != null && r.total_fairways != null) {
-      fw += r.total_fairways_hit;
-      fwOpp += r.total_fairways;
-    }
-  }
+  const holes = holeRounds(list);
   const round1 = (v: number | null) => (v == null ? null : Math.round(v * 10) / 10);
   return {
     avg: round1(weightedMean(list, (r) => r.total_score)),
-    gir: girOpp > 0 ? round1((gir / girOpp) * 100) : null,
-    fairways: fwOpp > 0 ? round1((fw / fwOpp) * 100) : null,
-    putts: round1(weightedMean(list, puttsOf)),
+    gir: round1(pooledRate(holes, rows, 'gir').pct),
+    fairways: round1(pooledRate(holes, rows, 'fairways').pct),
+    putts: round1(weightedMean(list, (r) => puttsOf(r, rows))),
   };
 }
 
 /** The window's rounds against the window before them; null when there is no earlier window to compare with. */
-export function windowCompare(last: ChRound[], previous: ChRound[] | null): ChCompare | null {
+export function windowCompare(last: ChRound[], previous: ChRound[] | null, rows: ChStatsRows): ChCompare | null {
   if (!previous) return null;
-  const a = periodFigures(last);
-  const b = periodFigures(previous);
+  const a = periodFigures(last, rows);
+  const b = periodFigures(previous, rows);
   const lastScored = last.filter(hasScore);
   const prevScored = previous.filter(hasScore);
   // A rate's spread is its per-round rates' (a nine-hole round's 50% is 50%, never doubled), measured from five rounds.
@@ -174,9 +170,9 @@ export function windowCompare(last: ChRound[], previous: ChRound[] | null): ChCo
     previousHoleRounds: holeRounds(previous.filter(hasScore)).length,
     rows: [
       { label: 'Scoring avg', last: a.avg, previous: b.avg, unit: '', digits: 1, lowerIsBetter: true, se: windowChangeSe(lastScored, prevScored, (r) => r.total_score, 'score') },
-      { label: 'Greens in regulation', last: a.gir, previous: b.gir, unit: '%', digits: 1, lowerIsBetter: false, se: rateSe(girPct) },
-      { label: 'Fairways hit', last: a.fairways, previous: b.fairways, unit: '%', digits: 1, lowerIsBetter: false, se: rateSe(fairwayPct) },
-      { label: 'Putts per round', last: a.putts, previous: b.putts, unit: '', digits: 1, lowerIsBetter: true, se: windowChangeSe(holeRounds(lastScored), holeRounds(prevScored), puttsOf, null) },
+      { label: 'Greens in regulation', last: a.gir, previous: b.gir, unit: '%', digits: 1, lowerIsBetter: false, se: rateSe((r) => girPct(r, rows)) },
+      { label: 'Fairways hit', last: a.fairways, previous: b.fairways, unit: '%', digits: 1, lowerIsBetter: false, se: rateSe((r) => fairwayPct(r, rows)) },
+      { label: 'Putts per round', last: a.putts, previous: b.putts, unit: '', digits: 1, lowerIsBetter: true, se: windowChangeSe(holeRounds(lastScored), holeRounds(prevScored), (r) => puttsOf(r, rows), null) },
     ],
   };
 }
@@ -196,8 +192,10 @@ export function pressureGap(rounds: ChRound[]): ChPressure {
   const press: ChRound[] = [];
   const prac: ChRound[] = [];
   for (const r of rounds.filter(hasScore)) {
-    if (r.round_type == null || r.score_to_par == null) continue;
-    (roundTypeFromDb(r.round_type) === 'practice' ? prac : press).push(r);
+    // DF-C-18: a round with no type counts in the averages but is neither a named competition nor practice (`roundKindOf`).
+    const kind = roundKindOf(r);
+    if (kind == null || r.score_to_par == null) continue;
+    (kind === 'practice' ? prac : press).push(r);
   }
   const toPar = (r: ChRound) => r.score_to_par;
   const pressWhole = effectiveCount(press, toPar);

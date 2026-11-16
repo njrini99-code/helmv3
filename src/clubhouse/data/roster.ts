@@ -32,7 +32,7 @@ import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { playerStrokesGained, roundsForFigures } from './figure-window';
 import { sgWindowOf, type ChSgWindow } from './sg-window';
 import { tourForGender } from './stats-common';
-import { QUIET_DAYS, daysBetween as daysBetweenDates } from '../screens/home/model';
+import { QUIET_DAYS, quietDaysSince } from '../screens/home/model';
 
 /**
  * Coach Roster (Clubhouse). Server-read, final on first paint, every section
@@ -52,8 +52,13 @@ export interface ChRosterPlayer {
   handicap: number | null;
   status: 'active' | 'inactive';
   joined: string | null;
+  /** The eighteen-hole rounds this season's average reads (`roundsForFigures`, 18 holes): the early floor and the place count these. */
   rounds: number;
-  /** Every round this season, practice included (Recent rounds and "All N"); the same as `rounds` with the lane's flag off. Optional for fixtures. */
+  /**
+   * The rounds this season that count toward a score, of either length (a nine-hole round is a round): the count the page shows
+   * ("Rds", "Rounds this season", "All N") and what Stats lists on This season with both lengths (DF-C-05). Optional for fixtures,
+   * which then show `rounds`.
+   */
   roundsAll?: number;
   avg: number | null;
   sgPerRound: number | null;
@@ -155,9 +160,9 @@ export interface ChRoster {
 
 export type ChRosterHelm = { status: 'on'; byPlayer: Record<string, ChReadCount> } | { status: 'off' } | { status: 'failed' };
 
-/** Whole team-local days from a round's date (YYYY-MM-DD or an ISO timestamp) to today in the team's zone, as Home counts them (never negative). */
-function quietDaysSince(roundDate: string, now: Date, tz: string) {
-  return Math.max(0, daysBetweenDates(roundDate.slice(0, 10), isoDay(now, tz)));
+/** Whole team-local days from a round's date (YYYY-MM-DD or an ISO timestamp) to today in the team's zone: Home's own count (`quietDaysSince`). */
+function quietDaysFrom(roundDate: string, now: Date, tz: string) {
+  return quietDaysSince(roundDate, isoDay(now, tz));
 }
 
 /**
@@ -177,7 +182,7 @@ export function attentionFor(
 ): ChRosterPlayer['attention'] {
   if (availability !== 'available') return null;
   if (s.lastRoundDate) {
-    const days = quietDaysSince(s.lastRoundDate, now, tz);
+    const days = quietDaysFrom(s.lastRoundDate, now, tz);
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
   }
   if (s.status === 'slipping' && s.formChange != null && s.formChange > 0) {
@@ -250,13 +255,16 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
   const wideByPlayer = groupByPlayer(wide.rounds);
   const counted = roundsForFigures(season.rounds);
   const byPlayer = groupByPlayer(counted);
-  // Averages, form and the floors read the cut rounds; Recent rounds and "All N" list every round the player posted (SHARED: Latest rounds lists every round).
+  // Averages, form and the floors read the cut rounds' eighteens; the round count reads the cut rounds of either length (DF-C-05); Recent
+  // rounds lists every round the player posted (SHARED: Latest rounds lists every round).
   const everyRound = groupByPlayer(season.rounds);
 
   const players: ChRosterPlayer[] = members.map((m) => {
     const p = m.player;
-    const s = summarizePlayer(byPlayer.get(p.id) ?? []);
-    const every = summarizePlayer(everyRound.get(p.id) ?? []);
+    const mine = byPlayer.get(p.id) ?? [];
+    const s = summarizePlayer(mine);
+    // Newest first, either length: a nine-hole round yesterday is the latest round (DF-C-05), and says it is a nine.
+    const latest = [...(everyRound.get(p.id) ?? [])].sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : a.id.localeCompare(b.id)));
     const sg = playerStrokesGained(wideByPlayer.get(p.id) ?? []);
     const status = m.status === 'inactive' ? 'inactive' : 'active';
     const availability: ChAvailability = parseAvailability(m.availability);
@@ -275,7 +283,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
         ? `Joined ${new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(m.joined_at))}`
         : null,
       rounds: s.rounds,
-      roundsAll: every.rounds,
+      roundsAll: mine.length,
       avg: s.avg,
       sgPerRound: sg.total,
       sgLegs: sg.legs,
@@ -283,10 +291,10 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
       trend: s.trend,
       trendDates: s.trendDates,
       form: s.status,
-      recent: every.recent.slice(0, 3).map((r) => ({
+      recent: latest.slice(0, 3).map((r) => ({
         id: r.id,
         course: r.course_name ?? 'Course not recorded',
-        date: shortDate(r.round_date),
+        date: (r.holes_played ?? 18) === 9 ? `${shortDate(r.round_date)} \u00b7 9 holes` : shortDate(r.round_date),
         score: r.total_score as number,
         toPar: r.score_to_par,
       })),

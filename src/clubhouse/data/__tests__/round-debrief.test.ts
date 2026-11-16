@@ -57,6 +57,8 @@ const read = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 const history = Array.from({ length: 6 }, (_, i) => ({ id: `h${i}`, round_date: '2026-10-01', total_score: 78, front_nine: 39, back_nine: 39, holes_played: 18, total_putts: 33 + (i % 2), total_fairways_hit: 7, total_fairways: 14, total_gir: 9 + (i % 2), total_gir_possible: 18, score_to_par: 6 }));
+/** Each earlier round's stats row: greens, fairways and putts come from here (DF-P-08), as Stats reads them. */
+const statsRows = history.map((h) => ({ round_id: h.id, total_putts: h.total_putts, fairways_hit: h.total_fairways_hit, fairways_total: h.total_fairways, greens_hit: h.total_gir, greens_total: h.total_gir_possible }));
 
 beforeEach(() => {
   m.flag = true;
@@ -85,6 +87,7 @@ describe('loadRoundDebrief', () => {
   it('on, says the moved number, the top read with this round’s change, the facts and the read’s drill', async () => {
     const f = fake({
       golf_rounds: { data: history },
+      golf_round_stats_cache: { data: statsRows },
       golf_insight_drill_attachments: { data: [{ rank: 1, drill: { title: 'Wedge ladder', duration_min: 15 } }] },
       golf_player_focus_areas: { data: [{ title: 'Lag putting' }] },
     });

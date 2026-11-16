@@ -27,6 +27,12 @@ describe('the rows a draft lands between', () => {
     expect(await landingRows(client, ctx, 'create_task', {})).toEqual([{ title: 'Putting block', sub: 'Due Nov 9' }]);
     expect(calls).toContainEqual(['eq', ['team_id', 'team-1']]);
   });
+  // Launch readiness 2026-11-15, DF-P-14 and DD-14: a QA run's qualifier, task, post or trip is on no screen, so it is no neighbour.
+  it.each(['create_qualifier', 'create_task', 'create_team_announcement', 'create_trip'])('%s leaves out rows marked is_test', async (tool) => {
+    const { client, calls } = sb([]);
+    await landingRows(client, ctx, tool, {});
+    expect(calls).toContainEqual(['eq', ['is_test', false]]);
+  });
   it('a goal needs its player, and only that player’s goals are read', async () => {
     const { client, calls } = sb([]);
     await landingRows(client, ctx, 'create_goal', { player_id: 'p1' });

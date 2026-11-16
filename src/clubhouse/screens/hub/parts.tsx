@@ -23,6 +23,7 @@ import { HUB_UPLOAD_ACCEPT } from './upload-rules';
 import type { ChHubWrites } from './writes';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 import { plural } from '../../lib/plural';
+import { tripStay } from './hub-summary';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -391,7 +392,7 @@ export function TripPass({
           {!(big && t.hotel) && (
             <div>
               <dt>Stay</dt>
-              <dd>{t.hotel ?? 'Same day'}</dd>
+              <dd>{tripStay(t)}</dd>
             </div>
           )}
           {/* The big pass names the coach's travelers below; the count would say them twice. */}

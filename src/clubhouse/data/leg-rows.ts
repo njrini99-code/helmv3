@@ -1,6 +1,6 @@
 import type { ChRound } from './season';
 import { mean, type summarizePlayer } from './season';
-import { recordedPutts } from './round-scope';
+import { pooledRate, roundCount, roundRate } from './figure-window';
 import type { ChRoundCache } from './stats-common';
 import { plural } from '../lib/plural';
 import { floorRate, type FloorKind } from '../lib/stats-signal';
@@ -52,7 +52,7 @@ export const LEG_LABELS: Record<ChLegKey, [string, string]> = {
 type Pick = { made: number; total: number } | null;
 
 /** The four parts of the game over the window: a weighted rate (never a mean of percentages), a per-round trend, and one line. */
-export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, bench: Map<string, number> | null, sg: ReturnType<typeof summarizePlayer>['sgLegs'], opts: { shs?: boolean } = {}): ChPlayerLeg[] {
+export function legRows(window: ChRound[], cache: ReadonlyMap<string, ChRoundCache>, bench: Map<string, number> | null, sg: ReturnType<typeof summarizePlayer>['sgLegs'], opts: { shs?: boolean } = {}): ChPlayerLeg[] {
   const trendLength = opts.shs ? SHS_LEG_TREND : LEG_TREND;
   const oldestFirst = [...window].reverse();
   const rateOf = (pick: (r: ChRound) => Pick) => {
@@ -73,30 +73,20 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
       .filter((p): p is { made: number; total: number } => !!p && p.total > 0)
       .map((p) => (p.made / p.total) * 100)
       .slice(-trendLength);
-  const fairways = (r: ChRound): Pick => {
-    const c = cache.get(r.id);
-    if (r.total_fairways_hit != null && r.total_fairways) return { made: r.total_fairways_hit, total: r.total_fairways };
-    return c?.fairways_hit != null && c.fairways_total ? { made: c.fairways_hit, total: c.fairways_total } : null;
-  };
-  const greens = (r: ChRound): Pick => (r.total_gir != null && r.total_gir_possible ? { made: r.total_gir, total: r.total_gir_possible } : null);
-  const scrambles = (r: ChRound): Pick => {
-    const c = cache.get(r.id);
-    return c?.scrambles_converted != null && c.scramble_attempts ? { made: c.scrambles_converted, total: c.scramble_attempts } : null;
-  };
+  // One source per rate (launch readiness DF-P-01): every rate and count reads the round's stats row (`roundRate`, `roundCount`), never
+  // the `golf_rounds` columns, so the legs print what My stats' table prints for the same rounds.
+  const fairways = (r: ChRound): Pick => roundRate(r, cache, 'fairways');
+  const greens = (r: ChRound): Pick => roundRate(r, cache, 'gir');
+  const scrambles = (r: ChRound): Pick => roundRate(r, cache, 'scrambling');
   const n = window.length;
   const tee = rateOf(fairways);
   const gir = rateOf(greens);
   const scr = rateOf(scrambles);
-  // Putts as Stats counts them: a round written 0 putts has none recorded (recordedPutts, the cache's `cachedPutts` rule).
-  const putts = window.map((r) => recordedPutts(r.total_putts)).filter((v): v is number => v != null);
-  const threes = window.map((r) => cache.get(r.id)?.three_putts).filter((v): v is number => typeof v === 'number');
-  const sand = window.reduce(
-    (a, r) => {
-      const c = cache.get(r.id);
-      return c?.sand_attempts && c.sand_saves != null ? { saves: a.saves + c.sand_saves, att: a.att + c.sand_attempts } : a;
-    },
-    { saves: 0, att: 0 },
-  );
+  // Putts as Stats counts them: a round written 0 putts has none recorded (the cache's `cachedPutts` rule).
+  const puttOf = (r: ChRound) => roundCount(r, cache, 'putts');
+  const putts = window.map(puttOf).filter((v): v is number => v != null);
+  const threes = window.map((r) => roundCount(r, cache, 'threePutts')).filter((v): v is number => v != null);
+  const sand = pooledRate(window, cache, 'sand');
   const rounds = (k: number) => `${plural(k, 'round')}`;
   // Fairways and greens need two rounds with a chance at them, scrambling ten chances (FLOORS, A7), as Stats holds them.
   const floored = (kind: FloorKind, n: number, value: number | null) => {
@@ -138,7 +128,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
       sg.around,
       bench?.get('scrambling_pct') ?? null,
       trendOf(scrambles),
-      scr.total ? [`Up and down ${scr.made} of ${scr.total}`, sand.att ? `sand saves ${sand.saves} of ${sand.att}` : null].filter(Boolean).join(' · ') : null,
+      scr.total ? [`Up and down ${scr.made} of ${scr.total}`, sand.chances ? `sand saves ${sand.made} of ${sand.chances}` : null].filter(Boolean).join(' · ') : null,
     ),
     row(
       'putting',
@@ -149,7 +139,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
       sg.putting,
       bench?.get('putts_per_round') ?? null,
       window
-        .map((r) => recordedPutts(r.total_putts))
+        .map(puttOf)
         .filter((v): v is number => v != null)
         .reverse()
         .slice(-trendLength),

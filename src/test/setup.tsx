@@ -2,6 +2,33 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 import type { ComponentProps } from 'react';
+import { TEST_SUPABASE_URL, installNetworkGuard, namesHostedSupabase, pinTestEnvironment } from './network-isolation';
+
+/**
+ * No test reaches a real network or a real Supabase project (launch readiness DATA-01, 2026-11-15: unit runs sent
+ * about 3,000 failed calls a day to production). The env is pinned again for every file because a test that writes
+ * `process.env` directly leaks into the next file in its worker; the guard refuses non-loopback hosts and Supabase API
+ * paths on fetch, WebSocket, XMLHttpRequest and raw sockets. Why and how: src/test/network-isolation.ts.
+ */
+pinTestEnvironment();
+installNetworkGuard();
+if (namesHostedSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL)) {
+  throw new Error(
+    `Tests must not point at a hosted Supabase project (NEXT_PUBLIC_SUPABASE_URL is ${new URL(String(process.env.NEXT_PUBLIC_SUPABASE_URL)).host}). ` +
+      `Keep TEST_SUPABASE_URL (${TEST_SUPABASE_URL}) in src/test/network-isolation.ts local.`,
+  );
+}
+
+// The browser Supabase client is offline in every test: building it works, any call into it throws a
+// NetworkCallInTestError naming the call. A test that needs a client mocks this module itself (its vi.mock wins over
+// this one) or sets a return value on this one: vi.mocked(createClient).mockReturnValueOnce(fakeClient).
+vi.mock('@/lib/supabase/client', async (orig) => {
+  const { createOfflineSupabaseClient } = await import('./network-isolation');
+  return {
+    ...(await orig<typeof import('@/lib/supabase/client')>()),
+    createClient: vi.fn(() => createOfflineSupabaseClient()),
+  };
+});
 
 /**
  * Unmount, then let the unmount finish.
