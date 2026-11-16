@@ -249,7 +249,7 @@ function AgainstLanded({ value, failed }: { value: Promise<ChTourRow[] | null>; 
 
 function AgainstWaiting() {
   return (
-    <div className="shape" aria-busy="true" aria-label="Loading the Tour comparison">
+    <div className="shape" role="status" aria-busy="true" aria-label="Loading the Tour comparison">
       {Array.from({ length: 6 }, (_, i) => (
         <div key={i} aria-hidden="true">
           <Skeleton width={80} height={12} />
