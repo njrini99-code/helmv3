@@ -1363,6 +1363,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-16-add-event-in-place.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-16-departed-players-not-counted.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-16-player-welcome-names-new-round.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-16-scorecard-inset.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-16-team-tour.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
@@ -1420,6 +1421,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-15-quietest-players-named.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-16-handicap-own-line.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-16-roster-limit.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-16-team-tour.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
@@ -2036,6 +2038,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-switch-and-board-first-paint.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-tour-values-sourced.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-brief-week-team-clock.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-huddle-coins-inside.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-names-start-with-drawn-words.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-standing-rounds-on-file.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-tour-comparison-streams.md` | current | - | - | - | - |

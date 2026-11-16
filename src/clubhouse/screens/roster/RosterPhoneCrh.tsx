@@ -417,6 +417,7 @@ export function RosterRowCrh({
   const sg = p.sgPerRound;
   const shown = lastFive(p.trend);
   const hcp = !bySg && p.handicap != null ? `${TERMS.handicap.long} ${formatHcp(p.handicap)}` : null;
+  const lead = classLine ? <ClassStatusLine kind={classLine.kind} text={classLine.text} /> : note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : p.rosterExempt ? 'Not counted' : null;
   const early = p.avg != null && !bySg ? earlyNeed(p.rounds) : null;
   const label = [
     p.name,
@@ -449,11 +450,13 @@ export function RosterRowCrh({
                 Injured
               </span>
             ) : (
-              <span>
-                {classLine ? <ClassStatusLine kind={classLine.kind} text={classLine.text} /> : note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : p.rosterExempt ? 'Not counted' : ' '}
-                {/* ROSTER-11 (prod audit 2026-11-15): the handicap is spelled out on the subline, not an "HCP" under the average. */}
-                {hcp && <span className="ch-num">{`${note?.text || classLine || p.rosterExempt ? ' \u00b7 ' : ''}${hcp}`}</span>}
-              </span>
+              <>
+                {(lead || !hcp) && <span>{lead ?? ' '}</span>}
+                {/* ROSTER-11 (prod audit 2026-11-15): the handicap is spelled out, not an "HCP" under the average. Its own line, as
+                    Mail gives a message its subject and preview: beside the note it squeezed "4 rounds under average · Handicap
+                    5.1" into three lines of two words beside the form bars on a 390 phone (CRH-3). */}
+                {hcp && <span className="ch-num">{hcp}</span>}
+              </>
             )}
           </span>
           {kind === 'active' && (p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : p.trend.length > 0 ? <FormStubs /> : null)}
