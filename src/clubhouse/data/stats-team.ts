@@ -4,6 +4,7 @@ import { chLogServer } from '../lib/track-server';
 import { formatFixed, formatSigned } from '../lib/format';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { figureOver } from './figure-window';
+import { printedDelta } from '../lib/format';
 import { countsForScoring, currentSeasonLabel, fullName, groupByPlayer, loadSeasonRounds, loadTeamZone, mean, MIN_SG_ROUNDS, seasonStartDate, shortDate, type ChRound } from './season';
 import {
   bandPutts,
@@ -569,13 +570,6 @@ export function mostImproved(rounds: ChRound[]): { id: string; change: number } 
     if (change < 0 && (!best || change < best.change)) best = { id, change };
   }
   return best;
-}
-
-/** A change rounded to the digits it is printed at, with no negative zero. */
-export function printedDelta(delta: number, digits: number): number {
-  // The same rounding `formatSigned` prints with.
-  const v = Number(delta.toFixed(digits));
-  return v === 0 ? 0 : v;
 }
 
 export function seasonBests(

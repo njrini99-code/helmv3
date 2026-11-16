@@ -59,7 +59,7 @@ describe('seasonBests', () => {
 
 describe('printedDelta (DF-C-15)', () => {
   it('is the change as printed, so a change that prints as zero is zero', async () => {
-    const { printedDelta } = await import('../stats-team');
+    const { printedDelta } = await import('../../lib/format');
     expect(printedDelta(0.04, 1)).toBe(0);
     expect(Object.is(printedDelta(-0.04, 1), 0)).toBe(true);
     expect(printedDelta(-0.36, 1)).toBe(-0.4);
