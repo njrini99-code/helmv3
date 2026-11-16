@@ -44,7 +44,6 @@ export function Segmented<V extends string>({
   redraws = false,
   block = false,
   hook,
-  plate,
 }: {
   label: string;
   value: V;

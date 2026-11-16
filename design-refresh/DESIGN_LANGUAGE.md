@@ -88,7 +88,7 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 | `--ch-card-ring` | `rgb(28 25 18 / 0.08)` | `rgb(241 236 223 / 0.08)` | The card edge, drawn as `0 0 0 1px` (S1.4); a boundary, not a 3:1 line | 1.17 on card-bg, 1.17 on workspace | 1.25 on card-bg, 1.22 on workspace |
 | `--ch-separator` | `rgb(28 27 24 / 0.1)` | `rgb(241 236 223 / 0.1)` | Row hairlines, inset 16 from the leading edge | 1.22 on card-bg | 1.33 on card-bg |
 | `--ch-border-control` | `#85817a` | `#807b6e` | Inputs, search, chips, switch off-ring, chart track rings (S1.8, 3:1) | 3.62 on card-bg, 3.02 on workspace | 3.61 on card-bg, 4.26 on workspace |
-| `--ch-border-focus` | `#155a39` | `#6bbb8c` | Keyboard focus ring, 2px | 7.68 on card-bg, 6.41 on workspace | 6.61 on card-bg, 7.80 on workspace |
+| `--ch-border-focus` | `#1f6b45` | `#6db488` | Keyboard focus ring, 2px | 6.04 on card-bg, 5.04 on workspace | 6.19 on card-bg, 7.30 on workspace |
 
 #### Data marks
 
