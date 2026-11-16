@@ -98,7 +98,11 @@ URL Configuration). Schema changes reach production through
 
 - **Build fails:** `npm run typecheck`, `npm run lint`, then `npm run build`.
 - **Auth not working:** check the redirect URLs and the Supabase env vars.
-- **Deploy "skipped":** `scripts/vercel-ignore-build.sh` skips any build that
-  carries `VERCEL_GIT_COMMIT_REF` (Git-triggered builds); CLI deploys do not.
+- **Deploy "skipped":** `scripts/vercel-ignore-build.sh` skips any Git-source
+  build except a production build of `main`. CLI deploys (no
+  `VERCEL_GIT_COMMIT_REF`) and connector `create_deployment` calls with
+  `gitSource` on `main` and `target: production` both build. The connector
+  cannot pass build env, so the release tag falls back to
+  `VERCEL_GIT_COMMIT_SHA` (`next.config.mjs`), which is the deployed commit.
 - **Cost:** each production deploy uses Vercel build minutes; batch ready PRs
   before deploying.

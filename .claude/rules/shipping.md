@@ -21,7 +21,7 @@ checkout.
 
 - **Pushing or merging to `main` does not deploy.** `vercel.json` disables Vercel
   Git deployments for every branch, and `scripts/vercel-ignore-build.sh` skips
-  any build carrying `VERCEL_GIT_COMMIT_REF` as defense in depth.
+  any Git-source build except a production build of `main` as defense in depth.
 - **Deploy from the linked checkout** with `./node_modules/.bin/vercel deploy
   --prod` (or the Vercel connector). From an unlinked directory Vercel silently
   creates a stray project; the real project id is in
