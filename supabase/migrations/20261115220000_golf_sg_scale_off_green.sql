@@ -9,7 +9,8 @@
 -- expected to take 1.083 strokes, so holing it gains +0.083, and every putt is
 -- credited 8.3% of its expectation: about 0.14 strokes a hole, 2.5 a round,
 -- moved into putting from the shot that reached the green. The app called the
--- scale "LPGA", but it is the men's curve times a constant, not an LPGA dataset.
+-- scale "LPGA", but it is the men's curve times a constant, not an LPGA
+-- dataset.
 --
 -- WHAT CHANGES. The three-argument overload returns the putting value
 -- unscaled; every off-green lie keeps the scale. The two-argument overload has
@@ -21,7 +22,8 @@
 -- move. Within it, strokes move from putting to the shot that reached the
 -- green: 0.083 x expected(first putt), 0.08 to 0.20 a hole.
 --
--- TS MIRROR: getExpectedStrokes() in src/lib/utils/golf-stats-calculator-shots.ts
+-- TS MIRROR: getExpectedStrokes() in
+-- src/lib/utils/golf-stats-calculator-shots.ts
 -- leaves putts unscaled in the same change; src/lib/golf/sg-benchmarks.ts
 -- relabels the baseline "Men's Tour, women's estimate".
 --
@@ -30,10 +32,14 @@
 -- (it is safe for everyone). When this file is applied together with
 -- 20261115210000, run it once, after this one.
 --
+-- noqa: disable=LT05
 -- ROLLBACK: supabase/rollbacks/20261115220000_golf_sg_scale_off_green.rollback.sql
+-- noqa: enable=LT05
 -- (the body 20261115210000 leaves, verbatim), then the same RECOMPUTE.
+-- noqa: disable=LT05
 -- VERIFY: select 1 where public.sg_expected_strokes('green'::text, 1::numeric, 1.083::numeric) = public.sg_expected_strokes('green'::text, 1::numeric, 1.0::numeric) and public.sg_expected_strokes('green'::text, 1::numeric, 1.0::numeric) = 1.04;
 -- VERIFY: select 1 where public.sg_expected_strokes('fairway'::text, 100::numeric, 1.083::numeric) = 2.80 * 1.083 and public.sg_expected_strokes('tee'::text, 400::numeric, 1.0::numeric) = 3.99;
+-- noqa: enable=LT05
 
 SET LOCAL lock_timeout = '3s';
 

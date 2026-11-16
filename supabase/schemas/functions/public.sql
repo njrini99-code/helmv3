@@ -4993,18 +4993,22 @@ CREATE OR REPLACE FUNCTION public.golf_holes_set_gir_fn() RETURNS trigger
     LANGUAGE plpgsql
     SET search_path TO 'public'
     AS $$
+DECLARE
+  v_shot_to_green integer;
 BEGIN
   -- One GIR rule (20261115230000): public.golf_hole_gir, from the hole's
   -- shots when they record the whole hole, else from score minus putts. The
   -- round totals (recompute_golf_round_totals) read the same function.
   IF NEW.par IS NOT NULL AND NEW.score IS NOT NULL THEN
-    NEW.gir := public.golf_hole_gir(
-      NEW.par, NEW.score, NEW.putts,
-      public.golf_hole_shot_to_green(NEW.round_id, NEW.hole_number, NEW.score)
-    );
+    v_shot_to_green := public.golf_hole_shot_to_green(NEW.round_id, NEW.hole_number, NEW.score);
+    NEW.gir := public.golf_hole_gir(NEW.par, NEW.score, NEW.putts, v_shot_to_green);
   END IF;
   -- An up-and-down is a missed green got down in two: never on a GIR hole.
-  IF NEW.gir IS TRUE THEN
+  -- Only the shots clear one. Submit writes the holes before the shots, so
+  -- while the card alone decides, a recorded up-and-down is kept: the shots
+  -- that follow can still show a missed green (a putter from the fringe the
+  -- card counted as a putt), and the shot trigger clears it if they show a GIR.
+  IF NEW.gir IS TRUE AND v_shot_to_green IS NOT NULL THEN
     NEW.up_and_down := NULL;
   END IF;
   RETURN NEW;
@@ -5654,18 +5658,25 @@ BEGIN
     ) AS t (round_id, hole_number)
     WHERE t.round_id IS NOT NULL AND t.hole_number IS NOT NULL
   LOOP
+    -- The hole's own trigger recomputes the flag on this write and clears
+    -- an up-and-down the shots show to be on a green in regulation.
     UPDATE public.golf_holes AS gh
     SET gir = g.gir
     FROM (
-      SELECT h.id, public.golf_hole_gir(
-        h.par, h.score, h.putts,
-        public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score)
+      SELECT h.id, s.shot_to_green, public.golf_hole_gir(
+        h.par, h.score, h.putts, s.shot_to_green
       ) AS gir
       FROM public.golf_holes AS h
+      CROSS JOIN LATERAL (
+        SELECT public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score) AS shot_to_green
+      ) AS s
       WHERE h.round_id = v_round AND h.hole_number = v_hole AND h.score IS NOT NULL
     ) AS g
     WHERE gh.id = g.id
-      AND gh.gir IS DISTINCT FROM g.gir;
+      AND (
+        gh.gir IS DISTINCT FROM g.gir
+        OR (g.gir IS TRUE AND g.shot_to_green IS NOT NULL AND gh.up_and_down IS NOT NULL)
+      );
   END LOOP;
   RETURN NULL;
 END

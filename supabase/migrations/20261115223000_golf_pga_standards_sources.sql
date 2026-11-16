@@ -18,26 +18,31 @@
 -- src/clubhouse/data/stats-common.ts readTourStandards) grades a figure only
 -- when its row's source_url is set; before this file is applied the column is
 -- missing and every row grades as it does today. Once applied, every Tour
--- grade in Clubhouse (Stats, Home, CoachHelm) is withdrawn and the figures stay,
+-- grade in Clubhouse (Stats, Home, CoachHelm) is withdrawn and the figures
+-- stay,
 -- until rows are filled from cited Tour pages. The standing refresh functions,
 -- the leak maps and team intelligence read the table as before.
 --
 -- FILLING A ROW (owner's data step, one statement a row):
 --   UPDATE public.golf_pga_standards
 --   SET pga_tour_value = <the page's value>, source_url = 'https://...',
---       as_of = '<date read>', source = '<site, stat name, season>', updated_at = now()
+--       as_of = '<date read>', source = '<site, stat name, season>', updated_at
+--       = now()
 --   WHERE metric_id = '<id>' AND season = '<season>' AND tour = '<pga|lpga>';
 --
+-- noqa: disable=LT05
 -- ROLLBACK: supabase/rollbacks/20261115223000_golf_pga_standards_sources.rollback.sql
+-- noqa: enable=LT05
 -- (drops the two columns; save any filled source_url / as_of first).
+-- noqa: disable=LT05
 -- VERIFY: select 1 where (select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'golf_pga_standards' and column_name in ('source_url', 'as_of')) = 2;
 -- VERIFY: select 1 where (select count(*) from pg_constraint where conrelid = 'public.golf_pga_standards'::regclass and conname in ('golf_pga_standards_source_url_https', 'golf_pga_standards_source_dated')) = 2;
+-- noqa: enable=LT05
 
 SET LOCAL lock_timeout = '3s';
 
-ALTER TABLE public.golf_pga_standards
-  ADD COLUMN IF NOT EXISTS source_url text,
-  ADD COLUMN IF NOT EXISTS as_of date;
+ALTER TABLE public.golf_pga_standards ADD COLUMN IF NOT EXISTS source_url text;
+ALTER TABLE public.golf_pga_standards ADD COLUMN IF NOT EXISTS as_of date;
 
 DO $constraints$
 BEGIN
@@ -52,5 +57,7 @@ BEGIN
 END
 $constraints$;
 
-COMMENT ON COLUMN public.golf_pga_standards.source_url IS 'The https page that publishes pga_tour_value (SC-08). Clubhouse grades a figure against this row only when it is set; a row without one shows the figure with no Tour grade.';
-COMMENT ON COLUMN public.golf_pga_standards.as_of IS 'The date pga_tour_value was read from source_url. Required whenever source_url is set.';
+COMMENT ON COLUMN public.golf_pga_standards.source_url IS
+'The https page that publishes pga_tour_value (SC-08). Clubhouse grades a figure against this row only when it is set; a row without one shows the figure with no Tour grade.';  -- noqa: LT05
+COMMENT ON COLUMN public.golf_pga_standards.as_of IS
+'The date pga_tour_value was read from source_url. Required whenever source_url is set.';  -- noqa: LT05

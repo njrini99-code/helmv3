@@ -1,4 +1,5 @@
--- DECLARATIVE: exempt data backfill of golf_holes.gir / up_and_down and its archive table (functions and triggers mirrored in supabase/schemas)
+-- DECLARATIVE: exempt data backfill of golf_holes.gir / up_and_down and its
+--   archive table (functions and triggers mirrored in supabase/schemas)
 --
 -- One GIR rule (stats and charts audit 2026-11-15, SC-05) and no up-and-down
 -- on a green hit in regulation (SC-13).
@@ -23,10 +24,12 @@
 --       putts, NULL when neither can tell (no shots and no putt count, or an
 --       unscored hole). public.golf_hole_shot_to_green() reads the shots.
 --   (2) golf_holes_set_gir_fn writes the flag with it, and clears
---       up_and_down on a GIR hole. Its trigger also fires on writes of gir,
---       up_and_down, hole_number and round_id, so no write leaves a flag off
---       the rule. A new AFTER trigger on golf_shots refreshes the hole's flag
---       when its shots arrive or change (submit writes holes, then shots).
+--       up_and_down on a hole the shots show as a GIR (the card alone never
+--       clears one: submit writes the holes before their shots). Its trigger
+--       also fires on writes of gir, up_and_down, hole_number and round_id,
+--       so no write leaves a flag off the rule. A new AFTER trigger on
+--       golf_shots refreshes the hole's flag when its shots arrive or change
+--       (submit writes holes, then shots).
 --   (3) recompute_golf_round_totals counts total_gir and total_gir_possible
 --       with the same function, hole by hole. Everything else in its body
 --       (the 20261114090100 totals-follow-holes patch included) is unchanged.
@@ -61,11 +64,13 @@
 -- ROLLBACK: supabase/rollbacks/20261115230000_golf_one_gir_rule.rollback.sql
 --   (the old bodies and trigger, the new functions and shot trigger dropped,
 --   every archived hole restored, the touched rounds recomputed).
+-- noqa: disable=LT05
 -- VERIFY: select 1 from pg_proc where oid = to_regprocedure('public.golf_hole_gir(integer,integer,integer,integer)');
 -- VERIFY: select 1 from pg_trigger where tgname = 'golf_shots_refresh_hole_gir' and tgrelid = 'public.golf_shots'::regclass;
 -- VERIFY: select 1 where not exists (select 1 from public.golf_holes h where h.score is not null and h.gir is distinct from public.golf_hole_gir(h.par, h.score, h.putts, public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score)));
 -- VERIFY: select 1 where not exists (select 1 from public.golf_holes h where h.gir is true and h.up_and_down is not null);
 -- VERIFY: select 1 where not has_table_privilege('authenticated', 'helm_private.golf_holes_gir_fix_20261115', 'SELECT') and not has_table_privilege('anon', 'helm_private.golf_holes_gir_fix_20261115', 'SELECT');
+-- noqa: enable=LT05
 
 SET LOCAL lock_timeout = '3s';
 
@@ -91,7 +96,9 @@ $guard$;
 
 -- (1) The rule ---------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION public.golf_hole_gir(p_par integer, p_score integer, p_putts integer, p_shot_to_green integer)
+CREATE OR REPLACE FUNCTION public.golf_hole_gir(
+    p_par integer, p_score integer, p_putts integer, p_shot_to_green integer
+)
 RETURNS boolean
 LANGUAGE sql
 IMMUTABLE
@@ -108,11 +115,17 @@ AS $$
   END;
 $$;
 
-ALTER FUNCTION public.golf_hole_gir(integer, integer, integer, integer) OWNER TO postgres;
-REVOKE ALL ON FUNCTION public.golf_hole_gir(integer, integer, integer, integer) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.golf_hole_gir(integer, integer, integer, integer) TO authenticated, service_role;
+ALTER FUNCTION public.golf_hole_gir(integer, integer, integer, integer)
+OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.golf_hole_gir(integer, integer, integer, integer)
+FROM public, anon;
+GRANT EXECUTE
+ON FUNCTION public.golf_hole_gir(integer, integer, integer, integer)
+TO authenticated, service_role;
 
-CREATE OR REPLACE FUNCTION public.golf_hole_shot_to_green(p_round_id uuid, p_hole_number integer, p_score integer)
+CREATE OR REPLACE FUNCTION public.golf_hole_shot_to_green(
+    p_round_id uuid, p_hole_number integer, p_score integer
+)
 RETURNS integer
 LANGUAGE sql
 STABLE
@@ -132,28 +145,35 @@ AS $$
     AND s.hole_number = p_hole_number;
 $$;
 
-ALTER FUNCTION public.golf_hole_shot_to_green(uuid, integer, integer) OWNER TO postgres;
-REVOKE ALL ON FUNCTION public.golf_hole_shot_to_green(uuid, integer, integer) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.golf_hole_shot_to_green(uuid, integer, integer) TO authenticated, service_role;
+ALTER FUNCTION public.golf_hole_shot_to_green(uuid, integer, integer)
+OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.golf_hole_shot_to_green(uuid, integer, integer)
+FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.golf_hole_shot_to_green(uuid, integer, integer)
+TO authenticated, service_role;
 
 -- (2) The hole's flag: written by the rule, on every hole write --------------
 
 CREATE OR REPLACE FUNCTION public.golf_holes_set_gir_fn() RETURNS trigger
-    LANGUAGE plpgsql
-    SET search_path TO 'public'
-    AS $$
+LANGUAGE plpgsql
+SET search_path TO 'public'
+AS $$
+DECLARE
+  v_shot_to_green integer;
 BEGIN
   -- One GIR rule (20261115230000): public.golf_hole_gir, from the hole's
   -- shots when they record the whole hole, else from score minus putts. The
   -- round totals (recompute_golf_round_totals) read the same function.
   IF NEW.par IS NOT NULL AND NEW.score IS NOT NULL THEN
-    NEW.gir := public.golf_hole_gir(
-      NEW.par, NEW.score, NEW.putts,
-      public.golf_hole_shot_to_green(NEW.round_id, NEW.hole_number, NEW.score)
-    );
+    v_shot_to_green := public.golf_hole_shot_to_green(NEW.round_id, NEW.hole_number, NEW.score);
+    NEW.gir := public.golf_hole_gir(NEW.par, NEW.score, NEW.putts, v_shot_to_green);
   END IF;
   -- An up-and-down is a missed green got down in two: never on a GIR hole.
-  IF NEW.gir IS TRUE THEN
+  -- Only the shots clear one. Submit writes the holes before the shots, so
+  -- while the card alone decides, a recorded up-and-down is kept: the shots
+  -- that follow can still show a missed green (a putter from the fringe the
+  -- card counted as a putt), and the shot trigger clears it if they show a GIR.
+  IF NEW.gir IS TRUE AND v_shot_to_green IS NOT NULL THEN
     NEW.up_and_down := NULL;
   END IF;
   RETURN NEW;
@@ -163,7 +183,9 @@ $$;
 -- The trigger also runs when the flag itself, the up-and-down or the hole's
 -- position is written, so no write can leave a flag off the rule.
 CREATE OR REPLACE TRIGGER golf_holes_set_gir
-BEFORE INSERT OR UPDATE OF par, score, putts, gir, up_and_down, hole_number, round_id ON public.golf_holes
+BEFORE INSERT OR UPDATE OF
+par, score, putts, gir, up_and_down, hole_number, round_id
+ON public.golf_holes
 FOR EACH ROW EXECUTE FUNCTION public.golf_holes_set_gir_fn();
 
 -- The shots arrive after the holes (submit_round_atomic writes the holes,
@@ -171,11 +193,12 @@ FOR EACH ROW EXECUTE FUNCTION public.golf_holes_set_gir_fn();
 -- a hole whose flag the rule now reads differently is written; a normal round
 -- writes none. (Row level: Postgres allows transition tables on one event
 -- only, and submit writes its shots one row at a time anyway.)
-CREATE OR REPLACE FUNCTION public.golf_shots_refresh_hole_gir_fn() RETURNS trigger
-    LANGUAGE plpgsql
+CREATE OR REPLACE FUNCTION public.golf_shots_refresh_hole_gir_fn()
+RETURNS trigger
+LANGUAGE plpgsql
 SECURITY DEFINER
-    SET search_path = ''
-    AS $$
+SET search_path = ''
+AS $$
 DECLARE
   v_round uuid;
   v_hole integer;
@@ -188,37 +211,48 @@ BEGIN
     ) AS t (round_id, hole_number)
     WHERE t.round_id IS NOT NULL AND t.hole_number IS NOT NULL
   LOOP
+    -- The hole's own trigger recomputes the flag on this write and clears
+    -- an up-and-down the shots show to be on a green in regulation.
     UPDATE public.golf_holes AS gh
     SET gir = g.gir
     FROM (
-      SELECT h.id, public.golf_hole_gir(
-        h.par, h.score, h.putts,
-        public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score)
+      SELECT h.id, s.shot_to_green, public.golf_hole_gir(
+        h.par, h.score, h.putts, s.shot_to_green
       ) AS gir
       FROM public.golf_holes AS h
+      CROSS JOIN LATERAL (
+        SELECT public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score) AS shot_to_green
+      ) AS s
       WHERE h.round_id = v_round AND h.hole_number = v_hole AND h.score IS NOT NULL
     ) AS g
     WHERE gh.id = g.id
-      AND gh.gir IS DISTINCT FROM g.gir;
+      AND (
+        gh.gir IS DISTINCT FROM g.gir
+        OR (g.gir IS TRUE AND g.shot_to_green IS NOT NULL AND gh.up_and_down IS NOT NULL)
+      );
   END LOOP;
   RETURN NULL;
 END
 $$;
 
 ALTER FUNCTION public.golf_shots_refresh_hole_gir_fn() OWNER TO postgres;
-REVOKE ALL ON FUNCTION public.golf_shots_refresh_hole_gir_fn() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.golf_shots_refresh_hole_gir_fn()
+FROM public, anon, authenticated;
 
 CREATE OR REPLACE TRIGGER golf_shots_refresh_hole_gir
-AFTER INSERT OR DELETE OR UPDATE OF round_id, hole_number, shot_number, result ON public.golf_shots
+AFTER INSERT OR DELETE OR UPDATE OF
+round_id, hole_number, shot_number, result
+ON public.golf_shots
 FOR EACH ROW EXECUTE FUNCTION public.golf_shots_refresh_hole_gir_fn();
 
 -- (3) The round totals: the same rule, hole by hole --------------------------
 
-CREATE OR REPLACE FUNCTION public.recompute_golf_round_totals(p_round_id uuid) RETURNS void
-    LANGUAGE plpgsql
+CREATE OR REPLACE FUNCTION public.recompute_golf_round_totals(p_round_id uuid)
+RETURNS void
+LANGUAGE plpgsql
 SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
+SET search_path TO 'public'
+AS $$
 BEGIN
   UPDATE golf_rounds r
   SET
@@ -377,6 +411,7 @@ END
 $$;
 
 ALTER FUNCTION helm_private.golf_backfill_one_gir_rule() OWNER TO postgres;
-REVOKE ALL ON FUNCTION helm_private.golf_backfill_one_gir_rule() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION helm_private.golf_backfill_one_gir_rule()
+FROM public, anon, authenticated;
 
 SELECT helm_private.golf_backfill_one_gir_rule();

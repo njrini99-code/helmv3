@@ -9,11 +9,13 @@
 -- average number of strokes to hole out": tee, fairway, rough, sand and
 -- recovery, 10-yard rows to 100 yards and 20-yard rows to 600 (tee from 100).
 --
--- WHAT IS WRONG TODAY. sg_expected_strokes() holds 7 to 10 knots per lie, picked
+-- WHAT IS WRONG TODAY. sg_expected_strokes() holds 7 to 10 knots per lie,
+-- picked
 -- by hand in 20260606140000, and interpolates straight lines between them. At
 -- the knots it is close; between them it is off the table, e.g. (code / table):
 --   tee 280 yd 3.56 / 3.65, tee 440 yd 4.18 / 4.08, fairway 60 yd 2.63 / 2.70,
---   fairway 540 yd 4.78 / 4.66, rough 60 yd 2.81 / 2.91, sand 60 yd 2.88 / 3.15,
+--   fairway 540 yd 4.78 / 4.66, rough 60 yd 2.81 / 2.91, sand 60 yd 2.88 /
+--   3.15,
 --   sand 140 yd 3.36 / 3.22, sand 540 yd 5.36 / 5.68.
 -- Below 20 yards it held the 20-yard value, but the table publishes 10-yard
 -- rows that are lower (fairway 2.18, rough 2.34, sand 2.43), so a short chip
@@ -49,11 +51,15 @@
 -- 20260930150000 and 20261023170000, run it once, after this one. The Stats
 -- pages compute SG in TypeScript on read and change when the app deploys.
 --
+-- noqa: disable=LT05
 -- ROLLBACK: supabase/rollbacks/20261115210000_golf_sg_tour_curve_broadie_table.rollback.sql
+-- noqa: enable=LT05
 -- (the two bodies 20261023170000 leaves, verbatim), then the same RECOMPUTE.
+-- noqa: disable=LT05
 -- VERIFY: select 1 where public.sg_expected_strokes('tee'::text, 280::numeric, 1.0::numeric) = 3.65 and public.sg_expected_strokes('tee'::text, 440::numeric, 1.0::numeric) = 4.08 and public.sg_expected_strokes('fairway'::text, 60::numeric, 1.0::numeric) = 2.70 and public.sg_expected_strokes('sand'::text, 540::numeric, 1.0::numeric) = 5.68;
 -- VERIFY: select 1 where public.sg_expected_strokes('fairway'::text, 10::numeric, 1.0::numeric) = 2.18 and public.sg_expected_strokes('rough'::text, 5::numeric, 1.0::numeric) = 2.34 and public.sg_expected_strokes('tee'::text, 80::numeric, 1.0::numeric) = 2.92 and public.sg_expected_strokes('recovery'::text, 10::numeric, 1.0::numeric) = 3.45;
 -- VERIFY: select 1 where public.sg_expected_strokes('other'::text, 50::numeric, 1.0::numeric) = public.sg_expected_strokes('rough'::text, 50::numeric, 1.0::numeric) and public.sg_expected_strokes('other'::text, 100::numeric, 1.0::numeric) = 3.41 and public.sg_expected_strokes('green'::text, 1::numeric, 1.0::numeric) = 1.04;
+-- noqa: enable=LT05
 
 SET LOCAL lock_timeout = '3s';
 

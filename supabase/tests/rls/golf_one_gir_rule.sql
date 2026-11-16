@@ -11,7 +11,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(21);
+SELECT plan(25);
 
 -- The rule ---------------------------------------------------------------------
 
@@ -36,22 +36,25 @@ INSERT INTO public.golf_players (id, user_id, first_name) VALUES
 ON CONFLICT DO NOTHING;
 INSERT INTO public.golf_rounds (id, player_id, round_date, status, round_type, holes_played) VALUES
   ('00000000-0000-0000-5c52-00000000000a', '00000000-0000-0000-5c51-000000000001', CURRENT_DATE, 'in_progress', 'practice', 2),
+  ('00000000-0000-0000-5c52-00000000000b', '00000000-0000-0000-5c51-000000000001', CURRENT_DATE, 'in_progress', 'practice', 1),
   ('00000000-0000-0000-5c52-00000000000c', '00000000-0000-0000-5c51-000000000001', CURRENT_DATE, 'in_progress', 'practice', 1);
 
 -- Round A, written the way submit_round_atomic writes it: the holes first, then the shots.
 --   Hole 1, par 4: tee to the fairway, approach to the fringe, a putter from the
 --   fringe that the card counted as a putt (putts 2), one putt holed. Score minus
 --   putts says GIR; the shots say the green was reached with the third stroke.
+--   The player got up and down from the fringe, and submit sends that.
 --   Hole 2, par 4: a water penalty never logged as a shot (4 shot rows, score 5),
 --   so the shots do not record the whole hole and the card decides: 5 - 2 = 3, no GIR.
 SELECT set_config('request.jwt.claims', json_build_object('sub', '00000000-0000-0000-5c50-000000000001', 'role', 'authenticated')::text, true);
 INSERT INTO public.golf_holes (id, round_id, hole_number, par, score, putts, up_and_down) VALUES
-  ('00000000-0000-0000-5c53-0000000000a1', '00000000-0000-0000-5c52-00000000000a', 1, 4, 4, 2, NULL),
+  ('00000000-0000-0000-5c53-0000000000a1', '00000000-0000-0000-5c52-00000000000a', 1, 4, 4, 2, TRUE),
   ('00000000-0000-0000-5c53-0000000000a2', '00000000-0000-0000-5c52-00000000000a', 2, 4, 5, 2, NULL);
 SELECT set_config('request.jwt.claims', '', true);
 
 SELECT is((SELECT gir FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000a1'), true, 'before its shots arrive, hole 1 reads the card: GIR');
 SELECT is((SELECT total_gir FROM public.golf_rounds WHERE id = '00000000-0000-0000-5c52-00000000000a'), 1, 'and the round counts it');
+SELECT is((SELECT up_and_down FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000a1'), TRUE, 'the card alone does not clear the up-and-down submit sent: the shots are still to come');
 
 INSERT INTO public.golf_shots (id, round_id, hole_id, hole_number, shot_number, shot_type, lie_before, result, is_penalty) VALUES
   ('00000000-0000-0000-5c54-0000000000a1', '00000000-0000-0000-5c52-00000000000a', '00000000-0000-0000-5c53-0000000000a1', 1, 1, 'tee', 'tee', 'fairway', FALSE),
@@ -64,6 +67,7 @@ INSERT INTO public.golf_shots (id, round_id, hole_id, hole_number, shot_number, 
   ('00000000-0000-0000-5c54-0000000000b4', '00000000-0000-0000-5c52-00000000000a', '00000000-0000-0000-5c53-0000000000a2', 2, 4, 'putting', 'green', 'hole', FALSE);
 
 SELECT is((SELECT gir FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000a1'), false, 'SC-05: once the shots arrive, hole 1 follows them: on in 3, no GIR');
+SELECT is((SELECT up_and_down FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000a1'), TRUE, 'and its up-and-down from the fringe survives the submit');
 SELECT is((SELECT gir FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000a2'), false, 'hole 2: the unlogged penalty leaves the shots short of the score, so the card decides: no GIR');
 SELECT is((SELECT total_gir FROM public.golf_rounds WHERE id = '00000000-0000-0000-5c52-00000000000a'), 0, 'the round total follows the holes: 0 greens');
 SELECT is((SELECT total_gir_possible FROM public.golf_rounds WHERE id = '00000000-0000-0000-5c52-00000000000a'), 2, 'of 2');
@@ -77,9 +81,22 @@ SELECT is(
 DELETE FROM public.golf_shots WHERE id = '00000000-0000-0000-5c54-0000000000a2';
 SELECT is((SELECT gir FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000a1'), true, 'with a shot deleted the shots no longer record the hole, and the card decides again');
 
--- SC-13: an up-and-down is never stored on a green hit in regulation.
-UPDATE public.golf_holes SET up_and_down = TRUE WHERE id = '00000000-0000-0000-5c53-0000000000a1';
-SELECT is((SELECT up_and_down FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000a1'), NULL::boolean, 'SC-13: an up-and-down written on a GIR hole is cleared');
+SELECT is((SELECT up_and_down FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000a1'), TRUE, 'the card alone never clears a recorded up-and-down');
+
+-- SC-13: an up-and-down is never stored on a green the shots show was hit in
+-- regulation. Round B, hole 1, par 3: on the green with the tee shot, two
+-- putts; the hole arrives with an up-and-down, then its shots.
+SELECT set_config('request.jwt.claims', json_build_object('sub', '00000000-0000-0000-5c50-000000000001', 'role', 'authenticated')::text, true);
+INSERT INTO public.golf_holes (id, round_id, hole_number, par, score, putts, up_and_down) VALUES
+  ('00000000-0000-0000-5c53-0000000000d1', '00000000-0000-0000-5c52-00000000000b', 1, 3, 3, 2, TRUE);
+SELECT set_config('request.jwt.claims', '', true);
+INSERT INTO public.golf_shots (id, round_id, hole_id, hole_number, shot_number, shot_type, lie_before, result, is_penalty) VALUES
+  ('00000000-0000-0000-5c54-0000000000d1', '00000000-0000-0000-5c52-00000000000b', '00000000-0000-0000-5c53-0000000000d1', 1, 1, 'tee', 'tee', 'green', FALSE),
+  ('00000000-0000-0000-5c54-0000000000d2', '00000000-0000-0000-5c52-00000000000b', '00000000-0000-0000-5c53-0000000000d1', 1, 2, 'putting', 'green', 'green', FALSE),
+  ('00000000-0000-0000-5c54-0000000000d3', '00000000-0000-0000-5c52-00000000000b', '00000000-0000-0000-5c53-0000000000d1', 1, 3, 'putting', 'green', 'hole', FALSE);
+SELECT is((SELECT up_and_down FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000d1'), NULL::boolean, 'SC-13: once the shots show the GIR, the up-and-down is cleared');
+UPDATE public.golf_holes SET up_and_down = TRUE WHERE id = '00000000-0000-0000-5c53-0000000000d1';
+SELECT is((SELECT up_and_down FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000d1'), NULL::boolean, 'and an up-and-down written on that hole later is cleared');
 UPDATE public.golf_holes SET up_and_down = TRUE WHERE id = '00000000-0000-0000-5c53-0000000000a2';
 SELECT is((SELECT up_and_down FROM public.golf_holes WHERE id = '00000000-0000-0000-5c53-0000000000a2'), TRUE, 'and kept on a missed green');
 

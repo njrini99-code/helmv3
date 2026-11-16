@@ -15,14 +15,18 @@
 --   recompute_golf_round_totals has not touched since it began writing the
 --   column, which it always fills), and only when that round's cache next
 --   refreshes; there is no backfill. How many could move, read-only:
+-- noqa: disable=LT05
 --   COUNTS: select count(*) from public.golf_rounds r where r.status = 'completed' and r.total_fairways_hit is null and exists (select 1 from public.golf_holes h where h.round_id = r.id and h.par < 4 and h.fairway_hit);
+-- noqa: enable=LT05
 --
 -- ORDER. None; the DO guard refuses unless update_round_stats_cache is the
 --   live body this file was written on (prosrc md5
 --   168f1e542c26d5d39c76bbff8b10cac9), and refuses a second apply.
 --
+-- noqa: disable=LT05
 -- ROLLBACK: supabase/rollbacks/20261115231000_golf_round_cache_fairways_par4.rollback.sql
 -- VERIFY: select 1 from pg_proc where oid = to_regprocedure('public.update_round_stats_cache()') and md5(prosrc) = '81bdb47ae70329fc9ae898251750ca53';
+-- noqa: enable=LT05
 
 SET LOCAL lock_timeout = '3s';
 

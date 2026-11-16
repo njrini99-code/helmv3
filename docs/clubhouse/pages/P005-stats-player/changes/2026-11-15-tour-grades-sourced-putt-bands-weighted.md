@@ -1,6 +1,6 @@
 # 2026-11-15 — stats (player)
 
-## 2026-11-15 — Tour grades only against sourced rows; putting bands weighted by the putts in them (SC-08)
+## 2026-11-15 — Tour grades only on sourced rows; putt bands weighted (SC-08)
 
 ```text
 Design package: none (data rule; the layout does not change)

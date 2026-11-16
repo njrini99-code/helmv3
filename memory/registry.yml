@@ -801,6 +801,11 @@ features:
         - supabase/migrations/*pressure_gate*.sql
         - supabase/migrations/*standing_pressure_gap*.sql
         - supabase/migrations/*_standards.sql
+        # Stats audit 2026-11-15 (PR #2536, held): sand saves on the Tour
+        # definition, cited Tour standards, one GIR rule.
+        - supabase/migrations/*golf_sand_save*.sql
+        - supabase/migrations/*golf_pga_standards*.sql
+        - supabase/migrations/*golf_one_gir_rule*.sql
       tests:
         - src/app/golf/actions/__tests__/stats-data.test.ts
         - src/clubhouse/data/__tests__/stats-reads.test.ts

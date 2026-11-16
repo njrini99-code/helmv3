@@ -1,4 +1,5 @@
--- DECLARATIVE: exempt data backfill of golf_holes.sand_save and its archive table (functions mirrored in supabase/schemas/functions/helm_private.sql)
+-- DECLARATIVE: exempt data backfill of golf_holes.sand_save and its archive
+--   table (functions mirrored in supabase/schemas/functions/helm_private.sql)
 --
 -- Sand saves on the PGA Tour's definition (stats and charts audit
 -- 2026-11-15, SC-02).
@@ -47,10 +48,12 @@
 --
 -- PREVIEW (read-only, before applying): holes that would change, by
 --   direction.
---   select h.sand_save as stored, helm_private.golf_hole_sand_save_tour(h.id) as tour, count(*)
+--   select h.sand_save as stored, helm_private.golf_hole_sand_save_tour(h.id)
+--   as tour, count(*)
 --   from public.golf_holes h join public.golf_rounds r on r.id = h.round_id
 --   where r.status = 'completed' and exists (select 1 from public.golf_shots s
---     where s.hole_id = h.id and s.result = 'hole' and s.is_penalty is not true)
+--     where s.hole_id = h.id and s.result = 'hole' and s.is_penalty is not
+--     true)
 --   group by 1, 2 order by 1, 2;
 --   (The function is created by this file, so run the preview after a dry run
 --   or on a scratch copy; expected: mostly false -> true, bogeys or worse out
@@ -64,6 +67,7 @@
 --
 -- pgTAP: supabase/tests/rls/golf_sand_save_tour_backfill.sql
 --
+-- noqa: disable=LT05
 -- VERIFY: select 1 from pg_proc where oid = to_regprocedure('helm_private.golf_hole_sand_save_tour(uuid)');
 -- VERIFY: select 1 from pg_proc where oid = to_regprocedure('helm_private.golf_backfill_sand_save_tour()');
 -- VERIFY: select 1 where not exists (select 1 from helm_private.golf_holes_sand_save_fix_20261115 a
@@ -72,6 +76,7 @@
 -- VERIFY:   'helm_private.golf_holes_sand_save_fix_20261115', 'SELECT')
 -- VERIFY:   and not has_table_privilege('anon',
 -- VERIFY:   'helm_private.golf_holes_sand_save_fix_20261115', 'SELECT');
+-- noqa: enable=LT05
 
 -- db:apply runs the file in one transaction, so SET LOCAL holds for exactly
 -- this apply. The backfill row-locks the holes and rounds it touches.
@@ -117,7 +122,8 @@ AS $$
 $$;
 
 ALTER FUNCTION helm_private.golf_hole_sand_save_tour(uuid) OWNER TO postgres;
-REVOKE ALL ON FUNCTION helm_private.golf_hole_sand_save_tour(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION helm_private.golf_hole_sand_save_tour(uuid)
+FROM public, anon, authenticated;
 
 -- (2) The archive and the backfill -----------------------------------------
 
@@ -238,7 +244,8 @@ END
 $$;
 
 ALTER FUNCTION helm_private.golf_backfill_sand_save_tour() OWNER TO postgres;
-REVOKE ALL ON FUNCTION helm_private.golf_backfill_sand_save_tour() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION helm_private.golf_backfill_sand_save_tour()
+FROM public, anon, authenticated;
 
 -- (3) Run it once ------------------------------------------------------------
 
