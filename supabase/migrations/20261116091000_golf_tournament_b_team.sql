@@ -42,28 +42,41 @@
 --   then re-run sections 5 and 6 of 20261024100200 (the old functions),
 --   drop index if exists public.golf_tournament_entries_squad_slot_uq;
 --   create unique index golf_tournament_entries_slot_uq on
---     public.golf_tournament_entries (tournament_id, slot) where slot is not null;
+--     public.golf_tournament_entries (tournament_id, slot) where slot is not
+-- null;
 --   alter table public.golf_tournament_entries drop constraint if exists
 --     golf_tournament_entries_squad_slot_role;
 --   alter table public.golf_tournament_entries add constraint
---     golf_tournament_entries_slot_role check ((role = 'lineup') = (slot is not null));
+--     golf_tournament_entries_slot_role check ((role = 'lineup') = (slot is not
+-- null));
 --   alter table public.golf_tournament_entries drop column if exists squad;
---   alter table public.golf_tournament_round_lineups drop column if exists squad;
+--   alter table public.golf_tournament_round_lineups drop column if exists
+-- squad;
 --
--- VERIFY: select 1 where exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'golf_tournament_entries' and column_name = 'squad');
--- VERIFY: select 1 where exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'golf_tournament_round_lineups' and column_name = 'squad');
--- VERIFY: select 1 where to_regclass('public.golf_tournament_entries_squad_slot_uq') is not null and to_regclass('public.golf_tournament_entries_slot_uq') is null;
--- VERIFY: select 1 where not exists (select 1 from public.golf_tournament_entries where squad <> 'A');
--- VERIFY: select 1 where not has_function_privilege('anon', 'public.golf_tournament_set_entries(uuid, jsonb, integer)', 'EXECUTE');
--- VERIFY: select 1 from pg_proc where oid = 'public.golf_tournament_set_entries(uuid, jsonb, integer)'::regprocedure and not prosecdef;
+-- VERIFY: select 1 where exists (select 1 from information_schema.columns where
+-- table_schema = 'public' and table_name = 'golf_tournament_entries' and
+-- column_name = 'squad');
+-- VERIFY: select 1 where exists (select 1 from information_schema.columns where
+-- table_schema = 'public' and table_name = 'golf_tournament_round_lineups' and
+-- column_name = 'squad');
+-- VERIFY: select 1 where
+-- to_regclass('public.golf_tournament_entries_squad_slot_uq') is not null and
+-- to_regclass('public.golf_tournament_entries_slot_uq') is null;
+-- VERIFY: select 1 where not exists (select 1 from
+-- public.golf_tournament_entries where squad <> 'A');
+-- VERIFY: select 1 where not has_function_privilege('anon',
+-- 'public.golf_tournament_set_entries(uuid, jsonb, integer)', 'EXECUTE');
+-- VERIFY: select 1 from pg_proc where oid =
+-- 'public.golf_tournament_set_entries(uuid, jsonb, integer)'::regprocedure and
+-- not prosecdef;
 
 set local lock_timeout = '3s';
 
 -- 1. The squad columns. Every existing row is the A squad.
 alter table public.golf_tournament_entries
-  add column if not exists squad text not null default 'A';
+add column if not exists squad text not null default 'A';
 alter table public.golf_tournament_round_lineups
-  add column if not exists squad text not null default 'A';
+add column if not exists squad text not null default 'A';
 
 do $$
 BEGIN
@@ -75,7 +88,8 @@ BEGIN
     ALTER TABLE public.golf_tournament_round_lineups
       ADD CONSTRAINT golf_trl_squad_check CHECK (squad in ('A', 'B'));
   END IF;
-  -- An A entry has a slot exactly when it is in the lineup (the old rule); a B entry is never in the lineup (it is an
+  -- An A entry has a slot exactly when it is in the lineup (the old rule); a B
+  -- entry is never in the lineup (it is an
   -- individual or the B alternate) and may keep a slot for its order.
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'golf_tournament_entries_squad_slot_role') THEN
     ALTER TABLE public.golf_tournament_entries
@@ -89,7 +103,8 @@ BEGIN
   END IF;
 END $$;
 
--- 2. One player a slot within a squad (the old index was one a slot in the event).
+-- 2. One player a slot within a squad (the old index was one a slot in the
+-- event).
 create unique index if not exists golf_tournament_entries_squad_slot_uq
 on public.golf_tournament_entries (tournament_id, squad, slot)
 where slot is not null;
@@ -125,7 +140,8 @@ BEGIN
   IF jsonb_typeof(coalesce(p_entries, '[]'::jsonb)) <> 'array' THEN
     RAISE EXCEPTION 'invalid' USING ERRCODE = 'P0001';
   END IF;
-  -- A squad is A or B; a B entry is an individual or the B alternate; each squad has one alternate at most.
+  -- A squad is A or B; a B entry is an individual or the B alternate; each
+  -- squad has one alternate at most.
   IF EXISTS (
     SELECT 1 FROM jsonb_array_elements(coalesce(p_entries, '[]'::jsonb)) e
     WHERE coalesce(e->>'squad', 'A') NOT IN ('A', 'B')
@@ -202,11 +218,23 @@ BEGIN
   RETURN v_at;
 END $$;
 
--- 5. Grants, as 20261024100200 section 12 (create or replace keeps them; restated so the file stands alone).
-revoke all on function public.golf_tournament_set_entries(uuid, jsonb, integer) from public, anon;
-grant execute on function public.golf_tournament_set_entries(uuid, jsonb, integer) to authenticated, service_role;
-revoke all on function public.golf_tournament_lock_lineup(uuid) from public, anon;
-grant execute on function public.golf_tournament_lock_lineup(uuid) to authenticated, service_role;
+-- 5. Grants, as 20261024100200 section 12 (create or replace keeps them;
+-- restated so the file stands alone).
+revoke all on function public.golf_tournament_set_entries(
+    uuid, jsonb, integer
+) from public,
+anon;
+grant execute on function public.golf_tournament_set_entries(
+    uuid, jsonb, integer
+) to authenticated,
+service_role;
+revoke all on function public.golf_tournament_lock_lineup(uuid) from public,
+anon;
+grant execute on function public.golf_tournament_lock_lineup(
+    uuid
+) to authenticated,
+service_role;
 
 comment on column public.golf_tournament_entries.squad is
-'F-05: A (every lineup, the team''s record) or B (a B team: individuals and its alternate, never counted in the record).';
+'F-05: A (every lineup, the team''s record) or B (a B team: individuals and '
+'its alternate, never counted in the record).';

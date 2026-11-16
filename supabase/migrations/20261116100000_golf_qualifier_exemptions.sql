@@ -38,58 +38,112 @@
 --   (no other object depends on it; picks already written stay as coach's
 --   picks with their reasons)
 --
--- VERIFY: select 1 where to_regclass('public.golf_qualifier_exemptions') is not null;
--- VERIFY: select 1 where (select relrowsecurity from pg_class where oid = 'public.golf_qualifier_exemptions'::regclass);
--- VERIFY: select 1 where (select count(*) from pg_policies where schemaname = 'public' and tablename = 'golf_qualifier_exemptions') = 4;
--- VERIFY: select 1 where not has_table_privilege('anon', 'public.golf_qualifier_exemptions', 'SELECT');
+-- VERIFY: select 1 where to_regclass('public.golf_qualifier_exemptions') is not
+-- null;
+-- VERIFY: select 1 where (select relrowsecurity from pg_class where oid =
+-- 'public.golf_qualifier_exemptions'::regclass);
+-- VERIFY: select 1 where (select count(*) from pg_policies where schemaname =
+-- 'public' and tablename = 'golf_qualifier_exemptions') = 4;
+-- VERIFY: select 1 where not has_table_privilege('anon',
+-- 'public.golf_qualifier_exemptions', 'SELECT');
 
 create table if not exists public.golf_qualifier_exemptions (
-  qualifier_id uuid not null references public.golf_qualifiers (id) on delete cascade,
-  team_id uuid not null references public.golf_teams (id) on delete cascade,
-  player_id uuid not null references public.golf_players (id) on delete cascade,
-  reason text not null check (char_length(btrim(reason)) between 1 and 280),
-  created_by uuid references auth.users (id) on delete set null,
-  created_at timestamptz not null default now(),
-  primary key (qualifier_id, player_id)
+    qualifier_id uuid not null references public.golf_qualifiers (
+        id
+    ) on delete cascade,
+    team_id uuid not null references public.golf_teams (id) on delete cascade,
+    player_id uuid not null references public.golf_players (
+        id
+    ) on delete cascade,
+    reason text not null check (char_length(btrim(reason)) between 1 and 280),
+    created_by uuid references auth.users (id) on delete set null,
+    created_at timestamptz not null default now(),
+    primary key (qualifier_id, player_id)
 );
 
 comment on table public.golf_qualifier_exemptions is
-  'F-06: players a coach exempted from a qualifier before it started; each becomes a coach''s pick when selection closes. Coach-only (the reason is like a pick''s reasoning, D-33).';
+'F-06: players a coach exempted from a qualifier before it started; each '
+'becomes a coach''s pick when selection closes. Coach-only (the reason is like '
+'a pick''s reasoning, D-33).';
 
-create index if not exists golf_qualifier_exemptions_team_idx on public.golf_qualifier_exemptions (team_id);
-create index if not exists golf_qualifier_exemptions_player_idx on public.golf_qualifier_exemptions (player_id);
-create index if not exists golf_qualifier_exemptions_created_by_idx on public.golf_qualifier_exemptions (created_by);
+create index if not exists golf_qualifier_exemptions_team_idx
+on public.golf_qualifier_exemptions (
+    team_id
+);
+create index if not exists golf_qualifier_exemptions_player_idx
+on public.golf_qualifier_exemptions (
+    player_id
+);
+create index if not exists golf_qualifier_exemptions_created_by_idx
+on public.golf_qualifier_exemptions (
+    created_by
+);
 
 alter table public.golf_qualifier_exemptions enable row level security;
 
-drop policy if exists golf_qualifier_exemptions_select on public.golf_qualifier_exemptions;
-create policy golf_qualifier_exemptions_select on public.golf_qualifier_exemptions
-  for select to authenticated
-  using (public.is_golf_team_coach(team_id));
+drop policy if exists golf_qualifier_exemptions_select
+on public.golf_qualifier_exemptions;
+create policy golf_qualifier_exemptions_select
+on public.golf_qualifier_exemptions
+for select to authenticated
+using (public.is_golf_team_coach(team_id));
 
-drop policy if exists golf_qualifier_exemptions_insert on public.golf_qualifier_exemptions;
-create policy golf_qualifier_exemptions_insert on public.golf_qualifier_exemptions
-  for insert to authenticated
-  with check (
+drop policy if exists golf_qualifier_exemptions_insert
+on public.golf_qualifier_exemptions;
+create policy golf_qualifier_exemptions_insert
+on public.golf_qualifier_exemptions
+for insert to authenticated
+with check (
     public.is_golf_team_coach(team_id)
-    and exists (select 1 from public.golf_qualifiers q where q.id = qualifier_id and q.team_id = golf_qualifier_exemptions.team_id)
-    and exists (select 1 from public.golf_qualifier_entries e where e.qualifier_id = golf_qualifier_exemptions.qualifier_id and e.player_id = golf_qualifier_exemptions.player_id)
-  );
+    and exists (
+        select 1
+        from public.golf_qualifiers q
+        where
+            q.id = qualifier_id
+            and q.team_id = golf_qualifier_exemptions.team_id
+    )
+    and exists (
+        select 1
+        from public.golf_qualifier_entries e
+        where
+            e.qualifier_id = golf_qualifier_exemptions.qualifier_id
+            and e.player_id = golf_qualifier_exemptions.player_id
+    )
+);
 
-drop policy if exists golf_qualifier_exemptions_update on public.golf_qualifier_exemptions;
-create policy golf_qualifier_exemptions_update on public.golf_qualifier_exemptions
-  for update to authenticated
-  using (public.is_golf_team_coach(team_id))
-  with check (
+drop policy if exists golf_qualifier_exemptions_update
+on public.golf_qualifier_exemptions;
+create policy golf_qualifier_exemptions_update
+on public.golf_qualifier_exemptions
+for update to authenticated
+using (public.is_golf_team_coach(team_id))
+with check (
     public.is_golf_team_coach(team_id)
-    and exists (select 1 from public.golf_qualifiers q where q.id = qualifier_id and q.team_id = golf_qualifier_exemptions.team_id)
-    and exists (select 1 from public.golf_qualifier_entries e where e.qualifier_id = golf_qualifier_exemptions.qualifier_id and e.player_id = golf_qualifier_exemptions.player_id)
-  );
+    and exists (
+        select 1
+        from public.golf_qualifiers q
+        where
+            q.id = qualifier_id
+            and q.team_id = golf_qualifier_exemptions.team_id
+    )
+    and exists (
+        select 1
+        from public.golf_qualifier_entries e
+        where
+            e.qualifier_id = golf_qualifier_exemptions.qualifier_id
+            and e.player_id = golf_qualifier_exemptions.player_id
+    )
+);
 
-drop policy if exists golf_qualifier_exemptions_delete on public.golf_qualifier_exemptions;
-create policy golf_qualifier_exemptions_delete on public.golf_qualifier_exemptions
-  for delete to authenticated
-  using (public.is_golf_team_coach(team_id));
+drop policy if exists golf_qualifier_exemptions_delete
+on public.golf_qualifier_exemptions;
+create policy golf_qualifier_exemptions_delete
+on public.golf_qualifier_exemptions
+for delete to authenticated
+using (public.is_golf_team_coach(team_id));
 
 revoke all on table public.golf_qualifier_exemptions from anon, public;
-grant select, insert, update, delete on table public.golf_qualifier_exemptions to authenticated;
+grant select,
+insert,
+update,
+delete on table public.golf_qualifier_exemptions to authenticated;

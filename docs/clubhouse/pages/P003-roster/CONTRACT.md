@@ -282,7 +282,10 @@ From the shell (P001): 10901 CHANGE_LANDED.
 
 ## 10 — Warning
 
-Status: N/A — no Roster state is minted as a warning; the roster over its limit (F-05) is CH-3981, minted under 07 by its kind (30781); Approve all that only partly
+Status: N/A — no Roster state is minted as a warning; the roster over its
+
+limit (F-05) is CH-3981, minted under 07 by its kind (30781); Approve all that
+only partly
 
 lands is an error with a Retry (category 06), and the duplicate-player notice
 Fairway shows has not been rebuilt (open).

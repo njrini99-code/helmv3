@@ -1,6 +1,6 @@
 # 2026-11-15 — tournament Ties setting log
 
-## 2026-11-15 — Ties on a tournament, and the field's shared places (launch readiness F-04)
+## 2026-11-15 — Ties on a tournament, and the field's shared places (F-04)
 
 ```text
 Design package: none (launch readiness findings, 15 Nov 2026, §4 F-04); no owner board. Built from Select and the fields' help line only

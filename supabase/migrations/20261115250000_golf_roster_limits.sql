@@ -39,92 +39,140 @@
 --   drop table if exists public.golf_team_roster_limits;
 --   (no other object depends on them; the app reads them as missing again)
 --
--- VERIFY: select 1 where to_regclass('public.golf_team_roster_limits') is not null;
--- VERIFY: select 1 where to_regclass('public.golf_roster_exemptions') is not null;
--- VERIFY: select 1 where (select count(*) from pg_policies where schemaname = 'public' and tablename in ('golf_team_roster_limits', 'golf_roster_exemptions')) = 8;
--- VERIFY: select 1 where not has_table_privilege('anon', 'public.golf_roster_exemptions', 'SELECT');
+-- VERIFY: select 1 where to_regclass('public.golf_team_roster_limits') is not
+-- null;
+-- VERIFY: select 1 where to_regclass('public.golf_roster_exemptions') is not
+-- null;
+-- VERIFY: select 1 where (select count(*) from pg_policies where schemaname =
+-- 'public' and tablename in ('golf_team_roster_limits',
+-- 'golf_roster_exemptions')) = 8;
+-- VERIFY: select 1 where not has_table_privilege('anon',
+-- 'public.golf_roster_exemptions', 'SELECT');
 
 create table if not exists public.golf_team_roster_limits (
-  team_id uuid primary key references public.golf_teams (id) on delete cascade,
-  enabled boolean not null default true,
-  max_players integer not null default 9 check (max_players between 1 and 40),
-  updated_by uuid references auth.users (id) on delete set null,
-  updated_at timestamptz not null default now()
+    team_id uuid primary key references public.golf_teams (
+        id
+    ) on delete cascade,
+    enabled boolean not null default true,
+    max_players integer not null default 9 check (max_players between 1 and 40),
+    updated_by uuid references auth.users (id) on delete set null,
+    updated_at timestamptz not null default now()
 );
 
 comment on table public.golf_team_roster_limits is
-  'F-05: a team''s roster limit (NCAA DI Bylaw 17.2: 9 in golf). One row a team; absent means on at 9 for Division I, off otherwise.';
+'F-05: a team''s roster limit (NCAA DI Bylaw 17.2: 9 in golf). One row a team; '
+'absent means on at 9 for Division I, off otherwise.';
 
-create index if not exists golf_team_roster_limits_updated_by_idx on public.golf_team_roster_limits (updated_by);
+create index if not exists golf_team_roster_limits_updated_by_idx
+on public.golf_team_roster_limits (
+    updated_by
+);
 
 create table if not exists public.golf_roster_exemptions (
-  team_id uuid not null references public.golf_teams (id) on delete cascade,
-  player_id uuid not null references public.golf_players (id) on delete cascade,
-  reason text not null check (reason in ('designated', 'medical')),
-  note text check (note is null or char_length(note) <= 280),
-  created_by uuid references auth.users (id) on delete set null,
-  updated_at timestamptz not null default now(),
-  primary key (team_id, player_id)
+    team_id uuid not null references public.golf_teams (id) on delete cascade,
+    player_id uuid not null references public.golf_players (
+        id
+    ) on delete cascade,
+    reason text not null check (reason in ('designated', 'medical')),
+    note text check (note is null or char_length(note) <= 280),
+    created_by uuid references auth.users (id) on delete set null,
+    updated_at timestamptz not null default now(),
+    primary key (team_id, player_id)
 );
 
 comment on table public.golf_roster_exemptions is
-  'F-05: a player who does not count toward the team''s roster limit (designated student-athlete, or medical). Coach-only.';
+'F-05: a player who does not count toward the team''s roster limit (designated '
+'student-athlete, or medical). Coach-only.';
 
-create index if not exists golf_roster_exemptions_player_idx on public.golf_roster_exemptions (player_id);
-create index if not exists golf_roster_exemptions_created_by_idx on public.golf_roster_exemptions (created_by);
+create index if not exists golf_roster_exemptions_player_idx
+on public.golf_roster_exemptions (
+    player_id
+);
+create index if not exists golf_roster_exemptions_created_by_idx
+on public.golf_roster_exemptions (
+    created_by
+);
 
 alter table public.golf_team_roster_limits enable row level security;
 alter table public.golf_roster_exemptions enable row level security;
 
-drop policy if exists golf_team_roster_limits_select on public.golf_team_roster_limits;
+drop policy if exists golf_team_roster_limits_select
+on public.golf_team_roster_limits;
 create policy golf_team_roster_limits_select on public.golf_team_roster_limits
-  for select to authenticated
-  using (public.is_golf_team_coach(team_id) or public.is_golf_team_player(team_id));
+for select to authenticated
+using (
+    public.is_golf_team_coach(team_id) or public.is_golf_team_player(team_id)
+);
 
-drop policy if exists golf_team_roster_limits_insert on public.golf_team_roster_limits;
+drop policy if exists golf_team_roster_limits_insert
+on public.golf_team_roster_limits;
 create policy golf_team_roster_limits_insert on public.golf_team_roster_limits
-  for insert to authenticated
-  with check (public.is_golf_team_coach(team_id));
+for insert to authenticated
+with check (public.is_golf_team_coach(team_id));
 
-drop policy if exists golf_team_roster_limits_update on public.golf_team_roster_limits;
+drop policy if exists golf_team_roster_limits_update
+on public.golf_team_roster_limits;
 create policy golf_team_roster_limits_update on public.golf_team_roster_limits
-  for update to authenticated
-  using (public.is_golf_team_coach(team_id))
-  with check (public.is_golf_team_coach(team_id));
+for update to authenticated
+using (public.is_golf_team_coach(team_id))
+with check (public.is_golf_team_coach(team_id));
 
-drop policy if exists golf_team_roster_limits_delete on public.golf_team_roster_limits;
+drop policy if exists golf_team_roster_limits_delete
+on public.golf_team_roster_limits;
 create policy golf_team_roster_limits_delete on public.golf_team_roster_limits
-  for delete to authenticated
-  using (public.is_golf_team_coach(team_id));
+for delete to authenticated
+using (public.is_golf_team_coach(team_id));
 
-drop policy if exists golf_roster_exemptions_select on public.golf_roster_exemptions;
+drop policy if exists golf_roster_exemptions_select
+on public.golf_roster_exemptions;
 create policy golf_roster_exemptions_select on public.golf_roster_exemptions
-  for select to authenticated
-  using (public.is_golf_team_coach(team_id));
+for select to authenticated
+using (public.is_golf_team_coach(team_id));
 
-drop policy if exists golf_roster_exemptions_insert on public.golf_roster_exemptions;
+drop policy if exists golf_roster_exemptions_insert
+on public.golf_roster_exemptions;
 create policy golf_roster_exemptions_insert on public.golf_roster_exemptions
-  for insert to authenticated
-  with check (
+for insert to authenticated
+with check (
     public.is_golf_team_coach(team_id)
-    and exists (select 1 from public.golf_team_members m where m.team_id = golf_roster_exemptions.team_id and m.player_id = golf_roster_exemptions.player_id)
-  );
+    and exists (
+        select 1
+        from public.golf_team_members m
+        where
+            m.team_id = golf_roster_exemptions.team_id
+            and m.player_id = golf_roster_exemptions.player_id
+    )
+);
 
-drop policy if exists golf_roster_exemptions_update on public.golf_roster_exemptions;
+drop policy if exists golf_roster_exemptions_update
+on public.golf_roster_exemptions;
 create policy golf_roster_exemptions_update on public.golf_roster_exemptions
-  for update to authenticated
-  using (public.is_golf_team_coach(team_id))
-  with check (
+for update to authenticated
+using (public.is_golf_team_coach(team_id))
+with check (
     public.is_golf_team_coach(team_id)
-    and exists (select 1 from public.golf_team_members m where m.team_id = golf_roster_exemptions.team_id and m.player_id = golf_roster_exemptions.player_id)
-  );
+    and exists (
+        select 1
+        from public.golf_team_members m
+        where
+            m.team_id = golf_roster_exemptions.team_id
+            and m.player_id = golf_roster_exemptions.player_id
+    )
+);
 
-drop policy if exists golf_roster_exemptions_delete on public.golf_roster_exemptions;
+drop policy if exists golf_roster_exemptions_delete
+on public.golf_roster_exemptions;
 create policy golf_roster_exemptions_delete on public.golf_roster_exemptions
-  for delete to authenticated
-  using (public.is_golf_team_coach(team_id));
+for delete to authenticated
+using (public.is_golf_team_coach(team_id));
 
 revoke all on table public.golf_team_roster_limits from anon, public;
 revoke all on table public.golf_roster_exemptions from anon, public;
-grant select, insert, update, delete on table public.golf_team_roster_limits to authenticated;
-grant select, insert, update, delete on table public.golf_roster_exemptions to authenticated;
+grant select,
+insert,
+update,
+delete on table public.golf_team_roster_limits to authenticated;
+grant select,
+insert,
+update,
+delete on table public.golf_roster_exemptions to authenticated;

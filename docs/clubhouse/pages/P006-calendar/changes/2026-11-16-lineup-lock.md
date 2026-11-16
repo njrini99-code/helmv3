@@ -1,6 +1,6 @@
 # 2026-11-16 — tournament lineup lock log
 
-## 2026-11-16 — The tournament sheet sets the lineup lock time (launch readiness F-05)
+## 2026-11-16 — The tournament sheet sets the lineup lock time (F-05)
 
 ```text
 Design package: none (launch readiness findings, 15 Nov 2026, §4 F-05); no owner board

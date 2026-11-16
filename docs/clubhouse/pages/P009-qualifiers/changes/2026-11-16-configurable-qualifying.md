@@ -22,7 +22,7 @@ Held items:     supabase/migrations/20261115240000_golf_qualifier_rules.sql, sup
   dropped."
 - **Exempt players** (form, under Travel squad, only with a coach's pick to
   take): tick an entrant and give a reason. When selection closes each exempt
-  player becomes a coach's pick with "Exempt: <reason>", in the closer's name,
+  player becomes a coach's pick with "Exempt: (the reason)", in the closer's name,
   never past the picks. A pick for an exempt player needs no scored round
   (Q-115 is waived for them only). Once the qualifier starts the exemptions are
   fixed and the form says to give a place with a coach's pick. The reason is

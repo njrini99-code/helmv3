@@ -10261,7 +10261,7 @@
     "category": 1,
     "item": 83,
     "name": "QUALIFIER_EXEMPT_PLAYERS",
-    "meaning": "Exempt players (F-06; owner, 16 Nov 2026: 'Exempt before, from coach picks'): before the qualifier starts the coach ticks entrants under Exempt players in the form and gives each a reason (coach-only, D-33). When selection closes each becomes one of the qualifier's coach's picks with 'Exempt: <reason>', never past the picks there are; a pick for an exempt player needs no scored round (Q-115 waived for them only). Once the qualifier starts the exemptions are fixed and the form says to use a coach's pick. Needs held migration 20261116100000; before it the field is not offered.",
+    "meaning": "Exempt players (F-06; owner, 16 Nov 2026: 'Exempt before, from coach picks'): before the qualifier starts the coach ticks entrants under Exempt players in the form and gives each a reason (coach-only, D-33). When selection closes each becomes one of the qualifier's coach's picks with 'Exempt: (the reason)', never past the picks there are; a pick for an exempt player needs no scored round (Q-115 waived for them only). Once the qualifier starts the exemptions are fixed and the form says to use a coach's pick. Needs held migration 20261116100000; before it the field is not offered.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#ExemptField; src/lib/golf/qualifier-exemptions.ts; src/lib/coachhelm/v3/qualifying/service.ts#placeExemptPlayers; src/lib/coachhelm/v3/qualifying/service.ts#setCoachPick",
     "tests": [
@@ -11461,7 +11461,7 @@
     "category": 9,
     "item": 83,
     "name": "EXEMPT_PLAYERS_PLACED_AT_CLOSE",
-    "meaning": "Closing selection places each exempt entrant as a coach's pick with 'Exempt: <reason>' in the closer's name (F-06), never past the picks, leaving a pick already made; a failure is logged and the coach can still pick them (Q-115 is waived for an exempt player).",
+    "meaning": "Closing selection places each exempt entrant as a coach's pick with 'Exempt: (the reason)' in the closer's name (F-06), never past the picks, leaving a pick already made; a failure is logged and the coach can still pick them (Q-115 is waived for an exempt player).",
     "status": "implemented",
     "where": "src/lib/coachhelm/v3/qualifying/service.ts#placeExemptPlayers",
     "tests": [
@@ -11899,7 +11899,7 @@
     "category": 23,
     "item": 4,
     "name": "INTENTS_LEAVE_BREADCRUMBS",
-    "meaning": "Each intent leaves a chTrail breadcrumb before anything is sent: a filter, opening the scorecards, asking to close, asking to start selecting or to confirm, Create, Save, and the write itself by name (action qualifiers.<name>).",
+    "meaning": "Each intent leaves a chTrail breadcrumb before anything is sent: a filter, opening the scorecards, asking to close, asking to start selecting or to confirm, Create, Save, and the write itself by name (action `qualifiers.<name>`).",
     "status": "implemented",
     "where": "QualifiersList.tsx; QualifierDetail.tsx; QualifierForm.tsx; QualifierSelection.tsx; src/clubhouse/lib/use-action.ts",
     "tests": [
