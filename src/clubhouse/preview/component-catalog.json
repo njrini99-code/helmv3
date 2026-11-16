@@ -7375,6 +7375,7 @@
       "exports": [
         "Courses",
         "LiveChip",
+        "Pairings",
         "Selections",
         "StaleStandings"
       ],
