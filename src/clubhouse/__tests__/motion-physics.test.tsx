@@ -144,7 +144,7 @@ describe('OVL-02 a sheet rides the keyboard', () => {
     for (const panel of ['.ch-modal__panel', '.ch-fsheet']) {
       const esc = panel.replace(/[.]/g, '\\.');
       expect(css).toMatch(new RegExp(`body\\.keyboard-open ${esc} \\{[^}]*translate: 0 calc\\(-1 \\* var\\(--keyboard-height, 0px\\)\\);`));
-      expect(css).toMatch(new RegExp(`\\n *${esc} \\{[^}]*translate var\\(--ch-dur-keyboard\\) var\\(--ch-ease-sheet\\)`));
+      expect(css).toMatch(new RegExp(`\\n *${esc} \\{[^}]*translate var\\(--ch-dur-reveal\\) var\\(--ch-ease-ios\\)`));
     }
     // The dialogs themselves keep their translate for the finger (lib/sheet-drag.ts): no keyboard margin on them.
     expect(css).not.toMatch(/body\.keyboard-open \.ch-modal \{[^}]*margin-bottom/);
