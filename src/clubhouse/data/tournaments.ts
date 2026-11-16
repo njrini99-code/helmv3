@@ -1,4 +1,5 @@
 import 'server-only';
+import { countRoster, readRosterLimit, rosterChip, rosterOverText } from '@/lib/golf/roster-limit';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
@@ -998,11 +999,22 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
     const info = await readTeam(ctx);
     const seasonEnd = Number(seasonIdOf(info.today).slice(0, 4)) + 1;
     // Every event of the team: a player's form and how often they counted come from the other events.
-    const [read, players] = await Promise.all([readEvents(ctx, info.team.timezone), readPlayers(ctx, seasonEnd)]);
+    const [read, players, limitRead] = await Promise.all([
+      readEvents(ctx, info.team.timezone),
+      readPlayers(ctx, seasonEnd),
+      // F-05: the roster limit, counted as the Roster header counts it. Never throws: a missing table is the division default.
+      readRosterLimit(ctx.supabase, ctx.teamId, { withExemptions: ctx.role === 'coach' }),
+    ]);
     const event = read.events.find((e) => e.id === eventId);
     if (!event) return { kind: 'missing' };
     const raw = read.raws.find((r) => r.t.id === eventId);
     const lineup = event.entries.filter((x) => x.role === 'lineup');
+    const rosterCount = countRoster(
+      players.filter((p) => !p.alumni).map((p) => p.id),
+      limitRead.exemptions,
+      limitRead.limit,
+    );
+    const chip = rosterChip(rosterCount);
     return {
       kind: 'ready',
       data: {
@@ -1021,6 +1033,7 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
         version: raw?.t.version ?? null,
         qualifier: null,
         errors: {},
+        ...(chip ? { rosterLimit: { chip: rosterCount.over > 0 ? `${chip}, ${rosterCount.over} over` : chip, over: rosterCount.over, text: rosterCount.over > 0 ? rosterOverText(rosterCount) : null } } : {}),
       },
     };
   });

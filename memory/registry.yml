@@ -1277,8 +1277,10 @@ features:
         - src/app/golf/actions/player-profile-stats.ts
         - src/app/golf/actions/team-switcher.ts
         - src/app/golf/actions/team-switcher.constants.ts
+        - src/app/golf/actions/roster-limit.ts
       services:
         - src/lib/auth/**
+        - src/lib/golf/roster-limit.ts
       db:
         - supabase/migrations/*team*.sql
         - supabase/migrations/*coach_staff*.sql
@@ -1288,8 +1290,12 @@ features:
         - supabase/migrations/*organizations*.sql
         # Roster availability: the coach-only reason (held, 2026-10-22).
         - supabase/migrations/*availability_coach_notes*.sql
+        # F-05 roster limit and exemptions (held, 2026-11-16).
+        - supabase/migrations/*golf_roster_limits*.sql
       tests:
         - src/app/golf/actions/__tests__/dashboard-data.test.ts
+        - src/app/golf/actions/__tests__/roster-limit.test.ts
+        - src/lib/golf/__tests__/roster-limit.test.ts
     integrations:
       - supabase
       - team_access_control

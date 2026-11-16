@@ -161,6 +161,7 @@ sync` mints its Bridge ID.
 | --- | --- | --- | --- | --- |
 | CH-16920 | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) | A status note under the head: "Results are provisional" + "The imported leaderboard has Sofia at 73 in round 3. The scorecard says 74. Team totals use the scorecard until you confirm which is right." (and "2 more differ."). Shown, never silently picked (D-82) | `EventDesk` (`.ch-tour-desk-warn`, `role="status"`) | tournaments-desk.test › CH-16920 |
 | CH-16980 | Import results: a round in the file differs from the player’s card or submitted round | Both are shown, never one silently picked (D-82): “Round 1: the file says 73, the card says 73. Holes 1 and 5 differ.” + Keep the card / Use the file. The card is kept by default when the totals agree. A submitted round is never changed: Use the file enters the official score, and the round stays on the player’s Rounds page | `ImportResults` (`PlayerRow`) | tournaments-import.test › CH-16980 |
+| CH-16981 | Lineup builder: the roster is over its limit (F-05) | The chip beside "x of y set" reads "Roster 10 of 9, 1 over" in amber; within the limit it reads "Roster 8 of 9" with no tone, and with the limit off there is no chip. The count is the Roster header's (active players less those marked as not counting) | `loadTournamentLineup` → `rosterLimit`, `LineupBuilder` meta | roster-limit.test › CH-16981 |
 
 ## Live rounds (P-6)
 

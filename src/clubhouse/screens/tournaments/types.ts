@@ -842,6 +842,11 @@ export interface ChTourLineupData {
   version: number | null;
   qualifier: { id: string; name: string } | null;
   errors: Partial<Record<'roster' | 'qualifier' | 'projection', true>>;
+  /**
+   * F-05: the team's roster limit, as the Roster header counts it (active players less those marked as not counting).
+   * `chip` is "Roster 9 of 9"; `over` how many past the limit. Absent with the limit off, or in fixtures.
+   */
+  rosterLimit?: { chip: string; over: number; text: string | null };
 }
 
 // ── Live round (5L) ────────────────────────────────────────────────────────────────────────────────────────────

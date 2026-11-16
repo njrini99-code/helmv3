@@ -154,6 +154,13 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
         <span className="ch-num">{set}</span> of <span className="ch-num">{of}</span> set
       </TourChip>
       {data.lineup.locksAt && data.lineup.status !== 'locked' && <TourChip>Locks {tourDayTime(data.lineup.locksAt)}</TourChip>}
+      {data.rosterLimit && (
+        <span data-ch-code={data.rosterLimit.over > 0 ? 'CH-16981' : undefined}>
+          <TourChip tone={data.rosterLimit.over > 0 ? 'warn' : undefined}>
+            <span className="ch-num">{data.rosterLimit.chip}</span>
+          </TourChip>
+        </span>
+      )}
       {data.lineup.seen && (
         <TourChip>
           Seen by <span className="ch-num">{data.lineup.seen.by}</span> of <span className="ch-num">{data.lineup.seen.of}</span>

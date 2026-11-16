@@ -2303,6 +2303,33 @@
     ]
   },
   {
+    "id": 30180,
+    "page": "P003",
+    "category": 1,
+    "item": 80,
+    "name": "ROSTER_LIMIT_COUNTED_UNDER_THE_HEAD",
+    "meaning": "The coach's Roster states the team's roster limit under the head (launch readiness F-05; NCAA Division I Bylaw 17.2: 9 in golf, a conference or the coach may set fewer): '7 of 9 count toward the roster limit.', counting active players only and leaving out a player marked as not counting (a designated student-athlete or a medical exemption), who says 'Not counted' in their row. A Division I team starts on at 9 and every other team off (Set a roster limit); a saved limit (held migration 20261115250000) wins. Over the limit it says how many (CH-3981). The lineup builder states the same count (CH-16981).",
+    "status": "implemented",
+    "where": "src/lib/golf/roster-limit.ts#countRoster; src/lib/golf/roster-limit.ts#readRosterLimit; src/clubhouse/screens/roster/RosterLimit.tsx#RosterLimitLine; src/clubhouse/data/roster.ts#loadRoster",
+    "tests": [
+      "src/clubhouse/__tests__/roster-limit.test.tsx",
+      "src/lib/golf/__tests__/roster-limit.test.ts"
+    ]
+  },
+  {
+    "id": 30181,
+    "page": "P003",
+    "category": 1,
+    "item": 81,
+    "name": "MARK_A_PLAYER_WHO_DOESNT_COUNT",
+    "meaning": "A player's actions (the row menu on a computer, Player actions on the phone) offer 'Doesn’t count toward the limit…' for an active player while the limit is on and can be changed: a sheet asks why (Designated student-athlete, or Medical, can’t compete again) and says what the mark does; a marked player offers 'Count toward the roster limit'. Nothing is offered before the held migration or when who counts didn't load.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/RosterLimit.tsx#useRosterLimit; src/clubhouse/screens/roster/Roster.tsx#menuFor; src/clubhouse/screens/roster/RosterPhoneCrh.tsx#PlayerActionsCrh",
+    "tests": [
+      "src/clubhouse/__tests__/roster-limit.test.tsx"
+    ]
+  },
+  {
     "id": 30201,
     "page": "P003",
     "category": 2,
@@ -2780,6 +2807,39 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30681,
+    "page": "P003",
+    "category": 6,
+    "item": 81,
+    "name": "SAVING_THE_ROSTER_LIMIT_FAILS",
+    "chCode": "CH-3081",
+    "meaning": "Saving the roster limit fails (launch readiness F-05; the limit's sheet, from the header's Roster limit)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30682,
+    "page": "P003",
+    "category": 6,
+    "item": 82,
+    "name": "MARKING_A_PLAYER_AS_NOT_COUNTING_TOWARD",
+    "chCode": "CH-3082",
+    "meaning": "Marking a player as not counting toward the roster limit, or counting them again, fails (row menu: Doesn’t count toward the limit…, Count toward the roster limit)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30683,
+    "page": "P003",
+    "category": 6,
+    "item": 83,
+    "name": "WHO_DOESNT_COUNT_TOWARD_THE_ROSTER_LIMIT",
+    "chCode": "CH-3283",
+    "meaning": "Who doesn’t count toward the roster limit doesn’t load (F-05)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -2800,6 +2860,28 @@
     "name": "CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE",
     "chCode": "CH-3980",
     "meaning": "Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`) or no mail transport is configured, so Invite players cannot email anyone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30781,
+    "page": "P003",
+    "category": 7,
+    "item": 81,
+    "name": "THE_ROSTER_IS_OVER_ITS_LIMIT",
+    "chCode": "CH-3981",
+    "meaning": "The roster is over its limit (F-05; NCAA Division I Bylaw 17.2: 9 in golf, or the coach's own number)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30782,
+    "page": "P003",
+    "category": 7,
+    "item": 82,
+    "name": "THE_ROSTER_LIMIT_CANT_BE_CHANGED_YET",
+    "chCode": "CH-3982",
+    "meaning": "The roster limit can't be changed yet (its store, held migration 20261115250000, isn't applied)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2892,6 +2974,34 @@
     "where": "src/clubhouse/lib/use-action.ts#useAction; Roster.tsx#remove",
     "tests": [
       "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 30980,
+    "page": "P003",
+    "category": 9,
+    "item": 80,
+    "name": "ROSTER_LIMIT_SAVED",
+    "meaning": "The roster limit's sheet saves the limit on or off and its number (1 to 40): 'Roster limit set to 8' with the success haptic, and the head's count follows at once. The server writes one row a team through RLS (a coach of the team) and answers 'unavailable' before the migration is applied.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/roster-limit.ts#saveRosterLimit; src/clubhouse/screens/roster/RosterLimit.tsx#useRosterLimit",
+    "tests": [
+      "src/clubhouse/__tests__/roster-limit.test.tsx",
+      "src/app/golf/actions/__tests__/roster-limit.test.ts"
+    ]
+  },
+  {
+    "id": 30981,
+    "page": "P003",
+    "category": 9,
+    "item": 81,
+    "name": "ROSTER_EXEMPTION_SAVED",
+    "meaning": "Marking a player as not counting (or counting again) shows at once in the count and the row, and lands with 'Ava Chen doesn’t count toward the roster limit'. The server writes one row a player with the reason through RLS (a coach of the team, the player on the team), deletes it to count them again, and answers 'unavailable' before the migration is applied.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/roster-limit.ts#setRosterExemption; src/clubhouse/screens/roster/RosterLimit.tsx#useRosterLimit",
+    "tests": [
+      "src/clubhouse/__tests__/roster-limit.test.tsx",
+      "src/app/golf/actions/__tests__/roster-limit.test.ts"
     ]
   },
   {
@@ -21873,6 +21983,17 @@
     "name": "IMPORT_RESULTS_A_ROUND_IN_THE_FILE",
     "chCode": "CH-16980",
     "meaning": "Import results: a round in the file differs from the player’s card or submitted round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160781,
+    "page": "P016",
+    "category": 7,
+    "item": 81,
+    "name": "LINEUP_BUILDER_THE_ROSTER_IS_OVER_ITS",
+    "chCode": "CH-16981",
+    "meaning": "Lineup builder: the roster is over its limit (F-05)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

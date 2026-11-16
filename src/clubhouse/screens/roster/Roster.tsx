@@ -43,6 +43,7 @@ import { availabilityCopy, RosterPeek, type AvailabilityControl } from './Roster
 import { RequestsRow, RequestsSheetCrh, RosterPhoneCrh } from './RosterPhoneCrh';
 import { RosterLeaders } from './RosterLeaders';
 import { RosterTeamCard } from './RosterTeamCard';
+import { RosterLimitLine, useRosterLimit } from './RosterLimit';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
 import { useHomeDayRollover } from '../home/use-day-rollover';
 import { Tooltip } from '../../ui/Tooltip';
@@ -106,6 +107,8 @@ export function Roster({ data }: { data: ChRoster; }) {
     setSeen(data.players);
     setPlayers(data.players);
   }
+  // F-05: the roster limit's count, sheet and row-menu items (the count reads `players`, so a mark shows at once).
+  const limit = useRosterLimit(data, players, setPlayers);
   // Search, filter, sort and layout come back when the coach returns to Roster (PAGE_PERFORMANCE.md rule 1).
   const [q, setQ] = useChSessionState('q', '');
   const [show, setShow] = useChSessionState<Show>('show', 'active');
@@ -409,6 +412,8 @@ export function Roster({ data }: { data: ChRoster; }) {
     const now = p.availability ?? 'available';
     items.push(...(now === 'available' ? [markInjured, markAway] : now === 'injured' ? [markAvailable, markAway] : [markAvailable, markInjured]));
     items.push({ kind: 'separator' });
+    const limitItems = limit.menuItems(p);
+    if (limitItems.length) items.push(...limitItems, { kind: 'separator' });
     items.push(
       p.status === 'active'
         ? { label: 'Mark inactive', icon: UserX, onSelect: () => setRestatus(p) }
@@ -427,6 +432,7 @@ export function Roster({ data }: { data: ChRoster; }) {
 
   const dialogs = (
     <>
+      {limit.dialogs}
       <InviteModal
         open={invite || inviteLink.open}
         atRest={inviteLink.atRest}
@@ -495,6 +501,7 @@ export function Roster({ data }: { data: ChRoster; }) {
           classLines={classLines}
           hold={hold}
           onRetry={() => router.refresh()}
+          limit={limit}
         >
           {dialogs}
         </RosterPhoneCrh>
@@ -542,6 +549,7 @@ export function Roster({ data }: { data: ChRoster; }) {
               {players.some((p) => p.sgPerRound != null) && <> {sgBaseline(data.sgTour ?? null).whyNamed}</>}
             </p>
           )}
+          {!data.playersError && players.length > 0 && <RosterLimitLine ctl={limit} />}
         </div>
         <div className="ch-rs-head__act">
           {players.length > 0 && (
@@ -827,7 +835,7 @@ function RosterList({
                   <Avatar name={p.name} id={p.id} size={76} year={yearKeyOf(p.gradYear, clock)} dim={p.status === 'inactive'} />
                 </span>
                 <span className="ch-rs-face__name">{p.name}</span>
-                <span className="ch-rs-face__meta">{[p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
+                <span className="ch-rs-face__meta">{[p.rosterExempt ? 'Not counted' : null, p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
                 <span className="ch-rs-face__form">
                   <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
                 </span>
@@ -1146,7 +1154,8 @@ function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): str
  */
 function RowMeta({ p, line: classLine }: { p: ChRosterPlayer; line?: ReturnType<typeof classNoteFor> }) {
   const line = availabilityLine(p);
-  const rest = [p.classYear, p.hometown].filter(Boolean).join(' · ');
+  // F-05: a player marked as not counting toward the roster limit says so first in the line.
+  const rest = [p.rosterExempt ? 'Not counted' : null, p.classYear, p.hometown].filter(Boolean).join(' · ');
   // P-10: a trip or a class leads the line, as the availability word does ("In class until 11:50 AM · Sophomore · Charlotte, NC").
   if (classLine) {
     const all = [classLine.text, rest || null].filter(Boolean).join(' · ');

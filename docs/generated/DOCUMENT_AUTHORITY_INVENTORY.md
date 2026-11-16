@@ -1099,6 +1099,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-13-span-switch-labels.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-csv-export.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-15-select-described-by.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1484,6 +1485,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-attendance-counts-typed.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-practice-hours.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-tournament-ties.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1610,6 +1612,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-first-render-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-past-last-day.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-15-export.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-15-tie-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
@@ -1900,6 +1903,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-14-retire-fairway.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-export.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-results-import.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-tie-setting.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/classes.md` | current | - | - | - | - |
@@ -2030,7 +2034,7 @@ them would bury everything above.
 | `src/lib/coachhelm/v3/chat/knowledge/SOURCES.md` | current | - | - | - | - |
 | `src/lib/coachhelm/v3/chat/tasks/INVENTORY.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 7 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 4 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 5 |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |
 | `tools/QUICK_REFERENCE.md` | current | - | - | - | - |

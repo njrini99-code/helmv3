@@ -655,8 +655,9 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
   it("32401 this file and the player roster's file name every Roster catalog code they force, in a test title", () => {
     const self = fileURLToPath(import.meta.url);
     const catalog = readFileSync(resolve(dirname(self), '../../../docs/clubhouse/catalog/roster.md'), 'utf8');
-    // The player's roster (CH-3210, CH-3211, CH-3307, CH-3308) is tested in its own file, and so is inviting by email (CH-3080, CH-3180).
-    const titles = [self, resolve(dirname(self), 'roster-player.test.tsx'), resolve(dirname(self), 'roster-invite-email.test.tsx')]
+    // The player's roster (CH-3210, CH-3211, CH-3307, CH-3308) is tested in its own file, and so are inviting by email (CH-3080,
+    // CH-3180) and the roster limit (F-05: CH-3081, CH-3082, CH-3283).
+    const titles = [self, resolve(dirname(self), 'roster-player.test.tsx'), resolve(dirname(self), 'roster-invite-email.test.tsx'), resolve(dirname(self), 'roster-limit.test.tsx')]
       .flatMap((file) => readFileSync(file, 'utf8').split('\n'))
       .filter((line) => /^\s*(it|describe)\(/.test(line))
       .join('\n');

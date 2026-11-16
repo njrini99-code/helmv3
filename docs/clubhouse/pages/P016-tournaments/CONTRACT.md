@@ -188,6 +188,7 @@ whole of it today; the live round's outbox (5L.8.5) adds its own.
 | --- | --- | --- | --- |
 | 160701 | CH-16605 | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | The device is offline while the card or the live view is open |
 | 160780 | CH-16980 | `IMPORT_RESULTS_A_ROUND_IN_THE_FILE` | Import results: a round in the file differs from the player’s card or submitted round |
+| 160781 | CH-16981 | `LINEUP_BUILDER_THE_ROSTER_IS_OVER_ITS` | Lineup builder: the roster is over its limit (F-05) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.

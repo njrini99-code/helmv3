@@ -75,6 +75,8 @@ Availability after Status. Players see none of it in v1: their roster reads
 | --- | --- | --- | --- |
 | 30101 | — | `ROSTER_READY` | Roster opens with the team line, the join requests, Needs a look and the active players as cards by scoring average, all from the server's first render; on the phone, the list screen with the same players as rows. |
 | 30102 | — | `DEEP_LINK_OPENS_PROFILE` | On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=. The bell's join-request link (?tab=requests) opens the phone's requests sheet once when a request is waiting, and ?invite=1 (Home's first-run Invite players) opens the invite sheet once on desktop and the phone; each param is dropped, closing the sheet spends it, and only the coach's roster reads them. |
+| 30180 | — | `ROSTER_LIMIT_COUNTED_UNDER_THE_HEAD` | The coach's Roster states the team's roster limit under the head (launch readiness F-05; NCAA Division I Bylaw 17.2: 9 in golf, a conference or the coach may set fewer): '7 of 9 count toward the roster limit.', counting active players only and leaving out a player marked as not counting (a designated student-athlete or a medical exemption), who says 'Not counted' in their row. A Division I team starts on at 9 and every other team off (Set a roster limit); a saved limit (held migration 20261115250000) wins. Over the limit it says how many (CH-3981). The lineup builder states the same count (CH-16981). |
+| 30181 | — | `MARK_A_PLAYER_WHO_DOESNT_COUNT` | A player's actions (the row menu on a computer, Player actions on the phone) offer 'Doesn’t count toward the limit…' for an active player while the limit is on and can be changed: a sheet asks why (Designated student-athlete, or Medical, can’t compete again) and says what the mark does; a marked player offers 'Count toward the roster limit'. Nothing is offered before the held migration or when who counts didn't load. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
@@ -192,6 +194,9 @@ refused change shows the server's own sentence when it is short and readable
 | 30622 | CH-3212 | `COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER` | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) |
 | 30623 | CH-3011 | `THE_COACH_ONLY_REASON_FOR_AN_INJURED` | The coach-only reason for an injured or away player doesn’t save (Why field, on leaving it) |
 | 30680 | CH-3080 | `EMAILING_THE_INVITE_TO_PLAYERS_FAILS_THE` | Emailing the invite to players fails (Invite players › Email them): the request fails, the coach has sent a lot of invites this hour, email is paused, or the team has no code |
+| 30681 | CH-3081 | `SAVING_THE_ROSTER_LIMIT_FAILS` | Saving the roster limit fails (launch readiness F-05; the limit's sheet, from the header's Roster limit) |
+| 30682 | CH-3082 | `MARKING_A_PLAYER_AS_NOT_COUNTING_TOWARD` | Marking a player as not counting toward the roster limit, or counting them again, fails (row menu: Doesn’t count toward the limit…, Count toward the roster limit) |
+| 30683 | CH-3283 | `WHO_DOESNT_COUNT_TOWARD_THE_ROSTER_LIMIT` | Who doesn’t count toward the roster limit doesn’t load (F-05) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10609 CH-1208,
@@ -213,6 +218,8 @@ reported (32301).
 | --- | --- | --- | --- |
 | 30701 | — | `WRITES_REFUSED_OFFLINE` | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
 | 30780 | CH-3980 | `CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE` | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`) or no mail transport is configured, so Invite players cannot email anyone |
+| 30781 | CH-3981 | `THE_ROSTER_IS_OVER_ITS_LIMIT` | The roster is over its limit (F-05; NCAA Division I Bylaw 17.2: 9 in golf, or the coach's own number) |
+| 30782 | CH-3982 | `THE_ROSTER_LIMIT_CANT_BE_CHANGED_YET` | The roster limit can't be changed yet (its store, held migration 20261115250000, isn't applied) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -268,12 +275,14 @@ export and a copy name themselves too (31702, 31703).
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 30901 | — | `CHANGE_LANDED` | A change that lands names itself in a toast (added, declined, note saved, removed) with one success haptic; a removal also closes the dialog and the player's panel or profile. |
+| 30980 | — | `ROSTER_LIMIT_SAVED` | The roster limit's sheet saves the limit on or off and its number (1 to 40): 'Roster limit set to 8' with the success haptic, and the head's count follows at once. The server writes one row a team through RLS (a coach of the team) and answers 'unavailable' before the migration is applied. |
+| 30981 | — | `ROSTER_EXEMPTION_SAVED` | Marking a player as not counting (or counting again) shows at once in the count and the row, and lands with 'Ava Chen doesn’t count toward the roster limit'. The server writes one row a player with the reason through RLS (a coach of the team, the player on the team), deletes it to count them again, and answers 'unavailable' before the migration is applied. |
 
 From the shell (P001): 10901 CHANGE_LANDED.
 
 ## 10 — Warning
 
-Status: N/A — no Roster state is a warning today; Approve all that only partly
+Status: N/A — no Roster state is minted as a warning; the roster over its limit (F-05) is CH-3981, minted under 07 by its kind (30781); Approve all that only partly
 
 lands is an error with a Retry (category 06), and the duplicate-player notice
 Fairway shows has not been rebuilt (open).

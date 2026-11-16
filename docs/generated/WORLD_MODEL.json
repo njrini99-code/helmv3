@@ -1382,6 +1382,11 @@
         "category": "actions"
       },
       {
+        "id": "actions:src/app/golf/actions/roster-limit.ts",
+        "pattern": "src/app/golf/actions/roster-limit.ts",
+        "category": "actions"
+      },
+      {
         "id": "actions:src/app/golf/actions/roster.ts",
         "pattern": "src/app/golf/actions/roster.ts",
         "category": "actions"
@@ -2114,6 +2119,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/golf/roster-limit.ts",
+        "pattern": "src/lib/golf/roster-limit.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/golf/round-session/**",
         "pattern": "src/lib/golf/round-session/**",
         "category": "services"
@@ -2311,6 +2321,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/golf/actions/__tests__/roster-limit.test.ts",
+        "pattern": "src/app/golf/actions/__tests__/roster-limit.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/app/golf/actions/__tests__/stats-data.test.ts",
         "pattern": "src/app/golf/actions/__tests__/stats-data.test.ts",
         "category": "tests"
@@ -2478,6 +2493,11 @@
       {
         "id": "tests:src/lib/golf/__tests__/client-resource-cache.test.ts",
         "pattern": "src/lib/golf/__tests__/client-resource-cache.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/golf/__tests__/roster-limit.test.ts",
+        "pattern": "src/lib/golf/__tests__/roster-limit.test.ts",
         "category": "tests"
       },
       {
@@ -3363,6 +3383,12 @@
         "id": "golf_qualifier_round_courses",
         "definedIn": [
           "supabase/migrations/20260621231000_qualifier_round_courses.sql"
+        ]
+      },
+      {
+        "id": "golf_qualifier_rules",
+        "definedIn": [
+          "supabase/migrations/20261115240000_golf_qualifier_rules.sql"
         ]
       },
       {
@@ -18947,6 +18973,11 @@
           "kind": "import_graph",
           "path": "src/lib/golf/qualifier-display.ts",
           "anchor": "src/lib/coachhelm/v3/qualifying/ranking"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/qualifier-rules.ts",
+          "anchor": "src/lib/coachhelm/v3/qualifying/ranking"
         }
       ]
     },
@@ -23863,6 +23894,17 @@
     },
     {
       "source": "qualifiers",
+      "target": "golf_qualifier_rules",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261115240000_golf_qualifier_rules.sql"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
       "target": "golf_qualifier_selection_reasons",
       "kind": "feature_rpc",
       "evidence": [
@@ -23887,6 +23929,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/qualifier-actions.ts",
           "anchor": "src/lib/golf/player-profiles"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/qualifying/loader.ts",
+          "anchor": "src/lib/golf/qualifier-rules"
         }
       ]
     },
@@ -24312,6 +24359,18 @@
     },
     {
       "source": "roster_team",
+      "target": "actions:src/app/golf/actions/roster-limit.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/roster-limit.ts"
+        }
+      ]
+    },
+    {
+      "source": "roster_team",
       "target": "actions:src/app/golf/actions/roster.ts",
       "kind": "feature_action",
       "evidence": [
@@ -24681,6 +24740,18 @@
     },
     {
       "source": "roster_team",
+      "target": "services:src/lib/golf/roster-limit.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/golf/roster-limit.ts"
+        }
+      ]
+    },
+    {
+      "source": "roster_team",
       "target": "sg_scale_for_player",
       "kind": "feature_rpc",
       "evidence": [
@@ -24712,6 +24783,30 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/actions/__tests__/dashboard-data.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "roster_team",
+      "target": "tests:src/app/golf/actions/__tests__/roster-limit.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/__tests__/roster-limit.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "roster_team",
+      "target": "tests:src/lib/golf/__tests__/roster-limit.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/golf/__tests__/roster-limit.test.ts"
         }
       ]
     },

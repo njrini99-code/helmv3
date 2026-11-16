@@ -349,6 +349,42 @@
       "tests": [
         "src/clubhouse/__tests__/roster-player.test.tsx"
       ]
+    },
+    {
+      "id": "ACT-P003-ROSTER-LIMIT",
+      "label": "Set the roster limit (on or off, and its number)",
+      "component": "src/clubhouse/screens/roster/RosterLimit.tsx#useRosterLimit",
+      "handler": "save.run",
+      "service": "src/app/golf/actions/roster-limit.ts#saveRosterLimit",
+      "data": [
+        "golf_team_roster_limits (migration 20261115250000, HELD)"
+      ],
+      "bridge": {
+        "success": 30980,
+        "failure": 30681
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster-limit.test.tsx",
+        "src/app/golf/actions/__tests__/roster-limit.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P003-ROSTER-EXEMPT",
+      "label": "Mark a player as not counting toward the roster limit, or counting again",
+      "component": "src/clubhouse/screens/roster/RosterLimit.tsx#useRosterLimit",
+      "handler": "mark.run",
+      "service": "src/app/golf/actions/roster-limit.ts#setRosterExemption",
+      "data": [
+        "golf_roster_exemptions (migration 20261115250000, HELD)"
+      ],
+      "bridge": {
+        "success": 30981,
+        "failure": 30682
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster-limit.test.tsx",
+        "src/app/golf/actions/__tests__/roster-limit.test.ts"
+      ]
     }
   ],
   "held": [
