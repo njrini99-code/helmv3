@@ -90,8 +90,8 @@ Proximity: how far from the hole approach shots finish, in feet, by the distance
 Driving distance is in yards. Putt distances and proximity are in feet.
 
 ## Short game and putting
-Scrambling: par or better after missing the green, and every sand save counts too (a greenside bunker is a chance even on a green hit in regulation). Higher is better. It depends on how far off the green the misses are, so read it beside greens in regulation. The Tour's scrambling counts missed greens only, so the Tour figure is a guide.
-Sand saves: down in two strokes or fewer from a greenside bunker, whatever the score; also its own stat. A player has few of these a round, so the sample is small.
+Scrambling: par or better after missing the green, plus sand saves. Higher is better. Read it beside greens hit. The Tour counts missed greens only, so it is a guide.
+Sand saves: down in two from a greenside bunker, any score; its own stat too. Small sample.
 Putts per round: lower is better, but it misleads unless it is read with greens hit, because a player who misses greens chips close and has fewer putts. Whenever you give putts per round, give greens hit beside it, and judge putting by strokes gained putting or make rate by distance.
 Three-putts: fewer is better. They come mostly from the first putt's distance control on long putts, not from the short one missed.
 Make rate by distance: the share of putts holed from each distance band. Higher is better. Short and mid-length putts decide the most strokes because there are many of them and each miss is a full stroke. From long range the job is to leave the next one close.
