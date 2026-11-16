@@ -27056,11 +27056,6 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-ring-field-invalid",
-          "value": "inset 0 0 0 2px var(--ch-danger-600)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-shadow-sm",
           "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']"
@@ -30470,7 +30465,13 @@
         "ch-tour-imp-ts",
         "ch-tour-imp-warn"
       ],
-      "tokens": []
+      "tokens": [
+        {
+          "name": "--ch-tour-imp-ring-invalid",
+          "value": "inset 0 0 0 2px var(--ch-danger-600)",
+          "scope": ".ch-tour-imp-g__in[aria-invalid='true']"
+        }
+      ]
     },
     {
       "file": "src/clubhouse/styles/tournaments-lineup.css",

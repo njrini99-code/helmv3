@@ -30,5 +30,6 @@ Held items: none
   motion is at the new counts.
 - After train 3 (dff100c5d), the two new stylesheets' raw shadows read
   tokens with the same values. The team hours rows read `--ch-rule-top-sep`.
-  The tournament import grid's field reads `--ch-ring-field`,
-  `--ch-ring-field-focus` and `--ch-ring-field-invalid`.
+  The tournament import grid's field reads `--ch-ring-field` and
+  `--ch-ring-field-focus`. Its red invalid ring is named in its own
+  error-state rule (`--ch-tour-imp-ring-invalid`).

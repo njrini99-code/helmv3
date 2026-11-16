@@ -622,10 +622,10 @@
   --ch-rule-top: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
   /* The same top rule in the separator ink (team hours rows). */
   --ch-rule-top-sep: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
-  /* A field's own rings, drawn inside or around it: at rest, focused and invalid (the tournament import grid). */
+  /* A field's own rings, drawn inside or around it: at rest and focused (the tournament import grid). Its invalid ring is
+     red, so it is named where it is used, in the error state (tournaments-import.css). */
   --ch-ring-field: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
   --ch-ring-field-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
-  --ch-ring-field-invalid: inset 0 0 0 2px var(--ch-danger-600);
 
   /* Elevation */
   /* The older names, kept for their many uses, now read their role on the depth ladder below. */
