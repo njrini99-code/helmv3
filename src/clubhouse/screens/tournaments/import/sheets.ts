@@ -152,13 +152,19 @@ export function decodeEntities(s: string): string {
   });
 }
 
+/** Strips until nothing changes, so a tag split around another ("<scr<b>ipt>") can't reassemble, then drops any bracket left. */
+function stripTags(html: string): string {
+  let s = html.replace(/<br\s*\/?>/gi, ' ');
+  for (let prev = ''; prev !== s; ) {
+    prev = s;
+    s = s.replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, '').replace(/<[^<>]*>/g, '');
+  }
+  return s.replace(/[<>]/g, '');
+}
+
+/** A cell's text. It is only ever shown as text (React escapes it) and written to a spreadsheet; never as HTML. */
 const cellText = (html: string) =>
-  decodeEntities(
-    html
-      .replace(/<br\s*\/?>/gi, ' ')
-      .replace(/<(script|style)[\s\S]*?<\/\1>/gi, '')
-      .replace(/<[^>]+>/g, ''),
-  )
+  decodeEntities(stripTags(html))
     .replace(/\s+/g, ' ')
     .trim();
 

@@ -7,6 +7,7 @@ import { countsForScoring, type ChRound } from '../data/season';
 import { roundsInFilter } from '../data/stats-common';
 import { filterFor } from '../data/stats-filter';
 import { summarizeWindow } from '../data/stats-weight';
+import { statsRowsOf } from './stats-rows';
 
 // Player Ask, staging, 2026-11-08: "How many putts did I average this season?" said 27 from the stats cache (a window of 131 days that
 // ended in September, nine-hole rounds counted as full ones) while Stats said 32.6 for Last 10, and the season's scoring read was a
@@ -33,10 +34,12 @@ const rounds: ChRound[] = [
   round('2026-07-20', 40, 90), round('2026-07-10', 40, 90), round('2026-07-01', 40, 90),
   round('2026-09-02', 14, 38, { holes_played: 9, front_nine: 38, back_nine: null }),
 ];
+// Greens, fairways and putts come from each round's stats row (DF-P-01); these rounds carry their figures, so the rows copy them.
+const ROWS = statsRowsOf(rounds);
 
 describe('Ask reads a player’s round-based figures as Stats does', () => {
   it('Last 10 strokes gained, greens and fairways are the figures Stats prints for those rounds', () => {
-    const f = playerFiguresOver(rounds, filterFor('last10'), START);
+    const f = playerFiguresOver(rounds, filterFor('last10'), START, ROWS);
     const stats = summarizeWindow(roundsInFilter(rounds.filter(countsForScoring), filterFor('last10'), START));
     expect(f.legs).toEqual(stats.sgLegs);
     expect(f.sg_total).toBe(stats.sgPerRound);
@@ -46,8 +49,8 @@ describe('Ask reads a player’s round-based figures as Stats does', () => {
     expect(f.fairway_pct).toBeCloseTo((8 / 14) * 100, 9);
   });
 
-  const last10 = playerFiguresOver(rounds, filterFor('last10'), START);
-  const season = playerFiguresOver(rounds, filterFor('season'), START);
+  const last10 = playerFiguresOver(rounds, filterFor('last10'), START, ROWS);
+  const season = playerFiguresOver(rounds, filterFor('season'), START, ROWS);
 
   it('Last 10 is the newest ten 18-hole rounds, practice out, and putts count only rounds that recorded them', () => {
     expect(last10.rounds).toBe(10);
@@ -56,6 +59,14 @@ describe('Ask reads a player’s round-based figures as Stats does', () => {
     // eight that did: not the cache's 27, and not a mean that counts a missing round as 0 putts.
     expect(last10.putts_per_round).toBeCloseTo((30 + 37 + 37 + 30 + 31 + 34 + 31 + 31) / 8, 9);
     expect(last10.putt_rounds).toBe(8);
+  });
+
+  it('greens and putts are each round’s stats row, never the round header (DF-P-01)', () => {
+    // The headers say 9 of 18 greens; the rows the 17 Oct GIR rule rewrote say 12, and 29 putts.
+    const rows = new Map([...ROWS].map(([id, r]) => [id, { ...r, greens_hit: 12, total_putts: r.total_putts ? 29 : r.total_putts }]));
+    const f = playerFiguresOver(rounds, filterFor('last10'), START, rows);
+    expect(f.gir_pct).toBeCloseTo((12 / 18) * 100, 9);
+    expect(f.putts_per_round).toBe(29);
   });
 
   it('the season starts on 1 August: three July rounds are out, so it is its own window', () => {

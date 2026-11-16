@@ -126,7 +126,7 @@ Coach Intelligence Triage · active · criticality high · owner product
 
 CoachHelm AI · active · criticality high · owner product
 
-- **Relations:** 5 doc/structurally-evidenced, 16 import-graph-only (weak)
+- **Relations:** 5 doc/structurally-evidenced, 15 import-graph-only (weak)
 - **Tables:** `ask_credit_requests`, `ask_usage_weekly`, `golf_coachhelm_action_runs`, `golf_coachhelm_coach_facts`, `golf_coachhelm_corrections`, `golf_coachhelm_player_state`, `golf_coachhelm_run_log`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
 - **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_division_cohort`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`
 - **Test surfaces:** 3
@@ -226,7 +226,7 @@ Player CoachHelm And Development · active · criticality high · owner product
 
 Player Hub · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `get_coach_today_schedule`, `get_player_hub_events`
 - **Test surfaces:** 1
@@ -489,7 +489,6 @@ Team Operations · active · criticality high · owner product
 | `player_hub` | `admin_platform` | import_graph (weak) |
 | `player_hub` | `auth_onboarding_join` | import_graph (weak) |
 | `player_hub` | `calendar_events` | import_graph (weak) |
-| `player_hub` | `coachhelm_ai` | import_graph (weak) |
 | `player_hub` | `golf_round_lifecycle` | import_graph (weak) |
 | `player_hub` | `team_communications` | import_graph (weak) |
 | `qualifiers` | `admin_platform` | import_graph (weak) |

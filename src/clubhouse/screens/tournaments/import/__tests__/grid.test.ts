@@ -67,6 +67,14 @@ describe('hole grid: cells and the save', () => {
     expect(cards[1]!.replace).toBe(false);
   });
 
+  it('a hole typed for a WD or DQ player keeps their status: it corrects strokes, never reinstates them', () => {
+    const ev = event({ playerRounds: [pr({ playerId: 'sofia', roundNumber: 1, total: 74, status: 'wd' }), pr({ playerId: 'jonah', roundNumber: 1, status: 'dq_pending' })] });
+    const g = gridFor(ev, ROSTER, null, { pin: COURSE }, 1);
+    if (!g.ok) throw new Error('no grid');
+    const cards = gridCards(g.grid, { [cellKey('sofia', 1)]: '5', [cellKey('jonah', 1)]: '4', [cellKey('eli', 1)]: '4' });
+    expect(Object.fromEntries(cards.map((c) => [c.playerId, c.status]))).toEqual({ sofia: 'wd', jonah: 'dq_pending', eli: 'ok' });
+  });
+
   it('holds back a row with a cell it can’t read, and names the cell', () => {
     const g = gridFor(event(), ROSTER, ledger([{ playerId: 'ava', roundNumber: 1, roundEventId: 'r1', startHole: 1, holes: holes(card(0)) }]), { pin: COURSE }, 1);
     if (!g.ok) throw new Error('no grid');

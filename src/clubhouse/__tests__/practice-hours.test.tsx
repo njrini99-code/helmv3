@@ -307,6 +307,14 @@ describe('Practice hours · states', () => {
     expect(screen.queryByRole('table')).toBeNull();
   });
 
+  it('60688 CH-6285 the saved limits didn’t load: the week reads the defaults and nothing can be saved over them', () => {
+    page({ ...PREVIEW_HOURS, settingsError: true, settingsFrom: 'default' });
+    expect(document.querySelector('[data-ch-code="CH-6285"]')!.textContent).toContain('Your saved limits didn’t load');
+    expect(screen.queryByRole('button', { name: 'Limits' })).toBeNull();
+    expect(screen.queryAllByRole('button', { name: /^Change how/ })).toHaveLength(0);
+    expect(cells('Ava Lindqvist')).toHaveLength(9);
+  });
+
   it('CH-6281 attendance didn’t load: the week is drafted from invitations and says so', () => {
     page({ ...PREVIEW_HOURS, partial: true, marks: {} });
     expect(document.querySelector('[data-ch-code="CH-6281"]')!.textContent).toContain('drafted from invitations alone');

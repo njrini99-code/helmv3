@@ -42,6 +42,11 @@ export interface ChHoursData {
   settingsFrom: 'saved' | 'division' | 'default';
   /** The hours tables aren't there yet (held migration): limits and changes can't be saved, and the page says so. */
   storeMissing: boolean;
+  /**
+   * The team's saved limits didn't load (not a missing table): the week is read against the defaults, and limits can't be
+   * saved, so a save never overwrites the stored seasons and custom limits with the defaults (CH-6285).
+   */
+  settingsError: boolean;
   events: ChHoursEventIn[];
   people: ChCalPerson[];
   marks: Record<string, Record<string, ChHoursMark>>;
@@ -93,12 +98,16 @@ export async function loadHours(input: {
   ]);
 
   let storeMissing = false;
+  let settingsError = false;
   let settings: ChHoursSettings = { ...DEFAULT_HOURS_SETTINGS, ...(division ? { division } : {}) };
   let untimedHours: number | null = null;
   let settingsFrom: ChHoursData['settingsFrom'] = division ? 'division' : 'default';
   if (settingsRes.error) {
     if (isHoursStoreMissing(settingsRes.error.code)) storeMissing = true;
-    else chLogServer('hours', 'settings', settingsRes.error, 'calendar');
+    else {
+      settingsError = true;
+      chLogServer('hours', 'settings', settingsRes.error, 'calendar');
+    }
   } else if (settingsRes.data) {
     ({ settings, untimedHours } = settingsFromRow(settingsRes.data as HoursSettingsRow));
     settingsFrom = 'saved';
@@ -188,6 +197,7 @@ export async function loadHours(input: {
     untimedHours,
     settingsFrom,
     storeMissing,
+    settingsError,
     events,
     people: cal.people,
     marks,

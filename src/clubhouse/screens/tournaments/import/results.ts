@@ -485,7 +485,8 @@ export function readResults(sheets: readonly ChResultsSheet[], layouts: readonly
     }
   }
   if (mismatched.length) warnings.push(`The holes don’t add up to the total written for ${listOf(mismatched)}. The holes are used.`);
-  if (badHoles.length) warnings.push(`${listOf(badHoles)} ${badHoles.length === 1 ? 'isn’t a hole score' : 'aren’t hole scores'}, so ${badHoles.length === 1 ? 'it is' : 'they are'} left empty.`);
+  const oneBad = badHoles.length === 1;
+  if (badHoles.length) warnings.push(`${listOf(badHoles)} ${oneBad ? 'isn’t a hole score' : 'aren’t hole scores'}, so ${oneBad ? 'it is' : 'they are'} left empty.`);
 
   return {
     layouts: [...layouts],

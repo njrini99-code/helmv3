@@ -1,6 +1,7 @@
 import type { HoursAdjustment } from '@/lib/golf/practice-hours';
 import { addDays, dowOf, dayNum, monthName, TYPE_LABEL, type ChCalEvent, type ChCalPerson, type ChCalType } from '../model';
 import { chCsvName, csvRound, type ChCsvFile, type ChCsvValue } from '../../../lib/csv';
+import { plural } from '../../../lib/plural';
 import { civicDayOf, fmtHours, type ChHoursFlagKind, type ChHoursLimits } from './rules';
 
 /**
@@ -378,7 +379,7 @@ export function draftHours(input: {
             ? limits.daysOff === 1
               ? 'No day off this week'
               : `No day off this week, ${limits.daysOff} needed`
-            : `${off} ${off === 1 ? 'day' : 'days'} off this week, ${limits.daysOff} needed`,
+            : `${plural(off, 'day')} off this week, ${limits.daysOff} needed`,
         bylaw: by('dayOff'),
       });
     }

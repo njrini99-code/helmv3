@@ -160,14 +160,19 @@ export function LinkedTrip({ eventId, preview }: { eventId: string; preview?: bo
     };
   }, [eventId, preview]);
   if (!trip) return null;
+  return <TripLink id={trip.id} place={trip.destination || trip.event_name || 'the trip'} />;
+}
+
+/** "View itinerary · Pinehurst", to Team Hub's Travel with that trip scrolled to: for an event's linked trip and a trip of its own. */
+export function TripLink({ id, place }: { id: string; place: string }) {
   return (
     <div className="ch-in__fact">
       <Icon icon={Plane} size={15} />
       <div>
         {/* Team Hub's Travel with the trip scrolled to: /travel redirects there in Clubhouse, and a layout's redirect
             can't carry `?trip=`. */}
-        <Link className="ch-in__trip" href={`/golf/dashboard/team-hub?tab=travel&trip=${encodeURIComponent(trip.id)}`}>
-          View itinerary · <b>{trip.destination || trip.event_name || 'the trip'}</b>
+        <Link className="ch-in__trip" href={`/golf/dashboard/team-hub?tab=travel&trip=${encodeURIComponent(id)}`}>
+          View itinerary · <b>{place}</b>
           <Icon icon={ArrowRight} size={13} />
         </Link>
       </div>

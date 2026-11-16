@@ -79,7 +79,7 @@ describe('Coach Home on the span', () => {
     const home = await loadCoachHome({ teamId: 't1', coachName: 'Dana Whitfield' });
     expect(home.span).toBeUndefined();
     expect(home.leaderboard.span).toBeUndefined();
-    expect(home.phone.form?.span).toBeUndefined();
+    expect(home.phone.form?.window).toBeUndefined();
     expect(home.leaderboard.rows.map((r) => r.name)).toEqual(['Ada Lin']);
     // Six tournaments and the total-only qualifier; no practice, none of last season’s.
     expect(home.leaderboard.rows[0]!.rounds).toBe(7);
@@ -109,7 +109,7 @@ describe('Coach Home on the span', () => {
   it('the team’s scoring is the mean of every such round on All time, with no previous window, and each player’s last ten otherwise', async () => {
     const home = await loadCoachHome({ teamId: 't1', coachName: 'Dana Whitfield', span: 'all' });
     const form = home.phone.form!;
-    expect(form.span).toBe('all');
+    expect(form.window).toBe('all');
     expect(form.avg).toBeCloseTo(fairwayAverage([...ada, ...bo])!, 9);
     expect(form.delta).toBeNull();
     expect(form.basis.rounds).toBe(13);
@@ -117,6 +117,20 @@ describe('Coach Home on the span', () => {
     const season = (await loadCoachHome({ teamId: 't1', coachName: 'Dana Whitfield' })).phone.form!;
     expect(season.basis.rounds).toBe(7);
     expect(season.avg).not.toBeCloseTo(form.avg, 3);
+  });
+
+  // Prod audit 2026-11-15, HOME-P-10: Team scoring offers Last 10, Season and All time, as Stats does for this figure. Season is the
+  // season's 18-hole rounds, practice out, with no previous window; the rest of Home stays on the season.
+  it('the Season window reads this season’s rounds, with no previous window, and leaves the rest of Home on the season', async () => {
+    const home = await loadCoachHome({ teamId: 't1', coachName: 'Dana Whitfield', span: 'season', formWindow: 'season' });
+    const form = home.phone.form!;
+    expect(form.window).toBe('season');
+    expect(form.delta).toBeNull();
+    // Ada's six tournaments and the total-only qualifier, all since 1 August; Bo's practice is out.
+    expect(form.basis.rounds).toBe(7);
+    expect(form.basis.from >= '2026-08-01').toBe(true);
+    expect(home.span).toBeUndefined();
+    expect(home.leaderboard.rows.map((r) => r.name)).toEqual(['Ada Lin']);
   });
 
   it('the four parts keep their own window (each player’s last ten, practice out) on both spans', async () => {

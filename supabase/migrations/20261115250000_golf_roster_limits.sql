@@ -54,6 +54,8 @@ create table if not exists public.golf_team_roster_limits (
         id
     ) on delete cascade,
     enabled boolean not null default true,
+    -- a small bounded value (its check holds it at 1 to 40).
+    -- squawk-ignore prefer-bigint-over-int
     max_players integer not null default 9 check (max_players between 1 and 40),
     updated_by uuid references auth.users (id) on delete set null,
     updated_at timestamptz not null default now()

@@ -125,6 +125,20 @@ export type PlayerFigures = {
   gir_holes: number;
   fairway_pct: number | null;
   fairway_holes: number;
+  /** Score to par, the mean per 18 holes over every round in the window (a nine at half). */
+  to_par: number | null;
+  /** Scrambling and sand saves, pooled over their chances as Stats pools them. */
+  scrambling_pct: number | null;
+  scramble_chances: number;
+  sand_pct: number | null;
+  sand_chances: number;
+  /** One-putts and three-putts as a share of the holes played in rounds whose putts were recorded; `putt_holes` is those holes. */
+  one_putt_pct: number | null;
+  three_putt_pct: number | null;
+  putt_holes: number;
+  /** Penalty strokes per 18 holes over the rounds that recorded them, and how many whole rounds that is. */
+  penalties_per_round: number | null;
+  penalty_rounds: number;
   window_start: string | null;
   window_end: string | null;
   /** The rounds the window holds, newest first: what a list of "the last N rounds" must be, so the list and the figure are the same rounds. */
@@ -148,12 +162,22 @@ export type PuttBandsRead = {
 /** Reads one player's putting bands for a window as Stats does; null when the rounds or shots could not be read. Handed in by the route, like {@link PlayerFiguresSource}. */
 export type PuttBandsSource = (playerId: string, window: FigureWindow) => Promise<PuttBandsRead | null>;
 
-/** The metrics a round holds, and where in {@link PlayerFigures} each one is. The rest are shot-level and stay on the cache. */
-const FIGURE_OF: Record<string, (f: PlayerFigures) => { value: number | null; n: number; unit?: 'holes' }> = {
+/**
+ * Where in {@link PlayerFigures} each catalogue metric is: every one a round holds, so a ranking or a team comparison reads all of them over
+ * the asked window and never sets a window figure beside the lifetime cache's (launch readiness 2026-11-15, DF-P-11). A rate names the
+ * chances it pools (`unit`); a per-round figure rests on rounds.
+ */
+const FIGURE_OF: Record<string, (f: PlayerFigures) => { value: number | null; n: number; unit?: 'holes' | 'attempts' }> = {
   gir_pct: (f) => ({ value: f.gir_pct, n: f.gir_holes, unit: 'holes' }),
   driving_accuracy_pct: (f) => ({ value: f.fairway_pct, n: f.fairway_holes, unit: 'holes' }),
+  scrambling_pct: (f) => ({ value: f.scrambling_pct, n: f.scramble_chances, unit: 'attempts' }),
+  sand_save_pct: (f) => ({ value: f.sand_pct, n: f.sand_chances, unit: 'attempts' }),
+  one_putt_pct: (f) => ({ value: f.one_putt_pct, n: f.putt_holes, unit: 'holes' }),
+  three_putt_pct: (f) => ({ value: f.three_putt_pct, n: f.putt_holes, unit: 'holes' }),
   scoring_average: (f) => ({ value: f.scoring_average, n: f.rounds }),
+  scoring_average_vs_par: (f) => ({ value: f.to_par, n: f.rounds }),
   putts_per_round: (f) => ({ value: f.putts_per_round, n: f.putt_rounds }),
+  penalties_per_round: (f) => ({ value: f.penalties_per_round, n: f.penalty_rounds }),
   sg_total: (f) => ({ value: f.sg_total, n: f.sg_rounds }),
   sg_tee: (f) => ({ value: f.legs.tee, n: f.sg_rounds }),
   sg_approach: (f) => ({ value: f.legs.approach, n: f.sg_rounds }),
@@ -181,7 +205,7 @@ function measurementFromFigures(f: PlayerFigures, metricId: string, entity: Meas
     coverage: hundredth === null ? 'empty' : 'complete',
     coverage_note: hundredth === null ? `Not enough rounds in this window for ${spec.blurb}.` : !unit && n < 5 ? `Only ${n} ${n === 1 ? 'round' : 'rounds'}, so this is a lean read.` : null,
     source: 'rounds',
-    method: `${spec.id}_per_18_over_the_window_as_stats_reads_it`,
+    method: unit ? `${spec.id}_pooled_over_the_window_as_stats_reads_it` : `${spec.id}_per_18_over_the_window_as_stats_reads_it`,
     denominator: unit ? n : null,
     benchmark: null,
     direction: spec.direction,

@@ -49,7 +49,7 @@ import { filterFor, type ChFilter } from '../data/stats-filter';
 import { parityState } from './parity-state';
 import { teamFiguresOver } from '../data/player-figures';
 import { loadSeasonRounds, seasonStartDate } from '../data/season';
-import { loadSince } from '../data/stats-common';
+import { loadRoundCache, loadSince } from '../data/stats-common';
 import type { EvalDb, Row } from './supabase-eval-fake';
 import { clubhousePlayer, clubhouseTeam, fairwayDetail, fairwayTeam, holeRoundIds, playerPairs, sameOnScreen, standingPairs, subsetDb, teamWindowRoundIds, type Pair } from './stats-parity-harness';
 
@@ -229,8 +229,8 @@ describe('Team stats against the Fairway Team stats page, same rounds', () => {
 });
 
 describe('Ask’s team figures are the numbers Team Stats prints, same rounds', () => {
-  // Ask compares a player to "the team" with `teamFiguresOver` (the rounds' own columns); Team Stats reads the same window through
-  // `loadTeamStats` (the round-cache rows). One team value, whichever screen asks: scoring average, greens and putts per round.
+  // Ask compares a player to "the team" with `teamFiguresOver`; Team Stats reads the same window through `loadTeamStats`. Both read
+  // greens and putts from the rounds' stats rows (DF-P-01). One team value, whichever screen asks: scoring average, greens and putts.
   const windows: Array<[string, ChFilter]> = [
     ['last10', filterFor('last10')],
     ['last5', filterFor('last10', 5)],
@@ -247,7 +247,8 @@ describe('Ask’s team figures are the numbers Team Stats prints, same rounds', 
     const ids = ['pA', 'pB', 'pC'];
     const start = seasonStartDate(new Date(), 'America/Chicago');
     const loaded = await loadSeasonRounds(sb, ids, { surface: 'parity', since: loadSince(f, start) });
-    const ask = teamFiguresOver(loaded.rounds, ids, f, start);
+    const cache = await loadRoundCache(sb, loaded.rounds.map((r) => r.id), 'parity');
+    const ask = teamFiguresOver(loaded.rounds, ids, f, start, cache.byRound);
     const fig = (k: string) => stats.figures.find((x) => x.key === k)?.value ?? null;
     // The figures exist (a null on both sides would match and prove nothing).
     expect(fig('score')).not.toBeNull();

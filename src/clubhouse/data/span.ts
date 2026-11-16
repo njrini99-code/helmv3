@@ -62,3 +62,25 @@ export function spanKeepsTotalOnly(span: ChSpan | undefined): boolean {
 export function spanWords(span: ChSpan | undefined): string {
   return span === 'all' ? 'All time, every round type' : 'This season, practice left out';
 }
+
+/**
+ * Which rounds Home's Team scoring reads (prod audit 2026-11-15, HOME-P-10): each player's newest ten (the default, Stats' Last 10,
+ * across seasons, Q-122), the season from 1 August in the team's zone (Stats' Season), or every round (All time, Fairway's rules). The
+ * card's switch had two choices, its default called `season` while it read each player's last ten, and no real Season. The address
+ * key is the page's `range`: absent is Last 10, `range=season` the season and `range=all` all time. The rest of Home reads its own
+ * season under Last 10 and Season alike (`formWindowSpan`), so `range=season` changes the card and nothing else.
+ */
+export type ChFormWindow = 'last10' | 'season' | 'all';
+
+export const FORM_WINDOW_LABEL: Record<ChFormWindow, string> = { last10: 'Last 10', season: 'Season', all: 'All time' };
+
+/** The window from an address value: `season` and `all` are themselves; anything else (missing, unknown) is Last 10. */
+export function parseFormWindow(v: string | string[] | null | undefined): ChFormWindow {
+  const s = Array.isArray(v) ? v[0] : v;
+  return s === 'all' ? 'all' : s === 'season' ? 'season' : 'last10';
+}
+
+/** The span the rest of the page reads under a form window: All time is all time, and the other two are the season. */
+export function formWindowSpan(w: ChFormWindow): ChSpan {
+  return w === 'all' ? 'all' : 'season';
+}

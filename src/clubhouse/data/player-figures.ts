@@ -1,12 +1,12 @@
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { TEAM_FIGURES_KEY, type PlayerFigures, type FigureWindow, type PuttBandsRead } from '@/lib/coachhelm/v3/chat/read-tools';
-import { holeRounds, recordedPutts } from './round-scope';
+import { figureSetOver } from './figure-window';
+import { holeRounds } from './round-scope';
 import { countsForScoring, groupByPlayer, loadSeasonRounds, seasonStartDate, type ChRound } from './season';
-import { bandPutts, loadPutts, loadSince, practiceCut, roundsInFilter, type ChPuttRow } from './stats-common';
+import { bandPutts, loadPutts, loadRoundCache, loadSince, practiceCut, roundsInFilter, type ChPuttRow, type ChRoundCache } from './stats-common';
 import { DETAIL_MAX_ROUNDS } from './stats-player';
 import { filterFor, type ChFilter } from './stats-filter';
-import { summarizeWindow, weightedMean } from './stats-weight';
 import { teamStrokesGained } from './stats-team-sg';
 
 /**
@@ -15,58 +15,59 @@ import { teamStrokesGained } from './stats-team-sg';
  * their holes and under the floor of three. Ask's `get_player_metrics` reads these instead of the stats cache for the figures a round
  * holds, because the cache lags (its last refresh ends where it ends) and counts nine-hole rounds as full ones: for the same
  * player it said 27.1 putts a round beside Stats' 32.6.
+ *
+ * The figures themselves are the one figures helper's (`figure-window.ts` `figureSetOver`): greens, fairways and putts from each
+ * round's stats row, never the round header's columns (launch readiness 2026-11-15, DF-P-01, DF-P-11). This file only cuts the window
+ * as Stats' filter does and names the figures as Ask's tools read them.
  */
 export function filterForFigureWindow(window: FigureWindow): ChFilter {
   return window === 'season' ? filterFor('season') : filterFor('last10', window === 'last5' ? 5 : window === 'last20' ? 20 : 10);
 }
 
-/** Greens and fairways pooled over the holes of the rounds that have them, as Stats' rates are. */
-function pooled(holes: readonly ChRound[]) {
-  const rate = (made: (r: ChRound) => number | null, total: (r: ChRound) => number | null) => {
-    let m = 0;
-    let t = 0;
-    for (const r of holes) {
-      const a = made(r);
-      const b = total(r);
-      if (a != null && b != null && b > 0) {
-        m += a;
-        t += b;
-      }
-    }
-    return { pct: t > 0 ? (m / t) * 100 : null, holes: t };
-  };
-  const gir = rate((r) => r.total_gir, (r) => r.total_gir_possible);
-  const fw = rate((r) => r.total_fairways_hit, (r) => r.total_fairways);
-  return { gir_pct: gir.pct, gir_holes: gir.holes, fairway_pct: fw.pct, fairway_holes: fw.holes };
-}
+/** Each round's stats row by round id: where greens, fairways and putts come from. */
+export type ChStatsRows = ReadonlyMap<string, ChRoundCache>;
 
-/** The figures of a window of rounds that is already cut (one player's, or every player's pooled): the one calculation behind a player's and a team's. */
-function figuresOfWindow(window: readonly ChRound[]): PlayerFigures {
-  const list = [...window];
-  const s = summarizeWindow(list);
-  const holes = holeRounds(list);
-  const putts = weightedMean(holes, (r) => recordedPutts(r.total_putts));
-  const puttRounds = holes.filter((r) => recordedPutts(r.total_putts) !== null).length;
-  const dates = list.map((r) => r.round_date.slice(0, 10)).sort();
+/** The figures of a window of rounds that is already cut (one player's, or every player's pooled), in Ask's names. */
+function figuresOfWindow(window: readonly ChRound[], rows: ChStatsRows): PlayerFigures {
+  const set = figureSetOver(window, rows);
   return {
-    rounds: s.rounds,
-    hole_rounds: s.holeRounds,
-    scoring_average: s.avg,
-    putts_per_round: puttRounds >= 1 ? putts : null,
-    putt_rounds: puttRounds,
-    ...pooled(holes),
-    sg_total: s.sgPerRound,
-    sg_rounds: s.sgRounds,
-    legs: s.sgLegs,
-    window_start: dates[0] ?? null,
-    window_end: dates[dates.length - 1] ?? null,
-    round_ids: [...list].sort((a, b) => (a.round_date === b.round_date ? (a.id < b.id ? -1 : 1) : a.round_date < b.round_date ? 1 : -1)).map((r) => r.id),
+    rounds: set.n,
+    hole_rounds: set.holeN,
+    scoring_average: set.scoring,
+    putts_per_round: set.putts.value,
+    putt_rounds: set.putts.rounds,
+    gir_pct: set.gir.pct,
+    gir_holes: set.gir.chances,
+    fairway_pct: set.fairways.pct,
+    fairway_holes: set.fairways.chances,
+    to_par: set.toPar,
+    scrambling_pct: set.scrambling.pct,
+    scramble_chances: set.scrambling.chances,
+    sand_pct: set.sand.pct,
+    sand_chances: set.sand.chances,
+    // Per 18 holes over the rounds whose putts were recorded is a share of those holes: one-putts per 18 over 18.
+    one_putt_pct: set.onePutts.value === null ? null : (set.onePutts.value / 18) * 100,
+    three_putt_pct: set.threePutts.value === null ? null : (set.threePutts.value / 18) * 100,
+    putt_holes: Math.round(set.threePutts.rounds * 18),
+    penalties_per_round: set.penalties.value,
+    penalty_rounds: set.penalties.rounds,
+    sg_total: set.sg.total,
+    sg_rounds: set.sg.rounds,
+    legs: set.sg.legs,
+    window_start: set.from,
+    window_end: set.to,
+    round_ids: set.roundIds,
   };
 }
 
-export function playerFiguresOver(rounds: readonly ChRound[], f: ChFilter, seasonStart: string): PlayerFigures {
+/** One player's rounds in the filter's window, practice out as Stats leaves it. */
+export function playerWindow(rounds: readonly ChRound[], f: ChFilter, seasonStart: string): ChRound[] {
   const scoring = practiceCut(f) ? rounds.filter(countsForScoring) : [...rounds];
-  return figuresOfWindow(roundsInFilter(scoring, f, seasonStart));
+  return roundsInFilter(scoring, f, seasonStart);
+}
+
+export function playerFiguresOver(rounds: readonly ChRound[], f: ChFilter, seasonStart: string, rows: ChStatsRows): PlayerFigures {
+  return figuresOfWindow(playerWindow(rounds, f, seasonStart), rows);
 }
 
 /**
@@ -74,16 +75,15 @@ export function playerFiguresOver(rounds: readonly ChRound[], f: ChFilter, seaso
  * practice left out as Stats leaves it, all those rounds pooled, and the same calculation a player's own figures use over the pool. Its strokes
  * gained is `teamStrokesGained`'s (the function Team Stats, CoachHelm Team and `teamStrokesGainedOver` call), so Ask's team value is the number Stats prints.
  */
-export function teamFiguresOver(rounds: readonly ChRound[], playerIds: readonly string[], f: ChFilter, seasonStart: string): PlayerFigures & { players: number } {
-  const scoring = practiceCut(f) ? rounds.filter(countsForScoring) : [...rounds];
-  const byPlayer = groupByPlayer(scoring);
+export function teamFiguresOver(rounds: readonly ChRound[], playerIds: readonly string[], f: ChFilter, seasonStart: string, rows: ChStatsRows): PlayerFigures & { players: number } {
+  const byPlayer = groupByPlayer([...rounds]);
   const window: ChRound[] = [];
-  for (const id of playerIds) window.push(...roundsInFilter(byPlayer.get(id) ?? [], f, seasonStart));
+  for (const id of playerIds) window.push(...playerWindow(byPlayer.get(id) ?? [], f, seasonStart));
   // Strokes gained is the one team figure (`teamStrokesGained`): only the players with three rounds that have it count, as on Team
   // Stats. Scoring, putts and the rates stay every round's, pooled, which is Team Stats' rule for those.
   const sg = teamStrokesGained(holeRounds(window), playerIds);
   return {
-    ...figuresOfWindow(window),
+    ...figuresOfWindow(window, rows),
     sg_total: sg.total,
     sg_rounds: sg.rounds,
     legs: { tee: sg.legs[0], approach: sg.legs[1], around: sg.legs[2], putting: sg.legs[3] },
@@ -101,9 +101,13 @@ export async function loadPlayersFigures(sb: Supabase, who: { timezone: string }
   const loaded = await loadSeasonRounds(sb, [...playerIds], { surface: 'ask.player_figures', since: loadSince(f, start) });
   if (loaded.error) return null;
   const byPlayer = groupByPlayer(loaded.rounds);
-  const figures = new Map(playerIds.map((id) => [id, playerFiguresOver(byPlayer.get(id) ?? [], f, start)]));
+  // The stats rows of every round the windows hold with its holes: one read for the players and the team pooled from them.
+  const ids = playerIds.flatMap((id) => holeRounds(playerWindow(byPlayer.get(id) ?? [], f, start)).map((r) => r.id));
+  const cache = await loadRoundCache(sb, ids, 'ask.player_figures');
+  if (cache.error) return null;
+  const figures = new Map(playerIds.map((id) => [id, playerFiguresOver(byPlayer.get(id) ?? [], f, start, cache.byRound)]));
   // The team's pooled figures ride beside the players' under a key no player id can be, for a comparison with the team (see `TEAM_FIGURES_KEY`).
-  if (playerIds.length >= 2) figures.set(TEAM_FIGURES_KEY, teamFiguresOver(loaded.rounds, playerIds, f, start));
+  if (playerIds.length >= 2) figures.set(TEAM_FIGURES_KEY, teamFiguresOver(loaded.rounds, playerIds, f, start, cache.byRound));
   return figures;
 }
 

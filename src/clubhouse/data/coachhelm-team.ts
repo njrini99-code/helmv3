@@ -13,6 +13,7 @@ import { loadCoachBrief } from './coachhelm-coach-brief';
 import { loadCoachTrackRecord } from './coachhelm-track-record';
 import { readThemes } from './coachhelm-dive';
 import { themesByCategory } from './coachhelm-dive-shape';
+import { seasonSgByCategory } from './season-figures-shape';
 import { readCorrections } from './coachhelm-corrections';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { isNotEnoughYet, notEnoughOf, notEnoughRead, splitFirm, type ChNotEnoughPlayer } from './coachhelm-firm';
@@ -281,7 +282,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     for (let i = 0; i < candidates.length; i += 4) {
       await Promise.all(
         candidates.slice(i, i + 4).map(async (id) => {
-          const t = await readThemes(id, 'coach');
+          // This season's strokes gained by category from the rounds already here (SC-01), not a read per player.
+          const t = await readThemes(id, 'coach', seasonRounds.error ? null : seasonSgByCategory(seasonRounds.rounds.filter((r) => r.player_id === id), zone, now));
           if (!t) return;
           themes[id] = themesByCategory(t, 'coach');
           const drawn = list.find((p) => p.id === id);

@@ -18,9 +18,13 @@ describe('Team scoring line', () => {
     expect(container.querySelectorAll('.ch-hm-form__mark')).toHaveLength(2);
   });
 
-  it('says when a marked day rests on one round', () => {
-    render(<Form form={{ ...form, lineCounts: form.lineCounts!.map((n, i) => (i === 0 ? 1 : n)) }} />);
-    expect(screen.getByText(/Toughest day 74\.6 · Sep 2 · 1 round/)).toBeTruthy();
+  // Prod audit 2026-11-15, HOME-P-13: "Toughest day 87.0 · Sep 13 · 1 round" named one player's round as the team's day. Best and
+  // toughest are chosen from days two or more rounds rest on, as Stats' line marks them.
+  it('never marks a one-round day as the team’s best or toughest', () => {
+    const { container } = render(<Form form={{ ...form, lineCounts: form.lineCounts!.map((n, i) => (i === 0 ? 1 : n)) }} />);
+    expect(screen.queryByText(/Toughest day 74\.6 · Sep 2/)).toBeNull();
+    expect(container.querySelector('.ch-hm-form__ends')!.textContent).not.toMatch(/1 round/);
+    expect(container.querySelectorAll('.ch-hm-form__mark')).toHaveLength(2);
   });
 
   it('a change under its standard error is quiet, a clear one keeps its tone', () => {

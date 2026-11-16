@@ -4,6 +4,7 @@ import { RotateCw, Sparkles, ArrowRight, ChartColumn, CalendarDays, CalendarPlus
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
+import type { ChFormWindow } from '../../data/span';
 import type { ChYearKey } from '../../lib/class-year';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -131,7 +132,7 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
 
         {!data.week.error && !nothingAhead && (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <WeekStrip calendar days={data.week.days} note={phone.weekNote} />
+            <WeekStrip calendar days={data.week.days} note={phone.weekNote} rounds={phone.form?.roundsThisWeek} />
           </SectionBoundary>
         )}
 
@@ -341,17 +342,29 @@ export function figureMissing(rounds: number, needs?: string): string {
   return rounds > 0 ? (needs ?? 'Too few rounds') : 'Totals only so far';
 }
 
-/** What the average, greens and putts rest on: "3 rounds · Aug 2", "24 rounds · Sep 1 – Sep 28". */
-export function formBasis(b: ChTeamForm['basis']): string {
+/** The window Team scoring reads, in words, as Stats names it (prod audit 2026-11-15, HOME-P-11: "Each player’s last 10"). */
+const FORM_WINDOW_WORDS: Record<ChFormWindow, string> = { last10: 'Each player’s last 10', season: 'This season', all: 'All time, every round' };
+
+/** What the card's dates cover: "Each player’s last 10 · Sep 1 – Sep 28". The rounds are counted in their own cell. */
+export function formSpan(b: ChTeamForm['basis'], w: ChFormWindow): string {
   const span = b.from === b.to ? shortDay(b.from) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
-  return `${plural(b.rounds, 'round')} · ${span}`;
+  return `${FORM_WINDOW_WORDS[w]} · ${span}`;
+}
+
+/**
+ * A change in words, only when it clears its standard error (prod audit 2026-11-15, HOME-P-09, HOME-P-14): a signed number in grey
+ * beside "No clear change" said two things at once, and a grey "−3 pts" carried a sign with no better or worse.
+ */
+function changeText(figure: string, tone: string): string {
+  return tone === 'is-gain' ? `${figure}, better` : tone === 'is-loss' ? `${figure}, worse` : 'No clear change';
 }
 
 /**
  * The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42).
- * The average, greens and putts share one basis, which the strip states (`formBasis`); the week's count is its own.
+ * The average, its rounds, greens and putts share one basis, which the card states (`formSpan`); the week's count is in This week.
  */
 export function Form({ form }: { form: ChTeamForm; }) {
+  const win: ChFormWindow = form.window ?? 'last10';
   const W = 320;
   const H = 64;
   const pts = form.line;
@@ -364,18 +377,22 @@ export function Form({ form }: { form: ChTeamForm; }) {
   // error (stats visuals Q4); otherwise plain, and the average's says "No clear change" (F-54's zero is inside that).
   const avgTone = deltaTone(form.delta, form.deltaSe, true);
   // W3 (owner's preview, 11 Nov 2026): "a green area with a V in it", no dates, nothing marked. The line names its first and last
-  // days and marks its best and toughest (the lowest and highest team average; a tie goes to the newer day), saying when one rests
-  // on a single round. Only with the days known (an older fixture has none) and three points or more.
+  // days and marks its best and toughest (the lowest and highest team average; a tie goes to the newer day). Only with the days known
+  // (an older fixture has none) and three points or more. Best and toughest are team days, two rounds or more (prod audit 2026-11-15,
+  // HOME-P-13: "Toughest day 87.0 · Sep 13 · 1 round" named one player's round as the team's day), as Stats' line marks them.
   const days = form.lineDays?.length === pts.length ? form.lineDays : null;
   const counts = form.lineCounts?.length === pts.length ? form.lineCounts : null;
-  let best = 0;
-  let worst = 0;
+  const teamDay = (i: number) => counts == null || counts[i]! >= 2;
+  let best = -1;
+  let worst = -1;
   pts.forEach((v, i) => {
-    if (v <= pts[best]!) best = i;
-    if (v >= pts[worst]!) worst = i;
+    if (!teamDay(i)) return;
+    if (best < 0 || v <= pts[best]!) best = i;
+    if (worst < 0 || v >= pts[worst]!) worst = i;
   });
-  const marked = days != null && pts.length >= 3 && pts[best] !== pts[worst];
-  const oneRound = (i: number) => (counts?.[i] === 1 ? ' · 1 round' : '');
+  const marked = days != null && pts.length >= 3 && best >= 0 && worst >= 0 && pts[best] !== pts[worst];
+  const girTone = deltaTone(form.gir.delta, form.gir.se, false);
+  const puttsTone = deltaTone(form.putts.delta, form.putts.se, true);
   return (
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
       <div className="ch-hm-form__head">
@@ -388,23 +405,24 @@ export function Form({ form }: { form: ChTeamForm; }) {
         </div>
       {/* The window picker has a row of its own: between the title and the link it wrapped both to two lines on a phone. */}
       <div className="ch-hm-form__span">
-        <HomeSpanSwitch span={form.span ?? 'season'} />
+        <HomeSpanSwitch value={win} />
       </div>
       <div className="ch-hm-form__top">
         <span>
           {/* The lane: the label is real text, not the old rule's ::after (06 §11.2). */}
-          <em id="ch-hm-form">{form.span === 'all' ? 'Average · every round, all time' : 'Average · each player’s last 10'}</em>
+          <em id="ch-hm-form">Average</em>
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
-        {/* A change the card calls noise is not its loudest figure (W3): plain weight, quiet ink, the words beside it. */}
+        {/* A change the card calls noise carries no number (HOME-P-09): "No clear change vs previous 10" alone, in quiet ink. A clear
+            change is the signed strokes and better or worse. */}
         <span className={'ch-hm-delta ch-num ' + (avgTone || (form.delta != null ? 'is-flat' : ''))}>
-          {form.delta != null && formatSigned(form.delta)}
+          {form.delta != null && avgTone && `${formatSigned(form.delta)} strokes`}
           {form.delta != null && <em>{deltaWords(form.delta, avgTone, 'vs previous 10')}</em>}
-          <em className="ch-hm-form__basis">{formBasis(form.basis)}</em>
+          <em className="ch-hm-form__basis">{formSpan(form.basis, win)}</em>
         </span>
       </div>
       {pts.length > 1 && (
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team’s average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team’s average on each of its ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
           <path d={`${d} L${x(pts.length - 1)},${H} L${x(0)},${H} Z`} className="ch-hm-form__fill" />
           <path d={d} className="ch-hm-form__line" vectorEffect="non-scaling-stroke" />
           {/* The last point: a zero-length round stroke, so it stays a circle when the desktop card stretches the plot to its height. */}
@@ -426,39 +444,42 @@ export function Form({ form }: { form: ChTeamForm; }) {
           <span>
             <i className="is-best" aria-hidden="true" />
             Best day {formatFixed(pts[best]!)} · {shortDay(days![best]!)}
-            {oneRound(best)}
           </span>
           <span>
             <i className="is-worst" aria-hidden="true" />
             Toughest day {formatFixed(pts[worst]!)} · {shortDay(days![worst]!)}
-            {oneRound(worst)}
           </span>
         </p>
       )}
       {pts.length <= 1 && <p className="ch-hm-form__noline">The line starts with a second round day.</p>}
       <dl className="ch-hm-form__figs">
+        {/* The rounds the figures rest on, in the row's own window (HOME-P-14: "Rounds 0 this week" sat beside last-10 greens). */}
         <div>
           <dt>Rounds</dt>
-          <dd className="ch-num">{form.roundsThisWeek}</dd>
-          <dd>this week</dd>
+          <dd className="ch-num">{form.basis.rounds}</dd>
+          <dd>{win === 'last10' ? 'last 10 each' : win === 'season' ? 'this season' : 'all time'}</dd>
         </div>
         <div>
           <dt>GIR</dt>
           <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : <NoData />}</dd>
-          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : form.gir.pct == null ? figureMissing(form.basis.girRounds, form.gir.needs) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + girTone}>{form.gir.delta != null ? changeText(`${formatSigned(form.gir.delta, 0)} pts`, girTone) : form.gir.pct == null ? figureMissing(form.basis.girRounds, form.gir.needs) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
           <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : <NoData />}</dd>
-          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : form.putts.avg == null ? figureMissing(form.basis.puttsRounds) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + puttsTone}>{form.putts.delta != null ? changeText(formatSigned(form.putts.delta), puttsTone) : form.putts.avg == null ? figureMissing(form.basis.puttsRounds) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
     </section>
   );
 }
 
-/** `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the calendar draws. */
-export function WeekStrip({ days, note, children, calendar = false }: { calendar?: boolean; days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
+/**
+ * `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the
+ * calendar draws. `rounds`: the team's countable rounds this week, a count on the week's own basis, so it sits here and not in Team
+ * scoring's last-10 row (prod audit 2026-11-15, HOME-P-14).
+ */
+export function WeekStrip({ days, note, children, calendar = false, rounds }: { calendar?: boolean; days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode; rounds?: number }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
@@ -470,6 +491,7 @@ export function WeekStrip({ days, note, children, calendar = false }: { calendar
         )}
       </div>
       <WeekDays days={days} note={note} />
+      {rounds != null && <p className="ch-hm-week__n ch-num">{rounds ? `${plural(rounds, 'round')} posted this week` : 'No rounds posted this week yet'}</p>}
       {children}
     </section>
   );

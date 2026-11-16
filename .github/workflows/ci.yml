@@ -748,6 +748,13 @@ jobs:
         shard: [1, 2, 3, 4, 5]
     env:
       VITEST_MAX_WORKERS: '4'  # 4-vCPU hosted runner; vitest.config.ts defaults to 3 for shared machines
+      # No step in this job talks to Supabase, so it does not take the workflow's
+      # project URL and key (launch readiness DATA-01, 2026-11-15). These are the
+      # loopback stand-ins vitest pins for every test anyway
+      # (src/test/network-isolation.ts TEST_SUPABASE_ENV), and that guard refuses
+      # any call to them.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key-not-a-real-key
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1

@@ -30,6 +30,10 @@ Held items:     supabase/migrations/20261116091000_golf_tournament_b_team.sql (R
   starts." Edit opens on the saved value (it used to show 10 whatever was
   saved, and did not send it).
 
+- A failed read of the B team (the column is there) fails the lineup with its
+  error and Try again, instead of showing B players as A individuals that a
+  save would move out of squad B (review, 16 Nov).
+
 ### Why
 
 - Coaches enter a B team at many events; it must never count in the team's

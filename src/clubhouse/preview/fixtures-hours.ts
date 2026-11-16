@@ -80,6 +80,7 @@ export const PREVIEW_HOURS: ChHoursData = {
   untimedHours: null,
   settingsFrom: 'division',
   storeMissing: false,
+  settingsError: false,
   events: EVENTS,
   people: PEOPLE,
   // Mila missed Wednesday's practice.

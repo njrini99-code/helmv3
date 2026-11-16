@@ -120,6 +120,7 @@ same way.
 | CH-6282 | Practice hours: the roster doesn't load (coach) | “The roster didn’t load” + “Hours are drafted for each player, so none are shown until it does.” Try again | `loadHours` (`membersError`) | practice-hours.test › CH-6282 |
 | CH-6283 | Practice hours: the team's hours tables aren't in the database yet (migration 20261115230000 held) | Coach only, a note: “Your own limits and changes can’t be saved yet” + the limits the week is read against (the division from Settings, Team). Limits and Change are hidden; the week still drafts on the defaults | `loadHours` (`storeMissing`, `isHoursStoreMissing`) | practice-hours.test › CH-6283 |
 | CH-6284 | Practice hours: the week's table or list crashes | “The week couldn’t be shown” in its place; the events and the rules below stay | `SectionBoundary` `calendar.hours.week` | preview |
+| CH-6285 | Practice hours: the team's saved limits don't load (coach; the tables are there) | “Your saved limits didn’t load” + “This week is read against the defaults until they do. Limits and changes can’t be saved yet, so nothing you saved is replaced.” Try again; Limits and Change are hidden, so a save never writes the defaults over the stored seasons and custom limits | `loadHours` (`settingsError`) | practice-hours.test › CH-6285 |
 
 ## 63xx Empty
 

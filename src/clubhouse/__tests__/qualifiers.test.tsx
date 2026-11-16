@@ -733,8 +733,16 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
       expect(document.querySelector('.ch-qf-mine')).toBeNull();
       view.unmount();
     };
-    await standing('golf_qualifier_entries');
-    await standing('golf_rounds');
+    // The fixture is live (22 Sep to 1 Oct): read on a day inside it, so the qualifier is the player's hero. Past its last day it files
+    // under Concluded for a player (N13P-51) and there is no hero to check.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-25T15:00:00Z'));
+    try {
+      await standing('golf_qualifier_entries');
+      await standing('golf_rounds');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('CH-09221 the coach’s pick notes that do not load are named, never presented as "no notes"; the squad stays', async () => {

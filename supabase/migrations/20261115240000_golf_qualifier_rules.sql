@@ -63,6 +63,8 @@ create table if not exists public.golf_qualifier_rules (
     ),
     -- F-06: count each player's best N rounds (null: every round, the rule
     -- every qualifier had before).
+    -- a small bounded value (its check holds it far below the smallint limit).
+    -- squawk-ignore prefer-bigint-over-smallint
     count_best smallint check (count_best between 1 and 10),
     updated_by uuid references auth.users (id) on delete set null,
     updated_at timestamptz not null default now()

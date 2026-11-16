@@ -44,7 +44,7 @@ const cardInput = z
     holes: z.array(z.number().int().min(1).max(15).nullable()).min(9).max(18).nullable(),
     pars: z.array(z.number().int().min(3).max(6)).min(9).max(18).nullable(),
     total: z.number().int().min(20).max(200).nullable(),
-    status: z.enum(['ok', 'wd', 'dq']),
+    status: z.enum(['ok', 'wd', 'dq', 'dq_pending']),
     replace: z.boolean(),
   })
   .refine((c) => (c.holes == null) === (c.pars == null) && (c.holes == null || c.holes.length === c.pars!.length), 'holes need their pars');

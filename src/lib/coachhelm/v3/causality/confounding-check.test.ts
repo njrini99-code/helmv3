@@ -22,7 +22,7 @@ interface Row {
  *  simplifying assumption `causality-attribute.test.ts`'s `exposureBuilder`
  *  makes for its own paginated fetch. */
 function makeClient(rows: Row[], opts: { error?: { message: string }; pageSize?: number } = {}) {
-  const calls: { eq: unknown[]; neq: unknown[]; lte: unknown[] } = { eq: [], neq: [], lte: [] };
+  const calls: { eq: unknown[]; neq: unknown[]; lte: unknown[]; or: unknown[] } = { eq: [], neq: [], lte: [], or: [] };
   const builder = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn((...args: unknown[]) => {
@@ -35,6 +35,10 @@ function makeClient(rows: Row[], opts: { error?: { message: string }; pageSize?:
     }),
     lte: vi.fn((...args: unknown[]) => {
       calls.lte.push(args);
+      return builder;
+    }),
+    or: vi.fn((...args: unknown[]) => {
+      calls.or.push(args);
       return builder;
     }),
     order: vi.fn().mockReturnThis(),
@@ -159,5 +163,15 @@ describe('detectConfoundingInterventions', () => {
     );
 
     expect(result).toEqual({ ok: true, multipleInterventions: true });
+  });
+});
+
+// Prod audit 2026-11-15, PMAC-01: Team Hub was fetched ahead of the tap and recorded its card as shown (`hub_signal`), so those rows are
+// not evidence of a view and never count as a confounding exposure.
+describe('detectConfoundingInterventions leaves prefetch-era Hub rows out', () => {
+  it('reads only exposures with no surface or a surface other than hub_signal', async () => {
+    const { client, calls } = makeClient([]);
+    await detectConfoundingInterventions(client as never, { player_id: 'p1', insight_id: 'i1', windowStart: WINDOW_START, windowEnd: WINDOW_END });
+    expect(calls.or).toEqual([['surface.is.null,surface.not.in.(hub_signal)']]);
   });
 });

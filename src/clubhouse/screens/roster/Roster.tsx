@@ -47,7 +47,7 @@ import { RosterLimitLine, useRosterLimit } from './RosterLimit';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
 import { useHomeDayRollover } from '../home/use-day-rollover';
 import { Tooltip } from '../../ui/Tooltip';
-import { AVAILABILITY_WORD, availabilityLine, lastFive, rosterFailedParts, rosterStandings, sgBarScale, sgBarWidth, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
+import { AVAILABILITY_WORD, availabilityLine, lastFive, rosterFailedParts, rosterStandings, roundsPlayed, sgBarScale, sgBarWidth, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import { classNoteFor, type RosterClassLines } from './class-line';
 import { useRosterClassLines } from './useClassLines';
@@ -370,7 +370,7 @@ export function Roster({ data }: { data: ChRoster; }) {
         p.classYear ?? '',
         p.status,
         AVAILABILITY_WORD[p.availability ?? 'available'],
-        p.rounds,
+        roundsPlayed(p),
         p.avg?.toFixed(1) ?? '',
         p.sgPerRound?.toFixed(2) ?? '',
         p.handicap ?? '',
@@ -394,7 +394,7 @@ export function Roster({ data }: { data: ChRoster; }) {
     }
   };
 
-  const statsHref = (p: ChRosterPlayer) => rebuiltHref(`/golf/dashboard/stats?player=${p.id}`);
+  const statsHref = (p: ChRosterPlayer) => rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season`);
   const menuFor = (p: ChRosterPlayer): MenuItem[] => {
     const items: MenuItem[] = [];
     // The board's first row item: CoachHelm's Deep dive of this player (spec A).
@@ -719,7 +719,7 @@ const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between players', keys: [
 
 /** A player's profile, where Stats is rebuilt for the coach; otherwise null (the peek opens instead). */
 // `from=roster`: the profile keeps Roster lit in the sidebar and as its way back (coach audit 13 Nov 2026, §8 #7).
-const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}&from=roster`);
+const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}&window=season&from=roster`);
 
 /**
  * The roster itself, as cards or a table. Its own component so the
@@ -938,7 +938,7 @@ function RosterList({
                 <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
                   {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
                 </span>
-                <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
+                <span role="cell" className="r ch-num ch-rs-num2">{roundsPlayed(p)}</span>
                 <span role="cell" className="r">
                   <Menu
                     label={`Actions for ${p.name}`}

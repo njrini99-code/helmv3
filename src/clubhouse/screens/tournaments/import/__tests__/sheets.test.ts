@@ -99,4 +99,11 @@ describe('results import: reading a file', () => {
   it('says a paste is empty rather than reading nothing', () => {
     expect(readResultsText('  \n\t\n')).toEqual({ ok: false, reason: 'empty' });
   });
+
+  it('a cell keeps only its text, even when a tag is split around another or left open', () => {
+    const html = '<table><tr><td><scr<b>ipt>alert(1)</script>Ava</td><td>7<i>2</i> <script>x</script></td><td>a < b</td></tr></table>';
+    const cells = readHtmlTables(html)[0]!.rows[0]!;
+    for (const c of cells) expect(c).not.toMatch(/[<>]/);
+    expect(cells[1]).toBe('72');
+  });
 });

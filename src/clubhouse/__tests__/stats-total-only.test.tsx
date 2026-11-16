@@ -22,12 +22,16 @@ const detailed = vi.hoisted(() => vi.fn());
 vi.mock('@/app/golf/actions/stats-data', () => ({ getDetailedStats: detailed, getSprayChartData: vi.fn().mockResolvedValue({ driving: null, approach: null, scope: { roundId: 'x', roundsIncluded: 0, filterApplied: false } }) }));
 
 import { teamForm } from '../data/home';
+import { statsRowsOf } from './stats-rows';
 import { seasonFrom, toLibraryRound, type ChRoundListRow } from '../data/rounds-shape';
 import { lastTenFloor, loadSeasonRounds, summarizePlayer, type ChRound } from '../data/season';
 import { filterFor } from '../data/stats-filter';
 import { loadPlayerProfile } from '../data/stats-player';
 import { loadTeamStats } from '../data/stats-team';
 import { PREVIEW_PLAYER } from '../preview/fixtures-stats';
+
+/** Home's team form over rounds that carry their figures, handed over as their stats rows (DF-P-01). */
+const teamFormOf = (full: ChRound[], week: number) => teamForm(full, statsRowsOf(full), week);
 
 type Filters = Array<[string, unknown[]]>;
 type Row = Record<string, unknown> & { id: string; player_id: string; round_date: string };
@@ -235,7 +239,7 @@ describe('Q-122 Last 10 across seasons', () => {
   it('Home’s team form is the same Last 10: the newest ten across seasons, said with their dates', () => {
     // As the season read hands them over: the nines make the total, and the two totals are marked.
     const rounds = COLE_ROUNDS.map((r) => ({ ...(r as unknown as ChRound), total_score: r.front_nine == null ? (r.total_score as number) : (r.front_nine as number) + ((r.back_nine as number | null) ?? 0), ...(String(r.id).startsWith('q') ? { total_only: true as const } : {}) }));
-    const f = teamForm(rounds, 0)!;
+    const f = teamFormOf(rounds, 0)!;
     expect(f.basis).toMatchObject({ rounds: 10, from: '2026-07-02', to: '2026-09-26' });
     expect(f.avg).toBeCloseTo(LAST_10_MEAN, 10);
     expect(f.delta).toBeCloseTo(LAST_10_MEAN - PREVIOUS_MEAN, 10);
@@ -343,7 +347,7 @@ describe('Q-123 Total-only rounds on Home, in Rounds and on the roster', () => {
     // Its row holds zeros, as an in-progress default would; an average must not read them.
     const zeros = { total_only: true as const, total_putts: 0, total_gir: 0, total_gir_possible: 18 };
     const full = [round('q', '2026-09-26', 70, zeros), round('a', '2026-09-20', 74), round('b', '2026-09-19', 74)];
-    const f = teamForm(full, 0)!;
+    const f = teamFormOf(full, 0)!;
     expect(f.avg).toBeCloseTo((70 + 74 + 74) / 3, 10);
     expect(f.putts.avg).toBe(30);
     expect(f.gir.pct).toBeCloseTo((20 / 36) * 100, 10);

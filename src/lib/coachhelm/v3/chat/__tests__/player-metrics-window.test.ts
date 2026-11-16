@@ -19,6 +19,7 @@ function sbWith(row: unknown) {
 const figures = (over: Partial<PlayerFigures> = {}): PlayerFigures => ({
   rounds: 10, hole_rounds: 8, sg_rounds: 8, scoring_average: 76.3, putts_per_round: 32.625, putt_rounds: 8, sg_total: -7.31,
   legs: { tee: -1.145, approach: -3.6, around: 0.51, putting: -3.07 }, gir_pct: 51.7, gir_holes: 144, fairway_pct: 57.1, fairway_holes: 112,
+  to_par: null, scrambling_pct: null, scramble_chances: 0, sand_pct: null, sand_chances: 0, one_putt_pct: null, three_putt_pct: null, putt_holes: 0, penalties_per_round: null, penalty_rounds: 0,
   window_start: '2026-08-25', window_end: '2026-10-21', ...over,
 });
 /** The route's loader, as a test sees it: these figures for whoever is asked about. */

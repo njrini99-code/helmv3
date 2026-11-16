@@ -5,7 +5,7 @@
 ```text
 Design package: none (launch readiness findings, 15 Nov 2026, §4 F-03); no owner board. Built from shared ui primitives and tokens only (Section, InlineNotice, EmptyState, Modal, Segmented, Field, ExportButton)
 PR/commit:      claude/project-thread-8hytxy (QUEUE lr-f03)
-Contract IDs:   60180–60184, 60980–60982; CH-6080–6082, CH-6180–6181, CH-6280–6284, CH-6380–6382, CH-6480, CH-6880–6881
+Contract IDs:   60180–60184, 60980–60982; CH-6080–6082, CH-6180–6181, CH-6280–6285 (60688), CH-6380–6382, CH-6480, CH-6880–6881
 Actions:        ACT-P006-HOURS-LIMITS, ACT-P006-HOURS-ADJUST, ACT-P006-HOURS-EXPORT (new)
 Data impact:    reads golf_events, golf_event_attendance and the roster through RLS; new tables golf_team_hours_settings and golf_hours_adjustments in migration 20261115230000 (HELD, not applied). Until it is applied the page drafts on the division from Settings, Team and says saving waits (CH-6283)
 Held items:     supabase/migrations/20261115230000_golf_team_hours.sql (HELD.md row)
@@ -35,6 +35,10 @@ Held items:     supabase/migrations/20261115230000_golf_team_hours.sql (HELD.md 
   CSV, a row a player a day and a row for the week.
 - An event with no times counts nothing until times or a standard for untimed
   practices are set, and its figures carry a + (CH-6381).
+
+- If the team's saved limits fail to load (the tables are there), the week reads
+  the defaults, Limits and Change are hidden and CH-6285 says so, so a save never
+  writes the defaults over the stored seasons and custom limits (review, 16 Nov).
 
 ### Why
 

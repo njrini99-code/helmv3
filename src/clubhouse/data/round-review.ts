@@ -133,6 +133,7 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
       tees_played: round.tees_played,
       tee_id: round.tee_id ?? null,
       round_date: round.round_date,
+      round_type: round.round_type ?? null,
       holes_played: round.holes_played,
       total_score: review.score,
       front_nine: round.front_nine,

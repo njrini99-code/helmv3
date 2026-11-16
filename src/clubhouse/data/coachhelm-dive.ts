@@ -14,6 +14,8 @@ import { SOURCE_ROUND_IDS_CAP } from '@/lib/coachhelm/v3/engine/source-rounds';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { readCorrections } from './coachhelm-corrections';
+import { loadPlayerSeasonSg } from './season-figures';
+import type { ChSgByCategory } from './season-figures-shape';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { toChInsight } from './coachhelm-map';
 import { speak } from './coachhelm-voice';
@@ -107,12 +109,22 @@ export async function readPlans(
 }
 
 /**
- * The category reads. `null`: they did not load (the action answers `success: false`, or throws). A coach's go through
- * `getThemesForCoach`, which admits a coach of the player (`verifyPlayerAccess`, as the coach feed does).
+ * This season's strokes gained by category for the themes (SC-01): read here, since the themes action may not import Clubhouse, and
+ * never the lifetime stats cache. Null when the season did not read: the themes then grade nothing as a leak or a strength from it.
  */
-export async function readThemes(playerId: string, role: 'player' | 'coach' = 'player'): Promise<AssembledThemes | null> {
+async function seasonSg(playerId: string): Promise<ChSgByCategory | null> {
+  return loadPlayerSeasonSg(await createClient(), playerId, { surface: 'coachhelm.themes' });
+}
+
+/**
+ * The category reads. `null`: they did not load (the action answers `success: false`, or throws). A coach's go through
+ * `getThemesForCoach`, which admits a coach of the player (`verifyPlayerAccess`, as the coach feed does). `sg`: this season's strokes
+ * gained by category when the caller has the player's rounds already (the team board); read here otherwise.
+ */
+export async function readThemes(playerId: string, role: 'player' | 'coach' = 'player', sg?: ChSgByCategory | null): Promise<AssembledThemes | null> {
   try {
-    const res = role === 'coach' ? await getThemesForCoach({ player_id: playerId }) : await getThemesForPlayer(playerId);
+    const figures = sg !== undefined ? sg : await seasonSg(playerId);
+    const res = role === 'coach' ? await getThemesForCoach({ player_id: playerId, sg: figures }) : await getThemesForPlayer(playerId, { sg: figures });
     if (res.success && res.data) return res.data;
     log('dive.themes', res.error ?? 'no themes');
     return null;

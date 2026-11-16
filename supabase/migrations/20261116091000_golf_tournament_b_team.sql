@@ -105,9 +105,15 @@ END $$;
 
 -- 2. One player a slot within a squad (the old index was one a slot in the
 -- event).
+-- Supabase applies the file in one transaction, where CONCURRENTLY
+-- cannot run; the table is small.
+-- squawk-ignore require-concurrent-index-creation
 create unique index if not exists golf_tournament_entries_squad_slot_uq
 on public.golf_tournament_entries (tournament_id, squad, slot)
 where slot is not null;
+-- Supabase applies the file in one transaction, where CONCURRENTLY
+-- cannot run; the table is small.
+-- squawk-ignore require-concurrent-index-deletion
 drop index if exists public.golf_tournament_entries_slot_uq;
 
 -- 3. Save the entries (20261024100200 section 5, with the squad).

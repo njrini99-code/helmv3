@@ -185,8 +185,18 @@ function EventLines({ week, coach, onChange }: { week: ChHoursWeek; coach: boole
                   </span>
                   <span className="ch-hrs-ln__why">{l.why}</span>
                 </span>
-                <span className="ch-hrs-ln__h ch-num" aria-label={l.counted && l.hours != null ? `${fmtHours(l.hours)} hours` : 'No hours'}>
-                  {l.counted && l.hours != null ? fmtHours(l.hours) : '—'}
+                <span className="ch-hrs-ln__h ch-num">
+                  {l.counted && l.hours != null ? (
+                    <>
+                      {fmtHours(l.hours)}
+                      <span className="ch-sr-only"> hours</span>
+                    </>
+                  ) : (
+                    <>
+                      <span aria-hidden="true">—</span>
+                      <span className="ch-sr-only">No hours</span>
+                    </>
+                  )}
                 </span>
                 {onChange && (
                   <Button size="sm" variant="ghost" className="ch-hrs-ln__act" onClick={() => onChange(l)} aria={{ label: `Change how ${l.title} counts` }}>
@@ -210,7 +220,8 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
   const [limitsOpen, setLimitsOpen] = useState(false);
   const [changing, setChanging] = useState<ChHoursLine | null>(null);
   const coach = data.role === 'coach';
-  const canSave = coach && !data.storeMissing;
+  // A failed read of the saved limits must not offer a save of the defaults over them (CH-6285).
+  const canSave = coach && !data.storeMissing && !data.settingsError;
 
   const limits = useMemo(() => limitsFor(data.settings, data.days[0]!), [data.settings, data.days]);
   const week = useMemo(
@@ -317,6 +328,16 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
         </div>
       )}
 
+      {coach && data.settingsError && !data.storeMissing && (
+        <InlineNotice
+          code="CH-6285"
+          title="Your saved limits didn’t load"
+          body="This week is read against the defaults until they do. Limits and changes can’t be saved yet, so nothing you saved is replaced."
+          onRetry={refresh}
+          retrying={refreshing}
+        />
+      )}
+
       {data.eventsError ? (
         <InlineNotice
           code="CH-6280"
@@ -374,6 +395,7 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
           <Section id="ch-hrs-ev" title="What counted" meta={week.lines.length ? 'Every event on the calendar this week' : undefined}>
             {week.lines.length === 0 ? (
               <EmptyState
+                kind="first-run"
                 code="CH-6382"
                 compact
                 icon={Clock}

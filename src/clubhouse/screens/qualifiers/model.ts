@@ -547,8 +547,12 @@ export function missingRounds(rows: ReadonlyArray<{ name: string; rounds: Readon
 /**
  * "Waiting on 3 rounds", or "Past last day" when nothing is outstanding or the count didn't load. The list files it under
  * Active, so "Ended" stays the word for a completed qualifier only: one state, one word (F-0068).
+ *
+ * That is the coach's label: the coach can chase the rounds and close it. A player sees "Closed · awaiting coach’s final" (prod audit
+ * 2026-11-15, N13P-51): "Waiting on 7 rounds" 45 days after the last day told a player nothing about whether they made the squad.
  */
-export function endedLabel(e: { outstanding: number | null }): string {
+export function endedLabel(e: { outstanding: number | null }, viewer: 'coach' | 'player' = 'coach'): string {
+  if (viewer === 'player') return 'Closed · awaiting coach’s final';
   return e.outstanding ? `Waiting on ${plural(e.outstanding, 'round')}` : 'Past last day';
 }
 

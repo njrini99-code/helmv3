@@ -31,7 +31,7 @@ export function chCsvCell(v: ChCsvValue): string {
 
 /** The whole file: the byte order mark, the head, then the rows, each line ended CRLF. */
 export function chCsv(head: readonly string[], rows: ReadonlyArray<readonly ChCsvValue[]>): string {
-  return '﻿' + [head, ...rows].map((row) => row.map(chCsvCell).join(',') + '\r\n').join('');
+  return '\uFEFF' + [head, ...rows].map((row) => row.map(chCsvCell).join(',') + '\r\n').join('');
 }
 
 /** A figure to `places` decimals, as a number (a spreadsheet's to sum), or null. */
@@ -58,7 +58,7 @@ export function chCsvName(...parts: ReadonlyArray<string | null | undefined>): s
     .map((p) =>
       p
         .normalize('NFKD')
-        .replace(/[̀-ͯ]/g, '')
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, ''),

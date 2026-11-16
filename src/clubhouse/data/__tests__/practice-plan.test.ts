@@ -209,3 +209,28 @@ describe('names on the plan come through golf_player_profiles, not a golf_player
     expect(JSON.stringify(load.plan)).not.toContain('Ada');
   });
 });
+
+/**
+ * Launch readiness 2026-11-15. DF-P-09: a practice the coach called off kept its live plan, and a player still opened it as the
+ * next practice. DF-C-07: the plan's clock read `golf_teams.timezone`, which Settings never writes; it now reads the team's
+ * settings zone (`loadTeamZone`), as every other Clubhouse loader does.
+ */
+describe('a cancelled practice and the team’s clock (DF-P-09, DF-C-07)', () => {
+  it('a player’s plan for a practice the coach called off is gone; the coach still opens their own', async () => {
+    tables.golf_events = [{ ...tables.golf_events![0], status: 'cancelled', cancelled_at: '2026-11-04T09:00:00Z' }];
+    expect((await loadPlayerPlan('plan-1', 'me')).status).toBe('gone');
+    expect((await loadPlayerPractice('plan-1', 'me', new Date('2026-11-05T19:10:00Z'))).status).toBe('gone');
+    tables.golf_practice_plans = [{ id: 'plan-1', team_id: 't-1', event_id: 'ev-1', title: 'Thursday practice', body: { v: 2, focus: 'Lag', notes: '', place: 'Lakeside', arrivalBufferMin: 15, bring: [], players: versionBody.players, groups: versionBody.groups, variants: { main: { blocks: versionBody.blocks }, rain: null } }, version: 2, status: 'published', published_version: 2, coach_why: {}, edited_after_publish: false }];
+    expect((await loadCoachPlan('plan-1')).status).toBe('ready');
+  });
+
+  it('the day is the team’s settings zone, not the team row’s', async () => {
+    // 06:00 UTC on 6 Nov: Thursday evening in Los Angeles, Friday in New York (the team row's zone).
+    tables.golf_events = [{ ...tables.golf_events![0], start_time: '2026-11-06T06:00:00Z', end_time: '2026-11-06T08:00:00Z' }];
+    tables.golf_team_settings = [{ team_id: 't-1', timezone: 'America/Los_Angeles' }];
+    const page = await loadPlayerPractice('plan-1', 'me', new Date('2026-11-06T06:10:00Z'));
+    if (page.status !== 'ready') throw new Error('not ready');
+    expect(page.data.context).toBe('Thursday');
+    expect(reads.some((r) => r.table === 'golf_teams' && r.cols.includes('timezone'))).toBe(false);
+  });
+});

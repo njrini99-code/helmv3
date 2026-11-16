@@ -59,13 +59,15 @@ describe('the course page reads canonical totals', () => {
 });
 
 describe('the review’s record chips compare canonical totals', () => {
+  // A practice round meets no record (DF-C-12), so the rounds the chips compare here are scoring rounds.
+  const scored = (id: string, over: Record<string, unknown> = {}) => row(id, { round_type: 'tournament', ...over });
   it('another round whose stored total drifted high is not beaten by a round that is only second lowest', async () => {
     // This round is 73. A's stored total says 74, but its nines say 72, so it is lower: this is not a career low.
     tables.current = {
       golf_rounds: {
         data: [
-          row('a', { total_score: 74, round_date: '2026-09-02' }),
-          row('b', { total_score: 80, front_nine: 40, back_nine: 40, round_date: '2026-09-03' }),
+          scored('a', { total_score: 74, round_date: '2026-09-02' }),
+          scored('b', { total_score: 80, front_nine: 40, back_nine: 40, round_date: '2026-09-03' }),
         ],
       },
     };
@@ -79,8 +81,8 @@ describe('the review’s record chips compare canonical totals', () => {
     tables.current = {
       golf_rounds: {
         data: [
-          row('a', { total_score: 76, front_nine: 38, back_nine: 38, round_date: '2026-09-02' }),
-          row('b', { total_score: 80, front_nine: 40, back_nine: 40, round_date: '2026-09-03' }),
+          scored('a', { total_score: 76, front_nine: 38, back_nine: 38, round_date: '2026-09-02' }),
+          scored('b', { total_score: 80, front_nine: 40, back_nine: 40, round_date: '2026-09-03' }),
         ],
       },
     };

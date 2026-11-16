@@ -36,6 +36,21 @@ describe('the one number that moved', () => {
     expect(movedNumber(round({ putts: 25 }), past({}, 2))).toBeNull();
     expect(movedNumber(round({ putts: 32.5 }), past({}))).toBeNull();
   });
+
+  // Launch readiness 2026-11-15, DF-P-08.
+  it('a putt count of 0 is "not recorded": an earlier round’s 0 is no round, and this round’s 0 says nothing', () => {
+    const history = [...past({}), ...past({ total_putts: 0 }, 3)];
+    // With the zeros counted the average fell to 21.7 and 32 putts read as a move the wrong way.
+    expect(movedNumber(round({ putts: 28 }), history)).toEqual({ value: '28 putts', line: 'Your average over your last 6 rounds: 32.5.', tone: 'gain' });
+    expect(movedNumber(round({ putts: 0, toPar: 5.5 }), past({}))).toBeNull();
+  });
+
+  it('greens are pooled over the earlier rounds’ holes, never a mean of each round’s percentage', () => {
+    // Four 18s at 9 of 18 and two nines at 1 of 9: pooled 38 of 90 is 42%; the mean of the six percentages would say 37%.
+    const history = [...past({ total_gir: 9, total_gir_possible: 18 }, 4), ...past({ total_gir: 1, total_gir_possible: 9 }, 2)];
+    const moved = movedNumber(round({ putts: 32.5, toPar: 5.5, fairways: { hit: 7, of: 14 }, greens: { hit: 17, of: 18 } }), history);
+    expect(moved).toEqual({ value: '17 of 18 greens', line: 'Your average over your last 6 rounds: 42% of greens (94% today).', tone: 'gain' });
+  });
 });
 
 describe('the round’s counted facts', () => {

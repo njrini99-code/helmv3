@@ -457,7 +457,8 @@ export interface ChImportCardInput {
   holes: Array<number | null> | null;
   pars: number[] | null;
   total: number | null;
-  status: ChResultStatus;
+  /** The file's status; the hole grid carries the card's own, so a hole typed never reinstates a WD or DQ. */
+  status: ChResultStatus | 'dq_pending';
   /** Replace what is there (an entered total, or a player's card with the official score). */
   replace: boolean;
 }

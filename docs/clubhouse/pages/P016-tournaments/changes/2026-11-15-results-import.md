@@ -55,6 +55,9 @@ Held items:     none
   drops out of the sums instead of blanking them, and Save says "Fix 1 hole to
   save"; a phone says "Choose the results file", having nothing to drag.
 
+- Enter holes keeps a card's status: typing a hole for a WD, DQ or DQ pending
+  player corrects strokes and never reinstates them (review, 16 Nov).
+
 ### Why
 
 - Coaches get results as Golf Genius exports or as paper cards. Without an

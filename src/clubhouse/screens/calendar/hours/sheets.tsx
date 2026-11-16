@@ -11,6 +11,7 @@ import { Segmented } from '../../../ui/Segmented';
 import { Select } from '../../../ui/Select';
 import { Switch } from '../../../ui/Switch';
 import { haptic } from '../../../lib/haptics';
+import { plural } from '../../../lib/plural';
 import { useAction } from '../../../lib/use-action';
 import { shortDay, type ChHoursLine } from './model';
 import {
@@ -134,7 +135,7 @@ function settingsOf(d: LimitsDraft): { settings: ChHoursSettings; untimedHours: 
 }
 
 const WEEKDAY_OPTIONS = Array.from({ length: 7 }, (_, i) => ({ value: String(i), label: weekdayName(i) }));
-const DAYS_OFF_OPTIONS = Array.from({ length: 8 }, (_, i) => ({ value: String(i), label: i === 1 ? '1 day' : `${i} days` }));
+const DAYS_OFF_OPTIONS = Array.from({ length: 8 }, (_, i) => ({ value: String(i), label: plural(i, 'day') }));
 
 export function LimitsSheet({
   open,

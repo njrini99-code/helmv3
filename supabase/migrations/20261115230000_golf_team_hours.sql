@@ -63,6 +63,8 @@ create table if not exists public.golf_team_hours_settings (
         division in ('d1', 'd2', 'd3', 'naia', 'custom')
     ),
     autonomy boolean not null default false,
+    -- a small bounded value (its check holds it far below the smallint limit).
+    -- squawk-ignore prefer-bigint-over-smallint
     week_starts_on smallint not null default 1 check (
         week_starts_on between 0 and 6
     ),
@@ -78,6 +80,8 @@ create table if not exists public.golf_team_hours_settings (
         custom_week_hours is null
         or (custom_week_hours > 0 and custom_week_hours <= 168)
     ),
+    -- a small bounded value (its check holds it far below the smallint limit).
+    -- squawk-ignore prefer-bigint-over-smallint
     custom_days_off smallint not null default 1 check (
         custom_days_off between 0 and 7
     ),

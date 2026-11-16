@@ -35,11 +35,13 @@ describe('the Needs a look card', () => {
   const player = (over: Partial<ChRosterPlayer>): ChRosterPlayer =>
     ({ id: 'p', name: 'Will Gruse', status: 'active', rounds: 30, avg: 75.5, sgPerRound: -7.1, trend: [74, 76, 79], gradYear: 2027, attention: null, ...over }) as ChRosterPlayer;
 
-  it('shows its reason as the figure, with strokes gained under it', () => {
-    const players = [player({ id: 'will', attention: { tone: 'loss', text: 'Scoring 4.0 worse' } }), player({ id: 'luke', name: 'Luke Wise', sgPerRound: -7.5 })];
+  // Prod audit 2026-11-15, ROSTER-08: the reason set as the 24px amber figure read as a number and was cut at the card's edge.
+  // The figure is strokes gained a round with its window; the reason is words under the name.
+  it('shows strokes gained as the figure, with its window, and the reason in words', () => {
+    const players = [player({ id: 'will', attention: { tone: 'loss', text: 'Scoring 4.0 worse' } }), player({ id: 'luke', name: 'Luke Wise', avg: 74, sgPerRound: -7.5 })];
     const { container } = render(<RosterLeaders players={players} statsError={false} clock={{ now: '2026-11-13T16:00:00Z', timeZone: NY } as never} onOpen={() => {}} />);
     const card = [...container.querySelectorAll('.ch-rs-ldr')].find((c) => c.textContent?.includes('Needs a look'))!;
-    expect(card.querySelector('.ch-rs-ldr__v')?.textContent).toMatch(/^Scoring 4\.0 worse/);
-    expect(card.querySelector('.ch-rs-ldr__v small')?.textContent).toMatch(/−7\.1 SG \/ rd/);
+    expect(card.querySelector('.ch-rs-ldr__v')?.textContent).toBe('−7.1SG a round');
+    expect(card.querySelector('.ch-rs-ldr__why')?.textContent).toBe('Scoring 4.0 worse');
   });
 });

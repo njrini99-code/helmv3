@@ -67,7 +67,8 @@ describe('Home scoring distinguishes unknown par', () => {
   it('uses only rounds with recorded par for the under-par figure and does not invent a common chart par', () => {
     showScoring([point('Oct 1', 71, 72), point('Oct 2', 70, null)]);
     expect(within(underFigure()).getByText('1 of 1')).toBeTruthy();
-    expect(within(underFigure()).getByText('Rounds with par recorded')).toBeTruthy();
+    // PL-HOME-02 (prod audit 2026-11-15): the sub-label names its window too, and still says the count is of rounds with a par.
+    expect(within(underFigure()).getByText('In last 2 with par recorded')).toBeTruthy();
     expect(within(chart()).queryByText('Par 72')).toBeNull();
   });
 

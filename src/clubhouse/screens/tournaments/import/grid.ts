@@ -7,7 +7,7 @@
  * hand is replaced by the card once holes are typed, so the round's total is the holes' sum. A hole already saved can
  * be changed but not emptied here: the write never deletes a hole.
  */
-import type { ChTourCourse, ChTourEvent, ChTourHoleLedger, ChTourPlayer } from '../types';
+import type { ChTourCourse, ChTourEvent, ChTourHoleLedger, ChTourPlayer, ScoreStatus } from '../types';
 import { playsRound, roundPars, type ChImportCardInput } from './plan';
 
 /** The most strokes a hole may take (the action's limit). */
@@ -22,6 +22,8 @@ export interface ChGridRow {
   locked: 'submitted' | null;
   /** A total entered by hand, which the holes replace. */
   entered: number | null;
+  /** The card's status (WD, DQ or DQ pending kept): typing a hole corrects strokes, never reinstates a player. */
+  status: ScoreStatus;
 }
 
 export interface ChGrid {
@@ -59,6 +61,7 @@ export function gridFor(
         saved,
         locked: pr?.roundId && pr.cardOpen === false ? 'submitted' : null,
         entered: pr && !pr.roundId && pr.total != null ? pr.total : null,
+        status: pr?.status ?? 'ok',
       };
     })
     // Lineup first by slot, then individuals, each by name.
@@ -147,7 +150,7 @@ export function gridCards(grid: ChGrid, edits: ChGridEdits): ChImportCardInput[]
     if (!holes) continue;
     const changed = holes.some((h, i) => h !== (row.saved[i] ?? null));
     if (!changed || holes.every((h) => h == null)) continue;
-    cards.push({ roundEventId: grid.roundEventId, playerId: row.playerId, date: grid.date, holes, pars: grid.pars, total: null, status: 'ok', replace: row.entered != null });
+    cards.push({ roundEventId: grid.roundEventId, playerId: row.playerId, date: grid.date, holes, pars: grid.pars, total: null, status: row.status, replace: row.entered != null });
   }
   return cards;
 }
