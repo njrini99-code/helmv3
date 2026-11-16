@@ -9,20 +9,28 @@ import { describe, expect, it } from 'vitest';
  * and the hollow early coin on the green stage.
  */
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8');
-const hex = (h: string) => h.replace('#', '').match(/../g)!.map((x) => parseInt(x, 16));
+type Rgb = [number, number, number];
+const hex = (h: string): Rgb => {
+  const n = parseInt(h.replace('#', ''), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+const linear = (v: number) => {
+  const c = v / 255;
+  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+};
 const lum = (h: string) => {
-  const [r, g, b] = hex(h).map((v) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const [r, g, b] = hex(h);
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
 };
 const ratio = (a: string, b: string) => {
-  const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
-  return (x + 0.05) / (y + 0.05);
+  const hi = Math.max(lum(a), lum(b));
+  const lo = Math.min(lum(a), lum(b));
+  return (hi + 0.05) / (lo + 0.05);
 };
-const mix = (fg: string, bg: string, a: number) =>
-  '#' + hex(fg).map((v, i) => Math.round(a * v + (1 - a) * hex(bg)[i]).toString(16).padStart(2, '0')).join('');
+const mix = (fg: string, bg: string, a: number) => {
+  const [f, b] = [hex(fg), hex(bg)];
+  return '#' + f.map((v, i) => Math.round(a * v + (1 - a) * b[i as 0 | 1 | 2]).toString(16).padStart(2, '0')).join('');
+};
 
 /** The first value a custom property takes in the sheet (the light theme's `:root`). */
 const firstDecl = (css: string, name: string) => {
