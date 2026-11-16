@@ -1,6 +1,6 @@
 # 2026-11-15 — CoachHelm
 
-## 2026-11-15 — Scorecard-only strokes gained leaves every average (SC-07, awaits the owner's approval)
+## 2026-11-15 — Scorecard-only strokes gained leaves the averages (SC-07)
 
 ```text
 Design package: none (the existing sgPolicy switch; its words already ship)
