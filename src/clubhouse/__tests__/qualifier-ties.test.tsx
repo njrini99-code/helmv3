@@ -211,7 +211,7 @@ describe('Qualifier ties · the form (F-04)', () => {
     const data: ChQFormData = { ...previewCreateForm(), initial: { ...previewCreateForm().initial, name: 'Conference qualifier', startDate: '2026-10-19' } };
     const { unmount } = wrap(<QualifierForm data={data} writes={writes} />);
     await user.click(screen.getByRole('button', { name: 'Create qualifier' }));
-    await waitFor(() => expect(writes.saveRules).toHaveBeenCalledWith('q-new', { tieRule: 'last_round' }));
+    await waitFor(() => expect(writes.saveRules).toHaveBeenCalledWith('q-new', { tieRule: 'last_round', countBest: null }));
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new'));
     unmount();
     const failing = fakeWrites();
@@ -220,7 +220,7 @@ describe('Qualifier ties · the form (F-04)', () => {
     await user.selectOptions(tie(), 'coach');
     await user.click(screen.getByRole('button', { name: 'Create qualifier' }));
     await screen.findByText('Qualifier created, but its tie rule didn’t save. Open Edit to set it.');
-    expect(failing.saveRules).toHaveBeenCalledWith('q-new', { tieRule: 'coach' });
+    expect(failing.saveRules).toHaveBeenCalledWith('q-new', { tieRule: 'coach', countBest: null });
   });
 
   it('90981 an edit sends the rule only when it changed', async () => {

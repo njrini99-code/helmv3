@@ -6,6 +6,7 @@ import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles
 import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
 import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
 import { NEW_QUALIFIER_RULES, readQualifierRules, readQualifierRulesMany, STORED_DEFAULT_RULES } from '@/lib/golf/qualifier-rules';
+import { readQualifierExemptions } from '@/lib/golf/qualifier-exemptions';
 import type { QualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/types';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, currentSeasonLabel, fullName, loadTeamZone } from './season';
@@ -217,6 +218,11 @@ export interface ChQFormData {
    * be changed), `error` when it didn't load (editing it is blocked so a guess can't overwrite it).
    */
   rulesState: 'ok' | 'missing' | 'error';
+  /**
+   * Exemptions (F-06): `missing` while migration 20261116100000 is held, `error` when they didn't load, `started` once the
+   * qualifier is under way (exempting is before it starts; a coach's pick gives a place after). Only `ok` can change them.
+   */
+  exemptState: 'ok' | 'missing' | 'error' | 'started';
 }
 
 function entrantOf(p: PlayerCols, now: Date, tz: string): ChQEntrant {
@@ -377,6 +383,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
       selections: null,
       numRounds: q.num_rounds,
       tieRule: (rulesRead.byId.get(q.id) ?? STORED_DEFAULT_RULES).tieRule,
+      countBest: (rulesRead.byId.get(q.id) ?? STORED_DEFAULT_RULES).countBest,
     });
     const me = input.playerId ? [...board.rows, ...board.unscored].find((r) => r.playerId === input.playerId) : undefined;
     return {
@@ -554,6 +561,7 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
           selections,
           numRounds: q.num_rounds,
           tieRule: rulesRead.rules.tieRule,
+          countBest: rulesRead.rules.countBest,
         });
 
   return {
@@ -656,6 +664,8 @@ const EMPTY_FORM: ChQFormValues = {
   picks: '1',
   playerIds: [],
   tieRule: NEW_QUALIFIER_RULES.tieRule,
+  countBest: NEW_QUALIFIER_RULES.countBest,
+  exempt: [],
 };
 
 /**
@@ -670,12 +680,16 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
   // The class year turns on 1 August in the team's zone (decision 9); read beside the page's other reads.
   const tzRead = loadTeamZone(supabase, input.teamId, 'qualifiers');
   // The roster is the team's, and the qualifier is read by its id: neither waits on the other.
-  const [rosterRes, qRes, rulesRead] = await Promise.all([
+  const [rosterRes, qRes, rulesRead, exemptRead] = await Promise.all([
     supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
     input.qualifierId ? supabase.from('golf_qualifiers').select(`${Q_COLUMNS}, team_id`).eq('id', input.qualifierId).maybeSingle() : Promise.resolve(null),
     // The tie rule (F-04). Creating, the read of no row still says whether the table is there yet.
     readQualifierRules(supabase, input.qualifierId ?? '00000000-0000-0000-0000-000000000000'),
+    // Exemptions (F-06), coach-only; the same read of no row says whether the table is there yet.
+    readQualifierExemptions(supabase, input.qualifierId ?? '00000000-0000-0000-0000-000000000000'),
   ]);
+  if (exemptRead.error) chLogServer('qualifiers', 'exemptions', exemptRead.error, 'qualifiers');
+  const exemptStore: ChQFormData['exemptState'] = exemptRead.missing ? 'missing' : exemptRead.error ? 'error' : 'ok';
   if (rulesRead.error) chLogServer('qualifiers', 'rules', rulesRead.error, 'qualifiers');
   const rulesState: ChQFormData['rulesState'] = rulesRead.missing ? 'missing' : rulesRead.error ? 'error' : 'ok';
   if (rosterRes.error) chLogServer('qualifiers', 'roster', rosterRes.error, 'qualifiers');
@@ -698,6 +712,7 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
       squadLocked: false,
       minRounds: 1,
       rulesState,
+      exemptState: exemptStore,
     };
   }
 
@@ -757,6 +772,8 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
       picks: String(q.selection_slots_coach_pick),
       playerIds: entered.map((p) => p.id),
       tieRule: rulesRead.rules.tieRule,
+      countBest: rulesRead.rules.countBest,
+      exempt: exemptRead.exemptions,
     },
     roundCourses: courseRows.map((c) => ({
       number: c.round_number,
@@ -775,6 +792,7 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
     // abandoned round at slot 3 must not stop the count going to 2 (audit F10). `used` above still holds every status for the locks.
     minRounds: Math.max(1, ...used.filter((u) => u.status === 'in_progress' || u.status === 'completed').map((u) => u.qualifier_round_number ?? 1)),
     rulesState,
+    exemptState: exemptStore === 'ok' && q.status != null && q.status !== 'upcoming' ? 'started' : exemptStore,
   };
 }
 

@@ -88,6 +88,22 @@ export function boardOrder(ranked: Iterable<Pick<StandingKey, 'played'>>, rule: 
   };
 }
 
+/**
+ * F-06: the rounds that count when a qualifier counts each player's best `best` rounds. Lower to par is better, then
+ * fewer strokes, then the earlier round (so the same rounds are dropped on every surface). With `best` null, or a player
+ * with no more rounds than it, every round counts. Returns the indexes of the counted rounds, in input order, so a caller
+ * sums its own fields and marks the rest dropped.
+ */
+export function countedRoundIndexes(rounds: ReadonlyArray<{ toPar: number; total: number }>, best: number | null): number[] {
+  const all = rounds.map((_, i) => i);
+  if (best == null || rounds.length <= best) return all;
+  return all
+    .slice()
+    .sort((a, b) => rounds[a]!.toPar - rounds[b]!.toPar || rounds[a]!.total - rounds[b]!.total || a - b)
+    .slice(0, best)
+    .sort((a, b) => a - b);
+}
+
 /** One scored player placed by the one order. */
 export interface PlacedStanding<T> {
   item: T;

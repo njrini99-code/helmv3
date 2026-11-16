@@ -69,6 +69,19 @@ describe('saveQualifierRules (F-04)', () => {
     expect(revalidate).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${Q}`);
   });
 
+  it('90981 90182 F-06 saves the rounds that count when given, and leaves them alone when not', async () => {
+    expect(await saveQualifierRules({ qualifierId: Q, rules: { tieRule: 'last_round', countBest: 2 } })).toEqual({ success: true });
+    expect(await saveQualifierRules({ qualifierId: Q, rules: { tieRule: 'last_round', countBest: null } })).toEqual({ success: true });
+    expect(await saveQualifierRules({ qualifierId: Q, rules: { tieRule: 'last_round' } })).toEqual({ success: true });
+    const rows = state.writes.map((w) => (w as { row: Record<string, unknown> }).row);
+    expect(rows[0]).toMatchObject({ count_best: 2 });
+    expect(rows[1]).toMatchObject({ count_best: null });
+    expect('count_best' in rows[2]!).toBe(false);
+    expect(await saveQualifierRules({ qualifierId: Q, rules: { tieRule: 'coach', countBest: 0 } })).toMatchObject({ success: false });
+    expect(await saveQualifierRules({ qualifierId: Q, rules: { tieRule: 'coach', countBest: 2.5 } })).toMatchObject({ success: false });
+    expect(state.writes).toHaveLength(3);
+  });
+
   it('refuses a rule it does not know, or an address that is not a qualifier id, without asking the database', async () => {
     expect(await saveQualifierRules({ qualifierId: Q, rules: { tieRule: 'playoff' as never } })).toMatchObject({ success: false, code: 'CH-09002' });
     expect(await saveQualifierRules({ qualifierId: 'q1', rules: { tieRule: 'coach' } })).toMatchObject({ success: false, code: 'CH-09002' });

@@ -22,7 +22,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop, usePhoneTabsHidden } from '../../shell/phone-chrome';
 import { PhoneTextAction } from '../../ui/PhoneBar';
 import { rebuiltHref } from '../../shell/nav';
-import { FIELD_ORDER, FORM_HELP, FORM_LEDE, plural, SQUAD_MAX, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
+import { enteredExempt, FIELD_ORDER, FORM_HELP, FORM_LEDE, plural, SQUAD_MAX, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
 import { CoursePicker, type ChQPickedCourse } from './CoursePicker';
 import { isPlainClick } from './return-state';
 import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
@@ -57,9 +57,11 @@ const FIELD_ID: Record<ChQField, string> = {
   entryDeadline: 'qf-deadline',
   rounds: 'qf-rounds',
   oneRoundAck: 'qf-one',
+  countBest: 'qf-count',
   playerIds: 'qf-players',
   squad: 'qf-squad',
   picks: 'qf-picks',
+  exempt: 'qf-exempt',
 };
 
 /**
@@ -129,8 +131,15 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       // The tie rule rides after the create (F-04): the qualifier exists either way, and a rule that didn't save is said in the toast.
       let rulesFailed = false;
       if (normalise(res).success && res.data?.qualifierId && data.rulesState === 'ok') {
-        const ruled = await writes.saveRules(res.data.qualifierId, { tieRule: v.tieRule }).catch(() => ({ success: false as const }));
+        const ruled = await writes.saveRules(res.data.qualifierId, { tieRule: v.tieRule, countBest: v.countBest }).catch(() => ({ success: false as const }));
         rulesFailed = !normalise(ruled).success;
+      }
+      // Who is exempt (F-06) rides after the create too: the players are entered by then.
+      const exempt = enteredExempt(v);
+      let exemptFailed = false;
+      if (normalise(res).success && res.data?.qualifierId && data.exemptState === 'ok' && exempt.length && writes.saveExemptions) {
+        const saved = await writes.saveExemptions(res.data.qualifierId, exempt).catch(() => ({ success: false as const }));
+        exemptFailed = !normalise(saved).success;
       }
       // The form has done its job: replaced, so Back from the new qualifier does not return to a form whose Create would make a second one.
       if (normalise(res).success) {
@@ -138,7 +147,9 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
         setCreated(true);
         router.replace(res.data?.qualifierId ? `${LIST}/${res.data.qualifierId}` : LIST);
       }
-      return rulesFailed && normalise(res).success ? { ...res, data: { ...res.data!, rulesFailed: true } } : res;
+      return (rulesFailed || exemptFailed) && normalise(res).success
+        ? { ...res, data: { ...res.data!, ...(rulesFailed ? { rulesFailed: true } : {}), ...(exemptFailed ? { exemptFailed: true } : {}) } }
+        : res;
     },
     () => ({
       done: `Qualifier created · ${plural(v.playerIds.length, 'player')} entered`,
@@ -154,7 +165,9 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           ? { ...c, done: 'Qualifier created, but its courses didn’t save. Open Edit to set them.' }
           : (result.data as { rulesFailed?: boolean } | undefined)?.rulesFailed
             ? { ...c, done: 'Qualifier created, but its tie rule didn’t save. Open Edit to set it.' }
-            : c
+            : (result.data as { exemptFailed?: boolean } | undefined)?.exemptFailed
+              ? { ...c, done: 'Qualifier created, but its exemptions didn’t save. Open Edit to set them.' }
+              : c
         : { ...c, hint: friendlyReason(result.error) ?? c.hint },
   );
 
@@ -182,7 +195,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
             }).filter((c) => c.courseName || data.roundCourses.some((o) => o.number === c.roundNumber)),
         squad: !data.squadLocked && (v.squad !== data.initial.squad || v.picks !== data.initial.picks) ? { total: squad, coachPicks: picks } : null,
         playerIds: [...v.playerIds].sort().join() !== initialIds ? v.playerIds : null,
-        rules: data.rulesState === 'ok' && v.tieRule !== data.initial.tieRule ? { tieRule: v.tieRule } : null,
+        rules: data.rulesState === 'ok' && (v.tieRule !== data.initial.tieRule || v.countBest !== data.initial.countBest) ? { tieRule: v.tieRule, countBest: v.countBest } : null,
+        exemptions: data.exemptState === 'ok' && JSON.stringify(enteredExempt(v)) !== JSON.stringify(enteredExempt(data.initial)) ? enteredExempt(v) : null,
       };
       setSaveNote(null);
       const res = await writes.saveEdit(data.id as string, plan);
@@ -448,6 +462,13 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                 </div>
               )}
               <RoundCourses rounds={rounds} courses={courses} fallback={v.course.trim() || null} failed={editing && data.coursesError} onPick={setPicking} onClear={clearCourse} />
+              <CountBestField
+                value={v.countBest}
+                rounds={rounds}
+                state={data.rulesState}
+                onChange={(n) => set('countBest', n)}
+                problem={problemOf('countBest')?.text ?? null}
+              />
               <TieRuleField value={v.tieRule} state={data.rulesState} onChange={(rule) => set('tieRule', rule)} />
               <div className="ch-field">
                 <label htmlFor="qf-rules" className="ch-field__label">
@@ -552,6 +573,14 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                 </div>
               </div>
               {data.squadLocked && <p className="ch-field__help">The squad is confirmed, so its size is fixed.</p>}
+              <ExemptField
+                players={data.players.filter((p) => v.playerIds.includes(p.id))}
+                value={v.exempt}
+                picks={picks}
+                state={data.exemptState}
+                onChange={(next) => set('exempt', next)}
+                problem={problemOf('exempt') ?? null}
+              />
               <div className="ch-qf-readout ch-well-soft ch-num" aria-live="polite">
                 {/* The segments wrap whole, and a dot only ever sits between two on one line (qualifiers.css). */}
                 <span className="ch-qf-readout__in">
@@ -656,6 +685,128 @@ function RoundCourses({
         </div>
       )}
       <span className="ch-field__help">Sets each round’s course and tees, and so its par.</span>
+    </div>
+  );
+}
+
+/**
+ * Who is exempt (F-06; owner, 16 Nov 2026: "Exempt before, from coach picks"): an entrant the coach places before the
+ * qualifier, with a reason. Each takes one of the coach's picks when selection closes, so it is offered only with a pick
+ * to take, and only before the qualifier starts. The reason is the coach's, never shown to players (D-33).
+ */
+function ExemptField({
+  players,
+  value,
+  picks,
+  state,
+  onChange,
+  problem,
+}: {
+  players: ReadonlyArray<{ id: string; name: string }>;
+  value: ChQFormValues['exempt'];
+  picks: number;
+  state: ChQFormData['exemptState'];
+  onChange: (next: ChQFormValues['exempt']) => void;
+  problem: ChQProblem | null;
+}) {
+  const shown = value.filter((e) => players.some((p) => p.id === e.playerId));
+  if (state === 'missing' || (state === 'ok' && picks === 0 && !shown.length)) return null;
+  const names = new Map(players.map((p) => [p.id, p.name]));
+  if (state !== 'ok') {
+    return (
+      <p className="ch-field__help" data-ch-code={state === 'error' ? 'CH-09282' : undefined}>
+        {state === 'error'
+          ? 'Exemptions didn’t load, so they can’t be changed here now. The qualifier keeps the ones it has.'
+          : shown.length
+            ? `Exempt: ${shown.map((e) => names.get(e.playerId)).join(', ')}. The qualifier has started, so exemptions are fixed; give a place with a coach’s pick.`
+            : 'The qualifier has started, so nobody can be exempted now; give a place with a coach’s pick.'}
+      </p>
+    );
+  }
+  const has = (id: string) => value.some((e) => e.playerId === id);
+  const toggle = (id: string, on: boolean) => onChange(on ? [...value, { playerId: id, reason: '' }] : value.filter((e) => e.playerId !== id));
+  const setReason = (id: string, reason: string) => onChange(value.map((e) => (e.playerId === id ? { ...e, reason } : e)));
+  return (
+    <fieldset className="ch-field" id="qf-exempt" aria-describedby="qf-exempt-h">
+      <legend className="ch-field__label">
+        Exempt players <span className="ch-field__opt">Optional</span>
+      </legend>
+      <span id="qf-exempt-h" className={'ch-field__help' + (problem ? ' is-error' : '')} role={problem ? 'alert' : undefined} data-ch-code={problem?.code}>
+        {problem?.text ?? `An exempt player needn’t play: they take one of the ${plural(picks, 'coach’s pick')} when selection closes. Only you see the reason.`}
+      </span>
+      {players.map((p) => (
+        <div key={p.id} className="ch-field">
+          <Checkbox id={`qf-exempt-${p.id}`} checked={has(p.id)} onChange={(on) => toggle(p.id, on)}>
+            {/* Named apart from the same player's entry tick above. */}
+            <span>
+              <span className="ch-sr-only">Exempt</span> {p.name}
+            </span>
+          </Checkbox>
+          {has(p.id) && (
+            <input
+              className="ch-input"
+              aria-label={`Why ${p.name} is exempt`}
+              placeholder="Reason, e.g. won the conference last spring"
+              maxLength={280}
+              value={value.find((e) => e.playerId === p.id)?.reason ?? ''}
+              onChange={(e) => setReason(p.id, e.target.value)}
+            />
+          )}
+        </div>
+      ))}
+    </fieldset>
+  );
+}
+
+/**
+ * Which rounds count (F-06): every round, or each player's best N of the qualifier's rounds, the worst dropped. Offered
+ * only once there are two rounds to choose from; locked like the tie rule when its store is held or didn't load.
+ */
+function CountBestField({
+  value,
+  rounds,
+  state,
+  onChange,
+  problem,
+}: {
+  value: number | null;
+  rounds: number;
+  state: ChQFormData['rulesState'];
+  onChange: (n: number | null) => void;
+  problem: string | null;
+}) {
+  if (!(rounds >= 2) && value == null) return null;
+  const locked = state !== 'ok';
+  const top = Math.max(rounds - 1, value ?? 0);
+  const options = [
+    { value: 'all', label: 'Every round' },
+    ...Array.from({ length: top }, (_, i) => ({ value: String(i + 1), label: `Best ${i + 1} of ${plural(rounds, 'round')}` })),
+  ];
+  const help = problem
+    ? problem
+    : state === 'missing'
+      ? 'Every round counts. Dropping a player’s worst round arrives with the next update.'
+      : state === 'error'
+        ? 'The counting rule didn’t load, so it can’t be changed here now. The qualifier keeps the rule it has.'
+        : value == null
+          ? 'Every round a player plays adds to their total.'
+          : `Each player’s best ${value} rounds add up; their worst ${rounds - value === 1 ? 'round is' : `${rounds - value} rounds are`} dropped and marked Dropped on their card.`;
+  return (
+    <div className="ch-field">
+      <label htmlFor="qf-count" className="ch-field__label">
+        Rounds that count
+      </label>
+      <Select
+        id="qf-count"
+        value={value == null ? 'all' : String(value)}
+        disabled={locked}
+        options={options}
+        onChange={(v) => onChange(v === 'all' ? null : Number(v))}
+        describedBy="qf-count-h"
+      />
+      <span id="qf-count-h" className="ch-field__help" role={problem ? 'alert' : undefined} data-ch-code={problem ? 'CH-09180' : undefined}>
+        {help}
+      </span>
     </div>
   );
 }

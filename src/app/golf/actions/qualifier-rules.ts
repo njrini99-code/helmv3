@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
-import { isQualifierRulesMissing, isTieRule, qualifierRulesTable, type QualifierRules } from '@/lib/golf/qualifier-rules';
+import { isCountBest, isQualifierRulesMissing, isTieRule, qualifierRulesTable, type QualifierRules } from '@/lib/golf/qualifier-rules';
 
 /**
  * Launch readiness F-04: save a qualifier's standings rules (its tie rule). One row a qualifier in golf_qualifier_rules,
@@ -26,8 +26,13 @@ const refused = (error: string, dbCode?: string | null): QualifierRulesResult =>
   unavailable: isQualifierRulesMissing(dbCode) || undefined,
 });
 
-async function saveQualifierRulesImpl(input: { qualifierId: string; rules: QualifierRules }): Promise<QualifierRulesResult> {
+/** The rules to save. `countBest` left out keeps what is stored (F-04 callers); null counts every round (F-06). */
+export type QualifierRulesInput = Pick<QualifierRules, 'tieRule'> & Partial<Pick<QualifierRules, 'countBest'>>;
+
+async function saveQualifierRulesImpl(input: { qualifierId: string; rules: QualifierRulesInput }): Promise<QualifierRulesResult> {
   if (!UUID.test(input.qualifierId) || !isTieRule(input.rules?.tieRule)) return refused('Couldn’t save the tie rule.');
+  const best = input.rules.countBest;
+  if (best !== undefined && best !== null && !isCountBest(best)) return refused('Couldn’t save the rounds that count.');
   const sb = await createClient();
   const { data: auth } = await sb.auth.getUser();
   const userId = auth.user?.id ?? null;
@@ -42,7 +47,14 @@ async function saveQualifierRulesImpl(input: { qualifierId: string; rules: Quali
     return refused('Couldn’t save the tie rule.');
   }
   if (!q.data) return refused('That qualifier wasn’t found on your team.');
-  const row = { qualifier_id: q.data.id, team_id: q.data.team_id, tie_rule: input.rules.tieRule, updated_by: userId, updated_at: new Date().toISOString() };
+  const row = {
+    qualifier_id: q.data.id,
+    team_id: q.data.team_id,
+    tie_rule: input.rules.tieRule,
+    ...(best !== undefined ? { count_best: best } : {}),
+    updated_by: userId,
+    updated_at: new Date().toISOString(),
+  };
   const { data, error } = await qualifierRulesTable(sb)
     .from('golf_qualifier_rules')
     .upsert(row, { onConflict: 'qualifier_id' })
@@ -62,6 +74,6 @@ async function saveQualifierRulesImpl(input: { qualifierId: string; rules: Quali
 
 const observed = withAdminObserved('saveQualifierRules', { sport: 'golf', feature: 'qualifiers' }, saveQualifierRulesImpl);
 
-export async function saveQualifierRules(input: { qualifierId: string; rules: QualifierRules }): Promise<QualifierRulesResult> {
+export async function saveQualifierRules(input: { qualifierId: string; rules: QualifierRulesInput }): Promise<QualifierRulesResult> {
   return observed(input);
 }

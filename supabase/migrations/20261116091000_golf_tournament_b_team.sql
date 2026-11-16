@@ -4,7 +4,7 @@
 --   anywhere, not run against any database.
 --
 -- Apply: npm run db:apply --
---   supabase/migrations/20261116090000_golf_tournament_b_team.sql
+--   supabase/migrations/20261116091000_golf_tournament_b_team.sql
 --   after npm run test:rls passes on a local stack (the pgTAP file is
 --   supabase/tests/rls/golf_tournament_b_team.sql). Order: after
 --   20261115250000 (independent of it and of 20261115230000/240000).

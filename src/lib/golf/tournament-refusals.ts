@@ -31,7 +31,7 @@ export const TOUR_REFUSAL_CODES = [
   'reason_required',
   'not_final',
   'event_taken',
-  /** F-05: a B-team entry before held migration 20261116090000 adds the squad. */
+  /** F-05: a B-team entry before held migration 20261116091000 adds the squad. */
   'b_team_unavailable',
   /** Anything else: the error is reported, the copy is generic. */
   'failed',

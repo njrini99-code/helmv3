@@ -2,7 +2,7 @@
 -- the team helpers, the qualifier must be the same team's, only the two rules are stored, and anon holds nothing.
 begin;
 
-select plan(8);
+select plan(9);
 
 select has_table('public', 'golf_qualifier_rules', 'the qualifier rules table exists');
 select ok((select relrowsecurity from pg_class where oid = 'public.golf_qualifier_rules'::regclass), 'RLS is on for golf_qualifier_rules');
@@ -22,6 +22,7 @@ select ok(
     like '%golf_qualifiers%team_id%',
   'an update cannot move a rule to another team''s qualifier');
 select col_default_is('public', 'golf_qualifier_rules', 'tie_rule', 'coach'::text, 'a row with no rule given ranks by coach, the rule before F-04');
+select col_is_null('public', 'golf_qualifier_rules', 'count_best', 'F-06: count_best is optional; empty counts every round');
 select ok(not has_table_privilege('anon', 'public.golf_qualifier_rules', 'SELECT'), 'anon cannot read qualifier rules');
 
 select * from finish();

@@ -23,7 +23,7 @@ import { MixedRounds, Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPa
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
-import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
+import { Courses, LiveChip, Pairings, Selections, StaleStandings } from './QualifierSections';
 import { NinesSkeleton, Streamed } from './streamed';
 import { SerifText } from '../../ui/SerifText';
 import { createOpenRow, PlayerRounds as ShowcaseRounds } from './RoundsShowcase';
@@ -197,6 +197,12 @@ export function QualifierDetailPhone({
       <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
         <Board data={data} status={status} stale={stale} feed={feed} onPeek={setPeek} sheetOpen={!!peeked || actions} />
       </SectionBoundary>
+
+      {coach && data.board && (
+        <SectionBoundary surface="qualifiers.pairings" label="Next round groups" code="CH-09283">
+          <Pairings board={data.board} numRounds={data.numRounds} status={status} />
+        </SectionBoundary>
+      )}
 
       <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
         <Courses data={data} />

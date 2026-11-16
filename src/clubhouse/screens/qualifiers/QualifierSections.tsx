@@ -10,7 +10,8 @@ import { InlineNotice } from '../../ui/Notices';
 import type { ChClock } from '../../lib/clock-cookie';
 import { useChClock } from '../../lib/use-clock';
 import { useRefresh } from '../../lib/use-refresh';
-import { plural, type ChQStatus } from './model';
+import { nextRoundPairings, plural, positionLabel, type ChQBoard, type ChQGroupSize, type ChQStatus } from './model';
+import { Segmented } from '../../ui/Segmented';
 import type { LiveFeedView } from './live';
 import { ToPar } from './parts';
 import { CoursesSkeleton, Streamed } from './streamed';
@@ -223,5 +224,43 @@ function CourseRows({ s }: { s: ChQDetailSecondary }) {
         </li>
       ))}
     </ol>
+  );
+}
+
+const GROUP_SIZES = [
+  { value: '3' as const, label: 'Threes' },
+  { value: '4' as const, label: 'Fours' },
+];
+
+/**
+ * The coach's groups for the next round (F-06), from the standings after round 1: leaders off last. A view of the board,
+ * nothing stored; the coach reads it out or copies it to the tee sheet. Shown while the qualifier is under way and a
+ * round is still to play.
+ */
+export function Pairings({ board, numRounds, status }: { board: ChQBoard; numRounds: number; status: ChQStatus }) {
+  const [size, setSize] = useState<ChQGroupSize>('3');
+  const pairings = status === 'in_progress' ? nextRoundPairings(board, numRounds, Number(size)) : null;
+  if (!pairings) return null;
+  return (
+    <section className="ch-qf-side" aria-labelledby="ch-qf-pairings">
+      <div className="ch-qf-panel__head">
+        <div>
+          <h2 id="ch-qf-pairings">Round {pairings.round} groups</h2>
+          <p className="ch-num">From the standings · leaders off last</p>
+        </div>
+        <Segmented<ChQGroupSize> weight="filter" size="sm" label="Players a group" value={size} onChange={setSize} options={GROUP_SIZES} />
+      </div>
+      <ol className="ch-qf-list">
+        {pairings.groups.map((g) => (
+          <li key={g.order}>
+            <span className="ch-qf-rn">{g.order}</span>
+            <b>{g.players.map((p) => p.name).join(', ')}</b>
+            <span className="ch-qf-list__m ch-num">
+              {g.players.map((p) => (p.position == null ? 'No score' : positionLabel(p))).join(' · ')}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }

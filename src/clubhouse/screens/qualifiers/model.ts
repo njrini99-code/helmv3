@@ -21,8 +21,8 @@
  * (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
  */
 
-import { boardOrder, rankStandings, type QualifierTieRule } from '@/lib/coachhelm/v3/qualifying/ranking';
-import { tieRuleSentence } from '@/lib/golf/qualifier-rules';
+import { boardOrder, countedRoundIndexes, rankStandings, type QualifierTieRule } from '@/lib/coachhelm/v3/qualifying/ranking';
+import { countBestSentence, tieRuleSentence } from '@/lib/golf/qualifier-rules';
 import { plural, pluralWord } from '../../lib/plural';
 import { firstName } from '../../lib/names';
 import { zoneFormat } from '../../lib/zone-format';
@@ -115,6 +115,12 @@ export interface ChQRow extends ChQEntrant {
   missed: boolean;
   state: ChQRowState;
   rounds: ChQRound[];
+  /**
+   * F-06: the rounds that count toward to par and strokes. Equal to `played` unless the qualifier counts each player's
+   * best N and this player has more than N in; then the rest are `dropped` (their ids) and still drawn, marked.
+   */
+  counting?: number;
+  dropped?: string[];
 }
 
 export interface ChQSelection {
@@ -138,6 +144,8 @@ export interface ChQBoard {
   mixed?: ChQMixedRound[];
   /** The tie rule the board was ranked by (F-04); the standings state it. */
   tieRule: QualifierTieRule;
+  /** F-06: the best-N rule the board was ranked by; left out, every round counts. */
+  countBest?: number;
 }
 
 export interface ChQMixedRound {
@@ -187,7 +195,12 @@ export function parseSelectionState(s: string | null | undefined): ChQSelectionS
 }
 
 /** Fewer rounds in than the most anyone on the board has: the group decision 10 ranks below the complete cards. */
-const shortOf = (rows: ReadonlyArray<Pick<ChQRow, 'played'>>) => boardOrder(rows).short;
+/** The rounds a row is ranked on: the counted ones (F-06 best N), else every scored round. */
+const countingOf = (r: Pick<ChQRow, 'played' | 'counting'>) => r.counting ?? r.played;
+const shortOf = (rows: ReadonlyArray<Pick<ChQRow, 'played' | 'counting'>>) => {
+  const short = boardOrder(rows.map((r) => ({ played: countingOf(r) }))).short;
+  return (r: Pick<ChQRow, 'played' | 'counting'>) => short({ played: countingOf(r) });
+};
 
 /**
  * Strokes by qualifier round (index 0 for round 1), from the rounds that count: the tie rule's countback reads it
@@ -205,7 +218,7 @@ function slotStrokes(rounds: readonly ChQRound[]): Array<number | null> {
 }
 
 /** The scored rows ranked, with positions and ties assigned (states left null; `missed` left false), and the unscored rows by name. */
-function rankRows(entrants: ChQEntrant[], rounds: ChQRound[], tieRule: QualifierTieRule = 'coach'): { scored: ChQRow[]; unscored: ChQRow[]; all: ChQRow[] } {
+function rankRows(entrants: ChQEntrant[], rounds: ChQRound[], tieRule: QualifierTieRule = 'coach', countBest: number | null = null): { scored: ChQRow[]; unscored: ChQRow[]; all: ChQRow[] } {
   const byPlayer = new Map<string, ChQRound[]>();
   for (const r of rounds) {
     const list = byPlayer.get(r.playerId) ?? [];
@@ -228,7 +241,12 @@ function rankRows(entrants: ChQEntrant[], rounds: ChQRound[], tieRule: Qualifier
       return true;
     });
     const full = withScore.filter(isFullRound);
-    const sum = (k: 'total' | 'toPar') => withScore.reduce((s, r) => s + (r[k] ?? 0), 0);
+    // F-06: a qualifier that counts each player's best N sums only those (the one helper, so the workspace drops the
+    // same rounds). The average and the short-round count stay over every round played: they describe the golf.
+    const keep = countedRoundIndexes(withScore.map((r) => ({ toPar: r.toPar as number, total: r.total as number })), countBest);
+    const counts = keep.map((i) => withScore[i]!);
+    const dropped = withScore.filter((_, i) => !keep.includes(i)).map((r) => r.id);
+    const sum = (k: 'total' | 'toPar') => counts.reduce((s, r) => s + (r[k] ?? 0), 0);
     return {
       ...e,
       position: null,
@@ -242,6 +260,7 @@ function rankRows(entrants: ChQEntrant[], rounds: ChQRound[], tieRule: Qualifier
       missed: false,
       state: null,
       rounds,
+      ...(dropped.length ? { counting: counts.length, dropped } : {}),
     };
   });
   const unscored = all.filter((r) => r.played === 0).sort((a, b) => a.name.localeCompare(b.name));
@@ -257,7 +276,7 @@ function rankRows(entrants: ChQEntrant[], rounds: ChQRound[], tieRule: Qualifier
   return { scored, unscored, all };
 }
 
-const standingKey = (r: ChQRow) => ({ toPar: r.toPar as number, total: r.total as number, played: r.played, name: r.name, rounds: slotStrokes(r.rounds) });
+const standingKey = (r: ChQRow) => ({ toPar: r.toPar as number, total: r.total as number, played: countingOf(r), name: r.name, rounds: slotStrokes(r.rounds) });
 
 /** A counted round: it has a total and a to-par (the rule `rankRows` applies). */
 const counted = (r: ChQRound) => r.total != null && r.toPar != null;
@@ -276,10 +295,10 @@ export function bubbleMinRounds(numRounds: number): number {
  * board as it stood with every round of the latest round number left out. Null for a player who wasn't ranked then,
  * or when there is no earlier round to compare with. Never a refresh-to-refresh delta.
  */
-function movement(entrants: ChQEntrant[], rounds: ChQRound[], scored: ChQRow[], tieRule: QualifierTieRule): void {
+function movement(entrants: ChQEntrant[], rounds: ChQRound[], scored: ChQRow[], tieRule: QualifierTieRule, countBest: number | null): void {
   const latest = rounds.filter(counted).reduce((m, r) => Math.max(m, r.number), 0);
   if (latest < 2) return;
-  const before = rankRows(entrants, rounds.filter((r) => r.number < latest), tieRule).scored;
+  const before = rankRows(entrants, rounds.filter((r) => r.number < latest), tieRule, countBest).scored;
   const was = new Map(before.map((r) => [r.playerId, r.position]));
   for (const row of scored) {
     const p = was.get(row.playerId);
@@ -311,10 +330,13 @@ export function buildBoard(input: {
    * selection workspace ranks with the same rule, so the board shows what confirm writes.
    */
   tieRule?: QualifierTieRule;
+  /** F-06 (`readQualifierRules`): count each player's best N rounds. Left out or null, every round counts. */
+  countBest?: number | null;
 }): ChQBoard {
   const tieRule = input.tieRule ?? 'coach';
-  const { scored, unscored, all } = rankRows(input.entrants, input.rounds, tieRule);
-  movement(input.entrants, input.rounds, scored, tieRule);
+  const countBest = input.countBest ?? null;
+  const { scored, unscored, all } = rankRows(input.entrants, input.rounds, tieRule, countBest);
+  movement(input.entrants, input.rounds, scored, tieRule, countBest);
 
   const squad = Math.max(0, input.squad);
   const topScore = Math.max(0, squad - Math.max(0, input.picks));
@@ -340,7 +362,7 @@ export function buildBoard(input: {
   });
 
   const mixed = mixedLengthRounds(input.rounds);
-  return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0), ...(mixed.length ? { mixed } : {}), tieRule };
+  return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0), ...(mixed.length ? { mixed } : {}), tieRule, ...(countBest != null ? { countBest } : {}) };
 }
 
 /** One line on the board measured from the viewer's row (row 74, "you vs the line"). */
@@ -449,8 +471,9 @@ export function viewerOutcomeText(o: ChQViewerOutcome): { label: string; text: s
 export const RANK_RULE = 'Complete cards rank first, by total to par, then total strokes, then more rounds played; a card a round short sits below them.';
 
 /** The caption under a board, the same words on desktop and the phone (row 75, CONS-37): the order, who qualifies, the bubble. */
-export function boardCaption(b: Pick<ChQBoard, 'topScore' | 'tieRule'>, picks: number, numRounds: number, status: ChQStatus, coach = true): string {
-  return `${RANK_RULE} ${tieRuleSentence(b.tieRule ?? 'coach', coach)} Top ${b.topScore} qualify on score${picks ? `; ${plural(picks, 'coach’s pick', 'coach’s picks')}` : ''}.${bubbleNote(numRounds, status)}`;
+export function boardCaption(b: Pick<ChQBoard, 'topScore' | 'tieRule' | 'countBest'>, picks: number, numRounds: number, status: ChQStatus, coach = true): string {
+  const best = countBestSentence(b.countBest ?? null, numRounds);
+  return `${RANK_RULE}${best ? ` ${best}` : ''} ${tieRuleSentence(b.tieRule ?? 'coach', coach)} Top ${b.topScore} qualify on score${picks ? `; ${plural(picks, 'coach’s pick', 'coach’s picks')}` : ''}.${bubbleNote(numRounds, status)}`;
 }
 
 export function bubbleNote(numRounds: number, status: ChQStatus): string {
@@ -663,8 +686,15 @@ export interface ChQFormValues {
   playerIds: string[];
   /** How players level on to par and strokes are separated (F-04). A new qualifier starts on `last_round`. */
   tieRule: QualifierTieRule;
+  /** F-06: count each player's best N rounds; null counts every round. */
+  countBest: number | null;
+  /**
+   * F-06 (owner, 16 Nov 2026: "Exempt before, from coach picks"): entrants exempted before the qualifier, each with a
+   * reason. Each takes one of the coach's picks when selection closes.
+   */
+  exempt: Array<{ playerId: string; reason: string }>;
 }
-export type ChQField = 'name' | 'startDate' | 'endDate' | 'entryDeadline' | 'rounds' | 'oneRoundAck' | 'playerIds' | 'squad' | 'picks';
+export type ChQField = 'name' | 'startDate' | 'endDate' | 'entryDeadline' | 'rounds' | 'oneRoundAck' | 'countBest' | 'playerIds' | 'squad' | 'picks' | 'exempt';
 export interface ChQProblem {
   field: ChQField;
   text: string;
@@ -672,12 +702,18 @@ export interface ChQProblem {
 }
 
 /** Fields in reading order, so focus lands on the first problem on screen. */
-export const FIELD_ORDER: ChQField[] = ['name', 'startDate', 'endDate', 'entryDeadline', 'rounds', 'oneRoundAck', 'playerIds', 'squad', 'picks'];
+export const FIELD_ORDER: ChQField[] = ['name', 'startDate', 'endDate', 'entryDeadline', 'rounds', 'oneRoundAck', 'countBest', 'playerIds', 'squad', 'picks', 'exempt'];
 
 export const SQUAD_MAX = 12;
 export const ROUNDS_MAX = 50;
 
 const wholeIn = (s: string, lo: number, hi: number) => /^\d+$/.test(s.trim()) && Number(s) >= lo && Number(s) <= hi;
+
+/** The exemptions that still apply: an exempt player taken out of the qualifier is no longer exempt. */
+export function enteredExempt(v: Pick<ChQFormValues, 'exempt' | 'playerIds'>): ChQFormValues['exempt'] {
+  const entered = new Set(v.playerIds);
+  return (v.exempt ?? []).filter((e) => entered.has(e.playerId)).map((e) => ({ playerId: e.playerId, reason: e.reason.trim() }));
+}
 
 export function validateForm(v: ChQFormValues, opts: { minRounds?: number } = {}): ChQProblem[] {
   const out: ChQProblem[] = [];
@@ -694,10 +730,76 @@ export function validateForm(v: ChQFormValues, opts: { minRounds?: number } = {}
   } else if (Number(v.rounds) === 1 && !v.oneRoundAck) {
     out.push({ field: 'oneRoundAck', text: 'Confirm that this qualifier is meant to have one round.', code: 'CH-09106' });
   }
+  // F-06: best N has to drop at least one round; a qualifier cut to N rounds or fewer would count every round anyway.
+  if (v.countBest != null && wholeIn(v.rounds, 1, ROUNDS_MAX) && v.countBest >= Number(v.rounds)) {
+    out.push({ field: 'countBest', text: `Counting the best ${v.countBest} needs more than ${plural(v.countBest, 'round')}. Add rounds or count every round.`, code: 'CH-09180' });
+  }
   if (!v.playerIds.length) out.push({ field: 'playerIds', text: 'Choose at least one player.', code: 'CH-09107' });
   if (!wholeIn(v.squad, 1, SQUAD_MAX)) out.push({ field: 'squad', text: `Squad size must be a whole number from 1 to ${SQUAD_MAX}.`, code: 'CH-09108' });
   else if (!wholeIn(v.picks, 0, Number(v.squad))) out.push({ field: 'picks', text: 'Coach’s picks must be a whole number no bigger than the squad.', code: 'CH-09109' });
+  // F-06: an exempt player takes a coach's pick, so there are never more than the picks, and each says why (like a pick).
+  const exempt = enteredExempt(v);
+  if (exempt.length && wholeIn(v.picks, 0, SQUAD_MAX) && exempt.length > Number(v.picks)) {
+    out.push({
+      field: 'exempt',
+      text: `An exempt player takes a coach’s pick: ${plural(exempt.length, 'player')} exempt, ${plural(Number(v.picks), 'pick')}. Add picks or exempt fewer.`,
+      code: 'CH-09181',
+    });
+  } else if (exempt.some((e) => !e.reason.trim())) {
+    out.push({ field: 'exempt', text: 'Give each exempt player a reason.', code: 'CH-09182' });
+  }
   return out;
 }
 
 export { plural };
+
+// ── Pairings for the next round (F-06) ──
+
+export type ChQGroupSize = '3' | '4';
+
+export interface ChQPairingGroup {
+  /** Off first is 1. */
+  order: number;
+  players: Array<Pick<ChQRow, 'playerId' | 'name' | 'position' | 'tied' | 'toPar'>>;
+}
+
+export interface ChQPairings {
+  /** The round the groups are for: the one after the latest round with a score. */
+  round: number;
+  groups: ChQPairingGroup[];
+}
+
+/**
+ * Groups for the next round, drawn from the standings after round 1 or later (F-06): the leaders go off last, as at a
+ * stroke-play event, so the last group holds the top of the board and players who haven't posted a score go off first.
+ * Groups are as even as the field allows (ten in fours is 3, 3 and 4), the larger ones last. Null before any round is in,
+ * once every round is in, or with fewer than two players to pair.
+ */
+export function nextRoundPairings(
+  board: Pick<ChQBoard, 'rows' | 'unscored'>,
+  numRounds: number,
+  groupSize: number,
+): ChQPairings | null {
+  const latest = board.rows.reduce((m, r) => Math.max(m, ...r.rounds.filter(counted).map((rd) => rd.number)), 0);
+  const round = latest + 1;
+  if (latest < 1 || round > numRounds) return null;
+  // Worst first: unscored, then the board from the bottom up.
+  const field = [...board.unscored, ...board.rows.slice().reverse()];
+  if (field.length < 2) return null;
+  const size = Math.max(2, Math.floor(groupSize));
+  const count = Math.ceil(field.length / size);
+  const base = Math.floor(field.length / count);
+  const larger = field.length % count;
+  const groups: ChQPairingGroup[] = [];
+  let at = 0;
+  for (let i = 0; i < count; i++) {
+    const n = base + (i >= count - larger ? 1 : 0);
+    const players = field
+      .slice(at, at + n)
+      .reverse()
+      .map((r) => ({ playerId: r.playerId, name: r.name, position: r.position, tied: r.tied, toPar: r.toPar }));
+    groups.push({ order: i + 1, players });
+    at += n;
+  }
+  return { round, groups };
+}

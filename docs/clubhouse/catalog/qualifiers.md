@@ -73,6 +73,9 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09110 | Any of the above on submit | "Couldn’t create the qualifier" (or save) + the one problem, or "Fix the 3 highlighted fields below." Nothing is sent | `InlineNotice` | qualifiers.test › CH-09110 |
 | CH-09111 | A coach's pick with no reason | "Say why you picked Ava Chen." under the reason; nothing is sent | `PickDialog` | qualifiers.test › CH-09111 |
 | CH-09112 | Save pick with no player chosen | "Choose a player." under the list; nothing is sent | `PickDialog` | qualifiers.test › CH-09112 |
+| CH-09180 | The rounds that count would drop no round (best N of N rounds or fewer) (F-06) | "Counting the best 3 needs more than 3 rounds. Add rounds or count every round." under Rounds that count | `validateForm` | qualifier-f06.test › CH-09180 |
+| CH-09181 | More players exempt than coach's picks (F-06) | "An exempt player takes a coach’s pick: 2 players exempt, 1 pick. Add picks or exempt fewer." under Exempt players | `validateForm` (`enteredExempt`: a player taken out is no longer exempt) | qualifier-f06.test › CH-09181 |
+| CH-09182 | An exempt player has no reason (F-06) | "Give each exempt player a reason." under Exempt players | `validateForm` | qualifier-f06.test › CH-09181 |
 
 ## 092xx Didn't load
 
@@ -102,6 +105,8 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09223 | The player's rounds panel crashes (desktop, beside the leaderboard) | "A player’s rounds couldn't be shown." | `SectionBoundary` `qualifiers.player-rounds` | qualifiers.test › CH-09223 |
 | CH-09224 | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) | The form lists them as "Inactive player" ("Not on the active roster", no class year) and keeps them in the player list it saves, so a save neither removes them silently nor is refused with "N players have a round" and no names. The board and Confirm squad still rank readable entrants only (both from the server loader); naming and ranking them needs a staff-scoped name read, which is a migration | `loadQualifierForm` | qualifiers.test › CH-09224 |
 | CH-09281 | Create or edit: the qualifier's tie rule doesn't load (launch readiness F-04) | The Ties field shows the rule in force and is locked, with "The tie rule didn’t load, so it can’t be changed here now. The qualifier keeps the rule it has." under it; a save leaves the rule alone, so a guess never overwrites it. Before the rule's store exists (migration 20261115240000 held) the field is locked on "You decide" with "Tied players share a place and you decide a tie at the cut. Choosing another rule arrives with the next update.", with no code | `TieRuleField` (`QualifierForm`); `rulesState` from `loadQualifierForm` (`readQualifierRules`) | qualifier-ties.test › CH-09281 |
+| CH-09282 | Edit: the qualifier's exemptions don't load (F-06) | "Exemptions didn’t load, so they can’t be changed here now. The qualifier keeps the ones it has." in place of the field; a save leaves them alone. Before the store exists (migration 20261116100000 held) the field is not offered | `ExemptField` (`QualifierForm`); `exemptState` from `loadQualifierForm` (`readQualifierExemptions`) | qualifier-f06.test › CH-09282 |
+| CH-09283 | Next round groups crash (F-06) | "Next round groups couldn't be shown." | `SectionBoundary` `qualifiers.pairings` | (boundary, shared test) |
 
 ## 093xx Empty
 

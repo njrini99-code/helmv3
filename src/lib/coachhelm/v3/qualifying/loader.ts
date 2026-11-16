@@ -26,7 +26,7 @@ import {
   type TieAtCut,
 } from './types';
 import { canConfirmSelection, pickableCount } from './state-machine';
-import { rankStandings, type QualifierTieRule } from './ranking';
+import { countedRoundIndexes, rankStandings, type QualifierTieRule } from './ranking';
 import { readQualifierRules } from '@/lib/golf/qualifier-rules';
 import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -100,10 +100,14 @@ export async function loadQualifyingWorkspace(
   const reasons = reasonsRes.reasons;
   // The board's rules (screens/qualifiers/model.ts buildBoard): a round needs a total and a to-par, and a second
   // round in the same qualifier round counts once.
-  const byPlayer = new Map<string, { n: number; total: number; toPar: number; slots: Set<number>; bySlot: Array<number | null> }>();
+  // F-06: a qualifier counting each player's best N sums only those, picked by the same helper as the board.
+  const byPlayer = new Map<
+    string,
+    { n: number; total: number; toPar: number; counted: number; slots: Set<number>; bySlot: Array<number | null>; scores: Array<{ toPar: number; total: number }> }
+  >();
   for (const r of roundsRes.data ?? []) {
     if (r.total_score == null || r.score_to_par == null) continue;
-    const agg = byPlayer.get(r.player_id) ?? { n: 0, total: 0, toPar: 0, slots: new Set<number>(), bySlot: [] };
+    const agg = byPlayer.get(r.player_id) ?? { n: 0, total: 0, toPar: 0, counted: 0, slots: new Set<number>(), bySlot: [], scores: [] };
     if (r.qualifier_round_number != null) {
       if (agg.slots.has(r.qualifier_round_number)) continue;
       agg.slots.add(r.qualifier_round_number);
@@ -113,9 +117,14 @@ export async function loadQualifyingWorkspace(
       }
     }
     agg.n += 1;
-    agg.total += r.total_score;
-    agg.toPar += r.score_to_par;
+    agg.scores.push({ toPar: r.score_to_par, total: r.total_score });
     byPlayer.set(r.player_id, agg);
+  }
+  for (const agg of byPlayer.values()) {
+    const keep = countedRoundIndexes(agg.scores, rulesRes.rules.countBest);
+    agg.counted = keep.length;
+    agg.total = keep.reduce((s, i) => s + agg.scores[i]!.total, 0);
+    agg.toPar = keep.reduce((s, i) => s + agg.scores[i]!.toPar, 0);
   }
 
   const selByPlayer = new Map<string, QualifierSelection>();
@@ -134,6 +143,7 @@ export async function loadQualifyingWorkspace(
         player_first_name: player.first_name,
         player_last_name: player.last_name,
         rounds_completed: agg?.n ?? 0,
+        ...(agg && agg.counted < agg.n ? { rounds_counted: agg.counted } : {}),
         total_score: agg ? agg.total : null,
         total_to_par: agg ? agg.toPar : null,
         rounds_by_slot: agg?.bySlot ?? [],
@@ -237,6 +247,8 @@ interface RankInput {
   player_first_name: string;
   player_last_name: string;
   rounds_completed: number;
+  /** F-06: the rounds summed when the qualifier counts each player's best N and this player has more in. */
+  rounds_counted?: number;
   total_score: number | null;
   total_to_par: number | null;
   /** Strokes by qualifier round (index 0 for round 1), for the tie rule's countback (F-04). */
@@ -265,7 +277,7 @@ export function rankCandidates(input: RankInput[], tieRule: QualifierTieRule = '
     (c) => ({
       toPar: c.total_to_par as number,
       total: c.total_score as number,
-      played: c.rounds_completed,
+      played: c.rounds_counted ?? c.rounds_completed,
       name: `${c.player_first_name ?? ''} ${c.player_last_name ?? ''}`.trim(),
       rounds: c.rounds_by_slot,
     }),

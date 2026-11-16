@@ -8,7 +8,7 @@ PR/commit:      claude/project-thread-8hytxy (QUEUE lr-f05)
 Contract IDs:   160180, 160181, 160981, 160482 (CH-16382)
 Actions:        setTournamentEntries takes an optional squad; createTournamentFromCalendar takes lockMinutes; updateTournament is sent lockMinutes
 Data impact:    loadTournamentLineup reads the event's B entries (squad B), tolerant of the held migration; the edit form reads lock_minutes
-Held items:     supabase/migrations/20261116090000_golf_tournament_b_team.sql (Risk MEDIUM, see HELD.md)
+Held items:     supabase/migrations/20261116091000_golf_tournament_b_team.sql (Risk MEDIUM, see HELD.md)
 ```
 
 ### Changed

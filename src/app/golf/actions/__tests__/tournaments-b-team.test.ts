@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 /**
- * setTournamentEntries with a B team (F-05). The squad column arrives with held migration 20261116090000: before it the
+ * setTournamentEntries with a B team (F-05). The squad column arrives with held migration 20261116091000: before it the
  * probe answers 42703 and a B entry is refused, so the old function never saves a B player as an A individual.
  */
 const state = vi.hoisted(() => ({

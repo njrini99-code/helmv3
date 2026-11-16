@@ -13,7 +13,7 @@ export interface LineupDraft {
   alternate: string | null;
   individuals: string[];
   /**
-   * F-05: the B team, when the event can hold one (held migration 20261116090000). Its spots and alternate are stored
+   * F-05: the B team, when the event can hold one (held migration 20261116091000). Its spots and alternate are stored
    * as individuals and an alternate of squad B, so no team score ever reads them (D-92). Absent: no B team offered.
    */
   b?: { slots: Array<string | null>; alternate: string | null };

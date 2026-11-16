@@ -20,6 +20,9 @@
 --   ranks by 'coach', so applying this changes no qualifier already running.
 --   The form saves 'last_round' for a new qualifier unless the coach picks
 --   otherwise (owner, 15 Nov 2026).
+--   count_best (F-06, added 16 Nov 2026 before this file was ever applied):
+--   count each player's best N rounds, so a qualifier can drop the worst
+--   round; null counts every round, as every qualifier does today.
 --
 -- RLS: the row is the qualifier's team's. A coach of the team
 --   (is_golf_team_coach) reads and writes; an active player of the team
@@ -42,11 +45,14 @@
 -- VERIFY: select 1 where (select relrowsecurity from pg_class where oid = 'public.golf_qualifier_rules'::regclass);
 -- VERIFY: select 1 where (select count(*) from pg_policies where schemaname = 'public' and tablename = 'golf_qualifier_rules') = 4;
 -- VERIFY: select 1 where not has_table_privilege('anon', 'public.golf_qualifier_rules', 'SELECT');
+-- VERIFY: select 1 where exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'golf_qualifier_rules' and column_name = 'count_best');
 
 create table if not exists public.golf_qualifier_rules (
   qualifier_id uuid primary key references public.golf_qualifiers (id) on delete cascade,
   team_id uuid not null references public.golf_teams (id) on delete cascade,
   tie_rule text not null default 'coach' check (tie_rule in ('coach', 'last_round')),
+  -- F-06: count each player's best N rounds (null: every round, the rule every qualifier had before).
+  count_best smallint check (count_best between 1 and 10),
   updated_by uuid references auth.users (id) on delete set null,
   updated_at timestamptz not null default now()
 );

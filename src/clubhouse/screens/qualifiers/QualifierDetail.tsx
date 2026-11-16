@@ -25,7 +25,7 @@ import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
-import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
+import { Courses, LiveChip, Pairings, Selections, StaleStandings } from './QualifierSections';
 import { PrintHead } from './PrintHead';
 import { StandingsSpread } from './StandingsSpread';
 import { RulesText } from './RulesText';
@@ -285,6 +285,11 @@ export function QualifierDetail({
             <SectionBoundary surface="qualifiers.selections" label="Selections" code="CH-09214">
               <Selections data={data} status={status} topScore={topScore} />
             </SectionBoundary>
+            {coach && b && (
+              <SectionBoundary surface="qualifiers.pairings" label="Next round groups" code="CH-09283">
+                <Pairings board={b} numRounds={data.numRounds} status={status} />
+              </SectionBoundary>
+            )}
             <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
               <Courses data={data} />
             </SectionBoundary>
@@ -641,7 +646,7 @@ function Tray({ row }: { row: ChQRow }) {
       {/* The cards stream in behind the standings: until they do each round shows its own head over a card-sized placeholder. */}
       <Streamed
         fallback={row.rounds.map((rd, i) => (
-          <ScorecardShell key={rd.id} round={rd} code={i === 0 ? 'CH-09410' : undefined}>
+          <ScorecardShell key={rd.id} round={rd} code={i === 0 ? 'CH-09410' : undefined} dropped={row.dropped?.includes(rd.id)}>
             <CardBodySkeleton />
           </ScorecardShell>
         ))}
@@ -660,14 +665,14 @@ function TrayCards({ row, s }: { row: ChQRow; s: ChQDetailSecondary }) {
         <InlineNotice code="CH-09205" title="Scorecards didn’t load" body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={refresh} retrying={refreshing} />
       )}
       {row.rounds.map((rd) => (
-        <Scorecard key={rd.id} round={rd} holes={s.holesError ? undefined : (s.holes[rd.id] ?? [])} />
+        <Scorecard key={rd.id} round={rd} dropped={row.dropped?.includes(rd.id)} holes={s.holesError ? undefined : (s.holes[rd.id] ?? [])} />
       ))}
     </>
   );
 }
 
 /** One round's card frame: its head (the round, the course and day, the total: all in the standings) over `children`. */
-function ScorecardShell({ round, code, children }: { round: ChQRound; code?: string; children: ReactNode }) {
+function ScorecardShell({ round, code, dropped, children }: { round: ChQRound; code?: string; dropped?: boolean; children: ReactNode }) {
   const meta = [round.course, dayLabel(round.date)].filter(Boolean).join(' · ');
   return (
     <div className="ch-qf-sc" data-ch-code={code}>
@@ -676,6 +681,7 @@ function ScorecardShell({ round, code, children }: { round: ChQRound; code?: str
         <span className="ch-num">
           {meta}
           {round.total != null && ` · ${round.total}`}
+          {dropped && <span> · Dropped, not counted</span>}
         </span>
       </div>
       {children}
@@ -684,14 +690,14 @@ function ScorecardShell({ round, code, children }: { round: ChQRound; code?: str
 }
 
 /** One round's card: hole, par and score, with Out, In and total. */
-function Scorecard({ round, holes }: { round: ChQRound; holes: ChQHole[] | undefined }) {
+function Scorecard({ round, holes, dropped }: { round: ChQRound; holes: ChQHole[] | undefined; dropped?: boolean }) {
   const meta = [round.course, dayLabel(round.date)].filter(Boolean).join(' · ');
   if (holes === undefined) return null;
   const front = holes.filter((h) => h.n <= 9);
   const back = holes.filter((h) => h.n > 9);
   const sum = (list: ChQHole[], k: 'par' | 'score') => (list.every((h) => h[k] != null) ? list.reduce((s, h) => s + (h[k] as number), 0) : null);
   return (
-    <ScorecardShell round={round}>
+    <ScorecardShell round={round} dropped={dropped}>
       {holes.length === 0 ? (
         <p className="ch-qf-sc__none" data-ch-code="CH-09308">
           No hole-by-hole card for this round. Only the total was recorded.

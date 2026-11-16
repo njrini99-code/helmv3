@@ -196,7 +196,7 @@ const entriesInput = z
   .refine((es) => es.every((e) => e.squad !== 'B' || e.role !== 'lineup'), 'a B-team player is never in the lineup');
 export type TourEntriesInput = z.infer<typeof entriesInput>;
 
-/** The squad column (held migration 20261116090000), read as RLS answers: false while it is missing. */
+/** The squad column (held migration 20261116091000), read as RLS answers: false while it is missing. */
 async function hasSquad(c: Coach, id: string): Promise<boolean | 'failed'> {
   const { error } = await tourTable(c.supabase, 'golf_tournament_entries').select('squad' as never).eq('tournament_id', id).limit(1);
   if (!error) return true;

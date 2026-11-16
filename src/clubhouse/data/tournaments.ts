@@ -996,7 +996,7 @@ export async function loadTournamentForm(ctx: TourCtx, eventId: string | null, f
 }
 
 /**
- * F-05: an event's B team, or null when the squad column is not there yet (held migration 20261116090000) or the read
+ * F-05: an event's B team, or null when the squad column is not there yet (held migration 20261116091000) or the read
  * failed (reported; the builder then offers no B team rather than an empty one that a save would wipe).
  */
 async function readBTeam(ctx: TourCtx, eventId: string): Promise<NonNullable<ChTourLineupData['bTeam']> | null> {
@@ -1028,7 +1028,7 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
       readPlayers(ctx, seasonEnd),
       // F-05: the roster limit, counted as the Roster header counts it. Never throws: a missing table is the division default.
       readRosterLimit(ctx.supabase, ctx.teamId, { withExemptions: ctx.role === 'coach' }),
-      // F-05: the B team. Its column arrives with held migration 20261116090000; before then the builder offers none.
+      // F-05: the B team. Its column arrives with held migration 20261116091000; before then the builder offers none.
       readBTeam(ctx, eventId),
     ]);
     const event = read.events.find((e) => e.id === eventId);

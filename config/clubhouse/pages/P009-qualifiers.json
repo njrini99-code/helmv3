@@ -380,6 +380,26 @@
         "src/clubhouse/__tests__/qualifier-ties.test.tsx",
         "src/app/golf/actions/__tests__/qualifier-rules.test.ts"
       ]
+    },
+    {
+      "id": "ACT-P009-EXEMPT",
+      "label": "Exempt players from a qualifier before it starts (coach, create and edit)",
+      "component": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#ExemptField",
+      "handler": "create then saveExemptions; runEditPlan step \"the exemptions\"",
+      "service": "src/app/golf/actions/qualifier-exemptions.ts#saveQualifierExemptions",
+      "data": [
+        "golf_qualifier_exemptions (migration 20261116100000, HELD)",
+        "golf_qualifier_selections (coach_pick written at close)"
+      ],
+      "bridge": {
+        "success": 90982,
+        "failure": 90602
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifier-f06.test.tsx",
+        "src/app/golf/actions/__tests__/qualifier-exemptions.test.ts",
+        "src/lib/coachhelm/v3/qualifying/__tests__/exemptions.test.ts"
+      ]
     }
   ],
   "held": [

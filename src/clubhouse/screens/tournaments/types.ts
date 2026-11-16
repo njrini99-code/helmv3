@@ -850,7 +850,7 @@ export interface ChTourLineupData {
    */
   rosterLimit?: { chip: string; over: number; text: string | null };
   /**
-   * F-05: the B team. Present only once the event can hold one (held migration 20261116090000 adds the squad); absent,
+   * F-05: the B team. Present only once the event can hold one (held migration 20261116091000 adds the squad); absent,
    * the builder offers no B team. `slots` are its players in order (stored as individuals of squad B, so they never count
    * in the team's record, D-92), `alternate` its alternate.
    */

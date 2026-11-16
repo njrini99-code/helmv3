@@ -10242,6 +10242,47 @@
     ]
   },
   {
+    "id": 90182,
+    "page": "P009",
+    "category": 1,
+    "item": 82,
+    "name": "QUALIFIER_COUNTS_BEST_ROUNDS",
+    "meaning": "A qualifier can count each player's best N rounds (launch readiness F-06, held migration 20261115240000 adds count_best): the form's 'Rounds that count' offers Every round or Best N of M; the board, the selection workspace and its confirm sum only the counted rounds (one helper, ranking.ts countedRoundIndexes: lower to par, then strokes, then the earlier round), a player is short only against the counted rounds, the dropped rounds stay on the player's card marked 'Dropped, not counted', and the standings caption states the rule ('Counts each player’s best 2 of 3 rounds: the worst round is dropped.').",
+    "status": "implemented",
+    "where": "src/lib/coachhelm/v3/qualifying/ranking.ts#countedRoundIndexes; src/clubhouse/screens/qualifiers/model.ts#rankRows; src/lib/coachhelm/v3/qualifying/loader.ts#loadQualifyingWorkspace; src/clubhouse/screens/qualifiers/QualifierForm.tsx#CountBestField",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-f06.test.tsx",
+      "src/app/golf/actions/__tests__/qualifier-rules.test.ts"
+    ]
+  },
+  {
+    "id": 90183,
+    "page": "P009",
+    "category": 1,
+    "item": 83,
+    "name": "QUALIFIER_EXEMPT_PLAYERS",
+    "meaning": "Exempt players (F-06; owner, 16 Nov 2026: 'Exempt before, from coach picks'): before the qualifier starts the coach ticks entrants under Exempt players in the form and gives each a reason (coach-only, D-33). When selection closes each becomes one of the qualifier's coach's picks with 'Exempt: <reason>', never past the picks there are; a pick for an exempt player needs no scored round (Q-115 waived for them only). Once the qualifier starts the exemptions are fixed and the form says to use a coach's pick. Needs held migration 20261116100000; before it the field is not offered.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#ExemptField; src/lib/golf/qualifier-exemptions.ts; src/lib/coachhelm/v3/qualifying/service.ts#placeExemptPlayers; src/lib/coachhelm/v3/qualifying/service.ts#setCoachPick",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-f06.test.tsx",
+      "src/lib/coachhelm/v3/qualifying/__tests__/exemptions.test.ts"
+    ]
+  },
+  {
+    "id": 90184,
+    "page": "P009",
+    "category": 1,
+    "item": 84,
+    "name": "QUALIFIER_NEXT_ROUND_GROUPS",
+    "meaning": "Next round groups (F-06): while a qualifier is under way with a round still to play, the coach's detail shows 'Round N groups' drawn from the standings, leaders off last and players with no score off first, in threes or fours (a filter Segmented), as even as the field allows with the larger groups last. A view of the board; nothing is stored.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/qualifiers/model.ts#nextRoundPairings; src/clubhouse/screens/qualifiers/QualifierSections.tsx#Pairings",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-f06.test.tsx"
+    ]
+  },
+  {
     "id": 90201,
     "page": "P009",
     "category": 2,
@@ -10655,6 +10696,39 @@
     ]
   },
   {
+    "id": 90580,
+    "page": "P009",
+    "category": 5,
+    "item": 80,
+    "name": "QUALIFIER_BEST_N_NEEDS_MORE_ROUNDS",
+    "chCode": "CH-09180",
+    "meaning": "The rounds that count would drop no round (best N of N rounds or fewer) (F-06)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90581,
+    "page": "P009",
+    "category": 5,
+    "item": 81,
+    "name": "QUALIFIER_MORE_EXEMPT_THAN_PICKS",
+    "chCode": "CH-09181",
+    "meaning": "More players exempt than coach's picks (F-06)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90582,
+    "page": "P009",
+    "category": 5,
+    "item": 82,
+    "name": "QUALIFIER_EXEMPT_PLAYER_NEEDS_A_REASON",
+    "chCode": "CH-09182",
+    "meaning": "An exempt player has no reason (F-06)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90601,
     "page": "P009",
     "category": 6,
@@ -11051,6 +11125,28 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90682,
+    "page": "P009",
+    "category": 6,
+    "item": 82,
+    "name": "QUALIFIER_EXEMPTIONS_DID_NOT_LOAD",
+    "chCode": "CH-09282",
+    "meaning": "Edit: the qualifier's exemptions don't load (F-06)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90683,
+    "page": "P009",
+    "category": 6,
+    "item": 83,
+    "name": "NEXT_ROUND_GROUPS_CRASH",
+    "chCode": "CH-09283",
+    "meaning": "Next round groups crash (F-06)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,
@@ -11343,6 +11439,33 @@
     "tests": [
       "src/clubhouse/__tests__/qualifier-ties.test.tsx",
       "src/app/golf/actions/__tests__/qualifier-rules.test.ts"
+    ]
+  },
+  {
+    "id": 90982,
+    "page": "P009",
+    "category": 9,
+    "item": 82,
+    "name": "QUALIFIER_EXEMPTIONS_SAVED",
+    "meaning": "Exemptions save with the qualifier (F-06): on create after the players are entered, and a list that doesn't save is said in the done toast ('Qualifier created, but its exemptions didn’t save. Open Edit to set them.'); on edit a step after the players and the squad, only when the list changed. The server replaces the list through RLS (a coach; each player an entrant), only while the qualifier is upcoming and never past its coach's picks.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/qualifier-exemptions.ts#saveQualifierExemptionsImpl; src/clubhouse/screens/qualifiers/writes.ts#runEditPlan",
+    "tests": [
+      "src/app/golf/actions/__tests__/qualifier-exemptions.test.ts",
+      "src/clubhouse/__tests__/qualifier-f06.test.tsx"
+    ]
+  },
+  {
+    "id": 90983,
+    "page": "P009",
+    "category": 9,
+    "item": 83,
+    "name": "EXEMPT_PLAYERS_PLACED_AT_CLOSE",
+    "meaning": "Closing selection places each exempt entrant as a coach's pick with 'Exempt: <reason>' in the closer's name (F-06), never past the picks, leaving a pick already made; a failure is logged and the coach can still pick them (Q-115 is waived for an exempt player).",
+    "status": "implemented",
+    "where": "src/lib/coachhelm/v3/qualifying/service.ts#placeExemptPlayers",
+    "tests": [
+      "src/lib/coachhelm/v3/qualifying/__tests__/exemptions.test.ts"
     ]
   },
   {
@@ -21167,7 +21290,7 @@
     "category": 1,
     "item": 80,
     "name": "LINEUP_BUILDER_B_TEAM",
-    "meaning": "Lineup builder: a B team (launch readiness F-05), offered once the event can hold one (held migration 20261116090000 adds the squad). A Team switch (A team, B team) shows the B spots and the B alternate, with 'The B team plays as individuals: its scores never count in the team's record.' A B player is stored as an individual (or the alternate) of squad B, so every team score, which reads the lineup only, leaves the B team out (D-92).",
+    "meaning": "Lineup builder: a B team (launch readiness F-05), offered once the event can hold one (held migration 20261116091000 adds the squad). A Team switch (A team, B team) shows the B spots and the B alternate, with 'The B team plays as individuals: its scores never count in the team's record.' A B player is stored as an individual (or the alternate) of squad B, so every team score, which reads the lineup only, leaves the B team out (D-92).",
     "status": "implemented",
     "where": "src/clubhouse/screens/tournaments/lineup-model.ts#place; src/clubhouse/screens/tournaments/LineupBuilder.tsx#BTeam; src/clubhouse/data/tournaments.ts#readBTeam",
     "tests": [
@@ -22066,7 +22189,7 @@
     "category": 9,
     "item": 81,
     "name": "LINEUP_B_TEAM_SAVED",
-    "meaning": "A lineup saved with a B team sends each B player as an individual of squad B with their spot, and the B alternate; the A entries go as before. Before held migration 20261116090000 a B entry is refused ('A B team arrives with the next update. Nothing was saved.') and nothing is written.",
+    "meaning": "A lineup saved with a B team sends each B player as an individual of squad B with their spot, and the B alternate; the A entries go as before. Before held migration 20261116091000 a B entry is refused ('A B team arrives with the next update. Nothing was saved.') and nothing is written.",
     "status": "implemented",
     "where": "src/app/golf/actions/tournaments.ts#setTournamentEntriesImpl",
     "tests": [
