@@ -43,7 +43,7 @@ describe("the length stepper on the plan block sheet", () => {
       </LazyMotion>,
     );
     const warmUp = [...document.querySelectorAll<HTMLElement>('.blk')].find((b) => b.textContent?.includes('Warm-up'))!;
-    fireEvent.click(warmUp);
+    fireEvent.click(warmUp.querySelector('.btt')!); // SWP-09: the block's title is its button.
     hapticSpy.mockClear();
     fireEvent.click(screen.getByRole('button', { name: 'Longer', hidden: true }));
     expect(screen.getAllByText('35 min').length).toBeGreaterThan(0);

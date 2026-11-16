@@ -44,21 +44,25 @@ export function NextBeyond({ e }: { e: ChHomeEvent }) {
   );
 }
 
-/** The desk's hero, beside the greeting: the same state in Up next's glass card (06 §11.4). */
+/**
+ * The desk's Up next inside the week (lay-01: Player Home's `DeskNext` card), when this week has nothing left: it says so
+ * and names the next event or trip after it, with its day and time; the card opens it.
+ */
 export function DeskNextBeyond({ e }: { e: ChHomeEvent }) {
   const t = useChClockText();
   const { day, time } = afterWhen(e);
   return (
-    <Link href={eventHref(e)} className="ch-h-herocard__next" data-ch-code="CH-2316" onClick={() => chTrail('home open next event')}>
-      <span className="ch-dh-next__k">
+    <Link href={eventHref(e)} className="ch-ph-next" data-ch-code="CH-2316" onClick={() => chTrail('home open next event')}>
+      <span className="ch-ph-next__k">
         <span>
           <Icon icon={CalendarDays} size={13} />
           Nothing else this week
         </span>
-        <em className="ch-num">{t([day, time].filter(Boolean).join(' · '))}</em>
+        <span className="ch-num">{t([day, time].filter(Boolean).join(' · '))}</span>
       </span>
-      <b>{e.title}</b>
-      <p className="ch-num">{[`Next · ${TYPE_LABEL[e.type]}`, e.location].filter(Boolean).join(' · ')}</p>
+      <span className="ch-ph-next__t">{e.title}</span>
+      <span className="ch-ph-next__m ch-num">{[`Next · ${TYPE_LABEL[e.type]}`, e.location].filter(Boolean).join(' · ')}</span>
+      <LinkPending />
     </Link>
   );
 }

@@ -23,7 +23,7 @@ export async function generateMetadata({
 
   if (!round) {
     return {
-      title: 'Round Details',
+      title: 'Round',
       description: 'View golf round details and scorecard',
     };
   }

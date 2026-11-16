@@ -18,9 +18,10 @@
  * (twMerge lets `w-16` win). Default `weight` ~1.5px lives in the `style` map
  * (never an arbitrary `h-[Npx]` className).
  */
-import { m, useReducedMotion } from 'motion/react';
+import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { rulesDraw } from './motion';
+import { useLivingReducedMotion } from './reduced-motion';
 
 export interface HairlineRuleProps {
   /** Rule ink: `team` green, `pursuit` clay, or the neutral warm `hairline`. */
@@ -41,7 +42,7 @@ const RULE_BG: Record<NonNullable<HairlineRuleProps['ink']>, string> = {
 };
 
 export function HairlineRule({ ink = 'hairline', weight = 1.5, animate = true, className }: HairlineRuleProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
   const still = !animate || reduced;
   const base = cn('w-full origin-left', RULE_BG[ink], className);
 

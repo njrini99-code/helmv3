@@ -24,13 +24,15 @@ describe('getTimeOfDay', () => {
     expect(getTimeOfDay(at(4))).toBe('lateNight');
   });
 
-  it('is morning from 5:00 up to (not including) 11:00', () => {
+  it('is morning from 5:00 up to (not including) noon', () => {
     expect(getTimeOfDay(at(5))).toBe('morning');
     expect(getTimeOfDay(at(10))).toBe('morning');
+    // MAC-14: 11:10 AM is still morning.
+    expect(getTimeOfDay(at(11))).toBe('morning');
   });
 
-  it('is afternoon from 11:00 up to (not including) 17:00', () => {
-    expect(getTimeOfDay(at(11))).toBe('afternoon');
+  it('is afternoon from noon up to (not including) 17:00', () => {
+    expect(getTimeOfDay(at(12))).toBe('afternoon');
     expect(getTimeOfDay(at(16))).toBe('afternoon');
   });
 

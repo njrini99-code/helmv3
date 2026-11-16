@@ -180,10 +180,10 @@ describe('20103 20806 the Week’s Next row says who hasn’t replied, with one 
     expect(desk).toMatch(/^\/golf\/dashboard\/messages\?/);
   });
 
-  it('no countdown on the coach’s desktop Home', () => {
+  it('the coach’s desktop Up next counts down, as the player’s does (lay-01, owner 15 Nov 2026)', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    expect(document.querySelector('.ch-cd')).toBeNull();
-    expect(screen.queryByRole('timer')).toBeNull();
+    expect(document.querySelectorAll('.ch-cd')).toHaveLength(1);
+    expect(document.querySelector('.ch-ph-next .ch-cd')).not.toBeNull();
   });
 });
 

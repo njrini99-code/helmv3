@@ -23,7 +23,7 @@ import { CrumbProvider } from '../../../shell/crumbs';
 import { ToastProvider } from '../../../ui/Toast';
 import { StatsPlayer } from '../StatsPlayer';
 import { StatsTeam } from '../StatsTeam';
-import { Form } from '../../home/HomePhone';
+import { TeamScoring } from '../../home/TeamScoring';
 import type { ChTeamForm } from '../../../data/home';
 import type { ChTeamStats } from '../../../data/stats-team';
 import type { ChPlayerProfile } from '../../../data/stats-player';
@@ -163,18 +163,19 @@ describe('Coach Home’s Team scoring card', () => {
   // Prod audit 2026-11-15, HOME-P-11: "Average · each player’s last 10" ran lowercase after a dot. The label is "Average" and the
   // window is said once, as Stats says it, beside the dates.
   it('names the window it shows: each player’s last 10 by default, this season on Season, every round on All time', () => {
-    render(shell(<Form form={form} />));
-    expect(document.getElementById('ch-hm-form')!.textContent).toBe('Average');
-    expect(document.querySelector('.ch-hm-form__basis')!.textContent).toMatch(/^Each player’s last 10 · /);
+    const line = () => document.querySelector('#ch-ph-tm-scoring + .ch-hm-meta')!.textContent;
+    render(shell(<TeamScoring form={form} phone />));
+    expect(document.querySelector('.ch-ph-figs dt')!.textContent).toBe('Average');
+    expect(line()).toMatch(/^Each player’s last 10 · /);
     // F-0002: the pill names the same window as the figure under it.
     expect(radio('Last 10')!.getAttribute('aria-checked')).toBe('true');
     cleanup();
-    render(shell(<Form form={{ ...form, window: 'season' }} />));
-    expect(document.querySelector('.ch-hm-form__basis')!.textContent).toMatch(/^This season · /);
+    render(shell(<TeamScoring form={{ ...form, window: 'season' }} phone />));
+    expect(line()).toMatch(/^This season · /);
     expect(radio('Season')!.getAttribute('aria-checked')).toBe('true');
     cleanup();
-    render(shell(<Form form={{ ...form, window: 'all' }} />));
-    expect(document.querySelector('.ch-hm-form__basis')!.textContent).toMatch(/^All time, every round · /);
+    render(shell(<TeamScoring form={{ ...form, window: 'all' }} phone />));
+    expect(line()).toMatch(/^All time, every round · /);
     expect(radio('All time')!.getAttribute('aria-checked')).toBe('true');
   });
 });

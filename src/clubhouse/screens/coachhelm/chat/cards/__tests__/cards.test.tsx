@@ -11,6 +11,7 @@ import { AppLinkRow, CoachNoteChip, NotTracked, WorkedOut, computedSummary } fro
 import { HandoffBody } from '../drafts';
 import { clockRange, dayWords, namesIn } from '../facts';
 import { WORK_KINDS } from '../work-words';
+import { expectLabelInName } from '../../../../../__tests__/label-in-name';
 
 afterEach(cleanup);
 
@@ -114,7 +115,12 @@ describe('a card that sends to players always shows who and the words', () => {
     const forty = CASES.find((c) => c.id === 'send_event_reminder (forty)')!;
     draw(forty);
     expect(screen.queryByText('Quinn Marlowe')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Show all 40/ }));
+    const key = screen.getByRole('button', { name: /Show all 40/ });
+    // SWP-02 (WCAG 2.5.3): the key is named by the names it shows, so Voice Control reaches it by them; no aria-label.
+    expect(key.hasAttribute('aria-label')).toBe(false);
+    expectLabelInName(key, key.querySelector('.ch-akc-people__names')!.textContent!);
+    fireEvent.click(key);
+    expect(screen.getByRole('button', { name: /Hide the list$/ })).toBe(key);
     for (const p of CAP_ROSTER_40) expect(screen.getByText(p.name)).toBeTruthy();
   });
 

@@ -5,7 +5,7 @@ import type { useCoachHelmChat } from '@/hooks/coachhelm/useCoachHelmChat';
 import { activeNavItem, routeLabel } from './nav';
 
 /**
- * What the Ask sheet body and the quick chat share (the sparkle key and its provider are retired): the context the quick chat provides, the "Looking at" label, and the chat type.
+ * What the quick chat keeps from the retired Ask sheet (the sparkle key, its provider and the sheet body are gone): the context the quick chat provides, the "Looking at" label, and the chat type.
  */
 /** The chat implementation: the production hook, or the preview's stand-in. */
 export type ChAskSheetChat = typeof useCoachHelmChat;

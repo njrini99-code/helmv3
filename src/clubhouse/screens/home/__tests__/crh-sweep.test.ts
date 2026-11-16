@@ -37,9 +37,10 @@ describe('Home, Classes and Roster lane', () => {
     expect(rule(home, "  .ch-hm[data-ch-crh='on'] .ch-hm-legs__a")).toContain('text-decoration: underline');
     expect(home).not.toContain('ch-hm-leg-grow');
   });
-  it('the waiting capsules sit on the green on a first run (CRH-5)', () => {
+  it('the waiting capsules sit in the hero on a first run, as on the loaded page (CRH-5; ivory since lay-01)', () => {
     const coach = src('screens/home/CoachHome.tsx');
-    expect(coach.indexOf('<CoachQueue queue={data.queue} phone />')).toBeLessThan(coach.indexOf('Get your team set up'));
+    expect(coach.indexOf('<CoachQueue queue={data.queue} phone />')).toBeGreaterThan(0);
+    expect(coach.indexOf('<CoachQueue queue={data.queue} phone />')).toBeLessThan(coach.lastIndexOf('{setup}'));
     expect(coach.slice(coach.indexOf('Welcome to Clubhouse'), coach.indexOf('Welcome to Clubhouse') + 600)).toMatch(/<CoachQueue[^>]*\/>\s*<\/header>/);
   });
   it('no dead # link (CRH-21)', () => {

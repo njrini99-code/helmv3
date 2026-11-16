@@ -21,8 +21,9 @@
  * drawn and static, per the motion contract. The stroke color is applied via
  * `style` (SVG presentation attributes do not resolve `var(--…)`).
  */
-import { m, useReducedMotion } from 'motion/react';
+import { m } from 'motion/react';
 import { traceDraw } from './motion';
+import { useLivingReducedMotion } from './reduced-motion';
 
 export interface TraceProps {
   /** SVG path data, authored in the caller's `<svg viewBox>` coordinate space. */
@@ -46,7 +47,7 @@ const INK_VAR: Record<NonNullable<TraceProps['ink']>, string> = {
 };
 
 export function Trace({ d, weight = 2, ink = 'team', glow = false, animate = true, className }: TraceProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
   const stroke = INK_VAR[ink];
   const still = !animate || reduced;
   const draw = still ? {} : { variants: traceDraw(false), initial: 'hidden' as const, animate: 'visible' as const };

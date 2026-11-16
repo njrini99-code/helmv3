@@ -1,42 +1,65 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }), usePathname: () => '/golf/dashboard', useSearchParams: () => new URLSearchParams() }));
+
 import { PREVIEW_HOME } from '../../../preview/fixtures';
-import { Form } from '../HomePhone';
+import { ScoreChart } from '../PlayerGame';
+import { TeamScoring, teamDays } from '../TeamScoring';
 
 /**
  * W3 (owner's preview, 11 Nov 2026): Team scoring was "a green area with a V in it": no dates, nothing marked, and its boldest
- * figure was a change the card itself called "No clear change".
+ * figure was a change the card itself called "No clear change". Since lay-01 (owner, 15 Nov 2026) it is drawn on the player's
+ * scoring line (SYS-04): dated axis, score labels, the team average dashed, the best day pinned.
  */
 describe('Team scoring line', () => {
   const form = PREVIEW_HOME.phone.form!;
 
-  it('names its first and last days and its best and toughest', () => {
-    const { container } = render(<Form form={form} />);
-    expect(container.querySelector('.ch-hm-form__axis')?.textContent).toBe('Sep 2Oct 13');
-    expect(screen.getByText(/Best day 73\.4 · Oct 13/)).toBeTruthy();
-    expect(screen.getByText(/Toughest day 74\.6 · Sep 2/)).toBeTruthy();
-    expect(container.querySelectorAll('.ch-hm-form__mark')).toHaveLength(2);
+  it('dates its axis, labels the scores and names its best and toughest days', () => {
+    const { container } = render(<TeamScoring form={form} phone={false} />);
+    const ax = [...container.querySelectorAll('.ch-ph-chart__ax')].map((t) => t.textContent);
+    expect(ax).toContain('Oct 13');
+    expect(ax.some((t) => /^\d+$/.test(t ?? ''))).toBe(true);
+    expect(container.querySelector('.ch-ph-chart__mean')).not.toBeNull();
+    expect(screen.getByText(/Best day 73\.4 on Oct 13, toughest 74\.6 on Sep 2/)).toBeTruthy();
+    expect(container.querySelector('.ch-ph-pinflag')?.textContent).toContain('Best day · 73.4');
   });
 
-  // Prod audit 2026-11-15, HOME-P-13: "Toughest day 87.0 · Sep 13 · 1 round" named one player's round as the team's day. Best and
-  // toughest are chosen from days two or more rounds rest on, as Stats' line marks them.
-  it('never marks a one-round day as the team’s best or toughest', () => {
-    const { container } = render(<Form form={{ ...form, lineCounts: form.lineCounts!.map((n, i) => (i === 0 ? 1 : n)) }} />);
-    expect(screen.queryByText(/Toughest day 74\.6 · Sep 2/)).toBeNull();
-    expect(container.querySelector('.ch-hm-form__ends')!.textContent).not.toMatch(/1 round/);
-    expect(container.querySelectorAll('.ch-hm-form__mark')).toHaveLength(2);
+  it('never names a one-round day as the team’s best or toughest (HOME-P-13)', () => {
+    const counts = form.lineCounts!.map((n, i) => (i === 0 ? 1 : n));
+    expect(teamDays({ ...form, lineCounts: counts })?.worst).not.toBe(0);
+    render(<TeamScoring form={{ ...form, lineCounts: counts }} phone={false} />);
+    expect(screen.queryByText(/toughest 74\.6 on Sep 2/)).toBeNull();
   });
 
-  it('a change under its standard error is quiet, a clear one keeps its tone', () => {
-    const { container, rerender } = render(<Form form={form} />);
-    expect(container.querySelector('.ch-hm-delta')?.className).toContain('is-flat');
-    rerender(<Form form={{ ...form, deltaSe: 0.3 }} />);
-    expect(container.querySelector('.ch-hm-delta')?.className).toContain('is-gain');
+  it('a change under its standard error is words only; a clear one is signed and toned (HOME-P-09)', () => {
+    const { container, rerender } = render(<TeamScoring form={form} phone />);
+    const avg = () => container.querySelector('.ch-ph-figs > div')!;
+    expect(avg().textContent).toContain('No clear change vs previous 10');
+    expect(avg().querySelector('dd.is-gain, dd.is-loss')).toBeNull();
+    rerender(<TeamScoring form={{ ...form, deltaSe: 0.3 }} phone />);
+    expect(avg().querySelector('dd.is-gain')).not.toBeNull();
+    expect(avg().textContent).toMatch(/−\d\.\d · Better than previous 10/);
   });
 
-  it('draws no labels without the days (an older fixture)', () => {
-    const { container } = render(<Form form={{ ...form, lineDays: undefined }} />);
-    expect(container.querySelector('.ch-hm-form__axis')).toBeNull();
-    expect(container.querySelector('.ch-hm-form__ends')).toBeNull();
+  it('draws no dates and marks no days without the days (an older fixture)', () => {
+    const { container } = render(<TeamScoring form={{ ...form, lineDays: undefined }} phone={false} />);
+    expect(container.querySelector('.ch-ph-pinflag')).toBeNull();
+    expect(container.querySelector('.ch-ph-note')).toBeNull();
+  });
+
+  // Staging, 16 Nov 2026: on the real team the 79.0 and 80.0 days sat on the line that came down into them.
+  it('moves a value under its dot where the line comes down into it, and only when asked', () => {
+    const scores = [77.5, 74, 79, 79, 74.1];
+    const points = scores.map((score, i) => ({ id: `p${i}`, label: `Jul ${i + 1}`, score, par: null }));
+    const valueYs = (dodge: boolean) => {
+      const { container, unmount } = render(<ScoreChart points={points} phone={false} format={(v) => v.toFixed(1)} dodge={dodge} />);
+      const dots = [...container.querySelectorAll('.ch-ph-chart__dot')].map((c) => Number(c.getAttribute('cy')));
+      const vals = [...container.querySelectorAll('.ch-ph-chart__val')].map((t) => Number(t.getAttribute('y')));
+      unmount();
+      return vals.map((v, i) => (v > dots[i]! ? 'below' : 'above'));
+    };
+    expect(valueYs(true)).toEqual(['below', 'above', 'below', 'below', 'above']);
+    expect(valueYs(false)).toEqual(['above', 'above', 'above', 'above', 'above']);
   });
 });

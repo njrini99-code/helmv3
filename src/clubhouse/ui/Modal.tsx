@@ -34,7 +34,19 @@ export function Modal({
   atRest = false,
   bare = false,
   variant = 'default',
+  id,
+  fallbackFocus,
+  role = 'dialog',
+  pop,
 }: {
+  /** `quick`: the ⌘K palette's beat, in from .96 over 180ms and out over 110ms (motion spec 15 Nov 3.4). An alert has it too. */
+  pop?: 'quick';
+  /** `alertdialog`: a question that interrupts (a delete), read out as an alert; pass `initialFocus` on its safe choice (S3.6). */
+  role?: 'dialog' | 'alertdialog';
+  /** The dialog's id, for a control's `aria-controls` (the dialog element is always mounted, open or not). */
+  id?: string;
+  /** Where focus goes on close when the opener has gone or sits in something inert (lib/dialog-lifetime.ts). */
+  fallbackFocus?: () => HTMLElement | null;
   /** `messages`: the Messages sheet's drag feel (closes past one third of its height, `sqrt` rubber band). Default: every other sheet as it was. */
   variant?: 'default' | 'messages';
   /** The panel draws its own head and Close: the title stays for assistive tech, and there's no second Close to tab to (TEAM-19). */
@@ -70,6 +82,8 @@ export function Modal({
     // VoiceOver starts on the title (P001 shared finding). Tab goes on to Close and the rest.
     focusSelector: initialFocus ?? '.ch-modal__titles h2',
     atRest,
+    fallbackFocus,
+    pop: pop === 'quick' || role === 'alertdialog' ? 'quick' : 'dialog',
   });
   const drag = useSheetDrag(ref, onClose, { enabled: phone, reduced, variant });
 
@@ -78,10 +92,13 @@ export function Modal({
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <dialog
       ref={ref}
+      id={id}
+      role={role === 'alertdialog' ? 'alertdialog' : undefined}
       className={'ch-modal' + (className ? ` ${className}` : '')}
       data-ch-code={code}
       data-ch-detent={detent ? '' : undefined}
       data-ch-at-rest={atRest ? '' : undefined}
+      data-ch-pop={pop}
       style={{ ['--ch-modal-w' as string]: `${width}px`, ...(detent ? { ['--ch-modal-detent' as string]: `${detent * 100}dvh` } : {}) }}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}

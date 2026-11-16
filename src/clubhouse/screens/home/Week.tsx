@@ -1,6 +1,7 @@
 'use client';
 
 import { CalendarDays, MessageSquare } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '../../ui/Button';
 import type { ReactNode } from 'react';
 import type { ChAgendaRow, ChCoachHome, ChHomeEvent } from '../../data/home';
@@ -17,6 +18,7 @@ import { useMarkReader } from '../../lib/use-change-marks';
 import { WasValue } from '../../ui/WasValue';
 import { agendaDetail, agendaTime } from './agenda-clock';
 import { nudgeDraft } from './nudge-draft';
+import { eventHref } from './event-links';
 import { firstName } from '../../lib/names';
 import { plural } from '../../lib/plural';
 
@@ -97,9 +99,11 @@ export function Week({ week, between, covered = false, events }: { week: ChCoach
             {todayRows.length === 0 && (
               <EmptyState code="CH-2301" compact icon={CalendarDays} title="Nothing on the calendar today." />
             )}
-            {todayRows.map((r) => (
-              <AgendaRow key={r.id} r={r} replies={r.isNext ? nextReplies(nextOf(r.id), today) : null} />
-            ))}
+            {todayRows.map((r) => {
+              const e = nextOf(r.id);
+              // The coach's today rows open their event, as the coach's desktop Today list did before lay-01.
+              return <AgendaRow key={r.id} r={r} href={e ? eventHref(e) : null} replies={r.isNext ? nextReplies(e, today) : null} />;
+            })}
             {laterRows.length > 0 && <div className="ch-h-agenda__label ch-h-agenda__label--later">Later this week</div>}
             {laterRows.map((r) => (
               <AgendaRow key={r.id} r={r} />
@@ -111,7 +115,7 @@ export function Week({ week, between, covered = false, events }: { week: ChCoach
   );
 }
 
-function AgendaRow({ r, replies = null }: { r: ChAgendaRow; replies?: ReturnType<typeof nextReplies> }) {
+function AgendaRow({ r, href = null, replies = null }: { r: ChAgendaRow; href?: string | null; replies?: ReturnType<typeof nextReplies> }) {
   const clock = useChClock();
   const detail = agendaDetail(r, clock);
   // P-14: the old value of a changed event leads the detail line, struck, until Got it.
@@ -121,7 +125,13 @@ function AgendaRow({ r, replies = null }: { r: ChAgendaRow; replies?: ReturnType
     <div className={'ch-h-agenda__row' + (r.isNext ? ' is-next' : '') + (r.isCompetition ? ' is-event' : '') + (replies ? ' has-replies' : '')}>
       <span className="ch-h-agenda__t ch-num">{agendaTime(r, clock)}</span>
       <div className="ch-h-agenda__txt">
-        <div className="ch-h-agenda__a">{r.title}</div>
+        {href ? (
+          <Link href={href} className="ch-h-agenda__a ch-h-agenda__open">
+            {r.title}
+          </Link>
+        ) : (
+          <div className="ch-h-agenda__a">{r.title}</div>
+        )}
         {(detail || was) && (
           <div className="ch-h-agenda__b">
             {was && <WasValue changeId={was.changeId}>{restyleClock(was.text, clock)}</WasValue>}

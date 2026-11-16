@@ -222,6 +222,30 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   font: var(--ch-type-16-medium);
   letter-spacing: var(--ch-track-16);
 }
+/* The block's title is its button, stretched over the whole row (SWP-09); the source keys sit above it. */
+.ch-cpv .blk .btt {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: var(--ch-type-headline);
+  text-align: start;
+  cursor: pointer;
+}
+.ch-cpv .blk .btt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--ch-radius-md);
+}
+.ch-cpv .blk .btt:focus-visible {
+  outline: none;
+}
+.ch-cpv .blk .btt:focus-visible::after {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
 .ch-cpv .blk .bs,
 .ch-cpv .rout {
   margin-top: 2px;
@@ -305,6 +329,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
 }
 .ch-cpv .srcb {
   position: relative;
+  z-index: 1;
   white-space: nowrap;
   padding: 2px 8px;
   border: 0;
@@ -812,6 +837,32 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   padding: 12px var(--ch-page-x-phone) max(12px, env(safe-area-inset-bottom));
   background: var(--ch-card-bg);
   border-top: var(--ch-hairline-w) solid var(--ch-pl-cpv-sep);
+}
+/* MOT-10: on a phone the full plan is a native dialog in the top layer (no z-index), and rises in as a sheet does, on the
+   smooth spring; it leaves on the release beat (useDialogLifetime). */
+dialog.ch-cpv-full {
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  z-index: auto;
+  animation: ch-rise var(--ch-dur-reveal) var(--ch-ease-ios);
+}
+dialog.ch-cpv-full:not([open]) {
+  display: none;
+}
+dialog.ch-cpv-full::backdrop {
+  background: var(--ch-scrim);
+  /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a); never a keyframe (A9). */
+  opacity: var(--ch-scrim-a, 1);
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease-out));
+}
+.ch-cpv-full .fbar > b:focus {
+  outline: none;
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-cpv-full {
@@ -1788,7 +1839,10 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv .refine button,
 .ch-cpv .saverow,
 .ch-cpv .qo { min-height: 44px; }
-.ch-cpv .srcb { position: relative; }
+/* SWP-29: a one-letter option ("A") was 43 wide. SWP-07: the source key is drawn 24 high at least, so a mouse's reach
+   and the finger's (the ::after) agree with what axe measures. */
+.ch-cpv .qo { min-width: 44px; }
+.ch-cpv .srcb { position: relative; min-height: 24px; }
 .ch-cpv .srcb::after { content: ''; position: absolute; inset: -12px -4px; }
 .ch-cpv-sheet .ask-in button { position: relative; }
 .ch-cpv-sheet .ask-in button::before { content: ''; position: absolute; inset: -8px; }

@@ -326,9 +326,9 @@ describe('the builder', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       fireEvent.click(screen.getByRole('button', { name: /Publish to 3 people/, hidden: true }));
-      await screen.findByText('Publishing in 8 seconds');
-      // Nothing is written or sent until the hold runs out.
-      await act(() => vi.advanceTimersByTimeAsync(7000));
+      await screen.findByText('Publishing in 10 seconds');
+      // Nothing is written or sent until the hold runs out: ten seconds, as every Undo window (NP-06).
+      await act(() => vi.advanceTimersByTimeAsync(9000));
       expect(publish).not.toHaveBeenCalled();
       await act(() => vi.advanceTimersByTimeAsync(1500));
       await waitFor(() => expect(publish).toHaveBeenCalledWith({ planId: 'plan-1', expectedVersion: 4, notify: 'now' }));
@@ -338,7 +338,7 @@ describe('the builder', () => {
     }
   });
 
-  it('Undo inside the 8 second hold publishes nothing and tells nobody', async () => {
+  it('Undo inside the 10 second hold publishes nothing and tells nobody', async () => {
     const base = emptyBody('Lakeside', ROSTER.map((r) => r.id), false);
     show(data({ body: addBlock(base, makeBlock('team', base, 't')), step: 'review' }));
     fireEvent.click(screen.getByRole('button', { name: 'Publish' }));

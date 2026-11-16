@@ -526,6 +526,17 @@
   font: var(--ch-type-13);
   text-decoration: none;
 }
+/* "Held · Change" is drawn 18 high: under a finger it reaches 44 on the short side (PMAC-09), as .ch-btn does. */
+.ch-ca-panel__change {
+  position: relative;
+}
+@media (pointer: coarse) {
+  .ch-ca-panel__change::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+    content: '';
+  }
+}
 .ch-ca-panel__change:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;

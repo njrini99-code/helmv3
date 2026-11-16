@@ -789,7 +789,8 @@
   right: 0;
   bottom: calc(100% + 8px);
   left: 0;
-  z-index: var(--ch-z-sticky);
+  /* Above the dock (50), which it covers for a moment (MENTION-04). */
+  z-index: var(--ch-z-overlay);
   border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-overlay), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
@@ -933,6 +934,9 @@
 body.keyboard-open .ch-ask-hist.is-drawer {
   height: calc(100dvh - var(--keyboard-height, 0px));
 }
+/* In and out on the same property (OVL-13): the exit (useDialogLifetime) animates transform from where the rise has it, so
+   a close mid-open, or a reopen mid-close, turns round where it stands; a rise on translate added to it and jumped. The
+   drag keeps translate. */
 .ch-ask-drawer[open] .ch-ask-hist.is-drawer {
   /* In from the leading edge like a sheet, over the reveal beat on the iOS curve (motion.css ch-drawer-in; 3.4, 3.12). */
   animation: ch-drawer-in var(--ch-dur-reveal) var(--ch-ease-ios);
@@ -958,11 +962,30 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 }
 
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  /* Ask owns the phone's height, tabs shown or not: the dock carries the home indicator's inset, and the canvas adds nothing
+     under it, so the page never scrolls under its own chat (ASK-13, MAC-06). In the app, --keyboard-height lifts the dock. */
   .ch-ask {
-    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--ch-tabbar-h) - env(safe-area-inset-bottom) - var(--keyboard-height, 0px));
+    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--keyboard-height, 0px));
   }
-  .ch-root[data-phone-notabs] .ch-ask {
-    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--keyboard-height, 0px));
+  .ch-root[data-ui] .ch-canvas:has(.ch-ask) {
+    padding-bottom: 0;
+  }
+  body.keyboard-open .ch-ask-dock {
+    padding-bottom: 8px;
+  }
+  /* Mobile Safari with the keyboard up (useSafariKeyboardFit, scope 'shell'): the shell's bar and the box are pinned to the
+     visible area together, so the heading stays under the bar and the dock sits on the keys with no band above them
+     (ASK-P-01). It is on .ch-root, so no tab state outranks it. */
+  .ch-root[data-ch-vv] .ch-topbar {
+    position: fixed;
+    top: var(--ch-vv-top);
+    inset-inline: 0;
+  }
+  .ch-root[data-ch-vv] .ch-ask {
+    position: fixed;
+    top: calc(var(--ch-vv-top) + var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    inset-inline: 0;
+    height: calc(var(--ch-vv-h) - var(--ch-phone-topbar-h) - env(safe-area-inset-top));
   }
   .ch-ask-top {
     padding: 8px var(--ch-page-x-phone);
@@ -984,9 +1007,6 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   .ch-ask-body.has-panel {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ch-ask[data-ch-vv] {
-    height: calc(var(--ch-vv-h) + var(--ch-vv-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-top));
-  }
   /* Under the CoachHelm switch's 52px row the chat is that much shorter: coachhelm.css owns those heights beside .ch-hsw. */
   .ch-ask-scroll {
     padding: 0 var(--ch-page-x-phone) 12px;
@@ -997,7 +1017,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   /* The tray paints the page colour, with no rule over it (ASK-P-13): the composer's own capsule is the only edge. */
   .ch-ask-dock {
-    padding: 8px var(--ch-page-x-phone) 8px;
+    padding: 8px var(--ch-page-x-phone) calc(8px + env(safe-area-inset-bottom));
   }
   .ch-ask-cmp__box {
     border-radius: var(--ch-radius-xl);
@@ -1411,18 +1431,5 @@ html:not([data-fw-theme='dark']) .ch-ask {
   }
   .ch-root:has(> .ch-cpv-full) .ch-ask-main {
     margin-right: max(380px, min(452px, 45vw));
-  }
-}
-
-/* ASK-13: Ask owns the phone's height: no extra scroll on the canvas, and with the tabs hidden the dock carries the home indicator's inset. */
-@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-canvas:has(> .ch-ask), .ch-root[data-phone-notabs] .ch-canvas:has(> .ch-ask) {
-    padding-bottom: 0;
-  }
-  .ch-root[data-phone-notabs] .ch-ask {
-    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--keyboard-height, 0px));
-  }
-  .ch-root[data-phone-notabs] .ch-ask-dock {
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 }

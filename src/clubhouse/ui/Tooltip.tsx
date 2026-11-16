@@ -3,6 +3,7 @@
 import { cloneElement, useCallback, useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type PointerEvent, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import { tipClock } from '../shell/command/tooltip-clock';
+import { CH_DUR } from '../lib/motion';
 
 const GAP = 8;
 const EDGE = 8;
@@ -55,22 +56,38 @@ export function Tooltip({
   children: ReactElement<TriggerProps>;
 }) {
   const [open, setOpen] = useState(false);
+  /** It fades out over the press beat once it closes, rather than cutting out (OVL-07). */
+  const [leaving, setLeaving] = useState(false);
+  const leaveTimer = useRef<number | undefined>(undefined);
   const trigger = useRef<HTMLElement | null>(null);
   const openRef = useRef(false);
   const child = children;
 
   const show = useCallback(() => {
+    window.clearTimeout(leaveTimer.current);
+    setLeaving(false);
     openRef.current = true;
     setOpen(true);
   }, []);
   const hide = useCallback(() => {
-    tipClock.release(openRef.current);
+    const was = openRef.current;
+    tipClock.release(was);
     openRef.current = false;
     setOpen(false);
+    if (!was) return;
+    setLeaving(true);
+    window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(() => setLeaving(false), CH_DUR.press * 1000);
   }, []);
 
   // A control that leaves while its tip is up (a toast timing out, a sheet closing) takes the tip with it.
-  useEffect(() => () => tipClock.release(openRef.current), []);
+  useEffect(
+    () => () => {
+      window.clearTimeout(leaveTimer.current);
+      tipClock.release(openRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -123,13 +140,13 @@ export function Tooltip({
   return (
     <>
       {cloneElement(child, props)}
-      {open && trigger.current && words && <TipPlate anchor={trigger.current} label={words} shortcut={shortcut} />}
+      {(open || leaving) && trigger.current && words && <TipPlate anchor={trigger.current} label={words} shortcut={shortcut} leaving={!open} />}
     </>
   );
 }
 
 /** The plate itself, mounted only while open: below its control, above when the page ends first, never past the window's edge. */
-function TipPlate({ anchor, label, shortcut }: { anchor: HTMLElement; label: string; shortcut?: readonly string[] }) {
+function TipPlate({ anchor, label, shortcut, leaving }: { anchor: HTMLElement; label: string; shortcut?: readonly string[]; leaving: boolean }) {
   const plate = useRef<HTMLSpanElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
 
@@ -147,7 +164,7 @@ function TipPlate({ anchor, label, shortcut }: { anchor: HTMLElement; label: str
 
   const host = anchor.closest('dialog[open]') ?? document.querySelector('.ch-root') ?? document.body;
   return createPortal(
-    <span ref={plate} className="ch-popover ch-tip" data-ui="clubhouse" aria-hidden="true" style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0 }}>
+    <span ref={plate} className="ch-popover ch-tip" data-ui="clubhouse" data-leaving={leaving || undefined} aria-hidden="true" style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0 }}>
       <span className="ch-tip__label">{label}</span>
       {shortcut && shortcut.length > 0 && (
         <span className="ch-tip__keys">

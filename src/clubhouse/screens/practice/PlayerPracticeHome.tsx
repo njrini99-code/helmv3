@@ -29,7 +29,7 @@ export function PlayerPracticeHome({ data }: { data: ChPlayerPracticeHome }) {
   const stops = next ? next.stops.slice(at, at + HOME_STOPS) : [];
   return (
     <main className={'ch-page ch-prc ch-prc--ply' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
-      {phone && <PhoneTop start title="Practice" />}
+      {phone && <PhoneTop start heading={false} title="Practice" />}
       <header className="ch-prc-h">
         <div>
           <LargeTitle id="ch-prc-title">Practice</LargeTitle>

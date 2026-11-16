@@ -71,8 +71,10 @@ describe('the sidebar identity is the account menu (B11)', () => {
     expect(within(menu()).getByRole('menuitem', { name: 'What’s new' })).toHaveAttribute('href', '/golf/dashboard/whats-new');
     expect(within(menu()).getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/golf/dashboard/settings');
     expect(within(menu()).getByRole('menuitem', { name: 'Help' })).toHaveAttribute('href', '/golf/dashboard/settings#set-help');
-    // Focus goes into the list, as every Menu does.
-    await waitFor(() => expect(document.activeElement).toBe(within(menu()).getByRole('menuitem', { name: 'Settings' })));
+    // Focus lands on the menu itself, as every Menu's does (MENU-01, S3.5), and the down arrow reaches Settings.
+    await waitFor(() => expect(document.activeElement).toBe(menu()));
+    fireEvent.keyDown(menu(), { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(within(menu()).getByRole('menuitem', { name: 'Settings' }));
   });
 
   it('Sign out is the one sign-out path (lib/sign-out.ts)', async () => {

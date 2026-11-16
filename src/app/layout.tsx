@@ -103,6 +103,10 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  // SYS-09: where a browser honours it (Chrome, Android), the on-screen keyboard shrinks the layout viewport, so
+  // bottom-fixed bars and sheets sit above it. iOS Safari ignores it; the app's keyboard code
+  // (CapacitorProvider, --keyboard-height) still does that work on iPhone.
+  interactiveWidget: 'resizes-content',
   // Emits <meta name="color-scheme" content="light dark"> — tells the UA
   // up front (before any CSS/JS has run) that this document supports both
   // schemes, so a dark-OS user isn't defaulted to a white canvas while the

@@ -8,7 +8,7 @@ import { ClubhouseWhatsNewRoute } from '@/clubhouse/routes/whats-new';
 // ============================================================================
 
 export const metadata = {
-  title: "What's New",
+  title: "What's new",
   description: 'Lifecycle activity across your team in the past 7 days',
 };
 

@@ -949,48 +949,11 @@
   color: #f0b7a8;
 }
 
-/* The phone account sheet (shell/AccountSheet.tsx, once the More sheet) */
-.ch-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: var(--ch-z-overlay);
-  background: rgb(20 18 12 / 0.34);
+/* The phone account sheet (shell/AccountSheet.tsx, once the More sheet): the shared Modal (OVL-12); its rows keep their
+   16px gutters. */
+.ch-acct .ch-modal__body {
+  padding: 4px 16px 16px;
 }
-.ch-more {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: var(--ch-z-overlay);
-  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
-  border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
-  background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-sheet);
-  touch-action: pan-y;
-  /* A coach with a team list under who they are has the tallest sheet: it scrolls rather than run off a short screen. */
-  max-height: calc(100dvh - env(safe-area-inset-top) - 12px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-/* The grab and the header drag the sheet shut (useSheetDrag); the rest of it scrolls. */
-.ch-more > .ch-grab,
-.ch-more__head {
-  touch-action: none;
-}
-.ch-more > .ch-grab {
-  margin-block: 8px 4px;
-}
-.ch-more__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 0 12px;
-  font: var(--ch-type-17-strong);
-  letter-spacing: var(--ch-track-17);
-  color: var(--ch-text-primary);
-}
-.ch-more__x,
 .ch-bellp__x {
   position: relative;
   display: grid;
@@ -1005,7 +968,6 @@
   cursor: pointer;
 }
 /* A 44px target around the 32px coin. */
-.ch-more__x::before,
 .ch-bellp__x::before {
   content: '';
   position: absolute;
@@ -2717,7 +2679,6 @@ html[data-fw-theme='dark'] .ch-empty-page__seg i {
 html[data-fw-theme='dark'] .ch-scrim {
   background: rgb(0 0 0 / 0.55);
 }
-html[data-fw-theme='dark'] .ch-more__x,
 html[data-fw-theme='dark'] .ch-bellp__x {
   background: rgb(237 231 216 / 0.08);
 }
@@ -2903,157 +2864,6 @@ html[data-fw-theme='dark'] .ch-offline {
 }
 :where(html[data-fw-theme='dark']) .ch-resume__go {
   color: var(--ch-hero-mint-strong);
-}
-
-/* Ask as a sheet (shell/AskSheet.tsx, CH-1840–CH-1842; owner, 2026-10-08): CoachHelm's Ask over any screen. Desktop: a
-   centred sheet. Phone: a bottom sheet with a half and a full detent; the page stays in view above the half one. */
-.ch-asks {
-  box-sizing: border-box;
-  width: min(calc(100% - 32px), 620px);
-  max-width: none;
-  height: auto;
-  max-height: none;
-  padding: 0;
-  overflow: visible;
-  border: 0;
-  background: transparent;
-  color: var(--ch-text-primary);
-}
-.ch-asks::backdrop {
-  background: var(--ch-scrim, rgb(20 20 18 / 0.36));
-  /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
-  opacity: var(--ch-scrim-a, 1);
-  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
-}
-.ch-asks__panel {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  max-height: min(calc(100dvh - 64px), 760px);
-  overflow: hidden;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-overlay), var(--ch-highlight);
-  animation: ch-pop var(--ch-dur-base) var(--ch-ease);
-}
-.ch-asks__head {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 4px;
-  padding: 16px 12px 4px 20px;
-}
-.ch-asks__title {
-  flex: 1;
-  margin: 0;
-  font: var(--ch-type-title);
-  color: var(--ch-text-primary);
-}
-.ch-root .ch-asks__title:focus {
-  outline: none;
-}
-.ch-asks .ch-asks__ctx {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  align-self: flex-start;
-  margin: 4px 20px 8px;
-  padding: 4px 8px 4px 8px;
-  border-radius: var(--ch-radius-full);
-  background: var(--ch-bg-inset);
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-  font: var(--ch-type-footnote);
-  line-height: var(--ch-lead-label);
-  color: var(--ch-text-secondary);
-}
-.ch-asks__ctx b {
-  font-weight: 600;
-  color: var(--ch-text-primary);
-}
-.ch-asks__scroll {
-  flex: 1;
-  min-height: 72px;
-  padding: 4px 20px 12px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.ch-asks__hint {
-  margin: 8px 0 0;
-  font: var(--ch-type-body);
-  color: var(--ch-text-secondary);
-}
-.ch-asks__dock {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
-  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
-}
-.ch-asks__open {
-  display: inline-flex;
-  align-items: center;
-  align-self: center;
-  gap: 4px;
-  min-height: 32px;
-  font: var(--ch-type-footnote);
-  line-height: var(--ch-lead-label);
-  color: var(--ch-green-700);
-  text-decoration: none;
-}
-.ch-asks__drag {
-  display: none;
-}
-/* The sheet has no roster to mention from; the full Ask (Open in CoachHelm) has. */
-.ch-asks .ch-ask-cmp__round[aria-label='Mention a player or stat'] {
-  display: none;
-}
-@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-asks {
-    position: fixed;
-    inset: auto 0 0;
-    width: 100%;
-    height: auto;
-    margin: 0;
-  }
-  .ch-asks__panel {
-    height: 56dvh;
-    max-height: none;
-    border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
-    box-shadow: var(--ch-elevation-sheet);
-    /* A bottom sheet on the phone: it rises on the smooth spring as every sheet does, not the desktop dialog's pop. */
-    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
-  }
-  .ch-asks__panel[data-detent='full'] {
-    height: calc(100dvh - env(safe-area-inset-top) - 12px);
-  }
-  .ch-asks__drag {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 100%;
-    height: 22px;
-    padding: 0;
-    border: 0;
-    background: none;
-    touch-action: none;
-  }
-  .ch-asks__head {
-    padding-top: 0;
-  }
-  /* In the app the keyboard does not resize the page (capacitor.config resize: ionic): the sheet sits on top of it, as
-     the shared Modal does, and the full detent shrinks to what is left. */
-  body.keyboard-open .ch-asks {
-    margin-bottom: var(--keyboard-height, 0px);
-  }
-  body.keyboard-open .ch-asks__panel,
-  body.keyboard-open .ch-asks__panel[data-detent='full'] {
-    height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 12px);
-  }
-  body.keyboard-open .ch-asks__dock {
-    padding-bottom: 8px;
-  }
 }
 
 /* Phone large titles (shell/large-title.tsx, owner 2026-10-08: "cardless, native-feeling phone Clubhouse"). The bar's
@@ -4368,11 +4178,6 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
 }
 
-/* B4: in dark, More and the CoachHelm asks sheet lift above the page's cards (tokens.css --ch-bg-elevated). */
-:where(html[data-fw-theme='dark']) .ch-more,
-:where(html[data-fw-theme='dark']) .ch-asks__panel {
-  background: var(--ch-bg-elevated);
-}
 
 
 /* Clubhouse refresh, PR 3: the large title's context line, and controls that stick under the green bar on the page colour.

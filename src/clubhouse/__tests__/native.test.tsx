@@ -2,6 +2,7 @@ import { LazyMotion, domAnimation } from 'motion/react';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import './dialog-polyfill';
 
 /** The iOS app shell: what Clubhouse owes the native layer (docs/clubhouse/MOBILE.md). */
 

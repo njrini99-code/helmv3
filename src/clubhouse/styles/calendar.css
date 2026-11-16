@@ -2384,6 +2384,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
+/* The time band is drawn 26 high in its 34 lane; its grip reaches 44 (SWP-33). A tap on the lane still moves it. */
+.ch-cal-ft__band::after {
+  position: absolute;
+  inset: -9px min(0px, calc(50% - 22px));
+  content: '';
+}
 .ch-lane__b {
   position: absolute;
   top: 4px;
@@ -2465,6 +2471,8 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   cursor: crosshair;
 }
 .ch-cal-ft__band {
+  /* It draws no text, so nothing spills: its grown touch area (above) must not be clipped by the lane block's overflow. */
+  overflow: visible;
   cursor: grab;
   touch-action: none;
 }

@@ -36,6 +36,7 @@ import type { ChCalendarData } from '../data/calendar';
 import type { ChCalEvent, ChCalRoundRef } from '../screens/calendar/model';
 import { roundLabel } from '../screens/calendar/round-label';
 import './dialog-polyfill';
+import { accessibleName } from './label-in-name';
 
 const TEAM = '00000000-0000-4000-8000-0000000000aa';
 const TOUR = '00000000-0000-4000-8000-00000000t001'.replace('t', '0');
@@ -84,7 +85,7 @@ describe('P-5 rounds on the calendar', () => {
     const pill = b.querySelector('.ch-ev__round')!;
     expect(pill.textContent).toBe('R1');
     expect(pill.getAttribute('aria-hidden')).toBe('true');
-    expect(b.getAttribute('aria-label')).toMatch(/^Pinehurst Invitational, round 1 of 3, /);
+    expect(accessibleName(b)).toMatch(/^Pinehurst Invitational, round 1 of 3, /);
     expect(b.className).toMatch(/\bhas-round\b/);
   });
 
@@ -92,7 +93,9 @@ describe('P-5 rounds on the calendar', () => {
     wrap(data([roundEv(1), roundEv(2, { cancelled: true }), roundEv(3)]));
     const b = block('rd-2')!;
     expect(b.querySelector('.ch-ev__round svg')).not.toBeNull();
-    expect(b.getAttribute('aria-label')).toMatch(/round 2 of 3, cancelled/);
+    // Said once, at the end (it was said twice: once by the round, once by the block).
+    expect(accessibleName(b)).toMatch(/^Pinehurst Invitational, round 2 of 3, .*, cancelled$/);
+    expect(accessibleName(b).match(/cancelled/g)).toHaveLength(1);
   });
 
   it('a block too short for the pill keeps the stored “Name · R1” title', () => {
@@ -107,14 +110,14 @@ describe('P-5 rounds on the calendar', () => {
     const b = block('rd-1')!;
     expect(b.querySelector('.ch-ev__round')).toBeNull();
     expect(b.querySelector('.ch-ev__t')?.textContent).toBe('Pinehurst Invitational · R1');
-    expect(b.getAttribute('aria-label')).not.toMatch(/round 1 of 3/);
+    expect(accessibleName(b)).not.toMatch(/round 1 of 3/);
   });
 
   it('a month chip names the tournament with “R1” after it, and says the round', () => {
     wrap(data(TRACKED, { view: 'month' }));
     const chip = [...document.querySelectorAll<HTMLElement>('.ch-mo__ev')].find((el) => el.textContent?.startsWith('Pinehurst Invitational'))!;
     expect(chip.querySelector('.ch-rn')?.textContent).toBe('R1');
-    expect(chip.getAttribute('aria-label')).toMatch(/^Pinehurst Invitational, round 1 of 3/);
+    expect(accessibleName(chip)).toMatch(/^Pinehurst Invitational, round 1 of 3/);
   });
 
   it('the agenda keeps the title whole with a trailing “R1 of 3”', () => {

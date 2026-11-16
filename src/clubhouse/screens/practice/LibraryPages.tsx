@@ -41,7 +41,7 @@ function LibraryHead({ tab, title, actionLabel, onAction }: { tab: PracticeTab; 
   const phone = useChPhone();
   return (
     <>
-      {phone && <PhoneTop start title={title} action={actionLabel && onAction ? <PhoneIconAction icon={Plus} label={actionLabel} onClick={onAction} /> : undefined} />}
+      {phone && <PhoneTop start heading={false} title={title} action={actionLabel && onAction ? <PhoneIconAction icon={Plus} label={actionLabel} onClick={onAction} /> : undefined} />}
       <header className="ch-prc-h">
         <LargeTitle id="ch-prc-title">{title}</LargeTitle>
         {!phone && actionLabel && onAction && (

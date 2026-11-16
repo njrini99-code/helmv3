@@ -47,6 +47,7 @@ import type { ChCalEvent } from '../screens/calendar/model';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR } from '../preview/fixtures-calendar';
 import './dialog-polyfill';
+import { accessibleName, faceText } from './label-in-name';
 
 const TZ = 'America/New_York';
 // Wednesday 14 October 2026, 2:40 PM Eastern.
@@ -188,7 +189,7 @@ describe('on the phone', () => {
   it('the day row shows the old time struck under the title, a Moved badge, and says so in its name', () => {
     wrap(withMarks([row()]));
     const r = rowButton();
-    expect(r.getAttribute('aria-label')).toMatch(/, moved, was 1:00 PM$/);
+    expect(accessibleName(r)).toMatch(/, moved, was 1:00 PM$/);
     const was = r.querySelector('s.ch-was')!;
     expect(was.textContent).toBe('was 1:00 PM');
     expect(was.closest('.ch-calm-ev__b')!.textContent).toContain('Team room');
@@ -199,12 +200,12 @@ describe('on the phone', () => {
     const onlyPlace = { start_time: '2026-10-15T17:30:00Z', end_time: '2026-10-15T18:15:00Z' };
     wrap(withMarks([row({ location: 'Practice range', change: stored({ from: { ...base, ...onlyPlace }, fields: ['location'] }) })], {}, [], { location: 'Practice range' }));
     const r = screen.getByRole('button', { name: /^Travel briefing, 1:30 PM to 2:15 PM/ });
-    expect(r.getAttribute('aria-label')).toMatch(/, moved to Practice range, was Team room$/);
+    expect(accessibleName(r)).toMatch(/, moved to Practice range, was Team room$/);
     expect(r.querySelector('.ch-calm-ev__sub')!.textContent).toBe('Practice range was Team room');
     cleanup();
     wrap(withMarks([row({ title: 'Team call', change: stored({ from: { ...base, ...onlyPlace }, fields: ['title'] }) })], {}, [], { title: 'Team call' }));
     const renamed = screen.getByRole('button', { name: /^Team call, 1:30 PM to 2:15 PM/ });
-    expect(renamed.getAttribute('aria-label')).toMatch(/, renamed, was Travel briefing$/);
+    expect(accessibleName(renamed)).toMatch(/, renamed, was Travel briefing$/);
     expect(renamed.querySelector('.ch-calm-ev__sub')!.textContent).toBe('was Travel briefing · Team room');
   });
 
@@ -255,7 +256,7 @@ describe('on the phone', () => {
     const r = screen.getByRole('button', { name: /^Round review/ });
     expect(within(r).getByText('Reply')).toBeTruthy();
     expect(within(r).queryByText('Moved')).toBeNull();
-    expect(r.getAttribute('aria-label')).toMatch(/needs your reply, moved, was 12:00 PM$/);
+    expect(accessibleName(r)).toMatch(/needs your reply, moved, was 12:00 PM$/);
   });
 
   it('a cancelled event shows a Cancelled badge, its title struck, and no struck time', () => {
@@ -281,7 +282,7 @@ describe('on the phone', () => {
     expect(screen.getByText('Change hidden on this device.')).toBeTruthy();
     expect(document.cookie).toContain('ch_marks=6f1c2a90:g');
     // The row is exactly today's row again.
-    expect(screen.getAllByRole('button', { name: /^Travel briefing, 1:30 PM to 2:15 PM/ }).every((b) => !b.querySelector('s.ch-was') && !/moved/.test(b.getAttribute('aria-label')!))).toBe(true);
+    expect(screen.getAllByRole('button', { name: /^Travel briefing, 1:30 PM to 2:15 PM/ }).every((b) => !b.querySelector('s.ch-was') && !/moved/.test(accessibleName(b)))).toBe(true);
 
     await user.click(screen.getByRole('button', { name: 'Show the change again' }));
     expect(await screen.findByRole('note', { name: 'What changed' })).toBeTruthy();
@@ -293,7 +294,7 @@ describe('on the phone', () => {
   it('a device that cleared the change paints it cleared on the first frame', () => {
     wrap(withMarks([row()], {}, [['6f1c2a90', 'g']]));
     expect(rowButton().querySelector('s.ch-was')).toBeNull();
-    expect(rowButton().getAttribute('aria-label')).not.toMatch(/moved/);
+    expect(accessibleName(rowButton())).not.toMatch(/moved/);
   });
 
   it('a cancellation is never hidden: no Got it, the reason is quoted', async () => {
@@ -469,7 +470,7 @@ describe('on the desktop', () => {
   it('a tall block carries the old time struck as the last part of its time line, and says so in its name', () => {
     wrap(withMarks([recRow()], { anchor: '2026-10-14' }));
     const b = block();
-    expect(b.getAttribute('aria-label')).toMatch(/, moved, was 3:00 PM\. Alt and the arrow keys/);
+    expect(accessibleName(b)).toMatch(/, moved, was 3:00 PM\. Alt and the arrow keys/);
     const line = b.querySelector('.ch-ev__m')!;
     const last = line.lastElementChild!;
     expect(last.className).toBe('ch-ev__was');
@@ -533,7 +534,10 @@ describe('on the desktop', () => {
     // The chips are their own buttons beside the day number, so the glyph sits in the cell, not in the day button.
     const box = cell.closest('.ch-mo__cell')!;
     expect(box.querySelector('.ch-mo__chg')).not.toBeNull();
-    expect(box.textContent).not.toContain('3:00');
+    // Not drawn there: the old time is in the chip's hidden words only (SWP-03), never on its face.
+    expect(faceText(box)).not.toContain('3:00');
+    const moved = Array.from(box.querySelectorAll('.ch-mo__ev')).find((c) => accessibleName(c).startsWith('Recovery nine'))!;
+    expect(accessibleName(moved)).toMatch(/^Recovery nine, 3:30 PM, moved, was 3:00 PM/);
   });
 
   it('the agenda row strikes the old time before the type and shows the badge; a cancelled row says Cancelled', () => {

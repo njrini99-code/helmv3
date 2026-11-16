@@ -40,9 +40,10 @@ vi.mock('@/app/golf/actions/travel', () => ({ getItineraryForEvent: () => Promis
 
 import type { ChCalendarData } from '../data/calendar';
 import { Calendar } from '../screens/calendar/Calendar';
-import { ToastProvider } from '../ui/Toast';
+import { CH_TOAST_ACTION_MS, ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR } from '../preview/fixtures-calendar';
 import './dialog-polyfill';
+import { accessibleName } from './label-in-name';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 /** Travel briefing (e9) carries a version and asks for replies, so who hears is its six invitees. */
@@ -68,7 +69,7 @@ const block = (name: RegExp) => screen.getAllByRole('button', { name }).find((b)
 const nudge = (keys: { shiftKey?: boolean; key?: string } = {}) => fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true, ...keys });
 const expire = () =>
   act(async () => {
-    vi.advanceTimersByTime(4000);
+    vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
   });
 
 beforeEach(() => {
@@ -107,7 +108,7 @@ describe('P-4 held moves', () => {
     wrap(cal());
     nudge();
     fireEvent.keyDown(document.body, { key: 'z', metaKey: true });
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:30 – 2:15 PM/);
     expect(code('CH-6805')!.textContent).toBe('Move undone.');
     await expire();
     expect(a.updateGolfEvent).not.toHaveBeenCalled();
@@ -138,7 +139,7 @@ describe('P-4 held moves', () => {
       const menu = screen.getByRole('menu', { name: 'Repeating event' });
       expect(menu).toBeTruthy();
       // Held where it would land while the question is open.
-      expect(series().getAttribute('aria-label')).toMatch(/3:45 – 5:15 PM/);
+      expect(accessibleName(series())).toMatch(/3:45 – 5:15 PM/);
       fireEvent.click(screen.getByRole('menuitemradio', { name: 'This and following' }));
       expect(screen.getByText('Moved this and following to 3:45 PM')).toBeTruthy();
       expect(screen.getByText(/^Every Wednesday from Oct 14\./)).toBeTruthy();
@@ -168,7 +169,7 @@ describe('P-4 held moves', () => {
       fireEvent.keyDown(series(), { key: 'ArrowDown', altKey: true });
       fireEvent.keyDown(screen.getByRole('menu', { name: 'Repeating event' }), { key: 'Escape' });
       expect(screen.queryByRole('menu', { name: 'Repeating event' })).toBeNull();
-      expect(series().getAttribute('aria-label')).toMatch(/3:30 – 5:00 PM/);
+      expect(accessibleName(series())).toMatch(/3:30 – 5:00 PM/);
       await expire();
       expect(a.updateGolfEvent).not.toHaveBeenCalled();
       expect(a.editRecurringEvent).not.toHaveBeenCalled();

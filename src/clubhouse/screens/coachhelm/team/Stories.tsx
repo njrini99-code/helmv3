@@ -12,6 +12,7 @@ import { useChSessionState } from '../../../lib/session-state';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { CH_DUR } from '../../../lib/motion';
 import { chDialogOpener } from '../../../lib/dialog-lifetime';
+import { useSheetDrag } from '../../../lib/sheet-drag';
 import { useOverlayScrollLock } from '../../../lib/overlay-scroll';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
@@ -21,9 +22,6 @@ import { Coin, Notice } from './parts';
 const signed = (v: number) => formatFixed(v).replace('-', '\u2212');
 
 const STORY_MS = 5200;
-/** How far a finger moves before it's a swipe and not a hold, and how far it closes the viewer. */
-const DRAG_SLOP = 8;
-const DRAG_CLOSE = 120;
 const MAX_TILES = 3;
 
 const nameOf = (s: ChTeamStory) => s.who;
@@ -177,28 +175,6 @@ function StoryViewer({
   const reduced = useChReducedMotion();
   // The page behind never moves while a story is up (MOB-TEAM-2).
   useOverlayScrollLock();
-  // Swipe down closes it: the sheet follows the finger, and under Reduce Motion it waits for the lift, then fades.
-  const drag = useRef<{ y: number; dy: number; at: number } | null>(null);
-  const dragged = useRef(false);
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
-    drag.current.dy = Math.max(0, e.clientY - drag.current.y);
-    if (drag.current.dy > DRAG_SLOP) dragged.current = true;
-    if (!reduced && box.current && dragged.current) {
-      box.current.style.transition = 'none';
-      box.current.style.transform = `translateY(${drag.current.dy}px)`;
-    }
-  };
-  const onPointerEnd = () => {
-    const d = drag.current;
-    drag.current = null;
-    setHeld(false);
-    if (!d || !box.current) return;
-    box.current.style.transition = '';
-    box.current.style.transform = '';
-    const speed = d.dy / Math.max(1, performance.now() - d.at);
-    if (d.dy > DRAG_CLOSE || (d.dy > DRAG_SLOP && speed > 0.6)) leave();
-  };
   const box = useRef<HTMLDivElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const story = stories[i];
@@ -208,6 +184,10 @@ function StoryViewer({
     setLeaving(true);
     window.setTimeout(onClose, CH_DUR.release * 1000 + 40);
   };
+  // Swipe down closes it, on the one sheet drag (lib/sheet-drag.ts; OVL-17): it follows the finger from the progress bar
+  // and the header, or from the story once a tall one is scrolled to its top; under Reduce Motion a let-go short of
+  // closing puts it back at once. The lift of a swipe never reads as a tap on the story.
+  const drag = useSheetDrag(box, leave, { reduced });
   const next = () => (i < stories.length - 1 ? setI(i + 1) : leave());
   useEffect(() => {
     // F-0012: the tile a Safari tap pressed, which it never focused; the sheets' own rule (lib/dialog-lifetime.ts).
@@ -261,15 +241,9 @@ function StoryViewer({
       aria-modal="true"
       tabIndex={-1}
       aria-label={`Story, ${nameOf(story)}`}
-      onPointerDown={(e) => {
-        setHeld(true);
-        dragged.current = false;
-        // Not from a button: its press is its own, and a drag off it would close the viewer. A tall body's drag scrolls it.
-        drag.current = (e.target as Element).closest?.(tall ? 'button, a, .sto-b' : 'button, a') ? null : { y: e.clientY, dy: 0, at: performance.now() };
-      }}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerEnd}
-      onPointerCancel={onPointerEnd}
+      onPointerDown={() => setHeld(true)}
+      onPointerUp={() => setHeld(false)}
+      onPointerCancel={() => setHeld(false)}
       // A keyboard reader gets the same pause as a held finger (FID-TEAM-6), and Tab stays inside the viewer.
       onFocusCapture={(e) => {
         if ((e.target as HTMLElement).matches(':focus-visible')) setHeld(true);
@@ -288,14 +262,14 @@ function StoryViewer({
         }
       }}
     >
-      <div className="prog">
+      <div className="prog" onPointerDown={drag.onPointerDown}>
         {stories.map((s, j) => (
           <i key={s.id} className={j < i ? 'done' : j === i ? 'now' : ''}>
             <b />
           </i>
         ))}
       </div>
-      <div className="sto-h">
+      <div className="sto-h" onPointerDown={drag.onPointerDown}>
         {p && <Coin player={p} />}
         <span className="c">
           <b>{nameOf(story).split(' ')[0]}</b>
@@ -309,10 +283,7 @@ function StoryViewer({
       <div
         ref={body}
         className={'sto-b' + (tall ? ' is-tall' : '')}
-        onClick={() => {
-          // The lift of a swipe still clicks.
-          if (!dragged.current) next();
-        }}
+        onClick={next}
       >
         <StoryBody story={story} round={roundOf(story)} />
       </div>
