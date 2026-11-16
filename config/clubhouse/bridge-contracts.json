@@ -10105,6 +10105,33 @@
     ]
   },
   {
+    "id": 90180,
+    "page": "P009",
+    "category": 1,
+    "item": 80,
+    "name": "QUALIFIER_TIE_RULE_RANKS_THE_BOARD",
+    "meaning": "A qualifier's tie rule (launch readiness F-04) ranks its board, its list leaders, the selection workspace and its confirm, and Ask's board read in the one order (ranking.ts rankStandings): 'last_round' separates players level on to par and strokes by the lower last round, then the round before, and only players still level share a place or tie at the cut; 'coach' (a qualifier with no stored rule, and every qualifier before the held migration 20261115240000) separates nobody (Q-114). The standings caption states the rule in words, to the coach and to a player.",
+    "status": "implemented",
+    "where": "src/lib/coachhelm/v3/qualifying/ranking.ts#rankStandings; src/clubhouse/screens/qualifiers/model.ts#buildBoard; src/lib/coachhelm/v3/qualifying/loader.ts#rankCandidates; src/lib/golf/qualifier-rules.ts#readQualifierRules",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-ties.test.tsx",
+      "src/lib/coachhelm/v3/qualifying/__tests__/ranking-ties.test.ts"
+    ]
+  },
+  {
+    "id": 90181,
+    "page": "P009",
+    "category": 1,
+    "item": 81,
+    "name": "QUALIFIER_FORM_CHOOSES_THE_TIE_RULE",
+    "meaning": "The qualifier form's Ties field (F-04): a new qualifier starts on 'Last round, then the one before' (owner, 15 Nov 2026), an existing one on its own rule, with 'You decide' as the other choice and a sentence saying what the rule does. Before the rule's store exists the field is locked on You decide and says choosing waits on the update; a read that fails locks it (CH-09281) and a save leaves the rule alone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#TieRuleField; src/clubhouse/data/qualifiers.ts#loadQualifierForm",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-ties.test.tsx"
+    ]
+  },
+  {
     "id": 90201,
     "page": "P009",
     "category": 2,
@@ -10903,6 +10930,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90681,
+    "page": "P009",
+    "category": 6,
+    "item": 81,
+    "name": "QUALIFIER_TIE_RULE_DID_NOT_LOAD",
+    "chCode": "CH-09281",
+    "meaning": "Create or edit: the qualifier's tie rule doesn't load (launch readiness F-04)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,
@@ -11181,6 +11219,20 @@
     "where": "src/clubhouse/screens/qualifiers/ExportStandings.tsx#ExportStandings (src/clubhouse/ui/ExportButton.tsx)",
     "tests": [
       "src/clubhouse/__tests__/exports.test.tsx"
+    ]
+  },
+  {
+    "id": 90981,
+    "page": "P009",
+    "category": 9,
+    "item": 81,
+    "name": "QUALIFIER_TIE_RULE_SAVED",
+    "meaning": "The tie rule saves with the qualifier (F-04): on create it is saved for the new qualifier, and a rule that doesn't save is said in the done toast ('Qualifier created, but its tie rule didn’t save. Open Edit to set it.'); on edit it is a step of the save only when it changed. The server writes one row a qualifier with its team through RLS (a coach of the team), refuses another team's qualifier, and answers 'unavailable' before the migration is applied.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/qualifier-rules.ts#saveQualifierRules; src/clubhouse/screens/qualifiers/writes.ts#runEditPlan",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-ties.test.tsx",
+      "src/app/golf/actions/__tests__/qualifier-rules.test.ts"
     ]
   },
   {

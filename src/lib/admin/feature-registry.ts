@@ -217,6 +217,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/v3/qualifying.ts': 'ALL',
+      'src/app/golf/actions/qualifier-rules.ts': 'ALL',
       'src/app/golf/actions/qualifier-actions.ts': [
         'createGolfQualifier',
         'getQualifierRoundCourses',

@@ -426,7 +426,7 @@ function Board({
         ))}
       </ol>
       <p className="ch-qf-cap">
-        {boardCaption(b, data.picks, data.numRounds, status)}
+        {boardCaption(b, data.picks, data.numRounds, status, coach)}
       </p>
     </section>
   );

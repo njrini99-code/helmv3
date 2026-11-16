@@ -282,3 +282,26 @@ describe('untrackTournament', () => {
     expect(await untrackTournament(TID, 4)).toMatchObject({ code: 'round_has_scores', error: 'Scores are entered for this tournament, so it stays tracked.' });
   });
 });
+
+describe('createTournamentFromCalendar: the tiebreak (F-04)', () => {
+  it('sets a tiebreak other than shared places right after the create, on the version the create returned', async () => {
+    m.rpc.golf_tournament_create_from_calendar = () => made();
+    m.rpc.golf_tournament_update = () => ({ data: 2, error: null });
+    const res = await createTournamentFromCalendar(input({ tiebreak: 'ncaa' }));
+    expect(res).toMatchObject({ success: true, data: { tournamentId: TID, version: 2 } });
+    expect(m.rpcCalls.map((c) => c.name)).toEqual(['golf_tournament_create_from_calendar', 'golf_tournament_update']);
+    expect(m.rpcCalls[1]!.args).toEqual({ p_id: TID, p_payload: { tiebreak: 'ncaa' }, p_version: 1 });
+  });
+
+  it('shared places, or a replay, sends nothing more; a tiebreak that fails is said, and the event stands', async () => {
+    m.rpc.golf_tournament_create_from_calendar = () => made();
+    await createTournamentFromCalendar(input({ tiebreak: 'ties_stand' }));
+    m.rpc.golf_tournament_create_from_calendar = () => made(true);
+    await createTournamentFromCalendar(input({ tiebreak: 'ncaa' }));
+    expect(m.rpcCalls.map((c) => c.name)).toEqual(['golf_tournament_create_from_calendar', 'golf_tournament_create_from_calendar']);
+    m.rpcCalls = [];
+    m.rpc.golf_tournament_create_from_calendar = () => made();
+    m.rpc.golf_tournament_update = () => ({ data: null, error: { message: 'stale', code: 'P0001' } });
+    expect(await createTournamentFromCalendar(input({ tiebreak: 'ncaa' }))).toMatchObject({ success: true, data: { tournamentId: TID, version: 1, tiebreakFailed: true } });
+  });
+});

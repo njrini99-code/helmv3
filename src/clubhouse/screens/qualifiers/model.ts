@@ -21,7 +21,8 @@
  * (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
  */
 
-import { boardOrder, rankStandings } from '@/lib/coachhelm/v3/qualifying/ranking';
+import { boardOrder, rankStandings, type QualifierTieRule } from '@/lib/coachhelm/v3/qualifying/ranking';
+import { tieRuleSentence } from '@/lib/golf/qualifier-rules';
 import { plural, pluralWord } from '../../lib/plural';
 import { firstName } from '../../lib/names';
 import { zoneFormat } from '../../lib/zone-format';
@@ -135,6 +136,8 @@ export interface ChQBoard {
    * the board says when one round compares unlike cards). Left out, none do.
    */
   mixed?: ChQMixedRound[];
+  /** The tie rule the board was ranked by (F-04); the standings state it. */
+  tieRule: QualifierTieRule;
 }
 
 export interface ChQMixedRound {
@@ -186,8 +189,23 @@ export function parseSelectionState(s: string | null | undefined): ChQSelectionS
 /** Fewer rounds in than the most anyone on the board has: the group decision 10 ranks below the complete cards. */
 const shortOf = (rows: ReadonlyArray<Pick<ChQRow, 'played'>>) => boardOrder(rows).short;
 
+/**
+ * Strokes by qualifier round (index 0 for round 1), from the rounds that count: the tie rule's countback reads it
+ * (F-04). A round in no numbered slot has no place in the countback.
+ */
+function slotStrokes(rounds: readonly ChQRound[]): Array<number | null> {
+  const out: Array<number | null> = [];
+  for (const r of rounds) {
+    if (r.total == null || r.toPar == null || r.numbered === false || r.number < 1) continue;
+    if (out[r.number - 1] != null) continue;
+    while (out.length < r.number) out.push(null);
+    out[r.number - 1] = r.total;
+  }
+  return out;
+}
+
 /** The scored rows ranked, with positions and ties assigned (states left null; `missed` left false), and the unscored rows by name. */
-function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[]; unscored: ChQRow[]; all: ChQRow[] } {
+function rankRows(entrants: ChQEntrant[], rounds: ChQRound[], tieRule: QualifierTieRule = 'coach'): { scored: ChQRow[]; unscored: ChQRow[]; all: ChQRow[] } {
   const byPlayer = new Map<string, ChQRound[]>();
   for (const r of rounds) {
     const list = byPlayer.get(r.playerId) ?? [];
@@ -234,11 +252,12 @@ function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[
   const scored = rankStandings(
     all.filter((r) => r.played > 0),
     standingKey,
+    tieRule,
   ).map((p) => Object.assign(p.item, { position: p.position, tied: p.tied }));
   return { scored, unscored, all };
 }
 
-const standingKey = (r: ChQRow) => ({ toPar: r.toPar as number, total: r.total as number, played: r.played, name: r.name });
+const standingKey = (r: ChQRow) => ({ toPar: r.toPar as number, total: r.total as number, played: r.played, name: r.name, rounds: slotStrokes(r.rounds) });
 
 /** A counted round: it has a total and a to-par (the rule `rankRows` applies). */
 const counted = (r: ChQRound) => r.total != null && r.toPar != null;
@@ -257,10 +276,10 @@ export function bubbleMinRounds(numRounds: number): number {
  * board as it stood with every round of the latest round number left out. Null for a player who wasn't ranked then,
  * or when there is no earlier round to compare with. Never a refresh-to-refresh delta.
  */
-function movement(entrants: ChQEntrant[], rounds: ChQRound[], scored: ChQRow[]): void {
+function movement(entrants: ChQEntrant[], rounds: ChQRound[], scored: ChQRow[], tieRule: QualifierTieRule): void {
   const latest = rounds.filter(counted).reduce((m, r) => Math.max(m, r.number), 0);
   if (latest < 2) return;
-  const before = rankRows(entrants, rounds.filter((r) => r.number < latest)).scored;
+  const before = rankRows(entrants, rounds.filter((r) => r.number < latest), tieRule).scored;
   const was = new Map(before.map((r) => [r.playerId, r.position]));
   for (const row of scored) {
     const p = was.get(row.playerId);
@@ -286,9 +305,16 @@ export function buildBoard(input: {
    * Every Clubhouse caller passes it; a caller without it (an older test of the shared ranking) gets the ungated state.
    */
   numRounds?: number;
+  /**
+   * How players level on to par and strokes are separated (F-04, `readQualifierRules`): `last_round` by the lower last
+   * round, then the round before; `coach` (a qualifier with no stored rule, and the default) separates nobody. The server's
+   * selection workspace ranks with the same rule, so the board shows what confirm writes.
+   */
+  tieRule?: QualifierTieRule;
 }): ChQBoard {
-  const { scored, unscored, all } = rankRows(input.entrants, input.rounds);
-  movement(input.entrants, input.rounds, scored);
+  const tieRule = input.tieRule ?? 'coach';
+  const { scored, unscored, all } = rankRows(input.entrants, input.rounds, tieRule);
+  movement(input.entrants, input.rounds, scored, tieRule);
 
   const squad = Math.max(0, input.squad);
   const topScore = Math.max(0, squad - Math.max(0, input.picks));
@@ -314,7 +340,7 @@ export function buildBoard(input: {
   });
 
   const mixed = mixedLengthRounds(input.rounds);
-  return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0), ...(mixed.length ? { mixed } : {}) };
+  return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0), ...(mixed.length ? { mixed } : {}), tieRule };
 }
 
 /** One line on the board measured from the viewer's row (row 74, "you vs the line"). */
@@ -423,8 +449,8 @@ export function viewerOutcomeText(o: ChQViewerOutcome): { label: string; text: s
 export const RANK_RULE = 'Complete cards rank first, by total to par, then total strokes, then more rounds played; a card a round short sits below them.';
 
 /** The caption under a board, the same words on desktop and the phone (row 75, CONS-37): the order, who qualifies, the bubble. */
-export function boardCaption(b: Pick<ChQBoard, 'topScore'>, picks: number, numRounds: number, status: ChQStatus): string {
-  return `${RANK_RULE} Top ${b.topScore} qualify on score${picks ? `; ${plural(picks, 'coach’s pick', 'coach’s picks')}` : ''}.${bubbleNote(numRounds, status)}`;
+export function boardCaption(b: Pick<ChQBoard, 'topScore' | 'tieRule'>, picks: number, numRounds: number, status: ChQStatus, coach = true): string {
+  return `${RANK_RULE} ${tieRuleSentence(b.tieRule ?? 'coach', coach)} Top ${b.topScore} qualify on score${picks ? `; ${plural(picks, 'coach’s pick', 'coach’s picks')}` : ''}.${bubbleNote(numRounds, status)}`;
 }
 
 export function bubbleNote(numRounds: number, status: ChQStatus): string {
@@ -635,6 +661,8 @@ export interface ChQFormValues {
   squad: string;
   picks: string;
   playerIds: string[];
+  /** How players level on to par and strokes are separated (F-04). A new qualifier starts on `last_round`. */
+  tieRule: QualifierTieRule;
 }
 export type ChQField = 'name' | 'startDate' | 'endDate' | 'entryDeadline' | 'rounds' | 'oneRoundAck' | 'playerIds' | 'squad' | 'picks';
 export interface ChQProblem {

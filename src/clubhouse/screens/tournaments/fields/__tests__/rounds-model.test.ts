@@ -239,3 +239,17 @@ describe('dates', () => {
     expect(seasonLabelOf('2026-08-01')).toBe('2026–27');
   });
 });
+
+describe('the Ties field (F-04)', () => {
+  it('a new event shares tied places; the NCAA tiebreakers are sent only when chosen', async () => {
+    const { TIEBREAK_OPTIONS, tiebreakOptions, tiebreakHelp, toCreatePayload: create } = await import('../rounds-model');
+    expect(initialTourState('2026-11-05').tiebreak).toBe('ties_stand');
+    const x = { teamId: 't', requestId: 'r', requiresRsvp: false, attendeeIds: [] };
+    expect(create(state(), 'America/New_York', x)).not.toHaveProperty('tiebreak');
+    expect(create(state({ tiebreak: 'ncaa' }), 'America/New_York', x)).toMatchObject({ tiebreak: 'ncaa' });
+    expect(TIEBREAK_OPTIONS.map((o) => o.label)).toEqual(['Tied teams share a place', 'NCAA tiebreakers']);
+    // A playoff an event already has keeps its own choice, so opening and saving it never changes it.
+    expect(tiebreakOptions('playoff').map((o) => o.value)).toEqual(['ties_stand', 'ncaa', 'playoff']);
+    expect(tiebreakHelp('ncaa')).toMatch(/non-counting scores, then each round’s lowest, second, third and fourth counting scores, then seed/);
+  });
+});

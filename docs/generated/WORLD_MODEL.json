@@ -3246,6 +3246,12 @@
         ]
       },
       {
+        "id": "golf_hours_adjustments",
+        "definedIn": [
+          "supabase/migrations/20261115230000_golf_team_hours.sql"
+        ]
+      },
+      {
         "id": "golf_insight_action",
         "definedIn": [
           "supabase/migrations/20260621160000_insight_event_ledger.sql"
@@ -3423,6 +3429,12 @@
         "id": "golf_team_drills",
         "definedIn": [
           "supabase/migrations/20261026010100_golf_team_drills.sql"
+        ]
+      },
+      {
+        "id": "golf_team_hours_settings",
+        "definedIn": [
+          "supabase/migrations/20261115230000_golf_team_hours.sql"
         ]
       },
       {
@@ -24494,6 +24506,17 @@
     },
     {
       "source": "roster_team",
+      "target": "golf_hours_adjustments",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261115230000_golf_team_hours.sql"
+        }
+      ]
+    },
+    {
+      "source": "roster_team",
       "target": "golf_join_team_with_code",
       "kind": "feature_rpc",
       "evidence": [
@@ -24594,6 +24617,17 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20261026010100_golf_team_drills.sql"
+        }
+      ]
+    },
+    {
+      "source": "roster_team",
+      "target": "golf_team_hours_settings",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261115230000_golf_team_hours.sql"
         }
       ]
     },

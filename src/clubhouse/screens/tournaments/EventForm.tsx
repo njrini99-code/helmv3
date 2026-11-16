@@ -15,7 +15,7 @@ import { useToast } from '../../ui/Toast';
 import { LIVE_WRITES } from '../qualifiers/writes';
 import { TournamentFields } from './fields/TournamentFields';
 import { refusalNotice, type TournamentRefusal } from './fields/refusals';
-import { initialTourState, receiptSentence, toCreatePayload, validate, type ChTourErrors, type ChTourState } from './fields/rounds-model';
+import { initialTourState, receiptSentence, TIEBREAK_NOT_SAVED, toCreatePayload, validate, type ChTourErrors, type ChTourState } from './fields/rounds-model';
 import { TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, tourGate, useTourPhone } from './parts';
 import { useTourPaths } from './paths';
 import { stateFromDraft, toUpdateInput } from './edit-model';
@@ -134,7 +134,7 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
         setNote(null);
         haptic('success');
         const id = res.data.tournamentId;
-        toast({ title: `${state.name.trim()} is set up in Tournaments`, code: 'CH-6040', action: { label: 'Open', run: () => router.push(paths.desk(id)) } });
+        toast({ title: `${state.name.trim()} is set up in Tournaments`, code: 'CH-6040', ...(res.data.tiebreakFailed ? { body: TIEBREAK_NOT_SAVED } : {}), action: { label: 'Open', run: () => router.push(paths.desk(id)) } });
         router.push(paths.desk(id));
       } else {
         const refusal = (res.code ?? 'failed') as TournamentRefusal;

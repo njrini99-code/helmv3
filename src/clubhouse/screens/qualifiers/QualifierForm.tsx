@@ -29,6 +29,13 @@ import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
 import { pluralWord } from '../../lib/plural';
 import '../../styles/qualifiers.css';
 import { LargeTitle } from '../../ui/LargeTitle';
+import { Select } from '../../ui/Select';
+import type { QualifierTieRule } from '@/lib/coachhelm/v3/qualifying/ranking';
+
+const TIE_OPTIONS: ReadonlyArray<{ value: QualifierTieRule; label: string }> = [
+  { value: 'last_round', label: 'Last round, then the one before' },
+  { value: 'coach', label: 'You decide' },
+];
 
 const LIST = '/golf/dashboard/qualifiers';
 // The limit is said before a save refuses it (wave-6 #16).
@@ -119,13 +126,19 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           .filter((c) => c.number <= rounds && c.courseName)
           .map((c) => ({ roundNumber: c.number, courseId: c.courseId, courseName: c.courseName, teeId: c.teeId })),
       });
+      // The tie rule rides after the create (F-04): the qualifier exists either way, and a rule that didn't save is said in the toast.
+      let rulesFailed = false;
+      if (normalise(res).success && res.data?.qualifierId && data.rulesState === 'ok') {
+        const ruled = await writes.saveRules(res.data.qualifierId, { tieRule: v.tieRule }).catch(() => ({ success: false as const }));
+        rulesFailed = !normalise(ruled).success;
+      }
       // The form has done its job: replaced, so Back from the new qualifier does not return to a form whose Create would make a second one.
       if (normalise(res).success) {
         createdRef.current = true;
         setCreated(true);
         router.replace(res.data?.qualifierId ? `${LIST}/${res.data.qualifierId}` : LIST);
       }
-      return res;
+      return rulesFailed && normalise(res).success ? { ...res, data: { ...res.data!, rulesFailed: true } } : res;
     },
     () => ({
       done: `Qualifier created · ${plural(v.playerIds.length, 'player')} entered`,
@@ -139,7 +152,9 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       result.success
         ? result.data?.roundCoursesFailed
           ? { ...c, done: 'Qualifier created, but its courses didn’t save. Open Edit to set them.' }
-          : c
+          : (result.data as { rulesFailed?: boolean } | undefined)?.rulesFailed
+            ? { ...c, done: 'Qualifier created, but its tie rule didn’t save. Open Edit to set it.' }
+            : c
         : { ...c, hint: friendlyReason(result.error) ?? c.hint },
   );
 
@@ -167,6 +182,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
             }).filter((c) => c.courseName || data.roundCourses.some((o) => o.number === c.roundNumber)),
         squad: !data.squadLocked && (v.squad !== data.initial.squad || v.picks !== data.initial.picks) ? { total: squad, coachPicks: picks } : null,
         playerIds: [...v.playerIds].sort().join() !== initialIds ? v.playerIds : null,
+        rules: data.rulesState === 'ok' && v.tieRule !== data.initial.tieRule ? { tieRule: v.tieRule } : null,
       };
       setSaveNote(null);
       const res = await writes.saveEdit(data.id as string, plan);
@@ -432,6 +448,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                 </div>
               )}
               <RoundCourses rounds={rounds} courses={courses} fallback={v.course.trim() || null} failed={editing && data.coursesError} onPick={setPicking} onClear={clearCourse} />
+              <TieRuleField value={v.tieRule} state={data.rulesState} onChange={(rule) => set('tieRule', rule)} />
               <div className="ch-field">
                 <label htmlFor="qf-rules" className="ch-field__label">
                   Scoring rules <span className="ch-field__opt">Optional</span>
@@ -639,6 +656,41 @@ function RoundCourses({
         </div>
       )}
       <span className="ch-field__help">Sets each round’s course and tees, and so its par.</span>
+    </div>
+  );
+}
+
+/**
+ * How the standings separate players level on to par and strokes (F-04). A new qualifier starts on the last round, then
+ * the one before (owner, 15 Nov 2026); Coach decides keeps every tie for the coach (Q-114). Without the rule's store
+ * (migration held) or when it didn't load, the rule in force is said and can't be changed, so a guess never overwrites it.
+ */
+function TieRuleField({ value, state, onChange }: { value: QualifierTieRule; state: ChQFormData['rulesState']; onChange: (rule: QualifierTieRule) => void }) {
+  const locked = state !== 'ok';
+  const help =
+    state === 'missing'
+      ? 'Tied players share a place and you decide a tie at the cut. Choosing another rule arrives with the next update.'
+      : state === 'error'
+        ? 'The tie rule didn’t load, so it can’t be changed here now. The qualifier keeps the rule it has.'
+        : value === 'last_round'
+          ? 'Players level on to par and strokes are separated by the lower last round, then the round before. Still level, they share a place and you decide.'
+          : 'Players level on to par and strokes share a place, and you decide a tie at the cut in Manage selections.';
+  return (
+    <div className="ch-field">
+      <label htmlFor="qf-tie" className="ch-field__label">
+        Ties
+      </label>
+      <Select
+        id="qf-tie"
+        value={value}
+        disabled={locked}
+        options={TIE_OPTIONS}
+        onChange={onChange}
+        describedBy="qf-tie-h"
+      />
+      <span id="qf-tie-h" className="ch-field__help" data-ch-code={state === 'error' ? 'CH-09281' : undefined}>
+        {help}
+      </span>
     </div>
   );
 }

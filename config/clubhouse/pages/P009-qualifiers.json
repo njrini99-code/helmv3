@@ -52,7 +52,10 @@
       "src/app/golf/actions/__tests__/qualifying-coach-gate.test.ts",
       "src/app/golf/actions/__tests__/golf-qualifier-manual-close.test.ts",
       "src/clubhouse/__tests__/exports.test.tsx",
-      "src/clubhouse/screens/qualifiers/__tests__/export.test.ts"
+      "src/clubhouse/screens/qualifiers/__tests__/export.test.ts",
+      "src/clubhouse/__tests__/qualifier-ties.test.tsx",
+      "src/app/golf/actions/__tests__/qualifier-rules.test.ts",
+      "src/lib/coachhelm/v3/qualifying/__tests__/ranking-ties.test.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/qualifiers.md",
@@ -358,6 +361,24 @@
       "tests": [
         "src/clubhouse/__tests__/exports.test.tsx",
         "src/clubhouse/screens/qualifiers/__tests__/export.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P009-TIE-RULE",
+      "label": "Choose a qualifier's tie rule (coach, create and edit)",
+      "component": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#QualifierForm",
+      "handler": "create then saveRules; runEditPlan step \"the tie rule\"",
+      "service": "src/app/golf/actions/qualifier-rules.ts#saveQualifierRules",
+      "data": [
+        "golf_qualifier_rules (migration 20261115240000, HELD)"
+      ],
+      "bridge": {
+        "success": 90981,
+        "failure": 90681
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifier-ties.test.tsx",
+        "src/app/golf/actions/__tests__/qualifier-rules.test.ts"
       ]
     }
   ],

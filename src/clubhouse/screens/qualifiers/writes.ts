@@ -4,6 +4,8 @@ import { createGolfQualifier, setQualifierRoundCourses, updateGolfQualifierDetai
 import { setQualifierEntrants, setQualifierSquadSize } from '@/app/golf/actions/qualifier-setup';
 import { getCourseDetail, getTeamSavedCourses, listCoursesStrict } from '@/app/golf/actions/course-library';
 import { advanceSelectionState, chooseQualifierTiePlace, confirmQualifierSelection, removeQualifierCoachPick, setQualifierCoachPick } from '@/app/golf/actions/v3/qualifying';
+import { saveQualifierRules } from '@/app/golf/actions/qualifier-rules';
+import type { QualifierRules } from '@/lib/golf/qualifier-rules';
 import type { ServerResult } from '../../lib/use-action';
 import { chTrail } from '../../lib/track';
 
@@ -31,6 +33,8 @@ export interface ChQEditPlan {
   squad: { total: number; coachPicks: number } | null;
   /** Only when the entrants changed. */
   playerIds: string[] | null;
+  /** Only when the tie rule changed and its store is there (F-04). */
+  rules?: QualifierRules | null;
 }
 
 export interface ChQCourseOption {
@@ -53,6 +57,8 @@ export interface ChQWrites {
   /** `roundCoursesFailed`: the qualifier exists but its per-round courses did not save. */
   create: (input: ChQCreateInput) => Promise<ServerResult<{ qualifierId: string; roundCoursesFailed?: boolean }>>;
   saveEdit: (id: string, plan: ChQEditPlan) => Promise<ServerResult>;
+  /** The qualifier's tie rule (F-04), after a create. */
+  saveRules: (id: string, rules: QualifierRules) => Promise<ServerResult>;
   setStatus: (id: string, status: 'in_progress' | 'completed') => Promise<ServerResult>;
   /** Courses matching the search, the team's saved ones first when there is no search. Throws when the read fails. */
   courses: (query: string) => Promise<ChQCourseOption[]>;
@@ -73,6 +79,7 @@ export async function runEditPlan(
     rounds: typeof setQualifierRoundCourses;
     squad: typeof setQualifierSquadSize;
     entrants: typeof setQualifierEntrants;
+    rules?: typeof saveQualifierRules;
   },
 ): Promise<ServerResult> {
   const steps: Array<{ label: string; run: () => Promise<{ success: boolean; error?: string }> }> = [
@@ -81,6 +88,10 @@ export async function runEditPlan(
   ];
   if (plan.squad) steps.push({ label: 'the squad size', run: () => api.squad(id, plan.squad!) });
   if (plan.playerIds) steps.push({ label: 'the players', run: () => api.entrants(id, plan.playerIds!) });
+  if (plan.rules && api.rules) {
+    const save = api.rules;
+    steps.push({ label: 'the tie rule', run: () => save({ qualifierId: id, rules: plan.rules! }) });
+  }
   const saved: string[] = [];
   for (const step of steps) {
     const res = await step.run();
@@ -106,7 +117,14 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export const LIVE_WRITES: ChQWrites = {
   create: (input) => createGolfQualifier(input),
   saveEdit: (id, plan) =>
-    runEditPlan(id, plan, { details: updateGolfQualifierDetails, rounds: setQualifierRoundCourses, squad: setQualifierSquadSize, entrants: setQualifierEntrants }),
+    runEditPlan(id, plan, {
+      details: updateGolfQualifierDetails,
+      rounds: setQualifierRoundCourses,
+      squad: setQualifierSquadSize,
+      entrants: setQualifierEntrants,
+      rules: saveQualifierRules,
+    }),
+  saveRules: (id, rules) => saveQualifierRules({ qualifierId: id, rules }),
   setStatus: (id, status) => updateQualifierStatus(id, status),
   courses: async (query) => {
     const q = query.trim();

@@ -56,6 +56,8 @@ workspace (90107).
 | 90105 | — | `ADDRESSES_RENDER_IN_PLACE` | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. The one exception is /my-qualifiers, retired on 2026-11-11 (owner): it opens /qualifiers. |
 | 90106 | — | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | Players have one Qualifiers page: /qualifiers puts a player's own first with where they stand. My qualifiers is retired (owner, 2026-11-11): /my-qualifiers opens /qualifiers for a coach and a player, and is no screen of its own. |
 | 90107 | — | `SELECTION_ADDRESS_OUTSIDE_THE_CLUBHOUSE` | With the Clubhouse off, /qualifiers/[id]/selection sends a coach to the CoachHelm qualifying workspace and a player to the qualifier, and a signed-out visitor to login; with it on, the route gets the address. |
+| 90180 | — | `QUALIFIER_TIE_RULE_RANKS_THE_BOARD` | A qualifier's tie rule (launch readiness F-04) ranks its board, its list leaders, the selection workspace and its confirm, and Ask's board read in the one order (ranking.ts rankStandings): 'last_round' separates players level on to par and strokes by the lower last round, then the round before, and only players still level share a place or tie at the cut; 'coach' (a qualifier with no stored rule, and every qualifier before the held migration 20261115240000) separates nobody (Q-114). The standings caption states the rule in words, to the coach and to a player. |
+| 90181 | — | `QUALIFIER_FORM_CHOOSES_THE_TIE_RULE` | The qualifier form's Ties field (F-04): a new qualifier starts on 'Last round, then the one before' (owner, 15 Nov 2026), an existing one on its own rule, with 'You decide' as the other choice and a sentence saying what the rule does. Before the rule's store exists the field is locked on You decide and says choosing waits on the update; a read that fails locks it (CH-09281) and a save leaves the rule alone. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
@@ -224,6 +226,7 @@ page again (91402), and Retry runs the write again (91401).
 | 90634 | CH-09223 | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | The player's rounds panel crashes (desktop, beside the leaderboard) |
 | 90635 | CH-09224 | `EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE` | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) |
 | 90680 | CH-09080 | `EXPORT_STANDINGS_FAILS_THE_BROWSER_REFUSED_THE` | Export standings fails: the browser refused the file (launch readiness F-02) |
+| 90681 | CH-09281 | `QUALIFIER_TIE_RULE_DID_NOT_LOAD` | Create or edit: the qualifier's tie rule doesn't load (launch readiness F-04) |
 
 ## 07 — Network / offline
 
@@ -345,6 +348,7 @@ scored), best effort, and a notification that fails is logged and not shown
 | 90901 | — | `CHANGE_LANDED` | A write that lands (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) says what landed in a toast and fires the success haptic. |
 | 90902 | — | `QUALIFIER_OPENS_AFTER_A_CREATE_SAVE_OR_CONFIRM` | A landed create opens the new qualifier and a landed save or confirm returns to the qualifier, while close, reopen, start selecting, save a pick and remove a pick leave the coach where they are. |
 | 90980 | — | `EXPORT_STANDINGS_LANDED` | An export of standings that lands says so in a toast ("Standings exported · 9 players") with the success haptic: a download on a computer, the share sheet on a phone. |
+| 90981 | — | `QUALIFIER_TIE_RULE_SAVED` | The tie rule saves with the qualifier (F-04): on create it is saved for the new qualifier, and a rule that doesn't save is said in the done toast ('Qualifier created, but its tie rule didn’t save. Open Edit to set it.'); on edit it is a step of the save only when it changed. The server writes one row a qualifier with its team through RLS (a coach of the team), refuses another team's qualifier, and answers 'unavailable' before the migration is applied. |
 
 From the shell (P001): 10901 CHANGE_LANDED.
 

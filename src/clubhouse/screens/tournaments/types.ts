@@ -244,6 +244,11 @@ export interface ChTourField {
   /** Postseason line drawn on the field table: "Top 5 advance", "Cut". */
   line: { kind: 'advance' | 'cut' | 'match_play'; label: string; places: number } | null;
   asOf: string | null;
+  /**
+   * Said under the field when the event separates ties (NCAA or a playoff) but places are still shared: field rows carry
+   * totals only, so a tie stays shared until the results are imported or the host's places are entered (F-04).
+   */
+  tieNote?: string | null;
 }
 
 export interface ChTourLineupState {

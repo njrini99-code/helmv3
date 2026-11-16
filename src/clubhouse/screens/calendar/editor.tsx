@@ -32,7 +32,7 @@ import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overla
 import { TYPE_ICON } from './views';
 import { tournamentSavedToast, TournamentSaveNotice, TournamentSection, type TrackBlock } from './editor-tournament';
 import { LIVE_WRITES, type ChQWrites } from '../qualifiers/writes';
-import { initialTourState, receiptSentence, toCreatePayload, validate, type ChTourErrors, type ChTourState } from '../tournaments/fields/rounds-model';
+import { initialTourState, receiptSentence, TIEBREAK_NOT_SAVED, toCreatePayload, validate, type ChTourErrors, type ChTourState } from '../tournaments/fields/rounds-model';
 import { refusalNotice, type TournamentRefusal } from '../tournaments/fields/refusals';
 
 const EDIT_TYPES: ChCalType[] = ['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'other'];
@@ -559,14 +559,14 @@ export function EventEditor({
         }
       }
       if (tracked) {
-        const r = res as { success: boolean; error?: string; code?: TournamentRefusal; data?: { tournamentId: string; version: number; replayed: boolean; rounds: { roundNumber: number; eventId: string }[] } };
+        const r = res as { success: boolean; error?: string; code?: TournamentRefusal; data?: { tournamentId: string; version: number; replayed: boolean; rounds: { roundNumber: number; eventId: string }[]; tiebreakFailed?: boolean } };
         if (r.success && r.data) {
           setTourNote(null);
           const name = title.trim();
           const id = r.data.tournamentId;
           haptic('success');
           const saved = tournamentSavedToast(name, id);
-          toast({ title: saved.title, code: saved.code, action: { label: saved.action, run: () => router.push(saved.href) } });
+          toast({ title: saved.title, code: saved.code, ...(r.data.tiebreakFailed ? { body: TIEBREAK_NOT_SAVED } : {}), action: { label: saved.action, run: () => router.push(saved.href) } });
           onTournamentSaved?.({ tournamentId: id, version: r.data.version, name, rounds: r.data.rounds, state: tourState, invited, rsvp, notes: notes.trim() || null, fromEventId: base?.id ?? null });
           onSaved(tourState.firstDay);
         } else {

@@ -96,6 +96,7 @@ function fakeWrites(over: Partial<Record<keyof ChQWrites, Mock>> = {}): FakeWrit
   return {
     create: vi.fn<ChQWrites['create']>(async () => ({ success: true, data: { qualifierId: 'q-new' } })),
     saveEdit: vi.fn<ChQWrites['saveEdit']>(async () => ({ success: true })),
+    saveRules: vi.fn<ChQWrites['saveRules']>(async () => ({ success: true })),
     setStatus: vi.fn<ChQWrites['setStatus']>(async () => ({ success: true })),
     courses: vi.fn<ChQWrites['courses']>(async () => PREVIEW_COURSES),
     tees: vi.fn<ChQWrites['tees']>(async () => PREVIEW_TEES),
@@ -3697,7 +3698,11 @@ describe('Qualifiers · this file', () => {
   it('92401 every catalog row of kinds 0 to 5 that is not marked preview is named by a test here, and so is every Bridge ID this page proves', () => {
     const root = process.cwd();
     const read = (file: string) => readFileSync(join(root, file), 'utf8');
-    const own = read('src/clubhouse/__tests__/qualifiers.test.tsx');
+    // The exports (F-02) and the tie rule (F-04) are proved in their own files.
+    const own = ['src/clubhouse/__tests__/qualifiers.test.tsx', 'src/clubhouse/__tests__/exports.test.tsx', 'src/clubhouse/__tests__/qualifier-ties.test.tsx']
+      .filter((f) => existsSync(join(root, f)))
+      .map(read)
+      .join('\n');
     const rows = [...read('docs/clubhouse/catalog/qualifiers.md').matchAll(/^\|\s*(CH-09[0-5]\d\d)\s*\|.*$/gm)]
       .filter((m) => !/\|\s*preview\s*\|\s*$/.test(m[0].trim()) && !/retired/i.test(m[0]))
       .map((m) => m[1]!);

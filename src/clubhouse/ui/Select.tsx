@@ -11,6 +11,7 @@ export function Select<V extends string>({
   onChange,
   disabled,
   label,
+  describedBy,
 }: {
   id?: string;
   value: V;
@@ -19,10 +20,12 @@ export function Select<V extends string>({
   disabled?: boolean;
   /** Accessible name when no <label htmlFor> points at it. */
   label?: string;
+  /** The id of the help or error line read with the field. */
+  describedBy?: string;
 }) {
   return (
     <span className={'ch-select' + (disabled ? ' is-disabled' : '')}>
-      <select id={id} value={value} disabled={disabled} aria-label={label} onChange={(e) => onChange(e.target.value as V)}>
+      <select id={id} value={value} disabled={disabled} aria-label={label} aria-describedby={describedBy} onChange={(e) => onChange(e.target.value as V)}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

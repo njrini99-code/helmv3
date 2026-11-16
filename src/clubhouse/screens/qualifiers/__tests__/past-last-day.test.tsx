@@ -31,7 +31,7 @@ const wrap = (node: ReactNode) =>
       </ToastProvider>
     </LazyMotion>,
   );
-const writes = () => ({ create: vi.fn(), saveEdit: vi.fn(), setStatus: vi.fn(async () => ({ success: true })), courses: vi.fn(async () => []), tees: vi.fn(async () => []) });
+const writes = () => ({ create: vi.fn(), saveEdit: vi.fn(), saveRules: vi.fn(async () => ({ success: true })), setStatus: vi.fn(async () => ({ success: true })), courses: vi.fn(async () => []), tees: vi.fn(async () => []) });
 const dayAfter = (iso: string) => new Date(Date.parse(`${iso.slice(0, 10)}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
 
 /**

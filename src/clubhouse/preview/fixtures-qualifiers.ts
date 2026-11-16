@@ -337,6 +337,7 @@ export function previewCreateForm(): ChQFormData {
       squad: '5',
       picks: '1',
       playerIds: ROSTER.map((p) => p.id),
+      tieRule: 'last_round',
     },
     roundCourses: [],
     players: ROSTER,
@@ -344,6 +345,7 @@ export function previewCreateForm(): ChQFormData {
     coursesError: false,
     squadLocked: false,
     minRounds: 1,
+    rulesState: 'ok',
   };
 }
 
@@ -371,6 +373,7 @@ export function previewEditForm(): ChQFormData {
       squad: String(s.squad),
       picks: String(s.picks),
       playerIds: s.entries.map(([k]) => PLAYER_ID[k]!),
+      tieRule: 'coach',
     },
     roundCourses: s.roundCourses.map(([c], i) => ({ number: i + 1, courseId: `c-${i}`, courseName: c, teeId: `t-${i}`, teeName: 'Blue', par: c === 'Hope Valley CC' ? 71 : 72 })),
     players,
@@ -378,6 +381,7 @@ export function previewEditForm(): ChQFormData {
     coursesError: false,
     squadLocked: false,
     minRounds: 2,
+    rulesState: 'ok',
   };
 }
 
