@@ -175,7 +175,7 @@ same way.
 
 | # | What | How | Test |
 | --- | --- | --- | --- |
-| CH-6801 | Each event is a button named with its title and time, and "schedule overlap" when it has one; each day header opens the day | `aria-label` | calendar.test › CH-6801 |
+| CH-6801 | Each event is a button named with its title and time, and "schedule overlap" when it has one; each day header opens the day | the title it draws, then hidden words (`.ch-sr-only`), never an `aria-label` that disagrees with the face (SWP-03) | calendar.test › CH-6801 |
 | CH-6802 | The detail panel is a polite live region; form errors are tied to their field | `aria-live`, `aria-invalid`, `aria-describedby` | calendar.test › CH-6802 |
 | CH-6803 | Changing the player filter is announced ("Showing 2 players") | `role="status"` | preview |
 | CH-6804 | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed | `npm run clubhouse:a11y` | a11y scan |

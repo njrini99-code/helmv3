@@ -89,6 +89,7 @@ import { CH_TOAST_ACTION_MS, ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR, PREVIEW_CALENDAR_PLAYER } from '../preview/fixtures-calendar';
 import { clashesAt, snapQuarter } from '../screens/calendar/views';
 import './dialog-polyfill';
+import { accessibleName } from './label-in-name';
 
 /** A numbered element that is actually on screen: a closed <dialog> doesn't count. */
 const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((el) => el.tagName !== 'DIALOG' || el.hasAttribute('open')) ?? null;
@@ -146,10 +147,10 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     a.updateGolfEvent.mockResolvedValue({ success: true });
     wrap(cal());
     const travel = block(/^Travel briefing/);
-    expect(travel.getAttribute('aria-label')).toMatch(/Alt and the arrow keys move it; add Shift to change its length/);
+    expect(accessibleName(travel)).toMatch(/Alt and the arrow keys move it; add Shift to change its length/);
     fireEvent.keyDown(travel, { key: 'ArrowDown', altKey: true });
     expect(screen.getByText('Moved to 1:45 PM')).toBeTruthy();
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:45 – 2:30 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:45 – 2:30 PM/);
     expect(a.updateGolfEvent).not.toHaveBeenCalled();
     await act(async () => {
       vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
@@ -164,7 +165,7 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     vi.useRealTimers();
     await expectCode('CH-6015', /Couldn’t move Travel briefing/);
     // Back on the server's copy (this test's refresh is a stub, so that is still the loaded 1:30).
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:30 – 2:15 PM/);
   });
 
   it('Undo inside the window puts it back and writes nothing', async () => {
@@ -172,7 +173,7 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     wrap(cal());
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:30 – 2:15 PM/);
     await act(async () => {
       vi.advanceTimersByTime(5000);
     });
@@ -219,7 +220,7 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
       vi.advanceTimersByTime(CH_TOAST_ACTION_MS + 2000);
     });
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:30 – 2:15 PM/);
     await act(async () => {
       vi.advanceTimersByTime(10_000);
     });
@@ -238,7 +239,7 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     fireEvent.click(undo);
     fireEvent.click(undo);
     expect(screen.queryByText('Already saved. Drag it back to undo.')).toBeNull();
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:30 – 2:15 PM/);
     // Still fading out, the card is inert: the second press reached a toast that takes no input.
     expect(undo.closest('.ch-toast')!.hasAttribute('inert')).toBe(true);
     await act(async () => {
@@ -259,7 +260,7 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(screen.getByText('Already saved. Drag it back to undo.')).toBeTruthy();
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:45 – 2:30 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:45 – 2:30 PM/);
     // P-4 6.3: further moves of the same event inside the window coalesce into one held write, from the last place.
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
@@ -1191,7 +1192,7 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
       // The row after the line; it sits in its peek wrapper (P006-C3), which draws no box.
       const after = mid.nextElementSibling!;
       const row = after.matches('.ch-peek-target') ? after.querySelector('button')! : after;
-      expect(row.getAttribute('aria-label')).toMatch(/^Short-game block/);
+      expect(accessibleName(row)).toMatch(/^Short-game block/);
     } finally {
       vi.useRealTimers();
     }
@@ -2161,7 +2162,7 @@ describe('Calendar · what each role is given', () => {
     expect(dialogOpen()).toBe(false);
     await user.keyboard('n');
     expect(dialogOpen()).toBe(false);
-    expect(screen.queryByRole('button', { name: /^People:/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /, choose people$/ })).toBeNull();
     // Wave 7: a player sees their own clashes flagged (Jonah's 1:1 and the short-game block), but has no Overlap panel
     // to move or keep them: no Review here, and no Overlaps item under More (below).
     expect(screen.queryAllByRole('button', { name: /schedule overlap/ }).length).toBeGreaterThan(0);
@@ -2183,7 +2184,7 @@ describe('Calendar · what each role is given', () => {
     wrap(cal(), seeded);
     await screen.findByRole('button', { name: 'Publish event' });
     expect(dialogOpen()).toBe(true);
-    for (const name of [/New event/, /^People:/, 'Attendance', 'Edit event', 'Attach']) expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
+    for (const name of [/New event/, /, choose people$/, 'Attendance', 'Edit event', 'Attach']) expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
     expect(screen.getByText('Responses')).toBeTruthy();
     expect(screen.getAllByRole('button', { name: /schedule overlap/ }).length).toBeGreaterThan(0);
   });
@@ -2317,7 +2318,7 @@ describe('Calendar · moving around', () => {
     expect(screen.queryByRole('heading', { level: 2, name: 'Travel briefing' })).toBeNull();
     // Typing in a field is typing: the people search takes a T and the week stays where it was.
     await user.keyboard('{ArrowRight}');
-    await user.click(screen.getByRole('button', { name: /^People:/ }));
+    await user.click(screen.getByRole('button', { name: /, choose people$/ }));
     await user.type(screen.getByRole('searchbox', { name: 'Find a player' }), 'nt');
     expect((screen.getByRole('searchbox', { name: 'Find a player' }) as HTMLInputElement).value).toBe('nt');
     expect(title()).toBe('Oct 18 – 24');

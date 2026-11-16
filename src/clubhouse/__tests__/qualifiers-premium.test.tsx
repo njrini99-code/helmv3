@@ -293,7 +293,9 @@ describe('P009-A1 standings on hand-hung plates', () => {
       const rows = [...document.querySelectorAll('.ch-qfm-lb__row')];
       expect(rows.length).toBe(8);
       for (const r of rows) expect(r.textContent).not.toMatch(/Rounds|Avg|Total/);
-      const luca = screen.getByRole('button', { name: /^Luca Ferraro, 7, \+8, \d+ strokes, 1 of 3 rounds\. Show their rounds$/ });
+      const luca = screen.getByRole('button', { name: /^7, ?Luca Ferraro, ?1 of 3 rounds, ?\+8, ?\d+ ?strokes\. Show their rounds$/ });
+      // SWP-01: the name is the row's own words in drawn order, never an aria-label that reorders them.
+      expect(luca.hasAttribute('aria-label')).toBe(false);
       expect(luca.querySelector('.ch-qf-plate')!.textContent).toBe('+8');
       expect(luca.querySelector('.ch-qfm-lb__tot')!.textContent).toMatch(/^\d+$/);
       // The same ranking sentence as desktop's caption (row 75), with decision 10's order.

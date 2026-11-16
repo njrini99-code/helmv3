@@ -1113,6 +1113,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-13-quick-chat-new-key.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-span-switch-labels.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-15-badge-decorative.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-busy-static-skeletons.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-charts-tell-the-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
@@ -1130,6 +1131,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-15-motion-vocabulary.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-nav-motion-3-3.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-nav-plate-first.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-15-practice-tab-titles.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-practice-zone-cancelled-all-day.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-quick-chat-styles-popover.md` | current | - | - | - | - |
@@ -1597,6 +1599,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-lists-tournament-fields.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-names-match-the-face.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-team-trips.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-test-invitees.md` | current | - | - | - | - |
@@ -1753,6 +1756,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-15-not-found-voice.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-16-ended-on-team-clock.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-16-names-start-with-drawn-words.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
@@ -2013,6 +2017,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-switch-and-board-first-paint.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-tour-values-sourced.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-brief-week-team-clock.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-names-start-with-drawn-words.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-tour-comparison-streams.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |

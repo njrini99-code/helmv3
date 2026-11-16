@@ -1,4 +1,4 @@
-import { computeAccessibleName } from 'dom-accessibility-api';
+import { computeAccessibleName, getRole } from 'dom-accessibility-api';
 import { expect } from 'vitest';
 
 /**
@@ -60,4 +60,37 @@ export function expectLabelInName(el: Element, label?: string): void {
   }
   expect(label, 'a control named by its content: pass the words it shows').toBeDefined();
   expect(curate(name).startsWith(curate(label!)), `the name "${name}" should start with "${label}"`).toBe(true);
+}
+
+/** axe 4.14 `curateTokens`: the words and figures of a string, lowercased, with parentheticals and every other mark out. */
+function axeTokens(s: string): string[] {
+  return s
+    .normalize('NFKD')
+    .replace(/\([^()]*\)/g, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/** The roles axe's label-content-name-mismatch applies to: widgets whose name may come from their content. */
+const NAME_FROM_CONTENT_WIDGETS = new Set(['button', 'checkbox', 'gridcell', 'link', 'menuitem', 'menuitemcheckbox', 'menuitemradio', 'option', 'radio', 'switch', 'tab', 'treeitem']);
+
+/**
+ * What axe's label-content-name-mismatch would report under `root` (SWP-03), read the way this file reads a face: every
+ * such widget named by `aria-label` or `aria-labelledby` whose face's words are not one unbroken run of its name's. jsdom
+ * draws nothing, so text CSS would hide counts here too: this finds at least what axe finds in a browser.
+ */
+export function labelMismatches(root: ParentNode): string[] {
+  const out: string[] = [];
+  for (const el of Array.from(root.querySelectorAll('[aria-label], [aria-labelledby]'))) {
+    const r = getRole(el);
+    if (!r || !NAME_FROM_CONTENT_WIDGETS.has(r)) continue;
+    const face = axeTokens(faceText(el));
+    if (!face.length) continue;
+    const name = axeTokens(accessibleName(el));
+    if (!name.some((_, i) => face.every((t, j) => name[i + j] === t))) out.push(`${r} "${faceText(el)}" named "${accessibleName(el)}"`);
+  }
+  return out;
 }
