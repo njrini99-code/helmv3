@@ -18,7 +18,7 @@
   gap: 12px;
 }
 .ch-tour-rev-layer {
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -56,7 +56,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -140,7 +140,7 @@
 }
 .ch-tour-rev-trend {
   padding: 16px 20px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -291,7 +291,7 @@
   flex: none;
   width: calc(var(--ch-tour-rev-len, 0) * (100% - 48px));
   height: 14px;
-  border-radius: var(--ch-radius-mark) var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-mark);
+  border-radius: 0 var(--ch-radius-sm) var(--ch-radius-sm) 0;
   /* An earlier season is this season's green, thinned: it holds against the card in the dark too, where the pale step
      of the ramp sank into it. */
   background: color-mix(in oklab, var(--ch-green-600) 34%, transparent);
@@ -309,7 +309,7 @@
 .ch-tour-rev-bar:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 /* G17: the phone's one filter (three views of the trend), the card's full width. The two stacked filters stood before
    any content. A label may wrap at a larger text size rather than run out of its third of the row. */
@@ -322,7 +322,7 @@
 .ch-tour-rev-hist.is-phone .ch-tour-rev-tools .ch-seg__b {
   min-width: 0;
   height: auto;
-  min-height: 26px;
+  min-height: calc(26 * var(--ch-type-k));
   padding: 4px 8px;
   white-space: normal;
 }
@@ -343,7 +343,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }

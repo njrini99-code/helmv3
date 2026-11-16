@@ -296,6 +296,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | - |
 | `audit/A1-RESOLUTION.md` | generated | - | - | - | - |
+| `design-refresh/DESIGN_LANGUAGE.md` | current | - | yes | - | - |
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | historical | - | yes | yes | - |
@@ -761,7 +762,6 @@ them would bury everything above.
 | `design-refresh/CODE_PROMPT.md` | current | - | - | - | - |
 | `design-refresh/COMPLETENESS.md` | current | - | - | - | - |
 | `design-refresh/DECISIONS.md` | current | - | - | yes | - |
-| `design-refresh/DESIGN_LANGUAGE.md` | current | - | - | - | - |
 | `design-refresh/GRADIENT_TEXT_SWEEP-2026-10-31.md` | current | - | - | - | - |
 | `design-refresh/MANIFEST.md` | current | - | - | - | - |
 | `design-refresh/START_HERE.md` | current | - | - | yes | - |
@@ -1111,6 +1111,11 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-13-quick-chat-new-key.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-span-switch-labels.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-15-desk-green-corner.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1248,6 +1253,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-search-ranking.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-type-scale-upward-only.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-14-retire-fairway.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
@@ -1298,6 +1305,10 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-13-trips-next-week-line.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-13-week-gap-legs-target.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-14-retire-fairway.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
@@ -1344,6 +1355,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-roster-truths.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-row-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-sg-window-and-past-class.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
@@ -1395,7 +1409,10 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-heading-and-tiles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-round-day-avg-key.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-tee-finish-one-row.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-15-css-ratchet-svg-overflow.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1448,7 +1465,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-heading-and-tiles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-shared-chart-file.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-tee-finish-one-row.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-15-css-ratchet-svg-overflow.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
@@ -1494,6 +1513,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-set-up-lands.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-attendance-counts-typed.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1551,6 +1572,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-13-former-member.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-13-time-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-13-unread-conversations.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-15-thread-day-key.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
@@ -1579,6 +1602,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-11-fix-wave.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-11-private-fields.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-12-current-email-stacked.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | 1 |
@@ -1619,6 +1643,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-12-upcoming-by-date-one-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-first-render-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-past-last-day.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
@@ -1657,7 +1683,10 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-13-active-assignees.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-13-updates-this-team.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-13-week-day-names.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-15-compose-files-only.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |
@@ -1723,6 +1752,10 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-round-link-target.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-row-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-team-book-first-render.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
@@ -1746,6 +1779,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-07-registrar-and-clashes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
@@ -1826,7 +1862,11 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-team-board-first-paint.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-team-week-tiles-and-map.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-14-retire-fairway.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-css-ratchet-svg-overflow.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
@@ -1848,6 +1888,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-12-pane-empty-lines.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-12-pipeline-zero-quiet.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-13-stage-name.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P014-recruiting/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P015-auth/DESIGN.md` | current | - | - | - | 1 |
@@ -1871,6 +1912,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-12-smooth-transitions.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-13-footer-targets.md` | current | - | - | - | 1 |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-14-retire-fairway.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/DESIGN.md` | current | - | - | - | - |
@@ -1906,6 +1948,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-13-row-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-13-setup-span.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-14-retire-fairway.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/classes.md` | current | - | - | - | - |

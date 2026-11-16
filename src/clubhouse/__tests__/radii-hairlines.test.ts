@@ -31,13 +31,13 @@ describe('radii and hairlines (B3)', () => {
   it.each(SHEETS)('%s %s: a sheet top is the sheet radius', (file, selector) => {
     const tops = radii(file, selector).filter((v) => /\s0\s+0$/.test(v));
     expect(tops.length).toBeGreaterThan(0);
-    expect(tops.filter((v) => v !== 'var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0')).toEqual([]);
+    expect(tops.filter((v) => v !== 'var(--ch-radius-xl) var(--ch-radius-xl) 0 0')).toEqual([]);
   });
 
   it('.ch-surface is the card radius on its own elevation', () => {
     const ui = css('ui.css');
     const rule = ui.slice(ui.indexOf('.ch-surface {'), ui.indexOf('}', ui.indexOf('.ch-surface {')));
-    expect(rule).toMatch(/border-radius: var\(--ch-radius-card\);/);
+    expect(rule).toMatch(/border-radius: var\(--ch-radius-lg\);/);
     // The one card recipe by its name for a card (tokens.css: --ch-card-shadow is --ch-elevation-card).
     expect(rule).toMatch(/box-shadow: var\(--ch-card-shadow\);/);
   });
@@ -71,7 +71,7 @@ describe('radii and hairlines (B3)', () => {
     expect(radii('ui.css', '.ch-btn--lg')).toEqual(['var(--ch-radius-md)']);
     expect(radii('ui.css', '.ch-btn')).toEqual(['var(--ch-radius-md)']);
     for (const [file, sel] of [['rounds-track.css', '.ch-rt-card'], ['stats.css', '.ch-stm-panel'], ['shell.css', '.ch-bst-card']] as const) {
-      expect(radii(file, sel), `${file} ${sel}`).toContain('var(--ch-radius-card)');
+      expect(radii(file, sel), `${file} ${sel}`).toContain('var(--ch-radius-lg)');
     }
   });
 
@@ -79,8 +79,9 @@ describe('radii and hairlines (B3)', () => {
     const tokens = css('tokens.css');
     expect(tokens).toMatch(/--ch-radius-sm: 8px;/);
     expect(tokens).toMatch(/--ch-radius-md: 12px;/);
-    expect(tokens).toMatch(/--ch-radius-card: 16px;/);
-    expect(tokens).toMatch(/--ch-radius-sheet: 20px;/);
+    expect(tokens).toMatch(/--ch-radius-lg: 16px;/);
+    expect(tokens).toMatch(/--ch-radius-xl: 20px;/);
+    expect(tokens).toMatch(/--ch-radius-full: 999px;/);
     expect(tokens).toMatch(/--ch-hairline-w: 1px;/);
   });
 });

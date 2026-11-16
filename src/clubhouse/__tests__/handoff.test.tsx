@@ -26,7 +26,7 @@ describe('the hand-off curtain', () => {
     expect(c.getAttribute('aria-hidden')).toBe('true');
     expect(c.style.pointerEvents).toBe('none');
     const canvas = c.firstElementChild as HTMLElement;
-    expect(canvas.style.left).toBe('240px');
+    expect(canvas.style.left).toBe('232px');
     expect(canvas.style.top).toBe('8px');
     expect(canvas.style.borderRadius).toBe('16px');
   });

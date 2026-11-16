@@ -228,8 +228,8 @@ colour and no new motion.
   has too few rounds to say every). Leg words: off the tee, on approach, around
   the green, putting. Only with a season's strokes gained; nothing when every
   leg is empty. The figure takes the loss ink (`--ch-chart-loss`, 6.0, dark
-  7.9) or the gain ink (`--ch-chart-gain`, 7.9, dark 7.2); red stays under par
-  only.
+  7.9) or the gain ink (`--ch-chart-gain`, 7.9, dark 7.2); under par is the gain
+  too (MOTION-AND-VISUAL 4.7).
 - **Development:** the focus area and goal counts are a link to the player's
   Development tab (`stats?player=<id>&tab=dev`).
 - **Phone profile:** a `ch-rsm-panel` after Recent rounds with the same counts

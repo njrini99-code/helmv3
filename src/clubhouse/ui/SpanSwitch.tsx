@@ -12,7 +12,7 @@ import { Segmented } from './Segmented';
 export function SpanSwitch({ value, onChange, hook, size = 'sm', labels }: { value: ChSpan; onChange: (v: ChSpan) => void; hook?: string; size?: 'sm' | 'md'; labels?: Partial<Record<ChSpan, string>> }) {
   return (
     <div className="ch-span" data-ch-span={value}>
-      <Segmented<ChSpan> weight="filter"
+      <Segmented<ChSpan>
         size={size}
         label="Rounds shown"
         hook={hook}

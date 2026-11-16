@@ -277,7 +277,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
           const cx = cxOf(i);
           const h = Math.max(3, Math.abs(d) * u);
           const y0 = d > 0 ? base : base - h;
-          // D3: one scoring language, red under par as everywhere else; a qualifier is a gilt outline on any bar.
+          // D3: one scoring language, the gain under par as everywhere else; a qualifier is a gilt outline on any bar.
           const cls = (d < 0 ? 'is-under' : d === 0 ? 'is-even' : 'is-over') + (x.type === 'qualifier' ? ' is-q' : '');
           return (
             <g
@@ -511,8 +511,8 @@ function SeasonStage({ ribbon, avg, phone }: { ribbon: ChRoundsSeason['ribbon'];
 }
 
 /**
- * A month's rounds as a row of small bars, oldest to newest: taller is better (further under par, or less over it), red is under
- * par; better is up, as the season ribbon above reads (stats visuals Q1). It reads at a glance whether the month trended up; the
+ * A month's rounds as a row of small bars, oldest to newest: taller is better (further under par, or less over it), under par
+ * is the gain; better is up, as the season ribbon above reads (stats visuals Q1). It reads at a glance whether the month trended up; the
  * figures beside it say the rest. Skipped for fewer than two rounds with a par to read against.
  */
 export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {

@@ -118,9 +118,11 @@ describe('six lines, then it scrolls', () => {
     expect(field).toMatch(/max-height:\s*132px/);
     expect(field).not.toMatch(/transition/);
     expect(all('.ch-ms-comp__field textarea:focus-visible')[0]![2]).toMatch(/outline:\s*none/);
-    // MSG-301: the pill is radius 24 at 10 px from the phone's edge (the page edge less 6).
+    // MSG-301, as the Nov 15 audit's DM-07 amends it: the pill is radius 24 on the page's own gutter (it was the gutter
+    // less 6), flat with the field's 1px control ring instead of the float shadow.
     expect(all('.ch-ms-comp__field')[0]![2]).toMatch(/border-radius:\s*24px/);
-    expect(css).toMatch(/\.ch-ms-comp \{\s*padding: 8px calc\(var\(--ch-page-x-phone\) - 6px\)/);
+    expect(all('.ch-ms-comp__field')[0]![2]).toMatch(/box-shadow:\s*var\(--ch-field-ring\);/);
+    expect(css).toMatch(/\.ch-ms-comp \{\s*padding: 8px var\(--ch-page-x-phone\) /);
   });
 });
 

@@ -188,7 +188,7 @@ svg .ch-num {
   border: 0;
   border-radius: var(--ch-radius-md);
   box-shadow: var(--ch-elevation-control);
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
 }
 .ch-sr-only--focusable > button {
   flex: 1;
@@ -239,7 +239,7 @@ svg .ch-num {
 .ch-sheet {
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
 }
 /* System contrast modes suppress shadows; retain a visible surface boundary there. */
 @media (forced-colors: active) {

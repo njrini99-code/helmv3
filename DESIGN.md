@@ -22,15 +22,18 @@ golf coaches managing their team and players following their schedule and game.
 Its reference is the owner's course-inspired Clubhouse design handoff and
 mobile boards in `design/handoff/`, with the current Safari feedback recorded
 in `docs/clubhouse/CHANGELOG.md`. The golf-hole arrival is the signature moment;
-daily screens prioritize readable facts and actions. Clubhouse is off in
-production today (its feature flag is off); Fairway is the live UI.
+daily screens prioritize readable facts and actions. Clubhouse is the only
+GolfHelm coach and player UI in production (Fairway's coach and player screens
+were retired on 14 Nov 2026). Its design system, with token tables generated
+from the runtime tokens, is `design-refresh/DESIGN_LANGUAGE.md`.
 
 ## Colors
 
 Runtime tokens remain canonical (Model B). Clubhouse's scoped palette,
 semantic ink, status colors and phone overrides live in
 `src/clubhouse/styles/tokens.css`. Green identifies the frame and safe primary
-actions; warm ivory separates page, sheet and well. Scoring colors retain their
+actions; ivory paper cards sit on the ivory light over a deeper linen page,
+and nothing is white. Scoring colors retain their
 domain meanings. Other Helm surfaces retain `src/styles/design-tokens.css` and
 their existing shared components. This index does not merge those systems.
 

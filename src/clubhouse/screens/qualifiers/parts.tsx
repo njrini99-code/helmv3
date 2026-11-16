@@ -37,14 +37,14 @@ export function StateBadge({ state }: { state: ChQRowState }) {
   return <Badge tone={s.tone}>{s.label}</Badge>;
 }
 
-/** Score to par. Red only under par. */
+/** Score to par. The gain only under par. */
 export function ToPar({ value, big = false }: { value: number | null; big?: boolean }) {
   return <span className={'ch-qf-tp' + (value != null && value < 0 ? ' is-under' : '') + (big ? ' is-big' : '')}>{formatToPar(value)}</span>;
 }
 
 /**
  * To par on a hand-hung plate (P009-A1): a fixed-aspect ivory plate with the numeral in the condensed cell role.
- * Red only under par; even and over par are ink. `size` is the board's (desktop, phone) or the list's live card.
+ * The gain only under par; even and over par are ink. `size` is the board's (desktop, phone) or the list's live card.
  */
 export function ToParPlate({ value, size = 'board' }: { value: number | null; size?: 'board' | 'card' }) {
   return (

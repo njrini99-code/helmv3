@@ -117,7 +117,7 @@
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
   color: var(--ch-text-tertiary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   cursor: pointer;
 }
 [data-ch-ms-v2] .ch-msd-tile svg {
@@ -167,7 +167,7 @@
 }
 /* MSG-603 The name on the phone page: 22k/700, ink (the shell's green large title is not this heading). */
 [data-ch-ms-v2] .ch-msp-details .ch-msp-prof h2 {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   letter-spacing: var(--ch-track-22);
   color: var(--ch-text-primary);
 }
@@ -184,13 +184,13 @@
   justify-content: space-between;
   gap: var(--ch-msd-s10);
   padding: var(--ch-msd-s14) var(--ch-space-4) var(--ch-space-2);
-  font: var(--ch-type-card-title);
-  letter-spacing: var(--ch-track-card-title);
+  font: var(--ch-type-headline);
+  letter-spacing: 0;
   color: var(--ch-text-primary);
 }
 [data-ch-ms-v2] .ch-msd-lcard__h > b {
-  font: var(--ch-type-card-title);
-  letter-spacing: var(--ch-track-card-title);
+  font: var(--ch-type-headline);
+  letter-spacing: 0;
 }
 [data-ch-ms-v2] .ch-msd-lcard__h > .ch-num {
   font: var(--ch-type-15);
@@ -297,7 +297,6 @@
   background: var(--ch-bubble-theirs-bg);
   color: var(--ch-text-primary);
   box-shadow: none;
-  filter: var(--ch-bubble-theirs-shadow);
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   [data-ch-ms-v2] .ch-msd-poll {
@@ -395,7 +394,7 @@
   color: var(--ch-bubble-mine-ink);
 }
 [data-ch-ms-v2] .ch-msd-poll__opt.is-multi .ch-msd-poll__mark {
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 [data-ch-ms-v2] .ch-msd-poll__opt.is-on .ch-msd-poll__mark {
   background: var(--ch-bubble-mine-fill);
@@ -500,7 +499,7 @@
 [data-ch-ms-v2] .ch-msd-poll__link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 /* A final poll's rows are results, not keys. */
 [data-ch-ms-v2] .ch-msd-poll.is-closed .ch-msd-poll__opt {
@@ -566,7 +565,7 @@
   inset: auto auto 0 0;
   width: var(--ch-msd-w, 0%);
   height: 3px;
-  border-radius: 0 var(--ch-radius-mark) var(--ch-radius-mark) 0;
+  border-radius: 0 var(--ch-radius-full) var(--ch-radius-full) 0;
   background: var(--ch-accent-ink);
 }
 .ch-msd-vg__who {
@@ -693,7 +692,6 @@
 [data-ch-ms-v2] .ch-msd-file.is-mine {
   background: var(--ch-bubble-mine-fill);
   color: var(--ch-bubble-mine-ink);
-  filter: var(--ch-bubble-mine-shadow);
 }
 [data-ch-ms-v2] .ch-msd-file.is-mine .ch-msd-file__ic {
   background: rgb(255 255 255 / 0.14);
@@ -737,7 +735,7 @@
   height: auto;
   padding: var(--ch-msd-s3) var(--ch-msd-s9) var(--ch-msd-s3) var(--ch-msd-s3);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-accent-tint);
   color: var(--ch-accent-ink);
   font: var(--ch-type-14-strong);

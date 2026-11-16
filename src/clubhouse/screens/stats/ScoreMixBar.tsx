@@ -7,7 +7,7 @@ import { mixReadout, mixRows, perRoundText, type MixCounts, type MixPerRound } f
 /**
  * P005: the scoring mix (stats-visuals spec 4.4, decision Q11). One 100% bar of every scored hole by result, with par in the
  * middle: going out from it, birdie then eagle or better to the left (under par), bogey then double or worse to the right
- * (over par). Red is under par; par, bogey and double are the scorecard's ivory, gray and ink (a bogey is a scorecard fact,
+ * (over par). Under par is the gain; par, bogey and double are the scorecard's ivory, gray and ink (a bogey is a scorecard fact,
  * not a loss, so it does not turn amber). A segment wide enough (about 30px) prints its share; every share is in the key.
  *
  * A pointer over a segment or a key entry, a tap, or the arrow keys read the result in the line above the bar ("Birdie · 19 of

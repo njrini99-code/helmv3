@@ -16,8 +16,8 @@ import { Segmented } from '../../ui/Segmented';
 import { FadeNum, useFadeOnChange } from './course-motion';
 
 /**
- * P-7 4.2.4: the course hole by hole. A map of 18 tiles, Out over In, tinted by the player's average to par there (D-42:
- * the red family under par, amber over, plain level, and level whenever the average is inside its noise), with a detail
+ * P-7 4.2.4: the course hole by hole. A map of 18 tiles, Out over In, tinted by the player's average to par there (MOTION-AND-VISUAL
+ * 4.7: the gain family under par, amber over, plain level, and level whenever the average is inside its noise), with a detail
  * panel for the picked hole; or the same as a list. With a keyboard the map is a radio group (arrows a hole, up and down
  * a nine, Home and End the ends). A tile takes colour only from five plays; from two to four it is an early read on the
  * level fill.

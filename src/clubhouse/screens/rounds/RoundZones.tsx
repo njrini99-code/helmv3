@@ -15,10 +15,10 @@ import { plural, pluralWord } from '../../lib/plural';
  * a round without the data says so in a line rather than drawing zeros.
  */
 
-/** The marks on the deep-green stage: under par is red (D-42), par recedes, over par is gold, a double is ivory. */
+/** The marks on the deep-green stage: under par is the gain (MOTION-AND-VISUAL 4.7), par recedes, over par is gold, a double is ivory. */
 const COLOR: Record<HoleResult, string> = {
-  eagle: 'var(--ch-stage-red)',
-  birdie: 'var(--ch-stage-red)',
+  eagle: 'var(--ch-stage-gain)',
+  birdie: 'var(--ch-stage-gain)',
   par: 'var(--ch-stage-ink-soft)',
   bogey: 'var(--ch-stage-gold)',
   double: 'var(--ch-stage-ink)',
@@ -220,9 +220,9 @@ export function ScoreFlow({
         </defs>
         {band && (
           <g className={'ch-rzband' + (band.loss ? ' is-loss' : ' is-gain')}>
-            <rect x={band.x0} y={TOP - 6} width={band.x1 - band.x0} height={colBase - TOP + 6} fill={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-red)'} fillOpacity={band.loss ? 0.14 : 0.12} />
-            <line x1={band.x0} y1={TOP - 6} x2={band.x0} y2={colBase} stroke={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-red)'} strokeWidth={1} />
-            <line x1={band.x1} y1={TOP - 6} x2={band.x1} y2={colBase} stroke={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-red)'} strokeWidth={1} />
+            <rect x={band.x0} y={TOP - 6} width={band.x1 - band.x0} height={colBase - TOP + 6} fill={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-gain)'} fillOpacity={band.loss ? 0.14 : 0.12} />
+            <line x1={band.x0} y1={TOP - 6} x2={band.x0} y2={colBase} stroke={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-gain)'} strokeWidth={1} />
+            <line x1={band.x1} y1={TOP - 6} x2={band.x1} y2={colBase} stroke={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-gain)'} strokeWidth={1} />
           </g>
         )}
         {ticks.map((v) => (
@@ -461,6 +461,9 @@ export function PuttingViz({ holes }: { holes: ChReviewHole[] }) {
   );
 }
 
+/** The pin's flag: red on the stage, as on the course; with a penalty stake, the only red drawn here (MOTION-AND-VISUAL 4.7). */
+const PIN_FLAG = 'var(--ch-stage-red)';
+
 const LIE_COLOR: Record<string, string> = {
   fairway: 'var(--ch-stage-line)',
   green: 'var(--ch-hero-mint-strong)',
@@ -540,7 +543,7 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
           if (s.penalty) {
             return (
               <g key={s.n}>
-                <circle cx={a} cy={base - 20} r={10} fill="var(--ch-stage-red)" />
+                <circle cx={a} cy={base - 20} r={10} fill={LIE_COLOR.penalty} />
                 <text className="ch-rzsvg__in" x={a} y={base - 16} textAnchor="middle" fontSize={11} fontWeight={700} fill="var(--ch-green-900)">+1</text>
               </g>
             );
@@ -565,7 +568,7 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
           {teeText}
         </text>
         <line x1={X1 + 16} y1={base} x2={X1 + 16} y2={base - 36} stroke="var(--ch-stage-ink)" strokeWidth={2} />
-        <path d={`M ${X1 + 16} ${base - 36} l 20 7 l -20 7 z`} fill="var(--ch-stage-red)" />
+        <path d={`M ${X1 + 16} ${base - 36} l 20 7 l -20 7 z`} fill={PIN_FLAG} />
         {puttText && (
           <g>
             {Array.from({ length: Math.min(t.putts, 5) }, (_, i) => (

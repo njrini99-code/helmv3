@@ -217,7 +217,7 @@ export function RosterPhoneCrh({
                 (a one-option control read as a broken bar). */}
             {!data.statsError && (
               <div className="ch-stickybar ch-rsx-sort">
-                <Segmented<PhoneSort> weight="filter"
+                <Segmented<PhoneSort>
                   block
                   label="Sort by"
                   value={sortBy}

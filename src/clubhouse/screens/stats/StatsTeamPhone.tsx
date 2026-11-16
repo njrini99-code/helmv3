@@ -443,7 +443,7 @@ export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: C
           <span>{by}</span>
         </div>
         {/* CH-4703: Segmented ticks on a change only. */}
-        <Segmented<Sort> weight="filter"
+        <Segmented<Sort>
           size="sm"
           label="Sort players"
           value={sort}

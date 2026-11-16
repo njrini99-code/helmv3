@@ -24,7 +24,7 @@
 .ch-akc[data-density='compact'] .ch-akc-who + .ch-akc-thing, .ch-akc[data-density='compact'] .ch-akc-who + .ch-akc-subject { margin-top: -4px; }
 
 .ch-akc-people { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.ch-akc-people__line { display: flex; align-items: center; gap: 8px; min-height: 24px; min-width: 0; font: var(--ch-type-13-medium); color: var(--ch-text-secondary); }
+.ch-akc-people__line { display: flex; align-items: center; gap: 8px; min-height: 24px; min-width: 0; font: var(--ch-type-footnote); color: var(--ch-text-secondary); }
 .ch-akc-people__line.is-key { width: 100%; min-height: 44px; margin: -8px 0; padding: 0; border: 0; background: none; text-align: start; cursor: pointer; border-radius: var(--ch-radius-sm); -webkit-tap-highlight-color: transparent; }
 .ch-akc-people__line.is-key:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; }
 .ch-akc-people__chev { flex: none; color: var(--ch-text-tertiary); }
@@ -192,7 +192,7 @@
 .ch-akc-poll li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 40px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); overflow-wrap: anywhere; }
 .ch-akc-poll li + li { border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 .ch-akc-poll li > i { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ch-border-strong); }
-.ch-akc-poll[data-multi] li > i { border-radius: var(--ch-radius-xs); }
+.ch-akc-poll[data-multi] li > i { border-radius: var(--ch-radius-sm); }
 .ch-akc-poll li > span:last-child { font: var(--ch-type-13); color: var(--ch-text-tertiary); }
 .ch-akc-plan { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
 .ch-akc-plan > li { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 0; }
@@ -221,7 +221,7 @@
 .ch-akc-deck { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
 /* It sits in the turn under the cards it speaks for, on the same paper leaf and at the same measure: what approving them
    does, the one key, then each card as a quiet line. */
-.ch-akc-all { box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 520px; padding: 16px 20px; border-radius: var(--ch-radius-card); background: var(--ch-chart-paper); box-shadow: var(--ch-elevation-card); container-type: inline-size; }
+.ch-akc-all { box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 520px; padding: 16px 20px; border-radius: var(--ch-radius-lg); background: var(--ch-chart-paper); box-shadow: var(--ch-elevation-card); container-type: inline-size; }
 .ch-akc-all__top { display: flex; align-items: center; gap: 12px; }
 .ch-akc-all__tx { display: flex; flex: 1 1 0; flex-direction: column; gap: 4px; min-width: 0; }
 .ch-akc-all__tx > b { display: inline-flex; align-items: center; gap: 8px; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
@@ -250,7 +250,7 @@
 .ch-akg__nav { display: flex; flex-wrap: wrap; gap: 8px; }
 .ch-akg__group { display: flex; flex-direction: column; gap: 20px; scroll-margin-top: 72px; }
 .ch-akg__group > header { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; border-bottom: var(--ch-hairline-w) solid var(--ch-separator-strong); }
-.ch-akg__group > header > h2 { margin: 0; font: var(--ch-type-22-strong); letter-spacing: var(--ch-track-22); }
+.ch-akg__group > header > h2 { margin: 0; font: var(--ch-type-title); letter-spacing: var(--ch-track-22); }
 .ch-akg__group > header > p { max-width: 68ch; margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
 
 .ch-akg-spec { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 72px; }
@@ -270,7 +270,7 @@
 .ch-akg-form { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .ch-akg-form > small { font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); }
 .ch-akg-form > p { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); }
-.ch-akg-plain { padding: 16px; border-radius: var(--ch-radius-card); background: var(--ch-card-bg); box-shadow: var(--ch-elevation-card); }
+.ch-akg-plain { padding: 16px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-elevation-card); }
 .ch-akg-words { width: 100%; border-collapse: collapse; }
 .ch-akg-words th, .ch-akg-words td { padding: 12px 12px 12px 0; border-top: var(--ch-hairline-w) solid var(--ch-separator); font: var(--ch-type-14); text-align: start; vertical-align: top; overflow-wrap: break-word; }
 .ch-akg-words th { width: 32%; font: var(--ch-type-13-strong); color: var(--ch-text-secondary); }
@@ -278,7 +278,7 @@
 .ch-akg-words td > span { display: inline-block; margin: 0 6px 4px 0; }
 
 /* The stand-in frame. */
-.ch-akg-card { box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 520px; padding: 16px 20px; border-radius: var(--ch-radius-card); background: var(--ch-chart-paper); box-shadow: var(--ch-elevation-card); }
+.ch-akg-card { box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 520px; padding: 16px 20px; border-radius: var(--ch-radius-lg); background: var(--ch-chart-paper); box-shadow: var(--ch-elevation-card); }
 .ch-akg-card[data-density='compact'] { gap: 12px; padding: 12px 16px; }
 .ch-akg-card__hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline); }
 .ch-akg-card__hd > b { font: var(--ch-type-13-strong); color: var(--ch-text-primary); }
@@ -326,5 +326,5 @@
 .ch-akg-asked > code { font: var(--ch-type-12); font-family: var(--ch-font-mono); color: var(--ch-text-tertiary); }
 .ch-akg-batch { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 640px; }
 .ch-akg-batch[data-density='compact'] { max-width: 361px; }
-.ch-akg-isl { position: relative; width: 100%; max-width: 640px; min-height: 380px; border-radius: var(--ch-radius-card); background: var(--ch-well-bg-flat); }
+.ch-akg-isl { position: relative; width: 100%; max-width: 640px; min-height: 380px; border-radius: var(--ch-radius-lg); background: var(--ch-well-bg-flat); }
 .ch-akg-isl[data-density='compact'] { max-width: 361px; }

@@ -81,7 +81,7 @@ export function ownHoleSd(byHole: ReadonlyArray<readonly ChHolePlay[]>): number 
 
 /**
  * One hole's figures here. A tile takes colour only from five plays and past two standard errors of par: tier 1, then
- * tier 2 at half a stroke or more; under par is the red family, over par amber (D-42). From two to four plays it is an
+ * tier 2 at half a stroke or more; under par is the gain family, over par amber (MOTION-AND-VISUAL 4.7). From two to four plays it is an
  * early read on the level fill, never coloured (the "muted, no semantic colour" contract of `stats-signal.ts`).
  */
 export function holeStats(plays: readonly ChHolePlay[], sd: number = FALLBACK_HOLE_SD): ChHoleStats {

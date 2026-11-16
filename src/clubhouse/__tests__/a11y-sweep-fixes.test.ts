@@ -7,7 +7,7 @@ const src = (file: string) => readFileSync(join(process.cwd(), 'src/clubhouse', 
 /** What clubhouse:a11y found once its stale selectors could reach these screens (redesign sweep, PR 2). */
 describe('accessibility fixes from the sweep', () => {
   it('a crash paints its own page: on a phone .ch-root is the frame green and the body text sat on it at 1.2:1', () => {
-    expect(src('styles/shell.css')).toMatch(/\.ch-root > \.ch-notyet \{[^}]*background: var\(--ch-canvas-wash\), var\(--ch-bg-page\)/);
+    expect(src('styles/shell.css')).toMatch(/\.ch-root > \.ch-notyet \{[^}]*background: var\(--ch-page-paint\)/);
   });
 
   it('the developer detail scrolls with the keyboard', () => {

@@ -9,7 +9,7 @@ import { hits, ratchet, ROOT, slack, walk } from './_scan';
  * fall.
  */
 const DECL = /border(?:-[a-z]+)*-radius\s*:\s*([^;}]+)/;
-const PART = String.raw`(?:var\(--ch-radius-(?:xs|sm|md|lg|xl|card|sheet|mark|tail|bubble|panel|panel-phone)\)|max\(var\(--ch-radius-xs\), calc\(var\(--ch-radius-(?:sm|md|lg|xl|card|sheet)\) - var\(--ch-space-[0-9_]+\)\)\)|0|50%|999px|inherit)`;
+const PART = String.raw`(?:var\(--ch-radius-(?:xs|sm|md|lg|xl|full|bubble|tail)\)|max\(var\(--ch-radius-xs\), calc\(var\(--ch-radius-(?:sm|md|lg|xl)\) - var\(--ch-space-[0-9_]+\)\)\)|0|50%|inherit)`;
 const OK = new RegExp(String.raw`^${PART}(?:\s+${PART})*(?:\s*!important)?$`);
 const sheets = walk(join(ROOT, 'styles'), /\.css$/).filter((f) => !f.endsWith('tokens.css'));
 // The Messages composer fields stay capsules at one line and grow (.ch-ms-comp__field, the pushed thread's textarea).
@@ -27,28 +27,20 @@ describe('radius steps (row 35)', () => {
     expect(slack(found, ALLOW)).toEqual([]);
   });
 
-  // Inner corner = outer step less the parent's padding. Each row: parent file and selector, child file and selector.
-  const NESTED: Array<[parentFile: string, parent: string, childFile: string, child: string]> = [
-    ['controls.css', '.ch-seg', 'controls.css', '.ch-seg__b'],
-    ['controls.css', '.ch-seg--sm', 'controls.css', '.ch-seg--sm .ch-seg__b'],
-  ];
-  it.each(NESTED)('%s %s > %s %s: the inner corner subtracts the parent padding', (pf, parent, cf, child) => {
-    const tokens = readFileSync(join(ROOT, 'styles', 'tokens.css'), 'utf8');
-    const space = Object.fromEntries([...tokens.matchAll(/--ch-space-([0-9_]+):\s*(\d+)px;/g)].map((m) => [m[1]!, Number(m[2])]));
-    const px = (v: string) => {
-      const t = /var\(--ch-space-([0-9_]+)\)/.exec(v);
-      return t ? space[t[1]!] : Number(/(\d+)px/.exec(v)?.[1]);
-    };
-    const pad = /(?:^|;)\s*padding:\s*([^;\s]+)/.exec(rule(pf, parent))?.[1] ?? '';
-    const sub = /calc\(var\(--ch-radius-[a-z]+\) - (var\(--ch-space-[0-9_]+\))\)/.exec(rule(cf, child))?.[1] ?? '';
-    expect(sub, `${child} has no nested corner`).not.toBe('');
-    expect(px(sub)).toBe(px(pad));
+  // The nested-corner rule (inner = outer step less the padding) still holds where a stepped corner nests; the toggle no
+  // longer does: its well and thumb are capsules, the thumb 3px in (MOTION-AND-VISUAL 4.2 and 4.5).
+  it('the segmented well and thumb are capsules, the thumb 3px in', () => {
+    expect(rule('controls.css', '.ch-seg')).toMatch(/padding:\s*var\(--ch-seg-inset\);/);
+    expect(readFileSync(join(ROOT, 'styles', 'tokens.css'), 'utf8')).toMatch(/--ch-seg-inset: 3px;/);
+    expect(rule('controls.css', '.ch-seg')).toMatch(/border-radius:\s*var\(--ch-radius-full\);/);
+    expect(rule('controls.css', '.ch-seg__b')).toMatch(/border-radius:\s*var\(--ch-radius-full\);/);
   });
 
-  it('the scale is four steps plus the floor and two named shapes', () => {
+  it('the scale is five steps plus the glyph corner and the bubble (MOTION-AND-VISUAL 4.5)', () => {
     const t = readFileSync(join(ROOT, 'styles', 'tokens.css'), 'utf8');
-    for (const [k, v] of [['xs', 4], ['sm', 8], ['md', 12], ['lg', 16], ['xl', 20], ['card', 16], ['sheet', 20], ['mark', 2], ['tail', 6]] as const) {
+    for (const [k, v] of [['sm', 8], ['md', 12], ['lg', 16], ['xl', 20], ['full', 999], ['xs', 4], ['bubble', 18], ['tail', 6]] as const) {
       expect(t, k).toMatch(new RegExp(`--ch-radius-${k}: ${v}px;`));
     }
+    expect([...t.matchAll(/^\s*--ch-radius-([a-z-]+):/gm)].map((m) => m[1]).sort()).toEqual(['bubble', 'full', 'lg', 'md', 'sm', 'tail', 'xl', 'xs']);
   });
 });

@@ -128,7 +128,7 @@ const toParSaid = (n: number | null) => (n == null ? 'no score' : n === 0 ? 'par
 
 /**
  * A round hole by hole, to par: the two nines as ruled lines of figures under their hole numbers, flat on the paper.
- * Red only under par (D-42); over par is plain ink. Each hole asks about itself.
+ * The gain only under par (MOTION-AND-VISUAL 4.7); over par is plain ink. Each hole asks about itself.
  */
 export function HoleStrip({ block }: { block: HoleStripBlock }) {
   const nines = [block.holes.filter((h) => h.hole_number <= 9), block.holes.filter((h) => h.hole_number > 9)].filter((n) => n.length > 0);

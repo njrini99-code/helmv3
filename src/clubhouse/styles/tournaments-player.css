@@ -79,7 +79,7 @@
 .ch-tour-pl-next {
   gap: 12px;
   padding: 20px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
 }
 .ch-tour-pl-next .ch-feat__kicker {
   min-width: 0;
@@ -169,7 +169,7 @@
 .ch-tour-pl .ch-tour-pl-next__then:focus-visible {
   outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 /* The foot's rule sits the card's own 12 under the days, as the days' rule sits under the title. */
 .ch-tour-pl-next .ch-feat__foot {
@@ -199,7 +199,7 @@
   color: var(--ch-on-green-ink-soft);
 }
 .ch-tour-pl.is-phone .ch-tour-pl-next .ch-feat__title {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-22);
 }
@@ -225,7 +225,7 @@
 }
 .ch-tour-pl-date span {
   margin-top: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -245,7 +245,7 @@
   min-width: 0;
 }
 .ch-tour-pl:not(.is-phone) .ch-tour-pl-res.ch-sheet {
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -261,7 +261,7 @@
 /* The last row's wash and focus ring follow the sheet's own corners. */
 .ch-tour-pl-res__row:last-child,
 .ch-tour-pl-res__row:last-child .ch-tour-pl-res__open::after {
-  border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
+  border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg);
 }
 /* The seam between two rows, and under the labels, is a straight hairline of its own from the text's inset. */
 .ch-tour-pl-res__row + .ch-tour-pl-res__row::before {
@@ -274,7 +274,7 @@
 .ch-tour-pl-res__row.is-head {
   min-height: 0;
   padding-block: 12px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
 }
@@ -414,7 +414,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -439,7 +439,7 @@
   flex-direction: column;
   gap: 4px;
   padding: 16px 20px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
   font: var(--ch-type-17-strong);

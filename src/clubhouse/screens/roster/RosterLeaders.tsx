@@ -5,7 +5,6 @@ import type { ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { formatFixed, formatSigned } from '../../lib/format';
-import { FormBars } from '../../ui/FormLine';
 import { leaderPicks, ROSTER_EARLY_FLOOR, yearKeyOf, type RosterClock, type RosterLeader } from './format';
 
 const KIND: Record<RosterLeader['kind'], { label: string; icon: LucideIcon; unit: string | null }> = {

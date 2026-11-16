@@ -313,7 +313,7 @@
 .ch-ask-hist__group {
   margin: 0;
   padding: 8px 8px 6px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
 /* A block, not a flex row: an ellipsis on a flex container cuts a long title mid-letter. The line height centres it. */
@@ -388,7 +388,7 @@
   margin-top: 6px;
   padding: 0 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
   font: var(--ch-type-14-strong);
@@ -410,7 +410,7 @@
   min-height: 36px;
   padding: 0 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
   font: var(--ch-type-14);
@@ -581,7 +581,7 @@
   height: 36px;
   padding: 0 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: none;
   box-shadow: 0 0 0 1px var(--ch-border-control);
   font: var(--ch-type-14-medium);
@@ -656,7 +656,7 @@
 .ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__box {
   gap: var(--ch-space-3);
   padding: var(--ch-space-5) var(--ch-space-5) var(--ch-space-3);
-  border-radius: var(--ch-radius-panel);
+  border-radius: var(--ch-radius-xl);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-sheet);
 }
 .ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__box:focus-within {
@@ -822,7 +822,7 @@
 /* Group headings: the quiet word over each kind of row, in sentence case. */
 .ch-ask-pick [cmdk-group-heading] {
   padding: 8px 8px 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-ask-pick [cmdk-group] + [cmdk-group] {
@@ -845,9 +845,11 @@
   -webkit-tap-highlight-color: transparent;
   transition: background-color var(--ch-dur-press) var(--ch-ease);
 }
-/* The row Enter would pick: the pointer's, or the arrow keys'. */
+/* The row Enter would pick: the pointer's, or the arrow keys'. The selected fill plus the control edge, so the choice
+   is seen without colour (audit S1.8b, MENTION-01). */
 .ch-ask-pick__row[data-selected='true'] {
-  background: var(--ch-bg-inset);
+  background: var(--ch-bg-selected);
+  box-shadow: inset 0 0 0 1px var(--ch-border-control);
 }
 .ch-ask-pick__row[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
@@ -926,7 +928,7 @@
   width: min(330px, 86vw);
   height: 100%;
   padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 16px);
-  box-shadow: 8px 0 30px rgb(0 0 0 / 0.18);
+  box-shadow: var(--ch-elevation-raised);
   touch-action: pan-y;
 }
 body.keyboard-open .ch-ask-hist.is-drawer {
@@ -1016,6 +1018,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     display: flex;
     flex-direction: column;
   }
+  /* The tray paints the page colour, with no rule over it (ASK-P-13): the composer's own capsule is the only edge. */
   .ch-ask-dock {
     padding: 8px var(--ch-page-x-phone) calc(8px + env(safe-area-inset-bottom));
     box-shadow: 0 -1px 0 var(--ch-border-hairline);
@@ -1199,13 +1202,6 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   .ch-ask-nothing__ic {
     background: var(--ch-ledger-row-hover);
-  }
-  /* On the phone the dock sits under a soft rule instead of the wash. */
-  .ch-ask-dock {
-    box-shadow: 0 -1px 0 var(--ch-ledger-rule-soft);
-  }
-  .ch-ask-dock::before {
-    display: none;
   }
 }
 

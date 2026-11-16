@@ -254,8 +254,9 @@ None.
 ### Owner decisions
 
 D-4 (Message team and New event), D-17 (the brief states facts; "ready" is
-accepted replies), D-22 (the owner's phone boards are the spec), D-42 (red means
-under par, the flag or destructive; gains green, losses amber), D-60 (page IDs),
+accepted replies), D-22 (the owner's phone boards are the spec), D-42 as amended
+by MOTION-AND-VISUAL 4.7 (red is for errors only, under par is the gain; gains
+green, losses amber), D-60 (page IDs),
 D-64 (motion), D-66 (navigation), D-67 (order: phone Home, then player Home),
 D-70 (haptics), D-71 (page empty states), Q-66 (the coach phone's differences
 from the board), Q-69 (the player Home's differences from the boards).
