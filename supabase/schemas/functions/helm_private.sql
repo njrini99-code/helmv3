@@ -2142,6 +2142,12 @@ BEGIN
     RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
   END IF;
 
+  -- The owner's own logins edit the demo team (owner, 16 Nov 2026: "Not read
+  -- only"). Test, QA and shared demo logins are not listed and stay refused.
+  IF EXISTS (SELECT 1 FROM helm_private.golf_demo_editors AS d WHERE d.user_id = auth.uid()) THEN
+    RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+  END IF;
+
   v_rows := CASE TG_OP
     WHEN 'INSERT' THEN ARRAY[pg_catalog.to_jsonb(NEW)]
     WHEN 'DELETE' THEN ARRAY[pg_catalog.to_jsonb(OLD)]
@@ -2194,4 +2200,4 @@ $$;
 ALTER FUNCTION "helm_private"."golf_demo_write_guard"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "helm_private"."golf_demo_team_id"() IS 'The one team the demo generator writes (src/lib/demo/config.ts DEMO_TEAM_ID).';
-COMMENT ON FUNCTION "helm_private"."golf_demo_write_guard"() IS 'DD-13: refuses a signed-in account''s writes to demo-team rows. The generator (helm.golf_demo_writer = generator) and writes with no signed-in user pass.';
+COMMENT ON FUNCTION "helm_private"."golf_demo_write_guard"() IS 'DD-13: refuses a signed-in account''s writes to demo-team rows. The generator (helm.golf_demo_writer = generator), writes with no signed-in user and the owner''s logins (helm_private.golf_demo_editors) pass.';

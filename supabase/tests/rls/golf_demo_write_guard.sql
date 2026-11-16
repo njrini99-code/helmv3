@@ -1,18 +1,25 @@
 -- The demo write guard (20261115211100, DD-13): a signed-in account cannot
--- add, change or delete the demo team's rows, whoever it is; other teams,
--- writes with no signed-in user and the generator's own writes pass. Runs as
+-- add, change or delete the demo team's rows; other teams, writes with no
+-- signed-in user, the generator's own writes and the owner's logins listed in
+-- helm_private.golf_demo_editors (20261116150000) pass. Runs as
 -- the owner, so row security is out of the way and only the trigger decides.
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(11);
+SELECT plan(14);
 
 SELECT is(
   (SELECT count(*)::int FROM pg_trigger
     WHERE tgname = 'golf_demo_write_guard' AND NOT tgisinternal AND tgenabled = 'O'),
   18,
   'the guard is on all 18 tables'
+);
+
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'helm_private.golf_demo_editors', 'select')
+  AND NOT has_table_privilege('anon', 'helm_private.golf_demo_editors', 'select'),
+  'no client role can read the editors list'
 );
 
 SELECT ok(
@@ -91,6 +98,27 @@ SELECT lives_ok(
   $$INSERT INTO public.golf_events (team_id, title, event_type, start_time)
     VALUES ('00000000-0000-4000-8000-00000000d1e1', 'Practice', 'practice', TIMESTAMPTZ '2026-11-21 14:00Z')$$,
   'another team takes the same event'
+);
+
+-- ------------------------------------------------------------ an owner login
+
+RESET request.jwt.claims;
+INSERT INTO auth.users (id, email, role)
+VALUES ('00000000-0000-4000-8000-00000000d1f2', 'demo-guard-owner@example.com', 'authenticated');
+INSERT INTO helm_private.golf_demo_editors (user_id, note)
+VALUES ('00000000-0000-4000-8000-00000000d1f2', 'owner login (test)');
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-4000-8000-00000000d1f2", "role": "authenticated"}';
+
+SELECT lives_ok(
+  $$UPDATE public.golf_events SET title = 'Owner edit' WHERE id = '00000000-0000-4000-8000-00000000d1c1'$$,
+  'an owner login on the editors list edits the demo team'
+);
+
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-4000-8000-00000000d1f1", "role": "authenticated"}';
+SELECT throws_ok(
+  $$UPDATE public.golf_events SET title = 'QA edit' WHERE id = '00000000-0000-4000-8000-00000000d1c1'$$,
+  '42501', NULL,
+  'an account not on the list is still refused'
 );
 
 -- ------------------------------------------------------------ the generator
