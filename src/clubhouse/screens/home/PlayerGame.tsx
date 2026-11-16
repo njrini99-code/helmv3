@@ -217,8 +217,33 @@ export function scoreTicks(lo: number, hi: number, max: number): number[] {
   return out;
 }
 
-/** Scores against par (hatched below it) and the player's own mean, the best round pinned. Lower scores sit higher. */
-function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolean }) {
+/**
+ * Scores against par (hatched below it) and the player's own mean, the best round pinned. Lower scores sit higher. The one
+ * scoring line on Home (SYS-04): coach Home draws the team's average on each round day with it, so `format` prints a value
+ * (the team's are tenths), `pin` names the best point and `label` reads the whole chart; left out, the player's.
+ */
+export function ScoreChart({
+  points,
+  phone,
+  format = String,
+  pin = 'low',
+  label,
+  mean: meanAt,
+  best: bestAt,
+  dodge = false,
+}: {
+  points: ChScoringPoint[];
+  phone: boolean;
+  format?: (v: number) => string;
+  pin?: string;
+  label?: string;
+  /** The dashed line's value when it is not the plotted points' own mean (the team's average rests on rounds, not days). */
+  mean?: number;
+  /** The pinned point's index when the best one is chosen by the caller (the team's best day skips one-round days); null pins none. */
+  best?: number | null;
+  /** Moves a value under its dot where the line runs down into that dot from both sides (the team's tenths are wide enough to sit on the line). */
+  dodge?: boolean;
+}) {
   const uid = useId().replace(/:/g, '');
   const W = phone ? 340 : 760;
   // Desktop draws taller so the line fills the space beside the four figures.
@@ -230,11 +255,11 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
   const scores = points.map((p) => p.score);
   // The par line requires a known, identical par for every round; each known round is still marked against its own par.
   const par = commonPar(points);
-  const lo = Math.min(...scores, par ?? Infinity) - 1;
-  const hi = Math.max(...scores, par ?? -Infinity) + 1;
+  const lo = Math.min(...scores, par ?? Infinity, meanAt ?? Infinity) - 1;
+  const hi = Math.max(...scores, par ?? -Infinity, meanAt ?? -Infinity) + 1;
   const x = (i: number) => L + (i * (W - L - R)) / Math.max(1, points.length - 1);
   const y = (v: number) => T + ((v - lo) / (hi - lo)) * (H - T - B);
-  const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const mean = meanAt ?? scores.reduce((a, b) => a + b, 0) / scores.length;
   const pts = scores.map((v, i) => [x(i), y(v)] as const);
   let d = `M${pts[0]![0].toFixed(1)},${pts[0]![1].toFixed(1)}`;
   // Straight segments between rounds (one chart line, S2.4): a curve invents scores between the dots.
@@ -242,20 +267,27 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
     const [x1, y1] = pts[i]!;
     d += ` L${x1.toFixed(1)},${y1.toFixed(1)}`;
   }
-  const best = Math.min(...scores);
-  const bi = scores.lastIndexOf(best);
+  const bi = bestAt === undefined ? scores.lastIndexOf(Math.min(...scores)) : bestAt;
+  const best = bi == null ? Math.min(...scores) : scores[bi]!;
   const last = points.length - 1;
   const labelled = points.length <= 10;
   const step = points.length <= 5 ? 1 : points.length <= 10 ? (phone ? 3 : 1) : phone ? 5 : 2;
   const ticks = scoreTicks(lo, hi, phone ? 6 : 8);
   // Under par against that round's own par, so a dot is green and a label red even where the par line is not drawn.
   const under = (i: number) => points[i]!.par != null && scores[i]! < points[i]!.par!;
+  // Where the line comes down into a dot (no neighbour sits lower on screen and at least one sits higher), the value
+  // above would sit on that line, so it goes below the dot.
+  const below = (i: number) => {
+    if (!dodge) return false;
+    const n = [scores[i - 1], scores[i + 1]].filter((v): v is number => v != null);
+    return n.some((v) => v < scores[i]!) && n.every((v) => v <= scores[i]!);
+  };
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
       className="ch-ph-chart"
       role="img"
-      aria-label={`Your scores over the last ${points.length} rounds, from ${scores[0]} to ${scores[last]}; your mean is ${formatFixed(mean)} and your best is ${best}.`}
+      aria-label={label ?? `Your scores over the last ${points.length} rounds, from ${scores[0]} to ${scores[last]}; your mean is ${formatFixed(mean)} and your best is ${best}.`}
     >
       <defs>
         <linearGradient id={`${uid}f`} x1="0" x2="0" y1="0" y2="1">
@@ -294,19 +326,19 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
         <g key={points[i]!.id}>
           <circle cx={px} cy={py} r={i === last ? 5 : points.length > 10 ? 2.6 : 3.4} className={'ch-ph-chart__dot' + (under(i) ? ' is-under' : '')} />
           {labelled && (
-            <text x={px} y={py - 10} textAnchor="middle" className={'ch-ph-chart__val' + (under(i) ? ' is-under' : '')}>
-              {scores[i]}
+            <text x={px} y={below(i) ? py + 18 : py - 10} textAnchor="middle" className={'ch-ph-chart__val' + (under(i) ? ' is-under' : '')}>
+              {format(scores[i]!)}
             </text>
           )}
         </g>
       ))}
-      {!phone && (
+      {!phone && bi != null && (
         <g transform={`translate(${x(bi).toFixed(1)},${(y(best) - (labelled ? 14 : 4)).toFixed(1)})`} className="ch-ph-pinflag">
           <line y1="-6" y2="-34" />
           <path d="M0,-34 L16,-29 L0,-24 Z" />
           {/* Near the right edge the label reads to the left of the pole, inside the chart. */}
           <text x={x(bi) > W - 160 ? -6 : 20} y="-26" textAnchor={x(bi) > W - 160 ? 'end' : 'start'} className="ch-ph-chart__ann">
-            low · {best}
+            {pin} · {format(best)}
           </text>
         </g>
       )}

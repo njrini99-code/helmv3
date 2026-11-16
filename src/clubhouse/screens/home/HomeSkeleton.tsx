@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
-import { SkeletonDeskCrh, SkeletonDeskForm, SkeletonDeskHead } from './SkeletonDeskHead';
+import { SkeletonDeskForm, SkeletonDeskHead } from './SkeletonDeskHead';
 import { SkeletonHeroBar } from './SkeletonHeroBar';
-import { SkeletonCrhCards, SkeletonPhoneHero } from './SkeletonPhoneHero';
+import { SkeletonPhoneHero } from './SkeletonPhoneHero';
 import '../../styles/home.css';
 
 /** A bar centred in a box the height of its real line, so the text lands where the bar was. */
@@ -19,16 +19,6 @@ export function HomeSkeleton() {
       {/* Phone: the page's own shape in the Mobile clubhouse pass (the date under its double rule, the greeting, the
           coach's brief or the player's keys around the green Up next card, then the first section under its rule and
           its rows), so the hand-off changes nothing but the words (F-37). */}
-      {/* The lane's own (06 §11.3); CSS picks it, since this route's loading draws before the flag is read. */}
-      <div className="ch-hm-sk-crh" aria-hidden="true">
-        <div className="ch-hm-sk-crh__hero">
-          <Skeleton width={150} height={13} />
-          <Skeleton width={240} height={30} radius={8} />
-          <Skeleton width="86%" height={13} />
-          <Skeleton width="58%" height={13} />
-        </div>
-        <SkeletonCrhCards />
-      </div>
       <div className="ch-hm-skel" aria-hidden="true">
         <SkeletonPhoneHero />
         <div className="ch-hm-skel__body">
@@ -43,8 +33,6 @@ export function HomeSkeleton() {
           ))}
         </div>
       </div>
-      {/* The lane's coach page; CSS picks it, as the phone's above. */}
-      <SkeletonDeskCrh />
       {/* Desktop head in the reader's shape: the coach's brief, or the player's plain head. */}
       <SkeletonDeskHead />
       {/* Row 79, as CoachHome draws it: the week's sheet first, then (the coach's) scoring form and four parts. */}
