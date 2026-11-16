@@ -22,7 +22,8 @@ import { PreviewRounds, previewSharePorts } from '../PreviewRounds';
  */
 describe('the preview’s Rounds reads no live table', () => {
   it('hands the library its own sharing ports', () => {
-    render(<PreviewRounds data={{} as ChRoundsLibrary} />);
+    // The preview reads its own scorecards from the library's rounds, so it is handed an empty list of them.
+    render(<PreviewRounds data={{ rounds: { list: [] } } as unknown as ChRoundsLibrary} />);
     expect(seen.ports).toBeDefined();
     expect(Object.keys(seen.ports!).sort()).toEqual(['loadPrefs', 'loadRoundShare', 'setNext', 'setPrefs', 'setShare']);
   });

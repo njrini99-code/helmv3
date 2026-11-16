@@ -334,7 +334,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/README.md` | generated | - | - | yes | - |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | - |
 | `memory/glossary.md` | current | yes | yes | yes | - |
-| `memory/projects/golfhelm.md` | current | yes | yes | - | 1 |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | - |
 | `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | - |
 
 ### `PROCESS_CONTRACT`
@@ -1334,6 +1334,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-roster-truths.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-row-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-sg-window-and-past-class.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-16-roster-limit.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
@@ -1486,6 +1487,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-attendance-counts-typed.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-practice-hours.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-15-tournament-ties.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-16-lineup-lock.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1613,6 +1615,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-past-last-day.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-15-export.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-15-tie-rule.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-16-configurable-qualifying.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
@@ -1904,6 +1907,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-export.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-results-import.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-tie-setting.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-16-b-team-lock-by.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-16-roster-count.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/classes.md` | current | - | - | - | - |
@@ -2034,7 +2039,7 @@ them would bury everything above.
 | `src/lib/coachhelm/v3/chat/knowledge/SOURCES.md` | current | - | - | - | - |
 | `src/lib/coachhelm/v3/chat/tasks/INVENTORY.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 7 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 5 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 3 |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |
 | `tools/QUICK_REFERENCE.md` | current | - | - | - | - |

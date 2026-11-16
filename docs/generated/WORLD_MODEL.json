@@ -1342,6 +1342,11 @@
         "category": "actions"
       },
       {
+        "id": "actions:src/app/golf/actions/qualifier-exemptions.ts",
+        "pattern": "src/app/golf/actions/qualifier-exemptions.ts",
+        "category": "actions"
+      },
+      {
         "id": "actions:src/app/golf/actions/qualifier-progress.ts",
         "pattern": "src/app/golf/actions/qualifier-progress.ts",
         "category": "actions"
@@ -2114,6 +2119,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/golf/qualifier-exemptions.ts",
+        "pattern": "src/lib/golf/qualifier-exemptions.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/golf/qualifier-selection-reasons.ts",
         "pattern": "src/lib/golf/qualifier-selection-reasons.ts",
         "category": "services"
@@ -2311,6 +2321,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/golf/actions/__tests__/qualifier-exemptions.test.ts",
+        "pattern": "src/app/golf/actions/__tests__/qualifier-exemptions.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/app/golf/actions/__tests__/qualifier-setup.test.ts",
         "pattern": "src/app/golf/actions/__tests__/qualifier-setup.test.ts",
         "category": "tests"
@@ -2393,6 +2408,11 @@
       {
         "id": "tests:src/clubhouse/__tests__/playground-tokens.test.ts",
         "pattern": "src/clubhouse/__tests__/playground-tokens.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/__tests__/qualifier-f06.test.tsx",
+        "pattern": "src/clubhouse/__tests__/qualifier-f06.test.tsx",
         "category": "tests"
       },
       {
@@ -2673,6 +2693,11 @@
       {
         "id": "tests:supabase/tests/rls/golf_qualifier_db_hardening.sql",
         "pattern": "supabase/tests/rls/golf_qualifier_db_hardening.sql",
+        "category": "tests"
+      },
+      {
+        "id": "tests:supabase/tests/rls/golf_qualifier_exemptions.sql",
+        "pattern": "supabase/tests/rls/golf_qualifier_exemptions.sql",
         "category": "tests"
       }
     ],
@@ -3380,6 +3405,12 @@
         ]
       },
       {
+        "id": "golf_qualifier_exemptions",
+        "definedIn": [
+          "supabase/migrations/20261116100000_golf_qualifier_exemptions.sql"
+        ]
+      },
+      {
         "id": "golf_qualifier_round_courses",
         "definedIn": [
           "supabase/migrations/20260621231000_qualifier_round_courses.sql"
@@ -3395,6 +3426,12 @@
         "id": "golf_recruit_documents",
         "definedIn": [
           "supabase/migrations/20260614020000_recruit_documents.sql"
+        ]
+      },
+      {
+        "id": "golf_roster_exemptions",
+        "definedIn": [
+          "supabase/migrations/20261115250000_golf_roster_limits.sql"
         ]
       },
       {
@@ -3461,6 +3498,12 @@
         "id": "golf_team_hours_settings",
         "definedIn": [
           "supabase/migrations/20261115230000_golf_team_hours.sql"
+        ]
+      },
+      {
+        "id": "golf_team_roster_limits",
+        "definedIn": [
+          "supabase/migrations/20261115250000_golf_roster_limits.sql"
         ]
       },
       {
@@ -4435,7 +4478,7 @@
       },
       {
         "id": "golf_tournament_lock_lineup",
-        "definedIn": "supabase/migrations/20261024100200_golf_tournaments_rpcs.sql"
+        "definedIn": "supabase/migrations/20261116091000_golf_tournament_b_team.sql"
       },
       {
         "id": "golf_tournament_mark",
@@ -4459,7 +4502,7 @@
       },
       {
         "id": "golf_tournament_set_entries",
-        "definedIn": "supabase/migrations/20261024100200_golf_tournaments_rpcs.sql"
+        "definedIn": "supabase/migrations/20261116091000_golf_tournament_b_team.sql"
       },
       {
         "id": "golf_tournament_set_round_status",
@@ -13975,6 +14018,11 @@
       "target": "player_coachhelm_development",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments.ts",
+          "anchor": "src/lib/coachhelm/v3/verdicts/schema-missing"
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/golf/tournament-refusals.ts",
@@ -23685,6 +23733,18 @@
     },
     {
       "source": "qualifiers",
+      "target": "actions:src/app/golf/actions/qualifier-exemptions.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/qualifier-exemptions.ts"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
       "target": "actions:src/app/golf/actions/qualifier-progress.ts",
       "kind": "feature_action",
       "evidence": [
@@ -23732,6 +23792,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/qualifier-actions.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/qualifier-exemptions.ts",
           "anchor": "src/lib/admin/observed-action"
         },
         {
@@ -23795,6 +23860,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/qualifier-actions.ts",
           "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/qualifier-exemptions.ts",
+          "anchor": "src/lib/supabase/server"
         },
         {
           "kind": "import_graph",
@@ -23883,6 +23953,17 @@
     },
     {
       "source": "qualifiers",
+      "target": "golf_qualifier_exemptions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261116100000_golf_qualifier_exemptions.sql"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
       "target": "golf_qualifier_round_courses",
       "kind": "feature_table",
       "evidence": [
@@ -23932,7 +24013,17 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/qualifier-exemptions.ts",
+          "anchor": "src/lib/golf/qualifier-rules"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/qualifying/loader.ts",
+          "anchor": "src/lib/golf/qualifier-rules"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/qualifier-exemptions.ts",
           "anchor": "src/lib/golf/qualifier-rules"
         }
       ]
@@ -24011,6 +24102,18 @@
     },
     {
       "source": "qualifiers",
+      "target": "services:src/lib/golf/qualifier-exemptions.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/golf/qualifier-exemptions.ts"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
       "target": "services:src/lib/golf/qualifier-selection-reasons.ts",
       "kind": "feature_service",
       "evidence": [
@@ -24035,6 +24138,18 @@
     },
     {
       "source": "qualifiers",
+      "target": "tests:src/app/golf/actions/__tests__/qualifier-exemptions.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/__tests__/qualifier-exemptions.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
       "target": "tests:src/app/golf/actions/__tests__/qualifier-setup.test.ts",
       "kind": "feature_test",
       "evidence": [
@@ -24042,6 +24157,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/actions/__tests__/qualifier-setup.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
+      "target": "tests:src/clubhouse/__tests__/qualifier-f06.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/__tests__/qualifier-f06.test.tsx"
         }
       ]
     },
@@ -24078,6 +24205,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "supabase/tests/rls/golf_qualifier_db_hardening.sql"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
+      "target": "tests:supabase/tests/rls/golf_qualifier_exemptions.sql",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "supabase/tests/rls/golf_qualifier_exemptions.sql"
         }
       ]
     },
@@ -24441,6 +24580,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/roster-limit.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/team-management.ts",
           "anchor": "src/lib/admin/observed-action"
         },
@@ -24492,6 +24636,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/player-profile-stats.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/roster-limit.ts",
+          "anchor": "src/lib/supabase/server"
         },
         {
           "kind": "import_graph",
@@ -24611,6 +24760,17 @@
     },
     {
       "source": "roster_team",
+      "target": "golf_roster_exemptions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261115250000_golf_roster_limits.sql"
+        }
+      ]
+    },
+    {
+      "source": "roster_team",
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [
@@ -24687,6 +24847,17 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20261115230000_golf_team_hours.sql"
+        }
+      ]
+    },
+    {
+      "source": "roster_team",
+      "target": "golf_team_roster_limits",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261115250000_golf_roster_limits.sql"
         }
       ]
     },
