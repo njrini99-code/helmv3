@@ -173,7 +173,7 @@ FOR EACH ROW EXECUTE FUNCTION public.golf_holes_set_gir_fn();
 -- only, and submit writes its shots one row at a time anyway.)
 CREATE OR REPLACE FUNCTION public.golf_shots_refresh_hole_gir_fn() RETURNS trigger
     LANGUAGE plpgsql
-    SECURITY DEFINER
+SECURITY DEFINER
     SET search_path = ''
     AS $$
 DECLARE
@@ -216,7 +216,7 @@ FOR EACH ROW EXECUTE FUNCTION public.golf_shots_refresh_hole_gir_fn();
 
 CREATE OR REPLACE FUNCTION public.recompute_golf_round_totals(p_round_id uuid) RETURNS void
     LANGUAGE plpgsql
-    SECURITY DEFINER
+SECURITY DEFINER
     SET search_path TO 'public'
     AS $$
 BEGIN
