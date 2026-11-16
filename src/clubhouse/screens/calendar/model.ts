@@ -30,6 +30,8 @@ export type ChCalPlan = { state: 'none' } | { state: 'draft' | 'published' | 'ed
 
 export interface ChCalEvent {
   plan?: ChCalPlan;
+  /** A practice whose plan read failed (GAP-S-28): the sheet says so where the plan shows (CH-6290), never "no plan". */
+  planFailed?: true;
   id: string;
   type: ChCalType;
   title: string;

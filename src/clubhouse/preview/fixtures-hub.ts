@@ -122,20 +122,20 @@ const BASE = {
       {
         name: 'Carolina Fall Invitational',
         files: [
-          { id: 'd1', title: 'Pairings and tee times', type: 'PDF', size: '84 KB', date: 'Oct 14', isPublic: true },
-          { id: 'd2', title: 'Hotel confirmation', type: 'PDF', size: '61 KB', date: 'Oct 13', isPublic: true },
-          { id: 'd3', title: 'Travel waiver', type: 'PDF', size: '46 KB', date: 'Oct 10', isPublic: true },
+          { id: 'd1', title: 'Pairings and tee times', type: 'PDF', size: '84 KB', date: 'Oct 14', at: '2026-10-14T13:00:00Z', isPublic: true },
+          { id: 'd2', title: 'Hotel confirmation', type: 'PDF', size: '61 KB', date: 'Oct 13', at: '2026-10-13T15:00:00Z', isPublic: true },
+          { id: 'd3', title: 'Travel waiver', type: 'PDF', size: '46 KB', date: 'Oct 10', at: '2026-10-10T15:00:00Z', isPublic: true },
         ],
       },
       {
         name: 'Team',
         files: [
-          { id: 'd4', title: 'Fall 2026 schedule', type: 'PDF', size: '120 KB', date: 'Aug 20', isPublic: true },
-          { id: 'd5', title: 'Team handbook', type: 'PDF', size: '1.2 MB', date: 'Aug 18', isPublic: true },
-          { id: 'd6', title: 'Practice plan · week 9', type: 'DOC', size: '32 KB', date: 'Oct 12', isPublic: false },
+          { id: 'd4', title: 'Fall 2026 schedule', type: 'PDF', size: '120 KB', date: 'Aug 20', at: '2026-08-20T15:00:00Z', isPublic: true },
+          { id: 'd5', title: 'Team handbook', type: 'PDF', size: '1.2 MB', date: 'Aug 18', at: '2026-08-18T15:00:00Z', isPublic: true },
+          { id: 'd6', title: 'Practice plan · week 9', type: 'DOC', size: '32 KB', date: 'Oct 12', at: '2026-10-12T15:00:00Z', isPublic: false },
         ],
       },
-      { name: 'Compliance', files: [{ id: 'd7', title: 'NCAA hours log', type: 'XLS', size: '58 KB', date: 'Oct 13', isPublic: true }] },
+      { name: 'Compliance', files: [{ id: 'd7', title: 'NCAA hours log', type: 'XLS', size: '58 KB', date: 'Oct 13', at: '2026-10-13T18:00:00Z', isPublic: true }] },
     ],
   },
   updates: {
@@ -280,3 +280,5 @@ const failed = (d: ChTeamHub): ChTeamHub => ({
 });
 export const PREVIEW_HUB_PLAYER_FAILED = failed(PREVIEW_HUB_PLAYER);
 export const PREVIEW_HUB_COACH_FAILED = failed(PREVIEW_HUB_COACH);
+/** Some reads failed and the rest answered: Announcements and Tasks say so in place, the rest of the Hub draws. */
+export const PREVIEW_HUB_COACH_PARTIAL: ChTeamHub = { ...PREVIEW_HUB_COACH, announcements: { rows: [], error: true }, tasks: { rows: [], error: true } };

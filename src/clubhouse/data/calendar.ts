@@ -59,6 +59,8 @@ export interface ChCalendarData {
   tournamentsEnabled?: boolean;
   /** P-5: the round refs failed to load: tournament events show their stored titles and can't be moved */
   roundRefsFailed?: boolean;
+  /** The practices' plans didn't read (a missing table is not this): each practice carries `planFailed` (GAP-S-28). */
+  plansError?: boolean;
   /** Which change marks this device has seen (`s`) or cleared (`g`), from the `ch_marks` cookie, newest first (P-14). */
   marks?: MarkEntries;
   /** Events that left a day of the window for another (live marks only): a quiet row on the old day, linking to the new one. */
@@ -69,12 +71,15 @@ type ClassRow = { id: string; player_id: string; instructor: string | null; days
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function readEventPlans(sb: Awaited<ReturnType<typeof createClient>>, teamId: string, coach: boolean): Promise<Map<string, ChCalPlan> | null> {
+/** A plan table that isn't there yet leaves the Plan row out; any other failed read is `plansError` (GAP-S-28). */
+const planRead = (error: { code?: string }): 'absent' | null => (error.code === '42P01' || error.code === 'PGRST205' ? 'absent' : null);
+
+async function readEventPlans(sb: Awaited<ReturnType<typeof createClient>>, teamId: string, coach: boolean): Promise<Map<string, ChCalPlan> | 'absent' | null> {
   const db = practiceTables(sb);
   const out = new Map<string, ChCalPlan>();
   if (coach) {
     const { data, error } = await db.from('golf_practice_plans').select('id, event_id, status, version, published_version').eq('team_id', teamId).not('event_id', 'is', null);
-    if (error) return null;
+    if (error) return planRead(error);
     for (const p of (data ?? []) as Array<{ id: string; event_id: string; status: string; version: number; published_version: number | null }>) {
       out.set(p.event_id, { id: p.id, state: p.status !== 'published' ? 'draft' : p.published_version != null && p.version !== p.published_version ? 'edited' : 'published' });
     }
@@ -82,7 +87,7 @@ async function readEventPlans(sb: Awaited<ReturnType<typeof createClient>>, team
   }
   // A player reads live versions only: RLS holds this to what's published for their team.
   const { data, error } = await db.from('golf_practice_plan_versions').select('plan_id, event_id').not('event_id', 'is', null);
-  if (error) return null;
+  if (error) return planRead(error);
   for (const v of (data ?? []) as Array<{ plan_id: string; event_id: string }>) out.set(v.event_id, { id: v.plan_id, state: 'published' });
   return out;
 }
@@ -309,7 +314,11 @@ export async function loadCalendar(input: {
   // (production allows it: golf_event_attendance_insert_self), and, only when the rows failed, whether a meeting invites
   // anyone at all (D2-8, below). Until that function exists (`missing`) the rows answer both, as before.
   // Practice's plan on each practice: one read beside the events. Off, or the tables not there yet, it's simply absent.
-  const plans = await readEventPlans(supabase, input.teamId, input.role === 'coach').catch(() => null);
+  const planAnswer = await readEventPlans(supabase, input.teamId, input.role === 'coach').catch(() => null);
+  const plans = planAnswer === 'absent' ? null : planAnswer;
+  // The plans didn't read: each practice says so where its plan shows (CH-6290), never "no plan".
+  const plansError = planAnswer === null;
+  if (plansError) chLogServer('calendar', 'eventPlans', 'plan read failed', 'calendar');
   const meetingIds = input.role === 'player' ? rows.filter((r) => !isClassEvent(r) && (r.event_type === 'meeting' || r.requires_rsvp === true)).map((r) => r.id) : [];
   // Paged (fetchAllRowsResult): 200 events x a full roster passes PostgREST's 1,000-row cap.
   const [{ data: attendance, error: attendanceError }, meetingCounts] = await Promise.all([
@@ -392,6 +401,7 @@ export async function loadCalendar(input: {
     if (input.role === 'player' && r.event_type === 'meeting' && !playerSeesMeeting(rsvpError ? null : !!me && invitees.includes(me), invitedCount(r.id))) continue;
     const base = {
       ...(type === 'practice' && plans ? { plan: plans.get(r.id) ?? (input.role === 'coach' ? ({ state: 'none' } as const) : undefined) } : {}),
+      ...(type === 'practice' && plansError ? { planFailed: true as const } : {}),
       id: r.id,
       type,
       title: r.title,
@@ -552,6 +562,7 @@ export async function loadCalendar(input: {
     firstRun,
     rsvpError,
     classesError: !!classesRes.error,
+    plansError,
     settingsError: !!settingsRes.error,
     membersError: !!membersRes.error,
     marks: input.marks ?? [],

@@ -12,7 +12,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata: Metadata = {
-  title: 'Calendar | Helm Sports',
+  title: 'Calendar',
   description: 'View and manage your team events, practices, and game schedule',
 };
 

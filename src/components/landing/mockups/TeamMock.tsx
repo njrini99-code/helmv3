@@ -70,7 +70,7 @@ interface RosterRow {
 }
 
 const ROSTER: RosterRow[] = [
-  { initials: 'TP', lead: true, name: 'Test Player', meta: 'Sr · Atlanta, GA', status: { label: 'Active', color: M.accent700, bg: M.accent50 }, rds: '15', avg: '70.5', spark: { points: '0,11 10,8 21,9 31,5 42,3', color: M.accent }, sg: '+1.2', sgAccent: true, focus: 'Lag putting' },
+  { initials: 'MC', lead: true, name: 'Maya Chen', meta: 'Sr · Atlanta, GA', status: { label: 'Active', color: M.accent700, bg: M.accent50 }, rds: '15', avg: '70.5', spark: { points: '0,11 10,8 21,9 31,5 42,3', color: M.accent }, sg: '+1.2', sgAccent: true, focus: 'Lag putting' },
   { initials: 'JM', lead: false, name: 'J. Marsh', meta: 'Jr · Dallas, TX', status: { label: 'Available', color: M.accent700, bg: M.accent50 }, rds: '12', avg: '72.1', spark: { points: '0,7 10,8 21,6 31,8 42,7', color: M.ink3 }, sg: '+0.4', sgAccent: false, focus: 'Wedges 100–125' },
   { initials: 'RD', lead: false, name: 'R. Diaz', meta: 'So · Phoenix, AZ', status: { label: 'Available', color: M.accent700, bg: M.accent50 }, rds: '14', avg: '73.4', spark: { points: '0,12 10,10 21,8 31,6 42,4', color: M.accent }, sg: '−0.2', sgAccent: false, focus: 'Driving accuracy' },
   { initials: 'AW', lead: false, name: 'A. Wells', meta: 'Sr · Columbus, OH', status: { label: 'Traveling', color: M.ink2, bg: M.sunkenDeep }, rds: '11', avg: '72.8', spark: { points: '0,5 10,7 21,6 31,10 42,12', color: M.warn }, sg: '−0.6', sgAccent: false, focus: 'Course mgmt' },
@@ -79,7 +79,7 @@ const ROSTER: RosterRow[] = [
 ];
 
 const QUALIFIER = [
-  { pos: '1', initials: 'TP', lead: true, name: 'Test Player', total: '136', par: '−6', parAccent: true, highlight: false },
+  { pos: '1', initials: 'MC', lead: true, name: 'Maya Chen', total: '136', par: '−6', parAccent: true, highlight: false },
   { pos: '2', initials: 'JM', lead: false, name: 'J. Marsh', total: '140', par: '−2', parAccent: true, highlight: false },
   { pos: '3▲', initials: 'RD', lead: false, name: 'R. Diaz', total: '141', par: '−1', parAccent: true, highlight: true },
   { pos: '4', initials: 'AW', lead: false, name: 'A. Wells', total: '142', par: 'E', parAccent: false, highlight: false },
@@ -87,7 +87,7 @@ const QUALIFIER = [
 ];
 
 const PLANS = [
-  { name: 'Test Player', focus: 'Lag putting 25–40 ft', pct: 62, note: 'Target 30% make · now 28% · +6 sessions' },
+  { name: 'Maya Chen', focus: 'Lag putting 25–40 ft', pct: 62, note: 'Target 30% make · now 28% · +6 sessions' },
   { name: 'C. Boyd', focus: 'Bunker recovery', pct: 40, note: 'Sand saves 5% → 20% goal · 4 wks left' },
   { name: 'R. Diaz', focus: 'Driving accuracy', pct: 55, note: 'Fairways 59% → 68% · on track' },
 ];
@@ -131,9 +131,9 @@ export function TeamMock() {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20 }}>
           <div>
-            <div style={lab(M.accent700)}>Team Management</div>
-            <div style={{ marginTop: 8, fontSize: 27, fontWeight: 640, letterSpacing: '-0.02em' }}>Team Roster</div>
-            <p style={{ margin: '6px 0 0', fontSize: 13, color: M.ink2 }}>Demo University Golf · Spring season · 8 players</p>
+            <div style={lab(M.accent700)}>Team</div>
+            <div style={{ marginTop: 8, fontSize: 27, fontWeight: 640, letterSpacing: '-0.02em' }}>Roster</div>
+            <p style={{ margin: '6px 0 0', fontSize: 13, color: M.ink2 }}>Coastal State Golf · Spring season · 8 players</p>
           </div>
           <div style={{ display: 'flex', gap: 9, flex: 'none' }}>
             <div style={{ fontSize: 12, fontWeight: 560, color: M.ink, background: M.surface, border: `1px solid ${M.lineSolid}`, padding: '9px 14px', borderRadius: 9999 }}>Message team</div>
@@ -251,10 +251,10 @@ export function TeamMock() {
           </div>
         </div>
 
-        {/* Development plans */}
+        {/* Focus areas */}
         <div data-assembly-piece="" data-assembly-order="4" style={{ ...card, padding: '16px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 13.5, fontWeight: 640 }}>Development plans</span>
+            <span style={{ fontSize: 13.5, fontWeight: 640 }}>Focus areas</span>
             <span style={{ fontSize: 11, color: M.accent700, fontWeight: 560 }}>All →</span>
           </div>
           <div style={{ marginTop: 13, display: 'flex', flexDirection: 'column', gap: 13 }}>

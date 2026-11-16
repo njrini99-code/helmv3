@@ -133,7 +133,7 @@ are the "Settings · phone" group in `settings.test.tsx`.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-8401 | The page is loading | A skeleton of the title, the section list and two sections, in the page's own layout; on the phone the title under its double rule, who you are and the sections on their seams, drawn in the live list's classes so nothing moves when it arrives | `SettingsSkeleton`, route `loading.tsx` (and the two old links' `loading.tsx`) | settings.test › CH-8401, settings-server.test › CH-8401 |
+| CH-8401 | The page is loading | A skeleton of the title, the section list and the section the address names (`?section=`, or the route's own: Notifications, a coach's CoachHelm), marked on the rail with its cards (GAP-S-17); on the phone that section pushed open, or, with none named, the title under its double rule, who you are and the sections on their seams, drawn in the live list's classes so nothing moves when it arrives | `SettingsSkeleton` / `SettingsRouteSkeleton`, route `loading.tsx` (and the two old links' `loading.tsx`) | settings.test › CH-8401, settings-server.test › CH-8401, route-skeleton-address.test |
 | CH-8402 | A form is saving | The button reads "Saving…" (or "Sending…", "Updating…", "Deleting…", "Leaving…") and can't be pressed twice | `useAction.pending` | settings.test › CH-8402 |
 | CH-8403 | A switch is saving | The switch holds its new position and can't be flipped again until it lands | `Switch busy` | settings.test › CH-8403 |
 | CH-8404 | A photo is uploading | The photo dims and the button reads "Uploading…" | `ProfileCard` | preview |

@@ -77,7 +77,8 @@ async function publishPracticePlanImpl(input: { planId: string; expectedVersion:
     const notices: PracticeNotice[] = row.first_publish ? firstNotices : [ { userIds: recipients.map((r) => r.user_id), title: `${word}’s plan changed`, body: changes?.changes[0]?.line ?? 'Open the plan to see what changed' }];
     after(() => fanOutPracticePlan(plan.id, row.published_version, row.first_publish ? 'published' : 'updated', notices));
   }
-  revalidatePath('/golf/dashboard/documents');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/team-hub');
   return { success: true, version: row.published_version, recipients: recipients.length, documentId: row.document_id, firstPublish: row.first_publish };
 }
 
@@ -94,7 +95,8 @@ async function takeDownPracticePlanImpl(input: { planId: string; expectedVersion
     const notices = [{ userIds: row.recipients.map((r) => r.user_id), title: input.title ?? 'A practice plan was taken down', body: input.body ?? 'It’s no longer on your Practice page.' }];
     after(() => fanOutPracticePlan(input.planId, row.plan_version, 'taken_down', notices));
   }
-  revalidatePath('/golf/dashboard/documents');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/team-hub');
   return { success: true };
 }
 

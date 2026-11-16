@@ -13,8 +13,12 @@ export async function printPlan(plan: PlanSheetModel): Promise<void> {
   return printNode(<PracticePlanSheet plan={plan} density="print" />);
 }
 
-/** Any printed pages (the print studio's pick) through the same root and paper. */
-export async function printNode(node: ReactNode): Promise<void> {
+/**
+ * Puts printed pages on the page, synchronously: the print root (which the print rules show alone) and its paper size.
+ * Returns what takes them away. printNode uses it before `window.print()`; the print studio also uses it from
+ * `beforeprint`, so the browser's own Print (Cmd+P) prints the sheets, not the studio's controls (GAP-R-16).
+ */
+export function mountPrintRoot(node: ReactNode): () => void {
   // A second Print replaces the first; iOS often never fires afterprint in the home-screen app.
   document.querySelectorAll('.ch-cp-print-root').forEach((el) => el.remove());
   const host = document.createElement('div');
@@ -29,6 +33,16 @@ export async function printNode(node: ReactNode): Promise<void> {
   document.head.appendChild(paper);
   const root = createRoot(host);
   flushSync(() => root.render(node));
+  return () => {
+    root.unmount();
+    host.remove();
+    paper.remove();
+  };
+}
+
+/** Any printed pages (the print studio's pick) through the same root and paper. */
+export async function printNode(node: ReactNode): Promise<void> {
+  const unmount = mountPrintRoot(node);
   // iOS only honours print inside the tap, so it doesn't wait when the fonts are already in.
   if (document.fonts.status !== 'loaded') {
     await document.fonts.ready;
@@ -37,9 +51,7 @@ export async function printNode(node: ReactNode): Promise<void> {
   const done = () => {
     window.removeEventListener('afterprint', done);
     window.removeEventListener('focus', done);
-    root.unmount();
-    host.remove();
-    paper.remove();
+    unmount();
   };
   window.addEventListener('afterprint', done);
   window.addEventListener('focus', done);

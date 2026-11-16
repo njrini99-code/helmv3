@@ -40,6 +40,9 @@ import { getRosterForImportMatching } from '@/lib/baseball/import-roster';
 import { ImportWizardClient } from '@/components/baseball/import-center/ImportWizardClient';
 import { fairwayScope } from '@/lib/redesign/flag';
 import type { BaseballStatUpload } from '@/lib/types';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Upload Stats' };
 
 export default async function StatsUploadPage() {
   const supabase = await createClient();

@@ -74,8 +74,8 @@ export function StatsMock() {
       <div style={lab(M.accent700)}>Stats</div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, marginTop: 8 }}>
         <div>
-          <div style={{ fontSize: 30, fontWeight: 640, letterSpacing: '-0.02em' }}>Test Player&apos;s stats</div>
-          <p style={{ margin: '7px 0 0', fontSize: 14, color: M.ink2 }}>Where Test Player stands vs PGA Tour and the team — and where the strokes are leaking.</p>
+          <div style={{ fontSize: 30, fontWeight: 640, letterSpacing: '-0.02em' }}>Maya Chen&apos;s stats</div>
+          <p style={{ margin: '7px 0 0', fontSize: 14, color: M.ink2 }}>Where Maya stands vs the PGA Tour and the team — and where the strokes are leaking.</p>
         </div>
         <span style={{ fontSize: 12, color: M.ink3, whiteSpace: 'nowrap' }}>← Team stats</span>
       </div>
@@ -97,7 +97,7 @@ export function StatsMock() {
             <span style={{ position: 'absolute', left: '6%', top: -3, width: 12, height: 12, borderRadius: '50%', background: '#fff', boxShadow: '0 0 0 3px rgba(255,255,255,0.18)' }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: M.mono, fontSize: 9, color: '#93d3aa', marginTop: 8 }}>
-            <span>TP</span><span>Team</span><span>Tour</span>
+            <span>Maya</span><span>Team</span><span>Tour</span>
           </div>
           <div style={{ ...monoLabel(9.5, '#93d3aa'), letterSpacing: '0.13em', marginTop: 18 }}>Priorities</div>
           <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 9 }}>

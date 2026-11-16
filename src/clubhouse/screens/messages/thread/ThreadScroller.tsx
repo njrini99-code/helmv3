@@ -5,7 +5,7 @@ import { clock, firstName, type ChConv, type ChThreadItem } from '../model';
 import type { ChMessagesApi } from '../api/types';
 import { convAvatarId, convYear } from '../shared/conv-ui';
 import { HelloCard } from '../HelloCard';
-import { InlineNotice } from '../../../ui/Notices';
+import { FAILURE_COPY, InlineNotice } from '../../../ui/Notices';
 import { EmptyState, Skeleton } from '../../../ui/States';
 import { ListPresence, PresenceRow } from '../../../ui/ListPresence';
 
@@ -59,7 +59,7 @@ export function ThreadScroller({
             <InlineNotice
               code="CH-7202"
               title="This conversation didn’t load"
-              body="Nothing was lost. Try again."
+              body={FAILURE_COPY.page}
               onRetry={api.refetchMsgs}
             />
           ) : api.msgsLoading && !api.msgs.length ? (

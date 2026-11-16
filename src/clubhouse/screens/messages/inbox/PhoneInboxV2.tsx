@@ -8,9 +8,10 @@ import { isMessagesFirstRun, MessagesFirstRun } from '../MessagesFirstRun';
 import { noteTappedFace } from '../thread-v2';
 import { SearchField } from '../../../ui/SearchField';
 import { Icon } from '../../../ui/Icon';
-import { SquarePen } from 'lucide-react';
+import { MessageSquare, SquarePen } from 'lucide-react';
 import { Segmented } from '../../../ui/Segmented';
 import { InlineNotice } from '../../../ui/Notices';
+import { EmptyState } from '../../../ui/States';
 import { ListPresence } from '../../../ui/ListPresence';
 import { ConvRow } from './ConvRow';
 import { PinTile } from './PinTile';
@@ -90,6 +91,11 @@ export function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew
             </section>
           )}
           {nothing && <RailEmpty filter={filter} layout="card" />}
+          {/* No conversations but the inbox is not a first run (announcements to show, or their read failed, GAP-S-01):
+              the empty list says so in one line above the announcements. */}
+          {!api.convs.length && filter === "all" && !searching && (
+            <EmptyState code="CH-7301" kind="first-run" compact icon={MessageSquare} title="No conversations yet" />
+          )}
           {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
           <MessageHits api={api} q={q} nameMatches={list.length} layout="card" />
         </div>

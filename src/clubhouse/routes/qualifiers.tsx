@@ -95,9 +95,9 @@ function NotFound({ id }: { id?: string }) {
         size="page"
         code="CH-09310"
         icon={SearchX}
-        title="That qualifier isn’t on your team"
-        body="It may have been deleted, or the link is from another team."
-        action={<BackToList id={id}>Back to qualifiers</BackToList>}
+        title="This qualifier isn’t here"
+        body="It may have been deleted, or the link is wrong. Everything else is where you left it."
+        action={<BackToList id={id}>Back to Qualifiers</BackToList>}
       />
     </Frame>
   );
@@ -145,3 +145,6 @@ function SelectionDidNotLoad() {
     </Frame>
   );
 }
+
+/** The route's own states, for the preview's fixtures (GAP-S-29). */
+export { NotFound as QualifierNotFound, CoachOnly as QualifierCoachOnly, SelectionDidNotLoad as QualifierSelectionFailed };

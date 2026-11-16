@@ -26,7 +26,7 @@ import { EditorsLetter } from '@/components/baseball/living-annual';
 import { ActivateRecruitingClient } from '@/components/baseball/player-access/ActivateRecruitingClient';
 
 export const metadata = {
-  title: 'Activate Recruiting | Helm Baseball',
+  title: 'Activate Recruiting',
   description: 'Make your profile visible to college coaches.',
 };
 

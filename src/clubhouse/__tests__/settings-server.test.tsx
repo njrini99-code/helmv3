@@ -84,6 +84,7 @@ vi.mock('../screens/settings/Settings', () => ({ Settings: () => null }));
 const gate = vi.hoisted(() => ({ on: true }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: (role: string | null) => gate.on && (role === 'coach' || role === 'player') }));
 vi.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(),
   redirect: (to: string) => {
     throw new Error(`redirect:${to}`);
   },

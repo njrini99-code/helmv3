@@ -92,6 +92,8 @@ search or filter, so it has no filtered empty state.
 | 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step) |
 | 100415 | CH-10314 | `NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN` | New announcement: files that players can't open are left out of the attach list |
 | 100416 | CH-10315 | `PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A` | Plan a trip: nobody chosen has a class during the trip |
+| 100490 | CH-10390 | `A_LINK_TO_A_TASK_THAT_ISNT` | A link to a task (`?task=`) that isn't on the loaded list, when the list is complete and read without error (GAP-S-26) |
+| 100491 | CH-10391 | `A_LINK_TO_A_TRIP_THAT_ISNT` | A link to a trip (`?trip=`) that isn't loaded (GAP-S-26) |
 
 ## 05 — Validation
 
@@ -170,7 +172,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 100701 | — | `WRITES_REFUSE_OFFLINE` | Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab. |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 

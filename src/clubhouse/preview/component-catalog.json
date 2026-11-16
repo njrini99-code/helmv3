@@ -765,7 +765,8 @@
       "file": "src/clubhouse/routes/hub.tsx",
       "group": "routes",
       "exports": [
-        "ClubhouseHubRoute"
+        "ClubhouseHubRoute",
+        "HubNoTeam"
       ],
       "styles": [
         "src/clubhouse/styles/hub.css"
@@ -814,6 +815,8 @@
       "file": "src/clubhouse/routes/practice.tsx",
       "group": "routes",
       "exports": [
+        "PRACTICE_NO_TEAM",
+        "PRACTICE_OFF",
         "PlanFormatRoute",
         "PracticeBuilderRoute",
         "PracticeDrillRoute",
@@ -836,6 +839,9 @@
       "group": "routes",
       "exports": [
         "ClubhouseQualifiersRoute",
+        "QualifierCoachOnly",
+        "QualifierNotFound",
+        "QualifierSelectionFailed",
         "QualifiersNoTeam"
       ],
       "styles": [
@@ -902,7 +908,8 @@
       "file": "src/clubhouse/routes/round-review.tsx",
       "group": "routes",
       "exports": [
-        "ClubhouseRoundReviewRoute"
+        "ClubhouseRoundReviewRoute",
+        "RoundNotFound"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -1139,9 +1146,12 @@
       "file": "src/clubhouse/screens/auth/GateLoading.tsx",
       "group": "screens",
       "exports": [
+        "GateFailed",
         "GateLoading"
       ],
-      "styles": [],
+      "styles": [
+        "src/clubhouse/styles/auth.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -1479,6 +1489,7 @@
       "file": "src/clubhouse/screens/calendar/CalendarSkeleton.tsx",
       "group": "screens",
       "exports": [
+        "CalendarRouteSkeleton",
         "CalendarSkeleton"
       ],
       "styles": [
@@ -3960,6 +3971,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-standing.css",
@@ -5171,6 +5183,7 @@
       "file": "src/clubhouse/screens/hub/HubSkeleton.tsx",
       "group": "screens",
       "exports": [
+        "HubRouteSkeleton",
         "HubSkeleton"
       ],
       "styles": [
@@ -5397,6 +5410,7 @@
       "group": "screens",
       "exports": [
         "LiveDenied",
+        "LiveNoTeam",
         "LiveView"
       ],
       "styles": [
@@ -6978,6 +6992,7 @@
       "file": "src/clubhouse/screens/practice/PracticeSkeletons.tsx",
       "group": "screens",
       "exports": [
+        "PlanFormatSkeleton",
         "PlayerPracticeHomeSkeleton",
         "PlayerPracticePlanSkeleton",
         "PracticeHomeSkeleton",
@@ -8435,6 +8450,7 @@
         "RoundEntrySkeleton",
         "RoundRecoverSkeleton",
         "RoundReviewSkeleton",
+        "RoundRuntimeSkeleton",
         "RoundsSkeleton"
       ],
       "styles": [
@@ -8450,6 +8466,7 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-recover.css",
         "src/clubhouse/styles/rounds-setup.css",
+        "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
@@ -9249,6 +9266,7 @@
       "file": "src/clubhouse/screens/settings/SettingsSkeleton.tsx",
       "group": "screens",
       "exports": [
+        "SettingsRouteSkeleton",
         "SettingsSkeleton"
       ],
       "styles": [
@@ -11036,7 +11054,13 @@
       "exports": [
         "TournamentsLoading"
       ],
-      "styles": [],
+      "styles": [
+        "src/clubhouse/styles/tournaments-compare.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
+        "src/clubhouse/styles/tournaments-live.css",
+        "src/clubhouse/styles/tournaments-review.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -11685,7 +11709,8 @@
       "exports": [
         "AliasWait",
         "CH_ALIAS_WAIT_MS",
-        "NotRebuilt"
+        "NotRebuilt",
+        "PlayersOnlyRounds"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -12998,6 +13023,7 @@
         "PhoneTextAction"
       ],
       "styles": [
+        "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/quick-chat.css",
@@ -16054,6 +16080,7 @@
         "ch-canvas",
         "ch-cpv-full",
         "ch-empty-page",
+        "ch-pbar__icon",
         "ch-root",
         "ch-seg",
         "ch-seg__b",

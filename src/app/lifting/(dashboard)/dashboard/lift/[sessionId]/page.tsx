@@ -32,6 +32,9 @@ import type {
   HelmLiftingSessionWithExercises,
   HelmLiftingReadinessCheckinRow,
 } from '@/lib/types';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Lift Session' };
 
 // ---------------------------------------------------------------------------
 // Athlete ID resolution — mirrors player-sessions.ts

@@ -139,8 +139,16 @@ export interface ChMessagesApi {
   setRead: (conversationId: string, read: boolean) => Promise<boolean>;
 
   announcements: ChAnnouncement[];
-  /** The first announcements read hasn't answered: the list waits, so they don't push it down when they land (CLS). */
+  /**
+   * The inbox waits on the first announcements read: only while it has no conversations to draw, so "no conversations"
+   * never shows as the first run before the announcements answer. With conversations, they draw at once and the
+   * announcements, folded under them, wait in their own section (`annPending`, GAP-S-11).
+   */
   annLoading?: boolean;
+  /** The first announcements read hasn't answered: their section draws its own wait. */
+  annPending?: boolean;
+  /** …and it has been out for 4 seconds: the section says "Still loading…" (CH-7490) until it answers or gives up. */
+  annSlow?: boolean;
   annError: boolean;
   refetchAnns: () => void;
   selectedAnnId: string | null;

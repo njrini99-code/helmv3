@@ -150,6 +150,13 @@ async function getWhatsNewForCoachImpl(): Promise<{
    * viewer's own zone, applied identically on both sides.
    */
   timeZone?: string | null;
+  /**
+   * The feed kinds whose read failed (GAP-S-02). A failed category is not an empty one: the page says which part of the
+   * week didn't load instead of drawing it as "nothing new". When every category fails the action fails.
+   */
+  failed?: Array<'insights' | 'patterns' | 'focus'>;
+  /** The coach has no organisation or no active team: the page draws NoTeam, not an empty week (GAP-S-36). */
+  noTeam?: boolean;
   error?: string;
 }> {
   const session = await getGolfSessionProfile();
@@ -163,7 +170,7 @@ async function getWhatsNewForCoachImpl(): Promise<{
   }
 
   if (!coach.organization_id) {
-    return { success: true, items: [], truncated: false };
+    return { success: true, items: [], truncated: false, noTeam: true };
   }
 
   const supabase = await createClient();
@@ -174,7 +181,7 @@ async function getWhatsNewForCoachImpl(): Promise<{
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (!teamId) {
-      return { success: true, items: [], truncated: false };
+      return { success: true, items: [], truncated: false, noTeam: true };
     }
 
     // The team's zone, read alongside everything else this action already
@@ -189,7 +196,7 @@ async function getWhatsNewForCoachImpl(): Promise<{
     const timeZone: string | null = teamRow?.timezone ?? null;
 
     // Roster — used to scope pattern_validated to team players
-    const { data: rosterRows } = await supabase
+    const { data: rosterRows, error: rosterError } = await supabase
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', teamId)
@@ -322,6 +329,29 @@ async function getWhatsNewForCoachImpl(): Promise<{
       );
     }
 
+    // A failed category is said, never drawn as an empty one (GAP-S-02). The roster read scopes patterns, so its failure
+    // is a patterns failure: with no roster the patterns branch never runs and would read as "no patterns this week".
+    if (rosterError) {
+      await logServerError(`getWhatsNewForCoach roster query failed: ${rosterError.message}`, {
+        action: 'getWhatsNewForCoach.roster',
+        featureArea: 'whats-new',
+        extra: { teamId, errorCode: rosterError.code },
+      });
+    }
+    const failed: Array<'insights' | 'patterns' | 'focus'> = [];
+    if (lifecycleResult.error || detectedResult.error) failed.push('insights');
+    if (rosterError || patternsResult.error) failed.push('patterns');
+    if (focusCreatedResult.error || focusCompletedResult.error) failed.push('focus');
+    const everyReadFailed =
+      !!lifecycleResult.error &&
+      !!detectedResult.error &&
+      !!(rosterError || patternsResult.error) &&
+      !!focusCreatedResult.error &&
+      !!focusCompletedResult.error;
+    if (everyReadFailed) {
+      return { success: false, error: 'Every What’s new category failed to load', failed, timeZone };
+    }
+
     const lifecycleRows = lifecycleResult.data ?? [];
     const detectedRows = detectedResult.data ?? [];
     const patternRows = patternsResult.data ?? [];
@@ -440,7 +470,7 @@ async function getWhatsNewForCoachImpl(): Promise<{
     // No global cap: the 7-day window already bounds the feed, so returning every
     // assembled item keeps the UI's counts honest (B4). `truncated` carries the
     // one remaining honesty caveat (a single category hitting PER_QUERY_LIMIT).
-    return { success: true, items, truncated, timeZone };
+    return { success: true, items, truncated, timeZone, failed };
   } catch (error) {
     await logServerError(
       `getWhatsNewForCoach failed: ${describeError(error)}`,
@@ -467,6 +497,10 @@ export async function getWhatsNewForCoach(): Promise<{
   /** Team IANA zone — pins server and client formatting to one zone so the
    *  feed does not throw React #418 on hydration. See the impl's doc. */
   timeZone?: string | null;
+  /** Kinds whose read failed; see the impl's doc (GAP-S-02). */
+  failed?: Array<'insights' | 'patterns' | 'focus'>;
+  /** No organisation or no active team (GAP-S-36). */
+  noTeam?: boolean;
   error?: string;
 }> {
   return observedGetWhatsNewForCoach();

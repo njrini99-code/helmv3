@@ -7,6 +7,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { CrhStateBlock } from '../../ui/CrhStateBlock';
 import { GroupList, GroupRow } from '../../ui/GroupList';
+import { FAILURE_COPY } from '../../ui/Notices';
 import { LargeTitle, LargeTitleContext } from '../../ui/LargeTitle';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
@@ -51,7 +52,7 @@ export function TeamRosterPhoneCrh({ data, onRetry }: { data: ChPlayerRoster; on
 
         {data.playersError ? (
           <Surface variant="card" level={2} padded={false} title="Teammates">
-            <CrhStateBlock kind="failed" code="CH-3210" title="The roster didn’t load" body="Try again. Nothing was lost.">
+            <CrhStateBlock kind="failed" code="CH-3210" title="The roster didn’t load" body={FAILURE_COPY.page}>
               <Button leftIcon={RotateCw} onClick={onRetry}>
                 Try again
               </Button>

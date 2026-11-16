@@ -215,6 +215,24 @@ describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
     expect(teammateDots()).toHaveLength(0);
   });
 
+  it('GAP-H-10 Accept acts on the proposal the plan card is (by id), never the first one listed', async () => {
+    const writes: ChPlayerWrites = { accept: vi.fn(async () => ({ success: true })), decline: vi.fn(async () => ({ success: true })) };
+    const base = week('proposed');
+    const data: ChPlayerWeek = { ...base, proposals: { ...base.proposals, list: [{ id: 'fa-other', title: 'Lag putting', from: null, coachName: 'Coach Reyes' }, ...base.proposals.list] } };
+    render(<YourWeek load={{ status: 'ready', data }} writes={writes} />, { wrapper: Wrap });
+    const keys = document.querySelector('.ch-hf-prop') as HTMLElement;
+    await userEvent.click(within(keys).getByRole('button', { name: 'Accept' }));
+    expect(writes.accept).toHaveBeenCalledWith('fa-1');
+  });
+
+  it('GAP-H-10 with no proposal that is the plan card, the card offers no Accept or Decline', () => {
+    const base = week('proposed');
+    // Same title, another row: a title is not an identity.
+    const data: ChPlayerWeek = { ...base, proposals: { ...base.proposals, list: [{ id: 'fa-other', title: 'Penalty strokes', from: null, coachName: 'Coach Reyes' }] } };
+    render(<YourWeek load={{ status: 'ready', data }} />, { wrapper: Wrap });
+    expect(document.querySelector('.ch-hf-prop')).toBeNull();
+  });
+
   it('Accept calls the player write once with the proposal id; a refusal shows CH-13004 and keeps the buttons', async () => {
     const writes: ChPlayerWrites = { accept: vi.fn(async () => ({ success: false, error: 'no' })), decline: vi.fn(async () => ({ success: true })) };
     render(<YourWeek load={{ status: 'ready', data: week('proposed') }} writes={writes} />, { wrapper: Wrap });

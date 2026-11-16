@@ -672,10 +672,9 @@ async function dismissInsightImpl(
 
     // Stale-data fix: also revalidate insights + intelligence + alerts pages
     // (previously only /golf/dashboard was busted).
+    // Clubhouse shows insights on CoachHelm; /insights, /intelligence and /alerts only redirect (GAP-R-14).
     revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/insights');
-    revalidatePath('/golf/dashboard/intelligence');
-    revalidatePath('/golf/dashboard/alerts');
+    revalidatePath('/golf/dashboard/coachhelm');
 
     return { success: true };
   } catch (error) {
@@ -768,9 +767,9 @@ async function acknowledgeInsightImpl(
     // in insight-management.ts) revalidates these paths; acknowledging left
     // the dashboard/insights/intelligence list showing the stale
     // pre-acknowledge state until an unrelated navigation happened to bust it.
+    // Clubhouse shows insights on CoachHelm; /insights, /intelligence and /alerts only redirect (GAP-R-14).
     revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/insights');
-    revalidatePath('/golf/dashboard/intelligence');
+    revalidatePath('/golf/dashboard/coachhelm');
 
     return { success: true };
   } catch (error) {

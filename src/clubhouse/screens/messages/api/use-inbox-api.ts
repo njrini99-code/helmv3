@@ -14,8 +14,8 @@ import { completeAnnouncementTask, createEnrichedAnnouncement } from '@/app/golf
  * Package A: the rail, pins, search, mute and read marks, announcements.
  * Part of the `ChMessagesApi` literal that Messages.tsx composes. Add keys here and nowhere else (docs/clubhouse/messages-v2/SEAMS.md).
  */
-export function useInboxApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'pins' | 'typingByConv' | 'convs' | 'convsLoading' | 'convsError' | 'refetchConvs' | 'selectedId' | 'select' | 'searchMessages' | 'openHit' | 'focusMessageId' | 'foundMessageId' | 'messageFocused' | 'muteOf' | 'muteConversation' | 'setRead' | 'announcements' | 'annLoading' | 'annError' | 'refetchAnns' | 'selectedAnnId' | 'selectAnn' | 'announcementDetail' | 'openAnnouncementDocument' | 'acknowledge' | 'completeTask' | 'createAnnouncement'> {
-  const { data, annError, annLoaded, announcementDetail, anns, attempt, badges, conversations, convs, error, focusMessageId, foundMessageId, loadAnns, loading, mark, muteConversation, muteOf, pins, refetch, rowMutes, searchMessages, select, selectedAnnId, selectedId, setAutoOpened, setFocusMessageId, setFoundMessageId, setSelectedAnnId, setSelectedId, shownConvs, toast, typingByConv } = ctx;
+export function useInboxApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'pins' | 'typingByConv' | 'convs' | 'convsLoading' | 'convsError' | 'refetchConvs' | 'selectedId' | 'select' | 'searchMessages' | 'openHit' | 'focusMessageId' | 'foundMessageId' | 'messageFocused' | 'muteOf' | 'muteConversation' | 'setRead' | 'announcements' | 'annLoading' | 'annPending' | 'annSlow' | 'annError' | 'refetchAnns' | 'selectedAnnId' | 'selectAnn' | 'announcementDetail' | 'openAnnouncementDocument' | 'acknowledge' | 'completeTask' | 'createAnnouncement'> {
+  const { data, annError, annLoaded, annSlow, announcementDetail, anns, attempt, badges, conversations, convs, error, focusMessageId, foundMessageId, loadAnns, loading, mark, muteConversation, muteOf, pins, refetch, rowMutes, searchMessages, select, selectedAnnId, selectedId, setAutoOpened, setFocusMessageId, setFoundMessageId, setSelectedAnnId, setSelectedId, shownConvs, toast, typingByConv } = ctx;
   return {
       // The team's channel is pinned first and takes one of the three places (Q-11).
       pins: pinsWithChannel(pins, shownConvs),
@@ -68,7 +68,10 @@ export function useInboxApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'pins' | '
         return ok;
       },
       announcements: anns,
-      annLoading: !annLoaded,
+      // The inbox waits on announcements only while it has no conversations to draw (GAP-S-11); with some, they draw now.
+      annLoading: !annLoaded && !shownConvs.length,
+      annPending: !annLoaded,
+      annSlow: !annLoaded && annSlow,
       annError,
       refetchAnns: () => void loadAnns(),
       selectedAnnId,

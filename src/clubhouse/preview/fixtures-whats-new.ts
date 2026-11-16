@@ -1,5 +1,5 @@
 import type { WhatsNewItem } from '@/app/golf/actions/whats-new';
-import { toWhatsNew, WHATS_NEW_FAILED, type ChWhatsNew } from '../data/whats-new-shape';
+import { toWhatsNew, WHATS_NEW_FAILED, WHATS_NEW_NO_TEAM, type ChWhatsNew } from '../data/whats-new-shape';
 
 /** What's new sample data: a week of the fixture team’s CoachHelm activity, read at 4 pm Eastern on 14 October 2026. */
 const NOW = Date.UTC(2026, 9, 14, 20, 0);
@@ -20,3 +20,10 @@ export const PREVIEW_WHATS_NEW: ChWhatsNew = toWhatsNew(ITEMS, { nowMs: NOW, zon
 export const PREVIEW_WHATS_NEW_TRUNCATED: ChWhatsNew = toWhatsNew(ITEMS, { nowMs: NOW, zone: ZONE, truncated: true });
 export const PREVIEW_WHATS_NEW_EMPTY: ChWhatsNew = toWhatsNew([], { nowMs: NOW, zone: ZONE });
 export const PREVIEW_WHATS_NEW_FAILED: ChWhatsNew = WHATS_NEW_FAILED;
+/** Patterns didn't load; insights and focus areas did (GAP-S-02, CH-13285). */
+export const PREVIEW_WHATS_NEW_PARTIAL: ChWhatsNew = toWhatsNew(
+  ITEMS.filter((i) => i.type !== 'pattern_validated'),
+  { nowMs: NOW, zone: ZONE, failed: ['patterns'] },
+);
+/** A coach with no active team (GAP-S-36, CH-13385). */
+export const PREVIEW_WHATS_NEW_NO_TEAM: ChWhatsNew = WHATS_NEW_NO_TEAM;

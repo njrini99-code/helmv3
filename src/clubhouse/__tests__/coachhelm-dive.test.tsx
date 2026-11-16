@@ -654,6 +654,16 @@ describe('the Deep dive screen', () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
+  it('GAP-H-17 on a desk, choosing a read moves focus to its title (the detail of the split view), and the first draw takes no focus', async () => {
+    show();
+    expect(document.activeElement?.tagName).not.toBe('H2');
+    await userEvent.click(within(rail()).getByRole('button', { name: /Penalty strokes/ }));
+    const read = screen.getByRole('article', { name: 'Penalty strokes: 1.1 per round' });
+    const title = within(read).getByRole('heading', { level: 2 });
+    expect(title).toHaveFocus();
+    expect(title.getAttribute('tabindex')).toBe('-1');
+  });
+
   it('what was measured: the number, the metric, the dates, the evidence the Board draws, and the sample with its confidence word', () => {
     show();
     const part = within(article()).getByRole('region', { name: 'What was measured' });

@@ -36,7 +36,8 @@ async function deletePracticePlanImpl(input: { planId: string }): Promise<Practi
   const sb = await createClient();
   const { error } = await practiceTables(sb).from('golf_practice_plans').delete().eq('id', input.planId);
   if (error) return { success: false, error: 'Couldn’t delete the plan.', code: 'CH-17008', unavailable: isPracticeMissing(error.code) };
-  revalidatePath('/golf/dashboard/documents');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/team-hub');
   return { success: true };
 }
 

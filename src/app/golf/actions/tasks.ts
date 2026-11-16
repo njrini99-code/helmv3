@@ -173,7 +173,8 @@ async function completeTaskImpl(
 
     await syncTaskStatusFromAssignments(taskId);
 
-    revalidatePath('/golf/dashboard/tasks');
+    // Tasks are Team Hub’s Tasks tab; /tasks and /tasks/templates only redirect (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
@@ -303,7 +304,8 @@ async function uncompleteTaskImpl(taskId: string): Promise<ActionResult> {
 
     await syncTaskStatusFromAssignments(taskId);
 
-    revalidatePath('/golf/dashboard/tasks');
+    // Tasks are Team Hub’s Tasks tab; /tasks and /tasks/templates only redirect (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
@@ -548,7 +550,8 @@ async function createTaskImpl(
       }
     }
 
-    revalidatePath('/golf/dashboard/tasks');
+    // Tasks are Team Hub’s Tasks tab; /tasks and /tasks/templates only redirect (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true, data: { taskId: task.id } };
   } catch (error) {
@@ -784,7 +787,8 @@ async function createRecurringTaskImpl(
       }
     }
 
-    revalidatePath('/golf/dashboard/tasks');
+    // Tasks are Team Hub’s Tasks tab; /tasks and /tasks/templates only redirect (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     updateTag(CACHE_TAGS.DASHBOARD);
     return {
       success: true,
@@ -961,7 +965,8 @@ async function deleteTaskImpl(taskId: string): Promise<ActionResult> {
       return { success: false, error: deleteError.message };
     }
 
-    revalidatePath('/golf/dashboard/tasks');
+    // Tasks are Team Hub’s Tasks tab; /tasks and /tasks/templates only redirect (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
@@ -1060,7 +1065,8 @@ async function setTaskReminderImpl(
       return { success: false, error: updateError.message };
     }
 
-    revalidatePath('/golf/dashboard/tasks');
+    // Tasks are Team Hub’s Tasks tab; /tasks and /tasks/templates only redirect (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true };
   } catch (error) {
     await logServerError(`[setTaskReminder Error]: ${describeError(error)}`, { action: 'tasks.setTaskReminder' });
@@ -1127,7 +1133,8 @@ async function clearTaskReminderImpl(taskId: string): Promise<ActionResult> {
       return { success: false, error: updateError.message };
     }
 
-    revalidatePath('/golf/dashboard/tasks');
+    // Tasks are Team Hub’s Tasks tab; /tasks and /tasks/templates only redirect (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true };
   } catch (error) {
     await logServerError(`[clearTaskReminder Error]: ${describeError(error)}`, { action: 'tasks.clearTaskReminder' });
@@ -1635,7 +1642,8 @@ async function createTaskFromTemplateImpl(
       }
     }
 
-    revalidatePath('/golf/dashboard/tasks');
+    // Tasks are Team Hub’s Tasks tab; /tasks and /tasks/templates only redirect (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true, data: { taskId: task.id } };
   } catch (error) {
@@ -1769,8 +1777,8 @@ async function seedDefaultTemplatesImpl(teamId: string): Promise<ActionResult> {
       return { success: false, error: 'Failed to seed templates' };
     }
 
-    revalidatePath('/golf/dashboard/tasks');
-    revalidatePath('/golf/dashboard/tasks/templates');
+    // Tasks are Team Hub’s Tasks tab; /tasks and /tasks/templates only redirect (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true };
   } catch (error) {
     await logServerError(`[seedDefaultTemplates Error]: ${describeError(error)}`, { action: 'tasks.seedDefaultTemplates' });

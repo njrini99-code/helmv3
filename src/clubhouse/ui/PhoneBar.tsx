@@ -169,9 +169,9 @@ export function PhoneBar(props: ChPhoneBarParts) {
 }
 
 /** A 44px icon action in the top bar. */
-export function PhoneIconAction({ icon, label, onClick, pressed }: { icon: LucideIcon; label: string; onClick: () => void; pressed?: boolean }) {
+export function PhoneIconAction({ icon, label, onClick, pressed, disabled }: { icon: LucideIcon; label: string; onClick: () => void; pressed?: boolean; disabled?: boolean }) {
   return (
-    <button type="button" className="ch-pbar__icon" aria-label={label} aria-pressed={pressed} onClick={onClick}>
+    <button type="button" className="ch-pbar__icon" aria-label={label} aria-pressed={pressed} aria-disabled={disabled || undefined} onClick={() => !disabled && onClick()}>
       <Icon icon={icon} size={20} />
     </button>
   );

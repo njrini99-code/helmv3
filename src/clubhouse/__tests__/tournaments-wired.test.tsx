@@ -63,7 +63,7 @@ describe('Tournaments route states', () => {
   it('CH-16304: an event that is not this team’s, with the way back', () => {
     const { container } = render(<TourNotice kind="not_found" phone={false} />);
     expect(container.querySelector('[data-ch-code="CH-16304"]')).not.toBeNull();
-    expect(screen.getByRole('link', { name: 'Back to tournaments' }).getAttribute('href')).toBe('/golf/dashboard/tournaments');
+    expect(screen.getByRole('link', { name: 'Back to Tournaments' }).getAttribute('href')).toBe('/golf/dashboard/tournaments');
   });
 
   it('CH-16305: a player on a coach’s page', () => {

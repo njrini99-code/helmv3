@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/players/[playerId]/game"
       component="LegacyPlayerInsightPage"
-      title="Failed to load player"
-      message="We couldn't load this player's data. Please try again."
       homePath="/golf/dashboard/roster"
     />
   );

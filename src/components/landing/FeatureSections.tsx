@@ -101,7 +101,7 @@ export function PerformanceSection() {
             delay={150}
             className="mt-[30px]"
             role="img"
-            aria-label="Preview of a player detail card: Test Player, scoring average 70.5, strokes gained +1.2, GIR 61%, improving over the last six rounds, focus on lag putting"
+            aria-label="Preview of a player detail card: Maya Chen, scoring average 70.5, strokes gained +1.2, GIR 61%, improving over the last six rounds, focus on lag putting"
           >
             <div aria-hidden="true">
               <PlayerDetailCard />

@@ -248,11 +248,12 @@ that landed (C-17; busy time 2026-10-17).
 | 60656 | CH-6044 | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | A round or the tournament is restored |
 | 60657 | CH-6040 | `A_TOURNAMENT_IS_SET_UP_FROM_THE` | A tournament is set up from the editor (P-5, `golf_tournaments_v1`) |
 | 60658 | CH-6024 | `OPENING_A_FILE_ATTACHED_TO_AN_EVENT` | Opening a file attached to an event fails (the signed link can't be made, or the file has no stored copy) |
+| 60690 | CH-6290 | `A_PRACTICES_PLAN_READ_FAILS` | A practice's plan read fails (`readEventPlans` answers an error that is not "table missing"; GAP-S-28) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10609 CH-1208,
 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211,
-10615 CH-1270, 10616 CH-1271, 10617 CH-1004.
+10615 CH-1270, 10616 CH-1271, 10617 CH-1004, 10690 CH-1290.
 
 ## 07 — Network / offline
 
@@ -269,7 +270,7 @@ file stays, and the toast says nothing was changed (60701).
 | 60701 | — | `FILE_REMOVAL_REFUSES_OFFLINE` | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 

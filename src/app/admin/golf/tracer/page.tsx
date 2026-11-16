@@ -17,6 +17,9 @@ import { StuckRoundsPanel } from './StuckRoundsPanel';
 import { TracerPlayerList } from './TracerPlayerList';
 import { TracerIncidentRow } from './TracerIncidentRow';
 import { FlightTraceExplorer } from './FlightTraceExplorer';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Tracer' };
 
 export const dynamic = 'force-dynamic';
 

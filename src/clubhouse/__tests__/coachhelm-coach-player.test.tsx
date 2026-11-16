@@ -154,7 +154,7 @@ describe('130807 130104 the scope check: on this coach’s team, or one page for
   it('CH-13209 a membership read that fails is the page’s "didn’t load", never "not on your team"', async () => {
     tables.current = { ...tables.current, golf_team_members: { error: { message: 'boom' } } };
     render(wrap(await page({ view: 'profile', player: PID })));
-    expect(code('CH-13209')!.textContent).toMatch(/This player’s page didn’t load.*Nothing is lost\. Try again in a moment\./);
+    expect(code('CH-13209')!.textContent).toMatch(/This player’s page didn’t load.*Nothing you saved is lost\. Try again\./);
     expect(code('CH-13311')).toBeNull();
   });
 

@@ -135,8 +135,8 @@ async function setTeamSgBaselineImpl(
     return { success: false, error: 'Saved, but recompute failed — try again' };
   }
 
+  // Team stats is /stats (GAP-R-10): /stats/team only redirects there.
   revalidatePath('/golf/dashboard/stats');
-  revalidatePath('/golf/dashboard/stats/team');
   revalidatePath('/golf/dashboard/coachhelm');
   revalidatePath('/golf/dashboard/settings/coaching-intelligence');
   return { success: true };

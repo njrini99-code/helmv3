@@ -61,6 +61,7 @@ that loads on its own. v2 timing: nothing for 150ms, then a fade (the shell's
 | 70209 | CH-7409 | `THE_SHARED_FILES_ARE_LOADING` | The shared files are loading (Details) |
 | 70210 | CH-7410 | `THE_ADD_SHEETS_LIST_IS_LOADING` | The Add sheet's list is loading |
 | 70211 | CH-7411 | `THE_SEEN_BY_LIST_IS_LOADING` | The Seen by list is loading |
+| 70290 | CH-7490 | `THE_ANNOUNCEMENTS_READ_HASNT_ANSWERED_WHILE_THE` | The announcements read hasn’t answered while the conversations have (GAP-S-11) |
 
 From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
@@ -143,12 +144,12 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70614 | CH-7018 | `ADDING_SOMEONE_TO_A_GROUP_FAILS` | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) |
 | 70615 | CH-7020 | `COPYING_A_MESSAGE_FAILS` | Copying a message fails (phone, from the long-press sheet; desktop, from the message menu) |
 | 70616 | CH-7021 | `A_SHARED_FILE_WONT_OPEN` | A shared file won't open (Details › Files, or an announcement's Files) |
-| 70617 | CH-7201 | `CONVERSATIONS_DONT_LOAD` | Conversations don't load |
+| 70617 | CH-7201 | `CONVERSATIONS_DONT_LOAD` | Conversations don't load, or the read hasn’t answered in 15 seconds (GAP-S-11) |
 | 70618 | CH-7202 | `A_CONVERSATIONS_MESSAGES_DONT_LOAD` | A conversation's messages don't load |
 | 70619 | CH-7203 | `MESSAGE_SEARCH_DOESNT_LOAD` | Message search doesn't load |
 | 70620 | CH-7204 | `GROUP_MEMBERS_DONT_LOAD` | Group members don't load |
 | 70621 | CH-7205 | `THE_TEAM_LIST_DOESNT_LOAD` | The team list doesn't load (New message) |
-| 70622 | CH-7206 | `ANNOUNCEMENTS_DONT_LOAD` | Announcements don't load |
+| 70622 | CH-7206 | `ANNOUNCEMENTS_DONT_LOAD` | Announcements don't load, or the read hasn’t answered in 15 seconds (GAP-S-11) |
 | 70623 | CH-7207 | `AN_ANNOUNCEMENTS_REPLIES_TASKS_AND_FILES_DONT` | An announcement's replies, tasks and files don't load |
 | 70624 | CH-7208 | `THE_MUTE_SETTING_DOESNT_LOAD` | The mute setting doesn't load |
 | 70625 | CH-7209 | `A_MESSAGES_ATTACHMENTS_DONT_LOAD` | A message's attachments don't load |
@@ -191,7 +192,7 @@ CH-1905.
 | 70701 | CH-7005 | `THE_NETWORK_DROPS_MID_SEND` | The network drops mid-send (Safari's "Load failed", Chrome's "Failed to fetch", Firefox's "NetworkError…": the same test the bubble's CH-7017 uses, so the toast and the bubble agree; the browser's text is never shown) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 

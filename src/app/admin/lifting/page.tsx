@@ -12,6 +12,9 @@ import { parseView, type AdminViewOf } from '@/lib/admin/views';
 import { ViewRail } from '../_components/ViewRail';
 import { LiftingFlowView } from './_components/LiftingFlowView';
 import { SectionLabel } from '../_components/SectionLabel';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Lift Lab' };
 
 export const dynamic = 'force-dynamic';
 

@@ -10,7 +10,7 @@ vi.mock('../in-app', () => ({ recordInAppNotification }));
 vi.mock('../email', () => ({ sendEmailNotification }));
 vi.mock('../push', () => ({}));
 
-const { notifyDevPlanAssigned, FAIRWAY_DEV_PLAN_PATH } = await import('../index');
+const { notifyDevPlanAssigned, DEV_PLAN_PATH } = await import('../index');
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -18,11 +18,11 @@ beforeEach(() => {
 });
 
 describe('notifyDevPlanAssigned', () => {
-  it('without a path it links Fairway’s address, in the bell row and in the email', async () => {
+  it('without a path it links Stats’ Development tab, never the retired Fairway address (GAP-R-14)', async () => {
     await notifyDevPlanAssigned('u1', 'p@example.com', 'Lag putting', 'putting', 'Coach Reyes');
-    expect(FAIRWAY_DEV_PLAN_PATH).toBe('/golf/dashboard/my-development');
-    expect(recordInAppNotification).toHaveBeenCalledWith(expect.objectContaining({ type: 'dev_plan_assigned', actionUrl: '/golf/dashboard/my-development' }));
-    expect(sendEmailNotification).toHaveBeenCalledWith('dev_plan_assigned', 'u1', 'p@example.com', expect.objectContaining({ planUrl: 'https://app.example.test/golf/dashboard/my-development' }));
+    expect(DEV_PLAN_PATH).toBe('/golf/dashboard/stats?tab=dev');
+    expect(recordInAppNotification).toHaveBeenCalledWith(expect.objectContaining({ type: 'dev_plan_assigned', actionUrl: '/golf/dashboard/stats?tab=dev' }));
+    expect(sendEmailNotification).toHaveBeenCalledWith('dev_plan_assigned', 'u1', 'p@example.com', expect.objectContaining({ planUrl: 'https://app.example.test/golf/dashboard/stats?tab=dev' }));
   });
 
   it('with a path it links that screen, in the bell row and in the email', async () => {

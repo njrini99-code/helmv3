@@ -957,13 +957,16 @@ describe('Roster · the redesigned screens: changes, failures and edge states', 
     expect(code('CH-3305')!.closest('.ch-surface')!.querySelector('svg.ch-formline, .ch-rsx-chart svg')).toBeNull();
   });
 
-  it('CH-3212 when CoachHelm\u2019s counts did not load the profile shows dashes and says so, never zero or "No reads yet"', () => {
+  it('CH-3212 when CoachHelm\u2019s counts did not load the profile says so in one line with Try again, never a dash in a sentence, zero or "No reads yet" (GAP-S-09)', () => {
     phone(PREVIEW_ROSTER_HELM_FAILED);
     expect(code('CH-3212')).not.toBeNull();
-    expect(code('CH-3212')!.textContent).toMatch(/— costing strokes · — working/);
-    expect(screen.getByText(/Didn’t load\. Refresh to try again\./)).toBeTruthy();
-    expect(code('CH-3212')!.textContent).not.toMatch(/No reads yet/);
-    expect(code('CH-3212')!.textContent).not.toMatch(/\b0 costing strokes/);
+    expect(code('CH-3212')!.textContent).toMatch(/Counts didn’t load/);
+    expect(within(code('CH-3212') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    const panel = code('CH-3212')!.closest('section')!;
+    expect(panel.textContent).not.toMatch(/—/);
+    expect(panel.textContent).not.toMatch(/costing strokes/);
+    expect(panel.textContent).not.toMatch(/No reads yet/);
+    expect(panel.textContent).not.toMatch(/\b0 costing strokes/);
   });
 
   it('31402 Try again on a roster that did not load asks the server for the whole page again', async () => {

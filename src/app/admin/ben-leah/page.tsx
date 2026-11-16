@@ -6,6 +6,9 @@ import { TabHeader } from '../_components/TabHeader';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { BenLeahForm } from './BenLeahForm';
 import { BenLeahIssueBoard } from './BenLeahIssueBoard';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Ben + Leah' };
 
 export const dynamic = 'force-dynamic';
 
