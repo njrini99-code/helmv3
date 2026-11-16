@@ -52,7 +52,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
   const baseline = sgBaseline(data.tour);
   const ref = (label: string) => (coach ? cmp(label)?.team : cmp(label)?.bench) ?? null;
-  const refName = coach ? 'Team' : 'Tour';
+  const refName = coach ? 'Rest of team' : 'Tour';
   const first = data.firstName;
 
   // 1 · strokes gained
@@ -175,7 +175,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
           <EmptyState compact code="CH-5309" title="No strokes gained in this window." body="Strokes gained by leg appears after three rounds with shots." />
         ) : (
           <Vis title="Where the strokes go" note="The same number split by the shots it counts. Right of the line gains strokes, left loses them.">
-            <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} onOpen={onOpenLeg} />
+            <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Rest of team' : null} onOpen={onOpenLeg} />
           </Vis>
         )}
         {sg != null && (
