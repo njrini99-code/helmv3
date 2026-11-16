@@ -468,6 +468,17 @@
   border-radius: 999px;
   transform-origin: 0 50%;
 }
+/* A figure that is not a rate is a dot on its measure's fixed span, better to the right, never a length (CH-04). */
+.ch-shs-cmp-track.is-dot {
+  position: relative;
+  overflow: visible;
+}
+.ch-shs-cmp-track.is-dot i {
+  position: absolute;
+  top: 0;
+  width: calc(14 * var(--ch-type-k));
+  transform: translateX(-50%);
+}
 .ch-shs-fill-gain {
   background: var(--ch-shs-s-gain-fill);
 }

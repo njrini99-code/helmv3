@@ -185,10 +185,11 @@ describe('the score, GIR, fairways and putts of each round', () => {
       round('b', '2026-09-02', { total_score: 75, total_putts: null }),
       round('a', '2026-09-01', { total_score: 73, total_gir: 18, total_gir_possible: 18 }),
     ]);
+    // Each point carries its date, so a line spaces rounds by real time (stats and charts audit 2026-11-15, CH-11).
     expect(s.score).toEqual([
-      { label: 'Sep 1', value: 73 },
-      { label: 'Sep 2', value: 75 },
-      { label: 'Sep 3', value: 71 },
+      { label: 'Sep 1', value: 73, at: '2026-09-01' },
+      { label: 'Sep 2', value: 75, at: '2026-09-02' },
+      { label: 'Sep 3', value: 71, at: '2026-09-03' },
     ]);
     expect(s.gir.map((p) => p.value)).toEqual([100, 50, 50]);
     expect(s.fairway.map((p) => p.label)).toEqual(['Sep 1', 'Sep 2']);
@@ -758,12 +759,21 @@ describe('Rounds tab · bests and comparison', () => {
     expect(tile(bests, 'Fewest putts').textContent).toContain('Oakmont CC · Oct 12');
     const cmp = card('rx-compare');
     expect(cmp.querySelector('th[scope="col"]:nth-child(2)')!.textContent).toBe('Latest 10');
-    // A change is coloured only past its standard error (A1): scoring's +0.7 is inside its 1.6, so it is printed in plain ink;
-    // putts 29.8 against 30.6 clears its 0.7 (better: green), greens' −5.6 points its 5.4 (worse: amber).
+    // A change is coloured only past two standard errors (A1, the 2 SE rule of the stats and charts audit, CH-05): scoring's +0.7
+    // is inside its 1.6, putts 29.8 against 30.6 is just over one of its 0.7, and greens' −5.6 points one of its 5.4, so all three
+    // are printed in plain ink.
     expect(cells(rowOf(cmp, 'Scoring avg'))).toEqual(['73.6', '72.9', '+0.7']);
-    expect(rowOf(cmp, 'Scoring avg').querySelectorAll('td')[2]!.className).not.toMatch(/ch-(gain|loss)/);
-    expect(rowOf(cmp, 'Putts per round').querySelectorAll('td')[2]!.className).toContain('ch-gain');
-    expect(rowOf(cmp, 'Greens in regulation').querySelectorAll('td')[2]!.className).toContain('ch-loss');
+    for (const row of ['Scoring avg', 'Putts per round', 'Greens in regulation']) expect(rowOf(cmp, row).querySelectorAll('td')[2]!.className).not.toMatch(/ch-(gain|loss)/);
+    cleanup();
+    // Measured at half the error, putts' and greens' changes clear two of them: putts down is better (green), greens down is worse
+    // (amber). Scoring's +0.7 against 0.8 still does not.
+    const p = player();
+    showPlayer({ ...p, extra: { ...p.extra, compare: { ...p.extra.compare!, rows: p.extra.compare!.rows.map((r) => ({ ...r, se: r.se == null ? null : r.se / 2 })) } } });
+    await openTab(/Rounds/);
+    const sharp = card('rx-compare');
+    expect(rowOf(sharp, 'Scoring avg').querySelectorAll('td')[2]!.className).not.toMatch(/ch-(gain|loss)/);
+    expect(rowOf(sharp, 'Putts per round').querySelectorAll('td')[2]!.className).toContain('ch-gain');
+    expect(rowOf(sharp, 'Greens in regulation').querySelectorAll('td')[2]!.className).toContain('ch-loss');
   });
 
   it('the comparison says the cut in force: Last 20 is the latest 20 against the 20 before them, never "10"', async () => {

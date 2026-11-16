@@ -653,6 +653,17 @@
   pointer-events: stroke;
   cursor: pointer;
 }
+/* A lone week has no stroke to catch the pointer: its dot takes it over a disc as wide as the line's band. */
+.ch-sgt__hit.is-pt {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+/* A player's week between two empty weeks, a dot in the line's own ink and fade (CH-15). */
+.ch-sgt__pt {
+  pointer-events: none;
+  transition: fill-opacity var(--ch-dur-quick) var(--ch-ease);
+}
 /* Two classes, so the base reset (`.ch-root p`) doesn't take the margin. */
 .ch-sgt .ch-note {
   margin: 6px 16px 0;
@@ -5041,21 +5052,52 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-tp__area {
   stroke: none;
 }
-.ch-st[data-canopy] .ch-tp__dot {
-  stroke-width: 2;
-  fill: var(--ch-ivory-25);
+.ch-st[data-canopy] .ch-tp__plot {
+  position: relative;
+  display: block;
+  min-width: 0;
 }
-.ch-st[data-canopy] .ch-tp__svg.is-gain :is(.ch-tp__line,
-.ch-tp__dot) {
+/* The end dot sits on the stretched drawing as its own box, so it stays round at any cell width (CH-23). */
+.ch-st[data-canopy] .ch-tp__dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--ch-text-tertiary);
+  border-radius: 50%;
+  background: var(--ch-ivory-25);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.ch-st[data-canopy] .ch-tp__svg.is-gain .ch-tp__line {
   stroke: var(--ch-chart-gain);
 }
-.ch-st[data-canopy] .ch-tp__svg.is-loss :is(.ch-tp__line,
-.ch-tp__dot) {
+.ch-st[data-canopy] .ch-tp__svg.is-loss .ch-tp__line {
   stroke: var(--ch-chart-loss);
 }
-.ch-st[data-canopy] .ch-tp__svg.is-flat :is(.ch-tp__line,
-.ch-tp__dot) {
+.ch-st[data-canopy] .ch-tp__svg.is-flat .ch-tp__line {
   stroke: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-tp__plot.is-gain .ch-tp__dot {
+  border-color: var(--ch-chart-gain);
+}
+.ch-st[data-canopy] .ch-tp__plot.is-loss .ch-tp__dot {
+  border-color: var(--ch-chart-loss);
+}
+/* A week between two empty weeks keeps a dot in the line's ink: the broken line has no segment for it (CH-15). */
+.ch-st[data-canopy] .ch-tp__pt {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ch-text-tertiary);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.ch-st[data-canopy] .ch-tp__plot.is-gain .ch-tp__pt {
+  background: var(--ch-chart-gain);
+}
+.ch-st[data-canopy] .ch-tp__plot.is-loss .ch-tp__pt {
+  background: var(--ch-chart-loss);
 }
 .ch-st[data-canopy] .ch-tp__n {
   font: var(--ch-type-13);
@@ -5243,6 +5285,9 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-sgt__line {
   stroke: var(--ch-ivory-100);
+}
+.ch-st[data-canopy] .ch-sgt__pt {
+  fill: var(--ch-ivory-100);
 }
 .ch-st[data-canopy] .ch-sgt__line.is-on,
 .ch-st[data-canopy] .ch-sgt__front {

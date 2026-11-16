@@ -70,6 +70,8 @@ export interface ChRosterPlayer {
    */
   sgWindow?: ChSgWindow | null;
   trend: number[];
+  /** Each trend score's date (YYYY-MM-DD), beside `trend` (CH-11); absent in older fixtures, when the line spaces rounds evenly. */
+  trendDates?: string[];
   form: ChForm;
   recent: Array<{ id: string; course: string; date: string; score: number; toPar: number | null }>;
   focusAreas: number | null;
@@ -287,6 +289,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
       sgLegs: sg.legs,
       sgWindow: sg.total == null ? null : sgWindowOf(wideByPlayer.get(p.id) ?? []),
       trend: s.trend,
+      trendDates: s.trendDates,
       form: s.status,
       recent: latest.slice(0, 3).map((r) => ({
         id: r.id,

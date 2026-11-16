@@ -33,6 +33,14 @@ Phase is before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P016__compare__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | compare (coach), 1440x932px, default; /clubhouse-preview/tournament-compare |
+| `P016__compare__coach__1440x932__default__before__c882964.png` | before | c882964 | compare (coach), 1440x932px, default; /clubhouse-preview/tournament-compare |
+| `P016__compare__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | compare (coach), 402px, default; /clubhouse-preview/tournament-compare |
+| `P016__compare__coach__402__default__before__c882964.png` | before | c882964 | compare (coach), 402px, default; /clubhouse-preview/tournament-compare |
+| `P016__history__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | history (coach), 1440x932px, default; /clubhouse-preview/tournament-history |
+| `P016__history__coach__1440x932__default__before__c882964.png` | before | c882964 | history (coach), 1440x932px, default; /clubhouse-preview/tournament-history |
+| `P016__history__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | history (coach), 402px, default; /clubhouse-preview/tournament-history |
+| `P016__history__coach__402__default__before__c882964.png` | before | c882964 | history (coach), 402px, default; /clubhouse-preview/tournament-history |
 
 ## Open verification gaps
 

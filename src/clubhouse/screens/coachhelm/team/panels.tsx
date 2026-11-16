@@ -13,6 +13,7 @@ import type { ChInsight } from '../../../data/coachhelm-shape';
 import { coachReadHref, playerFileHref, readHref } from '../../../data/coachhelm-views-shape';
 import type { CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { formatFixed, formatSigned } from '../../../lib/format';
+import { parColumns, zeroBars } from '../../../lib/chart';
 import { Icon } from '../../../ui/Icon';
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import { CorrectionChips } from '../Corrections';
@@ -44,17 +45,25 @@ function Head({ lead, name, line, onClose }: { lead: React.ReactNode; name: stri
   );
 }
 
-/** Your figure, the team pool and the Tour, as bars from zero in one scale; the Team row only with a pool of five or more (W-TEAM-11). */
+/**
+ * Your figure, the team pool and the Tour, as bars from zero in one scale; the Team row only with a pool of five or more
+ * (W-TEAM-11). A signed figure (strokes gained) runs from a zero rule, a loss to its left (stats and charts audit 2026-11-15,
+ * CH-23): a negative value once drew no bar at all.
+ */
 function Comparison({ read, first }: { read: ChInsight; first: string }) {
   const c = read.compare;
   if (!c || c.own == null) return null;
-  const mx = Math.max(c.own, c.team ?? 0, c.tour ?? 0) * 1.08 || 1;
+  const rows: Array<[string, number, string]> = [[first, c.own, 'you']];
+  if (c.team != null) rows.push(['Team', c.team, '']);
+  if (c.tour != null) rows.push(['Tour', c.tour, 'tour']);
+  const { zero, bars } = zeroBars(rows.map(([, v]) => v));
   const fmt = (v: number) => `${formatFixed(v, c.unit === '%' ? 0 : Math.abs(v) < 10 ? 2 : 1)}${c.unit}`;
-  const row = (label: string, v: number, cls: string) => (
+  const row = ([label, v, cls]: [string, number, string], k: number) => (
     <div className="ld" key={label}>
       <span>{label}</span>
       <span className="t">
-        <i className={cls} style={{ width: `${(v / mx) * 100}%` }} />
+        {zero > 0 && <b style={{ left: `${zero}%` }} />}
+        <i className={cls} style={{ left: `${bars[k]!.left}%`, width: `${bars[k]!.width}%` }} />
       </span>
       <span className="v">{fmt(v)}</span>
     </div>
@@ -65,22 +74,26 @@ function Comparison({ read, first }: { read: ChInsight; first: string }) {
         <h4>{read.evidence.label}</h4>
         <span className="meta">{c.higherBetter ? 'Higher is better' : 'Lower is better'}</span>
       </div>
-      <div className="lad">
-        {row(first, c.own, 'you')}
-        {c.team != null && row('Team', c.team, '')}
-        {c.tour != null && row('Tour', c.tour, 'tour')}
-      </div>
+      <div className="lad">{rows.map(row)}</div>
       {c.team == null && <p className="nordss ch-htb-ladnote">Team: not measured for this read</p>}
     </section>
   );
 }
 
-/** The read's own rounds, holes and why, when the host has them (06 CP shared read sheet). Each only when the read has it. */
+/** The least range the read's score strip is drawn on, in strokes to par (CH-14). */
+const EVIDENCE_MIN_SPAN = 10;
+
+/**
+ * The read's own rounds, holes and why, when the host has them (06 CP shared read sheet). Each only when the read has it. The
+ * score strip runs from a par line, better up, as every score chart does (stats and charts audit 2026-11-15, CH-14): it once drew
+ * taller for further over par. Penalties are a count, plain bars from zero with no floor.
+ */
 function ReadEvidence({ deep, penalties, coach }: { deep: ChDeepInsight; penalties?: ReadonlyArray<{ label: string; value: number }> | null; coach: boolean }) {
   const toPar = deep.rounds.strip;
-  const strip = penalties?.length ? penalties.map((p) => p.value) : toPar;
-  const low = strip.length ? Math.min(0, ...strip) : 0;
-  const span = (strip.length ? Math.max(...strip) : 1) - low || 1;
+  const counting = !!penalties?.length;
+  const strip = counting ? penalties!.map((p) => p.value) : toPar;
+  const most = Math.max(1, ...strip);
+  const par = counting ? null : parColumns(strip, EVIDENCE_MIN_SPAN);
   const b = deep.base;
   const meta = [b.evidence.sample, b.evidence.window, deep.firmness, b.evidence.asOf?.toLowerCase()].filter(Boolean).join(' · ');
   return (
@@ -89,12 +102,22 @@ function ReadEvidence({ deep, penalties, coach }: { deep: ChDeepInsight; penalti
         <section className="card">
           <div className="ch">
             <h4>{penalties?.length ? `Penalties in the last ${strip.length} rounds` : `Score to par, last ${strip.length} rounds`}</h4>
+            {par && <span className="meta">Under par above the line</span>}
           </div>
-          <div className="ch-hf-strip" aria-hidden="true">
-            {strip.map((v, i) => (
-              <i key={i} className={penalties?.length && v >= 2 ? 'hi' : ''} style={{ height: `${Math.max(5, ((v - low) / span) * 100)}%` }} />
-            ))}
-          </div>
+          {par ? (
+            <div className="ch-hf-strip is-par" aria-hidden="true">
+              <b style={{ top: `${par.zero}%` }} />
+              {par.bars.map((bar, i) => (
+                <i key={i} className={bar.under ? 'is-under' : ''} style={{ top: `${bar.top}%`, height: `${bar.height}%` }} />
+              ))}
+            </div>
+          ) : (
+            <div className="ch-hf-strip" aria-hidden="true">
+              {strip.map((v, i) => (
+                <i key={i} className={v >= 2 ? 'hi' : ''} style={{ height: `${Math.round((Math.max(0, v) / most) * 1000) / 10}%` }} />
+              ))}
+            </div>
+          )}
         </section>
       )}
       {deep.where && deep.where.holes.length > 0 && (

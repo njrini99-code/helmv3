@@ -10,6 +10,7 @@ import { useRef, useState } from 'react';
 import { courseReads, type ChTeamBoardData, type ChTeamPlayer, type ChTourRow } from '../../../data/coachhelm-team-shape';
 import type { CourseHistory, CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { formatFixed, MINUS } from '../../../lib/format';
+import { weekShares } from '../../../lib/chart';
 import { Chevron, ReadRow } from './parts';
 import { useContentIn } from './team-motion';
 
@@ -39,7 +40,9 @@ function Trend({ history }: { history: CourseHistory }) {
   const lo = Math.min(...vs) - 0.35;
   const hi = Math.max(...vs) + 0.35;
   const n = weeks.length;
-  const x = (i: number) => L + (n < 2 ? (w - L - R) / 2 : (i * (w - L - R)) / (n - 1));
+  // Weeks sit by their dates (stats and charts audit 2026-11-15, CH-11): a month with no rounds is a month of width, not one step.
+  const share = weekShares(n, weeks.map((p) => p.start));
+  const x = (i: number) => L + share[i]! * (w - L - R);
   const y = (v: number) => T + ((v - lo) / (hi - lo)) * (h - T - B);
   const pts = weeks.map((p, i) => [x(i), y(p.value)] as const);
   const last = pts[n - 1];

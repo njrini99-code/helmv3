@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import type { ChCompare } from '../../data/stats-figures';
-import { formatFixed } from '../../lib/format';
+import { formatFixed, formatSigned } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { halvesTone } from '../../lib/stats-signal';
 import { ShsArrow, ShsCard, ShsChevron, ShsPill } from './SummaryCard';
+import { dateShares } from '../../lib/chart';
 import { straightPath, type ShsTone } from './shs-figures';
 
 /** The page's words for "How this is measured" (design HOW). */
@@ -42,7 +43,8 @@ export function Ribbon({
   format = (v) => String(Math.round(v)),
   tone = 'flat',
 }: {
-  points: ReadonlyArray<{ label: string; value: number }>;
+  /** Oldest first; `at` (YYYY-MM-DD) spaces them by date when every point has one (CH-11). */
+  points: ReadonlyArray<{ label: string; value: number; at?: string }>;
   lowerIsBetter?: boolean;
   reference?: { value: number; label: string } | null;
   format?: (v: number) => string;
@@ -60,7 +62,9 @@ export function Ribbon({
   const sp = hi - lo || 1;
   lo -= sp * 0.12;
   hi += sp * 0.12;
-  const x = (i: number) => (n === 1 ? W / 2 : (i * W) / (n - 1));
+  // Rounds sit by the day they were played (stats and charts audit 2026-11-15, CH-11); evenly when any date is missing.
+  const share = dateShares(points.map((p) => p.at));
+  const x = (i: number) => (n === 1 ? W / 2 : share[i]! * W);
   const y = (v: number) => PAD + (lowerIsBetter ? (v - lo) / (hi - lo) : (hi - v) / (hi - lo)) * (H - PAD * 2);
   const pts = vals.map((v, i) => [x(i), y(v)] as const);
   const last = pts[n - 1]!;
@@ -121,7 +125,11 @@ export const COMPARE_ROWS = {
 /** Each row's span on its dumbbell: the page's own (design CMP). */
 const SPAN: Readonly<Record<string, number>> = { 'Scoring avg': 12, 'Greens in regulation': 30, 'Fairways hit': 30, 'Putts per round': 8 };
 
-/** Against the N before: dumbbells from `x.compare`, captioned as round totals; with no earlier window it says so (criterion 34). */
+/**
+ * Against the N before: dumbbells from `x.compare`, captioned as round totals; with no earlier window it says so (criterion 34).
+ * The pill's arrow says a clear change only (stats and charts audit 2026-11-15, CH-19): inside the change's noise it is neutral and
+ * prints the signed figure with no arrow, as the score chip does. Each dumbbell puts better on the right (CH-14).
+ */
 export function AgainstBefore({ compare, rows, how, previous }: { compare: ChCompare | null; rows: readonly string[]; how?: string; previous: boolean }) {
   const list = previous && compare ? compare.rows.filter((r) => rows.includes(r.label)) : [];
   return (
@@ -147,7 +155,8 @@ export function AgainstBefore({ compare, rows, how, previous }: { compare: ChCom
           const tone: ShsTone = t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : 'flat';
           const span = SPAN[r.label] ?? 12;
           const lo = (r.last + r.previous) / 2 - span / 2;
-          const at = (v: number) => Math.max(2, Math.min(98, ((v - lo) / span) * 100));
+          // Better to the right: a lower-is-better row (scoring, putts) runs high to low.
+          const at = (v: number) => Math.max(2, Math.min(98, ((r.lowerIsBetter ? lo + span - v : v - lo) / span) * 100));
           return (
             <div className="ch-shs-db" key={r.label}>
               <div>
@@ -162,8 +171,8 @@ export function AgainstBefore({ compare, rows, how, previous }: { compare: ChCom
                 </div>
               </div>
               <ShsPill tone={tone}>
-                <ShsArrow direction={delta < 0 ? 'down' : delta > 0 ? 'up' : 'flat'} />
-                {formatFixed(Math.abs(delta), r.digits)}
+                {tone !== 'flat' && <ShsArrow direction={delta < 0 ? 'down' : delta > 0 ? 'up' : 'flat'} />}
+                {tone !== 'flat' ? formatFixed(Math.abs(delta), r.digits) : formatSigned(delta, r.digits)}
                 {r.unit ? ' pts' : ''}
               </ShsPill>
               <div className="track" aria-hidden="true">

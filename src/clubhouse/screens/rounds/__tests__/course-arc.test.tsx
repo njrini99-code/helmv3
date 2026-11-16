@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { arcValueText, CourseArc } from '../CourseArc';
+import { arcLevels, arcValueText, CourseArc } from '../CourseArc';
 import { HowItPlays } from '../HowItPlays';
 import { toCourseHistory, type ChCourseListRow } from '../../../data/course-page-shape';
 import type { ChPlayHole } from '../../../data/stats-extra';
@@ -31,6 +31,25 @@ describe('the average arc (P-7 4.2.6)', () => {
     rerender(<CourseArc arc={{ mean, sd: mean.map(() => 1), rounds: 5 }} lines={{ best: null, last: null }} selected={1} onSelect={() => {}} />);
     expect(container.querySelector('.ch-carc__band')).not.toBeNull();
     expect(container.querySelector('[role="group"]')).toBeNull();
+  });
+});
+
+describe('the average arc tells the truth (stats and charts audit 2026-11-15)', () => {
+  it('draws straight segments hole to hole, never a curve between holes (CH-15)', () => {
+    const { container } = render(<CourseArc arc={{ mean: mean.map((m, i) => (i % 3 ? m : -m)), sd: null, rounds: 3 }} lines={{ best: null, last: null }} selected={1} onSelect={() => {}} />);
+    const d = container.querySelector('.ch-carc__mean')!.getAttribute('d')!;
+    expect(d).toMatch(/^M/);
+    expect(d).not.toMatch(/C/);
+    expect(d.match(/L/g)).toHaveLength(17);
+  });
+
+  it('labels a level each side of E, on a round step for the range (CH-22)', () => {
+    expect(arcLevels(-2, 4)).toEqual([2]);
+    expect(arcLevels(-3, 9)).toEqual([5]);
+    expect(arcLevels(-11, 14)).toEqual([-10, 10]);
+    const { container } = render(<CourseArc arc={{ mean, sd: null, rounds: 3 }} lines={{ best: null, last: null }} selected={1} onSelect={() => {}} />);
+    // The mean runs 0.1 to 1.8: the range is −1 to 3, so +2 is labelled beside E, with a true minus for any level under par.
+    expect([...container.querySelectorAll('.ch-carc__level text')].map((t) => t.textContent)).toEqual(['+2']);
   });
 });
 

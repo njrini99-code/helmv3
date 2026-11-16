@@ -291,6 +291,18 @@ before, after, baseline or evidence.
 | `P013__board__player__390x844__course-plan-none-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-none-light |
 | `P013__standing__coach__1280x900__light-method-line__after__2faf3cf.png` | after | 2faf3cf | standing (coach), 1280x900px, light-method-line |
 | `P013__coachhelm-coach-player__coach__390x844__light-r387-view-standing-s0__before__a9d2b19.png` | before | a9d2b19 | coachhelm-coach-player (coach), 390x844px, light-r387-view-standing-s0; /clubhouse-preview/coachhelm-coach-player?view=standing; synthetic preview |
+| `P013__player-file__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | player-file (coach), 1440x932px, default; /clubhouse-preview/coachhelm-player-file |
+| `P013__player-file__coach__1440x932__default__before__c882964.png` | before | c882964 | player-file (coach), 1440x932px, default; /clubhouse-preview/coachhelm-player-file |
+| `P013__player-file__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | player-file (coach), 402px, default; /clubhouse-preview/coachhelm-player-file |
+| `P013__player-file__coach__402__default__before__c882964.png` | before | c882964 | player-file (coach), 402px, default; /clubhouse-preview/coachhelm-player-file |
+| `P013__team-board__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | team-board (coach), 1440x932px, default; /clubhouse-preview/coachhelm-team |
+| `P013__team-board__coach__1440x932__default__before__c882964.png` | before | c882964 | team-board (coach), 1440x932px, default; /clubhouse-preview/coachhelm-team |
+| `P013__team-board__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | team-board (coach), 402px, default; /clubhouse-preview/coachhelm-team |
+| `P013__team-board__coach__402__default__before__c882964.png` | before | c882964 | team-board (coach), 402px, default; /clubhouse-preview/coachhelm-team |
+| `P013__team-board-course__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | team-board-course (coach), 1440x932px, default; /clubhouse-preview/coachhelm-team?station=course |
+| `P013__team-board-course__coach__1440x932__default__before__c882964.png` | before | c882964 | team-board-course (coach), 1440x932px, default; /clubhouse-preview/coachhelm-team?station=course |
+| `P013__team-board-course__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | team-board-course (coach), 402px, default; /clubhouse-preview/coachhelm-team?station=course |
+| `P013__team-board-course__coach__402__default__before__c882964.png` | before | c882964 | team-board-course (coach), 402px, default; /clubhouse-preview/coachhelm-team?station=course |
 
 ## Historical verification gaps
 

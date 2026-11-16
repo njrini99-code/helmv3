@@ -22,12 +22,17 @@ describe('coach Home desktop, design parity', () => {
 });
 
 describe('form bars', () => {
-  it('the highest score still draws a bar: a 30% floor, the lowest at full height', () => {
+  // The form strip is a dot per round on one score scale (stats and charts audit 2026-11-15, CH-03): the old bars ran from a 30%
+  // floor across the min-max range, so 70, 75 and 80 drew as 100, 65 and 30, a five-stroke gap as a third of the strip.
+  it('lower scores sit higher, equal strokes are equal distances, and every dot stays on the strip', () => {
     const { container } = render(<FormBars data={[70, 75, 80]} />);
-    const heights = [...container.querySelectorAll('i')].map((n) => parseInt((n as HTMLElement).style.height, 10));
-    expect(Math.max(...heights)).toBeLessThanOrEqual(100);
-    expect(heights[0]).toBeGreaterThan(heights[1]!);
-    expect(heights[1]).toBeGreaterThan(heights[2]!);
-    expect(heights[2]).toBeGreaterThanOrEqual(30);
+    const ups = [...container.querySelectorAll('i')].map((n) => parseFloat((n as HTMLElement).style.bottom));
+    for (const u of ups) {
+      expect(u).toBeGreaterThanOrEqual(0);
+      expect(u).toBeLessThanOrEqual(100);
+    }
+    expect(ups[0]).toBeGreaterThan(ups[1]!);
+    expect(ups[1]).toBeGreaterThan(ups[2]!);
+    expect(ups[0]! - ups[1]!).toBeCloseTo(ups[1]! - ups[2]!, 5);
   });
 });

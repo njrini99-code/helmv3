@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { formatSigned } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { sgScale } from '../../lib/sg';
+import { POOLED_SD } from '../../lib/stats-signal';
 import { divergeBar, sgTone, type ShsTone } from './shs-figures';
 
 /** Four mini diverging rows: label, a bar from a centre zero, the signed value. The card is the tap, so no whisker and no pin. */
@@ -130,24 +131,41 @@ export interface TickerRound {
   score: number;
 }
 
-/** Bar heights for the ticker: taller is a lower score on one shared range, at least 6; the best is the lowest, and a lone round has no best. */
+/**
+ * The least range the ticker draws its rounds on, in strokes: about two of a round's usual standard deviations
+ * (`POOLED_SD.score`, 3.6), so 72 against 73 is a small step on the strip and not the whole of it (CH-09).
+ */
+export const TICKER_MIN_SPAN = Math.round(2 * POOLED_SD.score);
+/** Every round's mark is this tall, in drawing units of 64: a position, not a length. */
+const TICKER_MARK = 8;
+
+/**
+ * The ticker's marks (stats and charts audit 2026-11-15, CH-09): a round is a mark of one size at its score's height, a lower
+ * score higher, on the rounds' own range widened to at least `TICKER_MIN_SPAN`. The best is marked only when it is one round's
+ * alone: a run of equal rounds has no best. The old bars were lengths from three strokes under the best round, so 73 drew a third
+ * as tall as 72, and every round of a flat run was marked best.
+ */
 export function tickerBars(rounds: readonly TickerRound[], W = 300, H = 64): Array<{ id: string; x: number; y: number; w: number; h: number; best: boolean }> {
   const n = rounds.length;
   if (!n) return [];
   const gap = n > 12 ? 3 : 5;
-  // A lone round is a short bar, not one full-width block (STATS-17).
+  // A lone round is a short mark, not one full-width block (STATS-17).
   const w = Math.min(14, (W - gap * (n - 1)) / n);
   const scores = rounds.map((r) => r.score);
-  const worst = Math.max(...scores) + 1;
-  const low = Math.min(...scores) - 3;
   const best = Math.min(...scores);
-  return rounds.map((r, i) => {
-    const h = Math.max(6, ((worst - r.score) / (worst - low)) * H);
-    return { id: r.id, x: i * (w + gap), y: H - h, w, h, best: n > 1 && r.score === best };
-  });
+  const uniqueBest = n > 1 && scores.filter((s) => s === best).length === 1;
+  let lo = best;
+  let hi = Math.max(...scores);
+  if (hi - lo < TICKER_MIN_SPAN) {
+    const mid = (lo + hi) / 2;
+    lo = mid - TICKER_MIN_SPAN / 2;
+    hi = mid + TICKER_MIN_SPAN / 2;
+  }
+  const h = Math.min(TICKER_MARK, H);
+  return rounds.map((r, i) => ({ id: r.id, x: i * (w + gap), y: ((r.score - lo) / (hi - lo)) * (H - h), w, h, best: uniqueBest && r.score === best }));
 }
 
-/** One bar per round, oldest on the left, taller is lower, the best in green (and no amber). It reads rounds only. */
+/** One mark per round, oldest on the left, higher is lower, a unique best in green (and no amber). It reads rounds only. */
 export function RoundTicker({ rounds }: { rounds: readonly TickerRound[] }) {
   return (
     <svg className="ch-shs-tick" viewBox="0 0 300 64" preserveAspectRatio="none" aria-hidden="true">

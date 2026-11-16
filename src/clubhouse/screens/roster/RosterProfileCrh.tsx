@@ -121,7 +121,7 @@ export function RosterProfileCrh({
                   No 18-hole rounds this season. Form appears once rounds are posted.
                 </p>
               ) : (
-                <CrhLine data={p.trend} height={84} label={`${p.name}, last rounds: ${p.trend.join(', ')}`} meanLabel={`mean ${formatFixed(p.trend.reduce((a, b) => a + b, 0) / p.trend.length)}`} />
+                <CrhLine data={p.trend} dates={p.trendDates} height={84} label={`${p.name}, last rounds: ${p.trend.join(', ')}`} meanLabel={`mean ${formatFixed(p.trend.reduce((a, b) => a + b, 0) / p.trend.length)}`} />
               )}
             </div>
           </Surface>

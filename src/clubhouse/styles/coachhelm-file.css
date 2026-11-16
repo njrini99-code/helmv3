@@ -89,6 +89,10 @@
 .ch-hf .ch-hf-strip { display: flex; align-items: flex-end; gap: 6px; height: 64px; }
 .ch-hf .ch-hf-strip i { flex: 1; border-radius: var(--ch-radius-xs) var(--ch-radius-xs) 0 0; background: var(--ch-hf-c-neutral); min-height: 3px; }
 .ch-hf .ch-hf-strip i.hi { background: var(--ch-hf-c-loss); }
+/* The score strip runs from a par line, under par rising above it and over par hanging below, on one range (CH-14). */
+.ch-hf .ch-hf-strip.is-par { position: relative; align-items: flex-start; }
+.ch-hf .ch-hf-strip.is-par b { position: absolute; left: 0; right: 0; height: 0; border-top: var(--ch-hairline-w) solid var(--ch-chart-zero); }
+.ch-hf .ch-hf-strip.is-par i { position: relative; min-height: 0; border-radius: var(--ch-radius-xs); }
 .ch-hf .ch-hf-holes { display: flex; flex-direction: column; gap: 8px; }
 .ch-hf .ch-hf-holes div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; }
 .ch-hf .ch-hf-holes span { font: var(--ch-type-13-strong);  color: var(--ch-hf-a-ink-2); white-space: nowrap;  }

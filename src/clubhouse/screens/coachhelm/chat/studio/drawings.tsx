@@ -4,6 +4,7 @@ import { changeTone, formatFixed, formatToPar } from '../../../../lib/format';
 import { formatValue, type AskEvidence } from '../../../../data/coachhelm-chat-thread';
 import { ChartTable } from '../../../../ui/charts/ChartTable';
 import { linePath, lineY } from '../../../../ui/charts/Line';
+import { sampleSd } from '../../../../lib/stats-signal';
 import { AskKey, type AskTarget } from './ask';
 import type { StudioLeg } from './types';
 
@@ -189,13 +190,18 @@ export function trendReference(block: TrendBlock): string | null {
 }
 
 /**
- * Whether the newest round sits on the good or the wrong side of the reference, for a measure whose direction is known:
- * green or amber on the last point, never red. Unknown direction, or level with it: plain ink.
+ * Whether the newest round sits clearly on the good or the wrong side of the reference, for a measure whose direction is known:
+ * green or amber on the last point, never red. One round is noisy (stats and charts audit 2026-11-15, CH-24), so the point is
+ * coloured only when it sits further from the reference than the shown rounds usually spread (one standard deviation of them, from
+ * three rounds); inside that, an unknown direction, or level with it: plain ink.
  */
 export function trendTone(block: TrendBlock): '' | 'is-gain' | 'is-loss' {
   const ref = block.reference;
-  const last = block.points[block.points.length - 1]?.value;
-  if (!ref || !block.goodDirection || last == null || last === ref.value) return '';
+  const values = block.points.map((p) => p.value);
+  const last = values[values.length - 1];
+  if (!ref || !block.goodDirection || last == null || values.length < 3) return '';
+  const spread = sampleSd(values) ?? 0;
+  if (Math.abs(last - ref.value) <= spread) return '';
   return (block.goodDirection === 'up' ? last > ref.value : last < ref.value) ? 'is-gain' : 'is-loss';
 }
 

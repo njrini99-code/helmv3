@@ -54,9 +54,12 @@ describe('home logic', () => {
   });
   it('reads form from the newer half against the older half, a change only past its standard error (stats visuals Q4)', () => {
     expect(formStatus([72, 73])).toBe('early');
-    // Three scores a half on the pooled 3.6 a round: a standard error of about 2.9 strokes.
-    expect(formStatus([78, 78, 77, 73, 72, 72])).toBe('improving');
-    expect(formStatus([72, 72, 72, 74, 76, 76, 77])).toBe('slipping');
+    // Three scores a half on the pooled 3.6 a round: a standard error of about 2.9 strokes, and a change is called past two of them
+    // (stats and charts audit 2026-11-15, CH-05), about 5.9 strokes.
+    expect(formStatus([80, 80, 79, 73, 72, 72])).toBe('improving');
+    expect(formStatus([72, 72, 72, 74, 78, 78, 79])).toBe('slipping');
+    // Down 5.3, under two errors: no clear change yet (it was "improving" at one).
+    expect(formStatus([78, 78, 77, 73, 72, 72])).toBe('steady');
     expect(formStatus([72, 72, 71, 72, 71, 71, 72])).toBe('steady');
     // Down 2.3 a round was "improving" on the old half-stroke threshold; inside its standard error it is no clear change.
     expect(formStatus([75, 75, 74, 73, 72, 72])).toBe('steady');
@@ -115,9 +118,12 @@ describe('roster attention', () => {
     const s = summarizePlayer([round('a', '2026-10-01', 74), round('b', '2026-09-28', 75)]);
     expect(attentionFor(s, now)).toEqual({ tone: 'warning', text: 'No rounds in 13 days' });
   });
-  it('flags scoring 1.5 or more worse', () => {
-    const s = summarizePlayer(['76', '76', '75', '73', '72', '72'].map((x, i) => round(`r${i}`, `2026-10-1${3 - Math.min(i, 3)}`, Number(x))));
+  it('flags scoring that is clearly worse: past two standard errors of the change (CH-05)', () => {
+    const s = summarizePlayer(['80', '79', '79', '73', '72', '72'].map((x, i) => round(`r${i}`, `2026-10-1${3 - Math.min(i, 3)}`, Number(x))));
     expect(attentionFor(s, now)?.text).toMatch(/^Scoring \d+\.\d worse$/);
+    // Up 3.3 a round on six scores is inside two errors (about 5.9): no flag.
+    const t = summarizePlayer(['76', '76', '75', '73', '72', '72'].map((x, i) => round(`r${i}`, `2026-10-1${3 - Math.min(i, 3)}`, Number(x))));
+    expect(attentionFor(t, now)).toBeNull();
   });
   it('praises four straight rounds under a player’s average', () => {
     const scores = [70, 71, 70, 71, 76, 77, 76, 77];
