@@ -21162,6 +21162,34 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160180,
+    "page": "P016",
+    "category": 1,
+    "item": 80,
+    "name": "LINEUP_BUILDER_B_TEAM",
+    "meaning": "Lineup builder: a B team (launch readiness F-05), offered once the event can hold one (held migration 20261116090000 adds the squad). A Team switch (A team, B team) shows the B spots and the B alternate, with 'The B team plays as individuals: its scores never count in the team's record.' A B player is stored as an individual (or the alternate) of squad B, so every team score, which reads the lineup only, leaves the B team out (D-92).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/tournaments/lineup-model.ts#place; src/clubhouse/screens/tournaments/LineupBuilder.tsx#BTeam; src/clubhouse/data/tournaments.ts#readBTeam",
+    "tests": [
+      "src/clubhouse/__tests__/tournaments-b-team.test.tsx"
+    ]
+  },
+  {
+    "id": 160181,
+    "page": "P016",
+    "category": 1,
+    "item": 81,
+    "name": "LINEUP_LOCK_BY",
+    "meaning": "The lineup's lock time is a 'lock by' (F-05): nothing locks a lineup at that time (it locks itself when round 1 starts), so the lineup head says 'Lock by …', past it CH-16382 says so, and the event form's Lineup lock sets it (10, 30 minutes, 1 or 2 hours, or the day before; a value set elsewhere stays a choice).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/tournaments/LineupBuilder.tsx#LineupPage; src/clubhouse/screens/tournaments/fields/rounds-model.ts#lockLine; src/clubhouse/screens/tournaments/fields/TournamentFields.tsx; src/app/golf/actions/tournaments-calendar.ts#createTournamentFromCalendarImpl",
+    "tests": [
+      "src/clubhouse/__tests__/tournaments-b-team.test.tsx",
+      "src/clubhouse/screens/tournaments/__tests__/edit-model-ties.test.ts",
+      "src/app/golf/actions/__tests__/tournaments-calendar.test.ts"
+    ]
+  },
+  {
     "id": 160201,
     "page": "P016",
     "category": 2,
@@ -21499,6 +21527,17 @@
     "name": "ENTER_HOLES_NO_GRID_FOR_THE_ROUND",
     "chCode": "CH-16381",
     "meaning": "Enter holes: no grid for the round (the course has no hole pars, no one is in the round)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160482,
+    "page": "P016",
+    "category": 4,
+    "item": 82,
+    "name": "LINEUP_BUILDER_THE_LINEUPS_LOCK_TIME_HAS",
+    "chCode": "CH-16382",
+    "meaning": "Lineup builder: the lineup's lock time has passed and it is not locked (launch readiness F-05; nothing locks it at that time)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
@@ -22019,6 +22058,19 @@
     "where": "src/clubhouse/screens/tournaments/EventDesk.tsx#EventDesk (src/clubhouse/ui/ExportButton.tsx)",
     "tests": [
       "src/clubhouse/__tests__/exports.test.tsx"
+    ]
+  },
+  {
+    "id": 160981,
+    "page": "P016",
+    "category": 9,
+    "item": 81,
+    "name": "LINEUP_B_TEAM_SAVED",
+    "meaning": "A lineup saved with a B team sends each B player as an individual of squad B with their spot, and the B alternate; the A entries go as before. Before held migration 20261116090000 a B entry is refused ('A B team arrives with the next update. Nothing was saved.') and nothing is written.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/tournaments.ts#setTournamentEntriesImpl",
+    "tests": [
+      "src/app/golf/actions/__tests__/tournaments-b-team.test.ts"
     ]
   },
   {

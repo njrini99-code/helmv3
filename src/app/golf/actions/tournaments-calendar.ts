@@ -53,6 +53,8 @@ const createSchema = z
     holesPerRound: z.union([z.literal(9), z.literal(18)]),
     eventKind: z.enum(['regular', 'conference', 'ncaa_regional', 'ncaa_championship', 'exhibition']).optional(),
     tiebreak: z.enum(['ties_stand', 'ncaa', 'playoff', 'card_playoff']).optional(),
+    // F-05: minutes before round 1's first tee that the lineup should be locked by (the column's default is 10).
+    lockMinutes: z.number().int().min(0).max(1440).optional(),
     fieldSize: z.number().int().min(1).max(40).optional(),
     host: z.string().trim().max(120).optional(),
     resultsUrl: z.string().trim().regex(/^https:\/\//).max(500).optional(),
@@ -145,7 +147,7 @@ async function eventUserIds(supabase: Client, eventId: string, playerIds?: strin
 
 // ── Create ──
 
-async function createTournamentFromCalendarImpl(input: CreateFromCalendarInput): Promise<TourActionResult<{ tournamentId: string; version: number; replayed: boolean; rounds: { roundNumber: number; eventId: string }[]; tiebreakFailed?: true }>> {
+async function createTournamentFromCalendarImpl(input: CreateFromCalendarInput): Promise<TourActionResult<{ tournamentId: string; version: number; replayed: boolean; rounds: { roundNumber: number; eventId: string }[]; tiebreakFailed?: true; lockFailed?: true }>> {
   const g = await gate();
   if (typeof g === 'string') return refused(g);
   const parsed = createSchema.safeParse(input);
@@ -212,14 +214,20 @@ async function createTournamentFromCalendarImpl(input: CreateFromCalendarInput):
   }
   if (!out) return refused('failed', { save: 'create' });
 
-  // The create RPC takes no tiebreak (it predates F-04): a tiebreak other than the default is set right after, through the
-  // event's own update, on the version the create returned. A failure there leaves the event on shared places and says so.
+  // The create RPC takes no tiebreak (it predates F-04) and no lock time (F-05): a value other than the default is set
+  // right after, through the event's own update, on the version the create returned. A failure there leaves the event on
+  // the defaults (shared places, 10 minutes) and says so.
   let tiebreakFailed = false;
-  if (!out.replayed && v.tiebreak && v.tiebreak !== 'ties_stand') {
-    const set = await tourRpc(g.supabase, 'golf_tournament_update', { p_id: out.tournament_id, p_payload: { tiebreak: v.tiebreak }, p_version: out.version });
+  let lockFailed = false;
+  const followUp: Record<string, unknown> = {};
+  if (v.tiebreak && v.tiebreak !== 'ties_stand') followUp.tiebreak = v.tiebreak;
+  if (v.lockMinutes != null && v.lockMinutes !== 10) followUp.lock_minutes = v.lockMinutes;
+  if (!out.replayed && Object.keys(followUp).length > 0) {
+    const set = await tourRpc(g.supabase, 'golf_tournament_update', { p_id: out.tournament_id, p_payload: followUp, p_version: out.version });
     if (set.error || set.data == null) {
-      tiebreakFailed = true;
-      await logServerError(`createTournamentFromCalendar tiebreak failed: ${describeError(set.error)}`, { action: 'golf.createTournamentFromCalendar', featureArea: 'calendar' }, 'warning');
+      tiebreakFailed = 'tiebreak' in followUp;
+      lockFailed = 'lock_minutes' in followUp;
+      await logServerError(`createTournamentFromCalendar settings failed: ${describeError(set.error)}`, { action: 'golf.createTournamentFromCalendar', featureArea: 'calendar' }, 'warning');
     } else out = { ...out, version: Number(set.data) };
   }
 
@@ -245,7 +253,7 @@ async function createTournamentFromCalendarImpl(input: CreateFromCalendarInput):
   }
 
   revalidate(out.tournament_id);
-  return { success: true, data: { tournamentId: out.tournament_id, version: out.version, replayed: out.replayed, rounds, ...(tiebreakFailed ? { tiebreakFailed: true } : {}) } };
+  return { success: true, data: { tournamentId: out.tournament_id, version: out.version, replayed: out.replayed, rounds, ...(tiebreakFailed ? { tiebreakFailed: true } : {}), ...(lockFailed ? { lockFailed: true } : {}) } };
 }
 
 // ── Round mode and the drag ──

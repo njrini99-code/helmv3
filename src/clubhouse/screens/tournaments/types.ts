@@ -777,6 +777,8 @@ export interface ChTourEventDraft {
   format: TourFormat;
   kind: ChTourEventKind;
   tiebreak: ChTourTiebreak;
+  /** F-05: minutes before round 1's first tee to lock the lineup by (10 unless the coach chose otherwise). Optional in fixtures. */
+  lockMinutes?: number;
   rounds: Array<{ date: string; courseId: string | null; startType: ChTourStartType; firstTee: string | null }>;
   fieldSize: number | null;
   fieldTeams: string[];
@@ -847,6 +849,12 @@ export interface ChTourLineupData {
    * `chip` is "Roster 9 of 9"; `over` how many past the limit. Absent with the limit off, or in fixtures.
    */
   rosterLimit?: { chip: string; over: number; text: string | null };
+  /**
+   * F-05: the B team. Present only once the event can hold one (held migration 20261116090000 adds the squad); absent,
+   * the builder offers no B team. `slots` are its players in order (stored as individuals of squad B, so they never count
+   * in the team's record, D-92), `alternate` its alternate.
+   */
+  bTeam?: { slots: Array<{ playerId: string; slot: number | null }>; alternate: string | null };
 }
 
 // ── Live round (5L) ────────────────────────────────────────────────────────────────────────────────────────────

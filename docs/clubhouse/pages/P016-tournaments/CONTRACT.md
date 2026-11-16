@@ -49,6 +49,8 @@ Status: DEFINED
 | 160129 | CH-16684 | `ROUND_SETUP_OPEN_CALL_VERSION_2` | Round setup, open call (a) version 2 (slice 2) |
 | 160130 | CH-16685 | `COACH_HOME_A_TOURNAMENT_TRACKS_A_LIVE` | Coach Home, a tournament tracks a live round |
 | 160131 | CH-16606 | `MORE_LANES_THAN_THE_CARD_SHOWS` | More lanes than the card shows |
+| 160180 | — | `LINEUP_BUILDER_B_TEAM` | Lineup builder: a B team (launch readiness F-05), offered once the event can hold one (held migration 20261116090000 adds the squad). A Team switch (A team, B team) shows the B spots and the B alternate, with 'The B team plays as individuals: its scores never count in the team's record.' A B player is stored as an individual (or the alternate) of squad B, so every team score, which reads the lineup only, leaves the B team out (D-92). |
+| 160181 | — | `LINEUP_LOCK_BY` | The lineup's lock time is a 'lock by' (F-05): nothing locks a lineup at that time (it locks itself when round 1 starts), so the lineup head says 'Lock by …', past it CH-16382 says so, and the event form's Lineup lock sets it (10, 30 minutes, 1 or 2 hours, or the day before; a value set elsewhere stays a choice). |
 
 ## 02 — Initial loading / skeleton
 
@@ -110,6 +112,7 @@ no rounds to link, and so on) are its lane's rows.
 | 160426 | CH-16393 | `PLAYER_EVENT_THE_TEAMS_RESULT_IS_NOT` | Player event: the team’s result is not on the player’s page (teammates’ scores and the lineup are the coach’s until held file 4) |
 | 160480 | CH-16380 | `IMPORT_RESULTS_NONE_OF_OUR_PLAYERS_ARE` | Import results: none of our players are in the file, or the file has team scores only |
 | 160481 | CH-16381 | `ENTER_HOLES_NO_GRID_FOR_THE_ROUND` | Enter holes: no grid for the round (the course has no hole pars, no one is in the round) |
+| 160482 | CH-16382 | `LINEUP_BUILDER_THE_LINEUPS_LOCK_TIME_HAS` | Lineup builder: the lineup's lock time has passed and it is not locked (launch readiness F-05; nothing locks it at that time) |
 
 ## 05 — Validation
 
@@ -219,6 +222,7 @@ the hole grid, the lineup); they are catalogued with their codes.
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 160980 | — | `EXPORT_RESULTS_LANDED` | An export of an event's results that lands says so in a toast ("Results exported · 12 teams, 5 players") with the success haptic: a download on a computer, the share sheet on a phone. |
+| 160981 | — | `LINEUP_B_TEAM_SAVED` | A lineup saved with a B team sends each B player as an individual of squad B with their spot, and the B alternate; the A entries go as before. Before held migration 20261116090000 a B entry is refused ('A B team arrives with the next update. Nothing was saved.') and nothing is written. |
 
 ## 10 — Warning
 

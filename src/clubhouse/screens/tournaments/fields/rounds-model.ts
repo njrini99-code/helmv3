@@ -259,8 +259,9 @@ export function lockLine(rounds: readonly Pick<ChRoundDraft, 'date' | 'tee' | 'c
   const l = lockAt(rounds, lockMinutes, timeZone);
   if (!l.at || l.date == null || l.minutes == null) return 'Lineup lock is set once R1 has a tee time.';
   const when = `${shortDay(l.date)} at ${fmtHour(l.minutes / 60, true, clock)}`;
-  if (l.r1Cancelled) return `R1 is cancelled. The lineup still locks ${when}, ${lockMinutes} minutes before R1’s first tee.`;
-  return `Lineup locks ${when}, ${lockMinutes} minutes before the first tee.`;
+  const before = lockMinutes >= 1440 && lockMinutes % 1440 === 0 ? (lockMinutes === 1440 ? 'a day' : `${lockMinutes / 1440} days`) : lockMinutes >= 60 && lockMinutes % 60 === 0 ? (lockMinutes === 60 ? 'an hour' : `${lockMinutes / 60} hours`) : `${lockMinutes} minutes`;
+  if (l.r1Cancelled) return `R1 is cancelled. Lock the lineup by ${when}, ${before} before R1’s first tee.`;
+  return `Lock the lineup by ${when}, ${before} before the first tee. It locks itself when round 1 starts.`;
 }
 
 /** "Name · R2", the stored calendar title of a round (D-81). */
@@ -312,6 +313,26 @@ export function tiebreakOptions(current: ChTourTiebreak): ReadonlyArray<{ value:
 }
 /** Said on the saved toast when the event was set up but its tiebreak didn't save (F-04). */
 export const TIEBREAK_NOT_SAVED = 'Its tiebreak didn’t save, so tied places are shared. Set Ties again in Edit.';
+export const LOCK_NOT_SAVED = 'Its lineup lock time didn’t save, so it is 10 minutes before the first tee. Set it again in Edit.';
+
+/**
+ * F-05: how long before round 1's first tee the coach means to lock the lineup. Nothing locks it at that time: the
+ * lineup locks itself when round 1 starts (golf_tournament_set_round_status), so the time is a "lock by".
+ */
+export const LOCK_MINUTE_CHOICES: ReadonlyArray<{ value: number; label: string }> = [
+  { value: 10, label: '10 minutes before' },
+  { value: 30, label: '30 minutes before' },
+  { value: 60, label: '1 hour before' },
+  { value: 120, label: '2 hours before' },
+  { value: 1440, label: 'The day before' },
+];
+
+/** The choices, with the event's own value kept when it is none of them (set elsewhere), so opening Edit changes nothing. */
+export function lockMinuteOptions(current: number): ReadonlyArray<{ value: string; label: string }> {
+  const known = LOCK_MINUTE_CHOICES.some((c) => c.value === current);
+  const list = known ? LOCK_MINUTE_CHOICES : [...LOCK_MINUTE_CHOICES, { value: current, label: `${current} minutes before` }].sort((a, b) => a.value - b.value);
+  return list.map((c) => ({ value: String(c.value), label: c.label }));
+}
 
 /** The sentence under the Ties field. */
 export function tiebreakHelp(t: ChTourTiebreak): string {
@@ -417,6 +438,7 @@ export interface ChCreateFromCalendar {
   holesPerRound: 9 | 18;
   eventKind: ChTourEventKind;
   tiebreak?: ChTourTiebreak;
+  lockMinutes?: number;
   fieldSize?: number;
   host?: string;
   resultsUrl?: string;
@@ -459,6 +481,7 @@ export function toCreatePayload(
     holesPerRound: s.holes,
     eventKind: s.eventKind,
     ...(s.tiebreak !== 'ties_stand' ? { tiebreak: s.tiebreak } : {}),
+    ...(s.lockMinutes !== DEFAULT_LOCK_MINUTES ? { lockMinutes: s.lockMinutes } : {}),
     ...(s.fieldSize != null ? { fieldSize: s.fieldSize } : {}),
     ...(s.host.trim() ? { host: s.host.trim() } : {}),
     ...(s.resultsUrl.trim() ? { resultsUrl: s.resultsUrl.trim() } : {}),

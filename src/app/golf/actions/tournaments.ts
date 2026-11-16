@@ -10,6 +10,7 @@ import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { describeError } from '@/lib/utils/describe-error';
 import { isUuid } from '@/lib/utils/uuid';
 import { TOUR_REFUSAL_COPY, tourRefusalOf, type TourRefusalCode } from '@/lib/golf/tournament-refusals';
+import { isMissingSchemaError } from '@/lib/coachhelm/v3/verdicts/schema-missing';
 import { isFlagEnabled } from '@/lib/flags';
 import { resolveCoachActiveTeamForRequest } from '@/lib/golf/dashboard-request-cache';
 import { tourTable } from '@/lib/golf/tournaments-tables';
@@ -181,15 +182,46 @@ async function deleteTournamentImpl(id: string, unlink = false): Promise<ActionR
 }
 
 const entriesInput = z
-  .array(z.object({ playerId: uuid, role: z.enum(['lineup', 'alternate', 'individual']), slot: z.number().int().min(1).max(9).nullable().optional(), reasoning: z.string().max(500).optional() }))
-  .max(20);
+  .array(
+    z.object({
+      playerId: uuid,
+      role: z.enum(['lineup', 'alternate', 'individual']),
+      slot: z.number().int().min(1).max(9).nullable().optional(),
+      reasoning: z.string().max(500).optional(),
+      // F-05: 'B' for a B-team player (an individual with a spot, or the B alternate). Left out, the entry is the A squad.
+      squad: z.enum(['A', 'B']).optional(),
+    }),
+  )
+  .max(20)
+  .refine((es) => es.every((e) => e.squad !== 'B' || e.role !== 'lineup'), 'a B-team player is never in the lineup');
 export type TourEntriesInput = z.infer<typeof entriesInput>;
+
+/** The squad column (held migration 20261116090000), read as RLS answers: false while it is missing. */
+async function hasSquad(c: Coach, id: string): Promise<boolean | 'failed'> {
+  const { error } = await tourTable(c.supabase, 'golf_tournament_entries').select('squad' as never).eq('tournament_id', id).limit(1);
+  if (!error) return true;
+  return isMissingSchemaError(error) ? false : 'failed';
+}
 
 async function setTournamentEntriesImpl(id: string, entries: TourEntriesInput, version: number | null): Promise<ActionResult<{ version: number }>> {
   const parsed = entriesInput.safeParse(entries);
   if (!uuid.safeParse(id).success || !parsed.success) return refuse('invalid');
-  const rows = parsed.data.map((e) => ({ player_id: e.playerId, role: e.role, slot: e.role === 'lineup' ? (e.slot ?? null) : null, ...(e.reasoning !== undefined ? { reasoning: e.reasoning } : {}) }));
-  return asCoach((c) => rpc(c, 'setTournamentEntries', 'golf_tournament_set_entries', { p_id: id, p_entries: rows, p_version: version }, (d) => ({ version: Number(d) })));
+  const anyB = parsed.data.some((e) => e.squad === 'B');
+  const rows = parsed.data.map((e) => {
+    const b = e.squad === 'B';
+    // An A entry keeps a spot only in the lineup; a B player keeps their spot as their order on the B team.
+    const slot = e.role === 'lineup' || (b && e.role === 'individual') ? (e.slot ?? null) : null;
+    return { player_id: e.playerId, role: e.role, slot, ...(b ? { squad: 'B' } : {}), ...(e.reasoning !== undefined ? { reasoning: e.reasoning } : {}) };
+  });
+  return asCoach(async (c) => {
+    // Before the held migration the old function ignores "squad" and would save a B player as an A individual: refuse.
+    if (anyB) {
+      const has = await hasSquad(c, id);
+      if (has === 'failed') return refuse('failed');
+      if (!has) return refuse('b_team_unavailable');
+    }
+    return rpc(c, 'setTournamentEntries', 'golf_tournament_set_entries', { p_id: id, p_entries: rows, p_version: version }, (d) => ({ version: Number(d) }));
+  });
 }
 
 async function lockTournamentLineupImpl(id: string): Promise<ActionResult<{ lockedAt: string }>> {

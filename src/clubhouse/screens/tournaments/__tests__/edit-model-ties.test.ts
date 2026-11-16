@@ -38,3 +38,16 @@ describe('edit model: Ties (F-04)', () => {
     expect(toUpdateInput(changed, 'America/New_York')).toMatchObject({ tiebreak: 'ncaa' });
   });
 });
+
+describe('edit model: Lineup lock (F-05)', () => {
+  it('160181 opens on the saved lock minutes (10 when unsaved) and sends them back with the save', async () => {
+    const { lockMinuteOptions } = await import('../fields/rounds-model');
+    const saved = stateFromDraft({ ...draft('ties_stand'), lockMinutes: 45 }, [], 'America/New_York');
+    expect(saved.lockMinutes).toBe(45);
+    expect(toUpdateInput(saved, 'America/New_York').lockMinutes).toBe(45);
+    // A value set elsewhere stays a choice, so opening Edit and saving changes nothing.
+    expect(lockMinuteOptions(45).map((o) => o.value)).toEqual(['10', '30', '45', '60', '120', '1440']);
+    expect(lockMinuteOptions(60).map((o) => o.label)).toContain('1 hour before');
+    expect(stateFromDraft(draft('ties_stand'), [], 'America/New_York').lockMinutes).toBe(10);
+  });
+});

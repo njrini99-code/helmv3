@@ -112,7 +112,10 @@ describe('lockAt', () => {
     const l = lockAt([r('2026-11-05', '08:42'), r('2026-11-06', null)], 10, NY);
     expect(l).toMatchObject({ date: '2026-11-05', minutes: 8 * 60 + 32, r1Cancelled: false });
     expect(l.at).toBe('2026-11-05T08:32:00-05:00');
-    expect(lockLine([r('2026-11-05', '08:42')], 10, NY)).toBe('Lineup locks Thu 5 Nov at 8:32 AM, 10 minutes before the first tee.');
+    expect(lockLine([r('2026-11-05', '08:42')], 10, NY)).toBe('Lock the lineup by Thu 5 Nov at 8:32 AM, 10 minutes before the first tee. It locks itself when round 1 starts.');
+    // F-05: an hour and a day read as words, never as 60 or 1440 minutes.
+    expect(lockLine([r('2026-11-05', '08:42')], 60, NY)).toMatch(/^Lock the lineup by Thu 5 Nov at 7:42 AM, an hour before/);
+    expect(lockLine([r('2026-11-05', '08:42')], 1440, NY)).toMatch(/^Lock the lineup by Wed 4 Nov at 8:42 AM, a day before/);
   });
   it('gives no lock while R1 is all-day', () => {
     expect(lockAt([r('2026-11-05', null), r('2026-11-06', '08:00')], 10, NY).at).toBeNull();
@@ -124,7 +127,7 @@ describe('lockAt', () => {
   it('stays on R1 when R1 is cancelled (4.33’s rule), and says so', () => {
     const rounds = [r('2026-11-05', '08:42', { cancelled: true }), r('2026-11-06', '09:00')];
     expect(lockAt(rounds, 10, NY)).toMatchObject({ date: '2026-11-05', minutes: 8 * 60 + 32, r1Cancelled: true });
-    expect(lockLine(rounds, 10, NY)).toMatch(/^R1 is cancelled\. The lineup still locks Thu 5 Nov at 8:32 AM/);
+    expect(lockLine(rounds, 10, NY)).toMatch(/^R1 is cancelled\. Lock the lineup by Thu 5 Nov at 8:32 AM/);
   });
   it('crosses midnight backwards when the lock is before the day starts', () => {
     expect(lockAt([r('2026-11-05', '00:05')], 10, NY)).toMatchObject({ date: '2026-11-04', minutes: 23 * 60 + 55 });

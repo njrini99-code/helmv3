@@ -28,6 +28,7 @@ import {
   daysBetween,
   inRoundOrder,
   lockLine,
+  lockMinuteOptions,
   removeLastRound,
   roundsFromRange,
   sortRounds,
@@ -350,6 +351,19 @@ export function TournamentFields({
               </p>
             </div>
           </div>
+          {!individual && (
+            <div className="ch-tfx__row">
+              <label className="ch-tfx__lbl" htmlFor={`${idPrefix}-lock`}>
+                Lineup lock
+              </label>
+              <div>
+                <Select id={`${idPrefix}-lock`} value={String(s.lockMinutes)} options={lockMinuteOptions(s.lockMinutes)} onChange={(v) => set({ lockMinutes: Number(v) })} describedBy={`${idPrefix}-lock-h`} />
+                <p id={`${idPrefix}-lock-h`} className="ch-tfx__help">
+                  When you mean to lock the lineup, before round 1’s first tee. It locks itself when round 1 starts.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="ch-tfx__row">
             <label className="ch-tfx__lbl" htmlFor={`${idPrefix}-field`}>
               Teams in the field

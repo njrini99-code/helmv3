@@ -305,3 +305,19 @@ describe('createTournamentFromCalendar: the tiebreak (F-04)', () => {
     expect(await createTournamentFromCalendar(input({ tiebreak: 'ncaa' }))).toMatchObject({ success: true, data: { tournamentId: TID, version: 1, tiebreakFailed: true } });
   });
 });
+
+describe('createTournamentFromCalendar: the lineup lock time (F-05)', () => {
+  it('160181 sets a lock time other than 10 minutes with the tiebreak in one update; a failure says which did not save', async () => {
+    m.rpc.golf_tournament_create_from_calendar = () => made();
+    m.rpc.golf_tournament_update = () => ({ data: 2, error: null });
+    await createTournamentFromCalendar(input({ tiebreak: 'ncaa', lockMinutes: 60 }));
+    expect(m.rpcCalls[1]!.args).toEqual({ p_id: TID, p_payload: { tiebreak: 'ncaa', lock_minutes: 60 }, p_version: 1 });
+    m.rpcCalls = [];
+    await createTournamentFromCalendar(input({ lockMinutes: 10 }));
+    expect(m.rpcCalls.map((c) => c.name)).toEqual(['golf_tournament_create_from_calendar']);
+    m.rpc.golf_tournament_update = () => ({ data: null, error: { message: 'stale', code: 'P0001' } });
+    const res = await createTournamentFromCalendar(input({ lockMinutes: 120 }));
+    expect(res).toMatchObject({ success: true, data: { lockFailed: true } });
+    expect((res as { data: { tiebreakFailed?: true } }).data.tiebreakFailed).toBeUndefined();
+  });
+});

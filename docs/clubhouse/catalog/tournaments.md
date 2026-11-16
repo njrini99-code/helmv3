@@ -116,6 +116,7 @@ sync` mints its Bridge ID.
 | CH-16352 | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) | The head (without Add event), then "Your season starts on the calendar" + "Add a tournament on the calendar and it shows up here with its rounds, lineup and results." + Add a tournament (to the calendar's editor on Tournament, the page's one primary) and Plan from here instead, or Set up from calendar (2) when the calendar has untracked tournaments | `FirstRun` | tournaments-p5.test › CH-16352 |
 | CH-16380 | Import results: none of our players are in the file, or the file has team scores only | “None of your players are in this file” + the file’s teams and “Choose your team above if it is there under another name.”; or “No player rows in this file” + “Team scores and places can still be saved.” | `ImportResults` (`CheckView`) | tournaments-import.test › CH-16380 |
 | CH-16381 | Enter holes: no grid for the round (the course has no hole pars, no one is in the round) | “The course has no hole pars yet” + add the pars on the event; “No one is in this round yet” + set the lineup first | `HoleEntry` (`gridFor`) | tournaments-import.test › CH-16381 |
+| CH-16382 | Lineup builder: the lineup's lock time has passed and it is not locked (launch readiness F-05; nothing locks it at that time) | “The lock time, Tue 20 Oct 7:50 AM, has passed. Lock the lineup now; it locks itself when round 1 starts.” The head's chip reads “Lock by …” in amber | `LineupBuilder` | tournaments-b-team.test › CH-16382 |
 
 ## 164xx Loading
 

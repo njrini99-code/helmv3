@@ -75,11 +75,11 @@ export function stateFromDraft(draft: ChTourEventDraft, courses: ReadonlyArray<{
     fieldSize: draft.fieldSize,
     host: draft.host,
     resultsUrl: draft.resultsUrl,
-    lockMinutes: 10,
+    lockMinutes: draft.lockMinutes ?? 10,
   };
 }
 
-/** The `updateTournament` input for the form's state. Fields the form does not edit (the lock minutes) are left out, so they stay as saved. */
+/** The `updateTournament` input for the form's state, the lock minutes included (F-05: the form edits them). */
 export function toUpdateInput(s: ChTourState, timeZone: string): Partial<TourEventInput> {
   const rounds = sortRounds(s.rounds);
   const cols = formatToColumns(s.format, s.counting, s.play, s.count);
@@ -95,6 +95,7 @@ export function toUpdateInput(s: ChTourState, timeZone: string): Partial<TourEve
     holesPerRound: s.holes,
     kind: s.eventKind,
     tiebreak: s.tiebreak,
+    lockMinutes: s.lockMinutes,
     fieldSize: s.fieldSize,
     host: s.host.trim() || null,
     resultsUrl: s.resultsUrl.trim() || null,
