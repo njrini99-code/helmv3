@@ -108,7 +108,7 @@ export function perRoundSeries(rounds: ChRound[], rows: ChStatsRows): ChSeries {
       const v = pick(r);
       return v == null ? [] : [{ label: shortDate(r.round_date), value: v, at: r.round_date.slice(0, 10) }];
     });
-  const window = periodFigures(list);
+  const window = periodFigures(list, rows);
   return {
     avg: { score: window.avg, gir: window.gir, fairway: window.fairways, putts: window.putts },
     score: points((r) => (r.total_score == null ? null : per18(r.total_score, r.holes_played))),

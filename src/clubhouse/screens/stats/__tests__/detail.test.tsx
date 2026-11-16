@@ -2,6 +2,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ChRound } from '../../../data/season';
 import { perRoundSeries } from '../../../data/stats-figures';
+import { statsRowsOf } from '../../../__tests__/stats-rows';
 import { RoundLine } from '../detail';
 
 /**
@@ -27,7 +28,8 @@ const round = (id: string, date: string, holes: number, gir: number, girOf: numb
 
 describe('RoundLine · the dashed average is the headline’s (CH-12)', () => {
   it('greens 2 of 9 and 12 of 18 read “avg 52%” (pooled), not 44% (mean of percentages)', () => {
-    const series = perRoundSeries([round('a', '2026-10-01', 9, 2, 9), round('b', '2026-10-08', 18, 12, 18)]);
+    const rounds = [round('a', '2026-10-01', 9, 2, 9), round('b', '2026-10-08', 18, 12, 18)];
+    const series = perRoundSeries(rounds, statsRowsOf(rounds));
     expect(series.gir.map((p) => p.value)).toEqual([22.2, 66.7]);
     expect(series.avg!.gir).toBeCloseTo(51.9, 1);
     const { container } = render(<RoundLine points={series.gir} unit="%" digits={0} label="Greens in regulation by round" avg={series.avg!.gir} />);
