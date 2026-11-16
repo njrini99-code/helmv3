@@ -32,6 +32,7 @@ vi.mock('@/app/golf/actions/stats-data', () => ({
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import { calculateStatsFromShots } from '@/lib/utils/golf-stats-calculator-shots';
 import { playerFiguresOver } from '../data/player-figures';
+import { statsRowsOf } from './stats-rows';
 import { loadSeasonRounds } from '../data/season';
 import { filterFor, withHoles } from '../data/stats-filter';
 import { perEighteen } from '../data/stats-weight';
@@ -166,7 +167,7 @@ describe('the window over G1 to G4', () => {
 
   it('playerFiguresOver, every length (a nine weighs half)', async () => {
     const { rounds } = await read();
-    const f = playerFiguresOver(rounds, withHoles(filterFor('season'), 'all'), GOLDEN_SEASON_START);
+    const f = playerFiguresOver(rounds, withHoles(filterFor('season'), 'all'), GOLDEN_SEASON_START, statsRowsOf(rounds));
     expect(f.rounds).toBe(3);
     expect(f.scoring_average).toBeCloseTo(WINDOW_EXPECTED.scoringAverageAnyLength, 2);
     expect(f.putts_per_round).toBeCloseTo(WINDOW_EXPECTED.puttsPer18, 2);
@@ -182,7 +183,7 @@ describe('the window over G1 to G4', () => {
 
   it('playerFiguresOver, eighteen-hole rounds only', async () => {
     const { rounds } = await read();
-    const f = playerFiguresOver(rounds, filterFor('season'), GOLDEN_SEASON_START);
+    const f = playerFiguresOver(rounds, filterFor('season'), GOLDEN_SEASON_START, statsRowsOf(rounds));
     expect(f.rounds).toBe(2);
     expect(f.scoring_average).toBeCloseTo(WINDOW_EXPECTED.scoringAverage18, 2);
     expect(f.putts_per_round).toBe(G1_EXPECTED.putts);
