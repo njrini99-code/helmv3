@@ -386,6 +386,7 @@ export async function loadCoachHome(input: {
     tz: clockRead.then((c) => c.tz),
     now,
     names: rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, nameOf(p)]))),
+    members: rosterRead.then((res) => (res.error ? null : new Set(rosterOf(res).map((p) => p.id)))),
   });
   const roundsRead = rosterRead.then(async (res): Promise<Awaited<ReturnType<typeof loadSeasonRounds>>> => {
     const players = rosterOf(res);
@@ -653,6 +654,11 @@ export async function loadHomeWeek(
     tz: string | Promise<string>;
     now: Date;
     names: Map<string, string> | Promise<Map<string, string>>;
+    /**
+     * Today's roster (the coach's Home): a departed player's attendance rows are left out of who is invited, going and
+     * unanswered (DF-C-06). Null or absent when the roster didn't load: the rows are counted as read.
+     */
+    members?: Promise<ReadonlySet<string> | null>;
     viewer?: 'coach' | 'player';
     /** The player whose Home this is (with `viewer: 'player'`): their own replies decide which meetings they see. */
     playerId?: string | null;
@@ -864,6 +870,7 @@ export async function loadHomeWeek(
         ),
       ),
     );
+    const members = input.members ? await input.members.catch(() => null) : null;
     for (const { data, error } of attendance) {
       if (error) {
         // CH-2209: without replies, agenda rows drop who is invited and the confirmed count, never "0 players".
@@ -872,10 +879,11 @@ export async function loadHomeWeek(
         break;
       }
       for (const a of data ?? []) {
+        if (a.notified_at) coachInvited.set(a.event_id, (coachInvited.get(a.event_id) ?? 0) + 1);
+        if (members && !members.has(a.player_id)) continue;
         invited.set(a.event_id, [...(invited.get(a.event_id) ?? []), a.player_id]);
         if (rsvpOf(a.status) === 'accepted') accepted.set(a.event_id, (accepted.get(a.event_id) ?? 0) + 1);
         if (rsvpOf(a.status) === 'pending') unanswered.set(a.event_id, [...(unanswered.get(a.event_id) ?? []), a.player_id]);
-        if (a.notified_at) coachInvited.set(a.event_id, (coachInvited.get(a.event_id) ?? 0) + 1);
       }
     }
   }

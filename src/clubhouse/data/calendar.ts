@@ -321,13 +321,18 @@ export async function loadCalendar(input: {
     chLogServer('calendar', 'attendance', attendanceError, 'calendar');
     rsvpError = true;
   } else {
+    // DF-C-06: a player who has left the team (or a QA account) keeps their attendance rows, so "N of M going" and the
+    // invitee list counted them. Only today's roster counts; who the coach invited at all (`coachInvited`) still reads
+    // every row, since it decides whether the event is an invite list, not who is on it.
+    const onRoster = membersRes.error ? null : new Set(people.map((p) => p.id));
     for (const a of attendance ?? []) {
       if (!shown.has(a.event_id)) continue;
+      if (a.notified_at) coachInvited.set(a.event_id, (coachInvited.get(a.event_id) ?? 0) + 1);
+      if (onRoster && !onRoster.has(a.player_id) && a.player_id !== input.viewerPlayerId) continue;
       const r = rsvp.get(a.event_id) ?? {};
       r[a.player_id] = rsvpOf(a.status);
       rsvp.set(a.event_id, r);
       invited.set(a.event_id, [...(invited.get(a.event_id) ?? []), a.player_id]);
-      if (a.notified_at) coachInvited.set(a.event_id, (coachInvited.get(a.event_id) ?? 0) + 1);
     }
   }
 
