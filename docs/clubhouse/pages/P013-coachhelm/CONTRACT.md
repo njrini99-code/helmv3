@@ -100,8 +100,11 @@ names the window first ("This season from Aug 1"), and each row says how many
 rounds it stands on. A row from before this season's 1 August is dropped, never
 labelled as this season's. The lifetime scoring average is not stated under
 "This season". Until the season table's migration (`20261024151000`, held) is
-applied, the page reads the lifetime table, says "All time" and shows no row
-counts. Tested in `coachhelm-standing.test.tsx` and
+applied, the page reads the lifetime table, says "Rounds on file" and shows no
+row counts. It never says "All time": that table's pressure rows are the last
+90 days, which the Pressure group says (DF-P-05). When the player has a test
+round on file, which that table counts, the hero adds "test rounds included".
+Tested in `coachhelm-standing.test.tsx` and
 `coachhelm-standing-shape.test.ts`.
 
 | Bridge ID | Code | Name | Meaning |

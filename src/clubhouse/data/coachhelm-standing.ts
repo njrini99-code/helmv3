@@ -138,9 +138,22 @@ async function readLadderReads(supabase: Supabase, playerId: string, viewer: ChV
 }
 
 /**
+ * Whether the player has a test round on file, which the lifetime Standing table counts (DF-P-05). A failed read is logged and
+ * answers false: the page then says nothing about test rounds rather than guess.
+ */
+async function hasTestRounds(supabase: Supabase, playerId: string): Promise<boolean> {
+  const { count, error } = await supabase.from('golf_rounds').select('id', { count: 'exact', head: true }).eq('player_id', playerId).eq('is_test', true);
+  if (error) {
+    log('standing.test_rounds', error);
+    return false;
+  }
+  return (count ?? 0) > 0;
+}
+
+/**
  * The rows Standing draws, and the window they cover. This season's table first (owner decision 9: from 1 August in the team's time
  * zone, each row with its own round count); while that table is not deployed (its migration is held), the lifetime table, which the
- * page labels "All time" rather than call it a season. Only rows that are this player's are kept, whatever a loader returned.
+ * page labels "Rounds on file" rather than call it a season or "All time" (DF-P-05: its pressure rows are the last 90 days). Only rows that are this player's are kept, whatever a loader returned.
  */
 export async function readStandingRows(playerId: string): Promise<{ ok: true; rows: PlayerStanding[]; window: ChStandWindowKind } | { ok: false }> {
   try {
@@ -179,7 +192,11 @@ export async function loadPlayerStanding(input: { playerId: string; viewer?: ChV
     // 1 August is still 31 July in every US zone, and a team outside a chunk waits longer. It is dropped, never labelled "This season".
     const since = seasonStartDate(new Date(), zone);
     const rows = map.window === 'season' ? map.rows.filter((r) => typeof r.season_start === 'string' && r.season_start.slice(0, 10) >= since) : map.rows;
-    return { status: 'ready', data: { ...toChStanding(rows, baseline, reads, input.viewer, zone, map.window), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
+    const shaped = toChStanding(rows, baseline, reads, input.viewer, zone, map.window);
+    // DF-P-05: the lifetime table counts test rounds until the OD-01 chain is applied, so a player with one on file is told.
+    const tests = map.window === 'all_time' && rows.length > 0 ? await hasTestRounds(supabase, input.playerId) : false;
+    const data = tests ? { ...shaped, window: { ...shaped.window, testRounds: true as const } } : shaped;
+    return { status: 'ready', data: { ...data, ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
   } catch (err) {
     log('standing', err);
     return { status: 'failed' };

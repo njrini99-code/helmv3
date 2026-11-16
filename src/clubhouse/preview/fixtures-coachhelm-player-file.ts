@@ -26,7 +26,7 @@ const FIGURES: ChFigures = { rounds: 10, holeRounds: 10, legs: { tee: legOf('tee
 const NO_FIGURES: ChFigures = { rounds: 2, holeRounds: 2, legs: { tee: null, approach: null, around: null, putting: null }, total: null };
 const TEAM_SG = { legs: STATIONS.map((s) => PREVIEW_TEAM_BOARD.stations[s].team), ready: { size: PREVIEW_TEAM_BOARD.roster.count } };
 // The coach's card links to the Standing page, whose legs are that page's own window: the link says which.
-const SG: ChFileSg = { ...toChFileSgOver(FIGURES, TEAM_SG, { you: false, first: FIRST }), standing: 'All time' };
+const SG: ChFileSg = { ...toChFileSgOver(FIGURES, TEAM_SG, { you: false, first: FIRST }), standing: 'Rounds on file' };
 // The player's own page carries no team figure.
 const SG_YOU: ChFileSg = toChFileSgOver(FIGURES, null, { you: true, first: FIRST });
 

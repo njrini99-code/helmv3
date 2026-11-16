@@ -75,7 +75,7 @@ describe('Standing names its window and each row its own round count (owner deci
 
   it('the lifetime table (the default, and the loader’s fallback) is "All time": rounds on file, no row counts, the 90-day pressure note', () => {
     const s = toChStanding([row('gir_pct', 58, 66, null), row('opening_hole_delta', 0.3, 0, null)], ok);
-    expect(s.window).toEqual({ kind: 'all_time', label: 'All time', since: null });
+    expect(s.window).toEqual({ kind: 'all_time', label: 'Rounds on file', since: null });
     expect(s.rounds).toBe(14);
     expect(s.groups.flatMap((g) => g.rows).every((r) => r.rounds === null)).toBe(true);
     expect(pressureOf(s)).toMatch(/last 90 days/);

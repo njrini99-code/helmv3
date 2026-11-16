@@ -320,7 +320,7 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     if (out.status !== 'ready') throw new Error('not ready');
     expect(out.data).toMatchObject({ state: 'ready', scoringAverage: '78.0', scoringRounds: 6, rounds: 14, baselineFailed: false });
     render(wrap(<Standing load={standingLoad(out.data)} />));
-    expect(screen.getByText(/^All time · 14 rounds · Scoring average 78\.0 this season, 6 rounds/)).toBeTruthy();
+    expect(screen.getByText(/^Rounds on file · 14 rounds · Scoring average 78\.0 this season, 6 rounds/)).toBeTruthy();
   });
 
   it('SC-01 under five rounds this season is an early read, whatever the lifetime row holds', async () => {
@@ -368,7 +368,32 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     expect(out.data.groups.flatMap((g) => g.rows).find((r) => r.id === 'gir_pct')!.rounds).toBe(13);
   });
 
-  it('while the season table is not deployed, the lifetime map, labelled "All time" and with no row counts', async () => {
+  it('DF-P-05: the lifetime map is "Rounds on file", never "All time", and says when it counts the player’s test rounds', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    const rounds = seasonRounds([78, 78, 78, 78, 78, 78]);
+    const withTests = (f: Array<[string, unknown[]]>) => (f.some(([k, a]) => k === 'eq' && a[0] === 'is_test') ? { count: 2 } : rounds);
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 74.1 } }, golf_rounds: withTests };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data.window).toEqual({ kind: 'all_time', label: 'Rounds on file', since: null, testRounds: true });
+    render(wrap(<Standing load={standingLoad(out.data)} />));
+    expect(screen.getByText(/^Rounds on file · test rounds included · 14 rounds/)).toBeTruthy();
+    expect(document.body.textContent).not.toContain('All time');
+    // The pressure rows are the last 90 days, and their group says so.
+    expect(out.data.groups.find((g) => g.id === 'pressure')?.description ?? 'last 90 days').toContain('last 90 days');
+  });
+
+  it('DF-P-05: no test round on file, or a failed read of them, says nothing about test rounds', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    const rounds = seasonRounds([78, 78, 78, 78, 78, 78]);
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 14 } }, golf_rounds: (f) => (f.some(([k, a]) => k === 'eq' && a[0] === 'is_test') ? { error: { message: 'timeout' } } : rounds) };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data.window.testRounds).toBeUndefined();
+    expect(logServer).toHaveBeenCalledWith('coachhelm', 'standing.test_rounds', expect.anything(), 'coachhelm');
+  });
+
+  it('while the season table is not deployed, the lifetime map, labelled "Rounds on file" and with no row counts', async () => {
     standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
     expect(out.status).toBe('ready');
@@ -642,7 +667,7 @@ describe('the Standing screen', () => {
     show(standingLoad(toChStanding(STANDING_ROWS, ok)));
     const life = screen.getByRole('heading', { name: 'Greens in regulation' }).closest('li')!;
     expect(life.querySelector('.ch-hs-n')).toBeNull();
-    expect(screen.getByText('All time · 14 rounds · Scoring average 77.2, practice included · Refreshed Sep 29')).toBeTruthy();
+    expect(screen.getByText('Rounds on file · 14 rounds · Scoring average 77.2, practice included · Refreshed Sep 29')).toBeTruthy();
   });
 
   it('the track is decoration, hidden from assistive tech: every number is in the text beside it', () => {
@@ -672,7 +697,7 @@ describe('the Standing screen', () => {
     expect(code('CH-13371')!.textContent).toBe('3 rounds so far, so this is an early read. Projections start at 5 rounds.');
     expect(document.querySelector('.ch-hs-proj')).toBeNull();
     expect(screen.queryByText('Most to gain')).toBeNull();
-    expect(screen.getByText('All time · 3 rounds · Refreshed Sep 29').textContent).toBe('All time\u00a0· 3 rounds\u00a0· Refreshed Sep\u00a029');
+    expect(screen.getByText('Rounds on file · 3 rounds · Refreshed Sep 29').textContent).toBe('Rounds on file\u00a0· 3 rounds\u00a0· Refreshed Sep\u00a029');
   });
 
   it('CH-13371 the early notice names the team floor only where a row is short of teammates', () => {

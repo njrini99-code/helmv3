@@ -78,13 +78,25 @@ export interface ChStandGroup {
   rows: ChStandRow[];
 }
 
-/** `season`: this season's table (owner decision 9). `all_time`: the lifetime table, read while the season table is not deployed. */
+/**
+ * `season`: this season's table (owner decision 9). `all_time`: the lifetime table, read while the season table is not deployed. The
+ * lifetime table is not one window (DF-P-05): its cache rows are every round on file, its pressure rows the last 90 days (the group
+ * says so) and its approach rows every round on file, so the page calls it "Rounds on file", never "All time".
+ */
+/** The lifetime table's label (DF-P-05). */
+export const ALL_ROUNDS_LABEL = 'Rounds on file';
+
 export type ChStandWindowKind = 'season' | 'all_time';
 
 export interface ChStandWindow {
   kind: ChStandWindowKind;
-  /** "This season" or "All time": the hero names it, so no number on the page passes for a window it is not. */
+  /** "This season" or "Rounds on file": the hero names it, so no number on the page passes for a window it is not. */
   label: string;
+  /**
+   * The lifetime table's rows count this player's test rounds (its refresh keeps them until the held OD-01 chain is applied), and the
+   * hero says so. Only on `all_time`, and only when the player has a test round on file; absent otherwise and when that read failed.
+   */
+  testRounds?: true;
   /** "Aug 1": the first day the season rows cover; null on the lifetime table and before any season row exists. */
   since: string | null;
 }
@@ -391,7 +403,7 @@ export function toChStanding(
   return {
     // A failed scoring-average read is not an early read: it is not known how many rounds there are, and the page says the read failed.
     state: all.length === 0 ? 'empty' : baseline.status === 'ok' && (behind == null || behind < MIN_PROJECTION_ROUNDS) ? 'early' : 'ready',
-    window: { kind: windowKind, label: windowKind === 'season' ? 'This season' : 'All time', since: dayLabel(since) },
+    window: { kind: windowKind, label: windowKind === 'season' ? 'This season' : ALL_ROUNDS_LABEL, since: dayLabel(since) },
     rounds: windowKind === 'season' ? (counted.length > 0 ? Math.max(...counted) : null) : roundsPlayed,
     scoringAverage: average != null ? oneDecimal(average) : null,
     scoringRounds: baseline.status === 'ok' && baseline.scoringRounds !== undefined ? baseline.scoringRounds : null,
