@@ -1141,6 +1141,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-15-team-hub-prefetch.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-touch-list-presence.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-chart-mark-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-css-ratchet-after-train.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-drill-push-skeleton.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-one-reduce-motion-read.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-phone-overlay-push.md` | current | - | - | - | - |
@@ -1292,6 +1293,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-15-shell-keeps-what-it-knew.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-15-touch-gestures.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-15-whats-new-failed-and-no-team.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-16-push-edge-token.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
