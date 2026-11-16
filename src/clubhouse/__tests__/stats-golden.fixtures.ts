@@ -91,7 +91,8 @@ export const G1_HOLES: readonly GoldenHole[] = [
   hole(7, 3, 190, [tee(190, 'sand', 20), chip('sand', 20, 'green', 30), putt(30, 3), putt(3, 0)], e(4, 2, null, false, 0, 3)),
   hole(8, 4, 410, [tee(410, 'rough', 150), app('rough', 150, 'green', 30), putt(30, 2), putt(2, 0)], e(4, 2, false, true, 0, null)),
   hole(9, 5, 540, [tee(540, 'fairway', 270), app('fairway', 270, 'fairway', 100), app('fairway', 100, 'sand', 10), chip('sand', 10, 'green', 4), putt(4, 0)], e(5, 1, true, false, 0, 2)),
-  // A bogey out of the bunker in two after a penalty: a save on the Tour definition (SC-02), not on the app's old par-or-better rule.
+  // A bogey out of the bunker in two after a penalty: a save on the Tour definition (SC-02), not on the app's old par-or-better rule,
+  // and a scramble too since scrambling counts sand saves (20261116200000).
   hole(10, 4, 430, [tee(430, 'other', 210), drop('other', 210, 'water'), app('rough', 210, 'sand', 15), chip('sand', 15, 'green', 5), putt(5, 0)], e(5, 1, false, false, 1, 2)),
   hole(11, 3, 160, [tee(160, 'green', 20), putt(20, 2), putt(2, 0)], e(3, 2, null, true, 0, null)),
   hole(12, 4, 390, [tee(390, 'rough', 140), app('rough', 140, 'rough', 15), chip('rough', 15, 'green', 3), putt(3, 0)], e(4, 1, false, false, 0, null)),
@@ -113,7 +114,8 @@ export const G1_EXPECTED = {
   fairways: { made: 8, of: 14, pct: 57.14 },
   putts: 31,
   puttsPerGir: 2.1,
-  scrambling: { made: 4, of: 8, pct: 50 },
+  /** Scrambling counts sand saves (20261116200000): the hole 10 bogey sand save is a fifth. */
+  scrambling: { made: 5, of: 8, pct: 62.5 },
   onePutts: 5,
   threePutts: 2,
   penaltyStrokes: 2,
@@ -412,7 +414,7 @@ export function goldenPgTapSql(): string {
   is(cache('total_putts'), ex.putts, 'G1 cache: 31 putts');
   is(cache('one_putts'), ex.onePutts, 'G1 cache: 5 one-putts');
   is(cache('three_putts'), ex.threePutts, 'G1 cache: 2 three-putts');
-  is(cache('scrambles_converted'), ex.scrambling.made, 'G1 cache: 4 scrambles (the hole 5 chip-in counts)');
+  is(cache('scrambles_converted'), ex.scrambling.made, 'G1 cache: 5 scrambles (the hole 5 chip-in and the hole 10 sand save count)');
   is(cache('scramble_attempts'), ex.scrambling.of, 'G1 cache: of 8');
   is(cache('sand_saves'), ex.sandSavesTour.made, 'G1 cache: 3 sand saves on the Tour definition');
   is(cache('sand_attempts'), ex.sandSavesTour.of, 'G1 cache: of 4');

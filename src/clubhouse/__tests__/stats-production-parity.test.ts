@@ -89,7 +89,14 @@ interface Spec {
 }
 
 /** A round, its holes and its cache row, built the way production's triggers build them (recompute_golf_round_totals, update_round_stats_cache). */
-function build(specs: Spec[], teams: Array<{ id: string; players: string[]; gender?: string }>): EvalDb {
+/**
+ * `recorded` builds the cache rows as they stood when the retired Fairway Team page's figures were recorded (scrambling over
+ * missed greens only); the oracle is keyed by every row, so only that build finds them. `current` is today's trigger
+ * (20261116200000): scrambling also counts a hole with a greenside-bunker visit, and a sand save as made.
+ */
+type ScrambleRule = 'recorded' | 'current';
+
+function build(specs: Spec[], teams: Array<{ id: string; players: string[]; gender?: string }>, rule: ScrambleRule = 'current'): EvalDb {
   const rounds: Row[] = [];
   const holes: Row[] = [];
   const cache: Row[] = [];
@@ -144,7 +151,12 @@ function build(specs: Spec[], teams: Array<{ id: string; players: string[]; gend
       round_id: s.id, player_id: s.player, total_score: total, score_to_par: toPar, front_nine: front, back_nine: back,
       fairways_hit: tot.total_fairways_hit, fairways_total: tot.total_fairways, greens_hit: tot.total_gir, greens_total: tot.total_gir_possible, total_putts: tot.total_putts,
       one_putts: withPutts.filter((h) => h.putts === 1).length, three_putts: withPutts.filter((h) => (h.putts as number) >= 3).length,
-      scrambles_converted: hs.filter((h) => h.gir === false && dd(h) <= 0).length, scramble_attempts: hs.filter((h) => h.gir === false).length,
+      ...(rule === 'recorded'
+        ? { scrambles_converted: hs.filter((h) => h.gir === false && dd(h) <= 0).length, scramble_attempts: hs.filter((h) => h.gir === false).length }
+        : {
+            scrambles_converted: hs.filter((h) => (h.gir === false && dd(h) <= 0) || h.sand_save === true).length,
+            scramble_attempts: hs.filter((h) => h.gir === false || h.sand_save != null).length,
+          }),
       sand_saves: hs.filter((h) => h.sand_save === true).length, sand_attempts: hs.filter((h) => h.sand_save != null).length,
       eagles: hs.filter((h) => dd(h) <= -2).length, birdies: hs.filter((h) => dd(h) === -1).length, pars: hs.filter((h) => dd(h) === 0).length,
       bogeys: hs.filter((h) => dd(h) === 1).length, double_bogeys: hs.filter((h) => dd(h) === 2).length, triple_plus: hs.filter((h) => dd(h) >= 3).length,
@@ -192,7 +204,7 @@ const day = (iso: string, back: number) => new Date(Date.parse(`${iso}T12:00:00Z
 const NOW = new Date('2026-10-15T15:00:00Z');
 
 /** One team: a full player (season boundary, an eagle, a round with no putts, unknown fairways, two nine-hole rounds, every type), a one-round player, and one whose uncountable rounds must not count. */
-function teamFixture(extra: Spec[] = []): EvalDb {
+function teamFixture(extra: Spec[] = [], rule: ScrambleRule = 'current'): EvalDb {
   const types = ['tournament', 'qualifier', 'practice'] as const;
   const a: Spec[] = Array.from({ length: 14 }, (_, i) => ({ id: `a${i}`, player: 'pA', date: day('2026-10-12', i * 6), type: types[i % 3], seed: i, sg: -1 + (i % 4) * 0.7 }));
   a[2] = { ...a[2]!, eagle: true };
@@ -208,14 +220,19 @@ function teamFixture(extra: Spec[] = []): EvalDb {
     { id: 'c-live', player: 'pC', date: '2026-10-12', status: 'in_progress', seed: 1 },
     { id: 'c-partial', player: 'pC', date: '2026-10-09', partial: true, seed: 2 },
   ];
-  return build([...a, ...b, ...c, ...extra], [{ id: 't1', players: ['pA', 'pB', 'pC'] }]);
+  return build([...a, ...b, ...c, ...extra], [{ id: 't1', players: ['pA', 'pB', 'pC'] }], rule);
 }
 
 /** Strokes gained needs three whole rounds on Clubhouse (MIN_SG_ROUNDS); production's Team stats row shows any. */
 const sgFloor = (p: Pair) => (/sgPerRound|sg[A-Z]/.test(p.metric) && p.clubhouse == null && p.production != null ? 'MIN_SG_ROUNDS floor' : null);
 /** A rate under its floor has no value on Clubhouse (A7): fairways and greens need two rounds, scrambling and sand saves ten chances; production shows any. */
 const rateFloor = (p: Pair) => (/(fairway|gir|scrambling|sandSave)Pct/.test(p.metric) && p.clubhouse == null && p.production != null ? 'A7 rate floor' : null);
-const floors = (p: Pair) => sgFloor(p) ?? rateFloor(p);
+/**
+ * The Fairway Team page retired (2026-11-14) counting scrambles over missed greens only; scrambling counts sand saves
+ * since 20261116200000, so its recorded scrambling figure is the old rule's. Every other figure still matches it.
+ */
+const retiredScrambling = (p: Pair) => (/^(player\.scramblingPct\.vsTeamPage|team\.scramblingPct)$/.test(p.metric) ? 'Fairway Team page retired before scrambling counted sand saves' : null);
+const floors = (p: Pair) => sgFloor(p) ?? rateFloor(p) ?? retiredScrambling(p);
 
 describe('Team stats against the Fairway Team stats page, same rounds', () => {
 
@@ -264,6 +281,7 @@ describe('Player stats against the Fairway player page (getDetailedStats), same 
   it('every window and filter, each player: scoring, to par, best round, fairways, greens, putts, 3-putts, scrambling, sand, penalties, par 3/4/5, the score mix, putts per green, strokes gained', async () => {
     vi.useFakeTimers({ now: NOW, toFake: ['Date'] });
     const db = teamFixture();
+    const recorded = teamFixture([], 'recorded');
     const pairs: Pair[] = [];
     const filters: Array<[string, ChFilter]> = [
       ['last10', filterFor('last10')],
@@ -279,7 +297,7 @@ describe('Player stats against the Fairway player page (getDetailedStats), same 
         if (!prof?.win.holeRounds) continue;
         const ids = holeRoundIds(db, prof);
         const s = await fairwayDetail(db, pid, ids);
-        const fw = await fairwayTeam(subsetDb(db, ids), 't1');
+        const fw = await fairwayTeam(subsetDb(recorded, ids), 't1');
         const out = playerPairs(prof, s, `${name}:${pid}`, fw.players.find((p) => p.id === pid));
         // Nine holes only: production's scoring average, to par and best round are of 18-hole rounds (none here), and its
         // per-round counts divide by rounds of any length; Clubhouse states them per 18 holes (perEighteen), by design.

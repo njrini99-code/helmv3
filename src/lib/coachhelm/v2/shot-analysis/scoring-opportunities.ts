@@ -6,6 +6,8 @@
  * Also calculates scrambling and sand save statistics.
  */
 
+import { holeScramble } from '@/lib/golf/stat-formulas';
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -131,14 +133,19 @@ interface ScrambleHoleData {
   gir: boolean;
   par: number;
   score: number;
-  sandShot?: boolean;
+  /**
+   * golf_holes.sand_save (Tour rule): null or absent = no greenside-bunker
+   * visit, true = holed in two from the bunker, false = a visit without one.
+   */
+  sandSave?: boolean | null;
 }
 
 /**
- * Calculate scrambling statistics.
+ * Calculate scrambling statistics, on the stats cache's rule (holeScramble).
  *
- * Scramble: missed GIR but still made par or better.
- * Sand save: scramble from a bunker (sandShot = true).
+ * Scramble: a missed green or a greenside-bunker visit is a chance; par or
+ * better after the miss, or a sand save, is made. One chance per hole.
+ * Sand save: its own stat, read from the sand_save flag (any score).
  * Up-and-down: same as scramble rate (common alias).
  */
 export function calculateScrambleRate(
@@ -150,26 +157,20 @@ export function calculateScrambleRate(
   let sandSaveSuccesses = 0;
 
   for (const hole of holes) {
-    const madePar = hole.score <= hole.par;
-
-    // Sand save: a greenside-bunker visit. Per the canonical definition the
-    // denominator is bunker visits — NOT gated on the gir column, which is
-    // mislabeled on real bunker holes (a hole can carry gir=true yet still
-    // have a genuine greenside-bunker up-and-down). Count it independently of
-    // the missed-GIR scramble gate below.
-    if (hole.sandShot) {
+    const sandSave = hole.sandSave ?? null;
+    if (sandSave !== null) {
       sandSaveAttempts++;
-      if (madePar) {
-        sandSaveSuccesses++;
-      }
+      if (sandSave) sandSaveSuccesses++;
     }
 
-    // Scramble: missed GIR but still made par or better.
-    if (hole.gir) continue;
-    totalScrambleAttempts++;
-    if (madePar) {
-      scrambleSuccesses++;
-    }
+    const scramble = holeScramble({
+      missedGreen: !hole.gir,
+      score: hole.score,
+      par: hole.par,
+      sandSave,
+    });
+    if (scramble.attempt) totalScrambleAttempts++;
+    if (scramble.made) scrambleSuccesses++;
   }
 
   const scrambleRate =

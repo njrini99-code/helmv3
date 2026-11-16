@@ -54,6 +54,7 @@ import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { __registerGetDetailedStatsAsAdmin } from '@/lib/golf/detailed-stats-admin-bridge';
 import { getStatsActionContext } from '@/lib/golf/stats-action-context';
+import { holeScramble } from '@/lib/golf/stat-formulas';
 import { verifyPlayerAccess as verifyCanonicalPlayerAccess } from '@/lib/auth/verify-player-access';
 
 
@@ -732,15 +733,16 @@ async function getStatsSummaryImpl(
     };
   }
 
-  // Fetch scrambling data from golf_holes — missed GIR + made par or better = scramble
-  // Uses (score - par) <= 0 to match the DB trigger definition exactly
+  // Scrambling from golf_holes on the DB trigger's rule (holeScramble): a
+  // chance is a missed green or a greenside-bunker visit; made is par or
+  // better after the miss, or a sand save.
   const roundIds = filteredRounds.map(r => r.id);
   const { data: holesWithScrambling, error: holesWithScramblingError } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
-    .select('score, par')
+    .select('score, par, gir, sand_save')
     .in('round_id', roundIds)
     .not('score', 'is', null)
-    .eq('gir', false)
+    .or('gir.eq.false,sand_save.not.is.null')
     .order('id', { ascending: true })
     .range(from, to), undefined, { table: 'golf_holes', action: 'getStatsSummary', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
   if (holesWithScramblingError) {
@@ -754,8 +756,9 @@ async function getStatsSummaryImpl(
   let scramblingMade = 0;
   if (holesWithScrambling) {
     for (const hole of holesWithScrambling) {
-      scramblingAttempts++;
-      if (hole.score !== null && hole.par !== null && (hole.score - hole.par) <= 0) {
+      const scramble = holeScramble({ missedGreen: hole.gir === false, score: hole.score, par: hole.par, sandSave: hole.sand_save });
+      if (scramble.attempt) scramblingAttempts++;
+      if (scramble.made) {
         scramblingMade++;
       }
     }
@@ -2015,15 +2018,16 @@ async function getTeamComparisonImpl(
     };
   }
 
-  // Fetch scrambling data from golf_holes — missed GIR + made par or better = scramble
-  // Uses (score - par) <= 0 to match the DB trigger definition exactly
+  // Scrambling from golf_holes on the DB trigger's rule (holeScramble): a
+  // chance is a missed green or a greenside-bunker visit; made is par or
+  // better after the miss, or a sand save.
   const teamRoundIds = roundsData.map(r => r.id);
   const { data: teamScramblingData, error: teamScramblingError } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
-    .select('round_id, score, par')
+    .select('round_id, score, par, gir, sand_save')
     .in('round_id', teamRoundIds)
     .not('score', 'is', null)
-    .eq('gir', false)
+    .or('gir.eq.false,sand_save.not.is.null')
     .order('id', { ascending: true })
     .range(from, to), undefined, { table: 'golf_holes', action: 'getTeamComparison', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
   if (teamScramblingError) {
@@ -2047,8 +2051,9 @@ async function getTeamComparisonImpl(
       const pId = roundToPlayer.get(hole.round_id);
       if (pId) {
         const scrambling = playerScramblingMap.get(pId)!;
-        scrambling.attempts++;
-        if (hole.score !== null && hole.par !== null && (hole.score - hole.par) <= 0) scrambling.made++;
+        const scramble = holeScramble({ missedGreen: hole.gir === false, score: hole.score, par: hole.par, sandSave: hole.sand_save });
+        if (scramble.attempt) scrambling.attempts++;
+        if (scramble.made) scrambling.made++;
       }
     }
   }
