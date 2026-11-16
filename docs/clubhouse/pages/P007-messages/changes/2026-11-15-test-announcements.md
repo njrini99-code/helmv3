@@ -13,12 +13,14 @@ Held items:     QA messages have no is_test column; the list to delete is in the
 
 ### Changed
 
-- `screens/messages/model.ts` `shownAnnouncements`, used by `routes/messages.tsx` and `Messages.tsx`: an announcement marked `is_test`
+- `screens/messages/model.ts` `shownAnnouncements`, used by
+  `routes/messages.tsx` and `Messages.tsx`: an announcement marked `is_test`
   is left out, as Team Hub leaves it out (`data/hub.ts`).
 
 ### Why
 
-- QA announcements showed in the coach's and players' Messages while Team Hub hid them.
+- QA announcements showed in the coach's and players' Messages while Team Hub
+  hid them.
 
 ### Verification
 
