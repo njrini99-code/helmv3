@@ -15,9 +15,7 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/rounds/continue"
       component="ContinueRoundPage"
-      title="Failed to load round"
-      message="We couldn't load your in-progress round. Please try again."
-      homePath="/golf/dashboard"
+      homePath="/golf/dashboard/rounds"
     />
   );
 }

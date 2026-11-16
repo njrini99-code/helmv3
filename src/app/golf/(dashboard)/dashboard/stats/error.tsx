@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/stats"
       component="StatsPage"
-      title="Failed to load statistics"
-      message="We couldn't load your statistics. Please try again."
       homePath="/golf/dashboard"
     />
   );

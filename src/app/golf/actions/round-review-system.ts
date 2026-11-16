@@ -1009,7 +1009,7 @@ async function computeAndStoreRoundReview(
 
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath(`/golf/dashboard/rounds/${roundId}`);
-    revalidatePath(`/golf/dashboard/rounds/${roundId}/review`);
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
 
     const review: RoundReviewWithRound = {
       id: reviewId,

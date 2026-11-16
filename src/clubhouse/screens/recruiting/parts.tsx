@@ -1,12 +1,11 @@
 'use client';
 
 import { CalendarClock, ChevronDown, Mail, NotebookPen, Phone, UserRound, type LucideIcon } from 'lucide-react';
-import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useId, type CSSProperties, type ReactNode } from 'react';
 import { CH_DIVISIONS } from '../../data/recruiting-calendar';
 import { dateLabel, isNextStepDue, isNextStepLate, mailHref, nextStepLine, stageMeta, telHref, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { initials } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
-import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import type { RecCtx } from './ctx';
@@ -29,36 +28,20 @@ export const isStrong = (stage: ChStage) => stage === 'offered' || stage === 'co
 
 /**
  * B1, "Committed is a moment, once": under a committed prospect's stage, a 1px gilt rule. On the successful move to
- * Committed it draws left to right over the reveal duration and `haptic('success')` lands as it ends (animationend),
- * never on the tap; `held` keeps it waiting while something covers it (the phone's stage sheet). Reduced motion or
- * Animations off: the rule is simply there and the haptic fires at once. The beat is consumed, so it never replays.
+ * Committed the rule is there at once and `haptic('success')` lands with it, never on the tap (content never moves on its
+ * own, MOTION-AND-VISUAL 3.1, 3.12: the left-to-right draw, and the animationend the haptic waited for, are gone);
+ * `held` keeps both waiting while something covers it (the phone's stage sheet). The beat is consumed, so it never replays.
  */
 export function CommitRule({ p, beat, held = false, onEnd }: { p: ChProspect; beat: { id: string; n: number } | null; held?: boolean; onEnd: (n: number) => void }) {
-  const reduced = useChReducedMotion();
-  const ref = useRef<HTMLSpanElement>(null);
   const mine = beat && beat.id === p.id && p.stage === 'committed' ? beat : null;
   const play = !!mine && !held;
-  const drawing = play && !reduced;
-  // Reduced motion or Animations off: nothing draws, so the beat lands at once.
   useEffect(() => {
-    if (!play || !reduced || !mine) return;
+    if (!play || !mine) return;
     haptic('success');
     onEnd(mine.n);
-  }, [play, reduced, mine, onEnd]);
-  // The haptic waits for the rule to finish drawing (a native listener on the rule's own animationend).
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !drawing || !mine) return;
-    const done = (e: AnimationEvent) => {
-      if (e.target !== el) return;
-      haptic('success');
-      onEnd(mine.n);
-    };
-    el.addEventListener('animationend', done);
-    return () => el.removeEventListener('animationend', done);
-  }, [drawing, mine, onEnd]);
+  }, [play, mine, onEnd]);
   if (p.stage !== 'committed') return null;
-  return <span ref={ref} className={'ch-rec-commit' + (mine ? (drawing ? ' is-drawing' : ' is-waiting') : '')} aria-hidden="true" data-ch-code="CH-14806" />;
+  return <span className={'ch-rec-commit' + (mine && held ? ' is-waiting' : '')} aria-hidden="true" data-ch-code="CH-14806" />;
 }
 
 /** "Overdue: " or "Next step: " before a step's words, for VoiceOver; the plate's colour says it to the eye. */

@@ -48,6 +48,38 @@ export function trendScale(points: readonly TrendPoint[], pad = 0.6): { lo: numb
   return { lo, hi: hi === lo ? lo + 1 : hi, mean: vals.reduce((a, b) => a + b, 0) / vals.length };
 }
 
+/** One phone bar: its length as a share of the longest bar, and which side of the zero rule it runs. */
+export type TrendBar = { len: number; side: 'better' | 'worse' | 'even' };
+
+/**
+ * The phone's bars (stats and charts audit 2026-11-15, CH-02): a figure against the rating or the field can be either side of zero,
+ * so each bar runs from a zero rule, better (below the mark, lower is better) to one side and worse to the other, every bar on one
+ * scale, the largest figure either way. No floor and no min-max range: +5.0 and +5.4 draw nearly the same length, and a figure
+ * of zero draws none. Null where the event has no figure.
+ */
+export function barLength(points: readonly TrendPoint[]): Array<TrendBar | null> {
+  const top = Math.max(0, ...points.map((p) => (p.value == null ? 0 : Math.abs(p.value))));
+  return points.map((p) => {
+    if (p.value == null) return null;
+    if (p.value === 0 || top === 0) return { len: 0, side: 'even' };
+    return { len: Math.abs(p.value) / top, side: p.value < 0 ? 'better' : 'worse' };
+  });
+}
+
+/**
+ * Where the bars' zero rule sits across the track, 0 to 1 from the worse end, and how much of the track the longest bar takes:
+ * the track holds exactly the figures' range with zero in it, so a season all over the mark gives the worse side the whole width
+ * and a mixed one splits it in proportion.
+ */
+export function barAxis(points: readonly TrendPoint[]): { zero: number; unit: number } {
+  const vals = points.map((p) => p.value).filter((v): v is number => v != null);
+  const worse = Math.max(0, ...vals);
+  const better = Math.max(0, ...vals.map((v) => -v));
+  const range = worse + better;
+  if (range === 0) return { zero: 0.5, unit: 0 };
+  return { zero: worse / range, unit: Math.max(worse, better) / range };
+}
+
 /** Where a value sits, 0 at the top (the better end) to 1 at the bottom. Lower is better, so lower is higher up. */
 export const trendY = (v: number, lo: number, hi: number) => (v - lo) / (hi - lo);
 

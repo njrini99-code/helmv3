@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CH_SWIPE } from '../../lib/motion';
 import {
-  CH_EDGE_COMMIT,
-  CH_EDGE_FLICK_PX_PER_MS,
   CH_EDGE_SLOP_PX,
-  CH_EDGE_ZONE_PX,
+  CH_SWIPE_FINISH_FLOOR,
   claimWebSwipe,
   createEdgeSwipe,
   edgeSwipeAllowed,
@@ -12,7 +11,13 @@ import {
   isTrackingRoute,
   nativeSwipeIsOff,
   overlayIsOpen,
+  swipeFinish,
 } from '../edge-swipe';
+
+// The thresholds are the vocabulary's (MOTION-AND-VISUAL 3.3), not copies of it.
+const CH_EDGE_ZONE_PX = CH_SWIPE.edge;
+const CH_EDGE_COMMIT = CH_SWIPE.commitProgress;
+const CH_EDGE_FLICK_PX_PER_MS = CH_SWIPE.commitVelocity;
 
 const W = 390;
 
@@ -81,7 +86,9 @@ describe('the edge swipe state machine', () => {
     expect(back.moves[1]?.frame?.offset).toBe(0);
   });
 
-  it('reports the commit mark as crossed once each way', () => {
+  // MOTION-AND-VISUAL 3.3 and 3.10: the back swipe has no haptic, so a move no longer reports the mark as crossed (it was
+  // the selection tick's cue); the frame still says which side of the mark it is on.
+  it('says which side of the commit mark each move is on', () => {
     const mark = W * CH_EDGE_COMMIT;
     const { moves } = drag([
       [10 + mark - 20, 400],
@@ -90,11 +97,11 @@ describe('the edge swipe state machine', () => {
       [10 + mark - 5, 400],
       [10 + mark - 30, 400],
     ]);
-    expect(moves.map((mv) => mv.crossed)).toEqual([false, true, false, true, false]);
     expect(moves.map((mv) => mv.frame?.past)).toEqual([false, true, true, false, false]);
+    expect(moves.every((mv) => !('crossed' in mv))).toBe(true);
   });
 
-  it('lets go past 35% of the width, slowly, and the screen pops', () => {
+  it('lets go past half the width, slowly, and the screen pops', () => {
     const mark = W * CH_EDGE_COMMIT;
     const slow = (to: number) => {
       const d = drag([[10 + to * 0.5, 400], [10 + to, 400]], { dt: 200 });
@@ -161,9 +168,8 @@ describe('a push still sliding in, grabbed where it stands (C1)', () => {
     const f = m.move(10 + CH_EDGE_SLOP_PX + 4, 401, 16);
     expect(f.claim).toBe(true);
     expect(f.frame?.offset).toBe(200 + CH_EDGE_SLOP_PX + 4);
-    // Already past the commit mark when taken, so it says so from the start rather than as a crossing.
+    // Already past the commit mark when taken, so it says so from the start.
     expect(f.frame?.past).toBe(true);
-    expect(f.crossed).toBe(false);
   });
 
   it('let go without a flick, it goes the way its place says: past the mark commits, short of it springs home', () => {
@@ -346,5 +352,42 @@ describe('a screen holding the swipe in the app (helmNav { webSwipe })', () => {
     expect(hasChevronBack(screen)).toBe(true);
     screen.innerHTML = '<p>no bar</p>';
     expect(hasChevronBack(screen)).toBe(false);
+  });
+});
+
+describe('a released swipe finishes from where it is (MOTION-AND-VISUAL 3.3)', () => {
+  it('takes the thresholds from the vocabulary: 20 px, half the width, 0.7 px/ms', () => {
+    expect(CH_SWIPE).toEqual({ edge: 20, commitProgress: 0.5, commitVelocity: 0.7 });
+    expect(createEdgeSwipe(W).start(CH_SWIPE.edge, 300, 0)).toBe(true);
+    expect(createEdgeSwipe(W).start(CH_SWIPE.edge + 1, 300, 0)).toBe(false);
+  });
+
+  it('runs 520 ms times the share of the way left, never under 35% of it, on the iOS curve', () => {
+    expect(CH_SWIPE_FINISH_FLOOR).toBe(0.35);
+    expect(swipeFinish(1).ms).toBe(520);
+    expect(swipeFinish(0.5).ms).toBe(260);
+    expect(swipeFinish(0.4).ms).toBe(208);
+    // The floor: a page let go nearly home (or nearly off) still takes 182 ms, never a snap.
+    expect(swipeFinish(0.2).ms).toBe(182);
+    expect(swipeFinish(0).ms).toBe(182);
+    expect(swipeFinish(2).ms).toBe(520);
+    expect(swipeFinish(Number.NaN).ms).toBe(520);
+    expect(swipeFinish(0.6).easing).toBe('cubic-bezier(0.32, 0.72, 0, 1)');
+    const ease = swipeFinish(0.6).ease;
+    expect(ease(0)).toBe(0);
+    expect(ease(1)).toBe(1);
+    // No overshoot, and it leaves fast: the iOS curve is most of the way there by half its time.
+    const samples = Array.from({ length: 50 }, (_, i) => ease((i + 1) / 50));
+    expect(Math.max(...samples)).toBeLessThanOrEqual(1);
+    expect(ease(0.5)).toBeGreaterThan(0.9);
+  });
+
+  it('a commit finishes the width left and a cancel the way home, on the same curve', () => {
+    // Let go 300 px into a 390 px page: 90 px left to go off, 300 px back home.
+    const off = swipeFinish(1 - 300 / W);
+    const home = swipeFinish(300 / W);
+    expect(off.ms).toBe(182);
+    expect(home.ms).toBe(Math.round(520 * (300 / W)));
+    expect(off.easing).toBe(home.easing);
   });
 });

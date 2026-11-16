@@ -6,7 +6,7 @@ import { BootSkeleton } from '@/clubhouse/shell/BootSkeleton';
  *
  * This is the boundary that covers the async `(dashboard)/layout.tsx` while it
  * resolves session → role → active team (a `loading.tsx` inside a segment sits
- * INSIDE that segment's layout, so `(dashboard)/loading.tsx` cannot cover its
+ * INSIDE that segment's layout, so a `loading.tsx` in `(dashboard)/` could not cover its
  * own layout's await — only the parent segment's can). It therefore paints on
  * essentially every cold entry into GolfHelm.
  *

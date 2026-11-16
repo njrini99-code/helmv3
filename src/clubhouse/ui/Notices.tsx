@@ -157,9 +157,15 @@ export function PageNotice({
   );
 }
 
-export type RouteErrorKind = 'chunk' | 'stale-action' | 'transient' | 'load' | 'unknown';
+export type RouteErrorKind = 'chunk' | 'stale-action' | 'offline' | 'transient' | 'load' | 'unknown';
 
 const COPY: Record<RouteErrorKind, { title: string; body: string }> = {
+  // The page's read failed while the browser says it has no network (GAP-S-05): the cause the browser names, and the
+  // promise RouteErrorBoundary keeps by trying again on the `online` event, never by retrying into the same failure.
+  offline: {
+    title: 'You’re offline',
+    body: 'This page needs a connection. It loads by itself when you’re back online.',
+  },
   chunk: {
     title: 'A newer version of GolfHelm is ready',
     body: 'This page was built for an older version. Reloading picks up the new one; nothing you saved is lost.',
@@ -186,6 +192,7 @@ const COPY: Record<RouteErrorKind, { title: string; body: string }> = {
 const ROUTE_ERROR_CODE: Record<RouteErrorKind, string> = {
   chunk: 'CH-1202',
   'stale-action': 'CH-1203',
+  offline: 'CH-1290',
   transient: 'CH-1204',
   load: 'CH-1205',
   unknown: 'CH-1206',
@@ -254,6 +261,9 @@ export function RouteErrorView({
   const copy = COPY[kind];
   const reload = kind === 'chunk' || kind === 'stale-action';
   const place = homePath ? placeName(homePath) : null;
+  // Try again while offline would fail the same way: it says so instead (CH-1905), as every other Try again does. The
+  // offline page already says it in its title, so it adds no second line.
+  const { retry, offline } = useOfflineRetry(onRetry, isRetrying);
   return (
     <main className="ch-notyet" role="alert" data-ch-code={ROUTE_ERROR_CODE[kind]}>
       <div className="ch-empty-page ch-empty-page--danger">
@@ -268,8 +278,13 @@ export function RouteErrorView({
           {retryCount > 0 && !isRetrying && (
             <p className="ch-empty-page__note">{retryCount === 1 ? 'Tried again once.' : `Tried again ${retryCount} times.`}</p>
           )}
+          {offline && kind !== 'offline' && (
+            <p className="ch-empty-page__note" data-ch-code="CH-1905">
+              {OFFLINE_LINE}
+            </p>
+          )}
           <div className="ch-empty-page__a">
-            <Button variant="primary" leftIcon={RotateCw} onClick={onRetry} busy={isRetrying}>
+            <Button variant="primary" leftIcon={RotateCw} onClick={retry} busy={isRetrying}>
               {isRetrying ? 'Trying again…' : reload ? 'Reload' : 'Try again'}
             </Button>
             {homePath && (

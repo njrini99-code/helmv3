@@ -12,6 +12,9 @@ import { createClient } from '@/lib/supabase/server';
 import { resolveLiftingAccess, resolveLiftingOrgIdForUser } from '@/lib/lifting/access';
 import { getReadinessSummary } from '@/app/lifting/actions/readiness';
 import { ReadinessBoardClient } from '@/components/lifting/readiness/ReadinessBoardClient';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Readiness' };
 
 export default async function ReadinessPage() {
   const supabase = await createClient();

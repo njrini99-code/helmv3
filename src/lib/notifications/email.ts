@@ -260,6 +260,23 @@ function headerPillIcon(iconKey: string): string {
     .replace(/currentColor/g, 'rgba(255,255,255,0.85)');
 }
 
+/** The product an email is about: its "Manage preferences" footer opens that product's settings (GAP-R-02). */
+export type EmailProduct = 'golf' | 'baseball';
+
+/**
+ * Where "Manage preferences" goes. GolfHelm: Settings' Notifications section (its own route). BaseballHelm has no
+ * per-person email preferences page (the program's #notifications are a head coach's quiet hours, and that page is
+ * coach-only), so its recipients, players included, land on the BaseballHelm settings hub, never on golf's.
+ */
+export function emailPreferencesPath(product: EmailProduct): string {
+  return product === 'baseball' ? '/baseball/dashboard/settings' : '/golf/dashboard/settings/notifications';
+}
+
+/** A send's product, from `data.product` (the send sites pass it); golf when absent. */
+function emailProductOf(data: Record<string, unknown>): EmailProduct {
+  return data.product === 'baseball' ? 'baseball' : 'golf';
+}
+
 /**
  * Shared premium layout shell.
  * Dark warm header · cream body · subtle footer
@@ -274,8 +291,10 @@ function emailShell(opts: {
   cta: { label: string; url: string };
   greeting?: string;
   footerNote?: string;
+  /** Whose settings "Manage preferences" opens. Golf when absent. */
+  product?: EmailProduct;
 }): string {
-  const { previewText, headerLabel, headerIconKey, iconKey, title, body, cta, greeting, footerNote } = opts;
+  const { previewText, headerLabel, headerIconKey, iconKey, title, body, cta, greeting, footerNote, product = 'golf' } = opts;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
   // `title`, `previewText`, and `greeting` are always plain sentences built
   // from user-controlled data (names, message/announcement text) — escape
@@ -389,7 +408,7 @@ function emailShell(opts: {
                     <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:${BRAND.muted};">
                       ${footerNote ?? 'You\'re receiving this because you\'re part of a Helm Sports team.'}
                       &nbsp;&middot;&nbsp;
-                      <a href="${baseUrl}/golf/dashboard/settings" style="color:${BRAND.muted};text-decoration:underline;">Manage preferences</a>
+                      <a href="${baseUrl}${emailPreferencesPath(product)}" style="color:${BRAND.muted};text-decoration:underline;">Manage preferences</a>
                     </p>
                   </td>
                   <td align="right" style="white-space:nowrap;padding-left:16px;">
@@ -497,6 +516,7 @@ function generateEmailTemplate(
           greeting: String(data._greeting || ''),
           cta: { label: 'Open Conversation', url: messageUrl },
           footerNote: 'You received this because someone sent you a message on Helm.',
+          product: emailProductOf(data),
         }),
         text: `New message from ${senderName}: "${preview}"\n\nReply at: ${messageUrl}`,
       };
@@ -622,6 +642,7 @@ function generateEmailTemplate(
           greeting: String(data._greeting || ''),
           cta: { label: 'View Your Profile', url: profileUrl },
           footerNote: 'You received this because a coach saved your BaseballHelm profile.',
+          product: 'baseball',
         }),
         text: `${coachName} from ${schoolName} added you to their watchlist.\n\nView your profile: ${profileUrl}`,
       };
@@ -664,6 +685,7 @@ function generateEmailTemplate(
           greeting: String(data._greeting || ''),
           cta: { label: 'View Your Journey', url: journeyUrl },
           footerNote: 'You received this because a coach updated your status on BaseballHelm.',
+          product: 'baseball',
         }),
         text: `${schoolName} updated your recruiting status to: ${stage.label}.\n${stage.desc}\n\nView your journey: ${journeyUrl}`,
       };
@@ -693,6 +715,7 @@ function generateEmailTemplate(
           greeting: String(data._greeting || ''),
           cta: { label: 'Update Your Profile', url: profileUrl },
           footerNote: 'You received this because a coach viewed your BaseballHelm profile.',
+          product: 'baseball',
         }),
         text: `${viewerInfo} viewed your profile.\n\nUpdate it at: ${profileUrl}`,
       };
@@ -895,6 +918,7 @@ async function getRecipientGreeting(userId: string): Promise<string> {
 // ---------------------------------------------------------------------------
 export const __testables = {
   getRecipientGreeting,
+  generateEmailTemplate,
 };
 
 /**

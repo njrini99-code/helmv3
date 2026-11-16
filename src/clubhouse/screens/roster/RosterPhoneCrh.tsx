@@ -14,7 +14,7 @@ import { CrhStateBlock } from '../../ui/CrhStateBlock';
 import { FormBars, FormRange } from '../../ui/FormLine';
 import { GroupList, GroupRow } from '../../ui/GroupList';
 import { Icon } from '../../ui/Icon';
-import { InlineNotice } from '../../ui/Notices';
+import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
 import { LargeTitle, LargeTitleContext } from '../../ui/LargeTitle';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 import { Modal } from '../../ui/Modal';
@@ -179,7 +179,7 @@ export function RosterPhoneCrh({
 
         {data.playersError ? (
           <Surface variant="card" level={2} padded={false} title="Players">
-            <CrhStateBlock kind="failed" code="CH-3201" title="The roster didn’t load" body="Try again. Nothing was lost.">
+            <CrhStateBlock kind="failed" code="CH-3201" title="The roster didn’t load" body={FAILURE_COPY.page}>
               <Button leftIcon={RotateCw} onClick={onRetry}>
                 Try again
               </Button>
@@ -216,7 +216,7 @@ export function RosterPhoneCrh({
                 (a one-option control read as a broken bar). */}
             {!data.statsError && (
               <div className="ch-stickybar ch-rsx-sort">
-                <Segmented<PhoneSort> weight="filter"
+                <Segmented<PhoneSort>
                   block
                   label="Sort by"
                   value={sortBy}

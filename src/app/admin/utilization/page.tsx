@@ -8,6 +8,9 @@ import { LocalTime } from '../_components/LocalTime';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureConstellation } from './FeatureConstellation';
 import { SectionLabel } from '../_components/SectionLabel';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Utilization' };
 
 export const dynamic = 'force-dynamic';
 

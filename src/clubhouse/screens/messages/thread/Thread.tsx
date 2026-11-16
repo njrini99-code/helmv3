@@ -11,7 +11,7 @@ import { personOf } from '../person-of';
 import { rebuiltHref } from '../../../shell/nav';
 import { useThreadAnchor } from '../use-thread-anchor';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
-import { useThreadMakeRoom, useSpringToEnd, useReplyFromTyping, useSendRise, ThreadDatePill, ThreadJumpKey } from '../thread-v2';
+import { useThreadMakeRoom, useSpringToEnd, useSendStamps, ThreadDatePill, ThreadJumpKey } from '../thread-v2';
 import { useFocusMessage } from '../use-focus-message';
 import { usePanelSmoothScroll } from '../../../lib/smooth-scroll';
 import { IconButton } from '../../../ui/Button';
@@ -102,8 +102,7 @@ export function Thread({
   useThreadMakeRoom(scroller, api.msgs.length, true, reducedMotion);
   // The same send, arrival and jump hooks as the phone (MOT-SEND-7, -12, MOT-JMP-3): the artifact runs them on both devices.
   const jumpToEnd = useSpringToEnd(scroller, anchor.toEnd, reducedMotion);
-  useReplyFromTyping(scroller, api.msgs.length, !!api.typing, true, reducedMotion);
-  useSendRise(scroller, api.msgs.length, true, reducedMotion);
+  useSendStamps(scroller, api.msgs.length, true);
   useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
   // The thread eases like the page does, with a longer glide (a conversation is read down a long column); desktop,
   // wheel only: a trackpad stays native.

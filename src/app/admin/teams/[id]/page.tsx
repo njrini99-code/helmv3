@@ -21,6 +21,9 @@ import { PanelAllClear, PanelNoData } from '../../_components/PanelStates';
 import { LocalTime } from '../../_components/LocalTime';
 import { RosterTable, type RosterDisplayRow } from './RosterTable';
 import { SectionLabel } from '../../_components/SectionLabel';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Team' };
 
 export const dynamic = 'force-dynamic';
 

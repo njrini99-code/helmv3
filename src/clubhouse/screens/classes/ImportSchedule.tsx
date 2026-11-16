@@ -255,10 +255,9 @@ export function ImportSchedule({
             // The first beat of a read: nothing yet (delay then minimum), so a quick read never flashes a state.
             <div className="ch-cl-read is-wait" role="status" aria-label="Reading your schedule" />
           ) : step === 'reading' ? (
-            // CH-12402: a scan over a page while the schedule is read.
+            // CH-12402, CH-12602: a page, drawn still, while the schedule is read (the sweep is gone, MOTION-AND-VISUAL 3.12).
             <div className="ch-cl-read" role="status" data-ch-code="CH-12402">
               <div className="ch-cl-read__doc" aria-hidden="true">
-                <span className="ch-cl-read__scan" /* CH-12602: the scan line sweeps the page while it is read */ />
                 {Array.from({ length: 6 }, (_, i) => (
                   <i key={i} style={{ width: `${50 + ((i * 37) % 45)}%` }} />
                 ))}

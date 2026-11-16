@@ -1649,7 +1649,7 @@ async function submitGolfRoundComprehensiveImpl(
           evaluateAndPersistFocusAreas(backgroundPlayerId),
         ]);
         revalidatePath('/golf/dashboard/coachhelm');
-        revalidatePath('/golf/dashboard/intelligence');
+        // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
       } catch (progressErr) {
         // Never let progress tracking take down round analysis behind it.
         await logServerError(
@@ -1770,8 +1770,8 @@ async function submitGolfRoundComprehensiveImpl(
       // had to hard-reload CoachHelm / My Development to see post-round
       // insights, qualifier progress, or focus-area shifts.
       revalidatePath('/golf/dashboard/coachhelm');
-      revalidatePath('/golf/dashboard/my-development');
-      revalidatePath('/golf/dashboard/my-qualifiers');
+      // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+      revalidatePath('/golf/dashboard/qualifiers');
       updateTag(CACHE_TAGS.DASHBOARD);
       updateTag(CACHE_TAGS.ROUNDS);
       updateTag(CACHE_TAGS.STATS);

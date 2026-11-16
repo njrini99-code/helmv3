@@ -34,12 +34,12 @@ afterEach(() => {
 const css = readFileSync(resolve(process.cwd(), 'src/clubhouse/styles/messages-details.css'), 'utf8');
 
 describe('MOT-DET-3: the mute menu and the quick action', () => {
-  it('the menu grows 0.8 > 1 with opacity on the lift spring from its corner; Reduce Motion is a fade', () => {
+  it('the menu grows 0.8 > 1 with opacity on the settle spring from its corner (3.12: lift retired); Reduce Motion is a fade', () => {
     render(<MuteMenu anchor={{ left: 10, top: 20, above: true }} onPick={vi.fn()} onClose={vi.fn()} />);
     const [frames, opts] = animate.mock.calls[0]!;
     expect(frames).toEqual([{ transform: 'scale(0.8)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }]);
-    expect(opts.duration).toBe(chSpringCurve('lift').ms);
-    expect(opts.easing).toBe(chSpringCurve('lift').linear);
+    expect(opts.duration).toBe(chSpringCurve('settle').ms);
+    expect(opts.easing).toBe(chSpringCurve('settle').linear);
     expect(screen.getByRole('menu').style.transformOrigin).toBe('0 100%');
     cleanup();
     animate.mockClear();
@@ -71,12 +71,12 @@ describe('MOT-DET-3: the mute menu and the quick action', () => {
     expect(muteToast(false, null)).toBe('Unmuted');
   });
 
-  it('the tile pops 0.92 > 1 on pop; nothing moves under Reduce Motion', () => {
+  it('the tile grows 0.92 > 1 on settle (3.12: pop retired); nothing moves under Reduce Motion', () => {
     const el = document.createElement('button');
     const { result } = renderHook(() => usePopIn());
     result.current(el, 0.92);
     expect(animate.mock.calls[0]![0]).toEqual([{ transform: 'scale(0.92)' }, { transform: 'scale(1)' }]);
-    expect(animate.mock.calls[0]![1].duration).toBe(chSpringCurve('pop').ms);
+    expect(animate.mock.calls[0]![1].duration).toBe(chSpringCurve('settle').ms);
     animate.mockClear();
     reduce.current = true;
     const r2 = renderHook(() => usePopIn());
@@ -173,10 +173,11 @@ describe('the sheet: layout and motion pins', () => {
     expect(css).toMatch(/\.ch-msd-poll__fill \{[^}]*transform: scaleX\(var\(--ch-poll-share, 0\)\);[^}]*transform-origin: 0 50%;[^}]*transition: transform var\(--ch-dur-spring-smooth\) var\(--ch-ease-spring-smooth\);/);
     expect(css).toMatch(/prefers-reduced-motion: reduce\) \{[^@]*\.ch-msd-poll__fill \{\s*transition: none;/);
   });
-  it('MOT-POLL-1/3: the disc pops from .6 and the check draws from 20; your face from .4', () => {
-    expect(css).toMatch(/@keyframes ch-msd-ring-pop \{\s*from \{\s*transform: scale\(0\.6\)/);
-    expect(css).toMatch(/@keyframes ch-msd-tick-draw \{\s*from \{\s*stroke-dashoffset: 20/);
-    expect(css).toMatch(/@keyframes ch-msd-face-pop \{\s*from \{\s*opacity: 0;\s*transform: scale\(0\.4\)/);
+  // MOTION-AND-VISUAL 3.12 changes MOT-POLL-1/3 on purpose: the pop spring retires, so the tapped disc, its check and your
+  // face are there at once.
+  it('MOT-POLL-1/3: the disc, its check and your face take their state at once, with no pop or draw', () => {
+    expect(css).not.toMatch(/@keyframes/);
+    expect(css).not.toMatch(/ch-msd-(?:ring-pop|tick-draw|face-pop)|\[data-pop\]/);
   });
   it('MOT-X-7: the switch is 44 x 26 with a 22 knob travelling 18', () => {
     expect(css).toMatch(/\.ch-msd-sw \.ch-switch__track \{\s*width: 44px;\s*height: 26px;/);

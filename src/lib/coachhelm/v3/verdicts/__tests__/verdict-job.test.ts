@@ -166,6 +166,8 @@ describe('runFocusAreaVerdicts', () => {
         data: expect.objectContaining({ verdict: 'got_worse', focus_area_id: 'fa-worse' }),
       }),
     );
+    // GAP-R-01: the bell opens the player's Development tab, where the verdict is, with no redirect hop.
+    expect(vi.mocked(recordInAppNotification).mock.calls[0]![0].actionUrl).toBe('/golf/dashboard/stats?player=p1&tab=dev');
   });
 
   it('a verdict another run already wrote is not counted or re-announced', async () => {

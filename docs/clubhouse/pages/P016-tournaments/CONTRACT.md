@@ -160,6 +160,8 @@ flags and its lane's rows.
 | 160633 | CH-16292 | `PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS` | Player event: the player’s reflection read fails (`errors.reflection`) |
 | 160634 | CH-16293 | `PLAYER_EVENT_THE_PLAYERS_OWN_SPOT_FAILS` | Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`) |
 | 160635 | CH-16072 | `HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS` | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) |
+| 160690 | CH-16294 | `A_SECTION_OF_THE_LIVE_ROUND_THE` | A section of the live round, the lineup builder, History or Live throws while drawing (GAP-S-10) |
+| 160691 | CH-16295 | `HISTORY_THE_ROSTER_OR_THE_SEASON_PROFILES` | History: the roster or the season profiles read fails (`errors.profiles`, GAP-S-08) |
 
 ## 07 — Network / offline
 
@@ -173,7 +175,7 @@ whole of it today; the live round's outbox (5L.8.5) adds its own.
 | 160701 | CH-16605 | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | The device is offline while the card or the live view is open |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
@@ -185,7 +187,7 @@ shell's gate is the only one, and Tournaments is reachable in the preview only.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 160801 | CH-16609 | `THE_COACH_HAS_NO_TEAM_OR_LOST` | The coach has no team, or lost access to it |
+| 160801 | CH-16609 | `THE_COACH_HAS_NO_TEAM_OR_LOST` | Live: the coach has no active team, or a team they may not read (GAP-S-12) |
 
 From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.

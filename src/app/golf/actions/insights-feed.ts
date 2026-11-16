@@ -387,15 +387,11 @@ async function generateTeamInsightsImpl() {
       duration_ms: executionTime,
     });
 
-    // 9. Revalidate dashboard + the insights page itself (C2/F112 — these
-    // newly-generated rows surface on /golf/dashboard/insights, which was never
-    // revalidated, so the coach saw a stale list until a full reload).
+    // 9. Revalidate dashboard + where the insights show (C2/F112: a list that
+    // was never revalidated stayed stale until a full reload). Clubhouse shows
+    // them on CoachHelm; the old Fairway addresses only redirect (GAP-R-14).
     revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/insights');
-    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
-    // Intelligence home's Signals drill (2026-07-19, plan Task 9) — revalidate
-    // the canonical destination too (pattern: v3/goals.ts createTeamGoal).
-    revalidatePath('/golf/dashboard/intelligence');
+    revalidatePath('/golf/dashboard/coachhelm');
 
     return {
       success: true,
@@ -578,10 +574,8 @@ async function acknowledgeInsightImpl(insightId: string) {
     revalidatePath('/golf/dashboard');
     // C2/F112 — the insights list page is its own route; revalidate it so the
     // acknowledged row updates without a hard reload.
-    revalidatePath('/golf/dashboard/insights');
-    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
-    // Intelligence home's Signals drill (2026-07-19, plan Task 9).
-    revalidatePath('/golf/dashboard/intelligence');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/coachhelm');
     return { success: true };
   } catch (error) {
     await logServerError(`acknowledgeInsight failed: ${describeError(error)}`, {
@@ -659,10 +653,8 @@ async function dismissInsightImpl(insightId: string) {
 
     revalidatePath('/golf/dashboard');
     // C2/F112 — revalidate the insights list route so the dismissed row drops.
-    revalidatePath('/golf/dashboard/insights');
-    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
-    // Intelligence home's Signals drill (2026-07-19, plan Task 9).
-    revalidatePath('/golf/dashboard/intelligence');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/coachhelm');
     return { success: true };
   } catch (error) {
     await logServerError(`dismissInsight failed: ${describeError(error)}`, {
@@ -768,10 +760,8 @@ async function reactivateInsightImpl(
     }
 
     revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/insights');
-    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
-    // Intelligence home's Signals drill (2026-07-19, plan Task 9).
-    revalidatePath('/golf/dashboard/intelligence');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/coachhelm');
     return { success: true };
   } catch (error) {
     await logServerError(`reactivateInsight failed: ${describeError(error)}`, {
@@ -858,10 +848,8 @@ async function resolveInsightImpl(insightId: string) {
 
     revalidatePath('/golf/dashboard');
     // C2/F112 — revalidate the insights list route so the resolved row updates.
-    revalidatePath('/golf/dashboard/insights');
-    // Defense-in-depth: /insights is a permanent-redirect shim onto the coach
-    // Intelligence home's Signals drill (2026-07-19, plan Task 9).
-    revalidatePath('/golf/dashboard/intelligence');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/coachhelm');
     return { success: true };
   } catch (error) {
     await logServerError(`resolveInsight failed: ${describeError(error)}`, {

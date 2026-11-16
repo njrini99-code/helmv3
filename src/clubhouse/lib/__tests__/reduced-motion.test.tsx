@@ -65,6 +65,32 @@ describe('CH-1608 reduced motion and Animations off (owner decision 2, OQ-15)', 
     expect(block!).toMatch(/view-transition-new\(ch-page\)\s*\{[^}]*animation:\s*var\(--ch-dur-vt-fade\)[^}]*ch-vt-in/);
   });
 
+  // MOTION-AND-VISUAL 3.11: read once, here, and passed down. However many parts read it, the app holds one listener on
+  // the OS setting, and lets it go with the last reader.
+  it('every reader shares one listener on the OS setting', () => {
+    const adds = vi.fn();
+    const removes = vi.fn();
+    vi.mocked(window.matchMedia).mockImplementation(
+      (query: string) =>
+        ({ matches: false, media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: query === '(prefers-reduced-motion: reduce)' ? adds : vi.fn(), removeEventListener: query === '(prefers-reduced-motion: reduce)' ? removes : vi.fn(), dispatchEvent: vi.fn() }) as unknown as MediaQueryList,
+    );
+    function Probe() {
+      useChReducedMotion();
+      useChMotionMode();
+      return null;
+    }
+    const view = render(
+      <>
+        <Probe />
+        <Probe />
+        <Probe />
+      </>,
+    );
+    expect(adds).toHaveBeenCalledTimes(1);
+    view.unmount();
+    expect(removes).toHaveBeenCalledTimes(1);
+  });
+
   it('CH-1608 outside React the mode comes from <html data-motion="off"> first, then the media query', () => {
     expect(chMotionModeNow()).toBe('full');
     osReduce = true;

@@ -522,7 +522,8 @@ async function validatePatternImpl(
       await createFocusAreaFromPatternInternal(patternId, coach.id);
     }
 
-    revalidatePath('/golf/dashboard/patterns');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/coachhelm');
     return { success: true };
   } catch (error) {
     await logServerError(`validatePattern failed: ${describeError(error)}`, {
@@ -588,11 +589,11 @@ async function dismissPatternImpl(
       return { success: false, error: 'Failed to dismiss pattern' };
     }
 
-    revalidatePath('/golf/dashboard/patterns');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/coachhelm');
     // Triage Desk (signal-groups.ts) reads patterns through this same file
     // and lives at the canonical Intelligence route — bust it too so a
     // dismiss-from-Triage doesn't leave a stale row in that list.
-    revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
     await logServerError(`dismissPattern failed: ${describeError(error)}`, {
@@ -664,11 +665,11 @@ async function markPatternAddressedImpl(
       return { success: false, error: 'Failed to update pattern' };
     }
 
-    revalidatePath('/golf/dashboard/patterns');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/coachhelm');
     // Triage Desk (signal-groups.ts) reads patterns through this same file
     // and lives at the canonical Intelligence route — bust it too so a
     // review-from-Triage doesn't leave a stale row in that list.
-    revalidatePath('/golf/dashboard/intelligence');
     return { success: true };
   } catch (error) {
     await logServerError(`markPatternAddressed failed: ${describeError(error)}`, {
@@ -741,7 +742,8 @@ async function resolvePatternImpl(
       return { success: false, error: 'Failed to resolve pattern' };
     }
 
-    revalidatePath('/golf/dashboard/patterns');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/coachhelm');
     return { success: true };
   } catch (error) {
     await logServerError(`resolvePattern failed: ${describeError(error)}`, {
@@ -819,7 +821,8 @@ async function reopenPatternImpl(
       return { success: false, error: 'Failed to reopen pattern' };
     }
 
-    revalidatePath('/golf/dashboard/patterns');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/coachhelm');
     return { success: true };
   } catch (error) {
     await logServerError(`reopenPattern failed: ${describeError(error)}`, {

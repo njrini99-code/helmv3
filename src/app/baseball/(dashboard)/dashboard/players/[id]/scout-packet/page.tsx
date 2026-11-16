@@ -30,7 +30,7 @@ import type {
 } from '@/lib/types/baseball-passport';
 
 export const metadata = {
-  title: 'Scout Packet · BaseballHelm',
+  title: 'Scout Packet',
 };
 
 interface PageProps {

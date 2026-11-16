@@ -13,6 +13,7 @@ import {
   rollingMean,
   sampleSd,
   sampleState,
+  SIGNAL_Z,
   spreadFor,
   standardError,
   wilson,
@@ -99,10 +100,43 @@ describe('the standard error of a window and of a change', () => {
 });
 
 describe('deltaTone', () => {
-  it('paints a change only when it clears one standard error', () => {
+  it('paints a change only when it clears two standard errors (SIGNAL_Z, stats and charts audit 2026-11-15, CH-05)', () => {
+    expect(SIGNAL_Z).toBe(2);
     expect(deltaTone(0.5, 1, false)).toBe('');
-    expect(deltaTone(1, 1, false)).toBe('is-gain');
-    expect(deltaTone(-1.4, 1, false)).toBe('is-loss');
+    expect(deltaTone(1, 1, false)).toBe('');
+    expect(deltaTone(1.5, 1, false)).toBe('');
+    expect(deltaTone(2, 1, false)).toBe('is-gain');
+    expect(deltaTone(-2.4, 1, false)).toBe('is-loss');
+  });
+
+  it('a change of 1.2 standard errors stays neutral; 2.1 is called (CH-05)', () => {
+    expect(deltaTone(1.2, 1.0, true)).toBe('');
+    expect(deltaTone(2.1, 1.0, true)).toBe('is-loss');
+  });
+
+  it('on a team with no real change, under 6% of figures are coloured (seeded, 10,000 pairs of ten rounds, SD 3)', () => {
+    // A small deterministic generator (mulberry32) and Box-Muller, so the test never flakes.
+    let seed = 20261115;
+    const rand = () => {
+      seed |= 0;
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const normal = () => Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(2 * Math.PI * rand());
+    const draw = () => Array.from({ length: 10 }, () => 74 + 3 * normal());
+    let coloured = 0;
+    const N = 10_000;
+    for (let k = 0; k < N; k++) {
+      const now = draw();
+      const before = draw();
+      const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+      // The change's standard error at the true spread: the test is of the rule, not of how well ten rounds measure their spread.
+      const se = diffSe(standardError(3, 10), standardError(3, 10));
+      if (deltaTone(mean(now) - mean(before), se, true) !== '') coloured += 1;
+    }
+    expect(coloured / N).toBeLessThan(0.06);
   });
 
   it('flips for a stat where lower is better', () => {

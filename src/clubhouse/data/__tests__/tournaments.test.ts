@@ -7,7 +7,7 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerEvent: logs.event, logSer
 vi.mock('../../lib/track-server', () => ({ chLogServer: logs.error }));
 vi.mock('@/lib/golf/player-profiles', () => ({ readGolfPlayerProfiles: async () => ({ data: [], error: null }) }));
 
-import { loadPlayerTournaments, loadTournamentDesk, loadTournamentsHome, type TourCtx } from '../tournaments';
+import { loadPlayerTournaments, loadTournamentDesk, loadTournamentHistory, loadTournamentsHome, type TourCtx } from '../tournaments';
 
 type Result = { data: unknown; error: { code?: string; message: string } | null };
 
@@ -74,6 +74,23 @@ describe('Tournaments loaders with the tables in place', () => {
     expect(load.data.events).toEqual([]);
     expect(load.data.next).toBeNull();
     expect(load.data.season.id).toBe('2026-27');
+    expect(load.data.errors).toEqual({});
+  });
+
+  it('History keeps its events when the roster read fails, and flags the names instead (GAP-S-08)', async () => {
+    const sb = client({ golf_teams: team, golf_team_members: { data: null, error: { code: '57014', message: 'canceling statement' } } });
+    const load = await loadTournamentHistory(ctx(sb));
+    expect(load.kind).toBe('ready');
+    if (load.kind !== 'ready') return;
+    expect(load.data.players).toEqual([]);
+    expect(load.data.errors).toEqual({ profiles: true });
+    expect(logs.error).toHaveBeenCalled();
+  });
+
+  it('History with every read in place flags nothing', async () => {
+    const load = await loadTournamentHistory(ctx(client({ golf_teams: team })));
+    expect(load.kind).toBe('ready');
+    if (load.kind !== 'ready') return;
     expect(load.data.errors).toEqual({});
   });
 

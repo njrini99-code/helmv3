@@ -88,8 +88,11 @@ describe('CH-1617 choices and the feature card answer a press without scaling', 
   for (const selector of ['.ch-seg__b:not(.is-on)[data-ch-pressed]', ".ch-pill:not([aria-pressed='true'])[data-ch-pressed]"])
     it(`${selector} tints after the press delay`, () => {
       const r = withProp(controls, selector, 'background');
-      expect(r).toMatch(/background:\s*var\(--ch-ledger-row-press\)/);
-      expect(r).toMatch(/transition-delay:\s*var\(--ch-dur-press-delay\)/);
+      // An option's press is the one wash (MOTION-AND-VISUAL 3.8; was --ch-ledger-row-press).
+      expect(r).toMatch(/background:\s*var\(--ch-sel\)/);
+      // MOTION-AND-VISUAL 3.2 and 3.8: the 50ms delay lives in lib/press.ts, which sets [data-ch-pressed] after it; the
+      // CSS delay token is gone, so the rule carries none.
+      expect(r).not.toMatch(/transition-delay/);
       expect(r).not.toMatch(/scale|transform/);
     });
 

@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/stats/team"
       component="TeamStatsPage"
-      title="Failed to load team stats"
-      message="We couldn't load team stats. Please try again."
       homePath="/golf/dashboard"
     />
   );

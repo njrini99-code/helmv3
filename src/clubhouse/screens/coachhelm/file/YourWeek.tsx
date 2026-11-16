@@ -2,23 +2,23 @@
 
 import { LargeTitle } from '../../../ui/LargeTitle';
 import { Button } from '../../../ui/Button';
+import { EmptyState } from '../../../ui/States';
 
 import { useRefresh } from '../../../lib/use-refresh';
 import { Check } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { isValidElement, useMemo, useState, type ReactNode } from 'react';
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import type { ChPlayerWeek } from '../../../data/coachhelm-file-shape';
 import { moreReadsLine } from '../../../data/coachhelm-shape';
-import { PLAYER_HELM_HREF, PLAYER_HELM_VIEWS, type ChViewLoad, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import type { ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
+import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { GonePanel, ReadPanel } from '../team/panels';
 import { Head } from '../parts';
 import { ProposalRow } from '../Proposals';
-import { useViewSwitch } from '../use-view-switch';
-import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
 import { LIVE_PLAYER_WRITES, type ChPlayerWrites } from '../writes';
 import { EarlyFeature, FeatureCard, FieldCard, PlanCard, ReadsCard, SgCard, WorkingCard } from './cards';
 import { FileFailed, PartFailed } from './PlayerFile';
@@ -29,7 +29,7 @@ import { plural } from '../../../lib/plural';
 export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLoad<ChPlayerWeek>; writes?: ChPlayerWrites }) {
   const phone = useChPhone();
   const { refresh } = useRefresh();
-  const sw = useViewSwitch<PlayerHelmView>('board', (v) => PLAYER_HELM_HREF[v], PLAYER_HELM_VIEWS);
+  // The switch (Board, Standing, Deep dive, Ask) is the route's, mounted once above this page (SwitchFrame, N13P-18).
   const [openRead, setOpenRead] = useState<string | null>(null);
   const data = load.status === 'ready' ? load.data : null;
   const all = useMemo(() => {
@@ -37,7 +37,6 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
     if (data) for (const d of [...(data.cards.feat ? [data.cards.feat] : []), ...data.cards.reads, ...data.cards.working]) m.set(d.base.id, d);
     return m;
   }, [data]);
-  const tabs = <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
   // Off for this player (the team's switch, or not eligible) is a state, not a failure: Try again could never help (PL-CH-01).
   if (load.status === 'off') {
     return (
@@ -66,7 +65,9 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
   }
   const { cards } = data;
   const stage = cards.plan?.stage ?? 'none';
-  const proposal = data.proposals.list.find((p) => p.title === cards.plan?.title) ?? data.proposals.list[0] ?? null;
+  // GAP-H-10: Accept and Decline act on the proposal this plan card is (the same focus-area row), never a neighbour with the same
+  // title or the first in the list. No match: no keys.
+  const proposal = (cards.plan?.focusId ? data.proposals.list.find((p) => p.id === cards.plan?.focusId) : undefined) ?? null;
   const open = openRead ? (all.get(openRead) ?? null) : null;
   const actions =
     proposal && (stage === 'suggested' || stage === 'shown') ? (
@@ -92,9 +93,8 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
   return (
     // On a desk the page takes the canopy for its head alone: the player's CoachHelm head (parts.tsx Head, tight), the page title,
     // the line and the views inside the page's gutter, as the board's. The phone keeps its large title under the chip row.
-    <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk')} aria-labelledby={phone ? 'ch-hf-week' : 'ch-hl-title'} data-ch="your-week" data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined}>
+    <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk')} aria-labelledby={phone ? 'ch-hf-week' : 'ch-hl-title'} data-ch="your-week" data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
-      {phone && tabs}
       <div className="dfile">
         {phone ? (
           <div className="dhead is-week">
@@ -104,34 +104,39 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
             </div>
           </div>
         ) : (
-          <Head title="Your week" tight aside={tabs}>
+          <Head title="Your week" tight>
             <span className="ch-num">{line}</span>
           </Head>
         )}
         <div className="ch-hf-flow">
           {empty ? (
             <section className="card">
-              <div className="empty">
-                <b>No rounds yet</b>
-                <p>CoachHelm starts reading your game after 4 full rounds in 90 days.</p>
-                <Button variant="primary" size="lg" href="/golf/dashboard/rounds">
-                  Go to Rounds
-                </Button>
-              </div>
+              <EmptyState
+                code="CH-13386"
+                kind="first-run"
+                title="No rounds yet"
+                body="Reads start after 4 full rounds in the last 90 days."
+                action={
+                  <Button variant="primary" size="lg" href="/golf/dashboard/rounds">
+                    Go to Rounds
+                  </Button>
+                }
+              />
             </section>
           ) : phone ? (
-            <>
+            // GAP-S-10: one boundary for the phone's stack for now; per card once the parts it draws are named (see boxWeek).
+            <SectionBoundary surface="coachhelm.your-week.cards" label="Your week" code="CH-13204">
               {feat}
               <WorkingCard list={cards.working} onOpen={setOpenRead} />
               {planCard}
               {fieldCard}
               {sgCard}
               <ReadsCard cards={cards} lens="player" onOpen={setOpenRead} moreLine={moreReadsLine(cards.more) || undefined} />
-            </>
+            </SectionBoundary>
           ) : (
             <div className="grid2">
-              <div className="col">{left}</div>
-              <div className="col">{right}</div>
+              <div className="col">{boxWeek(left)}</div>
+              <div className="col">{boxWeek(right)}</div>
             </div>
           )}
         </div>
@@ -142,4 +147,20 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
       </Modal>
     </main>
   );
+}
+
+/** What each card of the week is called when it cannot be drawn ("… couldn’t be shown", CH-13204), by the key the page gives it. */
+const WEEK_PART: Record<string, string> = { feat: 'Your main read', plan: 'Your plan', sg: 'Where the strokes go', w: 'What’s working', f: 'Last round in context', r: 'Your other reads' };
+
+/** GAP-S-10: each card of the week draws on its own, so a crash in one says so in its place and the rest of the week stays. */
+function boxWeek(nodes: ReactNode[]): ReactNode[] {
+  return nodes.map((node, i) => {
+    if (!node) return node;
+    const key = isValidElement(node) && node.key != null ? String(node.key) : String(i);
+    return (
+      <SectionBoundary key={key} surface={`coachhelm.your-week.${key}`} label={WEEK_PART[key] ?? 'This card'} code="CH-13204">
+        {node}
+      </SectionBoundary>
+    );
+  });
 }

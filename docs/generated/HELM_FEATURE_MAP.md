@@ -80,7 +80,7 @@ is a second thing to keep true.
 **Golf Round Lifecycle** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/hooks/golf/use-shot-tracking.ts`, `src/app/api/golf/rounds/**`, `src/app/golf/actions/round-submit.ts`, `src/app/golf/actions/round-partial.ts`, `src/app/golf/actions/saved-courses.ts` … and 37 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/hooks/golf/use-shot-tracking.ts`, `src/app/api/golf/rounds/**`, `src/app/api/cron/golf-demo-refresh/**`, `src/app/golf/actions/round-submit.ts`, `src/app/golf/actions/round-partial.ts` … and 46 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
 - **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md`, `memory/incidents/golf_round_lifecycle/INC-2026-10-20-round-start-retypes-empty-shell.md`
 - **Repair units:** `player-lookup-maybe-single-2026-09-25` (verified)
@@ -124,7 +124,7 @@ is a second thing to keep true.
 **Stats And Analytics** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/stats-analytics.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/clubhouse/screens/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 29 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/clubhouse/screens/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 32 more in the registry
 - **Telemetry:** `stats_analytics` (golfhelm, high), `my_game_profile` (golfhelm, low)
 - **Incidents:** `memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md`
 - **Repair units:** `worst-hole-indexed-read-2026-10-05` (verified_in_production)

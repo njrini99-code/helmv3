@@ -1,10 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
 
 import { Line } from '../../ui/charts/Line';
-import { CH_GLIDE_MS, useGlide, type ChGlideGeometry } from '../motion-glide';
+import { renderToString } from 'react-dom/server';
+import { CH_EASE_IOS_CSS } from '../motion';
+import { CH_GLIDE_MS, firstViewKey, resetFirstViews, useFirstViewGrow, useGlide, type ChGlideGeometry } from '../motion-glide';
 
 const realMatchMedia = window.matchMedia;
 beforeEach(() => {
@@ -31,6 +35,12 @@ const frames = (ms: number) => act(() => vi.advanceTimersByTime(ms));
 
 /** B9 (owner decision 1): bars and lines glide to new values on a change, never on first paint; digits never roll. */
 describe('useGlide (B9)', () => {
+  it('a window change glides over the marks beat, 360ms, on the iOS curve (MOTION-AND-VISUAL 3.7)', () => {
+    expect(CH_GLIDE_MS).toBe(360);
+    const src = readFileSync(join(process.cwd(), 'src/clubhouse/lib/motion-glide.ts'), 'utf8');
+    expect(src).toMatch(/const ease = cubicBezier\(\.\.\.CH_EASE_IOS\);/);
+  });
+
   it('first paint draws the figures where they belong and schedules no frame', () => {
     const { container } = render(<Probe at={[10, null, 40]} />);
     expect(shown(container)).toBe('10.0,-,40.0');
@@ -100,5 +110,97 @@ describe('charts glide on a change, and their digits do not roll (B9)', () => {
     expect(path()).not.toBe(target);
     frames(CH_GLIDE_MS);
     expect(path()).toBe(target);
+  });
+});
+
+/** 3.7: a bar chart's first view in a session grows its bars from the origin it gives, once per screen; never a revisit. */
+describe('useFirstViewGrow (MOTION-AND-VISUAL 3.7)', () => {
+  type Run = { el: Element; frames: Keyframe[]; opts: KeyframeAnimationOptions };
+  let runs: Run[] = [];
+  const realAnimate = HTMLElement.prototype.animate;
+  beforeEach(() => {
+    runs = [];
+    sessionStorage.clear();
+    resetFirstViews();
+    HTMLElement.prototype.animate = function (this: Element, frames: Keyframe[], opts: KeyframeAnimationOptions) {
+      runs.push({ el: this, frames, opts });
+      return { cancel: vi.fn() } as unknown as Animation;
+    } as never;
+  });
+  afterEach(() => {
+    HTMLElement.prototype.animate = realAnimate;
+    document.documentElement.removeAttribute('data-motion');
+  });
+
+  function Bars({ screen = 'stats-overview', values = [2, -1] }: { screen?: string; values?: number[] }) {
+    const grow = useFirstViewGrow<HTMLDivElement>(screen, 'x');
+    return (
+      <div ref={grow}>
+        {values.map((v, i) => (
+          <i key={i} className="bar" data-ch-grow={v >= 0 ? 'left' : 'right'} />
+        ))}
+        <span className="label">Zero</span>
+      </div>
+    );
+  }
+
+  it('the first view grows each bar from its own origin over 360ms on the iOS curve, and nothing else', () => {
+    render(<Bars />);
+    expect(runs.map((r) => (r.el as HTMLElement).className)).toEqual(['bar', 'bar']);
+    expect(runs[0]!.frames).toEqual([
+      { transform: 'scaleX(0)', transformOrigin: 'left' },
+      { transform: 'none', transformOrigin: 'left' },
+    ]);
+    expect(runs[1]!.frames[0]).toEqual({ transform: 'scaleX(0)', transformOrigin: 'right' });
+    expect(runs[0]!.opts).toEqual({ duration: 360, easing: CH_EASE_IOS_CSS });
+    expect(sessionStorage.getItem(firstViewKey('stats-overview'))).toBe('1');
+  });
+
+  it('a revisit in the same session never grows, and another screen keeps its own first view', () => {
+    const first = render(<Bars />);
+    first.unmount();
+    frames(1000);
+    runs = [];
+    render(<Bars />);
+    expect(runs).toEqual([]);
+    render(<Bars screen="stats-team-phone" />);
+    expect(runs).toHaveLength(2);
+  });
+
+  it('a session that has seen the screen (a reload, a new tab copy) never grows it', () => {
+    sessionStorage.setItem(firstViewKey('stats-overview'), '1');
+    render(<Bars />);
+    expect(runs).toEqual([]);
+  });
+
+  it('two charts arriving with the same page both grow', () => {
+    render(
+      <>
+        <Bars />
+        <Bars values={[1]} />
+      </>,
+    );
+    expect(runs).toHaveLength(3);
+  });
+
+  it('never under Reduce Motion or Animations off, and the view still counts as seen', () => {
+    reduceMotion();
+    render(<Bars />);
+    expect(runs).toEqual([]);
+    expect(sessionStorage.getItem(firstViewKey('stats-overview'))).toBe('1');
+    cleanup();
+    window.matchMedia = realMatchMedia;
+    document.documentElement.setAttribute('data-motion', 'off');
+    render(<Bars screen="stats-team-phone" />);
+    expect(runs).toEqual([]);
+  });
+
+  it('never over bars the server drew: hydration leaves them at full length', () => {
+    const container = document.createElement('div');
+    container.innerHTML = renderToString(<Bars />);
+    document.body.appendChild(container);
+    render(<Bars />, { container, hydrate: true });
+    expect(runs).toEqual([]);
+    expect(sessionStorage.getItem(firstViewKey('stats-overview'))).toBe('1');
   });
 });

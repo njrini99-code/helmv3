@@ -5,7 +5,7 @@ import { PrivacySettingsForm } from '@/components/player/settings/PrivacySetting
 import { SettingsShell } from '@/components/baseball/settings/SettingsChrome';
 
 export const metadata = {
-  title: 'Privacy Settings | Helm',
+  title: 'Privacy Settings',
   description: 'Manage your profile privacy settings',
 };
 

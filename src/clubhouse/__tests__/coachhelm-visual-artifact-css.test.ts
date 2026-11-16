@@ -59,10 +59,12 @@ describe('CH-13853: what an answer shows is styled', () => {
     const moving = [...css.matchAll(/([^{}]*)\{[^{}]*animation: (?!none)[^{}]*\}/g)].map((m) => m[1]!.trim());
     expect(moving.length).toBeGreaterThan(0);
     for (const sel of moving) expect(sel).toMatch(/^\.ch-aks-cv\[data-live\] /);
-    // Opacity, transform and the line's path length only, each on a duration token.
-    const frames = [...css.matchAll(/@keyframes [\w-]+ \{\s*from \{([^{}]*)\}/g)].map((m) => m[1]!.trim());
-    expect(frames.sort()).toEqual(['opacity: 0;', 'opacity: 0;\n    transform: translateY(8px);', 'stroke-dashoffset: 1;']);
-    for (const m of css.matchAll(/animation: (?!none)([^;]+);/g)) expect(m[1]).toMatch(/var\(--ch-dur-(?:base|reveal|quick)\) var\(--ch-ease\) backwards$/);
+    // Opacity, transform and the line's path length only, each on a duration token: the keyframes are motion.css's shared
+    // ones (MOTION-AND-VISUAL 3.12), the sections rising from 8px down through ch-arrive.
+    expect(css).not.toMatch(/@keyframes/);
+    expect([...css.matchAll(/animation: (?!none)([\w-]+) /g)].map((m) => m[1]).sort()).toEqual(['ch-arrive', 'ch-draw', 'ch-in']);
+    expect(css).toMatch(/--ch-arrive-t: translateY\(8px\);/);
+    for (const m of css.matchAll(/animation: (?!none)([^;]+);/g)) expect(m[1]).toMatch(/var\(--ch-dur-(?:base|reveal|quick)\) var\(--ch-ease-(?:ios|out)\) backwards$/);
     // Reduce Motion and Animations off end every one of them.
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?animation: none;/);
     expect(css).toMatch(/\[data-motion='off'\] \.ch-aks-cv\[data-live\] \.ch-aks-cv__in,[\s\S]*?animation: none;/);
@@ -80,7 +82,7 @@ describe('CH-13853: what an answer shows is styled', () => {
     const fonts = [...css.matchAll(/(?<![-\w])font: ([^;]+);/g)].map((m) => m[1]!);
     expect(fonts.length).toBeGreaterThan(20);
     expect(fonts.filter((f) => !/^var\(--ch-type-[a-z0-9-]+\)$/.test(f))).toEqual([]);
-    expect(rule('.ch-aks')).toMatch(/--ch-type-aks-figure: 500 calc\(64 \* var\(--ch-type-k\)\) \/ 0\.8 var\(--ch-font-sans\);/);
+    expect(rule('.ch-aks')).toMatch(/--ch-type-aks-figure: 600 calc\(64 \* var\(--ch-type-k\)\) \/ 0\.8 var\(--ch-font-sans\);/);
     expect(rule('.ch-aks-fig[data-one] .ch-aks-fig__value')).toMatch(/font: var\(--ch-type-aks-figure\);/);
   });
 

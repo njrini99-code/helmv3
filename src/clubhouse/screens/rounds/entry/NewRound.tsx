@@ -21,7 +21,7 @@ import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRunt
 import { useRoundDoneKey } from './use-done-key';
 import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
-import { afterSavedCourseStart, loadSetupQualifiers, QUALIFIER_READ_MS, readCourseGlances, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
+import { afterSavedCourseStart, readCourseGlances, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
 import type { ChCourseGlance } from '../../../data/course-glance';
 import { canvasScrollNow } from '../../../lib/smooth-scroll';
 
@@ -41,8 +41,21 @@ const ROUTES: RoundRuntimeRoutes = { library: LIBRARY, review: (roundId) => `${L
  * CoachHelm's one-tap data prompts ride along when the route hands them in (flags off: nothing is passed and the round is
  * what it was): the putt-miss asks (`dataGapAsks`, CH-11960), and with `dataPromptsV2` the recovery tap (CH-11961) and the
  * course nudge (CH-11962), whose pick the engine sends as the round's course with its next update.
+ *
+ * The player's open qualifiers come from the route, read on the server (`qualifiers`, null when they didn't load,
+ * CH-11211; PMAC-03), so the form is there from the first paint and Try again (a refresh) reads them again.
  */
-export function NewRound({ playerId, dataGapAsks, dataPromptsV2 = false }: { playerId: string; dataGapAsks?: readonly DataGapAsk[]; dataPromptsV2?: boolean }) {
+export function NewRound({
+  playerId,
+  qualifiers,
+  dataGapAsks,
+  dataPromptsV2 = false,
+}: {
+  playerId: string;
+  qualifiers: ChSetupQualifier[] | null;
+  dataGapAsks?: readonly DataGapAsk[];
+  dataPromptsV2?: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const params = useSearchParams();
@@ -73,18 +86,6 @@ export function NewRound({ playerId, dataGapAsks, dataPromptsV2 = false }: { pla
       alive = false;
     };
   }, [playerId]);
-
-  const [qualifiers, setQualifiers] = useState<ChSetupQualifier[] | null | 'loading'>('loading');
-  useEffect(() => {
-    let alive = true;
-    // A slow read must not keep a practice round from starting: past this it counts as not loaded (CH-11211), and it still lands if it arrives.
-    const late = window.setTimeout(() => alive && setQualifiers((q) => (q === 'loading' ? null : q)), QUALIFIER_READ_MS);
-    void loadSetupQualifiers().then((list) => alive && setQualifiers(list));
-    return () => {
-      alive = false;
-      window.clearTimeout(late);
-    };
-  }, []);
 
   // Offline as the engine reads it: the browser says so and the connection probe agrees (WKWebView reports false on
   // networks that are reachable, so `navigator.onLine` alone would refuse a start that would work).
@@ -232,7 +233,8 @@ export function NewRound({ playerId, dataGapAsks, dataPromptsV2 = false }: { pla
           // The saved round's id lives in a ref: it is current at any render after the first save, which is when the sheet can open.
           sharing={{ roundId: engine.savedRoundIdRef.current, type: session.round.type ?? 'practice', ports: browserSharePorts }}
         />
-      ) : today === null || qualifiers === 'loading' ? (
+      ) : today === null ? (
+        // The device's day, known only after hydration: one frame on a push, the hydration wait on a direct load.
         <RoundEntrySkeleton />
       ) : (
         <RoundSetup

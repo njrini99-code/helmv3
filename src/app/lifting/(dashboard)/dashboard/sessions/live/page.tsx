@@ -20,6 +20,9 @@ import type {
   HelmLiftingLiveAthleteRow,
 } from '@/lib/types/helm-lifting-data';
 import type { HelmLiftingAthleteRow } from '@/lib/types/helm-lifting';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Live Session' };
 
 
 async function buildLiveRoomData(orgId: string): Promise<{

@@ -439,7 +439,11 @@ describe('CH-1609 skeletons draw bars and rules, not filled cards', () => {
       </>,
     );
     expect([...container.querySelectorAll('.ch-skel')].map((s) => s.classList.contains('ch-skel--block'))).toEqual([true, true, false, false, false, true]);
-    expect(rule("  [data-ui='clubhouse'] main[data-canopy] .ch-skel--block")).toMatch(/border-radius: 0 !important;[\s\S]*animation: none;/);
+    // MOTION-AND-VISUAL 3.9: a ruled block is static and waits the busy delay as every block does, so it sets no
+    // animation of its own (it set `animation: none` against the retired shimmer).
+    expect(rule("  [data-ui='clubhouse'] main[data-canopy] .ch-skel--block")).toMatch(/border-radius: 0 !important;/);
+    expect(rule("  [data-ui='clubhouse'] main[data-canopy] .ch-skel--block")).not.toMatch(/animation/);
+    expect(rule('.ch-skel')).toMatch(/animation: ch-busy-wait 0s var\(--ch-dur-busy-delay\) backwards;/);
     // The deeper shade (states audit, 2026-10-08), through its token since P001-D6.
     expect(rule('.ch-skel')).toContain('var(--ch-skel-base)');
     expect(readFileSync(join(root, 'styles/tokens.css'), 'utf8')).toMatch(/--ch-skel-base: #d8d0bb;/);

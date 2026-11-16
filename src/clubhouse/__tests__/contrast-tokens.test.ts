@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { tokenHex } from './_tokens';
 
 /**
  * A18 and A27: placeholders on their token, no-data marks and the brass eyebrow above 4.5:1, and the Track's disabled
@@ -28,13 +29,8 @@ const contrast = (a: RGB, b: RGB) => {
   return (x! + 0.05) / (y! + 0.05);
 };
 const over = (fg: RGB, a: number, bg: RGB): RGB => fg.map((v, i) => v * a + bg[i]! * (1 - a)) as RGB;
-/** A token's hex in the light root (first definition) or the dark block (the first after `[data-fw-theme='dark']`). */
-const token = (name: string, theme: 'light' | 'dark'): string => {
-  const from = theme === 'light' ? 0 : tokens.indexOf("[data-fw-theme='dark']");
-  const m = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`).exec(tokens.slice(from));
-  if (!m) throw new Error(`--${name} (${theme}) is not a hex`);
-  return m[1]!;
-};
+/** A token's hex in the light root or the dark block, following var() aliases (_tokens.ts). */
+const token = (name: string, theme: 'light' | 'dark'): string => tokenHex(name, theme);
 
 describe('placeholders sit on their token (A18)', () => {
   it('every ::placeholder rule uses --ch-text-placeholder, but the phone To line on the bare page (tertiary)', () => {
@@ -89,8 +85,8 @@ describe("the Track's disabled button is readable (A27)", () => {
 });
 
 describe('ink on the elevated surfaces (B4)', () => {
-  it('primary, secondary and tertiary ink read at 4.5:1 or more on both dark elevated steps', () => {
-    for (const bg of ['ch-bg-elevated', 'ch-bg-elevated-2']) {
+  it('primary, secondary and tertiary ink read at 4.5:1 or more on the dark card and the raised step', () => {
+    for (const bg of ['ch-bg-surface', 'ch-bg-elevated']) {
       for (const ink of ['ch-ink-900', 'ch-ink-700', 'ch-ink-600']) {
         expect(contrast(hex(token(ink, 'dark')), hex(token(bg, 'dark'))), `${ink} on ${bg}`).toBeGreaterThanOrEqual(4.5);
       }
@@ -99,12 +95,14 @@ describe('ink on the elevated surfaces (B4)', () => {
 });
 
 describe('the primary key at night (B21, X-6)', () => {
-  it('ivory words read at 4.5:1 or more on every stop of the face, and the face stands off the page at 3:1', () => {
-    const rule = /:where\(html\[data-fw-theme='dark'\]\) \.ch-btn--primary \{\s*background: linear-gradient\(180deg, (#[0-9a-f]{6}) 0%, (#[0-9a-f]{6}) 50%, #[0-9a-f]{6} 50%, (#[0-9a-f]{6}) 100%\)/.exec(css('ui.css'));
-    expect(rule).not.toBeNull();
+  it('ivory words read at 4.5:1 or more on the solid face at rest, on hover and pressed, and the face stands off the page at 3:1', () => {
+    // The key is one solid face per state from tokens (audit Batch 5 item 6), so the dark theme changes values, never rules.
+    expect(css('ui.css')).toMatch(/\.ch-btn--primary \{[^}]*background: var\(--ch-primary-bg\);/);
     const ivory = hex(token('ch-text-on-accent', 'dark'));
-    for (const stop of rule!.slice(1, 4)) expect(contrast(ivory, hex(stop!)), stop).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(hex(rule![2]!), hex(token('ch-bg-page', 'dark')))).toBeGreaterThanOrEqual(3);
+    for (const face of ['ch-primary-bg', 'ch-primary-bg-hover', 'ch-primary-bg-press']) {
+      expect(contrast(ivory, hex(token(face, 'dark'))), face).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(contrast(hex(token('ch-primary-bg', 'dark')), hex(token('ch-bg-page', 'dark')))).toBeGreaterThanOrEqual(3);
   });
 });
 
@@ -249,7 +247,7 @@ const rule = (file: string, selector: string): string => {
   if (at < 0) throw new Error(`${file}: no rule ${selector}`);
   return src.slice(at, src.indexOf('}', at));
 };
-const NIGHT_SURFACES = ['ch-bg-page', 'ch-workspace', 'ch-bg-surface', 'ch-ivory-25', 'ch-bg-elevated', 'ch-bg-elevated-2'];
+const NIGHT_SURFACES = ['ch-bg-page', 'ch-workspace', 'ch-bg-surface', 'ch-ivory-25', 'ch-bg-elevated'];
 
 describe('F-0005: the zone number coin is deep green in both themes', () => {
   it('ivory on every stop reads 4.5:1 and Lc 75', () => {
@@ -344,8 +342,9 @@ describe('F-0036: the N keycap on a primary key at night', () => {
     const r = rule('ui.css', ":where(html[data-fw-theme='dark']) :is(.ch-btn--primary, .ch-btn--ink) .ch-btn__kbd");
     expect(r).toMatch(/background: rgb\(0 0 0 \/ 0\.18\)/);
     expect(r).toMatch(/color: var\(--ch-on-green-ink\)/);
-    const face = /:where\(html\[data-fw-theme='dark'\]\) \.ch-btn--primary \{\s*background: (linear-gradient\([^;]+\))/.exec(css('ui.css'))![1]!;
-    for (const s of stops(face, 'dark')) expect(contrast(ink('ch-on-green-ink', 'dark'), over([0, 0, 0], 0.18, s))).toBeGreaterThanOrEqual(4.5);
+    for (const face of ['ch-primary-bg', 'ch-primary-bg-hover']) {
+      expect(contrast(ink('ch-on-green-ink', 'dark'), over([0, 0, 0], 0.18, hex(token(face, 'dark')))), face).toBeGreaterThanOrEqual(4.5);
+    }
     expect(css('home.css')).not.toMatch(/\.ch-btn--primary \.ch-btn__kbd \{/);
   });
 });

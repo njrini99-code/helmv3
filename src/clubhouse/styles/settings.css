@@ -77,7 +77,8 @@
 }
 @media (hover: hover) {
   .ch-set-rail__i:hover {
-    background: rgb(28 25 18 / 0.05);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 @media (hover: hover) {
@@ -87,12 +88,12 @@
 }
 /* CH-8607: a section presses with a deeper tint over the press beat, never a scale (the shell's CH-1606). */
 .ch-set-rail__i[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
   transition-duration: var(--ch-dur-press);
 }
 @media (hover: hover) {
   .ch-set-rail__i:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
 }
@@ -180,10 +181,11 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
-  animation: ch-fade var(--ch-dur-quick) var(--ch-ease);
+  /* The word a save brings crossfades in over the quick beat (motion.css ch-in). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-set-matrix__what > .ch-set-row__top {
   font: inherit;
@@ -205,7 +207,7 @@
   display: inline-flex;
   flex: 1;
   min-width: 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-set-status > span {
@@ -298,7 +300,7 @@
 }
 .ch-set-sub {
   padding-top: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -367,7 +369,7 @@
   min-width: 0;
 }
 .ch-set-codebox__c > span {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -501,7 +503,7 @@
   padding-bottom: 8px;
   border-top: 0;
   background: var(--ch-bg-subtle);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -513,7 +515,7 @@
 .ch-set-matrix__group {
   padding: 16px 20px 4px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -610,14 +612,6 @@
 }
 .ch-set-rank__i:first-child {
   border-top: 0;
-}
-.ch-set-rank__i.is-moved {
-  animation: ch-set-moved var(--ch-dur-base) var(--ch-ease);
-}
-@keyframes ch-set-moved {
-  from {
-    background: rgb(21 90 57 / 0.07);
-  }
 }
 .ch-set-rank__n {
   display: grid;
@@ -869,11 +863,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-setm-id[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-setm-id:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-setm-id:focus-visible {
@@ -949,14 +943,14 @@
   .ch-setm-gh {
     margin: 0;
     padding: 0 16px 6px;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
   }
   .ch-setm-card {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-elevation-reading);
   }
@@ -1007,12 +1001,12 @@
   }
   button.ch-setm-row[data-ch-pressed],
   a.ch-setm-row[data-ch-pressed] {
-    background: var(--ch-bg-hover);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     button.ch-setm-row:active,
     a.ch-setm-row:active {
-      background: var(--ch-bg-hover);
+      background: var(--ch-sel);
     }
   }
   .ch-setm-row:focus-visible {
@@ -1217,7 +1211,7 @@
   }
   .ch-setm-field__l {
     flex: none;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
   }
   .is-inline .ch-setm-field__l {
@@ -1255,7 +1249,7 @@
   }
   .ch-setm-problem {
     margin: -6px 16px 0;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
   }
 
   /* Text actions and the invite card */
@@ -1315,7 +1309,7 @@
     height: 40px;
     padding: 0 16px;
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-green-800);
     color: var(--ch-on-fill-100);
     font: var(--ch-type-14-strong);
@@ -1351,11 +1345,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-setm-signout[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-setm-signout:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-setm-signout:disabled {
@@ -1422,16 +1416,16 @@
   .ch-setm-rank__i.is-held::before {
     display: none;
   }
-  /* The lifted row (the overlay, portaled into the Clubhouse root): its shadow rises over quick as it leaves the list
-     and falls away over release as it settles into its row (dnd-kit's drop, .is-settling). Instant with reduced motion and with
-     Animations off, where the duration tokens are zero and the drop does not animate. */
+  /* The lifted row (the overlay, portaled into the Clubhouse root): its shadow is there as the finger lifts it (the
+     shadow's own rise, a paint keyframe, is gone: MOTION-AND-VISUAL 3.12) and falls away over release as it settles into
+     its row (dnd-kit's drop, .is-settling). Instant with reduced motion and with Animations off, where the duration tokens
+     are zero and the drop does not animate. */
   .ch-setm-rank__i.is-lifted {
     margin: 0 4px;
     border-radius: var(--ch-radius-md);
     background: var(--ch-green-50);
     box-shadow: var(--ch-elevation-overlay);
     cursor: grabbing;
-    animation: ch-setm-rank-rise var(--ch-dur-quick) var(--ch-ease) backwards;
     transition:
       box-shadow var(--ch-dur-release) var(--ch-ease),
       background-color var(--ch-dur-release) var(--ch-ease);
@@ -1442,13 +1436,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .ch-setm-rank__i.is-lifted {
-      animation: none;
       transition: none;
-    }
-  }
-  @keyframes ch-setm-rank-rise {
-    from {
-      box-shadow: none;
     }
   }
   .ch-setm-rank__n {
@@ -1553,12 +1541,12 @@
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > button.ch-setm-row[data-ch-pressed],
   .ch-setm-page > .ch-setm-group > .ch-setm-card > a.ch-setm-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-setm-page > .ch-setm-group > .ch-setm-card > button.ch-setm-row:active,
     .ch-setm-page > .ch-setm-group > .ch-setm-card > a.ch-setm-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.has-tile {
@@ -1708,12 +1696,12 @@
   }
   /* A press deepens a link row's tint over the press beat (the shell's CH-1606: a row never scales). */
   .ch-set[data-canopy] .ch-surface .ch-set-link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-set[data-canopy] .ch-surface .ch-set-link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -1725,7 +1713,8 @@
    ivory, never the dark ivory ramp), and the action sheet's light card and scrim. */
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-set-rail__i:hover {
-    background: rgb(237 231 216 / 0.05);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
   html[data-fw-theme='dark'] .ch-set-rail__i.is-on:hover {
     background: rgb(107 187 140 / 0.13);
@@ -1736,11 +1725,11 @@
 }
 /* As in light: a press tints over hover, and the selected section keeps its own tint. */
 html[data-fw-theme='dark'] .ch-set-rail__i[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-set-rail__i:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 html[data-fw-theme='dark'] .ch-set-rail__i.is-on {

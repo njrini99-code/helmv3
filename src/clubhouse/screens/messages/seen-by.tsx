@@ -14,7 +14,7 @@ import { Icon } from "../../ui/Icon";
 import { MsSheet } from "./overlays/MsSheet";
 import { InlineNotice } from "../../ui/Notices";
 import { Skeleton } from "../../ui/States";
-import { clock, railTime, type ChMsg } from "./model";
+import { railTime, type ChMsg } from "./model";
 import type { ChMessagesApi } from "./MessagesView";
 
 /** The directory lookup MessagesView exports as personOf, kept here so this file only takes types from it (no import cycle). */
@@ -109,7 +109,7 @@ export function SeenFaces({ api, ids, size, max }: { api: ChMessagesApi; ids: re
     <span className="ch-msv-faces" aria-hidden="true">
       <AnimatePresence initial={false}>
         {ids.slice(0, max).map((id) => (
-          <M.span key={id} className="ch-msv-faces__f" initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={chSpring("pop", reduced)}>
+          <M.span key={id} className="ch-msv-faces__f" initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={chSpring("settle", reduced)}>
             <Avatar name={personOf(api, id)?.name ?? "Member"} id={personOf(api, id)?.playerId ?? id} size={size} />
           </M.span>
         ))}
@@ -165,7 +165,8 @@ export function SeenByPill({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg; o
 }
 
 /**
- * The receipt under your latest message in a direct thread (MSG-214, MOT-SEND-10): "Delivered", then "Seen 8:15 AM", the words
+ * The receipt under your latest message in a direct thread (MSG-214, MOT-SEND-10): "Delivered", then "Seen 8:15 AM" today,
+ * "Seen Yesterday", "Seen Sat" or "Seen Sep 3" later (DM-05, the inbox rail's own words), as plain text like iMessage's Read line; the words
  * crossfading over 180 ms. The time is the reader's, shown to a coach from the read marks; a player (or no mark yet) reads plain "Seen"
  * (Q-44). Renders nothing for a pending, failed, deleted or poll message.
  */
@@ -176,7 +177,7 @@ export function DmReceipt({ api, m }: { api: ChMessagesApi; m: ChMsg }) {
   if (m.seen) {
     const marks = api.receipts?.marks;
     const readAt = marks && api.viewer.role === "coach" ? (seenBy(m.at, m.senderId, marks).seen.map((id) => marks.get(id)).find((t): t is string => !!t) ?? null) : null;
-    label = readAt ? `Seen ${clock(readAt, api.timeZone, api.clock)}` : "Seen";
+    label = readAt ? `Seen ${railTime(readAt, api.now, api.timeZone, api.clock)}` : "Seen";
   }
   return (
     <span className="ch-msv-seen is-dm" data-ch-code="CH-7608" role="status">
@@ -299,7 +300,8 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
   // M6: a person moving from Not yet to Seen glides to their new place (one layout id across both sections, on smooth,
   // which keeps its velocity when retargeted); the meta and the section counts cross-fade on quick (M1's swap); a section
-  // left empty folds its height away on the same spring. All instant under reduced motion and Animations off.
+  // left empty fades out on quick, opacity only (audit 2026-11-15, MOT-15: no height is animated). All instant under
+  // reduced motion and Animations off.
   const fade = (key: string, text: string) => (
     <span className="ch-seen-swap">
       <AnimatePresence initial={false} mode="popLayout">
@@ -316,8 +318,8 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
         className="ch-seen-sec"
         aria-label={`${title}, ${rows.length} ${rows.length === 1 ? "person" : "people"}`}
         style={{ overflow: "hidden" }}
-        exit={reduced ? undefined : { height: 0, opacity: 0 }}
-        transition={chSpring("smooth", reduced)}
+        exit={reduced ? undefined : { opacity: 0 }}
+        transition={chTween("quick", reduced)}
       >
         <h3 className="ch-seen-sec__h ch-num">
           <><span>{title}</span>{fade(String(rows.length), String(rows.length))}</>

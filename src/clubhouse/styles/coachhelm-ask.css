@@ -256,11 +256,11 @@
   }
 }
 .ch-ask-hist__iconbtn[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ask-hist__iconbtn:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-ask-hist__new {
@@ -282,18 +282,28 @@
 .ch-ask-hist__new svg {
   color: var(--ch-green-600);
 }
+/* GAP-H-08: New chat waits while a reply is on its way (Stop ends it first), in the ink the phone bar's inert text action uses. */
+.ch-ask-hist__new[aria-disabled='true'],
+.ch-ask-hist__new[aria-disabled='true'] svg,
+.ch-ask-hist__iconbtn[aria-disabled='true'],
+.ch-ask-head__btn[aria-disabled='true'],
+.ch-ask .ch-pbar__icon[aria-disabled='true'] {
+  color: var(--ch-text-tertiary);
+  cursor: default;
+}
 @media (hover: hover) {
   /* The ledger's row tint over the key's own face, so it stays a key on the rail. */
   .ch-ask-hist__new:hover {
-    background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-bg-surface);
+    background: linear-gradient(var(--ch-sel), var(--ch-sel)), var(--ch-bg-surface);
+    transition-duration: 0s;
   }
 }
 .ch-ask-hist__new[data-ch-pressed] {
-  background: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press)), var(--ch-bg-surface);
+  background: linear-gradient(var(--ch-sel), var(--ch-sel)), var(--ch-bg-surface);
 }
 @media (hover: hover) {
   .ch-ask-hist__new:active {
-    background: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press)), var(--ch-bg-surface);
+    background: linear-gradient(var(--ch-sel), var(--ch-sel)), var(--ch-bg-surface);
   }
 }
 .ch-ask-hist__scroll {
@@ -313,7 +323,7 @@
 .ch-ask-hist__group {
   margin: 0;
   padding: 8px 8px 6px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
 /* A block, not a flex row: an ellipsis on a flex container cuts a long title mid-letter. The line height centres it. */
@@ -342,11 +352,11 @@
 }
 /* After the open chat's fill, so pressing it shows too. */
 .ch-ask-hist__row[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ask-hist__row:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 /* Inset: the history scroller clips a ring drawn outside the row. */
@@ -388,7 +398,7 @@
   margin-top: 6px;
   padding: 0 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
   font: var(--ch-type-14-strong);
@@ -410,7 +420,7 @@
   min-height: 36px;
   padding: 0 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
   font: var(--ch-type-14);
@@ -581,7 +591,7 @@
   height: 36px;
   padding: 0 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: none;
   box-shadow: 0 0 0 1px var(--ch-border-control);
   font: var(--ch-type-14-medium);
@@ -601,11 +611,11 @@
   }
 }
 .ch-ask-cmp__chip[data-ch-pressed] {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
 }
 @media (hover: hover) {
   .ch-ask-cmp__chip:active {
-    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+    background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
   }
 }
 .ch-ask-cmp__send {
@@ -656,7 +666,7 @@
 .ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__box {
   gap: var(--ch-space-3);
   padding: var(--ch-space-5) var(--ch-space-5) var(--ch-space-3);
-  border-radius: var(--ch-radius-panel);
+  border-radius: var(--ch-radius-xl);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-sheet);
 }
 .ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__box:focus-within {
@@ -756,7 +766,7 @@
 }
 .ch-ask-cmp.is-dock .ch-ask-cmp__round[data-ch-pressed],
 .ch-ask-cmp.is-phone .ch-ask-cmp__round[data-ch-pressed] {
-  background: var(--ch-press-wash);
+  background: var(--ch-sel);
 }
 .ch-ask-cmp.is-dock .ch-ask-cmp__send,
 .ch-ask-cmp.is-phone .ch-ask-cmp__send {
@@ -785,26 +795,16 @@
   box-shadow: var(--ch-elevation-overlay), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   overflow: hidden;
   transform-origin: 50% 100%;
-  animation: ch-ask-pick-in var(--ch-dur-quick) var(--ch-ease);
+  /* A menu a tap opens: from scale 0.96 and opacity 0 at its anchor's edge, over the quick beat on the iOS curve
+     (motion.css ch-arrive; MOTION-AND-VISUAL 3.4, 3.12). */
+  --ch-arrive-t: scale(0.96);
+  animation: ch-arrive var(--ch-dur-quick) var(--ch-ease-ios);
 }
 /* Below the new-chat box only while there is room there; with too little it opens above (`data-side="up"`, Composer.tsx). */
 .ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-pick:not([data-side='up']) {
   top: calc(100% + 8px);
   bottom: auto;
   transform-origin: 50% 0;
-  animation-name: ch-ask-pick-down;
-}
-@keyframes ch-ask-pick-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px) scale(0.985);
-  }
-}
-@keyframes ch-ask-pick-down {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.985);
-  }
 }
 [data-ui='clubhouse'][data-motion='off'] .ch-ask-pick {
   animation: none;
@@ -821,7 +821,7 @@
 /* Group headings: the quiet word over each kind of row, in sentence case. */
 .ch-ask-pick [cmdk-group-heading] {
   padding: 8px 8px 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-ask-pick [cmdk-group] + [cmdk-group] {
@@ -844,16 +844,18 @@
   -webkit-tap-highlight-color: transparent;
   transition: background-color var(--ch-dur-press) var(--ch-ease);
 }
-/* The row Enter would pick: the pointer's, or the arrow keys'. */
+/* The row Enter would pick: the pointer's, or the arrow keys'. The selected fill plus the control edge, so the choice
+   is seen without colour (audit S1.8b, MENTION-01). */
 .ch-ask-pick__row[data-selected='true'] {
-  background: var(--ch-bg-inset);
+  background: var(--ch-bg-selected);
+  box-shadow: inset 0 0 0 1px var(--ch-border-control);
 }
 .ch-ask-pick__row[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ask-pick__row:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-ask-pick__name {
@@ -925,22 +927,15 @@
   width: min(330px, 86vw);
   height: 100%;
   padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 16px);
-  box-shadow: 8px 0 30px rgb(0 0 0 / 0.18);
+  box-shadow: var(--ch-elevation-raised);
   touch-action: pan-y;
 }
 body.keyboard-open .ch-ask-hist.is-drawer {
   height: calc(100dvh - var(--keyboard-height, 0px));
 }
 .ch-ask-drawer[open] .ch-ask-hist.is-drawer {
-  animation: ch-ask-drawer-in var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
-}
-@keyframes ch-ask-drawer-in {
-  from {
-    translate: -100% 0;
-  }
-  to {
-    translate: 0 0;
-  }
+  /* In from the leading edge like a sheet, over the reveal beat on the iOS curve (motion.css ch-drawer-in; 3.4, 3.12). */
+  animation: ch-drawer-in var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 .ch-ask-drawer .ch-ask-hist__head :is(b, h2) {
   font-size: calc(20 * var(--ch-type-k));
@@ -992,6 +987,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   .ch-ask[data-ch-vv] {
     height: calc(var(--ch-vv-h) + var(--ch-vv-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-top));
   }
+  /* Under the CoachHelm switch's 52px row the chat is that much shorter: coachhelm.css owns those heights beside .ch-hsw. */
   .ch-ask-scroll {
     padding: 0 var(--ch-page-x-phone) 12px;
   }
@@ -999,10 +995,9 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     display: flex;
     flex-direction: column;
   }
+  /* The tray paints the page colour, with no rule over it (ASK-P-13): the composer's own capsule is the only edge. */
   .ch-ask-dock {
     padding: 8px var(--ch-page-x-phone) 8px;
-    box-shadow: 0 -1px 0 var(--ch-border-hairline);
-    background: var(--ch-phone-composer-bg);
   }
   .ch-ask-cmp__box {
     border-radius: var(--ch-radius-xl);
@@ -1067,13 +1062,11 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-ask-card[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-ask-card:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-ask-card:focus-visible {
@@ -1140,8 +1133,9 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
 }
 
-/* A switch (use-view-switch.ts): the strip or the chosen chat has already moved, so what is changing dims and stops answering
-   taps until the next view lands. To the Board the whole chat dims; to another chat the list of chats stays crisp. */
+/* A switch (use-view-switch.ts): the strip or the chosen chat has already moved, so what is changing stops answering taps until
+   the next view lands, and dims once the switch has taken the busy delay, held at least the busy hold (data-ch-busy,
+   lib/use-busy.ts; MOTION-AND-VISUAL 3.9). To the Board the whole chat dims; to another chat the list of chats stays crisp. */
 .ch-ask-body {
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
@@ -1151,8 +1145,12 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 .ch-ask[aria-busy='true'][data-switch='view']:not([aria-label^='Loading']) > .ch-ask-body,
 .ch-ask[aria-busy='true']:not([aria-label^='Loading']) > .ch-ask-plain,
 .ch-ask[aria-busy='true'][data-switch='chat']:not([aria-label^='Loading']) > .ch-ask-body > :not(.ch-ask-hist) {
-  opacity: 0.55;
   pointer-events: none;
+}
+.ch-ask[data-ch-busy='skeleton'][data-switch='view'] > .ch-ask-body,
+.ch-ask[data-ch-busy='skeleton'] > .ch-ask-plain,
+.ch-ask[data-ch-busy='skeleton'][data-switch='chat'] > .ch-ask-body > :not(.ch-ask-hist) {
+  opacity: 0.55;
 }
 
 /* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy"). On the phone Ask sits on the parchment (the canvas
@@ -1182,13 +1180,6 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   .ch-ask-nothing__ic {
     background: var(--ch-ledger-row-hover);
-  }
-  /* On the phone the dock sits under a soft rule instead of the wash. */
-  .ch-ask-dock {
-    box-shadow: 0 -1px 0 var(--ch-ledger-rule-soft);
-  }
-  .ch-ask-dock::before {
-    display: none;
   }
 }
 
@@ -1402,11 +1393,12 @@ html:not([data-fw-theme='dark']) .ch-ask {
   }
 }
 
-/* The Ask view settles in after a switch the same way the board's views do (coachhelm.css, ch-view-enter): its body or its
-   plain state rises from the dimmed opacity, desktop only. */
+/* The Ask view settles in after a switch the same way the board's views do (coachhelm.css): its body or its plain state
+   rises from the dimmed opacity, desktop only (motion.css ch-arrive from --ch-enter-from). */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-ask[data-ch-enter]:not(.is-phone) > :is(.ch-ask-body, .ch-ask-plain) {
-    animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
+    --ch-arrive-o: var(--ch-enter-from, 0.55);
+    animation: ch-arrive var(--ch-dur-quick) var(--ch-ease-ios) backwards;
   }
 }
 /* S-ASKD.pane: the chat narrows beside the plan, so nothing sits under it. */

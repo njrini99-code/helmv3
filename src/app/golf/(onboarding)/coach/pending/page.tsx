@@ -39,12 +39,13 @@ export default async function CoachPendingPage() {
   }
   if (!user) redirect('/golf/login');
 
-  const admin = createAdminClient();
-  const { data: coach, error: coachError } = await admin
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  // Who is this? Read with the caller's own session: RLS lets a user read their
+  // own golf_coaches and golf_players rows (user_id = auth.uid()), so this needs
+  // no service role. The admin client stays for the team and program reads below.
+  const [{ data: coach, error: coachError }, { data: player, error: playerError }] = await Promise.all([
+    supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
+    supabase.from('golf_players').select('id, onboarding_completed').eq('user_id', user.id).maybeSingle(),
+  ]);
   if (coachError) {
     await logServerError(
       `[coach/pending] coach read failed: ${describeError(coachError)}`,
@@ -52,6 +53,17 @@ export default async function CoachPendingPage() {
       'warning',
     );
   }
+
+  // GAP-R-13: someone with no coach row never asked to join a team as a coach,
+  // so "Waiting for approval" is not theirs. A player who hasn't finished
+  // onboarding goes back to it; anyone else goes to the dashboard, which routes
+  // them on. Only an answer of "no row" moves them: a failed read keeps today's
+  // page rather than bouncing a real pending coach away.
+  if (!coachError && !coach) {
+    redirect(!playerError && player && !player.onboarding_completed ? '/golf/player' : '/golf/dashboard');
+  }
+
+  const admin = createAdminClient();
 
   // Approved already? The staff row is the signal, so this reads the same
   // table the RLS helpers do rather than a second notion of "approved".

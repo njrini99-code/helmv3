@@ -5,7 +5,7 @@ import { useRef } from 'react';
 import { CH_STAGES, isNextStepLate, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { Button, IconButton } from '../../ui/Button';
 import { Menu } from '../../ui/Menu';
-import { InlineNotice } from '../../ui/Notices';
+import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
@@ -45,7 +45,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
         <InlineNotice
           code="CH-14201"
           title="Your prospects didn’t load"
-          body="Nothing was lost. Try again."
+          body={FAILURE_COPY.page}
           onRetry={c.tryAgain}
         />
       ) : (
@@ -78,7 +78,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
                   <div className="ch-rec-bar">
                     <SearchField className="ch-rec-search" value={c.query} onChange={c.setQuery} placeholder="Search prospects" label="Search prospects" />
                     {c.rows.length > 0 && (
-                      <Segmented weight="filter" size="sm" label="Sort prospects" value={c.sort} onChange={c.setSort} options={c.sorts.map((s) => ({ value: s.value, label: s.label }))} />
+                      <Segmented size="sm" label="Sort prospects" value={c.sort} onChange={c.setSort} options={c.sorts.map((s) => ({ value: s.value, label: s.label }))} />
                     )}
                   </div>
                   {/* CH-14603: a stage picked or let go settles the list in (base in, quick out); typing a search does not. */}

@@ -143,9 +143,11 @@ was empty (110413). A test covers 110413.
 | 110421 | CH-11320 | `TEAM_ROUNDS_NO_ROUND_POSTED_BY_ANYONE` | Team rounds: no round posted by anyone |
 | 110422 | CH-11321 | `TEAM_ROUNDS_THE_SEARCH_OR_PLAYER_FILTER` | Team rounds: the search or player filter matches nothing |
 | 110423 | CH-11322 | `TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE` | Team rounds: completed rounds with no score at all |
-| 110424 | CH-11330 | `A_COURSE_PAGE_THIS_VIEWER_HAS_NO` | A course page this viewer has no rounds at: an unknown key, or another player's course |
-| 110425 | CH-11331 | `A_COACHS_COURSE_PAGE_FOR_A_PLAYER` | A coach's course page for a player who isn't on their team, or no player named |
+| 110424 | CH-11330 | `A_COURSE_PAGE_THIS_VIEWER_HAS_NO` | A course page this viewer has no rounds at: a valid key with no rounds, or another player's course |
+| 110425 | CH-11331 | `A_COACHS_COURSE_PAGE_FOR_A_PLAYER` | A coach's course page for a player who isn't on their team |
 | 110426 | CH-11333 | `THE_COURSE_PAGES_HOLE_BY_HOLE_WITH` | The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load) |
+| 110490 | CH-11390 | `A_COACH_ON_A_PLAYERS_ROUND_FLOW` | A coach on a player's round flow: /rounds/new, /rounds/recover or /rounds/continue/[id] (GAP-R-12) |
+| 110491 | CH-11391 | `A_COACH_ON_A_COURSE_PAGE_WITH` | A coach on a course page with no player named, or a player id that isn't one (GAP-S-20) |
 
 ## 05 — Validation
 
@@ -241,6 +243,8 @@ Neither route has a Clubhouse error view: `rounds/error.tsx` and
 | 110642 | CH-11220 | `TEAM_ROUNDS_THE_ROSTER_DOESNT_LOAD` | Team rounds: the roster doesn't load |
 | 110643 | CH-11221 | `TEAM_ROUNDS_THE_POSTED_ROUNDS_DONT_LOAD` | Team rounds: the posted rounds don't load |
 | 110644 | CH-11222 | `A_ROUNDS_COACH_NOTE_CANT_BE_CHECKED` | A round's coach note can't be checked (the read of `golf_round_reviews.coach_notes` failed) |
+| 110690 | CH-11290 | `A_ROUND_REVIEWS_HISTORY_READ_FAILS_ON` | A round review's history read fails, on the server or as a stream cut off in the browser (GAP-S-27) |
+| 110691 | CH-11291 | `A_SECTION_OF_ROUND_TRACKING_OR_OF` | A section of round tracking or of the course page throws while drawing (GAP-S-10) |
 
 ## 07 — Network / offline
 
@@ -283,7 +287,7 @@ load, with Try again (CH-11208 to CH-11210).
 | 110762 | CH-11962 | `THE_COURSE_NUDGE_THE_ROUND_HAS_NO` | The course nudge (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the round has no library course (a course typed by hand) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
@@ -331,12 +335,12 @@ success haptic.
 
 A posted round opens its review with `?just=submitted` (the submit path's own
 navigation and its link). The review's round card (CH-11920 to CH-11924,
-`screens/rounds/card/`) settles in once on the smooth spring and says one quiet
-line about the round, using only figures the page shows; the success haptic was
-fired by the submit path and the card fires none. The parameter is taken out of
-the address after it is read, so a reload does not replay it. Share draws the
-card as a 1200px picture on the device (Canvas 2D) and hands it to the share
-sheet, or downloads it; nothing goes to a server.
+`screens/rounds/card/`) is whole in its first frame (MOTION-AND-VISUAL 3.12) and
+says one quiet line about the round, using only figures the page shows; the
+success haptic was fired by the submit path and the card fires none. The
+parameter is taken out of the address after it is read, so a reload does not
+replay it. Share draws the card as a 1200px picture on the device (Canvas 2D)
+and hands it to the share sheet, or downloads it; nothing goes to a server.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

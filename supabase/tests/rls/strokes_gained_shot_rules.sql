@@ -1,6 +1,7 @@
 -- Q-89: strokes gained charges a penalty to the shot that earned it, ends a shot where the
 -- next non-penalty shot starts, and stores NULL for is_test rounds (migration
--- 20260930150000_golf_sg_penalty_charged_to_earning_shot.sql). GENERATED from
+-- 20260930150000_golf_sg_penalty_charged_to_earning_shot.sql), on the Table B.1 curve
+-- (20261115215000_golf_sg_tour_curve_broadie_table.sql). GENERATED from
 -- src/lib/utils/__tests__/fixtures/sg-shot-rules.json, which the TypeScript engine
 -- test (golf-stats-calculator-shots.sg-shot-rules.test.ts) asserts too, so the SQL
 -- functions and the TS engine agree on the same shots.
@@ -135,47 +136,47 @@ UPDATE public.golf_rounds SET status = 'completed' WHERE id IN ('00000000-0000-0
 SELECT set_config('helm.golf_lifecycle_write', '', true);
 
 -- the pure function gives the shared numbers for every fixture hole
-SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa01-000000000000')), -0.974::numeric, 'tee-penalty-logged-after-the-shot: Off the tee');
-SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa01-000000000000')), 0.134::numeric, 'tee-penalty-logged-after-the-shot: Approach');
+SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa01-000000000000')), -1.035::numeric, 'tee-penalty-logged-after-the-shot: Off the tee');
+SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa01-000000000000')), 0.13::numeric, 'tee-penalty-logged-after-the-shot: Approach');
 SELECT is((SELECT sg_around_green FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa01-000000000000')), 0::numeric, 'tee-penalty-logged-after-the-shot: Around the green');
 SELECT is((SELECT sg_putting FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa01-000000000000')), -0.075::numeric, 'tee-penalty-logged-after-the-shot: Putting');
-SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa01-000000000000')), -0.915::numeric, 'tee-penalty-logged-after-the-shot: Total');
-SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa02-000000000000')), -1.099::numeric, 'penalty-logged-before-the-tee-shot: Off the tee');
-SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa02-000000000000')), -0.118::numeric, 'penalty-logged-before-the-tee-shot: Approach');
+SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa01-000000000000')), -0.98::numeric, 'tee-penalty-logged-after-the-shot: Total');
+SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa02-000000000000')), -1.17::numeric, 'penalty-logged-before-the-tee-shot: Off the tee');
+SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa02-000000000000')), -0.098::numeric, 'penalty-logged-before-the-tee-shot: Approach');
 SELECT is((SELECT sg_around_green FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa02-000000000000')), 0::numeric, 'penalty-logged-before-the-tee-shot: Around the green');
 SELECT is((SELECT sg_putting FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa02-000000000000')), 0.678::numeric, 'penalty-logged-before-the-tee-shot: Putting');
-SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa02-000000000000')), -0.539::numeric, 'penalty-logged-before-the-tee-shot: Total');
+SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa02-000000000000')), -0.59::numeric, 'penalty-logged-before-the-tee-shot: Total');
 SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa03-000000000000')), -0.145::numeric, 'approach-penalty-from-200-out: Off the tee');
 SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa03-000000000000')), -1.475::numeric, 'approach-penalty-from-200-out: Approach');
 SELECT is((SELECT sg_around_green FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa03-000000000000')), 0::numeric, 'approach-penalty-from-200-out: Around the green');
 SELECT is((SELECT sg_putting FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa03-000000000000')), 0.61::numeric, 'approach-penalty-from-200-out: Putting');
 SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa03-000000000000')), -1.01::numeric, 'approach-penalty-from-200-out: Total');
-SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa04-000000000000')), 0.052::numeric, 'short-shot-penalty-drop-farther-out: Off the tee');
-SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa04-000000000000')), -0.634::numeric, 'short-shot-penalty-drop-farther-out: Approach');
-SELECT is((SELECT sg_around_green FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa04-000000000000')), -2.161::numeric, 'short-shot-penalty-drop-farther-out: Around the green');
+SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa04-000000000000')), 0.08::numeric, 'short-shot-penalty-drop-farther-out: Off the tee');
+SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa04-000000000000')), -0.588::numeric, 'short-shot-penalty-drop-farther-out: Approach');
+SELECT is((SELECT sg_around_green FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa04-000000000000')), -2.21::numeric, 'short-shot-penalty-drop-farther-out: Around the green');
 SELECT is((SELECT sg_putting FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa04-000000000000')), 0.678::numeric, 'short-shot-penalty-drop-farther-out: Putting');
-SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa04-000000000000')), -2.065::numeric, 'short-shot-penalty-drop-farther-out: Total');
+SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa04-000000000000')), -2.04::numeric, 'short-shot-penalty-drop-farther-out: Total');
 SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa05-000000000000')), 0::numeric, 'par-3-tee-penalty: Off the tee');
-SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa05-000000000000')), -1.873::numeric, 'par-3-tee-penalty: Approach');
+SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa05-000000000000')), -1.875::numeric, 'par-3-tee-penalty: Approach');
 SELECT is((SELECT sg_around_green FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa05-000000000000')), 0::numeric, 'par-3-tee-penalty: Around the green');
 SELECT is((SELECT sg_putting FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa05-000000000000')), -0.075::numeric, 'par-3-tee-penalty: Putting');
-SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa05-000000000000')), -1.948::numeric, 'par-3-tee-penalty: Total');
-SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa06-000000000000')), -1.963::numeric, 'out-of-bounds-re-tee: Off the tee');
-SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa06-000000000000')), 0.082::numeric, 'out-of-bounds-re-tee: Approach');
+SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa05-000000000000')), -1.95::numeric, 'par-3-tee-penalty: Total');
+SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa06-000000000000')), -1.955::numeric, 'out-of-bounds-re-tee: Off the tee');
+SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa06-000000000000')), 0.075::numeric, 'out-of-bounds-re-tee: Approach');
 SELECT is((SELECT sg_around_green FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa06-000000000000')), 0::numeric, 'out-of-bounds-re-tee: Around the green');
 SELECT is((SELECT sg_putting FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa06-000000000000')), -0.13::numeric, 'out-of-bounds-re-tee: Putting');
-SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa06-000000000000')), -2.011::numeric, 'out-of-bounds-re-tee: Total');
-SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa07-000000000000')), 0.016::numeric, 'lie-break-between-shots: Off the tee');
-SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa07-000000000000')), 0.194::numeric, 'lie-break-between-shots: Approach');
+SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa06-000000000000')), -2.01::numeric, 'out-of-bounds-re-tee: Total');
+SELECT is((SELECT sg_tee FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa07-000000000000')), 0.028::numeric, 'lie-break-between-shots: Off the tee');
+SELECT is((SELECT sg_approach FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa07-000000000000')), 0.183::numeric, 'lie-break-between-shots: Approach');
 SELECT is((SELECT sg_around_green FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa07-000000000000')), 0::numeric, 'lie-break-between-shots: Around the green');
 SELECT is((SELECT sg_putting FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa07-000000000000')), 0.78::numeric, 'lie-break-between-shots: Putting');
-SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa07-000000000000')), 0.99::numeric, 'lie-break-between-shots: Total');
+SELECT is((SELECT sg_total FROM public.calculate_round_strokes_gained('00000000-0000-0000-aa07-000000000000')), 0.991::numeric, 'lie-break-between-shots: Total');
 
 -- recalculate_round_strokes_gained persists the same numbers (golf_rounds columns keep 2 decimals)
 SELECT public.recalculate_round_strokes_gained('00000000-0000-0000-aa01-000000000000');
-SELECT ok(abs((SELECT strokes_gained_tee FROM public.golf_rounds WHERE id = '00000000-0000-0000-aa01-000000000000') - (-0.974)) < 0.006, 'recalculate stores Off the tee for the tee-penalty hole');
-SELECT ok(abs((SELECT strokes_gained_approach FROM public.golf_rounds WHERE id = '00000000-0000-0000-aa01-000000000000') - (0.134)) < 0.006, 'recalculate stores Approach for the tee-penalty hole');
-SELECT ok(abs((SELECT strokes_gained_total FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-aa01-000000000000') - (-0.915)) < 0.006, 'recalculate writes the per-round cache row');
+SELECT ok(abs((SELECT strokes_gained_tee FROM public.golf_rounds WHERE id = '00000000-0000-0000-aa01-000000000000') - (-1.035)) < 0.006, 'recalculate stores Off the tee for the tee-penalty hole');
+SELECT ok(abs((SELECT strokes_gained_approach FROM public.golf_rounds WHERE id = '00000000-0000-0000-aa01-000000000000') - (0.13)) < 0.006, 'recalculate stores Approach for the tee-penalty hole');
+SELECT ok(abs((SELECT strokes_gained_total FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-aa01-000000000000') - (-0.98)) < 0.006, 'recalculate writes the per-round cache row');
 
 -- an is_test round carries no strokes gained: NULL in golf_rounds and in the per-round cache
 SELECT public.recalculate_round_strokes_gained('00000000-0000-0000-ee02-000000000000');

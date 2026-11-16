@@ -95,7 +95,7 @@ export function GlassMenu({
     const was = leaving.current;
     leaving.current = null;
     // Read the live frame first (live), then let the old fade go: cancelling it first would snap the menu back to full.
-    msAnimate(el, [{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], 'lift', { live: !!was, reduced });
+    msAnimate(el, [{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], 'settle', { live: !!was, reduced });
     if (was) {
       was.onfinish = null;
       was.cancel();

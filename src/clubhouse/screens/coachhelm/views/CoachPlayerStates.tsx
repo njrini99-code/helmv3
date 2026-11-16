@@ -6,6 +6,7 @@ import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
+import { FAILURE_COPY } from '../../../ui/Notices';
 import { EmptyState } from '../../../ui/States';
 
 /**
@@ -41,7 +42,7 @@ export function CoachPlayerFailed() {
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-hl-title'} aria-label={phone ? 'CoachHelm' : undefined}>
       {/* One h1 per screen: the phone bar's title is it on the phone, and a hidden one on desktop (the page outline, P013 D8). */}
       {phone ? <PhoneTop start title="CoachHelm" /> : <h1 id="ch-hl-title" className="ch-sr-only">CoachHelm</h1>}
-      <RefreshNotice code="CH-13209" title="This player’s page didn’t load" body="Nothing is lost. Try again in a moment." />
+      <RefreshNotice code="CH-13209" title="This player’s page didn’t load" body={FAILURE_COPY.page} />
     </main>
   );
 }

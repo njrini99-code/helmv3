@@ -7,7 +7,7 @@ import { Badge } from '../../ui/Badge';
 import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
-import { Skeleton } from '../../ui/States';
+import { Skeleton, SkelRows } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { zoneFormat } from '../../lib/zone-format';
@@ -15,6 +15,22 @@ import { chTrail } from '../../lib/track';
 import { clock, dayLabel, needsMyAck, railTime, type ChAnnouncement, type ChAnnouncementDetail } from './model';
 import type { ChMessagesApi } from './MessagesView';
 import { plural, pluralWord } from '../../lib/plural';
+
+/**
+ * The section in waiting (GAP-S-11, CH-7490): the conversations above it are already drawn, so only this part waits, in
+ * the failed notice's anatomy (its heading, then the row it holds). Still out after 4 seconds, the heading says so; after
+ * 15 the read gives up into the failed notice (CH-7206) and its Try again.
+ */
+function AnnouncementsWait({ slow }: { slow: boolean }) {
+  return (
+    <section className="ch-ms-sec is-ann" aria-label="Announcements" aria-busy="true" data-ch-code="CH-7490">
+      <div className="ch-ms-sec__l">
+        Announcements{slow && <span role="status"> · Still loading…</span>}
+      </div>
+      <SkelRows rows={1} lead />
+    </section>
+  );
+}
 
 /**
  * The team's announcements, folded under the conversations (owner, 2026-10-16: messages first, announcements folded).
@@ -33,6 +49,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
       </section>
     );
   }
+  if (api.annPending) return <AnnouncementsWait slow={!!api.annSlow} />;
   if (!list.length) return null;
   const shown = open || !!s || list.some((a) => a.id === api.selectedAnnId);
   const waiting = api.announcements.filter((a) => needsMyAck(a, api.viewer.role)).length;

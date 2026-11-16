@@ -110,6 +110,11 @@ export interface UseCoachHelmChatResult {
   stop: () => void;
   retry: () => void;
   newConversation: () => void;
+  /**
+   * Put back a thread that `newConversation` cleared (Ask's Undo, CH-13925): its messages and its conversation, as they stood.
+   * Nothing is sent, and it does nothing once a question in the new chat is on its way. Optional in the type as `revise` is.
+   */
+  restore?: (snapshot: { conversationId: string | null; messages: ChatUIMessage[] }) => void;
 
   /**
    * Answer a waiting card. The argument is the card's approval id
@@ -179,6 +184,8 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const lastQuestion = React.useRef<{ text: string; key: string; about?: { evidence_ref: string; key: string } } | null>(null);
   // The last decision sent, so a Confirm whose response was lost can be sent again: the server runs a key at most once.
   const lastDecision = React.useRef<{ key: string; approved: boolean } | null>(null);
+  /** What `newConversation` cleared from the retry state, so `restore` (Ask's Undo) brings back a working Try again. */
+  const clearedRetry = React.useRef<{ conversationId: string | null; question: typeof lastQuestion.current; decision: typeof lastDecision.current } | null>(null);
   // A Confirm keeps its request open through the Undo window, so a coach with several cards presses the next one while the first
   // is still open. Those presses are kept and sent in the order pressed, one request at a time.
   const flight = React.useRef<Outgoing | null>(null);
@@ -426,6 +433,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     inFlight.current?.abort();
     inFlight.current = null;
     flight.current = null;
+    clearedRetry.current = { conversationId: conversation.current, question: lastQuestion.current, decision: lastDecision.current };
     conversation.current = null;
     lastQuestion.current = null;
     lastDecision.current = null;
@@ -434,6 +442,24 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     setContext([]);
     setMessages([]);
     // The old thread's failure must not follow the coach into the new one.
+    setError(undefined);
+    setPhase(null);
+    setStatus('ready');
+  }, []);
+
+  const restore = React.useCallback((snapshot: { conversationId: string | null; messages: ChatUIMessage[] }) => {
+    // A question in the new chat is on its way: that chat is the coach's latest choice, and it stays.
+    if (inFlight.current) return;
+    const cleared = clearedRetry.current;
+    clearedRetry.current = null;
+    if (cleared && cleared.conversationId === snapshot.conversationId) {
+      lastQuestion.current = cleared.question;
+      lastDecision.current = cleared.decision;
+    }
+    conversation.current = snapshot.conversationId;
+    thread.current = snapshot.messages;
+    setConversationId(snapshot.conversationId);
+    setMessages(snapshot.messages);
     setError(undefined);
     setPhase(null);
     setStatus('ready');
@@ -516,6 +542,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     stop,
     retry,
     newConversation,
+    restore,
     approve,
     deny,
     revise,

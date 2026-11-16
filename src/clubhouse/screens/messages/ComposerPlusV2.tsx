@@ -63,7 +63,7 @@ export function ComposerPlusV2({ api, conv, disabled, onPick }: { api: ChMessage
     leaving.current = null;
     closingRef.current = false;
     setClosing(false);
-    if (menu.current) msAnimate(menu.current, [...ATTACH_IN], 'lift', { live: true, reduced });
+    if (menu.current) msAnimate(menu.current, [...ATTACH_IN], 'settle', { live: true, reduced });
     if (was) {
       was.onfinish = null;
       was.cancel();
@@ -73,7 +73,7 @@ export function ComposerPlusV2({ api, conv, disabled, onPick }: { api: ChMessage
   // Fresh open: it grows from the + (and, from the keyboard, the first row takes focus; not on a phone whose composer has the keyboard up).
   useLayoutEffect(() => {
     if (!open || !menu.current) return;
-    msAnimate(menu.current, [...ATTACH_IN], 'lift', { reduced });
+    msAnimate(menu.current, [...ATTACH_IN], 'settle', { reduced });
     const typing = document.activeElement instanceof HTMLTextAreaElement && window.matchMedia(CH_PHONE_QUERY).matches;
     if (!typing) menu.current.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per mount of the menu

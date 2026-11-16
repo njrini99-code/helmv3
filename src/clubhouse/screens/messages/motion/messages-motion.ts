@@ -4,8 +4,9 @@
  * component (clubhouse:check rejects them). Values live in `lib/motion.ts` (CH_SPRINGS, CH_MS, CH_KEYBOARD_EASE) and
  * `styles/tokens.css`; this file names them for Messages and holds the artifact's `anim()` as WAAPI.
  *
- * The spring numbers are the app's own `chSpringCurve`, not the artifact's solver (SETTLED ruling 29): smooth 462 ms,
- * settle 417, reveal 921, send 700, pop 496, lift 471, launch 812.
+ * The spring numbers are the app's own `chSpringCurve`, not the artifact's solver (SETTLED ruling 29): smooth and settle
+ * 462 ms, reveal 921. The send, launch and lift springs are gone and Messages no longer uses pop (MOTION-AND-VISUAL 3.12):
+ * a sent message is an insert (3.5), and every held or popped surface settles.
  */
 import { CH_DUR, CH_EASE, CH_FADE_MS, CH_KEYBOARD_EASE, CH_MS, CH_SPRINGS, chSpringCurve, type ChSpringKind } from '../../../lib/motion';
 

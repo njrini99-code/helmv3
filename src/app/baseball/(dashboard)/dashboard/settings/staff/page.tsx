@@ -22,7 +22,7 @@ import { StaffSettingsClient } from '@/components/baseball/staff/StaffSettingsCl
 import { fairwayScope } from '@/lib/redesign/flag';
 
 export const metadata = {
-  title: 'Staff & Permissions | Helm Baseball',
+  title: 'Staff & Permissions',
   description: 'Manage your coaching staff and their access.',
 };
 

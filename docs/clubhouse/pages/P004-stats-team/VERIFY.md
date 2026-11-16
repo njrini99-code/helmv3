@@ -308,6 +308,12 @@ before, after, baseline or evidence.
 | `P004__team-rank__coach__1440__scoring__after__8449655.png` | after | 8449655 | team-rank (coach), 1440px, scoring, after: scoring average menu choice, lower is better plotted to the right, no gain or loss color; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
 | `P004__team-rank__coach__390__default__after__8449655.png` | after | 8449655 | team-rank (coach), 390px, default, after: phone panel with 44px rows, short names, native metric menu; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
 | `P004__team-rank__coach__390__putting-pinned__after__8449655.png` | after | 8449655 | team-rank (coach), 390px, putting-pinned, after: putting leg, every dot an early read (under 15 rounds), Jonah pinned, Needs 5 rounds; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
+| `P004__team-stats__coach__1440x932__default__after__8c9eb23.png` | after | 8c9eb23 | team-stats (coach), 1440x932px, default; /clubhouse-preview/stats |
+| `P004__team-stats__coach__1440x932__default__before__c882964.png` | before | c882964 | team-stats (coach), 1440x932px, default; /clubhouse-preview/stats |
+| `P004__team-stats__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | team-stats (coach), 402px, default; /clubhouse-preview/stats |
+| `P004__team-stats__coach__402__default__before__c882964.png` | before | c882964 | team-stats (coach), 402px, default; /clubhouse-preview/stats |
+| `P004__team-stats__coach__1440x932__default__after__1b69702.png` | after | 1b69702 | team-stats (coach), 1440x932px, default; /clubhouse-preview/stats |
+| `P004__team-stats__coach__402__default__after__1b69702.png` | after | 1b69702 | team-stats (coach), 402px, default; /clubhouse-preview/stats |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

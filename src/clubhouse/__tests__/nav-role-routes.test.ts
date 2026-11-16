@@ -19,9 +19,10 @@ const hasPage = (dir: string): boolean =>
   });
 
 describe('role-aware aliases (F-0055, F-0056)', () => {
-  it('courses aliases for a coach only; live and whats-new for a player only', () => {
+  it('courses aliases for both roles (GAP-R-12); live and whats-new for a player only', () => {
     expect(nav.isAliased('/golf/dashboard/courses', 'coach')).toBe(true);
-    expect(nav.isAliased('/golf/dashboard/courses', 'player')).toBe(false);
+    expect(nav.isAliased('/golf/dashboard/courses', 'player')).toBe(true);
+    expect(nav.isAliased('/golf/dashboard/intelligence', 'player')).toBe(false);
     expect(nav.isAliased('/golf/dashboard/live', 'coach')).toBe(false);
     expect(nav.isAliased('/golf/dashboard/live', 'player')).toBe(true);
     expect(nav.isAliased('/golf/dashboard/whats-new', 'coach')).toBe(false);

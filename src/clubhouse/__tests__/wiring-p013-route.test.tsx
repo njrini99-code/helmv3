@@ -21,6 +21,7 @@ vi.mock('../data/coachhelm-profile', () => ({ loadPlayerProfile: vi.fn() }));
 vi.mock('../data/coachhelm-standing', () => ({ loadPlayerStanding: vi.fn() }));
 
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
+import { underSwitchFrame } from './route-view';
 
 const dual = (coachDone: boolean) =>
   ({
@@ -29,7 +30,8 @@ const dual = (coachDone: boolean) =>
   }) as unknown as GolfSessionProfile;
 
 /** The async view inside the route's one Suspense: its component's name and its props. */
-function view(out: unknown): { name: string; props: Record<string, unknown> } {
+function view(framed: unknown): { name: string; props: Record<string, unknown> } {
+  const out = underSwitchFrame(framed);
   expect(isValidElement(out)).toBe(true);
   const child = (out as ReactElement<{ children: ReactElement<Record<string, unknown>> }>).props.children;
   return { name: (child.type as { name: string }).name, props: child.props };

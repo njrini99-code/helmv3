@@ -2101,6 +2101,9 @@ export async function loadGolfConversationRail(
   return { ok: true, rows: transformedConversations };
 }
 
+/** GAP-S-11: the conversation list's read gives up after this long, so the rail shows its failed notice, not a skeleton. */
+export const CONVERSATIONS_READ_GIVE_UP_MS = 15_000;
+
 /**
  * @param viewerUserId The signed-in user's id when the caller already has it.
  *   Skips the `auth.getUser()` round trip AND lets the rail paint from cache
@@ -2139,6 +2142,7 @@ export function useGolfConversations(
   const supabase = supabaseRef.current;
   const conversationIdsRef = useRef<Set<string>>(new Set(warm?.data.map((c) => c.id) ?? []));
   const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const readSeqRef = useRef(0);
 
   // A hydrating mount seeded the rail empty (the server cannot see the cache).
   // Paint the cached rail now, before the silent revalidate below, so a hard
@@ -2192,7 +2196,16 @@ export function useGolfConversations(
 
     const seed = seedAllow.current;
     seedAllow.current = undefined;
-    const result = await loadGolfConversationRail(supabase, userId, seed === undefined ? {} : { allowIds: seed });
+    // GAP-S-11: a read that hasn't answered in 15 seconds is told as failed (the rail's notice and its Try again) rather
+    // than held on a skeleton for ever. Its answer, if it lands later, still replaces the notice.
+    const read = ++readSeqRef.current;
+    const giveUp = setTimeout(() => {
+      // Only the newest read gives up: an older one's timer never overrules a later answer.
+      if (readSeqRef.current !== read) return;
+      setError(true);
+      setLoading(false);
+    }, CONVERSATIONS_READ_GIVE_UP_MS);
+    const result = await loadGolfConversationRail(supabase, userId, seed === undefined ? {} : { allowIds: seed }).finally(() => clearTimeout(giveUp));
     if (!result.ok) {
       setError(true);
       // A failed background refresh must preserve the last readable inbox.
@@ -2203,6 +2216,7 @@ export function useGolfConversations(
     writeCachedResourceIfCurrent(conversationsCacheKey(userId, activeTeamId), transformedConversations, fetchEpoch);
     setConversations(transformedConversations);
     conversationIdsRef.current = new Set(transformedConversations.map(c => c.id));
+    setError(false);
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, activeTeamId]);

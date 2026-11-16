@@ -8,7 +8,7 @@ import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice
 import { EditorsLetter } from '@/components/baseball/living-annual';
 
 export const metadata: Metadata = {
-  title: 'Documents | BaseballHelm',
+  title: 'Documents',
   description: 'Access and manage your team files, resources, and important documents',
 };
 

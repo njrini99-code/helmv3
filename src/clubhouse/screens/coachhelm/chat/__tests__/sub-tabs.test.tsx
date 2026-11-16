@@ -7,7 +7,8 @@ vi.mock('../../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../../../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px)' }));
 
 import { ClubhouseMarker, type ChHelmViews } from '../../../../shell/context';
-import { PlayerHelmTabs } from '../../views/PlayerHelmTabs';
+import { PLAYER_HELM_HREF } from '../../../../data/coachhelm-views-shape';
+import { PlayerHelmTabs, playerHelmTabHref } from '../../views/PlayerHelmTabs';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from '../SubTabs';
 
 const labels = () => screen.getAllByRole('radio').map((r) => r.textContent);
@@ -53,5 +54,21 @@ describe('CoachHelm views a player can reach', () => {
     player({ playerAsk: true });
     fireEvent.click(screen.getByRole('radio', { name: 'Ask' }));
     expect(push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=ask');
+  });
+
+  // P1-57 (GAP-H-07): an owned strip sends Ask through the owner's switch, as every other view, so the tab takes the
+  // selection on the tap and the page is marked busy; the strip pushes nothing of its own.
+  it('with an owner, Ask goes through the owner’s switch, and its address is Ask’s own', () => {
+    const onGo = vi.fn();
+    render(
+      <ClubhouseMarker {...{ role: 'player' as const }} helmViews={{ playerAsk: true }}>
+        <PlayerHelmTabs active="board" onGo={onGo} />
+      </ClubhouseMarker>,
+    );
+    fireEvent.click(screen.getByRole('radio', { name: 'Ask' }));
+    expect(onGo).toHaveBeenCalledWith('ask');
+    expect(push).not.toHaveBeenCalled();
+    expect(playerHelmTabHref('ask')).toBe('/golf/dashboard/coachhelm?view=ask');
+    expect(playerHelmTabHref('standing')).toBe(PLAYER_HELM_HREF.standing);
   });
 });

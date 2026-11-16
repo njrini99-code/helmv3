@@ -1,7 +1,7 @@
 'use client';
 
 import { changeInk, changeTone, formatSigned } from '../../lib/format';
-import { useGlide } from '../../lib/motion-glide';
+import { useFirstViewGrow, useGlide } from '../../lib/motion-glide';
 import { sgScale, sgShare } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { legReadout, type SgLegRow } from './leg-rows';
@@ -42,6 +42,8 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
     r.team == null ? null : at(r.team),
   ]);
   const drawn = useGlide(target, rows.map((r) => r.label).join('|'));
+  // 3.7: the Overview's first view in a session grows each bar out from the zero line, once.
+  const grow = useFirstViewGrow<HTMLDivElement>('stats-overview', 'x');
   return (
     <div
       className="ch-lb"
@@ -50,6 +52,10 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
       tabIndex={0}
       aria-label={`Strokes gained per round by leg: ${summary}. Use the arrow keys to read each leg.`}
       {...pin.container}
+      ref={(el: HTMLDivElement | null) => {
+        pin.container.ref(el);
+        grow(el);
+      }}
     >
       <p className={'ch-sv-read' + (shown ? ' is-on' : '')} aria-hidden="true">
         {shown ?? 'Select a leg to see its likely range.'}
@@ -76,6 +82,7 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
               {r.value != null && bar != null && (
                 <i
                   className={'ch-lb__bar ' + tone(r.value)}
+                  data-ch-grow={bar >= 0 ? 'left' : 'right'}
                   style={{
                     ...(bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }),
                     transform: nBar == null ? undefined : spanTransform('x', [50, 50 + bar], [50, 50 + nBar]),

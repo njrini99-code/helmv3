@@ -8,6 +8,9 @@ import { AutoRefresh } from '../_components/AutoRefresh';
 import { TabHeader } from '../_components/TabHeader';
 import { TracesClient } from './TracesClient';
 import { fetchTraceIncidentLinks } from '@/lib/admin/triage/trace-incident-link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Flight Recorder' };
 
 export const dynamic = 'force-dynamic';
 

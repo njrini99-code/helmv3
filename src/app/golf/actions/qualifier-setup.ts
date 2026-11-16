@@ -78,7 +78,7 @@ async function coachOfQualifier(qualifierId: string, action: string): Promise<Ga
 function revalidate(qualifierId: string) {
   revalidatePath('/golf/dashboard/qualifiers');
   revalidatePath(`/golf/dashboard/qualifiers/${qualifierId}`);
-  revalidatePath('/golf/dashboard/my-qualifiers');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
 }
 
 const squadSchema = z

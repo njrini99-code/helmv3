@@ -526,7 +526,7 @@ async function updateRoundTypeImpl(
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath('/golf/dashboard/qualifiers');
     revalidatePath('/golf/dashboard/stats');
-    revalidatePath('/golf/dashboard/my-qualifiers');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
 
     return { success: true };
   } catch (err) {

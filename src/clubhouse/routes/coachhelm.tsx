@@ -30,6 +30,7 @@ import { landsOnGame, PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill, type ChView
 import { Ask } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
 import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
+import { CoachHelmSwitchFrame } from '../screens/coachhelm/SwitchFrame';
 import { CoachPlayerFailed, CoachPlayerNotOnTeam } from '../screens/coachhelm/views/CoachPlayerStates';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { DiveSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
@@ -58,14 +59,15 @@ import '../styles/coachhelm-plan.css';
  * their team's players, whichever other teams they staff; a player reads only
  * their own insights, with or without a team, and is never handed a coach control.
  *
- * Every view of this page (the coach's Team page and Ask, the player's Your week, Standing and Deep dive) is one async
- * component inside ONE Suspense, in the same place and not keyed by view (perf, 2026-10-01). A switch between views is a
- * transition, so React keeps the view on screen, dimmed by the tabs' own pending state (`useViewSwitch`), until the next view is
- * ready, and swaps once: no blank and no skeleton flash. The boundary's fallback is the skeleton of the view the address names,
- * so a hard load (the one time there is nothing to keep) draws the right shape at once, which `coachhelm/loading.tsx` cannot do
- * (it cannot see `?view=`). The reads that need the CoachHelm gate run inside it, after the page has been handed back, so the
- * shell never waits on them. Nothing here is cached or prefetched beyond the request: the delivery actions record every insight
- * they return as shown, so a page that is read twice, or ahead of the tap, would count insights nobody saw.
+ * Every view of this page that the switch moves between (the coach's Team page and Ask, the player's Your week, Standing, Deep dive
+ * and Ask) is one async component inside ONE Suspense, under one switch (`CoachHelmSwitchFrame`) that is mounted once above it and
+ * in the same place for every view of the role (N13C-67, N13P-18). A switch is drawn on the client: the switch moves on the tap and
+ * the view under it becomes the next view's skeleton at once, never the old view held while the server renders the next (it was
+ * held, dimmed, for 2.7 to 3.3 s). The boundary's fallback is the skeleton of the view the address names,
+ * so a hard load draws the right shape at once. The reads that need the CoachHelm gate run inside it, after the page has been
+ * handed back, so the shell never waits on them. Nothing here is cached or fetched whole ahead of the tap: the delivery actions
+ * record every insight they return as shown, so a page that is read twice, or ahead of the tap, would count insights nobody saw.
+ * The switch prefetches the other views only to the route's loading boundary, where no loader runs (CH-R1).
  */
 
 async function PlayerAskView() {
@@ -289,12 +291,14 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
         </Suspense>
       );
     }
-    // The Ask sub-tab is the coach's alone: a player's `?view=ask` falls through to their own board below.
+    // The coach's Ask: Team and Ask are one switch, mounted once above the view (N13C-67).
     const ask = view === 'ask';
     return (
-      <Suspense fallback={ask ? <AskSkeleton chained thread={typeof c === 'string' && c.length > 0} /> : <TeamBoardSkeleton />}>
-        <CoachHelmView coachId={team.coachId} teamId={team.teamId} ask={ask} conversationId={c} initialPlayer={player} initialInsight={open === 'read' && typeof insight === 'string' ? insight : undefined} />
-      </Suspense>
+      <CoachHelmSwitchFrame who="coach" active={ask ? 'ask' : 'board'}>
+        <Suspense fallback={ask ? <AskSkeleton chained thread={typeof c === 'string' && c.length > 0} /> : <TeamBoardSkeleton />}>
+          <CoachHelmView coachId={team.coachId} teamId={team.teamId} ask={ask} conversationId={c} initialPlayer={player} initialInsight={open === 'read' && typeof insight === 'string' ? insight : undefined} />
+        </Suspense>
+      </CoachHelmSwitchFrame>
     );
   }
   if (session.player) {
@@ -308,20 +312,25 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
         </Suspense>
       );
     }
+    // Board, Standing, Deep dive and Ask are one switch, mounted once above the view, in the same place for each (N13P-18).
     if (view === 'ask') {
       return (
-        <Suspense fallback={<AskSkeleton chained player />}>
-          <PlayerAskView />
-        </Suspense>
+        <CoachHelmSwitchFrame who="player" active="ask">
+          <Suspense fallback={<AskSkeleton chained player />}>
+            <PlayerAskView />
+          </Suspense>
+        </CoachHelmSwitchFrame>
       );
     }
     const drill = playerHelmDrill(view);
     return (
-      <Suspense fallback={viewSkeleton(drill ?? 'board')}>
-        {/* `?insight=` names the read the Deep dive opens on, and means nothing on the other views (a view switch carries none). It is only
-            read: a pick on the Board or the Deep dive is kept in the tab's session state, and the screens never write the address. */}
-        <PlayerHelmView playerId={session.player.id} drill={drill} insight={drill === 'deep-dive' && typeof insight === 'string' ? insight : undefined} at={landsOnGame(view) ? 'game' : undefined} />
-      </Suspense>
+      <CoachHelmSwitchFrame who="player" active={drill ?? 'board'}>
+        <Suspense fallback={viewSkeleton(drill ?? 'board')}>
+          {/* `?insight=` names the read the Deep dive opens on, and means nothing on the other views (a view switch carries none). It is only
+              read: a pick on the Board or the Deep dive is kept in the tab's session state, and the screens never write the address. */}
+          <PlayerHelmView playerId={session.player.id} drill={drill} insight={drill === 'deep-dive' && typeof insight === 'string' ? insight : undefined} at={landsOnGame(view) ? 'game' : undefined} />
+        </Suspense>
+      </CoachHelmSwitchFrame>
     );
   }
   return null;

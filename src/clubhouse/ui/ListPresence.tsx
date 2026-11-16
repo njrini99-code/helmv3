@@ -2,43 +2,55 @@
 
 import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { Children, createContext, isValidElement, useCallback, useContext, useEffect, useRef, useState, type HTMLAttributes, type ReactNode, type Ref, type RefObject } from 'react';
-import { CH_DUR, CH_EASE, chSpringCurve, CH_SPRING_SETTLE_MS } from '../lib/motion';
-import { useChReducedMotion } from '../lib/reduced-motion';
+import { CH_DUR, CH_EASE_IOS, CH_EASE_OUT } from '../lib/motion';
+import { useChMotionMode, type ChMotionMode } from '../lib/reduced-motion';
 
 /**
- * Rows that arrive and leave in place (B7). A list keyed by its rows wraps them in `ListPresence`, and each row's root is
- * a `PresenceRow` (the row itself, so the list's sibling rules still hold): a new row opens its height and fades in, a
- * removed row stays mounted (`data-leaving`, hidden from assistive tech and focus) while its height, padding and rules
- * close, clipped, so the rows below slide up instead of jumping, and a row that moves slides to its new place (FLIP, by
- * transform). Rows are measured only when the list's keys change; first paint never animates. Under reduced motion and
- * Animations off rows come and go at once (the same elements: turning the setting over mid-list remounts nothing), and
- * a `PresenceRow` outside a `ListPresence` is a plain row.
+ * Rows that arrive and leave in place: the one list insert and remove (MOTION-AND-VISUAL 3.5; production audit 2026-11-15,
+ * S3.10, MOT-04). A list keyed by its rows wraps them in `ListPresence`, and each row's root is a `PresenceRow` (the row
+ * itself, so the list's sibling rules still hold).
+ *   Insert (a round you just saved, a sent message): the row takes its height at once and rises 8px as it fades in, over
+ *   the base beat (260ms) on the iOS curve; the rows around it slide to their new places by transform (FLIP, 260ms, iOS).
+ *   Remove: the row stays mounted (`data-leaving`, hidden from assistive tech and focus) while it fades and shrinks to .96
+ *   over the quick beat (180ms, ease-out, as things leave), then unmounts, and the rows around it FLIP into the room it left.
+ *   First paint never animates, and nothing animates a height, so no frame of it is laid out on the main thread. Rows are
+ *   measured only when the list's keys change, or a leaving row has gone.
+ *   Reduce Motion: a row fades in or out over the quick beat with nothing moving, never a snap. Animations off: rows come
+ *   and go at once (the same elements either way: turning a setting over mid-list remounts nothing). A `PresenceRow`
+ *   outside a `ListPresence` is a plain row.
  * `flip={false}` keeps arrivals and leavings but not the slide to a new place, for a list inside a scroller that sets its
- * own position as rows come (a message thread, use-thread-anchor.ts): FLIP would read that scroll as every row moving.
+ * own position as rows come (a message thread: use-thread-anchor.ts, and useThreadMakeRoom moves the rows above instead):
+ * FLIP would read that scroll as every row moving. `cut` (a filter or search change, which swaps the list's content rather
+ * than adding to it): in that render the rows that leave go, the rows that come appear and the rest take their new places,
+ * all at once (3.3: content swaps instantly).
  *
  *   <ul><ListPresence>{trips.map((t) => <Trip key={t.id} …/>)}</ListPresence></ul>   // Trip's root: <PresenceRow as="li">
  */
 
-/** The list's keys in order, and whether it has painted (a row that mounts after is an arrival); null outside a ListPresence. */
-const ListCtx = createContext<{ keys: string; painted: RefObject<boolean>; flip: boolean; reduced: boolean; rise: boolean; inbox: boolean; cut: boolean } | null>(null);
-
 /**
- * `arrive="rise"` (a message thread; owner, 2026-10-31, as Fairway's thread does): a row that arrives takes its height at
- * once and only rises 8px and fades in, so nothing else on screen moves. Opening its height would push every row above
- * it up frame by frame while the thread re-pins its end (the jitter on send).
+ * What the rows read from their list: `keys` changes when a row comes or goes and again once a leaving row has gone (the
+ * FLIP's trigger), and whether it has painted (a row that mounts after is an arrival); null outside a ListPresence.
  */
-export function ListPresence({ children, flip = true, arrive = 'open', cut = false }: { children: ReactNode; flip?: boolean; /** `inbox` (Messages' redesign, 07 M-MSG-03b and CP-11): a row arrives by fading in its place, leaves by fading and shrinking to .96 over 180ms, and rows glide on the 462ms push. */ arrive?: 'open' | 'rise' | 'inbox'; /** With `inbox`: rows leaving go in one frame (a filter change, not a row leaving the list). */ cut?: boolean }) {
-  const reduced = useChReducedMotion();
+const ListCtx = createContext<{ keys: string; painted: RefObject<boolean>; flip: boolean; motion: ChMotionMode; cut: boolean } | null>(null);
+
+export function ListPresence({ children, flip = true, cut = false }: { children: ReactNode; flip?: boolean; /** This render swaps the list's content (a filter or search change): nothing moves. */ cut?: boolean }) {
+  const motion = useChMotionMode();
   const painted = useRef(false);
   useEffect(() => {
     painted.current = true;
   }, []);
-  const keys = Children.toArray(children)
-    .map((c) => (isValidElement(c) ? String(c.key) : ''))
-    .join('|');
+  // Bumped in the render that unmounts the rows that left, so the rows around them measure that render and slide into
+  // the room they left (S3.10: leave, then unmount, then FLIP) instead of jumping.
+  const [gone, setGone] = useState(0);
+  const keys =
+    Children.toArray(children)
+      .map((c) => (isValidElement(c) ? String(c.key) : ''))
+      .join('|') + `#${gone}`;
   return (
-    <ListCtx.Provider value={{ keys, painted, flip, reduced, rise: arrive === 'rise', inbox: arrive === 'inbox', cut }}>
-      <AnimatePresence initial={false}>{children}</AnimatePresence>
+    <ListCtx.Provider value={{ keys, painted, flip, motion, cut }}>
+      <AnimatePresence initial={false} onExitComplete={flip && motion === 'full' ? () => setGone((n) => n + 1) : undefined}>
+        {children}
+      </AnimatePresence>
     </ListCtx.Provider>
   );
 }
@@ -47,33 +59,7 @@ type RowTag = 'li' | 'div' | 'article' | 'section' | 'button';
 /** A row's own attributes; a button row takes its `type`. */
 type RowProps = HTMLAttributes<HTMLElement> & { type?: 'button' };
 
-/**
- * Whether the row that calls this mounted after its list had painted (an arrival, not first paint), latched at mount. For a
- * row that plays something once it has arrived (Messages' receipt rise); false outside a `ListPresence`.
- */
-export function useRowArrived(): boolean {
-  const list = useContext(ListCtx);
-  const [arrived] = useState(() => !!list && list.painted.current);
-  return arrived;
-}
-
-export function PresenceRow({
-  as = 'li',
-  children,
-  ref,
-  noArrival = false,
-  ...rest
-}: {
-  as?: RowTag;
-  children: ReactNode;
-  ref?: Ref<HTMLElement>;
-  /**
-   * The row has a motion of its own when it arrives (your own sent message flies out of the field; a reply grows out of the
-   * typing bubble), so the list's arrival (the 8px rise, or the opening of its height) is skipped. Leaving is unchanged:
-   * a deleted message still closes in place.
-   */
-  noArrival?: boolean;
-} & RowProps) {
+export function PresenceRow({ as = 'li', children, ref, ...rest }: { as?: RowTag; children: ReactNode; ref?: Ref<HTMLElement> } & RowProps) {
   const list = useContext(ListCtx);
   if (list == null) {
     const Tag = as as 'div';
@@ -84,18 +70,20 @@ export function PresenceRow({
     );
   }
   return (
-    <Moving as={as} keys={list.keys} flip={list.flip && !list.reduced} still={list.reduced} noArrival={noArrival} rise={list.rise} inbox={list.inbox} cut={list.cut} arrives={list.painted.current} rowRef={ref} {...rest}>
+    <Moving as={as} keys={list.keys} flip={list.flip && list.motion === 'full'} motion={list.motion} cut={list.cut} arrives={list.painted.current && !list.cut} rowRef={ref} {...rest}>
       {children}
     </Moving>
   );
 }
 
-function Moving({ as, keys, flip, still, noArrival, rise, inbox, cut, arrives, rowRef, children, ...rest }: { as: RowTag; keys: string; flip: boolean; still: boolean; noArrival: boolean; rise: boolean; inbox: boolean; cut: boolean; arrives: boolean; rowRef?: Ref<HTMLElement>; children: ReactNode } & RowProps) {
+function Moving({ as, keys, flip, motion, cut, arrives, rowRef, children, ...rest }: { as: RowTag; keys: string; flip: boolean; motion: ChMotionMode; cut: boolean; arrives: boolean; rowRef?: Ref<HTMLElement>; children: ReactNode } & RowProps) {
   const present = useIsPresent();
-  // A row there at first paint is never styled by the list; one that arrives later opens in, then hands its height,
-  // opacity and overflow back to its own stylesheet. Under reduced motion nothing opens, closes or slides.
+  // A row there at first paint, or one a cut brings, is never styled by the list; one that arrives later rises (or, under
+  // Reduce Motion, fades) in, then hands its opacity and transform back to its own stylesheet. With Animations off nothing
+  // moves or fades.
   const [arrived] = useState(arrives);
-  const arriving = arrived && !still && !noArrival;
+  const arriving = arrived && motion !== 'off';
+  const fade = motion === 'fade';
   const el = useRef<HTMLElement | null>(null);
   const ref = useCallback(
     (node: HTMLElement | null) => {
@@ -107,7 +95,7 @@ function Moving({ as, keys, flip, still, noArrival, rise, inbox, cut, arrives, r
   );
   const settle = () => {
     if (!present || !el.current) return;
-    for (const p of ['height', 'opacity', 'overflow', 'transform']) el.current.style.removeProperty(p);
+    for (const p of ['opacity', 'transform']) el.current.style.removeProperty(p);
   };
   const Row = ROW[as] as typeof m.div;
   return (
@@ -119,11 +107,11 @@ function Moving({ as, keys, flip, still, noArrival, rise, inbox, cut, arrives, r
       data-leaving={present ? undefined : ''}
       aria-hidden={present ? rest['aria-hidden'] : true}
       inert={!present}
-      initial={arriving ? (inbox ? INBOX_FROM : rise ? RISE_FROM : ENTER) : false}
-      animate={arriving ? (inbox ? INBOX_SHOWN : rise ? RISEN : SHOWN) : undefined}
+      initial={arriving ? (fade ? FADE_FROM : RISE_FROM) : false}
+      animate={arriving ? (fade ? FADED_IN : RISEN) : undefined}
       onAnimationComplete={arriving ? settle : undefined}
-      exit={still ? undefined : inbox ? (cut ? INBOX_CUT : INBOX_LEAVE) : LEAVE}
-      transition={inbox ? PUSH : MOVE}
+      exit={motion === 'off' ? undefined : cut ? CUT : fade ? FADE_OUT : LEAVE}
+      transition={cut ? AT_ONCE : MOVE}
     >
       {children}
     </Row>
@@ -132,37 +120,19 @@ function Moving({ as, keys, flip, still, noArrival, rise, inbox, cut, arrives, r
 
 const ROW = { li: m.li, div: m.div, article: m.article, section: m.section, button: m.button } as const;
 
-/**
- * About 260ms on the smooth spring, as its timed curve (a framer spring never settles over no distance, as a row that
- * measures 0 would): the height opens or closes with the content clipped, the fade a touch quicker.
- */
-const SMOOTH = chSpringCurve('smooth');
-const MOVE = { duration: SMOOTH.ms / 1000, ease: SMOOTH.ease };
-/** Messages' inbox, on the house push's clock. */
-const PUSH = { duration: CH_SPRING_SETTLE_MS / 1000, ease: SMOOTH.ease };
-const INBOX_FROM = { opacity: 0 };
-const INBOX_SHOWN = { opacity: 1, transition: PUSH };
-const INBOX_LEAVE = { opacity: 0, scale: 0.96, transition: { duration: 0.18, ease: CH_EASE } };
-const INBOX_CUT = { opacity: 0, transition: { duration: 0 } };
-const ENTER = { height: 0, opacity: 0, overflow: 'clip' as const };
-const SHOWN = {
-  height: 'auto',
-  opacity: 1,
-  transition: { height: MOVE, opacity: { duration: CH_DUR.base, ease: CH_EASE } },
-};
-// `rise`: the arrival moves on the compositor only (a transform string, which Motion hands to WAAPI), on the base beat.
+/** Rows around an arrival or a leaving row slide to their new places by transform (FLIP), on the base beat (260ms), iOS curve. */
+const MOVE = { duration: CH_DUR.base, ease: CH_EASE_IOS };
+/** A cut: the content swaps in one frame. */
+const AT_ONCE = { duration: 0 };
+const CUT = { opacity: 0, transition: AT_ONCE };
+// Arrival and leaving move on the compositor only (opacity and a transform string, which Motion hands to WAAPI).
+/** Insert: an 8px rise with the fade in, on the base beat and the iOS curve (3.5). */
 const RISE_FROM = { opacity: 0, transform: 'translateY(8px)' };
-const RISEN = { opacity: 1, transform: 'translateY(0px)', transition: { duration: CH_DUR.base, ease: CH_EASE } };
-// The row's own padding, margins and rules close with it, so it ends at nothing and unmounting moves no pixel.
-const LEAVE = {
-  height: 0,
-  opacity: 0,
-  paddingTop: 0,
-  paddingBottom: 0,
-  marginTop: 0,
-  marginBottom: 0,
-  borderTopWidth: 0,
-  borderBottomWidth: 0,
-  overflow: 'clip' as const,
-  transition: { default: MOVE, opacity: { duration: CH_DUR.quick, ease: CH_EASE } },
-};
+const RISEN = { opacity: 1, transform: 'translateY(0px)', transition: MOVE };
+/** Remove: to .96 and transparent over the quick beat, on ease-out (3.5; 3.2, things leaving). */
+const LEAVE = { opacity: 0, transform: 'scale(0.96)', transition: { duration: CH_DUR.quick, ease: CH_EASE_OUT } };
+/** Reduce Motion: the quick-beat fade, opacity only, never a snap (3.11, MOT-04). */
+const FADE = { duration: CH_DUR.quick, ease: CH_EASE_OUT };
+const FADE_FROM = { opacity: 0 };
+const FADED_IN = { opacity: 1, transition: FADE };
+const FADE_OUT = { opacity: 0, transition: FADE };

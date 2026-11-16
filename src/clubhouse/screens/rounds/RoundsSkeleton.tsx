@@ -1,6 +1,7 @@
 import { Skeleton } from '../../ui/States';
 import '../../styles/rounds.css';
 import '../../styles/rounds-recover.css';
+import '../../styles/rounds-track.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /**
@@ -180,6 +181,52 @@ export function RoundEntrySkeleton() {
       </div>
       <Skeleton width="100%" height={64} radius={16} />
     </main>
+  );
+}
+
+/**
+ * Route loading for a round to continue (CH-11407, GAP-S-18): the tracking screen's own boxes (RoundTracking), so the round
+ * opens in place instead of over the round-entry form: the top bar, the hole strip, the hole and its map, the shot card and
+ * the bar of keys.
+ */
+export function RoundRuntimeSkeleton() {
+  return (
+    <div className="ch-rt-q">
+      <main className="ch-rt" data-ui="clubhouse" aria-busy="true" aria-label="Loading your round" data-ch-code="CH-11407">
+        <header className="ch-rt-top">
+          <Skeleton width={76} height={36} radius={18} />
+          <div className="ch-rt-top__c">
+            <Skeleton width={160} height={17} />
+            <Skeleton width={110} height={12} />
+          </div>
+          <Skeleton width={76} height={36} radius={18} />
+        </header>
+        {/* The hole strip's height, not its grid: the strip's columns are laid out for the round's own holes. */}
+        <div aria-hidden="true" style={{ marginTop: 16 }}>
+          <Skeleton width="100%" height={56} radius={16} />
+        </div>
+        <div className="ch-rt-body" aria-hidden="true">
+          <section className="ch-rt-hero">
+            <Skeleton width="100%" height={220} radius={20} />
+            <Skeleton width="60%" height={20} />
+          </section>
+          <section className="ch-rt-panel">
+            <div className="ch-rt-card">
+              <Skeleton width="45%" height={17} />
+              <Skeleton width="100%" height={48} radius={12} />
+              <Skeleton width="100%" height={48} radius={12} />
+            </div>
+            <div className="ch-rt-bar">
+              <div className="ch-rt-bar__row">
+                {[0, 1, 2, 3].map((i) => (
+                  <Skeleton key={i} width="100%" height={44} radius={12} />
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
   );
 }
 

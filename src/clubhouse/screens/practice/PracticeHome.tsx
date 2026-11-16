@@ -15,6 +15,7 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { EmptyState } from '../../ui/States';
+import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Badge, type BadgeTone } from '../../ui/Badge';
 import { DayLegend, DayStrip, type DaySeg } from './DayStrip';
 import { wholeFacts } from './facts';
@@ -123,7 +124,7 @@ const UP_NEXT_ROWS = 4;
  * bar's plus. With no plan ever made, one card with the ways to start (S-PRC.home-first-run), and no empty headers. New plan makes the
  * practice too when there is none to plan (Q7, owner, 12 Nov), so it is always there; the calendar stays a quiet link.
  */
-export function PracticeHome({ data, openNew = false, previewSheet = false, template = null, newEvent = null }: { newEvent?: string | null; template?: { name: string; body: PlanBodyV2 } | null; data: ChPracticeHome; openNew?: boolean; previewSheet?: boolean }) {
+export function PracticeHome({ data, openNew = false, previewSheet = false, template = null, templateFailed = false, newEvent = null }: { newEvent?: string | null; template?: { name: string; body: PlanBodyV2 } | null; templateFailed?: boolean; data: ChPracticeHome; openNew?: boolean; previewSheet?: boolean }) {
   const phone = useChPhone();
   const [sheet, setSheet] = useState<{ event: string | null; start?: NewPlanStart } | null>(openNew ? { event: newEvent } : null);
   const [pastOpen, setPastOpen] = useState(false);
@@ -166,8 +167,11 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           under Up next on a phone here and under the title on Drills, Groups and Templates). Plans' own week follows them. */}
       <PracticeTabs active="plans" />
 
+      {/* Each section that draws its own read fails on its own (GAP-S-10): the rest of Practice keeps working. */}
       <section aria-label="This week">
-        <WeekStrip week={data.week} onPlan={(event) => setSheet({ event })} />
+        <SectionBoundary surface="practice.week" label="This week" code="CH-13204">
+          <WeekStrip week={data.week} onPlan={(event) => setSheet({ event })} />
+        </SectionBoundary>
       </section>
 
       <div className={'ch-prc-home' + (listed ? ' has-plans' : '')}>
@@ -210,6 +214,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
       ) : (
         <>
           {up ? (
+            <SectionBoundary surface="practice.next" label="Up next" code="CH-13204">
             <section className="ch-prc-card ch-prc-next" aria-labelledby="ch-prc-next">
               <div className="ch-prc-next__k">
                 <span>Up next</span>
@@ -249,6 +254,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
                 )}
               </div>
             </section>
+            </SectionBoundary>
           ) : (
             // The week's tiles already say there is no practice on each day: this says only what to do about it.
             <EmptyState
@@ -274,13 +280,17 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           {drafts.length > 0 && (
             <section className="ch-prc-sec" aria-labelledby="ch-prc-drafts">
               <h2 id="ch-prc-drafts">Drafts</h2>
-              <PlanRows rows={drafts} label="Drafts" />
+              <SectionBoundary surface="practice.drafts" label="Drafts" code="CH-13204">
+                <PlanRows rows={drafts} label="Drafts" />
+              </SectionBoundary>
             </section>
           )}
           {data.published.length > 0 && (
             <section className="ch-prc-sec" aria-labelledby="ch-prc-pub">
               <h2 id="ch-prc-pub">Published</h2>
-              <PlanRows rows={data.published} label="Published" />
+              <SectionBoundary surface="practice.published" label="Published" code="CH-13204">
+                <PlanRows rows={data.published} label="Published" />
+              </SectionBoundary>
             </section>
           )}
           {data.past.length > 0 && (
@@ -289,7 +299,11 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
                 Past plans ({data.past.length})
                 <Icon icon={ChevronRight} size={16} />
               </button>
-              {pastOpen && <PlanRows rows={data.past.slice(0, pastShown)} label="Past plans" />}
+              {pastOpen && (
+                <SectionBoundary surface="practice.past" label="Past plans" code="CH-13204">
+                  <PlanRows rows={data.past.slice(0, pastShown)} label="Past plans" />
+                </SectionBoundary>
+              )}
               {pastOpen && data.past.length > pastShown && <Button onClick={() => setPastShown((n) => n + 20)}>Show more</Button>}
             </section>
           )}
@@ -302,7 +316,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           <Icon icon={ChevronRight} size={16} />
         </Link>
       )}
-      <NewPlanSheet key={`${sheet?.event ?? 'new'}:${sheet?.start ?? ''}`} template={template} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} zone={data.zone} initialEvent={sheet?.event} initialStart={sheet?.start} preview={previewSheet} />
+      <NewPlanSheet key={`${sheet?.event ?? 'new'}:${sheet?.start ?? ''}`} template={template} templateFailed={templateFailed} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} zone={data.zone} initialEvent={sheet?.event} initialStart={sheet?.start} preview={previewSheet} />
     </main>
   );
 }

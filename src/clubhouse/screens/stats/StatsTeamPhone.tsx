@@ -25,6 +25,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { TeamRank } from './TeamRank';
 import { puttingNote } from './notes';
+import { puttBelowTour } from './putt-bands';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { holeCoverage } from '../../data/round-scope';
 import { nineRoundsInWindow } from '../../data/stats-filter';
@@ -34,7 +35,7 @@ import TeamTrendChart from './TeamTrendChart';
 import { hasRange, isFiltered } from '../../data/stats-filter';
 import { useChSessionState } from '../../lib/session-state';
 import { useArrivalPainted } from '../../lib/use-painted';
-import { useGlide } from '../../lib/motion-glide';
+import { useFirstViewGrow, useGlide } from '../../lib/motion-glide';
 import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { TeamInsight } from './StatsInsight';
@@ -353,6 +354,8 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
     rows.map((r) => (r.v == null ? null : (r.v >= 0 ? 1 : -1) * sgShare(r.v, scale) * 50)),
     rows.map((r) => r.key).join('|'),
   );
+  // 3.7: the screen's first view in a session grows each bar out from the zero line, once.
+  const grow = useFirstViewGrow<HTMLDivElement>('stats-team-phone', 'x');
   const head = (
     <div className="ch-stm-panel__h">
       <h2 id="ch-stm-legs">Strokes gained by leg</h2>
@@ -390,7 +393,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
         {/* Plain tabs, not Base UI's: its list scrolled the chosen tab into view and its indicator measured it as the page
             mounted, two layouts of the whole arriving page inside React's commit (28ms of a switch's 163ms of script at
             4x CPU, Chromium, production build, 2026-10-15). Every row is 44px, so the wash's place is its index. */}
-        <div className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical">
+        <div ref={grow} className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical">
           {rows.map(({ key, label, v, total }, i) => {
             const on = key === picked.key;
             const bar = drawn[i];
@@ -411,7 +414,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
                 <span>{label}</span>
                 <span className="ch-stm-leg__bar" aria-hidden="true">
                   <i className="ch-stm-leg__z" />
-                  {v != null && bar != null && <i className={'ch-stm-leg__v ' + changeTone(v, false, 1)} style={bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }} />}
+                  {v != null && bar != null && <i className={'ch-stm-leg__v ' + changeTone(v, false, 1)} data-ch-grow={bar >= 0 ? 'left' : 'right'} style={bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }} />}
                 </span>
                 <b className={'ch-num ' + changeInk(v)}>{v == null ? <NoData /> : formatSigned(v)}</b>
               </button>
@@ -451,7 +454,7 @@ export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: C
           <span>{by}</span>
         </div>
         {/* CH-4703: Segmented ticks on a change only. */}
-        <Segmented<Sort> weight="filter"
+        <Segmented<Sort>
           size="sm"
           label="Sort players"
           value={sort}
@@ -502,7 +505,8 @@ export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: C
 export function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
   if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again." covered={covered} />;
   if (!data.putting) return <EmptyState compact code="CH-4306" title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />;
-  const bands = data.putting.bands.slice(0, 5);
+  // Every band the data has, as the rings and the note below (CH-18): the longest band was cut while the note still named it.
+  const bands = data.putting.bands;
   const drawn = bands.reduce((a, b) => a + b.attempts, 0);
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-stm-putt">
@@ -513,8 +517,8 @@ export function Putting({ data, covered }: { data: ChTeamStats; covered: boolean
       <div className="ch-stm-putt ch-stm-group">
         {bands.map((b) => {
           const rate = b.attempts ? (b.made / b.attempts) * 100 : null;
-          // Below the Tour as the two print (whole percents): 69.6 against 70 is level, never amber (A2).
-          const low = rate != null && b.bench != null && b.attempts >= 10 && Math.round(rate) < Math.round(b.bench);
+          // Below the Tour as the two print (whole percents): 69.6 against 70 is level, never amber (A2); from 30 putts, the rings' rule (CH-18).
+          const low = puttBelowTour(b);
           return (
             <div key={b.label} className="ch-stm-putt__r">
               <span className="ch-num">{b.label}</span>

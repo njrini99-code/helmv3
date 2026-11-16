@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { MonthSpark, Ribbon } from '../parts';
+import { MONTH_SPARK_MIN_SPAN, MonthSpark, monthSparkBars, PUTTS_SCALE, puttsShare, Ribbon } from '../parts';
 import { seasonFrom, toLibraryRound, type ChLibraryRound, type ChRoundListRow } from '../../../data/rounds-shape';
 
 afterEach(cleanup);
@@ -50,12 +50,25 @@ describe('the season ribbon reads better as up', () => {
 describe('the month spark reads better as up', () => {
   const lib = (id: string, toPar: number): ChLibraryRound => ({ id, date: '2026-09-01', course: 'C', tee: null, teeColor: null, type: null, holes: 18, score: 72 + toPar, toPar, out: null, inn: null, fairways: null, greens: null, putts: null, countable: true });
 
-  it('draws the lowest round tallest and the highest shortest, oldest first', () => {
+  it('runs each bar from the par line, under par up and over par down, oldest first (CH-09)', () => {
     // Newest first, as the library lists them.
     const { container } = render(<MonthSpark rounds={[lib('c', 4), lib('b', -1), lib('a', 1)]} />);
-    const heights = [...container.querySelectorAll('i')].map((i) => (i as HTMLElement).style.height);
-    expect(heights).toEqual(['69.6%', '100%', '24%']);
+    const zero = parseFloat((container.querySelector('b') as HTMLElement).style.top);
+    const bars = [...container.querySelectorAll('i')].map((i) => ({ top: parseFloat((i as HTMLElement).style.top), h: parseFloat((i as HTMLElement).style.height) }));
+    // +1, −1, +4: the over-par bars start at par and hang below it, the under-par bar ends at par from above.
+    expect(bars[0]!.top).toBeCloseTo(zero, 5);
+    expect(bars[1]!.top + bars[1]!.h).toBeCloseTo(zero, 5);
+    expect(bars[2]!.top).toBeCloseTo(zero, 5);
+    // Lengths are the strokes from par on one scale: +4 is four times +1 and −1.
+    expect(bars[2]!.h / bars[0]!.h).toBeCloseTo(4, 1);
+    expect(bars[1]!.h).toBeCloseTo(bars[0]!.h, 1);
     expect(container.querySelectorAll('i.is-under')).toHaveLength(1);
+  });
+
+  it('a +1 and a +2 month draw a stroke apart on a range at least ten strokes wide, not as 100% and 24% (CH-09)', () => {
+    const { bars } = monthSparkBars([1, 2]);
+    expect(bars[1]!.height - bars[0]!.height).toBeLessThanOrEqual(100 / MONTH_SPARK_MIN_SPAN + 0.1);
+    expect(bars[1]!.height / bars[0]!.height).toBeCloseTo(2, 1);
   });
 });
 
@@ -83,5 +96,14 @@ describe('putts on the Rounds library read as Stats counts them', () => {
     const list = [row('a', 30), row('b', 0), row('c', 32)].map((x) => toLibraryRound(x)!);
     expect(list.map((x) => x.putts)).toEqual([30, null, 32]);
     expect(seasonFrom(list, '2026-08-01').putts).toBe(31);
+  });
+});
+
+describe('putts bars read one way on the Rounds page (CH-14)', () => {
+  it('the season bar and a round’s meter are both the putts per 18, longer for more', () => {
+    expect(puttsShare(30)).toBeCloseTo(30 / PUTTS_SCALE, 6);
+    expect(puttsShare(34)).toBeGreaterThan(puttsShare(30));
+    // A nine-hole round's 16 putts is 32 a round.
+    expect(puttsShare(16, 9)).toBeCloseTo(32 / PUTTS_SCALE, 6);
   });
 });

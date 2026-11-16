@@ -181,11 +181,20 @@ describe('Team Stats states', () => {
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('no team rounds: no sections and no summary cards', async () => {
+  it('no team rounds: the designed first run (CH-4310), no sections and no summary cards (GAP-S-22)', async () => {
     showTeam({ ...PREVIEW_TEAM_STATS, roundCount: 0, days: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, total: 0, rounds: [], courses: [] } });
-    await waitFor(() => expect(document.querySelector('.ch-shs-empty')).not.toBeNull());
+    await waitFor(() => expect(code('CH-4310')).not.toBeNull());
+    expect(code('CH-4310')!.textContent).toContain('No stats yet');
+    expect(document.querySelector('.ch-shs-empty')).toBeNull();
+    expect(screen.queryByText('No team rounds yet')).toBeNull();
     expect(cards()).toEqual([]);
     expect(document.querySelectorAll('.ch-shs-sech')).toHaveLength(0);
+  });
+
+  it('no team rounds and no players: the phone first run offers Invite players, as the desktop does (GAP-S-22)', async () => {
+    showTeam({ ...PREVIEW_TEAM_STATS, activeCount: 0, roundCount: 0, days: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, total: 0, rounds: [], courses: [] } });
+    await waitFor(() => expect(code('CH-4310')).not.toBeNull());
+    expect(code('CH-4310')!.querySelector('a[href*="invite=1"]')?.textContent).toContain('Invite players');
   });
 
   it('two round days: the partial note, and the trend still draws', async () => {

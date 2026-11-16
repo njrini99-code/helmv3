@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { filterFor } from '../../../data/stats-filter';
 import { PREVIEW_PLAYER } from '../../../preview/fixtures-stats';
-import { divergeBar, glanceTiles, hasPrevious, keyFigure, monoPath, sgTone, strongestAndLeak, windowLabel } from '../shs-figures';
+import { divergeBar, glanceTiles, hasPrevious, keyFigure, sgTone, straightPath, strongestAndLeak, windowLabel } from '../shs-figures';
 
 describe('one source per figure', () => {
   it('reads the glance tile and the part figure from one value', () => {
@@ -44,8 +44,13 @@ describe('strokes gained', () => {
   });
 });
 
-describe('monoPath', () => {
+describe('straightPath (CH-15)', () => {
   it('draws nothing for one point', () => {
-    expect(monoPath([[0, 0]])).toBe('');
+    expect(straightPath([[0, 0]])).toBe('');
+  });
+  it('joins the points with straight segments, never a curve', () => {
+    const d = straightPath([[0, 10], [5, 2], [9, 6]]);
+    expect(d).toBe('M0,10L5,2L9,6');
+    expect(d).not.toMatch(/C/);
   });
 });

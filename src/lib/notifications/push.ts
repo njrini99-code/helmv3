@@ -171,7 +171,8 @@ export function generatePushPayload(
         title: 'Round Submitted',
         body: `${data.playerName || 'A player'} shot ${data.totalScore}${data.scoreToPar ? ` (${Number(data.scoreToPar) > 0 ? '+' : ''}${data.scoreToPar})` : ''} at ${data.courseName || 'a course'}`,
         data: {
-          url: idOf('roundId') ? `${baseUrl}/golf/dashboard/rounds/${idOf('roundId')}` : `${baseUrl}/golf/dashboard/stats/team`,
+          // Without a round id, Stats (a coach's team view; /stats/team redirects there, GAP-R-10).
+          url: idOf('roundId') ? `${baseUrl}/golf/dashboard/rounds/${idOf('roundId')}` : `${baseUrl}/golf/dashboard/stats`,
           type,
         },
       };

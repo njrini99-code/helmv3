@@ -306,7 +306,7 @@ function ShareSheet({ open, onClose, model, dateIso }: { open: boolean; onClose:
   );
 }
 
-/** `just`: opened straight from Post round (the quiet line under the card). `settle`: the card arrives on the spring; false under reduced motion. */
+/** `just`: opened straight from Post round (the quiet line under the card). `settle`: marks that arrival (`is-just`); the card no longer moves on it (3.12). */
 export function RoundCard({ review: r, phone, just, settle }: { review: ChRoundReview; phone: boolean; just: boolean; settle: boolean }) {
   // A player's own round carries no name; the signed-in player is the one it names. A coach's view carries the player's.
   const user = useGolfUserOptional();

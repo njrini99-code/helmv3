@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { AnimatePresence, m } from 'motion/react';
-import { ChevronRight, LifeBuoy, LogOut, X } from 'lucide-react';
+import { ChevronRight, LifeBuoy, LogOut, Sparkles, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
@@ -203,6 +203,15 @@ export function AccountSheet({
               )}
               {teamSwitch && <MoreTeamSwitch model={teamSwitch} onSwitched={closeMore} />}
               <div className="ch-more__list">
+                {/* A coach's What's new (GAP-R-06): the phone's way to it, as the desktop account menu's row. */}
+                {role === 'coach' && (
+                  <Link href="/golf/dashboard/whats-new" className="ch-more__row" onClick={leaveForPage}>
+                    <span className="ch-more__ic">
+                      <Icon icon={Sparkles} size={17} />
+                    </span>
+                    <span className="ch-more__label">What’s new</span>
+                  </Link>
+                )}
                 <Link href="/golf/dashboard/settings#set-help" className="ch-more__row" onClick={leaveForPage}>
                   <span className="ch-more__ic">
                     <Icon icon={LifeBuoy} size={17} />
