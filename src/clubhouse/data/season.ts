@@ -7,6 +7,7 @@ import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { seasonLabelOf } from '../lib/season-start';
+import { isoDay } from '../lib/dates';
 import { deltaTone, halvesChange } from '../lib/stats-signal';
 import { countsInAverages, hasHoleScores, isTotalOnlyCountable } from './round-scope';
 import { spanKeepsPractice, spanKeepsTotalOnly, type ChSpan } from './span';
@@ -121,7 +122,7 @@ export const LAST_TEN_MONTHS = 12;
  */
 export function lastTenFloor(now = new Date(), tz: string = SEASON_DEFAULT_TZ): string {
   // DF-C-22: today on the clock seasons turn on, as `seasonStartDate`, not the UTC date (an evening in the US is already tomorrow).
-  const [y, m, d] = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now).split('-').map(Number);
+  const [y, m, d] = isoDay(now, tz).split('-').map(Number);
   return new Date(Date.UTC(y!, m! - 1 - LAST_TEN_MONTHS, d!)).toISOString().slice(0, 10);
 }
 

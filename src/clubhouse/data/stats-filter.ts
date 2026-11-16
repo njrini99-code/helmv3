@@ -1,5 +1,6 @@
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { isUuid } from '@/lib/utils/uuid';
+import { isoDay as dayIn } from '../lib/dates';
 import { plural, pluralWord } from '../lib/plural';
 import { parseSpan, SPAN_PARAM, type ChSpan } from './span';
 
@@ -8,7 +9,7 @@ import { parseSpan, SPAN_PARAM, type ChSpan } from './span';
  * America/New_York), not UTC (DF-C-22): the server and the phone agree, and New Year's Eve evening is still the old year.
  */
 export function filterYear(now: Date = new Date()): number {
-  return Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric' }).format(now));
+  return Number(dayIn(now, 'America/New_York').slice(0, 4));
 }
 
 /*
