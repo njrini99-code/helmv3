@@ -9477,6 +9477,25 @@ BEGIN
   ) q;
   v := v || jsonb_build_object('check', 'completed_round_zero_scored_holes',
     'status', CASE WHEN n = 0 THEN 'pass' ELSE 'fail' END, 'count', n, 'sample', sample);
+  -- Totals follow holes (20261114090100): a completed round whose hole rows
+  -- number holes_played and are all scored stores their sum as its total.
+  SELECT count(*), COALESCE(jsonb_agg(id) FILTER (WHERE rn <= 5), '[]'::jsonb)
+  INTO n, sample
+  FROM (
+    SELECT r.id, row_number() OVER (ORDER BY r.created_at DESC) AS rn
+    FROM golf_rounds r
+    JOIN (
+      SELECT h.round_id, count(*) AS holes, count(h.score) AS scored, sum(h.score) AS score_sum
+      FROM golf_holes h
+      GROUP BY h.round_id
+    ) t ON t.round_id = r.id
+    WHERE r.status = 'completed'
+      AND t.holes = r.holes_played
+      AND t.scored = t.holes
+      AND r.total_score IS DISTINCT FROM t.score_sum
+  ) q;
+  v := v || jsonb_build_object('check', 'completed_round_total_vs_holes',
+    'status', CASE WHEN n = 0 THEN 'pass' ELSE 'fail' END, 'count', n, 'sample', sample);
   RETURN v;
 END;
 $$;
