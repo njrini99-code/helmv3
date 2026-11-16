@@ -618,6 +618,14 @@
   --ch-scroll-edge-up: linear-gradient(to top, var(--ch-scroll-edge-ink), transparent);
   /* B3: the width of a separator. One device pixel on a Retina screen is set further down (min-resolution). */
   --ch-hairline-w: 1px;
+  /* A row's top rule drawn inside it, so it takes no height (the stat terms list). */
+  --ch-rule-top: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
+  /* The same top rule in the separator ink (team hours rows). */
+  --ch-rule-top-sep: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+  /* A field's own rings, drawn inside or around it: at rest and focused (the tournament import grid). Its invalid ring is
+     red, so it is named where it is used, in the error state (tournaments-import.css). */
+  --ch-ring-field: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
+  --ch-ring-field-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
 
   /* Elevation */
   /* The older names, kept for their many uses, now read their role on the depth ladder below. */
@@ -1413,6 +1421,8 @@ html:has([data-ui='clubhouse']) {
      Tusker), and the black dim over it, 0 to 0.075. PhoneScreen's scrim takes the same dim (B16, CH-1618). */
   --ch-push-parallax: -30%;
   --ch-push-dim: rgb(0 0 0 / 0.075);
+  /* The hairline on a pushing page's leading edge, where it meets the page beneath (S4.1). */
+  --ch-push-edge: -1px 0 0 var(--ch-card-ring);
 }
 
 /* The document under Clubhouse (high-fidelity audit F05): the overscroll bounce and the frame before first paint show

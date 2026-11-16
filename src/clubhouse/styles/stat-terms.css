@@ -99,7 +99,7 @@
 }
 .ch-howc__row {
   padding: 12px 0;
-  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
+  box-shadow: var(--ch-rule-top);
 }
 .ch-howc__row dt {
   font: var(--ch-type-callout);

@@ -237,7 +237,7 @@
   padding: var(--ch-space-3) var(--ch-space-4);
 }
 .ch-hrs-pc + .ch-hrs-pc {
-  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+  box-shadow: var(--ch-rule-top-sep);
 }
 .ch-hrs-pc__h {
   display: flex;
@@ -325,7 +325,7 @@
   padding: var(--ch-space-3) var(--ch-space-4);
 }
 .ch-hrs-ln + .ch-hrs-ln {
-  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+  box-shadow: var(--ch-rule-top-sep);
 }
 .ch-hrs-ln__main {
   display: grid;

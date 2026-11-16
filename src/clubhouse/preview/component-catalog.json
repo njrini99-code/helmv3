@@ -27036,6 +27036,26 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-rule-top",
+          "value": "inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-rule-top-sep",
+          "value": "inset 0 var(--ch-hairline-w) 0 var(--ch-separator)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-field",
+          "value": "inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-field-focus",
+          "value": "0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-shadow-sm",
           "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']"
@@ -29726,6 +29746,11 @@
           "scope": "html:has([data-ui='clubhouse'])"
         },
         {
+          "name": "--ch-push-edge",
+          "value": "-1px 0 0 var(--ch-card-ring)",
+          "scope": "html:has([data-ui='clubhouse'])"
+        },
+        {
           "name": "--ch-type-large-title",
           "value": "700 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
@@ -30440,7 +30465,13 @@
         "ch-tour-imp-ts",
         "ch-tour-imp-warn"
       ],
-      "tokens": []
+      "tokens": [
+        {
+          "name": "--ch-tour-imp-ring-invalid",
+          "value": "inset 0 0 0 2px var(--ch-danger-600)",
+          "scope": ".ch-tour-imp-g__in[aria-invalid='true']"
+        }
+      ]
     },
     {
       "file": "src/clubhouse/styles/tournaments-lineup.css",
