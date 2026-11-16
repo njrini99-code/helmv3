@@ -577,7 +577,12 @@ export function seasonBests(
     .filter((r) => name.has(r.player_id))
     .sort((a, b) => (a.round_date < b.round_date ? -1 : a.round_date > b.round_date ? 1 : a.id.localeCompare(b.id)));
 
-  const low = [...valid].sort((a, b) => (a.total_score ?? 999) - (b.total_score ?? 999))[0];
+  // DF-C-13: the low round is the lowest against par, as Team rounds' "Best" picks it (`team-rounds-shape.ts`), with the lower
+  // score breaking a tie; a 70 at a par-70 is not better than a 71 at a par-72. A season with no to-par at all falls back to gross.
+  const withPar = valid.filter((r) => r.total_score != null && r.score_to_par != null);
+  const low = withPar.length
+    ? withPar.reduce((m, r) => (r.score_to_par! < m.score_to_par! || (r.score_to_par === m.score_to_par && r.total_score! < m.total_score!) ? r : m))
+    : [...valid].sort((a, b) => (a.total_score ?? 999) - (b.total_score ?? 999))[0];
   if (low?.total_score != null) {
     const tp = low.score_to_par;
     out.push({

@@ -1397,6 +1397,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-15-css-ratchet-svg-overflow.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-15-figures-agree.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-15-trend-against-par.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-16-trend-whole-window.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1587,6 +1588,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-11-fix-wave.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-11-private-fields.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-12-current-email-stacked.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-16-dead-display-switches.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | 1 |
