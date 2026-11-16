@@ -97,7 +97,7 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
 /** The framed head, as Player Home's: the day, the greeting, who needs a look, Message team and New event. */
 function DeskHead({ data, title }: { data: ChCoachHome; title?: string }) {
   return (
-    <header className="ch-h-head" data-canopy-head="">
+    <header className="ch-h-head" data-canopy-head="tight">
       <span className="ch-h-head__date">{data.todayLabel}</span>
       <h1 className="ch-display">{title ?? data.greeting}</h1>
       {/* A count from the rounds, not AI output: no glyph (HOME-P-02). */}
@@ -178,7 +178,7 @@ function HomeFirstRun({ data, phone, now }: { data: ChCoachHome; phone: boolean;
     );
   return (
     <main className="ch-h-main ch-h-main--desk ch-h-main--setup" data-canopy="">
-      <header className="ch-h-head" data-canopy-head="">
+      <header className="ch-h-head" data-canopy-head="tight">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">Welcome to Clubhouse</h1>
         <p className="ch-h-head__sub">{brief}</p>
