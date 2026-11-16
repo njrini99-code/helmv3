@@ -132,7 +132,7 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/coachhelm.css': 1,
   'styles/controls.css': 12,
   'styles/home.css': 13,
-  'styles/hub.css': 8,
+  'styles/hub.css': 7,
   'styles/messages.css': 7,
   'styles/onboard.css': 17,
   'styles/qualifiers.css': 8,

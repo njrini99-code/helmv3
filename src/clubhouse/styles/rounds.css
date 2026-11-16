@@ -602,7 +602,7 @@
 /* A posted round with no score at all is said, not hidden (CH-11315) */
 .ch-rd-unscored {
   margin: 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 

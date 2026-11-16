@@ -2330,7 +2330,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     background: color-mix(in srgb, var(--ch-topbar-paper) 88%, var(--ch-grouped-bg));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    transition: background-color var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-topbar:not([data-scrolled]) {
     background: transparent;

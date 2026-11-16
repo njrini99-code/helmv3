@@ -123,7 +123,6 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
   let n = 0;
   let penalties = 0;
   let fairwayHit: boolean | null = hole.par === 3 ? null : false;
-  let playedFromSand = false;
   const push = (shot: Omit<SimShot, 'shot_number'>) => {
     n += 1;
     shots.push({ shot_number: n, ...shot });
@@ -181,7 +180,6 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
         yards = target;
         continue;
       }
-      if (lie === 'sand') playedFromSand = true;
       const prox = approachProximity(rng, yards, lie, s);
       if (prox <= GREEN_RADIUS_FT) {
         feet = round1(prox);
@@ -197,7 +195,6 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
       continue;
     }
     // Around the green.
-    if (lie === 'sand') playedFromSand = true;
     const duff = rng.chance(clamp(0.035 * Math.exp(-0.6 * s.shortGame) + s.wild * 0.02, 0, 0.2));
     if (duff) {
       const left = clamp(Math.round(yards * 0.5 + 2), 3, 30);
@@ -210,7 +207,7 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
     const prox = rng.chance(holeOut) ? 0 : shortGameProximity(rng, yards, lie, s);
     if (prox < 0.9) {
       push({ shot_type: 'around_green', club_type: 'non_driver', lie_before: lie, distance_to_hole_before: yards, distance_unit_before: 'yards', result: 'hole', lie_after: null, distance_to_hole_after: 0, distance_unit_after: 'feet', shot_distance: yards, is_penalty: false, penalty_type: null, putt_made: null, putt_distance_feet: null, miss_direction: null });
-      return finish(hole, holeNumber, shots, penalties, fairwayHit, playedFromSand);
+      return finish(hole, holeNumber, shots, penalties, fairwayHit);
     }
     feet = round1(prox);
     push({ shot_type: 'around_green', club_type: 'non_driver', lie_before: lie, distance_to_hole_before: yards, distance_unit_before: 'yards', result: 'green', lie_after: 'green', distance_to_hole_after: feet, distance_unit_after: 'feet', shot_distance: yards, is_penalty: false, penalty_type: null, putt_made: null, putt_distance_feet: null, miss_direction: null });
@@ -232,10 +229,10 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
     push({ shot_type: 'putting', club_type: 'putter', lie_before: 'green', distance_to_hole_before: feet, distance_unit_before: 'feet', result: 'green', lie_after: 'green', distance_to_hole_after: next, distance_unit_after: 'feet', shot_distance: 0, is_penalty: false, penalty_type: null, putt_made: false, putt_distance_feet: feet, miss_direction: null });
     feet = next;
   }
-  return finish(hole, holeNumber, shots, penalties, fairwayHit, playedFromSand);
+  return finish(hole, holeNumber, shots, penalties, fairwayHit);
 }
 
-function finish(hole: DemoHole, holeNumber: number, shots: SimShot[], penalties: number, fairwayHit: boolean | null, playedFromSand: boolean): SimHole {
+function finish(hole: DemoHole, holeNumber: number, shots: SimShot[], penalties: number, fairwayHit: boolean | null): SimHole {
   const score = shots.length;
   const putts = shots.filter((x) => x.shot_type === 'putting').length;
   // Green in regulation, by the database's own rule (golf_holes_set_gir_fn):
@@ -243,6 +240,10 @@ function finish(hole: DemoHole, holeNumber: number, shots: SimShot[], penalties:
   const toGreen = score - putts;
   const gir = hole.par >= 3 && score > 0 && toGreen > 0 && toGreen <= hole.par - 2;
   const upAndDown = gir ? null : score <= hole.par;
+  // Sand save, by the Tour's definition (stat-formulas.ts, SC-02): only a greenside bunker counts, and a save is holing
+  // out in two strokes or fewer from the first shot out of it, whatever the score. A fairway bunker is not an attempt.
+  const bunker = shots.findIndex((x) => x.shot_type === 'around_green' && x.lie_before === 'sand');
+  const sandSave = bunker < 0 ? null : shots.length - bunker <= 2;
   return {
     hole_number: holeNumber,
     par: hole.par,
@@ -252,7 +253,7 @@ function finish(hole: DemoHole, holeNumber: number, shots: SimShot[], penalties:
     fairway_hit: fairwayHit,
     gir,
     up_and_down: upAndDown,
-    sand_save: playedFromSand && !gir ? score <= hole.par : null,
+    sand_save: sandSave,
     penalty_strokes: penalties,
     shots,
   };

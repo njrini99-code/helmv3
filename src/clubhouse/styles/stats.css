@@ -658,7 +658,7 @@
 /* A player's week between two empty weeks, a dot in the line's own ink and fade (CH-15). */
 .ch-sgt__pt {
   pointer-events: none;
-  transition: fill-opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: fill-opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 /* Two classes, so the base reset (`.ch-root p`) doesn't take the margin. */
 .ch-sgt .ch-note {
