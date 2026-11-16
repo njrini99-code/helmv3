@@ -36,8 +36,8 @@
 -- ORDER: deploy the app change in the same PR first (the app reads the same
 --   rule), then apply this file. Both functions are patched in place: the
 --   file reads each live definition (pg_get_functiondef), replaces the
---   scramble lines, and refuses unless the old lines occur exactly once and
---   the new ones are absent, so a second apply is refused. In place rather
+--   scramble lines, and refuses unless the old lines occur exactly once; a
+--   body already on the new rule is left as it is (NOTICE). In place rather
 --   than a whole body because production's refresh_player_stats_cache (prosrc
 --   md5 da0ba53873b7c8ac519b9541f0b5f2eb) differs from a from-scratch replay,
 --   where the held 20260924120000_golf_countable_round_stats_cache.sql has
@@ -98,12 +98,14 @@ $new1$;
   v_def := pg_get_functiondef(v_fn);
   SELECT count(*) INTO v_hits FROM regexp_matches(v_def, 'OR sand_save=true', 'g');
   IF v_hits > 0 THEN
-    RAISE EXCEPTION 'scrambling counts sand saves: update_round_stats_cache() already counts sand saves; this file was applied before.';
-  END IF;
-  IF (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 THEN
+    -- Already on the rule (this file ran before, or an earlier held file
+    -- now carries it): leave the body as it is.
+    RAISE NOTICE 'scrambling counts sand saves: update_round_stats_cache() already counts sand saves; left as it is.';
+  ELSIF (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 THEN
     RAISE EXCEPTION 'scrambling counts sand saves: the scramble lines of update_round_stats_cache() are not the ones this file was written on. Rebase this file on the live body.';
+  ELSE
+    EXECUTE replace(v_def, v_old, v_new);
   END IF;
-  EXECUTE replace(v_def, v_old, v_new);
 
   -- (2) refresh_player_stats_cache: the player cache rebuild.
   v_fn := to_regprocedure('public.refresh_player_stats_cache(uuid)');
@@ -119,12 +121,14 @@ $new2$;
   v_def := pg_get_functiondef(v_fn);
   SELECT count(*) INTO v_hits FROM regexp_matches(v_def, 'OR h\.sand_save = true', 'g');
   IF v_hits > 0 THEN
-    RAISE EXCEPTION 'scrambling counts sand saves: refresh_player_stats_cache(uuid) already counts sand saves; this file was applied before.';
-  END IF;
-  IF (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 THEN
+    -- Already on the rule (this file ran before, or an earlier held file
+    -- now carries it): leave the body as it is.
+    RAISE NOTICE 'scrambling counts sand saves: refresh_player_stats_cache(uuid) already counts sand saves; left as it is.';
+  ELSIF (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 THEN
     RAISE EXCEPTION 'scrambling counts sand saves: the scramble lines of refresh_player_stats_cache(uuid) are not the ones this file was written on. Rebase this file on the live body.';
+  ELSE
+    EXECUTE replace(v_def, v_old, v_new);
   END IF;
-  EXECUTE replace(v_def, v_old, v_new);
 END
 $patch$;
 
