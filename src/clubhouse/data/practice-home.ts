@@ -11,6 +11,8 @@ import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { isoDay, formatWith } from '../lib/dates';
 import { editedAfterPublish, loadPlayerPractice } from './practice-plan';
+import { loadTeamZone } from './season';
+import { eventDaySpan } from '@/lib/calendar/timezone';
 import { blockDaySegs, keyOfDrill } from '../screens/practice/builder/builder-model';
 import type { ChBankDrill, ChBuilderData, ChPlayerPracticeHome, ChPracticeEvent, ChPracticeHome, ChPracticeLoad, ChPracticeRow, ChPracticeState, ChPracticeTile, ChPracticeUpNext } from './practice-home-shape';
 
@@ -22,8 +24,13 @@ interface EventRow {
   end_time: string | null;
   location: string | null;
   all_day: boolean | null;
+  /** A practice the coach called off. Cancelling is soft (the row stays), so a read by id must drop it itself (DF-C-08). */
+  cancelled_at?: string | null;
+  status?: string | null;
 }
 type PlanRow = PracticePlanRow;
+const EVENT_COLUMNS = 'id, title, start_time, end_time, location, all_day, status, cancelled_at';
+const isCancelled = (e: EventRow) => e.status === 'cancelled' || e.cancelled_at != null;
 
 const HREF = '/golf/dashboard/practice/plan/';
 const DAY = 86_400_000;
@@ -33,7 +40,30 @@ const dayShort = (d: Date, zone: string) => formatWith(d, { weekday: 'short', mo
 const dayLong = (d: Date, zone: string) => formatWith(d, { weekday: 'long', month: 'short', day: 'numeric', timeZone: zone });
 /** The team-zone date as yyyy-mm-dd. */
 const dayKey = (d: Date, zone: string) => isoDay(d, zone);
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+/**
+ * The team-zone date a practice is on. An all-day practice is stored as a UTC-midnight date (or the team's own day edges), so it is
+ * read by `eventDaySpan`, the calendar's helper, and never zoned: zoned, a Friday all-day practice sat on Thursday west of UTC (DF-C-09).
+ */
+const eventDay = (e: EventRow, zone: string): string => {
+  if (!e.all_day) return dayKey(new Date(e.start_time), zone);
+  const days = eventDaySpan({ start_time: e.start_time, end_time: e.end_time, all_day: true }, zone);
+  return days ? ymd(days.first) : e.start_time.slice(0, 10);
+};
+/** Noon UTC on a practice's date: a stable instant for printing that date in any zone's words. */
+const dayAt = (e: EventRow, zone: string) => new Date(`${eventDay(e, zone)}T12:00:00Z`);
+/** The date in words: a timed practice in the team's zone, an all-day one as the date it was written for. */
+const dayWords = (e: EventRow, zone: string, words: (d: Date, zone: string) => string) => (e.all_day ? words(dayAt(e, zone), 'UTC') : words(new Date(e.start_time), zone));
+/** Whether a practice is over. An all-day practice runs to the end of its last day on the team's calendar. */
+const isOver = (e: EventRow, now: Date, zone: string): boolean => {
+  if (!e.all_day) return (e.end_time ? new Date(e.end_time) : new Date(e.start_time)) < now;
+  const days = eventDaySpan({ start_time: e.start_time, end_time: e.end_time, all_day: true }, zone);
+  return (days ? ymd(days.last) : e.start_time.slice(0, 10)) < dayKey(now, zone);
+};
+/** Its minutes, for a week's hours: a timed practice's own length; an all-day practice has none to count (DF-C-09: it added 24 hours). */
+const minutesOf = (e: EventRow): number | null => (!e.all_day && e.end_time ? Math.round((Date.parse(e.end_time) - Date.parse(e.start_time)) / 60_000) : null);
 const span = (e: EventRow, zone: string) => {
+  if (e.all_day) return 'All day';
   const s = new Date(e.start_time);
   return e.end_time ? `${hhmm(s, zone)} to ${clock(new Date(e.end_time), zone)}` : clock(s, zone);
 };
@@ -43,13 +73,13 @@ const hours = (min: number) => {
   return h ? (m ? `${h} h ${m}` : `${h} h`) : `${m} min`;
 };
 
-/** The first two blocks in words, each at its time. */
-function blockLine(body: PlanBodyV2 | null, start: Date, zone: string): string {
+/** The first two blocks in words, each at its time. An all-day practice has no start to time them from, so they are named only. */
+function blockLine(body: PlanBodyV2 | null, start: Date, zone: string, allDay = false): string {
   if (!body) return '';
   let at = start.getTime();
   const out: string[] = [];
   for (const b of body.variants.main.blocks.slice(0, 2)) {
-    out.push(`${hhmm(new Date(at), zone)} ${b.title}`);
+    out.push(allDay ? b.title : `${hhmm(new Date(at), zone)} ${b.title}`);
     at += b.len * 60_000;
   }
   return out.join(' · ');
@@ -100,15 +130,16 @@ function weekTiles<T extends { event: EventRow; state: ChPracticeState; href: st
     date: formatWith(at, { day: 'numeric', timeZone: 'UTC' }),
     today: key === today,
     items: items
-      .filter((x) => dayKey(new Date(x.event.start_time), zone) === key)
+      .filter((x) => eventDay(x.event, zone) === key)
       .sort((a, b) => a.event.start_time.localeCompare(b.event.start_time))
-      .map((x) => ({ time: clock(new Date(x.event.start_time), zone), state: x.state, href: x.href, eventId: x.eventId })),
+      .map((x) => ({ time: x.event.all_day ? 'All day' : clock(new Date(x.event.start_time), zone), state: x.state, href: x.href, eventId: x.eventId })),
   }));
 }
 
+/** The team's name and its clock: the settings zone every Clubhouse loader reads (`loadTeamZone`; DF-C-07, never `golf_teams.timezone`). */
 async function teamBasics(sb: Sb, teamId: string) {
-  const { data, error } = await sb.from('golf_teams').select('name, timezone, organization_id').eq('id', teamId).maybeSingle();
-  return error || !data ? null : { name: data.name ?? '', zone: data.timezone ?? 'America/New_York', org: data.organization_id };
+  const [{ data, error }, zone] = await Promise.all([sb.from('golf_teams').select('name, organization_id').eq('id', teamId).maybeSingle(), loadTeamZone(sb, teamId, 'practice')]);
+  return error || !data ? null : { name: data.name ?? '', zone, org: data.organization_id };
 }
 
 /** The active roster with names, read as the plan page reads it (practice-plan.ts `context`): names through golf_player_profiles, not an embed. */
@@ -142,7 +173,7 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
   const plansRead = started(db.from('golf_practice_plans').select('id, title, status, event_id, version, published_version, edited_after_publish, updated_at, body, step, team_id').eq('team_id', teamId).eq('kind', 'event').order('updated_at', { ascending: false }).limit(200));
   const windowRead = started(
     Promise.all([
-      sb.from('golf_events').select('id, title, start_time, end_time, location, all_day').eq('team_id', teamId).eq('event_type', 'practice').is('cancelled_at', null).gte('start_time', new Date(now.getTime() - 8 * DAY).toISOString()).lte('start_time', new Date(now.getTime() + 21 * DAY).toISOString()).order('start_time').limit(120),
+      sb.from('golf_events').select(EVENT_COLUMNS).eq('team_id', teamId).eq('event_type', 'practice').is('cancelled_at', null).gte('start_time', new Date(now.getTime() - 8 * DAY).toISOString()).lte('start_time', new Date(now.getTime() + 21 * DAY).toISOString()).order('start_time').limit(120),
       activeRoster(sb, teamId),
     ]),
   );
@@ -156,20 +187,31 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
   if (upcoming.error || !roster) return { status: 'failed' };
   const byEvent = new Map(plans.filter((p) => p.event_id).map((p) => [p.event_id!, p]));
   const known = new Map<string, EventRow>((upcoming.data ?? []).map((e) => [e.id, e]));
+  // Plans whose practice is outside the window are read by id. That read must drop a cancelled practice itself, as the window's
+  // read does: before, a practice the coach called off came back here as a row, a day on the week and Up next (DF-C-08). Its plan
+  // stays copyable (`copies`): the blocks a coach wrote for a practice that didn't happen are still theirs to reuse.
+  const calledOff = new Map<string, EventRow>();
   const missing = plans.map((p) => p.event_id).filter((id): id is string => !!id && !known.has(id));
   if (missing.length) {
-    const older = await sb.from('golf_events').select('id, title, start_time, end_time, location, all_day').in('id', missing.slice(0, 200));
+    const older = await sb.from('golf_events').select(EVENT_COLUMNS).in('id', missing.slice(0, 200));
     if (older.error) return { status: 'failed' };
-    for (const e of older.data ?? []) known.set(e.id, e);
+    for (const e of older.data ?? []) (isCancelled(e) ? calledOff : known).set(e.id, e);
   }
-  const rows = plans.flatMap((p): Array<ChPracticeRow & { at: string; ended: boolean }> => {
-    const e = p.event_id ? known.get(p.event_id) : undefined;
-    if (!e) return [];
+  type Row = ChPracticeRow & { at: string; ended: boolean };
+  const rowOf = (p: PlanRow, e: EventRow): Row => {
     const start = new Date(e.start_time);
-    const ended = (e.end_time ? new Date(e.end_time) : start) < now;
+    const ended = isOver(e, now, zone);
     const body = parsePlanBody(p.body);
     const state = stateOf(p, ended);
-    return [{ id: p.id, day: dayShort(start, zone), title: p.title || e.title, time: span(e, zone), line: blockLine(body, start, zone), state, href: p.status === 'draft' ? `${HREF}${p.id}/edit` : `${HREF}${p.id}`, edits: editedAfterPublish(p), at: e.start_time, ended }];
+    return { id: p.id, day: dayWords(e, zone, dayShort), title: p.title || e.title, time: span(e, zone), line: blockLine(body, start, zone, !!e.all_day), state, href: p.status === 'draft' ? `${HREF}${p.id}/edit` : `${HREF}${p.id}`, edits: editedAfterPublish(p), at: e.start_time, ended };
+  };
+  const rows = plans.flatMap((p): Row[] => {
+    const e = p.event_id ? known.get(p.event_id) : undefined;
+    return e ? [rowOf(p, e)] : [];
+  });
+  const offRows = plans.flatMap((p): Row[] => {
+    const e = p.event_id ? calledOff.get(p.event_id) : undefined;
+    return e ? [rowOf(p, e)] : [];
   });
   const bare = ({ at: _a, ended: _e, ...r }: ChPracticeRow & { at: string; ended: boolean }): ChPracticeRow => r;
   const soonest = (a: { at: string }, b: { at: string }) => a.at.localeCompare(b.at);
@@ -181,7 +223,7 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
   const week = weekTiles(
     events.map((event) => {
       const p = byEvent.get(event.id);
-      const ended = (event.end_time ? new Date(event.end_time) : new Date(event.start_time)) < now;
+      const ended = isOver(event, now, zone);
       // A practice that has ended without a plan opens nothing: New plan plans what is coming, and its sheet lists only that (W15).
       return { event, state: stateOf(p, ended), href: p ? (p.status === 'draft' ? `${HREF}${p.id}/edit` : `${HREF}${p.id}`) : null, eventId: p || ended ? null : event.id };
     }),
@@ -189,13 +231,13 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
     zone,
   );
   const keys = new Set(week.map((t) => t.key));
-  const weekMin = events.filter((e) => keys.has(dayKey(new Date(e.start_time), zone)) && e.end_time).reduce((s, e) => s + Math.round((Date.parse(e.end_time!) - Date.parse(e.start_time)) / 60_000), 0);
+  const weekMin = events.filter((e) => keys.has(eventDay(e, zone))).reduce((s, e) => s + (minutesOf(e) ?? 0), 0);
   const open: ChPracticeEvent[] = events
-    .filter((e) => !byEvent.has(e.id) && new Date(e.end_time ?? e.start_time) >= now && Date.parse(e.start_time) <= now.getTime() + 14 * DAY)
+    .filter((e) => !byEvent.has(e.id) && !isOver(e, now, zone) && Date.parse(e.start_time) <= now.getTime() + 14 * DAY)
     .sort((a, b) => a.start_time.localeCompare(b.start_time))
-    .map((e) => ({ id: e.id, label: dayLong(new Date(e.start_time), zone), detail: [e.all_day ? 'All day' : span(e, zone), e.location].filter(Boolean).join(' · '), title: e.title, place: e.location ?? '', allDay: !!e.all_day, minutes: e.end_time && !e.all_day ? Math.round((Date.parse(e.end_time) - Date.parse(e.start_time)) / 60_000) : null }));
+    .map((e) => ({ id: e.id, label: dayWords(e, zone, dayLong), detail: [span(e, zone), e.location].filter(Boolean).join(' · '), title: e.title, place: e.location ?? '', allDay: !!e.all_day, minutes: minutesOf(e) }));
 
-  const nextEvent = events.filter((e) => new Date(e.end_time ?? e.start_time) >= now && !e.all_day).sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+  const nextEvent = events.filter((e) => !isOver(e, now, zone) && !e.all_day).sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
   let upNext: ChPracticeUpNext | null = null;
   if (nextEvent) {
     const p = byEvent.get(nextEvent.id);
@@ -214,7 +256,7 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
   }
   return {
     status: 'ready',
-    data: { teamName, week, weekLine: weekMin ? `${hours(weekMin)} of practice this week` : null, upNext, drafts, published, past, open, copies: rows.filter((r) => r.state !== 'Draft' || r.ended).slice(0, 20).map((r) => ({ id: r.id, label: `${r.title} · ${r.day}` })), roster: roster.map((r) => r.id), firstRun: plans.length === 0, zone },
+    data: { teamName, week, weekLine: weekMin ? `${hours(weekMin)} of practice this week` : null, upNext, drafts, published, past, open, copies: [...rows.filter((r) => r.state !== 'Draft' || r.ended).map((r) => ({ id: r.id, label: `${r.title} · ${r.day}` })), ...offRows.map((r) => ({ id: r.id, label: `${r.title} · ${r.day} · Cancelled` }))].slice(0, 20), roster: roster.map((r) => r.id), firstRun: plans.length === 0, zone },
   };
 }
 
@@ -231,15 +273,17 @@ export async function loadPlayerPracticeHome(teamId: string, playerId: string, n
   if (error) return isPracticeMissing(error.code) ? { status: 'unavailable' } : { status: 'failed' };
   const live = (data ?? []) as PracticePlanVersionRow[];
   const ids = live.map((v) => v.event_id).filter((id): id is string => !!id);
-  const eventsRes = ids.length ? await sb.from('golf_events').select('id, title, start_time, end_time, location, all_day').eq('team_id', teamId).in('id', ids) : { data: [] as EventRow[], error: null };
+  const eventsRes = ids.length ? await sb.from('golf_events').select(EVENT_COLUMNS).eq('team_id', teamId).in('id', ids) : { data: [] as EventRow[], error: null };
   if (eventsRes.error) return { status: 'failed' };
-  const eventOf = new Map<string, EventRow>((eventsRes.data ?? []).map((e) => [e.id, e]));
+  // A practice the coach called off is no practice to a player (DF-P-09): its live plan stays until the coach takes it down, so the
+  // read drops it here, as Home and Calendar do, and as the plan page reads it as gone.
+  const eventOf = new Map<string, EventRow>((eventsRes.data ?? []).filter((e) => !isCancelled(e)).map((e) => [e.id, e]));
   const rows = live.flatMap((v) => {
     const e = v.event_id ? eventOf.get(v.event_id) : undefined;
     if (!e) return [];
     const start = new Date(e.start_time);
-    const ended = (e.end_time ? new Date(e.end_time) : start) < now;
-    const row: ChPracticeRow = { id: v.plan_id, day: dayShort(start, zone), title: v.title || e.title, time: span(e, zone), line: blockLine(parseVersionBody(v.body), start, zone), state: ended ? 'Done' : 'Published', href: `${HREF}${v.plan_id}` };
+    const ended = isOver(e, now, zone);
+    const row: ChPracticeRow = { id: v.plan_id, day: dayWords(e, zone, dayShort), title: v.title || e.title, time: span(e, zone), line: blockLine(parseVersionBody(v.body), start, zone, !!e.all_day), state: ended ? 'Done' : 'Published', href: `${HREF}${v.plan_id}` };
     return [{ row, event: e, ended }];
   });
   const upcoming = rows.filter((r) => !r.ended).sort((a, b) => a.event.start_time.localeCompare(b.event.start_time));

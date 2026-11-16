@@ -449,7 +449,7 @@ describe('how it has moved', () => {
     const card = sec('moved') as HTMLElement;
     expect(card.querySelector('.ch-line')).toBeTruthy();
     expect(card.textContent).toContain('Penalties per round, oldest to newest');
-    expect(card.textContent).toContain('1.5 a round over the last 8 rounds');
+    expect(card.textContent).toContain('1.6 a round over the last 8 rounds');
     expect(card.textContent).toContain('Dashed line: Tour 0.3');
     const win = within(card).getByRole('radiogroup', { name: 'Rounds shown' });
     expect(within(win).getAllByRole('radio').map((b) => b.textContent)).toEqual(['Last 8', 'Season']);

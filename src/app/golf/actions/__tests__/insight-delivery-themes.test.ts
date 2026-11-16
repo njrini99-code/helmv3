@@ -63,6 +63,11 @@ vi.mock('@/app/golf/actions/stats-data', () => ({
     getDetailedStatsAsAdminMock(...(args as Parameters<typeof getDetailedStatsAsAdminMock>)),
 }));
 
+// SG by category is handed in by the caller (`opts.sg`): Clubhouse reads this
+// season's figures (src/clubhouse/data/season-figures.ts, stats and charts audit
+// 2026-11-15, SC-01). The action no longer reads golf_player_stats_cache.
+type SeasonSg = { tee?: number | null; approach?: number | null; short_game?: number | null; putting?: number | null };
+
 // Default: grant access. Specific tests override per-call to test denial.
 type VerifyReason = 'self' | 'coach' | 'denied';
 const verifyPlayerAccessMock = vi.fn(
@@ -219,16 +224,6 @@ interface SupabaseMockOpts {
   insightRows?: RawThemeRow[] | null;
   /** error for the insight fetch (forces assembleForPlayer to throw). */
   insightError?: { message: string } | null;
-  /** row for the `golf_player_stats_cache` SG fetch (maybeSingle) — the
-   *  canonical sg_*_per_round source for theme sizing. */
-  sgCache?: {
-    sg_putting_per_round: number | null;
-    sg_approach_per_round: number | null;
-    sg_tee_per_round: number | null;
-    sg_around_green_per_round: number | null;
-  } | null;
-  /** when true, the SG cache fetch rejects (exercises the best-effort catch). */
-  sgCacheError?: boolean;
   /** rows for the `golf_rounds` fetches (shot drivers + SG trend); default empty. */
   rounds?: unknown[];
 }
@@ -282,19 +277,6 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
     };
   };
 
-  // golf_player_stats_cache: the canonical SG source for theme sizing
-  // (sg_*_per_round), fetched via `.select(...).eq(...).maybeSingle()`.
-  const buildStatsCacheBuilder = () => {
-    return {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn(() =>
-        opts.sgCacheError
-          ? Promise.reject(new Error('stats cache down'))
-          : Promise.resolve({ data: opts.sgCache ?? null, error: null }),
-      ),
-    };
-  };
 
   return {
     auth: {
@@ -307,7 +289,6 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
       if (table === 'golf_coach_insights') return buildInsightBuilder();
       if (table === 'golf_rounds') return buildRoundsBuilder();
       if (table === 'golf_shots') return buildShotsBuilder();
-      if (table === 'golf_player_stats_cache') return buildStatsCacheBuilder();
       throw new Error(`fake-supabase: unexpected table "${table}" in themes delivery test`);
     }),
   };
@@ -605,24 +586,19 @@ describe('getThemesForPlayer — honesty invariants on a realistic fixture', () 
     });
 
     // approach reads as a category STRENGTH via SG; short_game a real loss.
-    // SG now comes from the canonical golf_player_stats_cache (sg_*_per_round),
-    // not getDetailedStatsAsAdmin.
+    // SG comes from this season's figures (SC-01), never the lifetime cache.
     useClient(
       makeSupabaseMock({
         userId: 'u-1',
         insightRows: [puttLeak, approachDiag, teeNoStanding],
-        sgCache: {
-          sg_putting_per_round: -0.9,
-          sg_approach_per_round: 0.8,
-          sg_tee_per_round: null,
-          sg_around_green_per_round: -1.0,
-        },
       }),
     );
 
-    const res = await getThemesForPlayer('p-1');
+    const sg: SeasonSg = { putting: -0.9, approach: 0.8, tee: null, short_game: -1.0 };
+    const res = await getThemesForPlayer('p-1', { sg });
     expect(res.success).toBe(true);
     const assembled = res.data as AssembledThemes;
+    expect(themeOf(assembled, 'short_game').sgPerRound).toBe(-1.0);
 
     assertHonestyInvariants(assembled);
 
@@ -652,11 +628,21 @@ describe('getThemesForPlayer — honesty invariants on a realistic fixture', () 
     expect(teeCause?.tourGapPerRound).toBeCloseTo(0.7, 6);
   });
 
-  it('routes the SG-fetch failure to a still-honest scaffold (best-effort SG)', async () => {
+  it('drops a caller’s SG that is not a finite number of strokes, and reads no lifetime cache', async () => {
+    useClient(makeSupabaseMock({ userId: 'u-1', insightRows: [] }));
+    const res = await getThemesForPlayer('p-1', { sg: { putting: Number.NaN, approach: 1e9, tee: 'x' as never, short_game: 0.4 } });
+    expect(res.success).toBe(true);
+    const assembled = res.data as AssembledThemes;
+    expect(themeOf(assembled, 'putting').sgPerRound).toBeNull();
+    expect(themeOf(assembled, 'approach').sgPerRound).toBeNull();
+    expect(themeOf(assembled, 'tee').sgPerRound).toBeNull();
+    expect(themeOf(assembled, 'short_game').sgPerRound).toBe(0.4);
+  });
+
+  it('routes a season that did not read (no SG handed in) to a still-honest scaffold (best-effort SG)', async () => {
     useClient(
       makeSupabaseMock({
         userId: 'u-1',
-        sgCacheError: true,
         insightRows: [
           makeRow({
             id: 'putt-1',

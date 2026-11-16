@@ -21,7 +21,9 @@ import { useViewSwitch } from '../use-view-switch';
 import { PlayerHelmTabs, playerHelmTabHref, type PlayerHelmTab } from '../views/PlayerHelmTabs';
 import { LIVE_PLAYER_WRITES, type ChPlayerWrites } from '../writes';
 import { EarlyFeature, FeatureCard, FieldCard, PlanCard, ReadsCard, SgCard, WorkingCard } from './cards';
-import { FileFailed } from './PlayerFile';
+import { FileFailed, PartFailed } from './PlayerFile';
+import { HelmOff } from '../views/Frame';
+import { plural } from '../../../lib/plural';
 
 /** The player's own CoachHelm with the flag on (S-BOARD): the lens's cards, for real. Accept and Decline are today's `ProposalRow`, live. */
 export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLoad<ChPlayerWeek>; writes?: ChPlayerWrites }) {
@@ -38,6 +40,19 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
     return m;
   }, [data]);
   const tabs = <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
+  // Off for this player (the team's switch, or not eligible) is a state, not a failure: Try again could never help (PL-CH-01).
+  if (load.status === 'off') {
+    return (
+      <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk is-failed')} data-ch="your-week-off">
+        {phone && <PhoneTop start title="CoachHelm" />}
+        <div className={phone ? undefined : 'dfile'}>
+          <div className="ch-hf-flow">
+            <HelmOff reason={load.reason} />
+          </div>
+        </div>
+      </main>
+    );
+  }
   if (!data) {
     return (
       // On a desk the card takes the page's own gutters and a reading width (it sat edge to edge, under the top bar).
@@ -69,9 +84,13 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
   const feat = cards.feat ? <FeatureCard key="feat" d={cards.feat} lens="player" first="" name="" team={cards.featTeam} teamBasis={cards.featTeamBasis} stage={stage} coach={proposal?.coachName ?? 'Your coach'} actions={actions} onOpen={() => setOpenRead(cards.feat!.base.id)} /> : <EarlyFeature key="feat" lens="player" first="" rounds={data.rounds} toGo={data.roundsToGo} />;
   const empty = !cards.feat && data.rounds === 0;
   const penalties = open && /penalt/i.test(`${open.base.metric} ${open.base.title}`) ? data.penalties : null;
-  const left = [feat, <PlanCard key="plan" plan={cards.plan} lens="player" first="" />, cards.sg && <SgCard key="sg" sg={cards.sg} who="You" standingHref={null} />];
-  const right = [<WorkingCard key="w" list={cards.working} onOpen={setOpenRead} />, cards.field && <FieldCard key="f" field={cards.field} />, <ReadsCard key="r" cards={cards} lens="player" onOpen={setOpenRead} moreLine={moreReadsLine(cards.more) || undefined} />];
-  const line = [data.rounds != null ? `${data.rounds} rounds` : null, data.refreshed ? `refreshed ${data.refreshed}` : null].filter(Boolean).join(' · ');
+  // A part whose read failed says so in its own slot, as the coach's file does (PL-CH-02, PL-CH-04): never a card that quietly isn't there, nor "no focus".
+  const planCard = data.failed.plan ? <PartFailed key="plan" title="Your plan" /> : <PlanCard key="plan" plan={cards.plan} lens="player" first="" />;
+  const sgCard = data.failed.sg ? <PartFailed key="sg" title="Where the strokes go" /> : cards.sg ? <SgCard key="sg" sg={cards.sg} who="You" standingHref={null} /> : null;
+  const fieldCard = data.failed.field ? <PartFailed key="f" title="Last round in context" /> : cards.field ? <FieldCard key="f" field={cards.field} /> : null;
+  const left = [feat, planCard, sgCard];
+  const right = [<WorkingCard key="w" list={cards.working} onOpen={setOpenRead} />, fieldCard, <ReadsCard key="r" cards={cards} lens="player" onOpen={setOpenRead} moreLine={moreReadsLine(cards.more) || undefined} />];
+  const line = [data.rounds != null ? plural(data.rounds, 'round') : null, data.refreshed ? `refreshed ${data.refreshed}` : null].filter(Boolean).join(' · ');
   return (
     // On a desk the page takes the canopy for its head alone: the player's CoachHelm head (parts.tsx Head, tight), the page title,
     // the line and the views inside the page's gutter, as the board's. The phone keeps its large title under the chip row.
@@ -96,7 +115,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
             <section className="card">
               <div className="empty">
                 <b>No rounds yet</b>
-                <p>Reads start after 4 full rounds in the last 90 days.</p>
+                <p>CoachHelm starts reading your game after 4 full rounds in 90 days.</p>
                 <Button variant="primary" size="lg" href="/golf/dashboard/rounds">
                   Go to Rounds
                 </Button>
@@ -106,9 +125,9 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
             <>
               {feat}
               <WorkingCard list={cards.working} onOpen={setOpenRead} />
-              <PlanCard plan={cards.plan} lens="player" first="" />
-              {cards.field && <FieldCard field={cards.field} />}
-              {cards.sg && <SgCard sg={cards.sg} who="You" standingHref={null} />}
+              {planCard}
+              {fieldCard}
+              {sgCard}
               <ReadsCard cards={cards} lens="player" onOpen={setOpenRead} moreLine={moreReadsLine(cards.more) || undefined} />
             </>
           ) : (

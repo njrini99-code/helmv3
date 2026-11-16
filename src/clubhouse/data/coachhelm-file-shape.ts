@@ -404,7 +404,8 @@ export interface ChPlayerWeek {
   readOn: boolean;
   penalties: Array<{ label: string; value: number }> | null;
   refreshed: string | null;
-  failed: { sg?: true; field?: true };
+  /** Parts whose read failed, each said in its own slot (PL-CH-02, PL-CH-04): `plan` is the focus read. */
+  failed: { sg?: true; field?: true; plan?: true };
 }
 
 /** The player's words on the feature card, by stage (06 12.1). */

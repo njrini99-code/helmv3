@@ -62,6 +62,12 @@ const polls = vi.hoisted(() => ({
 vi.mock('@/hooks/golf/use-message-responses', () => ({ useMessageResponses: () => polls.responses }));
 vi.mock('@/app/golf/actions/message-polls', () => ({ sendGolfPoll: polls.sendGolfPoll, closeGolfPoll: polls.closeGolfPoll }));
 vi.mock('@/hooks/golf/use-message-attachments', () => ({ useMessageAttachments: () => live.files }));
+// The thread's attachment facts read golf_message_attachments through the browser client, which is offline in tests
+// (src/test/network-isolation.ts): no facts, as when that read fails. attachment-facts.test.tsx covers the read itself.
+vi.mock('../screens/messages/attachment-facts', async (orig) => {
+  const none = new Map();
+  return { ...(await orig<object>()), useAttachmentFacts: () => none };
+});
 const a = vi.hoisted(() => ({
   markGolfMessagesAsRead: vi.fn(),
   createGolfConversation: vi.fn(),

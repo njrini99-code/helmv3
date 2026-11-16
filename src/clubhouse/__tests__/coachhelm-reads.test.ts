@@ -131,6 +131,7 @@ describe('the coach’s board reads', () => {
 describe('the Deep dive reads', () => {
   const FEED_HOPS = 3;
   const THEME_HOPS = 5;
+  const SEASON_SG_HOPS = 2;
   function arrange(waves: ReturnType<typeof readWaves>) {
     tables.gate = waves.gate;
     delivery.feed.mockImplementation(async () => {
@@ -160,9 +161,12 @@ describe('the Deep dive reads', () => {
     arrange(waves);
     const { result, waves: depth } = await waves.run(loadPlayerDeepDive({ playerId: jonah.id }));
     expect(result.status).toBe('ready');
-    // All four start in the first wave. (Before: the feed's 3, the team's 2, then the longest of the rest: 3 + 2 + 5 = 10 waves.)
-    expect(depth[0]).toEqual(expect.arrayContaining(['feed1', 'themes1', 'goals', 'golf_team_members']));
-    expect(depth).toHaveLength(THEME_HOPS);
+    // All four chains start in the first wave. (Before: the feed's 3, the team's 2, then the longest of the rest: 3 + 2 + 5 = 10 waves.)
+    // The category reads open with this season's strokes gained (SC-01): the season's rounds beside the team's clock (its member row,
+    // then its settings), two waves, then the themes' own.
+    expect(depth[0]).toEqual(expect.arrayContaining(['feed1', 'goals', 'golf_team_members', 'golf_rounds']));
+    expect(depth[2]).toEqual(expect.arrayContaining(['themes1']));
+    expect(depth).toHaveLength(SEASON_SG_HOPS + THEME_HOPS);
   });
 
   it('the feed (the read that records exposure) is read once, and the rounds behind the insights wait for it', async () => {

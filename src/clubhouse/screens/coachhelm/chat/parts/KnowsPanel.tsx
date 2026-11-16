@@ -6,6 +6,7 @@ import { deleteCoachFact, saveCoachFact, setChatTone } from '@/app/golf/actions/
 import type { ChAskData } from '../../../../data/coachhelm-chat-shape';
 import { Modal } from '../../../../ui/Modal';
 import { Segmented } from '../../../../ui/Segmented';
+import { haptic } from '../../../../lib/haptics';
 
 const TONES = [
   { id: 'straight', label: 'Straight' },
@@ -60,17 +61,31 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
   };
   return (
     <div className="ch-ak-knows">
-      <Segmented
-        label="Tone"
-        block
-        size="sm"
-        value={tone}
-        options={TONES.map((t) => ({ value: t.id, label: t.label }))}
-        onChange={(id) => {
-          setTone(id);
-          if (conversationId) void setChatTone(conversationId, id);
-        }}
-      />
+      {/* The tone is a chat's own: with no chat open there was nothing to save it to, and the pill moved as if it had saved (prod
+          audit 2026-11-15, CHATSET-01). Interim, until a coach-wide default tone exists: the control shows only on an open chat, and a
+          save that fails puts the pill back and says so. */}
+      {conversationId && (
+        <Segmented
+          label="Tone"
+          block
+          size="sm"
+          value={tone}
+          options={TONES.map((t) => ({ value: t.id, label: t.label }))}
+          onChange={(id) => {
+            const was = tone;
+            setTone(id);
+            const failed = (msg?: string) => {
+              setTone(was);
+              setError(msg ?? 'The tone wasn’t saved. Try again.');
+              haptic('error');
+            };
+            void setChatTone(conversationId, id).then(
+              (r) => (r.success ? setError(null) : failed(r.error)),
+              () => failed(),
+            );
+          }}
+        />
+      )}
       {facts.length > 0 && <h3>CoachHelm knows</h3>}
       <ul hidden={facts.length === 0}>
         {facts.map((f) => (

@@ -169,6 +169,16 @@ describe('100101 Team Hub · Home’s widgets', () => {
     expect(within(week).getByText('Coming up')).toBeTruthy();
   });
 
+  // Prod audit 2026-11-15, N13P-40: "On the road" sat right above "Nothing on Fri 13".
+  it('a trip day with no events says the trip, never Nothing on', async () => {
+    const days = PREVIEW_HUB_COACH.week.days.map((d) => (d.date === '2026-10-18' ? { ...d, events: [], trip: 'Pinehurst' } : d));
+    const { user } = show({ ...PREVIEW_HUB_COACH, week: { days, error: false } });
+    const week = screen.getByRole('region', { name: 'Next 7 days' });
+    await user.click(within(week).getByRole('button', { name: 'Sat 18: on the road (Pinehurst)' }));
+    expect(within(week).getByText(/On the road · Pinehurst/)).toBeTruthy();
+    expect(within(week).queryByText(/Nothing on Sat 18/)).toBeNull();
+  });
+
   it('a read that failed says so in its own tile, never as an empty one', () => {
     show({ ...PREVIEW_HUB_COACH, week: { days: [], error: true } });
     expect(within(screen.getByRole('region', { name: 'Next 7 days' })).getByText(/The next 7 days didn’t load/)).toBeTruthy();

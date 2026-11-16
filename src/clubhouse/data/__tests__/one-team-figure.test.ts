@@ -153,7 +153,7 @@ describe('CoachHelm’s Ask states Team stats’ team strokes gained (SOURCES.md
     expect(ask.rounds).toBe(team.sgRounds);
     expect(ask.players).toBe(5);
 
-    const figures = teamFiguresOver(loaded, IDS, f, SEASON);
+    const figures = teamFiguresOver(loaded, IDS, f, SEASON, new Map());
     expect(figures.sg_total).toBeCloseTo(team.figures.find((x) => x.key === 'sg')!.value!, 9);
     expect(figures.sg_rounds).toBe(team.sgRounds);
     expect(figures.legs).toEqual(ask.legs);
@@ -163,7 +163,7 @@ describe('CoachHelm’s Ask states Team stats’ team strokes gained (SOURCES.md
     const scoring = practiceCut(f) ? loaded.filter(countsForScoring) : loaded;
     const window = IDS.flatMap((id) => roundsInFilter(scoring.filter((r) => r.player_id === id), f, SEASON));
     const old = sgOver(holeRounds(window));
-    const ask = teamFiguresOver(loaded, IDS, f, SEASON);
+    const ask = teamFiguresOver(loaded, IDS, f, SEASON, new Map());
     // Far enough apart that a return to the old sum cannot pass as rounding.
     expect(Math.abs(old.total! - ask.sg_total!)).toBeGreaterThan(0.3);
     expect(Math.abs(old.legs.approach! - ask.legs.approach!)).toBeGreaterThan(0.1);
@@ -175,7 +175,7 @@ describe('CoachHelm’s Ask states Team stats’ team strokes gained (SOURCES.md
     expect(ask.legs).toEqual({ tee: null, approach: null, around: null, putting: null });
     expect(ask.rounds).toBe(0);
     expect(ask.players).toBe(0);
-    expect(teamFiguresOver(thin, ['a', 'b', 'c'], f, SEASON).sg_total).toBeNull();
+    expect(teamFiguresOver(thin, ['a', 'b', 'c'], f, SEASON, new Map()).sg_total).toBeNull();
   });
 
   it('both of Ask’s loaders call the one function and no longer pool for themselves', () => {

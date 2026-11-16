@@ -65,6 +65,7 @@ import {
 import { recordInsightExposure } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { describeError } from '@/lib/utils/describe-error';
 import { projectInsightForPlayer, projectInsightsForPlayer } from '@/lib/coachhelm/delivery/player-projection';
+import { playerInsightTeamFilter, scopeToTeams } from '@/lib/coachhelm/delivery/team-scope';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -178,6 +179,13 @@ export interface GetInsightsForCoachOptions {
    * the flag off.
    */
   includeMore?: boolean;
+  /**
+   * As on the player feed: which returned rows the calling surface draws, known only once it has shaped them. Called once with the
+   * returned page; only the ids the promise resolves to are recorded as shown (`coach_feed`), and a promise that rejects records
+   * nothing. Omitted: the whole page counts, as before. Launch readiness 2026-11-15, DF-P-03: the coach's Standing of a player read
+   * the whole feed to mark which metric has an open read, and every row of it was recorded as shown though Standing draws none.
+   */
+  drawnLater?: (shown: EvidenceInsight[]) => Promise<readonly string[]>;
 }
 
 /**
@@ -341,7 +349,12 @@ async function getTopInsightForPlayerImpl(
 
   // Self or coach-staffing-team access. `verifyPlayerAccess` performs its own
   // auth check + logs failures centrally, so we just branch on its result.
-  const access = await verifyPlayerAccess(playerId, user.id, supabase);
+  // Beside it, the teams the player is on now: the card shows a read from one
+  // of them, never a former team's (N13P-16, `team-scope.ts`).
+  const [access, teamFilter] = await Promise.all([
+    verifyPlayerAccess(playerId, user.id, supabase),
+    playerInsightTeamFilter(supabase, playerId),
+  ]);
   if (!access.allowed) return null;
 
   // P1-09: the player's feedback overlay — used to hide a player-dismissed row
@@ -395,12 +408,15 @@ async function getTopInsightForPlayerImpl(
   // cannot, so it is not read at all.
   const { data: urgent, error: urgentError } = plan.fold
     ? { data: null, error: null }
-    : await applyInsightVisibility(
-        supabase
-          .from('golf_coach_insights')
-          .select(INSIGHT_SELECT)
-          .eq('player_id', playerId)
-          .not('evidence', 'is', null),
+    : await scopeToTeams(
+        applyInsightVisibility(
+          supabase
+            .from('golf_coach_insights')
+            .select(INSIGHT_SELECT)
+            .eq('player_id', playerId)
+            .not('evidence', 'is', null),
+        ),
+        teamFilter,
       )
         .eq('priority', 'urgent')
         .order('created_at', { ascending: false })
@@ -451,12 +467,15 @@ async function getTopInsightForPlayerImpl(
   //    collapse + dedupe the feed applies, so the single-pick is literally the
   //    feed's head.
   const { data, error } = await fetchAllRowsResult((from, to) =>
-    applyInsightVisibility(
-      supabase
-        .from('golf_coach_insights')
-        .select(INSIGHT_SELECT)
-        .eq('player_id', playerId)
-        .not('evidence', 'is', null),
+    scopeToTeams(
+      applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select(INSIGHT_SELECT)
+          .eq('player_id', playerId)
+          .not('evidence', 'is', null),
+      ),
+      teamFilter,
     )
       .order('id', { ascending: true })
       .range(from, to),
@@ -576,7 +595,12 @@ async function getInsightsForPlayerImpl(
     throw err;
   }
 
-  const access = await verifyPlayerAccess(playerId, user.id, supabase);
+  // The teams the player is on now, read beside the access check: the feed is
+  // their reads from those teams, never a former team's (N13P-16, `team-scope.ts`).
+  const [access, teamFilter] = await Promise.all([
+    verifyPlayerAccess(playerId, user.id, supabase),
+    playerInsightTeamFilter(supabase, playerId),
+  ]);
   if (!access.allowed) return [];
 
   const limit = Math.min(Math.max(opts.limit ?? 10, 1), 50);
@@ -590,12 +614,15 @@ async function getInsightsForPlayerImpl(
   // Order by `id` for stable paging — the shared composite reorders in-app.
   const runQuery = () =>
     fetchAllRowsResult((from, to) => {
-      let query = applyInsightVisibility(
-        supabase
-          .from('golf_coach_insights')
-          .select(INSIGHT_SELECT)
-          .eq('player_id', playerId)
-          .not('evidence', 'is', null),
+      let query = scopeToTeams(
+        applyInsightVisibility(
+          supabase
+            .from('golf_coach_insights')
+            .select(INSIGHT_SELECT)
+            .eq('player_id', playerId)
+            .not('evidence', 'is', null),
+        ),
+        teamFilter,
       ).order('id', { ascending: true });
 
       if (opts.categories && opts.categories.length > 0) {
@@ -923,7 +950,16 @@ async function getInsightsForCoachWithMetaImpl(
   // + slice). Rows beyond the limit are NOT counted — only what's surfaced is.
   // The rank maps are keyed by id, so they survive collapse + dedupe + slice,
   // which all preserve ids while reordering and dropping rows.
-  recordExposureForReturned(data_, 'coach_feed', exposureCoachId, scoreMap(rankedScored));
+  const scores = scoreMap(rankedScored);
+  if (opts.drawnLater) {
+    const byId = new Map(data_.map((i) => [i.id, i]));
+    void opts.drawnLater(data_).then(
+      (ids) => recordExposureForReturned(ids.map((id) => byId.get(id)).filter((i): i is EvidenceInsight => !!i), 'coach_feed', exposureCoachId, scores),
+      () => undefined,
+    );
+  } else {
+    recordExposureForReturned(data_, 'coach_feed', exposureCoachId, scores);
+  }
   return { ok: true, data: data_, total: ranked.length, capped: ranked.length > data_.length };
 }
 
@@ -1502,6 +1538,22 @@ async function fetchSgTrendsByCategory(
   }
 }
 
+/** Strokes gained a round in each part of the round, as a caller passes it to the themes (this season's, from Clubhouse). */
+type ThemesSgInput = Partial<Record<'tee' | 'approach' | 'short_game' | 'putting', number | null>>;
+
+const SG_CATEGORIES = ['tee', 'approach', 'short_game', 'putting'] as const;
+
+/** The four categories' figures, each a finite number of strokes a round or null; anything else the caller sent is dropped. */
+function cleanSgByCategory(sg: ThemesSgInput | null | undefined): Partial<Record<InsightCategory, number | null>> {
+  if (!sg || typeof sg !== 'object') return {};
+  const out: Partial<Record<InsightCategory, number | null>> = {};
+  for (const c of SG_CATEGORIES) {
+    const v = sg[c];
+    out[c] = typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 30 ? v : null;
+  }
+  return out;
+}
+
 /**
  * Per-player query + assemble. Shared by both the player and coach paths
  * (themes are inherently per-player — the SG cascade is per-player). The
@@ -1510,6 +1562,7 @@ async function fetchSgTrendsByCategory(
 async function assembleForPlayer(
   supabase: SupabaseClient,
   playerId: string,
+  sg: ThemesSgInput | null | undefined,
 ): Promise<AssembledThemes> {
   const runQuery = () =>
     supabase
@@ -1550,38 +1603,17 @@ async function assembleForPlayer(
     .map(mapRowLoose)
     .filter((r): r is EvidenceInsight => r !== null);
 
-  // SG fetch is best-effort: a failure must NOT fail the themes scaffold.
-  // Source SG from the canonical golf_player_stats_cache (sg_*_per_round) — the
-  // SAME values the standing/counterfactual read — NOT a shot-level recompute.
-  // getDetailedStatsAsAdmin recomputes SG from raw shots capped at 100 rounds
-  // (+ the 1000-row PostgREST limit), so it could disagree with the standing SG
-  // shown on the same page for high-volume players. The cache averages over ALL
-  // completed rounds.
-  let sgByCategory: Partial<Record<InsightCategory, number | null>>;
-  try {
-    const { data: sgRow } = await supabase
-      .from('golf_player_stats_cache')
-      .select('sg_putting_per_round, sg_approach_per_round, sg_tee_per_round, sg_around_green_per_round')
-      .eq('player_id', playerId)
-      .maybeSingle();
-    const num = (v: unknown): number | null =>
-      v != null && Number.isFinite(Number(v)) ? Number(v) : null;
-    sgByCategory = {
-      putting: num(sgRow?.sg_putting_per_round),
-      approach: num(sgRow?.sg_approach_per_round),
-      tee: num(sgRow?.sg_tee_per_round),
-      short_game: num(sgRow?.sg_around_green_per_round),
-    };
-  } catch (sgErr) {
-    // Best-effort — themes render without SG, so a handled failure is a
-    // warning, not a paging error.
-    void logServerError(
-      `assembleForPlayer SG fetch failed (continuing): ${describeError(sgErr)}`,
-      { action: 'insight-delivery.assembleForPlayer', featureArea: 'insights', playerId },
-      'warning',
-    ).catch(() => undefined);
-    sgByCategory = {};
-  }
+  // Strokes gained by category comes from the caller: Clubhouse reads this
+  // season's figures (`src/clubhouse/data/season-figures.ts`) and passes them in,
+  // since code here may not import Clubhouse. It is never the lifetime
+  // golf_player_stats_cache row any more: production still builds that row with
+  // the old update_player_stats_complete (test and total-only rounds counted)
+  // until the held OD-01 chain is applied (stats and charts audit 2026-11-15,
+  // SC-01). No figures (null or absent) is "not known": every category reads
+  // without strokes gained, as when the old read failed. The numbers only grade
+  // the caller's own answer (leak, strength, thin) and are never stored, so a
+  // forged value misleads no one else; anything not a finite number is dropped.
+  const sgByCategory = cleanSgByCategory(sg);
 
   // PLAY C — shot-level drivers are best-effort: the helper swallows its own
   // failures and returns undefined, so the assembler simply omits them.
@@ -1653,7 +1685,7 @@ function mapRowLoose(row: RawInsightRowWithDrills): EvidenceInsight | null {
  */
 async function getThemesForPlayerImpl(
   playerId: string,
-  _opts: { window_days?: number } = {},
+  opts: { window_days?: number; sg?: ThemesSgInput | null } = {},
 ): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
   if (!playerId) return { success: false, error: 'playerId required' };
 
@@ -1665,7 +1697,7 @@ async function getThemesForPlayerImpl(
     const access = await verifyPlayerAccess(playerId, user.id, supabase);
     if (!access.allowed) return { success: false, error: 'Forbidden' };
 
-    const data = await assembleForPlayer(supabase, playerId);
+    const data = await assembleForPlayer(supabase, playerId, opts.sg);
     return { success: true, data };
   } catch (err) {
     await logServerError(
@@ -1681,11 +1713,15 @@ const observedGetThemesForPlayer = withAdminObserved(
   { sport: 'golf', feature: 'coachhelm_ai_engine' },
   getThemesForPlayerImpl,
 );
+/**
+ * `opts.sg`: this season's strokes gained by category (Clubhouse's `season-figures.ts`), which grades each theme as a leak or a
+ * strength; without it the themes read without strokes gained.
+ */
 export async function getThemesForPlayer(
   playerId: string,
-  _opts: { window_days?: number } = {},
+  opts: { window_days?: number; sg?: ThemesSgInput | null } = {},
 ): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
-  return observedGetThemesForPlayer(playerId, _opts);
+  return observedGetThemesForPlayer(playerId, opts);
 }
 
 /**
@@ -1695,7 +1731,7 @@ export async function getThemesForPlayer(
  * same per-player query + assemble.
  */
 async function getThemesForCoachImpl(
-  opts: { player_id: string; window_days?: number },
+  opts: { player_id: string; window_days?: number; sg?: ThemesSgInput | null },
 ): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
   const playerId = opts?.player_id;
   if (!playerId) return { success: false, error: 'player_id required' };
@@ -1709,7 +1745,7 @@ async function getThemesForCoachImpl(
     const access = await verifyPlayerAccess(playerId, user.id, supabase);
     if (!access.allowed) return { success: false, error: 'Forbidden' };
 
-    const data = await assembleForPlayer(supabase, playerId);
+    const data = await assembleForPlayer(supabase, playerId, opts.sg);
     return { success: true, data };
   } catch (err) {
     await logServerError(
@@ -1726,7 +1762,7 @@ const observedGetThemesForCoach = withAdminObserved(
   getThemesForCoachImpl,
 );
 export async function getThemesForCoach(
-  opts: { player_id: string; window_days?: number },
+  opts: { player_id: string; window_days?: number; sg?: ThemesSgInput | null },
 ): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
   return observedGetThemesForCoach(opts);
 }

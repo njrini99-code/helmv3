@@ -395,7 +395,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
   );
 }
 
-function PartFailed({ title }: { title: string }) {
+export function PartFailed({ title }: { title: string }) {
   const { refresh, refreshing } = useRefresh();
   return (
     <section className="card">

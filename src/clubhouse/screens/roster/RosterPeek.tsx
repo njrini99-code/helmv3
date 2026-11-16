@@ -20,7 +20,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { sgWindowLine } from '../../lib/sg-window-line';
 import { rebuiltHref } from '../../shell/nav';
-import { AVAILABILITY_WORD, relativeAgo, yearKeyOf, yearLineOf, type RosterClock } from './format';
+import { AVAILABILITY_WORD, relativeAgo, roundsPlayed, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { plural } from '../../lib/plural';
 import { ClassStatusLine } from '../../ui/ClassStatusLine';
@@ -110,12 +110,12 @@ function PeekBody({
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
     [SG_FIGURE, p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound), p.sgPerRound == null ? null : sgWindowLine(p.sgWindow)],
-    ['Rounds', String(p.rounds)],
+    ['Rounds', String(roundsPlayed(p))],
   ];
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
   // The board's Schedule 1:1: Calendar's editor with only this player invited (D-52), as the phone's Plan 1:1.
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
-  const profileHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&from=roster`);
+  const profileHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season&from=roster`);
 
   return (
     <>

@@ -58,6 +58,7 @@ import {
   type OutcomeSpec,
 } from '@/lib/coachhelm/v3/evaluation/comparable-opportunities';
 import { detectConfoundingInterventions } from './confounding-check';
+import { trustedExposure } from './exposure-scope';
 
 /**
  * A9 slice 2: the DB-write-layer method_version for a row whose measurement
@@ -347,10 +348,10 @@ export async function computeComparableAttribution(
   // The addendum rule: only a REAL recorded exposure counts. First exposure
   // = earliest `shown_at` on record for this insight. Zero rows → skip,
   // never estimate one from `created_at`.
-  const { data: exposure, error: exposureError } = await sb
-    .from('golf_insight_exposure')
-    .select('shown_at')
-    .eq('insight_id', input.insight_id)
+  // Prefetch-era Team Hub rows are not evidence of a view (`exposure-scope.ts`).
+  const { data: exposure, error: exposureError } = await trustedExposure(
+    sb.from('golf_insight_exposure').select('shown_at').eq('insight_id', input.insight_id),
+  )
     .order('shown_at', { ascending: true })
     .limit(1)
     .maybeSingle();

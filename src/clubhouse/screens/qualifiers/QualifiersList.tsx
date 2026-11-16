@@ -53,16 +53,21 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
   const [filter, setFilter] = useChSessionState<Filter>('filter', 'all');
   const [q, setQ] = useChSessionState('q', '');
 
-  const act = data.items.filter(isActive);
-  const con = data.items.filter((i) => !isActive(i));
+  // Prod audit 2026-11-15, N13P-51: past its last day, a qualifier has nothing left for a player to do, so it files under Concluded and
+  // reads "Closed · awaiting coach’s final"; a player saw "Active, Waiting on 7 rounds" 45 days on. The coach keeps it under Active:
+  // closing it is theirs (P009-D3).
+  const open = (i: ChQListItem) => isActive(i) && (coach || !endedOf(i, data.standingsError, data.today));
+  const act = data.items.filter(open);
+  const con = data.items.filter((i) => !open(i));
   const { active, concluded } = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const match = (i: ChQListItem) => !needle || [i.name, i.description ?? '', i.course ?? ''].join(' ').toLowerCase().includes(needle);
+    const isOpen = (i: ChQListItem) => isActive(i) && (coach || !endedOf(i, data.standingsError, data.today));
     return {
-      active: filter !== 'concluded' ? data.items.filter(isActive).filter(match) : [],
-      concluded: filter !== 'active' ? data.items.filter((i) => !isActive(i)).filter(match) : [],
+      active: filter !== 'concluded' ? data.items.filter(isOpen).filter(match) : [],
+      concluded: filter !== 'active' ? data.items.filter((i) => !isOpen(i)).filter(match) : [],
     };
-  }, [data.items, filter, q]);
+  }, [data.items, data.standingsError, data.today, coach, filter, q]);
   const hero = active.find((i) => i.status === 'in_progress') ?? active[active.length - 1];
   // W34: under the hero, live ones first, then the upcoming by start date (Nov 20 above Nov 23).
   const rest = active
@@ -298,7 +303,7 @@ function HeroWithNext({ item, standingsError, today, line, coach = false }: { it
   if (!next || !href || standingsError || endedOf(item, standingsError, today)) return <Hero item={item} standingsError={standingsError} today={today} line={line} coach={coach} />;
   return (
     <div className="ch-qf-herobox">
-      <Hero item={item} standingsError={standingsError} today={today} line={line} foot />
+      <Hero item={item} standingsError={standingsError} today={today} line={line} foot coach={coach} />
       <div className="ch-qf-herobox__foot" data-ch-code="CH-09906">
         <Button variant="primary" leftIcon={Play} href={href} className="ch-qf-herobox__go">
           {[`Play round ${next.round}`, next.course].filter(Boolean).join(' · ')}
@@ -323,7 +328,7 @@ function Hero({ item, standingsError, today, line, foot = false, coach = false }
   return (
     <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')} {...press(detailHref(item.id))}>
       <div className="ch-qf-hero__main">
-        <StatusPill status={item.status} ended={ended} />
+        <StatusPill status={item.status} ended={ended} viewer={coach ? 'coach' : 'player'} />
         <h2>
           <SerifText text={item.name} />
         </h2>
@@ -385,7 +390,7 @@ function Card({ item, standingsError, today, line, coach = false }: { item: ChQL
           <h3>{item.name}</h3>
           {item.description && <p>{item.description}</p>}
         </div>
-        <StatusPill status={item.status} ended={ended} />
+        <StatusPill status={item.status} ended={ended} viewer={coach ? 'coach' : 'player'} />
       </div>
       <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} today={today} />
       <LiveLine line={line} />
