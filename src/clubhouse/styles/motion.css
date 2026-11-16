@@ -47,6 +47,14 @@
   }
 }
 
+/* A fill that is a real clock (a CoachHelm story's progress bar, the time it stays up): scaled from its leading edge to
+   full over the time, with `transform-origin` and the scaleX(0) start on the rule. */
+@keyframes ch-fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* The CoachHelm wheel while CoachHelm works (CoachMark, owner #2410): one spoke, then a hold, on the working beat
    (--ch-dur-typing; CoachMark's TURN_MS). */
 @keyframes ch-th-turn {

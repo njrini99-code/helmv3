@@ -2569,7 +2569,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     rotate: 315deg;
   }
   .ch-ptr[data-state='spin'] .ch-ptr__spin {
-    animation: ch-ptr-turn calc(var(--ch-dur-base) * 4) steps(8) infinite;
+    /* The busy ring's turn (motion.css's kept ch-spinner-turn, 3.12), one turn per working beat, in eight steps. */
+    animation: ch-spinner-turn var(--ch-dur-typing) steps(8) infinite;
   }
   .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(1) {
     opacity: 1;
@@ -2594,11 +2595,6 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(2) {
     opacity: 0.23;
-  }
-}
-@keyframes ch-ptr-turn {
-  to {
-    rotate: 360deg;
   }
 }
 

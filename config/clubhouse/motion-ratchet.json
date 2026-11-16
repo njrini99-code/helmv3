@@ -57,8 +57,7 @@
     "retired-token": 1
   },
   "src/clubhouse/styles/coachhelm-team.css": {
-    "retired-token": 31,
-    "keyframes": 4
+    "retired-token": 28
   },
   "src/clubhouse/styles/coachhelm-thread.css": {
     "retired-token": 6,
@@ -141,7 +140,7 @@
   "src/clubhouse/styles/shell.css": {
     "paint-keyframes": 4,
     "retired-token": 64,
-    "keyframes": 12,
+    "keyframes": 11,
     "infinite": 1
   },
   "src/clubhouse/styles/spinner.css": {

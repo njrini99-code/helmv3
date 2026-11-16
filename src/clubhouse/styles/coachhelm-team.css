@@ -1905,7 +1905,8 @@
   padding: 0 16px 12px;
 }
 
-/* Stories: the viewer covers the board, and its progress fill scales instead of growing a width. */
+/* Stories: the viewer covers the board, and its progress fill scales instead of growing a width. The fill is the story's
+   real clock, on motion.css's kept ch-fill (3.12). */
 .ch-htb .story {
   position: fixed;
   z-index: var(--ch-z-panel);
@@ -1919,15 +1920,10 @@
   transform: scaleX(1);
 }
 .ch-htb .prog i.now b {
-  animation: ch-htb-prog var(--ch-dur-story) linear both;
+  animation: ch-fill var(--ch-dur-story) linear both;
 }
 .ch-htb .story.is-held .prog i.now b {
   animation-play-state: paused;
-}
-@keyframes ch-htb-prog {
-  to {
-    transform: scaleX(1);
-  }
 }
 .ch-htb-storydesk {
   padding: 16px;
@@ -1959,8 +1955,12 @@
   transform: none;
   transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
 }
+/* The viewer a tap opens rises from below over the reveal beat on the iOS curve; each story's body arrives 24px from the
+   trailing side over the base beat. Both on motion.css's ch-arrive (3.12). */
 .ch-htb .story {
-  animation: ch-htb-rise var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
+  --ch-arrive-o: 1;
+  --ch-arrive-t: translateY(102%);
+  animation: ch-arrive var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 .ch-htb .story {
   user-select:none;
@@ -1971,18 +1971,10 @@
 .ch-htb .sto-b {
   min-height:0;
   overflow-y:auto;
-  animation: ch-htb-slide var(--ch-dur-story-body) var(--ch-ease-spring-smooth);
-}
-@keyframes ch-htb-rise {
-  from {
-    transform: translateY(102%);
-  }
-}
-@keyframes ch-htb-slide {
-  from {
-    opacity: 0;
-    transform: translateX(24px);
-  }
+  /* The viewer's own --ch-arrive-o (1) is inherited, so the body names its own fade from 0. */
+  --ch-arrive-o: 0;
+  --ch-arrive-t: translateX(24px);
+  animation: ch-arrive var(--ch-dur-base) var(--ch-ease-ios);
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-htb .insp {
@@ -1996,7 +1988,7 @@
   /* base.css runs a keyframe in 1ms under Reduce Motion unless its rule asks for the fade. */
   .ch-htb .story {
     --ch-rm-animation: var(--ch-dur-crossfade-rm);
-    animation-name: ch-htb-fade;
+    animation-name: ch-in;
     animation-timing-function: linear;
   }
   .ch-htb .sto-b,
@@ -2009,11 +2001,6 @@
 [data-motion='off'] .ch-htb .sto-b,
 [data-motion='off'] .ch-htb .prog i.now b {
   animation: none;
-}
-@keyframes ch-htb-fade {
-  from {
-    opacity: 0;
-  }
 }
 
 /* The story's picture (AC-STORY-03): 18 holes in 9 columns, or before and now against the line. */
