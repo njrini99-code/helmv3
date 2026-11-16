@@ -214,6 +214,8 @@ export function summarizeWindow(rounds: ChRound[]): ChWindowSeason {
     avg: weightedMean(list, (r) => r.total_score),
     toPar: weightedMean(list, (r) => r.score_to_par),
     trend,
+    // The trend's round dates, oldest first, so a form line spaces its points by date (#2541), as `summarizePlayer` gives them.
+    trendDates: list.slice(0, TREND_LENGTH).reverse().map((r) => r.round_date.slice(0, 10)),
     formChange: trend.length >= 3 ? m(trend.slice(trend.length - half)) - m(trend.slice(0, half)) : null,
     sgPerRound: sg.total,
     sgRounds: sgRows.length,

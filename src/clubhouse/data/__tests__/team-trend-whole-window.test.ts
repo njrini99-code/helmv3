@@ -77,3 +77,13 @@ describe('the trend chart’s par (DF-C-21)', () => {
     expect(data.team.parMean).toBe(72);
   });
 });
+
+describe('dates on the season clock, not UTC (DF-C-22)', () => {
+  it('New Year’s Eve evening in the US is still the old year, and the last-ten floor counts from the US date', async () => {
+    const { filterYear } = await import('../stats-filter');
+    const { lastTenFloor } = await import('../season');
+    const eve = new Date('2027-01-01T03:00:00Z');
+    expect(filterYear(eve)).toBe(2026);
+    expect(lastTenFloor(eve)).toBe('2025-12-31');
+  });
+});

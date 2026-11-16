@@ -25,6 +25,8 @@ const RELATIONS: Record<string, Record<string, { many: boolean; childKey: string
     approach_miss_details: { many: true, childKey: 'shot_id', parentKey: 'id' },
   },
   golf_team_coach_staff: { golf_coaches: { many: false, childKey: 'id', parentKey: 'coach_id' } },
+  // One settings row per team (golf_team_settings_team_id_fkey, one to one): `teamTour`'s embedded baseline.
+  golf_teams: { golf_team_settings: { many: false, childKey: 'team_id', parentKey: 'id' } },
 };
 
 /** Child rows by key, built once per table array (the shot reads embed thousands of rows). */

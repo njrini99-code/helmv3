@@ -1141,6 +1141,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-16-chart-mark-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-drill-push-skeleton.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-one-reduce-motion-read.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-one-team-tour.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-phone-overlay-push.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-printed-delta.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-stat-definitions.md` | current | - | - | - | - |
@@ -1355,6 +1356,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-16-add-event-in-place.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-16-departed-players-not-counted.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-16-player-welcome-names-new-round.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-16-team-tour.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
@@ -1411,6 +1413,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-15-quietest-players-named.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-16-team-tour.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
@@ -1479,6 +1482,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-16-bests-and-par.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-16-chips-as-printed.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-16-low-round-to-par.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-16-season-clock-year.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-16-stat-definitions.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-16-trend-whole-window.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
@@ -1548,6 +1552,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-15-team-phone-first-run.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-15-tour-grades-sourced-putt-bands-weighted.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-16-rest-of-team.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-16-season-clock-and-tour.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-16-stat-definitions.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
@@ -2013,6 +2018,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-switch-and-board-first-paint.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-tour-values-sourced.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-brief-week-team-clock.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-standing-rounds-on-file.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-16-tour-comparison-streams.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |

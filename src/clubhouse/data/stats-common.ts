@@ -1,4 +1,5 @@
 import 'server-only';
+import { reviewTour } from './round-review-shape';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { PUTT_MAKE_BANDS, PUTT_REPORT_BAND_OF, puttMakeBandFor, type PuttMakeBandId, type PuttReportBandId } from '@/lib/golf/putt-make';
@@ -282,6 +283,21 @@ export async function readTourStandards(supabase: Supabase, tour: ChTour, surfac
 
 export function tourForGender(gender: string | null | undefined): ChTour {
   return gender === 'womens' || gender === 'women' || gender === 'female' ? 'lpga' : 'pga';
+}
+
+/** The columns a team read selects so `teamTour` can name its Tour: the gender, and the team's own strokes gained baseline. */
+export const TEAM_TOUR_COLUMNS = 'gender, golf_team_settings(sg_baseline)';
+
+type TeamTourRow = { gender?: string | null; golf_team_settings?: { sg_baseline?: string | null } | Array<{ sg_baseline?: string | null }> | null };
+
+/**
+ * The Tour a team's strokes gained is measured against (DF-P-13): its own baseline (`golf_team_settings.sg_baseline`, which recomputes
+ * the stored figures when it changes), else its gender's. The round review reads the same rule (`reviewTour`), so Home, Stats, Roster,
+ * CoachHelm and the review never name two Tours for one team. A settings row the reader cannot see reads as no baseline.
+ */
+export function teamTour(team: TeamTourRow | null | undefined): ChTour {
+  const settings = Array.isArray(team?.golf_team_settings) ? team?.golf_team_settings[0] : team?.golf_team_settings;
+  return reviewTour(tourForGender(team?.gender), settings?.sg_baseline ?? null);
 }
 
 /** Monday (UTC date string) of the week a calendar date falls in. */
