@@ -176,6 +176,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/controls.css",
@@ -995,6 +996,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -1549,6 +1551,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -1618,6 +1621,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -2444,6 +2448,30 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/SwitchFrame.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachHelmSwitchFrame"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/SwitchStrip.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachHelmHeldSwitch",
+        "CoachHelmSwitchOff",
+        "CoachHelmSwitchStrip"
+      ],
+      "styles": [
+        "src/clubhouse/styles/coachhelm.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/chat/Ask.tsx",
       "group": "screens",
       "exports": [
@@ -2453,6 +2481,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -2469,6 +2498,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -3767,6 +3797,7 @@
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-plan.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -4748,6 +4779,20 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/home/HomeEventEditor.tsx",
+      "group": "screens",
+      "exports": [
+        "HomeEventEditor"
+      ],
+      "styles": [
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/tournament-fields.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/home/HomePhone.tsx",
       "group": "screens",
       "exports": [
@@ -4876,6 +4921,16 @@
       "styles": [
         "src/clubhouse/styles/live.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/home/NewEventLink.tsx",
+      "group": "screens",
+      "exports": [
+        "NewEventLink"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -5712,6 +5767,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -5923,6 +5979,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -6141,6 +6198,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -6200,6 +6258,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -6315,6 +6374,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -6975,6 +7035,7 @@
       "exports": [
         "PlayerPracticeHomeSkeleton",
         "PlayerPracticePlanSkeleton",
+        "PracticeDrillSkeleton",
         "PracticeHomeSkeleton",
         "PracticeLibrarySkeleton",
         "PracticePlanSkeleton"
@@ -7002,6 +7063,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages-inbox.css",
@@ -9511,6 +9573,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -11334,6 +11397,7 @@
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11559,6 +11623,7 @@
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11590,6 +11655,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11646,6 +11712,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -11759,6 +11826,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11791,6 +11859,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11902,6 +11971,7 @@
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11972,6 +12042,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -12180,6 +12251,7 @@
       "file": "src/clubhouse/shell/phone-chrome.tsx",
       "group": "shell",
       "exports": [
+        "CH_PUSH_TWEEN",
         "CH_UNDERLAY_SHIFT",
         "DeskSlot",
         "DeskTop",
@@ -12315,6 +12387,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -12502,6 +12575,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -12792,6 +12866,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -13001,6 +13076,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -13056,6 +13132,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -13250,6 +13327,7 @@
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-team.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -13566,6 +13644,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -17393,6 +17472,26 @@
           "scope": ".ch-htb-sheet"
         },
         {
+          "name": "--ch-arrive-o",
+          "value": "1",
+          "scope": ".ch-htb .story"
+        },
+        {
+          "name": "--ch-arrive-t",
+          "value": "translateY(102%)",
+          "scope": ".ch-htb .story"
+        },
+        {
+          "name": "--ch-arrive-o",
+          "value": "0",
+          "scope": ".ch-htb .sto-b"
+        },
+        {
+          "name": "--ch-arrive-t",
+          "value": "translateX(24px)",
+          "scope": ".ch-htb .sto-b"
+        },
+        {
           "name": "--ch-rm-animation",
           "value": "var(--ch-dur-crossfade-rm)",
           "scope": "@media (prefers-reduced-motion: reduce) → .ch-htb .story"
@@ -17614,6 +17713,7 @@
     {
       "file": "src/clubhouse/styles/coachhelm.css",
       "classes": [
+        "ch-ask",
         "ch-btn",
         "ch-chd",
         "ch-chd__scope",
@@ -17687,12 +17787,16 @@
         "ch-hl-why",
         "ch-hl-why__b",
         "ch-hmb",
+        "ch-hsw",
         "ch-htr",
         "ch-hv",
         "ch-hv-tabs",
         "ch-large-title",
         "ch-notice",
+        "ch-root",
         "ch-scoreboard",
+        "ch-seg",
+        "ch-seg__b",
         "ch-sk-on-green",
         "ch-skel"
       ],
