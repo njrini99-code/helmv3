@@ -3,8 +3,8 @@
 --   the demo team). Not applied anywhere, not run against any database.
 --
 -- Apply: npm run db:apply --
---   supabase/migrations/20261115210100_golf_demo_write_guard.sql
---   after 20261115210000 (it calls helm_private.golf_demo_team_id) and after
+--   supabase/migrations/20261115211100_golf_demo_write_guard.sql
+--   after 20261115211000 (it calls helm_private.golf_demo_team_id) and after
 --   npm run test:rls passes (supabase/tests/rls/golf_demo_write_guard.sql).
 --
 -- Risk: MEDIUM, by design. After this, NO signed-in account can add, change
@@ -20,7 +20,7 @@
 --   Not refused: writes with no signed-in user (service role, crons, the
 --   SQL editor), so the generator, the owner's cleanup SQL and the nightly
 --   jobs keep working; and writes marked helm.golf_demo_writer = 'generator'
---   (the generator's own functions, 20261115210000).
+--   (the generator's own functions, 20261115211000).
 --   Cost on every write to these tables, any team: one trigger call; for a
 --   signed-in user, one primary-key lookup of the row's parent (round,
 --   event, conversation, task, qualifier, tournament or message). A round
@@ -39,7 +39,7 @@
 --   one team_id and writes nothing. REVOKE ALL FROM PUBLIC, anon,
 --   authenticated (a trigger function needs no EXECUTE grant to fire).
 --
--- ORDER: after 20261115210000. Independent of every other held migration.
+-- ORDER: after 20261115211000. Independent of every other held migration.
 --
 -- VERIFY: select 1 where (select count(*) from pg_catalog.pg_trigger t
 -- VERIFY:   where t.tgname = 'golf_demo_write_guard' and not t.tgisinternal
@@ -52,7 +52,7 @@
 -- VERIFY:   and p.proconfig @> array['search_path=""']);
 --
 -- ROLLBACK (one transaction; supabase/rollbacks/
---   20261115210100_golf_demo_write_guard.rollback.sql):
+--   20261115211100_golf_demo_write_guard.rollback.sql):
 -- ROLLBACK: drop trigger golf_demo_write_guard on each of the 18 tables;
 --   drop function helm_private.golf_demo_write_guard().
 --   Cost of rolling back: none beyond the guard itself; signed-in accounts

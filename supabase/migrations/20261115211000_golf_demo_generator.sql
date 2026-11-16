@@ -4,7 +4,7 @@
 --   against any database.
 --
 -- Apply: npm run db:apply --
---   supabase/migrations/20261115210000_golf_demo_generator.sql
+--   supabase/migrations/20261115211000_golf_demo_generator.sql
 --   after npm run test:rls passes (the pgTAP file is
 --   supabase/tests/rls/golf_demo_generator.sql). Applying it writes no team
 --   data: the generator writes only when its cron or script runs with
@@ -56,7 +56,7 @@
 --   'atomic', helm.tournament_write = 'rounds' or 'substitute'), with live
 --   round broadcast and per-hole total recomputes off (finish recomputes
 --   once per round), and with helm.golf_demo_writer = 'generator', which the
---   demo write guard (20261115210100) lets through.
+--   demo write guard (20261115211100) lets through.
 --
 -- RLS: the ledger has RLS on, a deny-all policy, and no grants to anon or
 --   authenticated. Every function: REVOKE ALL FROM PUBLIC, anon,
@@ -67,7 +67,7 @@
 --   scripts/golf-demo-refresh.ts. Without this migration the writer stops at
 --   golf_demo_begin with "plumbing missing" and writes nothing.
 --
--- ORDER: before 20261115210100 (the write guard reads helm.golf_demo_writer
+-- ORDER: before 20261115211100 (the write guard reads helm.golf_demo_writer
 --   and helm_private.golf_demo_team_id from here). Independent of every other
 --   held migration.
 --
@@ -97,14 +97,14 @@
 -- VERIFY:   'public.golf_demo_finish_rounds(uuid,jsonb,integer)', 'execute');
 --
 -- ROLLBACK (one transaction; supabase/rollbacks/
---   20261115210000_golf_demo_generator.rollback.sql):
+--   20261115211000_golf_demo_generator.rollback.sql):
 -- ROLLBACK: drop function public.golf_demo_finish_rounds(uuid, jsonb, integer),
 --   public.golf_demo_remove(uuid, text, jsonb),
 --   public.golf_demo_apply(uuid, text, jsonb, integer),
 --   public.golf_demo_begin(uuid, boolean); drop the helm_private helpers
 --   (golf_demo_check, golf_demo_key_sql, golf_demo_pk, golf_demo_parent,
 --   golf_demo_tables) and table helm_private.golf_demo_ledger.
---   Keep helm_private.golf_demo_team_id() if 20261115210100 is applied (its
+--   Keep helm_private.golf_demo_team_id() if 20261115211100 is applied (its
 --   guard calls it); drop it otherwise.
 --   Cost of rolling back: the generator can no longer write (the cron and
 --   script stop at begin). Rows it already wrote stay on the demo team; the

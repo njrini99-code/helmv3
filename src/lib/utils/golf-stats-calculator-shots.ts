@@ -671,7 +671,7 @@ export const AROUND_GREEN_THRESHOLD_YARDS = 50;
 // Appendix B) for tee, fairway, rough, sand and recovery, the owner's 'other'
 // rule on those rows, and the putting row in FEET. One copy for every TS engine
 // (src/lib/golf/sg-tour-baseline.ts), equal to public.sg_expected_strokes()
-// (migration 20261115210000, held) so the shot-derived player-page SG matches
+// (migration 20261115215000, held) so the shot-derived player-page SG matches
 // the DB/cache SG. interpolateBenchmark() interpolates linearly between rows
 // and holds the first or last row outside them.
 const STROKES_GAINED_BENCHMARKS = SG_TOUR_BASELINE;

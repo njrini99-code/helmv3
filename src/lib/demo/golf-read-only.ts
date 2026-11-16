@@ -55,7 +55,7 @@ export function isGolfDemoReadOnlyError(err: unknown): err is GolfDemoReadOnlyEr
 }
 
 /**
- * The database's own refusal (migration 20261115210100, DD-13): a signed-in
+ * The database's own refusal (migration 20261115211100, DD-13): a signed-in
  * account wrote a demo-team row. PostgREST hands it back as an error object
  * with SQLSTATE 42501 and DETAIL 'golf_demo_read_only'; its message ("This is
  * a shared demo team: changes are not saved.") is written for the user.

@@ -159,7 +159,7 @@ function scaleBaseline(pgaData: BaselineData, scaleFactor: number, puttingScale:
 
 // PGA Tour baseline: the one Tour curve (src/lib/golf/sg-tour-baseline.ts,
 // Broadie's Table B.1 and the putting row), equal to the DB function
-// public.sg_expected_strokes() (migration 20261115210000, held). The putting
+// public.sg_expected_strokes() (migration 20261115215000, held). The putting
 // row here also ends at 0 ft = 0 strokes (holed), as the DB row does.
 const PGA_TOUR_BASELINE: BaselineData = {
   ...SG_TOUR_BASELINE,

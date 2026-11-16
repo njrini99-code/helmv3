@@ -1,7 +1,7 @@
 -- Rollback for 20261115220000_golf_sg_scale_off_green.sql (SC-04).
 --
 -- Forward change: branch claude/project-thread-5yymil (PR #2536).
--- The three-argument sg_expected_strokes body that 20261115210000 leaves
+-- The three-argument sg_expected_strokes body that 20261115215000 leaves
 -- (prosrc md5 f8d7dcef4383b6fe73a49035589b7584), verbatim: the scale
 -- multiplies every lie again, putting included. CREATE OR REPLACE keeps the
 -- grants. The two-argument overload is not touched by the forward file.

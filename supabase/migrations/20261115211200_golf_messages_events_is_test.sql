@@ -5,7 +5,7 @@
 --   anywhere, not run against any database.
 --
 -- Apply: npm run db:apply --
---   supabase/migrations/20261115210200_golf_messages_events_is_test.sql
+--   supabase/migrations/20261115211200_golf_messages_events_is_test.sql
 --   then npm run db:types.
 --
 -- Risk: LOW. Additive only: one NOT NULL boolean, default false, on each
@@ -20,7 +20,7 @@
 --   fails the query.
 --
 -- ROLLBACK (supabase/rollbacks/
---   20261115210200_golf_messages_events_is_test.rollback.sql):
+--   20261115211200_golf_messages_events_is_test.rollback.sql):
 -- ROLLBACK:   ALTER TABLE public.golf_messages DROP COLUMN is_test;
 -- ROLLBACK:   ALTER TABLE public.golf_events DROP COLUMN is_test;
 --   Cost of rolling back: the flags set since are lost.

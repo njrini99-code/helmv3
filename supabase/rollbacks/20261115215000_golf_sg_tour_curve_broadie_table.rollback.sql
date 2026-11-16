@@ -1,4 +1,4 @@
--- Rollback for 20261115210000_golf_sg_tour_curve_broadie_table.sql (SC-03).
+-- Rollback for 20261115215000_golf_sg_tour_curve_broadie_table.sql (SC-03).
 --
 -- Forward change: branch claude/project-thread-5yymil (PR #2536).
 -- Captured 2026-11-15 with pg_get_functiondef from a local stack carrying every

@@ -44,7 +44,7 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'v3-goal-suggestions-evaluate', path: '/api/cron/v3/goal-suggestions-evaluate', cadenceMinutes: DAILY, schedule: '20 4 * * *' },
   { jobType: 'integrity-check', path: '/api/cron/integrity-check', cadenceMinutes: DAILY, schedule: '0 7 * * *' },
   // Launch readiness DD-01: the demo team refresh. Returns before any read while golf_demo_refresh_v1 is off (off everywhere
-  // until the owner turns it on); a 200 no-op until 20261115210000 (held) is applied.
+  // until the owner turns it on); a 200 no-op until 20261115211000 (held) is applied.
   { jobType: 'golf-demo-refresh', path: '/api/cron/golf-demo-refresh', cadenceMinutes: DAILY, schedule: '35 9 * * *' },
   { jobType: 'log-retention', path: '/api/cron/log-retention', cadenceMinutes: DAILY, schedule: '30 7 * * *' },
   { jobType: 'admin-digest', path: '/api/cron/admin-digest', cadenceMinutes: DAILY, schedule: '0 11 * * *' },

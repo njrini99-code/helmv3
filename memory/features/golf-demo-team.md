@@ -10,9 +10,9 @@ Launch readiness DD-01 to DD-18 (15 Nov 2026), except DD-14.
 ## Status
 
 - Code: on `main` once PR #2540 lands.
-- Database: migrations `20261115210000_golf_demo_generator.sql`,
-  `20261115210100_golf_demo_write_guard.sql` and
-  `20261115210200_golf_messages_events_is_test.sql` are **held**
+- Database: migrations `20261115211000_golf_demo_generator.sql`,
+  `20261115211100_golf_demo_write_guard.sql` and
+  `20261115211200_golf_messages_events_is_test.sql` are **held**
   (`supabase/migrations/HELD.md`). The functions named in this doc are not
   live until the owner applies them; `src/lib/types/database.ts` does not list
   them.
@@ -42,7 +42,7 @@ Launch readiness DD-01 to DD-18 (15 Nov 2026), except DD-14.
    ledger entry (`golf_rounds#finished`).
 3. **Apply** (`applyDemoWrite`): parents first, children before their parents
    on removal. It goes through four service-role functions of migration
-   20261115210000: `golf_demo_begin`, `golf_demo_apply`, `golf_demo_remove`
+   20261115211000: `golf_demo_begin`, `golf_demo_apply`, `golf_demo_remove`
    and `golf_demo_finish_rounds`. They refuse any team but the demo team and
    any table outside the 26. They **skip a row that exists but is not in the
    ledger**, so the generator never overwrites or deletes a row it did not
@@ -78,7 +78,7 @@ Both scripts refuse a production Supabase URL unless `HELM_ALLOW_PRODUCTION=1`.
 
 ## The write guard (DD-13)
 
-`20261115210100` puts a trigger, `golf_demo_write_guard`, on 18 tables. It
+`20261115211100` puts a trigger, `golf_demo_write_guard`, on 18 tables. It
 refuses any write by a signed-in user (`auth.uid()` set) to a row whose team,
 found directly or through its parent, is the demo team. It raises 42501 with
 DETAIL `golf_demo_read_only`. Writes with no signed-in user (service role,

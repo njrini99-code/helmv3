@@ -1827,7 +1827,7 @@ REVOKE ALL ON FUNCTION "public"."golf_shots_refresh_hole_gir_fn"() FROM PUBLIC, 
 GRANT ALL ON FUNCTION "public"."golf_shots_refresh_hole_gir_fn"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "helm_private"."golf_backfill_one_gir_rule"() FROM PUBLIC, "anon", "authenticated";
--- Demo team generator (HELD 20261115210000) and demo write guard (HELD 20261115210100)
+-- Demo team generator (HELD 20261115211000) and demo write guard (HELD 20261115211100)
 REVOKE ALL ON FUNCTION "helm_private"."golf_demo_team_id"() FROM PUBLIC, "anon", "authenticated";
 REVOKE ALL ON FUNCTION "helm_private"."golf_demo_tables"() FROM PUBLIC, "anon", "authenticated";
 REVOKE ALL ON FUNCTION "helm_private"."golf_demo_parent"("p_table" "text", OUT "parent_table" "text", OUT "fk_column" "text") FROM PUBLIC, "anon", "authenticated";

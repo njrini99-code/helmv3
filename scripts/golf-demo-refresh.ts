@@ -5,7 +5,7 @@
  * today in the team's zone, checks it, and prints what it would write: per
  * player the rounds, shot rounds and date range, then per table the rows to
  * write, remove and leave. With --apply it writes that difference through the
- * generator's database functions (migration 20261115210000) and checks what
+ * generator's database functions (migration 20261115211000) and checks what
  * the database then shows. The daily cron (/api/cron/golf-demo-refresh) runs
  * the same code once its flag is on.
  *
@@ -40,7 +40,7 @@ import { summarizeDataset } from '../src/lib/golf/demo/summary';
 const cli = cliGuard({
   name: 'scripts/golf-demo-refresh.ts',
   summary:
-    'Regenerates the demo team (DEMO_TEAM_ID only) for today and writes the difference through the generator functions of migration 20261115210000. Never touches a row the generator did not write. Production is refused unless HELM_ALLOW_PRODUCTION=1.',
+    'Regenerates the demo team (DEMO_TEAM_ID only) for today and writes the difference through the generator functions of migration 20261115211000. Never touches a row the generator did not write. Production is refused unless HELM_ALLOW_PRODUCTION=1.',
   usage: '[--no-db] [--today YYYY-MM-DD] [--full] [--seed <seed>] [--out <file>]',
   options: [
     ['--no-db', 'Generate and check only: no database, no credentials.'],

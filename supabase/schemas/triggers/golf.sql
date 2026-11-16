@@ -224,7 +224,7 @@ CREATE OR REPLACE TRIGGER "golf_participants_unpin_on_leave" AFTER DELETE ON "pu
 
 CREATE OR REPLACE TRIGGER "golf_participants_unpin_on_hide" AFTER UPDATE OF "hidden_at" ON "public"."golf_conversation_participants" FOR EACH ROW WHEN ((("new"."hidden_at" IS NOT NULL) AND ("old"."hidden_at" IS NULL))) EXECUTE FUNCTION "helm_private"."golf_unpin_on_participant_change"();
 
--- Demo write guard (HELD 20261115210100, DD-13): signed-in accounts cannot write demo-team rows
+-- Demo write guard (HELD 20261115211100, DD-13): signed-in accounts cannot write demo-team rows
 CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_announcements" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
 
 CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_documents" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();

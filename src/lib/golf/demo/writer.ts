@@ -6,7 +6,7 @@
  * (`helm_private.golf_demo_ledger`, one hash per row) and sends only the
  * difference: rows that are new or changed, and rows it wrote before that the
  * team no longer has. Everything goes through four functions of migration
- * 20261115210000, which run as the owner, are callable by the service role
+ * 20261115211000, which run as the owner, are callable by the service role
  * only and refuse every team but `DEMO_TEAM_ID`:
  *
  *   golf_demo_begin          drops ledger rows whose table row is gone, returns the ledger
@@ -93,10 +93,10 @@ export class DemoTeamRefusedError extends Error {
   }
 }
 
-/** The database functions are missing: migration 20261115210000 is not applied where this ran. */
+/** The database functions are missing: migration 20261115211000 is not applied where this ran. */
 export class DemoPlumbingMissingError extends Error {
   constructor(detail: string) {
-    super(`The demo generator's database functions are not there (apply supabase/migrations/20261115210000_golf_demo_generator.sql first): ${detail}`);
+    super(`The demo generator's database functions are not there (apply supabase/migrations/20261115211000_golf_demo_generator.sql first): ${detail}`);
     this.name = 'DemoPlumbingMissingError';
   }
 }

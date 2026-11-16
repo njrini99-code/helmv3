@@ -335,7 +335,7 @@ describe('writing the generated team day after day (fake database)', () => {
 });
 
 describe('the database side agrees with the writer', () => {
-  const sql = readFileSync(path.join(process.cwd(), 'supabase/migrations/20261115210000_golf_demo_generator.sql'), 'utf8');
+  const sql = readFileSync(path.join(process.cwd(), 'supabase/migrations/20261115211000_golf_demo_generator.sql'), 'utf8');
 
   it('lets the generator write exactly the tables it generates', () => {
     const body = sql.slice(sql.indexOf('FUNCTION helm_private.golf_demo_tables()'));

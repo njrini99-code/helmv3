@@ -1,4 +1,4 @@
--- Rollback for 20261115210100_golf_demo_write_guard.sql (DD-13 demo write guard).
+-- Rollback for 20261115211100_golf_demo_write_guard.sql (DD-13 demo write guard).
 --
 -- Every object the migration creates is new: there is no prior definition to
 -- restore. Run as postgres, in one transaction (db query --linked does that).

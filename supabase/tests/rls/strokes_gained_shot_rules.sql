@@ -1,7 +1,7 @@
 -- Q-89: strokes gained charges a penalty to the shot that earned it, ends a shot where the
 -- next non-penalty shot starts, and stores NULL for is_test rounds (migration
 -- 20260930150000_golf_sg_penalty_charged_to_earning_shot.sql), on the Table B.1 curve
--- (20261115210000_golf_sg_tour_curve_broadie_table.sql). GENERATED from
+-- (20261115215000_golf_sg_tour_curve_broadie_table.sql). GENERATED from
 -- src/lib/utils/__tests__/fixtures/sg-shot-rules.json, which the TypeScript engine
 -- test (golf-stats-calculator-shots.sg-shot-rules.test.ts) asserts too, so the SQL
 -- functions and the TS engine agree on the same shots.

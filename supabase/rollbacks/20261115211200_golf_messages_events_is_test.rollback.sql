@@ -1,4 +1,4 @@
--- Rollback for 20261115210200_golf_messages_events_is_test.sql (DD-13 is_test flag).
+-- Rollback for 20261115211200_golf_messages_events_is_test.sql (DD-13 is_test flag).
 --
 -- Both columns are new: there is no prior definition to restore. Run as
 -- postgres, in one transaction (db query --linked does that).

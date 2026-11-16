@@ -1,4 +1,4 @@
--- The demo generator's database functions (20261115210000, DD-01).
+-- The demo generator's database functions (20261115211000, DD-01).
 -- They run as the owner, so the contract is: callable by the service role
 -- only, the demo team only, the generator's tables only, never a row the
 -- generator did not write, and a finished round can be removed again.

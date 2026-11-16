@@ -4,7 +4,7 @@
  *
  * Regenerates the demo team (DEMO_TEAM_ID, nothing else) for today in the
  * team's zone and writes the difference through the generator's database
- * functions (migration 20261115210000): new and changed rows, rows it wrote
+ * functions (migration 20261115211000): new and changed rows, rows it wrote
  * before that the team no longer has, then the totals, stats and strokes
  * gained of the rounds that changed. A row the generator did not write is
  * never touched. Then it reads the team back and runs the coverage check

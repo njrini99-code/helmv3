@@ -1988,7 +1988,7 @@ END
 $$;
 
 ALTER FUNCTION "helm_private"."golf_backfill_one_gir_rule"() OWNER TO "postgres";
--- Demo team generator (HELD 20261115210000) and demo write guard (HELD 20261115210100): src/lib/golf/demo/writer.ts
+-- Demo team generator (HELD 20261115211000) and demo write guard (HELD 20261115211100): src/lib/golf/demo/writer.ts
 CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_check"("p_team" "uuid", "p_table" "text") RETURNS "void"
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO ''

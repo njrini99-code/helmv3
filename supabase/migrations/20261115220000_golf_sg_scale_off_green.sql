@@ -1,7 +1,7 @@
 -- Strokes gained: a team's baseline scale prices the off-green game only, so a
 -- sure putt is worth one stroke on every baseline (SC-04).
 -- STATUS: WRITTEN — HOLD — NOT APPLIED. Awaits the owner's approval to apply
--- (supabase/migrations/HELD.md), after 20261115210000 (the Table B.1 curve).
+-- (supabase/migrations/HELD.md), after 20261115215000 (the Table B.1 curve).
 --
 -- WHAT IS WRONG TODAY. sg_scale_for_player() gives a women's team 1.083
 -- (sg_baseline_scale('womens')), and the three-argument sg_expected_strokes()
@@ -30,12 +30,12 @@
 -- RECOMPUTE (separate step, service role, after apply; owner's go): the
 -- RECOMPUTE block in the header of 20260930150000, for women's teams' players
 -- (it is safe for everyone). When this file is applied together with
--- 20261115210000, run it once, after this one.
+-- 20261115215000, run it once, after this one.
 --
 -- noqa: disable=LT05
 -- ROLLBACK: supabase/rollbacks/20261115220000_golf_sg_scale_off_green.rollback.sql
 -- noqa: enable=LT05
--- (the body 20261115210000 leaves, verbatim), then the same RECOMPUTE.
+-- (the body 20261115215000 leaves, verbatim), then the same RECOMPUTE.
 -- noqa: disable=LT05
 -- VERIFY: select 1 where public.sg_expected_strokes('green'::text, 1::numeric, 1.083::numeric) = public.sg_expected_strokes('green'::text, 1::numeric, 1.0::numeric) and public.sg_expected_strokes('green'::text, 1::numeric, 1.0::numeric) = 1.04;
 -- VERIFY: select 1 where public.sg_expected_strokes('fairway'::text, 100::numeric, 1.083::numeric) = 2.80 * 1.083 and public.sg_expected_strokes('tee'::text, 400::numeric, 1.0::numeric) = 3.99;
@@ -47,13 +47,13 @@ DO $guard$
 DECLARE
   v_src text;
 BEGIN
-  -- 20261115210000 first, exactly: the three-argument overload must be the
+  -- 20261115215000 first, exactly: the three-argument overload must be the
   -- body it leaves, so this file never undoes the Table B.1 curve.
   SELECT p.prosrc INTO v_src FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'sg_expected_strokes'
     AND pg_get_function_identity_arguments(p.oid) = 'p_lie text, p_distance_yards numeric, p_scale numeric';
   IF v_src IS NULL OR md5(v_src) <> 'f8d7dcef4383b6fe73a49035589b7584' THEN
-    RAISE EXCEPTION 'sg scale off green: live sg_expected_strokes(text,numeric,numeric) is not the body 20261115210000 leaves (md5 %). Apply 20261115210000 first, or rebase this file on the live body.', md5(v_src);
+    RAISE EXCEPTION 'sg scale off green: live sg_expected_strokes(text,numeric,numeric) is not the body 20261115215000 leaves (md5 %). Apply 20261115215000 first, or rebase this file on the live body.', md5(v_src);
   END IF;
 END
 $guard$;

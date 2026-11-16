@@ -16350,7 +16350,7 @@ END $$;
 
 ALTER FUNCTION "public"."golf_team_members_identity_guard"() OWNER TO "postgres";
 
--- Demo team generator (HELD 20261115210000): service role only, the demo team only; src/lib/golf/demo/writer.ts
+-- Demo team generator (HELD 20261115211000): service role only, the demo team only; src/lib/golf/demo/writer.ts
 CREATE OR REPLACE FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text", "p_items" "jsonb", "p_version" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''

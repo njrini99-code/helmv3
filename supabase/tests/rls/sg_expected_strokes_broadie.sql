@@ -1,5 +1,5 @@
 -- The PGA Tour expected-strokes curve is Broadie's published table (SC-03,
--- 20261115210000_golf_sg_tour_curve_broadie_table.sql): Interfaces 42(2),
+-- 20261115215000_golf_sg_tour_curve_broadie_table.sql): Interfaces 42(2),
 -- Appendix B, Table B.1. The pins are the table's own rows (and the putting
 -- values the curve has always used), each within 0.01; the TypeScript copy
 -- (src/lib/golf/sg-tour-baseline.ts) is compared with the schema file by

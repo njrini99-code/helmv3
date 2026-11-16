@@ -435,7 +435,7 @@ describe('getExpectedStrokes', () => {
 
   it("prices an 'other' lie like rough inside 50 yd and between rough and recovery from 100 yd", () => {
     // The owner's rule of 20261023170000 on the Table B.1 rough and recovery
-    // rows (20261115210000, SC-03).
+    // rows (20261115215000, SC-03).
     // 50 yd and in: the rough curve (to the 0.001 the 50 yd anchor is kept to).
     for (const yards of [5, 10, 20, 25, 30, 40, 45, 50]) {
       expect(getExpectedStrokes('other', yards)).toBeCloseTo(getExpectedStrokes('rough', yards), 3);

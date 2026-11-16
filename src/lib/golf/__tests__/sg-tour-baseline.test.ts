@@ -8,7 +8,7 @@ import { getExpectedStrokes as statsExpected } from '@/lib/utils/golf-stats-calc
 
 // SC-03: one Tour curve. The TypeScript table is Broadie's Table B.1
 // (Interfaces 42(2), Appendix B) and must equal what public.sg_expected_strokes()
-// holds in the schema file (20261115210000), so the Stats pages (TypeScript)
+// holds in the schema file (20261115215000), so the Stats pages (TypeScript)
 // and the stored strokes gained (SQL) price a shot the same way.
 
 const SCHEMA = readFileSync(path.join(process.cwd(), 'supabase/schemas/functions/public.sql'), 'utf8');

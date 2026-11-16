@@ -1,4 +1,4 @@
--- The demo write guard (20261115210100, DD-13): a signed-in account cannot
+-- The demo write guard (20261115211100, DD-13): a signed-in account cannot
 -- add, change or delete the demo team's rows, whoever it is; other teams,
 -- writes with no signed-in user and the generator's own writes pass. Runs as
 -- the owner, so row security is out of the way and only the trigger decides.

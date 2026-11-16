@@ -1,4 +1,4 @@
--- Rollback for 20261115210000_golf_demo_generator.sql (demo team generator, DD-01).
+-- Rollback for 20261115211000_golf_demo_generator.sql (demo team generator, DD-01).
 --
 -- Every object the migration creates is new: there is no prior definition to
 -- restore. Run as postgres, in one transaction (db query --linked does that).
@@ -31,7 +31,7 @@ DROP FUNCTION IF EXISTS helm_private.golf_demo_parent(text);
 DROP FUNCTION IF EXISTS helm_private.golf_demo_tables();
 DROP TABLE IF EXISTS helm_private.golf_demo_ledger;
 
--- The demo write guard (20261115210100) calls golf_demo_team_id(): drop it
+-- The demo write guard (20261115211100) calls golf_demo_team_id(): drop it
 -- only when that migration is not applied (or was rolled back first).
 DO $$
 BEGIN

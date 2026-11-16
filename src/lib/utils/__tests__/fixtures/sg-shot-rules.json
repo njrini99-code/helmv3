@@ -1,5 +1,5 @@
 {
-  "description": "Shared SG shot-rule fixtures: one hole per case. `expected` is the production SQL function (calculate_round_strokes_gained after migration 20260930150000, on the Table B.1 curve of 20261115210000) computed on these exact shots; the TypeScript engine and the pgTAP test both assert it. `before_migration` is the live function before the migration, kept to show which rules each case exercises.",
+  "description": "Shared SG shot-rule fixtures: one hole per case. `expected` is the production SQL function (calculate_round_strokes_gained after migration 20260930150000, on the Table B.1 curve of 20261115215000) computed on these exact shots; the TypeScript engine and the pgTAP test both assert it. `before_migration` is the live function before the migration, kept to show which rules each case exercises.",
   "cases": [
     {
       "id": "tee-penalty-logged-after-the-shot",

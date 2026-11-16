@@ -52,7 +52,7 @@
 -- pages compute SG in TypeScript on read and change when the app deploys.
 --
 -- noqa: disable=LT05
--- ROLLBACK: supabase/rollbacks/20261115210000_golf_sg_tour_curve_broadie_table.rollback.sql
+-- ROLLBACK: supabase/rollbacks/20261115215000_golf_sg_tour_curve_broadie_table.rollback.sql
 -- noqa: enable=LT05
 -- (the two bodies 20261023170000 leaves, verbatim), then the same RECOMPUTE.
 -- noqa: disable=LT05

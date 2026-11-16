@@ -5,7 +5,7 @@ team's data (players, rounds, holes, shots, events, tournaments, qualifiers,
 practice plans, tasks, trips, messages) is not seeded from here any more: the
 demo generator (`src/lib/golf/demo`) writes it, fully synthetic and dated
 around today, through the database functions of migration
-`20261115210000_golf_demo_generator.sql`.
+`20261115211000_golf_demo_generator.sql`.
 
 - Daily: the cron `/api/cron/golf-demo-refresh` (behind the
   `golf_demo_refresh_v1` flag, off by default).

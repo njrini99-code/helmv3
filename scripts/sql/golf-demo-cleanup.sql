@@ -220,7 +220,7 @@ SET LOCAL statement_timeout = '300s';
 DO $$
 BEGIN
   IF pg_catalog.to_regclass('helm_private.golf_demo_ledger') IS NULL THEN
-    RAISE EXCEPTION 'Part B needs migration 20261115210000 and a first generator run.';
+    RAISE EXCEPTION 'Part B needs migration 20261115211000 and a first generator run.';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM helm_private.golf_demo_ledger
                   WHERE team_id = '6ecdd1a6-63fe-4beb-b094-00118f334163'
