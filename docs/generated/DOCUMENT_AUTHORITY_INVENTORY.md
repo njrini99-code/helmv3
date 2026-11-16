@@ -1129,6 +1129,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-16-drill-push-skeleton.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-one-reduce-motion-read.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-phone-overlay-push.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-printed-delta.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-stat-definitions.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-story-and-refresh-keyframes.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
