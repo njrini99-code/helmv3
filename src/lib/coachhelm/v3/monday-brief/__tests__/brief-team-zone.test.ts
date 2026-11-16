@@ -26,4 +26,11 @@ describe('computeMondayBrief on the team clock', () => {
     expect(b.week_end).toBe('2026-10-19');
     expect(b.rounds_last_week).toBe(2);
   });
+
+  it('spans seven calendar days across a daylight-saving change', () => {
+    // Monday 9 March 2026, 00:30 in New York: clocks went forward on the 8th, so 168 hours back is Sunday 1 March, 23:30.
+    const b = computeMondayBrief({ teamId: 't', roster, reads: [], rounds, teamPattern: null, withEnoughRounds: 1, now: new Date('2026-03-09T04:30:00Z'), tz: 'America/New_York' });
+    expect(b.week_end).toBe('2026-03-09');
+    expect(b.week_start).toBe('2026-03-02');
+  });
 });
