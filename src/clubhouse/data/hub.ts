@@ -476,7 +476,11 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   const anns = annRes.success ? without(annRes.data ?? [], hidden.announcements) : [];
   const owedPosts = new Map<string, string[]>();
   const [attendance, assignments, authors, waiting, pulse] = await Promise.all([
-    attendanceFor(supabase, [...events.map((e) => e.id), ...trips.map((t) => t.event_id).filter((id): id is string => !!id), ...tripEvents.map((e) => e.id)]),
+    attendanceFor(
+      supabase,
+      [...events.map((e) => e.id), ...trips.map((t) => t.event_id).filter((id): id is string => !!id), ...tripEvents.map((e) => e.id)],
+      rosterRes.error ? null : new Set(names.keys()),
+    ),
     assignmentsFor(supabase, tasks.map((t) => t.id), rosterRes.error ? null : new Set(names.keys())),
     authorNames(supabase, anns),
     // An all-team post's audience is the roster: without it, who is left is unknown.
@@ -529,7 +533,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           // golf_events has no mandatory column (get_player_hub_events returns FALSE too); Q-71.
           mandatory: false,
           mine: null,
-          counts: attendance.error ? null : rsvpCounts(rows),
+          // Without the roster a departed player can't be told apart, so the count is unknown, never a long one (DF-C-06).
+          counts: attendance.error || rosterRes.error ? null : rsvpCounts(rows),
         };
       }),
       error: !!eventsRes.error,
@@ -671,7 +676,11 @@ export function unackedPostCount(rows: ReadonlyArray<Pick<ChHubAnnouncement, 'ne
   return asking.filter((a) => a.notAcked!.length > 0).length;
 }
 
-export async function attendanceFor(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[]) {
+/**
+ * Each event's replies, by event. With `members` (today's roster), a row for anyone else is left out: a player who has
+ * left keeps their attendance rows, and they were counted in "N of M going", "no reply" and the travelers (DF-C-06).
+ */
+export async function attendanceFor(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], members?: ReadonlySet<string> | null) {
   const byEvent = new Map<string, Array<{ player: string; status: ChRsvp }>>();
   for (const ids of chunkIds([...new Set(eventIds)])) {
     // Paged: a season's events times a full roster passes PostgREST's 1000-row cap.
@@ -682,7 +691,7 @@ export async function attendanceFor(supabase: Awaited<ReturnType<typeof createCl
       log('attendance', error);
       return { byEvent, error: true };
     }
-    for (const a of data ?? []) byEvent.set(a.event_id, [...(byEvent.get(a.event_id) ?? []), { player: a.player_id, status: rsvpOf(a.status) as ChRsvp }]);
+    for (const a of data ?? []) if (!members || members.has(a.player_id)) byEvent.set(a.event_id, [...(byEvent.get(a.event_id) ?? []), { player: a.player_id, status: rsvpOf(a.status) as ChRsvp }]);
   }
   return { byEvent, error: false };
 }

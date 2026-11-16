@@ -276,12 +276,8 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
       </Card>
 
       <Card id="set-display" title="Display" description="What CoachHelm shows on your dashboards. The strokes-gained baseline follows your team: the Tour for men’s teams, the women’s tour for women’s.">
-        <Row label="Strokes gained" saved={saved.has('showStrokesGained')}>
-          <SettingSwitch label="Show strokes gained" hideLabel checked={p.showStrokesGained} onChange={(v) => change({ showStrokesGained: v })} />
-        </Row>
-        <Row label="Advanced statistics" saved={saved.has('showAdvancedStats')}>
-          <SettingSwitch label="Show advanced statistics" hideLabel checked={p.showAdvancedStats} onChange={(v) => change({ showAdvancedStats: v })} />
-        </Row>
+        {/* DF-C-11: "Show strokes gained" and "Show advanced statistics" were saved but no screen or CoachHelm read either, so
+            turning one off changed nothing. They are gone until a screen honours them; the columns stay. */}
         <Row label="Insight detail" saved={saved.has('insightVerbosity')}>
           <Segmented
             label="Insight detail"

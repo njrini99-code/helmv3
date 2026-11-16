@@ -45,6 +45,18 @@ export function quietDaysSince(roundDate: string, today: string): number {
   return Math.max(0, daysBetween(roundDate.slice(0, 10), today));
 }
 
+/**
+ * How long a player has gone without a counted round, Home's brief and Roster's Needs a look alike (DF-C-04: a player with no round
+ * this season had no count, so the quietest players were never named). `last` is the player's newest counted round in the read, which
+ * reaches a year back, before the season. A player with none in it is quiet since the season started, or since they joined if that is
+ * later, and `none` says so: they are named as having no round this season, never with a count that reads as a date.
+ */
+export function quietOf(last: string | null, from: { seasonStart: string; joined?: string | null }, today: string): { days: number; none: boolean } {
+  if (last) return { days: quietDaysSince(last, today), none: false };
+  const joined = from.joined?.slice(0, 10) ?? null;
+  return { days: quietDaysSince(joined && joined > from.seasonStart ? joined : from.seasonStart, today), none: true };
+}
+
 export { firstName };
 
 /**
@@ -82,6 +94,8 @@ export interface ChSublineRow {
   name: string;
   status: ChForm;
   quietDays: number | null;
+  /** No counted round this season or in the year before it: `quietDays` counts from the season's start or the player's joining (`quietOf`). */
+  none?: boolean;
   /** Injured or away: left out of "needs a look" and "on track" alike (the coach already knows). Absent reads as available. */
   availability?: ChAvailability;
 }
@@ -89,6 +103,7 @@ export interface ChSublineRow {
 function reason(r: ChSublineRow): string {
   const quiet = r.quietDays != null && r.quietDays >= QUIET_DAYS;
   const who = firstName(r.name);
+  if (r.none && quiet) return `${who} hasn’t posted a round this season`;
   if (r.status === 'slipping' && quiet) return `${who} is slipping and hasn’t posted a round in ${r.quietDays} days`;
   if (r.status === 'slipping') return `${who} is slipping`;
   return `${who} hasn’t posted a round in ${r.quietDays} days`;
@@ -117,6 +132,13 @@ function manyFlagged(flagged: ChSublineRow[]): string {
   if (ranked.every((r) => r.status !== 'slipping')) {
     const longest = ranked[0]!;
     const floor = since(ranked);
+    // DF-C-04: players with no round this season are said as that, never as "the longest at" a count from the season's start.
+    const none = ranked.filter((r) => r.none);
+    if (none.length === ranked.length) return `${ranked.length} players haven’t posted a round this season.`;
+    if (none.length) {
+      const tail = none.length === 1 ? `${firstName(none[0]!.name)} hasn’t posted one this season` : `${none.length} of them haven’t posted one this season`;
+      return `${ranked.length} players haven’t posted a round in ${floor}+ days; ${tail}.`;
+    }
     // F-0016: a longest is named only when one player is strictly longest; all tied, the team's line says the one figure.
     if (longest.quietDays === floor) return `${ranked.length} players haven’t posted a round in ${floor} days.`;
     // Prod audit 2026-11-15, HOME-P-01: "Mason the longest at 50" while Roster showed four players at 50. Several at the top are
@@ -145,15 +167,21 @@ export function homeSubline(
   opts: {
     roundsError: boolean;
     nextCompetition: { title: string; when: string } | null;
-    /** Active players with no 18-hole round this season: no leaderboard row, so never "on track" either, and never a sentence of their own (HOME-S5). */
-    unposted?: Pick<ChSublineRow, 'name' | 'availability'>[];
+    /**
+     * Active players with no 18-hole round this season: no leaderboard row, so never "on track" either. One quiet for QUIET_DAYS or more
+     * is named like any quiet player (DF-C-04, launch readiness 2026-11-15, which revisits HOME-S5's "never a sentence of their own"):
+     * by their days since a counted round (a nine, or one before the season), or as having none this season. Without a count, as in
+     * HOME-S5's own case, they are not named.
+     */
+    unposted?: Array<Pick<ChSublineRow, 'name' | 'availability'> & Partial<Pick<ChSublineRow, 'quietDays' | 'none'>>>;
   },
 ): string | null {
   if (opts.roundsError) return null;
   // A player who is out is neither flagged for a quiet stretch nor counted on track (same rule as the roster's Needs a look).
   const rows = allRows.filter((r) => !isOut(r.availability));
   const unposted = (opts.unposted ?? []).filter((r) => !isOut(r.availability));
-  const flagged = rows.filter((r) => r.status === 'slipping' || (r.quietDays != null && r.quietDays >= QUIET_DAYS));
+  const quietUnposted: ChSublineRow[] = unposted.flatMap((r) => (r.quietDays != null && r.quietDays >= QUIET_DAYS ? [{ ...r, status: 'early' as const, quietDays: r.quietDays }] : []));
+  const flagged = [...rows.filter((r) => r.status === 'slipping' || (r.quietDays != null && r.quietDays >= QUIET_DAYS)), ...quietUnposted];
   const onTrack = rows.filter((r) => !flagged.includes(r) && r.status !== 'early');
   const early = rows.filter((r) => !flagged.includes(r) && r.status === 'early');
   const out: string[] = [];

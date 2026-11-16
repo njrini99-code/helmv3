@@ -2714,7 +2714,9 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       // Alerts, thresholds, windows and display are all here.
       for (const name of ['Decline threshold', 'Pressure gap', 'Bubble zone', 'Minimum confidence', 'Hole ranking', 'Pattern lookback']) expect(screen.getByRole('slider', { name })).toBeTruthy();
       for (const name of [/^Alert delivery/, /^Stats comparison/, /^Insight detail/]) expect(screen.getByRole('button', { name })).toBeTruthy();
-      for (const name of ['Show strokes gained', 'Show advanced statistics', 'Insights', 'Predictions', 'Patterns']) expect(screen.getByRole('switch', { name })).toBeTruthy();
+      for (const name of ['Insights', 'Predictions', 'Patterns']) expect(screen.getByRole('switch', { name })).toBeTruthy();
+      // DF-C-11: two switches no screen or CoachHelm read are not offered.
+      for (const name of ['Show strokes gained', 'Show advanced statistics']) expect(screen.queryByRole('switch', { name })).toBeNull();
     });
 
     it('81901 CH-8021 an assistant coach sees the team switch locked, with the reason; the head coach can change it', async () => {

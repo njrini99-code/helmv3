@@ -540,10 +540,11 @@ describe('nine- and eighteen-hole rounds', () => {
 
   it('a coach\'s team figure under Both weighs the teammates\' nine-hole rounds the same way', async () => {
     profileOf([...mixedLengths(OWN), ...mixedLengths('p2').map((r) => ({ ...r, ...(r.holes_played === 9 ? { total_score: 40, front_nine: 40 } : rescore(76)) }))]);
+    // DF-C-17: the figure is the rest of the team's, so the player's own rounds (72s and 38s) are left out.
     const p = (await profileLoad(holes('all')))!;
-    expect(p.teamAvg).toBeCloseTo((4 * 72 + 3 * 38 + 4 * 76 + 3 * 40) / 11, 10);
+    expect(p.teamAvg).toBeCloseTo((4 * 76 + 3 * 40) / 5.5, 10);
     const nines = (await profileLoad(holes('9')))!;
-    expect(nines.teamAvg).toBeCloseTo((3 * 38 + 3 * 40) / 3, 10);
+    expect(nines.teamAvg).toBeCloseTo((3 * 40) / 1.5, 10);
   });
 
   it('the address carries the holes to the loader, and a value it does not know is 18', async () => {

@@ -71,6 +71,11 @@ export interface MondayBriefInput {
   withEnoughRounds: number;
   now: Date;
   /**
+   * The team's time zone (`golf_team_settings.timezone`). The week's first and last days, and so which rounds count as last
+   * week's, are dates on the team's clock; without it they are UTC dates (DF-P-10).
+   */
+  tz?: string;
+  /**
    * The most items in the brief, the team pattern included. The Monday brief keeps {@link MONDAY_BRIEF_MAX_ITEMS}; the coach Brief
    * behind `/intelligence` (the team view) passes `Infinity` so every player's top read is listed.
    */
@@ -197,12 +202,25 @@ interface Candidate {
   rung: number;
 }
 
+/** The calendar date (`YYYY-MM-DD`) of an instant on `tz`'s clock, or in UTC without one. */
+function dateOn(ms: number, tz: string | undefined): string {
+  if (!tz) return new Date(ms).toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+}
+
+/** The calendar date `n` days before a `YYYY-MM-DD` date. */
+function daysBefore(day: string, n: number): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(Date.UTC(y!, m! - 1, d! - n)).toISOString().slice(0, 10);
+}
+
 /** The week's brief for one team. Never throws: a read it cannot judge is left out. */
 export function computeMondayBrief(input: MondayBriefInput): MondayBrief {
   const endMs = input.now.getTime();
   const startMs = endMs - MONDAY_BRIEF_WEEK_DAYS * DAY_MS;
-  const weekStart = new Date(startMs).toISOString().slice(0, 10);
-  const weekEnd = input.now.toISOString().slice(0, 10);
+  const weekEnd = dateOn(endMs, input.tz);
+  // Seven calendar days before the team's today, not the date 168 hours back: across a daylight-saving change those differ by a day.
+  const weekStart = input.tz ? daysBefore(weekEnd, MONDAY_BRIEF_WEEK_DAYS) : dateOn(startMs, undefined);
   const names = new Map(input.roster.map((p) => [p.id, p.name]));
   const inPattern = new Set(input.teamPattern?.member_reads.map((m) => m.insight_id) ?? []);
 

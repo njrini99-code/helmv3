@@ -423,8 +423,10 @@ export async function loadPlayerProfile(input: {
   // Q-123: a round posted as a total only is a score and nothing else. Every hole-level figure reads the window's rounds with their holes.
   const holeWin = holeRounds(winRounds);
 
-  // Team rounds in the same window, for coach comparisons only (scores: all of them; hole-level: those with their holes).
-  const teamWin = coach ? teamIds.flatMap((id) => roundsInFilter(counted(byPlayer.get(id) ?? []), f, start)) : [];
+  // The rest of the team's rounds in the same window, for coach comparisons only (scores: all of them; hole-level: those with their
+  // holes). DF-C-17 (owner, 16 Nov: take the recommendation): the player is left out, so the line is "Rest of team", never an
+  // average that includes the player it is set against.
+  const teamWin = coach ? teamIds.filter((id) => id !== input.playerId).flatMap((id) => roundsInFilter(counted(byPlayer.get(id) ?? []), f, start)) : [];
   const teamHole = holeRounds(teamWin);
   // The player's own cache rows and the teammates' (the comparisons' team column), one lookup as before.
   const cache = { byRound: new Map([...cacheOwn.byRound, ...cacheOthers.byRound]), error: cacheOwn.error || cacheOthers.error };

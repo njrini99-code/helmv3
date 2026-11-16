@@ -534,20 +534,20 @@ describe('player loader', () => {
     golf_goals: { data: [] },
     ...over,
   });
-  // p1: five rounds, +1 to +5 (mean +3); p2: three rounds at −1. The team pools eight: (15 − 3) / 8 = +1.5.
+  // p1: five rounds, +1 to +5 (mean +3); p2: three rounds at −1. A coach's team column is the rest of the team (DF-C-17): p2's −1.
   const p1 = [1, 2, 3, 4, 5].map((sg, i) => rnd(`a${i}`, 'p1', i + 1, sg, [sg / 2, sg / 2, null, null]));
   const p2 = [1, 2, 3].map((_, i) => rnd(`b${i}`, 'p2', i + 1, -1, [-0.5, -0.5, null, null]));
   const load = (viewer: 'coach' | 'player', window: 'last10' | 'season' = 'last10') => loadPlayerProfile({ viewer, teamId: 't1', playerId: 'p1', window });
 
-  it('the comparison table has strokes gained first: the player’s window mean against the team’s pooled mean for a coach', async () => {
+  it('the comparison table has strokes gained first: the player’s window mean against the rest of the team’s pooled mean for a coach', async () => {
     tables.current = profileTables([...p1, ...p2]);
     const data = (await load('coach'))!;
     const rows = data.comparisons.slice(0, 5);
     expect(rows.map((r) => r.label)).toEqual(['SG total', 'SG off the tee', 'SG approach', 'SG around green', 'SG putting']);
     expect(rows.every((r) => r.sg === true && r.bench === null && r.lowerIsBetter === false)).toBe(true);
-    expect(rows[0]).toMatchObject({ you: 3, team: 1.5 });
-    // Off the tee: p1 mean 1.5; the pool of eight, (7.5 − 1.5) / 8 = 0.75.
-    expect(rows[1]).toMatchObject({ you: 1.5, team: 0.75 });
+    expect(rows[0]).toMatchObject({ you: 3, team: -1 });
+    // Off the tee: p1 mean 1.5; the rest of the team, p2's three at −0.5.
+    expect(rows[1]).toMatchObject({ you: 1.5, team: -0.5 });
     // Around the green has no value on any round: a dash for both, never zero.
     expect(rows[3]).toMatchObject({ you: null, team: null });
     // After the five strokes gained rows come the standing rows, in groups; every row says which group it is in.

@@ -121,8 +121,8 @@ describe('desktop My stats is the bento with its drill beside it', () => {
     // The Scoring average card stands beside the pane with the figure, its change and the score-by-round curve.
     expect(pane()!.querySelector('.ch-shs-d-hero__fig')).toBeNull();
     expect(pane()!.textContent).not.toContain('Score by round');
-    // What the card lacks stays: a coach's team average over the same rounds.
-    if (coachView().teamAvg != null) expect(pane()!.textContent).toContain('Team average');
+    // What the card lacks stays: a coach's rest-of-team average over the same rounds (DF-C-17).
+    if (coachView().teamAvg != null) expect(pane()!.textContent).toContain('Rest of team');
     // A drill whose card shows less than its hero keeps the hero.
     const rounds = await waitFor(() => {
       const c = cards().find((x) => x.dataset.go === 'rounds');

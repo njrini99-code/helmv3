@@ -927,7 +927,7 @@ function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'sco
       coach && data.teamAvg != null ? (
         <div className="ch-shs-d-hero">
           <p className="ch-shs-d-hero__cap">
-            Team average <b className="ch-num">{formatAvg(data.teamAvg)}</b> · {label}
+            Rest of team <b className="ch-num">{formatAvg(data.teamAvg)}</b> · {label}
           </p>
         </div>
       ) : null

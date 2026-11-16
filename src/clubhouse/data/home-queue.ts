@@ -74,7 +74,10 @@ export async function loadCoachQueue(
     if (res.error) throw res.error;
     const weekEnd = `${addDays(ymd(now, tz), 7)}T23:59:59Z`;
     const events = (res.data ?? []).filter((e) => Date.parse(e.start_time) < Date.parse(weekEnd));
-    const attendance = await attendanceFor(supabase, events.map((e) => e.id));
+    // Today's roster only (DF-C-06): without it a departed player's unanswered row would count as waiting.
+    const members = await input.names;
+    if (!members) throw new Error('roster did not load');
+    const attendance = await attendanceFor(supabase, events.map((e) => e.id), new Set(members.keys()));
     if (attendance.error) throw new Error('attendance did not load');
     const nowMs = now.getTime();
     const queue = rsvpQueue(events.map((e) => ({ eventId: e.id, counts: rsvpCounts(attendance.byEvent.get(e.id) ?? []), open: !replyIsClosed(e, nowMs) })));
