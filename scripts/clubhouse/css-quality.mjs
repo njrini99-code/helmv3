@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
-import config from '../../stylelint.clubhouse.config.mjs';
+import config, { radiusIsToken, RAW_MOTION, shadowIsToken, systemRatchet } from '../../stylelint.clubhouse.config.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const layout = /^(?:width|height|min-width|max-width|min-height|max-height|top|right|bottom|left|inset(?:-.+)?|margin(?:-.+)?|padding(?:-.+)?|grid-template-(?:rows|columns)|flex-basis)$/;
@@ -84,24 +84,32 @@ export function inspectCSS(css, { file = 'fixture.css', before = '', tokens } = 
  * fix can't quietly make room for a new one. config/clubhouse/css-ratchet.json holds the counts.
  */
 export const RATCHET_PATH = 'config/clubhouse/css-ratchet.json';
+export const RATCHET_RULES = ['hex', 'svg-overflow-visible', 'crh-negative-margin', ...systemRatchet.strict, ...systemRatchet.ceiling];
 export function ratchetCounts(css, file = 'fixture.css') {
-  const counts = { hex: 0, 'svg-overflow-visible': 0, 'crh-negative-margin': 0 };
-  parse(css, file).walkDecls((decl) => {
+  const counts = Object.fromEntries(RATCHET_RULES.map((rule) => [rule, 0]));
+  const ast = parse(css, file);
+  ast.walkDecls((decl) => {
     const scope = context(decl);
     if (!/(?:^|\/)tokens\.css$/.test(file)) counts.hex += (decl.value.replace(/url\([^)]*\)/g, '').match(/#[\da-f]{3,8}\b/gi) ?? []).length;
     if (decl.prop.toLowerCase() === 'overflow' && /visible/i.test(decl.value) && /svg|chart|hole|spark/i.test(scope)) counts['svg-overflow-visible'] += 1;
     if (/^margin-inline/i.test(decl.prop) && /^\s*-/.test(decl.value) && (/data-ch-crh/.test(scope) || /(?:^|\/)(?:home|roster|classes)\.css$/.test(file))) counts['crh-negative-margin'] += 1;
+    // The system's own values (stylelint.clubhouse.config.mjs, MOTION-AND-VISUAL build step 7).
+    if (systemRatchet.isRadius(decl.prop) && !radiusIsToken(decl.value)) counts['raw-radius'] += 1;
+    if (decl.prop.toLowerCase() === 'box-shadow' && !shadowIsToken(decl.value, postcss.list.comma)) counts['raw-shadow'] += 1;
+    if (!systemRatchet.tokenFile(file) && RAW_MOTION.test(decl.value.replace(/var\([^()]*\)/g, ''))) counts['raw-motion'] += 1;
   });
+  if (!systemRatchet.motionFile(file)) ast.walkAtRules(/^(?:-webkit-)?keyframes$/i, () => { counts.keyframes += 1; });
   return counts;
 }
 export function compareRatchet(current, recorded) {
   const problems = [];
   for (const file of new Set([...Object.keys(current), ...Object.keys(recorded)])) {
-    for (const rule of ['hex', 'svg-overflow-visible', 'crh-negative-margin']) {
+    for (const rule of RATCHET_RULES) {
       const now = current[file]?.[rule] ?? 0;
       const was = recorded[file]?.[rule] ?? 0;
       if (now > was) problems.push({ file, rule: `clubhouse/ratchet-${rule}`, reason: `${now} here, ${was} recorded. Use a token or a shared component instead of adding one.` });
-      else if (now < was) problems.push({ file, rule: `clubhouse/ratchet-${rule}`, reason: `${now} here, ${was} recorded. Good: lower the record with npm run clubhouse:css -- --ratchet.` });
+      // A ceiling (motion, keyframes) may sit below its record until the motion work lands; the strict rules may not.
+      else if (now < was && !systemRatchet.ceiling.includes(rule)) problems.push({ file, rule: `clubhouse/ratchet-${rule}`, reason: `${now} here, ${was} recorded. Good: lower the record with npm run clubhouse:css -- --ratchet.` });
     }
   }
   return problems;

@@ -172,8 +172,9 @@ blocks in `styles/shell.css`) now draws one family:
 - **Notice** (`InlineNotice`, `RefreshNotice`): flush, sitting between the
   section's own engraved rules with no fill, no ring and no stripe, its icon on
   the heading's edge. The icon is in the danger ink, the title in the page's
-  ink (red is for under par and destructive actions) and the body in the
-  secondary ink. In a full-width notice the words keep a 30rem measure and Try
+  ink (red is for errors and destructive actions only, MOTION-AND-VISUAL 4.7)
+  and the body in the secondary ink. In a full-width notice the words keep a
+  30rem measure and Try
   again is pinned to the row's end, centred on them (visual pass 2026-10-28); it
   sits under them in anything narrower than 640px (a container query: a rail, a
   half column) and on the phone, so notices side by side read alike. The inks

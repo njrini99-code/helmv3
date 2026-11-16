@@ -181,7 +181,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
   /* The word a save brings crossfades in over the quick beat (motion.css ch-in). */
@@ -207,7 +207,7 @@
   display: inline-flex;
   flex: 1;
   min-width: 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-set-status > span {
@@ -300,7 +300,7 @@
 }
 .ch-set-sub {
   padding-top: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -369,7 +369,7 @@
   min-width: 0;
 }
 .ch-set-codebox__c > span {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -503,7 +503,7 @@
   padding-bottom: 8px;
   border-top: 0;
   background: var(--ch-bg-subtle);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -515,7 +515,7 @@
 .ch-set-matrix__group {
   padding: 16px 20px 4px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -943,14 +943,14 @@
   .ch-setm-gh {
     margin: 0;
     padding: 0 16px 6px;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
   }
   .ch-setm-card {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-elevation-reading);
   }
@@ -1211,7 +1211,7 @@
   }
   .ch-setm-field__l {
     flex: none;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
   }
   .is-inline .ch-setm-field__l {
@@ -1249,7 +1249,7 @@
   }
   .ch-setm-problem {
     margin: -6px 16px 0;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
   }
 
   /* Text actions and the invite card */
@@ -1309,7 +1309,7 @@
     height: 40px;
     padding: 0 16px;
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-green-800);
     color: var(--ch-on-fill-100);
     font: var(--ch-type-14-strong);

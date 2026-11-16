@@ -94,7 +94,7 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
         )}
         {h.windows && (
           <div className="ch-ch-win">
-            <Segmented weight="filter"
+            <Segmented
               label="Which rounds"
               size="sm"
               value={h.window}

@@ -152,7 +152,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster; }) {
                   </Tooltip>
                 ))}
               </div>
-              <Segmented<TeamSort> weight="filter"
+              <Segmented<TeamSort>
                 size="sm"
                 label="Sort players"
                 value={sort}

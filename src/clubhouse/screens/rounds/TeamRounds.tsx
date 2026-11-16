@@ -388,7 +388,7 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
                 onChange={setPlayer}
                 options={[{ value: ALL_PLAYERS, label: 'All players' }, ...data.players.map((p) => ({ value: p.id, label: p.name }))]}
               />
-              <Segmented weight="filter"
+              <Segmented
                 redraws
                 label="Group rounds"
                 size="sm"

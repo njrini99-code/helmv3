@@ -81,9 +81,9 @@
   top: var(--ch-ms-pill-top);
   padding: 4px var(--ch-ms-px-10);
   background: var(--ch-glass-strong);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(160%);
-  font: var(--ch-type-13-medium);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
   transition: opacity var(--ch-dur-msg-pill-out) linear;
 }
@@ -136,7 +136,7 @@
   padding: var(--ch-ms-px-3) var(--ch-ms-px-9);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-flag);
 }
@@ -335,8 +335,8 @@ body [data-ch-ms-v2] .ch-pscreen.ch-msp-thread[data-fw-keyboard-aware][data-ch-v
   padding: 10px 14px;
   border-bottom: 0;
   background: var(--ch-glass);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
-  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
 }
 [data-ch-ms-v2] .ch-ms-thread.is-layered > .ch-ms-th::after {
   content: '';

@@ -32,14 +32,14 @@
   min-width: 0;
 }
 .ch-qf-head h1 {
-  font: var(--ch-type-hero);
-  letter-spacing: var(--ch-track-hero);
+  font: var(--ch-type-large-title);
+  letter-spacing: var(--ch-track-large-title);
   color: var(--ch-text-primary);
   overflow-wrap: anywhere;
 }
 .ch-qf-head p {
   max-width: 72ch;
-  font: var(--ch-type-body-l);
+  font: var(--ch-type-body);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   text-wrap: pretty;
@@ -53,7 +53,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font: var(--ch-type-eyebrow);
+  font: var(--ch-type-footnote);
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -83,10 +83,10 @@
   height: 30px;
   padding: 0 12px 0 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   cursor: pointer;
@@ -157,7 +157,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
   gap: 32px;
   padding: 24px 32px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -195,7 +195,7 @@
   display: flex;
   justify-content: space-between;
   padding: 2px 2px 8px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -218,7 +218,7 @@
   text-overflow: ellipsis;
 }
 .ch-qf-lead__th {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
   font-variant-numeric: tabular-nums;
@@ -261,7 +261,7 @@
 .ch-qf-card__h p {
   display: -webkit-box;
   overflow: hidden;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -302,7 +302,7 @@
   align-items: center;
   gap: 6px;
   margin-top: auto;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
@@ -327,7 +327,7 @@
 .ch-qf-empty {
   padding: 12px;
 }
-/* The live leaders on the green scoreboard (a tournament board): ivory names and positions, red under par. */
+/* The live leaders on the green scoreboard (a tournament board): ivory names and positions, the feature gain under par. */
 .ch-qf-lead.ch-scoreboard {
   padding: 16px 16px;
 }
@@ -338,7 +338,7 @@
   color: var(--ch-on-green-ink);
 }
 .ch-scoreboard .ch-qf-tp.is-under {
-  color: #ff8b7d;
+  color: var(--ch-score-under-on-green);
 }
 /* Concluded qualifiers: a ledger on the page, not a grid of cards (owner: no card soup). One row each, ruled by seams. */
 .ch-qf-grid.is-ledger {
@@ -461,14 +461,14 @@
   width: 100%;
   max-width: 160px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.07);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.1);
 }
 .ch-qf-bar i {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-chart-gain);
 }
 .ch-qf-seats {
@@ -478,7 +478,7 @@
 .ch-qf-seats i {
   width: 10px;
   height: 10px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-qf-seats i.is-score {
   background: var(--ch-chart-gain);
@@ -493,7 +493,7 @@
   margin: 2px 0 0;
 }
 .ch-qf-facts dt {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -523,7 +523,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-inset);
   color: var(--ch-text-secondary);
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
 }
 .ch-qf-note svg {
   flex: none;
@@ -553,7 +553,7 @@
 .ch-qf-panel,
 .ch-qf-side {
   overflow: hidden;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
 }
@@ -623,7 +623,7 @@
 /* Panel titles in the display serif, as Home's and Stats' panels. */
 .ch-qf .ch-qf-panel__head h2 {
   margin-bottom: 4px;
-  font: var(--ch-type-serif-s);
+  font: var(--ch-type-title);
   letter-spacing: -0.006em;
   color: var(--ch-text-primary);
 }
@@ -659,7 +659,7 @@
   border-bottom: 0;
   background: var(--ch-bg-subtle);
   color: var(--ch-text-tertiary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
 }
 .ch-qf-row--flat {
@@ -768,7 +768,7 @@
   align-items: center;
   gap: 8px;
   margin: 6px 12px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
@@ -853,7 +853,7 @@
 .ch-qf-strip {
   width: 100%;
   border-collapse: collapse;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -914,13 +914,13 @@
 }
 .ch-qf-list__k {
   margin-bottom: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-qf-list__n {
   width: 16px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
   font-variant-numeric: tabular-nums;
@@ -963,7 +963,7 @@
 }
 .ch-qf-why {
   margin-top: 12px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -1017,7 +1017,7 @@
   margin: 0;
   padding: 0 20px 20px;
   border: 0;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
 }
@@ -1201,7 +1201,7 @@
 }
 .ch-qf-picker__k {
   padding: 8px 8px 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -1290,7 +1290,7 @@
   align-items: center;
   gap: 8px;
   min-height: 32px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-qfs-steps li:last-child {
@@ -1510,9 +1510,9 @@
   }
   /* 12px, the phone text floor (F09), as the kit's PageIntro eyebrow. */
   .ch-qf--list .ch-qf-eyebrow {
-    font: var(--ch-type-eyebrow);
+    font: var(--ch-type-footnote);
     font-variant-numeric: tabular-nums;
-    letter-spacing: var(--ch-track-eyebrow);
+    letter-spacing: 0;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-qf--list .ch-qf-head p {
@@ -1621,7 +1621,7 @@
   }
   .ch-qf .ch-qf-hero h2 {
     margin: 4px 0 0;
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     letter-spacing: -0.03em;
     color: var(--ch-on-green-ink);
@@ -1736,7 +1736,7 @@
   .ch-qf-card {
     gap: 12px;
     padding: 16px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-sheet-bg);
   }
   .ch-qf-card__h p {
@@ -1756,8 +1756,8 @@
   .ch-qf--list .ch-qf-sec > h2 {
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
-    font: var(--ch-type-section);
-    letter-spacing: var(--ch-track-section);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-text-primary);
   }
@@ -1814,7 +1814,7 @@
     gap: 8px;
   }
   .ch-qfm-head__k > .ch-num {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     font-variant-numeric: tabular-nums;
     letter-spacing: normal;
     color: var(--ch-ledger-eyebrow);
@@ -1892,11 +1892,11 @@
     min-height: 10px;
   }
   .ch-qfm-facts dt {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
   .ch-qfm-facts dd {
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
@@ -1981,7 +1981,7 @@
     margin-top: 6px;
     padding: 0 0 6px;
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-label);
     color: var(--ch-text-tertiary);
   }
@@ -2143,7 +2143,7 @@
     border-radius: var(--ch-radius-sm);
     background: none;
     color: var(--ch-text-secondary);
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
@@ -2231,9 +2231,9 @@
   }
   .ch-qf--form .ch-qf-eyebrow,
   .ch-qfs .ch-qf-eyebrow {
-    font: var(--ch-type-eyebrow);
+    font: var(--ch-type-footnote);
     font-variant-numeric: tabular-nums;
-    letter-spacing: var(--ch-track-eyebrow);
+    letter-spacing: 0;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-qf--form .ch-qf-head p,
@@ -2385,7 +2385,7 @@
   }
   .ch-qf-skel-words > .ch-skel {
     display: inline;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
     color: transparent;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
@@ -2487,15 +2487,15 @@
 }
 
 /* P009-A1: to par on a hand-hung plate. A fixed-aspect ivory plate (the page's lightest paper, a dark plate at night)
-   with a keyline and a short drop, the numeral in the condensed cell role: 600, 86% width, tabular. Red only under par;
-   even and over par are ink. On the live card's green scoreboard the plate is the board's ivory with green ink. */
+   with a keyline and a short drop, the numeral in the condensed cell role: 600, 86% width, tabular. The gain only under
+   par; even and over par are ink. On the live card's green scoreboard the plate is the board's ivory with green ink. */
 .ch-qf-plate {
   display: inline-grid;
   place-items: center;
   box-sizing: border-box;
   width: 52px;
   height: 30px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-ivory-25);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ink-rule), var(--ch-elevation-control);
   font: 600 17px/1 var(--ch-font-sans);
@@ -2713,7 +2713,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   .ch-qf-hero .ch-qf-lead .ch-qf-plate.is-under,
   .ch-qf-hero .ch-qf-mine .ch-qf-plate.is-under {
-    color: #ff8b7d;
+    color: var(--ch-score-under-on-green);
   }
   .ch-qf-hero .ch-qf-lead .ch-qf-plate.is-none,
   .ch-qf-hero .ch-qf-mine .ch-qf-plate.is-none {
@@ -2769,9 +2769,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   .ch-qf[data-canopy] .ch-qf-eyebrow {
     gap: 8px;
-    font: var(--ch-type-eyebrow);
+    font: var(--ch-type-footnote);
     font-variant-numeric: tabular-nums;
-    letter-spacing: var(--ch-track-eyebrow);
+    letter-spacing: 0;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-qf--list[data-canopy] .ch-qf-eyebrow {
@@ -2786,7 +2786,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   .ch-qf[data-canopy] .ch-qf-eyebrow .ch-badge {
     background: none;
     box-shadow: 0 0 0 1px var(--ch-ledger-rule);
-    letter-spacing: var(--ch-track-eyebrow);
+    letter-spacing: 0;
   }
   /* A sub-screen's way back sits just over the head's double hairline. */
   .ch-qf[data-canopy] > .ch-qf-back,
@@ -2803,7 +2803,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     box-shadow: none;
   }
   .ch-qf--list[data-canopy] .ch-qf-hero h2 {
-    font: var(--ch-type-serif-l);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
     transition: color var(--ch-dur-quick) var(--ch-ease);
   }
   @media (hover: hover) {
@@ -2824,8 +2825,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   .ch-qf--list[data-canopy] .ch-qf-sec > h2 {
     padding: 0 0 12px;
-    font: var(--ch-type-section);
-    letter-spacing: var(--ch-track-section);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger {
@@ -3302,7 +3303,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   font: var(--ch-type-13-strong);
 }
 .ch-qf-sp__tip span {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-stage-ink-soft);
 }
@@ -3314,7 +3315,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 
 
 /* The leaderboard (P009), set as a printed tournament sheet: a heavy rule over the title, no avatars, no plates, one hairline a row.
-   To par is the loudest figure on the row (red under par), the position quiet beside the name, the leader and the cut carried by
+   To par is the loudest figure on the row (the gain under par), the position quiet beside the name, the leader and the cut carried by
    weight and a rule rather than colour. Rows past the travel cut set in the quiet ink. Presentation only; same rows, same trays. */
 .ch-qf[data-canopy] .ch-qf-board {
   border-top: 2px solid var(--ch-ink-900);
@@ -3322,7 +3323,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 }
 .ch-qf[data-canopy] .ch-qf-board .ch-qf-panel__head h2,
 .ch-qfm .ch-qf-board .ch-qf-panel__head h2 {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
 }
@@ -3337,7 +3338,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   background: none;
   box-shadow: none;
   border-bottom: var(--ch-hairline-w) solid var(--ch-ink-rule);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-ink-500);
 }
@@ -3471,7 +3472,7 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
   }
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card {
     padding: 20px 24px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow:
       inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
@@ -3579,8 +3580,8 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
      their titles are one style, the section title in ink, for a coach and a player alike. They were green 20px, ink 20px
      and a smaller, greyer 16px; the two rules that made them so are gone. */
   .ch-qf--list[data-canopy] .ch-qf-sec > h2 {
-    font: var(--ch-type-section);
-    letter-spacing: var(--ch-track-section);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
     color: var(--ch-text-primary);
   }
   /* A card, for both roles: the status sits on the title's line, beside the name, and the description runs the column's width
@@ -3763,7 +3764,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   min-width: 32px;
   height: 32px;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(255 255 255 / 0.1);
   box-shadow: inset 0 0 0 1px rgb(159 224 182 / 0.35);
   font: 700 14px/1 var(--ch-font-sans);
@@ -3780,10 +3781,10 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   color: var(--ch-text-primary);
 }
 .ch-qf-prounds__big b.is-under {
-  color: #ff8b7d;
+  color: var(--ch-score-under-on-green);
 }
 .ch-qf-prounds__big span {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -3842,7 +3843,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   color: var(--ch-text-primary);
 }
 .ch-qf-prounds__m small {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -3861,7 +3862,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
 }
 .ch-qf-prounds__hint {
   margin: 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
 }
 
@@ -3908,7 +3909,7 @@ a.ch-qf-prounds__r.is-play:focus-visible {
   flex-direction: column;
   gap: 24px;
   padding: 24px 32px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
@@ -4121,7 +4122,7 @@ button.ch-qf-prounds__r.is-open {
   vector-effect: non-scaling-stroke;
 }
 .ch-qf-rv__shape .is-under {
-  fill: #ff8b7d;
+  fill: var(--ch-score-under-on-green);
 }
 .ch-qf-rv__shape .is-over {
   fill: #e3b45c;
@@ -4184,9 +4185,9 @@ button.ch-qf-prounds__r.is-open {
   align-items: baseline;
   gap: 4px;
   padding: 6px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(255 255 255 / 0.08);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -4196,7 +4197,7 @@ button.ch-qf-prounds__r.is-open {
 }
 .ch-qf-rv__counts li.is-eagle,
 .ch-qf-rv__counts li.is-birdie {
-  background: rgb(255 139 125 / 0.18);
+  background: rgb(143 211 170 / 0.18);
 }
 .ch-qf-rv__counts li.is-bogey,
 .ch-qf-rv__counts li.is-double {
@@ -4220,7 +4221,7 @@ button.ch-qf-prounds__r.is-open {
 }
 .ch-qf-rv__note {
   margin: 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
 }
 /* The round against the field: its rank large, the field's scores as dots on one line, the average a tick, this one lit. */
@@ -4239,7 +4240,7 @@ button.ch-qf-prounds__r.is-open {
   color: var(--ch-text-primary);
 }
 .ch-qf-rv__fieldhead span {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -4254,7 +4255,7 @@ button.ch-qf-prounds__r.is-open {
   right: -7px;
   left: -7px;
   height: 2px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(237 231 216 / 0.18);
   transform: translateY(-50%);
   content: '';
@@ -4283,7 +4284,7 @@ button.ch-qf-prounds__r.is-open {
 .ch-qf-rv__avg {
   width: 2px;
   height: 20px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: rgb(237 231 216 / 0.55);
 }
 .ch-qf-rv__scale {
@@ -4327,7 +4328,7 @@ button.ch-qf-prounds__r.is-open {
   .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-card,
   .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
     padding: 16px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow:
       inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),

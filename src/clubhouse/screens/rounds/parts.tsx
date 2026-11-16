@@ -278,7 +278,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
           const cx = cxOf(i);
           const h = Math.max(3, Math.abs(d) * u);
           const y0 = d > 0 ? base : base - h;
-          // D3: one scoring language, red under par as everywhere else; a qualifier is a gilt outline on any bar.
+          // D3: one scoring language, the gain under par as everywhere else; a qualifier is a gilt outline on any bar.
           const cls = (d < 0 ? 'is-under' : d === 0 ? 'is-even' : 'is-over') + (x.type === 'qualifier' ? ' is-q' : '');
           return (
             <g

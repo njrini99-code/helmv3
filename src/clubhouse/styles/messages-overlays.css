@@ -1,9 +1,9 @@
 /*
  * Messages v2, package C: overlays (docs/clubhouse/messages-v2/SPEC.md MSG-224, 312, 401-410; MOTION.md HOLD, RX, TEAM, ATT).
  * Loaded after messages.css by the overlay components. New classes carry the `ch-mso-` prefix so this sheet and messages.css
- * never anchor the same class (scripts/clubhouse/css-owners.mjs). Blur, saturate and the scrim come from the Messages tokens
- * (`--ch-glass-blur-msg` 24, `--ch-glass-saturate-msg` 170%, `--ch-scrim-blur-msg` 14, `--ch-scrim-saturate-msg` 120%), each
- * falling back to the shared glass so Reduce Transparency and Increase Contrast flatten them. Corners are the four radius steps
+ * never anchor the same class (scripts/clubhouse/css-owners.mjs). Blur and saturate are the one glass (`--ch-glass-blur`,
+ * `--ch-glass-saturate`, MOTION-AND-VISUAL 4.1) and the scrim its Messages tokens, so Reduce Transparency and Increase
+ * Contrast flatten them. Corners are the four radius steps
  * (the artifact's 18 / 15 / 22 / 10 land on the nearest step, a tie rounding up: 20 / 16 / 20 / 12).
  */
 
@@ -20,8 +20,8 @@
   border-radius: var(--ch-radius-xl);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
-  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
 }
 .ch-mso-menu > button {
   display: flex;
@@ -77,7 +77,7 @@
   min-width: 0;
 }
 .ch-mso-menu__t small {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-crh-ink4);
 }
 .ch-mso-menu > hr {
@@ -197,11 +197,11 @@
   width: 260px;
   height: 50px;
   padding: 4px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
-  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
 }
 .ch-mso-rbar > button {
   position: relative;
@@ -259,7 +259,7 @@
   gap: 1px;
   box-sizing: border-box;
   padding: 4px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
   -webkit-backdrop-filter: blur(var(--ch-glass-blur));
@@ -358,7 +358,7 @@
   height: 26px;
   padding: 0 6px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
   cursor: pointer;
@@ -367,13 +367,13 @@
 .ch-ms-reacts.on-theirs .ch-ms-react {
   background: var(--ch-bubble-mine-fill);
   color: var(--ch-bubble-mine-ink);
-  box-shadow: var(--ch-mso-rx-page), var(--ch-elevation-badge);
+  box-shadow: var(--ch-mso-rx-page);
   transform-origin: 100% 100%;
 }
 .ch-ms-reacts.on-mine .ch-ms-react {
   background: var(--ch-card-bg);
   color: var(--ch-accent-ink);
-  box-shadow: var(--ch-mso-rx-page), 0 0 0 3px var(--ch-mso-rx-pale), var(--ch-elevation-badge);
+  box-shadow: var(--ch-mso-rx-page), 0 0 0 3px var(--ch-mso-rx-pale);
   transform-origin: 0% 100%;
 }
 /* YOUR reaction carries the champagne ring on a 4 px page-colour halo. */
@@ -385,7 +385,7 @@
   box-shadow: var(--ch-mso-rx-page-own);
 }
 .ch-ms-reacts.on-mine .ch-ms-react.is-mine {
-  box-shadow: var(--ch-mso-rx-page-own), 0 0 0 5px var(--ch-mso-rx-pale), var(--ch-elevation-badge);
+  box-shadow: var(--ch-mso-rx-page-own), 0 0 0 5px var(--ch-mso-rx-pale);
 }
 .ch-ms-react svg {
   fill: none;
@@ -414,8 +414,8 @@
   border-radius: var(--ch-radius-xl);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
-  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
   transform-origin: 18px 100%;
 }
 .ch-msv-attach.is-closing {
@@ -500,16 +500,26 @@
   margin: 6px 2px 0;
   padding: var(--ch-ms-px-3) var(--ch-ms-px-9) var(--ch-ms-px-3) 4px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-card-bg);
   /* A pill is too small for the card recipe's ambient layer: a hairline ring and the shared badge drop. */
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   color: var(--ch-text-tertiary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
 }
-/* A pill with no face in it (Delivered, a direct thread's receipt, a player's count) keeps the text's inset. */
+/* A pill with no face in it (Delivered, a player's count) keeps the text's inset. */
 .ch-msv-seen:not(:has(.ch-msv-faces)) {
   padding-left: var(--ch-ms-px-9);
+}
+/* A direct thread's receipt is no pill (DM-05): plain tertiary caption text, right-aligned under the message like
+   iMessage's Read line. */
+.ch-msv-seen.is-dm {
+  margin-top: 4px;
+  padding: 0 2px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font: var(--ch-type-caption);
 }
 button.ch-msv-seen {
   cursor: pointer;
@@ -551,7 +561,7 @@ button.ch-msv-seen::before {
   justify-content: space-between;
 }
 .ch-msv-seenrow small {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-crh-ink4);
 }
 

@@ -68,7 +68,7 @@ export function TeamRosterPhoneCrh({ data, onRetry }: { data: ChPlayerRoster; on
             {/* Directly above the players it sorts, not riding over the coaches (CRH-30). */}
             {!solo && (
               <div className="ch-stickybar ch-rsx-sort">
-                <Segmented<TeamSort> weight="filter"
+                <Segmented<TeamSort>
                   block
                   label="Sort by"
                   value={sort}

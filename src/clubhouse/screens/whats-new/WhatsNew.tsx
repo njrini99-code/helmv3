@@ -141,7 +141,7 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
             />
           )}
           <div className="ch-rd-tools">
-            <Segmented weight="filter"
+            <Segmented
               redraws
               label="Show"
               size="sm"

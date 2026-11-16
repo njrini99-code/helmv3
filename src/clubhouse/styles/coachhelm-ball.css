@@ -41,7 +41,7 @@
   background: radial-gradient(circle at 35% 29%, var(--ch-ball-hi) 0, var(--ch-ball-body) 44%, var(--ch-ball-limb) 122%);
 }
 .ch-ball.is-paper .ch-ball__shell {
-  box-shadow: var(--ch-elevation-badge);
+  box-shadow: none;
 }
 /* A dimple, and the lit lip on its far side. */
 .ch-ball__lip {

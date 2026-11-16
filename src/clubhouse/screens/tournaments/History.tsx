@@ -133,11 +133,11 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
             actions={
               <div className="ch-tour-rev-tools">
                 {phone ? (
-                  <Segmented weight="filter" size="sm" block label="What the trend shows" value={lensOf(state)} onChange={(v) => move(LENSES[v])} options={[{ value: 'rating', label: 'Rating' }, { value: 'returning', label: 'Returning' }, { value: 'field', label: 'The field' }]} />
+                  <Segmented size="sm" block label="What the trend shows" value={lensOf(state)} onChange={(v) => move(LENSES[v])} options={[{ value: 'rating', label: 'Rating' }, { value: 'returning', label: 'Returning' }, { value: 'field', label: 'The field' }]} />
                 ) : (
                   <>
-                    <Segmented weight="filter" size="sm" label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
-                    <Segmented weight="filter" size="sm" label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
+                    <Segmented size="sm" label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
+                    <Segmented size="sm" label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
                   </>
                 )}
               </div>

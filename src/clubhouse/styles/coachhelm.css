@@ -87,7 +87,7 @@
 /* A metric label can run to two lines on a phone ("Downhill penalty vs level putts (distance-controlled)", 286px wide at
    390px); at line-height 1 the lines touched, so it takes the caption leading. Aesthetic audit CH-1. */
 .ch-hl-ev__l {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-bars {
@@ -108,14 +108,14 @@
 }
 .ch-hl-bars__t {
   height: 10px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: rgb(28 25 18 / 0.07);
   overflow: hidden;
 }
 .ch-hl-bars__t i {
   display: block;
   height: 100%;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-green-fill-600);
 }
 .ch-hl-bars__t i.is-weak {
@@ -258,7 +258,7 @@
 .ch-hl-why:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-hl-why__b {
   margin: -4px 0 0;
@@ -323,7 +323,7 @@
   min-width: 0;
 }
 .ch-hl-row__b em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -343,7 +343,7 @@
 .ch-hl-row__v small {
   display: block;
   margin-top: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-row svg {
@@ -897,7 +897,7 @@
 }
 :is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__k {
   margin-bottom: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-on-green-ink-muted);
 }
 
@@ -928,7 +928,7 @@
     border-top: 0;
   }
   .ch-hl.is-phone .ch-hl-role {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -945,8 +945,8 @@
     margin: 0 0 4px;
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
-    font: var(--ch-type-section);
-    letter-spacing: var(--ch-track-section);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1086,7 +1086,7 @@
     margin: 0 0 6px;
     padding: 0;
     box-shadow: none;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
   }
   .ch-hl[data-canopy] .ch-hl-focus__head h2 {
     font: var(--ch-type-34-strong);
@@ -1100,7 +1100,7 @@
     width: 36px;
     height: 3px;
     margin-top: 16px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: linear-gradient(90deg, var(--ch-stage-gold), rgb(231 184 102 / 0));
     content: '';
   }
@@ -1118,7 +1118,7 @@
 
   .ch-hl[data-canopy] .ch-hl-bars__t {
     height: 12px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.14);
   }
 
@@ -1325,7 +1325,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
 }
 .ch-hl-eng__w {
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
   background: var(--ch-ivory-150);
@@ -1426,7 +1426,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
   min-height: 36px;
   padding: 0 16px;
   border: 1px solid var(--ch-border-control);
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);

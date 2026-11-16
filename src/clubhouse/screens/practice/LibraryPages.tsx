@@ -533,7 +533,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
       <section className="ch-prc-sec" aria-label="Your templates">
         <div className="ch-prc-sec__h">
           <h2>Your templates</h2>
-          <Segmented weight="filter" size="sm" label="Kind" value={kind} onChange={setKind} options={[{ value: 'session', label: 'Session' }, { value: 'block', label: 'Block' }, { value: 'week', label: 'Week' }]} />
+          <Segmented size="sm" label="Kind" value={kind} onChange={setKind} options={[{ value: 'session', label: 'Session' }, { value: 'block', label: 'Block' }, { value: 'week', label: 'Week' }]} />
         </div>
         <SectionBoundary surface="practice.templates.team" label="Your templates" code="CH-13204">
         {mine.length === 0 ? (

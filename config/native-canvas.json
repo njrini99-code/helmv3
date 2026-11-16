@@ -8,7 +8,7 @@
       "token": "--fw-color-canvas (src/styles/design-tokens.css)"
     },
     "clubhouse": {
-      "light": "#F2F0E9",
+      "light": "#E8E3D5",
       "dark": "#111512",
       "token": "--ch-bg-page (src/clubhouse/styles/tokens.css), one value at every width"
     }
