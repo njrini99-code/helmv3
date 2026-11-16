@@ -1,4 +1,5 @@
 'use client';
+import { HowStatsCountLink, StatTerm } from '../../ui/StatTerm';
 
 import { breakMake } from './break-make';
 import { roundSplit } from '../../lib/shares';
@@ -213,7 +214,9 @@ function Sec({
           const reason = needs ?? (isNone(v) ? NONE_REASON[`${id}:${l}`] : undefined);
           return (
             <div key={l}>
-              <dt className="t">{l}</dt>
+              <dt className="t">
+                <StatTerm label={l} />
+              </dt>
               <dd className={`v${t ? ` ch-shs-${t}` : ''}${reason ? ' ch-shs-none' : ''}`}>{reason ? <NoData /> : v}</dd>
               {(reason || (n && !isNone(v))) && <dd className="m">{reason ?? n}</dd>}
             </div>
@@ -256,6 +259,7 @@ function Sec({
         <ShsCard title="What this counts">
           <Rule how={how}>{rule}</Rule>
           {reads}
+          <HowStatsCountLink />
         </ShsCard>
       </section>
     );
@@ -278,7 +282,9 @@ function Sec({
             const reason = needs ?? (isNone(v) ? NONE_REASON[`${id}:${l}`] : undefined);
             return (
               <div key={l}>
-                <dt>{l}</dt>
+                <dt>
+                  <StatTerm label={l} />
+                </dt>
                 <dd className={reason ? 'ch-gm__none' : `ch-num${t ? ` ch-${t}` : ''}`}>{reason ?? v}</dd>
                 {n && v !== NO_DATA && <dd className="ch-gm__sub">{n}</dd>}
               </div>
@@ -287,6 +293,7 @@ function Sec({
         </dl>
         <Rule how={how}>{rule}</Rule>
         {reads}
+        <HowStatsCountLink />
       </div>
       <div className="ch-gm__vis">
         <div className="ch-gm__body">{children}</div>
