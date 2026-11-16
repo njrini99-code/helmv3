@@ -1292,10 +1292,12 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-13-trips-next-week-line.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-13-week-gap-legs-target.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-14-retire-fairway.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-15-coach-matches-player.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-15-colour-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-15-motion-visual-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-15-screen-rows.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-16-player-welcome-names-new-round.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
