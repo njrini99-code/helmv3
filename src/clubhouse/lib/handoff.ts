@@ -3,6 +3,7 @@
 import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { CH_DUR, CH_EASE } from './motion';
 import { CH_RAIL_COOKIE } from './rail-cookie';
+import { chMotionModeNow } from './reduced-motion';
 
 /**
  * The curtain between the welcome (or the last onboarding screen) and the
@@ -138,7 +139,8 @@ export function liftHandoffCurtain(): void {
     window.clearTimeout(safety);
     safety = null;
   }
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Reduce Motion or Settings › Animations off: the curtain goes at once (MOTION-AND-VISUAL 3.11).
+  const reduced = chMotionModeNow() !== 'full';
   const go = () => {
     // Two frames: the dashboard's first paint is on screen before the curtain starts to move.
     requestAnimationFrame(() =>
