@@ -12,8 +12,11 @@ import { isInOverlay, isTypingTarget, modalOpen } from '../../shell/command/shor
 const NEW_EVENT = '/golf/dashboard/calendar?new=1';
 const HOME_KEYS: readonly ChPageKey[] = [{ label: 'New event', keys: ['N'] }];
 
-/** Home's two actions: the team chat, and a new calendar event (N from anywhere on Home). */
-export function HomeActions({ teamChatId }: { teamChatId: string | null }) {
+/**
+ * Home's two actions: the team chat, and a new calendar event (N from anywhere on Home). `phone`: the player's two keys
+ * under Up next (PlayerHomePhone `.ch-ph-acts`), large and side by side, as coach Home now draws them too (lay-01).
+ */
+export function HomeActions({ teamChatId, phone = false }: { teamChatId: string | null; phone?: boolean }) {
   const router = useRouter();
   usePageKeys('Home', HOME_KEYS);
   useEffect(() => {
@@ -28,9 +31,21 @@ export function HomeActions({ teamChatId }: { teamChatId: string | null }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [router]);
+  const chat = teamChatId ? `/golf/dashboard/messages?conversation=${teamChatId}` : '/golf/dashboard/messages';
+  if (phone)
+    return (
+      <div className="ch-ph-acts">
+        <Button size="lg" href={chat} leftIcon={MessageSquare} feel="press">
+          Message team
+        </Button>
+        <Button size="lg" href={NEW_EVENT} variant="primary" leftIcon={Plus}>
+          New event
+        </Button>
+      </div>
+    );
   return (
     <div className="ch-h-head__actions">
-      <Button href={teamChatId ? `/golf/dashboard/messages?conversation=${teamChatId}` : '/golf/dashboard/messages'} leftIcon={MessageSquare}>
+      <Button href={chat} leftIcon={MessageSquare}>
         Message team
       </Button>
       <Button href={NEW_EVENT} variant="primary" leftIcon={Plus} kbd="N">
