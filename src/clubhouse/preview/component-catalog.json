@@ -26744,6 +26744,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-rule-top",
+          "value": "inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-shadow-sm",
           "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']"
@@ -29431,6 +29436,11 @@
         {
           "name": "--ch-push-dim",
           "value": "rgb(0 0 0 / 0.075)",
+          "scope": "html:has([data-ui='clubhouse'])"
+        },
+        {
+          "name": "--ch-push-edge",
+          "value": "-1px 0 0 var(--ch-card-ring)",
           "scope": "html:has([data-ui='clubhouse'])"
         },
         {
