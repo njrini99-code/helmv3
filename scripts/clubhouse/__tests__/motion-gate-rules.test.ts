@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { judgeMotion, motionTokens, type MotionRow } from '../../../e2e/clubhouse-gate/motion';
+import { judgeIdle, judgeMotion, motionTokens, type MotionRow } from '../../../e2e/clubhouse-gate/motion';
 
 const tokens = motionTokens(readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8'));
 const row = (over: Partial<MotionRow> = {}): MotionRow => ({
@@ -11,9 +11,10 @@ const row = (over: Partial<MotionRow> = {}): MotionRow => ({
 });
 
 describe('motionTokens', () => {
-  it('reads the D-64 durations and the loops from tokens.css', () => {
-    for (const ms of [0, 110, 120, 180, 220, 260, 280, 300, 520, 462, 900, 1900, 2800]) expect(tokens.has(ms), `${ms} ms`).toBe(true);
-    expect(tokens.has(137)).toBe(false);
+  it('reads the six vocabulary durations from tokens.css and nothing else (MOTION-AND-VISUAL 3.2)', () => {
+    expect([...tokens].sort((a, b) => a - b)).toEqual([0, 110, 180, 260, 280, 360, 520]);
+    // A retiring token's duration is off the scale: the old message beats, a word's rise, the loops.
+    for (const ms of [120, 150, 200, 220, 250, 320, 420, 462, 900, 1900, 2800]) expect(tokens.has(ms), `${ms} ms`).toBe(false);
   });
 });
 
@@ -32,7 +33,7 @@ describe('judgeMotion', () => {
   });
   it('passes the whole-page crossfade on first paint and a loop on any frame', () => {
     expect(judgeMotion([
-      row({ at: 0, name: 'ch-route-in', target: 'div.ch-route-frame', duration: 220, kind: 'CSSAnimation' }),
+      row({ at: 0, name: 'ch-route-in', target: 'div.ch-route-frame', duration: 180, kind: 'CSSAnimation' }),
       row({ at: 0, name: 'ch-shimmer', iterations: 'infinite', duration: 1900, kind: 'CSSAnimation' }),
     ], { reduced: false, tokens })).toEqual([]);
   });
@@ -54,7 +55,7 @@ describe('judgeMotion', () => {
     expect(out.every((b) => b.startsWith('reduced: '))).toBe(true);
   });
   it('judges an interaction without the first-paint rule, but keeps layout and token rules', () => {
-    const sheet = row({ at: 10, kind: 'CSSAnimation', name: 'ch-sheet-in', props: ['transform'], duration: 462, target: 'dialog.ch-fsheet' });
+    const sheet = row({ at: 10, kind: 'CSSAnimation', name: 'ch-sheet-in', props: ['transform'], duration: 520, target: 'dialog.ch-fsheet' });
     expect(judgeMotion([sheet], { reduced: false, tokens, phase: 'interaction' })).toEqual([]);
     expect(judgeMotion([sheet], { reduced: false, tokens, phase: 'open' })).toHaveLength(1);
     expect(judgeMotion([{ ...sheet, props: ['height'] }], { reduced: false, tokens, phase: 'interaction' })[0]).toMatch(/^layout: /);
@@ -62,5 +63,29 @@ describe('judgeMotion', () => {
 
   it('lets a zero-length swap through under Reduce Motion', () => {
     expect(judgeMotion([row({ duration: 0 })], { reduced: true, tokens })).toEqual([]);
+  });
+
+  it('under Reduce Motion allows only a 180 ms opacity fade, on an interaction or as the page crossfade (3.11)', () => {
+    const fade = row({ kind: 'CSSAnimation', name: 'ch-fade', props: ['opacity'], duration: 180, target: 'dialog.ch-fsheet' });
+    expect(judgeMotion([fade], { reduced: true, tokens, phase: 'interaction' })).toEqual([]);
+    expect(judgeMotion([{ ...fade, target: 'div.ch-route-frame', name: 'ch-route-in' }], { reduced: true, tokens })).toEqual([]);
+    // First paint is still, under Reduce Motion too.
+    expect(judgeMotion([fade], { reduced: true, tokens })[0]).toMatch(/^reduced: dialog\.ch-fsheet/);
+    // A travel, or a fade of any other length, still breaks.
+    expect(judgeMotion([{ ...fade, props: ['opacity', 'transform'] }], { reduced: true, tokens, phase: 'interaction' })).toHaveLength(1);
+    expect(judgeMotion([{ ...fade, duration: 260 }], { reduced: true, tokens, phase: 'interaction' })).toHaveLength(1);
+  });
+});
+
+describe('judgeIdle', () => {
+  it('names everything still running after load, loops marked, dev chrome ignored (3.1)', () => {
+    expect(
+      judgeIdle([
+        { kind: 'CSSAnimation', name: 'ch-live', target: 'span.ch-cal-now', pseudo: null, iterations: 'infinite' },
+        { kind: 'CSSTransition', name: 'opacity', target: 'div.ch-x', pseudo: '::after', iterations: 1 },
+        { kind: 'CSSAnimation', name: 'pulse', target: 'nextjs-portal', pseudo: null, iterations: 'infinite' },
+      ]),
+    ).toEqual(['idle: div.ch-x::after opacity still runs after load', 'idle: span.ch-cal-now ch-live still runs after load (a loop)']);
+    expect(judgeIdle([])).toEqual([]);
   });
 });

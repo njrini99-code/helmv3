@@ -12,7 +12,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, use
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import type { ChFileCards, ChFileIntent, ChFilePlan, ChFileRosterRow, ChPlayerFile } from '../../../data/coachhelm-file-shape';
 import { FILE_BYPASS, PLAYER_HELM_HREF, coachPlayerHref, playerFileHref, type ChViewLoad, type PlayerFileCard } from '../../../data/coachhelm-views-shape';
-import { CH_DUR, CH_FADE_MS } from '../../../lib/motion';
+import { CH_DUR, CH_EASE_IOS_CSS, CH_EASE_OUT, CH_FADE_MS } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useChPhone } from '../../../lib/use-phone';
 import { usePageCrumbs } from '../../../shell/crumbs';
@@ -45,7 +45,8 @@ const FILE_PART: Record<string, string> = {
 };
 import { IntentSheet, LIVE_SAVE_INTENT } from './IntentSheet';
 
-const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+/** Leaving rides the out curve (P3-305 / GAP-H-23: from lib/motion, not a hard-coded copy). */
+const LEAVE = `cubic-bezier(${CH_EASE_OUT.join(', ')})`;
 const WIDE = '(min-width: 1180px)';
 const useWide = () =>
   useSyncExternalStore(
@@ -58,7 +59,7 @@ const useWide = () =>
     () => false,
   );
 
-/** A lens-only card: folds on height (smooth spring, 462) with opacity 180 out / 260 in, from where it is. Gone from the DOM once folded (M-LNS-04). Reduce: no fold; the whole file fades. */
+/** A lens-only card: it takes its height at once and rises 8px into it with opacity over the base beat (260) on the iOS curve, and leaves over the quick beat (180) on the out curve, from where it is. Gone from the DOM once folded (M-LNS-04). Reduce: no fold; the whole file fades. */
 function Fold({ show, children }: { show: boolean; children: ReactNode }) {
   const [mounted, setMounted] = useState(show);
   const ref = useRef<HTMLDivElement>(null);
@@ -81,7 +82,7 @@ function Fold({ show, children }: { show: boolean; children: ReactNode }) {
     // Transform and opacity only: the card takes its height at once and fades and rises into it, so nothing lays out per frame.
     const box = el.animate(show ? [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }] : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], {
       duration: show ? CH_DUR.base * 1000 : CH_DUR.quick * 1000,
-      easing: EASE,
+      easing: show ? CH_EASE_IOS_CSS : LEAVE,
       fill: 'both',
     });
     box.onfinish = () => {

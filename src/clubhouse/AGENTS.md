@@ -78,10 +78,13 @@ and its consumer before copying a pattern; comments may describe older values.
   keyboard-aware scroll lock, base transition or immediate reduced-motion swap.
 - Routine route change: `shell/RouteFrame.tsx`, `styles/shell.css`,
   `lib/reduced-motion.ts` and `lib/motion.ts`. Content is visible immediately.
-  Preserve the whole-page crossfade with anchored chrome and Back/Forward
-  scroll restoration. A section switch (a tab bar or sidebar item, marked
-  `data-ch-tab` by `lib/nav-motion.ts`) swaps at once instead, owner-approved
-  2026-10-22 (mot-03). There is no routine first-paint stagger.
+  Preserve the desktop crossfade with anchored chrome and Back/Forward
+  scroll restoration. A section switch (a tab bar or sidebar item, read by
+  `lib/nav-motion.ts`) swaps at once instead, owner-approved 2026-10-22
+  (mot-03), and so does every phone navigation with motion on: a drill-in
+  pushes and Back pops on the live page (`lib/nav-motion.ts`,
+  `shell/use-route-swipe.ts`), with no view transition (audit 2026-11-15,
+  S4.1, S4.8). There is no routine first-paint stagger.
 
 The shell handoff is `design/handoff/m-shell.jsx`; depth references are
 `design/handoff/depth.css` and `design/handoff/design-system/guidelines/elevation.html`.

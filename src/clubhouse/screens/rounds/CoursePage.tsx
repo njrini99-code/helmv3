@@ -13,7 +13,7 @@ import { HoleMap, mostToGain } from './HoleMap';
 import { CourseArc } from './CourseArc';
 import { HowItPlays } from './HowItPlays';
 import { RoundsHere } from './RoundsHere';
-import { FadeNum, useExpandHeight } from './course-motion';
+import { FadeNum, SwapFade } from './course-motion';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useRouter } from 'next/navigation';
@@ -194,14 +194,13 @@ function LastTime({ t, who }: { t: NonNullable<ChCourseHistory['lastTime']>; who
 function NotePlate({ label, text }: { label: string; text: string }) {
   const [all, setAll] = useState(false);
   const long = text.length > 220;
-  // M12: "Show all" eases the text's height open on the smooth spring (a line clamp can't animate itself).
-  const body = useExpandHeight(all);
+  // M12 (audit 2026-11-15, MOT-15): "Show all" sets the note's height at once and the text fades back in over the quick beat.
   return (
     <div className="ch-ch-note">
       <span className="ch-ch-note__l">{label}</span>
-      <div ref={body} className="ch-ch-note__b">
+      <SwapFade swap={all} className="ch-ch-note__b">
         <p className={long && !all ? 'is-clamped' : undefined}>{text}</p>
-      </div>
+      </SwapFade>
       {long && (
         <button type="button" className="ch-ch-note__more" aria-expanded={all} onClick={() => setAll((v) => !v)}>
           {all ? 'Show less' : 'Show all'}

@@ -1599,7 +1599,7 @@ const scenarios: Scenario[] = [
     },
     landed: async () => {
       await waitFor(() => expect(dialogOpen()).toBe(false));
-      // The row closes up before it unmounts (B7, ui/ListPresence); meanwhile it is hidden and inert.
+      // The row fades and shrinks before it unmounts (B7, S3.10, ui/ListPresence); meanwhile it is hidden and inert.
       await waitFor(() => expect(screen.queryByText('Sign travel waiver')).toBeNull());
       await refreshed();
     },

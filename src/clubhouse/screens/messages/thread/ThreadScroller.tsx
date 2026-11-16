@@ -8,6 +8,7 @@ import { HelloCard } from '../HelloCard';
 import { FAILURE_COPY, InlineNotice } from '../../../ui/Notices';
 import { EmptyState, Skeleton } from '../../../ui/States';
 import { ListPresence, PresenceRow } from '../../../ui/ListPresence';
+import { useBusyReveal } from '../../../lib/use-busy';
 
 type MsgItem = Extract<ChThreadItem, { kind: 'msg' }>;
 
@@ -38,6 +39,11 @@ export function ThreadScroller({
   /** The typing dots (drawn only while the thread has loaded). */
   renderTyping: () => ReactNode;
 }) {
+  // 3.5 late content: the messages that take the skeleton's place fade in over the quick beat, opacity only. The skeleton
+  // itself still shows at once, without the 150 ms wait (3.9): a search hit's jump (use-focus-message.ts) looks for its row
+  // the moment loading ends, so the rows must be in the page then.
+  const loading = api.msgsLoading && !api.msgs.length;
+  const reveal = useBusyReveal<HTMLDivElement>(loading && !api.msgsError ? 'skeleton' : 'ready');
   return (
       <div
         className={className}
@@ -46,7 +52,7 @@ export function ThreadScroller({
         aria-live="polite"
         aria-relevant="additions"
       >
-        <div className="ch-ms-msgs">
+        <div className="ch-ms-msgs" ref={reveal}>
           {api.msgsStale && (
             <InlineNotice
               code="CH-7216"
@@ -62,7 +68,7 @@ export function ThreadScroller({
               body={FAILURE_COPY.page}
               onRetry={api.refetchMsgs}
             />
-          ) : api.msgsLoading && !api.msgs.length ? (
+          ) : loading ? (
             <div
               style={{ display: "grid", gap: 12, paddingTop: 24 }}
               aria-busy="true"
@@ -81,10 +87,10 @@ export function ThreadScroller({
             <EmptyState compact kind="first-run" code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
             )
           ) : (
-            // B7: a deleted message closes in place; one that arrives rises in at its full height, so the thread above it
-            // never moves (owner, 2026-10-31, as Fairway's thread does). The scroll stays with useThreadAnchor (no FLIP), and
-            // another conversation is a new list, whose messages never arrive.
-            <ListPresence key={conv.id} flip={false} arrive="rise">
+            // B7, 3.5: a deleted message closes in place; one that arrives (yours or theirs) rises 8 px in at its full height,
+            // and the thread above it moves up to make room (useThreadMakeRoom). The scroll stays with useThreadAnchor (no
+            // FLIP), and another conversation is a new list, whose messages never arrive.
+            <ListPresence key={conv.id} flip={false}>
               {items.flatMap<ReactNode>((it) =>
                 it.kind === "day"
                   ? [
@@ -99,7 +105,7 @@ export function ThreadScroller({
             </ListPresence>
           )}
           {/* No dots under a thread that didn't load or is still loading (states audit c9): nothing to type into yet. */}
-          {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
+          {api.typing && !api.msgsError && !loading && (
             renderTyping()
           )}
         </div>

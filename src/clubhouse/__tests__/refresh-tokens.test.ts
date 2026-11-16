@@ -47,13 +47,15 @@ describe('refresh motion tokens', () => {
   it('the reduced crossfade equals CH_FADE_MS', () => {
     expect(tokens).toContain(`--ch-dur-crossfade-rm: ${CH_FADE_MS}ms;`);
   });
-  it('a route push moves the page behind as far as a stack push', () => {
-    expect(tokens).toContain('--ch-vt-parallax: -24%;');
-    expect(tokens).not.toContain('--ch-vt-parallax: -30%;');
+  it('a route push draws the page behind back a third, under a 0.075 black dim (S4.1)', () => {
+    expect(tokens).toContain('--ch-push-parallax: -30%;');
+    expect(tokens).toContain('--ch-push-dim: rgb(0 0 0 / 0.075);');
+    expect(tokens).not.toContain('--ch-vt-parallax');
   });
-  it('the settle spring has its CSS curve', () => {
-    expect(tokens).toMatch(/--ch-ease-spring-settle: linear\(0, 0\.0429,/);
-    expect(tokens).toContain('--ch-dur-spring-settle: 417ms;');
+  it('the settle beat is the base beat on the iOS curve, no spring duration (S3.1)', () => {
+    expect(tokens).toContain('--ch-ease-spring-settle: var(--ch-ease-ios);');
+    expect(tokens).toContain('--ch-dur-spring-settle: var(--ch-dur-base);');
+    expect(tokens).not.toContain('417ms');
   });
 });
 

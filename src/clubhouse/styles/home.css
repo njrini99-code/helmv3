@@ -530,11 +530,11 @@
   }
 }
 .ch-h-rail__item[data-ch-pressed] {
-  background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-h-rail__item:active {
-    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+    background: var(--ch-sel);
   }
 }
 .ch-h-rail__item.is-on {
@@ -686,11 +686,11 @@
   }
 }
 .ch-h-lb__row.is-link[data-ch-pressed] {
-  background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-h-lb__row.is-link:active {
-    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+    background: var(--ch-sel);
   }
 }
 .ch-h-lb__row.is-link:has(.ch-h-lb__go:focus-visible) {
@@ -1534,11 +1534,11 @@
     transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-hm-rd[data-ch-pressed] {
-    background: var(--ch-bg-hover);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hm-rd:active {
-      background: var(--ch-bg-hover);
+      background: var(--ch-sel);
     }
   }
   .ch-hm-rd__b {
@@ -2646,7 +2646,8 @@
   }
   @media (hover: hover) {
     .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   /* The row's chevron sits in its 12px end padding, clear of the SG figure. */
@@ -2656,12 +2657,12 @@
   /* CH-2602: a press deepens the row's tint and nudges its chevron 2px on, over the press beat; letting go eases back
      over quick. A row never scales (lib/press.ts, owner F02). */
   .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -3242,12 +3243,10 @@
   }
   a.ch-hm-next[data-ch-pressed]::after {
     opacity: 0.38;
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     a.ch-hm-next:active::after {
       opacity: 0.38;
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   /* Today's rows sit on the section's edge like the Ledger's rows (ui.css `.ch-lgr__row.is-link`): the tap area runs
@@ -3259,13 +3258,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hm-tl__a[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hm-tl__a:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-hm-tl__a:focus-visible {
@@ -3289,13 +3286,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hm-rd[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hm-rd:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-hm-rd:focus-visible {
@@ -3310,12 +3305,10 @@
   }
   .ch-hm-link[data-ch-pressed] {
     opacity: 0.55;
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-hm-link:active {
       opacity: 0.55;
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-hm-none__chip,
@@ -3324,22 +3317,18 @@
   }
   .ch-hm-none__chip[data-ch-pressed] {
     background: rgb(255 255 255 / 0.16);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-hm-none__chip:active {
       background: rgb(255 255 255 / 0.16);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-hm-none__add[data-ch-pressed] {
     background: var(--ch-ivory-200);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-hm-none__add:active {
       background: var(--ch-ivory-200);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   /* The first-run pages (CH-2308, CH-2312): the head is the Ledger's page intro (ui/Ledger.tsx PageIntro), the date as
@@ -3416,13 +3405,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hm--player .ch-ph-pg button[data-ch-pressed]::before {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hm--player .ch-ph-pg button:active::before {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-hm--player .ch-ph-pg button:focus-visible::before {
@@ -3727,12 +3714,10 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   }
   .ch-hm-day:has(.ch-hm-day__open[data-ch-pressed])::after {
     opacity: 0.38;
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-hm-day:has(.ch-hm-day__open:active)::after {
       opacity: 0.38;
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   /* P002 D2: 28px coins whose 2px rings just touch, so two initials always clear the next coin. */
@@ -3789,12 +3774,10 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   }
   .ch-hm-day__act[data-ch-pressed] {
     background: rgb(244 238 221 / 0.2);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-hm-day__act:active {
       background: rgb(244 238 221 / 0.2);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-hm-day__act.is-primary[data-ch-pressed] {
@@ -4165,8 +4148,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   transition: background-color var(--ch-dur-press) var(--ch-ease);
 }
 .ch-ph-asks[data-ch-pressed] {
-  background: var(--ch-bg-hover);
-  transition-delay: var(--ch-dur-press-delay);
+  background: var(--ch-sel);
 }
 
 /* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
@@ -4442,7 +4424,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-hm-queue__a[data-ch-pressed] {
     background: color-mix(in oklab, currentColor 16%, transparent);
-    transition-delay: var(--ch-dur-press-delay);
   }
   .ch-hm-queue__fail {
     display: inline-flex;

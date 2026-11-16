@@ -843,44 +843,44 @@
   --ch-notice-body: var(--ch-notice-on-green-body);
 }
 
-/* Skeleton sheen (audit A-13, 2026-10-14): one layer per block, slid by transform, on every width. The desktop used a
-   viewport-fixed 200vw gradient whose background-position animated, which repainted every block on every frame while a
-   page loaded (the phone moved off it 2026-10-12 for the same reason; iOS ignored the fixed attachment anyway). A shade
-   deeper than the first pass (states audit, 2026-10-08): about 1.2:1 on the workspace, with a soft sheen. */
+/* Skeletons (MOTION-AND-VISUAL 3.9, 3.12): static blocks shaped like the content, with no shimmer and no pulse. A shade
+   deeper than the first pass (states audit, 2026-10-08): about 1.2:1 on the workspace.
+   Draw nothing new for the busy delay (3.9, lib/use-busy.ts): a block shows only once the wait has passed, so a load that
+   lands within 150 ms never draws one, while the page's frame (the bar, the title, the strip) is there from the first frame
+   (S4.4). A wait, not motion: it holds under Reduce Motion and Animations off, and it ends in an instant (no fade). A
+   skeleton that useBusy put up has waited already (data-ch-busy="skeleton"), and one chained after the route's own in the
+   same place (data-skel="chained") takes its place with no gap. Page skeletons with blocks of their own take the same
+   animation on them (stats-redesign.css, messages-inbox.css, coachhelm-team.css, coachhelm-file.css). */
+@keyframes ch-busy-wait {
+  from {
+    visibility: hidden;
+  }
+}
 .ch-skel {
   display: block;
   position: relative;
   overflow: hidden;
   background: var(--ch-skel-base);
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
-.ch-skel::before {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, var(--ch-skel-sheen) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: ch-shimmer-x var(--ch-dur-shimmer) linear infinite;
-  content: '';
+:is([data-skel='chained'], [data-ch-busy='skeleton']) .ch-skel {
+  animation: none;
 }
-/* A green feature card in waiting (a hero), on the loaded card's ground and lift, its sweep the pale ink Home's skeleton
-   bars use, so the page doesn't flash pale to green when it lands (F-0060). */
+/* A green feature card in waiting (a hero), on the loaded card's ground and lift, so the page doesn't flash pale to green
+   when it lands (F-0060). */
 .ch-skel.ch-skel--feature {
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-elevation-feature);
 }
-.ch-skel--feature::before {
-  background: linear-gradient(100deg, transparent 30%, rgb(244 241 232 / 0.12) 50%, transparent 70%);
-}
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* A block in waiting (a fluid Skeleton from 56px tall, or shape="block") is drawn in the Ledger as the Ledger draws
      what it stands for: a rule along its top and two lines of type under it, not a filled card. It keeps its box, so
-     nothing moves when the page lands; a real object that loads filled asks for shape="solid". Its two lines breathe
-     (opacity, on the compositor) rather than sweep: their pseudo-elements are the lines, so there is no layer to slide. */
+     nothing moves when the page lands; a real object that loads filled asks for shape="solid". The lines are still. */
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block {
     position: relative;
     overflow: visible;
     border-radius: 0 !important;
     background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 0 / 100% 1px no-repeat;
-    animation: none;
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
@@ -889,8 +889,6 @@
     left: 0;
     border-radius: var(--ch-radius-sm);
     background: var(--ch-skel-base);
-    transform: none;
-    animation: ch-skel-breathe var(--ch-dur-shimmer) ease-in-out infinite;
     content: '';
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before {
@@ -934,41 +932,6 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-}
-/* Animations off in Settings: skeletons hold still (a Ledger block's lines too), from the first frame (ThemeScript
-   marks <html> before hydration). */
-[data-motion='off'] .ch-root .ch-skel::before,
-.ch-root[data-motion='off'] .ch-skel::before {
-  animation: none;
-  display: none;
-}
-[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::before,
-[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::after,
-.ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::before,
-.ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::after {
-  display: block;
-  animation: none;
-}
-@keyframes ch-shimmer-x {
-  to {
-    transform: translateX(100%);
-  }
-}
-@keyframes ch-skel-breathe {
-  50% {
-    opacity: 0.55;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-skel,
-  .ch-skel::before,
-  .ch-skel--block::before,
-  .ch-skel--block::after {
-    animation: none !important;
-  }
-  .ch-skel:not(.ch-skel--block)::before {
-    display: none;
-  }
 }
 .ch-toast__txt {
   display: flex;
@@ -1072,13 +1035,11 @@
 }
 /* As a ledger row (CH-1606): the tint waits a beat, so a drag or a scroll that starts on a row never flashes it. */
 .ch-more__row[data-ch-pressed] {
-  background: var(--ch-bg-hover);
-  transition-delay: var(--ch-dur-press-delay);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-more__row:active {
-    background: var(--ch-bg-hover);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
 }
 .ch-more__ic {
@@ -1909,12 +1870,13 @@ button.ch-more__row[disabled] {
 }
 
 /* -- Page crossfade (RouteFrame's <ViewTransition>, owner 2026-10-01) ------------------------------------------------
-   The view-transition pseudo-elements hang off :root, outside [data-ui='clubhouse'], so their timings are tokens set on <html>
-   (tokens.css, --ch-dur-vt-*). The old and new pages crossfade together, in opacity
-   only: no slide, no blur, nothing that costs a phone a frame. The shell (root) is anchored: its new snapshot shows at
-   once and the old one is hidden, so the sidebar, top bar and tab bar never fade. Taps pass through to the live page
-   while it runs. Reduced motion and Animations off never start one (RouteFrame renders without it); the media query
-   below is the backstop. Every rule is scoped to a document showing Clubhouse, so Fairway pages are untouched. */
+   Only a desktop page change and a phone page change under Reduce Motion crossfade (production audit 2026-11-15, S4.8):
+   with motion on, a section switch and every phone navigation start no view transition at all (RouteFrame), so nothing
+   full-page is snapshotted on a tap. The view-transition pseudo-elements hang off :root, outside [data-ui='clubhouse'],
+   so their timings are tokens set on <html> (tokens.css, --ch-dur-vt-*). The old and new pages crossfade together, in
+   opacity only. The shell (root) is anchored: its new snapshot shows at once and the old one is hidden, so the sidebar,
+   top bar and tab bar never fade. Taps pass through to the live page while it runs. Animations off never starts one
+   (RouteFrame renders without it). Every rule is scoped to a document showing Clubhouse, so Fairway pages are untouched. */
 @keyframes ch-vt-out {
   to {
     opacity: 0;
@@ -1941,7 +1903,7 @@ html:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
   animation: var(--ch-dur-vt-out) var(--ch-ease-vt-out) both ch-vt-out;
 }
 html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-  animation: var(--ch-dur-vt-in) var(--ch-ease-vt-in) var(--ch-dur-vt-gap) both ch-vt-in;
+  animation: var(--ch-dur-vt-in) var(--ch-ease-vt-in) both ch-vt-in;
 }
 /* The bars never fade or move during a page change (native-feel audit 2026-10-08, P0-3). As part of root they sat under
    the page's group, so the fading old page and the new page's skeleton drew over the tab bar. Named, each is its own
@@ -1969,92 +1931,53 @@ html:has([data-ui='clubhouse'])::view-transition-old(ch-strip) {
 html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
   animation-delay: var(--ch-dur-vt-hold);
 }
-/* A section switch (the tab bar, a sidebar item; lib/nav-motion.ts sets data-ch-tab; motion pass 2026-10-22, mot-03)
-   swaps at once, as a tab bar and a sidebar do on iOS and macOS: the new page is there in the first frame and the old
-   one is gone. The fade-through's dip, the old page out before the new one in, read as a blank beat on every section
-   change. Onto a route skeleton the old page still stays up through the hold and the skeleton's own delay, then goes in
-   one step as the skeleton fades in; a page that arrives sooner takes the hold off, and the old page goes with it. */
-html[data-ch-tab]:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-  animation: none;
-}
-html[data-ch-tab]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-  display: none;
-}
-html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-  display: block;
-  animation: calc(var(--ch-dur-vt-hold) + var(--ch-dur-vt-out)) step-end both ch-vt-out;
-}
-/* A drill-in pushes and Back pops (P1-1, P1-2; lib/nav-motion.ts sets data-ch-nav), as a pushed phone screen does
-   (PhoneScreen): the new page slides in from the right edge on the smooth spring while the one under it draws back by
-   a parallax share, and Back plays it in reverse with the leaving page on top. Transform on the snapshot, no layout and
-   no filter. Phone only: desktop keeps the crossfade. */
-@keyframes ch-vt-pop-in {
-  from {
-    transform: translateX(var(--ch-vt-parallax));
-  }
-}
-@keyframes ch-vt-pop-out {
-  to {
-    transform: translateX(100%);
-  }
-}
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  /* The pages are opaque while they slide, so neither shows through the other. */
-  html[data-ch-nav] [data-ui='clubhouse'] .ch-frame-route {
-    background: var(--ch-bg-page);
-  }
-  /* C1: a drill-in is drawn by the live page sliding over a copy of the one it left (lib/nav-motion.ts playPush), so a
-     finger can take it mid-flight; the view transition swaps at once, so the two never both slide. */
-  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-old(ch-page),
-  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-    animation: none;
-  }
-  html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-    z-index: 1;
-    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-pop-out;
-  }
-  html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-pop-in;
-  }
-  /* Back's pop (lib/nav-motion.ts playPop): the copy of the leaving page, over the page and under the bars. */
+  /* Back's pop from the browser's own toolbar (lib/nav-motion.ts playPop, the popstate fallback): the copy of the leaving
+     page, over the page and under the bars. A Back tap and the edge swipe slide the live page instead. */
   .ch-root.ch-frame-popping {
     z-index: calc(var(--ch-z-sticky) - 1);
     min-height: 0;
     overflow: hidden;
     background: var(--ch-bg-page);
     pointer-events: none;
+    will-change: transform;
   }
-  /* C1: the copy of the page beneath a pushed one (lib/nav-motion.ts unders): below the page, which slides over it, and
-     under the bars. Inert; only drawn while a push plays or a finger drags the page back. */
+  /* The copy of the page beneath a pushed one (lib/nav-motion.ts unders, S4.1): below the page, which slides over it, and
+     under the bars. Inert, and in the document only while a push plays or a finger or Back takes the page off it, so it
+     is promoted for exactly that long. */
   .ch-root.ch-frame-under {
     z-index: calc(var(--ch-z-sticky) - 2);
     min-height: 0;
     overflow: hidden;
     background: var(--ch-bg-page);
     pointer-events: none;
+    will-change: transform;
   }
-  /* The page moving over that copy, by the push or under a finger: opaque, and above it. */
+  /* The page moving over that copy, by the push, a Back or a finger: opaque, above it, promoted while it moves, and
+     edged by a hairline where it meets the page beneath (S4.1; Apple's edge shadow is unpublished, the hairline is the
+     quiet version). */
   [data-ui='clubhouse'] .ch-frame-route[data-ch-pushing] {
     position: relative;
     z-index: calc(var(--ch-z-sticky) - 1);
     background: var(--ch-bg-page);
+    box-shadow: -1px 0 0 var(--ch-card-ring);
+    will-change: transform;
   }
 }
-/* Reduce Motion (owner decision 2, 2026-10-24, OQ-15): a page change crossfades, the old page out and the new one in
-   together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades. No push, pop, parallax,
-   dim or hold; the bars stay put and a section switch still swaps at once. Settings › Animations off never starts a
-   transition (RouteFrame renders without one). */
+/* Reduce Motion (owner decision 2, 2026-10-24, OQ-15; MOTION-AND-VISUAL 3.3, 3.11): a page change crossfades, the old
+   page out and the new one in together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades.
+   No push, pop, parallax or dim, and on a phone a section switch fades the same way (lib/nav-motion.ts chNavCrossfades);
+   the bars stay put. Settings › Animations off never starts a transition (RouteFrame renders without one). */
 @media (prefers-reduced-motion: reduce) {
   html:has([data-ui='clubhouse'])::view-transition-group(*),
   html:has([data-ui='clubhouse'])::view-transition-old(*),
   html:has([data-ui='clubhouse'])::view-transition-new(*) {
     animation: none !important;
   }
-  html:not([data-ch-tab], [data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-    z-index: auto;
+  html:not([data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-old(ch-page) {
     animation: var(--ch-dur-vt-fade) var(--ch-ease-vt-out) both ch-vt-out !important;
   }
-  html:not([data-ch-tab], [data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-new(ch-page) {
+  html:not([data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     animation: var(--ch-dur-vt-fade) var(--ch-ease-vt-in) both ch-vt-in !important;
   }
 }
@@ -2072,8 +1995,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 
 /* -- A nav tap before its page arrives (LinkPending) -----------------------------------------------------------------
    The tapped row or tab takes the selected look on the first frame; the hairline at the top of the page only fades in
-   if the wait passes --ch-dur-press, so a prefetched page never flickers it. Reduced motion keeps the bar (the signal matters)
-   without its sweep. */
+   if the wait passes --ch-dur-press, so a prefetched page never flickers it. It stands still: no sweep runs across it
+   (MOTION-AND-VISUAL 3.12: the only loop is the working indicator). */
 .ch-lp {
   display: contents;
 }
@@ -2086,19 +2009,6 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-nav:has(.ch-lp) .ch-navitem[aria-current='page']:not(:has(.ch-lp)) svg {
   color: inherit;
 }
-@keyframes ch-lp-show {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes ch-lp-sweep {
-  from {
-    transform: translateX(-60%) scaleX(0.4);
-  }
-  to {
-    transform: translateX(100%) scaleX(0.4);
-  }
-}
 .ch-lp__bar {
   position: fixed;
   /* Below the clock and island in the home-screen app (MOB-SHELL-13). */
@@ -2107,26 +2017,17 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   height: 2px;
   overflow: hidden;
   pointer-events: none;
-  animation: ch-lp-show var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-press) backwards;
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-out) var(--ch-dur-press) backwards;
 }
 .ch-lp__bar::after {
   content: '';
   position: absolute;
   inset: 0;
   background: var(--ch-green-600, currentColor);
-  transform-origin: left center;
-  animation: ch-lp-sweep var(--ch-dur-sweep) var(--ch-ease-io) var(--ch-dur-press) infinite;
+  opacity: 0.6;
 }
-[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar,
-[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar::after {
+[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar {
   animation: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-lp__bar::after {
-    animation: none !important;
-    transform: none;
-    opacity: 0.6;
-  }
 }
 
 /* The navigation glass, with an opaque fallback (owner 2026-10-01, audit F04): where backdrop-filter is missing, or the
@@ -2756,10 +2657,6 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
       box-shadow: 0 0 0 1px var(--ch-border-strong);
     }
   }
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
-    background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
-  }
 }
 @media (min-width: 821px) and (prefers-reduced-transparency: reduce) and ((min-height: 501px) or (pointer: fine)) {
   html[data-fw-theme='dark'] .ch-topbar {
@@ -2775,9 +2672,6 @@ html[data-fw-theme='dark'] .ch-empty-page--danger {
 }
 html[data-fw-theme='dark'] .ch-empty-page__seg i {
   background: rgb(237 231 216 / 0.12);
-}
-:where(html[data-fw-theme='dark']) .ch-skel {
-  background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
 }
 html[data-fw-theme='dark'] .ch-scrim {
   background: rgb(0 0 0 / 0.55);
@@ -3129,8 +3023,10 @@ html[data-fw-theme='dark'] .ch-offline {
    section switcher always shows, over a page's large title too, whether the shell draws it (.ch-topbar__ptitle) or the
    page's own bar holds it (.ch-sw in a .ch-pbar__title: Roster, Settings, Qualifiers, Recruiting) (owner, 2026-10-16:
    on Stats the switcher seemed gone while "Team stats" was in view). A pushed page that opens with its own large title does not also
-   show its name in the bar: while the large title is in view the bar's pushed title is hidden, and as it scrolls up
-   under the bar (the bar is marked data-large-title="tucked") it fades in, on opacity and a 3px rise only. The :has()
+   show its name in the bar: the bar's pushed title is hidden at rest and fades in from 36 to 52px of the page's scroll,
+   in opacity only, as the large title goes under the bar (MOTION-AND-VISUAL 3.3; production audit S4.3). Scroll-driven
+   where Safari has a scroll timeline (26 and later), the same fade from shell/large-title.tsx before that; no curve and
+   no script per frame, and the same under Reduce Motion (the person's own scroll drives it). The :has()
    list is CH_LARGE_TITLES and must stay in step with it; it holds from the first paint. The bar's title keeps its
    place in the accessibility tree and stays the focus target for a pushed page. Pages with no large title, the green
    hero's bar and desktop are untouched. The scroll edge: a soft shade under the bar once content has scrolled under
@@ -3170,10 +3066,25 @@ html[data-fw-theme='dark'] .ch-offline {
           .ch-large-title
         ):not(.ch-sr-only, .ch-pscreen *, dialog *)
     )
-    .ch-topbar:not([data-large-title='tucked'])
+    .ch-topbar
     :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title):not(:has(.ch-sw)) {
     opacity: 0;
-    translate: 0 3px;
+    transition: none;
+  }
+  @supports (animation-timeline: scroll()) {
+    [data-ui='clubhouse']:not([data-phone-hero]):has(
+        #ch-canvas
+          :is(
+            .ch-large-title
+          ):not(.ch-sr-only, .ch-pscreen *, dialog *)
+      )
+      .ch-topbar
+      :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title):not(:has(.ch-sw)) {
+      --ch-lt-to: 1;
+      animation: ch-lt-under linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 36px 52px;
+    }
   }
   [data-ui='clubhouse'] .ch-topbar::before {
     position: absolute;
@@ -3283,11 +3194,11 @@ html[data-fw-theme='dark'] .ch-offline {
     pointer-events: none;
   }
   .ch-more__row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-more__row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-more__ic,
@@ -3491,7 +3402,8 @@ html[data-fw-theme='dark'] .ch-offline {
     outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
-  /* The green bar's selected pill: one ivory plate that glides between pills (layoutId, the settle spring). */
+  /* The green bar's selected pill: one ivory plate that glides between pills (lib/slide-plate.ts: 260ms on the iOS curve,
+     translate and width, MOTION-AND-VISUAL 3.3; under Reduce Motion it fades in at its new place). */
   .ch-strip__plate {
     position: absolute;
     inset: 0;
@@ -4014,10 +3926,11 @@ html[data-fw-theme='dark'] .ch-offline {
   color: var(--ch-hero-mint);
 }
 /* The entrance after sign in (owner, 2026-10-16: "more premium. i do like the wheel turning"), about 3.5s in all:
-   the dashboard settles for about 0.55s; the word writes in left to right behind a wide feathered edge while it comes
-   into focus (blur and a 3px rise settling out), over about 1.5s; the wheel spins in three quarters of a turn from
-   small and slows to a stop with a slight settle, overlapping the last of the word; then one glint of light crosses
-   the frosted panel. */
+   the dashboard settles for about 0.55s; the word writes in left to right behind a wide feathered edge while it rises
+   the last 3px into place, over about 1.5s; the wheel spins in three quarters of a turn from small and slows to a stop
+   with a slight settle, overlapping the last of the word; then one glint of light crosses the frosted panel. The rise
+   and the glint are transforms (production audit 2026-11-15, MOT-15): no blur filter and no background-position is
+   animated, since either repaints on every frame. */
 .ch-brand__word.is-write {
   -webkit-mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
   mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
@@ -4027,7 +3940,7 @@ html[data-fw-theme='dark'] .ch-offline {
   mask-repeat: no-repeat;
   animation:
     ch-brand-write calc(var(--ch-dur-reveal) * 2.9) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both,
-    ch-brand-focus calc(var(--ch-dur-reveal) * 3.1) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both;
+    ch-brand-rise calc(var(--ch-dur-reveal) * 3.1) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both;
 }
 .ch-brand__mark.is-write {
   animation: ch-brand-wheel calc(var(--ch-dur-reveal) * 2.5) var(--ch-ease-spring-smooth) calc(var(--ch-dur-reveal) * 3) both;
@@ -4036,14 +3949,17 @@ html[data-fw-theme='dark'] .ch-offline {
   position: relative;
   overflow: hidden;
 }
+/* The glint is a band two and a half panels wide, slid across on a transform (the panel clips it): the same path the
+   band took as a background-position from 130% to -30%, as translateX from -78% to 18% of its own width. */
 .ch-brand:has(.ch-brand__line.is-write)::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgb(255 250 235 / 0.28) 50%, transparent 65%) no-repeat;
-  background-size: 250% 100%;
+  inset: 0 auto 0 0;
+  width: 250%;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 250 235 / 0.28) 50%, transparent 65%);
   mix-blend-mode: soft-light;
   pointer-events: none;
+  transform: translateX(-78%);
   animation: ch-brand-glint calc(var(--ch-dur-reveal) * 2.2) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 4.6) both;
 }
 /* Arriving from the welcome, the entrance holds on its first frame while the hand-off's curtain is up (lib/handoff.ts),
@@ -4063,13 +3979,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     mask-position: 0 0;
   }
 }
-@keyframes ch-brand-focus {
+@keyframes ch-brand-rise {
   from {
-    filter: blur(3px);
     transform: translateY(3px);
   }
   to {
-    filter: none;
     transform: none;
   }
 }
@@ -4091,10 +4005,10 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 }
 @keyframes ch-brand-glint {
   from {
-    background-position: 130% 0;
+    transform: translateX(-78%);
   }
   to {
-    background-position: -30% 0;
+    transform: translateX(18%);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4112,12 +4026,14 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 
 /* -- The folding sidebar (owner, 2026-10-17: "a little circle that collapses the sidebar and just shows the golfhelm
    logo and all the icons") --------------------------------------------------------------------------------------------
-   The rail is the sidebar at --ch-rail-w; the canvas is the rest of the row, so the page simply gains the width. One
-   motion carries it: the sidebar's edge, the circle riding it, the word's track and the brand panel all move on the
-   smooth spring, so the edge slides and the wheel glides to the rail's centre as one object. The icons never move: the
-   rail is exactly as wide as the icons' column. The words leave first and arrive last: folding, they fade out quickly
-   before the edge reaches them; opening, they fade in once the edge has passed, drifting the last 4px into place, so
-   no label is ever seen squeezed. Reduced motion and Animations off swap at once (the tokens go to 0). Desktop only. */
+   The rail is the sidebar at --ch-rail-w; the canvas is the rest of the row, so the page simply gains the width. The
+   fold moves on transform and opacity only (production audit 2026-11-15, S4.4, MOT-11): the sidebar's edge, the circle
+   on it, the word's track and the brand panel take their new place at once, so the canvas is laid out once, not on
+   every frame of the fold. The icons never move: the rail is exactly as wide as the icons' column. What moves is drawn
+   on the compositor: the circle's chevron turns over the base beat on the iOS curve, and the words fade and slide over
+   the quick beat. Opening, they arrive on the iOS curve, drifting the last 4px into place; folding, the rail clips them
+   at once and what is left fades on --ch-ease-out. Reduced motion and Animations off swap at once (the tokens go to 0).
+   Desktop only. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-app {
     position: relative;
@@ -4127,12 +4043,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
   .ch-sidebar {
     overflow-x: hidden;
-    transition: width var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
   /* While the fold moves (lib/rail-fold.ts sets data-ch-rail-moving; motion pass 2026-10-22, mot-01), the brand panel
-     drops its frost: a blur under a box that changes size is redrawn on every frame of the spring. Over the sidebar's
-     clear field, a smooth gradient, the panel reads nearly the same without it, and the frost is back as it settles.
-     The page's own size readers wait the fold out in the same way (afterRailMove). */
+     drops its frost. The width no longer moves (MOT-11), so this now spans a single task; it stays so that a sidebar
+     given a width transition again keeps its blur from being redrawn on every frame. The page's own size readers wait
+     the fold out in the same way (afterRailMove). */
   .ch-app[data-ch-rail-moving] .ch-brand {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -4158,8 +4073,8 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
       inset 0 1px 0 #fff,
       var(--ch-elevation-on-frame);
     cursor: pointer;
-    transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
-      transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+    /* No transition on its translate: the circle stays on the seam, which takes its place at once (MOT-11). */
+    transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
   /* 22px drawn, 24 x 24 to the pointer (F-0022): it sat under the desktop minimum on every page. */
   .ch-railtoggle::after {
@@ -4168,7 +4083,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     content: '';
   }
   .ch-railtoggle svg {
-    transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    transition: transform var(--ch-dur-base) var(--ch-ease-ios);
   }
   .ch-app[data-ch-rail='folded'] .ch-railtoggle svg {
     transform: rotate(180deg);
@@ -4181,12 +4096,12 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
   .ch-railtoggle[data-ch-pressed] {
     transform: scale(0.94);
-    transition-duration: var(--ch-dur-spring-smooth), var(--ch-dur-press), var(--ch-dur-press);
+    transition-duration: var(--ch-dur-press), var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-railtoggle:active {
       transform: scale(0.94);
-      transition-duration: var(--ch-dur-spring-smooth), var(--ch-dur-press), var(--ch-dur-press);
+      transition-duration: var(--ch-dur-press), var(--ch-dur-press);
     }
   }
   .ch-railtoggle:focus-visible {
@@ -4195,20 +4110,12 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
 
   /* The brand: the word's track closes to nothing (a grid column from 1fr to 0fr), the gap with it, and the panel
-     tightens to the wheel, so the wheel ends at the rail's centre. */
-  .ch-brand {
-    transition: margin var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
-      padding var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
-  }
-  .ch-brand__line {
-    transition: gap var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
-  }
+     tightens to the wheel, so the wheel sits at the rail's centre. All of it at once; only the word fades. */
   .ch-brand__fold {
     display: grid;
     grid-template-columns: 1fr;
     min-width: 0;
-    transition: grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
-      opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios);
   }
   .ch-brand__fold > .ch-brand__word {
     min-width: 0;
@@ -4226,11 +4133,10 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-app[data-ch-rail='folded'] .ch-brand__fold {
     grid-template-columns: 0fr;
     opacity: 0;
-    transition: grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
-      opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
   }
 
-  /* The words: out first, in last. The icon keeps its size while the row narrows; the label gives way. */
+  /* The words. The icon keeps its size on the rail; the label gives way. */
   .ch-navitem {
     white-space: nowrap;
   }
@@ -4245,16 +4151,16 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-nav__head > *,
   .ch-identity__txt,
   .ch-sidebar__card {
-    transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8),
-      transform var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8),
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios),
+      transform var(--ch-dur-quick) var(--ch-ease-ios),
       visibility 0s linear 0s;
   }
   .ch-app[data-ch-rail='folded'] :is(.ch-navitem__label, .ch-nav__head > *, .ch-identity__txt, .ch-sidebar__card) {
     opacity: 0;
     transform: translateX(-4px);
-    transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out),
-      transform calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out),
-      visibility 0s linear calc(var(--ch-dur-quick) * 0.7);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-out),
+      transform var(--ch-dur-quick) var(--ch-ease-out),
+      visibility 0s linear var(--ch-dur-quick);
   }
   /* The card is wide and fixed, so it never reflows while the edge passes over it; on the rail it is hidden. */
   .ch-sidebar__card {
@@ -4280,11 +4186,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     height: var(--ch-hairline-w);
     background: rgb(220 205 166 / 0.4);
     opacity: 0;
-    transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-app[data-ch-rail='folded'] .ch-nav__head::before {
     opacity: 1;
-    transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios);
   }
 
   /* A count rides the icon's corner on the rail. */
@@ -4311,7 +4217,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 
   /* The avatar centres on the rail; the foot's rule goes with the card. */
   .ch-identity .ch-avatar {
-    transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    transition: translate var(--ch-dur-base) var(--ch-ease-ios);
   }
   .ch-app[data-ch-rail='folded'] .ch-identity .ch-avatar {
     translate: -5px 0;
@@ -4347,7 +4253,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     opacity: 1;
     transform: translate(0, -50%);
     transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
-      translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+      translate var(--ch-dur-base) var(--ch-ease-ios);
   }
 }
 @keyframes ch-rail-count {
@@ -4367,11 +4273,8 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ch-sidebar,
   .ch-railtoggle,
   .ch-railtoggle svg,
-  .ch-brand,
-  .ch-brand__line,
   .ch-brand__fold,
   .ch-navitem__label,
   .ch-nav__head > *,
@@ -4434,12 +4337,18 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 }
 
 
-/* Clubhouse refresh, PR 3: the large title's context line, the title's scroll scale origin
-   (shell/large-title.tsx sets scale and opacity from the scroll), and controls that stick under the green bar on the page colour.
+/* Clubhouse refresh, PR 3: the large title's context line, and controls that stick under the green bar on the page colour.
    The bar itself is not touched. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-app[data-ch-refresh='on'] .ch-large-title {
-    transform-origin: left bottom;
+  /* The large title fades as it goes under the bar, over the first 52px of the page's scroll (production audit
+     2026-11-15, S4.3): scroll-driven, so no script runs per frame, and it never scales. Older Safari has no scroll
+     timeline and gets the same fade from shell/large-title.tsx. A pushed screen and a dialog scroll their own box. */
+  @supports (animation-timeline: scroll()) {
+    [data-ui='clubhouse'] main .ch-large-title:not(.ch-large-title--skel, .ch-pscreen .ch-large-title, dialog .ch-large-title) {
+      animation: ch-lt-under linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0px 52px;
+    }
   }
   .ch-app[data-ch-refresh='on'] .ch-large-title__context {
     margin: 4px 0 0;
@@ -4457,6 +4366,13 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-large-title__context {
     display: none;
+  }
+}
+/* One keyframe for both ends of the collapse (MOTION-AND-VISUAL 3.3): the large title from its own 1 to 0.1, and the bar's
+   title from its resting 0 to --ch-lt-to: 1. */
+@keyframes ch-lt-under {
+  to {
+    opacity: var(--ch-lt-to, 0.1);
   }
 }
 

@@ -6,6 +6,7 @@ import { ClubhouseMarker, useInClubhouse } from './context';
 import { FAILURE_COPY } from '../ui/Notices';
 import '../styles/tokens.css';
 import '../styles/base.css';
+import '../styles/motion.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 

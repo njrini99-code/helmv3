@@ -281,12 +281,12 @@
 }
 /* Pressing drops the hover lift. A card never scales: the shell's press is for keys (lib/press.ts, CH-1606). */
 .ch-rs-face:not(.ch-rs-face--static)[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
   transform: translateY(0);
 }
 @media (hover: hover) {
   .ch-rs-face:not(.ch-rs-face--static):active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transform: translateY(0);
   }
 }
@@ -1329,11 +1329,11 @@ a.ch-rs-peek__dev:focus-visible,
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rsm-row:focus-visible {
@@ -1561,11 +1561,11 @@ a.ch-rs-peek__dev:focus-visible,
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-panel__link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-panel__link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   /* CoachHelm on the phone profile: the counts on the panel's seam, under its heading. */
@@ -1756,13 +1756,11 @@ a.ch-rs-peek__dev:focus-visible,
     background: var(--ch-ledger-rule-soft);
   }
   .ch-rsm-banner[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-banner:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-rsm-banner[data-ch-pressed]::after {
@@ -1966,11 +1964,11 @@ a.ch-rs-peek__dev:focus-visible,
     pointer-events: none;
   }
   .ch-rsm-act[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-act:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rsm-act b {
@@ -2133,7 +2131,8 @@ a.ch-rs-peek__dev:focus-visible,
 
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rs[data-canopy] .ch-rs-face.is-sel {
@@ -2146,12 +2145,12 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* CH-3602: a press deepens the tint over the press beat (the row press tint). */
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static)[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2263,7 +2262,8 @@ a.ch-rs-peek__dev:focus-visible,
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-row:not(.ch-rs-row--head):hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rs[data-canopy] .ch-rs-row.is-sel {
@@ -2278,12 +2278,12 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* Pressing a player's name deepens the row's tint over the press beat; the row menu's key presses on its own. */
   .ch-rs[data-canopy] .ch-rs-row:has(.ch-rs-who[data-ch-pressed]) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-row:has(.ch-rs-who:active) {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2423,13 +2423,13 @@ a.ch-rs-peek__dev:focus-visible,
   opacity: 0.45;
 }
 
-/* CH-3701: a chosen sort slides each moved phone row to its new place on the smooth spring (D-64), its figure rolling
-   inside it. No crossfade: the row's new face travels from the old place. The pseudo-elements hang off <html>, so they
-   take the spring from its tokens there (tokens.css, --ch-*-vt-push). The shell's reduced-motion rule stops it, and the
+/* CH-3701: a chosen sort slides each moved phone row to its new place over base on the one curve (S3.10), its figure
+   rolling inside it. No crossfade: the row's new face travels from the old place. The pseudo-elements hang off <html>,
+   so they take the timing from its tokens there (tokens.css, --ch-*-vt-move). The shell's reduced-motion rule stops it, and the
    list never asks for it then, nor with Animations off (RosterPhoneList). */
 html:has([data-ui='clubhouse'])::view-transition-group(.ch-rsm-reorder) {
-  animation-duration: var(--ch-dur-vt-push);
-  animation-timing-function: var(--ch-ease-vt-push);
+  animation-duration: var(--ch-dur-vt-move);
+  animation-timing-function: var(--ch-ease-vt-move);
 }
 html:has([data-ui='clubhouse'])::view-transition-old(.ch-rsm-reorder) {
   display: none;
@@ -3071,7 +3071,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     text-align: left;
   }
   [data-ch-crh='on'] .ch-rsx-row[data-ch-pressed] {
-    background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+    background: var(--ch-sel);
     transform: none;
   }
   [data-ch-crh='on'] .ch-rsx-row:focus-visible {

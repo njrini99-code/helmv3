@@ -33,7 +33,7 @@ import '../../../styles/messages-overlays.css';
 export function popBadge(el: HTMLElement | null, reduced = false) {
   if (!el || el.dataset.chPopped) return;
   el.dataset.chPopped = "1";
-  msAnimate(el, [{ transform: "scale(.4)" }, { transform: "scale(1)" }], "pop", { reduced });
+  msAnimate(el, [{ transform: "scale(.4)" }, { transform: "scale(1)" }], "settle", { reduced });
 }
 
 export function ReactionChip({ api, messageId, r, arriving = false }: { api: ChMessagesApi; messageId: string; r: ChReaction; /** Redesign: a badge added after the bubble drew pops from its corner (M-MSG-13). */ arriving?: boolean }) {

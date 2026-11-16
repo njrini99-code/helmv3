@@ -1,27 +1,31 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
-import { CH_EASE, CH_EASE_SHEET, CH_FADE_MS, CH_MS, chSpringCurve, CH_DUR } from '../../lib/motion';
-import { chThrownExit } from '../../lib/sheet-drag';
+import { CH_DUR, CH_EASE, CH_EASE_IOS, CH_EASE_IOS_CSS, CH_FADE_MS, chSpringCurve } from '../../lib/motion';
 import type { ChMotionMode } from '../../lib/reduced-motion';
 
 const bez = (c: readonly number[]) => `cubic-bezier(${c.join(',')})`;
 
-/** M-QC: the panel is opaque by 90 ms, on purpose below the motion scale: a slower fade reads as a ghost of the page. */
-const PANEL_OPAQUE_MS = 90;
-/** MO-1-4: the close holds the panel's opacity for this share of its time, then lets it go (07 M-CLOSE). */
-const CLOSE_OPAQUE_SHARE = 0.4;
-/** M-CONTENT's parts leave in this long (07 M-CLOSE: "parts 100ms"); `--ch-dur-press` rounded down to the table's value. */
-const PARTS_OUT_MS = 100;
+/**
+ * The panel is a large popover, not a growing blob (production audit 2026-11-15, MOT-09, S3.5): it enters from 96% with
+ * its opacity over the base beat and leaves over the quick beat, the whole panel at once (no part is staggered), on the
+ * one curve every tap-started enter and exit rides (`--ch-ease-ios`).
+ */
+export const QC_FROM = 'scale(0.96)';
+export const QC_OPEN_MS = CH_DUR.base * 1000;
+export const QC_CLOSE_MS = CH_DUR.quick * 1000;
+/** How fast `--ch-ease-ios` leaves its start (y1 / x1, progress per unit of time). A throw's carry is sized by it, so the close leaves at the finger's speed. */
+const IOS_LAUNCH = CH_EASE_IOS[1] / CH_EASE_IOS[0];
 /** MO-1-5: the scrim thins to this as the sheet is dragged its own height. */
 const SCRIM_DRAGGED = 0.4;
 
 /**
- * M-OPEN's `transform-origin`: the key's centre (a viewport point) in the panel's own untransformed box. The panel's
- * place comes from its offsets (07: "offsetLeft / offsetTop chains, never getBoundingClientRect, which includes a
- * running scale"), so a retarget that measures mid-pour gets the same origin as the first open and the panel stays on
- * the key. Offsets are from the offset parent's padding edge; that parent is not moving, so its rect places them in the
- * viewport. The phone's panel is fixed and has no offset parent: its offsets are already from the viewport.
+ * The panel's `transform-origin`: the key's centre (a viewport point) in the panel's own untransformed box, so the
+ * popover settles onto the key it hangs from. The panel's place comes from its offsets (07: "offsetLeft / offsetTop
+ * chains, never getBoundingClientRect, which includes a running scale"), so a retarget that measures mid-open gets the
+ * same origin as the first open and the panel stays on the key. Offsets are from the offset parent's padding edge; that
+ * parent is not moving, so its rect places them in the viewport. The phone's panel is fixed and has no offset parent:
+ * its offsets are already from the viewport.
  */
 export function pourOrigin(panel: HTMLElement, key: { x: number; y: number }): string {
   const parent = panel.offsetParent as HTMLElement | null;
@@ -37,9 +41,24 @@ export function dragCloses(dy: number, velocity: number, height: number, share: 
 }
 
 /**
- * MO-1-1, M-CONTENT, MO-1-2, MO-1-4, MO-1-5 and every retarget between them (QUICK-CHAT.md, Moment 1). Each move reads
- * where the panel is (its computed transform and opacity, which include a drag's offset and a running effect), cancels
- * what was running, and continues from there: nothing restarts from its first frame and nothing queues.
+ * Where a close goes (S3.5): back to 96%, where the panel opened from. A sheet that was dragged leaves from where the finger
+ * put it; a thrown one carries on along its throw at the finger's speed (`speed`, px per ms) without shrinking, so the hand
+ * and the close are one motion in the same 180 ms.
+ */
+export function qcCloseTo(dragged: number, speed: number): string {
+  if (!dragged) return QC_FROM;
+  if (speed <= 0) return `translateY(${dragged}px) ${QC_FROM}`;
+  return `translateY(${dragged + (Math.sign(dragged) * speed * QC_CLOSE_MS) / IOS_LAUNCH}px)`;
+}
+
+/** A computed transform as a keyframe: `none` (and an engine that reports nothing) is where the panel rests. */
+const asFrame = (t: string) => (!t || t === 'none' ? 'scale(1)' : t);
+
+/**
+ * MO-1-1, MO-1-2, MO-1-4, MO-1-5 and every retarget between them (QUICK-CHAT.md, Moment 1). Each move reads where the
+ * panel is (its computed transform and opacity, which include a drag's offset and a running effect), cancels what was
+ * running, and continues from there: nothing restarts from its first frame and nothing queues. Reduce Motion is opacity
+ * only over 180 ms (S3.9); Animations off is at once.
  */
 export function useQcMotion(mode: ChMotionMode) {
   const anims = useRef<Animation[]>([]);
@@ -50,11 +69,7 @@ export function useQcMotion(mode: ChMotionMode) {
   };
   const held = (panel: HTMLElement, scrim: HTMLElement | null) => {
     const from = getComputedStyle(panel);
-    const parts = [...panel.querySelectorAll<HTMLElement>('[data-qc-rise]')].map((el) => {
-      const s = getComputedStyle(el);
-      return { el, o: s.opacity, t: s.transform };
-    });
-    return { t: from.transform, o: from.opacity, scrim: scrim ? getComputedStyle(scrim).opacity : '0', parts };
+    return { t: asFrame(from.transform), o: from.opacity || '1', scrim: scrim ? getComputedStyle(scrim).opacity || '1' : '0' };
   };
   const clearDrag = (panel: HTMLElement, scrim: HTMLElement | null) => {
     panel.style.transform = '';
@@ -64,7 +79,7 @@ export function useQcMotion(mode: ChMotionMode) {
   const open = useCallback(
     (panel: HTMLElement, scrim: HTMLElement | null, origin: { x: number; y: number }, onRest: () => void) => {
       const live = moving.current || !!panel.style.transform;
-      const was = live ? held(panel, scrim) : { t: 'scale(0.5)', o: '0', scrim: '0', parts: [] as Array<{ el: HTMLElement; o: string; t: string }> };
+      const was = live ? held(panel, scrim) : { t: QC_FROM, o: '0', scrim: '0' };
       stop();
       clearDrag(panel, scrim);
       if (mode === 'off') {
@@ -90,23 +105,17 @@ export function useQcMotion(mode: ChMotionMode) {
         rest(a);
         return;
       }
+      // The whole panel at once: transform and opacity together, from where it is (96% and clear on a first open).
       panel.style.transformOrigin = pourOrigin(panel, origin);
-      const pour = chSpringCurve('pour');
-      const smooth = chSpringCurve('smooth');
-      const a = panel.animate([{ transform: was.t === 'none' ? 'scale(1)' : was.t }, { transform: 'none' }], { duration: pour.ms, easing: pour.linear });
+      const a = panel.animate(
+        [
+          { transform: was.t, opacity: was.o },
+          { transform: 'none', opacity: 1 },
+        ],
+        { duration: QC_OPEN_MS, easing: CH_EASE_IOS_CSS },
+      );
       anims.current.push(a);
-      // A reopen finishes the fade it interrupted in the time that is left of it (07 M-RETARGET).
-      anims.current.push(panel.animate([{ opacity: was.o }, { opacity: 1 }], { duration: Math.max(1, PANEL_OPAQUE_MS * (1 - Number(was.o))), easing: 'linear' }));
-      if (scrim) anims.current.push(scrim.animate([{ opacity: was.scrim }, { opacity: 1 }], { duration: smooth.ms, easing: smooth.linear }));
-      // The one allowed stagger: header, body, composer (07 M-CONTENT). A part turned around mid-close has no delay.
-      panel.querySelectorAll<HTMLElement>('[data-qc-rise]').forEach((el, i) => {
-        const part = was.parts.find((p) => p.el === el);
-        anims.current.push(
-          part
-            ? el.animate([{ opacity: part.o, transform: part.t === 'none' ? 'translateY(0)' : part.t }, { opacity: 1, transform: 'none' }], { duration: CH_DUR.release * 1000, easing: bez(CH_EASE) })
-            : el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: CH_DUR.release * 1000, delay: 60 + i * 30, easing: bez(CH_EASE), fill: 'backwards' }),
-        );
-      });
+      if (scrim) anims.current.push(scrim.animate([{ opacity: was.scrim }, { opacity: 1 }], { duration: QC_OPEN_MS, easing: CH_EASE_IOS_CSS }));
       rest(a);
     },
     [mode],
@@ -115,6 +124,8 @@ export function useQcMotion(mode: ChMotionMode) {
   const close = useCallback(
     (panel: HTMLElement, scrim: HTMLElement | null, done: () => void, thrownAt = 0) => {
       const was = held(panel, scrim);
+      // How far a finger has the sheet (dragTo's offset), read before the drag is cleared.
+      const dragged = Number(/translateY\((-?[\d.]+)px\)/.exec(panel.style.transform)?.[1] ?? 0);
       stop();
       clearDrag(panel, scrim);
       if (mode === 'off') {
@@ -123,20 +134,19 @@ export function useQcMotion(mode: ChMotionMode) {
         return;
       }
       moving.current = true;
-      // A thrown sheet keeps its speed into the close (the smooth spring started at the finger's speed over what is left of
-      // its travel), so the hand and the close are one motion; every other close is MO-1-4's own time and curve.
-      const exit = thrownAt > 0 && mode === 'full' ? chThrownExit(thrownAt, Math.max(1, panel.offsetHeight / 2)) : null;
-      const duration = mode === 'fade' ? CH_FADE_MS : exit ? Math.min(exit.ms, CH_MS.field * 2) : CH_MS.field;
-      const easing = mode === 'fade' ? 'linear' : exit ? exit.linear : bez(CH_EASE_SHEET);
+      const duration = mode === 'fade' ? CH_FADE_MS : QC_CLOSE_MS;
+      const easing = mode === 'fade' ? 'linear' : CH_EASE_IOS_CSS;
       const main =
         mode === 'fade'
           ? panel.animate([{ opacity: was.o }, { opacity: 0 }], { duration, easing, fill: 'forwards' })
-          : panel.animate([{ transform: was.t === 'none' ? 'scale(1)' : was.t }, { transform: 'scale(0.5)' }], { duration, easing, fill: 'forwards' });
+          : panel.animate(
+              [
+                { transform: was.t, opacity: was.o },
+                { transform: qcCloseTo(dragged, thrownAt), opacity: 0 },
+              ],
+              { duration, easing, fill: 'forwards' },
+            );
       anims.current.push(main);
-      if (mode !== 'fade') {
-        anims.current.push(panel.animate([{ opacity: was.o }, { opacity: was.o, offset: CLOSE_OPAQUE_SHARE }, { opacity: 0 }], { duration, easing: 'linear', fill: 'forwards' }));
-        for (const p of was.parts) anims.current.push(p.el.animate([{ opacity: p.o }, { opacity: 0 }], { duration: PARTS_OUT_MS, easing: 'linear', fill: 'forwards' }));
-      }
       if (scrim) anims.current.push(scrim.animate([{ opacity: was.scrim }, { opacity: 0 }], { duration, easing, fill: 'forwards' }));
       void main.finished
         .then(() => {

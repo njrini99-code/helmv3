@@ -51,8 +51,9 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 
 ## states
 
-- [ ] Loading: a route skeleton shaped like the page, so nothing shifts when
-  data lands
+- [ ] Loading: a static route skeleton shaped like the page, so nothing shifts
+  when data lands; every wait goes through `useBusy` (nothing for 150 ms, the
+  skeleton held 300 ms, a 180 ms fade)
 - [ ] Empty (first run): says what will appear here and the one next step
 - [ ] Empty (filtered or no results): distinct from first run, and offers to
   clear filters
@@ -91,11 +92,30 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 
 ## motion
 <!-- Rewritten for v2 motion (D-64) and v2 haptics (D-70) on 2026-09-29; earlier evidence was against the old timings, so every box starts again. -->
-- [ ] Transitions use only the v2 tokens (press 110, quick 180, base 260, release 280, reveal 520ms) and the v2 curves (D-64)
-- [ ] Press: every tappable shrinks about 6px and springs back (`useChPress`), and nothing scales twice
-- [ ] First paint: content is visible at once (the reveal and every stagger are retired, Q-139); no count-ups; charts and graphics are drawn in place, with no wipe, rise or glide when they scroll into view (a changed value may still move); a refresh never animates
-- [ ] Page changes fade through on the phone (120 ms out, a 120 ms gap, 220 ms in) and crossfade with no gap on the desktop (120 ms out and 180 ms in together, owner decision 3) and hold the route skeleton back 300 ms, so a quick load never shows one; a section switch (tab bar, sidebar) swaps at once, with the same hold; skeletons share one shimmer sweep; pushes and sheets settle on the 462 ms smooth spring; the Stats busy dim holds off 150 ms (`--ch-dur-busy-delay`)
-- [ ] Reduced motion and Animations off remove the rise, the press and the shimmer (`useChReducedMotion`)
+- [ ] Transitions use only the vocabulary (MOTION-AND-VISUAL 3.2): press 110,
+  quick 180, base 260, release 280, marks 360, reveal 520 ms, `--ch-ease-ios`
+  and `--ch-ease-out`, no retiring token
+- [ ] Press (3.8): a press waits 50 ms and shows at least 110 ms; a button or
+  chip goes to scale 0.97 over 110 ms on ease-out and back over 280 ms on the
+  iOS curve with no overshoot (`useChPress`), and nothing scales twice; a row,
+  option or menu item takes the wash `--ch-sel` instead, and a desk row's hover
+  is the same wash, at once
+- [ ] First paint: content is visible at once (the reveal and every stagger are retired, Q-139); no count-ups; charts and graphics are drawn in place, with no wipe, rise or glide when they scroll into view (a changed value may still move), except a bar chart's first view in a session, whose bars grow once from their origin over 360 ms (3.7); a refresh never animates
+- [ ] A phone page change with motion on starts no view transition: a section
+  switch (tab bar, sidebar) and any other swap show the new page or its
+  skeleton's frame in the first frame (its blocks after 150 ms), and a drill-in
+  pushes and Back pops on the live page over 520 ms on the one curve
+  (`--ch-ease-ios`, a 30% parallax under a 0.075 black dim); the desktop
+  crossfades with no gap (120 ms out and 180 ms in together, owner decision 3),
+  and only a crossfade holds the route skeleton back 150 ms, so a quick load
+  never shows one; Reduce Motion crossfades over 180 ms; skeletons are static,
+  with no shimmer or pulse, and the one loop is the working indicator, only
+  while work runs; a dragged sheet settles on the script smooth spring (462 ms),
+  and CSS has no spring durations: a one-shot entry rides the iOS curve on a
+  D-64 beat; the Stats busy dim holds off 150 ms and then holds 300 ms, as the
+  CoachHelm view switches do (`--ch-dur-busy-delay`)
+- [ ] Reduce Motion (3.11) turns travel into a 180 ms fade and stills the
+  working indicator; Animations off removes every motion (`useChReducedMotion`)
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 
 ## accessibility

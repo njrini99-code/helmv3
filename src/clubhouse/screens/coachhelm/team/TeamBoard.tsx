@@ -471,7 +471,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
 
   return (
     <ReadWorthContext.Provider value={worth}>
-    <main ref={top} {...sw.enter} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
+    <main ref={top} {...sw.enter} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-busy={sw.busy} data-ch-screen="coachhelm-team">
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone ? (
         <div className="sheet">

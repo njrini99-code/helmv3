@@ -44,6 +44,7 @@ import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
 import '../styles/tokens.css';
 import '../styles/base.css';
+import '../styles/motion.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 import '../styles/controls.css';

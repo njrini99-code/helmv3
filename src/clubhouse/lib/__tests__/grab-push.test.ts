@@ -1,16 +1,16 @@
 /**
  * @vitest-environment jsdom
  *
- * C1 (rows 2 and 89): a phone drill-in is drawn by the live page sliding over a copy of the page it left, on the smooth
- * spring, so a finger can take it mid-flight (`grabPush`) and a Back can reverse it from where it stands
+ * C1 (rows 2 and 89): a phone drill-in is drawn by the live page sliding over a copy of the page it left, over 520ms on
+ * the one curve (production audit 2026-11-15, S4.1), so a finger can take it mid-flight (`grabPush`) and a Back can reverse it from where it stands
  * (`takeRunningPush`). The copy stays beneath the pushed page (`underFor`) for a swipe back to uncover.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { chSpringCurve } from '../motion';
+import { CH_PUSH_MS, CH_EASE_IOS, chBezier } from '../motion';
 
-type Fake = { currentTime: number; cancel: ReturnType<typeof vi.fn>; finished: Promise<void> };
+type Fake = { currentTime: number; cancel: ReturnType<typeof vi.fn>; pause: ReturnType<typeof vi.fn>; play: ReturnType<typeof vi.fn>; finished: Promise<void> };
 let anims: Fake[] = [];
-const curve = chSpringCurve('smooth');
+const curve = { ms: CH_PUSH_MS, ease: chBezier(CH_EASE_IOS) };
 
 async function load() {
   vi.resetModules();
@@ -19,7 +19,6 @@ async function load() {
 
 beforeEach(() => {
   anims = [];
-  document.documentElement.removeAttribute('data-ch-nav');
   document.documentElement.removeAttribute('data-motion');
   document.body.innerHTML = `
     <div class="ch-root" data-ui="clubhouse">
@@ -28,7 +27,7 @@ beforeEach(() => {
     </div>`;
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)', addEventListener() {}, removeEventListener() {} }));
   HTMLElement.prototype.animate = vi.fn(function () {
-    const a: Fake = { currentTime: 0, cancel: vi.fn(), finished: new Promise<void>(() => {}) };
+    const a: Fake = { currentTime: 0, cancel: vi.fn(), pause: vi.fn(), play: vi.fn(), finished: new Promise<void>(() => {}) };
     anims.push(a);
     return a as unknown as Animation;
   }) as unknown as HTMLElement['animate'];
@@ -59,6 +58,13 @@ describe('the grabbable push (C1)', () => {
     const frames = vi.mocked(HTMLElement.prototype.animate).mock.calls.flatMap((c) => c[0] as Keyframe[]);
     expect(new Set(frames.flatMap((f) => Object.keys(f)))).toEqual(new Set(['transform', 'opacity']));
     expect(document.getElementById('ch-content')!.hasAttribute('data-ch-pushing')).toBe(true);
+    // Created paused at their first frame and played in the next one (S4.1): the commit's frame lays out the new page.
+    expect(anims.every((a) => a.pause.mock.calls.length === 1 && a.play.mock.calls.length === 0)).toBe(true);
+    await new Promise((r) => requestAnimationFrame(r));
+    expect(anims.every((a) => a.play.mock.calls.length === 1)).toBe(true);
+    // 520ms on the one curve; the page beneath draws back a third.
+    const opts = vi.mocked(HTMLElement.prototype.animate).mock.calls.map((c) => c[1] as KeyframeAnimationOptions);
+    expect(opts.every((o) => o.duration === 520 && o.easing === 'cubic-bezier(0.32, 0.72, 0, 1)')).toBe(true);
     const under = nav.underFor('/golf/dashboard/roster/p1');
     expect(under).toMatchObject({ over: '/golf/dashboard/roster/p1', under: '/golf/dashboard/roster' });
     expect(under!.layer.isConnected).toBe(true);

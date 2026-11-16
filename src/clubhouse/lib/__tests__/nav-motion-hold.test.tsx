@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { chNavShown } from '../nav-motion';
+import { chNavKind, chNavShown } from '../nav-motion';
 
 /**
  * F-0006 (audit 2026-10-29): a drill-in's held copy of the page it leaves was appended to <body> inside React's commit,
@@ -10,13 +10,12 @@ import { chNavShown } from '../nav-motion';
 const realMatch = window.matchMedia;
 beforeEach(() => {
   window.matchMedia = ((q: string) => ({ matches: q.includes('max-width'), media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
-  HTMLElement.prototype.animate = vi.fn(() => ({ finished: new Promise(() => {}), cancel: vi.fn(), currentTime: 0 }) as unknown as Animation) as never;
+  HTMLElement.prototype.animate = vi.fn(() => ({ finished: new Promise(() => {}), cancel: vi.fn(), pause: vi.fn(), play: vi.fn(), currentTime: 0 }) as unknown as Animation) as never;
   document.body.innerHTML = '<div class="ch-root" data-ui="clubhouse"><main id="ch-content"><a href="/golf/dashboard/rounds/r1">Round</a></main></div>';
 });
 afterEach(() => {
   window.matchMedia = realMatch;
   document.body.innerHTML = '';
-  document.documentElement.removeAttribute('data-ch-nav');
 });
 
 describe('the push holds its copy at the tap (F-0006)', () => {
@@ -25,7 +24,9 @@ describe('the push holds its copy at the tap (F-0006)', () => {
     const link = document.querySelector('a')!;
     link.addEventListener('click', (e) => e.preventDefault());
     link.click();
-    expect(document.documentElement.getAttribute('data-ch-nav')).toBe('push');
+    expect(chNavKind()).toBe('push');
+    // Kept in the module, not on <html> (MOT-20): an attribute there restyled the whole document on every tap.
+    expect(document.documentElement.hasAttribute('data-ch-nav')).toBe(false);
     expect(document.body.querySelector(':scope > .ch-frame-under'), 'no copy in the tap frame').toBeNull();
     await new Promise((r) => requestAnimationFrame(r));
     const layer = document.body.querySelector<HTMLElement>(':scope > .ch-frame-under');

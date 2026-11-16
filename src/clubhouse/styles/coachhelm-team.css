@@ -22,7 +22,7 @@
 }
 /* Rows tint, they don't scale (lib/press.ts). */
 .ch-htb .tapp[data-ch-pressed] {
-  background-color: var(--ch-press-wash, var(--ch-well-bg-flat));
+  background-color: var(--ch-sel);
   transition-duration:var(--ch-dur-press);
 }
 /* Rows tint on press; only keys and tiles scale (MOT-40). */
@@ -31,7 +31,7 @@
 .ch-htb .rd.tapp[data-ch-pressed],
 .ch-htb .cr.tapp[data-ch-pressed] {
   transform:none;
-  background:var(--ch-ledger-row-press);
+  background:var(--ch-sel);
 }
 .ch-htb .sheet {
   display:flex;
@@ -245,7 +245,7 @@
 .ch-htb .stn {
   cursor:pointer;
   transform-box:view-box;
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-spring),opacity var(--ch-dur-quick) var(--ch-ease);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios),opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-htb .stn .halo {
   fill:color-mix(in srgb, var(--ch-feature-loss) 17%, transparent);
@@ -361,20 +361,8 @@
 .ch-htb .holefx__ring.is-even {
   box-shadow:inset 0 0 0 1.5px var(--ch-feature-ink-2);
 }
-/* The selected station's pulse (M-TEAM-06): 1 to 1.7 over 2.4s, twice, then still. */
-.ch-htb .holefx__ring.is-pulse {
-  animation:ch-htb-pulse var(--ch-dur-station-pulse) var(--ch-ease) 2;
-}
-@keyframes ch-htb-pulse {
-  from {
-    opacity:.7;
-    transform:scale(1);
-  }
-  to {
-    opacity:0;
-    transform:scale(1.7);
-  }
-}
+/* The selected station's pulse (M-TEAM-06) is gone (MOTION-AND-VISUAL 3.1, 3.12): the picked station's own state says
+   which it is. The ring stays unseen. */
 .ch-htb .holefx__fly {
   position:absolute;
   left:0;
@@ -447,7 +435,7 @@
   color:var(--ch-feature-ink);
   font-weight:var(--ch-fw-500);}
 .ch-htb .hole .stn {
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-spring),opacity var(--ch-dur-base) var(--ch-ease);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios),opacity var(--ch-dur-base) var(--ch-ease);
 }
 .ch-htb .hole.offh .stn {
   opacity:.38;
@@ -1088,7 +1076,7 @@
 }
 .ch-htb .ringc .fil {
   stroke:var(--ch-chart-gain-fill);
-  transition:stroke-dashoffset var(--ch-dur-sweep) var(--ch-ease);
+  transition:stroke-dashoffset var(--ch-dur-marks) var(--ch-ease-ios);
 }
 .ch-htb .ringc .fil.mid {
   stroke:var(--ch-chart-flat);
@@ -1520,31 +1508,18 @@
   color:var(--ch-feature-ink-2);
   white-space:nowrap;
 }
+/* Static blocks that wait the busy delay, as .ch-skel does (MOTION-AND-VISUAL 3.9; shell.css ch-busy-wait). */
 .ch-htb .skl {
   display:block;
   background:var(--ch-well-bg-flat);
   border-radius: var(--ch-radius-sm);
   position:relative;
   overflow:hidden;
-}
-.ch-htb .skl::after {
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(90deg,transparent,color-mix(in srgb, var(--ch-ivory-0) 45%, transparent),transparent);
-  transform:translateX(-100%);
-  animation:ch-htb-shim var(--ch-dur-shimmer) var(--ch-ease) infinite;
-}
-html[data-fw-theme='dark'] .ch-htb .skl::after {
-  background:linear-gradient(90deg,transparent,color-mix(in srgb, var(--ch-ivory-0) 6%, transparent),transparent);
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
 .ch-htb .feat .skl {
   background:color-mix(in srgb, var(--ch-feature-ink) 9%, transparent);
 }
-.ch-htb .feat .skl::after {
-  background:linear-gradient(90deg,transparent,color-mix(in srgb, var(--ch-feature-ink) 10%, transparent),transparent);
-}
-@keyframes ch-htb-shim {to{transform:translateX(100%);}}
 .ch-htb .sklc {
   padding:16px;
   display:grid;
@@ -1797,14 +1772,6 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   color:var(--ch-green-600);
 }
 
-/* Reduce Motion: var(--ch-dur-quick) opacity only (.dev[data-rm] on the page). */
-@media (prefers-reduced-motion: reduce) {
-  .ch-htb .skl::after {
-    animation: none;
-    opacity: 0;
-  }
-}
-
 /* The app's own frame around the page's blocks. */
 .ch-htb.is-phone .sheet {
   padding: 6px var(--ch-page-x-phone, 16px) calc(48px + env(safe-area-inset-bottom));
@@ -2038,7 +2005,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   }
 }
 .ch-htb .wk.is-new {
-  animation: ch-htb-wk var(--ch-dur-reveal) var(--ch-ease-spring);
+  animation: ch-htb-wk var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-htb .insp {
@@ -2062,7 +2029,6 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   }
 }
 /* Animations off: the duration tokens are 0 there (tokens.css), so a transition lands at once; these are the keyframes. */
-[data-motion='off'] .ch-htb .skl::after,
 [data-motion='off'] .ch-htb .story,
 [data-motion='off'] .ch-htb .sto-b,
 [data-motion='off'] .ch-htb .wk.is-new,
@@ -2279,8 +2245,11 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-htb[aria-busy='true']:not([aria-label^='Loading']) > * {
-  opacity: 0.55;
   pointer-events: none;
+}
+/* The dim waits the busy delay and holds the busy hold (data-ch-busy, lib/use-busy.ts; MOTION-AND-VISUAL 3.9). */
+.ch-htb[data-ch-busy='skeleton'] > * {
+  opacity: 0.55;
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-htb[data-ch-enter]:not(.is-phone) > * {

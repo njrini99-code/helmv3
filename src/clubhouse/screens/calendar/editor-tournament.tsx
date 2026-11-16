@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { Trophy } from 'lucide-react';
 import { forwardRef } from 'react';
 import { Icon } from '../../ui/Icon';
@@ -85,11 +85,14 @@ export const TournamentSection = forwardRef<HTMLElement, {
           </Button>
         </div>
       )}
-      {track && (
-        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ ...chTween('quick', reduced), delay: reduced ? 0 : 0.05 }}>
-          <TournamentFields state={state} onChange={onChange} errors={errors} showErrors={showErrors} timezone={timezone} courseWrites={courseWrites} announce={announce} />
-        </m.div>
-      )}
+      {/* 3.5: an editor that opens on a tournament shows its fields at once; turning tracking on fades them in. */}
+      <AnimatePresence initial={false}>
+        {track && (
+          <m.div key="fields" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={chTween('quick', reduced)}>
+            <TournamentFields state={state} onChange={onChange} errors={errors} showErrors={showErrors} timezone={timezone} courseWrites={courseWrites} announce={announce} />
+          </m.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 });

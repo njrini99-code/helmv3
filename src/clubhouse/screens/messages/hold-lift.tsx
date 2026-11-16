@@ -167,9 +167,9 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
     // Where the exit's settle ends, and where Reduce Motion stands without the grow.
     copy.current.style.transform = reduced ? `translateY(${place.shift}px)` : to;
     if (scrim.current) msAnimate(scrim.current, [{ opacity: 0 }, { opacity: 1 }], 'smooth', { reduced });
-    msAnimate(copy.current, [{ transform: `translateY(0) scale(${Math.round(s0 * 1000) / 1000})` }, { transform: to }], 'lift', { reduced, rd: null });
-    if (rbar.current) msAnimate(rbar.current, [{ transform: 'scale(.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], 'pop', { reduced });
-    if (menu.current) msAnimate(menu.current, [{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], 'lift', { reduced });
+    msAnimate(copy.current, [{ transform: `translateY(0) scale(${Math.round(s0 * 1000) / 1000})` }, { transform: to }], 'settle', { reduced, rd: null });
+    if (rbar.current) msAnimate(rbar.current, [{ transform: 'scale(.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], 'settle', { reduced });
+    if (menu.current) msAnimate(menu.current, [{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], 'settle', { reduced });
     // The first reaction takes focus, as the page's toolbar (its first control).
     // Not while typing on a phone: taking focus drops the keyboard, and the thread would move under what was just measured (MOB-MSG-6).
     if (!(phone && document.activeElement instanceof HTMLTextAreaElement)) rbar.current?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });

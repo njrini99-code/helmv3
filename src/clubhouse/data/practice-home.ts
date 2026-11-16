@@ -158,20 +158,34 @@ async function activeRoster(sb: Sb, teamId: string): Promise<Array<{ id: string;
   });
 }
 
+/** Starts a read now (a Supabase query runs only once awaited) and keeps an early return from leaving its failure unhandled. */
+const started = <T,>(read: PromiseLike<T>): Promise<T> => {
+  const p = Promise.resolve(read);
+  p.catch(() => {});
+  return p;
+};
+
 /** The coach's Practice. A missing table is "not on yet", any other failed read is the page's own "didn't load", never an empty list. */
 export async function loadCoachPracticeHome(teamId: string, now: Date = new Date()): Promise<ChPracticeLoad<ChPracticeHome>> {
   const sb = await createClient();
   const db = practiceTables(sb);
-  const team = await teamBasics(sb, teamId);
+  // PMAC-12: the team row, the plans, the practices in the window and the roster need only the team id, so they start
+  // together (they ran in three waves); their answers are read in the order they were, so every outcome is as it was.
+  const teamRead = started(teamBasics(sb, teamId));
+  const plansRead = started(db.from('golf_practice_plans').select('id, title, status, event_id, version, published_version, edited_after_publish, updated_at, body, step, team_id').eq('team_id', teamId).eq('kind', 'event').order('updated_at', { ascending: false }).limit(200));
+  const windowRead = started(
+    Promise.all([
+      sb.from('golf_events').select(EVENT_COLUMNS).eq('team_id', teamId).eq('event_type', 'practice').is('cancelled_at', null).gte('start_time', new Date(now.getTime() - 8 * DAY).toISOString()).lte('start_time', new Date(now.getTime() + 21 * DAY).toISOString()).order('start_time').limit(120),
+      activeRoster(sb, teamId),
+    ]),
+  );
+  const team = await teamRead;
   if (!team) return { status: 'failed' };
   const { name: teamName, zone } = team;
-  const plansRes = await db.from('golf_practice_plans').select('id, title, status, event_id, version, published_version, edited_after_publish, updated_at, body, step, team_id').eq('team_id', teamId).eq('kind', 'event').order('updated_at', { ascending: false }).limit(200);
+  const plansRes = await plansRead;
   if (plansRes.error) return isPracticeMissing(plansRes.error.code) ? { status: 'unavailable' } : { status: 'failed' };
   const plans = (plansRes.data ?? []) as PlanRow[];
-  const [upcoming, roster] = await Promise.all([
-    sb.from('golf_events').select(EVENT_COLUMNS).eq('team_id', teamId).eq('event_type', 'practice').is('cancelled_at', null).gte('start_time', new Date(now.getTime() - 8 * DAY).toISOString()).lte('start_time', new Date(now.getTime() + 21 * DAY).toISOString()).order('start_time').limit(120),
-    activeRoster(sb, teamId),
-  ]);
+  const [upcoming, roster] = await windowRead;
   if (upcoming.error || !roster) return { status: 'failed' };
   const byEvent = new Map(plans.filter((p) => p.event_id).map((p) => [p.event_id!, p]));
   const known = new Map<string, EventRow>((upcoming.data ?? []).map((e) => [e.id, e]));
@@ -251,10 +265,13 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
 /** A player's Practice: only live versions, which RLS holds to their team. The next one is drawn as their own path. */
 export async function loadPlayerPracticeHome(teamId: string, playerId: string, now: Date = new Date()): Promise<ChPracticeLoad<ChPlayerPracticeHome>> {
   const sb = await createClient();
-  const team = await teamBasics(sb, teamId);
+  // PMAC-12: the live versions do not need the team row, so both start at once.
+  const teamRead = started(teamBasics(sb, teamId));
+  const liveRead = started(practiceTables(sb).from('golf_practice_plan_versions').select('plan_id, version, title, event_id, body, published_at').eq('is_live', true).order('published_at', { ascending: false }).limit(60));
+  const team = await teamRead;
   if (!team) return { status: 'failed' };
   const { zone } = team;
-  const { data, error } = await practiceTables(sb).from('golf_practice_plan_versions').select('plan_id, version, title, event_id, body, published_at').eq('is_live', true).order('published_at', { ascending: false }).limit(60);
+  const { data, error } = await liveRead;
   if (error) return isPracticeMissing(error.code) ? { status: 'unavailable' } : { status: 'failed' };
   const live = (data ?? []) as PracticePlanVersionRow[];
   const ids = live.map((v) => v.event_id).filter((id): id is string => !!id);

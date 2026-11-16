@@ -146,6 +146,25 @@ this tooling change. Parser tests verify enforcement, not product smoothness.
 Lighthouse remains a Chromium navigation lab check: it no longer advertises
 a Safari user agent or an INP assertion without measured interactions.
 
+### First-load JavaScript per route (MAC-11)
+
+```sh
+npm run clubhouse:js-budget -- --next <dir>/.next            # every Clubhouse route, gzipped, fails over 300 KB
+npm run clubhouse:js-budget -- --next <dir>/.next --route /golf/dashboard/coachhelm --chunks
+```
+
+It reads a finished `next build` and nothing else (no browser, no network):
+the build manifest's runtime plus every server-component entry's chunks in
+each page's client reference manifest, gzipped at level 9. `own KB` is what a
+route adds beyond the chunks every listed route shares, which is where a
+route-level split shows. `--chunks` lists a route's chunks with the client
+modules that pull each in. It is an npm script only: it is not yet in a
+required workflow, because on 15 Nov 2026 every Clubhouse route was over
+300 KB (the runtime alone, PostHog, Sentry and Supabase in the root layout, is
+278 KB; the shell every route shares is 848 KB). Run it after `next build` in
+the CI `Next build` job with `--report-only` first, then as a gate once the
+shared shell is under budget.
+
 ## Tooling verification — 2026-10-06
 
 All 132 applicable presentation cases passed locally in Chromium and WebKit,

@@ -629,7 +629,7 @@
 .ch-msd-sw .ch-switch__thumb {
   width: 22px;
   height: 22px;
-  transition: transform var(--ch-msd-sw-travel, var(--ch-dur-word)) var(--ch-ease-spring), scale var(--ch-dur-press) var(--ch-ease);
+  transition: transform var(--ch-msd-sw-travel, var(--ch-dur-word)) var(--ch-ease-ios), scale var(--ch-dur-press) var(--ch-ease);
 }
 .ch-msd-sw .ch-switch input:checked + .ch-switch__track .ch-switch__thumb {
   transform: translateX(18px);

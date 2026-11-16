@@ -70,7 +70,9 @@ import { useAction, type ActionCopy } from '../lib/use-action';
 import { noticeToast, useRoundPorts } from '../screens/rounds/entry/ports';
 import { POSTED_OPEN_MS, RoundRuntime, SUBMIT_SLOW_MS } from '../screens/rounds/entry/RoundRuntime';
 import { cardHoles, monthDay, outcomeOf, recoveryFacts, summaryHoles, thrownReason, trackingRound, type ChRoundSession } from '../screens/rounds/entry/session';
-import { listCoursesRead, listTeesRead, loadSetupQualifiers, placeParts, startRefusal, teeFrom, teeHolesRead, toStartForm } from '../screens/rounds/entry/setup-reads';
+import { listCoursesRead, listTeesRead, placeParts, startRefusal, teeFrom, teeHolesRead, toStartForm } from '../screens/rounds/entry/setup-reads';
+// PMAC-03: the list is read by the route on the server now, with the same rules.
+import { loadSetupQualifiers } from '../data/setup-qualifiers';
 import type { ChSetupForm } from '../screens/rounds/setup/shape';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';

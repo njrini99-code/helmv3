@@ -5,10 +5,10 @@ import { isUuid } from '@/lib/utils/uuid';
 import { loadQualifierDetail, loadQualifierForm, loadQualifierList, loadQualifierSelection } from '../data/qualifiers';
 import { loadLiveRounds } from '../data/live-rounds';
 import { isOwnRoundOn, qualifierLiveLines } from '../screens/qualifiers/on-course';
-import { QualifiersList } from '../screens/qualifiers/QualifiersList';
-import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
-import { QualifierForm } from '../screens/qualifiers/QualifierForm';
-import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
+import type { QualifiersList } from '../screens/qualifiers/QualifiersList';
+import type { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
+import type { QualifierForm } from '../screens/qualifiers/QualifierForm';
+import type { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { BackToList } from '../screens/qualifiers/BackToList';
 import { RefreshNotice } from '../ui/RefreshNotice';
 import { EmptyState } from '../ui/States';
@@ -20,6 +20,26 @@ import '../styles/qualifiers.css';
 export type ChQView = 'list' | 'detail' | 'new' | 'edit' | 'selection';
 
 /**
+ * The screen an address draws, handed in by that address's own page (`app/golf/(dashboard)/dashboard/qualifiers/**`). This
+ * module imports none of the four, only their types: App Router loads every client component a page's server modules import on
+ * that page's first paint, whether it draws or not, so when this route imported all four every Qualifiers address loaded the
+ * list, the detail, the form and Manage selections (MAC-11, production audit 15 Nov 2026). Now each page carries its own.
+ * `new` and `edit` draw the form.
+ */
+export interface ChQScreens {
+  list?: typeof QualifiersList;
+  detail?: typeof QualifierDetail;
+  form?: typeof QualifierForm;
+  selection?: typeof QualifierSelection;
+}
+
+function screen<K extends keyof ChQScreens>(screens: ChQScreens, key: K): NonNullable<ChQScreens[K]> {
+  const s = screens[key];
+  if (!s) throw new Error(`Qualifiers: the page for this address did not hand the route its ${key} screen`);
+  return s as NonNullable<ChQScreens[K]>;
+}
+
+/**
  * Qualifiers in Clubhouse, every address rendered in place (D-23, never a
  * redirect):
  *   /qualifiers            list, coach and player (a player's own first, D-30)
@@ -28,7 +48,7 @@ export type ChQView = 'list' | 'detail' | 'new' | 'edit' | 'selection';
  *   /qualifiers/[id]/edit  edit, coach only
  *   /qualifiers/[id]/selection  Manage selections, coach only
  */
-export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id?: string }) {
+export async function ClubhouseQualifiersRoute({ view, id, screens }: { view: ChQView; id?: string; screens: ChQScreens }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
@@ -41,13 +61,15 @@ export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id
       loadQualifierList({ role: team.role, teamId: team.teamId, playerId }),
       team.role === 'coach' ? loadLiveRounds({ teamId: team.teamId, viewer: { role: 'coach', playerId: null } }) : null,
     ]);
-    return <QualifiersList data={list} live={liveNow && !liveNow.error ? qualifierLiveLines(liveNow.lanes, Date.now()) : undefined} />;
+    const List = screen(screens, 'list');
+    return <List data={list} live={liveNow && !liveNow.error ? qualifierLiveLines(liveNow.lanes, Date.now()) : undefined} />;
   }
 
   if ((view === 'new' || view === 'edit' || view === 'selection') && team.role !== 'coach') return <CoachOnly view={view} id={id} />;
   if (view === 'new') {
     const form = await loadQualifierForm({ teamId: team.teamId, qualifierId: null });
-    return form ? <QualifierForm data={form} /> : <NotFound />;
+    const Form = screen(screens, 'form');
+    return form ? <Form data={form} /> : <NotFound />;
   }
   if (!id || !isUuid(id)) return <NotFound />;
   if (view === 'selection') {
@@ -55,11 +77,13 @@ export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id
     if (sel.kind === 'missing') return <NotFound />;
     // CH-09218: a failed read is never shown as "not on your team".
     if (sel.kind === 'error') return <SelectionDidNotLoad />;
-    return <QualifierSelection data={sel.data} />;
+    const Selection = screen(screens, 'selection');
+    return <Selection data={sel.data} />;
   }
   if (view === 'edit') {
     const form = await loadQualifierForm({ teamId: team.teamId, qualifierId: id });
-    return form ? <QualifierForm data={form} /> : <NotFound />;
+    const Form = screen(screens, 'form');
+    return form ? <Form data={form} /> : <NotFound />;
   }
   // Who is on the course for this qualifier (4.7) is read beside the standings and never holds them up; it catches its own failure.
   const [detail, liveNow] = await Promise.all([
@@ -70,7 +94,8 @@ export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id
   // The standings, facts and squad are sent now; the courses and the scorecards follow as a promise the sections read in place (owner rule 6).
   const { secondary, ...core } = detail;
   const onCourse = { snapshot: liveNow, teamId: team.teamId, heldBack: team.role === 'player' && isOwnRoundOn(liveNow.lanes, playerId, id) };
-  return <QualifierDetail data={core} secondary={secondary} onCourse={onCourse} />;
+  const Detail = screen(screens, 'detail');
+  return <Detail data={core} secondary={secondary} onCourse={onCourse} />;
 }
 
 function Frame({ children }: { children: React.ReactNode }) {

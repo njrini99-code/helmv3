@@ -52,7 +52,7 @@ describe('Qualifier detail reads', () => {
   });
   const read = () => loadQualifierDetail({ role: 'player', teamId: 't1', playerId: 'p1', qualifierId: Q });
 
-  it('the standings, facts and squad come back after two waves (the qualifier, then its parts); the tees and the scorecards are read after and stream behind them', async () => {
+  it('the standings, facts and squad come back after two waves (the qualifier beside its entries, rounds and round courses, then the squad); the tees and the scorecards are read after and stream behind them', async () => {
     const waves = readWaves();
     // The tees and the scorecards are held until the page has its core: the core must not wait for them.
     let release: () => void = () => {};
@@ -61,9 +61,11 @@ describe('Qualifier detail reads', () => {
     tables.gate = (table) => (streamed.has(table) ? held : waves.gate(table));
     tables.current = answers();
     const { result, waves: depth } = await waves.run(read());
-    // The team's zone (the class year, decision 9) is read in the first wave, beside the qualifier: no extra wave.
-    expect(depth[0]).toEqual(['golf_qualifiers', 'golf_team_settings']);
-    expect(depth[1]).toEqual(['golf_qualifier_entries', 'golf_qualifier_round_courses', 'golf_qualifier_selections', 'golf_rounds']);
+    // The team's zone (the class year, decision 9) is read in the first wave, beside the qualifier: no extra wave. The entries, rounds
+    // and round courses need only the address's id and the team, so they start beside it too (MAC-11, production audit 2026-11-15).
+    expect(depth[0]).toEqual(['golf_qualifier_entries', 'golf_qualifier_round_courses', 'golf_qualifiers', 'golf_rounds', 'golf_team_settings']);
+    // The squad reads by the qualifier's selection state, so it waits for the qualifier.
+    expect(depth[1]).toEqual(['golf_qualifier_selections']);
     expect(depth).toHaveLength(2);
     // The core is whole without them.
     expect(result?.board?.rows.map((r) => r.playerId)).toEqual(['p1']);

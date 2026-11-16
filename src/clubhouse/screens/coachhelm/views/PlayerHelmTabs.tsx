@@ -4,7 +4,7 @@ import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
-import { COACH_PLAYER_VIEWS, PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_HELM_TAB_LABEL, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import { COACH_PLAYER_VIEWS, PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_HELM_HREF, PLAYER_HELM_TAB_LABEL, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useChPhone } from '../../../lib/use-phone';
@@ -17,8 +17,14 @@ import { useHScroll, useKeepInView } from '../../../ui/use-hscroll';
 
 const VIEWS: readonly PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
 /** The player's Ask: a view of this page with its own address, and no read of its own for the strip to wait on. */
-const PLAYER_ASK_HREF = '/golf/dashboard/coachhelm?view=ask';
-type PlayerTab = PlayerHelmView | 'ask';
+export const PLAYER_ASK_HREF = '/golf/dashboard/coachhelm?view=ask';
+/** A tab of the player's strip: a view of this page, or Ask. */
+export type PlayerHelmTab = PlayerHelmView | 'ask';
+type PlayerTab = PlayerHelmTab;
+/** A tab's address, for the owner's `useViewSwitch`: Ask's own, or the view's (`viewHref`, the player's own by default). */
+export function playerHelmTabHref(tab: PlayerHelmTab, viewHref: (view: PlayerHelmView) => string = (view) => PLAYER_HELM_HREF[view]): string {
+  return tab === 'ask' ? PLAYER_ASK_HREF : viewHref(tab);
+}
 
 /**
  * The player's CoachHelm sub-navigation, the player's counterpart of the coach's Board and Ask strip (CH-13923): Board, Standing
@@ -31,6 +37,8 @@ type PlayerTab = PlayerHelmView | 'ask';
  *
  * It is controlled: `active` is the view the tap has chosen (at once, not when the server answers) and `onGo` changes view. The
  * page that draws it owns that state (`useViewSwitch`), because it is the page that dims and is marked busy while the next view loads.
+ * Ask goes through `onGo` too (P1-57, GAP-H-07): it is a route that takes seconds, so its tab takes the selection on the tap and
+ * the page dims as for any view. Only a strip drawn without an owner pushes Ask's address itself.
  *
  * `coach`: a coach's views of one player (spec A): Deep dive and Standing, in that order. The Board is not one of them
  * (the way back is the header's link and the phone's Back), and Development is the player's own link, so it is not drawn.
@@ -38,12 +46,12 @@ type PlayerTab = PlayerHelmView | 'ask';
  * `held`: drawn by a loading skeleton (desktop), inert and hidden from assistive tech, so the strip stands where and as wide as the
  * page draws it and does not morph from a bar into itself when the page lands.
  */
-export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { active: PlayerTab; onGo?: (view: PlayerHelmView) => void; coach?: boolean; held?: boolean }) {
+export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { active: PlayerTab; onGo?: (view: PlayerTab) => void; coach?: boolean; held?: boolean }) {
   const phone = useChPhone();
   const router = useRouter();
   const helmViews = useHelmViews();
   const ask = !coach && !!helmViews.playerAsk;
-  const go = (v: PlayerTab) => (v === 'ask' ? router.push(PLAYER_ASK_HREF) : onGo?.(v));
+  const go = (v: PlayerTab) => (onGo ? onGo(v) : v === 'ask' ? router.push(PLAYER_ASK_HREF) : undefined);
   const row = useRef<HTMLDivElement>(null);
   const rowEdges = useHScroll<HTMLDivElement>(row);
   const development = coach ? null : rebuiltHref(PLAYER_HELM_DEVELOPMENT_HREF, 'player');
@@ -57,7 +65,7 @@ export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { 
 
   if (phone) {
     return (
-      <div className="ch-hv-tabs is-phone" data-ch-code="CH-13930">
+      <div className="ch-hv-tabs is-phone" data-ch-strip="" data-ch-code="CH-13930">
         <div ref={rowEdges} className="ch-hscroll ch-hv-chips" role="group" aria-label="CoachHelm view">
           {views.map((v) => (
             <button

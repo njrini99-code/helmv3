@@ -27,6 +27,7 @@ import { Select } from '../../ui/Select';
 import { EmptyState } from '../../ui/States';
 import { monthLabel, shortDay, TeeSwatch, TypePill } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
+import { ShowEarlier, useRoundWindow } from './round-window';
 import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { LiveNowCard } from '../home/LiveNowCard';
@@ -205,7 +206,7 @@ function TeamRoundTableRow({ r, by }: { r: ChTeamRound; by: Group }) {
  * between a name and its score). One table in the pattern of the Roster table: a quiet label row, a band for each
  * month or player, and a row a round with every value in a cell under its header.
  */
-function TeamRoundsTable({ groups, by, earlierAt }: { groups: RoundGroup[]; by: Group; earlierAt: number }) {
+function TeamRoundsTable({ groups, by, earlierAt }: { groups: Array<{ group: RoundGroup; rows: readonly ChTeamRound[] }>; by: Group; earlierAt: number }) {
   return (
     <div className={'ch-trd-tbl' + (by === 'player' ? ' is-by-player' : '')} role="table" aria-label="Team rounds">
       <div role="rowgroup">
@@ -226,7 +227,7 @@ function TeamRoundsTable({ groups, by, earlierAt }: { groups: RoundGroup[]; by: 
           <span aria-hidden="true" />
         </div>
       </div>
-      {groups.map((g, i) => (
+      {groups.map(({ group: g, rows }, i) => (
         <div key={g.key} role="rowgroup" aria-labelledby={`${groupId(g)}-t`}>
           {i === earlierAt && (
             <div className="ch-trd-earlier" role="row">
@@ -244,7 +245,7 @@ function TeamRoundsTable({ groups, by, earlierAt }: { groups: RoundGroup[]; by: 
               <span className="ch-trd-grp__m">{groupMeta(g)}</span>
             </div>
           </div>
-          {g.rounds.map((r) => (
+          {rows.map((r) => (
             <TeamRoundTableRow key={r.id} r={r} by={by} />
           ))}
         </div>
@@ -276,7 +277,13 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
   // A kept filter for a player who has left the team shows everyone rather than an empty list with no way to see why.
   const playerId = data.players.some((p) => p.id === player) ? player : ALL_PLAYERS;
   const groups = useMemo(() => groupTeamRounds(list, group, q, playerId), [list, group, q, playerId]);
-  const earlierAt = earlierStartsAt(groups, group, data.seasonStart);
+  // The newest two months draw at first; older ones wait for "Show earlier rounds" (MAC-01).
+  const win = useRoundWindow<ChTeamRound, RoundGroup>(groups, group === 'month');
+  const earlierAt = earlierStartsAt(
+    win.shown.map((s) => s.group),
+    group,
+    data.seasonStart,
+  );
   const s = data.season;
   const unscored = data.rounds.error ? 0 : (data.rounds.unscored ?? 0);
   const noRoster = !data.rosterError && data.players.length === 0;
@@ -396,12 +403,12 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
             {groups.length === 0 ? (
               <EmptyState code="CH-11321" compact title={q.trim() ? `No rounds for “${q.trim()}”` : 'No rounds for this player'} body={q.trim() ? 'Check the spelling, or search part of a name or course.' : 'They haven’t posted a round yet.'} />
             ) : phone ? (
-              groups.map((g, i) => (
+              win.shown.map(({ group: g, rows }, i) => (
                 <Fragment key={g.key}>
                   {i === earlierAt && <p className="ch-trd-earlier">{EARLIER}</p>}
                   <Section id={groupId(g)} title={g.title} meta={groupMeta(g)}>
                     <LedgerList label={`${g.title}, ${g.rounds.length} rounds`}>
-                      {g.rounds.map((r) => (
+                      {rows.map((r) => (
                         <TeamRoundRow key={r.id} r={r} by={group} />
                       ))}
                     </LedgerList>
@@ -409,8 +416,9 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
                 </Fragment>
               ))
             ) : (
-              <TeamRoundsTable groups={groups} by={group} earlierAt={earlierAt} />
+              <TeamRoundsTable groups={win.shown} by={group} earlierAt={earlierAt} />
             )}
+            {groups.length > 0 && <ShowEarlier className="ch-trd-more" hidden={win.hidden} onMore={win.more} />}
           </SectionBoundary>
 
           {unscored > 0 && (

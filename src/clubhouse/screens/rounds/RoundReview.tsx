@@ -917,8 +917,6 @@ export function RoundReview({
                 hole ? (
                   <>
                     <ZoneBig
-                      key={hole.n}
-                      settle
                       value={hole.score == null ? NO_DATA : String(hole.score)}
                       tone={hole.score == null || hole.par == null ? undefined : hole.score < hole.par ? 'good' : hole.score > hole.par ? 'bad' : undefined}
                     />

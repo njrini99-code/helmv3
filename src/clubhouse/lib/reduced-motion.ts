@@ -5,10 +5,29 @@ import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preference
 
 const QUERY = '(prefers-reduced-motion: reduce)';
 
+/**
+ * The OS setting is read here and nowhere else in Clubhouse (MOTION-AND-VISUAL 3.11): one media query and one listener
+ * for the whole app, however many parts read it, and every part gets it from here (the hooks below for React, and
+ * chMotionModeNow outside it). Each read asks the query as it renders, so a reading is never stale.
+ */
+const readers = new Set<() => void>();
+let query: MediaQueryList | null = null;
+const tell = () => {
+  for (const reader of Array.from(readers)) reader();
+};
+
 function subscribe(onChange: () => void) {
-  const mql = window.matchMedia(QUERY);
-  mql.addEventListener('change', onChange);
-  return () => mql.removeEventListener('change', onChange);
+  readers.add(onChange);
+  if (!query) {
+    query = window.matchMedia(QUERY);
+    query.addEventListener?.('change', tell);
+  }
+  return () => {
+    readers.delete(onChange);
+    if (readers.size || !query) return;
+    query.removeEventListener?.('change', tell);
+    query = null;
+  };
 }
 
 function useOsReduce(): boolean {
@@ -36,8 +55,8 @@ export function useChReducedMotion(): boolean {
 /**
  * How a page or a sheet comes and goes (owner decision 2, 2026-10-24, OQ-15): `full` slides and springs; `fade`, under
  * the OS Reduce Motion setting, swaps the slide for an opacity fade over the quick beat (180ms, `chFade`), as iOS does;
- * `off`, Settings › Animations off, is the kill switch and swaps at once. Only pages and sheets read it: everything
- * else stays instant under either (useChReducedMotion).
+ * `off`, Settings › Animations off, is the kill switch and swaps at once. Only pages, sheets and list rows
+ * (ui/ListPresence.tsx, S3.10) read it: everything else stays instant under either (useChReducedMotion).
  */
 export type ChMotionMode = 'full' | 'fade' | 'off';
 

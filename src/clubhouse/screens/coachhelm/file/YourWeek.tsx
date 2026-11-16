@@ -10,7 +10,7 @@ import { isValidElement, useMemo, useState, type ReactNode } from 'react';
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import type { ChPlayerWeek } from '../../../data/coachhelm-file-shape';
 import { moreReadsLine } from '../../../data/coachhelm-shape';
-import { PLAYER_HELM_HREF, PLAYER_HELM_VIEWS, type ChViewLoad, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import { PLAYER_HELM_VIEWS, type ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
@@ -20,7 +20,7 @@ import { GonePanel, ReadPanel } from '../team/panels';
 import { Head } from '../parts';
 import { ProposalRow } from '../Proposals';
 import { useViewSwitch } from '../use-view-switch';
-import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
+import { PlayerHelmTabs, playerHelmTabHref, type PlayerHelmTab } from '../views/PlayerHelmTabs';
 import { LIVE_PLAYER_WRITES, type ChPlayerWrites } from '../writes';
 import { EarlyFeature, FeatureCard, FieldCard, PlanCard, ReadsCard, SgCard, WorkingCard } from './cards';
 import { FileFailed, PartFailed } from './PlayerFile';
@@ -31,7 +31,9 @@ import { plural } from '../../../lib/plural';
 export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLoad<ChPlayerWeek>; writes?: ChPlayerWrites }) {
   const phone = useChPhone();
   const { refresh } = useRefresh();
-  const sw = useViewSwitch<PlayerHelmView>('board', (v) => PLAYER_HELM_HREF[v], PLAYER_HELM_VIEWS);
+  // Every tab, Ask included (P1-57), is a switch this page owns: the strip moves on the tap, the page is marked busy and, after
+  // the busy delay, dims and stops answering until the next view lands, which settles in from that dim (P1-56).
+  const sw = useViewSwitch<PlayerHelmTab>('board', (v) => playerHelmTabHref(v), PLAYER_HELM_VIEWS);
   const [openRead, setOpenRead] = useState<string | null>(null);
   const data = load.status === 'ready' ? load.data : null;
   const all = useMemo(() => {
@@ -96,7 +98,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
   return (
     // On a desk the page takes the canopy for its head alone: the player's CoachHelm head (parts.tsx Head, tight), the page title,
     // the line and the views inside the page's gutter, as the board's. The phone keeps its large title under the chip row.
-    <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk')} aria-labelledby={phone ? 'ch-hf-week' : 'ch-hl-title'} data-ch="your-week" data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined}>
+    <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk')} aria-labelledby={phone ? 'ch-hf-week' : 'ch-hl-title'} data-ch="your-week" data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined} data-ch-busy={sw.busy} {...sw.enter}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
       <div className="dfile">
