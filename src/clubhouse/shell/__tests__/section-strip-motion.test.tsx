@@ -94,6 +94,8 @@ describe('the section strip (MOTION-AND-VISUAL 3.3)', () => {
     // MAC-17: the width animation stays.
     expect(Object.keys(moves[0]!.keyframes[0]!)).toEqual(expect.arrayContaining(['transform', 'width']));
     expect(haptics.haptic.mock.calls).toEqual([['select']]);
+    // The push goes out a frame later; wait for it here so it cannot land in the next test.
+    await vi.waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
   });
 
   it('a tap on the current tab scrolls the page to the top, smoothly, with no haptic and no navigation', async () => {
