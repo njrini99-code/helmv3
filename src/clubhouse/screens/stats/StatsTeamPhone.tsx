@@ -13,7 +13,7 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
-import { deltaTone, deltaWords, halvesTone } from '../../lib/stats-signal';
+import { deltaTone, deltaWords, halvesTone, MIN_TREND_POINTS } from '../../lib/stats-signal';
 import { changeInk, changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { TERMS } from '../../lib/glossary';
 import { haptic } from '../../lib/haptics';
@@ -25,6 +25,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { TeamRank } from './TeamRank';
 import { puttingNote } from './notes';
+import { puttBelowTour } from './putt-bands';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { holeCoverage } from '../../data/round-scope';
 import { nineRoundsInWindow } from '../../data/stats-filter';
@@ -34,7 +35,7 @@ import TeamTrendChart from './TeamTrendChart';
 import { hasRange, isFiltered } from '../../data/stats-filter';
 import { useChSessionState } from '../../lib/session-state';
 import { useArrivalPainted } from '../../lib/use-painted';
-import { useGlide } from '../../lib/motion-glide';
+import { useFirstViewGrow, useGlide } from '../../lib/motion-glide';
 import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { TeamInsight } from './StatsInsight';
@@ -223,17 +224,25 @@ export function teamDaysMean(days: Array<{ score: number; n?: number }>): number
 /**
  * The newer half of the round days against the older half, worded as a change only past its standard error (A1), which the loader takes from
  * the rounds behind each half: a day's mean of six rounds is not read as one round. The line's ink follows the same test as the words (row 69).
+ * The change compares each player with themselves (prod audit 2026-11-15, NP-01, `roundHalves`), so with fewer than three of the same
+ * players on both sides there is no change to read, and the line says that instead of "no clear change". It needs four round days,
+ * two a half (CH-10), and is judged against par (CH-01).
  */
 export function teamTrendReading(data: Pick<ChTeamStats, 'daysHalves'>, known: number): { tone: '' | 'is-gain' | 'is-loss'; reading: string } {
   const change = data.daysHalves;
-  const tone = known < 3 ? '' : halvesTone(change, true);
+  const tone = known < MIN_TREND_POINTS ? '' : halvesTone(change, true);
   return {
     tone,
-    reading: tone === '' ? 'No clear change across these round days.' : `${change!.delta < 0 ? 'Down' : 'Up'} ${formatFixed(Math.abs(change!.delta))} strokes a round, newer half vs older half.`,
+    reading:
+      known >= MIN_TREND_POINTS && change == null
+        ? 'Not enough of the same players on both halves to read a change.'
+        : tone === ''
+          ? 'No clear change across these round days.'
+          : `${change!.delta < 0 ? 'Down' : 'Up'} ${formatFixed(Math.abs(change!.delta))} strokes a round, same players, newer half vs older half.`,
   };
 }
 
-/** The team's average on each of its last ten round days against their mean (dashed), with a one-line reading. */
+/** The team's average on each round day in the window against their mean (dashed), with a one-line reading. */
 function Trend({ data }: { data: ChTeamStats }) {
   const days = data.days ?? [];
   const known = days.filter((d): d is { label: string; score: number } => d.score != null);
@@ -274,7 +283,7 @@ function Trend({ data }: { data: ChTeamStats }) {
       <p className="ch-stm-note">
         <span>Lower is better. {reading}</span>
         <span className="ch-stm-mean ch-num" aria-hidden="true">
-          {/* These days' own mean, not the window's average above: the line draws the last ten round days at most. */}
+          {/* These days' own mean, not the window's average above, over every round day in the window (STATS-P-04). */}
           <i /> {`Mean of ${plural(known.length, 'day')}`} {formatFixed(mean)}
         </span>
       </p>
@@ -345,6 +354,8 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
     rows.map((r) => (r.v == null ? null : (r.v >= 0 ? 1 : -1) * sgShare(r.v, scale) * 50)),
     rows.map((r) => r.key).join('|'),
   );
+  // 3.7: the screen's first view in a session grows each bar out from the zero line, once.
+  const grow = useFirstViewGrow<HTMLDivElement>('stats-team-phone', 'x');
   const head = (
     <div className="ch-stm-panel__h">
       <h2 id="ch-stm-legs">Strokes gained by leg</h2>
@@ -382,7 +393,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
         {/* Plain tabs, not Base UI's: its list scrolled the chosen tab into view and its indicator measured it as the page
             mounted, two layouts of the whole arriving page inside React's commit (28ms of a switch's 163ms of script at
             4x CPU, Chromium, production build, 2026-10-15). Every row is 44px, so the wash's place is its index. */}
-        <div className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical">
+        <div ref={grow} className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical">
           {rows.map(({ key, label, v, total }, i) => {
             const on = key === picked.key;
             const bar = drawn[i];
@@ -403,7 +414,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
                 <span>{label}</span>
                 <span className="ch-stm-leg__bar" aria-hidden="true">
                   <i className="ch-stm-leg__z" />
-                  {v != null && bar != null && <i className={'ch-stm-leg__v ' + changeTone(v, false, 1)} style={bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }} />}
+                  {v != null && bar != null && <i className={'ch-stm-leg__v ' + changeTone(v, false, 1)} data-ch-grow={bar >= 0 ? 'left' : 'right'} style={bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }} />}
                 </span>
                 <b className={'ch-num ' + changeInk(v)}>{v == null ? <NoData /> : formatSigned(v)}</b>
               </button>
@@ -494,7 +505,8 @@ export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: C
 export function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
   if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again." covered={covered} />;
   if (!data.putting) return <EmptyState compact code="CH-4306" title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />;
-  const bands = data.putting.bands.slice(0, 5);
+  // Every band the data has, as the rings and the note below (CH-18): the longest band was cut while the note still named it.
+  const bands = data.putting.bands;
   const drawn = bands.reduce((a, b) => a + b.attempts, 0);
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-stm-putt">
@@ -505,8 +517,8 @@ export function Putting({ data, covered }: { data: ChTeamStats; covered: boolean
       <div className="ch-stm-putt ch-stm-group">
         {bands.map((b) => {
           const rate = b.attempts ? (b.made / b.attempts) * 100 : null;
-          // Below the Tour as the two print (whole percents): 69.6 against 70 is level, never amber (A2).
-          const low = rate != null && b.bench != null && b.attempts >= 10 && Math.round(rate) < Math.round(b.bench);
+          // Below the Tour as the two print (whole percents): 69.6 against 70 is level, never amber (A2); from 30 putts, the rings' rule (CH-18).
+          const low = puttBelowTour(b);
           return (
             <div key={b.label} className="ch-stm-putt__r">
               <span className="ch-num">{b.label}</span>

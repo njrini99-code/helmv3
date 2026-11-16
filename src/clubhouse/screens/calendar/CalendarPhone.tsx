@@ -20,7 +20,7 @@ import { useChClock } from '../../lib/use-clock';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { claimTouch } from '../../lib/touch-claim';
 import type { PeekLift } from '../../ui/Peek';
-import { DayTimeline, flipFrom, rectsOf, usePhoneDayDrag } from './day-timeline';
+import { DayTimeline, flipFrom, holdCardStill, rectsOf, usePhoneDayDrag } from './day-timeline';
 import type { ChMoveTarget } from './drag-model';
 import { EventPeek } from './peek';
 import { MarkBadge, MovedAwayRow, useRowMark } from './change-note';
@@ -511,6 +511,7 @@ function DayPage({
                   <button
                     type="button"
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '') + (lift ? ' is-movable' : '') + (liftedId === e.id ? ' is-lifted' : '')}
+                    ref={lift ? holdCardStill : undefined}
                     onTouchStart={lift ? () => claimTouch('pending') : undefined}
                     aria-label={`${roundLabel(e, title).name}${roundLabel(e, title).spokenRound}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${clash ? `, ${clash.charAt(0).toLowerCase()}${clash.slice(1)}` : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}`}
                     // D-70: opening an event is plain navigation, so it is silent (F-0071).

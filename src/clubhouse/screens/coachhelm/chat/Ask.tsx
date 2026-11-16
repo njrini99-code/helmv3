@@ -23,8 +23,9 @@ import { noteSendSource } from './send-source';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
+import { useToast } from '../../../ui/Toast';
 import { Tooltip } from '../../../ui/Tooltip';
-import { PhoneTop, usePhoneTabsHidden } from '../../../shell/phone-chrome';
+import { DeskTop, PhoneTop, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { AskComposer, useRefuseOffline } from './Composer';
 import { askDraftKey, useAskKept, useSeedOnce } from './drafts';
 import { AskEvidencePanel } from './EvidencePanel';
@@ -32,9 +33,7 @@ import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
 import { AskHomeV2 } from './Home';
 import { AskInputsFailed, AskNoRoster, AskThreadFailed, AskUnavailable } from './States';
 import { useViewSwitch } from '../use-view-switch';
-import { PLAYER_HELM_HREF } from '../../../data/coachhelm-views-shape';
-import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
-import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './SubTabs';
+import { COACHHELM_HREF } from './SubTabs';
 import { AskThread } from './Thread';
 import { MissCompassGate, type MissCompassGateValue } from './studio/compass-gate';
 
@@ -76,23 +75,20 @@ function TeamLabel({ name }: { name: string }) {
   );
 }
 
-/** A player's Ask is a view of their CoachHelm: the same strip, so Your week, Standing and Deep dive are one tap away. */
-function PlayerAskTabs() {
-  const router = useRouter();
-  return <PlayerHelmTabs active="ask" onGo={(v) => router.push(PLAYER_HELM_HREF[v])} />;
-}
-
-/** The frame the states without a chat share: the sub-tab strip (so the Board is one tap away) over the state. */
+/**
+ * The frame the states without a chat share. The switch (so the Team page is one tap away) is the route's, above this view
+ * (SwitchFrame, N13C-67); on a desk the team's name follows it in the top bar.
+ */
 function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
   const phone = useChPhone();
-  const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
   return (
-    <main className={'ch-ask is-plain' + (phone ? ' is-phone' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || undefined} data-ch-code="CH-13820" {...sw.enter}>
+    <main className={'ch-ask is-plain' + (phone ? ' is-phone' : '')} aria-label="Ask CoachHelm" data-ch-code="CH-13820">
       {phone && <PhoneTop start title="CoachHelm" />}
-      <div className="ch-ask-top">
-        <CoachHelmTabs active={sw.shown} onGo={sw.go} />
-        {!phone && team && <TeamLabel name={team} />}
-      </div>
+      {!phone && team && (
+        <DeskTop>
+          <TeamLabel name={team} />
+        </DeskTop>
+      )}
       <div className="ch-ask-plain">{children}</div>
     </main>
   );
@@ -137,8 +133,8 @@ export function Ask({ load, chat = useCoachHelmChat, initial, slashFlags }: { sl
 function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial; slashFlags?: { plans: boolean; lineup: boolean } }) {
   const phone = useChPhone();
   const router = useRouter();
-  // A switch to the Board moves the strip at once and dims the chat (aria-busy) until the Board is ready.
-  const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
+  // The switch to the Team page (a player's: Board, Standing, Deep dive) is the route's, mounted once above this view in the same
+  // place as on every other view (SwitchFrame, N13C-67, N13P-18). A tap there draws the next view's skeleton in place of the chat.
   const online = useOnline();
   const refuseOffline = useRefuseOffline();
   // The chats this visit started and the server's list does not hold yet. The list itself is the server's (`data.conversations`), read
@@ -230,6 +226,9 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   // FID-ASK-7: read once, then off the address (below), and taken once: the first send ends it.
   const [seededQuestion, consumeSeed] = useSeedOnce(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q'));
   const send = (text: string, about?: { evidence_ref: string; key: string }) => {
+    // A question in the new chat makes it the coach's choice: the Undo that would bring the last chat back goes.
+    undoNew.current?.abort();
+    undoNew.current = null;
     consumeSeed();
     setStoppedTurn(null);
     lastSent.current = text;
@@ -247,9 +246,18 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   };
   // `send`, for the composer, is the same without the gate: it already refused offline and blocked sends.
 
+  const toast = useToast();
+  // GAP-H-08: the chat a New chat left, kept for five seconds behind an Undo (CH-13925). A player has no chats list to find it in.
+  const undoNew = useRef<AbortController | null>(null);
+  useEffect(() => () => undoNew.current?.abort(), []);
   const newChat = () => {
-    // A reply still on its way belongs to the chat being left: stop it (silent, as Stop is), and an id that arrives for it later is not adopted.
-    if (chat.busy) chat.stop();
+    // GAP-H-08: a reply still on its way belongs to this chat, and New chat waits for it (its buttons are inert; Stop ends the reply
+    // first). An id that arrives later for a chat the coach has left is still not adopted (`epoch`).
+    if (chat.busy) return;
+    const left = !gone && chat.messages.length > 0 ? { messages: chat.messages, conversationId: openId ?? chat.conversationId ?? null, title, stoppedTurn } : null;
+    const restore = chat.restore;
+    undoNew.current?.abort();
+    undoNew.current = null;
     epoch.current += 1;
     expecting.current = null;
     chat.newConversation();
@@ -260,6 +268,29 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
     setDrawer(false);
     setArtifact(null);
     window.history.replaceState(window.history.state, '', COACHHELM_HREF.ask);
+    if (!left || !restore) return;
+    const notice = new AbortController();
+    undoNew.current = notice;
+    toast({
+      title: 'New chat started',
+      code: 'CH-13925',
+      holdMs: 5000,
+      signal: notice.signal,
+      action: {
+        label: 'Undo',
+        run: () => {
+          if (undoNew.current !== notice || !alive.current) return;
+          undoNew.current = null;
+          epoch.current += 1;
+          expecting.current = null;
+          restore({ messages: left.messages, conversationId: left.conversationId });
+          setOpenId(left.conversationId);
+          setTitle(left.title);
+          setStoppedTurn(left.stoppedTurn);
+          window.history.replaceState(window.history.state, '', left.conversationId ? conversationHref(left.conversationId) : COACHHELM_HREF.ask);
+        },
+      },
+    });
   };
 
   // A reply that ends on its own (not a failure) needs nothing here; a thread that finished and then closed the evidence for a
@@ -278,6 +309,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
     nowIso: data.nowIso,
     timezone: data.timezone,
     onNew: newChat,
+    newWaits: chat.busy,
     onOpen: chatSw.go,
   };
 
@@ -392,7 +424,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
 
   return (
     <MissCompassGate.Provider value={compass}>
-    <main ref={askRoot} className={'ch-ask ch-ak-root' +(phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
+    <main ref={askRoot} className={'ch-ask ch-ak-root' +(phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={chatSw.pending || undefined} data-switch={chatSw.pending ? 'chat' : undefined} data-ch-busy={chatSw.busy} data-ch-code="CH-13820">
       {phone && (
         <>
           <PhoneTop
@@ -413,7 +445,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
             action={
               <>
                 {data.knows && !player && <PhoneIconAction icon={Settings2} label="Chat settings" onClick={() => setSettingsOpen(true)} />}
-                <PhoneIconAction icon={SquarePen} label="New chat" onClick={newChat} />
+                <PhoneIconAction icon={SquarePen} label="New chat" disabled={chat.busy} onClick={newChat} />
               </>
             }
           />
@@ -425,13 +457,15 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
           )}
         </>
       )}
-      <div className="ch-ask-top">
-        {player ? <PlayerAskTabs /> : <CoachHelmTabs active={sw.shown} onGo={sw.go} />}
-        {/* Desktop keeps the meter beside the tabs in a thread. On the phone it sat off screen in the tab row and its height
-            opened an empty band above and below the tabs; the phone shows it on Ask's home only. */}
-        {player && data.allowance && !showHome && !phone && <AllowanceMeter bucket={data.allowance} />}
-        {!phone && <TeamLabel name={data.teamName} />}
-      </div>
+      {/* Desktop keeps the meter beside the switch in a thread, and the team's name after it, in the top bar where the route's
+          switch is (SwitchFrame). On the phone the meter sat off screen in the tab row and its height opened an empty band above
+          and below the tabs; the phone shows it on Ask's home only. */}
+      {!phone && (
+        <DeskTop>
+          {player && data.allowance && !showHome && <AllowanceMeter bucket={data.allowance} />}
+          <TeamLabel name={data.teamName} />
+        </DeskTop>
+      )}
       {/* A player's Ask keeps no chats list (HM3), so on a desk its body has no chats column (`is-solo`). The coach's first
           column, with nothing in it, held a player's whole conversation in 280px (owner's preview, 11 Nov 2026). */}
       <div className={'ch-ask-body' + (!phone && player ? ' is-solo' : '') + (!phone && !player && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
@@ -454,7 +488,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
                     </Tooltip>
                   )}
                   <Tooltip>
-                    <button type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" onClick={newChat}>
+                    <button type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" aria-disabled={chat.busy || undefined} onClick={newChat}>
                       <Icon icon={SquarePen} size={19} />
                     </button>
                   </Tooltip>

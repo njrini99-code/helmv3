@@ -37,7 +37,7 @@ import {
 } from '@/components/baseball/settings/SettingsChrome';
 
 export const metadata = {
-  title: 'Permissions | Helm Baseball',
+  title: 'Permissions',
   description: 'What each capability group controls. Every sensitive capability is visible here.',
 };
 

@@ -166,8 +166,8 @@ describe('Player Home truthful brief', () => {
 describe('Player Home legs hold to the rate floors (A7)', () => {
   const none = { tee: null, approach: null, around: null, putting: null };
   it('one bunker-free round of scrambling is not "100%": under ten chances it says what it needs; one round of greens needs two', () => {
-    const window = [{ id: 'r1', total_gir: 9, total_gir_possible: 18, total_fairways_hit: 7, total_fairways: 14 }] as ChRound[];
-    const cache = new Map([['r1', { round_id: 'r1', scrambles_converted: 1, scramble_attempts: 1 } as ChRoundCache]]);
+    const window = [{ id: 'r1' }] as ChRound[];
+    const cache = new Map([['r1', { round_id: 'r1', greens_hit: 9, greens_total: 18, fairways_hit: 7, fairways_total: 14, scrambles_converted: 1, scramble_attempts: 1 } as ChRoundCache]]);
     const by = Object.fromEntries(legRows(window, cache, null, none).map((l) => [l.key, l]));
     expect(by.short).toMatchObject({ value: null, needs: 'Needs 10 chances' });
     expect(by.approach).toMatchObject({ value: null, needs: 'Needs 2 rounds' });
@@ -177,8 +177,9 @@ describe('Player Home legs hold to the rate floors (A7)', () => {
   });
 
   it('between the floors a rate is an early read', () => {
-    const window = ['a', 'b', 'c'].map((id) => ({ id, total_gir: 9, total_gir_possible: 18 })) as ChRound[];
-    const approach = legRows(window, new Map(), null, none).find((l) => l.key === 'approach')!;
+    const window = ['a', 'b', 'c'].map((id) => ({ id })) as ChRound[];
+    const cache = new Map(window.map((r) => [r.id, { round_id: r.id, greens_hit: 9, greens_total: 18 } as ChRoundCache]));
+    const approach = legRows(window, cache, null, none).find((l) => l.key === 'approach')!;
     expect(approach).toMatchObject({ value: 50, early: 'Early read · 3 rounds' });
   });
 });
@@ -257,6 +258,16 @@ describe('Coach Home · 20104 what’s waiting on the coach (spec B §2)', () =>
     tables.current = answered();
     announcements.current = async () => ({ success: true, data: [{ id: 'n1', requires_acknowledgement: true }, { id: 'n2', requires_acknowledgement: false }] });
     expect(await queue()).toEqual({ joinRequests: 2, replies: { missing: 1, events: [{ id: 'e1', date: '2026-10-02', missing: 1 }] }, overdueTasks: 1, unackedPosts: 1 });
+  });
+
+  it('DD-14: a QA run’s task and post wait on no one (both are hidden on every screen)', async () => {
+    const asked: Array<Array<[string, unknown[]]>> = [];
+    tables.current = { ...answered(), golf_tasks: (f) => (asked.push(f), { data: [{ id: 't1', due_date: '2026-09-20' }] }) };
+    announcements.current = async () => ({ success: true, data: [{ id: 'n1', requires_acknowledgement: true }, { id: 'qa', requires_acknowledgement: true, is_test: true }] });
+    const q = await queue();
+    expect(asked[0]).toContainEqual(['eq', ['is_test', false]]);
+    // n1 waits on Bo (Ada acknowledged it); the QA post, acknowledged by no one, is not counted.
+    expect(q.unackedPosts).toBe(1);
   });
 
   it('a part that fails is null and logged, never 0, and the others still count', async () => {

@@ -195,11 +195,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 .ch-tour-live-lane__tap[data-ch-pressed] {
-  background: var(--ch-press-well);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-tour-live-lane__tap:active {
-    background: var(--ch-press-well);
+    background: var(--ch-sel);
   }
 }
 .ch-tour-live-lane__tap:focus-visible {

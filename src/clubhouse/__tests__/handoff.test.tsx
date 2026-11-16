@@ -56,6 +56,23 @@ describe('the hand-off curtain', () => {
     expect(curtain()).toBeNull();
   });
 
+  it('lifts at once under Settings › Animations off, with the OS setting on full motion', async () => {
+    media(false, false);
+    const animate = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'animate', { value: animate, configurable: true });
+    document.documentElement.setAttribute('data-motion', 'off');
+    try {
+      dropHandoffCurtain();
+      liftHandoffCurtain();
+      await vi.advanceTimersByTimeAsync(50);
+      expect(curtain()).toBeNull();
+      expect(animate).not.toHaveBeenCalled();
+    } finally {
+      document.documentElement.removeAttribute('data-motion');
+      delete (HTMLElement.prototype as { animate?: unknown }).animate;
+    }
+  });
+
   it('holds what waits for the dashboard to be seen while it is up, and lets it go when it lifts', async () => {
     media(false, true);
     dropHandoffCurtain();

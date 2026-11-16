@@ -44,29 +44,25 @@ const toneOf = (v: number | null): string => {
  * It never takes a tap (the layer has no pointer events): choosing a station mid-flight, a resize, or the tab going away fades it out
  * where it is. Reduce Motion and Animations off: it is never drawn.
  *
- * The selected station's pulse (M-TEAM-06): one ring, scale 1 to 1.7 over 2.4s, twice, only once the coach has chosen a station.
+ * The selected station's pulse (M-TEAM-06) is gone (MOTION-AND-VISUAL 3.12): the picked station's own state says which it is.
  */
 export function HoleMotion({
   hole,
   stations,
-  station,
   arrive,
   picks,
 }: {
   hole: HoleGeometry;
   stations: ChTeamBoardData['stations'];
-  station: ChStation | 'course';
   arrive: boolean;
-  /** How many times the coach has chosen a station here. A station restored from the last visit is not a choice. */
+  /** How many times the coach has chosen a station here (a station restored from the last visit is not a choice): a choice
+   *  made mid-flight stops the ball. */
   picks: number;
 }) {
   const reduced = useChReducedMotion();
   const box = useRef<HTMLDivElement | null>(null);
   const [flying, setFlying] = useState(false);
   const flight = useMemo(() => holeFlight(hole), [hole]);
-
-  // The first selection is the page's own; the pulse is the answer to a choice.
-  const chosen = picks > 0;
 
   useEffect(() => {
     const el = box.current;
@@ -171,19 +167,15 @@ export function HoleMotion({
     const r = stationRadius(stations[s].team);
     return { left: `${(t.x / hole.w) * 100}%`, top: `${(t.y / hole.h) * 100}%`, width: `${((2 * r) / hole.w) * 100}%` };
   };
-  const pulse = !reduced && chosen && !flying && station !== 'course' && stations[station].team != null ? station : null;
-  if (!flying && !pulse) return <div ref={box} className="holefx" aria-hidden="true" />;
+  if (!flying) return <div ref={box} className="holefx" aria-hidden="true" />;
   return (
-    <div ref={box} className="holefx" aria-hidden="true" data-ch-team-fly={flying ? '' : undefined}>
-      {pulse && <i key={pulse} className={'holefx__ring is-pulse' + toneOf(stations[pulse].team)} style={at(pulse)} />}
-      {flying &&
-        STATIONS.filter((s) => stations[s].team != null).map((s) => <i key={s} data-ripple={s} className={'holefx__ring' + toneOf(stations[s].team)} style={at(s)} />)}
-      {flying &&
-        [...TRAIL.map((_, i) => TRAIL.length - i), 0].map((i) => (
-          <span key={i} data-fly={i} className="holefx__fly">
-            <i className="holefx__ball" style={{ width: `${(BALL / hole.w) * 100}%`, ['--ch-fly-scale' as string]: i > 0 ? TRAIL[i - 1]!.scale : 1 }} />
-          </span>
-        ))}
+    <div ref={box} className="holefx" aria-hidden="true" data-ch-team-fly="">
+      {STATIONS.filter((s) => stations[s].team != null).map((s) => <i key={s} data-ripple={s} className={'holefx__ring' + toneOf(stations[s].team)} style={at(s)} />)}
+      {[...TRAIL.map((_, i) => TRAIL.length - i), 0].map((i) => (
+        <span key={i} data-fly={i} className="holefx__fly">
+          <i className="holefx__ball" style={{ width: `${(BALL / hole.w) * 100}%`, ['--ch-fly-scale' as string]: i > 0 ? TRAIL[i - 1]!.scale : 1 }} />
+        </span>
+      ))}
     </div>
   );
 }

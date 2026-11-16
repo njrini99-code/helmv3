@@ -12,22 +12,23 @@ import { useChClockText } from '../../lib/use-clock';
 import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { FAILURE_COPY } from '../../ui/Notices';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { WeekStrip } from '../../ui/WeekStrip';
 import { EmptyState } from '../../ui/States';
-import { firstBusyDay, lateBy, ledgerSorted, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
+import { dayHolds, firstBusyDay, lateBy, ledgerSorted, tripStay, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
 import { Acknowledgement, ReplyChoices, repliesLine, useTaskSave } from './parts';
 import { plural } from '../../lib/plural';
 
 /*
  * Team Hub's Home, as widgets (owner, 2026-10-21: "don't center around RSVPs … more like widgets or cool interactive
  * components"). Each tile answers one question and does one thing in place: the next trip, this week, who owes what,
- * the latest post, the tasks. A reply lives on its event in the week; a player's asks are one queue. Every figure is
+ * the latest post, the tasks. A player's asks are one queue, replies included (the week shows each reply's state). Every figure is
  * read from what the page already loaded, and a read that failed says so in its tile, never as a zero.
  */
 
 
-function Tile({ id, title, aside, span, dark, className, children }: {
+function Tile({ id, title, aside, span, dark, className, focusable, children }: {
   id: string;
   title: string;
   aside?: ReactNode;
@@ -35,6 +36,8 @@ function Tile({ id, title, aside, span, dark, className, children }: {
   span: number;
   dark?: boolean;
   className?: string;
+  /** The heading takes focus when the strip's "replies due" sends you here (GAP-H-13). */
+  focusable?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -44,7 +47,9 @@ function Tile({ id, title, aside, span, dark, className, children }: {
       aria-labelledby={id}
     >
       <div className="ch-hw__h">
-        <h2 id={id}>{title}</h2>
+        <h2 id={id} tabIndex={focusable ? -1 : undefined}>
+          {title}
+        </h2>
         {aside}
       </div>
       {children}
@@ -92,8 +97,8 @@ export const keepTokens = (text: string) =>
     .map((part, i) => (i % 2 ? '\u00a0' + part.slice(1) : part.replace(/ /g, '\u00a0')))
     .join('');
 
-export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, onOpenTravel }: {
-  /** Trips still to come, soonest first. */
+export function TripTile({ trips: teamTrips, role, days, error, covered, onEdit, onPlan, onOpenTravel }: {
+  /** The team's trips still to come, soonest first. */
   trips: ChHubTrip[];
   role: ChTeamHub['role'];
   days: ChTeamHub['week']['days'];
@@ -104,8 +109,13 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
   onOpenTravel: () => void;
 }) {
   const [at, setAt] = useState(0);
+  // What a page turn says, once, to a screen reader (GAP-H-20): empty until the first turn, so nothing is read twice on arrival.
+  const [said, setSaid] = useState('');
   const clk = useChClockText();
   const coach = role === 'coach';
+  // A player's countdown is their own trip (GAP-H-02): the next one they travel on. A team trip they aren't on, or aren't
+  // known to be on, never takes the hero; it is a plain "Team away" line under the week's next event instead.
+  const trips = coach ? teamTrips : teamTrips.filter((x) => x.mine === true);
   if (error) {
     return (
       <Tile id="ch-hw-trip" title="Next trip" span={7}>
@@ -118,12 +128,14 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
   const page = (to: number) => {
     haptic('select');
     setAt(to);
+    const next = trips[to];
+    if (next) setSaid(`Trip ${to + 1} of ${trips.length}: ${next.name}, ${next.dates}`);
   };
   if (t) {
     const word = t.inDays != null ? countLabel(t.inDays) : null;
     const stops = [
       { k: 'Leaves', v: keepTokens(clk(t.depart ?? t.dates)), s: t.from },
-      { k: 'Stays', v: t.hotel ?? 'Hotel not set', s: t.destination ? t.destination.replace(/ · /g, '\u00a0· ') : null },
+      { k: 'Stays', v: tripStay(t), s: t.destination ? t.destination.replace(/ · /g, '\u00a0· ') : null },
       { k: 'Home', v: keepTokens(clk(t.back ?? 'Not set')), s: null },
     ];
     const names = t.travelers ?? [];
@@ -139,7 +151,8 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
               <button type="button" aria-label="Previous trip" disabled={i === 0} onClick={() => page(i - 1)}>
                 <Icon icon={ChevronLeft} size={15} />
               </button>
-              <span className="ch-num" aria-live="polite">
+              {/* Not a live region: the turn is said once, below (GAP-H-20). */}
+              <span className="ch-num">
                 {i + 1} of {trips.length}
               </span>
               <button type="button" aria-label="Next trip" disabled={i === trips.length - 1} onClick={() => page(i + 1)}>
@@ -149,6 +162,9 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
           ) : undefined
         }
       >
+        <span className="ch-sr-only" aria-live="polite">
+          {said}
+        </span>
         <div className="ch-hw-count">
           {t.inDays != null && (
             <span className={'ch-hw-count__n' + (word ? ' is-word' : '')}>
@@ -203,7 +219,9 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
       </Tile>
     );
   }
-  // No trip ahead: the week's next event takes the tile.
+  // No trip ahead (for a player, none of their own): the week's next event takes the tile, and a team trip they aren't on
+  // is one plain line, with no countdown (GAP-H-02).
+  const away = coach ? null : (teamTrips[0] ?? null);
   const d = days.findIndex((x) => x.events.length > 0);
   const day = d >= 0 ? days[d]! : null;
   const ev = day?.events[0] ?? null;
@@ -228,7 +246,8 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
         </div>
       </div>
       <div className="ch-hw-trip__f">
-        <span className="ch-hw-you">{ev ? 'No trips planned' : ''}</span>
+        {/* GAP-H-25: "No trips planned" is the coach's phrase; a player is told about the team's travel. */}
+        <span className="ch-hw-you">{away ? `Team away · ${away.name} · ${keepTokens(away.dates)}` : ev ? (coach ? 'No trips planned' : 'No team travel coming up') : ''}</span>
         <span className="ch-hw-trip__a">
           {ev && day && <More href={`/golf/dashboard/calendar?date=${day.date}&event=${ev.id}`}>Open event</More>}
           {coach && onPlan && (
@@ -246,17 +265,16 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
 
 /**
  * Seven days you can step through: today and the six after it. A dot is an event, gold is a day on the road. The day you
- * pick lists its events; an event that takes replies shows who has replied (coach) or your answer, which you can change
- * in place (player). W21 (12 Nov): it said "This week" and "Later this week", so on a Wednesday next Tuesday was this
+ * pick lists its events; an event that takes replies shows who has replied (coach) or your answer (player; you answer in
+ * Your queue, GAP-H-04). W21 (12 Nov): it said "This week" and "Later this week", so on a Wednesday next Tuesday was this
  * week; it says the next 7 days, and what is coming up in them.
  */
-export function WeekTile({ week, role, rsvps, replies, isPending, onReply, covered, span = 5 }: {
+export function WeekTile({ week, role, rsvps, replies, covered, span = 5 }: {
   week: ChTeamHub['week'];
   role: ChTeamHub['role'];
   rsvps: ChTeamHub['rsvps'];
+  /** The player's replies this visit (made in the queue), over what loaded. */
   replies: Map<string, ChRsvp>;
-  isPending: (r: ChHubRsvp) => boolean;
-  onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => Promise<ServerResult>;
   covered: boolean;
   span?: number;
 }) {
@@ -277,9 +295,9 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
     .slice(0, 3);
   const rsvpFor = (id: string) => (rsvps.error ? null : (rsvps.rows.find((r) => r.eventId === id) ?? null));
   return (
-    <Tile id="ch-hw-week" title="Next 7 days" span={span} aside={!week.error && <More href="/golf/dashboard/calendar">Calendar</More>}>
+    <Tile id="ch-hw-week" title="Next 7 days" span={span} focusable={coach} aside={!week.error && <More href="/golf/dashboard/calendar">Calendar</More>}>
       {week.error ? (
-        <RefreshNotice code="CH-10201" title="The next 7 days didn’t load." body="Nothing was lost. Try again." covered={covered} />
+        <RefreshNotice code="CH-10201" title="The next 7 days didn’t load." body={FAILURE_COPY.page} covered={covered} />
       ) : quiet || !day ? (
         <EmptyState
           compact
@@ -306,7 +324,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
               dots: d.events.length,
               flag: d.trip ? 'trip' : undefined,
               // F-0011: the name opens with the face, "Today 14" or "Wed 15" (WeekStrip's weekDayName).
-              label: `${i === 0 ? `Today ${d.day}, ${d.weekday}` : `${d.weekday} ${d.day}`}: ${d.events.length ? plural(d.events.length, 'event') : 'nothing on'}${d.trip ? `, on the road (${d.trip})` : ''}`,
+              label: `${i === 0 ? `Today ${d.day}, ${d.weekday}` : `${d.weekday} ${d.day}`}: ${dayHolds(d)}`,
             }))}
             selected={day.date}
             onSelect={(date) => pick(days.findIndex((d) => d.date === date))}
@@ -318,16 +336,19 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
                 On the road · {day.trip}
               </p>
             )}
+            {/* A trip day is not empty (N13P-40): the trip line above says what is on, so no "Nothing on" under it. */}
             {!day.events.length ? (
-              <p className="ch-hw-agenda__none">
-                Nothing on {day.weekday} {day.day}.
-              </p>
+              !day.trip && (
+                <p className="ch-hw-agenda__none">
+                  Nothing on {day.weekday} {day.day}.
+                </p>
+              )
             ) : (
               <ol>
                 {day.events.map((e) => {
                   const r = rsvpFor(e.id);
                   return (
-                    <li key={e.id} className={!coach && r ? 'has-reply' : undefined}>
+                    <li key={e.id}>
                       <time className="ch-num">{clk(e.time)}</time>
                       <Link href={`/golf/dashboard/calendar?date=${day.date}&event=${e.id}`}>
                         <b>
@@ -344,7 +365,9 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
                             <span className="ch-hw-meter__k">Replies didn’t load</span>
                           )
                         ) : (
-                          <ReplyChoices r={r} mine={replies.get(r.eventId) ?? r.mine ?? 'pending'} pending={isPending(r)} onReply={onReply} />
+                          // GAP-H-04: the queue owns a player's replies; the week says where each stands, so one event never
+                          // offers Going / Maybe / Can’t twice on Home. The event's own page (its link) changes a reply.
+                          <ReplyState mine={replies.get(r.eventId) ?? r.mine ?? 'pending'} />
                         ))}
                     </li>
                   );
@@ -373,6 +396,18 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
         </>
       )}
     </Tile>
+  );
+}
+
+const REPLY_STATE: Record<ChRsvp, string> = { accepted: 'Going', tentative: 'Maybe', declined: 'Can’t go', pending: 'No reply yet' };
+
+/** A player's reply on the week, as a status: the answer, or "No reply yet" in the warning ink (the queue asks for it). */
+function ReplyState({ mine }: { mine: ChRsvp }) {
+  return (
+    <span className={'ch-hw-meter__k' + (mine === 'pending' ? ' is-warn' : '')}>
+      <span className="ch-sr-only">Your reply: </span>
+      {REPLY_STATE[mine]}
+    </span>
   );
 }
 
@@ -621,7 +656,7 @@ export function PostTile({ a, role, error, covered, acked, pending, onAck, onOpe
   if (error) {
     return (
       <Tile id="ch-hw-post" title="Latest post" span={span}>
-        <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again." covered={covered} />
+        <RefreshNotice code="CH-10206" title="Announcements didn’t load." body={FAILURE_COPY.page} covered={covered} />
       </Tile>
     );
   }
@@ -710,7 +745,7 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
   return (
     <Tile id="ch-hw-tasks" title="Tasks" span={5} aside={!data.error && data.rows.length > 0 && <More onClick={onOpenTasks}>All tasks</More>}>
       {data.error ? (
-        <RefreshNotice code="CH-10203" title="Tasks didn’t load." body="Nothing was lost. Try again." covered={covered} />
+        <RefreshNotice code="CH-10203" title="Tasks didn’t load." body={FAILURE_COPY.page} covered={covered} />
       ) : !data.rows.length ? (
         <EmptyState
           compact
@@ -818,9 +853,9 @@ export function QueueTile({ items, left, failed, covered, replies, isPending, on
   // A failed part says so in its own words; a failed announcements read is the post tile's to say.
   const down = failed.replies || failed.tasks;
   return (
-    <Tile id="ch-hw-queue" title="Your queue" span={5} aside={!down && items.length > 0 && <span className={'ch-hw__k ch-num' + (left ? ' is-on' : '')}>{left === 0 ? 'All done' : `${left} to do`}</span>}>
-      {failed.replies && <RefreshNotice code="CH-10201" title="Your events didn’t load." body="Nothing was lost. Try again." covered={covered} />}
-      {failed.tasks && <RefreshNotice code="CH-10203" title="Your tasks didn’t load." body="Nothing was lost. Try again." covered={covered} />}
+    <Tile id="ch-hw-queue" title="Your queue" span={5} focusable aside={!down && items.length > 0 && <span className={'ch-hw__k ch-num' + (left ? ' is-on' : '')}>{left === 0 ? 'All done' : `${left} to do`}</span>}>
+      {failed.replies && <RefreshNotice code="CH-10201" title="Your events didn’t load." body={FAILURE_COPY.page} covered={covered} />}
+      {failed.tasks && <RefreshNotice code="CH-10203" title="Your tasks didn’t load." body={FAILURE_COPY.page} covered={covered} />}
       {!items.length && !down ? (
         <EmptyState compact code="CH-10303" title="Nothing is asked of you" body="Replies, posts to acknowledge and tasks from your coaches land here." />
       ) : items.length > 0 && (
@@ -899,7 +934,9 @@ export function FilesTile({ data, opening, covered, onOpen, onOpenDocs }: {
   onOpen: (f: ChHubFile) => void;
   onOpenDocs: () => void;
 }) {
-  const files = data.folders.flatMap((f) => f.files.map((x) => ({ ...x, folder: f.name })));
+  // The newest across every folder (GAP-H-14): the folders keep first-seen order and sort newest first only inside each, so
+  // flattening them listed the first folder's files. A stable sort on when each file's date is; an unknown one goes last.
+  const files = data.folders.flatMap((f) => f.files.map((x) => ({ ...x, folder: f.name }))).sort((a, b) => (b.at ?? '').localeCompare(a.at ?? ''));
   return (
     <Tile id="ch-hw-files" title="Files" span={5} aside={!data.error && files.length > 4 && <More onClick={onOpenDocs}>{`All ${files.length}`}</More>}>
       {data.error ? (

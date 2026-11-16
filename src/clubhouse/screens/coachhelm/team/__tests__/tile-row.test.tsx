@@ -38,10 +38,18 @@ describe('This week’s rows on a desk (W10)', () => {
     }
   });
 
-  it('the focus picture’s target is a line through both bars, not a mark beside the lower one', () => {
-    const tick = [...tiles(false).flatMap((t) => [...t.querySelectorAll('.tv svg rect')])].find((r) => r.getAttribute('width') === '2');
-    expect(tick?.getAttribute('y')).toBe('0');
-    expect(tick?.getAttribute('height')).toBe('40');
+  it('the focus picture’s target is a line across the axis that before and now sit on, not a mark beside one of them', () => {
+    // Before and now are marks on one axis with the target (stats and charts audit 2026-11-15, CH-08); the target crosses them.
+    const svg = tiles(false).flatMap((t) => [...t.querySelectorAll<SVGSVGElement>('.tv svg')])[0]!;
+    const tick = [...svg.querySelectorAll('rect')].find((r) => r.getAttribute('width') === '2')!;
+    const marks = [...svg.querySelectorAll('circle')].map((c) => [Number(c.getAttribute('cy')) - Number(c.getAttribute('r')), Number(c.getAttribute('cy')) + Number(c.getAttribute('r'))]);
+    expect(marks).toHaveLength(2);
+    const top = Number(tick.getAttribute('y'));
+    const foot = top + Number(tick.getAttribute('height'));
+    for (const [a, b] of marks) {
+      expect(top).toBeLessThanOrEqual(a!);
+      expect(foot).toBeGreaterThanOrEqual(b!);
+    }
   });
 
   it('the phone’s cards keep their picture at the top', () => {

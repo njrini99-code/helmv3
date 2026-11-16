@@ -48,6 +48,13 @@ export interface ChWhatsNew {
   counts: Record<'all' | ChWhatsNewKind, number>;
   /** The newest event, ISO; null when there are none. */
   newestAt: string | null;
+  /**
+   * The kinds whose read failed while the rest loaded (GAP-S-02): the page draws what loaded with one notice naming
+   * what didn't, and an empty week is never claimed while any kind failed.
+   */
+  failed: ChWhatsNewKind[];
+  /** The coach has no active team: NoTeam, not "Nothing new this week" (GAP-S-36). */
+  noTeam: boolean;
 }
 
 const KIND: Record<WhatsNewType, { kind: ChWhatsNewKind; what: string; good: boolean }> = {
@@ -99,7 +106,7 @@ export function passage(text: string | null | undefined): string | null {
 }
 
 /** The feed as the page draws it: newest first, grouped by the team's calendar day. `nowMs` is the server's clock. */
-export function toWhatsNew(items: readonly WhatsNewItem[], opts: { nowMs: number; zone?: string | null; truncated?: boolean }): ChWhatsNew {
+export function toWhatsNew(items: readonly WhatsNewItem[], opts: { nowMs: number; zone?: string | null; truncated?: boolean; failed?: readonly ChWhatsNewKind[] }): ChWhatsNew {
   const zone = validZone(opts.zone);
   const today = dayKey(opts.nowMs, zone);
   const time = new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', minute: '2-digit' });
@@ -131,8 +138,13 @@ export function toWhatsNew(items: readonly WhatsNewItem[], opts: { nowMs: number
     total: rows.length,
     counts: { all: rows.length, insights: count('insights'), patterns: count('patterns'), focus: count('focus') },
     newestAt: rows[0]?.at ?? null,
+    failed: [...new Set(opts.failed ?? [])],
+    noTeam: false,
   };
 }
 
 /** A feed that failed to load. */
-export const WHATS_NEW_FAILED: ChWhatsNew = { error: true, truncated: false, days: [], total: 0, counts: { all: 0, insights: 0, patterns: 0, focus: 0 }, newestAt: null };
+export const WHATS_NEW_FAILED: ChWhatsNew = { error: true, truncated: false, days: [], total: 0, counts: { all: 0, insights: 0, patterns: 0, focus: 0 }, newestAt: null, failed: [], noTeam: false };
+
+/** A coach with no active team (GAP-S-36). */
+export const WHATS_NEW_NO_TEAM: ChWhatsNew = { ...WHATS_NEW_FAILED, error: false, noTeam: true };

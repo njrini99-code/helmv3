@@ -5,6 +5,7 @@ import { isUuid } from '@/lib/utils/uuid';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { lieAfterRecoveryFromRow } from '@/lib/golf/data-prompts/recovery';
 import { CompletedRoundRedirect } from './completed-round-redirect';
+import { RoundReviewSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import type { Tables } from '@/lib/types/database';
@@ -209,7 +210,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     // Not redirect(): this render also runs inside the submit action's
     // response, where a thrown redirect becomes React #441 and the error
     // boundary. See CompletedRoundRedirect.
-    return <CompletedRoundRedirect href={`/golf/dashboard/rounds/${id}`} />;
+    return <CompletedRoundRedirect href={`/golf/dashboard/rounds/${id}`} skeleton={<RoundReviewSkeleton />} />;
   }
 
   // Load holes, shots, and course hole yardages in parallel

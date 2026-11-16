@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '../../../ui/Button';
+import { EmptyState } from '../../../ui/States';
 import { formatWith } from '../../../lib/dates';
 
 import { useRefresh } from '../../../lib/use-refresh';
@@ -11,7 +12,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, use
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import type { ChFileCards, ChFileIntent, ChFilePlan, ChFileRosterRow, ChPlayerFile } from '../../../data/coachhelm-file-shape';
 import { FILE_BYPASS, PLAYER_HELM_HREF, coachPlayerHref, playerFileHref, type ChViewLoad, type PlayerFileCard } from '../../../data/coachhelm-views-shape';
-import { CH_DUR, CH_FADE_MS } from '../../../lib/motion';
+import { CH_DUR, CH_EASE_IOS_CSS, CH_EASE_OUT, CH_FADE_MS } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useChPhone } from '../../../lib/use-phone';
 import { usePageCrumbs } from '../../../shell/crumbs';
@@ -20,6 +21,7 @@ import { PhoneTop } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { Menu } from '../../../ui/Menu';
 import { Modal } from '../../../ui/Modal';
+import { FAILURE_COPY } from '../../../ui/Notices';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Segmented } from '../../../ui/Segmented';
 import { Swap } from '../../../ui/Swap';
@@ -28,9 +30,23 @@ import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
 import {  CoachActions, EarlyFeature, FeatureCard, FieldCard, IntentCard, PlanCard, ReadsCard, SgCard, TrackCard, WorkingCard, type FileLens } from './cards';
 import { Avatar } from '../../../ui/Avatar';
+import { SectionBoundary } from '../../../ui/SectionBoundary';
+
+/** What each card of the file is called when it cannot be drawn ("… couldn’t be shown", CH-13204). */
+const FILE_PART: Record<string, string> = {
+  feat: 'The main read',
+  plan: 'The plan',
+  field: 'Last round in context',
+  reads: 'The other reads',
+  sg: 'Where the strokes go',
+  working: 'What’s working',
+  intent: 'Your plan for this player',
+  track: 'The track record',
+};
 import { IntentSheet, LIVE_SAVE_INTENT } from './IntentSheet';
 
-const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+/** Leaving rides the out curve (P3-305 / GAP-H-23: from lib/motion, not a hard-coded copy). */
+const LEAVE = `cubic-bezier(${CH_EASE_OUT.join(', ')})`;
 const WIDE = '(min-width: 1180px)';
 const useWide = () =>
   useSyncExternalStore(
@@ -43,7 +59,7 @@ const useWide = () =>
     () => false,
   );
 
-/** A lens-only card: folds on height (smooth spring, 462) with opacity 180 out / 260 in, from where it is. Gone from the DOM once folded (M-LNS-04). Reduce: no fold; the whole file fades. */
+/** A lens-only card: it takes its height at once and rises 8px into it with opacity over the base beat (260) on the iOS curve, and leaves over the quick beat (180) on the out curve, from where it is. Gone from the DOM once folded (M-LNS-04). Reduce: no fold; the whole file fades. */
 function Fold({ show, children }: { show: boolean; children: ReactNode }) {
   const [mounted, setMounted] = useState(show);
   const ref = useRef<HTMLDivElement>(null);
@@ -66,7 +82,7 @@ function Fold({ show, children }: { show: boolean; children: ReactNode }) {
     // Transform and opacity only: the card takes its height at once and fades and rises into it, so nothing lays out per frame.
     const box = el.animate(show ? [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }] : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], {
       duration: show ? CH_DUR.base * 1000 : CH_DUR.quick * 1000,
-      easing: EASE,
+      easing: show ? CH_EASE_IOS_CSS : LEAVE,
       fill: 'both',
     });
     box.onfinish = () => {
@@ -108,7 +124,7 @@ export function FileFailed({ who, onRetry }: { who: string; onRetry: () => void 
           <Icon icon={TriangleAlert} size={22} />
         </span>
         <b>Couldn’t load {who}</b>
-        <p>Nothing was lost. Try again.</p>
+        <p>{FAILURE_COPY.page}</p>
         <Button data={{ 'data-ch-hf-retry': '' }} variant="secondary" size="lg" onClick={onRetry}>
           Try again
         </Button>
@@ -235,18 +251,22 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
   const isEmpty = none && data.rounds === 0;
   const isEarly = none && !isEmpty;
 
-  const card: Record<string, ReactNode> = {
+  const drawn: Record<string, ReactNode> = {
     feat: isEmpty ? (
       <section className="card">
-        <div className="empty">
-          <b>No rounds yet</b>
-          <p>Reads start after 4 full rounds in the last 90 days.</p>
-          {lens === 'coach' && (
-            <Button variant="secondary" size="lg" href={messageHref}>
-              Message {first}
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          code="CH-13386"
+          kind="first-run"
+          title="No rounds yet"
+          body="Reads start after 4 full rounds in the last 90 days."
+          action={
+            lens === 'coach' ? (
+              <Button variant="secondary" size="lg" href={messageHref}>
+                Message {first}
+              </Button>
+            ) : undefined
+          }
+        />
       </section>
     ) : shown.feat ? (
       <Swap swapKey={lens}>
@@ -269,6 +289,10 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
     intent: <Fold show={lens === 'coach'}>{data.failed.intent ? <PartFailed title={`Your plan for ${first}`} /> : <IntentCard intent={intent} first={first} onEdit={() => setIntentOpen(true)} />}</Fold>,
     track: <Fold show={lens === 'coach'}>{data.failed.track ? <PartFailed title={`Track record with ${first}`} /> : data.cards.track ? <TrackCard track={data.cards.track} first={first} /> : null}</Fold>,
   };
+  // GAP-S-10: each card draws on its own, so a crash in one says so in its place (CH-13204) and the rest of the file stays.
+  const card: Record<string, ReactNode> = Object.fromEntries(
+    Object.entries(drawn).map(([k, node]) => [k, node ? <SectionBoundary key={k} surface={`coachhelm.file.${k}`} label={FILE_PART[k] ?? 'This part'} code="CH-13204">{node}</SectionBoundary> : node]),
+  );
   void isEarly;
 
   const pill = (
@@ -394,7 +418,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
   );
 }
 
-function PartFailed({ title }: { title: string }) {
+export function PartFailed({ title }: { title: string }) {
   const { refresh, refreshing } = useRefresh();
   return (
     <section className="card">

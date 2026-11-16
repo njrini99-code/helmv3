@@ -104,9 +104,10 @@ describe('the Team lane, what the fixtures hid', () => {
     expect(css).toMatch(/\.ch-seg--lg \.ch-seg__b \{[^}]*height: calc\(38 \* var\(--ch-type-k\)\)/);
   });
 
-  it('the loading frame keeps the page head in place and the loaded heights (TEAM-28)', () => {
+  it('the loading frame keeps the page head in place and the loaded heights (TEAM-28); the switch is the route’s, above it (N13C-67)', () => {
     const { container } = render(<TeamBoardSkeleton />);
-    expect(container.querySelector('.sheet > .ch-chd.is-phone .ch-chd__sw')).not.toBeNull();
+    expect(container.querySelector('.sheet > .ch-chd.is-phone')).not.toBeNull();
+    expect(container.querySelector('.ch-chd__sw')).toBeNull();
     expect(container.querySelector<HTMLElement>('.sheet > .ch-htb-feat')!.style.minHeight).toBe('406px');
   });
 });

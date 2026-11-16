@@ -15,6 +15,7 @@ import { LargeTitle } from '../../../../ui/LargeTitle';
 import { BackLink } from '../../../../ui/Section';
 import { plural } from '../../../../lib/plural';
 import { useUndoWindow } from '../useUndoWindow';
+import { RefreshNotice } from '../../../../ui/RefreshNotice';
 
 export type FormatView =
   | { k: 'empty' }
@@ -69,7 +70,8 @@ function Sample({ found, sections = [] }: { found?: boolean; sections?: Array<{ 
 }
 
 /** Practice › Plan format (S-FMT.*): one upload sets the layout new plans use. Layout only: a drill, a time or a name in the sample never carries over. */
-export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'GolfHelm standard', published = 0, sheet: startSheet = false, picked: startPicked = null, preview = false, see = null }: { see?: { label: string; href: string } | null; teamId?: string; initial?: FormatView; current?: string; published?: number; sheet?: boolean; picked?: { name: string; meta: string } | null; preview?: boolean }) {
+export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'GolfHelm standard', published = 0, sheet: startSheet = false, picked: startPicked = null, preview = false, see = null, unread = [] }: { see?: { label: string; href: string } | null; teamId?: string; initial?: FormatView; current?: string; published?: number | null; sheet?: boolean; picked?: { name: string; meta: string } | null; preview?: boolean; /** The page's reads that failed (GAP-S-07): 'format' (the current format is unknown, so a new one can't be set over it yet) and 'published' (the count is unknown). */ unread?: ReadonlyArray<'format' | 'published'> }) {
+  const formatUnread = unread.includes('format');
   const [view, setView] = useState<FormatView>(initial);
   const [sheet, setSheet] = useState(startSheet);
   const [picked] = useState(startPicked);
@@ -108,7 +110,8 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
     e.target.value = '';
   };
   const use = async () => {
-    if (view.k !== 'found') return;
+    // Setting a format over one that didn't read would replace it unseen (GAP-S-07): wait until it is known.
+    if (view.k !== 'found' || formatUnread) return;
     const until = new Date(Date.now() + 8000).toISOString();
     if (preview) return setView({ k: 'set', file: view.file, id: 'preview', until });
     const res = await setPlanFormat({ documentId: view.documentId, name: view.file.replace(/\.[^.]+$/, ''), sections: view.sections });
@@ -143,7 +146,10 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
   );
   const shownName = view.k === 'set' ? view.file.replace(/\.[^.]+$/, '') : name;
   // The format in use, as the card's own caption: it was a card of its own for one line.
-  const curLine = (
+  // A format that didn't read is never shown as "GolfHelm standard" (GAP-S-07): it is said, with Try again.
+  const curLine = formatUnread && view.k !== 'set' ? (
+    <RefreshNotice code="CH-13286" title="Your format didn’t load" body="Your current format is unknown, so a new one can’t be set yet. Nothing you saved is lost. Try again." />
+  ) : (
     <p className="fcur">
       Current format <b>{shownName}</b>
     </p>
@@ -208,7 +214,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             <Button variant="secondary" onClick={openUpload}>
               Try another
             </Button>
-            <Button variant="primary" className="is-fill" onClick={() => void use()}>
+            <Button variant="primary" className="is-fill" disabled={formatUnread} onClick={() => void use()}>
               Use this format
             </Button>
           </div>

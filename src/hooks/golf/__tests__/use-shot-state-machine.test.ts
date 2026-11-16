@@ -11,6 +11,7 @@ import {
   type ShotAction,
 } from '../use-shot-state-machine';
 import type { PuttMissTag } from '@/lib/types/golf';
+import { lieFromShotResult } from '@/lib/utils/shot-helpers';
 import { makeShotRecord, makeRoundHole } from '@/test/fixtures/golf-shots';
 
 // ============================================================================
@@ -162,6 +163,18 @@ describe('getShotTypeFromState', () => {
   it('returns putting when on green regardless of hole', () => {
     const state = makeInitialState({ currentLie: 'green', currentShot: 1 });
     expect(getShotTypeFromState(state, makeRoundHole({ par: 3 }))).toBe('putting');
+  });
+
+  it('a stroke from the fringe defaults to a chip, not a putt (SC-05): only a ball on the green is putting', () => {
+    // A shot that finished on the fringe is logged "other" (the result sheet marks green "not fringe"), so the next stroke is
+    // played from the 'other' lie: around the green however close, never 'putting', and the hole's GIR is read from the stroke
+    // that reached the green (golf_hole_gir, 20261115230000).
+    const lie = lieFromShotResult(makeShotRecord({ result: 'other' }));
+    expect(lie).toBe('other');
+    for (const [distanceToHole, distanceUnit] of [[6, 'feet'], [4, 'yards'], [20, 'yards']] as const) {
+      const state = makeInitialState({ currentShot: 3, currentLie: lie, distanceToHole, distanceUnit });
+      expect(getShotTypeFromState(state, makeRoundHole({ par: 4 })), `${distanceToHole} ${distanceUnit}`).toBe('around_green');
+    }
   });
 });
 

@@ -35,8 +35,12 @@ export function MessagesFirstRun({ onNew, teamName, onTeam }: { coach: boolean; 
   );
 }
 
-/** Nothing to list at all (the list read, not loading or failed). */
-export function isMessagesFirstRun(api: { convs: unknown[]; announcements: unknown[]; convsLoading: boolean; convsError: unknown; annLoading?: boolean }): boolean {
+/**
+ * Nothing to list at all: both reads answered, neither failed, and both came back empty. A failed announcements read is
+ * not an empty one (GAP-S-01): the inbox stays, with the announcements notice (CH-7206) and its Try again, because a
+ * player's inbox is often announcements only and "No conversations yet" would read as "you have no messages".
+ */
+export function isMessagesFirstRun(api: { convs: unknown[]; announcements: unknown[]; convsLoading: boolean; convsError: unknown; annLoading?: boolean; annError?: boolean }): boolean {
   // Not before the announcements answer: one landing would swap the first-run page for the inbox (a layout shift).
-  return !api.convsLoading && !api.annLoading && !api.convsError && api.convs.length === 0 && api.announcements.length === 0;
+  return !api.convsLoading && !api.annLoading && !api.convsError && !api.annError && api.convs.length === 0 && api.announcements.length === 0;
 }

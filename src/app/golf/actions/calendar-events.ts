@@ -1451,8 +1451,9 @@ async function sendEventReminderToPlayersImpl(
       return { success: false, error: 'Failed to send reminders' };
     }
 
+    // The reminder shows in the bell and Team Hub’s updates; there is no /notifications page (GAP-R-14).
     revalidatePath('/golf/dashboard/calendar');
-    revalidatePath('/golf/dashboard/notifications');
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true, data: { sent: userIds.length, sentPlayerIds } };
   } catch (err) {
     await logServerError(`sendEventReminderToPlayers error: ${describeError(err)}`, {

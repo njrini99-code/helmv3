@@ -88,7 +88,7 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 | `--ch-card-ring` | `rgb(28 25 18 / 0.08)` | `rgb(241 236 223 / 0.08)` | The card edge, drawn as `0 0 0 1px` (S1.4); a boundary, not a 3:1 line | 1.17 on card-bg, 1.17 on workspace | 1.25 on card-bg, 1.22 on workspace |
 | `--ch-separator` | `rgb(28 27 24 / 0.1)` | `rgb(241 236 223 / 0.1)` | Row hairlines, inset 16 from the leading edge | 1.22 on card-bg | 1.33 on card-bg |
 | `--ch-border-control` | `#85817a` | `#807b6e` | Inputs, search, chips, switch off-ring, chart track rings (S1.8, 3:1) | 3.62 on card-bg, 3.02 on workspace | 3.61 on card-bg, 4.26 on workspace |
-| `--ch-border-focus` | `#155a39` | `#6bbb8c` | Keyboard focus ring, 2px | 7.68 on card-bg, 6.41 on workspace | 6.61 on card-bg, 7.80 on workspace |
+| `--ch-border-focus` | `#1f6b45` | `#6db488` | Keyboard focus ring, 2px | 6.04 on card-bg, 5.04 on workspace | 6.19 on card-bg, 7.30 on workspace |
 
 #### Data marks
 
@@ -97,7 +97,7 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 | `--ch-chart-gain` | `#0f5233` | `#a9e0c0` | Gain text and signed numbers (S2.5) | 8.62 on card-bg | 10.24 on card-bg |
 | `--ch-chart-loss` | `#7a4500` | `#f5c982` | Loss text and signed numbers (S2.5) | 7.32 on card-bg | 9.84 on card-bg |
 | `--ch-chart-gain-fill` | `#0b3a25` | `#c2f2d3` | Gain bars and marks | 11.92 on card-bg, 9.42 on chart-track | 12.29 on card-bg, 10.58 on chart-track |
-| `--ch-chart-loss-fill` | `#c58012` | `#b36c10` | Loss bars and marks; the track ring carries 3:1 (S2.6) | 3.03 on card-bg, 2.40 on chart-track | 3.68 on card-bg, 3.17 on chart-track |
+| `--ch-chart-loss-fill` | `#b06e0e` | `#b36c10` | Loss bars and marks; 3:1 on the card and on the track itself | 3.86 on card-bg, 3.05 on chart-track | 3.68 on card-bg, 3.17 on chart-track |
 | `--ch-chart-flat` | `#6b675f` | `#a39d90` | Steady or within-noise marks, drawn in ink | 5.26 on card-bg, 4.16 on chart-track | 5.65 on card-bg, 4.86 on chart-track |
 | `--ch-chart-line` | `#2d6a47` | `#6db488` | The series line, 2px, one dot on the newest round (S2.4) | 6.01 on card-bg | 6.19 on card-bg |
 | `--ch-chart-zero` | `#5f5c55` | `#ada697` | Mean and zero rules, 1px dashed | 6.23 on card-bg | 6.30 on card-bg |
@@ -215,7 +215,7 @@ Card anatomy:
    - Pushed pages (player profile): same green bar, "‹ Roster" in champagne on the left, the page's name centred in on-green ink, a more button on the right.
    - Home: the same green bar with the team mark and "Home ⌄", over the flat deep green hero.
    - Code: `shell/phone-chrome.tsx`, `ui/PhoneBar.tsx`, `PhoneTop`, the section switch. The refresh changes nothing about the bar's look, gestures or contents. No ivory or glass bar replaces it.
-2. **Large title** (optional per screen, 34pt `--ch-type-large-title`) on the sheet under the bar, as the page's heading. It opens nothing; the bar's title is always visible above it. On scroll it shrinks about 14% and fades; nothing moves into the bar. Reduce Motion: fade only.
+2. **Large title** (optional per screen, 34pt `--ch-type-large-title`) on the sheet under the bar, as the page's heading. It opens nothing; the bar's title is always visible above it. On scroll it fades to 10% over the first 52px as it goes under the bar, on the scroll itself, and never scales (production audit 2026-11-15, S4.3; the 14% shrink is gone, an interim call for Nick, MOT-06); nothing moves into the bar. Reduce Motion: the same fade, since the person's own scroll drives it.
 3. **Context line** under the large title: 15pt secondary, one line ("Varsity · 7 active · countable rounds").
 4. **Controls** (the one toggle, §9) directly under the context line, sticky under the green bar when scrolled. A sticky bar is transparent at rest and paints the paper over the linen only once content is under it (S1.9).
 5. **Cards**, 24pt apart, grouped by question (law 6).

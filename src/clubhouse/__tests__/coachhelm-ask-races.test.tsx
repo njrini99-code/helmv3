@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { UIMessage } from 'ai';
 import { hydrateRoot } from 'react-dom/client';
@@ -48,7 +48,7 @@ const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 
 /** What the conversation hook would return, with spies on everything the frame can ask of it. */
 function fakeChat(state: { messages?: UIMessage[]; busy?: boolean } = {}) {
-  const calls = { send: vi.fn(), stop: vi.fn(), retry: vi.fn(), newConversation: vi.fn(), approve: vi.fn(), deny: vi.fn() };
+  const calls = { send: vi.fn(), stop: vi.fn(), retry: vi.fn(), newConversation: vi.fn(), restore: vi.fn(), approve: vi.fn(), deny: vi.fn() };
   const seen: { options?: UseCoachHelmChatOptions } = {};
   const hook = ((options: UseCoachHelmChatOptions = {}): UseCoachHelmChatResult => {
     seen.options = options;
@@ -165,15 +165,24 @@ describe('New chat while a reply is on its way', () => {
       await Promise.resolve();
     });
 
-  it('stops the reply first, then starts the new chat', async () => {
+  // GAP-H-08 (15 Nov 2026): New chat used to stop the reply and wipe the chat in one tap. It now waits for the reply (Stop ends it
+  // first), so nothing on its way is thrown away; what the old test pinned (the reply is never left running into the new chat) holds.
+  it('GAP-H-08 waits while a reply is on its way: its keys are inert, and nothing is stopped or cleared', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(ASK_NOW));
     const view = show();
     await sendFirst(view);
+    const key = panel().getByRole('button', { name: 'New chat' });
+    expect(key).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(key, { advanceTimers: () => {} });
+    expect(view.chat.calls.stop).not.toHaveBeenCalled();
+    expect(view.chat.calls.newConversation).not.toHaveBeenCalled();
+    // Once the reply has ended, New chat is a key again.
+    view.chat.state.busy = false;
+    view.rerenderWith(ready());
+    expect(panel().getByRole('button', { name: 'New chat' })).not.toHaveAttribute('aria-disabled');
     await userEvent.click(panel().getByRole('button', { name: 'New chat' }), { advanceTimers: () => {} });
-    expect(view.chat.calls.stop).toHaveBeenCalledTimes(1);
     expect(view.chat.calls.newConversation).toHaveBeenCalledTimes(1);
-    expect(view.chat.calls.stop.mock.invocationCallOrder[0]).toBeLessThan(view.chat.calls.newConversation.mock.invocationCallOrder[0]!);
   });
 
   it('a New chat with no reply on its way does not stop anything', async () => {
@@ -189,6 +198,9 @@ describe('New chat while a reply is on its way', () => {
     const view = show();
     await sendFirst(view);
     const late = view.chat.seen.options!.onConversationId!;
+    // The coach stops the reply (New chat waits for one on its way, GAP-H-08), then starts a new chat before the id has come.
+    view.chat.state.busy = false;
+    view.rerenderWith(ready());
     await userEvent.click(panel().getByRole('button', { name: 'New chat' }), { advanceTimers: () => {} });
     expect(replaceState).toHaveBeenLastCalledWith(window.history.state, '', COACHHELM_HREF.ask);
     replaceState.mockClear();
@@ -204,9 +216,9 @@ describe('New chat while a reply is on its way', () => {
     vi.setSystemTime(new Date(ASK_NOW));
     const view = show();
     await sendFirst(view);
-    await userEvent.click(panel().getByRole('button', { name: 'New chat' }), { advanceTimers: () => {} });
     view.chat.state.busy = false;
     view.rerenderWith(ready());
+    await userEvent.click(panel().getByRole('button', { name: 'New chat' }), { advanceTimers: () => {} });
     await userEvent.type(box(), 'Who is trending up?{Enter}', { advanceTimers: () => {} });
     await act(async () => {
       view.chat.seen.options!.onConversationId?.('c-second');
@@ -214,6 +226,41 @@ describe('New chat while a reply is on its way', () => {
     });
     expect(replaceState).toHaveBeenLastCalledWith(window.history.state, '', `${COACHHELM_HREF.ask}&c=c-second`);
     expect(panel().getAllByRole('link', { name: 'Who is trending up?' })).toHaveLength(1);
+  });
+
+  describe('GAP-H-08 the chat a New chat left comes back with Undo (CH-13925)', () => {
+    const saved = () => ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } });
+
+    it('Undo puts the thread, its title and its address back, and sends nothing', async () => {
+      const view = show(saved());
+      await userEvent.click(panel().getByRole('button', { name: 'New chat' }));
+      expect(view.chat.calls.newConversation).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('New chat');
+      expect(code('CH-13925')).not.toBeNull();
+      expect(screen.getByText('New chat started')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+      expect(view.chat.calls.restore).toHaveBeenCalledWith({ messages: ASK_MSGS_ANSWER, conversationId: 'c-putting' });
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Putting inside 6 feet');
+      expect(replaceState).toHaveBeenLastCalledWith(window.history.state, '', `${COACHHELM_HREF.ask}&c=c-putting`);
+      expect(view.chat.calls.send).not.toHaveBeenCalled();
+    });
+
+    it('a question asked in the new chat takes the Undo away: the new chat is the choice', async () => {
+      const view = show(saved());
+      await userEvent.click(panel().getByRole('button', { name: 'New chat' }));
+      expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+      await userEvent.type(box(), 'Who is trending up?{Enter}');
+      expect(view.chat.calls.send).toHaveBeenCalled();
+      await waitFor(() => expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull());
+      expect(view.chat.calls.restore).not.toHaveBeenCalled();
+    });
+
+    it('a chat with nothing in it offers no Undo', async () => {
+      show();
+      await userEvent.click(panel().getByRole('button', { name: 'New chat' }));
+      expect(screen.queryByText('New chat started')).toBeNull();
+      expect(code('CH-13925')).toBeNull();
+    });
   });
 
   it('an id that arrives after another chat was opened (this frame is replaced) does not move the address', async () => {

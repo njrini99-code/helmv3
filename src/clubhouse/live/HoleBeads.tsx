@@ -11,8 +11,8 @@ import type { LaneChange } from './use-live-rounds';
  * ring around the hole the player is on. Hidden from VoiceOver; the lane's label says everything the beads show.
  *
  * Compact (Home) shows the last six played holes. Full shows every planned hole, a gap after the ninth. A hole that
- * gained a score since the last commit scales in over the release beat (opacity and transform only); under reduced
- * motion it takes a ring in its own colour for three seconds instead.
+ * gained a score since the last commit fades in over the release beat (opacity only, no scale: MOTION-AND-VISUAL 3.12);
+ * under reduced motion it takes a ring in its own colour for three seconds instead.
  */
 
 export const RING_MS = 3000;

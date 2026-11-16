@@ -10,8 +10,9 @@ const node = () => {
 
 describe('messages motion module', () => {
   it('names the artifact numbers from the app tokens', () => {
-    expect(CH_SPRINGS.launch).toEqual({ visualDuration: 0.5, bounce: 0.2 });
-    expect(chSpringCurve('launch').ms).toBe(812);
+    // MOTION-AND-VISUAL 3.12 and 3.5: the launch spring is gone (a sent message is an insert), and settle lands in 462ms.
+    expect('launch' in CH_SPRINGS).toBe(false);
+    expect(chSpringCurve('settle').ms).toBe(462);
     expect(KEYBOARD_MS).toBe(480);
     expect(KEYBOARD_EASE).toBe('cubic-bezier(0.32, 0.72, 0, 1)');
     expect(FADE_MS).toBe(CH_FADE_MS);
@@ -20,17 +21,17 @@ describe('messages motion module', () => {
 
   it('plays a spring, stacking with composite add', () => {
     const el = node();
-    msAnimate(el, [{ transform: 'translateY(20px)' }, { transform: 'none' }], 'launch', { composite: 'add' });
-    expect(el.animate).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ duration: 812, composite: 'add' }));
+    msAnimate(el, [{ transform: 'translateY(20px)' }, { transform: 'none' }], 'settle', { composite: 'add' });
+    expect(el.animate).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ duration: 462, composite: 'add' }));
   });
 
   it('under Reduce Motion crossfades an opacity motion and drops one without opacity or with rd null', () => {
     const el = node();
-    msAnimate(el, [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'none' }], 'pop', { reduced: true });
+    msAnimate(el, [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'none' }], 'settle', { reduced: true });
     expect(el.animate).toHaveBeenCalledWith([{ opacity: 0 }, { opacity: 1 }], expect.objectContaining({ duration: FADE_MS, easing: 'linear' }));
     const none = node();
-    expect(msAnimate(none, [{ transform: 'a' }, { transform: 'b' }], 'pop', { reduced: true })).toBeNull();
-    expect(msAnimate(none, [{ opacity: 0 }, { opacity: 1 }], 'pop', { reduced: true, rd: null })).toBeNull();
+    expect(msAnimate(none, [{ transform: 'a' }, { transform: 'b' }], 'settle', { reduced: true })).toBeNull();
+    expect(msAnimate(none, [{ opacity: 0 }, { opacity: 1 }], 'settle', { reduced: true, rd: null })).toBeNull();
     expect(none.animate).not.toHaveBeenCalled();
   });
 

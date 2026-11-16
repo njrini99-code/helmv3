@@ -153,13 +153,12 @@
 .ch-hr-surekey svg { transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth); }
 .ch-hr-surekey[aria-expanded='true'] svg { transform: rotate(180deg); }
 .ch-hr-sure { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0 0 16px; }
-.ch-hr-sure:not([hidden]) { animation: ch-hr-rise var(--ch-dur-spring-settle) var(--ch-ease-spring-settle); }
 .ch-hr-sure p { margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
-@keyframes ch-hr-rise { from { opacity: 0; transform: translateY(6px); } }
-@keyframes ch-hr-fade { from { opacity: 0; } }
+/* The panel a tap opens crossfades in over the quick beat, with no rise (motion.css ch-in; MOTION-AND-VISUAL 3.5, 3.12);
+   under Reduce Motion the same 180ms fade (3.11). */
+.ch-hr-sure:not([hidden]) { animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios); }
 @media (prefers-reduced-motion: reduce) {
-  /* Reduce Motion: the panel fades over the shared 180ms and moves nowhere. */
-  .ch-hr-sure:not([hidden]) { animation-name: ch-hr-fade; --ch-rm-animation: var(--ch-dur-crossfade-rm); }
+  .ch-hr-sure:not([hidden]) { --ch-rm-animation: var(--ch-dur-quick); }
 }
 .ch-hr-week { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
 .ch-hr-week p { margin: 0; }

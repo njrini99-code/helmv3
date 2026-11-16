@@ -39,7 +39,7 @@ import type {
 } from '@/lib/types/helm-lifting-data';
 
 export const metadata = {
-  title: 'Today · Helm Lifting Lab',
+  title: 'Today',
 };
 
 // ---------------------------------------------------------------------------

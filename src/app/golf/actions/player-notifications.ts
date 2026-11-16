@@ -385,7 +385,9 @@ async function markAnnouncementsSeenImpl(): Promise<ActionResult> {
     // WAVE W2: the Hub's triage content lives on /golf/dashboard now (the
     // standalone /hub route is a redirect stub) — revalidate the real surface.
     revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/announcements');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
+    revalidatePath('/golf/dashboard/messages');
     return { success: true };
   } catch (error) {
     await logServerError(
@@ -446,7 +448,8 @@ async function markTravelSeenImpl(): Promise<ActionResult> {
     // WAVE W2: the Hub's triage content lives on /golf/dashboard now (the
     // standalone /hub route is a redirect stub) — revalidate the real surface.
     revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/travel');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true };
   } catch (error) {
     await logServerError(

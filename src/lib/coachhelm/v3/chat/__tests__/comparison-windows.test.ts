@@ -24,7 +24,7 @@ const ctx: CoachChatContext = { coach_id: 'c1', user_id: 'u1', team_id: 'team-1'
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
-const figs = (sg: number): PlayerFigures => ({ rounds: 10, hole_rounds: 10, scoring_average: 75, putts_per_round: 30, putt_rounds: 10, sg_total: sg, sg_rounds: 10, legs: { tee: null, approach: null, around: null, putting: null }, gir_pct: null, gir_holes: 0, fairway_pct: null, fairway_holes: 0, window_start: '2026-09-01', window_end: '2026-10-20' });
+const figs = (sg: number): PlayerFigures => ({ rounds: 10, hole_rounds: 10, scoring_average: 75, putts_per_round: 30, putt_rounds: 10, sg_total: sg, sg_rounds: 10, legs: { tee: null, approach: null, around: null, putting: null }, gir_pct: null, gir_holes: 0, fairway_pct: null, fairway_holes: 0, to_par: null, scrambling_pct: null, scramble_chances: 0, sand_pct: null, sand_chances: 0, one_putt_pct: null, three_putt_pct: null, putt_holes: 0, penalties_per_round: null, penalty_rounds: 0, window_start: '2026-09-01', window_end: '2026-10-20' });
 /** The rounds in a window: last 10 differs from the five, the season and all-history values. */
 // The team's figure for a window is Team Stats' POOLED one (every player's rounds pooled), not the mean of the players' figures: they differ here on purpose.
 const POOLED = { last10: -2.5, all: -2.2 } as const;

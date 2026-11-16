@@ -1810,3 +1810,37 @@ GRANT ALL ON FUNCTION "public"."golf_team_join_requests_identity_guard"() TO "se
 REVOKE ALL ON FUNCTION "public"."golf_team_members_identity_guard"() FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_team_members_identity_guard"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_team_members_identity_guard"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_hole_sand_save_tour"("p_hole_id" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_backfill_sand_save_tour"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "public"."golf_hole_gir"("p_par" integer, "p_score" integer, "p_putts" integer, "p_shot_to_green" integer) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_hole_gir"("p_par" integer, "p_score" integer, "p_putts" integer, "p_shot_to_green" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_hole_gir"("p_par" integer, "p_score" integer, "p_putts" integer, "p_shot_to_green" integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_hole_shot_to_green"("p_round_id" "uuid", "p_hole_number" integer, "p_score" integer) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_hole_shot_to_green"("p_round_id" "uuid", "p_hole_number" integer, "p_score" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_hole_shot_to_green"("p_round_id" "uuid", "p_hole_number" integer, "p_score" integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_shots_refresh_hole_gir_fn"() FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_shots_refresh_hole_gir_fn"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_backfill_one_gir_rule"() FROM PUBLIC, "anon", "authenticated";
+-- Demo team generator (HELD 20261115211000) and demo write guard (HELD 20261115211100)
+REVOKE ALL ON FUNCTION "helm_private"."golf_demo_team_id"() FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "helm_private"."golf_demo_tables"() FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "helm_private"."golf_demo_parent"("p_table" "text", OUT "parent_table" "text", OUT "fk_column" "text") FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "helm_private"."golf_demo_pk"("p_table" "text") FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "helm_private"."golf_demo_key_sql"("p_table" "text", "p_source" "text") FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "helm_private"."golf_demo_check"("p_team" "uuid", "p_table" "text") FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "helm_private"."golf_demo_marks"("p_table" "text") FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "helm_private"."golf_demo_write_guard"() FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."golf_demo_begin"("p_team" "uuid", "p_prune" boolean) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text", "p_items" "jsonb", "p_version" integer) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."golf_demo_remove"("p_team" "uuid", "p_table" "text", "p_keys" "jsonb") FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."golf_demo_finish_rounds"("p_team" "uuid", "p_rounds" "jsonb", "p_version" integer) FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_demo_begin"("p_team" "uuid", "p_prune" boolean) TO "service_role";
+GRANT ALL ON FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text", "p_items" "jsonb", "p_version" integer) TO "service_role";
+GRANT ALL ON FUNCTION "public"."golf_demo_remove"("p_team" "uuid", "p_table" "text", "p_keys" "jsonb") TO "service_role";
+GRANT ALL ON FUNCTION "public"."golf_demo_finish_rounds"("p_team" "uuid", "p_rounds" "jsonb", "p_version" integer) TO "service_role";

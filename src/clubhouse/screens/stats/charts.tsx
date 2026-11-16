@@ -6,10 +6,11 @@ import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
 import { SerifText } from '../../ui/SerifText';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
-import { sgBaseline, sgScale } from '../../lib/sg';
+import { sgBaseline } from '../../lib/sg';
 import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
 import { plural } from '../../lib/plural';
 import { NoData } from '../../ui/NoData';
+import { puttBelowTour } from './putt-bands';
 
 /**
  * The yardage book: charts drawn the way a caddie's book reads, numbers where
@@ -35,11 +36,18 @@ export function YardagePage({ title, meta, note, children }: { title: string; me
 }
 
 /**
+ * The end of the strokes-gained and to-par gauges, in strokes either way of zero: one fixed scale for every figure (stats and
+ * charts audit 2026-11-15, CH-13), so −3.4 draws a longer loss than −0.9. The strokes-gained end was the value's own
+ * (`sgScale([v])`), so −0.9 drew at 45% and −3.4 at 42.5%. A value past it fills its half and the end label says so (">+6").
+ */
+export const GAUGE_END = 6;
+
+/**
  * A figure drawn against the reference its data gives (owner, 2026-10-07: no bare numbers), on one 6px track so the row
- * reads as a set: strokes gained from the Tour's zero (to an end the value itself sets, `sgScale`: whole strokes, never
- * under one, so nothing clamps), the scoring average from par (six), a rate along 0 to 100 with the Tour's mark when there
- * is one (green at or above it, amber below, neutral ink with no mark to judge by), putts on a track to 40 marked at 36
- * (two on every green), birdies as holes out of 18. Decorative: the value and its words say it.
+ * reads as a set: strokes gained from the Tour's zero and the scoring average from par, both to `GAUGE_END`, a rate along 0
+ * to 100 with the Tour's mark when there is one (green at or above it, amber below, neutral ink with no mark to judge by),
+ * putts on a track to 40 marked at 36 (two on every green) in neutral ink, since two-putting is a reference and not a grade
+ * (CH-13: nearly every college average was green), birdies as holes out of 18. Decorative: the value and its words say it.
  */
 export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
   const pct = (v: number) => `${Math.max(0, Math.min(100, v))}%`;
@@ -56,7 +64,7 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
   if (gauge.kind === 'sg' || gauge.kind === 'par') {
     const v = gauge.kind === 'sg' ? n : gauge.toPar;
     if (v == null) return null;
-    const end = gauge.kind === 'sg' ? sgScale([v]) : 6;
+    const end = GAUGE_END;
     // The bar fills at most its own half (A8.4): a value past the end stops at it, and the end label says so (">+3",
     // "<−3"; ASCII, because the font has no "≥", A23).
     const clipped = Math.abs(v) > end;
@@ -80,7 +88,7 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
     return (
       <span className="ch-fg__gauge" aria-hidden="true">
         <span className="ch-fg__track">
-          <i className={n <= 36 ? 'is-gain' : 'is-loss'} style={{ left: 0, width: pct((n / 40) * 100) }} />
+          <i className="is-neutral" style={{ left: 0, width: pct((n / 40) * 100) }} />
           <b style={{ left: '90%' }} />
         </span>
         <em style={{ left: '90%' }}>36</em>
@@ -135,15 +143,26 @@ export function ringOpacity(attempts: number, rate: number | null): number {
   return attempts < 10 ? RING_EARLY_OPACITY : 0.1 + rate * 0.85;
 }
 
-/** Putting read off rings around the cup: make rate by distance band, with the Tour rate beside it. */
+/** The rings' radii for five bands (the design system's PuttingGreen); six and more step evenly out to the same edge. */
+const RING_RADII = [18, 38, 62, 92, 120];
+export function ringRadii(n: number): number[] {
+  if (n <= RING_RADII.length) return RING_RADII.slice(0, n);
+  return Array.from({ length: n }, (_, i) => Math.round(16 + ((120 - 16) * i) / (n - 1)));
+}
+
+/**
+ * Putting read off rings around the cup: make rate by distance band, with the Tour rate beside it. Every band the data has is a
+ * ring (stats and charts audit 2026-11-15, CH-18: the sixth, longest band never drew), and a band reads "below the Tour" on the
+ * Putting bands chart's own rule (`puttBandViews`: 30 putts, by the rate against the Tour), never from 10.
+ */
 export function PuttingRings({ bands }: { bands: Array<{ label: string; made: number; attempts: number; bench: number | null }> }) {
   // Geometry from the design system's PuttingGreen (charts/geom.jsx `green`): rings by
   // distance, each shaded by its make rate, the pin at the centre, labels on leaders.
-  const shown = bands.slice(0, 5);
+  const shown = bands;
   const W = 360;
   const cx = 124;
   const cy = 128;
-  const radii = [18, 38, 62, 92, 120];
+  const radii = ringRadii(shown.length);
   const rate = (b: (typeof shown)[number]) => (b.attempts ? b.made / b.attempts : null);
   return (
     <svg viewBox={`0 0 ${W} 256`} className="ch-pg" role="img" aria-label={shown.map((b) => `${b.label}: ${b.attempts ? `${Math.round((b.made / b.attempts) * 100)}%` : 'no putts'}`).join(', ')}>
@@ -169,7 +188,7 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
         const px = cx + rm;
         const py = cy;
         const ly = 26 + i * 24;
-        const below = pct != null && b.bench != null && b.attempts >= 10 && pct < b.bench;
+        const below = puttBelowTour(b);
         return (
           <g key={b.label}>
             <circle cx={px} cy={py} r={2.5} fill="var(--ch-ink-900)" />

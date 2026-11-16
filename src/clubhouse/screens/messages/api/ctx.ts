@@ -103,6 +103,8 @@ export interface MessagesApiCtx {
   anns: ChAnnouncement[];
   annError: boolean;
   annLoaded: boolean;
+  /** The first announcements read has been out for 4 seconds (GAP-S-11, use-announcements-read.ts). */
+  annSlow: boolean;
   selectedAnnId: string | null;
   setSelectedAnnId: Dispatch<SetStateAction<string | null>>;
   loadAnns: () => Promise<void>;

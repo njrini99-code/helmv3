@@ -169,8 +169,8 @@ async function closeGolfPollImpl(messageId: string): Promise<PollResult> {
   return { success: true, id: row.id };
 }
 
-const observedSendGolfPoll = withAdminObserved('sendGolfPoll', { sport: 'golf', feature: 'messaging' }, sendGolfPollImpl);
-const observedCloseGolfPoll = withAdminObserved('closeGolfPoll', { sport: 'golf', feature: 'messaging' }, closeGolfPollImpl);
+const observedSendGolfPoll = withAdminObserved('sendGolfPoll', { sport: 'golf', feature: 'messaging', demoSafe: true }, sendGolfPollImpl);
+const observedCloseGolfPoll = withAdminObserved('closeGolfPoll', { sport: 'golf', feature: 'messaging', demoSafe: true }, closeGolfPollImpl);
 
 export async function sendGolfPoll(conversationId: string, draft: PollDraft, clientMessageId?: string, priorClientId?: string): Promise<SendPollResult> {
   return observedSendGolfPoll(conversationId, draft, clientMessageId, priorClientId);

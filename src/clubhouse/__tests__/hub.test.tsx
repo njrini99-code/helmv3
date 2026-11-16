@@ -12,7 +12,7 @@ vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 const track = vi.hoisted(() => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('../lib/track', () => track);
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }));
-vi.mock('next/navigation', () => ({ useRouter: () => router }));
+vi.mock('next/navigation', () => ({ useRouter: () => router, useSearchParams: () => new URLSearchParams() }));
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
@@ -187,6 +187,8 @@ describe('Team Hub · player', () => {
   it('CH-10410 a failed completion restores a loaded completed task that was already reopened this visit', async () => {
     const user = userEvent.setup();
     const w = show(PREVIEW_HUB_PLAYER, writes({ completeTask: refuse() }), 'tasks');
+    // A loaded completed task sits in the collapsed Done section (GAP-H-16).
+    await user.click(screen.getByRole('button', { name: 'Done (1)' }));
     const schedule = () => screen.getByRole('button', { name: /^Upload class schedule/ });
     await user.click(schedule());
     await waitFor(() => expect(schedule()).toHaveAttribute('aria-pressed', 'false'));
@@ -1597,7 +1599,7 @@ const scenarios: Scenario[] = [
     },
     landed: async () => {
       await waitFor(() => expect(dialogOpen()).toBe(false));
-      // The row closes up before it unmounts (B7, ui/ListPresence); meanwhile it is hidden and inert.
+      // The row fades and shrinks before it unmounts (B7, S3.10, ui/ListPresence); meanwhile it is hidden and inert.
       await waitFor(() => expect(screen.queryByText('Sign travel waiver')).toBeNull());
       await refreshed();
     },
@@ -2850,6 +2852,55 @@ describe('Team Hub · this file', () => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+/** GAP-S-26 (moved here from hub-gap-pass so this file names CH-10390 and CH-10391, see 102401): a deep link's target. */
+function showFocus(data: ChTeamHub, opts: { tab?: ChHubTab; focusTask?: string; focusTrip?: string } = {}) {
+  const user = userEvent.setup();
+  render(
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          <TeamHub data={data} writes={writes()} initialTab={opts.tab} focusTask={opts.focusTask} focusTrip={opts.focusTrip} viewerName="Maya Reyes" />
+        </div>
+      </ToastProvider>
+    </LazyMotion>,
+  );
+  return { user };
+}
+
+describe('GAP-S-26 · a link to a removed task or trip says so', () => {
+  it('a task that is gone: its tab opens with "That task was removed"', async () => {
+    const { user } = showFocus(PREVIEW_HUB_PLAYER, { focusTask: 'gone' });
+    expect(screen.getByRole('tab', { name: 'Tasks', selected: true })).toBeTruthy();
+    expect(code('CH-10390')!.textContent).toContain('That task was removed');
+    expect(code('CH-10390')!.textContent).toContain('It’s no longer on your list.');
+    // Leaving the tab forgets the link.
+    await user.click(screen.getByRole('tab', { name: 'Home' }));
+    await user.click(screen.getByRole('tab', { name: 'Tasks' }));
+    expect(code('CH-10390')).toBeNull();
+  });
+
+  it('a trip that is gone: Travel says it isn’t here', () => {
+    showFocus(PREVIEW_HUB_PLAYER, { tab: 'travel', focusTrip: 'gone' });
+    expect(code('CH-10391')!.textContent).toMatch(/That trip isn’t here.*It may have been removed, or it’s too far past to show in Team Hub\./);
+  });
+
+  it('says nothing for a task or trip that is there, or when the list failed to load', () => {
+    showFocus(PREVIEW_HUB_PLAYER, { focusTask: 't1' });
+    expect(code('CH-10390')).toBeNull();
+    cleanup();
+    showFocus({ ...PREVIEW_HUB_PLAYER, tasks: { rows: [], error: true } }, { focusTask: 'gone' });
+    expect(code('CH-10390')).toBeNull();
+    cleanup();
+    showFocus(PREVIEW_HUB_PLAYER, { tab: 'travel', focusTrip: PREVIEW_HUB_PLAYER.trips.rows[0]!.id });
+    expect(code('CH-10391')).toBeNull();
+  });
+
+  it('a coach’s capped task list never calls a task past its cap removed', () => {
+    showFocus({ ...PREVIEW_HUB_COACH, tasks: { ...PREVIEW_HUB_COACH.tasks, total: 140 } }, { focusTask: 'gone' });
+    expect(code('CH-10390')).toBeNull();
+  });
 });
 
 describe('Team Hub · the palette’s Post announcement (A16)', () => {

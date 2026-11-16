@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard"
       component="GolfDashboardErrorBoundary"
-      title="Something went wrong"
-      message="We encountered an unexpected error. Please try again."
       homePath="/golf"
     />
   );

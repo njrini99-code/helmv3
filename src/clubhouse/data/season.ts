@@ -3,13 +3,12 @@ import type { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
-import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { seasonLabelOf } from '../lib/season-start';
 import { deltaTone, halvesChange } from '../lib/stats-signal';
-import { hasHoleScores, isTotalOnlyCountable } from './round-scope';
+import { countsInAverages, hasHoleScores, isTotalOnlyCountable } from './round-scope';
 import { spanKeepsPractice, spanKeepsTotalOnly, type ChSpan } from './span';
 
 /**
@@ -59,12 +58,12 @@ const ROUND_COLUMNS =
   'id, player_id, course_id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
 
 /**
- * Whether a round counts in averages (START_HERE's shared values table): true when `round_type` is null or
- * `roundTypeFromDb(round_type) !== 'practice'`. Roster, Home and Stats loaders call it under their lane flags. Latest rounds
- * lists every round; Stats' pressure gap and by-type row keep the uncut window. `roundTypeFromDb` reads an unknown type as practice.
+ * Whether a round counts in averages (START_HERE's shared values table): true when `round_type` is null or names anything but
+ * practice. The rule is `countsInAverages` (round-scope.ts, DF-C-18), which every reader shares. Latest rounds lists every round;
+ * Stats' pressure gap and by-type row keep the uncut window. An unknown type reads as practice.
  */
 export function countsForScoring(r: { round_type: string | null }): boolean {
-  return r.round_type == null || roundTypeFromDb(r.round_type) !== 'practice';
+  return countsInAverages(r);
 }
 
 /**
@@ -217,6 +216,11 @@ export interface ChPlayerSeason {
   toPar: number | null;
   /** Oldest to newest, up to seven 18-hole scores. */
   trend: number[];
+  /**
+   * Each trend score's date (YYYY-MM-DD), beside `trend`, so its line spaces rounds by real time (stats and charts audit, CH-11).
+   * Optional: a window's season (`stats-weight`) and older fixtures leave it out, and the line then spaces rounds evenly.
+   */
+  trendDates?: string[];
   /** Newer half minus older half of the trend; negative is better. */
   formChange: number | null;
   sgPerRound: number | null;
@@ -237,6 +241,7 @@ export function summarizePlayer(all: ChRound[]): ChPlayerSeason {
   const holeNums = (pick: (r: ChRound) => number | null) => list.filter(hasHoleScores).map(pick).filter((v): v is number => v != null);
   const sg = holeNums((r) => r.strokes_gained_total);
   const trend = scores.slice(0, TREND_LENGTH).reverse();
+  const trendDates = list.slice(0, TREND_LENGTH).reverse().map((r) => r.round_date.slice(0, 10));
   const half = Math.floor(trend.length / 2);
   const legs = (pick: (r: ChRound) => number | null) => {
     const v = holeNums(pick);
@@ -247,6 +252,7 @@ export function summarizePlayer(all: ChRound[]): ChPlayerSeason {
     avg: mean(scores),
     toPar: mean(nums((r) => r.score_to_par)),
     trend,
+    trendDates,
     formChange: trend.length >= 3 ? (mean(trend.slice(trend.length - half)) ?? 0) - (mean(trend.slice(0, half)) ?? 0) : null,
     sgPerRound: sg.length >= MIN_SG_ROUNDS ? mean(sg) : null,
     sgRounds: sg.length,

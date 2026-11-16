@@ -156,15 +156,23 @@ function Row({ r, voice = PLAYER_VOICE, readHref = null }: { r: ChStandRow; voic
   );
 }
 
+/** Which rounds this season's scoring average covers, after the figure: nothing when it is the season count the hero has already said. */
+function scoringWindow(behind: number, said: number | null, season: boolean): string {
+  if (season && behind === said) return '';
+  return `${season ? ' over' : ' this season,'} ${plural(behind, 'round')}`;
+}
+
 function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice }) {
   const w = wordsFor(voice);
-  // The window first, so every number after it is read as that window's (owner decision 9). The scoring average is a lifetime figure
-  // (the stats cache), so it is named only beside the lifetime rows, never under "This season".
+  // The window first, so every number after it is read as that window's (owner decision 9). The loader's scoring average is this
+  // season's (SC-01): under the season's rows it names its own rounds only when they are not the count already said; beside all-time
+  // rows it says it is this season's. One that names no rounds is a lifetime figure (the stats cache), never stated under "This season".
   const season = s.window.kind === 'season';
+  const scoring = !s.scoringAverage ? null : s.scoringRounds != null ? `Scoring average ${s.scoringAverage}${scoringWindow(s.scoringRounds, s.rounds, season)}` : season ? null : `Scoring average ${s.scoringAverage}, practice included`;
   const meta = [
     season && s.window.since ? `${s.window.label} from ${s.window.since.replace(' ', '\u00a0')}` : s.window.label,
     s.rounds != null ? `${plural(s.rounds, 'round')}` : null,
-    !season && s.scoringAverage ? `Scoring average ${s.scoringAverage}, practice included` : null,
+    scoring,
     s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null,
   ].filter(Boolean);
   const { tour, team } = s.counts;
@@ -361,6 +369,8 @@ export function Standing({ load, voice = PLAYER_VOICE, game, at }: { load: ChVie
   const s = load.data;
   const w = wordsFor(voice);
   const readHref = readHrefFor(s, voice);
+  // An early read counts the rounds the projections wait on: this season's behind the scoring average when the read names them.
+  const early = s.scoringRounds ?? s.rounds ?? 0;
   return (
     <PlayerHelmFrame view="standing" line={LINE} voice={voice}>
       {s.state === 'empty' ? (
@@ -409,7 +419,7 @@ export function Standing({ load, voice = PLAYER_VOICE, game, at }: { load: ChVie
             ))}
           {s.state === 'early' && (
             <p className="ch-hs-early" role="note" data-ch-code="CH-13371">
-              <b className="ch-num">{s.rounds ?? 0} {pluralWord(s.rounds ?? 0, 'round')}</b> so far, so this is an early read. Projections start at 5 rounds
+              <b className="ch-num">{early} {pluralWord(early, 'round')}</b> {s.scoringRounds != null ? 'this season' : 'so far'}, so this is an early read. Projections start at 5 rounds
               {/* The team clause only where a row is short of teammates: rows with team values say otherwise. */}
               {s.groups.some((g) => g.rows.some((r) => r.teamNote)) ? `, and a comparison with ${w.team} needs 5 teammates with the stat` : ''}.
             </p>

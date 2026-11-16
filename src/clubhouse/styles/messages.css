@@ -142,15 +142,16 @@
 }
 @media (hover: hover) {
   .ch-ms-row:hover {
-    background: rgb(28 25 18 / 0.045);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-ms-row[data-ch-pressed] {
-  background: rgb(28 25 18 / 0.07);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ms-row:active {
-    background: rgb(28 25 18 / 0.07);
+    background: var(--ch-sel);
   }
 }
 .ch-ms-row:focus-visible {
@@ -303,15 +304,16 @@
 }
 @media (hover: hover) {
   .ch-ms-row:hover {
-    background: rgb(28 25 18 / 0.05);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-ms-row[data-ch-pressed] {
-  background: rgb(28 25 18 / 0.08);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ms-row:active {
-    background: rgb(28 25 18 / 0.08);
+    background: var(--ch-sel);
   }
 }
 .ch-ms-grp {
@@ -1561,11 +1563,11 @@
     }
   }
   .ch-msp .ch-ms-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-msp .ch-ms-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-msp .ch-ms-row.is-sel {
@@ -1897,12 +1899,12 @@
     transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-msp-tile[data-ch-pressed]:not(:disabled) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-msp-tile:active:not(:disabled) {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -1998,11 +2000,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-msp-row.is-btn[data-ch-pressed]:not(:disabled) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-msp-row.is-btn:active:not(:disabled) {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-msp-row__b {
@@ -2139,11 +2141,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-msp-danger[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-msp-danger:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
 
@@ -2323,11 +2325,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file + .ch-ms-bub--file::before {
@@ -2696,7 +2698,8 @@
    chips lift to the text greens, and ivory type on a filled green takes the on-green ink. */
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-ms-row:hover {
-    background: rgb(237 231 216 / 0.045);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
   html[data-fw-theme='dark'] .ch-ms-tool:hover {
     background: rgb(237 231 216 / 0.06);
@@ -2706,11 +2709,11 @@
   }
 }
 html[data-fw-theme='dark'] .ch-ms-row[data-ch-pressed] {
-  background: rgb(237 231 216 / 0.07);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-ms-row:active {
-    background: rgb(237 231 216 / 0.07);
+    background: var(--ch-sel);
   }
 }
 html[data-fw-theme='dark'] .ch-ms-row.is-sel {
@@ -2743,11 +2746,11 @@ html[data-fw-theme='dark'] .ch-ms-grp.is-ann.is-urgent {
     }
   }
   html[data-fw-theme='dark'] .ch-msp .ch-ms-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     html[data-fw-theme='dark'] .ch-msp .ch-ms-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   html[data-fw-theme='dark'] .ch-msp .ch-ms-row.is-sel {
@@ -2839,16 +2842,11 @@ html[data-fw-theme='dark'] .ch-ms-grp.is-ann.is-urgent {
 .ch-ms-fold__body {
   padding: 2px 0 6px;
   border-top: 1px solid color-mix(in srgb, var(--ch-green-fill-600) 16%, transparent);
-  animation: ch-ms-fold-in var(--ch-dur-base) var(--ch-ease);
+  /* Opened by a tap: it crossfades in over the quick beat, with no drop (motion.css ch-in; MOTION-AND-VISUAL 3.12). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-ms-fold__body .ch-ms-more {
   margin-inline: 12px;
-}
-@keyframes ch-ms-fold-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
 }
 
 /* B8: the conversation list draws only the rows near the screen; an off-screen row keeps the height it last drew (a
@@ -3201,7 +3199,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   color: var(--ch-text-secondary);
 }
 [data-ch-ms-v2] .ch-ms-row[data-ch-pressed] {
-  background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+  background: var(--ch-sel);
 }
 [data-ch-ms-v2] .ch-ms-row .ch-ms-row__mute {
   flex: none;
@@ -3229,8 +3227,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   height: 5px;
   border-radius: 50%;
   background: var(--ch-typing-dot);
-  /* M-MSG-30: a 1200 ms cycle, 160 ms apart. */
-  animation: ch-msv-typing var(--ch-dur-typing) var(--ch-ease-typing) infinite;
+  /* M-MSG-30: the working indicator, a 1200 ms opacity cycle, 160 ms apart (MOTION-AND-VISUAL 3.9; motion.css). */
+  animation: ch-working var(--ch-dur-typing) var(--ch-ease-typing) infinite;
 }
 [data-ch-ms-v2] .ch-ms-typing-mini i:nth-child(2) {
   animation-delay: var(--ch-dur-typing-step);
@@ -3238,38 +3236,20 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 [data-ch-ms-v2] .ch-ms-typing-mini i:nth-child(3) {
   animation-delay: calc(var(--ch-dur-typing-step) * 2);
 }
-@keyframes ch-msv-typing {
-  0%,
-  60%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  28% {
-    transform: translateY(-3px);
-    opacity: 1;
-  }
-}
+/* A photo on its way: a static block (MOTION-AND-VISUAL 3.9, no pulse) that waits the busy delay (shell.css ch-busy-wait). */
 [data-ch-ms-v2] .ch-msv-sk {
   display: block;
   border-radius: var(--ch-radius-sm);
   background: color-mix(in srgb, var(--ch-text-primary) 9%, transparent);
-  animation: ch-msv-skel var(--ch-dur-sweep) ease-in-out infinite;
-}
-@keyframes ch-msv-skel {
-  50% {
-    opacity: 0.55;
-  }
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-ch-ms-v2] .ch-ms-typing-mini i,
-  [data-ch-ms-v2] .ch-msv-sk {
+  [data-ch-ms-v2] .ch-ms-typing-mini i {
     animation: none;
     opacity: 1;
   }
 }
-[data-motion='off'] [data-ch-ms-v2] .ch-ms-typing-mini i,
-[data-motion='off'] [data-ch-ms-v2] .ch-msv-sk {
+[data-motion='off'] [data-ch-ms-v2] .ch-ms-typing-mini i {
   animation: none;
   opacity: 1;
 }
@@ -3458,8 +3438,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   border-radius: var(--ch-radius-xl);
   border-bottom-left-radius: var(--ch-radius-tail);
   background: var(--ch-bubble-theirs-bg);
-  transform-origin: 0% 100%;
-  animation: ch-msv-typing-pop var(--ch-dur-spring-pop) var(--ch-ease-spring-pop) both;
+  filter: var(--ch-bubble-theirs-shadow);
+  /* Late content: it crossfades in on the quick beat, with no pop (MOTION-AND-VISUAL 3.5). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-out) backwards;
 }
 [data-ch-ms-v2] .ch-msv-typing.has-name {
   flex-direction: column;
@@ -3476,20 +3457,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   height: 7px;
   border-radius: 50%;
   background: var(--ch-typing-dot);
-  /* M-MSG-30: a 1200 ms cycle, 160 ms apart. */
-  animation: ch-msv-typing var(--ch-dur-typing) var(--ch-ease-typing) infinite;
+  /* M-MSG-30: the working indicator, a 1200 ms opacity cycle, 160 ms apart (MOTION-AND-VISUAL 3.9; motion.css). */
+  animation: ch-working var(--ch-dur-typing) var(--ch-ease-typing) infinite;
 }
 [data-ch-ms-v2] .ch-msv-typing__dots i:nth-child(2) {
   animation-delay: var(--ch-dur-typing-step);
 }
 [data-ch-ms-v2] .ch-msv-typing__dots i:nth-child(3) {
   animation-delay: calc(var(--ch-dur-typing-step) * 2);
-}
-@keyframes ch-msv-typing-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
-  }
 }
 /* Drag for times: a 52 x k column off the right edge, revealed by the thread's move. Desktop shows it on hover. */
 [data-ch-ms-v2] .ch-msv-time {
@@ -3571,7 +3546,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   backdrop-filter: blur(var(--ch-glass-blur));
   box-shadow: var(--ch-shadow-float);
   color: var(--ch-text-primary);
-  animation: ch-msv-jump-in var(--ch-dur-spring-pop) var(--ch-ease-spring-pop) both;
+  /* MOT-JMP-1: once you are a screen above the latest it crossfades in over the quick beat; its pop from 0.6 is gone
+     (the pop spring retires, MOTION-AND-VISUAL 3.12; motion.css ch-in). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios) both;
 }
 [data-ch-ms-v2] .ch-msv-jump::before {
   position: absolute;
@@ -3594,12 +3571,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 @media (min-width: 414px) {
   [data-ch-ms-v2] .ch-msv-jump {
     right: 18px;
-  }
-}
-@keyframes ch-msv-jump-in {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3694,7 +3665,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   inset: -4px;
 }
 [data-ch-ms-v2] .ch-msv-plus__key svg {
-  transition: transform var(--ch-dur-release) var(--ch-ease-spring);
+  transition: transform var(--ch-dur-release) var(--ch-ease-ios);
 }
 [data-ch-ms-v2] .ch-msv-plus__key.is-open svg {
   transform: rotate(45deg);
@@ -4010,15 +3981,11 @@ body:has([data-ch-ms-v2]) .ch-toast {
   font-weight:var(--ch-fw-500);
   color: var(--ch-text-secondary);
 }
-@keyframes ch-msv-det-fade {
-  from {
-    opacity: 0;
-  }
-}
+/* Reduce Motion: the details panel fades in over the quick beat (motion.css ch-in; 3.11). */
 @media (prefers-reduced-motion: reduce) {
   [data-ch-ms-v2] .ch-ms-det {
-    --ch-rm-animation: var(--ch-dur-crossfade-rm);
-    animation: ch-msv-det-fade var(--ch-dur-crossfade-rm) linear;
+    --ch-rm-animation: var(--ch-dur-quick);
+    animation: ch-in var(--ch-dur-quick) linear;
   }
 }
 [data-ch-ms-v2] .ch-ms-det {

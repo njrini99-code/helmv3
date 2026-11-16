@@ -1792,14 +1792,8 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv .srcb::after { content: ''; position: absolute; inset: -12px -4px; }
 .ch-cpv-sheet .ask-in button { position: relative; }
 .ch-cpv-sheet .ask-in button::before { content: ''; position: absolute; inset: -8px; }
-/* PP-23: the things that say it's still working move. Reduced motion holds them still and the words carry it. */
-@media (prefers-reduced-motion: no-preference) {
-  .ch-cpv .caret { animation: ch-cp-blink var(--ch-dur-reveal) steps(2, jump-none) infinite alternate; }
-  .ch-cpv .sw2 { transform-origin: left; animation: ch-cp-sweep var(--ch-dur-reveal) var(--ch-ease) infinite alternate; }
-  .ch-cpv .scanrow .dot { animation: ch-cp-blink var(--ch-dur-reveal) var(--ch-ease) infinite alternate; }
-}
-@keyframes ch-cp-blink { from { opacity: 1; } to { opacity: 0.3; } }
-@keyframes ch-cp-sweep { from { transform: scaleX(0.2); } to { transform: scaleX(1); } }
+/* PP-23: the caret, the saving bar and the reading dot stand still and the words beside them carry the work ("Saving…",
+   "Reading …"): the one loop is the working indicator (MOTION-AND-VISUAL 3.1, 3.12), so their blink and sweep are gone. */
 /* PP-24: long folder names stop at one line. */
 .ch-cpv .fr .n,
 .ch-cpv .saverow > span,
@@ -1918,9 +1912,9 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 /* A press answers on every control, and the folder list fades in (MOT-31, M-ASK-17). */
 .ch-cpv .fr[data-ch-pressed],
 .ch-cpv .saverow[data-ch-pressed] {
-  background-color: var(--ch-press-wash, var(--ch-well-bg-flat));
+  background-color: var(--ch-sel);
 }
-.ch-cpv .flist { animation: ch-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+.ch-cpv .flist { animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios) backwards; }
 @media (hover: hover) {
-  .ch-cpv .fr:hover { background-color: var(--ch-press-wash, var(--ch-well-bg-flat)); }
+  .ch-cpv .fr:hover { background-color: var(--ch-sel); transition-duration: 0s; }
 }

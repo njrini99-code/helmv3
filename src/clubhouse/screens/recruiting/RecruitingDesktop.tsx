@@ -5,7 +5,7 @@ import { useRef } from 'react';
 import { CH_STAGES, isNextStepLate, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { Button, IconButton } from '../../ui/Button';
 import { Menu } from '../../ui/Menu';
-import { InlineNotice } from '../../ui/Notices';
+import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
@@ -45,7 +45,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
         <InlineNotice
           code="CH-14201"
           title="Your prospects didn’t load"
-          body="Nothing was lost. Try again."
+          body={FAILURE_COPY.page}
           onRetry={c.tryAgain}
         />
       ) : (

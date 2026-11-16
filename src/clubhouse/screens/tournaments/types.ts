@@ -628,7 +628,7 @@ export interface ChTourHistoryData {
   matchedPlayers: string[];
   headToHead: ChTourHeadToHead[];
   splits: ChTourHistorySplit[];
-  errors: Partial<Record<'trend' | 'headToHead' | 'splits', true>>;
+  errors: Partial<Record<'trend' | 'headToHead' | 'splits' | 'profiles', true>>;
 }
 
 export interface ChTourLinkCandidate {

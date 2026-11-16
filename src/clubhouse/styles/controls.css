@@ -58,13 +58,11 @@
    waits so a scroll that starts on it never flashes it; letting go clears it at once. It never scales (lib/press.ts):
    the chip arriving is the answer. The chosen option has nothing to change, so it doesn't answer. */
 .ch-seg__b:not(.is-on)[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
-  transition-delay: var(--ch-dur-press-delay);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-seg__b:not(.is-on):active {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
 }
 .ch-seg__b:focus-visible {
@@ -125,13 +123,11 @@
 }
 /* CH-1617: a pill that isn't on answers a press the way a segment does. */
 .ch-pill:not([aria-pressed='true'])[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
-  transition-delay: var(--ch-dur-press-delay);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-pill:not([aria-pressed='true']):active {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
 }
 .ch-pill[aria-pressed='true'] {
@@ -779,7 +775,7 @@
   background: var(--ch-switch-thumb-bg);
   box-shadow: var(--ch-switch-thumb-shadow);
   transform-origin: left center;
-  transition: transform var(--ch-dur-base) var(--ch-ease-spring), scale var(--ch-dur-press) var(--ch-ease),
+  transition: transform var(--ch-dur-base) var(--ch-ease-ios), scale var(--ch-dur-press) var(--ch-ease),
     transform-origin var(--ch-dur-press) var(--ch-ease);
 }
 .ch-switch input:checked + .ch-switch__track {
@@ -1053,15 +1049,16 @@
 }
 @media (hover: hover) {
   .ch-df__open:hover:not(:disabled) {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-df__open[data-ch-pressed]:not(:disabled) {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-df__open:active:not(:disabled) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-df__open:focus-visible {
@@ -1149,15 +1146,16 @@
 }
 @media (hover: hover) {
   .ch-df-nav:hover:not(:disabled) {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-df-nav[data-ch-pressed]:not(:disabled) {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-df-nav:active:not(:disabled) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-df-nav:disabled {
@@ -1209,15 +1207,16 @@
 }
 @media (hover: hover) {
   .ch-df-day:hover:not(:disabled):not(.is-on) {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-df-day[data-ch-pressed]:not(:disabled):not(.is-on) {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-df-day:active:not(:disabled):not(.is-on) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 /* Today is a dot under its numeral, not a colour; the chosen day is the segmented control's lit chip. */
@@ -1305,15 +1304,16 @@
 }
 @media (hover: hover) {
   .ch-tf__row:hover:not(:disabled):not(.is-on) {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-tf__row[data-ch-pressed]:not(:disabled):not(.is-on) {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-tf__row:active:not(:disabled):not(.is-on) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-tf__row.is-on {

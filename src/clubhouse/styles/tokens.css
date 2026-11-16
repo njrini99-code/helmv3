@@ -165,9 +165,10 @@
   /* CONS-20: the rest of the gain and loss family, so a tone paints only with it (check.mjs). A bar or a mark takes the
      -fill (a graphic, 3:1); a chip's ground takes the -tint and its words the ink. Aliases declared beside the night
      values they read, so each follows the theme. A surface the ink can't sit on (a green stage) redefines the pair. */
-  /* S2.5: a bar or mark (3:1 on the card): gain 12.2:1, loss 3.1:1, and 3.9:1 apart (4.4 deuteranopia, 3.3 protanopia). */
+  /* S2.5: a bar or mark holds 3:1 on the card and on the chart track: gain 12.2:1, loss 3.9:1 on the card and 3.05:1 on
+     the track (#e3ddcf; #c58012 was 2.4:1 there, charts contrast pass 16 Nov), and the two 3.1:1 apart. */
   --ch-chart-gain-fill: #0b3a25;
-  --ch-chart-loss-fill: #c58012;
+  --ch-chart-loss-fill: #b06e0e;
   --ch-chart-gain-tint: var(--ch-positive-100);
   --ch-chart-loss-tint: var(--ch-warning-100);
   --ch-chart-flag: #b03a2e;
@@ -302,7 +303,7 @@
   /* Score mark (double): edge, lit top, contact shadow. */
   --ch-score-double-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(28 25 18 / 0.3);
   /* Green, not ink: the owner rejected the black keyboard outline (F-46). */
-  --ch-border-focus: var(--ch-green-600);
+  --ch-border-focus: var(--ch-green-500);
   /* The focus ring on a dark or green surface (CONS-36): the champagne that reads on the hero green and at night. */
   --ch-border-focus-on-dark: var(--ch-champagne-300);
   /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
@@ -747,6 +748,10 @@
   --ch-feature-icon-bg: rgb(244 241 232 / 0.12);
   --ch-separator-strong: rgb(28 27 24 / 0.16);
   --ch-press-wash: rgb(28 27 24 / 0.05);
+  /* The wash (MOTION-AND-VISUAL 3.8): a pressed row, menu item or option, and a hovered row on a desk, take this one linen
+     fill; lib/press.ts runs it in over press and out over release. It is the selected linen, read through
+     --ch-bg-selected so there is one value; the fallback holds until that token carries the linen. */
+  --ch-sel: var(--ch-bg-selected, #ebe4d2);
   --ch-chip-gain-bg: #e8eee8;
   --ch-chip-loss-bg: #f7f0e6;
   --ch-chip-flat-bg: #f2f1ee;
@@ -952,33 +957,34 @@
   --ch-green-raised-shadow: 0 1px 2px rgb(8 43 28 / 0.2), 0 6px 12px -4px rgb(8 43 28 / 0.36),
     inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.15);
 
-  /* Motion (D-64, the v2 design's gh-polish.css and gh-core.js). No count-ups and no staggers.
-     press: a key (.ch-btn, or [data-ch-press] up to 240px) shrinks about 6px (lib/press.ts) and springs back over
-     release; a row or a wider control deepens its tint instead (--ch-ledger-row-press).
-     quick: hover, toggles, the tab underline. base: sheets, panels, pushes, crossfades and swaps (ui/Swap.tsx).
-     reveal: the sign-in handoff curtain lifting (lib/handoff.ts) and a deliberate single rise (--ch-reveal-rise). The
-     staggered first-paint reveal ended on 2026-10-01: a page is visible at once under the page crossfade. */
-  --ch-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --ch-ease-io: cubic-bezier(0.65, 0, 0.35, 1);
-  --ch-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  /* Motion: the whole vocabulary (MOTION-AND-VISUAL 3.2, production audit 2026-11-15 S3), mirrored in lib/motion.ts.
+     Three things move: the page (push, pop, back swipe), the overlay (sheet, menu, palette, toast) and the control under
+     the finger (press, segment thumb, strip pill). Content never moves on its own: first paint is still, late content
+     crossfades over quick, and nothing overshoots or loops but the working dots while work runs. Reduce Motion turns
+     every travel into a quick opacity fade.
+     press 110: press down, a menu out. quick 180: fades, a menu in, crossfades, Reduce Motion. base 260: the pill, the
+     thumb, a toast in, a list insert, a FLIP. release 280: a press let go, a sheet out. marks 360: chart marks gliding,
+     first-view bars. reveal 520: a push, a pop, a sheet in.
+     ease-ios travels (everything that moves across the screen); ease-out is a press going down and things leaving. */
   --ch-dur-press: 110ms;
   --ch-dur-quick: 180ms;
   --ch-dur-base: 260ms;
   --ch-dur-release: 280ms;
+  --ch-dur-marks: 360ms;
   --ch-dur-reveal: 520ms;
-  /* A row's pressed tint waits this long after the finger lands (UIKit delays a cell's highlight the same way), so a
-     scroll that starts on a row never flashes it; letting go clears it at once. Kept with reduced motion: it isn't motion. */
-  --ch-dur-press-delay: 50ms;
-  /* Stats dims for a window change only after this beat (A11), so a fast answer never flickers; leaving busy clears at
-     once. Kept with reduced motion and Animations off: it is a wait, not motion. */
+  --ch-ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ch-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Loading (3.9): draw nothing new for busy-delay; once a skeleton shows, hold it busy-min so it never flashes
+     (lib/use-busy.ts). A wait, not motion: kept with reduced motion and Animations off. */
   --ch-dur-busy-delay: 150ms;
-  /* The smooth spring (D-64 extension, 2026-10-08; lib/motion.ts CH_SPRINGS, base, no bounce) for a one-shot CSS entry
-     that moves an anchored part, such as a sheet rising. Where linear() is missing it is the ease-out over base. An
-     interruptible state change keeps a curve: a CSS spring would restart from rest when retargeted, so those springs
-     run in script. */
-  --ch-ease-spring-pour: var(--ch-ease);
-  --ch-dur-spring-pour: 420ms;
-  --ch-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --ch-dur-busy-min: 300ms;
+
+  /* Retiring (3.2): every motion token below is outside the vocabulary. Each may only lose uses (the motion gate,
+     src/clubhouse/__tests__/motion-gate.test.ts, holds the count in config/clubhouse/motion-ratchet.json); write the
+     vocabulary token in new code. --ch-ease is --ch-ease-out under its old name; --ch-ease-sheet stays one release. */
+  --ch-ease: var(--ch-ease-out);
+  --ch-ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --ch-ease-sheet: var(--ch-ease-ios);
   /* Messages v2: the iOS keyboard's ride (MOT-KB-1), on --ch-ease-sheet; lib/motion.ts CH_MS.keyboard. */
   --ch-dur-keyboard: 480ms;
   /* Messages v2 thread beats (MSG-208, MSG-202, MSG-210, MSG-211): a hover time, the bar's hairline, the date pill out, the jump key out. */
@@ -986,35 +992,32 @@
   --ch-dur-msg-rule: 200ms;
   --ch-dur-msg-pill-out: 250ms;
   --ch-dur-msg-key-out: 160ms;
-  --ch-ease-spring-smooth: var(--ch-ease);
-  --ch-dur-spring-smooth: var(--ch-dur-base);
-  /* The settle spring for a part CSS moves (a switch thumb): chSpring('settle'). Where linear() is missing, the ease-out over base. */
-  --ch-ease-spring-settle: var(--ch-ease);
+  /* CSS has no spring curves (production audit 2026-11-15, S3.1, MOT-08): a one-shot entry rides the one curve on a
+     D-64 beat, with no overshoot. The names stay for their callers: smooth is an anchored part travelling in (a sheet
+     rising, a pushed title) over the reveal beat; settle is a free part arriving over base; pop is a small tap-opened
+     surface (a reaction, a jump key, a chip) over quick; send is a pane moving on over base. Springs run in script,
+     where a retarget keeps its speed (lib/motion.ts CH_SPRINGS). */
+  --ch-ease-spring-smooth: var(--ch-ease-ios);
+  --ch-dur-spring-smooth: var(--ch-dur-reveal);
+  --ch-ease-spring-settle: var(--ch-ease-ios);
   --ch-dur-spring-settle: var(--ch-dur-base);
+  --ch-ease-spring-pop: var(--ch-ease-ios);
+  --ch-dur-spring-pop: var(--ch-dur-quick);
+  --ch-ease-spring-send: var(--ch-ease-ios);
+  --ch-dur-spring-send: var(--ch-dur-base);
   --ch-reveal-offset: 40ms;
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
-  --ch-dur-shimmer: 1.9s;
-  /* Messages v2 skeleton pulse (MSG-112, MSG-003): stops under Reduce Motion and with Animations off. */
-  --ch-dur-skeleton: 1.4s;
-  /* A live marker's slow breath (the calendar's now line): one cycle, ambient, never a call to act. */
-  --ch-dur-live: 2.8s;
-  /* The pending hairline's sweep (LinkPending, shell.css). */
-  --ch-dur-sweep: 900ms;
-  /* The mockups' own beats: chart marks settling (360), a story's body (420), a typing dot's cycle and its step, a story. */
-  --ch-dur-marks: 360ms;
+  /* The mockups' own beats: a story's body (420), a typing dot's cycle and its step, a story. The typing dot's cycle is
+     the working beat: the one loop (MOTION-AND-VISUAL 3.1, 3.9), the working indicator (motion.css ch-working) and every
+     busy ring and wheel while work runs. */
   --ch-dur-word: 320ms;
   --ch-dur-crossfade-rm: 180ms;
   --ch-dur-story-body: 420ms;
   --ch-dur-typing: 1200ms;
   --ch-dur-typing-step: 160ms;
   --ch-dur-story: 5200ms;
-  /* The selected station's ring on Team's hole (M-TEAM-06): one slow pulse, played twice, then still. */
-  --ch-dur-station-pulse: 2400ms;
   --ch-ease-typing: cubic-bezier(0.45, 0, 0.55, 1);
-  /* Skeletons wait this long before showing, then fade in over base. */
-  /* 0: a route load on a phone runs past any delay, so a delay only added a blank frame before the skeleton (F-37). */
-  --ch-skel-delay: 0ms;
 
   /* Z: the ladder (CONS-35). Values 0 to 5 stay local literals inside one component. */
   --ch-z-raised: 10;
@@ -1077,6 +1080,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-feature-flat-tint: #315643;
   --ch-separator-strong: rgb(241 236 223 / 0.16);
   --ch-press-wash: rgb(241 236 223 / 0.06);
+  --ch-sel: var(--ch-bg-selected, #2c322d);
   --ch-chip-gain-bg: #29392f;
   --ch-chip-loss-bg: #3a3524;
   --ch-chip-flat-bg: #292d28;
@@ -1232,7 +1236,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-score-eagle-shadow: inset 0 0 0 1px rgb(169 224 192 / 0.7), 0 1px 2px rgb(0 0 0 / 0.45);
   --ch-score-bogey-shadow: inset 0 0 0 1px rgb(237 231 216 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4);
   --ch-score-double-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5);
-  --ch-border-focus: #6bbb8c;
+  --ch-border-focus: var(--ch-green-500);
   --ch-green-ring: rgb(107 187 140 / 0.35);
   --ch-green-rule: rgb(107 187 140 / 0.45);
   --ch-ink-rule: rgb(237 231 216 / 0.22);
@@ -1352,27 +1356,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
 }
 
-/* The smooth spring as CSS linear(), sampled from chSpringCurve('smooth') once a frame and cut within 0.1% of the
-   mark (motion-physics.test pins the two together). */
-@supports (transition-timing-function: linear(0, 1)) {
-  [data-ui='clubhouse'] {
-    --ch-ease-spring-smooth: linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1);
-    --ch-dur-spring-smooth: 462ms;
-    --ch-ease-spring-pour: linear(0, 0.0177, 0.0621, 0.1229, 0.1926, 0.2661, 0.3395, 0.4106, 0.4777, 0.5398, 0.5967, 0.6481, 0.6942, 0.7351, 0.7713, 0.8031, 0.8309, 0.8551, 0.8761, 0.8942, 0.9099, 0.9233, 0.9349, 0.9448, 0.9532, 0.9604, 0.9665, 0.9717, 0.9762, 0.9799, 0.9831, 0.9858, 0.988, 0.99, 0.9916, 0.9929, 0.9941, 0.995, 0.9958, 0.9965, 0.9971, 0.9976, 0.998, 0.9983, 0.9986, 0.9988, 1);
-    --ch-dur-spring-pour: 742ms;
-    --ch-ease-spring-send: linear(0, 0.0175, 0.0624, 0.1251, 0.1982, 0.2764, 0.3554, 0.4325, 0.5057, 0.5737, 0.6357, 0.6915, 0.7411, 0.7847, 0.8225, 0.8551, 0.8828, 0.9063, 0.9259, 0.9423, 0.9557, 0.9666, 0.9754, 0.9824, 0.988, 0.9923, 0.9956, 0.9981, 0.9999, 1.0011, 1.002, 1.0025, 1.0028, 1.003, 1.0029, 1.0028, 1.0027, 1.0025, 1.0022, 1.002, 1.0018, 1.0015, 1.0013, 1.0011, 1);
-    --ch-dur-spring-send: 700ms;
-    --ch-ease-spring-pop: linear(0, 0.0483, 0.1654, 0.3163, 0.4756, 0.6259, 0.7569, 0.8635, 0.9448, 1.0024, 1.0394, 1.0598, 1.0676, 1.0666, 1.0599, 1.0502, 1.0394, 1.0288, 1.0194, 1.0116, 1.0055, 1.001, 0.998, 0.9963, 0.9955, 0.9954, 0.9957, 0.9963, 0.9971, 0.9978, 0.9985, 1);
-    --ch-dur-spring-pop: 496ms;
-    --ch-ease-spring-lift: linear(0, 0.0388, 0.1306, 0.2476, 0.3711, 0.4898, 0.5971, 0.6899, 0.7675, 0.8304, 0.88, 0.9182, 0.9469, 0.9678, 0.9826, 0.9926, 0.9991, 1.0031, 1.0053, 1.0062, 1.0063, 1.0059, 1.0052, 1.0045, 1.0037, 1.003, 1.0023, 1.0018, 1.0013, 1);
-    --ch-dur-spring-lift: 471ms;
-    --ch-ease-spring-launch: linear(0, 0.0127, 0.0465, 0.0957, 0.1553, 0.2216, 0.2913, 0.3619, 0.4316, 0.4988, 0.5624, 0.6219, 0.6766, 0.7263, 0.7711, 0.811, 0.8461, 0.8768, 0.9033, 0.9259, 0.945, 0.961, 0.9742, 0.9849, 0.9935, 1.0003, 1.0054, 1.0092, 1.0119, 1.0137, 1.0147, 1.0151, 1.0151, 1.0147, 1.014, 1.0132, 1.0122, 1.0112, 1.0101, 1.009, 1.008, 1.007, 1.0061, 1.0052, 1.0044, 1.0037, 1.0031, 1.0025, 1.002, 1.0016, 1.0012, 1);
-    --ch-dur-spring-launch: 812ms;
-    --ch-ease-spring-settle: linear(0, 0.0429, 0.1419, 0.2645, 0.3907, 0.509, 0.6136, 0.7024, 0.7754, 0.8338, 0.8795, 0.9145, 0.9408, 0.9601, 0.974, 0.9839, 0.9906, 0.9952, 0.9981, 0.9998, 1.0008, 1.0013, 1.0015, 1.0015, 1.0014, 1.0012, 1);
-    --ch-dur-spring-settle: 417ms;
-  }
-}
-
 /* Settings > Preferences > Animations off: every Clubhouse transition becomes
    instant (portaled menus and dialogs carry their own data-ui, so both forms). */
 [data-ui='clubhouse'][data-motion='off'],
@@ -1383,12 +1366,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-release: 0ms;
   --ch-dur-reveal: 0ms;
   --ch-dur-spring-smooth: 0ms;
-  --ch-dur-spring-pour: 0ms;
   --ch-dur-spring-settle: 0ms;
   --ch-dur-spring-send: 0ms;
   --ch-dur-spring-pop: 0ms;
-  --ch-dur-spring-lift: 0ms;
-  --ch-dur-spring-launch: 0ms;
   --ch-dur-keyboard: 0ms;
   --ch-dur-msg-time: 0ms;
   --ch-dur-msg-rule: 0ms;
@@ -1399,65 +1379,40 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-reveal-offset: 0ms;
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;
-  --ch-skel-delay: 0ms;
-  /* The loops too, so a skeleton's shimmer, the calendar's live pulse and the pending sweep hold still from the first
-     frame: ThemeScript marks <html> before hydration, ahead of the rules that stop them by name. */
-  --ch-dur-shimmer: 0ms;
-  --ch-dur-skeleton: 0ms;
-  --ch-dur-live: 0ms;
-  --ch-dur-sweep: 0ms;
+  /* The working beat too (--ch-dur-typing below), so the working sign holds still from the first frame: ThemeScript marks
+     <html> before hydration, ahead of the rules that stop it by name. */
   --ch-dur-marks: 0ms;
   --ch-dur-word: 0ms;
   --ch-dur-story-body: 0ms;
   --ch-dur-typing: 0ms;
   --ch-dur-typing-step: 0ms;
   --ch-dur-story: 0ms;
-  --ch-dur-station-pulse: 0ms;
 }
 
 /* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off
-   <html>, so they read these from there: both pages crossfade together. Scoped to a
-   document showing Clubhouse. */
+   <html>, so they read these from there. Scoped to a document showing Clubhouse. */
 html:has([data-ui='clubhouse']) {
-  /* On the phone, a fade through, not a crossfade (phone test 2026-10-13): the old page clears quickly, then the new
-     one fades in, so two different pages are never on screen at once (a crossfade of two pages read as a washed-out
-     double image). The new page waits for the whole fade out: a shorter gap leaves both snapshots up for its last
-     frames. The desktop crossfades with no gap (below). */
+  /* A desktop page change crossfades with no gap: the old page fades out over 120ms while the new one fades in over
+     180ms, both from the first frame (owner decision 3, 2026-10-24, OQ-14 / A10; S4.4). A phone navigation with motion
+     on never crossfades: it swaps, pushes or pops on the live page (S4.4, S4.8), so the phone's fade-through is gone. */
   --ch-dur-vt-out: 120ms;
-  --ch-dur-vt-in: 220ms;
-  --ch-dur-vt-gap: var(--ch-dur-vt-out);
+  --ch-dur-vt-in: 180ms;
   --ch-ease-vt-out: cubic-bezier(0.4, 0, 1, 1);
   --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
   /* Under the OS Reduce Motion setting a page change is a plain crossfade over the quick beat, old and new together, in
      opacity only: no push, no pop, no parallax (owner decision 2, 2026-10-24, OQ-15; CH_FADE_MS in lib/motion.ts). */
   --ch-dur-vt-fade: 180ms;
-  /* How long a navigation onto a route skeleton keeps the old page up before the skeleton shows (native-feel audit
-     2026-10-08, P0-2): a load that finishes sooner never shows a skeleton. base.css delays the skeleton by the same. */
-  --ch-dur-vt-hold: 300ms;
-  /* A drill-in's push and Back's pop (lib/nav-motion.ts): the smooth spring, as a pushed phone screen moves
-     (PhoneScreen), and how far the page beneath draws back (UIKit's parallax, about a third). */
-  --ch-dur-vt-push: 260ms;
-  --ch-ease-vt-push: cubic-bezier(0.22, 1, 0.36, 1);
-  --ch-vt-parallax: -24%;
-  /* The dim on the page beneath a push (B16, CH-1618): PhoneScreen's scrim, and the same depth as a filter for a route
-     push, whose page beneath is a view-transition snapshot that cannot take an overlay. */
-  --ch-push-dim: rgb(20 18 12 / 0.1);
-}
-/* The desktop drill-in (a player row into a profile) crossfades with no gap: the old page fades out over 120ms while
-   the new one fades in over 180ms, both from the first frame, so there is no blank beat between them (owner decision
-   3, 2026-10-24, OQ-14 / A10). The phone keeps its fade through above. */
-@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  html:has([data-ui='clubhouse']) {
-    --ch-dur-vt-in: 180ms;
-    --ch-dur-vt-gap: 0ms;
-  }
-}
-/* The smooth spring as CSS linear(), as [data-ui='clubhouse'] has it above (motion-physics.test pins the two). */
-@supports (transition-timing-function: linear(0, 1)) {
-  html:has([data-ui='clubhouse']) {
-    --ch-ease-vt-push: linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1);
-    --ch-dur-vt-push: 462ms;
-  }
+  /* How long a crossfade onto a route skeleton keeps the old page up before the skeleton shows (P0-2, halved by S4.4): a
+     load that finishes sooner never shows a skeleton. base.css delays the skeleton by the same. A swap, a push and a pop
+     never hold: their skeleton's frame is in the first frame, and its blocks wait --ch-dur-busy-delay (3.9). */
+  --ch-dur-vt-hold: 150ms;
+  /* A list row sliding to its new place (a roster reorder, a qualifier rank change; S3.10): the one curve, on base. */
+  --ch-dur-vt-move: 260ms;
+  --ch-ease-vt-move: cubic-bezier(0.32, 0.72, 0, 1);
+  /* A phone push and pop (lib/nav-motion.ts, S4.1): how far the page beneath draws back (UIKit's third, as measured by
+     Tusker), and the black dim over it, 0 to 0.075. PhoneScreen's scrim takes the same dim (B16, CH-1618). */
+  --ch-push-parallax: -30%;
+  --ch-push-dim: rgb(0 0 0 / 0.075);
 }
 
 /* The document under Clubhouse (high-fidelity audit F05): the overscroll bounce and the frame before first paint show

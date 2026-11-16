@@ -17,6 +17,12 @@ export function formatSigned(value: number | null | undefined, digits = 1): stri
   return (rounded > 0 ? '+' : MINUS) + Math.abs(rounded).toFixed(digits);
 }
 
+/** A change rounded to the digits it is printed at (the same rounding `formatSigned` uses), with no negative zero (DF-C-15). */
+export function printedDelta(delta: number, digits: number): number {
+  const v = Number(delta.toFixed(digits));
+  return v === 0 ? 0 : v;
+}
+
 /**
  * The tone of a change or a signed figure: green when it moved the good way, amber when the other (D-42), and none when it
  * rounds to zero at the `digits` it is shown with. "0.0" is no change, so it is never painted amber or green (F-54).

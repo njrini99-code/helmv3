@@ -136,7 +136,7 @@ async function markCelebrationShownImpl(
   // legacy:true/hidden:true) — it never renders cached content of its own, so
   // revalidating it was a stale no-op. /golf/dashboard/coachhelm below is the
   // real target that actually renders the celebration treatment.
-  revalidatePath('/golf/dashboard/insights');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
   revalidatePath('/golf/dashboard/coachhelm');
 
   return { success: true, celebration_shown_at: shownAt };

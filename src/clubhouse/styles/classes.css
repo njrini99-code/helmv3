@@ -783,27 +783,8 @@
 .ch-cl-read__doc i:nth-child(3n) {
   background: #efe6d2;
 }
-/* CH-12602: a sweep down the page while the schedule is read. */
-.ch-cl-read__scan {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 34px;
-  background: linear-gradient(180deg, rgb(31 107 69 / 0), rgb(31 107 69 / 0.18) 80%, var(--ch-green-600));
-  animation: ch-cl-scan var(--ch-dur-shimmer) var(--ch-ease) infinite;
-}
-@keyframes ch-cl-scan {
-  from {
-    transform: translateY(-34px);
-  }
-  to {
-    /* The box's own height, whatever it is (MOT-44). */
-    transform: translateY(100cqh);
-  }
-}
-[data-ui='clubhouse'][data-motion='off'] .ch-cl-read__scan,
-[data-motion='off'] [data-ui='clubhouse'] .ch-cl-read__scan {
-  animation: none;
-}
+/* CH-12602's sweep down the page is gone (MOTION-AND-VISUAL 3.12: no loop but the working indicator): the page is drawn
+   still, and the words under it say it is being read. */
 .ch-cl-err {
   display: flex;
   flex-direction: column;
@@ -1290,11 +1271,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-cl.is-phone .ch-cl-today__row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-cl.is-phone .ch-cl-today__row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-cl.is-phone .ch-cl-today__n {

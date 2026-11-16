@@ -110,6 +110,7 @@ same way.
 | CH-6213 | The roster doesn't load | "The roster didn’t load" + "Events are complete, but players can’t be invited or picked until it does." Try again (with another read failed too, folded into CH-1209, which names it); in the editor, "The roster didn’t load, so no one can be invited yet." in place of the invite list | `Calendar`, `EventEditor`; logged `clubhouse.calendar.members` | calendar.test › CH-6213 |
 | CH-6240 | Round mode for a tournament event whose round ref didn't load (the calendar's events did) | A warning notice in place of the banner: "Couldn’t load the tournament for this round. You can still change its time." Only the day and times show, saved through the calendar's own save; blocks show stored titles with no pill | `RoundEditor`; `loadRoundRefs` `failed` | calendar.test › P-5 CH-6240; calendar-round-mode.test |
 | CH-6241 | The tournament changed since it was opened (a version conflict) | "This tournament changed since you opened it. Reload to see the latest." + Reload; unsaved values stay until then | refusal `stale` | calendar.test › P-5 CH-6241 |
+| CH-6290 | A practice's plan read fails (`readEventPlans` answers an error that is not "table missing"; GAP-S-28) | In the event sheet, where the plan row goes: "The practice plan didn’t load" + "Nothing you saved is lost. Try again." + Try again. Never Build plan and never "No plan": before, a failed read looked like a practice with no plan. A missing plan table still just leaves the row out | `InlineNotice` in `screens/calendar/inspector.tsx`; `plansError` and each practice's `planFailed` from `loadCalendar` (`data/calendar.ts`) | calendar.test › CH-6290 |
 
 ## 63xx Empty
 
@@ -130,7 +131,7 @@ same way.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-6401 | Calendar is loading | Header, toolbar, the week grid and the panel as skeletons. On the phone: the month's opening on its double rule with the view switch, the flush week, the day's heading on its rule and four rows on seams, in the loaded page's geometry (0px shift at 390, WebKit) | `CalendarSkeleton` | calendar.test › CH-6401 |
+| CH-6401 | Calendar is loading | Header, toolbar, the view the address names (`?view=`: the week grid, or the day, month or agenda) and the panel where that view keeps it, as skeletons (GAP-S-17; before, always the week). On the phone: the month's opening on its double rule with the view switch, the flush week, the day's heading on its rule and four rows on seams, in the loaded page's geometry (0px shift at 390, WebKit) | `CalendarSkeleton` (`view`), `calendar/loading.tsx` reading the address | calendar.test › CH-6401, route-skeleton-address.test |
 | CH-6402 | Calendar-app links are loading | Two skeleton rows | `SubscribeSheet` | calendar.test › CH-6402 |
 | CH-6403 | An event's files are loading | A skeleton row | `EventFiles` | calendar.test › CH-6403 |
 | CH-6404 | Documents are loading (attach) | Two skeleton rows | `FilePicker` | calendar.test › CH-6404 |

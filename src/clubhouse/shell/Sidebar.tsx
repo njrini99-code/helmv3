@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { LinkPending } from "./LinkPending";
+import { navLinkPrefetch } from "./link-prefetch";
 import type { GolfUserData } from "@/contexts/golf-user-context";
 import { useNotificationBadges } from "@/contexts/notification-badge-context";
 import { Avatar } from "../ui/Avatar";
@@ -11,7 +12,7 @@ import { activeNavItemFrom, CH_NAV_SECTIONS, navFor } from "./nav";
 import { NavPlate } from "./NavPlate";
 import { ResumeRoundCard } from "./Dock";
 import { badgeCount } from "./badge-count";
-import { LifeBuoy, LogOut, Settings, Users } from "lucide-react";
+import { LifeBuoy, LogOut, Settings, Sparkles, Users } from "lucide-react";
 import { Menu, type MenuItem } from "../ui/Menu";
 import { useToast } from "../ui/Toast";
 import { haptic } from "../lib/haptics";
@@ -89,6 +90,8 @@ export function Sidebar({
                   <Link
                     key={i.id}
                     href={i.href}
+                    // The page on screen is never prefetched (MAC-12, link-prefetch.ts).
+                    prefetch={navLinkPrefetch(i.href, pathname, search)}
                     // RouteFrame restores the scroll (SectionStrip says why Next's is off).
                     scroll={false}
                     className="ch-navitem"
@@ -130,6 +133,8 @@ export function Sidebar({
 
 /** Help in the account menu is Settings' Help and legal card, as on the phone's account sheet. */
 const HELP_HREF = "/golf/dashboard/settings#set-help";
+/** The coach's What's new: the team's CoachHelm activity of the past week (routes/whats-new.tsx). */
+const WHATS_NEW_HREF = "/golf/dashboard/whats-new";
 
 /** A head coach on more than one team: the account menu lists the teams too, the current one ticked (useTeamSwitch). */
 function IdentityMenuWithTeams({ userData, headCoach, teamSwitch }: { userData: GolfUserData; headCoach: boolean; teamSwitch: ChTeamSwitch }) {
@@ -158,6 +163,8 @@ function IdentityMenu({ userData, headCoach, teams = [] }: { userData: GolfUserD
   const items: MenuItem[] = [
     { label: "Settings", icon: Settings, href: "/golf/dashboard/settings" },
     ...(teams.length ? [{ kind: "separator" } as const, ...teams, { kind: "separator" } as const] : []),
+    // A coach's What's new (GAP-R-06): beside Help, where a secondary page is reached, not only from Cmd+K.
+    ...(userData.role === "coach" ? [{ label: "What’s new", icon: Sparkles, href: WHATS_NEW_HREF }] : []),
     { label: "Help", icon: LifeBuoy, href: HELP_HREF },
     { label: "Sign out", icon: LogOut, onSelect: () => void signOut() },
   ];

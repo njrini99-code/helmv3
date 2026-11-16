@@ -237,7 +237,7 @@ describe('get_team_stats: one team average, places already worked out', () => {
   });
 
   it('a column the grid has no figure for comes from Stats\' own per-player calculation, and a failed read of it is said', async () => {
-    const figures = (putts: number) => ({ rounds: 10, hole_rounds: 10, scoring_average: 74, putts_per_round: putts, putt_rounds: 10, sg_total: null, sg_rounds: 0, legs: { tee: null, approach: null, around: null, putting: null }, gir_pct: 60, gir_holes: 180, fairway_pct: 55, fairway_holes: 140, window_start: null, window_end: null });
+    const figures = (putts: number) => ({ rounds: 10, hole_rounds: 10, scoring_average: 74, putts_per_round: putts, putt_rounds: 10, sg_total: null, sg_rounds: 0, legs: { tee: null, approach: null, around: null, putting: null }, gir_pct: 60, gir_holes: 180, fairway_pct: 55, fairway_holes: 140, to_par: null, scrambling_pct: null, scramble_chances: 0, sand_pct: null, sand_chances: 0, one_putt_pct: null, three_putt_pct: null, putt_holes: 0, penalties_per_round: null, penalty_rounds: 0, window_start: null, window_end: null });
     const playerFigures = vi.fn(async () => new Map([[ELI, figures(31.2)], [MAYA, figures(29.8)], [NOAH, figures(33)]]));
     const out = await tool().run(ctxFor(coach, { teamStats: async () => teamPage(), playerFigures }), { window: 'last10', rank_by: 'putts_per_round', putting: false });
     expect(playerFigures).toHaveBeenCalledWith([ELI, MAYA, NOAH], 'last10');

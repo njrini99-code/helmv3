@@ -302,9 +302,9 @@
 .ch-akg-ring circle { fill: none; stroke-width: 2.5; }
 .ch-akg-ring .trk { stroke: var(--ch-separator-strong); }
 .ch-akg-ring .drn { stroke: var(--ch-ask-accent); stroke-linecap: round; stroke-dasharray: 81.68; }
-.ch-akg-ring[data-run] .drn { animation: ch-akg-drain linear forwards; }
+/* The Undo window is a real clock: the ring drains over the time left (motion.css ch-drain, its length the ring's dash). */
+.ch-akg-ring[data-run] .drn { --ch-drain: 81.68; animation: ch-drain linear forwards; }
 .ch-akg-ring > b { font: var(--ch-type-13-strong); }
-@keyframes ch-akg-drain { to { stroke-dashoffset: 81.68; } }
 .ch-akg-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; }
 .ch-akg-mark[data-tone='ok'] { background: var(--ch-ask-accent); color: var(--ch-ask-on-accent); }
 .ch-akg-mark[data-tone='warn'] { background: var(--ch-warning-100); color: var(--ch-loss); }

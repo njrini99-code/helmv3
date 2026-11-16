@@ -12,7 +12,7 @@ vi.mock('../../../shell/phone-chrome', () => ({ PhoneTop: ({ title }: { title: R
 
 import '../../../__tests__/dialog-polyfill';
 import { PREVIEW_LIVE, PREVIEW_LIVE_EMPTY, PREVIEW_LIVE_FAILED, PREVIEW_LIVE_NOW, PREVIEW_LIVE_ONE } from '../../../preview/fixtures-live';
-import { LiveDenied, LiveView } from '../LiveView';
+import { LiveDenied, LiveNoTeam, LiveView } from '../LiveView';
 import type { LiveSnapshot } from '../../../live/model';
 
 const view = (initial: LiveSnapshot) => render(<LiveView initial={initial} frozen now={PREVIEW_LIVE_NOW} />);
@@ -104,9 +104,30 @@ describe('the live view', () => {
     expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
   });
 
-  it('says it is not theirs to read when the coach has no team (CH-16609)', () => {
+  it('says Live is not theirs to read, with the way back to Home (CH-16609, GAP-S-12)', () => {
     const { container } = render(<LiveDenied />);
-    expect(container.querySelector('[data-ch-code="CH-16609"]')!.textContent).toBe('You don’t have access to this team’s live rounds.');
+    const state = container.querySelector('[data-ch-code="CH-16609"]')!;
+    expect(state.textContent).toContain('Live isn’t available for this team');
+    expect(within(state as HTMLElement).getByRole('link', { name: /Back to Home/ }).getAttribute('href')).toBe('/golf/dashboard');
+  });
+
+  it('loads in the desk’s own boxes: the head, the tools and the groups of lanes (GAP-S-32)', async () => {
+    const Loading = (await import('@/app/golf/(dashboard)/dashboard/live/loading')).default;
+    const { container } = render(<Loading />);
+    const main = container.querySelector('main.ch-lv.ch-lv--desk')!;
+    expect(main.getAttribute('aria-busy')).toBe('true');
+    expect(main.querySelector('.ch-lv-head')).not.toBeNull();
+    expect(main.querySelector('.ch-lv-tools')).not.toBeNull();
+    expect(main.querySelectorAll('.ch-lv-groups > .ch-lv-group .ch-lv-card')).toHaveLength(2);
+    expect(main.querySelector('[data-ch-large-title]')).toBeNull();
+  });
+
+  it('draws the shared "not on a team" state for a coach with no team (CH-16609, GAP-S-12)', () => {
+    const { container } = render(<LiveNoTeam />);
+    const state = container.querySelector('[data-ch-code="CH-16609"]')!;
+    expect(state).not.toBeNull();
+    expect(state.textContent).toContain('Once your team is set up, the players out on the course show here.');
+    expect(state.textContent).not.toContain('Live isn’t available');
   });
 
   it('walks the lanes with the arrow keys as one tab stop, and Enter opens the player in the panel', async () => {

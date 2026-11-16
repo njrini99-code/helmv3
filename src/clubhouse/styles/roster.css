@@ -280,12 +280,12 @@
 }
 /* Pressing drops the hover lift. A card never scales: the shell's press is for keys (lib/press.ts, CH-1606). */
 .ch-rs-face:not(.ch-rs-face--static)[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
   transform: translateY(0);
 }
 @media (hover: hover) {
   .ch-rs-face:not(.ch-rs-face--static):active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transform: translateY(0);
   }
 }
@@ -1053,7 +1053,8 @@ a.ch-rs-peek__dev:focus-visible,
   background: var(--ch-green-100);
   color: var(--ch-forest-800);
   font: var(--ch-type-footnote);
-  animation: ch-rs-em-in var(--ch-dur-quick) var(--ch-ease);
+  /* A chip the coach just typed crossfades in over the quick beat, with no pop (motion.css ch-in; MOTION-AND-VISUAL 3.12). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-rs-em__chip > span:first-child {
   min-width: 0;
@@ -1139,16 +1140,6 @@ a.ch-rs-peek__dev:focus-visible,
 }
 .ch-rs-em__off {
   margin: 0;
-}
-@keyframes ch-rs-em-in {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-rs-em__chip {
@@ -1328,11 +1319,11 @@ a.ch-rs-peek__dev:focus-visible,
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rsm-row:focus-visible {
@@ -1560,11 +1551,11 @@ a.ch-rs-peek__dev:focus-visible,
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-panel__link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-panel__link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   /* CoachHelm on the phone profile: the counts on the panel's seam, under its heading. */
@@ -1755,13 +1746,11 @@ a.ch-rs-peek__dev:focus-visible,
     background: var(--ch-ledger-rule-soft);
   }
   .ch-rsm-banner[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-banner:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-rsm-banner[data-ch-pressed]::after {
@@ -1965,11 +1954,11 @@ a.ch-rs-peek__dev:focus-visible,
     pointer-events: none;
   }
   .ch-rsm-act[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-act:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rsm-act b {
@@ -2132,7 +2121,8 @@ a.ch-rs-peek__dev:focus-visible,
 
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rs[data-canopy] .ch-rs-face.is-sel {
@@ -2145,12 +2135,12 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* CH-3602: a press deepens the tint over the press beat (the row press tint). */
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static)[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2262,7 +2252,8 @@ a.ch-rs-peek__dev:focus-visible,
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-row:not(.ch-rs-row--head):hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rs[data-canopy] .ch-rs-row.is-sel {
@@ -2277,12 +2268,12 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* Pressing a player's name deepens the row's tint over the press beat; the row menu's key presses on its own. */
   .ch-rs[data-canopy] .ch-rs-row:has(.ch-rs-who[data-ch-pressed]) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-row:has(.ch-rs-who:active) {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2422,13 +2413,13 @@ a.ch-rs-peek__dev:focus-visible,
   opacity: 0.45;
 }
 
-/* CH-3701: a chosen sort slides each moved phone row to its new place on the smooth spring (D-64), its figure rolling
-   inside it. No crossfade: the row's new face travels from the old place. The pseudo-elements hang off <html>, so they
-   take the spring from its tokens there (tokens.css, --ch-*-vt-push). The shell's reduced-motion rule stops it, and the
+/* CH-3701: a chosen sort slides each moved phone row to its new place over base on the one curve (S3.10), its figure
+   rolling inside it. No crossfade: the row's new face travels from the old place. The pseudo-elements hang off <html>,
+   so they take the timing from its tokens there (tokens.css, --ch-*-vt-move). The shell's reduced-motion rule stops it, and the
    list never asks for it then, nor with Animations off (RosterPhoneList). */
 html:has([data-ui='clubhouse'])::view-transition-group(.ch-rsm-reorder) {
-  animation-duration: var(--ch-dur-vt-push);
-  animation-timing-function: var(--ch-ease-vt-push);
+  animation-duration: var(--ch-dur-vt-move);
+  animation-timing-function: var(--ch-ease-vt-move);
 }
 html:has([data-ui='clubhouse'])::view-transition-old(.ch-rsm-reorder) {
   display: none;
@@ -2931,16 +2922,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ch-crh='on'] .ch-rs-ldr__v.is-loss {
   color: var(--ch-chart-loss);
 }
-/* Needs a look shows its reason as the figure (coach audit 13 Nov 2026, §8 #4): words at 20, and the strokes gained it was
-   ranked by on its own line under them. */
-[data-ch-crh='on'] .ch-rs-ldr__v.is-words {
-  font: var(--ch-type-20-strong);
-  letter-spacing: var(--ch-track-20);
-  white-space: normal;
-}
-[data-ch-crh='on'] .ch-rs-ldr__v.is-words small {
-  display: block;
-  margin: 2px 0 0;
+/* Needs a look keeps its strokes gained as the figure and says why under the name, in body ink (prod audit 2026-11-15,
+   ROSTER-08; the 13 Nov reason-as-figure read as a number and was cut at the edge). */
+[data-ch-crh='on'] .ch-rs-ldr__why {
+  grid-column: 1 / -1;
+  font: var(--ch-type-13-medium);
+  color: var(--ch-crh-ink2);
 }
 [data-ch-crh='on'] .ch-rs-ldr__v small {
   margin-left: 4px;
@@ -3074,7 +3061,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     text-align: left;
   }
   [data-ch-crh='on'] .ch-rsx-row[data-ch-pressed] {
-    background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+    background: var(--ch-sel);
     transform: none;
   }
   [data-ch-crh='on'] .ch-rsx-row:focus-visible {

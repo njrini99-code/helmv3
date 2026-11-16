@@ -20,6 +20,9 @@ import { fetchHelmJobsQueueStatus } from '@/lib/admin/data/helm-jobs';
 import { HelmJobsQueuePanel } from './HelmJobsQueuePanel';
 import { SectionLabel } from '../_components/SectionLabel';
 import { TabHeader } from '../_components/TabHeader';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Jobs & Integrity' };
 
 export const dynamic = 'force-dynamic';
 

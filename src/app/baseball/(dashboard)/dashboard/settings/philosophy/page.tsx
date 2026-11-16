@@ -3,6 +3,9 @@ import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { PhilosophySettingsClient } from '@/components/baseball/settings/PhilosophySettingsClient';
 import type { BaseballCoachPhilosophy } from '@/lib/types';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Coaching Philosophy' };
 
 export default async function PhilosophySettingsPage() {
   const supabase = await createClient();

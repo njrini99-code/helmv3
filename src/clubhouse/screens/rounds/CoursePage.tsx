@@ -13,12 +13,13 @@ import { HoleMap, mostToGain } from './HoleMap';
 import { CourseArc } from './CourseArc';
 import { HowItPlays } from './HowItPlays';
 import { RoundsHere } from './RoundsHere';
-import { FadeNum, useExpandHeight } from './course-motion';
+import { FadeNum, SwapFade } from './course-motion';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useRouter } from 'next/navigation';
 import { haptic } from '../../lib/haptics';
 import { Segmented } from '../../ui/Segmented';
+import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 
 /**
  * P-7 4.2 to 4.4: one player's history at one course. The hero is the one green card; everything under it is flush under
@@ -50,68 +51,89 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
     q.set('hole', String(hole));
     router.replace(`?${q.toString()}`, { scroll: false });
   };
+  // GAP-S-10: each part of the course page is its own section, so one that crashes leaves the rest; two or more are said
+  // once under the hero (CH-1210).
   return (
-    <main className="ch-ch" aria-labelledby="ch-ch-title">
-      <CourseHero h={h} coach={coach} who={who} playerId={playerId} />
-      <section className="ch-ch-sec" aria-labelledby="ch-ch-fig-h">
-        <h2 id="ch-ch-fig-h" className="ch-sr-only">
-          Figures
-        </h2>
-        <div className="ch-ch-fig">
-          {h.figures.map((f) => {
-            const body = (
-              <>
-                <span className="ch-ch-fig__l">{f.label}</span>
-                <b className="ch-ch-fig__v">
-                  {f.value != null ? <FadeNum className="ch-num" text={f.value} /> : <span className="ch-num"><NoData label={f.sub} /></span>}
-                </b>
-                <span className={'ch-ch-fig__s ch-num' + toneOf(f.toPar)}>{f.sub}</span>
-              </>
-            );
-            return f.roundId ? (
-              <Link prefetch={false} key={f.label} className="ch-ch-fig__c is-link" href={reviewHref(f.roundId)} aria-label={`${f.label}: ${f.value}, ${f.sub}. Open the round`}>
-                {body}
-              </Link>
-            ) : (
-              <div key={f.label} className="ch-ch-fig__c">
-                {body}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-      {h.lastTime && <LastTime t={h.lastTime} who={who} />}
-      {h.windows && (
-        <div className="ch-ch-win">
-          <Segmented
-            label="Which rounds"
-            size="sm"
-            value={h.window}
-            onChange={setWindow}
-            options={[
-              { value: 'all', label: 'All time' },
-              { value: 'season', label: 'This season' },
-            ]}
-          />
-        </div>
-      )}
-      {h.holes.length > 0 ? (
-        <HoleMap holes={h.holes} selected={hole} onSelect={setHole} coverage={h.coverage} sample={h.holeRounds} />
-      ) : (
-        <section className="ch-ch-sec" aria-labelledby="ch-hmap-h">
-          <div className="ch-ch-sec__h">
-            <h2 id="ch-hmap-h">Hole by hole</h2>
+    <SectionGroup>
+      <main className="ch-ch" aria-labelledby="ch-ch-title">
+        <CourseHero h={h} coach={coach} who={who} playerId={playerId} />
+        <SectionGroupNotice />
+        <SectionBoundary surface="rounds.course.figures" label="The figures" code="CH-11291">
+          <section className="ch-ch-sec" aria-labelledby="ch-ch-fig-h">
+            <h2 id="ch-ch-fig-h" className="ch-sr-only">
+              Figures
+            </h2>
+            <div className="ch-ch-fig">
+              {h.figures.map((f) => {
+                const body = (
+                  <>
+                    <span className="ch-ch-fig__l">{f.label}</span>
+                    <b className="ch-ch-fig__v">
+                      {f.value != null ? <FadeNum className="ch-num" text={f.value} /> : <span className="ch-num"><NoData label={f.sub} /></span>}
+                    </b>
+                    <span className={'ch-ch-fig__s ch-num' + toneOf(f.toPar)}>{f.sub}</span>
+                  </>
+                );
+                return f.roundId ? (
+                  <Link prefetch={false} key={f.label} className="ch-ch-fig__c is-link" href={reviewHref(f.roundId)} aria-label={`${f.label}: ${f.value}, ${f.sub}. Open the round`}>
+                    {body}
+                  </Link>
+                ) : (
+                  <div key={f.label} className="ch-ch-fig__c">
+                    {body}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </SectionBoundary>
+        {h.lastTime && (
+          <SectionBoundary surface="rounds.course.last" label="Last time" code="CH-11291">
+            <LastTime t={h.lastTime} who={who} />
+          </SectionBoundary>
+        )}
+        {h.windows && (
+          <div className="ch-ch-win">
+            <Segmented
+              label="Which rounds"
+              size="sm"
+              value={h.window}
+              onChange={setWindow}
+              options={[
+                { value: 'all', label: 'All time' },
+                { value: 'season', label: 'This season' },
+              ]}
+            />
           </div>
-          <div className="ch-ch-plate" data-ch-code="CH-11333">
-            <b>{h.holesError ? 'The holes didn’t load' : 'Needs 2 rounds with hole scores'}</b>
-            <p>{h.holesError ? 'The rest of your history here is still right. Try again in a moment.' : 'Hole scores come from rounds entered hole by hole.'}</p>
-          </div>
-        </section>
-      )}
-      <HowItPlays data={h.howItPlays} who={who} onHole={toHole} />
-      {h.arc && <CourseArc arc={h.arc} lines={h.arcLines} selected={hole} onSelect={setHole} />}
-      <RoundsHere rounds={h.rounds} cards={h.cards} title={who ? `${who}’s rounds here` : 'Your rounds here'} />
-    </main>
+        )}
+        {h.holes.length > 0 ? (
+          <SectionBoundary surface="rounds.course.holes" label="Hole by hole" code="CH-11291">
+            <HoleMap holes={h.holes} selected={hole} onSelect={setHole} coverage={h.coverage} sample={h.holeRounds} />
+          </SectionBoundary>
+        ) : (
+          <section className="ch-ch-sec" aria-labelledby="ch-hmap-h">
+            <div className="ch-ch-sec__h">
+              <h2 id="ch-hmap-h">Hole by hole</h2>
+            </div>
+            <div className="ch-ch-plate" data-ch-code="CH-11333">
+              <b>{h.holesError ? 'The holes didn’t load' : 'Needs 2 rounds with hole scores'}</b>
+              <p>{h.holesError ? 'The rest of your history here is still right. Try again in a moment.' : 'Hole scores come from rounds entered hole by hole.'}</p>
+            </div>
+          </section>
+        )}
+        <SectionBoundary surface="rounds.course.plays" label="How it plays" code="CH-11291">
+          <HowItPlays data={h.howItPlays} who={who} onHole={toHole} />
+        </SectionBoundary>
+        {h.arc && (
+          <SectionBoundary surface="rounds.course.arc" label="The round here" code="CH-11291">
+            <CourseArc arc={h.arc} lines={h.arcLines} selected={hole} onSelect={setHole} />
+          </SectionBoundary>
+        )}
+        <SectionBoundary surface="rounds.course.rounds" label={who ? `${who}’s rounds here` : 'Your rounds here'} code="CH-11291">
+          <RoundsHere rounds={h.rounds} cards={h.cards} title={who ? `${who}’s rounds here` : 'Your rounds here'} />
+        </SectionBoundary>
+      </main>
+    </SectionGroup>
   );
 }
 
@@ -172,14 +194,13 @@ function LastTime({ t, who }: { t: NonNullable<ChCourseHistory['lastTime']>; who
 function NotePlate({ label, text }: { label: string; text: string }) {
   const [all, setAll] = useState(false);
   const long = text.length > 220;
-  // M12: "Show all" eases the text's height open on the smooth spring (a line clamp can't animate itself).
-  const body = useExpandHeight(all);
+  // M12 (audit 2026-11-15, MOT-15): "Show all" sets the note's height at once and the text fades back in over the quick beat.
   return (
     <div className="ch-ch-note">
       <span className="ch-ch-note__l">{label}</span>
-      <div ref={body} className="ch-ch-note__b">
+      <SwapFade swap={all} className="ch-ch-note__b">
         <p className={long && !all ? 'is-clamped' : undefined}>{text}</p>
-      </div>
+      </SwapFade>
       {long && (
         <button type="button" className="ch-ch-note__more" aria-expanded={all} onClick={() => setAll((v) => !v)}>
           {all ? 'Show less' : 'Show all'}

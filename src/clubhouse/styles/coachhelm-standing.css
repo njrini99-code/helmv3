@@ -706,11 +706,11 @@
     border-top-color: var(--ch-ledger-rule-soft);
   }
   .ch-hs-ld__why[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hs-ld__why:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
 }

@@ -27,7 +27,7 @@ import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized'
 import { SettingsAuditClient } from '@/components/baseball/settings/SettingsAuditClient';
 
 export const metadata = {
-  title: 'Settings Audit Log | Helm Baseball',
+  title: 'Settings Audit Log',
   description: 'Append-only history of sensitive setting changes.',
 };
 

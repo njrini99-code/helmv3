@@ -195,8 +195,6 @@ export function PollCard({
   const qid = useId();
   const [votesOpen, setVotesOpen] = useState(false);
   const [closing, setClosing] = useState(false);
-  // M3: the row the viewer last tapped; only its check plays the pop (a card that loads voted shows it at rest).
-  const [tapped, setTapped] = useState<string | null>(null);
   const tally = polls?.tally(messageId, poll) ?? null;
   const nowMs = usePollClock(poll.closesAt, api.now);
   const closed = isPollClosed(poll, nowMs);
@@ -252,7 +250,6 @@ export function PollCard({
     // encodeChoice orders the ids as the options are, so "o3,o1" can't be stored.
     const ordered = next.length ? (encodeChoice(poll, next)?.split(",") ?? []) : [];
     haptic("select");
-    setTapped(optionId);
     polls.vote(messageId, poll, ordered);
   };
 
@@ -313,7 +310,7 @@ export function PollCard({
                 onClick={(e) => pick(o.id, e.detail === 0)}
               >
                 <span className="ch-msd-poll__fill" aria-hidden="true" />
-                <span className="ch-msd-poll__mark" aria-hidden="true" data-pop={on && tapped === o.id ? "" : undefined}>
+                <span className="ch-msd-poll__mark" aria-hidden="true">
                   {on && (
                     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
                       <path d="M2.2 6.4 4.9 9l4.9-5.6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={20} strokeDasharray={20} strokeDashoffset={0} />
@@ -328,7 +325,7 @@ export function PollCard({
                   {tally && (tally.voters[o.id]?.length ?? 0) > 0 && (
                     <span className="ch-msd-poll__faces">
                       {faceOrder(tally.voters[o.id] ?? [], api.viewer.userId).map((id) => (
-                        <span key={id} data-pop={id === api.viewer.userId && tapped === o.id ? "" : undefined}>
+                        <span key={id}>
                           {/* One letter: at 18 px the next coin overlaps the right of this one, which cut a second initial in half. */}
                           <Avatar name={(id === api.viewer.userId ? api.viewer.name : nameOf(id)).trim().split(/\s+/)[0] ?? ""} size={18} />
                         </span>

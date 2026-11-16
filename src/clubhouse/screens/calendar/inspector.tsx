@@ -37,7 +37,7 @@ import { Badge, type BadgeTone } from '../../ui/Badge';
 import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
-import { InlineNotice } from '../../ui/Notices';
+import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
 import { PillGroup, Segmented, type SegOption } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
@@ -68,7 +68,7 @@ import {
 } from './model';
 import type { ChNow } from './views';
 import { messageCoachHref } from '../home/player-links';
-import { BusyDetail, EventFiles, LinkedTrip } from './extras';
+import { BusyDetail, EventFiles, LinkedTrip, TripLink } from './extras';
 import { courseParts } from './class-group';
 import { BackLink } from '../../ui/Section';
 import { plural, pluralWord } from '../../lib/plural';
@@ -489,6 +489,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
   }
   if (e.type === 'class') return <ClassDetail ctx={ctx} e={e} />;
   if (e.type === 'busy') return <BusyDetail e={e} now={ctx.now} zoneLabel={ctx.zoneLabel} onBack={() => ctx.go(null)} onDeleted={() => (ctx.go(null), ctx.refresh())} />;
+  if (e.trip) return <TripDetail ctx={ctx} e={e} trip={e.trip} />;
   const overlap = ctx.overlaps.find((o) => o.eventId === e.id);
   const coach = ctx.role === 'coach';
   // P-5 4.9: a tracked round reads as its tournament's; it is cancelled, restored and deleted through Tournaments.
@@ -569,6 +570,11 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         {e.recurring && <Fact icon={Repeat}>{e.recurring}</Fact>}
         {e.notes && <Fact icon={Text}>{e.notes}</Fact>}
       </div>
+      {e.planFailed && (
+        <div className="ch-in__sec">
+          <InlineNotice code="CH-6290" title="The practice plan didn’t load" body={FAILURE_COPY.page} onRetry={ctx.refresh} covered={ctx.covered} />
+        </div>
+      )}
       {e.plan && (coach || e.plan.state !== 'none') && (
         <div className="ch-in__sec ch-in__plan">
           <span className="ch-in__plan-s">{PLAN_WORD[e.plan.state]}</span>
@@ -771,6 +777,41 @@ function ClassDetail({ ctx, e }: { ctx: InspCtx; e: ChCalEvent }) {
           Compare schedules
         </Button>
       )}
+    </div>
+  );
+}
+
+/**
+ * A team trip with no calendar event (N13P-24): when it leaves and comes back, where, and the way to its itinerary. Nothing here
+ * edits it (no replies, files or attendance: it is not an event); it is planned and changed in Team Hub's Travel.
+ */
+function TripDetail({ ctx, e, trip }: { ctx: InspCtx; e: ChCalEvent; trip: NonNullable<ChCalEvent['trip']> }) {
+  const clock = useChClock();
+  const from = e.span?.from ?? e.date;
+  const to = e.span?.to ?? e.date;
+  const times = [trip.leaves != null && `Leaves ${fmtHour(trip.leaves, true, clock)}`, trip.returns != null && `back ${fmtHour(trip.returns, true, clock)}`].filter(Boolean).join(' · ');
+  return (
+    <div className="ch-in">
+      <Back label="Today" onClick={() => ctx.go(null)} />
+      <div className="ch-in__plate" data-tone={plateTone(e.type)}>
+        <div className="ch-in__kick">
+          <Badge tone="accent">{TYPE_LABEL[e.type]}</Badge>
+        </div>
+        <h2 className="ch-in__title" tabIndex={-1}>
+          {e.title}
+        </h2>
+      </div>
+      <div className="ch-in__facts">
+        <Fact icon={Clock}>
+          {from === to ? dayLabel(from, ctx.now.date) : `${dowOf(from)} ${dayNum(from)} – ${dowOf(to)} ${dayNum(to)}`}
+          <br />
+          <span className="ch-num">{times || 'All day'}</span>
+          {times && ` · ${ctx.zoneLabel}`}
+        </Fact>
+        {e.location && <Fact icon={MapPin}>{e.location}</Fact>}
+        <TripLink id={trip.id} place={e.location || e.title} />
+      </div>
+      <p className="ch-in__quiet">Planned in Team Hub’s Travel, where the itinerary, rooms and changes are.</p>
     </div>
   );
 }

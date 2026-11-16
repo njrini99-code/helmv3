@@ -124,6 +124,7 @@ in flight it steps back to half strength, and the answer replaces it in place
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-15201 | The welcome's notifications read fails | In the card, under "Since you last signed in": "Updates didn’t load" + "They’ll be waiting in your notifications." It never reads "You’re all caught up" for something it could not check, and Continue is there whatever the reads did. Not on the boards: added so the card stays true | `NewsEmpty` in `Welcome`; `loadWelcome` logs `chLogServer('auth', 'welcome.notifications', …)` | auth.test › CH-15201; auth-server.test › CH-15201 |
+| CH-15290 | A new player's questions (/golf/player): the read of who this account is fails (the coach or player profile, or the declared role when both profiles are unfinished; GAP-S-04) | The sign-in room with "Your game", "We couldn’t check your account just now. Nothing you saved is lost. Try again." and Try again, which re-runs the read. Never the blank player form, so a coach or an onboarded player is never handed player onboarding over a blip; the submit refuses an onboarded coach and rewrites nothing for an onboarded player | `GateFailed` (`screens/auth/GateLoading.tsx`) from `ClubhousePlayerOnboardRoute`, `loadPlayerOnboard` (`failed`, logged `auth onboard.*`), `completePlayerOnboarding` | onboard-load |
 
 ## 153xx Empty
 

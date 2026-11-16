@@ -263,7 +263,7 @@ is the browser's, not tested here.
 | 20701 | CH-2970 | `THE_SHEET_IS_OPEN_WHILE_OFFLINE` | The sheet is open while offline |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 

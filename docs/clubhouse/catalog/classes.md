@@ -166,7 +166,7 @@ while the calendar is told.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-12601 | Hovering a class | On desktop the class takes the Ledger row tint (quick) and a deeper one on press (press), with no lift and no scale | `.ch-cl-card`, `--ch-ledger-row-press` | preview |
-| CH-12602 | A schedule is being read | A scan line sweeps down the page (still with reduced motion) | `.ch-cl-read__scan`, `--ch-dur-shimmer` | preview |
+| CH-12602 | A schedule is being read | The page is drawn still while it is read; the sweep is gone (MOTION-AND-VISUAL 3.12) | `.ch-cl-read__doc` | preview |
 
 ## 127xx Haptics
 

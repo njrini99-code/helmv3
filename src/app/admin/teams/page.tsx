@@ -14,6 +14,9 @@ import { parseView } from '@/lib/admin/views';
 import { ViewRail } from '../_components/ViewRail';
 import { TabHeader } from '../_components/TabHeader';
 import { TeamsEkgView } from './_components/TeamsEkgView';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Teams pulse' };
 
 export const dynamic = 'force-dynamic';
 

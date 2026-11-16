@@ -47,6 +47,13 @@ import './dialog-polyfill';
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_ROUND } from '../preview/fixtures-round-review';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 import { shotsAnswer } from '../data/__tests__/sg-shots-fake';
+import { sgPolicy } from '../data/stats-sg-mix';
+
+// These tests pin figures and reads written for every stored strokes gained figure, so they run under `include`. The shipped policy
+// (`exclude`, SC-07) and what it changes are pinned in src/clubhouse/data/__tests__/sg-mix.test.ts.
+const SG_POLICY_SHIPPED = sgPolicy.estimated;
+beforeEach(() => { sgPolicy.estimated = 'include'; });
+afterEach(() => { sgPolicy.estimated = SG_POLICY_SHIPPED; });
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const ROOT = { className: 'ch-root', 'data-ui': 'clubhouse' } as const;
@@ -255,11 +262,13 @@ describe('team stats · desktop', () => {
   });
 
   it('every tape figure carries its own weekly line from its series, and its tone follows how it moved', () => {
-    showTeam(team());
+    // Both kinds on one page: scoring and greens clear two standard errors (SIGNAL_Z, stats and charts audit 2026-11-15, CH-05),
+    // putts, scrambling and birdies do not.
+    const figures = PREVIEW_TEAM_STATS.figures.map((f) => (f.key === 'score' ? { ...f, se: 0.4 } : f.key === 'gir' ? { ...f, se: 1.4 } : f));
+    showTeam(team({ figures }));
     const cell = (label: string) => [...document.querySelectorAll('.ch-tp__c')].find((c) => c.querySelector('.ch-tp__l')!.textContent === label) as HTMLElement;
-    // The preview has both: scoring and greens clear their standard errors, putts, scrambling and birdies do not.
-    expect(PREVIEW_TEAM_STATS.figures.filter((x) => x.key !== 'sg').map((f) => deltaTone(f.delta, f.se, f.lowerIsBetter))).toEqual(['is-gain', 'is-gain', '', '', '']);
-    for (const f of PREVIEW_TEAM_STATS.figures.filter((x) => x.key !== 'sg')) {
+    expect(figures.filter((x) => x.key !== 'sg').map((f) => deltaTone(f.delta, f.se, f.lowerIsBetter))).toEqual(['is-gain', 'is-gain', '', '', '']);
+    for (const f of figures.filter((x) => x.key !== 'sg')) {
       const c = cell(f.label);
       expect(c.querySelector('.ch-tp__line'), f.label).not.toBeNull();
       // Green or amber only when the change clears its standard error, by the figure's own direction (lower scores and fewer
@@ -346,7 +355,8 @@ describe('team stats · desktop', () => {
   it('A1: a change past its standard error is worded as one, from the halves', () => {
     // The halves come from the loader (wp1-honest, `roundHalves`), so the override carries them with the weeks.
     showTeam(team({ team: { ...PREVIEW_TEAM_STATS.team, sg: [-3, -3, -3, 0, 3, 3, 3], sgHalves: { delta: 6, se: 0.5 } } }));
-    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('The team’s strokes gained are up 6.0 a round, newer half vs older half.');
+    // The team's halves compare each player with themselves (the loader pairs them, NP-01), and the words say so.
+    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('The team’s strokes gained are up 6.0 a round, same players, newer half vs older half.');
   });
 
   it('a flat line is no clear change, not a change', () => {
@@ -524,20 +534,20 @@ describe('player loader', () => {
     golf_goals: { data: [] },
     ...over,
   });
-  // p1: five rounds, +1 to +5 (mean +3); p2: three rounds at −1. The team pools eight: (15 − 3) / 8 = +1.5.
+  // p1: five rounds, +1 to +5 (mean +3); p2: three rounds at −1. A coach's team column is the rest of the team (DF-C-17): p2's −1.
   const p1 = [1, 2, 3, 4, 5].map((sg, i) => rnd(`a${i}`, 'p1', i + 1, sg, [sg / 2, sg / 2, null, null]));
   const p2 = [1, 2, 3].map((_, i) => rnd(`b${i}`, 'p2', i + 1, -1, [-0.5, -0.5, null, null]));
   const load = (viewer: 'coach' | 'player', window: 'last10' | 'season' = 'last10') => loadPlayerProfile({ viewer, teamId: 't1', playerId: 'p1', window });
 
-  it('the comparison table has strokes gained first: the player’s window mean against the team’s pooled mean for a coach', async () => {
+  it('the comparison table has strokes gained first: the player’s window mean against the rest of the team’s pooled mean for a coach', async () => {
     tables.current = profileTables([...p1, ...p2]);
     const data = (await load('coach'))!;
     const rows = data.comparisons.slice(0, 5);
     expect(rows.map((r) => r.label)).toEqual(['SG total', 'SG off the tee', 'SG approach', 'SG around green', 'SG putting']);
     expect(rows.every((r) => r.sg === true && r.bench === null && r.lowerIsBetter === false)).toBe(true);
-    expect(rows[0]).toMatchObject({ you: 3, team: 1.5 });
-    // Off the tee: p1 mean 1.5; the pool of eight, (7.5 − 1.5) / 8 = 0.75.
-    expect(rows[1]).toMatchObject({ you: 1.5, team: 0.75 });
+    expect(rows[0]).toMatchObject({ you: 3, team: -1 });
+    // Off the tee: p1 mean 1.5; the rest of the team, p2's three at −0.5.
+    expect(rows[1]).toMatchObject({ you: 1.5, team: -0.5 });
     // Around the green has no value on any round: a dash for both, never zero.
     expect(rows[3]).toMatchObject({ you: null, team: null });
     // After the five strokes gained rows come the standing rows, in groups; every row says which group it is in.
@@ -614,9 +624,9 @@ describe('player profile · desktop', () => {
     expect(chip.textContent).toBe('−1.3');
     expect(chip.className).toContain('is-flat');
     expect(hero.querySelector('.ch-sgchg')!.lastElementChild!.textContent).toBe('No clear change vs previous 10');
-    // Against 0.9 the same fall is clear: amber, and it says so.
+    // Against 0.6 the same fall clears two standard errors (SIGNAL_Z, CH-05): amber, and it says so.
     cleanup();
-    showPlayer(player({ sgChange: { ...PREVIEW_PLAYER.sgChange, se: 0.9 } }));
+    showPlayer(player({ sgChange: { ...PREVIEW_PLAYER.sgChange, se: 0.6 } }));
     hero = [...document.querySelectorAll('.ch-pf-hero__figs > div')].find((d) => d.querySelector('dt')!.textContent === 'SG / round')!;
     chip = hero.querySelector('.ch-delta')!;
     expect(chip.className).toContain('is-loss');
@@ -899,12 +909,13 @@ describe('the Tour is the only benchmark (Q-88)', () => {
     });
   });
 
-  it('the putting note grades against the Tour in every case', () => {
+  it('the putting note grades against the Tour in every case, from 30 putts as the Putting bands chart does (CH-18)', () => {
     const band = (label: string, made: number, attempts: number, bench: number | null) => ({ label, made, attempts, bench });
-    expect(puttingNote([band('3–5 ft', 5, 5, 90)])).toBe('Bands grade against the Tour once they have 10 or more putts.');
-    expect(puttingNote([band('3–5 ft', 18, 20, 90), band('5–10 ft', 14, 20, 50)])).toBe('Every graded band is at or above the Tour make rate.');
-    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 14, 20, 50)])).toBe('3 to 5\u00a0feet is the only band below the Tour make rate.');
-    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 4, 20, 50)])).toBe('2 bands are below the Tour make rate: 3–5\u00a0ft, 5–10\u00a0ft.');
+    expect(puttingNote([band('3–5 ft', 5, 5, 90)])).toBe('Bands grade against the Tour once they have 30 or more putts.');
+    expect(puttingNote([band('3–5 ft', 10, 20, 90)])).toBe('Bands grade against the Tour once they have 30 or more putts.');
+    expect(puttingNote([band('3–5 ft', 27, 30, 90), band('5–10 ft', 21, 30, 50)])).toBe('Every graded band is at or above the Tour make rate.');
+    expect(puttingNote([band('3–5 ft', 15, 30, 90), band('5–10 ft', 21, 30, 50)])).toBe('3 to 5\u00a0feet is the only band below the Tour make rate.');
+    expect(puttingNote([band('3–5 ft', 15, 30, 90), band('5–10 ft', 6, 30, 50)])).toBe('2 bands are below the Tour make rate: 3–5\u00a0ft, 5–10\u00a0ft.');
   });
 
   describe('the benchmark read', () => {
@@ -920,9 +931,10 @@ describe('the Tour is the only benchmark (Q-88)', () => {
         pga: [{ metric_id: 'gir_pct', pga_tour_value: '66' }, { metric_id: 'scrambling_pct_sand', pga_tour_value: '50' }],
         lpga: [{ metric_id: 'gir_pct', pga_tour_value: '70' }, { metric_id: 'scrambling_pct_rough', pga_tour_value: null }],
       };
-      // The fake ignores a select's columns, so it returns only the ones the loader asked for.
+      // The fake ignores a select's columns, so it returns only the ones the loader asked for (every one for `*`, which the
+      // shared Tour read uses so it never names a column that may not exist yet, SC-08).
       const cols = String(f.find(([k]) => k === 'select')?.[1][0] ?? '');
-      return { data: (rows[String(tour)] ?? []).map((r) => Object.fromEntries(Object.entries(r as Record<string, unknown>).filter(([k]) => cols.includes(k)))) };
+      return { data: (rows[String(tour)] ?? []).map((r) => (cols === '*' ? r : Object.fromEntries(Object.entries(r as Record<string, unknown>).filter(([k]) => cols.includes(k))))) };
     };
     const tablesFor = (gender: string): import('./supabase-fake').ChFakeTables => ({
       golf_teams: { data: { name: 'Varsity', gender } },

@@ -116,6 +116,18 @@ export function linePath(values: Array<number | null>, x: (i: number) => number,
   return d;
 }
 
+/**
+ * The wash under a `linePath`: each segment closed down (or up) to `floor`. A coordinate can carry a sign (stats and charts audit
+ * 2026-11-15, CH-23): a value past an explicit domain lands above the plot at a negative y, and a pattern without the sign dropped
+ * that segment's wash.
+ */
+export function washOf(path: string, floor: string): string {
+  return path.replace(/M(-?[\d.]+),(-?[\d.]+)((?: L-?[\d.]+,-?[\d.]+)*)/g, (_m, x0: string, y0: string, rest: string) => {
+    const xEnd = /L(-?[\d.]+),-?[\d.]+$/.exec(rest)?.[1] ?? x0;
+    return `M${x0},${floor} L${x0},${y0}${rest} L${xEnd},${floor} Z`;
+  });
+}
+
 /** A baseline label's width per character, estimated from the larger (12px phone) tick type. */
 const REF_CHAR = 6.6;
 /** The least room between two point names under the plot. */
@@ -279,12 +291,7 @@ export function Line({
   const path = linePath(drawn.slice(0, n), x, (v) => v);
   // The wash closes each segment down to the worse edge of the plot (the bottom, since better is up), or to the baseline.
   const floor = wash === 'baseline' && baseline ? baseY.toFixed(1) : String(PAD.t + plotH);
-  const washPath = wash
-    ? path.replace(/M([\d.]+),([\d.]+)((?: L[\d.]+,[\d.]+)*)/g, (_m, x0, y0, rest: string) => {
-        const xEnd = /L([\d.]+),[\d.]+$/.exec(rest)?.[1] ?? x0;
-        return `M${x0},${floor} L${x0},${y0}${rest} L${xEnd},${floor} Z`;
-      })
-    : '';
+  const washPath = wash ? washOf(path, floor) : '';
   // A baseline's words go beside it where the line leaves room, else in a key under the chart.
   const refText = baseline?.label ?? '';
   const refAt = refText

@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/coachhelm/qualifying/[id]"
       component="CoachHelmQualifyingPage"
-      title="Failed to load qualifying view"
-      message="We couldn't load qualifying data. Please try again."
       homePath="/golf/dashboard/qualifiers"
     />
   );

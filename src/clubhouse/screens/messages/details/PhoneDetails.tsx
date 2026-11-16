@@ -18,6 +18,7 @@ import { CalendarPlus, ChevronRight } from 'lucide-react';
 import { InlineNotice } from '../../../ui/Notices';
 import { Skeleton } from '../../../ui/States';
 import { muteLabel } from './mute-label';
+import { chMotionModeNow } from '../../../lib/reduced-motion';
 import { LeaveGroupModal, AddMembersModal, RemoveMemberModal } from './group-modals';
 
 /* Details */
@@ -76,7 +77,7 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
                   mute={muteV2}
                   profileHref={statsHref && other?.playerId ? `${statsHref}?player=${encodeURIComponent(other.playerId)}` : null}
                   onSearch={() => setSearching((v) => !v)}
-                  onFiles={() => document.querySelector(".ch-msp-details .ch-msv-files")?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}
+                  onFiles={() => document.querySelector(".ch-msp-details .ch-msv-files")?.scrollIntoView({ block: "start", behavior: chMotionModeNow() === "full" ? "smooth" : "auto" })}
                   onAdd={() => setAdding(true)}
                   onLeave={() => setLeaving(true)}
                 />

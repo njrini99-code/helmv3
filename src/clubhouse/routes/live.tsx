@@ -2,7 +2,7 @@ import 'server-only';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadEventScope, loadLiveRounds } from '../data/live-rounds';
 import { scopeFromParams, type LiveScope } from '../live/scope';
-import { LiveDenied, LiveView } from '../screens/live/LiveView';
+import { LiveDenied, LiveNoTeam, LiveView } from '../screens/live/LiveView';
 import { resolveClubhouseTeam } from './team';
 import '../styles/live.css';
 
@@ -16,8 +16,10 @@ export async function ClubhouseLiveRoute({ params }: { params: Record<string, st
   const session = await getGolfSessionProfile();
   if (!session?.coach) return null;
   const team = await resolveClubhouseTeam(session);
-  // No active team for this coach: the page says it is not theirs to read (CH-16609), not an empty list.
-  if (team?.role !== 'coach') return <LiveDenied />;
+  // No active team for this coach: the one "not on a team" state, as every other screen draws it (GAP-S-12); a team
+  // that is not a coach's to read is the restricted state with the way Home (CH-16609), never an empty list.
+  if (!team) return <LiveNoTeam />;
+  if (team.role !== 'coach') return <LiveDenied />;
   let scope: LiveScope | undefined = scopeFromParams(params);
   if (scope.eventId) {
     const resolved = await loadEventScope({ teamId: team.teamId, eventId: scope.eventId });

@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/coachhelm"
       component="CoachHelmPage"
-      title="Failed to load CoachHelm"
-      message="We couldn't load the CoachHelm dashboard. Please try again."
       homePath="/golf/dashboard"
     />
   );

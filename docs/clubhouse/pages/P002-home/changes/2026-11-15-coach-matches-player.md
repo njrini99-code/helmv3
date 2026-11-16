@@ -27,6 +27,10 @@ Held items:     none
   coach-only green hero card, its cards grid and the leaderboard left Home.
 - First run: the same framed head and hero as the loaded page; the setup steps
   sit on the page, not in a card.
+- Team scoring keeps #2534's window switch (Last 10, Season, All time,
+  HOME-P-10), labels the first figure "Average" and says the window once in
+  the section's line (HOME-P-11), counts Rounds in that window, and leaves
+  this week's count to This week (HOME-P-14).
 - Team scoring prints a signed change only when it clears its standard error
   (HOME-P-09); Greens and Putts take the same green or amber as the average.
   Best and toughest day count only days with two rounds or more.

@@ -359,8 +359,10 @@ describe('the What line as prose', () => {
 describe('the trend, the round notes and the hole scores', () => {
   it('Eli’s penalties, round by round: the last eight and the season agree with the read’s own 23 over 21', () => {
     const d = previewReadView('penalties', 'coach').read!;
-    expect(d.trend?.last.values).toEqual([2, 1, 3, 0, 1, 0, 3, 2]);
-    expect(d.trend?.last.said).toBe('1.5 a round over the last 8 rounds');
+    // Per 18 holes (SC-06): the nine-hole round's one penalty plots as 2 and weighs half, so the eight rounds' 12 penalties are
+    // over 7.5 whole rounds, 1.6 a round. Its row still says "1 penalty".
+    expect(d.trend?.last.values).toEqual([2, 2, 3, 0, 1, 0, 3, 2]);
+    expect(d.trend?.last.said).toBe('1.6 a round over the last 8 rounds');
     expect(d.trend?.season?.values.length).toBe(10);
     expect(d.trend?.ref).toEqual({ label: 'Tour', value: 0.3, display: '0.3' });
     expect(d.trend?.lowerBetter).toBe(true);
@@ -383,7 +385,7 @@ describe('the trend, the round notes and the hole scores', () => {
 
   it('a player gets the same trend from their own rounds, and still no pool, teammate or coach-only field', () => {
     const v = previewReadView('penalties', 'player');
-    expect(v.read?.trend?.last.values).toEqual([2, 1, 3, 0, 1, 0, 3, 2]);
+    expect(v.read?.trend?.last.values).toEqual([2, 2, 3, 0, 1, 0, 3, 2]);
     const json = JSON.stringify(v);
     expect(json).not.toMatch(/Team pool|teammate/);
     // The one name on a player's page is their own coach's, for Message Coach Reyes.

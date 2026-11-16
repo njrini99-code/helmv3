@@ -12,6 +12,9 @@ import { WorkFilterChips, type WorkFilterChip } from './WorkFilterChips';
 import { WorkProofView, PROOF_SKELETON } from './_components/WorkProofView';
 import { parseView } from '@/lib/admin/views';
 import { ViewRail } from '../_components/ViewRail';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Work log' };
 
 export const dynamic = 'force-dynamic';
 

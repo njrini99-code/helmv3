@@ -24,14 +24,14 @@ const labelFor = (what: string, coach: ChSkeletonCoach | undefined) => `Loading 
 
 function Chrome({ label, code, view, chained, brief = 2, coach, children }: { label: string; code: string; view: PlayerHelmView; chained?: boolean; brief?: 2 | 3; coach?: ChSkeletonCoach; children: React.ReactNode }) {
   const phone = useChPhone();
-  // The sub-navigation where the page puts it. Desktop: the strip itself, held (inert, hidden from assistive tech), at the view
-  // the address names, so it is as wide as the page's (a player's with its Development link) and does not turn from a bar into
-  // the control when the read lands. Phone: the chip row's bar.
-  const tabs = (
+  // A coach's view of one player draws its own strip, where the page puts it. Desktop: the strip itself, held (inert, hidden from
+  // assistive tech), at the view the address names, so it does not turn from a bar into the control when the read lands. Phone:
+  // the chip row's bar. The player's own switch is the route's, above the view (SwitchFrame, N13P-18), so it is not drawn here.
+  const tabs = coach ? (
     <div className="ch-hv-sk-tabs">
-      {phone ? <Skeleton width="100%" height={36} radius={18} /> : <PlayerHelmTabs active={view} coach={!!coach} held />}
+      {phone ? <Skeleton width="100%" height={36} radius={18} /> : <PlayerHelmTabs active={view} coach held />}
     </div>
-  );
+  ) : null;
   return (
     <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label={label} data-skel={chained ? 'chained' : undefined} data-ch-code={code} data-canopy={phone ? undefined : ''}>
       {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
@@ -60,13 +60,12 @@ function Chrome({ label, code, view, chained, brief = 2, coach, children }: { la
         </header>
       ) : (
         // The player's own: the title, and the brief's two lines beside the views (48 and 42), under the tight head as the page's.
-        <header className="ch-hl-h has-aside" data-canopy-head="tight">
+        <header className="ch-hl-h" data-canopy-head="tight">
           <SkelLine line={48} bar={38} width={196} />
           <span className="ch-hv-sk-brief">
             <SkelLine line={21} bar={13} width="96%" />
             <SkelLine line={21} bar={13} width="62%" />
           </span>
-          <div className="ch-hl-h__aside">{tabs}</div>
         </header>
       )}
       {children}

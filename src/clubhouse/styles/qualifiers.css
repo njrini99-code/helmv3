@@ -367,12 +367,12 @@
 }
 /* CH-09601: a pressed row deepens to the row press tint over the press beat; it never scales. */
 .ch-qf-grid.is-ledger .ch-qf-card[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
   transition-duration: var(--ch-dur-press);
 }
 @media (hover: hover) {
   .ch-qf-grid.is-ledger .ch-qf-card:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
 }
@@ -811,16 +811,10 @@
   border-radius: 0 0 var(--ch-radius-md) var(--ch-radius-md);
   background: var(--ch-green-25);
 }
-/* CH-09602: the tray opens with its row (no height animation); what is in it drops 6px into place as it fades in, over
-   base, at its final values. Closing takes it away at once. */
+/* CH-09602: the tray opens with its row (no height animation); what is in it crossfades in at its final place over the
+   quick beat, with no drop (motion.css ch-in; MOTION-AND-VISUAL 3.5, 3.12). Closing takes it away at once. */
 .ch-qf-tray > * {
-  animation: ch-qf-tray-in var(--ch-dur-base) var(--ch-ease);
-}
-@keyframes ch-qf-tray-in {
-  from {
-    opacity: 0;
-    translate: 0 -6px;
-  }
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-qf-tray__avg {
   font: var(--ch-type-13);
@@ -2017,11 +2011,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   button.ch-qfm-lb__row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     button.ch-qfm-lb__row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-qfm-lb__row:focus-visible {
@@ -2170,12 +2164,12 @@
     pointer-events: none;
   }
   .ch-qfm-chip[data-ch-pressed]:not(:disabled):not([aria-pressed='true']) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-qfm-chip:active:not(:disabled):not([aria-pressed='true']) {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2283,11 +2277,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-qf--form .ch-qf-prow[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-qf--form .ch-qf-prow:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-qf--form .ch-qf-prow.is-locked[data-ch-pressed] {
@@ -2356,12 +2350,12 @@
     touch-action: manipulation;
   }
   .ch-qfs-opt[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-qfs-opt:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2651,13 +2645,13 @@
   }
 }
 
-/* P009-B1: a refresh that changed the ranks slides each moved row to its new place on the smooth spring (D-64). No
+/* P009-B1: a refresh that changed the ranks slides each moved row to its new place over base on the one curve (S3.10). No
    crossfade and no digits rolling: the row's new face travels from the old place. The shell's reduced-motion rule
    stops it, and the board never asks for it then (rank-slide.ts). */
 html:has([data-ui='clubhouse'])::view-transition-group(.ch-rank) {
-  /* The <html>-scoped smooth spring: --ch-*-spring-smooth live on [data-ui='clubhouse'] and never reach these pseudos. */
-  animation-duration: var(--ch-dur-vt-push);
-  animation-timing-function: var(--ch-ease-vt-push);
+  /* <html>-scoped: tokens on [data-ui='clubhouse'] never reach these pseudos. */
+  animation-duration: var(--ch-dur-vt-move);
+  animation-timing-function: var(--ch-ease-vt-move);
 }
 html:has([data-ui='clubhouse'])::view-transition-old(.ch-rank) {
   display: none;
@@ -2861,18 +2855,19 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   @media (hover: hover) {
     .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   /* CH-09601: a press deepens a row's tint, and the live qualifier's title deepens to forest, over the press beat.
      Nothing scales (the shell's CH-1606). */
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2973,16 +2968,17 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   @media (hover: hover) {
     .ch-qf[data-canopy] .ch-qf-rowbtn:hover:not(.is-open) {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-qf[data-canopy] .ch-qf-rowbtn[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-qf[data-canopy] .ch-qf-rowbtn:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -3025,7 +3021,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   @media (hover: hover) {
     .ch-qf--form[data-canopy] .ch-qf-prow:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-qf--form[data-canopy] .ch-qf-rc {
@@ -3181,7 +3178,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   translate: calc(var(--ch-qf-x, 0) * 1cqw) 0;
   transition:
     translate var(--ch-dur-reveal) var(--ch-ease),
-    transform var(--ch-dur-quick) var(--ch-ease-spring);
+    transform var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-qf-sp__plot li.is-score > span {
   background: var(--ch-green-900);
@@ -4102,7 +4099,7 @@ button.ch-qf-prounds__r.is-open {
   border-radius: var(--ch-radius-lg);
   background: rgb(0 0 0 / 0.2);
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.25);
-  animation: ch-qf-tray-in var(--ch-dur-base) var(--ch-ease);
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-qf-rv__wait {
   height: 168px;

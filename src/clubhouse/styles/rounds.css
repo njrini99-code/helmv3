@@ -602,7 +602,7 @@
 /* A posted round with no score at all is said, not hidden (CH-11315) */
 .ch-rd-unscored {
   margin: 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 
@@ -620,6 +620,18 @@
   padding: var(--ch-space-3) var(--ch-space-5);
   border-top: 0;
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+}
+
+/* The end of a cut rounds list (MAC-01, PMAC-02): the press that draws the next 40 rounds, and how many are left. */
+.ch-trd-more,
+.ch-rd-earlier-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-4) 0 var(--ch-space-2);
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
 }
 
 /* Tools */
@@ -1921,15 +1933,16 @@ a.ch-trd-open:focus-visible {
 }
 @media (hover: hover) {
   .ch-trd-tr.is-link:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-trd-tr.is-link:has(a.ch-trd-open[data-ch-pressed]) {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-trd-tr.is-link:has(a.ch-trd-open:active) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-trd-tr > .ch-trd-td--who {
@@ -2287,11 +2300,11 @@ a.ch-trd-open:focus-visible {
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-rd.is-phone a.ch-rd-sc[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rd.is-phone a.ch-rd-sc:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rd.is-phone .ch-rd-sc__date {
@@ -2405,12 +2418,12 @@ a.ch-trd-open:focus-visible {
      the hole are keys and compress, data-ch-press). */
   .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel)[data-ch-pressed],
 .ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel)[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel):active,
     .ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rv.is-phone .ch-rv-cols {
@@ -2787,7 +2800,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   @media (hover: hover) {
     .ch-rv[data-canopy] .ch-rv-back:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rv[data-canopy] .ch-rv-hero {
@@ -3299,8 +3313,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   @media (hover: hover) {
     .ch-rd[data-canopy] a.ch-rd-sc:hover {
       transform: none;
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
       box-shadow: none;
+      transition-duration: 0s;
     }
   }
   @media (hover: hover) {
@@ -3311,12 +3326,12 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   /* CH-11601: a press deepens the tint over the press beat (the shell's CH-1606: a row never scales). */
   .ch-rd[data-canopy] a.ch-rd-sc[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-rd[data-canopy] a.ch-rd-sc:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -4062,7 +4077,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzdot {
   transform-box: view-box;
-  transition: transform var(--ch-dur-quick) var(--ch-ease-spring);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-rv .ch-rzdot.is-hot {
   transform: scale(1.35);
@@ -4613,16 +4628,26 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font-weight: 600;
   color: var(--ch-text-primary);
 }
-/* A month's trend: one small bar a round, oldest to newest. */
+/* A month's trend: one small bar a round, oldest to newest, from a par line on a fixed-minimum range (CH-09). */
 .ch-rd-grp__spark {
+  position: relative;
   display: inline-flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 4px;
   height: 22px;
 }
+.ch-rd-grp__spark b {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  height: 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-chart-zero);
+}
 .ch-rd-grp__spark i {
+  position: relative;
   display: block;
   width: 5px;
+  min-height: 1px;
   border-radius: var(--ch-radius-full);
   background: linear-gradient(180deg, var(--ch-ink-400), var(--ch-ink-600));
 }
@@ -4777,21 +4802,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   --ch-rcard-sub: 38px;
   --ch-rcard-mk: 20px;
 }
-/* It arrives once, on the smooth spring: one movement, no count-up, no stagger. Reduced motion and Animations off: none. */
-@keyframes ch-rcard-settle {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-}
-.ch-rcard.is-just {
-  animation: ch-rcard-settle var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) backwards;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-rcard.is-just {
-    animation: none;
-  }
-}
+/* CH-11924: the card opened from Post round is whole in its first frame (MOTION-AND-VISUAL 3.5, 3.12: its settle, a
+   first-paint rise, is gone; the push that brought it is the movement). */
 .ch-rcard-h {
   display: flex;
   align-items: flex-start;
@@ -5608,11 +5620,11 @@ a.ch-rd-grp__h.is-link {
   text-decoration: none;
 }
 a.ch-rd-grp__h.is-link[data-ch-pressed] {
-  background: var(--ch-bg-subtle);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   a.ch-rd-grp__h.is-link:active {
-    background: var(--ch-bg-subtle);
+    background: var(--ch-sel);
   }
 }
 a.ch-rd-grp__h.is-link:focus-visible {
@@ -6049,11 +6061,11 @@ a.ch-rd-grp__h.is-link:focus-visible {
   letter-spacing: var(--ch-track-15);
 }
 button.ch-hip__row[data-ch-pressed] {
-  background: var(--ch-bg-subtle);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   button.ch-hip__row:active {
-    background: var(--ch-bg-subtle);
+    background: var(--ch-sel);
   }
 }
 button.ch-hip__row:focus-visible,
@@ -6155,25 +6167,17 @@ button.ch-hip__row:focus-visible,
   opacity: 0.5;
 }
 
-/* P-7 5.1 (M4, M8, M9): the course page's CSS fades, all opacity over the quick beat. OS Reduce Motion does not zero the
-   Clubhouse durations (only [data-motion='off'] does), so each has its own override below. */
-@keyframes ch-course-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+/* P-7 5.1 (M4, M8, M9): the course page's CSS fades, all opacity over the quick beat (motion.css ch-in; MOTION-AND-VISUAL
+   3.12). OS Reduce Motion does not zero the Clubhouse durations (only [data-motion='off'] does), so each has its own
+   override below. */
 /* M4: the view the Map / List switch brings in fades in; set only once the reader has switched (never on first paint). */
 .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
 .ch-hmap-sec[data-swapped] .ch-hmap-listv {
-  animation: ch-course-fade var(--ch-dur-quick) var(--ch-ease);
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
-/* M9: the compare rows' circles fade in with the list, and a tick as it is chosen. */
-.ch-cmp-row__c,
+/* M9: a compare row's tick fades in as it is chosen; the circles stand still with the list (first paint is still, 3.5). */
 .ch-cmp-row__c > svg {
-  animation: ch-course-fade var(--ch-dur-quick) var(--ch-ease);
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 /* M8: the best and last overlays fade, they do not pop. */
 .ch-carc__ov {
@@ -6193,7 +6197,6 @@ button.ch-hip__row:focus-visible,
   }
   .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
   .ch-hmap-sec[data-swapped] .ch-hmap-listv,
-  .ch-cmp-row__c,
   .ch-cmp-row__c > svg {
     animation: none;
   }
@@ -6212,8 +6215,6 @@ button.ch-hip__row:focus-visible,
 [data-motion='off'] [data-ui='clubhouse'] .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
 [data-ui='clubhouse'][data-motion='off'] .ch-hmap-sec[data-swapped] .ch-hmap-listv,
 [data-motion='off'] [data-ui='clubhouse'] .ch-hmap-sec[data-swapped] .ch-hmap-listv,
-[data-ui='clubhouse'][data-motion='off'] .ch-cmp-row__c,
-[data-motion='off'] [data-ui='clubhouse'] .ch-cmp-row__c,
 [data-ui='clubhouse'][data-motion='off'] .ch-cmp-row__c > svg,
 [data-motion='off'] [data-ui='clubhouse'] .ch-cmp-row__c > svg {
   animation: none;

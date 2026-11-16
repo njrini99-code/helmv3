@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/roster"
       component="RosterPage"
-      title="Failed to load roster"
-      message="We couldn't load your team roster. Please try again."
       homePath="/golf/dashboard"
     />
   );

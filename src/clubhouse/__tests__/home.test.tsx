@@ -25,6 +25,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => router, redirect: redirectS
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 vi.mock('../lib/phone-hint', () => ({ marksHint: () => Promise.resolve([]) }));
+// Home's Add event reads the editor's inputs on a press (MAC-03); here they never come, so a click goes to Calendar as before.
+vi.mock('../data/event-editor-inputs', () => ({ getEventEditorInputs: async () => null }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 
@@ -56,11 +58,12 @@ vi.mock('@/app/golf/actions/teams', () => ({ getTeamJoinRequests: async () => ({
 
 import GolfDashboardPage from '@/app/golf/(dashboard)/dashboard/page';
 import { loadCoachHome, teamForm, type ChCoachHome, type ChHomeEvent } from '../data/home';
+import { statsRowsOf } from './stats-rows';
 import { groupByPlayer, seasonStartDate, type ChRound } from '../data/season';
 import { previousInFilter, roundsInFilter } from '../data/stats-common';
 import { filterFor } from '../data/stats-filter';
 import { weightedMean } from '../data/stats-weight';
-import { formBasis } from '../screens/home/HomePhone';
+import { formSpan } from '../screens/home/HomePhone';
 import { CoachHome, CoachHomeNoTeam, isFirstRun } from '../screens/home/CoachHome';
 import { HomeSkeleton } from '../screens/home/HomeSkeleton';
 import { LatestRound } from '../screens/home/LatestRound';
@@ -70,6 +73,9 @@ import { PlayerHome, PlayerHomeNoTeam } from '../screens/home/PlayerHome';
 import { chReport, chTrail } from '../lib/track';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
+
+/** Home's team form over rounds that carry their figures, handed over as their stats rows (DF-P-01). */
+const teamFormOf = (full: ChRound[], week: number) => teamForm(full, statsRowsOf(full), week);
 import {
   PREVIEW_HOME,
   PREVIEW_HOME_EMPTY,
@@ -336,9 +342,10 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(form.textContent).not.toMatch(/[+−]\d/);
     expect(screen.getByRole('img', { name: /Team scoring, the team’s average on each of its last \d+ round days/ })).toBeTruthy();
     cleanup();
-    // Measured tighter, the same changes clear it: the average down 0.9 is better, putts up 0.3 is worse.
+    // Measured tighter, the same changes clear two errors (stats and charts audit, CH-05): the average down 0.9 is better, putts up
+    // 0.3 is worse.
     const f = PREVIEW_HOME.phone.form!;
-    const sharp = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: { ...f, deltaSe: 0.5, gir: { ...f.gir, se: 4 }, putts: { ...f.putts, se: 0.2 } } } };
+    const sharp = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: { ...f, deltaSe: 0.4, gir: { ...f.gir, se: 4 }, putts: { ...f.putts, se: 0.12 } } } };
     wrap(<CoachHome data={sharp} now={PREVIEW_HOME_NOW} />);
     form = document.querySelector('.ch-ph-tm .ch-ph-figs')!;
     avg = form.querySelector(':scope > div')!;
@@ -534,8 +541,22 @@ describe('Home · the team’s form (teamForm)', () => {
     strokes_gained_putting: null,
   });
   const newestFirst = (n: number, make: (i: number) => ChRound) => Array.from({ length: n }, (_, i) => make(i));
+  it('DF-C-16, DF-P-01: greens and putts come from each round’s stats row, as Stats reads them, never the round’s own columns', () => {
+    // The rounds' columns say 3 of 18 greens and 40 putts (a pre-31-Oct rule); their stats rows say 12 of 18 and 30.
+    const rounds = newestFirst(10, (i) => r(72, 3, 40, { back: i }));
+    const rows = statsRowsOf(rounds);
+    for (const row of rows.values()) Object.assign(row, { greens_hit: 12, greens_total: 18, total_putts: 30 });
+    const f = teamForm(rounds, rows, 0)!;
+    expect(Math.round(f.gir.pct!)).toBe(67);
+    expect(f.putts.avg).toBe(30);
+    // A round with no stats row has no greens and no putts: not the column's.
+    const none = teamForm(rounds, new Map(), 0)!;
+    expect(none.gir.pct).toBeNull();
+    expect(none.putts.avg).toBeNull();
+  });
+
   it('averages the last ten against the ten before, and compares greens and putts the same way', () => {
-    const f = teamForm(newestFirst(20, (i) => (i < 10 ? r(72, 12, 29, { back: i }) : r(74, 9, 31, { back: i }))), 3)!;
+    const f = teamFormOf(newestFirst(20, (i) => (i < 10 ? r(72, 12, 29, { back: i }) : r(74, 9, 31, { back: i }))), 3)!;
     expect(f.avg).toBe(72);
     expect(f.delta).toBe(-2);
     expect(Math.round(f.gir.pct!)).toBe(67);
@@ -547,30 +568,38 @@ describe('Home · the team’s form (teamForm)', () => {
   });
   it('carries each change’s standard error, and reads putts as Stats does: a round written 0 putts has none (stats visuals 7.1)', () => {
     // Identical rounds measure no spread: the score falls back on the pooled 3.6, greens and putts (no pooled spread) have none.
-    const f = teamForm(newestFirst(20, (i) => (i < 10 ? r(72, 12, 29, { back: i }) : r(74, 9, 31, { back: i }))), 3)!;
+    const f = teamFormOf(newestFirst(20, (i) => (i < 10 ? r(72, 12, 29, { back: i }) : r(74, 9, 31, { back: i }))), 3)!;
     expect(f.deltaSe).toBeCloseTo(Math.sqrt(3.6 ** 2 / 10 + 3.6 ** 2 / 10), 6);
     expect(f.gir.se).toBeNull();
     expect(f.putts.se).toBeNull();
     // With a spread of their own (five rounds or more in each ten), putts have a standard error too.
-    const spread = teamForm(newestFirst(20, (i) => r(72, 10, (i < 10 ? 28 : 30) + (i % 5), { back: i })), 0)!;
+    const spread = teamFormOf(newestFirst(20, (i) => r(72, 10, (i < 10 ? 28 : 30) + (i % 5), { back: i })), 0)!;
     expect(spread.putts.delta).toBe(-2);
     expect(spread.putts.se).toBeCloseTo(Math.sqrt(2 * (20 / 9 / 10)), 6);
     // Three rounds written 0 putts are not rounds holed in no putts: the mean leaves them out, and the basis counts the rest.
-    const zeros = teamForm(newestFirst(10, (i) => r(72, 10, i < 3 ? 0 : 30, { back: i })), 0)!;
+    const zeros = teamFormOf(newestFirst(10, (i) => r(72, 10, i < 3 ? 0 : 30, { back: i })), 0)!;
     expect(zeros.putts.avg).toBe(30);
     expect(zeros.basis.puttsRounds).toBe(7);
   });
-  it('draws the line as the team’s average on each round day, the last ten days, not a point a round', () => {
+  it('draws the line as the team’s average on each round day the figures rest on, not a point a round', () => {
     // Three players on each of twelve days: thirty-six rounds, but one point a day, and each player's newest ten reach back to day 2.
     const rounds: ChRound[] = [];
     for (let d = 0; d < 12; d++) ['a', 'b', 'c'].forEach((p, i) => rounds.push(r(70 + d + i, 10, 30, { player: p, back: 11 - d })));
     const full = rounds.sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : a.id < b.id ? 1 : -1));
-    const f = teamForm(full, 0)!;
+    const f = teamFormOf(full, 0)!;
     expect(f.line).toHaveLength(10);
     // Day d's three scores are 70+d, 71+d and 72+d: a mean of 71+d. Days 2 to 11.
     expect(f.line).toEqual([73, 74, 75, 76, 77, 78, 79, 80, 81, 82]);
+    // Prod audit 2026-11-15, HOME-D-06: every day in the basis, not the last ten. Two players ten rounds each, offset by four days:
+    // fourteen days, and the line covers the dates the card states.
+    const offset: ChRound[] = [];
+    for (let d = 0; d < 10; d++) offset.push(r(72, 10, 30, { player: 'a', back: 13 - d }), r(74, 10, 30, { player: 'b', back: 9 - d }));
+    const wide = teamFormOf(offset.sort((a, b) => (a.round_date < b.round_date ? 1 : -1)), 0)!;
+    expect(wide.line).toHaveLength(14);
+    expect(wide.lineDays![0]).toBe(wide.basis.from);
+    expect(wide.lineDays![13]).toBe(wide.basis.to);
     // Rounds on one day average into one point.
-    expect(teamForm([r(70, 10, 30, { player: 'a', date: day(0) }), r(74, 10, 30, { player: 'b', date: day(0) }), r(71, 10, 30, { player: 'a', date: day(1) })].sort((a, b) => (a.round_date < b.round_date ? 1 : -1)), 0)!.line).toEqual([71, 72]);
+    expect(teamFormOf([r(70, 10, 30, { player: 'a', date: day(0) }), r(74, 10, 30, { player: 'b', date: day(0) }), r(71, 10, 30, { player: 'a', date: day(1) })].sort((a, b) => (a.round_date < b.round_date ? 1 : -1)), 0)!.line).toEqual([71, 72]);
   });
   it('colours a change that rounds to zero as shown plain: "0.0" is neither a gain nor a loss (F-54)', () => {
     const p = PREVIEW_HOME.phone;
@@ -579,9 +608,9 @@ describe('Home · the team’s form (teamForm)', () => {
     expect(form.querySelectorAll('dd.is-gain, dd.is-loss, .is-now.is-gain, .is-now.is-loss')).toHaveLength(0);
   });
   it('makes no comparison with fewer than three rounds before (the Stats rule), and nothing with no rounds', () => {
-    expect(teamForm(newestFirst(12, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBeNull();
-    expect(teamForm(newestFirst(13, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBe(0);
-    expect(teamForm([], 0)).toBeNull();
+    expect(teamFormOf(newestFirst(12, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBeNull();
+    expect(teamFormOf(newestFirst(13, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBe(0);
+    expect(teamFormOf([], 0)).toBeNull();
   });
 
   // Swap audit §10-1: Home's "last 10" was the team's newest ten rounds pooled, while Stats (Last 10, Team) pools each
@@ -590,7 +619,7 @@ describe('Home · the team’s form (teamForm)', () => {
     const busy = newestFirst(15, (i) => r(70, 10, 30, { player: 'busy', back: i }));
     const quiet = newestFirst(5, (i) => r(80, 10, 30, { player: 'quiet', back: 20 + i }));
     const full = [...busy, ...quiet].sort((a, b) => (a.round_date < b.round_date ? 1 : -1));
-    const f = teamForm(full, 0)!;
+    const f = teamFormOf(full, 0)!;
     // Hand count: busy's newest ten at 70 and quiet's five at 80 → (700 + 400) / 15.
     expect(f.avg).toBeCloseTo(1100 / 15, 10);
     expect(f.basis.rounds).toBe(15);
@@ -610,19 +639,20 @@ describe('Home · the team’s form (teamForm)', () => {
   // · Putts 38.0" with nothing saying the figures were three August rounds.
   it('§10-1 says what the average, greens and putts rest on, apart from the week’s count', () => {
     const aug2 = [r(69, 18, 37, { player: 'a', date: day(0) }), r(70, 18, 38, { player: 'b', date: day(0) }), r(71, 18, 39, { player: 'c', date: day(0) })];
-    const f = teamForm(aug2, 0)!;
+    const f = teamFormOf(aug2, 0)!;
     expect(f.avg).toBe(70);
     expect(f.gir.pct).toBe(100);
     expect(f.putts.avg).toBe(38);
     expect(f.basis).toEqual({ rounds: 3, from: day(0), to: day(0), girRounds: 3, puttsRounds: 3 });
-    expect(formBasis(f.basis)).toMatch(/^3 rounds · [A-Z][a-z]{2} \d{1,2}$/);
+    expect(formSpan(f.basis, 'last10')).toMatch(/^Each player’s last 10 · [A-Z][a-z]{2} \d{1,2}$/);
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
-    // The Rounds figure carries the count and the days it spans, so the August rounds say they are August's.
+    // The window is said once, in the section's line; the Rounds figure counts in that window (HOME-P-11, HOME-P-14).
     const form = document.querySelector('.ch-ph-tm .ch-ph-figs')!;
+    expect(document.querySelector('#ch-ph-tm-scoring + .ch-hm-meta')!.textContent).toBe(formSpan(f.basis, 'last10'));
     const rounds = [...form.querySelectorAll(':scope > div')][3]!;
     expect(rounds.querySelector('dt')!.textContent).toBe('Rounds');
     expect(rounds.querySelector('dd.ch-num')!.textContent).toBe('3');
-    expect(formBasis(f.basis)).toContain(rounds.querySelector('.ch-ph-figs__m')!.textContent!);
+    expect(rounds.querySelector('.ch-ph-figs__m')!.textContent).toBe('last 10 each');
     expect(form.textContent).not.toMatch(/vs previous 10/);
   });
 
@@ -635,7 +665,7 @@ describe('Home · the team’s form (teamForm)', () => {
   });
 
   it('§10-1 a figure resting on fewer rounds than the average says how many', () => {
-    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, 10, null, { back: 1 }), r(73, null, 31, { back: 2 }), r(75, null, null, { back: 3 })], 0)!;
+    const f = teamFormOf([r(72, 12, 30, { back: 0 }), r(74, 10, null, { back: 1 }), r(73, null, 31, { back: 2 }), r(75, null, null, { back: 3 })], 0)!;
     expect(f.basis).toMatchObject({ rounds: 4, girRounds: 2, puttsRounds: 2 });
     // Greens pool the holes of the two rounds that have them; putts average the two that do.
     expect(f.gir.pct).toBeCloseTo((22 / 36) * 100, 10);
@@ -647,7 +677,7 @@ describe('Home · the team’s form (teamForm)', () => {
   });
 
   it('A7 the team’s greens from one round are not a share: they say what they need', () => {
-    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, null, null, { back: 1 })], 0)!;
+    const f = teamFormOf([r(72, 12, 30, { back: 0 }), r(74, null, null, { back: 1 })], 0)!;
     expect(f.gir).toMatchObject({ pct: null, needs: 'Needs 2 rounds', delta: null });
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
     const figs = [...document.querySelectorAll('.ch-ph-tm .ch-ph-figs > div')].map((d) => d.textContent);

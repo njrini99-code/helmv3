@@ -280,7 +280,8 @@
   outline-offset: -2px;
 }
 .ch-tour-led__row:has(.ch-tour-led__open):hover {
-  background: var(--ch-ledger-row-hover);
+  background: var(--ch-sel);
+  transition-duration: 0s;
 }
 .ch-tour-led__t2 {
   font: var(--ch-type-13);

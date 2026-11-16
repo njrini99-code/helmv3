@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useEffect, useState, useCallback } from 'react';
+import { startTransition, useEffect, useState, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +13,7 @@ import {
 import { getRecovery, requestRecovery } from '@/lib/recovery/client';
 import { useInClubhouse } from '@/clubhouse/shell/context';
 import { RouteErrorView } from '@/clubhouse/ui/Notices';
+import { useIsOffline } from '@/clubhouse/ui/Retry';
 
 interface RouteErrorBoundaryProps {
   error: Error & { digest?: string };
@@ -21,11 +22,11 @@ interface RouteErrorBoundaryProps {
   route: string;
   /** Optional: Component name for logging (defaults to route) */
   component?: string;
-  /** Optional: Custom error title */
+  /** Optional: Custom error title. Outside Clubhouse only: Clubhouse's view names the page from `route`. */
   title?: string;
-  /** Optional: Custom error message */
+  /** Optional: Custom error message. Outside Clubhouse only: Clubhouse's view keeps its own voice (FAILURE_COPY). */
   message?: string;
-  /** Optional: Custom home path for "Go Home" button */
+  /** Optional: Custom home path for "Go Home" button (inside Clubhouse, the way back: the route's section for a sub-screen) */
   homePath?: string;
   /** Optional: Show home button (default: true) */
   showHomeButton?: boolean;
@@ -128,14 +129,21 @@ export function RouteErrorBoundary({
   autoRetry = true,
 }: RouteErrorBoundaryProps) {
   const [retryCount, setRetryCount] = useState(0);
-  const [isRetrying, setIsRetrying] = useState(false);
+  // Progress shows only while the retry's refresh is out (GAP-S-35): no artificial wait before it starts.
+  const [isRetrying, startRetry] = useTransition();
   const inClubhouse = useInClubhouse();
+  const offline = useIsOffline();
+  // Set when the connection came back and the page is trying again for it: it keeps saying offline until that answers.
+  const [reconnecting, setReconnecting] = useState(false);
 
   const isChunk = isChunkLoadError(error);
   const isStaleAction = isStaleServerActionError(error);
   const isTransient = isTransientError(error);
   const isGenericLoad = isGenericLoadFailure(error);
   const isServer5xx = isServerStatusError(error);
+  // Inside Clubhouse, a read that failed while the browser says it has no network is the offline page (GAP-S-05): it does
+  // not retry into the same failure, and it tries again when the connection returns.
+  const isOfflineFailure = inClubhouse && (isTransient || isGenericLoad) && (offline || reconnecting);
 
   // A stale asset is only fixed by fetching the new one, but this boundary no
   // longer decides that alone: it used to keep a private one-shot flag and call
@@ -154,23 +162,29 @@ export function RouteErrorBoundary({
   }, [isChunk, isStaleAction, error]);
 
   const router = useRouter();
-  const handleRetry = useCallback(async () => {
-    setIsRetrying(true);
-    // Small delay before retry
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  const handleRetry = useCallback(() => {
     setRetryCount(prev => prev + 1);
-    try {
-      // Re-read the route on the server, then clear the boundary, in one transition: what Next's own `retry` does.
-      // `reset()` alone redraws the payload that failed, so a server-thrown read never got another try (PAGE_PERFORMANCE.md
-      // rule 4: a first-load error offers a retry that retries).
-      startTransition(() => {
-        router.refresh();
-        reset();
-      });
-    } finally {
-      setIsRetrying(false);
-    }
+    // Re-read the route on the server, then clear the boundary, in one transition: what Next's own `retry` does.
+    // `reset()` alone redraws the payload that failed, so a server-thrown read never got another try (PAGE_PERFORMANCE.md
+    // rule 4: a first-load error offers a retry that retries). The transition is pending until the refresh answers, which
+    // is what `isRetrying` shows; it starts at once (GAP-S-35: it used to wait a second first).
+    startRetry(() => {
+      router.refresh();
+      reset();
+    });
   }, [reset, router]);
+
+  // Offline inside Clubhouse: try again once the connection comes back, as the page promises. One try per return; if it
+  // fails, the boundary mounts again and takes it from there.
+  useEffect(() => {
+    if (!inClubhouse || !offline || !(isTransient || isGenericLoad)) return undefined;
+    const back = () => {
+      setReconnecting(true);
+      handleRetry();
+    };
+    window.addEventListener('online', back);
+    return () => window.removeEventListener('online', back);
+  }, [inClubhouse, offline, isTransient, isGenericLoad, handleRetry]);
 
   useEffect(() => {
     // Log error to monitoring service
@@ -231,6 +245,11 @@ export function RouteErrorBoundary({
       return undefined;
     }
 
+    // Offline inside Clubhouse, a retry would fail the same way: the `online` listener above tries again instead.
+    if (isOfflineFailure) {
+      return undefined;
+    }
+
     // 1. Never auto-retry a hidden tab: the user isn't watching and retrying a
     //    transient just spins. Every flood record had visibilityState 'hidden'.
     if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
@@ -260,7 +279,7 @@ export function RouteErrorBoundary({
       handleRetry();
     }, 2000);
     return () => clearTimeout(timer);
-  }, [autoRetry, isTransient, isGenericLoad, retryCount, handleRetry, route]);
+  }, [autoRetry, isTransient, isGenericLoad, isOfflineFailure, retryCount, handleRetry, route]);
 
   // Better default messages for different error types
   const getDefaultMessage = () => {
@@ -283,7 +302,7 @@ export function RouteErrorBoundary({
   if (inClubhouse) {
     return (
       <RouteErrorView
-        kind={isChunk ? 'chunk' : isStaleAction ? 'stale-action' : isTransient ? 'transient' : isGenericLoad ? 'load' : 'unknown'}
+        kind={isChunk ? 'chunk' : isStaleAction ? 'stale-action' : isOfflineFailure ? 'offline' : isTransient ? 'transient' : isGenericLoad ? 'load' : 'unknown'}
         isRetrying={isRetrying}
         retryCount={retryCount}
         onRetry={handleRetry}

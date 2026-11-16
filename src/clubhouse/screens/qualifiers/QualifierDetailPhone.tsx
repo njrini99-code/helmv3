@@ -1,7 +1,7 @@
 'use client';
 
 import { ChartColumn, Ellipsis, Flag, Lock, LockOpen, MessageSquare, Pencil, Users } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, ViewTransition, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -23,6 +23,7 @@ import { MixedRounds, Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPa
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
+import { RankSlot, useRankSlideArmed } from './RankSlot';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
 import { NinesSkeleton, Streamed } from './streamed';
 import { SerifText } from '../../ui/SerifText';
@@ -127,7 +128,7 @@ export function QualifierDetailPhone({
       />
       <header className="ch-qfm-head">
         <span className="ch-qfm-head__k">
-          <StatusPill status={status} ended={feed.ended} />
+          <StatusPill status={status} ended={feed.ended} viewer={coach ? 'coach' : 'player'} />
           <span className="ch-num">{shortRange(data.startDate, data.endDate)}</span>
         </span>
         <h1>
@@ -294,6 +295,8 @@ function Board({
   const order = useMemo(() => (b?.rows ?? []).map((r) => r.playerId), [b]);
   // P009-B1: rows slide to new ranks only when a refresh changed them, and never under an open sheet.
   const slide = useRankSlide(order, sheetOpen);
+  // pa-mot-02: the rows' boundaries mount after the board lands, so a push into the qualifier starts no view transition.
+  const armed = useRankSlideArmed();
 
   const head = (
     <div className="ch-qf-panel__head">
@@ -373,7 +376,7 @@ function Board({
           );
           const label = `${r.name}, ${positionLabel(r)}, ${formatToPar(r.toPar)}${r.total != null ? `, ${r.total} strokes` : ''}, ${r.played} of ${plural(data.numRounds, 'round')}${r.missed ? ', missed a round' : ''}`;
           const slideRow = (
-            <ViewTransition name={`ch-rank-${r.playerId}`} update={slide ? 'ch-rank' : 'none'} enter="none" exit="none" share="none" default="none">
+            <RankSlot id={r.playerId} slide={slide} armed={armed}>
               {canOpen(r) ? (
                 <button
                   type="button"
@@ -394,7 +397,7 @@ function Board({
                   {body}
                 </div>
               )}
-            </ViewTransition>
+            </RankSlot>
           );
           return (
             <li key={r.playerId}>

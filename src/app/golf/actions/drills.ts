@@ -452,7 +452,8 @@ async function recordDrillAddedToPlanImpl(
   );
 
   // Analytics dashboards read from this table; revalidate the analytics route.
-  revalidatePath('/golf/dashboard/analytics/coachhelm');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/coachhelm');
 
   return { success: true };
 }

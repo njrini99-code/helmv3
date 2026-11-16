@@ -26,7 +26,7 @@ import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized'
 import { IntegrationsClient } from '@/components/baseball/settings/IntegrationsClient';
 
 export const metadata = {
-  title: 'Integrations | Helm Baseball',
+  title: 'Integrations',
   description:
     'Connection levels for stat and device sources. Adapter contracts only — no credentials stored.',
 };

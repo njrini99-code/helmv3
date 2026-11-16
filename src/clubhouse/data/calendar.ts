@@ -14,6 +14,8 @@ import { classYearLabel, fullName } from './season';
 import { parseAvailability } from './availability';
 import { loadAttendanceCounts } from './attendance-counts';
 import { loadRoundRefs } from './calendar-rounds';
+import { calendarTripRows, tripsInWindowFilter } from './calendar-trips';
+import { HOME_TRIP_COLUMNS, type ChHomeTripRow } from './home-trips';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import {
   addDays,
@@ -57,6 +59,8 @@ export interface ChCalendarData {
   tournamentsEnabled?: boolean;
   /** P-5: the round refs failed to load: tournament events show their stored titles and can't be moved */
   roundRefsFailed?: boolean;
+  /** The practices' plans didn't read (a missing table is not this): each practice carries `planFailed` (GAP-S-28). */
+  plansError?: boolean;
   /** Which change marks this device has seen (`s`) or cleared (`g`), from the `ch_marks` cookie, newest first (P-14). */
   marks?: MarkEntries;
   /** Events that left a day of the window for another (live marks only): a quiet row on the old day, linking to the new one. */
@@ -67,12 +71,15 @@ type ClassRow = { id: string; player_id: string; instructor: string | null; days
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function readEventPlans(sb: Awaited<ReturnType<typeof createClient>>, teamId: string, coach: boolean): Promise<Map<string, ChCalPlan> | null> {
+/** A plan table that isn't there yet leaves the Plan row out; any other failed read is `plansError` (GAP-S-28). */
+const planRead = (error: { code?: string }): 'absent' | null => (error.code === '42P01' || error.code === 'PGRST205' ? 'absent' : null);
+
+async function readEventPlans(sb: Awaited<ReturnType<typeof createClient>>, teamId: string, coach: boolean): Promise<Map<string, ChCalPlan> | 'absent' | null> {
   const db = practiceTables(sb);
   const out = new Map<string, ChCalPlan>();
   if (coach) {
     const { data, error } = await db.from('golf_practice_plans').select('id, event_id, status, version, published_version').eq('team_id', teamId).not('event_id', 'is', null);
-    if (error) return null;
+    if (error) return planRead(error);
     for (const p of (data ?? []) as Array<{ id: string; event_id: string; status: string; version: number; published_version: number | null }>) {
       out.set(p.event_id, { id: p.id, state: p.status !== 'published' ? 'draft' : p.published_version != null && p.version !== p.published_version ? 'edited' : 'published' });
     }
@@ -80,7 +87,7 @@ async function readEventPlans(sb: Awaited<ReturnType<typeof createClient>>, team
   }
   // A player reads live versions only: RLS holds this to what's published for their team.
   const { data, error } = await db.from('golf_practice_plan_versions').select('plan_id, event_id').not('event_id', 'is', null);
-  if (error) return null;
+  if (error) return planRead(error);
   for (const v of (data ?? []) as Array<{ plan_id: string; event_id: string }>) out.set(v.event_id, { id: v.plan_id, state: 'published' });
   return out;
 }
@@ -189,7 +196,8 @@ export async function loadCalendar(input: {
     supabase
       .from('golf_team_members')
       // A coach also sees who is injured or away beside a name; a player's page never carries it (availability, v1).
-      .select(input.role === 'coach' ? 'availability, player:golf_players(id, first_name, last_name, graduation_year)' : 'player:golf_players(id, first_name, last_name, graduation_year)')
+      // `is_test`: a QA account is never offered as an invitee (prod audit 2026-11-15, PV-41), as Ask's roster leaves it out.
+      .select(input.role === 'coach' ? 'availability, player:golf_players(id, first_name, last_name, graduation_year, is_test)' : 'player:golf_players(id, first_name, last_name, graduation_year, is_test)')
       .eq('team_id', input.teamId)
       .eq('status', 'active')
       .limit(200),
@@ -210,10 +218,10 @@ export async function loadCalendar(input: {
   const anchor = parseDate(input.date ?? eventDate, today);
   const range = windowFor(anchor);
 
-  type PlayerRow = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
+  type PlayerRow = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null; is_test?: boolean | null };
   const people: ChCalPerson[] = (membersRes.data ?? [])
     .map((m) => m as unknown as { availability?: string | null; player: PlayerRow | null })
-    .filter((m): m is { availability?: string | null; player: PlayerRow } => !!m.player)
+    .filter((m): m is { availability?: string | null; player: PlayerRow } => !!m.player && m.player.is_test !== true)
     .map((m) => ({
       id: m.player.id,
       name: fullName(m.player),
@@ -242,7 +250,18 @@ export async function loadCalendar(input: {
       .order('id', { ascending: true })
       .range(from, to),
   );
-  const [eventsRes, classesRes, busyRes, everRes] = await Promise.all([
+  // The team's trips (N13P-24): Team Hub can plan one with no calendar event, and the calendar read only events. A trip that is on
+  // the calendar as an event is drawn once, as that event (calendar-trips.ts).
+  const tripsRead = supabase
+    .from('golf_travel_itineraries')
+    .select(HOME_TRIP_COLUMNS)
+    .eq('team_id', input.teamId)
+    .eq('is_test', false)
+    .lte('departure_date', range.to)
+    .or(tripsInWindowFilter(range.from))
+    .order('departure_date', { ascending: true })
+    .limit(100);
+  const [eventsRes, classesRes, busyRes, everRes, tripsRes] = await Promise.all([
     fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_events')
@@ -271,7 +290,10 @@ export async function loadCalendar(input: {
     // CH-6309: has this team ever scheduled anything? A count, no rows; a coach's question only. Class meetings synced
     // from players' schedules are not the coach scheduling anything, so they do not end the first-run state (audit L7).
     input.role === 'coach' ? supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', input.teamId).neq('event_type', 'class') : null,
+    tripsRead,
   ]);
+  // A failed trip read is reported and draws no trip, as on Home; the events still show.
+  if (tripsRes.error) chLogServer('calendar', 'trips', tripsRes.error, 'calendar');
   if (everRes?.error) chLogServer('calendar', 'eventCount', everRes.error, 'calendar');
   const firstRun = !!everRes && !everRes.error && everRes.count === 0;
   if (eventsRes.error) chLogServer('calendar', 'events', eventsRes.error, 'calendar');
@@ -292,7 +314,11 @@ export async function loadCalendar(input: {
   // (production allows it: golf_event_attendance_insert_self), and, only when the rows failed, whether a meeting invites
   // anyone at all (D2-8, below). Until that function exists (`missing`) the rows answer both, as before.
   // Practice's plan on each practice: one read beside the events. Off, or the tables not there yet, it's simply absent.
-  const plans = await readEventPlans(supabase, input.teamId, input.role === 'coach').catch(() => null);
+  const planAnswer = await readEventPlans(supabase, input.teamId, input.role === 'coach').catch(() => null);
+  const plans = planAnswer === 'absent' ? null : planAnswer;
+  // The plans didn't read: each practice says so where its plan shows (CH-6290), never "no plan".
+  const plansError = planAnswer === null;
+  if (plansError) chLogServer('calendar', 'eventPlans', 'plan read failed', 'calendar');
   const meetingIds = input.role === 'player' ? rows.filter((r) => !isClassEvent(r) && (r.event_type === 'meeting' || r.requires_rsvp === true)).map((r) => r.id) : [];
   // Paged (fetchAllRowsResult): 200 events x a full roster passes PostgREST's 1,000-row cap.
   const [{ data: attendance, error: attendanceError }, meetingCounts] = await Promise.all([
@@ -304,13 +330,18 @@ export async function loadCalendar(input: {
     chLogServer('calendar', 'attendance', attendanceError, 'calendar');
     rsvpError = true;
   } else {
+    // DF-C-06: a player who has left the team (or a QA account) keeps their attendance rows, so "N of M going" and the
+    // invitee list counted them. Only today's roster counts; who the coach invited at all (`coachInvited`) still reads
+    // every row, since it decides whether the event is an invite list, not who is on it.
+    const onRoster = membersRes.error ? null : new Set(people.map((p) => p.id));
     for (const a of attendance ?? []) {
       if (!shown.has(a.event_id)) continue;
+      if (a.notified_at) coachInvited.set(a.event_id, (coachInvited.get(a.event_id) ?? 0) + 1);
+      if (onRoster && !onRoster.has(a.player_id) && a.player_id !== input.viewerPlayerId) continue;
       const r = rsvp.get(a.event_id) ?? {};
       r[a.player_id] = rsvpOf(a.status);
       rsvp.set(a.event_id, r);
       invited.set(a.event_id, [...(invited.get(a.event_id) ?? []), a.player_id]);
-      if (a.notified_at) coachInvited.set(a.event_id, (coachInvited.get(a.event_id) ?? 0) + 1);
     }
   }
 
@@ -375,6 +406,7 @@ export async function loadCalendar(input: {
     if (input.role === 'player' && r.event_type === 'meeting' && !playerSeesMeeting(rsvpError ? null : !!me && invitees.includes(me), invitedCount(r.id))) continue;
     const base = {
       ...(type === 'practice' && plans ? { plan: plans.get(r.id) ?? (input.role === 'coach' ? ({ state: 'none' } as const) : undefined) } : {}),
+      ...(type === 'practice' && plansError ? { planFailed: true as const } : {}),
       id: r.id,
       type,
       title: r.title,
@@ -437,6 +469,12 @@ export async function loadCalendar(input: {
     const end = b.date === a.date ? Math.max(b.hour, a.hour + 0.25) : 24;
     if (a.date < range.from || a.date > range.to) continue;
     events.push({ ...base, date: a.date, start: a.hour, end, allDay: false, span: null });
+  }
+
+  // Trips with no event on the calendar, as all-day Travel rows (N13P-24). Not while the events failed: a trip alone would read as
+  // the team's whole calendar.
+  if (!eventsRes.error && !tripsRes.error) {
+    events.push(...calendarTripRows((tripsRes.data ?? []) as ChHomeTripRow[], new Set(rows.map((r) => r.id)), range));
   }
 
   // The coach's own blocked time. Only the coach sees it; it's labelled as theirs.
@@ -529,6 +567,7 @@ export async function loadCalendar(input: {
     firstRun,
     rsvpError,
     classesError: !!classesRes.error,
+    plansError,
     settingsError: !!settingsRes.error,
     membersError: !!membersRes.error,
     marks: input.marks ?? [],

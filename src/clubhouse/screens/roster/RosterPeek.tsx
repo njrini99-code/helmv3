@@ -20,10 +20,12 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { sgWindowLine } from '../../lib/sg-window-line';
 import { rebuiltHref } from '../../shell/nav';
-import { AVAILABILITY_WORD, relativeAgo, yearKeyOf, yearLineOf, type RosterClock } from './format';
+import { AVAILABILITY_WORD, relativeAgo, roundsPlayed, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { plural } from '../../lib/plural';
 import { ClassStatusLine } from '../../ui/ClassStatusLine';
+import { FAILURE_COPY } from '../../ui/Notices';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 import type { RosterClassLine } from './class-line';
 
 /** The player drawer. Esc closes it; the coach's note saves when the field loses focus. */
@@ -110,12 +112,12 @@ function PeekBody({
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
     [SG_FIGURE, p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound), p.sgPerRound == null ? null : sgWindowLine(p.sgWindow)],
-    ['Rounds', String(p.rounds)],
+    ['Rounds', String(roundsPlayed(p))],
   ];
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
   // The board's Schedule 1:1: Calendar's editor with only this player invited (D-52), as the phone's Plan 1:1.
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
-  const profileHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&from=roster`);
+  const profileHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season&from=roster`);
 
   return (
     <>
@@ -181,13 +183,13 @@ function PeekBody({
   );
 }
 
-/** "3 costing strokes · 1 working", "No reads yet", or dashes when the counts did not load (CH-3212). */
-function HelmCounts({ p, helm }: { p: ChRosterPlayer; helm: Exclude<ChRosterHelm, { status: 'off' }> }) {
-  const c = helm.status === 'on' ? helm.byPlayer[p.id] : null;
-  if (helm.status === 'on' && !c) return <span>No reads yet</span>;
+/** "3 costing strokes · 1 working" or "No reads yet". Counts that did not load are HelmPanel's notice (CH-3212), never a dash in a sentence. */
+function HelmCounts({ p, helm }: { p: ChRosterPlayer; helm: Extract<ChRosterHelm, { status: 'on' }> }) {
+  const c = helm.byPlayer[p.id];
+  if (!c) return <span>No reads yet</span>;
   return (
     <span>
-      <b className="ch-num">{c ? c.costing : NO_DATA}</b> costing strokes · <b className="ch-num">{c ? c.working : NO_DATA}</b> working
+      <b className="ch-num">{c.costing}</b> costing strokes · <b className="ch-num">{c.working}</b> working
     </span>
   );
 }
@@ -210,10 +212,14 @@ export function HelmPanel({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }
           </Link>
         )}
       </div>
-      <div className="ch-rs-peek__dev" data-ch-code={helm.status === 'failed' ? 'CH-3212' : undefined}>
-        <HelmCounts p={p} helm={helm} />
-      </div>
-      {helm.status === 'failed' && <p className="ch-rs-peek__cap">Didn&rsquo;t load. Refresh to try again.</p>}
+      {helm.status === 'failed' ? (
+        // GAP-S-09: one muted line that says the counts failed, with Try again; never "— costing strokes · — working".
+        <RefreshNotice code="CH-3212" title="Counts didn’t load" body={FAILURE_COPY.shown} />
+      ) : (
+        <div className="ch-rs-peek__dev">
+          <HelmCounts p={p} helm={helm} />
+        </div>
+      )}
     </section>
   );
 }

@@ -3,7 +3,7 @@
 import { RotateCw, ArrowRight, ChartColumn, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
-import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
+import type { ChCoachHome, ChHomeEvent, ChLatestRound } from '../../data/home';
 import { Button } from '../../ui/Button';
 import { CrhStateBlock } from '../../ui/CrhStateBlock';
 import { useRefresh } from '../../lib/use-refresh';
@@ -46,6 +46,7 @@ import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { plural } from '../../lib/plural';
 import { ClassHomeLine } from './ClassHomeLine';
 import { NextBeyond } from './NextBeyond';
+import { NewEventLink } from './NewEventLink';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -70,7 +71,6 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
   const until = phone.next ? countdownTo(phone.next) : null;
   // A malformed read is CoachLatest's to contain (CH-2206); what changed since you looked reads no rounds from it.
   const rounds = (data.latestRounds.error ? null : data.latestRounds.rounds) ?? [];
-  const thisWeek = phone.form?.roundsThisWeek ?? 0;
 
   return (
     <main className="ch-hm ch-hm--coach" aria-label="Home">
@@ -112,9 +112,7 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
         {!data.week.error && !nothingAhead ? (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
             {/* The player's This week: the days, then today's timeline as a small label inside the section. */}
-            <WeekStrip calendar days={data.week.days} note={phone.weekNote}>
-              {/* Rounds posted this week is the week's own count, not the last-10 figures' (HOME-P-14). */}
-              {thisWeek > 0 && <p className="ch-hm-week__n ch-num">{`${plural(thisWeek, 'round')} posted this week`}</p>}
+            <WeekStrip calendar days={data.week.days} note={phone.weekNote} rounds={phone.form?.roundsThisWeek}>
               <SectionBoundary surface="home.today" label="Today" code="CH-2214">
                 <Today inline card list={phone.today} now={now} failed={false} quiet={false} />
               </SectionBoundary>
@@ -193,16 +191,16 @@ function NoEvents() {
       </div>
       <div className="ch-hm-none__q">
         {QUICK.map((t) => (
-          <Link key={t} href={newEventHref(t)} className="ch-hm-none__chip" data-ch-press="">
+          <NewEventLink key={t} href={newEventHref(t)} type={t} className="ch-hm-none__chip">
             <Icon icon={TYPE_ICON[t]} size={13} />
             {TYPE_LABEL[t]}
-          </Link>
+          </NewEventLink>
         ))}
       </div>
-      <Link href={newEventHref()} className="ch-hm-none__add" onClick={() => haptic('press')}>
+      <NewEventLink href={newEventHref()} className="ch-hm-none__add" onTap={() => haptic('press')}>
         <Icon icon={Plus} size={16} />
         Add event
-      </Link>
+      </NewEventLink>
     </div>
   );
 }
@@ -290,19 +288,14 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
   );
 }
 
-const SHORT_DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
-const shortDay = (ymd: string) => SHORT_DAY.format(new Date(`${ymd}T12:00:00Z`));
+export { figureMissing, formSpan } from './TeamScoring';
 
-export { figureMissing } from './TeamScoring';
-
-/** What the average, greens and putts rest on: "3 rounds · Aug 2", "24 rounds · Sep 1 – Sep 28". */
-export function formBasis(b: ChTeamForm['basis']): string {
-  const span = b.from === b.to ? shortDay(b.from) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
-  return `${plural(b.rounds, 'round')} · ${span}`;
-}
-
-/** `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the calendar draws. */
-export function WeekStrip({ days, note, children, calendar = false }: { calendar?: boolean; days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
+/**
+ * `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the
+ * calendar draws. `rounds`: the team's countable rounds this week, a count on the week's own basis, so it sits here and not in Team
+ * scoring's last-10 row (prod audit 2026-11-15, HOME-P-14).
+ */
+export function WeekStrip({ days, note, children, calendar = false, rounds }: { calendar?: boolean; days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode; rounds?: number }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
@@ -314,6 +307,7 @@ export function WeekStrip({ days, note, children, calendar = false }: { calendar
         )}
       </div>
       <WeekDays days={days} note={note} />
+      {rounds != null && <p className="ch-hm-week__n ch-num">{rounds ? `${plural(rounds, 'round')} posted this week` : 'No rounds posted this week yet'}</p>}
       {children}
     </section>
   );

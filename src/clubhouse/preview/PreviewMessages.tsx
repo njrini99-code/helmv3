@@ -205,7 +205,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
   useToastPill(design);
   const cast = useMemo(() => (design ? { ...DESIGN_CAST, ...designRouteFixture(view) } : castOf(role)), [design, role, view]);
   const { people, all } = cast;
-  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' || (design && (view === 'empty' || view === 'loading')) ? [] : design && view === 'longinbox' ? designLongInbox(cast.convs) : cast.convs);
+  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' || state === 'empty-ann-failed' || (design && (view === 'empty' || view === 'loading')) ? [] : design && view === 'longinbox' ? designLongInbox(cast.convs) : cast.convs);
   const [threads, setThreads] = useState(cast.threads);
   const [reactions, setReactions] = useState(design ? DESIGN_REACTIONS : baseReactions);
   const [votes, setVotes] = useState<PollResponseRow[]>(design ? DESIGN_VOTES : baseVotes);
@@ -317,7 +317,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
     if (design || state === 'empty' || state === 'rail' || state === 'announcement') return;
     if (window.matchMedia(CH_DESK_QUERY).matches) setSelectedId((id) => id ?? 'team');
   }, [state, design]);
-  const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' || design ? [] : baseAnns);
+  const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' || state === 'empty-ann-failed' || design ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
   const [mute, setMute] = useState<ChMute>({ muted: false, until: null });
   // Any row's mute (owner decision 14), the open one's included: the preview's own record by conversation.
@@ -493,7 +493,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
       return true;
     },
     announcements: anns,
-    annError: state === 'ann-failed',
+    annError: state === 'ann-failed' || state === 'empty-ann-failed',
     refetchAnns: () => undefined,
     selectedAnnId: annId,
     selectAnn: (id) => {

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import postcss from 'postcss';
 import { describe, expect, it } from 'vitest';
-import { titleOnScroll } from '../shell/large-title';
+import { CH_LARGE_TITLE_RANGE, titleOnScroll } from '../shell/large-title';
 
 /** Clubhouse refresh, PR 2 and 3: every rule sits under `[data-ch-refresh='on']`, which the app root always carries (the flag is retired). */
 
@@ -42,19 +42,20 @@ describe('the refreshed shell', () => {
 });
 
 describe('titleOnScroll', () => {
-  it('shrinks to 86% and fades to 10% over the first 56px', () => {
-    expect(titleOnScroll(0, false)).toEqual({ scale: 1, opacity: 1 });
-    const end = titleOnScroll(56, false);
-    expect(end.scale).toBeCloseTo(0.86);
-    expect(end.opacity).toBeCloseTo(0.1);
-    expect(titleOnScroll(500, false)).toEqual(end);
-  });
-  it('fades only under Reduce Motion', () => {
-    const end = titleOnScroll(56, true);
-    expect(end.scale).toBe(1);
-    expect(end.opacity).toBeCloseTo(0.1);
+  // Production audit 2026-11-15 (S4.3, MOT-06): an iOS large title scrolls with the content and is never scaled.
+  it('fades to 10% over the first 52px, and never scales', () => {
+    expect(titleOnScroll(0)).toBe(1);
+    expect(titleOnScroll(CH_LARGE_TITLE_RANGE)).toBeCloseTo(0.1);
+    expect(CH_LARGE_TITLE_RANGE).toBe(52);
+    expect(titleOnScroll(500)).toBeCloseTo(0.1);
   });
   it('holds still on a bounce above the top', () => {
-    expect(titleOnScroll(-20, false)).toEqual({ scale: 1, opacity: 1 });
+    expect(titleOnScroll(-20)).toBe(1);
+  });
+  it('fades on the scroll timeline in CSS where Safari has one, with no scale anywhere', () => {
+    const shell = css('shell.css');
+    expect(shell).toMatch(/@supports \(animation-timeline: scroll\(\)\)[\s\S]*?\.ch-large-title[\s\S]*?animation-timeline: scroll\(root block\);[\s\S]*?animation-range: 0px 52px;/);
+    // One keyframe for both titles (MOTION-AND-VISUAL 3.3): the large title ends at 0.1, the bar's title at --ch-lt-to: 1.
+    expect(shell).toMatch(/@keyframes ch-lt-under \{\s*to \{\s*opacity: var\(--ch-lt-to, 0\.1\);\s*\}\s*\}/);
   });
 });

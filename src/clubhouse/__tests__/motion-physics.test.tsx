@@ -45,50 +45,52 @@ afterEach(() => {
 });
 
 describe('D-64 springs (extension, 2026-10-08)', () => {
-  it('keep the D-64 base duration (the drop\'s reveal spring: D-64\'s reveal) with a bounce of 0 to 0.1, handed to framer as stiffness and damping so velocity carries', () => {
-    // Named, signed-off exceptions: Messages' send, pop and lift (owner, 31 Oct 2026, "as long as it's smooth"; messages 02 §2.2), Messages v2's launch (Q-04 default, bounce 0.2, owner to confirm) and the quick chat's pour (coachhelm 07).
-    const named = new Set(['send', 'pop', 'lift', 'launch', 'pour']);
+  it('keep the D-64 base duration (the drop\'s reveal spring: D-64\'s reveal) with no bounce, handed to framer as stiffness and damping so velocity carries', () => {
+    // Bounce 0 on every spring (production audit 2026-11-15, S3.1, MOT-08; MOTION-AND-VISUAL 3.1 rule 4). The gesture spring
+    // is Apple's 0.5 s.
     for (const [kind, { visualDuration, bounce }] of Object.entries(CH_SPRINGS)) {
-      if (named.has(kind)) continue;
+      expect(bounce, kind).toBe(0);
+      if (kind === 'gesture') continue;
       expect(visualDuration).toBe(kind === 'reveal' ? CH_DUR.reveal : CH_DUR.base);
-      expect(bounce).toBeGreaterThanOrEqual(0);
-      expect(bounce).toBeLessThanOrEqual(0.1);
     }
+    // MOTION-AND-VISUAL 3.12 deletes the pop, launch and lift springs, and 3.5 makes a sent message an insert (the base beat on
+    // the iOS curve), so send goes with them. pop stays only while ui/Toast.tsx (the overlays thread's) still names it.
+    expect(Object.keys(CH_SPRINGS).sort()).toEqual(['gesture', 'pop', 'reveal', 'settle', 'smooth']);
     // framer's own reading of visualDuration and bounce (motion-dom spring.mjs).
     const root = (2 * Math.PI) / (CH_DUR.base * 1.2);
     expect(chSpring('smooth')).toEqual({ type: 'spring', stiffness: root * root, damping: 2 * root, mass: 1 });
-    expect(chSpring('settle')).toMatchObject({ stiffness: root * root, damping: 2 * 0.9 * root });
+    expect(chSpring('settle')).toEqual(chSpring('smooth'));
+    expect(chSpring('pop')).toEqual(chSpring('smooth'));
     expect(chSpring('smooth', false, 900)).toMatchObject({ velocity: 900 });
     expect(chSpring('settle', true)).toEqual({ duration: 0 });
+    // The one gesture-release spring (S3.1): Apple's 0.5 s, bounce 0.
+    expect(chSpring('gesture')).toMatchObject({ stiffness: expect.closeTo(157.9, 1), damping: expect.closeTo(25.13, 2), mass: 1 });
   });
 
-  it('the four Messages springs keep the values the owner signed off', () => {
-    for (const [kind, stiffness, damping, peak] of [
-      ['send', 155, 21.9, 1.003],
-      ['pop', 439, 27.2, 1.068],
-      ['lift', 350, 31.8, 1.006],
-      ['launch', 110, 16.8, 1.015],
-    ] as const) {
-      expect(chSpring(kind)).toMatchObject({ stiffness: expect.closeTo(stiffness, 0), damping: expect.closeTo(damping, 1) });
+  it('no script spring passes its mark from rest (S3.1; 3.5 retired the send and launch overshoot with the send flight)', () => {
+    for (const kind of ['smooth', 'settle', 'pop', 'reveal', 'gesture'] as const) {
       let high = 0;
       for (let t = 0; t <= 1.5; t += 0.001) high = Math.max(high, chSpringAt(kind, t));
-      expect(Math.abs(high - peak)).toBeLessThanOrEqual(0.001);
+      expect(high, kind).toBeLessThanOrEqual(1);
     }
   });
 
-  it('the tokens for those springs are their sampled curves', () => {
+  it('CSS has no spring curves: the spring-named tokens ride the one curve on D-64 beats (S3.1, MOT-08)', () => {
     const tokens = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8');
-    for (const kind of ['send', 'pop', 'lift', 'launch'] as const) {
-      expect(tokens).toContain(`--ch-ease-spring-${kind}: ${chSpringCurve(kind).linear};`);
-      expect(tokens).toContain(`--ch-dur-spring-${kind}: ${chSpringCurve(kind).ms}ms;`);
+    expect(tokens).not.toMatch(/linear\(0, /);
+    expect(tokens).not.toContain('cubic-bezier(0.34, 1.3, 0.64, 1)');
+    expect(tokens).not.toMatch(/--ch-ease-spring:/);
+    for (const [kind, beat] of [['smooth', 'reveal'], ['settle', 'base'], ['pop', 'quick'], ['send', 'base']] as const) {
+      expect(tokens).toContain(`--ch-ease-spring-${kind}: var(--ch-ease-ios);`);
+      expect(tokens).toContain(`--ch-dur-spring-${kind}: var(--ch-dur-${beat});`);
     }
+    expect(tokens).not.toMatch(/--ch-(ease|dur)-spring-(pour|lift|launch)/);
   });
 
   it('never pass their mark by more than their bounce, and a thrown curve starts at the throw speed', () => {
     const peak = (kind: 'smooth' | 'settle', v0 = 0) => Math.max(...Array.from({ length: 1500 }, (_, i) => chSpringAt(kind, i / 1000, v0)));
     expect(peak('smooth')).toBeLessThanOrEqual(1);
-    expect(peak('settle') - 1).toBeLessThan(0.002);
-    expect(peak('settle', 8) - 1).toBeLessThan(0.003);
+    expect(peak('settle')).toBeLessThanOrEqual(1);
     const slope = (chSpringAt('smooth', 0.0001, 6) - chSpringAt('smooth', 0, 6)) / 0.0001;
     expect(slope).toBeCloseTo(6, 1);
     const curve = chSpringCurve('smooth');
@@ -109,12 +111,11 @@ describe('D-64 springs (extension, 2026-10-08)', () => {
     }
   });
 
-  it('the CSS token is the same smooth spring, and Animations off zeroes it', () => {
+  it('Animations off zeroes the spring-named CSS beats', () => {
     const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8');
-    const curve = chSpringCurve('smooth');
-    expect(css).toContain(`--ch-ease-spring-smooth: ${curve.linear};`);
-    expect(css).toContain(`--ch-dur-spring-smooth: ${curve.ms}ms;`);
-    expect(css).toMatch(/\[data-motion='off'\] \[data-ui='clubhouse'\] \{[^}]*--ch-dur-spring-smooth: 0ms;/);
+    for (const kind of ['smooth', 'settle', 'pop', 'send']) {
+      expect(css).toMatch(new RegExp(`\\[data-motion='off'\\] \\[data-ui='clubhouse'\\] \\{[^}]*--ch-dur-spring-${kind}: 0ms;`));
+    }
   });
 });
 

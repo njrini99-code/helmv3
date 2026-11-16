@@ -102,6 +102,18 @@ describe('old addresses one place for both roles are config redirects (Fairway r
     expect(route).toContain('const focusTask = task && /^[\\w-]{1,64}$/.test(task) ? task : null;');
   });
 
+  it('GAP-R-10: Team stats is Stats, one address for one screen, and a saved ?area= rides the redirect', async () => {
+    const { default: config } = (await import(NEXT_CONFIG_URL)) as { default: { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean; has?: unknown }>> } };
+    const rule = (await config.redirects()).find((r) => r.source === '/golf/dashboard/stats/team');
+    // No query of its own in the destination, so Next passes the request's (?area=putting) through unchanged.
+    expect(rule).toMatchObject({ destination: '/golf/dashboard/stats', permanent: false });
+    expect(rule?.has).toBeUndefined();
+    // /stats reads ?area= for both roles, as /stats/team did.
+    const page = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/stats/page.tsx'), 'utf8');
+    expect(page).toContain('area={params.area}');
+    for (const role of ['coach', 'player'] as const) expect(isRebuilt('/golf/dashboard/stats', role)).toBe(true);
+  });
+
   it('every destination is a rebuilt screen for both roles', () => {
     for (const [, destination] of MOVED) {
       const path = destination.replace(':id', '00000000-0000-0000-0000-000000000001').split('?')[0]!;

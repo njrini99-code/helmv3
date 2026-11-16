@@ -25,6 +25,7 @@ import { boardOrder, rankStandings } from '@/lib/coachhelm/v3/qualifying/ranking
 import { plural, pluralWord } from '../../lib/plural';
 import { firstName } from '../../lib/names';
 import { zoneFormat } from '../../lib/zone-format';
+import { isoDay } from '../../lib/dates';
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
 export type ChQSelectionState = 'open' | 'scoring' | 'closed' | 'selected';
@@ -453,10 +454,12 @@ export function rankOrderChanged(prev: readonly string[] | null, next: readonly 
 }
 
 /**
- * The day to hold a qualifier's end date against (P009-D3), for a server-side `now`: the calendar date where the day
- * starts last (UTC−12), so a qualifier reads as ended only once its last day is over everywhere.
+ * The day to hold a qualifier's end date against (P009-D3), for a server-side `now`: today on the team's clock
+ * (`golf_team_settings.timezone`), so a qualifier reads as ended once its last day is over where the team plays (DF-P-12).
+ * Without a zone it falls back to the calendar date where the day starts last (UTC−12), ended only once over everywhere.
  */
-export function endDayFor(now: Date): string {
+export function endDayFor(now: Date, tz?: string): string {
+  if (tz) return isoDay(now, tz);
   return new Date(now.getTime() - 12 * 3_600_000).toISOString().slice(0, 10);
 }
 
@@ -498,8 +501,12 @@ export function missingRounds(rows: ReadonlyArray<{ name: string; rounds: Readon
 /**
  * "Waiting on 3 rounds", or "Past last day" when nothing is outstanding or the count didn't load. The list files it under
  * Active, so "Ended" stays the word for a completed qualifier only: one state, one word (F-0068).
+ *
+ * That is the coach's label: the coach can chase the rounds and close it. A player sees "Closed · awaiting coach’s final" (prod audit
+ * 2026-11-15, N13P-51): "Waiting on 7 rounds" 45 days after the last day told a player nothing about whether they made the squad.
  */
-export function endedLabel(e: { outstanding: number | null }): string {
+export function endedLabel(e: { outstanding: number | null }, viewer: 'coach' | 'player' = 'coach'): string {
+  if (viewer === 'player') return 'Closed · awaiting coach’s final';
   return e.outstanding ? `Waiting on ${plural(e.outstanding, 'round')}` : 'Past last day';
 }
 

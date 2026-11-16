@@ -7,8 +7,8 @@
  * action review, coach insights with source attribution) all render real,
  * internally-consistent data for a demo login.
  *
- * Mirrors the GolfHelm demo pattern (scripts/provision-demo-accounts.mjs +
- * scripts/seed-demo-player.ts): a stable demo team identity, a coach login and
+ * Mirrors the original GolfHelm demo pattern (provisioned demo accounts plus a
+ * seeded player, since replaced by src/lib/golf/demo): a stable demo team identity, a coach login and
  * a player login created via auth.admin, and deterministic seed ids so re-runs
  * UPSERT in place rather than duplicating.
  *

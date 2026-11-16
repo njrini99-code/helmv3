@@ -88,10 +88,10 @@ describe('MSG-410 the menu', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it('opens on lift, 0.8 to 1 with opacity, the first enabled row focused', () => {
+  it('opens on settle (3.12: lift retired), 0.8 to 1 with opacity, the first enabled row focused', () => {
     render(<GlassMenu open anchor={anchor()} items={items()} label="x" onClose={() => {}} />);
     const open = played.calls[0]!;
-    expect(open.spring).toBe('lift');
+    expect(open.spring).toBe('settle');
     expect(open.keyframes).toEqual([{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }]);
     expect(open.opts).toMatchObject({ reduced: false });
     expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Open conversation' }));
@@ -154,7 +154,7 @@ describe('MSG-410 the menu', () => {
     const out = played.calls[played.calls.length - 1]!;
     rerender(<GlassMenu open anchor={a} items={items()} label="x" onClose={() => {}} />);
     const again = played.calls[played.calls.length - 1]!;
-    expect(again.spring).toBe('lift');
+    expect(again.spring).toBe('settle');
     expect(again.opts).toMatchObject({ live: true });
     expect(out.anim!.cancel).toHaveBeenCalled();
     expect(screen.queryByRole('menu')).not.toBeNull();

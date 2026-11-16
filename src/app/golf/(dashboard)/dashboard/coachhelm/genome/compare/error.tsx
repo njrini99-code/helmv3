@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/coachhelm/genome/compare"
       component="GenomeComparePage"
-      title="Failed to load comparison"
-      message="We couldn't load the genome comparison. Please try again."
       homePath="/golf/dashboard/coachhelm"
     />
   );

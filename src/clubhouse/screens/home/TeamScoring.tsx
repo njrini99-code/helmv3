@@ -4,6 +4,7 @@ import { ArrowRight, Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ChTeamForm } from '../../data/home';
 import type { ChScoringPoint } from '../../data/player-home';
+import type { ChFormWindow } from '../../data/span';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { NoData } from '../../ui/NoData';
@@ -37,6 +38,15 @@ export function teamDays(form: Pick<ChTeamForm, 'line' | 'lineDays' | 'lineCount
   return best >= 0 && worst >= 0 && pts[best] !== pts[worst] ? { best, worst } : null;
 }
 
+/** The window Team scoring reads, in words, as Stats names it (prod audit 2026-11-15, HOME-P-11: "Each player’s last 10"). */
+const FORM_WINDOW_WORDS: Record<ChFormWindow, string> = { last10: 'Each player’s last 10', season: 'This season', all: 'All time, every round' };
+
+/** What the card's dates cover, said once: "Each player’s last 10 · Sep 1 – Sep 28". The rounds are counted in their own cell. */
+export function formSpan(b: ChTeamForm['basis'], w: ChFormWindow): string {
+  const span = b.from === b.to ? shortDay(b.from) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
+  return `${FORM_WINDOW_WORDS[w]} · ${span}`;
+}
+
 /** Under a figure's dash: why there is none, so totals-only rounds read as what they are and not as a gap. */
 export function figureMissing(rounds: number, needs?: string): string {
   return rounds > 0 ? (needs ?? 'Too few rounds') : 'Totals only so far';
@@ -55,7 +65,8 @@ function changeLine(delta: number | null, tone: DeltaTone, signed: (d: number) =
  * `ChTeamForm` as before; only the drawing changed.
  */
 export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean }) {
-  const all = form.span === 'all';
+  // Last 10, Season or All time (HOME-P-10); only Last 10 has a previous window to set a change against.
+  const win: ChFormWindow = form.window ?? 'last10';
   const against = 'vs previous 10';
   const avgTone = deltaTone(form.delta, form.deltaSe, true);
   const girTone = deltaTone(form.gir.delta, form.gir.se, false);
@@ -63,7 +74,6 @@ export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean 
   const days = form.lineDays?.length === form.line.length ? form.lineDays : null;
   const points: ChScoringPoint[] = form.line.map((v, i) => ({ id: days?.[i] ?? String(i), label: days ? shortDay(days[i]!) : '', score: v, par: null }));
   const marks = teamDays(form);
-  const span = form.basis.from === form.basis.to ? shortDay(form.basis.from) : `${shortDay(form.basis.from)} – ${shortDay(form.basis.to)}`;
   // The average against the previous window's, as the player's figure draws it: decorative, the words carry it.
   const prev = form.delta != null ? form.avg - form.delta : null;
   const lo = Math.min(form.avg, prev ?? form.avg) - 1.5;
@@ -77,12 +87,13 @@ export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean 
         <b style={{ left: `${Math.min(at(form.avg), at(prev))}%`, width: `${Math.abs(at(form.avg) - at(prev))}%` }} />
       </span>
     ) : null;
-  const partOf = (n: number) => (n > 0 && n < form.basis.rounds ? `${n} of ${form.basis.rounds} rounds` : all ? 'Every round' : 'Each player’s last 10');
+  // The window is said once, in the section's line (HOME-P-11); a figure names only what differs from it.
+  const partOf = (n: number) => (n > 0 && n < form.basis.rounds ? `${n} of ${form.basis.rounds} rounds` : '');
   const figs: Array<{ k: string; v: ReactNode; m: string; tone: string; viz?: ReactNode }> = [
     {
-      k: 'Team average',
+      k: 'Average',
       v: formatFixed(form.avg),
-      m: changeLine(form.delta, avgTone, (d) => formatSigned(d), against) ?? (all ? 'Every round, all time' : 'Each player’s last 10'),
+      m: changeLine(form.delta, avgTone, (d) => formatSigned(d), against) ?? '',
       tone: avgTone,
       viz: avgViz,
     },
@@ -98,9 +109,10 @@ export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean 
       m: changeLine(form.putts.delta, puttsTone, (d) => formatSigned(d), against) ?? (form.putts.avg == null ? figureMissing(form.basis.puttsRounds) : partOf(form.basis.puttsRounds)),
       tone: form.putts.avg != null ? puttsTone : '',
     },
-    { k: 'Rounds', v: String(form.basis.rounds), m: span, tone: '' },
+    // The rounds the figures rest on, in the card's window (HOME-P-14); this week's count is in This week.
+    { k: 'Rounds', v: String(form.basis.rounds), m: win === 'last10' ? 'last 10 each' : win === 'season' ? 'this season' : 'all time', tone: '' },
   ];
-  const meta = all ? 'Team average · every round, all time' : 'Team average · each player’s last 10';
+  const meta = formSpan(form.basis, win);
   const label = `Team scoring, the team’s average on each of its last ${points.length} round days, from ${formatFixed(points[0]?.score)} to ${formatFixed(points[points.length - 1]?.score)}; the team average is ${formatFixed(form.avg)}.`;
   const body =
     points.length < 2 ? (
@@ -116,10 +128,12 @@ export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean 
           <div key={f.k}>
             <dt>{f.k}</dt>
             <dd className={'ch-num ' + f.tone}>{f.v}</dd>
-            <dd className="ch-ph-figs__m ch-num">
-              {f.viz}
-              {f.m}
-            </dd>
+            {(f.viz || f.m) && (
+              <dd className="ch-ph-figs__m ch-num">
+                {f.viz}
+                {f.m}
+              </dd>
+            )}
           </div>
         ))}
       </dl>
@@ -137,7 +151,7 @@ export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean 
       Team stats
     </Button>
   );
-  const picker = <HomeSpanSwitch span={form.span ?? 'season'} />;
+  const picker = <HomeSpanSwitch value={win} />;
 
   if (phone) {
     return (
@@ -161,7 +175,7 @@ export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean 
         <div>
           <h2 id="ch-ph-tm-scoring">Team scoring</h2>
           <span>
-            {meta} · on each round day{points.length >= 2 ? ` · dashed line, the team average ${formatFixed(form.avg)}` : ''}
+            {meta}{points.length >= 2 ? ` · dashed line, the team average ${formatFixed(form.avg)}` : ''}
           </span>
         </div>
         {picker}

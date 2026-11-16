@@ -22,8 +22,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/team-hub"
       component="TeamHubPage"
-      title="Failed to load Team Hub"
-      message="We couldn't load your tasks, announcements, travel, and classes. Please try again."
       homePath="/golf/dashboard"
     />
   );

@@ -62,6 +62,12 @@ const polls = vi.hoisted(() => ({
 vi.mock('@/hooks/golf/use-message-responses', () => ({ useMessageResponses: () => polls.responses }));
 vi.mock('@/app/golf/actions/message-polls', () => ({ sendGolfPoll: polls.sendGolfPoll, closeGolfPoll: polls.closeGolfPoll }));
 vi.mock('@/hooks/golf/use-message-attachments', () => ({ useMessageAttachments: () => live.files }));
+// The thread's attachment facts read golf_message_attachments through the browser client, which is offline in tests
+// (src/test/network-isolation.ts): no facts, as when that read fails. attachment-facts.test.tsx covers the read itself.
+vi.mock('../screens/messages/attachment-facts', async (orig) => {
+  const none = new Map();
+  return { ...(await orig<object>()), useAttachmentFacts: () => none };
+});
 const a = vi.hoisted(() => ({
   markGolfMessagesAsRead: vi.fn(),
   createGolfConversation: vi.fn(),
@@ -192,8 +198,9 @@ const setOnline = (v: boolean) => Object.defineProperty(navigator, 'onLine', { c
 beforeEach(() => {
   // Drafts persist per tab (F-12); each test starts with none.
   sessionStorage.clear();
-  // jsdom has no Web Animations: the thread's make-room and the composer's lift animate in a browser.
-  HTMLElement.prototype.animate = (() => ({ cancel: () => {}, finish: () => {}, finished: Promise.resolve(), onfinish: null })) as never;
+  // jsdom has no Web Animations: the thread's make-room, the composer's lift and the late-content fade (which pauses its
+  // fade until the content has painted) animate in a browser.
+  HTMLElement.prototype.animate = (() => ({ cancel: () => {}, finish: () => {}, pause: () => {}, play: () => {}, finished: Promise.resolve(), onfinish: null })) as never;
   HTMLElement.prototype.getAnimations = (() => []) as never;
   // Desktop width: the newest thread opens beside the rail.
   window.matchMedia = ((q: string) => ({ matches: /min-width/.test(q), media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
@@ -490,6 +497,59 @@ describe('Messages · empty and loading', () => {
     live.msgs.loading = true;
     show();
     await expectCode('CH-7403');
+  });
+
+  /** Every Web Animation the page starts, with the element it runs on. */
+  const recordFades = () => {
+    const runs: { el: Element; frames: Keyframe[]; opts: KeyframeAnimationOptions }[] = [];
+    HTMLElement.prototype.animate = function (this: Element, frames: Keyframe[], opts: KeyframeAnimationOptions) {
+      runs.push({ el: this, frames, opts });
+      return { cancel: () => {}, finish: () => {}, pause: () => {}, play: () => {}, finished: Promise.resolve(), onfinish: null };
+    } as never;
+    return runs;
+  };
+  const tree = () => (
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          <Messages data={data} />
+        </div>
+      </ToastProvider>
+    </LazyMotion>
+  );
+
+  it('3.5 late content: the rail waits 150 ms before its skeleton, and the conversations that replace it fade in over 180 ms, opacity only', async () => {
+    const runs = recordFades();
+    live.convs.conversations = [];
+    live.convs.loading = true;
+    const view = render(tree());
+    // 3.9: nothing new is drawn for the first 150 ms of a wait.
+    expect(code('CH-7402')).toBeNull();
+    await expectCode('CH-7402');
+    live.convs.conversations = [team];
+    live.convs.loading = false;
+    view.rerender(tree());
+    // Held at least 300 ms once shown, then the list takes its place.
+    await waitFor(() => expect(code('CH-7402')).toBeNull(), { timeout: 1500 });
+    const body = document.querySelector('.ch-ms-rail__body');
+    const fade = runs.find((r) => r.el === body);
+    expect(fade?.frames).toEqual([{ opacity: 0 }, { opacity: 1 }]);
+    expect(fade?.opts.duration).toBe(180);
+  });
+
+  it('3.5 late content: messages that replace the thread skeleton fade in over 180 ms, opacity only', async () => {
+    const runs = recordFades();
+    live.msgs.messages = [];
+    live.msgs.loading = true;
+    const view = render(tree());
+    await expectCode('CH-7403');
+    live.msgs.messages = [mine];
+    live.msgs.loading = false;
+    view.rerender(tree());
+    await waitFor(() => expect(code('CH-7403')).toBeNull());
+    const fade = runs.find((r) => r.el.classList.contains('ch-ms-msgs') && JSON.stringify(r.frames) === JSON.stringify([{ opacity: 0 }, { opacity: 1 }]));
+    expect(fade?.opts.duration).toBe(180);
+    expect(fade?.frames.some((f) => 'transform' in f)).toBe(false);
   });
 });
 
@@ -1561,7 +1621,7 @@ describe('MSG-406 reactions appear at once (messages-v2 fix 1)', () => {
   /** jsdom has no Web Animations: every animation here finishes on the next microtask, as it would in a browser. */
   const finishing = () => {
     HTMLElement.prototype.animate = (() => {
-      const anim = { cancel: () => {}, finish: () => {}, reverse: () => {}, finished: Promise.resolve() };
+      const anim = { cancel: () => {}, finish: () => {}, pause: () => {}, play: () => {}, reverse: () => {}, finished: Promise.resolve() };
       Object.defineProperty(anim, 'onfinish', { configurable: true, set(fn: (() => void) | null) { if (fn) queueMicrotask(fn); }, get: () => null });
       return anim;
     }) as never;
@@ -1605,7 +1665,7 @@ describe('Messages · failure and edge states on the redesign (catalog rows with
   /** jsdom has no Web Animations: every animation here finishes on the next microtask, as it would in a browser. */
   const finishing = () => {
     HTMLElement.prototype.animate = (() => {
-      const anim = { cancel: () => {}, finish: () => {}, reverse: () => {}, finished: Promise.resolve() };
+      const anim = { cancel: () => {}, finish: () => {}, pause: () => {}, play: () => {}, reverse: () => {}, finished: Promise.resolve() };
       Object.defineProperty(anim, 'onfinish', { configurable: true, set(fn: (() => void) | null) { if (fn) queueMicrotask(fn); }, get: () => null });
       return anim;
     }) as never;
@@ -1916,7 +1976,7 @@ describe('Messages · a message’s menu holds only what it can do', () => {
   it('someone else’s photo can be replied to and has nothing to copy; the menu is never an empty box', async () => {
     // jsdom has no Web Animations: the lift's close finishes on the next microtask, as it would in a browser.
     HTMLElement.prototype.animate = (() => {
-      const anim = { cancel: () => {}, finish: () => {}, reverse: () => {}, finished: Promise.resolve() };
+      const anim = { cancel: () => {}, finish: () => {}, pause: () => {}, play: () => {}, reverse: () => {}, finished: Promise.resolve() };
       Object.defineProperty(anim, 'onfinish', { configurable: true, set(fn: (() => void) | null) { if (fn) queueMicrotask(fn); }, get: () => null });
       return anim;
     }) as never;

@@ -79,7 +79,8 @@ describe('owner 2026-10-01: the remaining not-rebuilt addresses open the nearest
     const { isAliased } = await import('../shell/nav');
     for (const tail of ['/game', '/game/print', '/genome']) expect(isAliased(`/golf/dashboard/players/${PID}${tail}`), tail).toBe(true);
     const { default: CompareLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/layout');
-    await expect(CompareLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/stats/team');
+    // Straight to Stats: /stats/team is itself a redirect to /stats (GAP-R-10), so no second hop.
+    await expect(CompareLayout({ children: null })).rejects.toThrow(new RegExp('REDIRECT /golf/dashboard/stats$'));
   });
 
   it('/team opens Settings (Team for a coach, Golf for a player); courses opens Home, and a player’s What’s new opens Home; a player’s chat opens CoachHelm', async () => {
@@ -152,7 +153,7 @@ describe('an old address keeps its query when it moves (the proxy hands layouts 
   it('a string target ignores the query (genome compare keeps nothing)', async () => {
     const { default: CompareLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/layout');
     search = `?a=${TID}&b=${TID}`;
-    await expect(CompareLayout({ children: null })).rejects.toThrow(new RegExp('REDIRECT /golf/dashboard/stats/team$'));
+    await expect(CompareLayout({ children: null })).rejects.toThrow(new RegExp('REDIRECT /golf/dashboard/stats$'));
   });
 });
 

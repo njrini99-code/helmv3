@@ -68,7 +68,7 @@ export function PlayerStage({ rounds, first, coach, teamAvg, meta, note }: { rou
           </div>
           {coach && teamAvg != null && (
             <div>
-              <dt>Team</dt>
+              <dt>Rest of team</dt>
               <dd className="ch-num">{formatAvg(teamAvg)}</dd>
             </div>
           )}

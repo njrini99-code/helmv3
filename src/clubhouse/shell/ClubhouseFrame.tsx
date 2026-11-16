@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation';
 import { useNavOnce } from '../lib/nav-once';
 import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
 import { DemoPricingNudge } from '@/components/demo/DemoPricingNudge';
-import { activeNavItem, isAliased, isKnownDashboardPath, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel, withoutCoachParams } from './nav';
+import { activeNavItem, isAliased, isKnownDashboardPath, isPlayerRoundFlow, isRebuilt, isRebuiltDynamicChild, phoneFullScreen, phonePushedTop, routeLabel, withoutCoachParams } from './nav';
 import { Sidebar } from './Sidebar';
 import { RailToggle } from './RailToggle';
 import { TopBar } from './TopBar';
@@ -32,7 +32,7 @@ import { RouteFrame } from './RouteFrame';
 import { chNavPath } from '../lib/nav-motion';
 import { PullToRefresh } from './PullToRefresh';
 import { teamSwitchFor } from './team-switch';
-import { AliasWait, NotRebuilt } from './NotRebuilt';
+import { AliasWait, NotRebuilt, PlayersOnlyRounds } from './NotRebuilt';
 import { useRelinkEpoch } from './relink';
 import { ClubhouseMarker } from './context';
 import { LightProvider } from './light';
@@ -44,6 +44,7 @@ import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
 import '../styles/tokens.css';
 import '../styles/base.css';
+import '../styles/motion.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 import '../styles/controls.css';
@@ -133,6 +134,10 @@ export function ClubhouseFrame({
   const aliased = isAliased(pathname, role);
   // A mistyped dashboard address renders its segment, the not-found page (CH-1306), not "not rebuilt" (F-0025).
   const known = isKnownDashboardPath(pathname);
+  // A rebuilt screen's child with a malformed id is still that screen's: its segment draws its own not-found (GAP-R-03).
+  const dynamicChild = isRebuiltDynamicChild(pathname, role, shell);
+  // A coach on a player's own round flow is told whose page it is, with the way back to Rounds (CH-11390, GAP-R-12).
+  const playersOnly = !rebuilt && role === 'coach' && isPlayerRoundFlow(pathname);
   // A player on a page rebuilt for coaches only (Recruiting, What's new): the not-rebuilt page says it is a coach's page.
   // Not on an aliased address: there the label is the player's own nav item (stats/team reads "My stats"), so a late
   // fallback saying only coaches use it would be false.
@@ -190,11 +195,13 @@ export function ClubhouseFrame({
                           <OfflineBanner />
                           {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
                           <RouteFrame routeKey={`${chNavPath(pathname, search)}\u0000${userData.teamId ?? ''}${relink ? `\u0000${relink}` : ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
-                            {rebuilt || !known ? children : (
+                            {rebuilt || !known || dynamicChild ? children : (
                               <>
-                                {/* An old address on its way somewhere draws a blank canvas, not "not rebuilt" (A30). */}
+                                {/* An old address on its way somewhere draws where it is going (its skeleton, GAP-S-19), not "not rebuilt" (A30). */}
                                 {aliased ? (
-                                  <AliasWait label={item?.label ?? routeLabel(pathname) ?? 'This page'} coachOnly={coachOnly} />
+                                  <AliasWait label={item?.label ?? routeLabel(pathname) ?? 'This page'} coachOnly={coachOnly} path={pathname} role={role} />
+                                ) : playersOnly ? (
+                                  <PlayersOnlyRounds />
                                 ) : (
                                   <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} coachOnly={coachOnly} />
                                 )}

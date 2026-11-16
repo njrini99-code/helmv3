@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/rounds/[id]"
       component="RoundDetailPage"
-      title="Failed to load round"
-      message="We couldn't load this golf round. It may not exist or there might be a connection issue."
       homePath="/golf/dashboard/rounds"
     />
   );

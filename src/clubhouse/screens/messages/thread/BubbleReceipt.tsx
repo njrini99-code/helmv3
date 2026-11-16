@@ -6,7 +6,7 @@ import { DmReceipt, SeenByPill } from '../seen-by';
 import { useToast } from '../../../ui/Toast';
 import { AlertCircle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { playReceiptRise, receiptDelayAfter } from '../motion/messages-beats';
+import { playReceiptFade, receiptDelayAfter } from '../motion/messages-beats';
 import { takeSendStamp } from './send-stamps';
 import { Icon } from '../../../ui/Icon';
 
@@ -28,7 +28,7 @@ export function BubbleReceipt({
   reduced?: boolean;
 }) {
   const toast = useToast();
-  // MOT-SEND-8: a receipt that arrives for a message you just sent rises 4 px, 70% of the launch after the send began.
+  // MOT-SEND-8, 3.5: a receipt that arrives for a message you just sent crossfades in once the bubble has risen (late content).
   const rise = useRef<HTMLSpanElement | null>(null);
   const receipt = !group && carrier && m.mine && !m.failed && !m.pending && !m.deleted && !m.poll;
   useEffect(() => {
@@ -36,7 +36,7 @@ export function BubbleReceipt({
     const at = takeSendStamp(m.id);
     const pill = rise.current?.firstElementChild;
     if (at === null || !(pill instanceof HTMLElement)) return;
-    playReceiptRise(pill, { receiptDelayMs: receiptDelayAfter(performance.now() - at) }, !!reduced);
+    playReceiptFade(pill, receiptDelayAfter(performance.now() - at), !!reduced);
   }, [receipt, m.id, reduced]);
   return (
     <>

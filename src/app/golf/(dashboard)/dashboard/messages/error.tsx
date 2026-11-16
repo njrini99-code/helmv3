@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/messages"
       component="MessagesPage"
-      title="Failed to load messages"
-      message="We couldn't load your messages. Please try again."
       homePath="/golf/dashboard"
     />
   );

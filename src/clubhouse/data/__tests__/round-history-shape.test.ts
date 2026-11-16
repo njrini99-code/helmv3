@@ -39,6 +39,17 @@ describe('toReviewHistory (P-7 stage 3)', () => {
     expect(h.usual).toEqual({ bounce: null, ppg: null, closing: null, big: null });
   });
 
+  it('DF-C-12: practice rounds neither set nor block a record chip', () => {
+    const round = row(72, { round_date: '2026-10-01', round_type: 'tournament' });
+    const practice = row(68, { round_date: '2026-09-20', round_type: 'practice', course_name: 'Marsh' });
+    const others = [row(74, { round_date: '2026-09-01', round_type: 'tournament', course_name: 'Marsh' }), row(76, { round_date: '2026-08-20', round_type: null, course_name: 'Marsh' }), row(75, { round_date: '2026-08-15', round_type: 'qualifier', course_name: 'Marsh' })];
+    const list = [round, practice, ...others];
+    // The 68 in practice is no one's low: the 72 is the low of the rounds that count.
+    expect(toReviewHistory({ round, list, holes: new Map(), seasonStart: '2026-08-01' }).records.map((m) => m.label)).toContain('Career low');
+    // A practice round under review gets no chips, however low.
+    expect(toReviewHistory({ round: practice, list, holes: new Map(), seasonStart: '2026-08-01' }).records).toEqual([]);
+  });
+
   it('builds the usual from five earlier full rounds, never from a later one', () => {
     const round = row(72, { round_date: '2026-10-01' });
     const earlier = Array.from({ length: 5 }, (_, i) => row(74, { round_date: `2026-09-0${i + 1}`, course_name: 'Marsh' }));

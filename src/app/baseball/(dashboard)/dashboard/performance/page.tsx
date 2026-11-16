@@ -51,6 +51,9 @@ import type {
   HelmLiftingExerciseRow,
   HelmLiftingReadinessCheckinRow,
 } from '@/lib/types/helm-lifting-data';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Performance' };
 
 interface RosterPlayerRow {
   id: string;

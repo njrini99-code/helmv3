@@ -1404,19 +1404,20 @@
 }
 @media (hover: hover) {
   .ch-ox-nextstep:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
     color: var(--ch-text-secondary);
+    transition-duration: 0s;
   }
   .ch-ox-nextstep:hover > svg {
     transform: translateX(2px);
   }
 }
 .ch-ox-nextstep[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ox-nextstep:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-ox-nextstep:focus-visible {

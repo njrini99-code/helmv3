@@ -1,11 +1,11 @@
 /**
- * When each of your messages began its send flight (useSendRise), so the receipt that arrives with the server's answer can
- * count its delay from the send (MOT-SEND-8) and a thread that merely opens, with receipts already there, never rises one.
+ * When each of your messages arrived in the thread (useSendStamps), so the receipt that arrives with the server's answer can
+ * count its delay from the send (MOT-SEND-8) and a thread that merely opens, with receipts already there, never fades one in.
  * Keyed by message id; a stamp is taken once and a stale one is dropped.
  */
 const stamps = new Map<string, number>();
 
-/** A send older than this is not "just sent": the receipt appears without the rise. */
+/** A send older than this is not "just sent": the receipt appears without the fade. */
 export const SEND_STAMP_TTL_MS = 10_000;
 
 export function stampSend(id: string, at: number = performance.now()): void {

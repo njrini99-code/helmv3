@@ -271,33 +271,17 @@ svg .ch-num {
 
 /* Routine navigation shows a page as soon as it is ready: the page crossfade (RouteFrame) is the only entrance. The
    staggered first-paint reveal (D-64) was retired by the owner on 2026-10-01 (high-fidelity audit F01: a page could take
-   about a second to finish appearing). The keyframes stay for the few deliberate single-element rises. */
-@keyframes ch-reveal {
-  from {
-    opacity: 0;
-    translate: 0 var(--ch-reveal-rise);
-  }
-}
+   about a second to finish appearing), and its keyframe with it (MOTION-AND-VISUAL 3.12). */
 
-/* Route skeletons (every one is a main[aria-busy] labelled "Loading ..."): a
-   fade in over base. Only skeletons: a live page that is aria-busy during a
-   transition keeps its content on screen instead of blinking to transparent
-   (F-55, the first flash on a window or filter change). */
-@keyframes ch-skel-in {
-  from {
-    opacity: 0;
-  }
-}
-[data-ui='clubhouse'] main[aria-busy='true'][aria-label^='Loading'] {
-  animation: ch-skel-in var(--ch-dur-base) var(--ch-ease) var(--ch-skel-delay) backwards;
-}
-/* Reached by an in-app navigation (RouteFrame sets data-ch-vt-hold while the page crossfade runs): the skeleton waits
-   --ch-dur-vt-hold (300ms) with the old page still up, so a load that finishes sooner never flashes one (native-feel
-   audit 2026-10-08, P0-2), and then the old page's fade out (--ch-dur-vt-out), so it fades in after the old page has
-   gone, never through it (phone test 2026-10-13). A hard load's streamed skeleton, a push, reduced motion and
-   Animations off show it at once. */
+/* Route skeletons (every one is a main[aria-busy] labelled "Loading ..."): their frame (the bar, the title, the strip) is
+   in the first frame (production audit 2026-11-15, S4.4), so a tab, a push and a pop show the next screen's shape at once,
+   never a fade up from blank; their static blocks wait the busy delay (MOTION-AND-VISUAL 3.9, shell.css ch-busy-wait). Only
+   onto a desktop crossfade (RouteFrame sets data-ch-vt-hold while it runs) does a skeleton wait: --ch-dur-vt-hold with
+   the old page still up, so a load that finishes sooner never flashes one (native-feel audit 2026-10-08, P0-2), then the
+   old page's fade out (--ch-dur-vt-out), and it fades in over base after the old page has gone, never through it
+   (motion.css ch-in: a kept keyframe lives there, MOTION-AND-VISUAL 3.12). */
 html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='Loading'] {
-  animation-delay: calc(var(--ch-dur-vt-hold) + var(--ch-dur-vt-out));
+  animation: ch-in var(--ch-dur-base) var(--ch-ease-ios) calc(var(--ch-dur-vt-hold) + var(--ch-dur-vt-out)) backwards;
 }
 
 /* Animations off (Settings; <html> carries it from the first frame, ThemeScript) and reduced motion: no skeleton fade. */
@@ -320,19 +304,16 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
     transition-duration: var(--ch-dur-crossfade-rm) !important;
     transition-timing-function: linear !important;
     animation-duration: var(--ch-rm-animation, 1ms) !important;
-    /* A looping animation at 1ms would strobe: run it once and stop. */
+    /* A looping animation at 1ms would strobe: run it once and stop. The working indicator too: under Reduce Motion it
+       stands still (MOTION-AND-VISUAL 3.9, 3.11), and the words beside it say what is working. */
     animation-iteration-count: 1 !important;
   }
-  /* Except the one spinner (OQ-18, rubric H19): it keeps turning, as iOS's activity indicator does under Reduce Motion. A
-     ring turning in place moves nothing across the screen, and a still ring reads as stuck. Animations off still stops
-     it (--ch-dur-sweep is 0 there). */
-  .ch-root .ch-spinner,
-  .ch-root .ch-qcs .live__spin,
-  .ch-root .ch-qck .live__spin,
-  .ch-root .ch-hr .spin,
-  .ch-root .ch-htb .spin {
-    animation-duration: var(--ch-dur-sweep) !important;
-    animation-iteration-count: infinite !important;
+  /* The large title's fade runs on the page's scroll, not on time (S4.3, S4.9: the person's own scroll drives it, so it
+     stays under Reduce Motion); a 1ms duration would cut it to a jump. */
+  @supports (animation-timeline: scroll()) {
+    .ch-root main .ch-large-title {
+      animation-duration: auto !important;
+    }
   }
   /* A dialog's scrim is its own pseudo-element in the top layer and kept its fade (audit A-12). Its own rule, so a
      browser that can't parse ::backdrop drops only this one, not the floor above. */

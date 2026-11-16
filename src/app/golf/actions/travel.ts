@@ -285,7 +285,8 @@ async function createGolfTravelItineraryImpl(input: CreateTravelItineraryInput) 
       };
     }
 
-    revalidatePath('/golf/dashboard/travel');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
 
     return {
       success: true,
@@ -448,7 +449,8 @@ async function updateGolfTravelItineraryImpl(input: UpdateTravelItineraryInput) 
       };
     }
 
-    revalidatePath('/golf/dashboard/travel');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
 
     return {
       success: true,
@@ -556,7 +558,8 @@ async function deleteGolfTravelItineraryImpl(itineraryId: string) {
     };
   }
 
-  revalidatePath('/golf/dashboard/travel');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/team-hub');
 
   return {
     success: true,
@@ -768,7 +771,8 @@ async function createTravelExpenseImpl(input: CreateExpenseInput) {
       return { success: false, error: 'Failed to create expense. Please try again.' };
     }
 
-    revalidatePath('/golf/dashboard/travel');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true, data };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -851,7 +855,8 @@ async function updateTravelExpenseImpl(input: UpdateExpenseInput) {
       return { success: false, error: 'Failed to update expense. Please try again.' };
     }
 
-    revalidatePath('/golf/dashboard/travel');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true, data };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -932,7 +937,8 @@ async function deleteTravelExpenseImpl(expenseId: string) {
     return { success: false, error: 'Failed to delete expense. Please try again.' };
   }
 
-  revalidatePath('/golf/dashboard/travel');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/team-hub');
   return { success: true };
 }
 
@@ -1417,7 +1423,8 @@ async function setBudgetImpl(input: { itinerary_id: string; category: ExpenseCat
       return { success: false, error: 'Failed to set budget. Please try again.' };
     }
 
-    revalidatePath('/golf/dashboard/travel');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true, data };
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * One number, one source (owner rule, 10 Nov 2026). A team's strokes gained, and a player's, are drawn on Team stats, on CoachHelm
@@ -34,6 +34,13 @@ import type { ChRound } from '../season';
 import { PREVIEW_TEAM_STATS, PREVIEW_PLAYER } from '../../preview/fixtures-stats';
 import { PREVIEW_TEAM_BOARD } from '../../preview/fixtures-coachhelm-team';
 import { PREVIEW_SG_ROWS, PREVIEW_TEAM_SG } from '../../preview/fixtures-team-sg';
+import { sgPolicy } from '../stats-sg-mix';
+
+// These tests pin figures and reads written for every stored strokes gained figure, so they run under `include`. The shipped policy
+// (`exclude`, SC-07) and what it changes are pinned in src/clubhouse/data/__tests__/sg-mix.test.ts.
+const SG_POLICY_SHIPPED = sgPolicy.estimated;
+beforeEach(() => { sgPolicy.estimated = 'include'; });
+afterEach(() => { sgPolicy.estimated = SG_POLICY_SHIPPED; });
 
 const src = (file: string) => readFileSync(join(process.cwd(), 'src/clubhouse', file), 'utf8');
 const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
@@ -153,7 +160,7 @@ describe('CoachHelm’s Ask states Team stats’ team strokes gained (SOURCES.md
     expect(ask.rounds).toBe(team.sgRounds);
     expect(ask.players).toBe(5);
 
-    const figures = teamFiguresOver(loaded, IDS, f, SEASON);
+    const figures = teamFiguresOver(loaded, IDS, f, SEASON, new Map());
     expect(figures.sg_total).toBeCloseTo(team.figures.find((x) => x.key === 'sg')!.value!, 9);
     expect(figures.sg_rounds).toBe(team.sgRounds);
     expect(figures.legs).toEqual(ask.legs);
@@ -163,7 +170,7 @@ describe('CoachHelm’s Ask states Team stats’ team strokes gained (SOURCES.md
     const scoring = practiceCut(f) ? loaded.filter(countsForScoring) : loaded;
     const window = IDS.flatMap((id) => roundsInFilter(scoring.filter((r) => r.player_id === id), f, SEASON));
     const old = sgOver(holeRounds(window));
-    const ask = teamFiguresOver(loaded, IDS, f, SEASON);
+    const ask = teamFiguresOver(loaded, IDS, f, SEASON, new Map());
     // Far enough apart that a return to the old sum cannot pass as rounding.
     expect(Math.abs(old.total! - ask.sg_total!)).toBeGreaterThan(0.3);
     expect(Math.abs(old.legs.approach! - ask.legs.approach!)).toBeGreaterThan(0.1);
@@ -175,7 +182,7 @@ describe('CoachHelm’s Ask states Team stats’ team strokes gained (SOURCES.md
     expect(ask.legs).toEqual({ tee: null, approach: null, around: null, putting: null });
     expect(ask.rounds).toBe(0);
     expect(ask.players).toBe(0);
-    expect(teamFiguresOver(thin, ['a', 'b', 'c'], f, SEASON).sg_total).toBeNull();
+    expect(teamFiguresOver(thin, ['a', 'b', 'c'], f, SEASON, new Map()).sg_total).toBeNull();
   });
 
   it('both of Ask’s loaders call the one function and no longer pool for themselves', () => {

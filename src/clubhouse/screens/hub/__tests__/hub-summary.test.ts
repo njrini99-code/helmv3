@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChRsvp } from '../../../data/hub';
-import { firstBusyDay, hubStrip, ledgerSorted, owedBy, queueOf, tabAttention, taskFigures, untouchedLine, type StripInput } from '../hub-summary';
+import { dayHolds, firstBusyDay, hubStrip, ledgerSorted, owedBy, queueOf, tabAttention, taskFigures, tripStay, untouchedLine, type StripInput } from '../hub-summary';
 
 const rsvp = (over: Partial<ChHubRsvp> = {}): ChHubRsvp => ({
   eventId: 'e1',
@@ -171,5 +171,27 @@ describe('taskFigures', () => {
   it('is absent when any task’s completion did not load, or there are no tasks', () => {
     expect(taskFigures([task({ done: [1, 2] }), task({ id: 't2', done: null })], done)).toBeNull();
     expect(taskFigures([], done)).toBeNull();
+  });
+});
+
+// Prod audit 2026-11-15, P1-21 / N13P-40: a Friday to Sunday trip with no hotel said "Stay: Same day", and Next 7 days said "On the
+// road" right above "Nothing on Fri 13".
+describe('a trip says where it stays, and a trip day is not empty', () => {
+  it('the hotel when set; else the nights its dates hold; Same day only for a day trip', () => {
+    expect(tripStay({ hotel: 'Carolina Inn', departDate: '2026-11-13', returnDate: '2026-11-15' })).toBe('Carolina Inn');
+    expect(tripStay({ hotel: null, departDate: '2026-11-13', returnDate: '2026-11-15' })).toBe('2 nights, hotel not set');
+    expect(tripStay({ hotel: null, departDate: '2026-11-13', returnDate: '2026-11-14' })).toBe('1 night, hotel not set');
+    expect(tripStay({ hotel: null, departDate: '2026-10-31', returnDate: '2026-11-02' })).toBe('2 nights, hotel not set');
+    expect(tripStay({ hotel: null, departDate: '2026-11-13', returnDate: '2026-11-13' })).toBe('Same day');
+    expect(tripStay({ hotel: null, departDate: '2026-11-13', returnDate: null })).toBe('Same day');
+    expect(tripStay({ hotel: null, departDate: null, returnDate: null })).toBe('Hotel not set');
+  });
+
+  it('a day names its events and its trip, and says nothing on only when it holds neither', () => {
+    const ev = { id: 'e', title: 'Practice', time: '3:00 PM', place: null } as unknown as ChHubDay['events'][number];
+    expect(dayHolds({ events: [], trip: 'Pinehurst' })).toBe('on the road (Pinehurst)');
+    expect(dayHolds({ events: [ev, ev], trip: 'Pinehurst' })).toBe('2 events, on the road (Pinehurst)');
+    expect(dayHolds({ events: [ev], trip: null })).toBe('1 event');
+    expect(dayHolds({ events: [], trip: null })).toBe('nothing on');
   });
 });

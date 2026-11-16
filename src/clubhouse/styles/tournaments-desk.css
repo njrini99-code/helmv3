@@ -340,7 +340,8 @@ button.ch-tour-desk-sc {
 }
 @media (hover: hover) {
   button.ch-tour-desk-sc:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 button.ch-tour-desk-sc:focus-visible {
@@ -608,7 +609,8 @@ button.ch-tour-desk-sc:focus-visible {
 }
 @media (hover: hover) {
   .ch-tour-desk-hg__cell:hover {
-    background: var(--ch-ledger-row-hover);
+    background: var(--ch-sel);
+    transition-duration: 0s;
   }
 }
 .ch-tour-desk-hg__cell:focus-visible {

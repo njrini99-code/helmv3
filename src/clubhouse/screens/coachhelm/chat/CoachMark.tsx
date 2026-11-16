@@ -2,8 +2,8 @@
 
 import { useLayoutEffect, useRef, useState } from 'react';
 
-/** One cycle of the wheel's turn (`ch-th-turn`): it turns one spoke, then holds. Matches `--ch-dur-shimmer`. */
-const TURN_MS = 1900;
+/** One cycle of the wheel's turn (`ch-th-turn`): it turns one spoke, then holds. Matches `--ch-dur-typing`, the working beat. */
+const TURN_MS = 1200;
 const SPOKES = [0, 45, 90, 135, 180, 225, 270, 315];
 
 /**

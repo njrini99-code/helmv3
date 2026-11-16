@@ -89,6 +89,10 @@
       "schedule": "0 7 * * *"
     },
     {
+      "path": "/api/cron/golf-demo-refresh",
+      "schedule": "35 9 * * *"
+    },
+    {
       "path": "/api/cron/log-retention",
       "schedule": "30 7 * * *"
     },

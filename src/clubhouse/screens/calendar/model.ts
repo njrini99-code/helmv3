@@ -30,6 +30,8 @@ export type ChCalPlan = { state: 'none' } | { state: 'draft' | 'published' | 'ed
 
 export interface ChCalEvent {
   plan?: ChCalPlan;
+  /** A practice whose plan read failed (GAP-S-28): the sheet says so where the plan shows (CH-6290), never "no plan". */
+  planFailed?: true;
   id: string;
   type: ChCalType;
   title: string;
@@ -95,6 +97,11 @@ export interface ChCalEvent {
   round?: ChCalRoundRef;
   /** P-5: a tournament event whose round ref couldn't be read: it can't be moved until it is. */
   roundRefFailed?: boolean;
+  /**
+   * A team trip with no calendar event (golf_travel_itineraries, N13P-24): read-only here, planned in Team Hub's Travel. `leaves` and
+   * `returns` are the saved wall times on its first and last day, in decimal hours; null when none was saved.
+   */
+  trip?: { id: string; leaves: number | null; returns: number | null };
 }
 
 /** P-5 8.10: what the calendar knows of a round's tournament. `roundNo` and `lockedAt` are P-4's field names. */

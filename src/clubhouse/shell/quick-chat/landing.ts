@@ -96,7 +96,7 @@ export function landingHome(tool: string | undefined, lands?: LandsHint | null):
 export const LANDING_UNSEEN_MS = 60_000;
 /** The page has not shown the row this long after the save: read it once more. Twice this long: the slot leaves. */
 export const LANDING_LATE_MS = 6_000;
-/** The mark's whole life, the value of `--ch-dur-live` (tokens.css): in over the quick beat, held, gone at the end. */
+/** The mark's whole life, 2.8 s: in over the quick beat, held, gone at the end. */
 export const LANDING_MARK_MS = 2_800;
 const MARK_HOLD_UNTIL_MS = 1_200;
 
@@ -209,7 +209,7 @@ const bez = (c: readonly number[]) => `cubic-bezier(${c.join(',')})`;
 
 /**
  * MO-8-2: the mark. A tint layer over the row and, where the row allows one, a "New" tag: opacity only, in over the
- * quick beat, held, gone at `--ch-dur-live`. Both are this file's own nodes, appended to the row and removed when the
+ * quick beat, held, gone at `LANDING_MARK_MS`. Both are this file's own nodes, appended to the row and removed when the
  * effect ends, so the row is an ordinary row again. Animations off: the same mark, still, for the same time.
  */
 export function markRow(row: HTMLElement, mode: 'full' | 'fade' | 'off' = 'full', opts: { /** The row takes the place of a slot that was already lit: the tint is handed over at full, with no second rise. */ handed?: boolean } = {}): () => void {

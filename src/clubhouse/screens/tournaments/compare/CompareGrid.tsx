@@ -26,21 +26,27 @@ export interface GridProps {
   onOpen: (side: "a" | "b", key: TourMetricKey) => void;
 }
 
-/** Dots for every round on one shared scale, the side's own average as a bar, the other side's as a dashed line. */
+/**
+ * Dots for every round on one shared scale, the side's own average as a bar, the other side's as a dashed line. Better is to the
+ * right in every row (stats and charts audit 2026-11-15, CH-14): a lower-is-better measure runs high to low, so the grid never
+ * puts the better side on the left for scoring and on the right for greens.
+ */
 function Strip({
   values,
   lo,
   hi,
   mean,
   other,
+  lowerBetter,
 }: {
   values: number[];
   lo: number;
   hi: number;
   mean: number | null;
   other: number | null;
+  lowerBetter: boolean;
 }) {
-  const x = (v: number) => (hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
+  const x = (v: number) => (hi === lo ? 50 : ((lowerBetter ? hi - v : v - lo) / (hi - lo)) * 100);
   return (
     <span className="ch-tour-cmp-strip" aria-hidden="true">
       <i className="ch-tour-cmp-strip__axis" />
@@ -66,6 +72,9 @@ function Strip({
     </span>
   );
 }
+
+/** Which way the measure is better, and that its strip puts better on the right (CH-14). */
+const betterWords = (better: "lower" | "higher") => `${better === "lower" ? "Lower" : "Higher"} is better · better to the right`;
 
 function scaleOf(a: SideFigure, b: SideFigure) {
   const all = [...a.values, ...b.values];
@@ -118,6 +127,7 @@ function Value({
           hi={hi}
           mean={f.state !== "none" ? f.result.value : null}
           other={other.state !== "none" ? other.result.value : null}
+          lowerBetter={def.better === "lower"}
         />
       )}
     </button>
@@ -256,9 +266,7 @@ export function CompareGrid({
               <div role="rowheader" className="ch-tour-cmp-m">
                 <b>{def.label}</b>
                 <span>
-                  {def.better === "lower"
-                    ? "Lower is better"
-                    : "Higher is better"}
+                  {betterWords(def.better)}
                 </span>
               </div>
               <div role="cell">
@@ -351,9 +359,7 @@ export function CompareBlocks({ keys, a, b, labA, labB, onOpen }: GridProps) {
             <div className="ch-tour-cmp-block__h">
               <b>{def.label}</b>
               <span>
-                {def.better === "lower"
-                  ? "Lower is better"
-                  : "Higher is better"}
+                {betterWords(def.better)}
               </span>
             </div>
             <div className="ch-tour-cmp-block__ab">

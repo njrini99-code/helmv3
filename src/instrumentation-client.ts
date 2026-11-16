@@ -7,6 +7,14 @@ import { buildClientSentryOptions, isHealthProbeFetchEcho } from '@/lib/sentry-c
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
+import { createRepeatErrorSampler } from '@/lib/observability/repeat-error-sampler';
+
+/**
+ * MAC-12 (production audit 2026-11-15): the same error sent on every render or retry rate limited the Sentry tunnel
+ * (429), and the reports that mattered were dropped with it. A page load sends the first few of each error and a
+ * bounded total (lib/observability/repeat-error-sampler.ts).
+ */
+const repeatErrors = createRepeatErrorSampler();
 
 /**
  * True when this event came from `captureConsoleIntegration` rather than an
@@ -84,6 +92,9 @@ Sentry.init({
   beforeSendLog: enforceLogAttributeAllowlist,
 
   integrations: typeof window !== 'undefined' ? [
+    // Drops an event identical to the one just before it. It is one of the SDK's defaults; it is named here so the
+    // repeat sampling in beforeSend is never the only guard if the defaults are ever turned off (MAC-12).
+    Sentry.dedupeIntegration(),
     // Skip replay in dev — it records DOM mutations and adds overhead.
     // Privacy: mask every text node and every input value (never capture
     // request/response bodies or auth headers — `networkDetailAllowUrls` is
@@ -200,6 +211,11 @@ Sentry.init({
     }
 
     if (isBackgroundPresenceHeartbeatTimeout(event)) {
+      return null;
+    }
+
+    // Last of the drops, so an event dropped above never uses up an error's allowance.
+    if (!repeatErrors.keep(event)) {
       return null;
     }
 

@@ -208,28 +208,27 @@ describe('on the phone', () => {
     expect(renamed.querySelector('.ch-calm-ev__sub')!.textContent).toBe('was Travel briefing · Team room');
   });
 
-  it('the strike is pending until this device has seen it, and already done on the first frame after', () => {
+  it('the strike is drawn still from the first frame, seen or not: no draw-in waits on this device (3.12)', () => {
     stubObserver();
     try {
       wrap(withMarks([row()]));
-      expect(rowButton().querySelector('s.ch-was')!.getAttribute('data-draw')).toBe('pending');
+      expect(rowButton().querySelector('s.ch-was')!.hasAttribute('data-draw')).toBe(false);
       cleanup();
       wrap(withMarks([row()], {}, [['6f1c2a90', 's']]));
-      expect(rowButton().querySelector('s.ch-was')!.getAttribute('data-draw')).toBe('done');
+      expect(rowButton().querySelector('s.ch-was')!.hasAttribute('data-draw')).toBe(false);
     } finally {
       vi.unstubAllGlobals();
     }
   });
 
-  it('once a mark has been 60% on screen the device records it (the observer only records; the draw is CSS)', async () => {
+  it('once a mark has been 60% on screen the device records it (the observer only records)', async () => {
     const io = stubObserver();
     try {
       wrap(withMarks([row()]));
       await waitFor(() => expect(io.watched.length).toBeGreaterThan(0));
       expect(document.cookie).not.toContain('ch_marks=6f1c2a90');
       io.callbacks[0]!([{ isIntersecting: true, target: io.watched[0]! }]);
-      await waitFor(() => expect(rowButton().querySelector('s.ch-was')!.getAttribute('data-draw')).toBe('done'));
-      expect(document.cookie).toContain('ch_marks=6f1c2a90:s');
+      await waitFor(() => expect(document.cookie).toContain('ch_marks=6f1c2a90:s'));
     } finally {
       vi.unstubAllGlobals();
     }
@@ -239,7 +238,7 @@ describe('on the phone', () => {
     vi.stubGlobal('IntersectionObserver', undefined);
     try {
       wrap(withMarks([row()]));
-      await waitFor(() => expect(rowButton().querySelector('s.ch-was')!.getAttribute('data-draw')).toBe('done'));
+      await waitFor(() => expect(document.cookie).toContain('ch_marks=6f1c2a90:s'));
     } finally {
       vi.unstubAllGlobals();
     }
@@ -286,9 +285,9 @@ describe('on the phone', () => {
 
     await user.click(screen.getByRole('button', { name: 'Show the change again' }));
     expect(await screen.findByRole('note', { name: 'What changed' })).toBeTruthy();
-    // It was already seen: it comes back without drawing a second time.
+    // It was already seen: it comes back as seen, struck as it always is.
     expect(document.cookie).toContain('ch_marks=6f1c2a90:s');
-    expect(screen.getAllByRole('button', { name: /^Travel briefing/ }).some((b) => b.querySelector('s.ch-was')?.getAttribute('data-draw') === 'done')).toBe(true);
+    expect(screen.getAllByRole('button', { name: /^Travel briefing/ }).some((b) => b.querySelector('s.ch-was') !== null)).toBe(true);
   });
 
   it('a device that cleared the change paints it cleared on the first frame', () => {

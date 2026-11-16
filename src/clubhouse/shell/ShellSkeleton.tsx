@@ -3,12 +3,13 @@ import { clubhouseFontVariables } from '../lib/fonts';
 import { Skeleton } from '../ui/States';
 import '../styles/tokens.css';
 import '../styles/base.css';
+import '../styles/motion.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 
 /**
  * The Clubhouse frame's silhouette for route boundaries that sit ABOVE the
- * dashboard layout (`/golf/loading.tsx`, `(dashboard)/loading.tsx`), where the
+ * dashboard layout (`/golf/loading.tsx`), where the
  * shell and its role are not known yet. Same chrome as ClubhouseFrame (sidebar
  * on wide screens, top bar) so the hand-off to the real shell
  * changes only what is inside it. Swap audit F-30: these boundaries painted

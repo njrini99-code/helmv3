@@ -12,7 +12,7 @@ import { useChReducedMotion } from '../lib/reduced-motion';
  * it is going; toward a row too near to stop at from that speed it starts slower, so it never passes the row (the
  * spring is sampled into Web Animations keyframes, so it needs no animation library in the shell).
  * Until this has measured, and wherever script never runs, each row draws its own plate as before (`.ch-nav--plate`
- * hands the drawing over). Reduced motion and Animations off jump.
+ * hands the drawing over), in one frame with no fade (`data-ch-plate-first`). Reduced motion and Animations off jump.
  */
 export function NavPlate() {
   const ref = useRef<HTMLSpanElement>(null);
@@ -67,12 +67,21 @@ export function NavPlate() {
         nav.classList.add('ch-nav--plate');
       }
     };
+    // The first placement swaps the row's own plate for this one at once: faded together over the quick beat, both
+    // stood half there and the current row read dim on every page load. The swap paints with no transition, and the
+    // transitions come back a frame later for the changes that follow.
+    nav.setAttribute('data-ch-plate-first', '');
     place(false);
+    let settle = requestAnimationFrame(() => {
+      settle = requestAnimationFrame(() => nav.removeAttribute('data-ch-plate-first'));
+    });
     const mo = new MutationObserver(() => place(true));
     mo.observe(nav, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-current'] });
     const ro = new ResizeObserver(() => place(false));
     ro.observe(nav);
     return () => {
+      cancelAnimationFrame(settle);
+      nav.removeAttribute('data-ch-plate-first');
       mo.disconnect();
       ro.disconnect();
       glide?.anim.cancel();

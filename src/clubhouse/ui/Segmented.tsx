@@ -20,9 +20,10 @@ export interface SegOption<V extends string> {
 
 /**
  * The recessed well with a raised, pressed chip: the owner's "depth like the
- * toggles". The chip slides between options on the settle spring (base, bounce 0.1; CH-1615), so it arrives and
- * settles rather than stopping on a curve. Arrow keys move the selection like a native segmented control, with a
- * detent haptic on change. Reduced motion and Animations off move it at once.
+ * toggles". The chip slides between options over the base beat (260 ms) on the iOS curve, with no overshoot, and the
+ * content under it swaps at once (MOTION-AND-VISUAL 3.3, 4.2's motion line; CH-1615). A change ticks the selection haptic, by tap
+ * or by the arrow keys, which move the selection like a native segmented control. Under Reduce Motion the chip fades in
+ * at its new place over 180 ms (3.11); Animations off moves it at once.
  *
  * With `redraws` (a switch that swaps a whole view: a calendar's week for its day, a list's grouping), the chip moves in
  * the tap's own frame and the view renders as a transition after it, so a heavy view can't hold the chip back (motion
@@ -43,7 +44,6 @@ export function Segmented<V extends string>({
   redraws = false,
   block = false,
   hook,
-  plate,
 }: {
   label: string;
   value: V;
@@ -56,7 +56,7 @@ export function Segmented<V extends string>({
   block?: boolean;
   /** A capture hook on each option (`data-ch`, with `data-v`); absent, none is drawn. */
   hook?: string;
-  /** `thumb` (Messages' filter, MOT-X-2): the chip slides for 360 ms on the overshooting CSS spring instead of the settle spring. */
+  /** Retiring: every chip is the 260 ms iOS-curve thumb now (MOTION-AND-VISUAL 3.3), so this changes nothing. Kept for its callers. */
   plate?: 'thumb';
 }) {
   const reduced = useChReducedMotion();
@@ -65,7 +65,9 @@ export function Segmented<V extends string>({
   const [changing, startChange] = useTransition();
   const [chosen, setChosen] = useState<V | null>(null);
   const shown = changing && chosen !== null ? chosen : value;
-  useSlidePlate(well, '.is-on > .ch-seg__pill', shown, { reduced, ink: '.ch-seg__b', tween: plate });
+  // The thumb: 260 ms on the iOS curve, translate and width (MOTION-AND-VISUAL 3.3, 4.2; MAC-17 keeps the width). The
+  // content under it swaps at once.
+  useSlidePlate(well, '.is-on > .ch-seg__pill', shown, { reduced, ink: '.ch-seg__b', tween: 'thumb' });
   const pick = (v: V) => {
     if (v === shown) return;
     haptic('select');

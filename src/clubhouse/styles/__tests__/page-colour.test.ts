@@ -131,7 +131,9 @@ describe('the page: ivory light over a deeper linen', () => {
         copies.push(d.value.trim());
       });
     });
-    expect(copies.length).toBeGreaterThanOrEqual(4);
+    // Three since the motion fix (#2537) retired the view-transition slide and its `html[data-ch-nav] .ch-frame-route`
+    // rule: the pop copy, the copy under a push and the page sliding over it. Each still paints the page.
+    expect(copies.length).toBeGreaterThanOrEqual(3);
     for (const v of copies) expect(v).toBe('var(--ch-page-paint)');
   });
 });

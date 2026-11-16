@@ -7,6 +7,8 @@ import { todayIsoInZone } from '@/lib/golf/timezone';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { isTourSchemaMissing } from '@/lib/golf/tournament-refusals';
 import { isoDay } from '../lib/dates';
+import { isScoreCountable } from './round-scope';
+import { loadTeamZone } from './season';
 import { chLogServer } from '../lib/track-server';
 import { suggestLinks, type LinkCandidateRound, type LinkEventRound } from '../screens/tournaments/links';
 import {
@@ -191,13 +193,13 @@ interface TeamInfo {
 }
 
 async function readTeam(ctx: TourCtx): Promise<TeamInfo> {
-  const [{ data, error }, settings] = await Promise.all([
-    ctx.supabase.from('golf_teams').select('id, name, timezone, gender').eq('id', ctx.teamId).maybeSingle(),
-    ctx.supabase.from('golf_team_settings').select('timezone').eq('team_id', ctx.teamId).maybeSingle(),
+  const [{ data, error }, tz] = await Promise.all([
+    ctx.supabase.from('golf_teams').select('id, name, gender').eq('id', ctx.teamId).maybeSingle(),
+    loadTeamZone(ctx.supabase, ctx.teamId, 'tournaments'),
   ]);
   if (error || !data) throw new ReadFailed('team', error ?? { message: 'team not found' });
-  // The team's clock as Calendar reads it (golf_team_settings), then the team row's; a round day is a date on it.
-  const tz = (!settings.error && settings.data?.timezone) || data.timezone || 'America/New_York';
+  // The team's clock, the settings zone every Clubhouse loader reads (`loadTeamZone`); a round day is a date on it. DF-C-07: it fell
+  // back to `golf_teams.timezone`, which Settings never writes, and took a zone that isn't one as given.
   const today = todayIsoInZone(tz, new Date(ctx.now));
   const season = seasonIdOf(today);
   const label = `${data.name} · ${season.slice(0, 4)}–${season.slice(5)}`;
@@ -641,13 +643,26 @@ export async function loadTournamentHistory(ctx: TourCtx): Promise<TourLoad<ChTo
   return guard<ChTourHistoryData>('history', async () => {
     const info = await readTeam(ctx);
     const seasonEnd = Number(seasonIdOf(info.today).slice(0, 4)) + 1;
-    const [read, players, profiles] = await Promise.all([readEvents(ctx, info.team.timezone), readPlayers(ctx, seasonEnd), readSeasonProfiles(ctx)]);
+    // The events are the page; the roster, the season profiles and the trend are its sections (GAP-S-08). A failure in one
+    // flags that section and the events still show, instead of the whole page failing.
+    const [read, roster, seasonRows] = await Promise.all([
+      readEvents(ctx, info.team.timezone),
+      section('history', 'players', () => readPlayers(ctx, seasonEnd)),
+      section('history', 'season_profiles', () => readSeasonProfiles(ctx)),
+    ]);
+    const players = roster.ok ? roster.value : [];
+    const profiles = seasonRows.ok ? seasonRows.value : [];
     const season = seasonIdOf(info.today);
     const complete = read.events.filter((e) => e.status === 'complete');
-    const matched = matchedPlayersOf(read.events, season);
-    const trend = historyTrend(complete, read.courses, matched);
-    const vals = trend.filter((t) => complete.find((e) => e.id === t.eventId)?.seasonId === season && t.actual != null).map((t) => t.actual!).sort((a, b) => a - b);
-    const q = (p: number) => vals[Math.min(vals.length - 1, Math.max(0, Math.round(p * (vals.length - 1))))]!;
+    const figures = await section('history', 'trend', async () => {
+      const matched = matchedPlayersOf(read.events, season);
+      const trend = historyTrend(complete, read.courses, matched);
+      const vals = trend.filter((t) => complete.find((e) => e.id === t.eventId)?.seasonId === season && t.actual != null).map((t) => t.actual!).sort((a, b) => a - b);
+      const q = (p: number) => vals[Math.min(vals.length - 1, Math.max(0, Math.round(p * (vals.length - 1))))]!;
+      // The middle half of this season's results; under four events there is no band to draw.
+      return { matched, trend, band: vals.length >= 4 ? { lo: q(0.25), hi: q(0.75) } : null };
+    });
+    const { matched, trend, band } = figures.ok ? figures.value : { matched: [], trend: [], band: null };
     return {
       kind: 'ready',
       data: {
@@ -658,13 +673,12 @@ export async function loadTournamentHistory(ctx: TourCtx): Promise<TourLoad<ChTo
         courses: read.courses,
         events: complete,
         trend,
-        // The middle half of this season's results; under four events there is no band to draw.
-        band: vals.length >= 4 ? { lo: q(0.25), hi: q(0.75) } : null,
+        band,
         matchedPlayers: matched,
         headToHead: headToHeadOf(read.events, season),
         // Splits by day, kind and start need the standard errors of the metrics engine's pool: not built in this pass.
         splits: [],
-        errors: {},
+        errors: { ...(roster.ok && seasonRows.ok ? {} : { profiles: true as const }), ...(figures.ok ? {} : { trend: true as const }) },
       },
     };
   });
@@ -680,6 +694,8 @@ interface PoolRound {
   course_id: string | null;
   total_score: number | null;
   holes_played: number | null;
+  front_nine: number | null;
+  back_nine: number | null;
   score_to_par: number | null;
   total_putts: number | null;
   total_penalties: number | null;
@@ -721,6 +737,18 @@ export function holeStats(holes: readonly PoolHole[], round: Pick<PoolRound, 'to
   };
 }
 
+/**
+ * Whether a GolfHelm round enters the comparison pool (launch readiness 2026-11-15, DF-P-07): a round that counts in a score, by the
+ * rule every Stats figure uses (`isScoreCountable`: 9 or 18 holes all scored, or an 18-hole total), never a 14-hole card read as 18
+ * holes (its 58 read −14 to par). A linked event round marked WD or DQ stays whatever its length, so its evidence can say why; every
+ * figure leaves it out (10.3).
+ */
+export function poolRoundCounts(r: Pick<PoolRound, 'total_score' | 'holes_played' | 'front_nine' | 'back_nine' | 'total_putts'>, own: readonly Pick<PoolHole, 'score'>[], linkedStatus: ChTourEvent['playerRounds'][number]['status'] | null): boolean {
+  if (r.total_score == null) return false;
+  if (linkedStatus === 'wd' || linkedStatus === 'dq' || linkedStatus === 'dq_pending') return true;
+  return isScoreCountable({ ...r, recorded_holes: own.filter((h) => h.score != null).length });
+}
+
 /** A WD or DQ event round stays in the pool so its evidence can say why, but every figure leaves it out (10.3). */
 const outStatus = (status: ChTourEvent['playerRounds'][number]['status']): Pick<ChTourCompareRound, 'status'> =>
   status === 'wd' ? { status: 'wd' } : status === 'dq' || status === 'dq_pending' ? { status: 'dq' } : {};
@@ -741,7 +769,7 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
   const rounds = await allIn<PoolRound>('poolRounds', playerIds, (chunk, from, to) =>
     ctx.supabase
       .from('golf_rounds')
-      .select('id, player_id, round_date, round_type, course_id, total_score, holes_played, score_to_par, total_putts, total_penalties, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
+      .select('id, player_id, round_date, round_type, course_id, total_score, holes_played, front_nine, back_nine, score_to_par, total_putts, total_penalties, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
       .in('player_id', chunk)
       .eq('status', 'completed')
       .eq('is_test', false)
@@ -772,13 +800,13 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
   };
   const out: ChTourCompareRound[] = [];
   for (const r of rounds) {
-    if (r.total_score == null) continue;
+    const own = byRound.get(r.id) ?? [];
+    const link = linkedTo.get(r.id);
+    if (r.total_score == null || !poolRoundCounts(r, own, link?.pr.status ?? null)) continue;
     const holesPlayed: 9 | 18 = (r.holes_played ?? 18) <= 9 ? 9 : 18;
     const course = r.course_id ? read.courses[r.course_id] : undefined;
-    const own = byRound.get(r.id) ?? [];
     const par = poolRoundPar(own, holesPlayed, course?.par ?? null, r.score_to_par != null ? r.total_score - r.score_to_par : null);
     const rating = course?.rating != null ? (holesPlayed === 9 ? course.rating / 2 : course.rating) : null;
-    const link = linkedTo.get(r.id);
     const sg = r.strokes_gained_tee != null && r.strokes_gained_approach != null && r.strokes_gained_around_green != null && r.strokes_gained_putting != null ? { ott: r.strokes_gained_tee, app: r.strokes_gained_approach, arg: r.strokes_gained_around_green, putt: r.strokes_gained_putting } : null;
     const fpr = link ? fieldPerRound(link.e, link.pr.roundNumber) : null;
     out.push({

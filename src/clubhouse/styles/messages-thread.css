@@ -185,15 +185,12 @@
   color: var(--ch-text-tertiary);
 }
 
-/* MOT-R: under Reduce Motion the typing bubble fades in instead of growing; its dots hold still at full opacity (MSG-003). */
+/* MOT-R: under Reduce Motion the typing bubble fades in over the quick beat instead of growing (motion.css ch-in,
+   MOTION-AND-VISUAL 3.11); its dots hold still at full opacity (MSG-003). */
 @media (prefers-reduced-motion: reduce) {
   [data-ch-ms-v2] .ch-msv-typing {
-    animation: ch-msv-fade var(--ch-dur-crossfade-rm) linear both;
-  }
-}
-@keyframes ch-msv-fade {
-  from {
-    opacity: 0;
+    --ch-rm-animation: var(--ch-dur-quick);
+    animation: ch-in var(--ch-dur-quick) linear both;
   }
 }
 

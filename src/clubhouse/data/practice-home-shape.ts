@@ -130,6 +130,8 @@ export interface ChBuilderData {
   why: Record<string, PlanWhy>;
   step: 'blocks' | 'groups' | 'drills' | 'review';
   drills: ChBankDrill[];
+  /** Part of the drill bank didn't read (GAP-S-28): the builder says so above the bank. */
+  drillsFailed?: boolean;
   /** The Documents folder the draft is filed in, so a kept suggestion's save doesn't move it; null when not filed yet. */
   folder?: string | null;
   /** The helper card, Fill the draft and the suggestions. */

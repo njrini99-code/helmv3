@@ -1,12 +1,17 @@
 'use client';
 
+import { House } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { LIVE_COPY } from '../../live/copy';
+import { Button } from '../../ui/Button';
+import { NoTeam } from '../../ui/NoTeam';
+import { EmptyState } from '../../ui/States';
 import { FreshnessChip } from '../../live/FreshnessChip';
 import { LiveAnnouncer } from '../../live/LiveAnnouncer';
 import type { LiveSnapshot } from '../../live/model';
 import type { LiveScope } from '../../live/scope';
-import { useRovingRows } from '../../lib/roving';
+import { RovingRows } from '../../ui/RovingRows';
+import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
 import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
 import { LargeTitle } from '../../ui/LargeTitle';
@@ -30,12 +35,34 @@ export function LiveView({ initial, scope, denied = false, frozen = false, now }
   return <LiveViewDesk v={v} />;
 }
 
+/**
+ * A coach whose team Live may not read (CH-16609, GAP-S-12): the restricted page state with the way back to Home. A coach
+ * with no team at all gets `LiveNoTeam` instead, as every other screen does.
+ */
 export function LiveDenied() {
   return (
     <main className="ch-lv ch-lv--denied">
-      <p className="ch-lv-empty__title" data-ch-code="CH-16609">
-        {LIVE_COPY.noAccess}
-      </p>
+      <EmptyState
+        size="page"
+        kind="restricted"
+        code="CH-16609"
+        title={LIVE_COPY.noAccess}
+        body="Live shows the players of the team you coach. Your team, rounds and stats are on Home."
+        action={
+          <Button variant="primary" leftIcon={House} href="/golf/dashboard">
+            Back to Home
+          </Button>
+        }
+      />
+    </main>
+  );
+}
+
+/** A coach with no active team (CH-16609): the one "not on a team" state, as every other screen draws it. */
+export function LiveNoTeam() {
+  return (
+    <main className="ch-lv ch-lv--denied">
+      <NoTeam code="CH-16609" coach body="Once your team is set up, the players out on the course show here." />
     </main>
   );
 }
@@ -46,7 +73,6 @@ function LiveViewDesk({ v }: { v: LiveViewState }) {
   // reads the same value.
   const { narrow, setDeskWidth } = v;
   const root = useRef<HTMLElement>(null);
-  useRovingRows(root, '.ch-lv-hit');
   const total = v.groups.onCourse.length + v.groups.finished.length + v.groups.quiet.length;
   const { failed } = v;
 
@@ -108,20 +134,27 @@ function LiveViewDesk({ v }: { v: LiveViewState }) {
         <LiveEmpty />
       ) : (
         <div className="ch-lv-split" data-panel={narrow ? 'sheet' : 'side'}>
-          <LiveGroupsList v={v} density="full" onOpen={(l) => v.select(l.roundId)} />
+          {/* The lanes and the panel are sections (GAP-S-10): one that throws is named in place, and the other keeps working. */}
+          <SectionBoundary surface="live.lanes" label="Players on the course" code="CH-16294">
+            <LiveGroupsList v={v} density="full" onOpen={(l) => v.select(l.roundId)} />
+            {/* Inside the boundary, so the rows it walks are the ones drawn; the loaded desk, never its skeleton (live/loading.tsx). */}
+            <RovingRows selector=".ch-lv-hit" within=".ch-lv--desk[aria-labelledby]" />
+          </SectionBoundary>
           {!narrow && (
             <aside className="ch-lv-panel" data-lenis-prevent="" aria-label={v.selected ? `${v.selected.name}, round` : LIVE_COPY.everyone}>
               {v.selected ? (
-                <>
+                <SectionBoundary key={v.selected.roundId} surface="live.panel" label={`${v.selected.name}’s round`} code="CH-16294">
                   <PlayerPanelHead lane={v.selected} />
                   <PlayerLiveBody lane={v.selected} moments={v.live.moments} now={v.now} coach hours={v.hours} />
-                </>
+                </SectionBoundary>
               ) : (
                 <>
                   <h2 className="ch-lv-panel__title" data-ch-code="CH-16618">
                     {LIVE_COPY.everyone}
                   </h2>
-                  <CourseRibbon lanes={v.everyone} label={LIVE_COPY.everyone} />
+                  <SectionBoundary surface="live.ribbon" label={LIVE_COPY.everyone} code="CH-16294">
+                    <CourseRibbon lanes={v.everyone} label={LIVE_COPY.everyone} />
+                  </SectionBoundary>
                 </>
               )}
             </aside>

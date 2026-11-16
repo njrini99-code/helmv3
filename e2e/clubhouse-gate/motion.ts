@@ -22,13 +22,25 @@ export const LAYOUT_PROPS = new Set([
   'row-gap', 'column-gap', 'letter-spacing',
 ]);
 
-/** Every duration tokens.css defines (`--ch-dur-*`), in ms, following `var()` references; 0 is always allowed. */
+/** The six durations of the motion vocabulary (MOTION-AND-VISUAL 3.2): press, quick, base, release, marks, reveal. */
+export const VOCABULARY = ['press', 'quick', 'base', 'release', 'marks', 'reveal'] as const;
+
+/**
+ * The durations a finite animation may run for, in ms, read from tokens.css: the six vocabulary durations (`--ch-dur-press`
+ * and so on, every declaration including the reduced-motion and Animations-off overrides), and 0. A retiring token's
+ * duration (`--ch-dur-word`, `--ch-dur-msg-*`, ...) is not on the scale (3.2: "Delete every other duration").
+ */
 export function motionTokens(css: string): Set<number> {
   const values = new Set<number>([0]);
-  // Each declaration, including the @media and [data-*] overrides, contributes its literal value.
-  for (const m of css.matchAll(/--ch-dur-[\w-]+\s*:\s*([\d.]+)(ms|s)\s*;/g)) values.add(Math.round(Number(m[1]) * (m[2] === 's' ? 1000 : 1)));
+  const names = VOCABULARY.join('|');
+  for (const m of css.matchAll(new RegExp(`--ch-dur-(?:${names})\\s*:\\s*([\\d.]+)(ms|s)\\s*;`, 'g'))) {
+    values.add(Math.round(Number(m[1]) * (m[2] === 's' ? 1000 : 1)));
+  }
   return values;
 }
+
+/** Reduce Motion is a quick fade (3.11, `CH_FADE_MS`): the one animation it allows, opacity only, on an interaction. */
+export const REDUCED_FADE_MS = 180;
 
 /** Next's development overlay, present only under `next dev`. */
 const DEV_CHROME = /^nextjs-portal/;
@@ -60,14 +72,35 @@ export function judgeMotion(
     // that is interrupted and reversed (a hover, a press) is shortened by the browser to the distance left, so its length
     // depends on timing. Transition durations are held to the tokens statically, by the CSS ratchet and lint.
     if (finite && moves && r.kind === 'CSSAnimation' && !tokens.has(r.duration!)) out.add(`token: ${where} runs ${r.duration} ms, not a --ch-dur-* duration`);
+    // Under Reduce Motion every travel becomes a 180 ms opacity fade (3.11): a fade on an interaction, or the whole-page
+    // crossfade, is the change still reading; anything else that moves is a break.
+    const fade = finite && r.props.length > 0 && r.props.every((p) => p === 'opacity') && r.duration === REDUCED_FADE_MS;
+    const fadeAllowed = fade && (phase === 'interaction' || ROUTE_FRAME.test(where));
     // These two name the element only: whether the browser runs a fade as a CSS transition or a Web Animation, and for
     // how long, varies run to run (seen on 15 Nov), while the element that moves does not.
     const who = `${target}${r.pseudo ?? ''}`;
     if (reduced) {
-      if (moves) out.add(`reduced: ${who} moves under Reduce Motion${finite ? '' : ' (a loop)'}`);
+      if (moves && !fadeAllowed) out.add(`reduced: ${who} moves under Reduce Motion${finite ? '' : ' (a loop)'}`);
     } else if (phase === 'open' && finite && moves && !ROUTE_FRAME.test(where)) {
       out.add(`first-paint: ${who} animates as the screen opens${r.delay > 0 ? ' (delayed: a stagger)' : ''}`);
     }
+  }
+  return [...out].sort();
+}
+
+/** A running animation, read once after a screen has loaded and sat idle. */
+export type IdleRow = { kind: string; name: string; target: string; pseudo: string | null; iterations: number | 'infinite' };
+
+/**
+ * After load and a second of idle, nothing runs (3.1: content never moves on its own; the working dots are the one loop,
+ * and only while work runs). One sentence per element still animating.
+ */
+export function judgeIdle(rows: IdleRow[]): string[] {
+  const out = new Set<string>();
+  for (const r of rows) {
+    if (DEV_CHROME.test(r.target)) continue;
+    const target = r.target.replace(/#(?:_R_[\w]+_|:r[\w]+:)/g, '');
+    out.add(`idle: ${target}${r.pseudo ?? ''} ${r.name || r.kind} still runs after load${r.iterations === 'infinite' ? ' (a loop)' : ''}`.replace(/\s+/g, ' '));
   }
   return [...out].sort();
 }

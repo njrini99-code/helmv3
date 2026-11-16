@@ -13,6 +13,7 @@ import { ThemeApplier } from "@/components/theme/ThemeApplier";
 import type { ChShellData } from "../data/shell";
 import { ChMotionFeatures, ClubhouseFrame } from "./ClubhouseFrame";
 import { useWarmInbox } from "./use-warm-inbox";
+import { useLastKnownShell } from "./shell-memory";
 import { OfflineSync } from "./OfflineSync";
 import { DeepLinks } from "./DeepLinks";
 import { ChPhoneHintProvider } from "../lib/use-phone";
@@ -87,10 +88,12 @@ function ShellFrame({
   const search = useSearchParams()?.toString() ?? "";
   // The inbox list, cached in the background, so Messages paints it on the first visit (use-warm-inbox.ts).
   useWarmInbox(userData.userId, userData.teamId);
+  // A shell read that failed keeps its last answer: Resume and the head coach's title (GAP-S-14, shell-memory.ts).
+  const known = useLastKnownShell(shell, `${userData.userId}\u0000${userData.teamId ?? ""}`);
   return (
     <ClubhouseFrame
       userData={userData}
-      shell={shell}
+      shell={known}
       pathname={pathname}
       search={search}
       folded={folded}

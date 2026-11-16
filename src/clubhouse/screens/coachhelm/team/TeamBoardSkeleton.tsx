@@ -1,9 +1,8 @@
 'use client';
 
 import { useChPhone } from '../../../lib/use-phone';
-import { DeskTop, PhoneTop } from '../../../shell/phone-chrome';
+import { PhoneTop } from '../../../shell/phone-chrome';
 import { LargeTitleSkeleton } from '../../../ui/LargeTitle';
-import { CoachHelmTabs } from '../chat/SubTabs';
 
 const rows = (n: number, height?: number) => (
   <div className="card sklc" style={height ? { minHeight: height } : undefined}>
@@ -25,7 +24,7 @@ const hero = (h: number, height?: number) => (
   </div>
 );
 
-/** The final shape and height, all hidden from assistive tech (AC-TEAM-10, AC-HOLE-16). */
+/** The final shape and height, all hidden from assistive tech (AC-TEAM-10, AC-HOLE-16). The switch is the route's, above it (SwitchFrame, N13C-67). */
 export function TeamBoardSkeleton() {
   const phone = useChPhone();
   if (phone)
@@ -37,9 +36,6 @@ export function TeamBoardSkeleton() {
             <div className="ch-chd__t">
               <LargeTitleSkeleton />
               <span className="skl" style={{ width: '72%', height: 16, margin: '2px 0' }} />
-            </div>
-            <div className="ch-chd__sw">
-              <CoachHelmTabs active="board" held boardLabel="Team" />
             </div>
           </header>
           {/* The loaded cards' heights (06 #loading: 180, 406, 258, 216), so nothing jumps when they land (TEAM-28). */}
@@ -56,9 +52,6 @@ export function TeamBoardSkeleton() {
   return (
     <main className="ch-htb is-desk" aria-busy="true" aria-label="Loading Team view">
       <div className="ch-htb-desk" aria-hidden="true">
-        <DeskTop>
-          <CoachHelmTabs active="board" held boardLabel="Team" />
-        </DeskTop>
         <div className="dgrid">
           <div className="dcol">
             {hero(250)}

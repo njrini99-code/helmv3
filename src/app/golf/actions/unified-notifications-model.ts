@@ -163,6 +163,25 @@ export function categorizeCalendarNotificationRow(
   return row.notification_type === 'message' ? 'messages' : 'events';
 }
 
+/**
+ * A focus-area verdict row written before 15 Nov 2026 links `/golf/dashboard/players/<id>`, which redirects twice and
+ * lands on the Game tab. Its data names the category and the player, so it is pointed at the Development tab, where the
+ * verdict is, as it is read (GAP-R-01). Any other row keeps its address.
+ */
+export function notificationActionUrl(row: Pick<RawNotificationRow, 'action_url' | 'data'>): string | null {
+  const data = readJsonObject(row.data);
+  const player = data.player_id;
+  if (
+    data.coachhelm_category === 'focus_area_verdict' &&
+    typeof player === 'string' &&
+    /^[\w-]{1,64}$/.test(player) &&
+    row.action_url === `/golf/dashboard/players/${player}`
+  ) {
+    return `/golf/dashboard/stats?player=${player}&tab=dev`;
+  }
+  return row.action_url;
+}
+
 export function normalizeNotificationRow(row: RawNotificationRow): UnifiedNotificationItem {
   return {
     id: row.id,
@@ -170,7 +189,7 @@ export function normalizeNotificationRow(row: RawNotificationRow): UnifiedNotifi
     category: categorizeNotificationRow(row),
     title: row.title,
     body: row.body,
-    action_url: row.action_url,
+    action_url: notificationActionUrl(row),
     created_at: row.created_at ?? EPOCH,
     read_at: row.read_at,
   };

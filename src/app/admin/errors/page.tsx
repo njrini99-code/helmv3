@@ -54,6 +54,9 @@ import { ReleaseWatchPanel } from './_components/ReleaseWatchPanel';
 import { loadErrorsPageData } from './_data';
 import { buildBoardAliasGroups, buildIncidentGenome } from '@/lib/admin/incidents/genome';
 import { fetchCurrentReleaseWatch, emptyReleaseWatch } from '@/lib/admin/incidents/release-watch';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Incidents' };
 export const dynamic = 'force-dynamic';
 
 /**

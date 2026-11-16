@@ -1,4 +1,5 @@
 'use client';
+import { StatTerm } from '../../ui/StatTerm';
 
 import { CalendarPlus, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Sparkles, Target } from 'lucide-react';
 import Link from 'next/link';
@@ -20,6 +21,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { ScrollRegion } from '../../ui/ScrollRegion';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import { CH_SLOW_SAVE_AFTER, isOffline, useAction } from '../../lib/use-action';
+import { useBusy } from '../../lib/use-busy';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useSlidePlate } from '../../lib/slide-plate';
@@ -151,6 +153,9 @@ export function StatsPlayer({
   });
   const [focusOpen, setFocusOpen] = useState(false);
   const [pending, start] = useTransition();
+  // A window or filter change dims the figures only once it has taken the busy delay, and keeps them dimmed at least the busy
+  // hold, so a change that lands at once never flickers (MOTION-AND-VISUAL 3.9, A11; lib/use-busy.ts).
+  const busy = useBusy(pending) === 'skeleton' ? 'skeleton' : undefined;
   const coach = data.viewer === 'coach';
   // As in the handoff: a coach looking at a player reads "Stats › Jonah Okafor".
   usePageCrumbs(coach ? ['Stats', data.name] : null);
@@ -242,7 +247,7 @@ export function StatsPlayer({
   const updating = <UpdatingNote from={data.filter} to={loading} code="CH-5903" />;
   if (phone)
     return (
-      <main className="ch-st is-phone" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
+      <main className="ch-st is-phone" aria-busy={pending} data-ch-busy={busy} data-ch-code={pending ? 'CH-5402' : undefined}>
         <StatsPlayerPhoneShs
           data={data}
           initialTab={initialTab}
@@ -268,7 +273,7 @@ export function StatsPlayer({
   if (!printing && layout === 'bento')
     return (
       <>
-        <main className="ch-st is-desk ch-st--shs" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
+        <main className="ch-st is-desk ch-st--shs" aria-busy={pending} data-ch-busy={busy} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
           <header className="ch-shs-dhead" data-canopy-head="tight">
             {coach && (
               <div className="ch-st-back">
@@ -338,7 +343,7 @@ export function StatsPlayer({
   // The tabbed page from here: what paper prints (PrintHead, the Rounds table, Game detail), which a bento is not.
   return (
     <>
-      <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
+      <main className="ch-st is-desk" aria-busy={pending} data-ch-busy={busy} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
         <PrintHead subject={`${data.name} · Player stats`} />
         {coach && (
           <div className="ch-st-back">
@@ -399,7 +404,9 @@ export function StatsPlayer({
           <dl className="ch-pf-hero__figs">
             {heroFigs.map(([l, v, s, cls, chip]) => (
               <div key={l}>
-                <dt>{l}</dt>
+                <dt>
+                  <StatTerm label={l} />
+                </dt>
                 <dd className={`ch-num${cls ? ` ${cls}` : ''}`}>{v}</dd>
                 <dd className="ch-pf-hero__sub">{s}</dd>
                 {chip && <dd className="ch-pf-hero__chg">{chip}</dd>}

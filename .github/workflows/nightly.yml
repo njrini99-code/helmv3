@@ -88,6 +88,13 @@ jobs:
         # Sharded for the same reason as unit-tests. Unsharded, this job would
         # become the critical path the moment the others got faster.
         shard: [1, 2, 3]
+    env:
+      # Same as ci.yml's unit-tests: no step here talks to Supabase, so the job
+      # takes the loopback stand-ins vitest pins for every test
+      # (src/test/network-isolation.ts) instead of the workflow's project URL
+      # and key (launch readiness DATA-01, 2026-11-15).
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key-not-a-real-key
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1

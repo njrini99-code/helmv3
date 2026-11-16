@@ -23,7 +23,7 @@ import { EditorsLetter } from '@/components/baseball/living-annual';
 import { fairwayScope } from '@/lib/redesign/flag';
 
 export const metadata = {
-  title: 'Practice Effectiveness | Helm Baseball',
+  title: 'Practice Effectiveness',
   description: 'Did what you practiced transfer to performance? Honest, source-backed measurement.',
 };
 

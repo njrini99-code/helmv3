@@ -14,7 +14,7 @@ import { permanentRedirect } from 'next/navigation';
 import { getBaseballSettingsAliasHref } from '@/lib/baseball/settings-route-aliases';
 
 export const metadata = {
-  title: 'Data Retention Settings | Helm Baseball',
+  title: 'Data Retention Settings',
 };
 
 export default function Page() {

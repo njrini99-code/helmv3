@@ -38,6 +38,9 @@ import { StrengthGroupsClient } from '@/components/lifting/groups/StrengthGroups
 import { SectionMasthead, EditorsLetter } from '@/components/baseball/living-annual';
 import type { HelmLiftingGroupRow } from '@/lib/types/helm-lifting-data';
 import type { HelmLiftingAthleteRow } from '@/lib/types/helm-lifting';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Strength Groups' };
 
 interface GroupWithMembers extends HelmLiftingGroupRow {
   member_count: number;

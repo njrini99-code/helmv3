@@ -28,6 +28,7 @@ vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(t
 
 import { loadRoundReview } from '../data/round-review';
 import { distribution, nineOf, toHoles, toShot, type ChRoundReview, type ChShotRow } from '../data/round-review-shape';
+import { HISTORY_FAILED } from '../data/round-history-shape';
 import { ClubhouseRoundReviewRoute } from '../routes/round-review';
 import { firstHole, RoundReview } from '../screens/rounds/RoundReview';
 import { isRebuilt } from '../shell/nav';
@@ -391,6 +392,16 @@ describe('Round review: never a wrong figure or a silent difference', () => {
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it('CH-11290 a history read that failed is said once, with Try again; the round’s own figures stay (GAP-S-27)', async () => {
+    const user = userEvent.setup();
+    wrap(<RoundReview review={{ ...PREVIEW_REVIEW, history: undefined }} history={Promise.resolve(HISTORY_FAILED)} />);
+    await expectCode('CH-11290', /History didn’t load.*Records and past rounds are left out\. This round’s own figures are unaffected/);
+    expect(document.querySelectorAll('[data-ch-code="CH-11290"]')).toHaveLength(1);
+    expect(screen.queryByRole('list', { name: 'Records' })).toBeNull();
+    await user.click(within(code('CH-11290') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
   it('CH-11216 a good tee read says nothing; a round with no tee on file says nothing either (that is not a failure)', async () => {
     tables.current = base({ tee_id: null });
     const r = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'player', playerId: 'p1', teamId: 'team1' });
@@ -527,16 +538,16 @@ describe('Round review route', () => {
     teamOf.current = { role: 'player', teamId: 'team1', playerId: 'p2' };
     tables.current = { golf_rounds: { data: { ...PREVIEW_REVIEW_ROUND, player_id: 'p1', status: 'completed', is_test: false } } };
     wrap(await ClubhouseRoundReviewRoute({ id: PREVIEW_REVIEW_ROUND.id }));
-    await expectCode('CH-11307', /This round isn’t here.*It may have been deleted, or it isn’t one of your rounds\./);
+    await expectCode('CH-11307', /This round isn’t here.*It may have been deleted, or the link is wrong\./);
     expect(screen.getByRole('link', { name: 'Go to your rounds' }).getAttribute('href')).toBe('/golf/dashboard/rounds');
   });
 
-  it('CH-11307 a coach off the player’s team gets the coach’s wording and a way back to Stats', async () => {
+  it('CH-11307 a coach off the player’s team gets the same one voice (GAP-S-24) and a way back to Stats', async () => {
     session.current = { userId: 'u1', coach: { id: 'c1' }, player: null };
     teamOf.current = { role: 'coach', teamId: 'team2', coachId: 'c1' };
     tables.current = { golf_rounds: { data: { ...PREVIEW_REVIEW_ROUND, player_id: 'p1', status: 'completed', is_test: false } }, golf_team_members: { data: [] } };
     wrap(await ClubhouseRoundReviewRoute({ id: PREVIEW_REVIEW_ROUND.id }));
-    await expectCode('CH-11307', /played by someone who isn’t on your team/);
+    await expectCode('CH-11307', /This round isn’t here.*It may have been deleted, or the link is wrong\./);
     expect(screen.getByRole('link', { name: 'Go to Stats' })).toBeTruthy();
   });
 

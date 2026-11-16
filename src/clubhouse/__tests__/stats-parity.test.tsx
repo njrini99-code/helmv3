@@ -34,6 +34,7 @@ import { PUTT_MAKE_BANDS, PUTT_REPORT_BAND_OF, puttMakeBandFor } from '@/lib/gol
 import type { ChRound } from '../data/season';
 import { loadPlayerProfile, type ChPlayerProfile } from '../data/stats-player';
 import { openingDelta, perRoundSeries, personalBests, pressureGap, toughestHoles, windowCompare, type ChHoleRow } from '../data/stats-figures';
+import { statsRowsOf } from './stats-rows';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { FairwayStrip } from '../screens/stats/charts';
 import { CrumbProvider } from '../shell/crumbs';
@@ -123,6 +124,26 @@ const round = (id: string, date: string, over: Partial<ChRound> = {}): ChRound =
   ...over,
 });
 
+// Greens, fairways and putts come from each round's stats row (DF-P-01): these fixtures set them on the round, so the rows copy them.
+const bestsOf = (rs: ChRound[]) => personalBests(rs, statsRowsOf(rs));
+const seriesOf = (rs: ChRound[]) => perRoundSeries(rs, statsRowsOf(rs));
+const compareOf = (last: ChRound[], previous: ChRound[] | null) => windowCompare(last, previous, statsRowsOf([...last, ...(previous ?? [])]));
+
+describe('greens, fairways and putts read the stats row, never the round header (DF-P-01)', () => {
+  it('a round whose header predates the 17 Oct GIR rule reads its stats row', () => {
+    // The header still says 9 greens; the row the rule change rewrote says 12. My stats' table reads the row, so the card does too.
+    const r = round('a', '2026-10-01', { total_gir: 9, total_gir_possible: 18, total_putts: 33 });
+    const rows = statsRowsOf([r]);
+    rows.set('a', { ...rows.get('a')!, greens_hit: 12, total_putts: 30 });
+    expect(personalBests([r], rows).gir!.value).toBe(66.7);
+    expect(perRoundSeries([r], rows).putts.map((p) => p.value)).toEqual([30]);
+    const c = windowCompare([r], [round('b', '2026-09-01')], rows)!;
+    expect(c.rows.find((x) => x.label === 'Greens in regulation')!.last).toBe(66.7);
+    // A round with no stats row has no greens, whatever its header holds.
+    expect(personalBests([round('z', '2026-10-02')], new Map()).gir).toBeNull();
+  });
+});
+
 describe('personal bests', () => {
   it('the lowest score, the lowest to par, the best GIR and the fewest putts, each with its course and date; a tie goes to the earliest round', () => {
     const rounds = [
@@ -130,7 +151,7 @@ describe('personal bests', () => {
       round('b', '2026-09-10', { total_score: 70, score_to_par: -2, total_gir: 16, course_name: 'Early GC', total_putts: 27 }),
       round('a', '2026-09-01', { total_score: 75, score_to_par: 3, total_gir: 9, total_putts: 33 }),
     ];
-    const b = personalBests(rounds);
+    const b = bestsOf(rounds);
     expect(b.score).toEqual({ value: 70, date: 'Sep 10', course: 'Early GC' });
     expect(b.toPar).toEqual({ value: -2, date: 'Sep 10', course: 'Early GC' });
     expect(b.gir).toEqual({ value: 88.9, date: 'Sep 10', course: 'Early GC' });
@@ -142,32 +163,33 @@ describe('personal bests', () => {
       round('a', '2026-09-01', { total_score: 80, score_to_par: null, total_putts: null, total_gir: null, total_gir_possible: null }),
       round('z', '2026-09-03', { total_score: 78, score_to_par: 6, total_putts: 0 }),
     ];
-    const b = personalBests(rounds);
+    const b = bestsOf(rounds);
     expect(b.score!.value).toBe(78);
     expect(b.toPar!.value).toBe(6);
     expect(b.putts).toBeNull();
     expect(b.gir!.value).toBe(50);
-    expect(personalBests([])).toEqual({ score: null, toPar: null, gir: null, putts: null });
+    expect(bestsOf([])).toEqual({ score: null, toPar: null, gir: null, putts: null });
   });
 
   it('takes the rounds it is given, whatever their length: a 9-hole score is its own best, listed apart from the 18-hole ones by the loader', () => {
     const nine = round('nine', '2026-09-02', { total_score: 30, score_to_par: -6, holes_played: 9 });
-    expect(personalBests([nine]).score).toEqual({ value: 30, date: 'Sep 2', course: 'Finley GC' });
-    expect(personalBests([round('a', '2026-09-01', { total_score: 80 }), nine]).score!.value).toBe(30);
+    expect(bestsOf([nine]).score).toEqual({ value: 30, date: 'Sep 2', course: 'Finley GC' });
+    expect(bestsOf([round('a', '2026-09-01', { total_score: 80 }), nine]).score!.value).toBe(30);
   });
 });
 
 describe('the score, GIR, fairways and putts of each round', () => {
   it('one point per round, oldest first, and a round with no value has no point', () => {
-    const s = perRoundSeries([
+    const s = seriesOf([
       round('c', '2026-09-03', { total_score: 71, total_fairways: null, total_fairways_hit: null }),
       round('b', '2026-09-02', { total_score: 75, total_putts: null }),
       round('a', '2026-09-01', { total_score: 73, total_gir: 18, total_gir_possible: 18 }),
     ]);
+    // Each point carries its date, so a line spaces rounds by real time (stats and charts audit 2026-11-15, CH-11).
     expect(s.score).toEqual([
-      { label: 'Sep 1', value: 73 },
-      { label: 'Sep 2', value: 75 },
-      { label: 'Sep 3', value: 71 },
+      { label: 'Sep 1', value: 73, at: '2026-09-01' },
+      { label: 'Sep 2', value: 75, at: '2026-09-02' },
+      { label: 'Sep 3', value: 71, at: '2026-09-03' },
     ]);
     expect(s.gir.map((p) => p.value)).toEqual([100, 50, 50]);
     expect(s.fairway.map((p) => p.label)).toEqual(['Sep 1', 'Sep 2']);
@@ -177,10 +199,10 @@ describe('the score, GIR, fairways and putts of each round', () => {
 
 describe('this window against the one before', () => {
   it('summed numerators over summed denominators, never a mean of percentages; none without an earlier window', () => {
-    expect(windowCompare([round('a', '2026-09-01')], null)).toBeNull();
+    expect(compareOf([round('a', '2026-09-01')], null)).toBeNull();
     const last = [round('a', '2026-09-10', { total_gir: 2, total_gir_possible: 4, total_score: 70, total_putts: 28 }), round('b', '2026-09-09', { total_gir: 9, total_gir_possible: 18, total_score: 74, total_putts: 32 })];
     const before = [round('c', '2026-09-01', { total_gir: 18, total_gir_possible: 18, total_score: 76, total_putts: 30 })];
-    const c = windowCompare(last, before)!;
+    const c = compareOf(last, before)!;
     expect(c.lastRounds).toBe(2);
     expect(c.previousRounds).toBe(1);
     const row = (l: string) => c.rows.find((r) => r.label === l)!;
@@ -191,7 +213,7 @@ describe('this window against the one before', () => {
   });
 
   it('each change carries its standard error (A1): the pooled score spread under five rounds; rates and putts none until five rounds measure them', () => {
-    const c = windowCompare(
+    const c = compareOf(
       [round('a', '2026-09-10', { total_gir: 9, total_gir_possible: 18, total_score: 72, total_putts: 30 })],
       [round('b', '2026-09-01', { total_gir: 9, total_gir_possible: 18, total_score: 74, total_putts: 31 })],
     )!;
@@ -201,7 +223,7 @@ describe('this window against the one before', () => {
     expect(se('Greens in regulation')).toBeNull();
     expect(se('Putts per round')).toBeNull();
     const five = (p: string, girs: number[]) => girs.map((g, i) => round(`${p}${i}`, `2026-09-${String(10 + i).padStart(2, '0')}`, { total_gir: g, total_gir_possible: 18, total_score: 72 + i, total_putts: 30 + i }));
-    const both = windowCompare(five('n', [9, 10, 11, 12, 13]), five('o', [6, 7, 8, 9, 10]))!;
+    const both = compareOf(five('n', [9, 10, 11, 12, 13]), five('o', [6, 7, 8, 9, 10]))!;
     expect(both.rows.find((r) => r.label === 'Greens in regulation')!.se).toBeGreaterThan(0);
     expect(both.rows.find((r) => r.label === 'Putts per round')!.se).toBeGreaterThan(0);
   });
@@ -317,7 +339,10 @@ describe('putts by distance', () => {
     expect(sum(['15–20 ft', '20–25 ft'], 'attempts')).toBe(six.find((b) => b.label === '15–25 ft')!.attempts);
     expect(sum(['25–30 ft', '30–35 ft', '35+ ft'], 'made')).toBe(six.find((b) => b.label === '25+ ft')!.made);
     expect(nine.reduce((a, b) => a + b.attempts, 0)).toBe(rows.length);
-    expect(nine.map((b) => b.bench)).toEqual([null, 90.5, null, null, 15.4, 15.4, 5.5, 5.5, 5.5]);
+    // Each band's Tour rate is weighted by its own putts (SC-08): 3–5 ft holds a 4- and a 5-footer, (91.4 + 80.7) / 2, not the
+    // row's plain 3-4-5 mean of 90.5; 15–20 ft reads the Tour's 15-20 ft rate and 20–25 ft its 20-25 ft rate, not 15.4 for both.
+    expect(nine.map((b) => b.bench)).toEqual([null, (91.4 + 80.7) / 2, null, null, 18.3, 12.5, 5.5, 5.5, 5.5]);
+    expect(six.find((b) => b.label === '15–25 ft')!.bench).toBeCloseTo((2 * 18.3 + 2 * 12.5) / 4, 6);
   });
 });
 
@@ -438,12 +463,16 @@ describe('the profile’s extra figures', () => {
   it('the standing rows: the Tour’s value beside each, a band graded only with 10 putts, big numbers from the round cache; a coach’s team figures pooled, a player’s never', async () => {
     const puttRows = [...Array.from({ length: 10 }, (_, i) => ({ round_id: 'r1', putt_distance_feet: 4, putt_made: i < 7 })), ...Array.from({ length: 9 }, () => ({ round_id: 'r1', putt_distance_feet: 8, putt_made: true }))];
     // A three-putt count stands on a round with its putts recorded (cachedPutts): the cache always writes both.
-    const cache = ['r1', 'r2'].map((round_id) => ({ round_id, double_bogeys: 1, triple_plus: 1, penalty_strokes: 1, total_putts: 32, three_putts: 1, sand_attempts: 10, sand_saves: 5, greens_hit: 9, greens_total: 18 }));
-    tables.current = loaderTables(ten, { golf_shots: (f) => (f.some(([k, a]) => k === 'eq' && a[0] === 'shot_type') ? { data: [] } : { data: puttRows }), golf_round_stats_cache: { data: cache } });
+    const cache = ['r1', 'r2', 'tr1', 'tr2'].map((round_id) => ({ round_id, double_bogeys: 1, triple_plus: 1, penalty_strokes: 1, total_putts: 32, three_putts: 1, sand_attempts: 10, sand_saves: 5, greens_hit: 9, greens_total: 18 }));
+    // A teammate's rounds: the team column is the rest of the team (DF-C-17), never the player's own rounds.
+    const mate = ten.map((r) => ({ ...r, id: `t${r.id}`, player_id: 'p2' }));
+    tables.current = loaderTables([...ten, ...mate], { golf_shots: (f) => (f.some(([k, a]) => k === 'eq' && a[0] === 'shot_type') ? { data: [] } : { data: puttRows }), golf_round_stats_cache: { data: cache } });
     const coach = (await load('coach'))!;
     const row = (p: ChPlayerProfile, l: string) => p.comparisons.find((c) => c.label === l)!;
-    // 7 of 10 from 3–5 feet against the Tour's 90.5; 5–10 feet has 9 putts, under the floor: no value, never a rate of 9.
-    expect(row(coach, 'Make 3–5 ft')).toMatchObject({ you: 70, bench: 90.5, unit: '%' });
+    // 7 of 10 from 4 feet against the Tour's 4-ft rate, 91.4 (SC-08: weighted by the putts, not the band's plain 90.5);
+    // 5–10 feet has 9 putts, under the floor: no value, never a rate of 9.
+    expect(row(coach, 'Make 3–5 ft')).toMatchObject({ you: 70, unit: '%' });
+    expect(row(coach, 'Make 3–5 ft').bench).toBeCloseTo(91.4, 6);
     expect(row(coach, 'Make 5–10 ft').you).toBeNull();
     // Two doubles or worse in a round of 18 holes: 11.1%, and the same in the team's rounds.
     expect(row(coach, 'Big numbers')).toMatchObject({ you: (2 / 18) * 100, team: (2 / 18) * 100, bench: 2 });
@@ -732,12 +761,21 @@ describe('Rounds tab · bests and comparison', () => {
     expect(tile(bests, 'Fewest putts').textContent).toContain('Oakmont CC · Oct 12');
     const cmp = card('rx-compare');
     expect(cmp.querySelector('th[scope="col"]:nth-child(2)')!.textContent).toBe('Latest 10');
-    // A change is coloured only past its standard error (A1): scoring's +0.7 is inside its 1.6, so it is printed in plain ink;
-    // putts 29.8 against 30.6 clears its 0.7 (better: green), greens' −5.6 points its 5.4 (worse: amber).
+    // A change is coloured only past two standard errors (A1, the 2 SE rule of the stats and charts audit, CH-05): scoring's +0.7
+    // is inside its 1.6, putts 29.8 against 30.6 is just over one of its 0.7, and greens' −5.6 points one of its 5.4, so all three
+    // are printed in plain ink.
     expect(cells(rowOf(cmp, 'Scoring avg'))).toEqual(['73.6', '72.9', '+0.7']);
-    expect(rowOf(cmp, 'Scoring avg').querySelectorAll('td')[2]!.className).not.toMatch(/ch-(gain|loss)/);
-    expect(rowOf(cmp, 'Putts per round').querySelectorAll('td')[2]!.className).toContain('ch-gain');
-    expect(rowOf(cmp, 'Greens in regulation').querySelectorAll('td')[2]!.className).toContain('ch-loss');
+    for (const row of ['Scoring avg', 'Putts per round', 'Greens in regulation']) expect(rowOf(cmp, row).querySelectorAll('td')[2]!.className).not.toMatch(/ch-(gain|loss)/);
+    cleanup();
+    // Measured at half the error, putts' and greens' changes clear two of them: putts down is better (green), greens down is worse
+    // (amber). Scoring's +0.7 against 0.8 still does not.
+    const p = player();
+    showPlayer({ ...p, extra: { ...p.extra, compare: { ...p.extra.compare!, rows: p.extra.compare!.rows.map((r) => ({ ...r, se: r.se == null ? null : r.se / 2 })) } } });
+    await openTab(/Rounds/);
+    const sharp = card('rx-compare');
+    expect(rowOf(sharp, 'Scoring avg').querySelectorAll('td')[2]!.className).not.toMatch(/ch-(gain|loss)/);
+    expect(rowOf(sharp, 'Putts per round').querySelectorAll('td')[2]!.className).toContain('ch-gain');
+    expect(rowOf(sharp, 'Greens in regulation').querySelectorAll('td')[2]!.className).toContain('ch-loss');
   });
 
   it('the comparison says the cut in force: Last 20 is the latest 20 against the 20 before them, never "10"', async () => {
