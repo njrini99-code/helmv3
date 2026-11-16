@@ -29,7 +29,7 @@ Held items:     none
   under it with the definition and a "How stats are counted" link. A label
   that names no stat stays plain text. `HowStatsCount` is the sheet with the
   rule and every definition; `HowStatsCountLink` opens it from a page.
-- `styles/ui.css`: `.ch-term`, `.ch-term-card`, `.ch-howc` on the shared
+- `styles/stat-terms.css`: `.ch-term`, `.ch-term-card`, `.ch-howc` on the shared
   popover and sheet materials.
 
 ### Why

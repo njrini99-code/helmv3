@@ -7,6 +7,7 @@ import { haptic } from '../lib/haptics';
 import { COUNTING_RULE, STAT_DEFINITIONS, STAT_ORDER, statDefinition, type ChStatDefinition } from '../lib/stat-definitions';
 import { Icon } from './Icon';
 import { Modal } from './Modal';
+import '../styles/stat-terms.css';
 
 const GAP = 8;
 const EDGE = 12;
