@@ -11,7 +11,8 @@ Data impact:    none
 Held items:     none
 ```
 
-Beside the form bars on a 390 phone, "4 rounds under average · Handicap 5.1" ran to three lines of two
-words. The note and the handicap are now two short lines under the name, as Mail stacks a subject and its
-preview. The row's spoken name is unchanged. The gate's known CRH-1 and CRH-4 lines for Roster are removed: the
-row and nesting fixes already on main pass.
+Beside the form bars on a 390 phone, "4 rounds under average · Handicap 5.1"
+ran to three lines of two words. The note and the handicap are now two short
+lines under the name, as Mail stacks a subject and its preview. The row's
+spoken name is unchanged. The gate's known CRH-1 and CRH-4 lines for Roster
+are removed: the row and nesting fixes already on main pass.

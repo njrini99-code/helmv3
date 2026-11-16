@@ -11,6 +11,7 @@ Data impact:    none
 Held items:     none
 ```
 
-On a wide range the huddle's data padding is only a few points, so a coin at the top or right edge put its
-44 tap circle past the chart's box (1 past on the stress board). The range now widens at its high end until every
-coin's circle fits. The gate's known TEAM-1 lines are removed.
+On a wide range the huddle's data padding is only a few points, so a coin at
+the top or right edge put its 44 tap circle past the chart's box (1 past on
+the stress board). The range now widens at its high end until every coin's
+circle fits. The gate's known TEAM-1 lines are removed.
