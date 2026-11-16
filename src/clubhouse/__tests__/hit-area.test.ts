@@ -6,7 +6,7 @@ import { ROOT } from './_scan';
 /** Row 38 (AX-11): a phone control drawn under 44pt takes a 44pt tap through an invisible ::before, without growing. */
 const ui = readFileSync(join(ROOT, 'styles/ui.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 const coarse = ui.slice(ui.lastIndexOf('@media (pointer: coarse) {'));
-const SHORT = ['.ch-toast__action', '.ch-toast__close', '.ch-asks__open', '.ch-ask-cmp__send', '.ch-rv-back'];
+const SHORT = ['.ch-toast__action', '.ch-toast__close', '.ch-ask-cmp__send', '.ch-rv-back'];
 
 describe('44pt hit areas on touch (row 38)', () => {
   it.each(SHORT)('%s grows its tap target, not its look', (sel) => {

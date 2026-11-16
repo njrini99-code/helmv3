@@ -40,14 +40,14 @@ export function NotFoundView() {
         </Link>
         <nav aria-label="Other places" className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 font-fw-sans text-sm">
           {others.map((d) => (
-            <Link key={d.href} href={d.href} prefetch={false} className="text-accent-ink hover:underline">
+            <Link key={d.href} href={d.href} prefetch={false} className="py-3 text-accent-ink hover:underline">
               {d.label}
             </Link>
           ))}
         </nav>
         <p className="mt-8 font-fw-sans text-sm text-text-secondary">
           Need help?{' '}
-          <a href="mailto:admin@helmsportslabs.com" className="text-accent-ink hover:underline">
+          <a href="mailto:admin@helmsportslabs.com" className="py-3 text-accent-ink hover:underline">
             Contact support
           </a>
         </p>

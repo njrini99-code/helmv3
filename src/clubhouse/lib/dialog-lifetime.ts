@@ -1,13 +1,15 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { CH_DUR, CH_EASE, CH_FADE_MS, chSpringCurve } from './motion';
+import { CH_DUR, CH_EASE, CH_EASE_SHEET, CH_FADE_MS, chSpringCurve } from './motion';
 import { acquireOverlayScroll } from './overlay-scroll';
 import { useChMotionMode, useChReducedMotion } from './reduced-motion';
 import { chSetScrim, chSupportsLinear, chThrownExit, takeSheetFling } from './sheet-drag';
 import { chFocusQuietly } from './focus-quietly';
 
 const EASE = `cubic-bezier(${CH_EASE.join(', ')})`;
+/** The iOS sheet curve (`--ch-ease-sheet`, the motion spec's `--ch-ease-ios`): every tap-initiated enter and exit (S3.1). */
+const SHEET_EASE = `cubic-bezier(${CH_EASE_SHEET.join(', ')})`;
 
 /**
  * F-0012: the control a finger, a click or VoiceOver last pressed, and when. Safari (and the iOS app's WKWebView) focuses
@@ -53,7 +55,7 @@ export function chDialogOpener(): HTMLElement | null {
  * OS Reduce Motion setting, owner decision 2, OQ-15) the surface fades in over the quick beat instead, in opacity only:
  * the CSS rise or pop is floored to 1ms there (base.css), so nothing slides or scales, and the scrim fades alongside.
  */
-function holdRise(dialog: HTMLElement, surface: HTMLElement | null, fade: boolean) {
+function holdRise(dialog: HTMLElement, surface: HTMLElement | null, fade: boolean, direction: 'bottom' | 'left' | 'center', quick: boolean) {
   const held = surface && surface !== dialog ? [dialog, surface] : [dialog];
   for (const el of held) el.setAttribute('data-ch-hold', '');
   chSetScrim(dialog, 0, 0);
@@ -63,11 +65,21 @@ function holdRise(dialog: HTMLElement, surface: HTMLElement | null, fade: boolea
     requestAnimationFrame(() => {
       for (const el of held) el.removeAttribute('data-ch-hold');
       appear?.play();
-      // Fades in over the base duration as the panel rises (the CSS's own transition); over the quick beat with `fade`.
+      // A sheet or drawer rises over the reveal beat (its CSS) while its dim comes up over the base beat, linear (motion
+      // spec 15 Nov 3.4, which settles OVL-01's mismatch: the dim is the quicker of the two on purpose); a centred dialog's
+      // dim is the CSS's own base-beat transition, or the quick beat with its panel for the palette and an alert (3.4,
+      // S3.6). Over the quick beat with `fade`.
       if (fade) chSetScrim(dialog, 1, CH_FADE_MS, EASE);
+      else if (direction !== 'center') chSetScrim(dialog, 1, CH_DUR.base * 1000, 'linear');
+      else if (quick) chSetScrim(dialog, 1, CH_DUR.quick * 1000, SHEET_EASE);
       else chSetScrim(dialog, 1);
     }),
   );
+}
+
+/** Whether focus can go back to `el`: still on the page and not inside something inert. */
+function reachable(el: Element | null): el is HTMLElement {
+  return el instanceof HTMLElement && el.isConnected && !el.closest('[inert]');
 }
 
 /** Native modal lifetime shared by custom bars, action sheets and drawers. */
@@ -77,13 +89,18 @@ export function useDialogLifetime(open: boolean, {
   focusSelector,
   fallbackFocus,
   atRest = false,
+  pop = 'dialog',
 }: {
   /** Opened by a link: no rise and no scrim fade; it is at rest on its first frame (classes-roster-home 07 M-CRH-46). */
   atRest?: boolean;
+  /** A centred dialog's beat. `quick`: the ⌘K palette and an alert, in over 180ms with their dim and out over 110ms (motion
+   * spec 15 Nov 3.4); `dialog`: 260ms in, 180ms out (S3.2). Their CSS draws the entrance. */
+  pop?: 'dialog' | 'quick';
   direction?: 'bottom' | 'left' | 'center';
   surfaceSelector?: string;
   focusSelector?: string;
-  /** Where focus goes when the dialog closes and what opened it has gone (a deleted event: its day, the grid). */
+  /** Where focus goes when the dialog closes and what opened it has gone or sits in something inert (a deleted event:
+   * its day, the grid; the account sheet: the section title, since the strip that held its opener has shut). */
   fallbackFocus?: () => HTMLElement | null;
 } = {}) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -112,9 +129,9 @@ export function useDialogLifetime(open: boolean, {
       // Native focus restoration must happen while the underlying page is locked,
       // including route unmounts and nested dialogs released in either order.
       dialog?.close();
-      const back = opener?.isConnected ? opener : (fallbackRef.current?.() ?? null);
+      const back = reachable(opener) ? opener : (fallbackRef.current?.() ?? null);
       if (back) chFocusQuietly(back);
-      else if (opener) delete opener.dataset.chPeekQuiet;
+      if (opener && opener !== back) delete opener.dataset.chPeekQuiet;
       release();
     };
   }, [present]);
@@ -152,7 +169,7 @@ export function useDialogLifetime(open: boolean, {
         // start of the rise and it jumped up from part way (phone, owner 2026-10-15: "needs to be smoother"). Two
         // frames later it plays from the bottom, on the compositor.
         if (atRest) chSetScrim(dialog, 1, 0);
-        else holdRise(dialog, surface, mode === 'fade');
+        else holdRise(dialog, surface, mode === 'fade', direction, pop === 'quick');
         dialog.showModal();
         // A field that asked for focus (autoFocus) keeps it; otherwise the named element (a title) takes it.
         const active = document.activeElement;
@@ -168,7 +185,10 @@ export function useDialogLifetime(open: boolean, {
       dialog.close();
       setRetained(false);
       const target = opener.current;
-      if (target instanceof HTMLElement && target.isConnected && !target.closest('[inert]')) chFocusQuietly(target);
+      // An opener that has gone, or sits in something that closed under the dialog (the section strip's Account pill),
+      // hands focus to the caller's fallback instead (OVL-12).
+      const back = target instanceof HTMLElement && reachable(target) ? target : (fallbackRef.current?.() ?? null);
+      if (back) chFocusQuietly(back);
     };
     dialog.setAttribute('data-closing', '');
     if (surface) surface.inert = true;
@@ -184,25 +204,29 @@ export function useDialogLifetime(open: boolean, {
         gone.cancel();
       };
     }
-    const exitTransform = direction === 'left' ? 'translateX(-100%)' : direction === 'bottom' ? 'translateY(100%)' : 'translateY(6px) scale(.98)';
     const computed = getComputedStyle(surface);
-    // A sheet or drawer leaves on the smooth spring it rose on, ending as it leaves sight, as the bell and the account
-    // sheet do (popup audit 2026-10-13): thrown shut, at the throw's speed (CH-1611); closed any other way, from rest.
-    // A centred dialog, or a browser without linear(), takes the base ease-out.
+    // Thrown shut, a sheet or drawer leaves on the smooth spring at the throw's speed, ending as it leaves sight (CH-1611).
+    // Closed any other way (its key, Esc, the scrim) it leaves on the release beat, 280ms, on the curve it rose on, quicker
+    // than its 520ms rise (MAC-19, S3.2, motion spec 3.4). A centred dialog fades where it stands over the quick beat, 180ms,
+    // opacity only (OVL-03, S3.2); the palette and an alert over the press beat, 110ms, ease-out (3.4).
+    const exitTransform = direction === 'left' ? 'translateX(-100%)' : direction === 'bottom' ? 'translateY(100%)' : computed.transform;
     const fling = direction === 'center' ? 0 : takeSheetFling(dialog) || takeSheetFling(surface);
     const travel = direction === 'left' ? surface.offsetWidth : surface.offsetHeight;
-    const thrown = direction !== 'center' && travel > 0 && chSupportsLinear() ? chThrownExit(fling, travel) : null;
+    const thrown = direction !== 'center' && fling > 0 && travel > 0 && chSupportsLinear() ? chThrownExit(fling, travel) : null;
     // From where the throw has it by the exit's first frame (when it was at rest, not mid rise).
     const lead = thrown && computed.transform === 'none' ? thrown.lead : 0;
     const from = lead ? (direction === 'left' ? `translateX(${-lead}px)` : `translateY(${lead}px)`) : computed.transform;
+    const leave = thrown
+      ? { ms: thrown.ms, easing: thrown.linear }
+      : direction === 'center'
+        ? pop === 'quick' ? { ms: CH_DUR.press * 1000, easing: EASE } : { ms: CH_DUR.quick * 1000, easing: SHEET_EASE }
+        : { ms: CH_DUR.release * 1000, easing: SHEET_EASE };
     const exit = surface.animate([
       { transform: from, opacity: computed.opacity },
       { transform: exitTransform, opacity: direction === 'center' ? 0 : 1 },
-    ], thrown
-      ? { duration: thrown.ms, easing: thrown.linear, fill: 'forwards' }
-      : { duration: CH_DUR.release * 1000, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+    ], { duration: leave.ms, easing: leave.easing, fill: 'forwards' });
     // The dim clears with the panel, over the exit's own duration and curve, from wherever a drag had left it (A9).
-    chSetScrim(dialog, 0, thrown ? thrown.ms : CH_DUR.release * 1000, thrown ? thrown.linear : 'cubic-bezier(.22,1,.36,1)');
+    chSetScrim(dialog, 0, leave.ms, leave.easing);
     exit.onfinish = finish;
     return () => {
       active = false;
@@ -215,7 +239,7 @@ export function useDialogLifetime(open: boolean, {
       exit.cancel();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- atRest is read as the sheet opens; a later change never replays it
-  }, [open, reduced, mode, direction, surfaceSelector, focusSelector]);
+  }, [open, reduced, mode, direction, surfaceSelector, focusSelector, pop]);
 
   // A caller can clear its selected object immediately on dismiss. Retain the
   // last open subtree as well as the dialog, so the exit never becomes empty.

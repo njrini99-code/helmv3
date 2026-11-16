@@ -14,7 +14,7 @@ const save = vi.fn();
 const helper = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
 vi.mock('../../../lib/use-phone', () => ({ useChPhone: () => false }));
-vi.mock('../../../ui/Toast', () => ({ useToast: () => vi.fn() }));
+vi.mock('../../../ui/Toast', () => ({ useToast: () => vi.fn(), CH_TOAST_ACTION_MS: 10_000 }));
 vi.mock('../../coachhelm/plan/PrintPlan', () => ({ printNode: vi.fn(), printPlan: vi.fn() }));
 vi.mock('@/app/golf/actions/practice-plans', () => ({ savePracticePlan: (...a: unknown[]) => save(...a), copyPlanBody: vi.fn(), deletePracticePlan: vi.fn() }));
 vi.mock('@/app/golf/actions/practice-publish', () => ({ publishPracticePlan: vi.fn() }));

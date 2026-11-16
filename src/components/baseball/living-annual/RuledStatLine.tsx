@@ -26,10 +26,11 @@
  *
  * `prefers-reduced-motion` → rule renders drawn, numeral set, no pulse.
  */
-import { m, useReducedMotion } from 'motion/react';
+import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { StatReadout } from './StatReadout';
 import { inkSettles, rulesDraw } from './motion';
+import { useLivingReducedMotion } from './reduced-motion';
 
 export interface RuledStatLineProps {
   /** Small-caps measurable name, e.g. `60-YARD`, `EXIT VELO`, `POP TIME`. */
@@ -99,7 +100,7 @@ export function RuledStatLine({
   decimals = 0,
   className,
 }: RuledStatLineProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
   const settle = inkSettles(reduced);
   const rule = rulesDraw(reduced);
   const numeralSize = size === 'hero' ? 'text-ink-hero' : 'text-ink';

@@ -13,10 +13,11 @@
  * `present={false}`) = a ghost dashed outline — the projected/ceiling grade
  * not yet earned. Reduced motion → shown instantly, no press, no bleed.
  */
-import { m, useReducedMotion } from 'motion/react';
+import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { gradeColor, GRADE_VAR } from './grades';
 import { inkBleed, stampPress } from './motion';
+import { useLivingReducedMotion } from './reduced-motion';
 
 export interface GradeStampProps {
   /** The 20-80 grade. */
@@ -37,7 +38,7 @@ const SIZE: Record<'sm' | 'md', { box: string; num: string; tool: string }> = {
 };
 
 export function GradeStamp({ value, tool, present = true, rotate, size = 'md', className }: GradeStampProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
   const band = gradeColor(value);
   const color = GRADE_VAR[band];
   const tilt = rotate ?? (value % 2 === 0 ? -1.5 : 1.5);

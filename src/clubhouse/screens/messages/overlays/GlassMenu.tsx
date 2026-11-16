@@ -6,7 +6,7 @@ import { Icon } from '../../../ui/Icon';
 import type { MenuItem } from '../../../ui/Menu';
 import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
-import { MS_BEATS, msAnimate, sheetCloseCurve } from '../motion/messages-motion';
+import { MS_BEATS, menuOpenCurve, msAnimate, sheetCloseCurve } from '../motion/messages-motion';
 import '../../../styles/messages-overlays.css';
 
 /** MSG-410: a menu is 236 wide; 8 px from the screen's edge; flips above when it would pass the bottom 40 and there are 60 above. */
@@ -95,7 +95,9 @@ export function GlassMenu({
     const was = leaving.current;
     leaving.current = null;
     // Read the live frame first (live), then let the old fade go: cancelling it first would snap the menu back to full.
-    msAnimate(el, [{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], 'settle', { live: !!was, reduced });
+    // As every menu opens (ui/Menu.tsx): from 0.97 with its opacity over the quick beat, ease-out, not from 0.8 on the lift
+    // spring (OVL-15).
+    msAnimate(el, [{ transform: 'scale(.96)', opacity: 0 }, { transform: 'none', opacity: 1 }], null, { live: !!was, reduced, timing: menuOpenCurve });
     if (was) {
       was.onfinish = null;
       was.cancel();

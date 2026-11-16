@@ -66,7 +66,7 @@ export function Palette({
   keyword: number;
 }) {
   return (
-    <Modal open={open} onClose={onClose} title="Search Clubhouse" width={580} initialFocus=".ch-cmd-input">
+    <Modal open={open} onClose={onClose} title="Search Clubhouse" width={580} initialFocus=".ch-cmd-input" pop="quick">
       <PaletteBody key={keyword} onClose={onClose} role={role} features={features} pathname={pathname} people={people} peopleState={peopleState} events={events} recent={recent} />
     </Modal>
   );

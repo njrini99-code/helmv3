@@ -13,9 +13,10 @@
  * thin convenience wrapper for it. Reduced motion → the seal is shown pressed,
  * without the press or bleed animation.
  */
-import { m, useReducedMotion } from 'motion/react';
+import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { inkBleed, stampPress } from './motion';
+import { useLivingReducedMotion } from './reduced-motion';
 
 export interface CommitSealProps {
   /** Ceremony word (defaults by variant: commit → `COMMITTED`, packet → `ISSUED`). */
@@ -39,7 +40,7 @@ const EMBOSS =
   'shadow-[inset_0_2px_4px_rgba(0,0,0,0.35),inset_0_-1px_2px_rgba(255,255,255,0.12),0_2px_6px_rgba(0,0,0,0.22)]';
 
 export function CommitSeal({ label, variant = 'commit', size = 'md', rotate = -1.5, className }: CommitSealProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
   const dims = SIZE[size];
   const text = label ?? (variant === 'packet' ? 'ISSUED' : 'COMMITTED');
 

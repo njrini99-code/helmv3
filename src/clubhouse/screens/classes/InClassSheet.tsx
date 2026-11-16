@@ -3,7 +3,7 @@
 import { Icon } from '../../ui/Icon';
 import { ChevronRight, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import type { ChClassDay } from '../../data/class-day-shape';
 import { teamNow, statusClock, type ChStatusTextOptions } from '../../data/class-status';
 import { Button, IconButton } from '../../ui/Button';
@@ -12,6 +12,7 @@ import { Modal } from '../../ui/Modal';
 import { Spinner } from '../../ui/Spinner';
 import { pluralWord } from '../../lib/plural';
 import { useChPhone } from '../../lib/use-phone';
+import { useOnline } from '../../lib/use-online';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { rebuiltHref } from '../../shell/nav';
 import { messagesPrefillHref } from '../messages/prefill';
@@ -31,21 +32,8 @@ import '../../styles/class-awareness.css';
 const ASK =
   'Could you add your class schedule in Clubhouse (Classes)? It lets me see when you’re in class so I don’t message you mid-lecture, and your pushes wait until class ends.';
 
-const subscribeOnline = (cb: () => void) => {
-  window.addEventListener('online', cb);
-  window.addEventListener('offline', cb);
-  return () => {
-    window.removeEventListener('online', cb);
-    window.removeEventListener('offline', cb);
-  };
-};
-
 function useOffline(): boolean {
-  return useSyncExternalStore(
-    subscribeOnline,
-    () => !navigator.onLine,
-    () => false,
-  );
+  return !useOnline();
 }
 
 function useAfter(ms: number, active: boolean): boolean {

@@ -5,7 +5,7 @@ import { ClubhouseSettingsRoute } from '@/clubhouse/routes/settings';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 export const metadata: Metadata = {
-  title: 'Coaching Intelligence',
+  title: 'CoachHelm settings',
   description: 'Configure your coaching philosophy, alert thresholds, and AI insight preferences.',
 };
 

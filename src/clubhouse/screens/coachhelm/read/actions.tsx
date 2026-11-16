@@ -17,7 +17,7 @@ import { useRefresh } from '../../../lib/use-refresh';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
-import { useToast } from '../../../ui/Toast';
+import { CH_TOAST_ACTION_MS, useToast } from '../../../ui/Toast';
 import { focusStatusSaid, type ChFocusActions } from '../parts';
 import { ProposalRow } from '../Proposals';
 import type { ChPlayerWrites } from '../writes';
@@ -37,15 +37,16 @@ export const LIVE_READ_WRITES: ChReadWrites = {
   recheck: (playerId) => refreshPlayerAnalysisAsCoach(playerId),
 };
 
-/** The window a held write waits in, the same eight seconds Ask holds a write for (`lib/coachhelm/v3/chat/undo-hold.ts`). */
-export const READ_HOLD_MS = 8_000;
+/** The window a held write waits in: the ten seconds every Undo window gives (NP-06). Ask's own server hold
+ * (`lib/coachhelm/v3/chat/undo-hold.ts`) is still eight. */
+export const READ_HOLD_MS = CH_TOAST_ACTION_MS;
 
 /** What the page shows while a write waits behind its Undo: the outcome, at once. Nothing is saved until the window closes. */
 export type ReadHeld = 'assign' | 'remove' | null;
 
 /**
  * A write held behind Undo (the pattern of the board's Decline and the calendar's held move): the page shows the outcome at once,
- * the toast offers Undo for eight seconds, and the write is sent only when Undo stops being offered, or at once when the page is
+ * the toast offers Undo for ten seconds, and the write is sent only when Undo stops being offered, or at once when the page is
  * left. Undo is the write never sent, so nothing is saved and the player is told nothing until the window closes.
  */
 function useHeldWrite(holdMs: number) {

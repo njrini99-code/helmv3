@@ -6,6 +6,8 @@
  * Source: design/handoff/auth/src/scene.jsx (KEYS, skyAt, mixc).
  */
 
+import { timeOfDayForHour } from '@/lib/utils/time-of-day';
+
 export interface SkyKey {
   h: number;
   top: string;
@@ -91,10 +93,12 @@ export function isDarkSky(hour: number): boolean {
   return skyAt(hour).ambA > 0.3;
 }
 
-/** The greeting word by hour: morning 4:30 to 12, afternoon 12 to 17, evening otherwise. */
+/** The greeting word by hour, on the app's one set of buckets (`time-of-day.ts`: morning 5 to 12, afternoon 12 to 17);
+ * the welcome says evening for the rest of the night, under its dark sky (MAC-14). */
 export function greetingWord(hour: number): 'Good morning' | 'Good afternoon' | 'Good evening' {
-  if (hour >= 4.5 && hour < 12) return 'Good morning';
-  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  const part = timeOfDayForHour(hour);
+  if (part === 'morning') return 'Good morning';
+  if (part === 'afternoon') return 'Good afternoon';
   return 'Good evening';
 }
 

@@ -167,7 +167,7 @@ export default function SupportPage() {
             Helm Sports Labs &middot;{' '}
             <a
               href="mailto:admin@helmsportslabs.com"
-              className="text-primary-600 hover:underline"
+              className="py-3 text-primary-600 hover:underline"
             >
               admin@helmsportslabs.com
             </a>

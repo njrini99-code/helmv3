@@ -7,7 +7,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type 
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
 import { haptic } from '../lib/haptics';
-import { CH_POP, chTween } from '../lib/motion';
+import { chMenuMotion } from '../lib/menu-motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { chTrail } from '../lib/track';
 
@@ -49,7 +49,7 @@ export function Menu({
   open: controlledOpen,
   onOpenChange,
 }: {
-  trigger: (props: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string }) => ReactNode;
+  trigger: (props: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string | undefined }) => ReactNode;
   items: MenuItem[];
   align?: 'start' | 'end';
   /** On touch, don't move focus into the menu: a composer behind it keeps its keyboard (MOB-ASK-11). */
@@ -140,7 +140,9 @@ export function Menu({
       if (!list.current?.contains(t) && !btn.current?.contains(t)) close(false);
     };
     document.addEventListener('mousedown', onDown);
-    const frame = requestAnimationFrame(() => (keepFocus && !window.matchMedia('(pointer: fine)').matches ? null : list.current)?.querySelector<HTMLElement>('[role="menuitem"],[role="menuitemradio"]')?.focus({ preventScroll: true }));
+    // MENU-01 (S3.5): focus lands on the menu itself, never on an item, so a menu that opens on Delete can't start it on a
+    // stray Enter; the arrows (or Home, End) step into the rows from there.
+    const frame = requestAnimationFrame(() => (keepFocus && !window.matchMedia('(pointer: fine)').matches ? null : list.current)?.focus({ preventScroll: true }));
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener('mousedown', onDown);
@@ -167,7 +169,8 @@ export function Menu({
         onClick: () => setOpen(!open),
         'aria-expanded': open,
         'aria-haspopup': 'menu',
-        'aria-controls': id,
+        // Only while the menu is there to point at: a closed menu is not mounted (PMAC-13).
+        'aria-controls': open ? id : undefined,
       })}
       {typeof document !== 'undefined' &&
         createPortal(
@@ -178,13 +181,11 @@ export function Menu({
                 id={id}
                 role="menu"
                 aria-label={label}
+                tabIndex={-1}
                 className="ch-menu ch-popover"
                 data-ui="clubhouse"
                 style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width, transformOrigin: pos?.origin }}
-                initial={reduced ? { opacity: 0 } : CH_POP.initial}
-                animate={reduced ? { opacity: 1 } : CH_POP.animate}
-                exit={reduced ? { opacity: 0 } : CH_POP.exit}
-                transition={chTween('quick', reduced)}
+                {...chMenuMotion(reduced)}
                 onKeyDown={onKey}
               >
                 <MenuItems items={items} onClose={close} />
@@ -206,7 +207,9 @@ export function menuKeyDown(e: React.KeyboardEvent, list: HTMLElement | null, on
     on.onEscape();
   } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     e.preventDefault();
-    els[(i + (e.key === 'ArrowDown' ? 1 : -1) + els.length) % els.length]?.focus();
+    // From the menu itself (it takes focus as it opens, MENU-01), down is the first row and up the last.
+    const at = i < 0 ? (e.key === 'ArrowDown' ? -1 : 0) : i;
+    els[(at + (e.key === 'ArrowDown' ? 1 : -1) + els.length) % els.length]?.focus();
   } else if (e.key === 'Home' || e.key === 'End') {
     e.preventDefault();
     els[e.key === 'Home' ? 0 : els.length - 1]?.focus();

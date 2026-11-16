@@ -114,7 +114,9 @@ describe('press-and-hold peek (P003-C1 primitive)', () => {
     act(() => {
       fireEvent.keyDown(window, { key: 'Escape' });
     });
-    expect(document.querySelector('.ch-hovercard')).toBeNull();
+    // It leaves on its fade (OVL-10), taking no pointer or focus on the way out; ui/__tests__/hovercard-exit.test.tsx
+    // watches it go on the real frame clock, which this file's fake timers hold still.
+    expect(document.querySelector('.ch-hovercard')!.hasAttribute('inert')).toBe(true);
   });
 
   it('a disabled target is only its child', () => {

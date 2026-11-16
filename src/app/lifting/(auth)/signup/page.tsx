@@ -19,7 +19,7 @@ function SignInLink() {
     ? `/lifting/login?returnTo=${encodeURIComponent(returnTo)}`
     : '/lifting/login';
   return (
-    <Link href={loginHref} className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
+    <Link href={loginHref} className="py-3 text-primary-600 font-semibold hover:text-primary-700 transition-colors">
       Sign in
     </Link>
   );
@@ -234,7 +234,7 @@ function SignupContent() {
               Already have an account?{' '}
               <Suspense
                 fallback={
-                  <Link href="/lifting/login" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
+                  <Link href="/lifting/login" className="py-3 text-primary-600 font-semibold hover:text-primary-700 transition-colors">
                     Sign in
                   </Link>
                 }

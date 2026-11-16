@@ -1,13 +1,15 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
-import { m } from 'motion/react';
+import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import Link from 'next/link';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useDialogLifetime } from '../lib/dialog-lifetime';
+import { chSafeAreaInsets } from '../lib/safe-area';
 import { haptic } from '../lib/haptics';
-import { chSpring, chTween } from '../lib/motion';
+import { chSpring } from '../lib/motion';
+import { chMenuMotion } from '../lib/menu-motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { Icon } from './Icon';
 
@@ -280,11 +282,14 @@ export function PeekTarget({
       >
         {children}
       </span>
-      {mode?.kind === 'hover' && (
-        <HoverCard id={cardId} label={label} rect={mode.rect} fit={!!within} actions={shown} onEnter={holdHover} onLeave={leaveHover} onClose={close}>
-          {card()}
-        </HoverCard>
-      )}
+      {/* It leaves on a fade rather than vanishing (OVL-10). */}
+      <AnimatePresence>
+        {mode?.kind === 'hover' && (
+          <HoverCard key="hover" id={cardId} label={label} rect={mode.rect} fit={!!within} actions={shown} onEnter={holdHover} onLeave={leaveHover} onClose={close}>
+            {card()}
+          </HoverCard>
+        )}
+      </AnimatePresence>
       <PressPeek open={mode?.kind === 'press'} up={!!mode?.up} rect={mode?.rect ?? null} label={label} actions={shown} onClose={close}>
         {mode?.kind === 'press' ? card() : null}
       </PressPeek>
@@ -315,6 +320,12 @@ function ActionKey({ a, onDone, className }: { a: PeekAction; onDone: () => void
   );
 }
 
+/** The open dialog on top, if any: the last one opened is last in the top layer. */
+function topOpenDialog(): HTMLDialogElement | null {
+  const open = document.querySelectorAll<HTMLDialogElement>('dialog[open]');
+  return open[open.length - 1] ?? null;
+}
+
 function HoverCard({
   id,
   label,
@@ -339,6 +350,8 @@ function HoverCard({
 }) {
   const card = useRef<HTMLDivElement>(null);
   const reduced = useChReducedMotion();
+  // On its way out it takes no pointer or focus: a pass over the leaving card never holds it open again.
+  const present = useIsPresent();
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const w = hoverCardWidth(fit, rect.width);
   useLayoutEffect(() => {
@@ -358,10 +371,10 @@ function HoverCard({
       className={fit ? 'ch-hovercard ch-hovercard--fit' : 'ch-hovercard'}
       role="dialog"
       aria-label={label}
-      style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: w }}
-      initial={reduced ? false : { opacity: 0, transform: 'translate(0px, 4px)' }}
-      animate={{ opacity: 1, transform: 'translate(0px, 0px)' }}
-      transition={reduced ? { duration: 0 } : chTween('quick')}
+      inert={!present || undefined}
+      // As a menu (S3.5, motion spec 15 Nov 3.4): 180 in from .96 at the corner nearest its anchor, 110 out.
+      style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: w, transformOrigin: pos && pos.top < rect.top ? 'bottom left' : 'top left' }}
+      {...chMenuMotion(reduced)}
       onPointerEnter={onEnter}
       onPointerLeave={onLeave}
     >
@@ -374,8 +387,9 @@ function HoverCard({
         </div>
       )}
     </m.div>,
-    // Inside the Clubhouse root when there is one, so the card has its fonts; fixed, so it never clips.
-    document.querySelector('.ch-root') ?? document.body,
+    // Inside an open dialog when the card's anchor is in one, or it would draw under the top layer and its keys sit in what
+    // the dialog has made inert (OVL-10); else inside the Clubhouse root, so the card has its fonts. Fixed, so it never clips.
+    topOpenDialog() ?? document.querySelector('.ch-root') ?? document.body,
   );
 }
 
@@ -430,7 +444,8 @@ function PressPeek({
     if (!open || !rect) return;
     const h = panel.current?.offsetHeight ?? 320;
     const margin = 16;
-    const safeTop = margin + 44;
+    // Under the notch or the status bar, by the real inset (OVL-09), not a fixed 60px.
+    const safeTop = chSafeAreaInsets().top + 8;
     setTop(Math.max(safeTop, Math.min(rect.top, window.innerHeight - h - margin - 24)));
   }, [open, rect]);
   return (

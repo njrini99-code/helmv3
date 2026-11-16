@@ -27,30 +27,34 @@ export function spotScales(values: number[]): { loss: number; gain: number } {
 function BarRow({ player, station, teamValue, scales, onPlayer }: { player: ChTeamPlayer; station: ChStation; teamValue: number | null; scales: { loss: number; gain: number }; onPlayer: (id: string) => void }) {
   const leg = player.legs[station];
   const v = leg.strokes;
+  // Named by what it shows (MAC-09, SWP-04: Voice Control): the first name on the row, the rest of the name for a screen
+  // reader only, then the figure. No aria-label to disagree with the face.
+  const rest = player.name.startsWith(player.first) ? player.name.slice(player.first.length).trim() : '';
   const name = (
     <span className="bn">
       <Coin player={player} small />
       {player.first}
+      {rest && <span className="ch-sr-only"> {rest}</span>}
     </span>
   );
   if (v == null)
     return (
-      <button type="button" className="br tapp" data-p={player.id} onClick={() => onPlayer(player.id)} aria-label={`${player.name}, ${leg.missing ?? 'not measured'}`}>
-        {name}
-        <span className="bmiss">{leg.missing}</span>
-        <span className="bv is-none">—</span>
+      <button type="button" className="br tapp" data-p={player.id} onClick={() => onPlayer(player.id)}>
+        {name}{' '}
+        <span className="bmiss">{leg.missing ?? <span className="ch-sr-only">not measured</span>}</span>
+        <span className="bv is-none" aria-hidden="true">—</span>
       </button>
     );
   const loss = v < 0;
   return (
-    <button type="button" className="br tapp is-row" data-p={player.id} data-early={player.early || undefined} onClick={() => onPlayer(player.id)} aria-label={`${player.name}, ${formatSigned(v)}`}>
-      {name}
+    <button type="button" className="br tapp is-row" data-p={player.id} data-early={player.early || undefined} onClick={() => onPlayer(player.id)}>
+      {name}{' '}
       <span className="bt">
         <i className="z" />
         {/* On the fills' own scale, either side of Tour (TEAM-9). */}
         {teamValue != null && <i className="avg" style={{ left: `${teamValue < 0 ? ZERO_AT - barScale(teamValue, scales.loss, scales.gain) * ZERO_AT : ZERO_AT + barScale(teamValue, scales.loss, scales.gain) * (100 - ZERO_AT)}%` }} />}
         <i className={`bf ${loss ? 'l' : 'g'}${player.early ? ' early' : ''}`} style={{ transform: `scaleX(${barScale(v, scales.loss, scales.gain)})` }} />
-      </span>
+      </span>{' '}
       <span className={'bv ch-num' + (loss ? '' : Math.abs(v) < 0.05 ? ' is-even' : ' g')}>{formatSigned(v)}</span>
     </button>
   );

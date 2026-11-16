@@ -10,7 +10,8 @@
  * dot renders static (no pulse), per the motion contract. Pass `label` and a
  * small-caps lane-ink label sits beside it (`LIVE`, `STANDING BY`, `SYNCING`).
  */
-import { m, useReducedMotion } from 'motion/react';
+import { m } from 'motion/react';
+import { useLivingReducedMotion } from './reduced-motion';
 import { cn } from '@/lib/utils';
 
 export interface LiveDotProps {
@@ -27,7 +28,7 @@ const INK: Record<NonNullable<LiveDotProps['ink']>, { text: string; varRef: stri
 };
 
 export function LiveDot({ ink = 'team', label, className }: LiveDotProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
   const { text, varRef } = INK[ink];
 
   return (

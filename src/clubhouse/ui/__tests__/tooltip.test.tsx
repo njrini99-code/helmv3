@@ -30,7 +30,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const tip = () => document.querySelector('.ch-tip');
+/** The tip on show; a closing one fades out over the press beat first (OVL-07) and is not counted. */
+const tip = () => document.querySelector('.ch-tip:not([data-leaving])');
 const over = (el: Element, pointerType = 'mouse') => act(() => void fireEvent.pointerOver(el, { pointerType }));
 const out = (el: Element) => act(() => void fireEvent.pointerOut(el));
 const wait = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
@@ -100,6 +101,10 @@ describe('Tooltip', () => {
     act(() => void b.dispatchEvent(esc));
     expect(tip()).toBeNull();
     expect(esc.defaultPrevented).toBe(false);
+    // It fades out over the press beat, then leaves the page (OVL-07).
+    expect(document.querySelector('.ch-tip[data-leaving]')).not.toBeNull();
+    act(() => void vi.advanceTimersByTime(110));
+    expect(document.querySelector('.ch-tip')).toBeNull();
   });
 
   it('closes on a press, on blur and when its control leaves the page', () => {

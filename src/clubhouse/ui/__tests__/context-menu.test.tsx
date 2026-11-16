@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'motion/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useContextMenu } from '../ContextMenu';
+import { CTX_HOLD_MS, useContextMenu } from '../ContextMenu';
 import type { MenuItem } from '../Menu';
 
 vi.mock('../../lib/haptics', () => ({ haptic: vi.fn() }));
@@ -23,8 +23,8 @@ const itemsFor = (name: string): MenuItem[] => [
   { label: 'Remove from team', danger: true, onSelect: () => onRemove(name) },
 ];
 
-function Rows() {
-  const ctx = useContextMenu<string>({ label: (n) => `Actions for ${n}`, items: itemsFor });
+function Rows({ touchHold = false }: { touchHold?: boolean }) {
+  const ctx = useContextMenu<string>({ label: (n) => `Actions for ${n}`, items: itemsFor, touchHold });
   return (
     <LazyMotion features={domAnimation}>
       <div className="ch-root">
@@ -104,5 +104,36 @@ describe('ContextMenu', () => {
     expect(menu()).toHaveAccessibleName('Actions for Jonah');
     fireEvent.mouseDown(document.body);
     await waitFor(() => expect(menu()).toBeNull());
+  });
+
+  it('OVL-06: a touch held still opens the menu under the row it pressed, not a sheet, and swallows the tap it ends in', () => {
+    // jsdom has no PointerEvent: a MouseEvent carrying pointerType stands in, so the hold can tell a finger from a mouse.
+    if (typeof window.PointerEvent === 'undefined') {
+      class FakePointer extends MouseEvent {
+        pointerType: string;
+        isPrimary: boolean;
+        constructor(type: string, init: PointerEventInit = {}) {
+          super(type, init);
+          this.pointerType = init.pointerType ?? 'mouse';
+          this.isPrimary = init.isPrimary ?? true;
+        }
+      }
+      (window as unknown as { PointerEvent: typeof FakePointer }).PointerEvent = FakePointer;
+    }
+    vi.useFakeTimers();
+    try {
+      desktop = false;
+      render(<Rows touchHold />);
+      const row = screen.getByRole('row', { name: 'Ava' });
+      vi.spyOn(row, 'getBoundingClientRect').mockReturnValue({ top: 100, bottom: 160, left: 0, right: 390, width: 390, height: 60, x: 0, y: 100, toJSON() {} });
+      fireEvent.pointerDown(row, { pointerType: 'touch', isPrimary: true, clientX: 40, clientY: 120 });
+      act(() => vi.advanceTimersByTime(CTX_HOLD_MS + 10));
+      expect(menu()).toHaveAccessibleName('Actions for Ava');
+      expect(screen.queryByRole('dialog')).toBeNull();
+      // Placed from the row's own edge, just under it.
+      expect(parseFloat(menu()!.style.top)).toBeGreaterThanOrEqual(160);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
