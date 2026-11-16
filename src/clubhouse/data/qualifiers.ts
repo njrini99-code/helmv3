@@ -410,7 +410,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
 
   // A player's own qualifiers come first within the list order (D-30): theirs is the one Qualifiers page (My qualifiers is retired).
   const ordered = input.role === 'player' ? [...items.filter((i) => i.mine?.entered), ...items.filter((i) => !i.mine?.entered)] : items;
-  return { role: input.role, items: ordered, listError: false, standingsError, entriesError: entries.error, today: endDayFor(now), ...(labelRead ? { teamLabel: await labelRead } : {}) };
+  return { role: input.role, items: ordered, listError: false, standingsError, entriesError: entries.error, today: endDayFor(now, tz), ...(labelRead ? { teamLabel: await labelRead } : {}) };
 }
 
 /** "Varsity · 2026–27": the team's name and the season that is on in its zone (the one season format, F-0002). Null when the name didn't load. */
@@ -556,7 +556,7 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
     selections,
     selectionsError: !!selRes.error,
     reasonsError: !!reasonsRes.error,
-    today: endDayFor(now),
+    today: endDayFor(now, tz),
     secondary,
   };
 }

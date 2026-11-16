@@ -25,6 +25,7 @@ import { boardOrder, rankStandings } from '@/lib/coachhelm/v3/qualifying/ranking
 import { plural, pluralWord } from '../../lib/plural';
 import { firstName } from '../../lib/names';
 import { zoneFormat } from '../../lib/zone-format';
+import { isoDay } from '../../lib/dates';
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
 export type ChQSelectionState = 'open' | 'scoring' | 'closed' | 'selected';
@@ -453,10 +454,12 @@ export function rankOrderChanged(prev: readonly string[] | null, next: readonly 
 }
 
 /**
- * The day to hold a qualifier's end date against (P009-D3), for a server-side `now`: the calendar date where the day
- * starts last (UTC−12), so a qualifier reads as ended only once its last day is over everywhere.
+ * The day to hold a qualifier's end date against (P009-D3), for a server-side `now`: today on the team's clock
+ * (`golf_team_settings.timezone`), so a qualifier reads as ended once its last day is over where the team plays (DF-P-12).
+ * Without a zone it falls back to the calendar date where the day starts last (UTC−12), ended only once over everywhere.
  */
-export function endDayFor(now: Date): string {
+export function endDayFor(now: Date, tz?: string): string {
+  if (tz) return isoDay(now, tz);
   return new Date(now.getTime() - 12 * 3_600_000).toISOString().slice(0, 10);
 }
 

@@ -1631,6 +1631,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-first-render-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-past-last-day.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-15-closed-for-players.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-16-ended-on-team-clock.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
