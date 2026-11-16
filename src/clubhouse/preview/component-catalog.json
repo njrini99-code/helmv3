@@ -27041,6 +27041,26 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-rule-top-sep",
+          "value": "inset 0 var(--ch-hairline-w) 0 var(--ch-separator)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-field",
+          "value": "inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-field-focus",
+          "value": "0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-field-invalid",
+          "value": "inset 0 0 0 2px var(--ch-danger-600)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-shadow-sm",
           "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']"
