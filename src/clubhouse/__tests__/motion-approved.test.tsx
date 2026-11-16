@@ -83,15 +83,15 @@ describe('CH-1618 the page draws back under a pushed screen', () => {
     for (const still of ['.ch-pscreen', '.ch-frame-route', 'main.page', '.sheet', '.ch-canvas']) expect(parts).not.toContain(q(still));
   });
 
-  it('draws back a quarter of the width at full progress, in proportion on the way, and clears at rest', () => {
+  it('draws back 30% of the width at full progress, in proportion on the way, and clears at rest', () => {
     const { q } = shellDom();
     const parts = underlayParts();
     placeUnderlay(parts, 1);
-    expect(CH_UNDERLAY_SHIFT).toBe(0.24);
-    expect(q('.list').style.translate).toBe('-24.000vw 0');
+    expect(CH_UNDERLAY_SHIFT).toBe(0.3);
+    expect(q('.list').style.translate).toBe('-30.000vw 0');
     expect(q('.ch-topbar').style.willChange).toBe('transform');
     placeUnderlay(parts, 0.5);
-    expect(q('.ch-offline').style.translate).toBe('-12.000vw 0');
+    expect(q('.ch-offline').style.translate).toBe('-15.000vw 0');
     placeUnderlay(parts, 0);
     for (const el of parts) {
       expect(el.style.translate).toBe('');
