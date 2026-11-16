@@ -1098,6 +1098,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-13-quick-chat-new-key.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-span-switch-labels.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-stat-definitions.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1383,6 +1384,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-round-day-avg-key.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-tee-finish-one-row.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-15-css-ratchet-svg-overflow.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-16-stat-definitions.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1436,6 +1438,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-shared-chart-file.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-tee-finish-one-row.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-15-css-ratchet-svg-overflow.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-16-stat-definitions.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
