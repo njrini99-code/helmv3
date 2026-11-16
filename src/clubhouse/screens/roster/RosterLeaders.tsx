@@ -39,21 +39,25 @@ export function RosterLeaders({ players, statsError, clock, onOpen }: { players:
         const reason = kind === 'look' ? p.attention?.text ?? null : null;
         const figure = kind === 'look' ? formatSigned(value) : formatFixed(value);
         return (
-          // A plain card (ROSTER-04): the class year shows on the avatar coin only, not as a tint over the whole card.
-          <button key={kind} type="button" className="ch-rs-ldr" data-ch-press-scale=".97" aria-label={`${k.label}, ${p.name}, ${figure} ${k.unit}${reason ? `, ${reason}` : ''}. Open profile`} onClick={() => onOpen(p.id)}>
+          // Named by its face, in the order it is drawn (MAC-09, N13C-19: Voice Control): the label, the figure and its unit,
+          // the player; "Open profile" for a screen reader only. No aria-label to disagree with what it shows. A plain card
+          // (ROSTER-04): the class year shows on the avatar coin only, not as a tint over the whole card.
+          <button key={kind} type="button" className="ch-rs-ldr" data-ch-press-scale=".97" onClick={() => onOpen(p.id)}>
             <span className="ch-rs-ldr__k">
               {k.label}
               <Icon icon={k.icon} size={15} />
-            </span>
+            </span>{' '}
             <span className={'ch-rs-ldr__v ch-num' + (kind === 'look' ? ' is-loss' : '')}>
               {figure}
+              <span className="ch-sr-only"> </span>
               <small>{k.unit}</small>
-            </span>
+            </span>{' '}
             <span className="ch-rs-ldr__p">
               <Avatar name={p.name} id={p.id} size="sm" year={year} />
               <b>{p.name}</b>
             </span>
             {reason && <span className="ch-rs-ldr__why">{reason}</span>}
+            <span className="ch-sr-only">. Open profile</span>
           </button>
         );
       })}

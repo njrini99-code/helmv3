@@ -101,7 +101,7 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
                 type="button"
                 className={'ch-qf-prounds__r' + (isBest ? ' is-best' : '') + (isOpen ? ' is-open' : '')}
                 aria-expanded={isOpen}
-                aria-controls={`ch-qf-rv-${rd.id}`}
+                aria-controls={isOpen ? `ch-qf-rv-${rd.id}` : undefined}
                 onClick={() => {
                   haptic('select');
                   chTrail('qualifiers open round detail');

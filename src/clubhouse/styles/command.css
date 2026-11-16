@@ -17,6 +17,10 @@
   pointer-events: none;
   animation: ch-fade var(--ch-dur-press) var(--ch-ease);
 }
+/* Closed, it fades out over the same beat before it leaves (OVL-07). */
+.ch-popover.ch-tip[data-leaving] {
+  animation: ch-out var(--ch-dur-press) var(--ch-ease-out) forwards;
+}
 .ch-tip__keys,
 .ch-cmd-keys {
   display: inline-flex;

@@ -15,11 +15,12 @@
  * GREEN in team lanes, clay in the War Room — the visible green wayfinding a
  * section masthead should carry.
  */
-import { m, useReducedMotion, useScroll, useTransform } from 'motion/react';
+import { m, useScroll, useTransform } from 'motion/react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Eyebrow } from './Eyebrow';
 import { inkColumn, inkSettles, rulesDraw } from './motion';
+import { useLivingReducedMotion } from './reduced-motion';
 
 const ACCENT_RULE: Record<'team' | 'pursuit', string> = {
   team: 'bg-grade-plus',
@@ -54,7 +55,7 @@ export function Masthead({
   scrollShrink = false,
   className,
 }: MastheadProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
 
   // Hooks must run unconditionally; the transform is only APPLIED when the
   // scroll-shrink behavior is on and reduced motion is off.

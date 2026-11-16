@@ -20,8 +20,12 @@ describe('one sheet grab and radius (CONS-23)', () => {
   it('every handle in the markup is the one grab', () => {
     const tsx = walk(ROOT, /\.tsx$/).filter((f) => !f.includes('__tests__'));
     expect(hits(/className="[^"]*(?:__grab|-grab)\b[^"]*"/, tsx).filter((h) => !/className="ch-grab(?: ch-grab--hit)?"/.test(h.text))).toEqual([]);
-    const sheets = ['ui/Modal.tsx', 'shell/AccountSheet.tsx', 'shell/AskSheetBody.tsx', 'shell/Bell.tsx', 'ui/FormSheet.tsx', 'screens/rounds/track/CourseView.tsx'];
+    const sheets = ['ui/Modal.tsx', 'shell/Bell.tsx', 'ui/FormSheet.tsx', 'screens/rounds/track/CourseView.tsx'];
     for (const f of sheets) expect(code(join(ROOT, f)), f).toMatch(/className="ch-grab/);
+    // OVL-12, OVL-17: the account sheet is the shared Modal, not a sheet of its own.
+    const account = code(join(ROOT, 'shell/AccountSheet.tsx'));
+    expect(account).toMatch(/<Modal\b/);
+    expect(account).not.toMatch(/useSheetDrag|role="dialog"|<dialog\b/);
   });
 
   it('Settings and Recruiting build their sheets on the one FormSheet', () => {

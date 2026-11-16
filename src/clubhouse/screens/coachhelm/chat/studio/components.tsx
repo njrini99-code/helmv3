@@ -513,16 +513,29 @@ export function QualifierBoard(p: StudioProps<'qualifier_board'>) {
         </li>
         {rows.map((r, i) => (
           <li key={r.id} className="ch-aks-row" data-in={cut != null && i < cut ? '' : undefined} data-cut={cut != null && i === cut - 1 && i < rows.length - 1 ? '' : undefined}>
-            <AskKey target={t} id={r.id} className="ch-aks-board__row" label={`Place ${i + 1}, ${r.name}, ${r.total ?? 'no total yet'}${r.toPar == null ? '' : `, ${r.toPar === 'E' ? 'level par' : `${r.toPar} to par`}`}. Ask about it.`} words={`Ask about this: ${r.name} in ${title}${r.toPar == null ? '' : `, ${r.toPar === 'E' ? 'level par' : r.toPar}`}`}>
-              <span className="ch-aks-rank__n ch-num">{i + 1}</span>
-              <b className="ch-aks-board__name">{r.name}</b>
+            {/* Named by its face, left to right, with the words a listener needs added unseen inside the cells (SWP-02, WCAG
+                2.5.3): "Place 1 Eli Brandt 69 70 139 −5 to par. Ask about it." The spaces between cells are not drawn in a grid. */}
+            <AskKey target={t} id={r.id} className="ch-aks-board__row" words={`Ask about this: ${r.name} in ${title}${r.toPar == null ? '' : `, ${r.toPar === 'E' ? 'level par' : r.toPar}`}`}>
+              <span className="ch-aks-rank__n ch-num">
+                <span className="ch-sr-only">Place</span> {i + 1}
+              </span>{' '}
+              <b className="ch-aks-board__name">{r.name}</b>{' '}
               {rounds.map((label, ri) => (
                 <span key={label} className="is-num ch-num">
-                  {r.rounds[ri] || <NoData label="Not played" />}
+                  {r.rounds[ri] || <NoData label="Not played" />}{' '}
                 </span>
               ))}
-              <span className="is-num ch-num">{r.total ?? <NoData />}</span>
-              <b className="is-num ch-num">{r.toPar ?? <NoData />}</b>
+              <span className="is-num ch-num">{r.total ?? <NoData />}</span>{' '}
+              <b className="is-num ch-num">
+                {r.toPar ?? <NoData />}
+                {r.toPar != null && (
+                  <>
+                    {' '}
+                    <span className="ch-sr-only">{r.toPar === 'E' ? 'level par' : 'to par'}</span>
+                  </>
+                )}{' '}
+                <span className="ch-sr-only">. Ask about it.</span>
+              </b>
             </AskKey>
             <OpenKey href={r.href} label={`Open ${r.name}’s rounds`} />
             {cut != null && i === cut - 1 && i < rows.length - 1 && (

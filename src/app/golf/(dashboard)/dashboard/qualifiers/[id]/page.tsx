@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .maybeSingle();
 
   return {
-    title: qualifier?.name ? qualifierDisplayName(qualifier.name) : 'Qualifier Details',
+    title: qualifier?.name ? qualifierDisplayName(qualifier.name) : 'Qualifier',
     description: qualifier?.description || 'View live leaderboard and qualifier details for college golf recruiting',
   };
 }

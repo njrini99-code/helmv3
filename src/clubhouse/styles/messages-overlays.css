@@ -10,7 +10,8 @@
 /* The message menu and the popover menu: one glass (MSG-404, MSG-410). */
 .ch-mso-menu {
   position: fixed;
-  z-index: var(--ch-z-skip);
+  /* Over its own scrim, inside the popover or lift that holds it (each its own layer, below). */
+  z-index: 1;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -48,7 +49,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-mso-menu > button[data-ch-pressed] {
-  background: var(--ch-press-wash, var(--ch-selected-tint));
+  background: var(--ch-sel, var(--ch-press-wash, var(--ch-selected-tint)));
 }
 @media (hover: hover) {
   .ch-mso-menu > button:hover {
@@ -88,10 +89,11 @@
 }
 
 /* The popover around a menu: a transparent scrim catches the outside tap (MSG-410). */
+/* The popover layer, under a sheet and a toast; the skip-link layer is the skip link's alone (OVL-15). */
 .ch-mso-pop {
   position: fixed;
   inset: 0;
-  z-index: var(--ch-z-skip);
+  z-index: var(--ch-z-popover);
 }
 .ch-mso-pop__scrim {
   position: absolute;
@@ -101,10 +103,9 @@
   pointer-events: none;
 }
 
-/* The Messages sheet (MSG-407): Modal wearing the Messages scrim, height and desktop card. */
+/* The Messages sheet (MSG-407): Modal wearing the Messages scrim, height and desktop card. No blur under it (OVL-14): the dim
+   follows a drag frame by frame, and a 14px blur repainted under every frame of it; it dims as every Modal does. */
 .ch-mss::backdrop {
-  -webkit-backdrop-filter: blur(var(--ch-scrim-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-scrim-saturate-msg, 120%));
-  backdrop-filter: blur(var(--ch-scrim-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-scrim-saturate-msg, 120%));
   background: var(--ch-scrim-msg);
   /* The dim follows the sheet's drag like every dialog's (A9): .ch-modal's transition drives it. */
   opacity: var(--ch-scrim-a, 1);
@@ -153,10 +154,11 @@
 }
 
 /* The lift (MSG-402, MOT-HOLD-5): the scrim's blur is set once and never animated; only its opacity moves. */
+/* The sheet layer: over the page and its dock, under a toast (OVL-16). */
 .ch-mso-lift {
   position: fixed;
   inset: 0;
-  z-index: var(--ch-z-skip);
+  z-index: var(--ch-z-sheet);
 }
 .ch-mso-lift__scrim {
   position: absolute;
@@ -188,7 +190,8 @@
 /* The reaction bar (MSG-403): a glass pill, six 40 px keys, 260 by 50. */
 .ch-mso-rbar {
   position: fixed;
-  z-index: var(--ch-z-skip);
+  /* Over the lift's scrim and copy, inside the lift's own layer. */
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -448,7 +451,7 @@
   cursor: pointer;
 }
 .ch-msv-attach > button[data-ch-pressed] {
-  background: var(--ch-press-wash, var(--ch-well-bg-flat));
+  background: var(--ch-sel, var(--ch-press-wash, var(--ch-well-bg-flat)));
 }
 @media (hover: hover) {
   .ch-msv-attach > button:hover {

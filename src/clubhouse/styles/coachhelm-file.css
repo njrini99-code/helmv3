@@ -280,7 +280,7 @@
 .ch-hf .cb-p:last-child { margin-bottom: 0; }
 .ch-hf .cb-p b { color: var(--ch-hf-a-ink); font-weight:var(--ch-fw-600); }
 .ch-hf .lnk { border: 0; background: none; padding: 0; color: var(--ch-hf-a-accent); font: var(--ch-type-15-strong);  cursor: pointer; letter-spacing: var(--ch-track-15); }
-.ch-hf .r.undo .lnk { min-height: 44px; }
+.ch-hf .r.undo .lnk { min-height: 44px; min-width: 44px; padding-inline: 4px; }
 /* A link inside a sentence keeps the line's height and reaches 44 to the finger. The app's own rule for a link in a paragraph
    (globals.css: a negative margin undone by the same padding) lost its padding to `.lnk` above, which left the margin pulling the
    link two pixels over the space before it ("per round.Full standing"). The reach is the ::after below, so the margin goes too. */

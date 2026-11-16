@@ -147,7 +147,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
   );
   return (
     <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
-      {phone && <PhoneTop start title="Practice" action={<PhoneIconAction icon={Plus} label="New plan" onClick={() => newPlan()} />} />}
+      {phone && <PhoneTop start heading={false} title="Practice" action={<PhoneIconAction icon={Plus} label="New plan" onClick={() => newPlan()} />} />}
       <header className="ch-prc-h">
         <div>
           <LargeTitle id="ch-prc-title">Practice</LargeTitle>

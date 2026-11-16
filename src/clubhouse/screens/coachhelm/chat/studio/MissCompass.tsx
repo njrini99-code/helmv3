@@ -90,7 +90,6 @@ export function MissCompass({ block, shots, compact }: { block: MissPatternBlock
         type="button"
         role="radio"
         aria-checked={on}
-        aria-label={`${Said(d)}, ${plural(n, 'shot')}${n ? `, ${share(d)}%` : ''}`}
         tabIndex={d === tabStop ? 0 : -1}
         className={'ch-aks-compass__dir' + (n === most && n > 0 ? ' is-most' : '') + (on ? ' is-on' : '')}
         data-dir={d}
@@ -99,8 +98,14 @@ export function MissCompass({ block, shots, compact }: { block: MissPatternBlock
         onClick={() => choose(d)}
         onKeyDown={(e) => onKey(e, d)}
       >
-        <span className="ch-aks-compass__word">{Said(d)}</span>
-        <b className="ch-aks-compass__n ch-num">{n}</b>
+        {/* Named by its face (SWP-02, WCAG 2.5.3), "Long left, 2 shots, 2%": the unit and the pauses are said, not drawn. */}
+        <span className="ch-aks-compass__word">
+          {Said(d)}
+          <span className="ch-sr-only">,</span>
+        </span>{' '}
+        <b className="ch-aks-compass__n ch-num">
+          {n} <span className="ch-sr-only">{n === 1 ? 'shot,' : 'shots,'}</span>
+        </b>{' '}
         <small className="ch-aks-compass__share ch-num">{n ? `${share(d)}%` : 'none'}</small>
         {/* Its count against the commonest, as a ruled length: drawn in place, never grown. */}
         <svg className="ch-aks-compass__bar" viewBox="0 0 100 3" preserveAspectRatio="none" aria-hidden="true" focusable="false">

@@ -78,7 +78,7 @@ export function HoleGrid({
           {mode === 'to-par' ? (
             <span className={'ch-num ch-tour-desk-hg__tp' + (d != null && d < 0 ? ' ch-tour-under' : '')}>{d == null ? <NoData /> : formatToPar(d)}</span>
           ) : (
-            <ScoreMark score={s} par={par} size="sm" />
+            <ScoreMark score={s} par={par} size="sm" hidden />
           )}
         </button>
       </span>

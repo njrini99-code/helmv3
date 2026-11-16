@@ -183,10 +183,14 @@ export function ClubhouseFrame({
                 <CrumbProvider>
                   <QuickChatProvider plans pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
                     <DockProvider>
-                      {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
-                      <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
-                        Skip to content
-                      </a>
+                      {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view).
+                          In a landmark of its own (MAC-20): a link outside every landmark is content a screen reader's
+                          landmark list never reaches. */}
+                      <nav className="ch-skipnav" aria-label="Skip">
+                        <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
+                          Skip to content
+                        </a>
+                      </nav>
                       <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined} data-ch-refresh="on">
                         <Sidebar userData={userData} shell={shell} pathname={pathname} search={search} teamSwitch={teamSwitch} folded={folded} />
                         <RailToggle folded={folded} onFold={setFolded} />
@@ -342,10 +346,15 @@ function usePhoneEdges(hero: boolean) {
       body.style.backgroundColor = page;
       // The status area is always the frame's green; the bar's own ::before carries it up through a pull (owner call, sweep).
       meta.content = green;
+      // So the app's status bar draws light glyphs on it in both themes (CHROME-P-01; CapacitorProvider watches this).
+      const glyphsWere = html.dataset.statusBar;
+      html.dataset.statusBar = 'light';
       const tag = meta;
       restore = () => {
         html.style.backgroundColor = was.html;
         body.style.backgroundColor = was.body;
+        if (glyphsWere === undefined) delete html.dataset.statusBar;
+        else html.dataset.statusBar = glyphsWere;
         if (created) tag.remove();
         else tag.content = before;
       };

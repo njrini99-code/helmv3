@@ -17,6 +17,7 @@ import { Swap } from '../../ui/Swap';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useSlidePlate } from '../../lib/slide-plate';
 import { haptic } from '../../lib/haptics';
+import { plural } from '../../lib/plural';
 import { chTrail } from '../../lib/track';
 import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
@@ -823,12 +824,13 @@ export function TeamHub({
           <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} playersError={data.playersError} write={writes.assignTask} onDone={refresh} provisional={provisionalTask} />
           <ConfirmDelete
             open={!!confirm}
-            what={confirm?.kind === 'ann' ? 'this announcement' : confirm?.kind === 'task' ? 'this task' : confirm?.kind === 'trip' ? 'this trip' : 'this file'}
+            noun={confirm?.kind === 'ann' ? 'announcement' : confirm?.kind === 'task' ? 'task' : confirm?.kind === 'trip' ? 'trip' : 'file'}
+            name={confirm?.kind === 'ann' ? confirm.a.title : confirm?.kind === 'task' ? confirm.t.title : confirm?.kind === 'trip' ? confirm.t.name : confirm?.kind === 'file' ? confirm.f.title : ''}
             body={
               confirm?.kind === 'ann'
-                ? 'Players stop seeing it, and its acknowledgements go with it.'
+                ? 'Players stop seeing it, and its acknowledgements go with it. This can’t be undone.'
                 : confirm?.kind === 'task'
-                  ? 'It leaves every player’s list, done or not.'
+                  ? `${confirm.t.done ? `It leaves ${plural(confirm.t.done[1], 'player’s list', 'players’ lists')}` : 'It leaves every player’s list'}, done or not. This can’t be undone.`
                   : confirm?.kind === 'trip'
                     ? 'Players stop seeing the itinerary. Its expenses and budgets are deleted with it, and the calendar event stays. This can’t be undone.'
                     : 'Players can no longer open it. This can’t be undone.'

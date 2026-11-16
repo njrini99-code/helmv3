@@ -116,16 +116,17 @@ describe('Team Hub · Travel · who gets the menu', () => {
 });
 
 describe('Team Hub · Travel · CH-10504 CH-10009 Delete a trip (D2)', () => {
-  it('CH-10504 asks first with a warning, says what goes with the trip, and Keep it sends nothing', async () => {
+  it('CH-10504 asks first with a warning, names the trip, says what goes with it, and Cancel (focused) sends nothing', async () => {
     const { user, w } = show();
     await openMenu(user, SEA, 'Delete trip');
     expect(hapticSpy).toHaveBeenCalledWith('warning');
-    const ask = await screen.findByRole('dialog', { name: 'Delete this trip?' });
+    const ask = await screen.findByRole('alertdialog', { name: `Delete “${SEA}”?` });
     expect(code('CH-10504')).toBe(ask);
     expect(ask.textContent).toMatch(/expenses and budgets are deleted with it/);
     expect(ask.textContent).toMatch(/calendar event stays/);
     expect(w.deleteTrip).not.toHaveBeenCalled();
-    await user.click(within(ask).getByRole('button', { name: 'Keep it' }));
+    await waitFor(() => expect(document.activeElement).toBe(within(ask).getByRole('button', { name: 'Cancel' })));
+    await user.click(within(ask).getByRole('button', { name: 'Cancel' }));
     expect(w.deleteTrip).not.toHaveBeenCalled();
     expect(screen.getByText(SEA)).toBeTruthy();
   });
@@ -133,7 +134,7 @@ describe('Team Hub · Travel · CH-10504 CH-10009 Delete a trip (D2)', () => {
   it('Delete calls deleteTrip with the trip, the trip leaves the page at once, and the page reads again', async () => {
     const { user, w } = show();
     await openMenu(user, SEA, 'Delete trip');
-    await user.click(within(await screen.findByRole('dialog', { name: 'Delete this trip?' })).getByRole('button', { name: 'Delete' }));
+    await user.click(within(await screen.findByRole('alertdialog', { name: /^Delete “.+”\?$/ })).getByRole('button', { name: 'Delete trip' }));
 
     await waitFor(() => expect(w.deleteTrip).toHaveBeenCalledWith('sea'));
     expect(w.deleteTrip).toHaveBeenCalledTimes(1);
@@ -149,7 +150,7 @@ describe('Team Hub · Travel · CH-10504 CH-10009 Delete a trip (D2)', () => {
     const deleteTrip = vi.fn().mockImplementationOnce(() => Promise.resolve({ success: false, error: 'Not authorized for this team' })).mockImplementationOnce(ok);
     const { user } = show(PREVIEW_HUB_COACH, writes({ deleteTrip }));
     await openMenu(user, SEA, 'Delete trip');
-    await user.click(within(await screen.findByRole('dialog', { name: 'Delete this trip?' })).getByRole('button', { name: 'Delete' }));
+    await user.click(within(await screen.findByRole('alertdialog', { name: /^Delete “.+”\?$/ })).getByRole('button', { name: 'Delete trip' }));
 
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Couldn’t delete Seahawk Intercollegiate/);
@@ -169,7 +170,7 @@ describe('Team Hub · Travel · CH-10504 CH-10009 Delete a trip (D2)', () => {
   it('deleting the next trip promotes the one after it', async () => {
     const { user } = show();
     await openMenu(user, CFI, 'Delete trip');
-    await user.click(within(await screen.findByRole('dialog', { name: 'Delete this trip?' })).getByRole('button', { name: 'Delete' }));
+    await user.click(within(await screen.findByRole('alertdialog', { name: /^Delete “.+”\?$/ })).getByRole('button', { name: 'Delete trip' }));
     await waitFor(() => expect(screen.queryByText(CFI)).toBeNull());
     expect(screen.getByText(SEA)).toBeTruthy();
   });

@@ -57,7 +57,8 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
         <span className="meta">Strokes to Tour a round</span>
       </div>
       <div className="hud">
-        <svg className="hudsvg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Huddle chart: ball striking against scoring for each player.">
+        {/* A named group, not an image: an image's children are hidden from a screen reader, and the coins are buttons (SWP-10, as F-0007 for the hole). */}
+        <svg className="hudsvg" viewBox={`0 0 ${W} ${H}`} role="group" aria-label="Huddle chart: ball striking against scoring for each player.">
           <line className="ax" x1={L} x2={W - R} y1={H - B} y2={H - B} />
           <line className="ax" x1={L} x2={L} y1={T} y2={H - B} />
           <line className="tour" x1={X(0)} x2={X(0)} y1={T} y2={H - B} />

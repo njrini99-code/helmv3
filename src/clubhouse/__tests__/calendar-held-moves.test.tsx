@@ -40,7 +40,7 @@ vi.mock('@/app/golf/actions/travel', () => ({ getItineraryForEvent: () => Promis
 
 import type { ChCalendarData } from '../data/calendar';
 import { Calendar } from '../screens/calendar/Calendar';
-import { ToastProvider } from '../ui/Toast';
+import { CH_TOAST_ACTION_MS, ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR } from '../preview/fixtures-calendar';
 import './dialog-polyfill';
 
@@ -68,7 +68,7 @@ const block = (name: RegExp) => screen.getAllByRole('button', { name }).find((b)
 const nudge = (keys: { shiftKey?: boolean; key?: string } = {}) => fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true, ...keys });
 const expire = () =>
   act(async () => {
-    vi.advanceTimersByTime(4000);
+    vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
   });
 
 beforeEach(() => {

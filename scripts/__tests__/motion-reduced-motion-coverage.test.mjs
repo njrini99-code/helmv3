@@ -137,6 +137,9 @@ const SAFE_DELEGATES = new Map([
   // The same gate as three modes (full, fade under the OS setting, off for Settings > Animations off); ListPresence
   // reads it so a row under Reduce Motion fades in place and moves nothing.
   ['useChMotionMode', 'src/clubhouse/lib/reduced-motion.ts'],
+  // BaseballHelm's living-annual kit: motion's own hook, held false until hydration so the first client tree matches the
+  // server's (prod audit SWP-24).
+  ['useLivingReducedMotion', 'src/components/baseball/living-annual/reduced-motion.ts'],
 ]);
 
 function honorsReducedMotion(rawSrc) {

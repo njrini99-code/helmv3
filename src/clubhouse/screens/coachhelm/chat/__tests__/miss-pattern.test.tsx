@@ -17,7 +17,7 @@ describe('MissPattern · wedge area is the count (CH-22)', () => {
     const c = draw([{ direction: 'short', count: 4 }, { direction: 'long', count: 0 }]);
     const wedges = [...c.querySelectorAll('.ch-aks-miss__wedge')];
     expect(wedges).toHaveLength(1);
-    expect(wedges[0]!.getAttribute('aria-label')).toBe('Ask about short misses, 4');
+    expect(wedges[0]!.closest('.ch-aks-miss__key')!.getAttribute('aria-label')).toBe('Ask about short misses, 4');
   });
 
   it('four misses against one draw twice the radius, four times the area', () => {

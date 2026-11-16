@@ -718,6 +718,7 @@
   border-top: var(--ch-hairline-w) solid var(--ch-separator);
 }
 .ch-aks-strip__hole {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: var(--ch-space-0_5);
@@ -730,6 +731,13 @@
   color: var(--ch-text-primary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+/* Nine holes share a phone row, 38 wide each: the touch area reaches out to meet its neighbours' (SWP-06), and the
+   44 high the hole already has. Nine at 44 would not fit 342. */
+.ch-aks-strip__hole::after {
+  position: absolute;
+  inset: 0 -3px;
+  content: '';
 }
 .ch-aks-strip__hole > small {
   color: var(--ch-text-tertiary);
@@ -771,21 +779,29 @@
   stroke: var(--ch-separator);
   stroke-dasharray: 1 3;
 }
+/* The key is the whole sector (SWP-05); the wedge inside it is drawn to its share. */
+.ch-aks-miss__key {
+  cursor: pointer;
+  outline: none;
+}
+.ch-aks-miss__hit {
+  stroke: transparent;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.ch-aks-miss__key:focus-visible > .ch-aks-miss__hit {
+  stroke: var(--ch-border-focus);
+}
 .ch-aks-miss__wedge {
   fill: var(--ch-chart-rough);
   stroke: var(--ch-ink-500);
   stroke-width: 0.75;
   stroke-linejoin: round;
-  cursor: pointer;
 }
 .ch-aks-miss__wedge.is-most {
   fill: var(--ch-chart-loss-tint);
   stroke: var(--ch-loss);
   stroke-width: 1.25;
-}
-.ch-aks-miss__wedge:focus-visible {
-  outline: 2px solid var(--ch-border-focus);
-  outline-offset: 2px;
 }
 .ch-aks-miss__dot {
   fill: var(--ch-ink-900);

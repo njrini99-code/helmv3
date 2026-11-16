@@ -184,12 +184,16 @@ function useKeepDockClear(ref: RefObject<HTMLElement | null>, on: boolean): void
  * visible area down to the focused composer, which took the screen's own bar off the top. While the keyboard is up,
  * the screen fits the visible area instead (`data-ch-vv`, shell.css), so its bar stays and the composer sits on the
  * keys. The app's WebView takes the other path: CapacitorProvider publishes `--keyboard-height` (body.capacitor).
+ *
+ * `scope: 'shell'` is for a page that sits in the canvas under the shell's own top bar (Ask): the attribute and the
+ * two lengths go on `.ch-root`, so the bar and the page are pinned to the visible area together (ASK-P-01).
  */
-export function useSafariKeyboardFit(ref: RefObject<HTMLElement | null>, on: boolean): void {
+export function useSafariKeyboardFit(ref: RefObject<HTMLElement | null>, on: boolean, scope: 'screen' | 'shell' = 'screen'): void {
   useEffect(() => {
-    const el = ref.current;
+    const own = ref.current;
     const vv = window.visualViewport;
-    if (!on || !el || !vv || isNativeApp() || !window.matchMedia?.('(pointer: coarse)').matches) return;
+    if (!on || !own || !vv || isNativeApp() || !window.matchMedia?.('(pointer: coarse)').matches) return;
+    const el = scope === 'shell' ? (own.closest<HTMLElement>('.ch-root') ?? own) : own;
     const fit = () => {
       // The layout viewport's height (clientHeight) is what the keyboard covers: Safari 26 shrinks innerHeight with the
       // visible area, so innerHeight minus it reads 0 with the keyboard up. A pinch-zoom shrinks the visible area too;
@@ -210,6 +214,8 @@ export function useSafariKeyboardFit(ref: RefObject<HTMLElement | null>, on: boo
       vv.removeEventListener('resize', fit);
       vv.removeEventListener('scroll', fit);
       delete el.dataset.chVv;
+      el.style.removeProperty('--ch-vv-top');
+      el.style.removeProperty('--ch-vv-h');
     };
-  }, [ref, on]);
+  }, [ref, on, scope]);
 }

@@ -5,7 +5,7 @@ import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseRecruitingRoute } from '@/clubhouse/routes/recruiting';
 
 export const metadata: Metadata = {
-  title: 'Recruiting HQ',
+  title: 'Recruiting',
   description: 'Track prospects from watchlist to commitment.',
 };
 

@@ -463,12 +463,18 @@
 .ch-ms-rail__body {
   overscroll-behavior: contain;
 }
+/* DM-01: the thread scrolls up and down only. Each message's time waits past the row's right edge for the drag (.ch-msv-time),
+   so with overflow: auto it widened the scroll area and a sideways pan on the iPhone carried every bubble off the left edge.
+   Hidden on x (what clip computes to beside a scrolling y), and the browser keeps vertical pans and pinch for itself, so a
+   sideways pan reaches the drag for times instead. */
 .ch-ms-scroll {
   flex: 1;
   min-height: 0;
   padding: 12px 0 8px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
+  touch-action: pan-y pinch-zoom;
 }
 /* The composer's measure (816 with the same 32px inset), so bubbles and the field share both edges: one width, set on
    the page roots. */
@@ -1507,7 +1513,8 @@
   .ch-msp-scroll {
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     overscroll-behavior: contain;
   }
 
@@ -4300,10 +4307,9 @@ body:has([data-ch-ms-v2]) .ch-toast {
 /* MSG-VOTES-01: name over the person's line. */
 
 /* MSG-2: a reacted bubble clears the chips above it; the row stays on the screen. */
-/* MSG-004: the thread's sides sit 4 inside the page edge (12 at 390, 16 on a large phone), so a bubble and its tail
-   hug the edge the way the composer pill does. */
+/* DM-01: the thread's sides are the page edge (16 on a small phone, 20 on a large one), as every other phone page. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  [data-ch-ms-v2] .ch-msp-scroll .ch-ms-msgs { padding-inline: calc(var(--ch-page-x-phone) - var(--ch-space-1)); }
+  [data-ch-ms-v2] .ch-msp-scroll .ch-ms-msgs { padding-inline: var(--ch-page-x-phone); }
 }
 /* MSG-7: the phone thread bar, as drawn: 36 face, 17 name, 13 role, at any Text Size. */
 .ch-msp-who b { font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }

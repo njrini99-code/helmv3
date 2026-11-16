@@ -12,14 +12,15 @@ function kindOf(score: number | null, par: number | null): Kind {
  * One hole in classic scorecard notation: circles under par (red), squares
  * over par (green outline), doubled for eagle and double bogey.
  */
-export function ScoreMark({ score, par, size = 'md' }: { score: number | null; par: number | null; size?: 'sm' | 'md' }) {
+export function ScoreMark({ score, par, size = 'md', hidden = false }: { score: number | null; par: number | null; size?: 'sm' | 'md'; hidden?: boolean }) {
   const kind = kindOf(score, par);
   const cls = ['ch-score', size === 'sm' && 'ch-score--sm', kind && `ch-score--${kind}`, score == null && 'ch-score--empty']
     .filter(Boolean)
     .join(' ');
   return (
-    // One picture of the hole's score: an image to VoiceOver, which reads a plain span's label unreliably (A19).
-    <span className={cls} role="img" aria-label={score == null ? 'Not played' : `${score}${kind ? ` (${kind})` : ''}`}>
+    // One picture of the hole's score: an image to VoiceOver, which reads a plain span's label unreliably (A19). Inside a
+    // button or link (`hidden`) the control's own name says the score, and an image role there is invalid (MAC-20).
+    <span className={cls} {...(hidden ? { 'aria-hidden': true } : { role: 'img', 'aria-label': score == null ? 'Not played' : `${score}${kind ? ` (${kind})` : ''}` })}>
       {score == null ? NO_DATA : score}
     </span>
   );

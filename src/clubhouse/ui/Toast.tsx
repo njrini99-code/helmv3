@@ -13,7 +13,7 @@ import { chSupportsLinear, chThrownExit } from '../lib/sheet-drag';
 interface ToastItem {
   id: number;
   title: string;
-  /** Error toasts say what failed and what to do next; they stay 8s. */
+  /** Error toasts say what failed and what to do next; they stay until closed (NP-06). */
   tone: 'done' | 'error';
   body?: string;
   action?: { label: string; run: () => void };
@@ -22,7 +22,8 @@ interface ToastItem {
 }
 
 export interface ToastInput {
-  /** How long it stays before it leaves, when an Undo window needs a set length (the 8 second publish hold). */
+  /** How long it stays before it leaves, when an Undo window needs a set length (the 10 second publish hold). A toast with
+   * an action never stays less than `CH_TOAST_ACTION_MS`. */
   holdMs?: number;
   title: string;
   tone?: ToastItem['tone'];
@@ -79,7 +80,16 @@ export function useDelayedToast() {
   }, [lifetime]);
 }
 
-const DISMISS_MS = { done: 4000, error: 8000 } as const;
+/**
+ * How long a notice stays: a confirmation 2.4 seconds (motion spec 15 Nov 3.4; the audit's NP-06 asked 5, and the newer
+ * spec is the owner's later word); an error until it is closed (its X, a swipe, Esc), since a phone has no hover or focus
+ * to hold a Retry on screen and WCAG 2.2.1 asks for no time limit on what needs an answer (NP-06). Anything with an action
+ * (Undo, Retry) stays at least `CH_TOAST_ACTION_MS`, so an Undo window is the same length on every screen (NP-06). A press
+ * anywhere on it pauses the clock (3.4).
+ */
+const DISMISS_MS = { done: 2400, error: null } as const;
+/** The shortest life of a toast with an action: Undo and Retry mean the same ten seconds everywhere (NP-06). */
+export const CH_TOAST_ACTION_MS = 10_000;
 
 /**
  * Messages redesign: the one toast, restyled as the page's glass pill at the top (MSG-TOAST-01, 02), while that page is up. It is the
@@ -109,12 +119,20 @@ const HELD_RESUME_MS = 1500;
 const SWIPE_DISMISS_PX = 40;
 const SWIPE_FLICK_PX_PER_MS = 0.5;
 
-/** A toast's own clock: it runs out after its time on screen, and stops while a finger holds the toast. */
+/** A toast's own clock: it runs out after its time on screen, and stops while a finger holds the toast. `left` is null for a
+ * notice that stays until it is closed (an error). */
 interface ToastClock {
-  left: number;
+  left: number | null;
   since: number;
-  timer: number;
+  timer: number | undefined;
   held: boolean;
+}
+
+/** How long a notice with this tone and action stays, null for until it is closed (NP-06). */
+function lifeOf(tone: ToastItem['tone'], action: boolean, holdMs: number | undefined): number | null {
+  if (tone === 'error') return null;
+  const ms = holdMs ?? (pillOn && !action ? PILL_DONE_MS : DISMISS_MS.done);
+  return action ? Math.max(ms, CH_TOAST_ACTION_MS) : ms;
 }
 
 /** The open dialog on top, if any (the last one opened is last in the top layer). Clubhouse opens every dialog with showModal (ui/Modal). */
@@ -214,7 +232,8 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
       if (onExpire) expiries.set(id, onExpire);
       if (replace != null) keys.set(replace, id);
       const abort = () => dismiss(id);
-      const clock: ToastClock = { left: holdMs ?? (pillOn && tone === 'done' ? PILL_DONE_MS : DISMISS_MS[tone]), since: Date.now(), timer: window.setTimeout(() => dismiss(id), holdMs ?? (pillOn && tone === 'done' ? PILL_DONE_MS : DISMISS_MS[tone])), held: false };
+      const life = lifeOf(tone, !!action, holdMs);
+      const clock: ToastClock = { left: life, since: Date.now(), timer: life == null ? undefined : window.setTimeout(() => dismiss(id), life), held: false };
       clocks.set(id, clock);
       signal?.addEventListener('abort', abort, { once: true });
       lifetimes.set(id, () => {
@@ -230,14 +249,14 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
   // HELD_RESUME_MS, so it can be read to the end.
   const hold = useCallback((id: number) => {
     const clock = clocks.get(id);
-    if (!clock || clock.held) return;
+    if (!clock || clock.held || clock.left == null) return;
     window.clearTimeout(clock.timer);
     clock.left = Math.max(0, clock.left - (Date.now() - clock.since));
     clock.held = true;
   }, [clocks]);
   const letGo = useCallback((id: number) => {
     const clock = clocks.get(id);
-    if (!clock?.held) return;
+    if (!clock?.held || clock.left == null) return;
     clock.held = false;
     clock.left = Math.max(clock.left, HELD_RESUME_MS);
     clock.since = Date.now();
@@ -315,10 +334,24 @@ function ToastCard({
     if (holding.current.size === 0) onLetGo(t.id);
   };
   /** Set as a swipe dismisses it: which way it was thrown and how fast (px per ms), read once its exit begins. */
-  const thrown = useRef<{ edge: 1 | -1; speed: number } | null>(null);
+  const thrown = useRef<{ edge: 1 | -1; speed: number; at: number } | null>(null);
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     const el = ref.current;
-    if (!el || e.button !== 0 || e.isPrimary === false || (e.target as Element).closest('button')) return;
+    if (!el || e.button !== 0 || e.isPrimary === false) return;
+    // Paused while pressed (motion spec 15 Nov 3.4), its keys too: a finger resting on Undo keeps the window open. A key
+    // press doesn't start a swipe.
+    if ((e.target as Element).closest('button')) {
+      holdFor('press');
+      const up = (ev: PointerEvent) => {
+        if (ev.pointerId !== e.pointerId) return;
+        window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+        releaseFor('press');
+      };
+      window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
+      return;
+    }
     holdFor('press');
     const pointerId = e.pointerId;
     const start = e.clientY;
@@ -350,7 +383,7 @@ function ToastCard({
       const age = Math.max(0, ev.timeStamp - last[0]);
       const fresh = age < 80 ? speed * (1 - age / 80) : 0;
       if (ev.type === 'pointerup' && (d > SWIPE_DISMISS_PX || (d > 10 && fresh > SWIPE_FLICK_PX_PER_MS))) {
-        thrown.current = { edge, speed: Math.max(0, fresh) };
+        thrown.current = { edge, speed: Math.max(0, fresh), at: d };
         onDismiss(t.id);
         return;
       }
@@ -368,12 +401,22 @@ function ToastCard({
   const leave = {
     gone: () => {
       const throw_ = thrown.current;
-      if (reduced) return { opacity: 0, transition: { duration: 0 } };
+      // Reduce Motion: it fades where it stands over the quick beat, not gone in a frame (OVL-08); Animations off, at once.
+      if (reduced) return { opacity: 0, transition: chTween('quick', true) };
       if (!throw_ && pillOn) return { opacity: 0, transition: { duration: CH_MS.arrow / 1000 } };
-      if (!throw_) return { opacity: 0, transform: 'translateY(6px) scale(0.98)', transition: chTween('base') };
-      // On from where the finger let go, at the speed it was thrown, for another 48px as it fades.
+      // Out over the quick beat, ease-out, 8px toward its edge as it fades (3.4, S3.7).
+      if (!throw_) return { opacity: 0, transform: 'translateY(8px)', transition: chTween('quick') };
+      // On from where the finger let go, at the speed it was thrown, for another 48px as it fades. The travel is the
+      // compositor's (Web Animations on `translate`, where the finger left it), not a per-frame `y` on the main thread
+      // (OVL-08); Motion only fades it, and the layout reflow keeps the transform.
       const out = chThrownExit(throw_.speed, 48);
-      return { y: [out.lead * throw_.edge, 48 * throw_.edge], opacity: 0, transition: { y: { duration: out.ms / 1000, ease: out.ease }, opacity: { duration: CH_DUR.quick } } };
+      const el = ref.current;
+      if (el?.animate) {
+        const from = (throw_.at + out.lead) * throw_.edge;
+        const to = (throw_.at + 48) * throw_.edge;
+        el.animate([{ translate: `0 ${from}px` }, { translate: `0 ${to}px` }], chSupportsLinear() ? { duration: out.ms, easing: out.linear, fill: 'forwards' } : { duration: CH_DUR.release * 1000, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+      }
+      return { opacity: 0, transition: { opacity: { duration: CH_DUR.quick } } };
     },
   };
   return (
@@ -384,14 +427,15 @@ function ToastCard({
       role={t.tone === 'error' ? 'alert' : 'status'}
       data-ch-code={t.code}
       inert={!present}
-      // CH-1604: it fades in here and rises 10px by CSS (`ch-toast-in`, ui.css), on the compositor; Motion keeps the
-      // stack's reflow (layout), which owns this element's transform.
+      // CH-1604: it fades in here and rises 8px by CSS (`ch-toast-in`, ui.css; 260ms on the sheet curve, 3.4), on the
+      // compositor; Motion keeps the stack's reflow (layout), which owns this element's transform.
       initial={reduced ? (pillOn ? { opacity: 0 } : false) : pillOn ? { opacity: 0, y: -8, scale: 0.96 } : { opacity: 0 }}
       animate={pillOn ? { opacity: 1, y: 0, scale: 1 } : { opacity: 1 }}
       variants={leave}
       exit="gone"
-      // CH-1604: a toast slides up 10px and fades in; the stack reflows (layout).
-      transition={pillOn && !reduced ? { type: 'tween', duration: chSpringCurve('pop').ms / 1000, ease: chSpringCurve('pop').ease } : chTween('base', reduced)}
+      // CH-1604: a toast rises 8px and fades in over the base beat; the stack reflows (layout).
+      // The pill arrives over the quick beat, ease-out, from 0.96: not the overshooting pop spring (OVL-08).
+      transition={pillOn && !reduced ? chTween('quick') : chTween('base', reduced)}
       onPointerDown={onPointerDown}
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') holdFor('hover'); }}
       onPointerLeave={(e) => { if (e.pointerType === 'mouse') releaseFor('hover'); }}

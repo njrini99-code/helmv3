@@ -11,11 +11,12 @@
  * Ink follows the lane: `team` green (default, team/dev), `pursuit` clay
  * (recruiting). Reduced motion → rule drawn, dot solid (no breathing).
  */
-import { m, useReducedMotion } from 'motion/react';
+import { m } from 'motion/react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { PaperCard } from './PaperCard';
 import { rulesDraw } from './motion';
+import { useLivingReducedMotion } from './reduced-motion';
 
 export interface EditorsLetterProps {
   /** The letter's headline, e.g. `Standing by — awaiting first pitch`. */
@@ -50,7 +51,7 @@ export function EditorsLetter({
   action,
   className,
 }: EditorsLetterProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
   const tone = INK[ink];
 
   return (
