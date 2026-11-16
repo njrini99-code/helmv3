@@ -24,16 +24,16 @@
     "raw-radius": 0,
     "raw-shadow": 0,
     "raw-motion": 2,
-    "keyframes": 2
+    "keyframes": 0
   },
   "src/clubhouse/styles/calendar.css": {
     "hex": 12,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 93,
+    "raw-shadow": 91,
     "raw-motion": 0,
-    "keyframes": 4
+    "keyframes": 0
   },
   "src/clubhouse/styles/class-awareness.css": {
     "hex": 0,
@@ -42,7 +42,7 @@
     "raw-radius": 0,
     "raw-shadow": 2,
     "raw-motion": 0,
-    "keyframes": 1
+    "keyframes": 0
   },
   "src/clubhouse/styles/classes.css": {
     "hex": 51,
@@ -51,7 +51,7 @@
     "raw-radius": 0,
     "raw-shadow": 54,
     "raw-motion": 0,
-    "keyframes": 1
+    "keyframes": 0
   },
   "src/clubhouse/styles/coachhelm-ask-cards.css": {
     "hex": 0,
@@ -60,7 +60,7 @@
     "raw-radius": 0,
     "raw-shadow": 3,
     "raw-motion": 0,
-    "keyframes": 1
+    "keyframes": 0
   },
   "src/clubhouse/styles/coachhelm-ask-look.css": {
     "hex": 0,
@@ -71,23 +71,14 @@
     "raw-motion": 0,
     "keyframes": 0
   },
-  "src/clubhouse/styles/coachhelm-ask-studio.css": {
-    "hex": 0,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0,
-    "raw-radius": 0,
-    "raw-shadow": 0,
-    "raw-motion": 0,
-    "keyframes": 3
-  },
   "src/clubhouse/styles/coachhelm-ask-v2.css": {
     "hex": 6,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 32,
-    "raw-motion": 4,
-    "keyframes": 43
+    "raw-shadow": 29,
+    "raw-motion": 3,
+    "keyframes": 0
   },
   "src/clubhouse/styles/coachhelm-ask.css": {
     "hex": 5,
@@ -96,16 +87,7 @@
     "raw-radius": 0,
     "raw-shadow": 21,
     "raw-motion": 0,
-    "keyframes": 3
-  },
-  "src/clubhouse/styles/coachhelm-ball.css": {
-    "hex": 0,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0,
-    "raw-radius": 0,
-    "raw-shadow": 0,
-    "raw-motion": 0,
-    "keyframes": 7
+    "keyframes": 0
   },
   "src/clubhouse/styles/coachhelm-brief.css": {
     "hex": 0,
@@ -131,8 +113,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 5,
-    "raw-motion": 4,
-    "keyframes": 1
+    "raw-motion": 0,
+    "keyframes": 0
   },
   "src/clubhouse/styles/coachhelm-plan.css": {
     "hex": 40,
@@ -141,7 +123,7 @@
     "raw-radius": 0,
     "raw-shadow": 24,
     "raw-motion": 0,
-    "keyframes": 2
+    "keyframes": 0
   },
   "src/clubhouse/styles/coachhelm-profile.css": {
     "hex": 0,
@@ -159,7 +141,7 @@
     "raw-radius": 0,
     "raw-shadow": 5,
     "raw-motion": 0,
-    "keyframes": 2
+    "keyframes": 0
   },
   "src/clubhouse/styles/coachhelm-standing.css": {
     "hex": 0,
@@ -177,7 +159,7 @@
     "raw-radius": 0,
     "raw-shadow": 8,
     "raw-motion": 0,
-    "keyframes": 12
+    "keyframes": 0
   },
   "src/clubhouse/styles/coachhelm-thread.css": {
     "hex": 0,
@@ -186,7 +168,7 @@
     "raw-radius": 0,
     "raw-shadow": 9,
     "raw-motion": 0,
-    "keyframes": 5
+    "keyframes": 0
   },
   "src/clubhouse/styles/coachhelm-views.css": {
     "hex": 0,
@@ -204,7 +186,7 @@
     "raw-radius": 0,
     "raw-shadow": 16,
     "raw-motion": 0,
-    "keyframes": 2
+    "keyframes": 0
   },
   "src/clubhouse/styles/command.css": {
     "hex": 0,
@@ -221,7 +203,7 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 32,
-    "raw-motion": 1,
+    "raw-motion": 0,
     "keyframes": 3
   },
   "src/clubhouse/styles/hero-tones.css": {
@@ -239,7 +221,7 @@
     "crh-negative-margin": 3,
     "raw-radius": 1,
     "raw-shadow": 65,
-    "raw-motion": 1,
+    "raw-motion": 0,
     "keyframes": 0
   },
   "src/clubhouse/styles/hub.css": {
@@ -247,9 +229,9 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 55,
+    "raw-shadow": 53,
     "raw-motion": 0,
-    "keyframes": 1
+    "keyframes": 0
   },
   "src/clubhouse/styles/live.css": {
     "hex": 0,
@@ -258,7 +240,7 @@
     "raw-radius": 0,
     "raw-shadow": 2,
     "raw-motion": 0,
-    "keyframes": 3
+    "keyframes": 0
   },
   "src/clubhouse/styles/messages-details.css": {
     "hex": 0,
@@ -267,7 +249,7 @@
     "raw-radius": 0,
     "raw-shadow": 5,
     "raw-motion": 0,
-    "keyframes": 3
+    "keyframes": 0
   },
   "src/clubhouse/styles/messages-inbox.css": {
     "hex": 0,
@@ -276,7 +258,7 @@
     "raw-radius": 0,
     "raw-shadow": 2,
     "raw-motion": 0,
-    "keyframes": 1
+    "keyframes": 0
   },
   "src/clubhouse/styles/messages-overlays.css": {
     "hex": 0,
@@ -287,15 +269,6 @@
     "raw-motion": 2,
     "keyframes": 1
   },
-  "src/clubhouse/styles/messages-thread.css": {
-    "hex": 0,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0,
-    "raw-radius": 0,
-    "raw-shadow": 0,
-    "raw-motion": 0,
-    "keyframes": 1
-  },
   "src/clubhouse/styles/messages.css": {
     "hex": 1,
     "svg-overflow-visible": 0,
@@ -303,7 +276,7 @@
     "raw-radius": 1,
     "raw-shadow": 24,
     "raw-motion": 0,
-    "keyframes": 6
+    "keyframes": 0
   },
   "src/clubhouse/styles/onboard-tokens.css": {
     "hex": 0,
@@ -311,7 +284,7 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 0,
-    "raw-motion": 94,
+    "raw-motion": 80,
     "keyframes": 0
   },
   "src/clubhouse/styles/onboard.css": {
@@ -330,7 +303,7 @@
     "raw-radius": 2,
     "raw-shadow": 16,
     "raw-motion": 0,
-    "keyframes": 3
+    "keyframes": 0
   },
   "src/clubhouse/styles/qualifiers.css": {
     "hex": 6,
@@ -338,8 +311,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 58,
-    "raw-motion": 1,
-    "keyframes": 1
+    "raw-motion": 0,
+    "keyframes": 0
   },
   "src/clubhouse/styles/quick-chat.css": {
     "hex": 0,
@@ -348,7 +321,7 @@
     "raw-radius": 0,
     "raw-shadow": 10,
     "raw-motion": 1,
-    "keyframes": 2
+    "keyframes": 0
   },
   "src/clubhouse/styles/recruiting.css": {
     "hex": 3,
@@ -357,7 +330,7 @@
     "raw-radius": 0,
     "raw-shadow": 41,
     "raw-motion": 0,
-    "keyframes": 1
+    "keyframes": 0
   },
   "src/clubhouse/styles/roster.css": {
     "hex": 7,
@@ -365,8 +338,8 @@
     "crh-negative-margin": 2,
     "raw-radius": 0,
     "raw-shadow": 43,
-    "raw-motion": 1,
-    "keyframes": 1
+    "raw-motion": 0,
+    "keyframes": 0
   },
   "src/clubhouse/styles/rounds-setup.css": {
     "hex": 22,
@@ -375,7 +348,7 @@
     "raw-radius": 0,
     "raw-shadow": 58,
     "raw-motion": 0,
-    "keyframes": 2
+    "keyframes": 0
   },
   "src/clubhouse/styles/rounds-track.css": {
     "hex": 33,
@@ -383,8 +356,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 57,
-    "raw-motion": 2,
-    "keyframes": 9
+    "raw-motion": 0,
+    "keyframes": 0
   },
   "src/clubhouse/styles/rounds.css": {
     "hex": 45,
@@ -393,7 +366,7 @@
     "raw-radius": 0,
     "raw-shadow": 81,
     "raw-motion": 0,
-    "keyframes": 2
+    "keyframes": 0
   },
   "src/clubhouse/styles/settings.css": {
     "hex": 0,
@@ -402,25 +375,16 @@
     "raw-radius": 0,
     "raw-shadow": 8,
     "raw-motion": 0,
-    "keyframes": 2
+    "keyframes": 0
   },
   "src/clubhouse/styles/shell.css": {
     "hex": 28,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 38,
-    "raw-motion": 4,
-    "keyframes": 16
-  },
-  "src/clubhouse/styles/spinner.css": {
-    "hex": 0,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0,
-    "raw-radius": 0,
-    "raw-shadow": 0,
+    "raw-shadow": 37,
     "raw-motion": 0,
-    "keyframes": 1
+    "keyframes": 11
   },
   "src/clubhouse/styles/stats-redesign.css": {
     "hex": 2,
@@ -428,8 +392,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 5,
-    "raw-motion": 1,
-    "keyframes": 3
+    "raw-motion": 0,
+    "keyframes": 0
   },
   "src/clubhouse/styles/stats.css": {
     "hex": 72,
@@ -438,7 +402,7 @@
     "raw-radius": 1,
     "raw-shadow": 103,
     "raw-motion": 0,
-    "keyframes": 1
+    "keyframes": 0
   },
   "src/clubhouse/styles/tournaments-compare.css": {
     "hex": 0,
@@ -519,6 +483,6 @@
     "raw-radius": 0,
     "raw-shadow": 39,
     "raw-motion": 0,
-    "keyframes": 4
+    "keyframes": 1
   }
 }

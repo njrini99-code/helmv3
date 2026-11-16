@@ -46,8 +46,12 @@ export function shadowIsToken(value, comma) {
   return comma(v).every((layer) => /^var\(--ch-[\w-]+\)$/.test(layer.trim()) || /^0 0 0 0 transparent$/i.test(layer.trim()));
 }
 
-/** A raw duration or curve in a declaration's value (var() names and their fallbacks aside). */
-export const RAW_MOTION = /(?<![\w-])(?:\d*\.)?\d+m?s(?![\w-])|cubic-bezier\(/i;
+/**
+ * A raw duration or curve in a declaration's value (var() names and their fallbacks aside). A zero (0s, 0ms, 0.0s) is no
+ * motion, as the motion gate reads it (src/clubhouse/__tests__/motion-gate.test.ts): a hover's wash "at once", a skeleton's
+ * wait or a visibility flip after a fade is written that way (Nick, 16 Nov 2026).
+ */
+export const RAW_MOTION = /(?<![\w-])(?:\d*[1-9]\d*(?:\.\d+)?|\d*\.\d*[1-9]\d*)m?s(?![\w-])|cubic-bezier\(/i;
 
 export const systemRatchet = {
   strict: ['raw-radius', 'raw-shadow'],

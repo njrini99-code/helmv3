@@ -72,7 +72,8 @@ test('the system ratchet counts raw radii, raw shadows, raw motion and stray key
     '.ch-k{transition:opacity var(--ch-dur-base) var(--ch-ease)} .ch-l{transition:opacity 200ms ease} .ch-m{animation-timing-function:cubic-bezier(.2,0,0,1)}',
     '.ch-n{transition:opacity var(--ch-dur-base, 260ms)} @keyframes ch-x{to{opacity:0}}',
   ].join('\n');
-  const c = ratchetCounts(css, 'src/clubhouse/styles/x.css');
+  const f0 = 'src/clubhouse/styles/x.css';
+  const c = ratchetCounts(css, f0);
   assert.equal(c['raw-radius'], 2);
   assert.equal(c['raw-shadow'], 2);
   assert.equal(c['raw-motion'], 2);
@@ -80,6 +81,10 @@ test('the system ratchet counts raw radii, raw shadows, raw motion and stray key
   // tokens.css and motion.css hold the raw motion values and the keyframes.
   assert.equal(ratchetCounts('.ch-l{transition:opacity 200ms ease}', 'src/clubhouse/styles/tokens.css')['raw-motion'], 0);
   assert.equal(ratchetCounts('@keyframes ch-x{to{opacity:0}}', 'src/clubhouse/styles/motion.css').keyframes, 0);
+  // A zero is no motion (Nick, 16 Nov 2026), as the motion gate reads it; any other literal still counts.
+  const zeros = '.ch-o:hover{transition-duration:0s} .ch-p{transition:opacity var(--ch-dur-quick), visibility 0s linear var(--ch-dur-quick)} .ch-q{animation:ch-w 0ms var(--ch-dur-busy-delay) backwards}';
+  assert.equal(ratchetCounts(zeros, f0)['raw-motion'], 0);
+  assert.equal(ratchetCounts('.ch-r{transition:opacity 0.2s} .ch-s{transition-delay:1.0s} .ch-t{animation-delay:-1.2s} .ch-u{transition:color .05s}', f0)['raw-motion'], 4);
   // Radius and shadow only fall; motion and keyframes are ceilings, so a lower count there is not a finding.
   const f = 'src/clubhouse/styles/x.css';
   assert.equal(compareRatchet({ [f]: { 'raw-radius': 1 } }, { [f]: { 'raw-radius': 2 } }).length, 1);

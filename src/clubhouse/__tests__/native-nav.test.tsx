@@ -115,7 +115,8 @@ describe('the push and the pop (S4.1)', () => {
     expect(shell).toMatch(/\.ch-frame-route\[data-ch-pushing\] \{\s*position: relative;\s*z-index: calc\(var\(--ch-z-sticky\) - 1\);/);
     const page = shell.slice(shell.indexOf('.ch-frame-route[data-ch-pushing] {'));
     const rule = page.slice(0, page.indexOf('}'));
-    expect(rule).toContain('box-shadow: -1px 0 0 var(--ch-card-ring);');
+    expect(rule).toContain('box-shadow: var(--ch-push-edge);');
+    expect(tokens).toMatch(/--ch-push-edge: -1px 0 0 var\(--ch-card-ring\);/);
     expect(rule).toContain('will-change: transform;');
     const under = shell.slice(shell.indexOf('.ch-root.ch-frame-under {'));
     expect(under.slice(0, under.indexOf('}'))).toContain('will-change: transform;');
