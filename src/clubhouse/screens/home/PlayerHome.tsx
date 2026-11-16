@@ -135,7 +135,7 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
 }
 
 /** Up next inside the week (Player - Home.html `pv-next`): type, when, where, and the countdown. */
-function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
+export function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
   const t = useChClockText();
   const clock = useChClock();
   // P-14: a changed event wears a badge in the kicker and its old value struck under the range, until Got it.

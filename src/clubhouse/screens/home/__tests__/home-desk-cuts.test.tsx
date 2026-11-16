@@ -10,32 +10,32 @@ import type { ChCoachHome } from '../../../data/home';
 
 afterEach(cleanup);
 
-/** Dashboard cuts, 2: one home per number. Desktop Home is the phone's design laid out wider. */
+/**
+ * Dashboard cuts, 2: one home per number, so no leaderboard on Home. Since lay-01 (owner, 15 Nov 2026: "I want the coach home
+ * page matching the players") the desktop is Player Home's layout: the week beside the latest round, Up next leading it.
+ */
 describe('coach Home desktop, the cuts', () => {
   const NOW = '2026-11-07T15:00:00.000Z';
   const data = (over: Partial<ChCoachHome['phone']> = {}) => ({ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, ...over } }) as ChCoachHome;
 
-  it('draws no leaderboard and no week list: those live on Roster, Stats and Calendar', () => {
+  it('draws no leaderboard: it lives on Roster and Stats', () => {
     const { container } = render(<CoachHome data={data()} now={NOW} />);
     expect(container.querySelector('.ch-dh-rows--board')).toBeNull();
-    expect(container.querySelector('.ch-dh-rows--agenda')).toBeNull();
-    expect(container.querySelector('.ch-hm-week')).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Leaderboard' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'This week' })).toBeNull();
   });
 
-  it('draws the next event once: Up next holds it and Today lists the rest', () => {
+  it('lays out as Player Home: the week, then the latest round with Up next leading it, then Team scoring and the team’s game', () => {
     const next = PREVIEW_HOME.phone.next ?? PREVIEW_HOME.phone.today[0]!;
-    const rest = { ...next, id: 'later', title: 'Film session' };
-    const { container } = render(<CoachHome data={data({ next, today: [next, rest] })} now={NOW} />);
-    const count = (container.textContent!.match(new RegExp(next.title, 'g')) ?? []).length;
-    expect(count).toBe(1);
-    expect(screen.getByText('Film session')).toBeTruthy();
-  });
-
-  it('leaves Today out when the next event is all of it', () => {
-    const next = PREVIEW_HOME.phone.next ?? PREVIEW_HOME.phone.today[0]!;
-    const { container } = render(<CoachHome data={data({ next, today: [next] })} now={NOW} />);
-    expect(container.querySelector('.ch-dh-rows--today')).toBeNull();
+    const { container } = render(<CoachHome data={data({ next })} now={NOW} />);
+    const main = container.querySelector('main')!;
+    expect(main.hasAttribute('data-canopy')).toBe(true);
+    expect(main.hasAttribute('data-ch-crh')).toBe(false);
+    const heads = [...container.querySelectorAll('h2')].map((h) => h.textContent);
+    expect(heads.indexOf('This week')).toBeLessThan(heads.indexOf('Latest round'));
+    expect(heads.indexOf('Latest round')).toBeLessThan(heads.indexOf('Team scoring'));
+    expect(heads.indexOf('Team scoring')).toBeLessThan(heads.indexOf('The team’s game'));
+    // Up next is the player's desk card, leading the latest round's pane.
+    const pane = container.querySelector('.ch-h-pane:has(#ch-round-title)')!;
+    expect(pane.querySelector('.ch-ph-next')?.textContent).toContain(next.title);
   });
 });

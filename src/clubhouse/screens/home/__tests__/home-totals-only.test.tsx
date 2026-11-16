@@ -25,13 +25,13 @@ describe('coach Home, totals-only rounds read as deliberate', () => {
     const { container } = render(<CoachHome data={PREVIEW_HOME_TOTALS_ONLY} now={NOW} />);
     expect(screen.getAllByText('Totals only so far')).toHaveLength(2);
     // Two round days draw the line, so no sentence stands in for it.
-    expect(container.querySelector('.ch-hm-form__svg')).not.toBeNull();
-    expect(container.querySelector('.ch-hm-form__noline')).toBeNull();
+    expect(container.querySelector('.ch-ph-tm .ch-ph-chart')).not.toBeNull();
+    expect(container.querySelector('.ch-ph-tm-noline')).toBeNull();
   });
 
   it('one round day has no line to draw, and says when it starts', () => {
     const { container } = render(<CoachHome data={PREVIEW_HOME_ONE_DAY} now={NOW} />);
-    expect(container.querySelector('.ch-hm-form__svg')).toBeNull();
+    expect(container.querySelector('.ch-ph-tm .ch-ph-chart')).toBeNull();
     expect(screen.getByText('The line starts with a second round day.')).toBeTruthy();
   });
 
