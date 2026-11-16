@@ -1101,6 +1101,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-15-practice-zone-cancelled-all-day.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-round-kind-one-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-15-team-hub-prefetch.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-16-printed-delta.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
