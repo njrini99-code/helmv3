@@ -525,7 +525,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "golf_demo_refresh_v1",
     owner: "golf/demo",
-    purpose: "Gates the daily cron /api/cron/golf-demo-refresh, which regenerates the demo team (Demo University Golf, DEMO_TEAM_ID only) for today in the team's zone and writes the difference through the generator's database functions (20261115210000): new and changed rows, and rows it wrote before that the team no longer has; rows it did not write are never touched. Reason: the demo shows a prospect a team whose season is in progress today, not frozen months ago. Off: the cron returns before it reads or writes anything. The manual script works with the flag off.",
+    purpose: "Gates the daily cron /api/cron/golf-demo-refresh, which regenerates the demo team (Demo University Golf, DEMO_TEAM_ID only) for today in the team's zone and writes the difference through the generator's database functions (20261115211000): new and changed rows, and rows it wrote before that the team no longer has; rows it did not write are never touched. Reason: the demo shows a prospect a team whose season is in progress today, not frozen months ago. Off: the cron returns before it reads or writes anything. The manual script works with the flag off.",
     type: "operations_kill_switch",
     status: "active",
     created_at: "2026-11-15",

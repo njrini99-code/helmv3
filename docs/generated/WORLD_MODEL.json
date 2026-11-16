@@ -3780,7 +3780,7 @@
         "id": "helm_private",
         "definedIn": [
           "supabase/migrations/20261031140000_golf_rounds_tee_id_backfill.sql",
-          "supabase/migrations/20261115210000_golf_demo_generator.sql",
+          "supabase/migrations/20261115211000_golf_demo_generator.sql",
           "supabase/migrations/20261114090100_round_totals_follow_holes.sql",
           "supabase/migrations/20261115200000_golf_sand_save_tour_definition.sql",
           "supabase/migrations/20261115230000_golf_one_gir_rule.sql"
@@ -4122,19 +4122,19 @@
       },
       {
         "id": "golf_demo_apply",
-        "definedIn": "supabase/migrations/20261115210000_golf_demo_generator.sql"
+        "definedIn": "supabase/migrations/20261115211000_golf_demo_generator.sql"
       },
       {
         "id": "golf_demo_begin",
-        "definedIn": "supabase/migrations/20261115210000_golf_demo_generator.sql"
+        "definedIn": "supabase/migrations/20261115211000_golf_demo_generator.sql"
       },
       {
         "id": "golf_demo_finish_rounds",
-        "definedIn": "supabase/migrations/20261115210000_golf_demo_generator.sql"
+        "definedIn": "supabase/migrations/20261115211000_golf_demo_generator.sql"
       },
       {
         "id": "golf_demo_remove",
-        "definedIn": "supabase/migrations/20261115210000_golf_demo_generator.sql"
+        "definedIn": "supabase/migrations/20261115211000_golf_demo_generator.sql"
       },
       {
         "id": "golf_event_attendance_counts",
@@ -18775,7 +18775,7 @@
         },
         {
           "kind": "migration_schema",
-          "path": "supabase/migrations/20261115210000_golf_demo_generator.sql"
+          "path": "supabase/migrations/20261115211000_golf_demo_generator.sql"
         }
       ]
     },

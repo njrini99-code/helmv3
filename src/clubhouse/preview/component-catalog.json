@@ -13505,6 +13505,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -13519,7 +13520,6 @@
         "src/clubhouse/styles/stat-terms.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
