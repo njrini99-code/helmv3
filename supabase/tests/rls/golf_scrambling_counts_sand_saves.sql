@@ -67,12 +67,15 @@ SELECT is(
   'Sand saves is unchanged and still its own stat: 2 of 4'
 );
 
--- The player cache writer counts the same rule.
+-- The player refresh rewrites every round's cache row with the same rule.
+UPDATE public.golf_round_stats_cache
+SET scrambles_converted = 0, scramble_attempts = 0
+WHERE round_id = '00000000-0000-0000-5c72-000000000001';
 SELECT public.refresh_player_stats_cache('00000000-0000-0000-5c71-000000000001');
 SELECT is(
-  (SELECT row(scrambles_converted, scramble_attempts)::text FROM public.golf_player_stats_cache WHERE player_id = '00000000-0000-0000-5c71-000000000001'),
+  (SELECT row(scrambles_converted, scramble_attempts)::text FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-5c72-000000000001'),
   row(3, 5)::text,
-  'player cache: refresh_player_stats_cache counts 3 of 5, as the round cache does'
+  'refresh_player_stats_cache writes 3 of 5, as the round trigger does'
 );
 
 -- The backfill finds a cache written on the old rule (missed greens only) and
