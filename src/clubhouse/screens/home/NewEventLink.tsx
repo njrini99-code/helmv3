@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { getEventEditorInputs, type ChEventEditorInputs } from '../../data/event-editor-inputs';
 import type { ChCalType } from '../calendar/model';
+import type { EditorSeed } from '../calendar/editor';
 import { useBusy } from '../../lib/use-busy';
 import { chTrail } from '../../lib/track';
 
@@ -22,7 +23,7 @@ const HomeEventEditor = dynamic(loadEditor, { ssr: false });
 export function NewEventLink({ href, type, className, onTap, children }: { href: string; type?: ChCalType; className: string; onTap?: () => void; children: ReactNode }) {
   const router = useRouter();
   const inputs = useRef<Promise<ChEventEditorInputs | null> | null>(null);
-  const [open, setOpen] = useState<{ type?: ChCalType; inputs: ChEventEditorInputs } | null>(null);
+  const [open, setOpen] = useState<{ seed: EditorSeed; inputs: ChEventEditorInputs } | null>(null);
   const [pending, setPending] = useState(false);
   const busy = useBusy(pending);
 
@@ -46,7 +47,8 @@ export function NewEventLink({ href, type, className, onTap, children }: { href:
         router.push(href);
         return;
       }
-      setOpen({ type, inputs: got });
+      // The seed is made once per opening: the editor fills its form from it, so a later render must not hand it a new one.
+      setOpen({ seed: { event: null, type }, inputs: got });
     });
   };
 
@@ -57,7 +59,7 @@ export function NewEventLink({ href, type, className, onTap, children }: { href:
       </Link>
       {open && (
         <HomeEventEditor
-          seed={{ event: null, type: open.type }}
+          seed={open.seed}
           inputs={open.inputs}
           onClose={() => setOpen(null)}
           onSaved={() => {

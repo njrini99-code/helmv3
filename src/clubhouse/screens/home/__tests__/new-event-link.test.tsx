@@ -40,6 +40,16 @@ describe('Home: new event in place (MAC-03)', () => {
     expect(inputs).toHaveBeenCalledTimes(1);
   });
 
+  it('hands the editor one seed for the whole opening, so a later render cannot reset what the coach typed', async () => {
+    inputs.mockResolvedValue(INPUTS);
+    const { rerender } = render(<NewEventLink href="/golf/dashboard/calendar?new=1" className="x">Add event</NewEventLink>);
+    await userEvent.click(screen.getByRole('link', { name: 'Add event' }));
+    await screen.findByRole('dialog', undefined, { timeout: 15000 });
+    const first = (editor.mock.calls.at(-1)![0] as { seed: unknown }).seed;
+    rerender(<NewEventLink href="/golf/dashboard/calendar?new=1" className="y">Add event</NewEventLink>);
+    expect((editor.mock.calls.at(-1)![0] as { seed: unknown }).seed).toBe(first);
+  });
+
   it('goes to Calendar as before when the inputs do not come (not a coach, a failed read)', async () => {
     inputs.mockResolvedValue(null);
     render(<NewEventLink href="/golf/dashboard/calendar?new=1" className="x">Add event</NewEventLink>);
