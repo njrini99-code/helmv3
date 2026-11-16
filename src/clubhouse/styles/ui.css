@@ -3019,3 +3019,121 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-crh-skcard__r + .ch-crh-skcard__r {
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
 }
+
+/* ── Stat definitions (ui/StatTerm.tsx, F-07) ─────────────────────────────────────────────────────────────────────────
+   A stat's name is the control: a dotted underline says it opens, the label keeps its own size and colour, and the card
+   is the shared popover material. The sheet lists the counting rule, then every definition. */
+.ch-root .ch-term {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-decoration: underline dotted;
+  text-decoration-color: var(--ch-text-tertiary);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: help;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-root .ch-term:hover,
+.ch-root .ch-term.is-open {
+  text-decoration-color: currentColor;
+}
+.ch-root .ch-term:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
+}
+.ch-popover.ch-term-card {
+  position: fixed;
+  z-index: var(--ch-z-toast);
+  width: min(320px, calc(100vw - 24px));
+  padding: 12px 14px 10px;
+  border-radius: var(--ch-radius-md);
+  color: var(--ch-text-primary);
+  text-align: left;
+  white-space: normal;
+  animation: ch-fade var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-term-card p {
+  margin: 0;
+}
+.ch-term-card__name {
+  font: var(--ch-type-15-strong);
+}
+.ch-term-card .ch-term-card__means {
+  margin-top: 4px;
+  font: var(--ch-type-14);
+  color: var(--ch-text-primary);
+}
+.ch-term-card .ch-term-card__counted,
+.ch-term-card .ch-term-card__better {
+  margin-top: 6px;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-term-card__rule,
+.ch-root .ch-howc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-accent);
+  font: var(--ch-type-13-medium);
+  cursor: pointer;
+}
+.ch-root .ch-howc-link {
+  margin: 0;
+}
+.ch-term-card__rule:hover,
+.ch-root .ch-howc-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ch-term-card__rule:focus-visible,
+.ch-root .ch-howc-link:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
+}
+.ch-root[data-motion='off'] .ch-popover.ch-term-card {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-popover.ch-term-card {
+    animation: none;
+  }
+}
+.ch-howc__part + .ch-howc__part {
+  margin-top: 20px;
+}
+.ch-howc__h {
+  margin: 0 0 8px;
+  font: var(--ch-type-15-strong);
+  color: var(--ch-text-primary);
+}
+.ch-howc__list {
+  margin: 0;
+}
+.ch-howc__row {
+  padding: 10px 0;
+  border-top: 1px solid var(--ch-border-hairline);
+}
+.ch-howc__row dt {
+  font: var(--ch-type-14-medium);
+  color: var(--ch-text-primary);
+}
+.ch-howc__row dd {
+  margin: 2px 0 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+}

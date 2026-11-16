@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
+import { StatTerm } from '../../ui/StatTerm';
 import type { ChGauge } from '../../data/stats-team';
 import { gappedPath, lastValue } from '../../lib/chart';
 import { changeTone, formatSigned, NO_DATA } from '../../lib/format';
@@ -80,7 +81,9 @@ function TapeCell({ it, against }: { it: TapeItem; against: string }) {
   return (
     <li className={`ch-tp__c ${tone}`} data-ch-code={it.code}>
       <Dial it={it} tone={tone} />
-      <span className="ch-tp__l">{it.label}</span>
+      <span className="ch-tp__l">
+        <StatTerm label={it.label} />
+      </span>
       <b className="ch-tp__v ch-num">
         {it.value}
         {it.unit && !none && <small>{it.unit}</small>}

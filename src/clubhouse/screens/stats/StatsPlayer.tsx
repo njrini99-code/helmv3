@@ -1,4 +1,5 @@
 'use client';
+import { StatTerm } from '../../ui/StatTerm';
 
 import { CalendarPlus, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Sparkles, Target } from 'lucide-react';
 import Link from 'next/link';
@@ -399,7 +400,9 @@ export function StatsPlayer({
           <dl className="ch-pf-hero__figs">
             {heroFigs.map(([l, v, s, cls, chip]) => (
               <div key={l}>
-                <dt>{l}</dt>
+                <dt>
+                  <StatTerm label={l} />
+                </dt>
                 <dd className={`ch-num${cls ? ` ${cls}` : ''}`}>{v}</dd>
                 <dd className="ch-pf-hero__sub">{s}</dd>
                 {chip && <dd className="ch-pf-hero__chg">{chip}</dd>}

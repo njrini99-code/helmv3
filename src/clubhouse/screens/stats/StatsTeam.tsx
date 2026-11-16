@@ -1,6 +1,7 @@
 import { ChartColumn, Medal } from 'lucide-react';
 import Link from 'next/link';
 import type { ChTeamStats } from '../../data/stats-team';
+import { HowStatsCountLink } from '../../ui/StatTerm';
 import { isFiltered, previousWords, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
@@ -116,7 +117,8 @@ export function StatsTeam({
           {/* The team is the eyebrow. A roster that did not load is not "0 active players". */}
           {data.roundsError ? 'Countable rounds only' : (
             <>
-              <span className="ch-num">{data.activeCount}</span> active {pluralWord(data.activeCount, 'player')} &middot; countable rounds only
+              <span className="ch-num">{data.activeCount}</span> active {pluralWord(data.activeCount, 'player')} &middot; countable rounds only &middot;{' '}
+              <HowStatsCountLink />
             </>
           )}
         </PageHero>

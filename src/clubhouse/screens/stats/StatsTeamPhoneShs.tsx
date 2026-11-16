@@ -1,4 +1,5 @@
 'use client';
+import { HowStatsCountLink, StatTerm } from '../../ui/StatTerm';
 
 import { AlertTriangle, ChartColumn, Flag, Medal } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
@@ -478,7 +479,9 @@ function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
           const ref = reference(f);
           return (
             <div key={f.label}>
-              <dt>{shortLabel(f.label)}</dt>
+              <dt>
+                <StatTerm label={f.label}>{shortLabel(f.label)}</StatTerm>
+              </dt>
               <dd className="v">{figureValue(f)}</dd>
               {ref && <dd className="m ch-num">{ref}</dd>}
               {f.delta != null && (
@@ -491,6 +494,7 @@ function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
         })}
       </dl>
       <p className="ch-shs-anote">{roundNote(data, rows.some((f) => f.delta != null), coverage, note)}</p>
+      <HowStatsCountLink />
     </ShsCard>
   );
 }
