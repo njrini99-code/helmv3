@@ -14,7 +14,7 @@ import { replyClosedAt } from '../screens/calendar/model';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
-import { loadRoundCache, loadTourBenchmarks, tourForGender, type ChRoundCache } from './stats-common';
+import { loadRoundCache, loadTourBenchmarks, teamTour, TEAM_TOUR_COLUMNS, type ChRoundCache } from './stats-common';
 import { formatFixed } from '../lib/format';
 
 export { legRows } from './leg-rows';
@@ -128,7 +128,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // The scoring card's Last 5 / 10 / 20, the leg figures and the brief are the player's newest rounds in any season, as Stats' Last 10 is (Q-122); the season's own figures are cut below.
   const roundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'home', since: spanSince(input.span, lastTenFloor()) });
   const playerRead = Promise.resolve(supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle());
-  const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender, created_by, organization_id').eq('id', input.teamId).maybeSingle());
+  const teamRead = Promise.resolve(supabase.from('golf_teams').select(`${TEAM_TOUR_COLUMNS}, created_by, organization_id`).eq('id', input.teamId).maybeSingle());
   // Behind the Stats flag practice rounds stay out of the scores, the legs, the brief and strokes gained, so Home's figures equal My stats' (DATA-CHECKS, SHARED-11).
   // All time (span.ts) is Fairway's basis for the scores: every round type, and no round posted as a total only.
   const fullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : roundsForSpan(res.rounds, input.span).filter(isFull18));
@@ -146,7 +146,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     return window.length ? loadRoundCache(supabase, window.map((r) => r.id), 'home') : { byRound: new Map<string, ChRoundCache>(), error: false };
   });
   // Without the team's row its tour is unknown, so no benchmark is claimed (as on Stats, CH-4210).
-  const benchRead = teamRead.then((team) => (team.data ? loadTourBenchmarks(supabase, tourForGender(team.data.gender), 'home') : null));
+  const benchRead = teamRead.then((team) => (team.data ? loadTourBenchmarks(supabase, teamTour(team.data), 'home') : null));
   const coachRead = teamRead.then((team) => coachFor(supabase, team.data ?? null));
   // P-14: the coach's schedule changes, read once the team's zone and the player's week (which meetings are theirs) are known.
   const changesRead = loadHomeChanges(supabase, {
@@ -209,7 +209,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     ...(input.span === 'all'
       ? { span: input.span, scoringAll: roundsRes.error ? null : { avg: mean(full.map((r) => r.total_score as number)), n: full.length } }
       : {}),
-    tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
+    tour: teamRes.data ? teamTour(teamRes.data) : null,
     handicap: playerRes.data?.handicap_index ?? playerRes.data?.handicap ?? null,
     legs,
     asks,

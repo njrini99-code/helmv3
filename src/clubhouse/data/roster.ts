@@ -31,7 +31,7 @@ import { isoDay } from '../lib/dates';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { playerStrokesGained, roundsForFigures } from './figure-window';
 import { sgWindowOf, type ChSgWindow } from './sg-window';
-import { tourForGender } from './stats-common';
+import { teamTour, TEAM_TOUR_COLUMNS } from './stats-common';
 import { QUIET_DAYS, quietDaysSince, quietOf } from '../screens/home/model';
 
 /**
@@ -206,7 +206,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
   const now = new Date();
 
   const [teamRes, membersRes, requestsRes, tz] = await Promise.all([
-    supabase.from('golf_teams').select('name, join_code, gender').eq('id', input.teamId).maybeSingle(),
+    supabase.from('golf_teams').select(`name, join_code, ${TEAM_TOUR_COLUMNS}`).eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
       .select('status, jersey_number, joined_at, availability, availability_updated_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
@@ -369,8 +369,8 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
     requestsError: !requestsRes.success,
     helm,
     clock: { tz, day: isoDay(now, tz) },
-    sgVs: sgBaseline(tourForGender(teamRes.data?.gender)).vs,
-    sgTour: tourForGender(teamRes.data?.gender),
+    sgVs: sgBaseline(teamTour(teamRes.data)).vs,
+    sgTour: teamTour(teamRes.data),
   };
 }
 
