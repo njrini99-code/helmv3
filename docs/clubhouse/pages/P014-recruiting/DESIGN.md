@@ -137,13 +137,12 @@ columns; with a Next step column, Class and Hometown move under the name below
 ### Premium pass (2026-10-08)
 
 - **Committed is a moment, once (B1, CH-14806).** Only a landed move to
-  Committed: a 1px gilt rule (`--ch-champagne-500`) under the stage draws left
-  to right over `--ch-dur-reveal` with `clip-path`, and the success haptic lands
-  at its `animationend` (the save's own success haptic is withheld for this one
-  move). The coin takes a gilt rim. Phone: the rule sits on the Stage row's
-  bottom seam and waits for the stage sheet to close. Reduced motion and
-  Animations off: final state and haptic at once. The rule stays, at rest, on
-  every committed prospect.
+  Committed: a 1px gilt rule (`--ch-champagne-500`) under the stage, there at
+  once, and the success haptic lands with it (the save's own success haptic is
+  withheld for this one move). The left-to-right draw is gone (2026-11-15:
+  content never moves on its own, MOTION-AND-VISUAL 3.1, 3.12). The coin takes
+  a gilt rim. Phone: the rule sits on the Stage row's bottom seam and waits for
+  the stage sheet to close. The rule stays, at rest, on every committed prospect.
 - **Next step (C1, CH-14307).** A label and a day per prospect, behind the
   columns of `supabase/migrations/20261008120000_golf_recruits_next_step.sql`.
   Before that file is applied every next-step surface is hidden and never

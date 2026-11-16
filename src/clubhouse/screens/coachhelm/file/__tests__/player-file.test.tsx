@@ -185,7 +185,7 @@ describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
     expect(screen.queryByRole('button', { name: /Assign|Dismiss|Undo|Share/ })).toBeNull();
   });
 
-  it('on a desk the page opens with the player’s CoachHelm head: the page title, the line, and the views inside the head', () => {
+  it('on a desk the page opens with the player’s CoachHelm head: the page title and the line; the views are the route’s switch, not the head’s', () => {
     render(<YourWeek load={{ status: 'ready', data: week('default') }} />, { wrapper: Wrap });
     const main = screen.getByRole('main');
     // The canopy is what gives the head the page title's style (shell.css), and the tight head has no rule over the title.
@@ -195,8 +195,10 @@ describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
     const title = within(head).getByRole('heading', { level: 1, name: 'Your week' });
     expect(main.getAttribute('aria-labelledby')).toBe(title.id);
     expect(head.textContent).toMatch(/21 rounds · refreshed/);
-    // The views stand in the head's own aside (inside the page's gutter), never in the 300px box that ran them to the page's edge.
-    expect(within(head.querySelector('.ch-hl-h__aside') as HTMLElement).getByRole('radiogroup', { name: 'CoachHelm view' })).toBeTruthy();
+    // The views are not drawn in the head any more: the switch is the route's, mounted once above every view in the same place
+    // (SwitchFrame, N13P-18, production audit 2026-11-15 P1-19), so the head has no aside and the page draws no switch of its own.
+    expect(head.querySelector('.ch-hl-h__aside')).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'CoachHelm view' })).toBeNull();
     expect(main.querySelector('.dhead, .aseg')).toBeNull();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });

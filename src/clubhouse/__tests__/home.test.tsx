@@ -25,6 +25,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => router, redirect: redirectS
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 vi.mock('../lib/phone-hint', () => ({ marksHint: () => Promise.resolve([]) }));
+// Home's Add event reads the editor's inputs on a press (MAC-03); here they never come, so a click goes to Calendar as before.
+vi.mock('../data/event-editor-inputs', () => ({ getEventEditorInputs: async () => null }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 

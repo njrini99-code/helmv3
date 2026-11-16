@@ -230,7 +230,7 @@ in place.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-13601 | An insight is assigned or dismissed, or a proposed focus area is answered | The Assigned chip, the dismissed notice or the Started or Declined chip (CH-13902) rises in (base). With reduced motion or Animations off it appears at once | `.ch-hl-done`, `.ch-hl-dis`, `ch-hl-rise` | coachhelm.test › CH-13601 |
+| CH-13601 | An insight is assigned or dismissed, or a proposed focus area is answered | The Assigned chip, the dismissed notice or the Started or Declined chip (CH-13902) takes its place at once, with no rise (MOTION-AND-VISUAL 3.1, 3.12) | `.ch-hl-done`, `.ch-hl-dis` | coachhelm.test › CH-13601 |
 | CH-13602 | Hovering an insight row or a player | On desktop the row takes the Ledger row tint (quick) and a press deepens it (press), never a scale | `.ch-hl-row`, `.ch-hl-pl`, `--ch-ledger-row-press` | preview |
 | CH-13620 | Ask: Hide chats | The panel goes at once (inert) and Show chats and New chat move into the header; Show chats brings it back, fading in with its content sliding from the edge (its column never animates) | `History` | coachhelm-ask.test › CH-13620 |
 | CH-13621 | Ask: The phone drawer is dragged | A drag left past 80px closes it; a nudge of a few pixels leaves it open | `History` | coachhelm-ask.test › CH-13621 |

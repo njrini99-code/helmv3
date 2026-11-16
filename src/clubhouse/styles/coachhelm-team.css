@@ -916,7 +916,6 @@
 }
 .ch-htb .ins .cnote {
   font: var(--ch-type-14);}
-@keyframes ch-htb-fadein {from{opacity:0;transform:translateY(6px);}}
 .ch-htb .hud {
   padding:0 8px 4px;
 }
@@ -1081,7 +1080,6 @@
 .ch-htb .ringc .fil.mid {
   stroke:var(--ch-chart-flat);
 }
-@keyframes ch-htb-popin {from{opacity:0;transform:scale(.94);}}
 .ch-htb .rec {
   padding:0 16px 16px;
   display:grid;
@@ -1331,7 +1329,6 @@
   stroke-dasharray:24;
   stroke-dashoffset:24;
 }
-@keyframes ch-htb-draw {to{stroke-dashoffset:0;}}
 .ch-htb .pbars {
   display:grid;
   gap:8px;
@@ -1431,7 +1428,6 @@
   display:flex;
   gap:8px;
 }
-@keyframes ch-htb-storyin {from{opacity:0;transform:translateX(24px);}}
 .ch-htb .holes18 {
   display:grid;
   grid-template-columns:repeat(9,1fr);
@@ -1600,7 +1596,6 @@
   font: var(--ch-type-14);
   color:var(--ch-ink-600);
 }
-@keyframes ch-htb-rmfade {from{opacity:0;}to{opacity:1;}}
 .ch-htb .dgrid {
   --ch-htb-rail:clamp(320px,30%,440px);
   display:grid;
@@ -1919,7 +1914,8 @@
   padding: 0 16px 12px;
 }
 
-/* Stories: the viewer covers the board, and its progress fill scales instead of growing a width. */
+/* Stories: the viewer covers the board, and its progress fill scales instead of growing a width. The fill is the story's
+   real clock, on motion.css's kept ch-fill (3.12). */
 .ch-htb .story {
   position: fixed;
   z-index: var(--ch-z-panel);
@@ -1933,15 +1929,10 @@
   transform: scaleX(1);
 }
 .ch-htb .prog i.now b {
-  animation: ch-htb-prog var(--ch-dur-story) linear both;
+  animation: ch-fill var(--ch-dur-story) linear both;
 }
 .ch-htb .story.is-held .prog i.now b {
   animation-play-state: paused;
-}
-@keyframes ch-htb-prog {
-  to {
-    transform: scaleX(1);
-  }
 }
 .ch-htb-storydesk {
   padding: 16px;
@@ -1973,8 +1964,12 @@
   transform: none;
   transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
 }
+/* The viewer a tap opens rises from below over the reveal beat on the iOS curve; each story's body arrives 24px from the
+   trailing side over the base beat. Both on motion.css's ch-arrive (3.12). */
 .ch-htb .story {
-  animation: ch-htb-rise var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
+  --ch-arrive-o: 1;
+  --ch-arrive-t: translateY(102%);
+  animation: ch-arrive var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 .ch-htb .story {
   user-select:none;
@@ -1985,27 +1980,10 @@
 .ch-htb .sto-b {
   min-height:0;
   overflow-y:auto;
-  animation: ch-htb-slide var(--ch-dur-story-body) var(--ch-ease-spring-smooth);
-}
-@keyframes ch-htb-rise {
-  from {
-    transform: translateY(102%);
-  }
-}
-@keyframes ch-htb-slide {
-  from {
-    opacity: 0;
-    transform: translateX(24px);
-  }
-}
-@keyframes ch-htb-wk {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-}
-.ch-htb .wk.is-new {
-  animation: ch-htb-wk var(--ch-dur-reveal) var(--ch-ease-ios);
+  /* The viewer's own --ch-arrive-o (1) is inherited, so the body names its own fade from 0. */
+  --ch-arrive-o: 0;
+  --ch-arrive-t: translateX(24px);
+  animation: ch-arrive var(--ch-dur-base) var(--ch-ease-ios);
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-htb .insp {
@@ -2019,11 +1997,10 @@
   /* base.css runs a keyframe in 1ms under Reduce Motion unless its rule asks for the fade. */
   .ch-htb .story {
     --ch-rm-animation: var(--ch-dur-crossfade-rm);
-    animation-name: ch-htb-fade;
+    animation-name: ch-in;
     animation-timing-function: linear;
   }
   .ch-htb .sto-b,
-  .ch-htb .wk.is-new,
   .ch-htb .prog i.now b {
     animation: none;
   }
@@ -2031,14 +2008,8 @@
 /* Animations off: the duration tokens are 0 there (tokens.css), so a transition lands at once; these are the keyframes. */
 [data-motion='off'] .ch-htb .story,
 [data-motion='off'] .ch-htb .sto-b,
-[data-motion='off'] .ch-htb .wk.is-new,
 [data-motion='off'] .ch-htb .prog i.now b {
   animation: none;
-}
-@keyframes ch-htb-fade {
-  from {
-    opacity: 0;
-  }
 }
 
 /* The story's picture (AC-STORY-03): 18 holes in 9 columns, or before and now against the line. */
@@ -2252,8 +2223,10 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
   opacity: 0.55;
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  /* The view that lands rises from the dimmed opacity, as coachhelm.css's view roots (motion.css ch-arrive; 3.12). */
   .ch-htb[data-ch-enter]:not(.is-phone) > * {
-    animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
+    --ch-arrive-o: var(--ch-enter-from, 0.55);
+    animation: ch-arrive var(--ch-dur-quick) var(--ch-ease-ios) backwards;
   }
 }
 /* The hole and its chips sit on the green in both themes, so their gain is the on-green one. */

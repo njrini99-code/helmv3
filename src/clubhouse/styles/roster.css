@@ -1054,7 +1054,8 @@ a.ch-rs-peek__dev:focus-visible,
   background: var(--ch-green-100);
   color: var(--ch-forest-800);
   font: var(--ch-type-13-medium);
-  animation: ch-rs-em-in var(--ch-dur-quick) var(--ch-ease);
+  /* A chip the coach just typed crossfades in over the quick beat, with no pop (motion.css ch-in; MOTION-AND-VISUAL 3.12). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-rs-em__chip > span:first-child {
   min-width: 0;
@@ -1140,16 +1141,6 @@ a.ch-rs-peek__dev:focus-visible,
 }
 .ch-rs-em__off {
   margin: 0;
-}
-@keyframes ch-rs-em-in {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-rs-em__chip {

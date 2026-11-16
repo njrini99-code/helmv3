@@ -188,15 +188,15 @@ describe('the hole is whole before anything moves', () => {
 });
 
 describe('the selected station’s pulse (M-TEAM-06)', () => {
-  it('answers a choice, never the first paint or a station brought back from the last visit', () => {
+  // MOTION-AND-VISUAL 3.12 retires the pulse on purpose: its ring no longer moved, so it is no longer drawn, after a choice
+  // or on the first paint.
+  it('draws no ring for a choice, the first paint or a station brought back from the last visit', () => {
     const { container, rerender } = render(<TeamHole stations={stations} players={list} station="approach" onStation={() => {}} orientation="v" picks={0} />);
     expect(container.querySelector('.is-pulse')).toBeNull();
-    rerender(<TeamHole stations={stations} players={list} station="putting" onStation={() => {}} orientation="v" picks={0} />);
-    expect(container.querySelector('.is-pulse')).toBeNull();
     rerender(<TeamHole stations={stations} players={list} station="short_game" onStation={() => {}} orientation="v" picks={1} />);
-    expect(container.querySelectorAll('.is-pulse')).toHaveLength(1);
+    expect(container.querySelector('.is-pulse, .holefx__ring')).toBeNull();
     rerender(<TeamHole stations={stations} players={list} station="course" onStation={() => {}} orientation="v" picks={2} />);
-    expect(container.querySelector('.is-pulse')).toBeNull();
+    expect(container.querySelector('.is-pulse, .holefx__ring')).toBeNull();
   });
 
   it('no longer pulses (MOTION-AND-VISUAL 3.12): no ring animation and no station-pulse token', () => {

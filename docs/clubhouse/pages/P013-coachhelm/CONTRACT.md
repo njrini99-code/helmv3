@@ -122,6 +122,20 @@ in the signed-in role's shape (130204); a write in flight says so on its button
 (Assigning, Dismissing, Undoing: CH-13403). CoachHelm loads no section on its
 own after the server render, so there are no section skeletons.
 
+The view switch (the coach's Team and Ask; the player's Board, Standing, Deep
+dive and Ask) is one row the route mounts once above the view
+(`screens/coachhelm/SwitchFrame.tsx`, N13C-67, N13P-18): on a desk it is the
+first thing in the glass top bar, on the phone a 52 px row under the bar, in the
+same place for every view, and it is not drawn again when the view changes.
+loading.tsx holds it there, inert, over the view's skeleton. A tap moves the
+switch at once (one selection tick) and the view under it becomes the next
+view's skeleton in the same commit, never the old view held while the server
+renders the next; the skeleton's blocks wait 150 ms and, once shown, hold
+300 ms (`useBusy`). The other views are prefetched when the page is idle, with
+the route's own prefetch only (it stops at the loading boundary), never fetched
+whole (CH-R1). A view that finds CoachHelm off (CH-13304, CH-13305) hides the
+switch.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 130201 | CH-13401 | `THE_PLAYERS_PAGE_IS_ON_ITS_WAY` | The player's page is on its way |

@@ -370,9 +370,9 @@ and an empty part's action take the row press tint for the press beat, never a
 scale (141604, CH-14604). A key presses in about 6px and springs back through
 the shell's press (11606), while a prospect row deepens its tint instead; there
 is no first-paint rise; reduced motion and Animations off remove all of it
-(11608). A landed move to Committed draws a 1px gilt rule under the stage, left
-to right over the reveal duration, once per commit (CH-14806); it is at rest on
-every committed prospect and at once with reduced motion. This page's own CSS
+(11608). A landed move to Committed shows a 1px gilt rule under the stage at
+once, with no draw (CH-14806; MOTION-AND-VISUAL 3.1, 3.12); it is at rest on
+every committed prospect. This page's own CSS
 uses only the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
@@ -396,8 +396,8 @@ v2 grammar (D-70): selection when a stage is picked as the filter or as a
 prospect's stage, when a row is opened and when a sort is chosen (141701,
 CH-14701); warning when Delete prospect is tapped, before the question (141702,
 CH-14702); success for a landed save or send (11702), except a move to
-Committed, whose success lands as its gilt rule finishes drawing (CH-14806; at
-once with reduced motion or Animations off); error when a write fails (11703).
+Committed, whose success lands with its gilt rule, once the save has and the
+phone's stage sheet has closed (CH-14806); error when a write fails (11703).
 Every other tap is silent.
 
 | Bridge ID | Code | Name | Meaning |

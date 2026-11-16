@@ -793,26 +793,12 @@
   color: var(--ch-text-tertiary);
   text-decoration: line-through;
 }
-/* A task a notification opened (`?task=`): a selected-row wash that fades once. Reduced motion keeps it still. */
+/* A task a notification opened (`?task=`): a still selected-row wash until the row is used (first paint is still,
+   MOTION-AND-VISUAL 3.5, 3.12: the fade that played as the page opened is gone). */
 .ch-hb-task.is-focus {
-  border-radius: var(--ch-radius-sm);
-  animation: ch-hb-task-focus calc(var(--ch-dur-reveal) * 3) var(--ch-ease) both;
-}
-.ch-hb-task.is-focus-still {
   border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-selected);
   box-shadow: 0 0 0 6px var(--ch-bg-selected);
-}
-@keyframes ch-hb-task-focus {
-  0%,
-  60% {
-    background: var(--ch-bg-selected);
-    box-shadow: 0 0 0 6px var(--ch-bg-selected);
-  }
-  100% {
-    background: transparent;
-    box-shadow: 0 0 0 6px transparent;
-  }
 }
 .ch-hb-check {
   display: grid;

@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Ellipsis, Share, type LucideIcon } from 'lucide-react';
-import { CH_DUR, CH_EASE, chSpring, chSpringCurve } from '../lib/motion';
-import { chSupportsLinear } from '../lib/sheet-drag';
+import { CH_EASE_IOS, CH_EASE_IOS_CSS, CH_PUSH_MS } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { poppedByUA } from '../lib/ua-pop';
 import { Icon } from '../ui/Icon';
@@ -184,8 +183,8 @@ export function usePhonePushed(present: boolean): void {
   }, [present, setPushed]);
 }
 
-/** How far the page beneath a pushed screen draws back, as a share of the screen's width (a UIKit push moves it about a third). */
-export const CH_UNDERLAY_SHIFT = 0.24;
+/** How far the page beneath a pushed screen draws back, as a share of the screen's width: 30%, as a UIKit push and the route push do (S4.1). */
+export const CH_UNDERLAY_SHIFT = 0.3;
 
 /**
  * What draws back under the pushed screens: inside the canvas, everything that holds no screen (the top bar, the
@@ -240,18 +239,13 @@ function takeUnderlayTiming(): ChUnderlayTiming | undefined {
 }
 
 /**
- * Slides `parts` to drawn back (1) or rest (0) on the compositor, on the smooth spring the pushed screen rides, from
+ * Slides `parts` to drawn back (1) or rest (0) on the compositor, over the push's 520 ms on the iOS curve the pushed screen rides, from
  * wherever each one is now (mid slide included), so a pop that cuts a push short reverses from there. Returns the
  * running animations; at the end each part is placed for good and its animation let go. `hand` is a released swipe's
  * finish, which it rides instead.
  */
 export function slideUnderlay(parts: HTMLElement[], to: 0 | 1, running: Animation[] = [], hand?: ChUnderlayTiming): Animation[] {
-  const curve = hand ? null : chSupportsLinear() ? chSpringCurve('smooth') : null;
-  const timing: KeyframeAnimationOptions = hand
-    ? { duration: hand.ms, easing: hand.easing, fill: 'forwards' }
-    : curve
-      ? { duration: curve.ms, easing: curve.linear, fill: 'forwards' }
-      : { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})`, fill: 'forwards' };
+  const timing: KeyframeAnimationOptions = hand ? { duration: hand.ms, easing: hand.easing, fill: 'forwards' } : { duration: CH_PUSH_MS, easing: CH_EASE_IOS_CSS, fill: 'forwards' };
   const target = to ? `${(-CH_UNDERLAY_SHIFT * 100).toFixed(3)}vw 0` : '0px 0px';
   // Read every start before any new animation begins: one style pass, not one per part.
   const from = parts.map((el) => {
@@ -282,8 +276,8 @@ export function slideUnderlay(parts: HTMLElement[], to: 0 | 1, running: Animatio
 
 /**
  * The page beneath the phone's pushed screens (CH-1618, owner-approved 2026-10-08). As a screen slides in, the page it
- * covers (the shell's bars and the page itself) draws back about a quarter of the width and dims, on the screen's own
- * smooth spring; as the screen pops, the page comes back with it on the same spring (P1-2, 2026-10-08). The two edges
+ * covers (the shell's bars and the page itself) draws back 30% of the width and dims, over the screen's own 520 ms on
+ * the iOS curve (S4.1); as the screen pops, the page comes back with it on the same timing (P1-2, 2026-10-08). The two edges
  * move as one, so no gap opens between them. Both run on the compositor (the screen's transform through framer's
  * WAAPI, the page's translate here, the scrim's opacity), so a busy frame while the screen mounts or leaves doesn't
  * hold them back (motion audit 2026-10-12: a 50ms stall mid pop was a visible hitch when they ran frame by frame). A
@@ -291,6 +285,9 @@ export function slideUnderlay(parts: HTMLElement[], to: 0 | 1, running: Animatio
  * with its page, puts the page back at once. With reduced motion or Animations off the page holds still under a
  * screen that swaps in at once. Desktop never pushes a screen, so this stays at rest there.
  */
+/** The phone push and pop (S4.1): 520 ms on the iOS curve, for framer's tween (seconds). The screen, the page beneath and its dim share it. */
+export const CH_PUSH_TWEEN = { duration: CH_PUSH_MS / 1000, ease: CH_EASE_IOS as unknown as [number, number, number, number] };
+
 export function PhoneUnderlay() {
   const { pushed } = usePhoneChromeState();
   const reduced = useChReducedMotion();
@@ -329,7 +326,7 @@ export function PhoneUnderlay() {
       aria-hidden="true"
       initial={{ opacity: 0 }}
       animate={{ opacity: on ? 1 : 0 }}
-      transition={on || !atOnce ? chSpring('smooth') : { duration: 0 }}
+      transition={on || !atOnce ? CH_PUSH_TWEEN : { duration: 0 }}
       // The scrim's animation starts in the same frame as the screen's, so the page starts with them.
       onAnimationStart={() => {
         if (atOnce) return;

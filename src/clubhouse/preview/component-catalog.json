@@ -176,6 +176,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/controls.css",
@@ -1002,6 +1003,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -1560,6 +1562,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -1629,6 +1632,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -2456,6 +2460,30 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/SwitchFrame.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachHelmSwitchFrame"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/SwitchStrip.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachHelmHeldSwitch",
+        "CoachHelmSwitchOff",
+        "CoachHelmSwitchStrip"
+      ],
+      "styles": [
+        "src/clubhouse/styles/coachhelm.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/chat/Ask.tsx",
       "group": "screens",
       "exports": [
@@ -2465,6 +2493,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -2481,6 +2510,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -3780,6 +3810,7 @@
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-plan.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -4762,6 +4793,20 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/home/HomeEventEditor.tsx",
+      "group": "screens",
+      "exports": [
+        "HomeEventEditor"
+      ],
+      "styles": [
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/tournament-fields.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/home/HomePhone.tsx",
       "group": "screens",
       "exports": [
@@ -4892,6 +4937,16 @@
       "styles": [
         "src/clubhouse/styles/live.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/home/NewEventLink.tsx",
+      "group": "screens",
+      "exports": [
+        "NewEventLink"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -5730,6 +5785,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -5941,6 +5997,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -6159,6 +6216,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -6218,6 +6276,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -6333,6 +6392,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -6994,6 +7054,7 @@
         "PlanFormatSkeleton",
         "PlayerPracticeHomeSkeleton",
         "PlayerPracticePlanSkeleton",
+        "PracticeDrillSkeleton",
         "PracticeHomeSkeleton",
         "PracticeLibrarySkeleton",
         "PracticePlanSkeleton"
@@ -7021,6 +7082,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages-inbox.css",
@@ -9536,6 +9598,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -11368,6 +11431,7 @@
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11593,6 +11657,7 @@
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11624,6 +11689,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11680,6 +11746,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -11794,6 +11861,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11826,6 +11894,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -11937,6 +12006,7 @@
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -12007,6 +12077,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -12215,6 +12286,7 @@
       "file": "src/clubhouse/shell/phone-chrome.tsx",
       "group": "shell",
       "exports": [
+        "CH_PUSH_TWEEN",
         "CH_UNDERLAY_SHIFT",
         "DeskSlot",
         "DeskTop",
@@ -12350,6 +12422,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -12537,6 +12610,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -12828,6 +12902,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -13037,6 +13112,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -13093,6 +13169,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -13287,6 +13364,7 @@
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-team.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -13603,6 +13681,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -15506,7 +15585,13 @@
         "ch-seg",
         "ch-select"
       ],
-      "tokens": []
+      "tokens": [
+        {
+          "name": "--ch-drain",
+          "value": "81.68",
+          "scope": ".ch-akg-ring[data-run] .drn"
+        }
+      ]
     },
     {
       "file": "src/clubhouse/styles/coachhelm-ask-look.css",
@@ -16113,6 +16198,11 @@
       ],
       "tokens": [
         {
+          "name": "--ch-arrive-t",
+          "value": "scale(0.96)",
+          "scope": ".ch-ask-pick"
+        },
+        {
           "name": "--ch-ink-700",
           "value": "#1c1b18",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask"
@@ -16201,6 +16291,11 @@
           "name": "--ch-champagne-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "html:not([data-fw-theme='dark']) .ch-ask"
+        },
+        {
+          "name": "--ch-arrive-o",
+          "value": "var(--ch-enter-from, 0.55)",
+          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → .ch-ask[data-ch-enter]:not(.is-phone) > :is(.ch-ask-body, .ch-ask-plain)"
         }
       ]
     },
@@ -16638,6 +16733,11 @@
           "name": "--ch-hf-seg-ink",
           "value": "var(--ch-on-green-ink)",
           "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-arrive-o",
+          "value": "var(--ch-enter-from, 0.55)",
+          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → .ch-hf[data-ch-enter]:not(.is-phone) .ch-hf-flow"
         },
         {
           "name": "--ch-hf-o",
@@ -17225,7 +17325,7 @@
         },
         {
           "name": "--ch-rm-animation",
-          "value": "var(--ch-dur-crossfade-rm)",
+          "value": "var(--ch-dur-quick)",
           "scope": "@media (prefers-reduced-motion: reduce) → .ch-hr-sure:not([hidden])"
         }
       ]
@@ -17410,9 +17510,34 @@
           "scope": ".ch-htb-sheet"
         },
         {
+          "name": "--ch-arrive-o",
+          "value": "1",
+          "scope": ".ch-htb .story"
+        },
+        {
+          "name": "--ch-arrive-t",
+          "value": "translateY(102%)",
+          "scope": ".ch-htb .story"
+        },
+        {
+          "name": "--ch-arrive-o",
+          "value": "0",
+          "scope": ".ch-htb .sto-b"
+        },
+        {
+          "name": "--ch-arrive-t",
+          "value": "translateX(24px)",
+          "scope": ".ch-htb .sto-b"
+        },
+        {
           "name": "--ch-rm-animation",
           "value": "var(--ch-dur-crossfade-rm)",
           "scope": "@media (prefers-reduced-motion: reduce) → .ch-htb .story"
+        },
+        {
+          "name": "--ch-arrive-o",
+          "value": "var(--ch-enter-from, 0.55)",
+          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → .ch-htb[data-ch-enter]:not(.is-phone) > *"
         },
         {
           "name": "--ch-chart-gain",
@@ -17626,6 +17751,7 @@
     {
       "file": "src/clubhouse/styles/coachhelm.css",
       "classes": [
+        "ch-ask",
         "ch-btn",
         "ch-chd",
         "ch-chd__scope",
@@ -17699,12 +17825,16 @@
         "ch-hl-why",
         "ch-hl-why__b",
         "ch-hmb",
+        "ch-hsw",
         "ch-htr",
         "ch-hv",
         "ch-hv-tabs",
         "ch-large-title",
         "ch-notice",
+        "ch-root",
         "ch-scoreboard",
+        "ch-seg",
+        "ch-seg__b",
         "ch-sk-on-green",
         "ch-skel"
       ],
@@ -17718,6 +17848,11 @@
           "name": "--ch-skel-sheen",
           "value": "rgb(255 255 255 / 0.16)",
           "scope": ".ch-sk-on-green"
+        },
+        {
+          "name": "--ch-arrive-o",
+          "value": "var(--ch-enter-from, 0.55)",
+          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → .ch-hl[data-ch-enter]:not(.is-phone) > :not(.ch-hl-h):not([data-ch-strip])"
         },
         {
           "name": "--ch-ink-700",
@@ -19299,6 +19434,11 @@
           "name": "--ch-ms-pill-top",
           "value": "76px",
           "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → [data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread)"
+        },
+        {
+          "name": "--ch-rm-animation",
+          "value": "var(--ch-dur-quick)",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ch-ms-v2] .ch-msv-typing"
         }
       ]
     },
@@ -19652,7 +19792,7 @@
         },
         {
           "name": "--ch-rm-animation",
-          "value": "var(--ch-dur-crossfade-rm)",
+          "value": "var(--ch-dur-quick)",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ch-ms-v2] .ch-ms-det"
         },
         {

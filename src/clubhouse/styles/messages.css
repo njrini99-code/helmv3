@@ -2844,16 +2844,11 @@ html[data-fw-theme='dark'] .ch-ms-grp.is-ann.is-urgent {
 .ch-ms-fold__body {
   padding: 2px 0 6px;
   border-top: 1px solid color-mix(in srgb, var(--ch-green-fill-600) 16%, transparent);
-  animation: ch-ms-fold-in var(--ch-dur-base) var(--ch-ease);
+  /* Opened by a tap: it crossfades in over the quick beat, with no drop (motion.css ch-in; MOTION-AND-VISUAL 3.12). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-ms-fold__body .ch-ms-more {
   margin-inline: 12px;
-}
-@keyframes ch-ms-fold-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
 }
 
 /* B8: the conversation list draws only the rows near the screen; an off-screen row keeps the height it last drew (a
@@ -3571,7 +3566,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   backdrop-filter: blur(var(--ch-glass-blur));
   box-shadow: var(--ch-shadow-float);
   color: var(--ch-text-primary);
-  animation: ch-msv-jump-in var(--ch-dur-spring-pop) var(--ch-ease-spring-pop) both;
+  /* MOT-JMP-1: once you are a screen above the latest it crossfades in over the quick beat; its pop from 0.6 is gone
+     (the pop spring retires, MOTION-AND-VISUAL 3.12; motion.css ch-in). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios) both;
 }
 [data-ch-ms-v2] .ch-msv-jump::before {
   position: absolute;
@@ -3594,12 +3591,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 @media (min-width: 414px) {
   [data-ch-ms-v2] .ch-msv-jump {
     right: 18px;
-  }
-}
-@keyframes ch-msv-jump-in {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4010,15 +4001,11 @@ body:has([data-ch-ms-v2]) .ch-toast {
   font-weight:var(--ch-fw-500);
   color: var(--ch-text-secondary);
 }
-@keyframes ch-msv-det-fade {
-  from {
-    opacity: 0;
-  }
-}
+/* Reduce Motion: the details panel fades in over the quick beat (motion.css ch-in; 3.11). */
 @media (prefers-reduced-motion: reduce) {
   [data-ch-ms-v2] .ch-ms-det {
-    --ch-rm-animation: var(--ch-dur-crossfade-rm);
-    animation: ch-msv-det-fade var(--ch-dur-crossfade-rm) linear;
+    --ch-rm-animation: var(--ch-dur-quick);
+    animation: ch-in var(--ch-dur-quick) linear;
   }
 }
 [data-ch-ms-v2] .ch-ms-det {

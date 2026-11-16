@@ -173,7 +173,7 @@ describe('F-0013 the coach board loader reads in few, wide rounds', () => {
       throw new Error('standing down');
     });
     const { result } = await waves.run(loadCoachTeamBoard({ coachId: 'c1', teamId: 't1', now: NOW }));
-    expect(result.course.against).toBeNull();
+    expect(await result.course.against).toBeNull();
     expect(result.players.list).toHaveLength(2);
     expect(result.players.error).toBe(false);
   });
@@ -182,7 +182,7 @@ describe('F-0013 the coach board loader reads in few, wide rounds', () => {
     const waves = readWaves();
     arrange(waves);
     const { result } = await waves.run(loadCoachTeamBoard({ coachId: 'c1', teamId: 't1', now: NOW }));
-    expect(result.course.against).toHaveLength(6);
+    expect(await result.course.against).toHaveLength(6);
     expect(result.team.name).toBe('Test Copy');
   });
 });

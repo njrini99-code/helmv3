@@ -630,8 +630,8 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
 }) {
   const row = useRef<HTMLElement>(null);
   const reduced = useChReducedMotion();
-  // Lit from the first paint when a notification named this task; the wash fades once (or, with reduced motion, stays
-  // still until the row is used).
+  // Lit from the first paint when a notification named this task: a still wash until the row is used (first paint is
+  // still, MOTION-AND-VISUAL 3.5, 3.12; the fade that played as the page opened is gone, for every user).
   const [lit, setLit] = useState(focus);
   const scrolled = useRef(false);
   useEffect(() => {
@@ -640,20 +640,12 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
     row.current?.scrollIntoView?.({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
     onFocused?.();
   }, [focus, reduced, onFocused]);
-  // The wash ends with its own fade (a native listener: the row's animationend, not a child's).
-  useEffect(() => {
-    const el = row.current;
-    if (!lit || reduced || !el) return;
-    const done = (e: AnimationEvent) => e.target === el && setLit(false);
-    el.addEventListener('animationend', done);
-    return () => el.removeEventListener('animationend', done);
-  }, [lit, reduced]);
   const save = useTaskSave(d, onToggle);
   return (
     <PresenceRow as="div"
       ref={row}
-      className={'ch-hb-task' + (coach ? ' is-coach' : '') + (d ? ' is-done' : '') + (lit ? (reduced ? ' is-focus-still' : ' is-focus') : '')}
-      onPointerDown={lit && reduced ? () => setLit(false) : undefined}
+      className={'ch-hb-task' + (coach ? ' is-coach' : '') + (d ? ' is-done' : '') + (lit ? ' is-focus' : '')}
+      onPointerDown={lit ? () => setLit(false) : undefined}
     >
       {coach ? (
         // A text figure and a track under it: "3/6" reads at a glance where the old ring's numeral was 8.5px.

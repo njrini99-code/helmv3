@@ -3,7 +3,7 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { cleanup, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { resolved } from './route-view';
+import { resolved, underSwitchFrame } from './route-view';
 
 /** The CoachHelm audit's code fixes (swap audit section 13), through the loaders, the route and the screens. */
 
@@ -299,7 +299,8 @@ describe('CH13-20 the Ask address respects the CoachHelm switch, as the board do
   it('CoachHelm on: the chat (its own Suspense, which draws the Ask skeleton while the chat reads)', async () => {
     asCoach();
     vi.mocked(isCoachHelmEnabledForCoach).mockResolvedValue({ ...on });
-    const el = (await ClubhouseCoachHelmRoute({ view: 'ask' })) as { type: unknown; props: { fallback: unknown } };
+    // Under the coach's one switch, mounted above the view (N13C-67).
+    const el = underSwitchFrame(await ClubhouseCoachHelmRoute({ view: 'ask' })) as { type: unknown; props: { fallback: unknown } };
     expect(el.type).toBe(Suspense);
     expect(el.props.fallback).not.toBeNull();
     // The gate is read inside the boundary, after the page has been handed back, and before the chat is.

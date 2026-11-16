@@ -795,26 +795,16 @@
   box-shadow: var(--ch-elevation-overlay), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   overflow: hidden;
   transform-origin: 50% 100%;
-  animation: ch-ask-pick-in var(--ch-dur-quick) var(--ch-ease);
+  /* A menu a tap opens: from scale 0.96 and opacity 0 at its anchor's edge, over the quick beat on the iOS curve
+     (motion.css ch-arrive; MOTION-AND-VISUAL 3.4, 3.12). */
+  --ch-arrive-t: scale(0.96);
+  animation: ch-arrive var(--ch-dur-quick) var(--ch-ease-ios);
 }
 /* Below the new-chat box only while there is room there; with too little it opens above (`data-side="up"`, Composer.tsx). */
 .ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-pick:not([data-side='up']) {
   top: calc(100% + 8px);
   bottom: auto;
   transform-origin: 50% 0;
-  animation-name: ch-ask-pick-down;
-}
-@keyframes ch-ask-pick-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px) scale(0.985);
-  }
-}
-@keyframes ch-ask-pick-down {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.985);
-  }
 }
 [data-ui='clubhouse'][data-motion='off'] .ch-ask-pick {
   animation: none;
@@ -942,15 +932,8 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   height: calc(100dvh - var(--keyboard-height, 0px));
 }
 .ch-ask-drawer[open] .ch-ask-hist.is-drawer {
-  animation: ch-ask-drawer-in var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
-}
-@keyframes ch-ask-drawer-in {
-  from {
-    translate: -100% 0;
-  }
-  to {
-    translate: 0 0;
-  }
+  /* In from the leading edge like a sheet, over the reveal beat on the iOS curve (motion.css ch-drawer-in; 3.4, 3.12). */
+  animation: ch-drawer-in var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 .ch-ask-drawer .ch-ask-hist__head :is(b, h2) {
   font-size: calc(20 * var(--ch-type-k));
@@ -1002,6 +985,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   .ch-ask[data-ch-vv] {
     height: calc(var(--ch-vv-h) + var(--ch-vv-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-top));
   }
+  /* Under the CoachHelm switch's 52px row the chat is that much shorter: coachhelm.css owns those heights beside .ch-hsw. */
   .ch-ask-scroll {
     padding: 0 var(--ch-page-x-phone) 12px;
   }
@@ -1415,11 +1399,12 @@ html:not([data-fw-theme='dark']) .ch-ask {
   }
 }
 
-/* The Ask view settles in after a switch the same way the board's views do (coachhelm.css, ch-view-enter): its body or its
-   plain state rises from the dimmed opacity, desktop only. */
+/* The Ask view settles in after a switch the same way the board's views do (coachhelm.css): its body or its plain state
+   rises from the dimmed opacity, desktop only (motion.css ch-arrive from --ch-enter-from). */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-ask[data-ch-enter]:not(.is-phone) > :is(.ch-ask-body, .ch-ask-plain) {
-    animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
+    --ch-arrive-o: var(--ch-enter-from, 0.55);
+    animation: ch-arrive var(--ch-dur-quick) var(--ch-ease-ios) backwards;
   }
 }
 /* S-ASKD.pane: the chat narrows beside the plan, so nothing sits under it. */

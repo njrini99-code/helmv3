@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { Suspense, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readWaves } from './read-waves';
+import { underSwitchFrame } from './route-view';
 
 /**
  * CoachHelm (P013), the numbered contracts in docs/clubhouse/pages/P013-coachhelm/CONTRACT.md that no test named: the player
@@ -110,7 +111,7 @@ describe('130104 the Fairway drills’ addresses (?view=) land on a screen that 
   it('130104 ?view=standing and deep-dive (and profile, Standing at How you play) are the signed-in player’s own: the id comes from the session, never from the address', async () => {
     asPlayer();
     for (const [view, drill, at] of [['profile', 'standing', 'game'], ['standing', 'standing', undefined], ['deep-dive', 'deep-dive', undefined]] as const) {
-      const el = (await ClubhouseCoachHelmRoute({ view, player: 'pl-someone-else' })) as Gated;
+      const el = underSwitchFrame(await ClubhouseCoachHelmRoute({ view, player: 'pl-someone-else' })) as Gated;
       expect(el.type).toBe(Suspense);
       expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill, at });
     }
@@ -120,7 +121,7 @@ describe('130104 the Fairway drills’ addresses (?view=) land on a screen that 
     asPlayer();
     for (const view of ['insights', undefined, '', 'nope', 'PROFILE']) {
       expect(playerHelmDrill(view)).toBeNull();
-      const el = (await ClubhouseCoachHelmRoute({ view })) as Gated;
+      const el = underSwitchFrame(await ClubhouseCoachHelmRoute({ view })) as Gated;
       expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: null, at: undefined });
     }
   });
@@ -129,7 +130,7 @@ describe('130104 the Fairway drills’ addresses (?view=) land on a screen that 
     session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1', organization_id: 'org1' }, player: null };
     teamOf.current = { role: 'coach', teamId: 't1', coachId: 'c1' };
     for (const view of ['profile', 'standing', 'deep-dive']) {
-      const el = (await ClubhouseCoachHelmRoute({ view })) as ReactElement<{ children: ReactElement<{ coachId: string; teamId: string; ask: boolean }> }>;
+      const el = underSwitchFrame(await ClubhouseCoachHelmRoute({ view })) as ReactElement<{ children: ReactElement<{ coachId: string; teamId: string; ask: boolean }> }>;
       expect(el.props.children.props).toMatchObject({ coachId: 'c1', teamId: 't1', ask: false });
       expect(el.props.children.props).not.toHaveProperty('drill');
     }

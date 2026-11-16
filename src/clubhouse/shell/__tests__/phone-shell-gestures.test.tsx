@@ -130,9 +130,9 @@ describe('the edge swipe on a pushed screen', () => {
     const move = swipeTo(el, 108);
     expect(move.prevented()).toBe(true);
     expect(el.style.translate).toBe('100px 0');
-    // A quarter of the share the pop uses (progress 100 / 390), from fully drawn back at rest.
+    // 30% (S4.1) of the share the pop uses (progress 100 / 390), from fully drawn back at rest.
     const shift = parseFloat(page.style.translate);
-    expect(shift).toBeCloseTo(-24 * (1 - 100 / W), 1);
+    expect(shift).toBeCloseTo(-30 * (1 - 100 / W), 1);
     expect(bar.style.translate).toBe(page.style.translate);
   });
 
@@ -294,7 +294,7 @@ describe('the edge swipe on a pushed screen', () => {
     expect(el.style.translate).toBe('82px 0');
     touch(el, 'touchcancel', 0, 0, now + 10);
     expect(el.style.translate).toBe('');
-    expect(parseFloat(page.style.translate)).toBeCloseTo(-24, 1);
+    expect(parseFloat(page.style.translate)).toBeCloseTo(-30, 1);
   });
 
   // MOTION-AND-VISUAL 3.11 (replaces F-0018, audit 2026-10-29): under Reduce Motion the interactive back swipe is off; the
