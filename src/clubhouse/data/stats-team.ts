@@ -468,7 +468,9 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     roundCount: windowRounds.length,
     holeRoundCount: holeWindow.length,
     roundsEffective: effectiveRounds(windowRounds),
-    figures,
+    // DF-C-15: each change is the change as printed, at the figure's own digits, so the chip's sign, arrow, colour and words agree
+    // with the number on it (a 0.04 change printed "0.0" no longer reads as up, or green).
+    figures: figures.map((x) => (x.delta == null ? x : { ...x, delta: printedDelta(x.delta, x.digits) })),
     weeks: weekKeys.map(weekLabel),
     weekStarts: weekKeys,
     days: dayKeys.map((d) => {
@@ -561,6 +563,13 @@ export function mostImproved(rounds: ChRound[]): { id: string; change: number } 
     if (change < 0 && (!best || change < best.change)) best = { id, change };
   }
   return best;
+}
+
+/** A change rounded to the digits it is printed at, with no negative zero. */
+export function printedDelta(delta: number, digits: number): number {
+  // The same rounding `formatSigned` prints with.
+  const v = Number(delta.toFixed(digits));
+  return v === 0 ? 0 : v;
 }
 
 export function seasonBests(
