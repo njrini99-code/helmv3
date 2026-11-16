@@ -83,3 +83,5 @@ COMMENT ON COLUMN "public"."push_subscriptions"."last_push_at" IS 'Timestamp of 
 COMMENT ON COLUMN "public"."push_subscriptions"."failed_count" IS 'Number of consecutive failed push attempts';
 
 COMMENT ON COLUMN "public"."users"."notification_preferences" IS 'User notification preferences for email and push notifications. Fields: email_messages, email_pipeline_updates, email_event_reminders, email_profile_views, email_announcements, push_messages, push_events';
+
+COMMENT ON TABLE "helm_private"."golf_demo_editors" IS 'Signed-in accounts the demo write guard lets edit the demo team: the owner''s own logins. Read only by helm_private.golf_demo_write_guard().';

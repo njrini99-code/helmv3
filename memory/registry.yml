@@ -505,6 +505,7 @@ features:
         # Demo team generator, write guard and is_test (held).
         - supabase/migrations/*golf_demo_generator*.sql
         - supabase/migrations/*golf_demo_write_guard*.sql
+        - supabase/migrations/*golf_demo_owner_editors*.sql
         - supabase/migrations/*golf_messages_events_is_test*.sql
         - supabase/migrations/*preserve_golf_history*.sql
         - supabase/migrations/*preserve_started_round*.sql

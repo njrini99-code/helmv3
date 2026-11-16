@@ -830,3 +830,12 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
 );
 
 ALTER TABLE "public"."users" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "helm_private"."golf_demo_editors" (
+    "user_id" "uuid" NOT NULL,
+    "note" "text" NOT NULL,
+    "added_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_demo_editors_pkey" PRIMARY KEY ("user_id")
+);
+
+ALTER TABLE "helm_private"."golf_demo_editors" OWNER TO "postgres";
