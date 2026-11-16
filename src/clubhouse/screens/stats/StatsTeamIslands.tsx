@@ -344,6 +344,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   // Weeks are spaced by their dates when the data has them (row 119): only weeks with rounds are listed, so a quiet week
   // between two shows as a wider step, not as the next week.
   const share = weekShares(n, data.weekStarts?.slice(span.from, span.to));
+  const labelStep = Math.max(1, Math.ceil(n / 10));
   const x = (i: number) => (n <= 1 ? (padL + w - padR) / 2 : padL + share[i]! * (w - padL - padR));
   const y = (v: number) => padT + ((hi - v) / (hi - lo)) * (h - padT - padB);
   const ticks = isSg ? niceTicks(lo, hi) : niceTicks(Math.min(lo, hi), Math.max(lo, hi));
@@ -576,11 +577,14 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                   </text>
                 </g>
               ))}
-              {weeks.map((wk, i) => (
-                <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick ch-num">
-                  {wk}
-                </text>
-              ))}
+              {weeks.map((wk, i) =>
+                // DF-C-10: the line holds every week of the window, so a long one labels at most ten, counted back from the latest.
+                (n - 1 - i) % labelStep === 0 ? (
+                  <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick ch-num">
+                    {wk}
+                  </text>
+                ) : null,
+              )}
               {/* The team's line holds a wash to the reference: green where it sits above it (better), amber below. */}
               {teamPath && tFirst && tLast && yRef != null && (
                 <g aria-hidden="true">

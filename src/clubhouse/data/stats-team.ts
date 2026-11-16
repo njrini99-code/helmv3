@@ -343,8 +343,10 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       ? { ...sgBase, delta: sgPaired != null && sgPrev != null ? sgPaired - sgPrev : null, se: windowChangeSe(sgPairedWindow, sgPrevWindow, sgOf, 'sg') }
       : sgBase;
   const baseline = sgBaseline(tour);
-  // Weekly trend: team and each player, strokes gained and scoring.
-  const weekKeys = [...new Set(windowRounds.map((r) => weekOf(r.round_date)))].sort().slice(-10);
+  // Weekly trend: team and each player, strokes gained and scoring. Every week of the window (DF-C-10): the line and the
+  // newer-half-vs-older-half verdicts read the window the page is filtered to, not its last ten weeks, which on a full season
+  // cut the fall off; the chart labels at most ten of them.
+  const weekKeys = [...new Set(windowRounds.map((r) => weekOf(r.round_date)))].sort();
   const inWeek = (rs: ChRound[], wk: string) => rs.filter((r) => weekOf(r.round_date) === wk);
   const avgOf = (rs: ChRound[], pick: (r: ChRound) => number | null) => weightedMean(rs, pick);
   // The score lens of the trends is judged against par, per 18 (prod audit 2026-11-15, CH-01): a week at a par-72 course drew two
