@@ -564,4 +564,18 @@ describe('useCoachHelmChat', () => {
     await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(JSON.parse(String(fetchMock.mock.calls[0]![1]!.body)).conversation_id).toBe(CONVERSATION);
   });
+
+  it('GAP-H-08 Try again still works on a failed thread brought back by Undo', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('{}', { status: 500 }));
+    const { result } = renderHook(() => useCoachHelmChat({ conversationId: CONVERSATION }));
+    act(() => result.current.send('Who is hot?'));
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    const left = result.current.messages;
+    act(() => result.current.newConversation());
+    act(() => result.current.restore!({ conversationId: CONVERSATION, messages: left }));
+    fetchMock.mockResolvedValueOnce(sse(answer('Avery is hot.')));
+    act(() => result.current.retry());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(JSON.parse(String(fetchMock.mock.calls[1]![1]!.body)).conversation_id).toBe(CONVERSATION);
+  });
 });
