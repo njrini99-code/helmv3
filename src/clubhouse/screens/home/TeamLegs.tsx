@@ -39,7 +39,7 @@ export function legChange(leg: Pick<ChTeamLeg, 'sg' | 'delta' | 'se'>): { tone: 
 const UNIT_DESK = 'Last 10 rounds · strokes gained per round';
 
 /** "Theo M.", "Theo M. and Eli R.", "Theo M. and 2 others": the first one or two named players link to their Game tab. */
-function People({ p, className }: { p: ChLegPeople; className: string }) {
+export function People({ p, className }: { p: ChLegPeople; className: string }) {
   const named = p.names.length === 2 ? p.ids : p.ids.slice(0, 1);
   const name = (id: string) => {
     const href = legPlayerHref(id);
@@ -65,7 +65,7 @@ function People({ p, className }: { p: ChLegPeople; className: string }) {
   );
 }
 
-function Notices({ legs, covered }: { legs: ChTeamLegs; covered: boolean }) {
+export function Notices({ legs, covered }: { legs: ChTeamLegs; covered: boolean }) {
   return (
     <>
       {legs.cacheError && <RefreshNotice code="CH-2218" title="Up-and-down figures didn’t load" body="Strokes gained is right." covered={covered} />}
@@ -74,7 +74,7 @@ function Notices({ legs, covered }: { legs: ChTeamLegs; covered: boolean }) {
   );
 }
 
-function NoHoleRounds() {
+export function NoHoleRounds() {
   return (
     <EmptyState
       compact
@@ -86,7 +86,7 @@ function NoHoleRounds() {
   );
 }
 
-const NOBODY_RANKED = 'No player has 3 rounds with hole scores yet, so no one is ranked.';
+export const NOBODY_RANKED = 'No player has 3 rounds with hole scores yet, so no one is ranked.';
 
 /**
  * P002 (spec B §1): the team's four parts on the coach's desktop Home, a ruled ledger under the scoring stage on the

@@ -63,7 +63,6 @@ const ALLOW_DATES: Record<string, number> = {
   'data/welcome-shape.ts': 3,
   'data/whats-new-shape.ts': 3,
   'screens/home/DayCard.tsx': 3,
-  'screens/home/HomePhone.tsx': 1,
   'screens/home/event-links.ts': 1,
   'screens/home/nudge-draft.ts': 1,
   'screens/home/use-day-rollover.ts': 1,
