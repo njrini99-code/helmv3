@@ -15,7 +15,7 @@
   "MD029/ol-prefix": 76,
   "MD031/blanks-around-fences": 573,
   "MD032/blanks-around-lists": 820,
-  "MD033/no-inline-html": 1273,
+  "MD033/no-inline-html": 1272,
   "MD034/no-bare-urls": 110,
   "MD036/no-emphasis-as-heading": 307,
   "MD037/no-space-in-emphasis": 21,
@@ -28,5 +28,5 @@
   "MD055/table-pipe-style": 4,
   "MD056/table-column-count": 39,
   "MD058/blanks-around-tables": 45,
-  "MD060/table-column-style": 5404
+  "MD060/table-column-style": 4566
 }

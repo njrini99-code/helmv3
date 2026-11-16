@@ -156,6 +156,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -237,6 +238,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -559,7 +561,8 @@
       "file": "src/clubhouse/preview/PreviewRounds.tsx",
       "group": "preview",
       "exports": [
-        "PreviewRounds"
+        "PreviewRounds",
+        "PreviewTeamRounds"
       ],
       "styles": [],
       "examples": [],
@@ -694,6 +697,18 @@
         "WelcomeLoader"
       ],
       "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/routes/calendar-hours.tsx",
+      "group": "routes",
+      "exports": [
+        "ClubhouseCalendarHoursRoute"
+      ],
+      "styles": [
+        "src/clubhouse/styles/hours.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -1124,6 +1139,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -1299,6 +1315,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -1398,6 +1415,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -1772,6 +1790,79 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/calendar/hours/HoursSkeleton.tsx",
+      "group": "screens",
+      "exports": [
+        "HoursSkeleton"
+      ],
+      "styles": [
+        "src/clubhouse/styles/hours.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx",
+      "group": "screens",
+      "exports": [
+        "PracticeHours"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hours.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/calendar/hours/sheets.tsx",
+      "group": "screens",
+      "exports": [
+        "AdjustSheet",
+        "LimitsSheet"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hours.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
@@ -6070,6 +6161,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -6742,6 +6834,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -7331,6 +7424,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/qualifiers/ExportStandings.tsx",
+      "group": "screens",
+      "exports": [
+        "ExportStandings"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/qualifiers/LiveOnCourse.tsx",
       "group": "screens",
       "exports": [
@@ -7447,6 +7550,7 @@
       "exports": [
         "Courses",
         "LiveChip",
+        "Pairings",
         "Selections",
         "StaleStandings"
       ],
@@ -8047,6 +8151,36 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/roster/RosterLimit.tsx",
+      "group": "screens",
+      "exports": [
+        "RosterLimitLine"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/roster/RosterNoTeam.tsx",
       "group": "screens",
       "exports": [
@@ -8389,6 +8523,17 @@
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/ExportRounds.tsx",
+      "group": "screens",
+      "exports": [
+        "ExportRounds",
+        "LIVE_READ_ROUND_HOLES"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -8993,6 +9138,7 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -9099,6 +9245,7 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -9162,6 +9309,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -9251,6 +9399,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -9324,6 +9473,7 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -10396,6 +10546,7 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -10852,6 +11003,7 @@
       "styles": [
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/tournaments-compare.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -10964,6 +11116,32 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/tournaments/HoleEntry.tsx",
+      "group": "screens",
+      "exports": [
+        "HoleEntry"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-import.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/tournaments/HoleGrid.tsx",
       "group": "screens",
       "exports": [
@@ -11012,6 +11190,38 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-live.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/ImportResults.tsx",
+      "group": "screens",
+      "exports": [
+        "ImpField",
+        "ImportResults"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -11440,6 +11650,7 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-compare.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
@@ -11587,6 +11798,7 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -12168,6 +12380,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -12568,6 +12781,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -12745,6 +12959,7 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -12790,6 +13005,21 @@
       ],
       "styles": [
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/ExportButton.tsx",
+      "group": "ui",
+      "exports": [
+        "ChExportReadError",
+        "ExportButton"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -13003,6 +13233,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -13440,7 +13671,8 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-import.css"
       ],
       "examples": [
         "Select"
@@ -13719,6 +13951,7 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments-import.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments-player.css",
@@ -18740,6 +18973,61 @@
       ]
     },
     {
+      "file": "src/clubhouse/styles/hours.css",
+      "classes": [
+        "ch-hrs",
+        "ch-hrs-cites",
+        "ch-hrs-cites__by",
+        "ch-hrs-dow",
+        "ch-hrs-draft",
+        "ch-hrs-ev",
+        "ch-hrs-ev__day",
+        "ch-hrs-ev__dt",
+        "ch-hrs-ev__l",
+        "ch-hrs-flags",
+        "ch-hrs-flags__by",
+        "ch-hrs-flags__l",
+        "ch-hrs-form",
+        "ch-hrs-form__row",
+        "ch-hrs-form__row--3",
+        "ch-hrs-form__set",
+        "ch-hrs-h",
+        "ch-hrs-h__t",
+        "ch-hrs-k",
+        "ch-hrs-lim",
+        "ch-hrs-lim__src",
+        "ch-hrs-ln",
+        "ch-hrs-ln__act",
+        "ch-hrs-ln__h",
+        "ch-hrs-ln__m",
+        "ch-hrs-ln__main",
+        "ch-hrs-ln__t",
+        "ch-hrs-ln__why",
+        "ch-hrs-note",
+        "ch-hrs-pc",
+        "ch-hrs-pc__days",
+        "ch-hrs-pc__dow",
+        "ch-hrs-pc__h",
+        "ch-hrs-pc__n",
+        "ch-hrs-pc__wk",
+        "ch-hrs-pl",
+        "ch-hrs-status",
+        "ch-hrs-step",
+        "ch-hrs-step__t",
+        "ch-hrs-tbl",
+        "ch-hrs-td",
+        "ch-hrs-td--wk",
+        "ch-hrs-tools",
+        "ch-hrs-tools__act",
+        "ch-hrs-tr",
+        "ch-hrs-tr--head",
+        "ch-hrs-who",
+        "ch-hrs-who__n",
+        "ch-hrs-who__y"
+      ],
+      "tokens": []
+    },
+    {
       "file": "src/clubhouse/styles/hub.css",
       "classes": [
         "ch-avatar",
@@ -21623,6 +21911,10 @@
         "ch-rs-ldr__why",
         "ch-rs-ldrs",
         "ch-rs-ldrs__rule",
+        "ch-rs-limit",
+        "ch-rs-limit__over",
+        "ch-rs-limitf",
+        "ch-rs-limitp",
         "ch-rs-list",
         "ch-rs-list--team",
         "ch-rs-mix",
@@ -30094,6 +30386,59 @@
         "ch-tour-home-setup__plate",
         "ch-tour-home__today",
         "ch-tour-home__up"
+      ],
+      "tokens": []
+    },
+    {
+      "file": "src/clubhouse/styles/tournaments-import.css",
+      "classes": [
+        "ch-btn",
+        "ch-select",
+        "ch-tour-chip",
+        "ch-tour-imp",
+        "ch-tour-imp-ask",
+        "ch-tour-imp-ask__f",
+        "ch-tour-imp-cols",
+        "ch-tour-imp-cols__g",
+        "ch-tour-imp-dif",
+        "ch-tour-imp-drop",
+        "ch-tour-imp-drop__ic",
+        "ch-tour-imp-drop__tip",
+        "ch-tour-imp-err",
+        "ch-tour-imp-err__a",
+        "ch-tour-imp-err__ic",
+        "ch-tour-imp-g",
+        "ch-tour-imp-g-wrap",
+        "ch-tour-imp-g__errors",
+        "ch-tour-imp-g__in",
+        "ch-tour-imp-g__par",
+        "ch-tour-imp-g__sub",
+        "ch-tour-imp-g__tot",
+        "ch-tour-imp-g__who",
+        "ch-tour-imp-kept",
+        "ch-tour-imp-note",
+        "ch-tour-imp-ok",
+        "ch-tour-imp-ok__ic",
+        "ch-tour-imp-p",
+        "ch-tour-imp-p__h",
+        "ch-tour-imp-p__m",
+        "ch-tour-imp-p__n",
+        "ch-tour-imp-p__r",
+        "ch-tour-imp-paste",
+        "ch-tour-imp-peek",
+        "ch-tour-imp-ps",
+        "ch-tour-imp-read",
+        "ch-tour-imp-sec",
+        "ch-tour-imp-src",
+        "ch-tour-imp-sum",
+        "ch-tour-imp-t",
+        "ch-tour-imp-t--head",
+        "ch-tour-imp-t__n",
+        "ch-tour-imp-t__pl",
+        "ch-tour-imp-t__r",
+        "ch-tour-imp-t__tot",
+        "ch-tour-imp-ts",
+        "ch-tour-imp-warn"
       ],
       "tokens": []
     },

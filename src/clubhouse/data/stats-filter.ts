@@ -1,7 +1,16 @@
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { isUuid } from '@/lib/utils/uuid';
+import { isoDay as dayIn } from '../lib/dates';
 import { plural, pluralWord } from '../lib/plural';
 import { parseSpan, SPAN_PARAM, type ChSpan } from './span';
+
+/**
+ * The year a filter's dates are written against (a date in it drops its year), on the clock seasons turn on (`SEASON_DEFAULT_TZ`,
+ * America/New_York), not UTC (DF-C-22): the server and the phone agree, and New Year's Eve evening is still the old year.
+ */
+export function filterYear(now: Date = new Date()): number {
+  return Number(dayIn(now, 'America/New_York').slice(0, 4));
+}
 
 /*
  * The Stats round filter, shared by the team page and the player profile (desktop and phone).
@@ -371,7 +380,7 @@ function filterParts(f: ChFilter, year: number): string[] {
 }
 
 /** The count line: "12 rounds: tournaments, Sep 1 to Sep 29". */
-export function filterSummary(f: ChFilter, count: number, year = new Date().getUTCFullYear()): string {
+export function filterSummary(f: ChFilter, count: number, year = filterYear()): string {
   if (f.pick?.mode === 'only') return `${count} picked ${pluralWord(count, 'round')}`;
   return `${plural(count, 'round', 'rounds')}: ${filterParts(f, year).join(', ')}`;
 }
@@ -383,7 +392,7 @@ export const windowBasis = (f: Pick<ChFilter, 'window' | 'last' | 'span'>): stri
 export const previousWords = (last: number): string => `vs previous ${last}`;
 
 /** The noun phrase under a figure that says which rounds it counts: the window's own label, or what the filter selects ("Tournaments, Sep 1 to Sep 29"). */
-export function basisWords(f: ChFilter, year = new Date().getUTCFullYear()): string {
+export function basisWords(f: ChFilter, year = filterYear()): string {
   if (!isFiltered(f)) return windowBasis(f);
   if (f.pick?.mode === 'only') return 'Picked rounds';
   const s = filterParts(f, year).join(', ');
@@ -398,7 +407,7 @@ export interface ChFilterChip {
 }
 
 /** One removable chip per active filter; the window is the switch's, not a chip. */
-export function filterChips(f: ChFilter, year = new Date().getUTCFullYear()): ChFilterChip[] {
+export function filterChips(f: ChFilter, year = filterYear()): ChFilterChip[] {
   const chips: ChFilterChip[] = [];
   for (const k of f.types) chips.push({ key: `type:${k}`, label: KIND_LABEL[k], next: withTypes(f, f.types.filter((x) => x !== k)) });
   if (f.holes !== '18') chips.push({ key: 'holes', label: f.holes === '9' ? '9 holes' : '18 and 9 holes', next: withHoles(f, '18') });

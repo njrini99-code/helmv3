@@ -94,12 +94,14 @@ function wrap(node: ReactNode) {
     </LazyMotion>,
   );
 }
-type FakeWrites = { [K in keyof ChQWrites]: Mock<ChQWrites[K]> };
+type FakeWrites = { [K in keyof ChQWrites]-?: Mock<NonNullable<ChQWrites[K]>> };
 function fakeWrites(over: Partial<Record<keyof ChQWrites, Mock>> = {}): FakeWrites {
   return {
     create: vi.fn<ChQWrites['create']>(async () => ({ success: true, data: { qualifierId: 'q-new' } })),
     saveEdit: vi.fn<ChQWrites['saveEdit']>(async () => ({ success: true })),
+    saveRules: vi.fn<ChQWrites['saveRules']>(async () => ({ success: true })),
     setStatus: vi.fn<ChQWrites['setStatus']>(async () => ({ success: true })),
+    saveExemptions: vi.fn<NonNullable<ChQWrites['saveExemptions']>>(async () => ({ success: true })),
     courses: vi.fn<ChQWrites['courses']>(async () => PREVIEW_COURSES),
     tees: vi.fn<ChQWrites['tees']>(async () => PREVIEW_TEES),
     ...over,
@@ -1120,7 +1122,7 @@ describe('Qualifiers · one qualifier', () => {
     expect(screen.queryByText(/Two top-10s last spring/)).toBeNull();
   });
 
-  it('CH-09212 CH-09213 CH-09214 CH-09215 CH-09223 a crash stays inside its section', () => {
+  it('CH-09212 CH-09213 CH-09214 CH-09215 CH-09223 CH-09283 a crash stays inside its section', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const d = detail();
     const broken = { ...d, roundCourses: d.roundCourses.map((c) => ({ ...c, course: {} as never })), board: { ...d.board!, rows: d.board!.rows.map((r, i) => (i === 0 ? { ...r, name: null as never, rounds: null as never } : r)) } };
@@ -1131,6 +1133,8 @@ describe('Qualifiers · one qualifier', () => {
     expect(code('CH-09215')!.textContent).toMatch(/Course per round couldn’t be shown/);
     // The coach's panel falls back to the first row, the one broken above.
     expect(code('CH-09223')!.textContent).toMatch(/A player’s rounds couldn’t be shown/);
+    // F-06: the next round's groups read every row's rounds, so the broken row stops them too, inside their section.
+    expect(code('CH-09283')!.textContent).toMatch(/Next round groups couldn’t be shown/);
     expect(screen.getByRole('heading', { name: 'Pinehurst qualifier' })).toBeTruthy();
     quiet.mockRestore();
   });
@@ -3710,7 +3714,11 @@ describe('Qualifiers · this file', () => {
   it('92401 every catalog row of kinds 0 to 5 that is not marked preview is named by a test here, and so is every Bridge ID this page proves', () => {
     const root = process.cwd();
     const read = (file: string) => readFileSync(join(root, file), 'utf8');
-    const own = read('src/clubhouse/__tests__/qualifiers.test.tsx');
+    // The exports (F-02), the tie rule (F-04) and configurable qualifying (F-06) are proved in their own files.
+    const own = ['src/clubhouse/__tests__/qualifiers.test.tsx', 'src/clubhouse/__tests__/exports.test.tsx', 'src/clubhouse/__tests__/qualifier-ties.test.tsx', 'src/clubhouse/__tests__/qualifier-f06.test.tsx']
+      .filter((f) => existsSync(join(root, f)))
+      .map(read)
+      .join('\n');
     const rows = [...read('docs/clubhouse/catalog/qualifiers.md').matchAll(/^\|\s*(CH-09[0-5]\d\d)\s*\|.*$/gm)]
       .filter((m) => !/\|\s*preview\s*\|\s*$/.test(m[0].trim()) && !/retired/i.test(m[0]))
       .map((m) => m[1]!);

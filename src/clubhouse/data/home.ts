@@ -17,7 +17,7 @@ import { loadCoachQueue, type ChCoachQueue } from './home-queue';
 import { teamRankRows, type TeamRankMetric, type TeamRankRow } from '../screens/stats/team-rank';
 import type { ChSgTour } from '../lib/sg';
 import { holeRounds, recordedPutts, roundKindOf } from './round-scope';
-import { loadRoundCache, previousInFilter, readTourBenchmarks, roundsInFilter, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
+import { loadRoundCache, previousInFilter, readTourBenchmarks, roundsInFilter, seasonOnly, teamTour, TEAM_TOUR_COLUMNS, type ChRoundCache } from './stats-common';
 import { filterFor } from './stats-filter';
 import { effectiveCount, weightedMean, windowChangeSe } from './stats-weight';
 import { changeSe, floorRate } from '../lib/stats-signal';
@@ -406,8 +406,8 @@ export async function loadCoachHome(input: {
   );
   // The four parts: the team's tour (its gender, as Player Home reads it) and the Tour's marks; the up-and-down figures of
   // the form's own Last 10 rounds with their holes.
-  const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender').eq('id', input.teamId).maybeSingle());
-  const benchRead = teamRead.then((team) => (team.error || !team.data ? null : readTourBenchmarks(supabase, tourForGender(team.data.gender), 'home')));
+  const teamRead = Promise.resolve(supabase.from('golf_teams').select(TEAM_TOUR_COLUMNS).eq('id', input.teamId).maybeSingle());
+  const benchRead = teamRead.then((team) => (team.error || !team.data ? null : readTourBenchmarks(supabase, teamTour(team.data), 'home')));
   // The cache is read for the parts' own rounds (`partsRounds`): it read each player's newest ten with practice in, while the parts
   // read them with practice out, so a player who had practised lost rounds' up-and-down counts (prod audit 2026-11-15, STATS-P-12).
   // The team form's greens and putts read the same stats rows (DF-C-16), so its rounds (the window and the one it is compared with) are read too.
@@ -525,7 +525,7 @@ export async function loadCoachHome(input: {
   // The parts are each player's last ten (Stats' Last 10, across seasons within the read's year) whichever basis the average is on: All time reads
   // further back and keeps practice, so the parts are cut back to the rounds and the year they are read on by default.
   const partsFull = partsRounds(readRounds, now);
-  const legs = form ? teamLegs({ full: partsFull, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : tourForGender(teamRes.data.gender) }) : null;
+  const legs = form ? teamLegs({ full: partsFull, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : teamTour(teamRes.data) }) : null;
 
   return {
     teamId: input.teamId,

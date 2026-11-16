@@ -216,6 +216,8 @@ export interface QualifierBoardScreen {
   board: {
     rows: Array<{ playerId: string; name: string; position: number | null; tied: boolean; played: number; toPar: number | null; total: number | null; avg: number | null; shortRounds: number; state: string | null }>;
     unscored: Array<{ playerId: string; name: string }>;
+    /** How players level on to par and strokes are separated (F-04); left out reads as `coach`. */
+    tieRule?: 'coach' | 'last_round';
   } | null;
   selections: Array<{ playerId: string; name: string; type: string; reasoning: string | null }> | null;
   entriesError: boolean;

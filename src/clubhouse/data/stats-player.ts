@@ -24,7 +24,8 @@ import {
   roundsInFilter,
   seasonOnly,
   sgChange,
-  tourForGender,
+  teamTour,
+  TEAM_TOUR_COLUMNS,
   type ChPuttBand,
   type ChRoundCache,
   type ChSgChange,
@@ -258,7 +259,7 @@ export async function loadPlayerProfile(input: {
   //     (focus areas, goals), and the viewer's identity and access for the shot-level actions;
   //   at once after the player's own rounds: the shot-level reads and the player's own round cache (nothing else is needed for them);
   //   as the team list answers (a coach): the teammates' rounds, then their cache, which only the comparisons read.
-  const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender').eq('id', input.teamId).maybeSingle());
+  const teamRead = Promise.resolve(supabase.from('golf_teams').select(TEAM_TOUR_COLUMNS).eq('id', input.teamId).maybeSingle());
   const playerRead = Promise.resolve(
     supabase.from('golf_players').select('id, first_name, last_name, graduation_year, hometown, state, handicap, handicap_index').eq('id', input.playerId).maybeSingle(),
   );
@@ -313,7 +314,7 @@ export async function loadPlayerProfile(input: {
           .limit(3),
       );
   // CH-5208: without the team's row its tour is unknown, so no benchmark is claimed (a women's team is never graded against the men's).
-  const benchRead = teamRead.then((t) => (t.error ? null : loadTourBenchmarks(supabase, tourForGender(t.data?.gender), 'stats')));
+  const benchRead = teamRead.then((t) => (t.error ? null : loadTourBenchmarks(supabase, teamTour(t.data), 'stats')));
   const sharedContext = statsActionContext(supabase, input.playerId);
   // The team's ids, the player first, then the list's order.
   const teamIdsRead = (teamMembersRead ?? Promise.resolve(null)).then((res) => {
@@ -354,7 +355,7 @@ export async function loadPlayerProfile(input: {
   if (!p || !memberRes.data) return null;
 
   // CH-5208 again: the tour is the team's.
-  const tour = teamRes.error ? null : tourForGender(teamRes.data?.gender);
+  const tour = teamRes.error ? null : teamTour(teamRes.data);
   const [ownRead, teamIds] = await Promise.all([ownRoundsRead, teamIdsRead]);
   const ownRes = trim(ownRead);
 

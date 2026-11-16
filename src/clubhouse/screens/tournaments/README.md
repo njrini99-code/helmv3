@@ -20,6 +20,7 @@ so the files stay separable:
 | event form, lineup builder | `EventForm.tsx`, `LineupBuilder.tsx` | `tournaments-lineup.css` | `.ch-tour-lu-` | 60–69 |
 | live round | `LiveRound.tsx` | `tournaments-live.css` | `.ch-tour-live-` | 70–89 |
 | player's view | `PlayerEvent.tsx` | `tournaments-player.css` | `.ch-tour-pl-` | 90–99 |
+| results import, hole grid (launch readiness F-01) | `ImportResults.tsx`, `HoleEntry.tsx`, `import/` (`sheets.ts` reads a file, `results.ts` finds its columns, `plan.ts` matches it to the event, `grid.ts` is the typed grid) | `tournaments-import.css` | `.ch-tour-imp-` | 80–89 in kinds 0–5, 8, 9 (the live round keeps 80–85 in kind 6) |
 
 Rules every view keeps:
 

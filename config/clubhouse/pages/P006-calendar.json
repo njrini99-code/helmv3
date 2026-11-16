@@ -4,7 +4,8 @@
   "slug": "calendar",
   "bridgeNamespace": 6,
   "routes": [
-    "/golf/dashboard/calendar"
+    "/golf/dashboard/calendar",
+    "/golf/dashboard/calendar/hours"
   ],
   "roles": [
     "coach",
@@ -43,11 +44,21 @@
     "route": "src/clubhouse/routes/calendar.tsx",
     "styles": "src/clubhouse/styles/calendar.css",
     "tests": [
-      "src/clubhouse/__tests__/calendar.test.tsx"
+      "src/clubhouse/__tests__/calendar.test.tsx",
+      "src/clubhouse/__tests__/practice-hours.test.tsx",
+      "src/clubhouse/screens/calendar/hours/__tests__/hours.test.ts",
+      "src/app/golf/actions/__tests__/hours.test.ts",
+      "src/lib/golf/__tests__/practice-hours.test.ts"
     ],
     "also": [
       "src/clubhouse/data/attendance-counts.ts",
-      "src/clubhouse/data/calendar-rounds.ts"
+      "src/clubhouse/data/calendar-rounds.ts",
+      "src/clubhouse/data/hours.ts",
+      "src/clubhouse/routes/calendar-hours.tsx",
+      "src/clubhouse/styles/hours.css",
+      "src/app/golf/actions/hours.ts",
+      "src/lib/golf/practice-hours.ts",
+      "src/clubhouse/preview/fixtures-hours.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/calendar.md",
@@ -516,6 +527,61 @@
       },
       "tests": [
         "src/clubhouse/__tests__/calendar.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P006-HOURS-LIMITS",
+      "label": "Save the team's practice hour limits (coach)",
+      "component": "src/clubhouse/screens/calendar/hours/sheets.tsx#LimitsSheet",
+      "handler": "save (useAction calendar.hours.saveLimits)",
+      "service": "src/app/golf/actions/hours.ts#saveHoursSettings",
+      "data": [
+        "golf_team_hours_settings (migration 20261115232000, held)"
+      ],
+      "bridge": {
+        "validation": 60580,
+        "success": 60980,
+        "failure": 60680
+      },
+      "tests": [
+        "src/clubhouse/__tests__/practice-hours.test.tsx",
+        "src/app/golf/actions/__tests__/hours.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P006-HOURS-ADJUST",
+      "label": "Change how one event counts toward practice hours (coach)",
+      "component": "src/clubhouse/screens/calendar/hours/sheets.tsx#AdjustSheet",
+      "handler": "save (useAction calendar.hours.saveAdjustment)",
+      "service": "src/app/golf/actions/hours.ts#saveHoursAdjustment",
+      "data": [
+        "golf_hours_adjustments (migration 20261115232000, held)"
+      ],
+      "bridge": {
+        "validation": 60581,
+        "success": 60981,
+        "failure": 60681
+      },
+      "tests": [
+        "src/clubhouse/__tests__/practice-hours.test.tsx",
+        "src/app/golf/actions/__tests__/hours.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P006-HOURS-EXPORT",
+      "label": "Export the week's practice hours",
+      "component": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours",
+      "handler": "ExportButton run",
+      "service": "src/clubhouse/screens/calendar/hours/model.ts#hoursCsv",
+      "data": [
+        "a CSV file on the device"
+      ],
+      "bridge": {
+        "success": 60982,
+        "failure": 60682
+      },
+      "tests": [
+        "src/clubhouse/__tests__/practice-hours.test.tsx"
       ]
     }
   ],

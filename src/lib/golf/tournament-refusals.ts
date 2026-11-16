@@ -31,6 +31,8 @@ export const TOUR_REFUSAL_CODES = [
   'reason_required',
   'not_final',
   'event_taken',
+  /** F-05: a B-team entry before held migration 20261116091000 adds the squad. */
+  'b_team_unavailable',
   /** Anything else: the error is reported, the copy is generic. */
   'failed',
 ] as const;
@@ -68,6 +70,7 @@ export const TOUR_REFUSAL_COPY: Record<TourRefusalCode, string> = {
   not_coach: 'Only a coach of this team can change its tournaments.',
   not_found: 'That event isn’t on your team any more.',
   stale: 'This event changed since you opened it. Reload it to see the latest, then make your change again.',
+  b_team_unavailable: 'A B team arrives with the next update. Nothing was saved.',
   invalid: 'Something in the event isn’t valid. Check the dates, rounds and scores, then try again.',
   locked: 'The lineup is locked. Make a substitution instead.',
   lineup_empty: 'Add players to the lineup first.',

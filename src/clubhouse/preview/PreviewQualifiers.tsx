@@ -16,6 +16,7 @@ function useFakeWrites(fail: boolean): ChQWrites {
     () => ({
       create: () => wait(fail ? { success: false, error: 'preview' } : { success: true, data: { qualifierId: '10000000-0000-4000-8000-000000000002' } }),
       saveEdit: () => wait(fail ? { success: false, error: 'Saved the details, but not the players. One player has a round in this qualifier. Save again to finish.' } : { success: true }),
+      saveRules: () => wait(fail ? { success: false, error: 'preview' } : { success: true }),
       setStatus: () => wait(fail ? { success: false, error: 'preview' } : { success: true }),
       courses: (q) =>
         fail ? wait(null).then(() => Promise.reject(new Error('preview'))) : wait(PREVIEW_COURSES.filter((c) => c.name.toLowerCase().includes(q.trim().toLowerCase())), 250),

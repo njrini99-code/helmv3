@@ -72,7 +72,9 @@ describe('Q-122 · how far back Last 10 reads', () => {
   it('is twelve months before today, and never later than the season start', () => {
     expect(LAST_TEN_MONTHS).toBe(12);
     expect(lastTenFloor(new Date('2026-09-30T12:00:00Z'))).toBe('2025-09-30');
-    expect(lastTenFloor(new Date('2026-01-15T00:00:00Z'))).toBe('2025-01-15');
+    expect(lastTenFloor(new Date('2026-01-15T12:00:00Z'))).toBe('2025-01-15');
+    // Midnight UTC is still the 14th on the season clock (America/New_York), so it counts from the 14th (DF-C-22).
+    expect(lastTenFloor(new Date('2026-01-15T00:00:00Z'))).toBe('2025-01-14');
     // The season starts on 1 August: on the last day of the season it is 364 days back, still inside the year.
     expect(lastTenFloor(new Date('2027-07-31T12:00:00Z')) <= '2026-08-01').toBe(true);
     expect(lastTenFloor(new Date('2026-08-01T12:00:00Z')) <= '2026-08-01').toBe(true);
