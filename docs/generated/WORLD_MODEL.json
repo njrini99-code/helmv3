@@ -4089,7 +4089,7 @@
       },
       {
         "id": "golf_event_attendance_counts",
-        "definedIn": "supabase/migrations/20261017102000_golf_event_attendance_players_own_rows.sql"
+        "definedIn": "supabase/migrations/20261116090000_golf_event_attendance_counts_roster_only.sql"
       },
       {
         "id": "golf_events_change_mark",
@@ -21662,6 +21662,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/tasks/task-tasks.ts",
+          "anchor": "src/lib/calendar/timezone"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/monday-brief/loader.ts",
           "anchor": "src/lib/calendar/timezone"
         }
       ]
