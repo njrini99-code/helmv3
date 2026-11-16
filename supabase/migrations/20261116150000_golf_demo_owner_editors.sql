@@ -23,10 +23,19 @@
 --
 -- ORDER: after 20261115211100.
 --
--- VERIFY: select 1 where to_regclass('helm_private.golf_demo_editors') is not null and not has_table_privilege('authenticated', 'helm_private.golf_demo_editors', 'select') and not has_table_privilege('anon', 'helm_private.golf_demo_editors', 'select');
--- VERIFY: select 1 from pg_catalog.pg_proc p join pg_catalog.pg_namespace n on n.oid = p.pronamespace where n.nspname = 'helm_private' and p.proname = 'golf_demo_write_guard' and p.prosecdef and p.prosrc like '%helm_private.golf_demo_editors%';
+-- VERIFY: select 1 where to_regclass('helm_private.golf_demo_editors')
+-- VERIFY: is not null and not has_table_privilege('authenticated',
+-- VERIFY: 'helm_private.golf_demo_editors', 'select') and not
+-- VERIFY: has_table_privilege('anon', 'helm_private.golf_demo_editors',
+-- VERIFY: 'select');
+-- VERIFY: select 1 from pg_catalog.pg_proc p
+-- VERIFY: join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+-- VERIFY: where n.nspname = 'helm_private'
+-- VERIFY: and p.proname = 'golf_demo_write_guard' and p.prosecdef
+-- VERIFY: and p.prosrc like '%helm_private.golf_demo_editors%';
 --
--- ROLLBACK: supabase/rollbacks/20261116150000_golf_demo_owner_editors.rollback.sql
+-- ROLLBACK: supabase/rollbacks/
+--   20261116150000_golf_demo_owner_editors.rollback.sql
 --   (the 20261115211100 guard body, then drop the table): the demo team is
 --   read-only for every signed-in account again.
 
@@ -35,14 +44,17 @@
 SET lock_timeout = '3s';
 
 CREATE TABLE IF NOT EXISTS helm_private.golf_demo_editors (
-  user_id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-  note text NOT NULL,
-  added_at timestamptz NOT NULL DEFAULT now()
+    user_id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+    note text NOT NULL,
+    added_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE helm_private.golf_demo_editors ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE helm_private.golf_demo_editors FROM public, anon, authenticated;
+REVOKE ALL ON TABLE helm_private.golf_demo_editors
+FROM public, anon, authenticated;
 COMMENT ON TABLE helm_private.golf_demo_editors IS
-'Signed-in accounts the demo write guard lets edit the demo team: the owner''s own logins. Read only by helm_private.golf_demo_write_guard().';
+'Signed-in accounts the demo write guard lets edit the demo team: '
+'the owner''s own logins. Read only by '
+'helm_private.golf_demo_write_guard().';
 
 CREATE OR REPLACE FUNCTION helm_private.golf_demo_write_guard()
 RETURNS trigger
