@@ -4,11 +4,11 @@
  * background) counts insights nobody saw. Such an address is read only when it is opened. Every full prefetch and the
  * quiet refresh ask here first.
  *
- * PMAC-01 (production audit, 15 Nov 2026): a player's Team Hub records its top insight as shown too (`data/hub.ts`, the
- * `hub_signal` surface), and the section strip fetched it whole on every app open, so every player was counted as having
- * seen it once a day. It joins CoachHelm here, for both roles (the address does not say whose hub it is).
+ * PMAC-01 (production audit, 15 Nov 2026) found a player's Team Hub recording its top insight as shown on every prefetch.
+ * DF-P-02 (#2534) removed the root cause: the hub aggregate no longer reads an insight, so Team Hub records nothing and
+ * may be fetched ahead again (`lib/__tests__/prefetch-exposure.test.ts` walks the page for any recording read).
  */
-const RECORDS_ON_READ = /^\/golf\/dashboard\/(?:coachhelm|team-hub)(?:[/?#]|$)/;
+const RECORDS_ON_READ = /^\/golf\/dashboard\/coachhelm(?:[/?#]|$)/;
 
 /** True for an address whose server render records what it shows. */
 export function recordsOnRead(href: string): boolean {

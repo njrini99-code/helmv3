@@ -53,21 +53,17 @@ describe('CH-R1 · CoachHelm is never fetched ahead', () => {
   });
 });
 
-describe('PMAC-01 · Team Hub is never fetched ahead either', () => {
+describe('PMAC-01 · Team Hub records nothing since DF-P-02, so it is fetched ahead like any page', () => {
   const HUB = '/golf/dashboard/team-hub';
 
-  it('is refused by the guard, with or without a query, and nothing that only starts like it is', () => {
-    expect([HUB, `${HUB}?tab=updates`, `${HUB}/`].map(fullPrefetchAllowed)).toEqual([false, false, false]);
-    expect(['/golf/dashboard/team-hubs', '/golf/dashboard/team'].map(fullPrefetchAllowed)).toEqual([true, true]);
+  it('is allowed by the guard, with or without a query', () => {
+    expect([HUB, `${HUB}?tab=updates`, `${HUB}/`].map(fullPrefetchAllowed)).toEqual([true, true, true]);
   });
 
-  it('as a tab, a section and on press, every other page is fetched and Team Hub is not', () => {
+  it('as a tab, Team Hub is fetched with the other pages', () => {
     renderHook(() => usePrefetchTabs([HOME, CAL, HUB], HOME, [HOME, CAL, HUB]));
     act(() => void vi.advanceTimersByTime(5_000));
     expect(fetched()).toContain(CAL);
-    expect(fetched().some((href) => href.startsWith(HUB))).toBe(false);
-    router.prefetch.mockClear();
-    prefetchOnPress(router as never, HUB, Date.now());
-    expect(router.prefetch).not.toHaveBeenCalled();
+    expect(fetched().some((href) => href.startsWith(HUB))).toBe(true);
   });
 });
