@@ -65,7 +65,7 @@ async function advanceSelectionStateImpl(
     const ctx = await getAuthedCoachContext(qualifier_id);
     if (!ctx.ok) return ctx;
 
-    const r = await transitionSelectionState(ctx.supabase, qualifier_id, target);
+    const r = await transitionSelectionState(ctx.supabase, qualifier_id, target, ctx.user.id);
     if (!r.ok) return r;
 
     pathsToRevalidate(qualifier_id).forEach((p) => revalidatePath(p));

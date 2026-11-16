@@ -242,6 +242,8 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
  */
 const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
   '/golf/dashboard/qualifiers': /^\/golf\/dashboard\/qualifiers\/(new|[0-9a-f-]{36}(\/(edit|selection))?)$/i,
+  // Launch readiness F-03: Practice hours, the coach's team log and a player's own week.
+  '/golf/dashboard/calendar': /^\/golf\/dashboard\/calendar\/hours$/,
 };
 
 const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice(\/(format|drills(\/[^/]+)?|groups|templates|print\/[^/]+|plan\/[^/]+(\/edit)?))?$/;
@@ -430,6 +432,8 @@ const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpE
   { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+\/edit$/, top: (role) => (role === 'coach' ? { back: 'Practice', title: '', parent: '/golf/dashboard/practice' } : null) },
   // P-7: no parent, so Back steps back to the round or the library it came from (D-41).
   { path: /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, top: (role) => ({ back: role === 'coach' ? 'Round' : 'Rounds', title: 'Course' }) },
+  // F-03: Practice hours opens from Calendar's More and goes back to it.
+  { path: /^\/golf\/dashboard\/calendar\/hours$/, top: (role) => ({ back: 'Calendar', title: role === 'coach' ? 'Practice hours' : 'Your practice hours', parent: '/golf/dashboard/calendar' }) },
 ];
 
 const SETTINGS = '/golf/dashboard/settings';

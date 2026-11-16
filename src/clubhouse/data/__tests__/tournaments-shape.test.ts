@@ -155,7 +155,7 @@ describe('linkedRoundOf (a tournament scored hole by hole)', () => {
   const r = (over: Partial<{ status: string | null; total_score: number | null; holes_played: number | null }> = {}) => ({ status: 'in_progress', total_score: null, strokes_gained_total: null, holes_played: 18, ...over });
 
   it('a round in progress with every hole scored is a finished card: its total is the holes’ sum', () => {
-    expect(linkedRoundOf(r(), { n: 18, sum: 74 }, true)).toEqual({ total: 74, completed: true, holes: true, shots: false });
+    expect(linkedRoundOf(r(), { n: 18, sum: 74 }, true)).toEqual({ total: 74, completed: true, submitted: false, holes: true, shots: false });
   });
 
   it('a round with holes still to play has no total yet', () => {

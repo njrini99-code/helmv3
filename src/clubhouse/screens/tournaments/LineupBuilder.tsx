@@ -14,10 +14,12 @@ import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
 import { formatToPar, tourDayTime, tourRange } from './format';
 import {
+  bCount,
   CHANCE_WORDS,
   draftOf,
   entriesOf,
@@ -76,6 +78,9 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
   const [draft, setDraft] = useState<LineupDraft>(() => draftOf(data));
   const [saved, setSaved] = useState<LineupDraft>(() => draftOf(data));
   const [asking, setAsking] = useState(false);
+  // F-05: which team the spots below show. The B team is offered only once the event can hold one (data.bTeam).
+  const [squad, setSquad] = useState<'A' | 'B'>('A');
+  const showB = squad === 'B' && !!draft.b;
   const version = useRef<number | null>(data.version);
   const said = useRef('');
   const [announce, setAnnounce] = useState('');
@@ -95,8 +100,8 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
     setDraft(next);
     haptic('select');
     const p = player(playerId);
-    const w = to.kind === 'bench' ? 'the bench' : whereWords(to.kind === 'slot' ? { kind: 'slot', slot: to.slot } : to.kind === 'alternate' ? { kind: 'alternate' } : { kind: 'individual' });
-    said.current = `${p?.first ?? 'Player'} moved to ${w.toLowerCase() === 'the bench' ? w : w.toLowerCase()}.`;
+    const w = to.kind === 'bench' ? 'the bench' : whereWords(to);
+    said.current = `${p?.first ?? 'Player'} moved to ${w === 'the bench' ? w : w.replace(/^Spot|^Alternate|^Individual/, (x) => x.toLowerCase())}.`;
     setAnnounce(said.current);
   };
 
@@ -146,6 +151,9 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
     (result, c) => (result.success ? c : { ...c, hint: result.error ?? c.hint }),
   );
   const busy = save.pending || publish.pending || lock.pending;
+  // Nothing locks the lineup at its lock time (it locks itself when round 1 starts): past it, say so.
+  const overdue = editable && !!data.lineup.locksAt && Date.parse(data.now) > Date.parse(data.lineup.locksAt);
+  const bSet = bCount(draft);
   const published = data.lineup.status === 'published' || data.lineup.status === 'scheduled';
 
   const meta = (
@@ -154,7 +162,19 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
       <TourChip>
         <span className="ch-num">{set}</span> of <span className="ch-num">{of}</span> set
       </TourChip>
-      {data.lineup.locksAt && data.lineup.status !== 'locked' && <TourChip>Locks {tourDayTime(data.lineup.locksAt)}</TourChip>}
+      {data.lineup.locksAt && data.lineup.status !== 'locked' && <TourChip tone={overdue ? 'warn' : undefined}>Lock by {tourDayTime(data.lineup.locksAt)}</TourChip>}
+      {bSet && bSet.set > 0 && (
+        <TourChip>
+          B team <span className="ch-num">{bSet.set}</span> of <span className="ch-num">{bSet.of}</span>
+        </TourChip>
+      )}
+      {data.rosterLimit && (
+        <span data-ch-code={data.rosterLimit.over > 0 ? 'CH-16981' : undefined}>
+          <TourChip tone={data.rosterLimit.over > 0 ? 'warn' : undefined}>
+            <span className="ch-num">{data.rosterLimit.chip}</span>
+          </TourChip>
+        </span>
+      )}
       {data.lineup.seen && (
         <TourChip>
           Seen by <span className="ch-num">{data.lineup.seen.by}</span> of <span className="ch-num">{data.lineup.seen.of}</span>
@@ -218,6 +238,11 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
       <p className="ch-sr-only" role="status" aria-live="polite">
         {announce}
       </p>
+      {overdue && data.lineup.locksAt && (
+        <p className="ch-tour-lu-hint" data-ch-code="CH-16382">
+          The lock time, {tourDayTime(data.lineup.locksAt)}, has passed. Lock the lineup now; it locks itself when round 1 starts.
+        </p>
+      )}
       {editable && block && set < of && roster.length > 0 && (
         <p className="ch-tour-lu-hint" data-ch-lineup-hint="">
           {block}
@@ -240,8 +265,33 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
               ))}
             </ul>
           )}
+          {draft.b && (
+            <Segmented<'A' | 'B'>
+              label="Team"
+              value={squad}
+              onChange={setSquad}
+              options={[
+                { value: 'A', label: 'A team' },
+                { value: 'B', label: 'B team' },
+              ]}
+            />
+          )}
           <div className="ch-tour-lu-cols">
             <div className="ch-tour-lu-col">
+              {showB && draft.b ? (
+                <BTeam
+                  b={draft.b}
+                  roster={roster}
+                  draft={draft}
+                  availability={availability}
+                  stats={stats}
+                  editable={editable}
+                  busy={busy}
+                  move={move}
+                  name={(id) => player(id)?.first ?? 'player'}
+                />
+              ) : (
+              <>
               <Section id="ch-tour-lu-slots" title="Playing" meta={`${set} of ${of} spots set`}>
                 <SectionBoundary surface="tournaments.lineup.slots" label="Playing" code="CH-16294">
                   <ol className="ch-tour-lu-slots">
@@ -303,6 +353,8 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
                   </div>
                 </SectionBoundary>
               </Section>
+              </>
+              )}
             </div>
             <div className="ch-tour-lu-col ch-tour-lu-side">
               <Section id="ch-tour-lu-roster" title="Roster" meta="Form is the last five team rounds; counts is how often a score counted">
@@ -311,7 +363,7 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
                     {roster.map((p) => {
                       const c = stats.get(p.id);
                       const w = whereIs(draft, p.id);
-                      const target = nextOpen(draft);
+                      const target = nextOpen(draft, showB ? 'B' : 'A');
                       return (
                         <li key={p.id} className="ch-tour-lu-r">
                           <Avatar name={p.name} size="sm" />
@@ -374,6 +426,71 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
         }
       />
     </TourMain>
+  );
+}
+
+/**
+ * F-05: the B team's spots and alternate. A B player plays as an individual (stored as one, squad B), so the B team's
+ * scores never count in the team's record or its stats (D-92); the spots keep the order the coach set.
+ */
+function BTeam({
+  b,
+  roster,
+  draft,
+  availability,
+  stats,
+  editable,
+  busy,
+  move,
+  name,
+}: {
+  b: NonNullable<LineupDraft['b']>;
+  roster: ChTourPlayer[];
+  draft: LineupDraft;
+  availability: ReadonlyMap<string, ChTourCandidate['availability']>;
+  stats: ReadonlyMap<string, ChTourCandidate>;
+  editable: boolean;
+  busy: boolean;
+  move: (playerId: string, to: LineupTarget) => void;
+  name: (id: string) => string;
+}) {
+  const set = b.slots.filter(Boolean).length;
+  const options = (empty: string) => [{ value: EMPTY, label: empty }, ...roster.map((p) => ({ value: p.id, label: optionLabel(p, draft, availability.get(p.id) ?? p.availability) }))];
+  return (
+    <Section id="ch-tour-lu-b" title="B team" meta={`${set} of ${b.slots.length} spots set. The B team plays as individuals: its scores never count in the team’s record.`}>
+      <ol className="ch-tour-lu-slots" data-ch-squad="B">
+        {b.slots.map((id, i) => (
+          <li key={i} className="ch-tour-lu-slot">
+            <span className="ch-tour-lu-slot__n ch-num" aria-hidden="true">
+              {i + 1}
+            </span>
+            <div className="ch-tour-lu-slot__who">
+              <Select
+                label={`B spot ${i + 1}`}
+                value={id ?? EMPTY}
+                disabled={!editable || busy}
+                onChange={(v) => (v ? move(v, { kind: 'bslot', slot: i + 1 }) : id && move(id, { kind: 'bench' }))}
+                options={options('Empty')}
+              />
+              {id && <Form candidate={stats.get(id)} />}
+            </div>
+            {editable && id && <IconButton icon={X} label={`Take ${name(id)} out of B spot ${i + 1}`} onClick={() => move(id, { kind: 'bench' })} />}
+          </li>
+        ))}
+      </ol>
+      <div className="ch-tour-lu-extra">
+        <div className="ch-tour-lu-extra__row">
+          <span className="ch-tour-lu-lbl">B alternate</span>
+          <Select
+            label="B alternate"
+            value={b.alternate ?? EMPTY}
+            disabled={!editable || busy}
+            onChange={(v) => (v ? move(v, { kind: 'balternate' }) : b.alternate && move(b.alternate, { kind: 'bench' }))}
+            options={options('None')}
+          />
+        </div>
+      </div>
+    </Section>
   );
 }
 

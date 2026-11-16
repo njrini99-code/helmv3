@@ -30,7 +30,7 @@ const wrap = (node: ReactNode) =>
       </ToastProvider>
     </LazyMotion>,
   );
-const writes = () => ({ create: vi.fn(), saveEdit: vi.fn(), setStatus: vi.fn(async () => ({ success: true })), courses: vi.fn(async () => []), tees: vi.fn(async () => []) });
+const writes = () => ({ create: vi.fn(), saveEdit: vi.fn(), saveRules: vi.fn(async () => ({ success: true })), setStatus: vi.fn(async () => ({ success: true })), courses: vi.fn(async () => []), tees: vi.fn(async () => []) });
 
 /** Coach audit 13 Nov 2026 (§12 #2–#3): Samanyu, 2 of 3 rounds at +14, looked tied with Connor; the rules printed twice as one run-on. */
 describe('the qualifier board says what it holds', () => {

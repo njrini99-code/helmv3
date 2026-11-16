@@ -12,41 +12,88 @@ export interface LineupDraft {
   slots: Array<string | null>;
   alternate: string | null;
   individuals: string[];
+  /**
+   * F-05: the B team, when the event can hold one (held migration 20261116091000). Its spots and alternate are stored
+   * as individuals and an alternate of squad B, so no team score ever reads them (D-92). Absent: no B team offered.
+   */
+  b?: { slots: Array<string | null>; alternate: string | null };
 }
 
-export type LineupTarget = { kind: 'slot'; slot: number } | { kind: 'alternate' } | { kind: 'individual' } | { kind: 'bench' };
+export type LineupTarget =
+  | { kind: 'slot'; slot: number }
+  | { kind: 'alternate' }
+  | { kind: 'individual' }
+  | { kind: 'bslot'; slot: number }
+  | { kind: 'balternate' }
+  | { kind: 'bench' };
 
 /** The most entries one event takes (the action's own cap). */
 export const MAX_ENTRIES = 20;
 /** Count chance is shown from this many eligible team rounds (D-93). */
 export const CHANCE_GATE = 6;
 
-export function draftOf(data: Pick<ChTourLineupData, 'slots' | 'alternate' | 'individuals'>): LineupDraft {
+export function draftOf(data: Pick<ChTourLineupData, 'slots' | 'alternate' | 'individuals' | 'bTeam'>): LineupDraft {
   const size = data.slots.length;
   const slots: Array<string | null> = Array.from({ length: size }, () => null);
   for (const s of data.slots) if (s.slot >= 1 && s.slot <= size) slots[s.slot - 1] = s.playerId;
-  return { slots, alternate: data.alternate, individuals: [...data.individuals] };
+  const d: LineupDraft = { slots, alternate: data.alternate, individuals: [...data.individuals] };
+  if (data.bTeam) {
+    const b: Array<string | null> = Array.from({ length: size }, () => null);
+    // A B player with no stored spot (or one past the format) takes the first free spot, so nobody is dropped.
+    const loose: string[] = [];
+    for (const x of data.bTeam.slots) {
+      if (x.slot != null && x.slot >= 1 && x.slot <= size && !b[x.slot - 1]) b[x.slot - 1] = x.playerId;
+      else loose.push(x.playerId);
+    }
+    for (const id of loose) {
+      const i = b.indexOf(null);
+      if (i >= 0) b[i] = id;
+    }
+    d.b = { slots: b, alternate: data.bTeam.alternate };
+  }
+  return d;
 }
 
-/** Everyone in the draft, in spot order, then the alternate, then the individuals. */
+/** Everyone in the draft, in spot order, then the alternate, then the individuals, then the B team. */
 export function placedIds(d: LineupDraft): string[] {
-  return [...d.slots.filter((x): x is string => !!x), ...(d.alternate ? [d.alternate] : []), ...d.individuals];
+  return [
+    ...d.slots.filter((x): x is string => !!x),
+    ...(d.alternate ? [d.alternate] : []),
+    ...d.individuals,
+    ...(d.b ? [...d.b.slots.filter((x): x is string => !!x), ...(d.b.alternate ? [d.b.alternate] : [])] : []),
+  ];
 }
 
-export type LineupWhere = { kind: 'slot'; slot: number } | { kind: 'alternate' } | { kind: 'individual' } | null;
+export type LineupWhere = { kind: 'slot'; slot: number } | { kind: 'alternate' } | { kind: 'individual' } | { kind: 'bslot'; slot: number } | { kind: 'balternate' } | null;
 
 export function whereIs(d: LineupDraft, playerId: string): LineupWhere {
   const i = d.slots.indexOf(playerId);
   if (i >= 0) return { kind: 'slot', slot: i + 1 };
   if (d.alternate === playerId) return { kind: 'alternate' };
   if (d.individuals.includes(playerId)) return { kind: 'individual' };
+  if (d.b) {
+    const j = d.b.slots.indexOf(playerId);
+    if (j >= 0) return { kind: 'bslot', slot: j + 1 };
+    if (d.b.alternate === playerId) return { kind: 'balternate' };
+  }
   return null;
 }
 
-/** "Spot 2", "Alternate", "Individual", or "" for the bench. */
+/** "Spot 2", "Alternate", "Individual", "B spot 2", "B alternate", or "" for the bench. */
 export function whereWords(w: LineupWhere): string {
   if (!w) return '';
-  return w.kind === 'slot' ? `Spot ${w.slot}` : w.kind === 'alternate' ? 'Alternate' : 'Individual';
+  switch (w.kind) {
+    case 'slot':
+      return `Spot ${w.slot}`;
+    case 'alternate':
+      return 'Alternate';
+    case 'individual':
+      return 'Individual';
+    case 'bslot':
+      return `B spot ${w.slot}`;
+    case 'balternate':
+      return 'B alternate';
+  }
 }
 
 function without(d: LineupDraft, playerId: string): LineupDraft {
@@ -54,6 +101,7 @@ function without(d: LineupDraft, playerId: string): LineupDraft {
     slots: d.slots.map((x) => (x === playerId ? null : x)),
     alternate: d.alternate === playerId ? null : d.alternate,
     individuals: d.individuals.filter((x) => x !== playerId),
+    ...(d.b ? { b: { slots: d.b.slots.map((x) => (x === playerId ? null : x)), alternate: d.b.alternate === playerId ? null : d.b.alternate } } : {}),
   };
 }
 
@@ -78,12 +126,35 @@ export function place(d: LineupDraft, playerId: string, to: LineupTarget): Lineu
     return next;
   }
   if (to.kind === 'alternate') return { ...base, alternate: playerId };
+  if (to.kind === 'bslot' || to.kind === 'balternate') {
+    if (!base.b) return d;
+    // A player new to the draft adds an entry: the event's cap holds (a move within the draft adds none).
+    if (!from && placedIds(base).length >= MAX_ENTRIES) return d;
+    if (to.kind === 'balternate') return { ...base, b: { ...base.b, alternate: playerId } };
+    const i = to.slot - 1;
+    if (i < 0 || i >= base.b.slots.length) return d;
+    const occupant = d.b?.slots[i] ?? null;
+    if (occupant === playerId) return d;
+    const slots = [...base.b.slots];
+    slots[i] = playerId;
+    if (occupant && from?.kind === 'bslot') slots[from.slot - 1] = occupant;
+    return { ...base, b: { ...base.b, slots } };
+  }
   if (placedIds(base).length >= MAX_ENTRIES) return d;
   return { ...base, individuals: [...base.individuals, playerId] };
 }
 
-/** The first open spot, else the alternate when it is free, else null: where "Add" puts a player. */
-export function nextOpen(d: LineupDraft): LineupTarget | null {
+/**
+ * Where "Add" puts a player: the first open spot, else the alternate when it is free, else null. With `squad` B, the
+ * same on the B team (null when the draft holds no B team).
+ */
+export function nextOpen(d: LineupDraft, squad: 'A' | 'B' = 'A'): LineupTarget | null {
+  if (squad === 'B') {
+    if (!d.b) return null;
+    const j = d.b.slots.findIndex((x) => !x);
+    if (j >= 0) return { kind: 'bslot', slot: j + 1 };
+    return d.b.alternate ? null : { kind: 'balternate' };
+  }
   const i = d.slots.findIndex((x) => !x);
   if (i >= 0) return { kind: 'slot', slot: i + 1 };
   return d.alternate ? null : { kind: 'alternate' };
@@ -93,17 +164,31 @@ export function setCount(d: LineupDraft): { set: number; of: number } {
   return { set: d.slots.filter(Boolean).length, of: d.slots.length };
 }
 
-/** The `setTournamentEntries` payload: the lineup with its spots, the alternate and the individuals. */
+/**
+ * The `setTournamentEntries` payload: the lineup with its spots, the alternate and the individuals, then the B team as
+ * individuals of squad B in spot order and its alternate. The A entries carry no squad, so a payload with no B team is
+ * exactly what it was before F-05.
+ */
 export function entriesOf(d: LineupDraft): TourEntriesInput {
   return [
     ...d.slots.flatMap((p, i) => (p ? [{ playerId: p, role: 'lineup' as const, slot: i + 1 }] : [])),
     ...(d.alternate ? [{ playerId: d.alternate, role: 'alternate' as const, slot: null }] : []),
     ...d.individuals.map((p) => ({ playerId: p, role: 'individual' as const, slot: null })),
+    ...(d.b ? d.b.slots.flatMap((p, i) => (p ? [{ playerId: p, role: 'individual' as const, slot: i + 1, squad: 'B' as const }] : [])) : []),
+    ...(d.b?.alternate ? [{ playerId: d.b.alternate, role: 'alternate' as const, slot: null, squad: 'B' as const }] : []),
   ];
 }
 
+const sameList = (a: ReadonlyArray<string | null>, b: ReadonlyArray<string | null>) => a.length === b.length && a.every((x, i) => x === b[i]);
+
 export function sameDraft(a: LineupDraft, b: LineupDraft): boolean {
-  return a.slots.length === b.slots.length && a.slots.every((x, i) => x === b.slots[i]) && a.alternate === b.alternate && a.individuals.length === b.individuals.length && a.individuals.every((x, i) => x === b.individuals[i]);
+  const sameB = !a.b || !b.b ? !a.b === !b.b : sameList(a.b.slots, b.b.slots) && a.b.alternate === b.b.alternate;
+  return sameList(a.slots, b.slots) && a.alternate === b.alternate && sameList(a.individuals, b.individuals) && sameB;
+}
+
+/** How many B spots are set, of how many. */
+export function bCount(d: LineupDraft): { set: number; of: number } | null {
+  return d.b ? { set: d.b.slots.filter(Boolean).length, of: d.b.slots.length } : null;
 }
 
 /** A lineup can be changed until it locks; a locked one changes by substitution only. */

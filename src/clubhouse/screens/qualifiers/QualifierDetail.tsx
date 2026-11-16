@@ -26,12 +26,13 @@ import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { RankSlot, useRankSlideArmed } from './RankSlot';
-import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
+import { Courses, LiveChip, Pairings, Selections, StaleStandings } from './QualifierSections';
 import { PrintHead } from './PrintHead';
 import { StandingsSpread } from './StandingsSpread';
 import { RulesText } from './RulesText';
 import { createOpenRow, PlayerRounds, type OpenRow } from './RoundsShowcase';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
+import { ExportStandings } from './ExportStandings';
 import { LiveOnCourse } from './LiveOnCourse';
 import type { ChQOnCourse } from './on-course';
 import { LIST_HREF, noteIfSelectionLink, useStepBack } from './return-state';
@@ -274,7 +275,7 @@ export function QualifierDetail({
             </SectionBoundary>
             {coach && b && b.rows.length > 0 && (
               <SectionBoundary surface="qualifiers.rounds" label="Round-by-round scores" code="CH-09213">
-                <RoundByRound board={b} numRounds={data.numRounds} />
+                <RoundByRound board={b} numRounds={data.numRounds} name={data.name} />
               </SectionBoundary>
             )}
           </div>
@@ -285,6 +286,11 @@ export function QualifierDetail({
             <SectionBoundary surface="qualifiers.selections" label="Selections" code="CH-09214">
               <Selections data={data} status={status} topScore={topScore} />
             </SectionBoundary>
+            {coach && b && (
+              <SectionBoundary surface="qualifiers.pairings" label="Next round groups" code="CH-09283">
+                <Pairings board={b} numRounds={data.numRounds} status={status} />
+              </SectionBoundary>
+            )}
             <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
               <Courses data={data} />
             </SectionBoundary>
@@ -617,7 +623,7 @@ function Leaderboard({
         </div>
       </div>
       <p className="ch-qf-cap">
-        {boardCaption(b, data.picks, data.numRounds, status)}
+        {boardCaption(b, data.picks, data.numRounds, status, coach)}
       </p>
     </section>
   );
@@ -643,7 +649,7 @@ function Tray({ row }: { row: ChQRow }) {
       {/* The cards stream in behind the standings: until they do each round shows its own head over a card-sized placeholder. */}
       <Streamed
         fallback={row.rounds.map((rd, i) => (
-          <ScorecardShell key={rd.id} round={rd} code={i === 0 ? 'CH-09410' : undefined}>
+          <ScorecardShell key={rd.id} round={rd} code={i === 0 ? 'CH-09410' : undefined} dropped={row.dropped?.includes(rd.id)}>
             <CardBodySkeleton />
           </ScorecardShell>
         ))}
@@ -662,14 +668,14 @@ function TrayCards({ row, s }: { row: ChQRow; s: ChQDetailSecondary }) {
         <InlineNotice code="CH-09205" title="Scorecards didn’t load" body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={refresh} retrying={refreshing} />
       )}
       {row.rounds.map((rd) => (
-        <Scorecard key={rd.id} round={rd} holes={s.holesError ? undefined : (s.holes[rd.id] ?? [])} />
+        <Scorecard key={rd.id} round={rd} dropped={row.dropped?.includes(rd.id)} holes={s.holesError ? undefined : (s.holes[rd.id] ?? [])} />
       ))}
     </>
   );
 }
 
 /** One round's card frame: its head (the round, the course and day, the total: all in the standings) over `children`. */
-function ScorecardShell({ round, code, children }: { round: ChQRound; code?: string; children: ReactNode }) {
+function ScorecardShell({ round, code, dropped, children }: { round: ChQRound; code?: string; dropped?: boolean; children: ReactNode }) {
   const meta = [round.course, dayLabel(round.date)].filter(Boolean).join(' · ');
   return (
     <div className="ch-qf-sc" data-ch-code={code}>
@@ -678,6 +684,7 @@ function ScorecardShell({ round, code, children }: { round: ChQRound; code?: str
         <span className="ch-num">
           {meta}
           {round.total != null && ` · ${round.total}`}
+          {dropped && <span> · Dropped, not counted</span>}
         </span>
       </div>
       {children}
@@ -686,14 +693,14 @@ function ScorecardShell({ round, code, children }: { round: ChQRound; code?: str
 }
 
 /** One round's card: hole, par and score, with Out, In and total. */
-function Scorecard({ round, holes }: { round: ChQRound; holes: ChQHole[] | undefined }) {
+function Scorecard({ round, holes, dropped }: { round: ChQRound; holes: ChQHole[] | undefined; dropped?: boolean }) {
   const meta = [round.course, dayLabel(round.date)].filter(Boolean).join(' · ');
   if (holes === undefined) return null;
   const front = holes.filter((h) => h.n <= 9);
   const back = holes.filter((h) => h.n > 9);
   const sum = (list: ChQHole[], k: 'par' | 'score') => (list.every((h) => h[k] != null) ? list.reduce((s, h) => s + (h[k] as number), 0) : null);
   return (
-    <ScorecardShell round={round}>
+    <ScorecardShell round={round} dropped={dropped}>
       {holes.length === 0 ? (
         <p className="ch-qf-sc__none" data-ch-code="CH-09308">
           No hole-by-hole card for this round. Only the total was recorded.
@@ -774,7 +781,7 @@ function RoundHead({ n }: { n: number }) {
   return <Streamed fallback={`R${n}`}>{(s) => <span title={s.roundCourses.find((c) => c.number === n)?.course ?? undefined}>R{n}</span>}</Streamed>;
 }
 
-function RoundByRound({ board, numRounds }: { board: ChQBoard; numRounds: number }) {
+function RoundByRound({ board, numRounds, name }: { board: ChQBoard; numRounds: number; name: string }) {
   const cols = `36px minmax(120px, 1fr) ${Array.from({ length: numRounds }, () => '52px').join(' ')} 56px 60px`;
   const minWidth = 36 + 120 + numRounds * 52 + 56 + 60 + (numRounds + 4) * 12 + 24;
   return (
@@ -784,6 +791,7 @@ function RoundByRound({ board, numRounds }: { board: ChQBoard; numRounds: number
           <h2 id="ch-qf-rbr">Round-by-round scores</h2>
           <p>Gross strokes · coach only</p>
         </div>
+        <ExportStandings name={name} board={board} numRounds={numRounds} />
       </div>
       <ScrollRegion label="Round-by-round scores, scrolls sideways" className="ch-qf-table">
         <div role="table" aria-labelledby="ch-qf-rbr" style={{ minWidth }}>

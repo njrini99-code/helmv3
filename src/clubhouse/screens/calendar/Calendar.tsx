@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
+import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, Timer, TriangleAlert, Users, X } from 'lucide-react';
 import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type ComponentProps, type CSSProperties, type ReactNode, type RefObject } from 'react';
@@ -1024,7 +1024,10 @@ function CalendarBody({
     </div>
   );
 
+  // F-03: the week's practice hours, the coach's team log and a player's own week.
+  const hoursItem = { label: coach ? 'Practice hours' : 'Your practice hours', icon: Timer, onSelect: () => router.push('/golf/dashboard/calendar/hours') };
   const moreItems = [
+    hoursItem,
     { label: 'Add to calendar app', icon: Rss, onSelect: () => setSubs(true) },
     // The board's Print week: the browser's print of what is on screen; the print rules (calendar.css, shell.css) drop the chrome.
     { label: `Print ${view}`, icon: Printer, onSelect: () => window.print() },
@@ -1189,7 +1192,7 @@ function CalendarBody({
           onOpen={open}
           onNew={(d) => setEditor({ event: null, date: d })}
           onSubscribe={() => setSubs(true)}
-          more={coach ? moreItems.filter((i) => i.icon !== Printer) : undefined}
+          more={coach ? moreItems.filter((i) => i.icon !== Printer) : [hoursItem]}
           onMove={coach ? onGridMove : undefined}
         />
         {/* The desktop's detail panel, as a sheet (board: event detail). */}

@@ -1,4 +1,5 @@
 import 'server-only';
+import { countRoster, readRosterLimit, rosterChip, rosterOverText } from '@/lib/golf/roster-limit';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
@@ -554,6 +555,7 @@ export async function loadTournamentDesk(ctx: TourCtx, eventId: string): Promise
       kind: 'ready',
       data: {
         now: ctx.now,
+        teamName: info.team.name,
         event,
         players,
         courses: read.courses,
@@ -960,6 +962,7 @@ function draftOf(e: ChTourEvent | null, t: TourRow | null, givers: string[]): Ch
     format: e?.format ?? { kind: '5c4', players: 5, counting: 4, holes: 18 },
     kind: e?.kind ?? 'regular',
     tiebreak: e?.tiebreak ?? 'ties_stand',
+    lockMinutes: t?.lock_minutes ?? 10,
     rounds: e ? e.rounds.map((r) => ({ date: r.date, courseId: r.courseId || null, startType: r.startType, firstTee: r.firstTeeAt })) : [{ date: '', courseId: null, startType: 'tee_times', firstTee: null }],
     fieldSize: t?.field_size ?? null,
     fieldTeams: e?.field?.teams.filter((x) => !x.us).map((x) => x.name) ?? [],
@@ -1020,16 +1023,56 @@ export async function loadTournamentForm(ctx: TourCtx, eventId: string | null, f
   });
 }
 
+/**
+ * F-05: an event's B team, or null when the squad column is not there yet (held migration 20261116091000). A read that
+ * fails otherwise fails the whole lineup (ReadFailed, logged by the guard): without it the B players would read as A
+ * individuals and a save would drop their squad, so the builder shows its error and Try again instead of a lineup.
+ */
+async function readBTeam(ctx: TourCtx, eventId: string): Promise<NonNullable<ChTourLineupData['bTeam']> | null> {
+  const { data, error } = await tourTable(ctx.supabase, 'golf_tournament_entries')
+    .select('player_id, role, slot, squad' as never)
+    .eq('tournament_id', eventId)
+    .eq('squad' as never, 'B' as never);
+  if (error) {
+    if (isTourSchemaMissing(error)) return null;
+    throw new ReadFailed('bTeam', error);
+  }
+  const rows = (data ?? []) as unknown as Array<{ player_id: string; role: string; slot: number | null }>;
+  return {
+    slots: rows
+      .filter((r) => r.role === 'individual')
+      .sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99))
+      .map((r) => ({ playerId: r.player_id, slot: r.slot })),
+    alternate: rows.find((r) => r.role === 'alternate')?.player_id ?? null,
+  };
+}
+
 export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promise<TourLoad<ChTourLineupData>> {
   return guard<ChTourLineupData>('lineup', async () => {
     const info = await readTeam(ctx);
     const seasonEnd = Number(seasonIdOf(info.today).slice(0, 4)) + 1;
     // Every event of the team: a player's form and how often they counted come from the other events.
-    const [read, players] = await Promise.all([readEvents(ctx, info.team.timezone), readPlayers(ctx, seasonEnd)]);
+    const [read, players, limitRead, bRead] = await Promise.all([
+      readEvents(ctx, info.team.timezone),
+      readPlayers(ctx, seasonEnd),
+      // F-05: the roster limit, counted as the Roster header counts it. Never throws: a missing table is the division default.
+      readRosterLimit(ctx.supabase, ctx.teamId, { withExemptions: ctx.role === 'coach' }),
+      // F-05: the B team. Its column arrives with held migration 20261116091000; before then the builder offers none.
+      readBTeam(ctx, eventId),
+    ]);
     const event = read.events.find((e) => e.id === eventId);
     if (!event) return { kind: 'missing' };
     const raw = read.raws.find((r) => r.t.id === eventId);
     const lineup = event.entries.filter((x) => x.role === 'lineup');
+    // The shared event shape reads every entry as the A squad, so a B player shows there as an individual or an
+    // alternate: the A side here leaves them out.
+    const bIds = new Set(bRead ? [...bRead.slots.map((x) => x.playerId), ...(bRead.alternate ? [bRead.alternate] : [])] : []);
+    const rosterCount = countRoster(
+      players.filter((p) => !p.alumni).map((p) => p.id),
+      limitRead.exemptions,
+      limitRead.limit,
+    );
+    const chip = rosterChip(rosterCount);
     return {
       kind: 'ready',
       data: {
@@ -1040,14 +1083,16 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
         // The projected range is the projection engine's, which is not built: null, never an invented figure.
         candidates: players.filter((p) => !p.alumni).map((p) => ({ playerId: p.id, availability: p.availability, qualifying: null, ...candidateStats(p.id, read.events, eventId, event.courseIds) })),
         slots: Array.from({ length: event.format.players }, (_, i) => ({ slot: i + 1, playerId: lineup.find((x) => x.slot === i + 1)?.playerId ?? null, reason: null, squad: 'A' as const })),
-        alternate: event.entries.find((x) => x.role === 'alternate')?.playerId ?? null,
-        individuals: event.entries.filter((x) => x.role === 'individual').map((x) => x.playerId),
+        alternate: event.entries.find((x) => x.role === 'alternate' && !bIds.has(x.playerId))?.playerId ?? null,
+        individuals: event.entries.filter((x) => x.role === 'individual' && !bIds.has(x.playerId)).map((x) => x.playerId),
+        ...(bRead ? { bTeam: bRead } : {}),
         projection: null,
         projectionShort: [],
         lineup: event.lineup,
         version: raw?.t.version ?? null,
         qualifier: null,
         errors: {},
+        ...(chip ? { rosterLimit: { chip: rosterCount.over > 0 ? `${chip}, ${rosterCount.over} over` : chip, over: rosterCount.over, text: rosterCount.over > 0 ? rosterOverText(rosterCount) : null } } : {}),
       },
     };
   });
