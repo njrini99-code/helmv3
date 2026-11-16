@@ -13,12 +13,13 @@ import { Modal } from '../../../ui/Modal';
 import { useSafariKeyboardFit } from '../../../shell/PhoneScreen';
 import { useRouter } from 'next/navigation';
 import { announceLanding } from '../../../shell/quick-chat/landing';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/hooks/coachhelm/useCoachHelmChat';
 import { CHAT_ERROR_DID_NOT_FINISH, describeChatError } from '../../../data/coachhelm-chat-error';
 import { titleFromQuestion, type ChAskConversation, type ChAskData, type ChAskLoad } from '../../../data/coachhelm-chat-shape';
 import { answerNeverCame, pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
 import { useChPhone } from '../../../lib/use-phone';
+import { useOnline } from '../../../lib/use-online';
 import { noteSendSource } from './send-source';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
@@ -47,17 +48,6 @@ export interface ChAskInitial {
   panelOpen?: boolean;
 }
 
-function subscribeOnline(cb: () => void) {
-  window.addEventListener('online', cb);
-  window.addEventListener('offline', cb);
-  return () => {
-    window.removeEventListener('online', cb);
-    window.removeEventListener('offline', cb);
-  };
-}
-function useOnline(): boolean {
-  return useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
-}
 
 /** The `useViewSwitch` value that stands for "no chat open". */
 const NEW_CHAT = 'new';
@@ -405,9 +395,10 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
     if (evidenceOpen && narrowDesktop()) setEvidence(null);
   };
   const [settingsOpen, setSettingsOpen] = useState(false);
-  // ASK-2: on Safari the keyboard covers the page without moving it, and --keyboard-height is the app's. The box follows what's visible.
+  // ASK-2, ASK-P-01: on Safari the keyboard covers the page without moving it, and --keyboard-height is the app's. The shell's
+  // bar and the box follow what's visible together, so the heading stays under the bar and the dock sits on the keys.
   const askRoot = useRef<HTMLElement>(null);
-  useSafariKeyboardFit(askRoot, phone);
+  useSafariKeyboardFit(askRoot, phone, 'shell');
   const artifactView = artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <ArtifactBody body={b} />} onPublish={(title) => { if (phone) setArtifact(null); ask(`Publish “${title}” for the team.`); }} onClose={() => setArtifact(null)} />;
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);

@@ -8,8 +8,7 @@ import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Button, IconButton } from '../../ui/Button';
 import { PhoneIconAction } from '../../ui/PhoneBar';
-import { MenuSheet } from '../../ui/ContextMenu';
-import type { MenuItem } from '../../ui/Menu';
+import { Menu, type MenuItem } from '../../ui/Menu';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { ScrollPager } from '../../ui/ScrollPager';
 import { Segmented } from '../../ui/Segmented';
@@ -106,7 +105,6 @@ export function CalendarPhone({
     haptic('select');
     onView(view, now.date);
   };
-  const [moreOpen, setMoreOpen] = useState(false);
 
   return (
     <main className="ch-calm" aria-label="Calendar">
@@ -141,12 +139,12 @@ export function CalendarPhone({
                 { value: 'list', label: 'List' },
               ]}
             />
-            {/* Row 81: the coach's More, beside the view switch; the top bar keeps its one action, New event (B10.1). */}
-            {!!more?.length && <IconButton icon={Ellipsis} label="More" className="ch-calm-more" onClick={() => setMoreOpen(true)} />}
+            {/* Row 81: the coach's More, beside the view switch; the top bar keeps its one action, New event (B10.1). Two
+                items: a menu anchored to the key, not a sheet with a title, a grab and a Close (CALMORE-03, S3.5). */}
+            {!!more?.length && <Menu label="More" items={more} trigger={(t) => <IconButton icon={Ellipsis} label="More" className="ch-calm-more" menu={t} />} />}
           </span>
         </span>
       </header>
-      {more && <MenuSheet open={moreOpen} title="Calendar" label="More" items={more} onClose={() => setMoreOpen(false)} />}
       {notices}
       {data.eventsError &&
         (pv === 'day' ? (

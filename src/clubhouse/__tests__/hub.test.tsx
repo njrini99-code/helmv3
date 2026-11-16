@@ -528,7 +528,8 @@ describe('Team Hub · coach', () => {
     await user.click(within(post).getByRole('button', { name: 'Jonah Okafor' }));
     expect(within(post).getByText('Jonah Okafor hasn’t acknowledged it yet.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
-    expect(within(screen.getByRole('region', { name: 'Tasks' })).getByLabelText('3 of 5 done')).toBeTruthy();
+    // MAC-20: the count is the row's words, not an image inside its button.
+    expect(within(screen.getByRole('region', { name: 'Tasks' })).getByRole('button', { name: /, 3 of 5 done$/ })).toBeTruthy();
     await tab('Tasks');
     expect(screen.getAllByLabelText('3 of 5 done').length).toBeGreaterThan(0);
   });
@@ -963,20 +964,23 @@ describe('Team Hub · coach', () => {
     await user.click(screen.getAllByRole('button', { name: /More for Short-game block/ })[0]!);
     await user.click(await screen.findByRole('menuitem', { name: 'Delete announcement' }));
     expect(hapticSpy).toHaveBeenCalledWith('warning');
-    await expectCode('CH-10501', /acknowledgements go with it/);
-    await user.click(screen.getByRole('button', { name: 'Keep it' }));
+    await expectCode('CH-10501', /acknowledgements go with it\. This can’t be undone\./);
+    // NP-05: an alert that names the item, its focus on Cancel so Enter never deletes.
+    const ask = screen.getByRole('alertdialog', { name: 'Delete “Short-game block moves to Green 2”?' });
+    await waitFor(() => expect(document.activeElement).toBe(within(ask).getByRole('button', { name: 'Cancel' })));
+    await user.click(within(ask).getByRole('button', { name: 'Cancel' }));
     await tab('Tasks');
     await user.click(screen.getByRole('button', { name: 'More for Sign travel waiver' }));
     await user.click(await screen.findByRole('menuitem', { name: 'Delete task' }));
-    await expectCode('CH-10502', /every player’s list/);
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await expectCode('CH-10502', /players’ lists, done or not\. This can’t be undone\./);
+    await user.click(screen.getByRole('button', { name: 'Delete task' }));
     expect(w.deleteTask).toHaveBeenCalledWith('t1');
     await waitFor(() => expect(screen.queryByText('Sign travel waiver')).toBeNull());
     await tab('Documents');
     await user.click(screen.getByRole('button', { name: 'More for NCAA hours log' }));
     await user.click(await screen.findByRole('menuitem', { name: 'Delete file' }));
     await expectCode('CH-10503', /can’t be undone/);
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Delete file' }));
     await expectCode('CH-10009', /Couldn’t delete NCAA hours log/);
     expect(screen.getByText('NCAA hours log')).toBeTruthy();
   });
@@ -989,10 +993,10 @@ describe('Team Hub · coach', () => {
     await user.click(await screen.findByRole('menuitem', { name: 'Delete trip' }));
     await expectCode('CH-10504', /expenses and budgets are deleted with it/);
     expect(w.deleteTrip).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Delete trip' }));
     await expectCode('CH-10009', /Couldn’t delete Seahawk Intercollegiate/);
     expect(screen.getByText('Seahawk Intercollegiate')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Keep it' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
     await user.click(screen.getByRole('button', { name: 'More for Seahawk Intercollegiate' }));
     await user.click(await screen.findByRole('menuitem', { name: 'Edit trip' }));
     await user.click(within(await screen.findByRole('dialog', { name: 'Edit trip' })).getByRole('button', { name: 'Save changes' }));
@@ -1567,7 +1571,7 @@ const scenarios: Scenario[] = [
     done: `Deleted “${SHORT_GAME}”`,
     drive: async (user) => {
       await openRowMenu(user, new RegExp(`More for ${SHORT_GAME}`), 'Delete announcement');
-      await user.click(screen.getByRole('button', { name: 'Delete' }));
+      await user.click(screen.getByRole('button', { name: 'Delete announcement' }));
     },
     notYet: () => {
       expect(dialogOpen()).toBe(true);
@@ -1590,7 +1594,7 @@ const scenarios: Scenario[] = [
     done: 'Deleted Sign travel waiver',
     drive: async (user) => {
       await openRowMenu(user, 'More for Sign travel waiver', 'Delete task');
-      await user.click(screen.getByRole('button', { name: 'Delete' }));
+      await user.click(screen.getByRole('button', { name: 'Delete task' }));
     },
     notYet: () => {
       expect(dialogOpen()).toBe(true);
@@ -1614,7 +1618,7 @@ const scenarios: Scenario[] = [
     done: 'Deleted NCAA hours log',
     drive: async (user) => {
       await openRowMenu(user, 'More for NCAA hours log', 'Delete file');
-      await user.click(screen.getByRole('button', { name: 'Delete' }));
+      await user.click(screen.getByRole('button', { name: 'Delete file' }));
     },
     notYet: () => {
       expect(dialogOpen()).toBe(true);

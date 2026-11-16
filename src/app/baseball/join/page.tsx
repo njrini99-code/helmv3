@@ -63,7 +63,8 @@ export default function BaseballJoinPage() {
       <div className="w-full max-w-md animate-fade-up">
         <div className="mb-6 text-center">
           <Link href="/baseball" className="inline-flex items-center gap-2">
-            <HelmMark sport="baseball" size={40} className="h-10 w-10" unoptimized />
+            {/* SWP-39: the mark is the link's only content, so its words are the link's name. */}
+            <HelmMark sport="baseball" size={40} className="h-10 w-10" alt="BaseballHelm home" unoptimized />
           </Link>
           <h1 className="mt-4 font-annual text-h1 font-semibold text-text-primary">Join a team</h1>
           <p className="mt-2 text-body text-text-secondary">Enter the invite code your coach sent you.</p>
@@ -101,7 +102,8 @@ export default function BaseballJoinPage() {
 
           <p className="text-center text-body-sm text-text-tertiary">
             Don&apos;t have a code? Ask your coach, or{' '}
-            <Link href="/baseball/signup" className="font-medium text-grade-plus hover:underline">
+            {/* SWP-28: the padding reaches 44 tall without moving the line (an inline box's vertical padding). */}
+            <Link href="/baseball/signup" className="py-3 font-medium text-grade-plus hover:underline">
               create a program
             </Link>
             .

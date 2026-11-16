@@ -11,9 +11,10 @@
  *
  * Reduced motion → rule drawn, pips set, no fade.
  */
-import { m, useReducedMotion } from 'motion/react';
+import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { rulesDraw, EASE_GLIDE } from './motion';
+import { useLivingReducedMotion } from './reduced-motion';
 
 export interface ToolRailAthlete {
   /** Present grade (filled pip). */
@@ -86,7 +87,7 @@ function PipRow({ athlete, reduced, shiftY }: { athlete: ToolRailAthlete; reduce
 }
 
 export function ToolRail({ value, future, ink = 'team', label, compare, className }: ToolRailProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
   const rule = rulesDraw(reduced);
 
   return (

@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import { PracticeHomeRoute } from '@/clubhouse/routes/practice';
 import { redirectUnlessClubhousePractice } from '@/clubhouse/routes/practice-gate';
+
+export const metadata: Metadata = { title: 'Practice' };
 
 /** Practice, the tab. `?new=1` opens New plan. */
 export default async function Page({ searchParams }: { searchParams: Promise<{ new?: string; template?: string; event?: string }> }) {

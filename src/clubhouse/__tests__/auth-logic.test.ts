@@ -101,9 +101,9 @@ describe('CH-15902 where a successful sign-in goes (role routing)', () => {
 });
 
 describe('CH-15602 the greeting by hour, and the sky it sits on', () => {
-  it('follows morning 4:30 to 12, afternoon 12 to 17, evening otherwise', () => {
-    expect(greetingWord(4 + 29 / 60)).toBe('Good evening');
-    expect(greetingWord(4.5)).toBe('Good morning');
+  it('follows the app buckets: morning 5 to 12, afternoon 12 to 17, evening otherwise (MAC-14)', () => {
+    expect(greetingWord(4 + 59 / 60)).toBe('Good evening');
+    expect(greetingWord(5)).toBe('Good morning');
     expect(greetingWord(11 + 59 / 60)).toBe('Good morning');
     expect(greetingWord(12)).toBe('Good afternoon');
     expect(greetingWord(16 + 59 / 60)).toBe('Good afternoon');

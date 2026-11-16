@@ -676,8 +676,10 @@ describe('the welcome', () => {
     [12, 'Good afternoon,'],
     [16.9, 'Good afternoon,'],
     [17, 'Good evening,'],
-    [4 + 29 / 60, 'Good evening,'],
-    [4.5, 'Good morning,'],
+    // One set of buckets across the app (MAC-14, time-of-day.ts): morning starts at 5.
+    [4 + 59 / 60, 'Good evening,'],
+    [5, 'Good morning,'],
+    [11 + 59 / 60, 'Good morning,'],
   ])('CH-15602 at %s it says %s', (hour, line) => {
     const d = new Date(2025, 9, 14, Math.floor(hour), Math.round((hour % 1) * 60));
     render(

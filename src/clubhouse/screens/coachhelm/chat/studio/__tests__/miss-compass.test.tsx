@@ -62,6 +62,8 @@ describe('on: eight labelled directions, chosen locally', () => {
     const directed = WITH.wedges.reduce((a, w) => a + w.count, 0);
     expect(radio(/^Right,/)).toHaveAccessibleName(`Right, 46 shots, ${Math.round((46 / directed) * 100)}%`);
     expect(radio(/^Long left,/)).toHaveAccessibleName(`Long left, 2 shots, ${Math.round((2 / directed) * 100)}%`);
+    // Named by its face with the unit said unseen, not by an aria-label Voice Control cannot match (SWP-02, WCAG 2.5.3).
+    expect(radio(/^Right,/).hasAttribute('aria-label')).toBe(false);
     expect(group).toHaveAccessibleName(`Where the misses finished, by direction: ${directed} shots with a direction logged`);
     const caption = document.querySelector('.ch-aks-compass figcaption')!.textContent!;
     expect(caption).toContain('6 with no direction logged, not in the shares');

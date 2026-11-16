@@ -12,7 +12,7 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'ink' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 /** What ui/Menu's `trigger` hands the key that opens it. */
-export type ChMenuTrigger = { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string };
+export type ChMenuTrigger = { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string | undefined };
 
 interface CommonProps {
   variant?: Variant;

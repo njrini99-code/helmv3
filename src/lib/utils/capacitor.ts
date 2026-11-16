@@ -312,8 +312,18 @@ async function setStatusBarStyle(content: 'light' | 'dark' = 'dark'): Promise<vo
  */
 export async function syncStatusBarToTheme(): Promise<void> {
   if (!isNativeApp() || typeof document === 'undefined') return;
-  const isDark = document.documentElement.classList.contains('dark');
-  await setStatusBarStyle(isDark ? 'light' : 'dark');
+  await setStatusBarStyle(statusBarGlyphs(document.documentElement));
+}
+
+/**
+ * The glyph colour the status bar needs. A surface that paints its own bar under the status area names it on <html>
+ * (`data-status-bar`): Clubhouse's phone top bar is the frame's green in both themes, so it asks for light glyphs, which
+ * the theme alone would have made black on green in the light theme (CHROME-P-01). Otherwise the theme decides.
+ */
+export function statusBarGlyphs(html: HTMLElement): 'light' | 'dark' {
+  const named = html.dataset.statusBar;
+  if (named === 'light' || named === 'dark') return named;
+  return html.classList.contains('dark') ? 'light' : 'dark';
 }
 
 /**

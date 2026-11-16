@@ -5,12 +5,14 @@ import { createContext, useContext, useEffect, useId, useRef, useState, type Mou
 import { haptic } from '../lib/haptics';
 import { useDialogLifetime } from '../lib/dialog-lifetime';
 import { useSheetDrag } from '../lib/sheet-drag';
+import { useChPhone } from '../lib/use-phone';
 
 /**
  * The phone's bottom sheets (CONS-23), on the native <dialog> top layer like `Modal`: focus is trapped, Esc closes,
  * focus returns to what opened it, and a toast raised while one is open renders inside it (CH-1812). One bar for all
  * of them (controls.css .ch-fsheet-bar): Cancel, a title and Save (FormSheet); a title and Done (ListSheet); and the
- * iOS action sheet, its destructive choice in red (ActionSheet). Settings and Recruiting build on these.
+ * iOS action sheet, its destructive choice in red (ActionSheet). Settings and Recruiting build on these. On a desktop
+ * (CoachHelm's plan, Practice) the same sheet is a centred card that pops and fades as `Modal` does, with no drag (OVL-04).
  */
 
 /**
@@ -27,7 +29,8 @@ export const HeldSheetsContext = createContext<((sheet: ChHeldSheet) => () => vo
 
 /** Opens and closes a <dialog> with `open`, follows the finger down (CH-1611), and sends Esc and the backdrop the same way. */
 function useSheetDialog(open: boolean, onClose: () => void, guard?: { busy?: boolean; dirty?: boolean; ask?: () => void }) {
-  const { ref, reduced, retainContent } = useDialogLifetime(open, { surfaceSelector: '.ch-fsheet', focusSelector: 'h2' });
+  const phone = useChPhone();
+  const { ref, reduced, retainContent } = useDialogLifetime(open, { surfaceSelector: '.ch-fsheet', focusSelector: 'h2', direction: phone ? 'bottom' : 'center' });
   // A drag that is refused (unsaved changes, a save in flight) must not leave the sheet half way down.
   const springBack = () => {
     const d = ref.current;
@@ -43,7 +46,7 @@ function useSheetDialog(open: boolean, onClose: () => void, guard?: { busy?: boo
     }
     onClose();
   };
-  const drag = useSheetDrag(ref, requestClose, { reduced });
+  const drag = useSheetDrag(ref, requestClose, { enabled: phone, reduced });
   const dialogProps = {
     ref,
     onCancel: (e: SyntheticEvent) => {
@@ -209,6 +212,7 @@ export function ActionSheet({
   cancelLabel = 'Cancel',
   busy,
   code,
+  warn = true,
 }: {
   open: boolean;
   onClose: () => void;
@@ -218,13 +222,16 @@ export function ActionSheet({
   cancelLabel?: string;
   busy?: boolean;
   code?: string;
+  /** False when the caller already warned in the tap that opened it (Team Hub's deletes), so the warning ticks once. */
+  warn?: boolean;
 }) {
   const titleId = useId();
   const messageId = useId();
-  const { ref, retainContent } = useDialogLifetime(open, { focusSelector: '.ch-fsheet-act__cancel' });
+  const phone = useChPhone();
+  const { ref, retainContent } = useDialogLifetime(open, { focusSelector: '.ch-fsheet-act__cancel', direction: phone ? 'bottom' : 'center' });
   useEffect(() => {
-    if (open) haptic('warning');
-  }, [open]);
+    if (open && warn) haptic('warning');
+  }, [open, warn]);
   const close = () => {
     if (!busy) onClose();
   };

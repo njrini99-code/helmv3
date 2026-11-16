@@ -7,6 +7,7 @@ import { tripWindow } from '../../data/hub-shape';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { DateField } from '../../ui/DateField';
+import { ActionSheet } from '../../ui/FormSheet';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { RefreshNotice } from '../../ui/RefreshNotice';
@@ -947,7 +948,8 @@ export function AssignSheet({
 /** Deleting asks first (warning haptic on open), and says what goes with it. */
 export function ConfirmDelete({
   open,
-  what,
+  noun,
+  name,
   body,
   code,
   pending,
@@ -955,29 +957,42 @@ export function ConfirmDelete({
   onConfirm,
 }: {
   open: boolean;
-  what: string;
+  /** What kind of thing it is ("task"), for the button: Delete task. */
+  noun: string;
+  /** The item's own name, so the question says which one (NP-05). */
+  name: string;
   body: string;
   code: string;
   pending: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const phone = useChPhone();
+  const title = `Delete “${name}”?`;
+  const action = `Delete ${noun}`;
+  // NP-05, S3.6: an alert, not a form sheet. On the phone the iOS action sheet (its Cancel focused, the delete in red);
+  // on a desk an alert dialog whose focus starts on Cancel, so Enter never deletes. The tap that opened it warned
+  // already (CH-10702), so the action sheet doesn't tick again.
+  if (phone)
+    return <ActionSheet open={open} onClose={onCancel} title={title} message={body} actions={[{ label: pending ? 'Deleting…' : action, onClick: onConfirm }]} busy={pending} code={code} warn={false} />;
   return (
     <Modal
       open={open}
       onClose={onCancel}
+      role="alertdialog"
+      initialFocus=".ch-hub-del-cancel"
       icon={TriangleAlert}
-      title={`Delete ${what}?`}
+      title={title}
       code={code}
       description={body}
       footer={
         <>
-          <Button variant="ghost" onClick={onCancel}>
-            Keep it
+          <Button variant="ghost" className="ch-hub-del-cancel" onClick={onCancel}>
+            Cancel
           </Button>
           {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
           <Button variant="danger" busy={pending} feel={null} onClick={onConfirm}>
-            {pending ? 'Deleting…' : 'Delete'}
+            {pending ? 'Deleting…' : action}
           </Button>
         </>
       }

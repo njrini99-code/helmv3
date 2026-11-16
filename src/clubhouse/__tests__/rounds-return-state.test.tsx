@@ -1,4 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
+import { roundSummary } from './round-row';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
@@ -53,7 +54,7 @@ const review = (r = PREVIEW_REVIEW) => (
     </ToastProvider>
   </LazyMotion>
 );
-const rowLabels = () => screen.getAllByRole('link').map((l) => l.getAttribute('aria-label')).filter((l): l is string => !!l && /, \d+( \(|$)/.test(l));
+const rowLabels = () => screen.getAllByRole('link').map(roundSummary).filter((l): l is string => !!l);
 
 /** How many entries the tab's history holds (jsdom starts with one). Back steps back only when there is an entry behind this one. */
 const historyEntries = { n: 3 };
@@ -115,14 +116,14 @@ describe('CH-11912 Rounds library and review: Back is a real Back when the revie
     const user = userEvent.setup();
     render(library());
     expect(openedFromLibrary(ROUND)).toBe(false);
-    await user.click(screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' }));
+    await user.click(screen.getByRole('link', { name: /^26 Sat Sep Finley GC .* E 72$/ }));
     expect(openedFromLibrary(ROUND)).toBe(true);
     expect(openedFromLibrary('a0000000-0000-4000-8000-000000000002')).toBe(false);
   });
 
   it('a new-tab open (a modifier or a non-left button) writes no note: a copied note could not be stepped back from', () => {
     render(library());
-    const row = screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' });
+    const row = screen.getByRole('link', { name: /^26 Sat Sep Finley GC .* E 72$/ });
     fireEvent.click(row, { ctrlKey: true });
     fireEvent.click(row, { metaKey: true });
     fireEvent.click(row, { shiftKey: true });
@@ -248,7 +249,7 @@ describe('CH-11912 Rounds library inside the shell frame: the search and the pla
     await user.type(screen.getByRole('searchbox', { name: 'Search rounds by course' }), 'finley');
     canvas.scrollTop = 520;
     canvas.dispatchEvent(new Event('scroll'));
-    await user.click(screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' }));
+    await user.click(screen.getByRole('link', { name: /^26 Sat Sep Finley GC .* E 72$/ }));
 
     view.rerender(page(REV, review()));
     expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });

@@ -41,7 +41,7 @@ describe('the Needs a look card', () => {
     const players = [player({ id: 'will', attention: { tone: 'loss', text: 'Scoring 4.0 worse' } }), player({ id: 'luke', name: 'Luke Wise', avg: 74, sgPerRound: -7.5 })];
     const { container } = render(<RosterLeaders players={players} statsError={false} clock={{ now: '2026-11-13T16:00:00Z', timeZone: NY } as never} onOpen={() => {}} />);
     const card = [...container.querySelectorAll('.ch-rs-ldr')].find((c) => c.textContent?.includes('Needs a look'))!;
-    expect(card.querySelector('.ch-rs-ldr__v')?.textContent).toBe('−7.1SG a round');
+    expect(card.querySelector('.ch-rs-ldr__v')?.textContent).toBe('−7.1 SG a round'); // the sr-only space keeps the figure and its unit apart for a screen reader
     expect(card.querySelector('.ch-rs-ldr__why')?.textContent).toBe('Scoring 4.0 worse');
   });
 });

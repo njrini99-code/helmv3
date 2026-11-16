@@ -18,7 +18,7 @@ vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePrefere
 vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges: () => ({ notificationsUnread: 0, calendarNotifications: 0, messages: 0, announcements: 0, tasks: 0, travel: 0, refetch: vi.fn() }) }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({}) }));
 
-import { CH_DUR, CH_SPRINGS, chSpring, chSpringAt, chSpringCurve } from '../lib/motion';
+import { CH_DUR, CH_EASE_SHEET, CH_SPRINGS, chSpring, chSpringAt, chSpringCurve } from '../lib/motion';
 import { chThrownExit, rubberBand, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { poppedByUA } from '../lib/ua-pop';
 import { PhoneNav } from './phone-nav-harness';
@@ -137,6 +137,20 @@ function Sheet({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+
+describe('OVL-02 a sheet rides the keyboard', () => {
+  it('lifts its panel by translate on the keyboard beat and curve, never by a margin that jumps', () => {
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/controls.css'), 'utf8');
+    for (const panel of ['.ch-modal__panel', '.ch-fsheet']) {
+      const esc = panel.replace(/[.]/g, '\\.');
+      expect(css).toMatch(new RegExp(`body\\.keyboard-open ${esc} \\{[^}]*translate: 0 calc\\(-1 \\* var\\(--keyboard-height, 0px\\)\\);`));
+      expect(css).toMatch(new RegExp(`\\n *${esc} \\{[^}]*translate var\\(--ch-dur-reveal\\) var\\(--ch-ease-ios\\)`));
+    }
+    // The dialogs themselves keep their translate for the finger (lib/sheet-drag.ts): no keyboard margin on them.
+    expect(css).not.toMatch(/body\.keyboard-open \.ch-modal \{[^}]*margin-bottom/);
+    expect(css).not.toMatch(/body\.keyboard-open \.ch-fsheet-dlg[^{]*\{[^}]*margin-bottom/);
+  });
+});
 
 describe('CH-1611 sheet physics', () => {
   it('pulled up past its open position it gives like a rubber band, over a floor of its own colour', () => {
@@ -270,7 +284,7 @@ describe('CH-1611 sheet physics', () => {
     expect(takeSheetFling(sheet)).toBe(0);
   });
 
-  it('a Modal thrown shut leaves on the spring at the throw speed; closed by its button it leaves on the same spring from rest', () => {
+  it('a Modal thrown shut leaves on the spring at the throw speed; closed by its button it leaves on the release beat (MAC-19)', () => {
     const real = window.matchMedia;
     window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     vi.stubGlobal('CSS', { supports: () => true });
@@ -305,10 +319,10 @@ describe('CH-1611 sheet physics', () => {
       render(<Harness />);
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
       expect(exits).toHaveLength(2);
-      // The same smooth spring it rose on, from rest (popup audit 2026-10-13); the throw's exit is quicker than this.
-      const rest = chThrownExit(0, 400);
-      expect(exits[1]).toMatchObject({ duration: rest.ms, easing: rest.linear });
-      expect(exits[0]!.duration).toBeLessThan(rest.ms);
+      // Closed from rest it leaves on the release beat, 280ms, on the sheet curve it rose on over 520ms (MAC-19, S3.2,
+      // motion spec 15 Nov 3.4); the throw's exit is quicker than the spring from rest would have been.
+      expect(exits[1]).toMatchObject({ duration: CH_DUR.release * 1000, easing: `cubic-bezier(${CH_EASE_SHEET.join(', ')})` });
+      expect(exits[0]!.duration).toBeLessThan(chThrownExit(0, 400).ms);
     } finally {
       window.matchMedia = real;
       vi.unstubAllGlobals();
@@ -338,7 +352,7 @@ describe('CH-1614 a toast swipes away and waits while held', () => {
     render(<ToastProvider><Raise /></ToastProvider>);
     fireEvent.click(screen.getByRole('button', { name: 'Raise' }));
     const el = toastEl();
-    act(() => vi.advanceTimersByTime(3500));
+    act(() => vi.advanceTimersByTime(1500));
     act(() => {
       el.dispatchEvent(pointer('pointerdown', 720, 0));
     });
@@ -452,7 +466,7 @@ describe('A-17 a toast in use by keyboard or mouse keeps its clock stopped', () 
     vi.useFakeTimers();
     render(<ToastProvider><Raise /></ToastProvider>);
     fireEvent.click(screen.getByRole('button', { name: 'Raise' }));
-    act(() => vi.advanceTimersByTime(3500));
+    act(() => vi.advanceTimersByTime(1500));
     fireEvent.focus(card());
     act(() => vi.advanceTimersByTime(20_000));
     expect(screen.getByText('Saved')).toBeTruthy();
@@ -467,15 +481,15 @@ describe('A-17 a toast in use by keyboard or mouse keeps its clock stopped', () 
     render(<ToastProvider><Raise /></ToastProvider>);
     fireEvent.click(screen.getByRole('button', { name: 'Raise' }));
     fireEvent.pointerOver(card(), { pointerType: 'touch' });
-    act(() => vi.advanceTimersByTime(4000));
+    act(() => vi.advanceTimersByTime(5000));
     expect(screen.queryByText('Saved')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Raise' }));
     fireEvent.pointerOver(card(), { pointerType: 'mouse' });
     act(() => vi.advanceTimersByTime(20_000));
     expect(screen.getByText('Saved')).toBeTruthy();
     fireEvent.pointerOut(card(), { pointerType: 'mouse', relatedTarget: document.body });
-    // Held from its first moment, so it still has its whole 4 seconds.
-    act(() => vi.advanceTimersByTime(3999));
+    // Held from its first moment, so it still has its whole 2.4 seconds (motion spec 15 Nov 3.4).
+    act(() => vi.advanceTimersByTime(2399));
     expect(screen.getByText('Saved')).toBeTruthy();
     act(() => vi.advanceTimersByTime(1));
     expect(screen.queryByText('Saved')).toBeNull();

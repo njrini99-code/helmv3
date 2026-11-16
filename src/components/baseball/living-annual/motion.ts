@@ -17,7 +17,7 @@
  * components (as the golf HeroInsightCard exemplar does); this module only
  * produces the variants + one convenience hook.
  */
-import { useReducedMotion } from 'motion/react';
+import { useLivingReducedMotion } from './reduced-motion';
 import type { Variants } from 'motion/react';
 
 /** Cinematic settle — the house curve (mirrors --fw-ease-glide). */
@@ -190,7 +190,7 @@ export function useSettleStagger(): {
   item: Variants;
   rule: Variants;
 } {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useLivingReducedMotion();
   return {
     reduced,
     container: inkColumn(reduced),

@@ -222,7 +222,14 @@
   color: var(--ch-text-secondary);
 }
 .ch-ox .ch-ox-signin-m a {
+  position: relative;
   font-weight: 600;
+}
+/* "Sign in" is drawn 31 high: its touch area reaches 44 on the short side (SWP-31), as .ch-btn does. */
+.ch-ox .ch-ox-signin-m a::after {
+  position: absolute;
+  inset: min(0px, calc(50% - 22px));
+  content: '';
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-ox .ch-ox-signin-m {

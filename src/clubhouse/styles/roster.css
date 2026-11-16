@@ -213,6 +213,7 @@
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 .ch-rs-vt__b {
+  position: relative;
   display: grid;
   place-items: center;
   width: 30px;
@@ -224,6 +225,15 @@
   color: var(--ch-text-tertiary);
   cursor: pointer;
   transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+}
+/* Drawn 30 by 28 for a mouse; under a finger each half of the toggle reaches 44 (PL-ROST-07). The pair sits 2px apart,
+   so each grows on its own side only as far as 44 needs. */
+@media (pointer: coarse) {
+  .ch-rs-vt__b::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+    content: '';
+  }
 }
 @media (hover: hover) {
   .ch-rs-vt__b:hover {

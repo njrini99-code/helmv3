@@ -82,10 +82,11 @@ export function ClassCard({
   const when = flexible ? (noTime ? `${daysLabel(c.days)}, no time set` : 'no fixed meeting') : `${daysLabel(c.days)} ${range}`;
   const overlap = conflictFlag(overlaps);
   return (
+    // Named by its face, in the order it is drawn (PMAC-07, MAC-09: Voice Control); the week strip is drawn for the eye only, so
+    // its days and time are said in words after the instructor. No aria-label to disagree with what it shows.
     <button
       type="button"
       className={`ch-cl-card ch-cl-t-${c.tone}`}
-      aria-label={`${c.code ? `${c.code}, ` : ''}${c.name}, ${when}`}
       onClick={() => {
         haptic('select');
         onOpen(c);
@@ -93,15 +94,16 @@ export function ClassCard({
     >
       <span className="ch-cl-card__top">
         <span className="ch-cl-card__code">
-          <b>{tab.top}</b>
+          <b>{tab.top}</b>{' '}
           {tab.bottom}
-        </span>
+        </span>{' '}
         {c.credits != null && <span className="ch-cl-card__cr">{c.credits} cr</span>}
-      </span>
+      </span>{' '}
       <span className="ch-cl-card__n">
-        <b className="ch-cl-card__name">{c.name}</b>
+        <b className="ch-cl-card__name">{c.name}</b>{' '}
         <span className="ch-cl-card__prof">{c.instructor ?? 'Instructor not listed'}</span>
-      </span>
+      </span>{' '}
+      {!flexible && <span className="ch-sr-only">{when} </span>}
       {flexible ? (
         <span className="ch-cl-card__flex" data-ch-code={noDays || noTime ? undefined : 'CH-12303'}>
           {noDays ? 'Add the days this class meets.' : noTime ? 'Add the time this class meets.' : 'Online or arranged. No fixed meeting.'}

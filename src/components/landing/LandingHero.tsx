@@ -180,7 +180,8 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
             <a
               href="#golfhelm"
               onClick={(e) => scrollToHash(e, '#golfhelm')}
-              className="group inline-flex items-center gap-[9px] text-body font-medium text-text-primary"
+              // SWP-28: the full 44 tall, around the 30px mark.
+              className="group inline-flex min-h-11 items-center gap-[9px] text-body font-medium text-text-primary"
             >
               {/* The GolfHelm mark was 21px — smaller than the cap-height of
                   the label beside it, so it read as a bullet rather than as

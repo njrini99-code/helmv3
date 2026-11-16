@@ -23,13 +23,15 @@ export function SearchField({
   className?: string;
 }) {
   return (
+    // The whole pill is the field's label, so a tap on the glass focuses it; the label holds its words (MAC-20: a label
+    // that wrapped only the icon and the field held no text), hidden, as the placeholder already shows the prompt.
     <label className={'ch-search' + (className ? ` ${className}` : '')}>
+      <span className="ch-sr-only">{label}</span>
       <Icon icon={Search} size={14} />
       <input
         type="search"
         value={value}
         placeholder={placeholder}
-        aria-label={label}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Escape' && value) {

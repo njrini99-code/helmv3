@@ -1,4 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
+import { accessibleName, expectLabelInName } from './label-in-name';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -983,8 +984,8 @@ describe('Classes, on screen', () => {
     expect(screen.getByText(/Your coach can see your classes, when they meet and where.*Your teammates don.t see them\./)).toBeTruthy();
     expect(screen.getByText('Fall 2026 · Aug 20 – Dec 15')).toBeTruthy();
     expect(names()).toEqual(['Intermediate Macroeconomics', 'Writing in the Disciplines', 'Probability and Statistics', 'Corporate Finance', 'Golf Performance Lab']);
-    expect(card(/^STAT 201, Probability and Statistics, Tue, Thu 9:00–10:15 AM$/)).toBeTruthy();
-    expect(card(/^EXSS 188, Golf Performance Lab, Fri 8:00–9:15 AM$/)).toBeTruthy();
+    expect(card(/^STAT 201 .*Probability and Statistics .*Tue, Thu 9:00–10:15 AM/)).toBeTruthy();
+    expect(card(/^EXSS 188 .*Golf Performance Lab .*Fri 8:00–9:15 AM/)).toBeTruthy();
     const stat = card(/^STAT 201/);
     expect(within(stat).getByText('Dr. L. Osei')).toBeTruthy();
     expect(within(stat).getByText('Hanes Hall 120')).toBeTruthy();
@@ -1025,7 +1026,10 @@ describe('Classes, states', () => {
   it('CH-12303 CH-12304 an online class says it has no fixed meeting; times with no days say what is missing and that it is not on the calendar', () => {
     show(PREVIEW_CLASSES_MIXED);
     const online = card(/^CSCI 110/);
-    expect(online.getAttribute('aria-label')).toBe('CSCI 110, Intro to Programming, no fixed meeting');
+    // Named by its face (PMAC-07: Voice Control): no aria-label, its code first, then its name and its no-fixed-meeting line.
+    expect(online.hasAttribute('aria-label')).toBe(false);
+    expectLabelInName(online, 'CSCI 110');
+    expect(accessibleName(online)).toMatch(/^CSCI 110 .*Intro to Programming .*No fixed meeting\./);
     expect(within(online).getByText('Online or arranged. No fixed meeting.').getAttribute('data-ch-code')).toBe('CH-12303');
     expect(online.querySelector('.ch-cl-card__week')).toBeNull();
     const noDays = card(/^ART 101/);
@@ -1322,7 +1326,7 @@ describe('Classes, the redesigned screens: removing a class, sections that fail,
     show();
     const b = card(STAT);
     expect(b.querySelector('.ch-cl-card__code b')?.textContent).toBe('STAT');
-    expect(b.querySelector('.ch-cl-card__code')?.textContent).toBe('STAT201');
+    expect(b.querySelector('.ch-cl-card__code')?.textContent).toBe('STAT 201');
     expect(b.querySelector('.ch-cl-card__cr')?.textContent).toBe('3 cr');
     expect(b.querySelector('.ch-cl-card__name')?.textContent).toBe('Probability and Statistics');
     expect(b.querySelector('.ch-cl-card__prof')?.textContent).toBe('Dr. L. Osei');
@@ -1333,7 +1337,9 @@ describe('Classes, the redesigned screens: removing a class, sections that fail,
     expect(b.querySelector('.ch-cl-card__loc')?.textContent).toBe('Hanes Hall 120');
     // The week is drawing; the binder's name says when it meets.
     expect(b.querySelector('.ch-cl-card__week')?.getAttribute('aria-hidden')).toBe('true');
-    expect(b.getAttribute('aria-label')).toMatch(/^STAT 201, Probability and Statistics, /);
+    expect(b.hasAttribute('aria-label')).toBe(false);
+    expectLabelInName(b, 'STAT 201');
+    expect(accessibleName(b)).toMatch(/^STAT 201 .*Probability and Statistics Dr\. L\. Osei .*9:00/);
   });
 
   it('120103 a class\u2019s sheet shows where and when it meets and who teaches it, and its two keys are Remove and Edit class', async () => {

@@ -12,7 +12,7 @@ import { ratchet, ROOT, walk, type Hit } from './_scan';
  * (the Button's ring). An invalid field's red ring is its own state, not a focus ring. A rule that only moves the ring
  * (`outline-offset` with no outline of its own, as the sign-in text links) moves it 2px too. The files below still draw
  * a ring of their own; their counts may only fall:
- * - controls.css and shell.css: the pressed rows' inset ink highlight (a menu item, the team switcher, the bell rows);
+ * - shell.css: the pressed rows' inset ink highlight (the team switcher, the bell rows);
  * - shell.css: the hero bell and Ask keys, whose 2px clear border is the gap, so their ring sits at offset 0.
  */
 const FOCUS = /:focus(-visible|-within)?(?![\w-])/;
@@ -96,7 +96,6 @@ function rings(): Hit[] {
 }
 
 const ALLOW_RING: Record<string, number> = {
-  'styles/controls.css': 1,
   'styles/messages-overlays.css': 8,
   'styles/shell.css': 4,
 };

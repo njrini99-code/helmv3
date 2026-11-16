@@ -735,7 +735,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-knows form .acts button:disabled { opacity: 0.4; cursor: default; }
 .ch-ak-knows form .acts button[type='button'] { color: var(--ch-text-secondary); }
 
-/* What Ask can see. */
+/* What CoachHelm can see. */
 .ch-ak-see { display: grid; margin: 0; }
 .ch-ak-see > div { display: grid; gap: 2px; padding: 12px 0; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 .ch-ak-see > div:first-child { border-top: 0; padding-top: 0; }

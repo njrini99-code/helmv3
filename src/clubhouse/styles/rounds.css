@@ -2267,6 +2267,8 @@ a.ch-trd-open:focus-visible {
     color: var(--ch-text-primary);
   }
   .ch-rd.is-phone .ch-rd-more li {
+    /* 12, not 8: each key's touch area grows 5 past its 34 box, so at 8 the two met (PL-RND-03). */
+    gap: 12px;
     min-height: 58px;
     border-top-color: var(--ch-ledger-rule-soft);
   }

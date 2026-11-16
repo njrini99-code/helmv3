@@ -216,11 +216,11 @@
     "keyframes": 0
   },
   "src/clubhouse/styles/controls.css": {
-    "hex": 20,
+    "hex": 18,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 36,
+    "raw-shadow": 32,
     "raw-motion": 1,
     "keyframes": 3
   },
@@ -409,7 +409,7 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 39,
+    "raw-shadow": 38,
     "raw-motion": 4,
     "keyframes": 16
   },

@@ -75,7 +75,8 @@ export function CapacitorProvider() {
       });
       themeObserver.observe(document.documentElement, {
         attributes: true,
-        attributeFilter: ['class'],
+        // `data-status-bar`: a surface with its own bar colour under the status area (Clubhouse's green phone bar).
+        attributeFilter: ['class', 'data-status-bar'],
       });
 
       // Hide splash screen once the login content has actually painted.

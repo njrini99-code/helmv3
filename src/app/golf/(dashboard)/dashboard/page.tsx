@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
@@ -10,6 +11,8 @@ import { PlayerHome, PlayerHomeNoTeam } from '@/clubhouse/screens/home/PlayerHom
 import { resolveClubhouseTeam } from '@/clubhouse/routes/team';
 import { marksHint } from '@/clubhouse/lib/phone-hint';
 import { formWindowSpan, parseFormWindow } from '@/clubhouse/data/span';
+
+export const metadata: Metadata = { title: 'Home' };
 
 export const dynamic = 'force-dynamic';
 

@@ -8,6 +8,7 @@ import { type ChAskData, type ChAskSuggestion } from '../../../data/coachhelm-ch
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
 import { BallMark } from './BallMark';
+import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 
 /** Players, and not one recorded round between them: nothing to report yet, and the chat still works. */
 function NothingYet({ phone }: { phone: boolean }) {
@@ -28,7 +29,8 @@ function NothingYet({ phone }: { phone: boolean }) {
 
 const TAG: Record<ChAskSuggestion['id'], string> = { brief: 'Team', strokes: 'Strokes gained', trending: 'Season', week: 'Practice plan' };
 const DOT: Record<string, string> = { warn: 'is-warn', loss: 'is-warn', down: 'is-warn', gain: 'is-fine', up: 'is-fine' };
-const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
+/** The app's one greeting (time-of-day.ts, MAC-14): Home and the welcome say the same words at the same hour. */
+const greeting = (hour: number) => getGreeting(timeOfDayForHour(hour));
 /** The hour in the team's zone, so the server's render and the browser's say the same words. */
 export function zoneHour(iso: string, timezone: string): number {
   return Number(formatWith(new Date(iso), { hour: 'numeric', hourCycle: 'h23', timeZone: timezone }));
