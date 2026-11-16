@@ -140,7 +140,7 @@ export interface ChTeamStats {
    * `sgHalves` and `scoreHalves`: the weeks' newer half against their older half, from the rounds behind each half (A1); null under
    * three weeks, absent when unmeasured (no change is then claimed).
    */
-  team: { sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null; sgHalves?: ChHalves | null; scoreHalves?: ChHalves | null; toPar?: Array<number | null>; toParMean?: number | null };
+  team: { sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null; sgHalves?: ChHalves | null; scoreHalves?: ChHalves | null; toPar?: Array<number | null>; toParMean?: number | null; /** The par the window's rounds were played against, per 18, from rounds with a to-par (DF-C-21). */ parMean?: number | null };
   players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null; sgHalves?: ChHalves | null; scoreHalves?: ChHalves | null; toPar?: Array<number | null>; toParMean?: number | null }>;
   legWeeks: Record<ChLeg, Array<number | null>>;
   /** Each leg's weeks, newer half against older half, from the rounds behind each half (A1), as `team.sgHalves`. */
@@ -254,8 +254,11 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // One cache read serves the window, the previous window and the season bests (either length, and earlier ones when Last 10 or a range
   // reaches before the season): only the rounds with their holes, and only the ones a figure reads, so Last 10's wider read does not
   // pull a year of putts. The season's bests are 18-hole rounds (`seasonFull`).
-  const seasonFull = scoringRounds.filter((r) => (r.holes_played ?? 18) === 18);
-  const seasonRounds = seasonOnly(scoringRounds, start);
+  // DF-C-20: the bests read the season's countable rounds, practice out, whatever the filter, as their caption says ("the filter does
+  // not apply here"); they read `scoringRounds` before, so a Practice or All time filter could make a practice round the low round.
+  const bestsBasis = season.rounds.filter(countsForScoring);
+  const seasonFull = bestsBasis.filter((r) => (r.holes_played ?? 18) === 18);
+  const seasonRounds = seasonOnly(bestsBasis, start);
   const figureIds = [...new Set([...holeWindow, ...holePrev, ...holeRounds(seasonRounds)].map((r) => r.id))];
   const [cache, putts, longest, bench, sgSource] = await Promise.all([
     loadRoundCache(supabase, figureIds, 'stats'),
@@ -488,6 +491,9 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       scoreHalves: roundHalves(weekKeys.map((wk) => inWeek(windowRounds, wk)), toParOf, 'score', byPlayerId),
       toPar: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), toParOf)),
       toParMean: toPar,
+      // DF-C-21: par for the chart's reference line, from the rounds with both a score and a to-par. The average score less the
+      // average to par read two different sets of rounds whenever a round had no to-par, and drew par off by their difference.
+      parMean: weightedMean(windowRounds, (r) => (r.total_score != null && r.score_to_par != null ? r.total_score - r.score_to_par : null)),
     },
     players: playerSeries,
     legWeeks,

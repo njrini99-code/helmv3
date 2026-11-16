@@ -55,3 +55,25 @@ describe('the team trend reads the whole window (DF-C-10)', () => {
     expect(data.team.scoreHalves!.delta).toBeLessThan(-3);
   });
 });
+
+describe('the season bests leave the filter alone (DF-C-20)', () => {
+  it('a practice 65 is never the low round, even with Practice picked', async () => {
+    tables.current.golf_rounds = { data: [...ROUNDS, { ...round('ada', 1, 65), id: 'ada-practice', round_type: 'practice' }] };
+    const { filterFor } = await import('../stats-filter');
+    const low = (bests: Array<{ label: string; value: string }>) => bests.find((b) => /low/i.test(b.label))?.value;
+    const plain = await loadTeamStats({ teamId: 't1', window: 'season' });
+    const practice = await loadTeamStats({ teamId: 't1', window: 'season', filter: { ...filterFor('season'), types: ['practice'] } });
+    expect(low(plain.bests)).toBeDefined();
+    expect(low(practice.bests)).toBe(low(plain.bests));
+    expect(low(practice.bests)).not.toContain('65');
+  });
+});
+
+describe('the trend chart’s par (DF-C-21)', () => {
+  it('is read from the rounds with a to-par, not the average score less an average over other rounds', async () => {
+    // Nine rounds of 74 at par 72, and three of 70 with no to-par: par is 72, where the two averages gave 73 − 2 = 71.
+    tables.current.golf_rounds = { data: ROUNDS.slice(0, 12).map((r, i) => (i < 9 ? { ...r, total_score: 74, score_to_par: 2 } : { ...r, total_score: 70, score_to_par: null })) };
+    const data = await loadTeamStats({ teamId: 't1', window: 'season' });
+    expect(data.team.parMean).toBe(72);
+  });
+});

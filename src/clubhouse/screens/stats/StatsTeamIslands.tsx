@@ -329,10 +329,9 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const padR = 28;
   const padT = 16;
   const padB = 28;
-  // Par is what the window's rounds were played against (the average score less the average to par), not a number written here.
-  const scoreFig = data.figures.find((f) => f.key === 'score');
-  const toPar = scoreFig?.gauge?.kind === 'par' ? scoreFig.gauge.toPar : null;
-  const par = data.team.scoreMean != null && toPar != null ? data.team.scoreMean - toPar : null;
+  // Par is what the window's rounds were played against (each round's score less its to par, averaged over the rounds with both:
+  // DF-C-21), not a number written here.
+  const par = data.team.parMean ?? null;
   const ref: number | null = isSg ? 0 : par;
   const [lo, hi] = useMemo(() => {
     if (!all.length) return isSg ? [-2, 2] : [par != null ? par - 2 : 0, par != null ? par + 6 : 8];
