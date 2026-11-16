@@ -423,6 +423,45 @@ export function PracticeLibrarySkeleton({ tab }: { tab: 'drills' | 'groups' | 't
 }
 
 /**
+ * A drill's page in waiting (MAC-04, production audit 2026-11-15): the drill's own boxes, so the push draws its header and this
+ * in the first frame and the body streams in behind it. The name and its line (area, kind, minutes, players), the two keys
+ * (Archive and Edit; on a phone they share the row), the plan line, then the facts card with its usual set-up, goal and bring
+ * rows. The phone's bar ("Drill", back to Drills) is PracticeLoading's, since it needs the shell.
+ */
+export function PracticeDrillSkeleton() {
+  return (
+    <main className="ch-page ch-prc ch-prc-drillpage" data-ch="practice" aria-busy="true" aria-label="Loading the drill">
+      <header className="ch-prc-h" aria-hidden="true">
+        <div>
+          <LargeTitleSkeleton width={220} className="ch-prc-sk-title" />
+          <span className="ch-prc-sk-desk">
+            <SkelLine line={47.5} bar={36} width={300} />
+          </span>
+          <p className="ch-prc-h__line">
+            <SkelLine line={20} bar={12} width={200} />
+          </p>
+        </div>
+        <div className="ch-prc-h__a is-page">
+          <Skeleton width={84} height={36} radius={12} />
+          <Skeleton width={64} height={36} radius={12} />
+        </div>
+      </header>
+      <p className="ch-prc-none" aria-hidden="true">
+        <SkelLine line={20} bar={12} width={96} />
+      </p>
+      <div className="ch-prc-dfacts" aria-hidden="true">
+        {[180, 240, 140].map((w) => (
+          <div key={w}>
+            <SkelLine line={18} bar={12} width={56} />
+            <SkelLine line={20} bar={14} width={w} />
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+/**
  * A plan's page, the coach's, in waiting: on a Mac the way back, the plan's name and day, the status line with its keys, then
  * the sheet; on a phone (the bar holds the name) the status, the keys under it, then the sheet. Drawn for a published plan
  * outside its practice: Run, which stands between the status and the sheet during practice, pushes the sheet down when it comes.
