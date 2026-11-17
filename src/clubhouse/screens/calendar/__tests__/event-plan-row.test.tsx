@@ -7,7 +7,9 @@ const views = readFileSync('src/clubhouse/screens/calendar/views.tsx', 'utf8');
 
 describe('the Plan row on a practice (N-00 4.17)', () => {
   it('reads each practice’s plan, and a missing table leaves the row out', () => {
-    expect(data).toContain('await readEventPlans(');
+    // #2562 starts the read early and awaits it with attendance in one Promise.all.
+    expect(data).toContain('const plansRead = readEventPlans(');
+    expect(data).toMatch(/await Promise\.all\(\[[^\]]*plansRead,/);
     expect(data).not.toContain('isPracticeTabEnabled');
     expect(data).toContain('.catch(() => null)');
   });
