@@ -3597,6 +3597,18 @@ $$;
 
 ALTER FUNCTION "public"."get_current_player_team_ids"() OWNER TO "postgres";
 
+CREATE OR REPLACE FUNCTION "public"."golf_current_coach_team_ids"() RETURNS SETOF "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT gtcs.team_id
+  FROM public.golf_team_coach_staff gtcs
+  JOIN public.golf_coaches gc ON gc.id = gtcs.coach_id
+  WHERE gc.user_id = (SELECT auth.uid());
+$$;
+
+ALTER FUNCTION "public"."golf_current_coach_team_ids"() OWNER TO "postgres";
+
 CREATE OR REPLACE FUNCTION "public"."get_db_telemetry"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_catalog'
