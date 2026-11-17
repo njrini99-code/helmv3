@@ -1,6 +1,6 @@
 # 2026-11-17 — Silent errors reported (screens-a)
 
-## 2026-11-17 — CoachHelm failures that were swallowed now reach error tracking
+## 2026-11-17 — Swallowed CoachHelm failures now reach error tracking
 
 ```text
 Design package: none
