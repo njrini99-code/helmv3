@@ -1,6 +1,6 @@
 # 2026-11-17 — silent errors (data loaders)
 
-## 2026-11-17 — Player stats report the attesting coach and action context reads
+## 2026-11-17 — Player stats report two more failed reads
 
 ```text
 Design package: none (owner: "just fix the errors", 17 Nov 2026)

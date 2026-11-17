@@ -35,7 +35,8 @@ Held items:     none
 - A read that failed without reporting left nothing in Sentry or error_logs, so
   a broken read could only be found by a coach or player noticing. Every such
   spot in the loaders now reports through the existing pipeline, tagged
-  ui=clubhouse (chLogServer surfaces coachhelm, coachhelm.file, coachhelm.ask, practice, practice.home, practice.builder, practice.plan, practice.library).
+  ui=clubhouse (chLogServer surfaces coachhelm, coachhelm.file, coachhelm.ask,
+  practice, practice.home, practice.builder, practice.plan, practice.library).
 
 ### Verification
 
