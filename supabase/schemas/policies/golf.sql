@@ -658,9 +658,11 @@ CREATE POLICY "golf_event_attendance_insert_self" ON "public"."golf_event_attend
    FROM "public"."golf_events" "e"
   WHERE (("e"."id" = "golf_event_attendance"."event_id") AND "public"."is_golf_team_player"("e"."team_id"))))));
 
-CREATE POLICY "golf_event_attendance_select_team" ON "public"."golf_event_attendance" FOR SELECT USING ((EXISTS ( SELECT 1
+CREATE POLICY "golf_event_attendance_select_team" ON "public"."golf_event_attendance" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."golf_events" "e"
-  WHERE (("e"."id" = "golf_event_attendance"."event_id") AND ("public"."is_golf_team_coach"("e"."team_id") OR "public"."is_golf_team_player"("e"."team_id"))))));
+  WHERE (("e"."id" = "golf_event_attendance"."event_id") AND (("e"."team_id" IN ( SELECT "public"."golf_current_coach_team_ids"() AS "golf_current_coach_team_ids")) OR (("e"."team_id" IN ( SELECT "public"."get_current_player_team_ids"() AS "get_current_player_team_ids")) AND ("golf_event_attendance"."player_id" IN ( SELECT "gp"."id"
+           FROM "public"."golf_players" "gp"
+          WHERE ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))))))));
 
 CREATE POLICY "golf_event_attendance_update_coach_or_player" ON "public"."golf_event_attendance" FOR UPDATE USING ((EXISTS ( SELECT 1
    FROM "public"."golf_events" "e"
@@ -684,7 +686,12 @@ CREATE POLICY "golf_events_delete_coach" ON "public"."golf_events" FOR DELETE US
 
 CREATE POLICY "golf_events_insert_coach" ON "public"."golf_events" FOR INSERT WITH CHECK ("public"."is_golf_team_coach"("team_id"));
 
-CREATE POLICY "golf_events_select_team" ON "public"."golf_events" FOR SELECT USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id")));
+CREATE POLICY "golf_events_select_team" ON "public"."golf_events" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "public"."golf_current_coach_team_ids"() AS "golf_current_coach_team_ids")) OR (("team_id" IN ( SELECT "public"."get_current_player_team_ids"() AS "get_current_player_team_ids")) AND
+CASE
+    WHEN ("event_type" = 'class'::"text") THEN "public"."golf_player_owns_class_event"("description")
+    WHEN ("event_type" = 'meeting'::"text") THEN "public"."golf_player_invited_to_event"("id")
+    ELSE true
+END)));
 
 CREATE POLICY "golf_events_update_coach" ON "public"."golf_events" FOR UPDATE USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
 
