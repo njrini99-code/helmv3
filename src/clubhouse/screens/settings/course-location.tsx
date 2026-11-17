@@ -60,6 +60,7 @@ export function liveCourseSource(teamId: string): ChCourseSource {
     try {
       return createClient().from('golf_team_settings') as unknown as Untyped;
     } catch {
+      // No Supabase config (tests, a bare preview): the row reads as off, by design.
       return null;
     }
   };

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { chReport } from '../../lib/track';
 import type { ChMsg } from './model';
 
 /**
@@ -59,7 +60,8 @@ export function useAttachmentFacts(messageIds: readonly string[], enabled = true
     let supabase: ReturnType<typeof createClient>;
     try {
       supabase = createClient();
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'messages.attachmentFacts', action: 'createClient', severity: 'low' });
       return;
     }
     for (const id of fresh) asked.current.add(id);
@@ -72,6 +74,8 @@ export function useAttachmentFacts(messageIds: readonly string[], enabled = true
           .order('created_at', { ascending: true }),
       )
         .then(({ data, error }) => {
+          // A failed read leaves the bubbles without a held frame, as before; it is reported, not drawn.
+          if (error) chReport(new Error(error.message), { surface: 'messages.attachmentFacts', action: 'golf_message_attachments', severity: 'low' });
           if (!mounted.current || error || !data?.length) return;
           setFacts((prev) => {
             const next = new Map(prev);
@@ -79,7 +83,7 @@ export function useAttachmentFacts(messageIds: readonly string[], enabled = true
             return next;
           });
         })
-        .catch(() => undefined);
+        .catch((err: unknown) => chReport(err, { surface: 'messages.attachmentFacts', action: 'golf_message_attachments', severity: 'low' }));
     }
   }, [key, enabled]);
   return facts;
