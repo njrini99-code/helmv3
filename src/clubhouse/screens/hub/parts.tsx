@@ -251,7 +251,7 @@ function Attachments({ a, files }: { a: ChHubAnnouncement; files: ChHubAttachmen
       if (res.success && res.data) {
         setState({ status: 'ready', rows: res.data.files.map((f) => ({ id: f.id, title: f.title, type: kindLabel(f.type), size: null, date: null, isPublic: true })) });
       } else {
-        chReport(new Error(res.error || 'announcement files read failed'), { surface: 'hub.announcements', action: 'announcementFiles', severity: 'low', extra: { announcementId: a.id } });
+        chReport(new Error((!res.success && res.error) || 'announcement files read failed'), { surface: 'hub.announcements', action: 'announcementFiles', severity: 'low', extra: { announcementId: a.id } });
         setState({ status: 'failed' });
       }
     } catch (err) {
