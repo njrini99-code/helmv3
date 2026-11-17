@@ -138,7 +138,7 @@ Team stats (the back button, or Team on the phone), Messages on the direct threa
 
 ```text
 Design:          the owner (Claude Design)
-Implementation:  src/clubhouse/screens/stats (StatsPlayer, GameDetail, StatsPlayerPhone), loader
+Implementation:  src/clubhouse/screens/stats (StatsPlayer, GameDetail, StatsPlayerPhoneShs), loader
                  src/clubhouse/data/stats-player.ts, route src/clubhouse/routes/stats.tsx
 Data:            stats_analytics and player_coachhelm_development: golf_players, golf_team_members,
                  golf_rounds, golf_round_stats_cache, shot-level stats through getDetailedStats,

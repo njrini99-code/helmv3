@@ -1,5 +1,12 @@
 # P005 — Stats (player): parity with the production player stats page
 
+> Status, 2026-11-17: historical record. The production (Fairway) player stats
+> page this table was checked against was deleted when the owner retired
+> Fairway on 2026-11-14 (#2527). Most `SS` and component paths below no longer
+> exist on `main`; they are kept as written and can be read in the tag
+> `archive/fairway-2026-11-15`. The shared calculators (`CALC`, under
+> `src/lib/`) are still live.
+
 Owner, 2026-09-30: "scrambling, GIR, putting, all of it needs to be in there." This is the row-by-row record
 of what the production (Fairway) player stats page shows and where Clubhouse shows it. Every row is either
 **shown** (already built), **added** (built in the parity pass of 2026-09-30) or **not shown because <reason>**.
