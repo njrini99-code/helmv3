@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   init: vi.fn(),
   captureRequestError: vi.fn(),
   logServerException: vi.fn(async () => {}),
+  scopeTags: [] as Array<[string, string]>,
   vercelAIIntegration: vi.fn((opts: unknown) => ({ name: 'VercelAI', opts })),
 }));
 vi.mock('@sentry/nextjs', () => ({
@@ -30,6 +31,8 @@ vi.mock('@sentry/nextjs', () => ({
   consoleLoggingIntegration: () => ({ name: 'ConsoleLogging' }),
   captureConsoleIntegration: () => ({ name: 'CaptureConsole' }),
   captureRequestError: mocks.captureRequestError,
+  withScope: (fn: (scope: { setTag: (k: string, v: string) => void }) => void) =>
+    fn({ setTag: (k: string, v: string) => mocks.scopeTags.push([k, v]) }),
 }));
 vi.mock('@supabase/supabase-js/tracing', () => ({}));
 vi.mock('@/lib/observability/register-process-error-handlers', () => ({
@@ -141,6 +144,46 @@ describe('onRequestError — captureRequestError respects __helmBridgeLogged', (
     err.name = 'LiftingSetSaveFailed';
     await onRequestError(err, baseRequest, baseErrorContext);
     expect(mocks.logServerException).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('onRequestError — the product UI the request was serving', () => {
+  beforeEach(() => {
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs');
+    mocks.captureRequestError.mockClear();
+    mocks.logServerException.mockClear();
+    mocks.scopeTags.length = 0;
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  const loggedTags = () =>
+    (mocks.logServerException.mock.calls[0] as unknown as [unknown, { tags?: Record<string, string> }])[1].tags;
+
+  it('tags a Clubhouse page failure ui=clubhouse in Sentry and on the Bridge row', async () => {
+    await onRequestError(new Error('render failed'), baseRequest, baseErrorContext);
+    expect(mocks.captureRequestError).toHaveBeenCalledTimes(1);
+    expect(mocks.scopeTags).toEqual([['ui', 'clubhouse']]);
+    expect(loggedTags()).toEqual({ ui: 'clubhouse' });
+  });
+
+  it('tags an API route called from a Clubhouse page by its Referer', async () => {
+    const request = {
+      path: '/api/coachhelm/v3/chat/stream',
+      method: 'POST',
+      headers: { referer: 'https://helm.example/golf/dashboard/coachhelm' },
+    };
+    await onRequestError(new Error('stream failed'), request, { ...baseErrorContext, routeType: 'route' });
+    expect(loggedTags()).toEqual({ ui: 'clubhouse' });
+  });
+
+  it('leaves a non-Clubhouse failure untagged', async () => {
+    const request = { path: '/admin/errors', method: 'GET', headers: { referer: 'https://helm.example/golf/dashboard' } };
+    await onRequestError(new Error('admin failed'), request, baseErrorContext);
+    expect(mocks.captureRequestError).toHaveBeenCalledTimes(1);
+    expect(mocks.scopeTags).toEqual([]);
+    expect(loggedTags()).toBeUndefined();
   });
 });
 

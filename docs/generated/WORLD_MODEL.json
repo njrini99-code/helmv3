@@ -4200,6 +4200,10 @@
         "definedIn": "supabase/migrations/20260613190000_course_library_normalize_unique.sql"
       },
       {
+        "id": "golf_current_coach_team_ids",
+        "definedIn": "supabase/migrations/20261117010000_golf_events_policy_team_sets.sql"
+      },
+      {
         "id": "golf_day_token_dow",
         "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
       },
@@ -6017,6 +6021,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/incidents/fetch.ts",
+          "anchor": "src/lib/admin/bridge-scope"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/incidents/present.ts",
           "anchor": "src/lib/admin/feature-registry"
         },
@@ -6157,6 +6166,18 @@
           "kind": "import_graph",
           "path": "src/lib/admin/incident-resolver.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
+        }
+      ]
+    },
+    {
+      "source": "admin_incidents",
+      "target": "clubhouse",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-incidents.md",
+          "anchor": "clubhouse"
         }
       ]
     },
@@ -6481,6 +6502,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/admin-tracer-data.ts",
           "anchor": "src/lib/admin/incident-grouping"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/__tests__/bridge-scope.test.ts",
+          "anchor": "src/lib/admin/incidents/fetch"
         },
         {
           "kind": "import_graph",
@@ -7922,6 +7948,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/__tests__/schedule-bridge-write.test.ts",
           "anchor": "src/lib/observability/vercel-wait-until"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/bridge-scope.ts",
+          "anchor": "src/lib/observability/ui-surface"
         },
         {
           "kind": "import_graph",

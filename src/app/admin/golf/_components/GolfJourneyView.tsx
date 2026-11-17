@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { fetchGolfJourneyLens } from '@/lib/admin/lenses/golf-journey';
 import { fetchErrorsTab } from '@/lib/admin/data/errors';
+import { BRIDGE_UI_SCOPE } from '@/lib/admin/bridge-scope';
 import { fetchGolfTab, sortTeamsByHealth } from '@/lib/admin/data/golf';
 import { fetchAiAvailability } from '@/lib/admin/data/ai-availability';
 import { fetchReleaseLedger } from '@/lib/admin/data/release-ledger';
@@ -13,7 +14,7 @@ import { DetailsDisclosure } from '../../_components/TabHeader';
 export async function GolfJourneyView() {
   const [journey, errors, golf, ai, releases] = await Promise.all([
     fetchGolfJourneyLens(),
-    fetchErrorsTab({ sport: 'golf', windowHours: 168 }),
+    fetchErrorsTab({ sport: 'golf', windowHours: 168, scope: BRIDGE_UI_SCOPE }),
     fetchGolfTab(),
     fetchAiAvailability(),
     fetchReleaseLedger(),
@@ -44,7 +45,7 @@ export async function GolfJourneyView() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <Surface padding="sm">
-          <SectionLabel>Golf incidents (7d)</SectionLabel>
+          <SectionLabel>Clubhouse incidents (7d)</SectionLabel>
           <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
             <p className="font-fw-mono text-2xl font-bold tabular-nums text-warm-900">{errors.counts.actionableGroups}</p>
             <p className="min-w-0 text-sm text-warm-500">actionable · {errors.counts.affectedUsers} users affected</p>
@@ -55,7 +56,7 @@ export async function GolfJourneyView() {
                 {inc.title}
               </p>
             ))}
-            {errors.incidents.length === 0 && <PanelNoData label="No golf incidents in the last 7 days" description="" />}
+            {errors.incidents.length === 0 && <PanelNoData label="No Clubhouse incidents in the last 7 days" description="" />}
           </div>
           <Link href="/admin/errors?sport=golf" className="mt-1 inline-flex min-h-11 items-center text-xs font-medium text-accent-700 hover:underline">
             Open Incidents →

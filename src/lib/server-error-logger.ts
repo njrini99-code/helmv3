@@ -39,6 +39,7 @@ import { redactSensitiveUrl } from '@/lib/security/redact-url';
 import { resolveFeatureKey } from '@/lib/admin/feature-registry';
 import { absorbIntoRecentEvent } from '@/lib/admin/durable-collapse';
 import { drainCollapsedCount, releaseEmit, shouldEmit } from '@/lib/admin/emit-throttle';
+import { ambientUiSurface } from '@/lib/observability/ui-surface';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -161,6 +162,10 @@ function normalizeContext(context: RoundErrorContext, traceMessage?: string): Re
     extra: context.extra ?? {},
     sport: context.sport ?? null,
     teamId: context.teamId ?? null,
+    // The product UI at the top level too, where the browser path writes it (error_logs.context.ui,
+    // admin_events.metadata.ui), so the Bridge's Clubhouse-only views read one key for both writers.
+    // Present only when tagged, so an untagged row keeps its old shape.
+    ...(typeof context.tags?.ui === 'string' && context.tags.ui ? { ui: context.tags.ui } : {}),
     ...(traceMessage ? { trace_message: traceMessage.slice(0, 2000) } : {}),
     // Only reached when shouldPersistAdminTables() is true (writeAdminTables
     // is called after that gate), so this is always 'production' in practice
@@ -345,17 +350,32 @@ function enrichTraceContext(message: string, rawContext: RoundErrorContext): Rou
             : {}),
         };
 
-  const sport = inferSport(message, context);
-  if (!sport) return context;
+  const tagged = withAmbientUi(context);
+  const sport = inferSport(message, tagged);
+  if (!sport) return tagged;
   const classified = classifyTraceFeature(
     { route: context.route ?? null, url: context.url ?? null, action: context.action ?? null },
     message,
   );
   return {
-    ...context,
+    ...tagged,
     sport,
-    feature: context.feature ?? classified.feature ?? resolveFeatureKey(null, context.featureArea),
+    feature: tagged.feature ?? classified.feature ?? resolveFeatureKey(null, tagged.featureArea),
   };
+}
+
+/**
+ * Default `tags.ui` from the request being served, the same way requestId, traceId and userId are defaulted above:
+ * a server action, a CoachHelm chat turn or a round save that fails while serving Clubhouse logs with no `ui` tag of
+ * its own, and the Bridge's Clubhouse-only views (src/lib/admin/bridge-scope.ts) would not see it. The ambient read
+ * is in-memory and never throws (see ambientUiSurface). An explicit `tags.ui` from the caller always wins, and an
+ * unknown UI leaves the context exactly as it was.
+ */
+function withAmbientUi(context: RoundErrorContext): RoundErrorContext {
+  if (context.tags?.ui) return context;
+  const ui = ambientUiSurface();
+  if (!ui) return context;
+  return { ...context, tags: { ...(context.tags ?? {}), ui } };
 }
 
 // Ceiling on 'bridge_write_failed' Sentry alerts (mirrors instrumentation.ts's

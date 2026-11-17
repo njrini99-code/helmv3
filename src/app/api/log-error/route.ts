@@ -18,6 +18,7 @@ import {
   redactFreeTextForStorage,
 } from '@/lib/observability/redact-pii';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
+import { uiSurfaceForPath } from '@/lib/observability/ui-surface';
 import type { Json } from '@/lib/types/database';
 
 function readContextString(context: unknown, key: string): string | null {
@@ -330,6 +331,10 @@ export async function POST(request: NextRequest) {
     const trace = classifyTraceSurface(traceRoute, traceAction);
     const finalSport = readContextSport(redactedContext) ?? trace.sport;
     const finalFeature = (readContextString(redactedContext, 'feature') as FeatureKey | null) ?? trace.feature;
+    // The product UI. `chReport` sends `ui: 'clubhouse'`; any other report from a Clubhouse page (an error boundary, a
+    // shared hook such as round auto-save) is a Clubhouse error too, so the reported route decides it. Read by the
+    // Bridge's Clubhouse-only views (src/lib/admin/bridge-scope.ts) at error_logs.context.ui and admin_events.metadata.ui.
+    const finalUi = readContextString(redactedContext, 'ui') ?? uiSurfaceForPath(traceRoute ?? url);
 
     const fingerprint = buildIncidentSignature({
       severity,
@@ -368,6 +373,7 @@ export async function POST(request: NextRequest) {
             action: traceAction,
             sport: finalSport,
             feature: finalFeature,
+            ...(finalUi ? { ui: finalUi } : {}),
           }
         : {
             anonymous: isAnonymous,
@@ -376,6 +382,7 @@ export async function POST(request: NextRequest) {
             action: traceAction,
             sport: finalSport,
             feature: finalFeature,
+            ...(finalUi ? { ui: finalUi } : {}),
           };
 
     // The client already sends the error's constructor name in
@@ -410,6 +417,7 @@ export async function POST(request: NextRequest) {
       // exact false confidence the field exists to avoid.
       sport: finalSport,
       feature: finalFeature,
+      ...(finalUi ? { ui: finalUi } : {}),
       reportedSeverity: errorReport.severity || 'medium',
       timestamp,
       context: contextWithAnonymity,
