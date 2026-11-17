@@ -219,11 +219,17 @@ export async function recordInsightExposure(
     }));
 
     const insightIds = Array.from(new Set(payload.map((r) => r.insight_id)));
+    const dayStart = startOfUtcDayIso();
+    // created_at carries the same bound as shown_at (both default to now() and
+    // this module never writes either), and it is indexed: with shown_at alone
+    // Postgres read every exposure row an insight has ever had (26k for the
+    // busiest one, 291ms mean and up to 17s on production) to keep today's.
     const { data: existing, error: existingError } = await admin
       .from('golf_insight_exposure')
       .select('insight_id, coach_id, surface')
       .in('insight_id', insightIds)
-      .gte('shown_at', startOfUtcDayIso());
+      .gte('created_at', dayStart)
+      .gte('shown_at', dayStart);
 
     if (existingError) {
       await logServerError(`recordInsightExposure dedup read failed: ${existingError.message}`, {

@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { eventDaySpan, getValidTimezone } from '@/lib/calendar/timezone';
 import { classIdFromDescription, isClassEvent, stripClassTag } from '@/lib/calendar/class-events';
 import { describeRecurrenceRule, parseRecurrenceRule } from '@/lib/golf/recurrence';
@@ -90,6 +91,26 @@ async function readEventPlans(sb: Awaited<ReturnType<typeof createClient>>, team
   if (error) return planRead(error);
   for (const v of (data ?? []) as Array<{ plan_id: string; event_id: string }>) out.set(v.event_id, { id: v.plan_id, state: 'published' });
   return out;
+}
+
+type AttendanceRow = { id: string; event_id: string; player_id: string; status: string | null; notified_at: string | null };
+
+/**
+ * The RSVP rows of these events, by `event_id` (an index read). Chunked for the URL, each chunk paged; any failed chunk
+ * fails the whole read, so a half-read list never shows as "no one replied".
+ */
+async function readAttendance(sb: Awaited<ReturnType<typeof createClient>>, eventIds: string[]): Promise<{ data: AttendanceRow[] | null; error: { message: string; code?: string | null } | null }> {
+  if (!eventIds.length) return { data: [], error: null };
+  const chunks = await Promise.all(
+    chunkIds(eventIds).map((chunk) =>
+      fetchAllRowsResult<AttendanceRow>((from, to) =>
+        sb.from('golf_event_attendance').select('id, event_id, player_id, status, notified_at').in('event_id', chunk).order('id', { ascending: true }).range(from, to),
+      ),
+    ),
+  );
+  const failed = chunks.find((c) => c.error);
+  if (failed) return { data: null, error: failed.error };
+  return { data: chunks.flatMap((c) => c.data ?? []), error: null };
 }
 
 const TYPES: ReadonlySet<string> = new Set(['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'class', 'other']);
@@ -238,18 +259,9 @@ export async function loadCalendar(input: {
   // read by start alone left it out (as Fairway's still does, page.tsx).
   const overlapsWindow = `end_time.gte.${fromIso},start_time.gte.${fromIso}`;
 
-  // RSVPs are read beside the events (audit A-03: they waited for the event ids, a third round trip on every load), by
-  // the same team and window through the event they belong to; the rows of events that aren't shown are dropped below.
-  const attendanceRead = fetchAllRowsResult((from, to) =>
-    supabase
-      .from('golf_event_attendance')
-      .select('id, event_id, player_id, status, notified_at, golf_events!inner(id)')
-      .eq('golf_events.team_id', input.teamId)
-      .lt('golf_events.start_time', toIso)
-      .or(overlapsWindow, { referencedTable: 'golf_events' })
-      .order('id', { ascending: true })
-      .range(from, to),
-  );
+  // Practice's plan on each practice: needs only the team, so it is read beside the events, not after them. Off, or the
+  // tables not there yet, it's simply absent.
+  const plansRead = readEventPlans(supabase, input.teamId, input.role === 'coach').catch(() => null);
   // The team's trips (N13P-24): Team Hub can plan one with no calendar event, and the calendar read only events. A trip that is on
   // the calendar as an event is drawn once, as that event (calendar-trips.ts).
   const tripsRead = supabase
@@ -313,18 +325,22 @@ export async function loadCalendar(input: {
   // read beside the rows: they tell a player that an event asking for replies invites no one, so the whole team may reply
   // (production allows it: golf_event_attendance_insert_self), and, only when the rows failed, whether a meeting invites
   // anyone at all (D2-8, below). Until that function exists (`missing`) the rows answer both, as before.
-  // Practice's plan on each practice: one read beside the events. Off, or the tables not there yet, it's simply absent.
-  const planAnswer = await readEventPlans(supabase, input.teamId, input.role === 'coach').catch(() => null);
+  const meetingIds = input.role === 'player' ? rows.filter((r) => !isClassEvent(r) && (r.event_type === 'meeting' || r.requires_rsvp === true)).map((r) => r.id) : [];
+  // RSVPs by the shown events' ids, beside the plans and the meeting counts. Read through the event instead
+  // (golf_events!inner filtered by team and window), Postgres walked every attendance row on every team in id order and
+  // ran RLS on each: 836ms mean on production for about 20 rows. By event_id it is an index read (about 10ms).
+  // Chunked (chunkIds) for the URL length and paged (fetchAllRowsResult): 200 events x a full roster passes PostgREST's
+  // 1,000-row cap.
+  const [attendanceRes, planAnswer, meetingCounts] = await Promise.all([
+    readAttendance(supabase, ids),
+    plansRead,
+    meetingIds.length ? loadAttendanceCounts(supabase, meetingIds) : null,
+  ]);
+  const { data: attendance, error: attendanceError } = attendanceRes;
   const plans = planAnswer === 'absent' ? null : planAnswer;
   // The plans didn't read: each practice says so where its plan shows (CH-6290), never "no plan".
   const plansError = planAnswer === null;
   if (plansError) chLogServer('calendar', 'eventPlans', 'plan read failed', 'calendar');
-  const meetingIds = input.role === 'player' ? rows.filter((r) => !isClassEvent(r) && (r.event_type === 'meeting' || r.requires_rsvp === true)).map((r) => r.id) : [];
-  // Paged (fetchAllRowsResult): 200 events x a full roster passes PostgREST's 1,000-row cap.
-  const [{ data: attendance, error: attendanceError }, meetingCounts] = await Promise.all([
-    attendanceRead,
-    meetingIds.length ? loadAttendanceCounts(supabase, meetingIds) : null,
-  ]);
   if (meetingCounts?.kind === 'error') chLogServer('calendar', 'meetingInvites', meetingCounts.error, 'calendar');
   if (attendanceError) {
     chLogServer('calendar', 'attendance', attendanceError, 'calendar');

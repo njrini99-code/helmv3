@@ -271,7 +271,7 @@ describe('recordInsightExposure — bounded retry on transient network errors', 
       table: {
         select: () => ({
           in: () => ({
-            gte: async () => ({ data: [], error: null }),
+            gte: () => ({ gte: async () => ({ data: [], error: null }) }),
           }),
         }),
         insert: insertSpy,

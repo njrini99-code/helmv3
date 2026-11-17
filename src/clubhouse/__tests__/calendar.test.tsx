@@ -1828,7 +1828,7 @@ describe('Calendar · the loader', () => {
     expect(JSON.stringify(asked.golf_events![0])).toMatch(/requires_rsvp/);
   });
 
-  it('62101 the loader reads each table once for the whole screen (the events twice: the window, and the coach’s count for CH-6309), in two rounds: the team, then events with classes, busy time and the window’s replies (A-03)', async () => {
+  it('62101 the loader reads each table once for the whole screen (the events twice: the window, and the coach’s count for CH-6309), in three rounds: the team, then events with classes and busy time, then the shown events’ replies by id', async () => {
     const { asked, order } = serve({ ...healthy(), golf_events: { data: [eventRow('e1'), eventRow('e2'), eventRow('e3'), classEventRow('c1', 'k1')] } });
     await load();
     expect(Object.fromEntries(Object.entries(asked).map(([table, calls]) => [table, calls.length]))).toEqual({
@@ -1841,11 +1841,12 @@ describe('Calendar · the loader', () => {
       golf_event_attendance: 1,
     });
     expect(order.slice(0, 3).sort()).toEqual(['golf_team_members', 'golf_team_settings', 'golf_teams']);
-    expect(order.slice(3, 8).sort()).toEqual(['golf_coach_blocked_time', 'golf_event_attendance', 'golf_events', 'golf_events', 'golf_player_classes']);
-    // The window's replies are asked for in one read beside the events, through the event they belong to (the team and
-    // the same window), never one event at a time.
-    expect(asked.golf_event_attendance![0]).toContainEqual(['eq', ['golf_events.team_id', expect.any(String)]]);
-    expect(asked.golf_event_attendance![0]!.some(([m]) => m === 'in')).toBe(false);
+    expect(order.slice(3, 7).sort()).toEqual(['golf_coach_blocked_time', 'golf_events', 'golf_events', 'golf_player_classes']);
+    expect(order.at(-1)).toBe('golf_event_attendance');
+    // The replies are asked for once, by the ids of the events shown (an index read), never one event at a time and never
+    // through a join on the event (golf_events!inner), which walked every team's replies on production (836ms mean).
+    expect(asked.golf_event_attendance![0]).toContainEqual(['in', ['event_id', ['e1', 'e2', 'e3']]]);
+    expect(JSON.stringify(asked.golf_event_attendance![0])).not.toMatch(/golf_events/);
   });
 
   it('the coach’s people carry availability, a player’s never do (it is the coach’s to see, v1)', async () => {

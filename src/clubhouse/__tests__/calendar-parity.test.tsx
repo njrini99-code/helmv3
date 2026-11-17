@@ -466,7 +466,7 @@ describe('Calendar parity · an event that asks for replies and invites no one i
 });
 
 describe('Calendar parity · the loader reads every event that overlaps its window, not only those that start in it', () => {
-  it('the read asks for events that start before the window ends and end on or after it starts (the replies too)', async () => {
+  it('the read asks for events that start before the window ends and end on or after it starts (the replies follow those events)', async () => {
     freezeClock();
     const asked: Record<string, Array<Array<[string, unknown[]]>>> = {};
     serve([]);
@@ -482,8 +482,8 @@ describe('Calendar parity · the loader reads every event that overlaps its wind
     expect(ev0.find(([k]) => k === 'or')![1]).toEqual([`end_time.gte.${from},start_time.gte.${from}`]);
     expect(ev0.find(([k]) => k === 'lt')![1]).toEqual(['start_time', '2026-11-27T00:00:00Z']);
     expect(ev0.some(([k, args]) => k === 'gte' && args[0] === 'start_time')).toBe(false);
-    const att = asked.golf_event_attendance![0]!;
-    expect(att.find(([k]) => k === 'or')![1]).toEqual([`end_time.gte.${from},start_time.gte.${from}`, { referencedTable: 'golf_events' }]);
+    // The replies are read by the ids of the events the window returned, so they follow the same window.
+    expect(asked.golf_event_attendance).toBeUndefined();
   });
 
   it('a trip that began before the window fills the window’s first days, all day or timed', async () => {
