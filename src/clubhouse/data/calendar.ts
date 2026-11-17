@@ -407,6 +407,7 @@ export async function loadCalendar(input: {
         const rule = parseRecurrenceRule(r.recurrence_rule);
         recurring = rule ? describeRecurrenceRule(rule) : null;
       } catch {
+        // A stored rule the parser can't read: the row just says nothing about repeating.
         recurring = null;
       }
     }
@@ -506,6 +507,7 @@ export async function loadCalendar(input: {
       try {
         rule = parseRecurrenceRule(b.recurrence_rule);
       } catch {
+        // A stored rule the parser can't read: the block is drawn on its own dates only.
         rule = null;
       }
       if (!rule && b.end_date < range.from) continue;

@@ -57,7 +57,9 @@ async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: st
     chLogServer('practice.plan', 'team context', teamError ?? membersError ?? profiles.error ?? { message: 'context failed' }, 'practice_plans');
     return FAILED;
   }
-  const { data: coaches } = team?.organization_id ? await sb.from('golf_coaches').select('full_name').eq('organization_id', team.organization_id) : { data: [] };
+  const { data: coaches, error: coachesError } = team?.organization_id ? await sb.from('golf_coaches').select('full_name').eq('organization_id', team.organization_id) : { data: [], error: null };
+  // The sheet's coach names are a byline: a failed read leaves them off, and is reported.
+  if (coachesError) chLogServer('practice.plan', 'coaches', coachesError, 'practice_plans');
   const active = new Set((members ?? []).map((m) => m.player_id).filter((id): id is string => !!id));
   const names = new Map<string, string>();
   for (const p of profiles.data) if (active.has(p.id)) names.set(p.id, [p.first_name, p.last_name].filter(Boolean).join(' '));
@@ -107,6 +109,7 @@ export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
   if (ctx === FAILED) return { status: 'failed' };
   if (!ctx) return { status: 'gone' };
   const opens = row.status === 'published' ? await practiceTables(sb).from('golf_practice_plan_opens').select('player_id').eq('plan_id', planId) : null;
+  if (opens?.error && !isPracticeMissing(opens.error.code)) chLogServer('practice.plan', 'opens', opens.error, 'practice_plans');
   const seen = opens && !opens.error ? { names: ((opens.data ?? []) as Array<{ player_id: string }>).map((o) => ctx.names.get(o.player_id)).filter((n): n is string => !!n), of: ctx.names.size } : null;
   const zone = ctx.zone;
   const [{ format, failed: formatFailed }, live] = await Promise.all([
@@ -142,6 +145,7 @@ async function liveVersionFor(sb: Awaited<ReturnType<typeof createClient>>, plan
   if (!ctx || ctx.cancelled) return { status: 'gone' };
   // No lines to read leaves an Own work stop with its title; the plan still opens.
   const { data: lines, error: linesError } = await practiceTables(sb).from('golf_practice_plan_lines').select('block_id, line').eq('plan_id', planId).eq('version', row.version).eq('player_id', playerId);
+  if (linesError && !isPracticeMissing(linesError.code)) chLogServer('practice.plan', 'own lines', linesError, 'practice_plans');
   const body = withOwnLines(parsed, playerId, linesError ? [] : ((lines ?? []) as Array<{ block_id: string; line: string }>));
   return { status: 'ready', row, body, ctx };
 }
