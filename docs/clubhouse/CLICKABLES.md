@@ -1,5 +1,12 @@
 # Clubhouse clickable inventory: the v2 boards against the built Clubhouse
 
+> **Superseded by [generated/CLUBHOUSE_CLICKABLE_MAP.md](generated/CLUBHOUSE_CLICKABLE_MAP.md)
+> (`npm run clubhouse:clickables`); this file is a snapshot of 2026-09-30, kept
+> as history.** Its line citations point at code that has since moved: nine of
+> the files it cites no longer exist and many lines run past the end of their
+> file. The generated map lists every control in `src/clubhouse` as it is now;
+> it does not repeat this file's board-against-build judgments.
+
 ## October 6 release evidence
 
 The board comparison below is a September source snapshot. Its line numbers
