@@ -29,6 +29,7 @@ import { Modal } from '../../../ui/Modal';
 import { BackLink } from '../../../ui/Section';
 import { Segmented } from '../../../ui/Segmented';
 import { CH_TOAST_ACTION_MS, useToast } from '../../../ui/Toast';
+import { chReport } from '../../../lib/track';
 import type { PlanPartData } from '../../coachhelm/plan/PlanCard';
 import { printPlan } from '../../coachhelm/plan/PrintPlan';
 import { PracticePlanSheet } from '../../coachhelm/plan/sheet/PracticePlanSheet';
@@ -256,7 +257,8 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         action: { label: 'Undo', run: () => toast({ title: 'Not published. Nobody was told.' }) },
         onExpire: () => void commitPublish(expectedVersion),
       });
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'practice.builder', action: 'practice.publish', severity: 'high' });
       setPublishError('Couldn’t publish the plan. Nothing was sent.');
     } finally {
       setPublishing(false);
@@ -272,7 +274,8 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       }
       toast({ title: 'Published', body: republish && !tell ? 'No one was told.' : `${plural(res.recipients, 'person', 'people')} told`, code: 'CH-13081' });
       router.push(`/golf/dashboard/practice/plan/${data.planId}`);
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'practice.builder', action: 'practice.publish', severity: 'high' });
       setPublishError('Couldn’t publish the plan. Nothing was sent.');
       setConfirm(true);
     }
@@ -286,7 +289,10 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     setMoveAsk(false);
     if (previewing || !data.eventId) return setMoving(null);
     const date = zonedDate(data.start, data.zone);
-    const res = await updateGolfEvent(data.eventId, { startDate: date, startTime: moving.start, endTime: moving.end || undefined, timezoneOffset: offsetMinutesFor(date, moving.start, data.zone) ?? undefined }).catch(() => null);
+    const res = await updateGolfEvent(data.eventId, { startDate: date, startTime: moving.start, endTime: moving.end || undefined, timezoneOffset: offsetMinutesFor(date, moving.start, data.zone) ?? undefined }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.builder', action: 'practice.moveTime', severity: 'high' });
+      return null;
+    });
     setMoving(null);
     if (!res?.success) return toast({ tone: 'error', title: 'Couldn’t move the practice', body: 'It’s still at the old time.' });
     router.refresh();
