@@ -410,7 +410,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         title="Short game"
         def={
           <>
-            <b>Scrambling</b> is par or better after missing the green. <b>Sand saves</b> is the same from a greenside bunker.
+            <b>Scrambling</b> is par or better after missing the green, plus every sand save. <b>Sand saves</b> is getting down in two from a greenside bunker, whatever the score.
           </>
         }
         read={

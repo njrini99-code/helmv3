@@ -141,7 +141,7 @@ SELECT is((SELECT fairways_total FROM public.golf_round_stats_cache WHERE round_
 SELECT is((SELECT total_putts FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-901d-000000000001'), 31, 'G1 cache: 31 putts');
 SELECT is((SELECT one_putts FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-901d-000000000001'), 5, 'G1 cache: 5 one-putts');
 SELECT is((SELECT three_putts FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-901d-000000000001'), 2, 'G1 cache: 2 three-putts');
-SELECT is((SELECT scrambles_converted FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-901d-000000000001'), 4, 'G1 cache: 4 scrambles (the hole 5 chip-in counts)');
+SELECT is((SELECT scrambles_converted FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-901d-000000000001'), 5, 'G1 cache: 5 scrambles (the hole 5 chip-in and the hole 10 sand save count)');
 SELECT is((SELECT scramble_attempts FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-901d-000000000001'), 8, 'G1 cache: of 8');
 SELECT is((SELECT sand_saves FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-901d-000000000001'), 3, 'G1 cache: 3 sand saves on the Tour definition');
 SELECT is((SELECT sand_attempts FROM public.golf_round_stats_cache WHERE round_id = '00000000-0000-0000-901d-000000000001'), 4, 'G1 cache: of 4');

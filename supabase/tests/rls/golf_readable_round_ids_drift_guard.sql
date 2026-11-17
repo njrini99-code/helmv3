@@ -7,7 +7,9 @@
 -- policies change and the function does not, holes and shots silently stop
 -- matching their rounds. This file fails in two ways when that happens:
 --   1. The golf_rounds SELECT policy text is pinned by md5 (production and
---      local both hash to bafbcd0fd91621b457cfe8a67ef4759b on 2026-10-08).
+--      local both hash to 7557a69ce5814bb10c212e186648f6a1 on 2026-11-17,
+--      after 20261116190000 wrapped admin_read_all as (SELECT is_admin());
+--      golf_rounds_select and golf_rounds_select_team are unchanged).
 --   2. Per persona, the golf_rounds ids visible under RLS, minus rows only
 --      admin_read_all grants, must equal golf_readable_round_ids().
 -- The persona set includes an INACTIVE team member, who must see their own
@@ -25,7 +27,7 @@ SELECT is(
   (SELECT md5(string_agg(policyname || ':' || coalesce(qual, ''), '|' ORDER BY policyname))
    FROM pg_policies
    WHERE schemaname = 'public' AND tablename = 'golf_rounds' AND cmd IN ('SELECT', 'ALL')),
-  'bafbcd0fd91621b457cfe8a67ef4759b',
+  '7557a69ce5814bb10c212e186648f6a1',
   'golf_rounds SELECT policies changed: update golf_readable_round_ids to match, then re-pin this md5'
 );
 

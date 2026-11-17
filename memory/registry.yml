@@ -825,6 +825,8 @@ features:
         - supabase/migrations/*golf_sand_save*.sql
         - supabase/migrations/*golf_pga_standards*.sql
         - supabase/migrations/*golf_one_gir_rule*.sql
+        # Scrambling counts sand saves (2026-11-16, held).
+        - supabase/migrations/*golf_scrambling_counts_sand_saves*.sql
       tests:
         - src/app/golf/actions/__tests__/stats-data.test.ts
         - src/clubhouse/data/__tests__/stats-reads.test.ts

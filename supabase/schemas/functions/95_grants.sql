@@ -1814,6 +1814,7 @@ GRANT ALL ON FUNCTION "public"."golf_team_members_identity_guard"() TO "service_
 REVOKE ALL ON FUNCTION "helm_private"."golf_hole_sand_save_tour"("p_hole_id" "uuid") FROM PUBLIC, "anon", "authenticated";
 
 REVOKE ALL ON FUNCTION "helm_private"."golf_backfill_sand_save_tour"() FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "helm_private"."golf_backfill_scrambling_sand_saves"() FROM PUBLIC, "anon", "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."golf_hole_gir"("p_par" integer, "p_score" integer, "p_putts" integer, "p_shot_to_green" integer) FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_hole_gir"("p_par" integer, "p_score" integer, "p_putts" integer, "p_shot_to_green" integer) TO "authenticated";

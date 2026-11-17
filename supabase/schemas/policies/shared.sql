@@ -118,11 +118,11 @@ CREATE POLICY "Admins can read all client errors" ON "public"."admin_client_erro
    FROM "public"."users"
   WHERE (("users"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("users"."role" = 'admin'::"public"."user_role")))));
 
-CREATE POLICY "Admins can read audit logs" ON "public"."audit_log" FOR SELECT TO "authenticated" USING ("public"."is_admin"());
+CREATE POLICY "Admins can read audit logs" ON "public"."audit_log" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
-CREATE POLICY "Admins can read error logs" ON "public"."error_logs" FOR SELECT TO "authenticated" USING ("public"."is_admin"());
+CREATE POLICY "Admins can read error logs" ON "public"."error_logs" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
-CREATE POLICY "Admins can read login attempts" ON "public"."login_attempts" FOR SELECT TO "authenticated" USING ("public"."is_admin"());
+CREATE POLICY "Admins can read login attempts" ON "public"."login_attempts" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
 CREATE POLICY "Admins can update CRM events" ON "public"."crm_events" FOR UPDATE USING ((EXISTS ( SELECT 1
    FROM "public"."users"
@@ -314,19 +314,19 @@ CREATE POLICY "admin_allowlist_no_client_access" ON "public"."admin_allowlist" A
 
 CREATE POLICY "admin_error_resolutions_select_super_admin" ON "public"."admin_error_resolutions" FOR SELECT TO "authenticated" USING ("public"."is_super_admin"());
 
-CREATE POLICY "admin_read_all" ON "public"."users" FOR SELECT TO "authenticated" USING ("public"."is_admin"());
+CREATE POLICY "admin_read_all" ON "public"."users" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
-CREATE POLICY "api_call_logs_admin_read" ON "public"."api_call_logs" FOR SELECT TO "authenticated" USING ("public"."is_admin"());
+CREATE POLICY "api_call_logs_admin_read" ON "public"."api_call_logs" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
 CREATE POLICY "api_call_logs_service_write" ON "public"."api_call_logs" TO "service_role" USING ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text")) WITH CHECK ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text"));
 
-CREATE POLICY "auth_metrics_hourly_admin_read" ON "public"."auth_metrics_hourly" FOR SELECT TO "authenticated" USING ("public"."is_admin"());
+CREATE POLICY "auth_metrics_hourly_admin_read" ON "public"."auth_metrics_hourly" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
 CREATE POLICY "auth_metrics_hourly_service_write" ON "public"."auth_metrics_hourly" TO "service_role" USING ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text")) WITH CHECK ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text"));
 
 CREATE POLICY "auth_rate_limits_no_client_access" ON "public"."auth_rate_limits" AS RESTRICTIVE TO "authenticated", "anon" USING (false) WITH CHECK (false);
 
-CREATE POLICY "background_job_logs_admin_read" ON "public"."background_job_logs" FOR SELECT TO "authenticated" USING ("public"."is_admin"());
+CREATE POLICY "background_job_logs_admin_read" ON "public"."background_job_logs" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
 CREATE POLICY "background_job_logs_service_write" ON "public"."background_job_logs" TO "service_role" USING ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text")) WITH CHECK ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text"));
 
@@ -338,7 +338,7 @@ CREATE POLICY "crm_unmatched_inbound_deny_all" ON "public"."crm_unmatched_inboun
 
 CREATE POLICY "error_logs_insert_authenticated_self" ON "public"."error_logs" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
-CREATE POLICY "error_rate_hourly_admin_read" ON "public"."error_rate_hourly" FOR SELECT TO "authenticated" USING ("public"."is_admin"());
+CREATE POLICY "error_rate_hourly_admin_read" ON "public"."error_rate_hourly" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
 CREATE POLICY "error_rate_hourly_service_write" ON "public"."error_rate_hourly" TO "service_role" USING ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text")) WITH CHECK ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text"));
 

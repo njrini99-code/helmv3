@@ -3597,6 +3597,18 @@ $$;
 
 ALTER FUNCTION "public"."get_current_player_team_ids"() OWNER TO "postgres";
 
+CREATE OR REPLACE FUNCTION "public"."golf_current_coach_team_ids"() RETURNS SETOF "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT gtcs.team_id
+  FROM public.golf_team_coach_staff gtcs
+  JOIN public.golf_coaches gc ON gc.id = gtcs.coach_id
+  WHERE gc.user_id = (SELECT auth.uid());
+$$;
+
+ALTER FUNCTION "public"."golf_current_coach_team_ids"() OWNER TO "postgres";
+
 CREATE OR REPLACE FUNCTION "public"."get_db_telemetry"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_catalog'
@@ -9294,8 +9306,9 @@ BEGIN
     COALESCE(r.total_putts, SUM(h.putts)),
     COALESCE(COUNT(*) FILTER (WHERE h.putts = 1), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.putts >= 3), 0),
-    COALESCE(COUNT(*) FILTER (WHERE h.gir = false AND (h.score - h.par) <= 0 AND h.score IS NOT NULL), 0),
-    COALESCE(COUNT(*) FILTER (WHERE h.gir = false AND h.score IS NOT NULL), 0),
+    -- Scrambling counts sand saves (20261116200000), as update_round_stats_cache does.
+    COALESCE(COUNT(*) FILTER (WHERE h.score IS NOT NULL AND ((h.gir = false AND (h.score - h.par) <= 0) OR h.sand_save = true)), 0),
+    COALESCE(COUNT(*) FILTER (WHERE h.score IS NOT NULL AND (h.gir = false OR h.sand_save IS NOT NULL)), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.sand_save = true), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.sand_save IS NOT NULL), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.score IS NOT NULL AND (h.score - h.par) <= -2), 0),
@@ -12459,8 +12472,12 @@ BEGIN
   INTO v_one_putts, v_three_putts, v_total_putts_from_holes
   FROM golf_holes WHERE round_id = NEW.id AND putts IS NOT NULL;
 
-  SELECT COALESCE(SUM(CASE WHEN gir=false AND (score-par)<=0 THEN 1 ELSE 0 END),0),
-    COALESCE(SUM(CASE WHEN gir=false THEN 1 ELSE 0 END),0)
+  -- Scrambling counts sand saves (20261116200000): a chance is a missed green
+  -- or a greenside-bunker visit, one per hole; made is par or better after the
+  -- miss, or a sand save (any score). Mirrors holeScramble in
+  -- src/lib/golf/stat-formulas.ts.
+  SELECT COALESCE(SUM(CASE WHEN (gir=false AND (score-par)<=0) OR sand_save=true THEN 1 ELSE 0 END),0),
+    COALESCE(SUM(CASE WHEN gir=false OR sand_save IS NOT NULL THEN 1 ELSE 0 END),0)
   INTO v_scrambles_converted, v_scramble_attempts
   FROM golf_holes WHERE round_id = NEW.id AND score IS NOT NULL;
 

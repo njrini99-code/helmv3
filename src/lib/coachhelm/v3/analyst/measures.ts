@@ -658,7 +658,7 @@ export const MEASURES: readonly MeasureDef[] = [
   ),
   {
     id: 'scrambling',
-    label: 'Scrambling: greens missed in regulation still saved for par or better',
+    label: 'Scrambling: missed greens saved for par or better, plus sand saves',
     unit: 'percent',
     direction: 'higher_is_better',
     area: 'around_the_green',
@@ -671,7 +671,7 @@ export const MEASURES: readonly MeasureDef[] = [
   },
   {
     id: 'sand_saves',
-    label: 'Sand saves: par or better after a greenside bunker',
+    label: 'Sand saves: down in two from a greenside bunker, any score',
     unit: 'percent',
     direction: 'higher_is_better',
     area: 'around_the_green',
