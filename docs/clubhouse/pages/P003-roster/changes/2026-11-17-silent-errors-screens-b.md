@@ -13,7 +13,8 @@ Held items: none
 
 ### Changed
 
-- The export, invite share and copy catches say why they are not reported (a browser refusal, already told in a toast). No behaviour change.
+- The export, invite share and copy catches say why they are not reported (a
+  browser refusal, already told in a toast). No behaviour change.
 
 ### Why
 
@@ -21,7 +22,8 @@ Held items: none
 
 ### Verification
 
-- `__tests__/rounds-silent-errors.test.ts` (new: a failed recovery cache or queue
+- `__tests__/rounds-silent-errors.test.ts` (new: a failed recovery cache or
+  queue
   read and a queued copy a discard couldn't drop are reported; the scan and the
   discard still behave as before). Related suites (round entry, recovery, setup,
   qualifiers, roster, stats, tournaments import, practice) pass; tsgo

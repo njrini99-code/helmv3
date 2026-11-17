@@ -13,7 +13,9 @@ Held items: none
 
 ### Changed
 
-- `QualifierForm.tsx`: a tie rule or exemptions write that fails after Create (thrown or refused) is reported (`qualifiers.form`, high). The toast already said it didn't save; nothing tracked it, since the create itself succeeded.
+- `QualifierForm.tsx`: a tie rule or exemptions write that fails after Create
+  (thrown or refused) is reported (`qualifiers.form`, high). The toast already
+  said it didn't save; nothing tracked it, since the create itself succeeded.
 - `return-state.ts`: the storage read says why its catch is empty.
 
 ### Why
@@ -22,7 +24,8 @@ Held items: none
 
 ### Verification
 
-- `__tests__/rounds-silent-errors.test.ts` (new: a failed recovery cache or queue
+- `__tests__/rounds-silent-errors.test.ts` (new: a failed recovery cache or
+  queue
   read and a queued copy a discard couldn't drop are reported; the scan and the
   discard still behave as before). Related suites (round entry, recovery, setup,
   qualifiers, roster, stats, tournaments import, practice) pass; tsgo
