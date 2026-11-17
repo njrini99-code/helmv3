@@ -1,5 +1,5 @@
 -- Calendar reads check team membership once per query, not once per row.
--- STATUS: HOLD. Performance; owner applies.
+-- STATUS: APPLIED to production 2026-11-17 01:22Z (owner go).
 --   Record: supabase/migrations/HELD.md.
 --
 -- WHY. golf_events_select_team and golf_event_attendance_select_team call
