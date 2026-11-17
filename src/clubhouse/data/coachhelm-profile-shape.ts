@@ -159,7 +159,7 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
 const COACH_WORDS: Readonly<Record<string, Partial<Pick<MeasureCopy, 'meaning' | 'measured'>>>> = {
   miss_side_bias: { meaning: 'Which side approach misses finish on. An even split is the goal; a lopsided one is a pattern to aim around.' },
   pressure_delta: { meaning: 'How scoring changes when it counts: tournaments and qualifiers against practice rounds.' },
-  scrambling_rate: { meaning: 'How often par or better is saved after a missed green.', measured: 'The share of missed greens where par or better was still made.' },
+  scrambling_rate: { meaning: 'How often par or better is saved after a missed green, sand saves included.', measured: 'The share of missed greens and greenside bunkers where par or better was still made, or the bunker was a sand save.' },
   par3_proficiency: { meaning: 'Scoring on par 3s against par. It points to the kind of course that suits this game.' },
   back_nine_delta: { meaning: 'Whether scoring holds up over the round.' },
   scoring_trend: { meaning: 'Whether scores are moving the right way lately.' },
@@ -197,12 +197,12 @@ const COPY: Record<string, MeasureCopy> = {
   },
   scrambling_rate: {
     category: 'Recovery',
-    meaning: 'How often you save par or better after missing the green.',
-    measured: 'The share of greens you missed where you still made par or better.',
-    floor: 'At least 15 missed greens with a score.',
+    meaning: 'How often you save par or better after missing the green, sand saves included.',
+    measured: 'The share of missed greens and greenside bunkers where you still made par or better, or got down in two from the sand.',
+    floor: 'At least 15 chances with a score.',
     scale: { min: 0, max: 1, anchor: null, low: '0%', high: '100%' },
     clamp: null,
-    figure: (v) => ({ figure: pct(v), note: 'of missed greens saved for par or better' }),
+    figure: (v) => ({ figure: pct(v), note: 'of chances saved, sand saves included' }),
   },
   par3_proficiency: {
     category: 'Course fit',

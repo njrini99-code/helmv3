@@ -1905,6 +1905,75 @@ $$;
 
 ALTER FUNCTION "helm_private"."golf_backfill_sand_save_tour"() OWNER TO "postgres";
 
+CREATE OR REPLACE FUNCTION helm_private.golf_backfill_scrambling_sand_saves()
+RETURNS integer
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+DECLARE
+  v_changed integer;
+  v_off integer;
+BEGIN
+  -- Archive every completed round whose cached scramble counts differ from
+  -- the rule update_round_stats_cache now writes.
+  INSERT INTO helm_private.golf_round_cache_scrambling_fix_20261116 (
+    round_id, old_scrambles_converted, old_scramble_attempts,
+    new_scrambles_converted, new_scramble_attempts
+  )
+  SELECT c.round_id, c.scrambles_converted, c.scramble_attempts, k.made, k.chances
+  FROM public.golf_round_stats_cache AS c
+  INNER JOIN public.golf_rounds AS r ON r.id = c.round_id
+  CROSS JOIN LATERAL (
+    SELECT
+      count(*) FILTER (WHERE (h.gir = false AND (h.score - h.par) <= 0) OR h.sand_save = true)::integer AS made,
+      count(*) FILTER (WHERE h.gir = false OR h.sand_save IS NOT NULL)::integer AS chances
+    FROM public.golf_holes AS h
+    WHERE h.round_id = c.round_id AND h.score IS NOT NULL
+  ) AS k
+  WHERE r.status = 'completed'
+    AND (c.scrambles_converted IS DISTINCT FROM k.made
+      OR c.scramble_attempts IS DISTINCT FROM k.chances)
+  ON CONFLICT (round_id) DO UPDATE SET
+    old_scrambles_converted = excluded.old_scrambles_converted,
+    old_scramble_attempts = excluded.old_scramble_attempts,
+    new_scrambles_converted = excluded.new_scrambles_converted,
+    new_scramble_attempts = excluded.new_scramble_attempts,
+    archived_at = excluded.archived_at;
+
+  -- Refresh each archived round's cache: trg_update_round_stats_cache fires
+  -- on UPDATE OF status, and the cache row's own trigger refreshes the
+  -- player's. The lifecycle guard lets postgres touch a completed round under
+  -- the transaction-local 'atomic' mark.
+  PERFORM set_config('helm.golf_lifecycle_write', 'atomic', true);
+
+  UPDATE public.golf_rounds AS r
+  SET status = r.status
+  WHERE r.id IN (
+    SELECT a.round_id
+    FROM helm_private.golf_round_cache_scrambling_fix_20261116 AS a
+    WHERE a.archived_at = now()
+  );
+  GET DIAGNOSTICS v_changed = ROW_COUNT;
+
+  PERFORM set_config('helm.golf_lifecycle_write', '', true);
+
+  SELECT count(*) INTO v_off
+  FROM helm_private.golf_round_cache_scrambling_fix_20261116 AS a
+  INNER JOIN public.golf_round_stats_cache AS c ON c.round_id = a.round_id
+  WHERE a.archived_at = now()
+    AND (c.scrambles_converted IS DISTINCT FROM a.new_scrambles_converted
+      OR c.scramble_attempts IS DISTINCT FROM a.new_scramble_attempts);
+  IF v_off > 0 THEN
+    RAISE EXCEPTION 'scrambling backfill: % round stats caches disagree with the new rule; rolling back', v_off;
+  END IF;
+
+  RETURN v_changed;
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_backfill_scrambling_sand_saves"() OWNER TO "postgres";
+
 CREATE OR REPLACE FUNCTION helm_private.golf_backfill_one_gir_rule()
 RETURNS integer
 LANGUAGE plpgsql

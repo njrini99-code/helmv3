@@ -11,6 +11,7 @@
 import { SG_TOUR_BASELINE } from '@/lib/golf/sg-tour-baseline';
 import { calculatePuttsPerRound } from '@/lib/golf/putts-per-round';
 import { isPlausibleApproach } from '@/lib/golf/approach-plausibility';
+import { holeScramble } from '@/lib/golf/stat-formulas';
 import {
   isPuttMade,
   normalizePuttFeet,
@@ -1052,6 +1053,16 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
   const putts = hole.putts ?? null;
   const greenInRegulation = hole.gir ?? false;
   const fairwayHit = hole.par < 4 ? null : (hole.fairway_hit ?? null);
+  // Canonical scramble definition (holeScramble, the DB cache trigger's rule):
+  // a chance is a missed green or a greenside-bunker visit; made is par or
+  // better after the miss, or a sand save. A hole with no recorded score is
+  // never a chance: we cannot know whether it converted.
+  const scramble = holeScramble({
+    missedGreen: !greenInRegulation,
+    score,
+    par: hole.par,
+    sandSave: hole.sand_save,
+  });
 
   return {
     holeNumber: hole.hole_number,
@@ -1077,11 +1088,8 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
     firstPuttLeave: null,
     firstPuttBreak: null,
     firstPuttSlope: null,
-    // Canonical scramble definition (DB cache trigger): attempt = gir=false
-    // AND score IS NOT NULL. A missed green with no recorded score is NOT a
-    // scramble attempt — we cannot know whether it converted.
-    scrambleAttempt: !greenInRegulation && score !== null,
-    scrambleMade: !greenInRegulation && score !== null && score <= hole.par,
+    scrambleAttempt: scramble.attempt,
+    scrambleMade: scramble.made,
     // One sand-save figure: the golf_holes.sand_save flag (attempt = flag is
     // non-null, made = flag true), the same source the DB cache and
     // shot-analytics read. A scorecard-only hole still carries it.
@@ -1276,10 +1284,6 @@ export function calculateHoleStatsFromShots(
   // the same one the leak map uses; a putt without a start distance is not banded.
   const puttMakeByBand = tallyPuttMakes(puttingShots) as Record<string, { made: number; total: number }>;
 
-  // Scrambling = missed GIR but made par or better
-  const scrambleAttempt = !greenInRegulation;
-  const scrambleMade = scrambleAttempt && (score <= holeInfo.par);
-
   // Find the around-green shot for scrambling stats
   // This is the shot that actually tries to get up-and-down (chip/pitch), not the approach
   // Detection: shot_type === 'around_green' OR (not on green, not putting, within threshold)
@@ -1337,6 +1341,16 @@ export function calculateHoleStatsFromShots(
   const sandSaveMade = sandFlag !== undefined
     ? sandFlag === true
     : (sandShot !== undefined && strokesFromSand <= 2);
+
+  // Scrambling (holeScramble): a missed green or a greenside-bunker visit is a
+  // chance; par or better after the miss, or a sand save, is made. The bunker
+  // reads the same flag (or shot fallback) as the sand-save figure above.
+  const { attempt: scrambleAttempt, made: scrambleMade } = holeScramble({
+    missedGreen: !greenInRegulation,
+    score,
+    par: holeInfo.par,
+    sandSave: sandSaveAttempt ? sandSaveMade : null,
+  });
 
   // Penalties. ONE count: golf_holes.penalty_strokes (null = 0, like the DB
   // cache's COALESCE(penalty_strokes, 0) and the Standing rate). The is_penalty
