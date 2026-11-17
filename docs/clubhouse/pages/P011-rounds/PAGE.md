@@ -199,3 +199,15 @@ Data:           existing (no held plan; the design's coach notes and the recap's
 Verification:   partial (VERIFY.md)
 Docs:           current
 ```
+
+## Live rounds (`/golf/dashboard/live`)
+
+A named screen of this page (checked 2026-11-17): `/golf/dashboard/live` is in
+the manifest `routes`, and its code is `screens/live`, `src/clubhouse/live/`,
+`routes/live.tsx`, `styles/live.css` and `data/live-rounds.ts`. It is a coach's
+page (a player's address goes to Home). Its checklist is `screens/live.md` and
+its phone draft `phone/live.md`; its tracker row is "Live rounds" in
+`PROGRESS.md`. Its catalog rows are the Live rounds rows of
+`catalog/tournaments.md` (CH-16600 to CH-16677 and CH-16680 to CH-16685), so
+their Bridge IDs belong to P016, not to this page. P016's own
+`/tournaments/[id]/live` is a different screen (a tournament's live round).

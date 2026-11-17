@@ -37,6 +37,14 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
   opens the rebuilt Team stats in place (players are sent to their own stats)
 - [x] **Calendar** `/calendar` — Practices, qualifiers, tournaments, travel and
   meetings; week, month and agenda; attendance, overlaps, files
+- [ ] **Practice** `/practice` — Plan a practice (blocks, groups, drills), publish
+  it, run it on the day, keep a drill, group and template library, and print it
+  (P017; with `/drills`, `/drills/[drillId]`, `/groups`, `/templates`,
+  `/format`, `/plan/[planId]`, `/plan/[planId]/edit`, `/print/[planId]`). Built
+  and in the sidebar after Calendar. Left unticked because the tick follows
+  `CH_REBUILT_ROUTES` and Practice is rebuilt through `CH_REBUILT_PATTERNS`
+  (`CH_PRACTICE_PAGES` in `shell/nav.ts`); see
+  `pages/P017-practice/PAGE.md`
 - [x] **Messages** `/messages` — Direct and group chat with players and coaches,
   plus team announcements
 - [x] **Settings** `/settings` — Account, notifications, team and invite code,
@@ -94,6 +102,10 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
   and focus areas
 - [x] **Calendar** `/calendar` — Team schedule with RSVPs; teammates' classes
   stay private
+- [ ] **Practice** `/practice` — What to do at practice: their next practice (focus,
+  their group, the stop on now and the next two), this week, coming up and past
+  plans; only published plans (P017; with `/plan/[planId]`). Unticked for the
+  same reason as the coach's line above
 - [x] **Messages** `/messages` — Chat with coaches and teammates; announcements
   with acknowledge and tasks
 - [x] **Settings** `/settings` — Account, notifications, preferences, joining a

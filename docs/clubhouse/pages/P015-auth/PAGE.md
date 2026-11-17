@@ -149,3 +149,13 @@ Data:           existing (no migration)
 Verification:   partial (VERIFY.md)
 Docs:           current
 ```
+
+## Onboarding (new coach and new player)
+
+Onboarding is part of this page (checked 2026-11-17; its routes are the
+`(onboarding)/coach` and `(onboarding)/player` groups under `src/app/golf`): the code is
+`screens/onboard` (`Onboard`, `CoachOnboard`, `Steps`, `CoachSteps`, `Rail`,
+`MemberCard` and their logic and writes), `routes/onboard.tsx`,
+`data/onboard.ts` and `styles/onboard*.css`, all listed in the manifest. Its
+catalog rows are in `catalog/auth.md` (block CH-15xxx, e.g. CH-15010 to CH-15012); the phone specs are
+`phone/coach-onboarding.md`, `phone/join-team.md` and `phone/staff-invite.md`.
