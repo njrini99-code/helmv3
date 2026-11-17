@@ -1,6 +1,6 @@
 -- Admin read policies call is_admin() once per query, not once per row.
--- STATUS: HELD. Not applied anywhere. Owner applies
---   (supabase/migrations/HELD.md).
+-- STATUS: APPLIED to production 2026-11-17 00:13Z (owner go).
+--   Record: supabase/migrations/HELD.md.
 --
 -- WHY. 42 permissive SELECT policies (39 public, 1 graveyard, all listed below)
 --   say USING (public.is_admin()). Postgres ORs every permissive policy for a
