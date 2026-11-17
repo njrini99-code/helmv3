@@ -24,6 +24,7 @@ import {
 import { useChClock } from '../../lib/use-clock';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { chReport } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
@@ -164,7 +165,9 @@ export function ImportSchedule({
     let result: ChReadResult;
     try {
       result = await read(source);
-    } catch {
+    } catch (err) {
+      // The live read reports and never throws; this meets a read that did throw.
+      chReport(err, { surface: 'classes.import', action: 'read', severity: 'medium', extra: { source: source.kind } });
       result = { ok: false, kind: 'fault', message: FAIL.fault.body };
     }
     window.clearTimeout(timer);

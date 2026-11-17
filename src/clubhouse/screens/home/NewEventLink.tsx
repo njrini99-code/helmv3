@@ -8,7 +8,7 @@ import { getEventEditorInputs, type ChEventEditorInputs } from '../../data/event
 import type { ChCalType } from '../calendar/model';
 import type { EditorSeed } from '../calendar/editor';
 import { useBusy } from '../../lib/use-busy';
-import { chTrail } from '../../lib/track';
+import { chReport, chTrail } from '../../lib/track';
 
 const loadEditor = () => import('./HomeEventEditor').then((m) => m.HomeEventEditor);
 const HomeEventEditor = dynamic(loadEditor, { ssr: false });
@@ -28,7 +28,11 @@ export function NewEventLink({ href, type, className, onTap, children }: { href:
   const busy = useBusy(pending);
 
   const warm = useCallback(() => {
-    inputs.current ??= getEventEditorInputs().catch(() => null);
+    // A read that failed on the server is logged there; a call that threw is reported here. Either way the link goes to Calendar.
+    inputs.current ??= getEventEditorInputs().catch((err: unknown) => {
+      chReport(err, { surface: 'home.newEvent', action: 'editorInputs', severity: 'low' });
+      return null;
+    });
     void loadEditor();
     return inputs.current;
   }, []);

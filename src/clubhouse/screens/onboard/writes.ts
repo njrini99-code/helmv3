@@ -100,12 +100,18 @@ export async function uploadPhoto(file: File): Promise<{ ok: true; url: string }
   try {
     const supabase = createClient();
     const { data: s, error: se } = await supabase.auth.getSession();
-    if (se) return { ok: false, error: 'Couldn’t check your session just now. Try again.' };
+    if (se) {
+      chReport(se, { surface: 'onboard.photo', action: 'session', severity: 'low' });
+      return { ok: false, error: 'Couldn’t check your session just now. Try again.' };
+    }
     const uid = s.session?.user?.id;
     if (!uid) return { ok: false, error: 'Your session has expired. Sign in again to add a photo.' };
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
     const { data, error } = await supabase.storage.from('avatars').upload(`${uid}/avatar-${Date.now()}.${ext}`, file, { cacheControl: '3600', upsert: true });
-    if (error || !data) return { ok: false, error: 'That photo didn’t upload. Try again, or skip it for now.' };
+    if (error || !data) {
+      chReport(error ?? new Error('avatar upload returned no path'), { surface: 'onboard.photo', action: 'upload', severity: 'medium' });
+      return { ok: false, error: 'That photo didn’t upload. Try again, or skip it for now.' };
+    }
     return { ok: true, url: supabase.storage.from('avatars').getPublicUrl(data.path).data.publicUrl };
   } catch (e) {
     if (!offlineLike(e)) chReport(e, { surface: 'onboard.photo', severity: 'medium' });

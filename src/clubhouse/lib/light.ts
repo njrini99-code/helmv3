@@ -71,6 +71,7 @@ function zoneOffsetHours(timeZone: string, at: number): number | null {
     if (!m) return name === 'GMT' ? 0 : null;
     return (m[1] === '-' ? -1 : 1) * (Number(m[2]) + Number(m[3] ?? 0) / 60);
   } catch {
+    // An unknown zone: the documented null.
     return null;
   }
 }

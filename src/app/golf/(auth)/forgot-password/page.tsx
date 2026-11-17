@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { requestPasswordResetAction } from '@/app/golf/actions/auth';
 import { isNativeApp } from '@/lib/utils/capacitor';
+import { chReport } from '@/clubhouse/lib/track';
 import {
   AuthCanvas,
   AuthFieldError,
@@ -74,16 +75,23 @@ export default function ForgotPasswordPage() {
       setSuccess(true);
       setSendCount((n) => n + 1);
       setLoading(false);
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'auth.forgot', action: 'requestReset', severity: 'medium' });
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };
 
   const resend = async () => {
-    const result = await requestPasswordResetAction(submittedEmail);
-    if (result.success) setSendCount((n) => n + 1);
-    return result.success;
+    try {
+      const result = await requestPasswordResetAction(submittedEmail);
+      if (result.success) setSendCount((n) => n + 1);
+      return result.success;
+    } catch (err) {
+      // Reported here; SentConfirmation shows the failed resend.
+      chReport(err, { surface: 'auth.forgot', action: 'resend', severity: 'medium' });
+      return false;
+    }
   };
 
   const homeLink = !isNative ? (

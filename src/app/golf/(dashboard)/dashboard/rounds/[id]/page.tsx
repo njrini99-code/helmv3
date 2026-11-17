@@ -5,6 +5,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isUuid } from '@/lib/utils/uuid';
 import { formatDateOnlyFull } from '@/lib/golf/date-only';
 import { ClubhouseRoundReviewRoute } from '@/clubhouse/routes/round-review';
+import { chLogServer } from '@/clubhouse/lib/track-server';
 
 export async function generateMetadata({
   params,
@@ -15,11 +16,13 @@ export async function generateMetadata({
   if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
-  const { data: round } = await supabase
+  const { data: round, error } = await supabase
     .from('golf_rounds')
     .select('course_name, round_date, total_score, score_to_par')
     .eq('id', id)
     .maybeSingle();
+  // The tab keeps its generic title; the page's own read says what failed.
+  if (error) chLogServer('rounds', 'metadata', error);
 
   if (!round) {
     return {
