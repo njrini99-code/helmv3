@@ -40,3 +40,46 @@ Held items:     flag coachhelm_reads_v1 is off everywhere; COACHHELM_READS_TEAM_
 - Unit and render tests (`file/__tests__/analyst-read.test.tsx`). No
   screenshots: the card draws only with the held table applied and the flag on
   for a team, which no environment has yet.
+
+## 2026-11-18 — The four parts, what else is unusual, memory and the focus line (insights rebuild, stages 2, 4 and 5)
+
+```text
+Design package: COACHHELM_2_TO_10.md sections 3, 5 and 6 (stages 2, 4, 5)
+PR/commit:      agent/coachhelm-reads (#2585)
+Contract IDs:   none changed
+Actions:        none
+Data impact:    reads the held tables golf_coach_read_feedback and golf_coach_read_focus (missing reads as none); nothing written from the page
+Held items:     flag coachhelm_reads_v1 off everywhere; coachhelm_v2_writer_stop_v1 off everywhere; migrations 20261117120000 and 20261117121000 are HOLD
+```
+
+### Added
+
+- On the same card, for a listed team: "The four parts" (off the tee,
+  approach, around the green, putting: strokes a round, the last 10 against
+  the 10 before, where one level down, and the team's middle for a coach) and
+  "Also unusual" (at most three counted reads from the catalogue, one per
+  family, each against the teammates' median).
+- Memory: the words change only at a checkpoint (3 new rounds or 20 new shots
+  of that kind). A stronger or weaker read says what changed in one line; an
+  improvement says what it was and what it is now before it clears.
+- A focus made from the read shows a one-word verdict and the "since the focus
+  was set" line.
+- A read a coach marked "not useful" or "wrong" draws only "You marked this
+  read ...: <reason>. It stays down until the evidence changes."
+- The weekly team brief exists as data only (`reads/team-brief.ts`): no
+  screen, no send.
+
+### Changed
+
+- For a listed team, the old engine's Tier-1 checks stop writing new cards.
+  Rows already written stay, and every other team is unchanged.
+- A coach's Deep dive now names the player in a cause's driver labels, and so
+  does a coach's audit line when no gauge is drawn ("Jonah's right-to-left make
+  %", not "Your ..."). This applies to every team, not only listed ones.
+
+### Verified
+
+- Unit tests: the catalogue floors and signal test, the engine gates, the
+  memory rules, a season replayed in date order, the focus words, the brief,
+  and the coach-voice cases (`coachhelm-coach-voice.test.ts`,
+  `coachhelm-dive.test.tsx`). No screenshots, for the same reason as stage 1.
