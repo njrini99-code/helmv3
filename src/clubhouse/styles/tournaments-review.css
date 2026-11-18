@@ -454,11 +454,14 @@
 .ch-tour-links-row__more[open] > summary {
   margin-bottom: 8px;
 }
-.ch-tour-links-row__chg {
+.ch-tour-links-row__more > .ch-tour-links-row__act {
+  margin-top: 8px;
+}
+.ch-tour-links-row__n.ch-tour-links-row__chg {
   flex: none;
   color: var(--ch-green-700);
 }
-.ch-tour-links-row__more[open] > summary .ch-tour-links-row__chg {
+.ch-tour-links-row__more[open] > summary .ch-tour-links-row__n.ch-tour-links-row__chg {
   color: var(--ch-text-secondary);
 }
 .ch-tour-links-row__act {
@@ -469,6 +472,13 @@
 }
 .ch-tour-links-row.is-phone .ch-tour-links-row__act {
   justify-content: stretch;
+}
+/* L-033: while a row's pickers are closed, its one line and "Not a tournament round" share a line under the name. */
+.ch-tour-links-row.is-phone:has(.ch-tour-links-row__more:not([open])) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.ch-tour-links-row.is-phone:has(.ch-tour-links-row__more:not([open])) > .ch-tour-links-row__who {
+  grid-column: 1 / -1;
 }
 .ch-tour-links-row.is-phone .ch-tour-links-row__act .ch-btn {
   flex: 1 1 0;
