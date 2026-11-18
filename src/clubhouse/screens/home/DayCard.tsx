@@ -371,6 +371,7 @@ function readSeen(): Seen | null {
     const v: unknown = raw ? JSON.parse(raw) : null;
     return v && typeof v === 'object' && Array.isArray((v as Seen).rounds) ? ({ ...(v as Seen), changes: Array.isArray((v as Seen).changes) ? (v as Seen).changes : [] }) : null;
   } catch {
+    // Storage blocked or an old value that no longer parses: no chips this visit.
     return null;
   }
 }

@@ -24,6 +24,7 @@ function read(userId: string): ChRecent[] {
     memory.set(userId, list);
     return list;
   } catch {
+    // Storage blocked or a value that no longer parses: no recents.
     return [];
   }
 }

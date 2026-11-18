@@ -95,6 +95,7 @@ export function SentConfirmation({ onResend }: { onResend: () => Promise<boolean
     if (resending || remaining > 0) return;
     setResending(true);
     setFailed(false);
+    // The caller reports a failed resend (page.tsx); this only shows it.
     const ok = await onResend().catch(() => false);
     setResending(false);
     if (ok) {

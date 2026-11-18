@@ -19,6 +19,7 @@ function asked(): boolean {
   try {
     return sessionStorage.getItem(KEY) === '1';
   } catch {
+    // Storage blocked: the wordmark is drawn whole.
     return false;
   }
 }

@@ -2,6 +2,7 @@
 
 import { getGolfCoachEntry } from '@/app/golf/actions/coach-entry';
 import { createClient } from '@/lib/supabase/client';
+import { chReport } from '../../lib/track';
 
 /**
  * CH-15952: who may see the new-program questions, decided the way today's /golf/coach decides it (its page is a client page, so
@@ -64,10 +65,12 @@ export function browserCoachGuard(): CoachGuardDeps {
     // as absent, so a failure never sends a coach to the player dashboard.
     async hasCoachRow(userId) {
       const { data, error } = await supabase.from('golf_coaches').select('id, onboarding_completed').eq('user_id', userId).maybeSingle();
+      if (error) chReport(error, { surface: 'onboard.coach', action: 'guard.coachRow', severity: 'medium' });
       return error ? true : !!data;
     },
     async hasPlayerRow(userId) {
       const { data, error } = await supabase.from('golf_players').select('id').eq('user_id', userId).maybeSingle();
+      if (error) chReport(error, { surface: 'onboard.coach', action: 'guard.playerRow', severity: 'medium' });
       return error ? false : !!data;
     },
     wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),

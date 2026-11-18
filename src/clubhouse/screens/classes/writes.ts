@@ -226,7 +226,9 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
           try {
             const read = await table().select('id').in('id', missing).eq('player_id', ctx.playerId);
             if (!read.error) left = ((read.data ?? []) as Array<{ id: string }>).map((r) => r.id);
-          } catch {
+            else chReport(new Error(read.error.message || 'recheck failed'), { surface: 'classes.removeAll', action: 'recheck', severity: 'low' });
+          } catch (err) {
+            chReport(err, { surface: 'classes.removeAll', action: 'recheck', severity: 'low' });
             left = null;
           }
           offCalendar = left ?? missing;

@@ -20,7 +20,7 @@ import {
 } from '../../data/recruiting-shape';
 import { RECRUIT_FILM_ENABLED } from '../../data/recruiting-film';
 import { haptic } from '../../lib/haptics';
-import { chTrail } from '../../lib/track';
+import { chReport, chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
@@ -93,8 +93,10 @@ export function Documents({ prospect, writes, initialUpload, level }: { prospect
   const fetchDocs = useCallback(async (): Promise<DocState> => {
     try {
       const r = normalise(await writes.documents.list(id));
+      // A refused read is logged by the server action; a call that threw is reported here. The section shows its failed state.
       return r.success ? { kind: 'ready', docs: r.data ?? [] } : { kind: 'failed' };
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'recruiting.documents', action: 'list', severity: 'medium', extra: { recruitId: id } });
       return { kind: 'failed' };
     }
   }, [id, writes]);

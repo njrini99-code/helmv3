@@ -75,6 +75,7 @@ export function joinLiveTopic(args: {
     if (!alive || hidden() || channel) return;
     try {
       rt = args.realtime ? args.realtime() : (createClient() as unknown as LiveRealtime);
+      // A failed setAuth surfaces as the join's CHANNEL_ERROR, which is reported below.
       await Promise.resolve(rt.setAuth?.()).catch(() => undefined);
       if (!alive || channel) return;
       const ch = rt.channel(topic, { config: { private: true } });

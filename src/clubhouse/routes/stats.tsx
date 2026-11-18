@@ -6,6 +6,7 @@ import { loadTeamStats } from '../data/stats-team';
 import { loadPlayerProfile } from '../data/stats-player';
 import { loadCoachPlayerScope } from '../data/coachhelm-player';
 import { loadStatsReads, readsForScope, type ChStatsReads } from '../data/stats-reads';
+import { chLogServer } from '../lib/track-server';
 import { parseFilter, type ChFilterQuery } from '../data/stats-filter';
 import { StatsTeam } from '../screens/stats/StatsTeam';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
@@ -50,7 +51,11 @@ export async function ClubhouseStatsRoute({ player, window, tab, area, query }: 
     // The promise never rejects: a failed scope check or read is `{ status: 'failed' }`.
     const reads: Promise<ChStatsReads> = loadCoachPlayerScope({ coachId: team.coachId, teamId: team.teamId, playerId: player })
       .then(readsForScope)
-      .catch((): ChStatsReads => ({ status: 'failed' }));
+      // Both calls log the failures they catch; this only meets a throw neither caught (the CoachHelm gate's own read).
+      .catch((err: unknown): ChStatsReads => {
+        chLogServer('stats', 'coachReads', err);
+        return { status: 'failed' };
+      });
     const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter });
     return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} initialArea={area} reads={reads} /> : <NotOnTeam coach />;
   }
