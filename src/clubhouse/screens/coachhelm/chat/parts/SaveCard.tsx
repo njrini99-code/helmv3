@@ -4,6 +4,7 @@ import { ArrowUpRight, Check, ChevronDown, FileText, FolderClosed } from 'lucide
 import { useEffect, useRef, useState } from 'react';
 import { askArtifactFolders, saveAskArtifact, undoAskArtifact } from '@/app/golf/actions/coachhelm-ask-artifacts';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
+import { chReport } from '../../../../lib/track';
 import { Button } from '../../../../ui/Button';
 import { Icon } from '../../../../ui/Icon';
 import { useUndoWindow } from '../../plan/useUndoWindow';
@@ -48,7 +49,9 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
         // The most used folder is the likely one; the coach can pick another before anything is saved.
         if (r.folders[0]) setFolder((f) => (f === ROOT ? r.folders[0]!.name : f));
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        // The picker offers Documents only; saving still works.
+        chReport(err, { surface: 'coachhelm.ask.save', action: 'askArtifactFolders', severity: 'low' });
         if (live) setFolders([]);
       });
     return () => {
@@ -67,7 +70,10 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
     setPhase({ k: 'saving' });
     setProblem(null);
     setOpen(false);
-    const r = await saveAskArtifact({ title, body, folder: folder || null }).catch(() => ({ success: false, error: 'That didn’t save. Try again.' }) as { success: boolean; error?: string; id?: string; folder?: string | null; savedAt?: string });
+    const r = await saveAskArtifact({ title, body, folder: folder || null }).catch((err: unknown) => {
+      chReport(err, { surface: 'coachhelm.ask.save', action: 'saveAskArtifact', severity: 'high' });
+      return { success: false, error: 'That didn’t save. Try again.' } as { success: boolean; error?: string; id?: string; folder?: string | null; savedAt?: string };
+    });
     if (!r.success) {
       setPhase({ k: 'failed', error: r.error ?? 'That didn’t save. Try again.' });
       return;
@@ -75,6 +81,7 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
     // Saved with a note means the folder step failed and the draft is in Documents itself: say where it is.
     const landed = r.folder ?? (r.error ? ROOT : folder);
     if (landed && page.current && icon.current) {
+      // Motion only: a flight that cannot run leaves the save as it is.
       await flyPageToFolder(page.current, icon.current, reduced).catch(() => undefined);
       setFolders((l) => {
         const cur = l ?? [];
@@ -95,7 +102,10 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
         setFolders((l) => (l ?? []).map((f) => (f.name === was ? { ...f, count: f.count - 1 } : f)).filter((f) => f.count > 0));
         setPhase({ k: 'undone' });
       })
-      .catch(() => setProblem('That wasn’t undone.'))
+      .catch((err: unknown) => {
+        chReport(err, { surface: 'coachhelm.ask.save', action: 'undoAskArtifact', severity: 'high', extra: { artifactId: phase.id } });
+        setProblem('That wasn’t undone.');
+      })
       .finally(() => setUndoing(false));
   };
 

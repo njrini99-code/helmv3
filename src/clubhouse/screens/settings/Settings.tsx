@@ -12,6 +12,7 @@ import { useNativePush } from './native-push';
 /** Push-to-self (D1-6): the server sends one fixed test to the signed-in person's own subscriptions. */
 async function sendTestPush(): Promise<{ ok: boolean; sent?: number; error?: string }> {
   const res = await fetch('/api/push-subscriptions/test', { method: 'POST' });
+  // A body that is not JSON (a proxy's error page): the status still says how it went.
   const body = (await res.json().catch(() => ({}))) as { sent?: number; error?: string };
   return res.ok ? { ok: true, sent: body.sent } : { ok: false, error: body.error };
 }

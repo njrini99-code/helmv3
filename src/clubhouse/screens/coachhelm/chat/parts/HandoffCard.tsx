@@ -8,6 +8,7 @@ import { messagesPrefillHref } from '../../../messages/prefill';
 import type { AskHandoffData } from '../../../../data/coachhelm-chat-thread';
 import { captureBoard } from '../board-image';
 import { formatWith } from '../../../../lib/dates';
+import { chReport } from '../../../../lib/track';
 
 const HEAD: Record<AskHandoffData['kind'], { icon: LucideIcon; on: string; lede: string }> = {
   board: { icon: LayoutGrid, on: 'Nothing is sent until you tap Send.', lede: 'You send it from Messages' },
@@ -37,7 +38,10 @@ export function HandoffCard({ handoff, tiles }: { handoff: AskHandoffData; tiles
     setBusy(true);
     let files: File[] | undefined;
     if (handoff.kind === 'board' && tiles && board.current) {
-      const picture = await captureBoard(board.current).catch(() => null);
+      const picture = await captureBoard(board.current).catch((err: unknown) => {
+        chReport(err, { surface: 'coachhelm.ask.handoff', action: 'captureBoard', severity: 'low' });
+        return null;
+      });
       if (picture) files = [picture];
       else toast({ tone: 'error', title: 'Couldn’t draw the board', body: 'Your note is in the message. Nothing was sent.', code: 'CH-7001' });
     }
