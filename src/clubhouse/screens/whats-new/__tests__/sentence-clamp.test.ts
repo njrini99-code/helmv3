@@ -9,7 +9,7 @@ describe('sentenceClamp', () => {
   });
   it('keeps whole sentences up to the limit on the desk', () => {
     expect(sentenceClamp(body, false, 70)).toBe('Approach play dropped 0.4 a round. When you miss, it is long.');
-    expect(sentenceClamp(body, false)).toBe(body);
+    expect(sentenceClamp(body, false, 240)).toBe(body);
   });
   it('never splits a decimal, and leaves a body with one sentence whole', () => {
     expect(sentenceClamp('Average 74.5 over five rounds', true)).toBe('Average 74.5 over five rounds');

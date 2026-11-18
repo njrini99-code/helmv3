@@ -41,12 +41,13 @@ export const whatsNewLink = (it: Pick<ChWhatsNewItem, 'playerId' | 'kind'>) =>
 
 /**
  * L-065: a body ends at a sentence, never mid-word. The phone keeps the first sentence; the desk keeps whole sentences up to
- * `max` characters (always at least the first). The row opens the full text. A body with no sentence end is left whole for the
- * line clamp.
+ * `max` characters (always at least the first), inside the desk's three-line clamp. A body with no sentence end is left whole
+ * for the line clamp.
  */
-export function sentenceClamp(text: string, phone: boolean, max = 240): string {
+export function sentenceClamp(text: string, phone: boolean, max = 180): string {
   // A sentence ends at . ! or ? (and any closing quote) followed by a space and a capital or a digit: "74.5" never splits.
-  const parts = text.trim().split(/(?<=[.!?]["”’)]*)\s+(?=[A-Z0-9"“])/);
+  // Forward-only (no lookbehind): WebKit before Safari 16.4 rejects lookbehind at parse time.
+  const parts = text.trim().replace(/([.!?]["”’)]*)\s+(?=[A-Z0-9"“])/g, '$1\u0000').split('\u0000');
   if (parts.length < 2) return text;
   if (phone) return parts[0]!;
   let out = parts[0]!;
