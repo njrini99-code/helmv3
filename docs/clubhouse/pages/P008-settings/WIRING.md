@@ -19,7 +19,8 @@ counts include wrappers rather than unique popups.
 Route:                   /golf/dashboard/settings (coach and player), ?section=
                          /golf/dashboard/settings/notifications and /golf/dashboard/settings/coaching-intelligence
                          are the old links; each hands the same route a fixed section
-Page:                    src/app/golf/(dashboard)/dashboard/settings/page.tsx (isClubhouseFor -> Clubhouse, else Fairway);
+Page:                    src/app/golf/(dashboard)/dashboard/settings/page.tsx (always ClubhouseSettingsRoute; the flag and the
+                         Fairway branch were removed on 2026-11-14, #2527);
                          settings/notifications/page.tsx (section notifications) and
                          settings/coaching-intelligence/layout.tsx (coach: section coachhelm; player: none) do the same
 Clubhouse route adapter: src/clubhouse/routes/settings.tsx (session, team; a missing team is not an empty state, the team
@@ -30,7 +31,7 @@ Screen:                  src/clubhouse/screens/settings/Settings.tsx (live conta
                          native flag) -> SettingsView.tsx (header, rail, the open section, the page's copy of the data);
                          at 820px or less (useChPhone) SettingsView renders phone/SettingsPhone.tsx over the same data,
                          writes and device (81901)
-Skeleton:                src/clubhouse/screens/settings/SettingsSkeleton.tsx (CH-8401; a phone version of the list is
+Skeleton:                src/clubhouse/screens/settings/SettingsSkeleton.tsx#SettingsRouteSkeleton (CH-8401, by section since 2026-11-15; a phone version of the list is
                          switched in CSS), from settings/loading.tsx and the loading files of the two old links
 ```
 
@@ -151,7 +152,12 @@ anything new.
 | `screens/settings/Notifications.tsx` | `DeliveryCard` (email, push, quiet mode, weekly email), `RoutingCard` (CoachHelm updates) | 80605 to 80610, 80626 to 80628, 81002, 81003, 81104 |
 | `screens/settings/Team.tsx` | Team details, Invite players, Scoring and format, Event reminders | 80401, 80508 to 80511, 80611 to 80615, 80629 to 80632, 81103 |
 | `screens/settings/Golf.tsx` | Golf details, Team (leave) or Join a team | 80402, 80403, 80512 to 80515, 80616 to 80619, 80633, 80634, 81102 |
-| `screens/settings/CoachHelm.tsx` | The team and dashboards switches, priorities, sensitivity, alerts, signal controls, windows, display | 80303, 80620 to 80622, 80635, 81105, 81206 |
+| `screens/settings/CoachHelm.tsx` | The team and dashboards switches, priorities, sensitivity, alerts, signal controls, windows, display (since 2026-11-16 without Show strokes gained and Show advanced statistics; the columns stay) | 80303, 80620 to 80622, 80635, 81105, 81206 |
+| `screens/settings/Staff.tsx`, `phone/StaffPhone.tsx` | The coaching staff on Team (coach): staff, assistants waiting, invites | — |
+| `screens/settings/LiveRounds.tsx` | Live rounds (player, P-6, 2026-10-25): the practice level menu and the read-only qualifier row; `setLivePrefs` in `actions/round-live.ts`, `golf_round_live_prefs` | CH-16661, CH-16662, CH-16664 |
+| `screens/settings/hold-during-class.ts` | Hold during class (player, P-10, 2026-10-25): `golf_player_class_settings.hold_pushes`, own RLS write; off also calls `releaseMyHeldPushes` | CH-8030, CH-8216 |
+| `screens/settings/native-push.ts` | This device's push in the iOS app (Notifications) | — |
+| `screens/settings/course-location.tsx` | The team's course location, the sun source for the global light | — |
 | `screens/settings/Preferences.tsx` | Animations, Haptics (app) | 81608, 81707 |
 | `screens/settings/parts.tsx` | `Card`, `Row`, `Field`, `SaveBar`, `ReadFailed`, `useUnsavedGuard`, `useDraft`, `useSaveAction`, `useInstantSave`, `SettingSwitch` | 80301, 80625 to 80635, 81201 to 81205, 81301, 81302, 81401, 81402 |
 | `screens/settings/live.ts` | `keepSaved`: a landed write also patches the page's copy of the data | 81204 |
@@ -221,8 +227,8 @@ None. `status.data` is existing and the manifest lists no held plan.
 
 ## Impact notes
 
-- The server actions are shared with Fairway's Settings; a change to one changes
-  both UIs.
+- The server actions were shared with Fairway's Settings until its retirement on
+  2026-11-14; they are still shared code outside `src/clubhouse`.
 - A new card must use `useSaveAction` (or `useInstantSave`) so its landing work
   runs on Retry, and a new write that changes a value a card shows needs a patch
   in `keepSaved`, or the section shows the old value on return (81204).
@@ -239,22 +245,24 @@ None. `status.data` is existing and the manifest lists no held plan.
 
 Every control above was checked against what production's Settings sends
 (`FairwaySettingsGeneral`, `FairwaySettingsCoachingIntelligence`,
-`JoinTeamSection`, `useCoachPhilosophy`, `useCoachHelmSettings`) and against the
-server's role check (the action's guard and the live RLS policies). Same tables,
-columns, filters and actions throughout: profile by `user_id`, golf details by
-player id, team settings upserted on `team_id`, organization then team, the join
-code through `regenerateJoinCode` (cookie-aware active team, as Fairway), join
-requests through `createTeamJoinRequest` with the code trimmed and upper-cased,
-leave as the player's own membership delete, the digest through
-`saveCoachingPhilosophy`, delivery keys from `DELIVERY_NOTIFICATION_GROUPS`
-without `pipeline` and `profile_views` (as Fairway), the player matrix through
-`setCategoryChannel` / `setAllChannels` / `setQuietMode`, the team CoachHelm
-switch only for the head coach (an assistant sees it off-limits, as Fairway's
-P084), the staff invite hidden from a known assistant (`createStaffInvite` is
-head-coach only). Scoring choices and time zones are Fairway's lists; every
-stored team value is one of them (production, 5 rows). The legacy
-`/settings/notifications` and `/settings/coaching-intelligence` links open
-Notifications and (coach) CoachHelm.
+`JoinTeamSection`, `useCoachPhilosophy`, `useCoachHelmSettings`; the Fairway
+files were deleted on 2026-11-14 and are kept in the tag
+`archive/fairway-2026-11-15`) and against the server's role check (the action's
+guard and the live RLS policies). Same tables, columns, filters and actions
+throughout: profile by `user_id`, golf details by player id, team settings
+upserted on `team_id`, organization then team, the join code through
+`regenerateJoinCode` (cookie-aware active team, as Fairway), join requests
+through `createTeamJoinRequest` with the code trimmed and upper-cased, leave as
+the player's own membership delete, the digest through `saveCoachingPhilosophy`,
+delivery keys from `DELIVERY_NOTIFICATION_GROUPS` without `pipeline` and
+`profile_views` (as Fairway), the player matrix through `setCategoryChannel` /
+`setAllChannels` / `setQuietMode`, the team CoachHelm switch only for the head
+coach (an assistant sees it off-limits, as Fairway's P084), the staff invite
+hidden from a known assistant (`createStaffInvite` is head-coach only). Scoring
+choices and time zones are Fairway's lists; every stored team value is one of
+them (production, 5 rows). The legacy `/settings/notifications` and
+`/settings/coaching-intelligence` links open Notifications and (coach)
+CoachHelm.
 
 Two differences, fixed:
 

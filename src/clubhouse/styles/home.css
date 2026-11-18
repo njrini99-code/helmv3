@@ -77,9 +77,9 @@
 .ch-h-main--desk > .ch-h-head + .ch-h-flow {
   margin-top: 32px;
 }
-/* The canopy rises from under the top bar: the page's top padding is part of the green. Player Home is held as built (the
-   owner's 28 Oct version): its top and its head's 4px inset are the ones it was built on, not the one frame's (tokens.css
-   --ch-page-top-home-player; owner question, 11 Nov 2026). */
+/* The canopy rises from under the top bar: the page's top padding is part of the green. Home's head is the tight head
+   (no double rule above), its greeting on every page title's line (tokens.css --ch-page-top-home-player; owner, 16 Nov
+   2026). Its head's 4px inset is still the one it was built on (owner question, 11 Nov 2026). */
 .ch-h-main--desk[data-canopy] {
   padding-top: var(--ch-page-top-home-player);
 }
@@ -3525,8 +3525,8 @@
   }
 }
 
-/* Home's first run on desktop opens under the loaded page's framed head (states audit (c)4, 2026-10-08): the head's
-   rules run the page's width, and the date and the greeting sit where the loaded Home sets them. */
+/* Home's first run on desktop opens under the loaded page's head (states audit (c)4, 2026-10-08): the head's rule runs
+   the page's width, and the date and the greeting sit where the loaded Home sets them. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-h-main--first[data-canopy] {
     padding-top: var(--ch-page-top-home-player);

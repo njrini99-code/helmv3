@@ -7,6 +7,19 @@
 > `file/YourWeek.tsx` for a player (`loadPlayerYourWeek`). `loadCoachCoachHelm`
 > and `loadPlayerCoachHelm` are still in `data/coachhelm.ts`, marked retired:
 > no page reads them. See CONTRACT.md, "Retired on 11 Nov 2026".
+>
+> Checked against the code on 2026-11-17: since 2026-11-14 (#2527) the page has
+> no flag and no Fairway branch, and `coachhelm/loading.tsx` draws
+> `CoachHelmRouteSkeleton` directly (`ClubhouseSwitch` was deleted). The route
+> (`src/clubhouse/routes/coachhelm.tsx`) now dispatches: for a coach,
+> `?view=read&player=` -> `ReadPage` (`loadCoachRead`), `?view=player&player=`
+> -> the player file (`file/`, `loadCoachPlayerFile`), `?view=track-record` and
+> `?view=monday-brief` (each behind its own switch), `?view=ask` -> `Ask`, and
+> otherwise `TeamBoard` (`team/`, `loadCoachTeamBoard`); for a player,
+> `?view=read` -> `ReadPage` (`loadPlayerRead`), `?view=ask` -> `Ask`, and
+> otherwise `YourWeek` or a drill (Standing, Deep dive) inside one
+> `CoachHelmSwitchFrame`. The Entry point block below keeps the earlier
+> routing as it was written.
 
 <!-- clubhouse:release-audit:start -->
 ## Current ownership audit — 2026-10-06
@@ -26,10 +39,10 @@ counts include wrappers rather than unique popups.
 ```text
 Route:                   /golf/dashboard/coachhelm
 Page:                    src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx
-                         (a coach or a player with golf_clubhouse_ui on ->
-                         ClubhouseCoachHelmRoute with ?view= handed to it, drawn
-                         in place; else the Fairway page; no session ->
-                         /golf/login)
+                         (a signed-in coach or player ->
+                         ClubhouseCoachHelmRoute with every query value handed
+                         to it, drawn in place; no session -> /golf/login; the
+                         flag and the Fairway page were removed on 2026-11-14)
 Clubhouse route adapter: src/clubhouse/routes/coachhelm.tsx
                          ClubhouseCoachHelmRoute({ view, player, c, insight }):
                          ?view=development -> redirect to Stats' Development
@@ -122,8 +135,8 @@ Screens:                 src/clubhouse/screens/coachhelm/PlayerBoard.tsx (->
                          Skeletons
 Skeleton:                src/clubhouse/screens/coachhelm/CoachHelmSkeleton.tsx
                          (CH-13401 player, CH-13402 coach), from
-                         coachhelm/loading.tsx through ClubhouseSwitch and
-                         CoachHelmRouteSkeleton (the role from the golf user
+                         coachhelm/loading.tsx through CoachHelmRouteSkeleton
+                         (ClubhouseSwitch was deleted; the role from the golf user
                          context). A view's own skeleton is the page's Suspense
                          fallback (views/Skeletons.tsx: CH-13470 standing,
                          CH-13480 deep dive; Ask's is
