@@ -56,9 +56,10 @@ log). What is left, and who has it: [QUEUE.md](QUEUE.md).
   points at `0d73e96a65`, the `main` this change starts from, and holds every
   file it deletes. `git show archive/fairway-2026-11-15:<path>` reads one;
   `git checkout archive/fairway-2026-11-15 -- <path>` brings one back.
-- **Expected, not a fault:** the 5-minute standings cron reports
-  `season-not-applied` until the numbers-day migrations (`20261024151000` and
-  its chain) are applied.
+- **Season Standing is live (2026-11-18):** `20261118030000` (the countable-round
+  helpers alone) and `20261024151000` were applied on the owner's yes, and the
+  season table was filled. The 5-minute standings cron now refreshes it; the
+  rest of the OD-01 chain stays held.
 - **Attendance privacy is done:** `20261017102000` was applied in production
   on 2026-11-15, and #2526 removed `attendance-counts-rpc` and its Sentry
   ignore.
@@ -140,8 +141,8 @@ calls in the 2026-10-23 plan below.
   `20261023130000` (anon surface grants). The rest of HELD.md's Tier 1
   follows in its order. On a separate day after the flip, the ones that move
   numbers: `20261017110000` (null putts), `20260930150000` and
-  `20261023170000` (strokes gained), the OD-01 chain, then
-  `20261024151000` (Standing by season). `20261025060000` (course page
+  `20261023170000` (strokes gained), the OD-01 chain
+  (`20261024151000`, Standing by season, was applied on its own on 2026-11-18). `20261025060000` (course page
   index) only if that read measures slow; `20261025070400` (pg_cron
   variant) is not applied. HELD.md stays the authority for prerequisites.
 - **Scoring and data rules (owner, 2026-10-28).** A provisional DQ is

@@ -73,10 +73,10 @@ describe('20261118030000 countable-round helpers', () => {
     for (const name of required) expect(statementsFor(HELPERS, name)[0]).toMatch(/^CREATE OR REPLACE FUNCTION/);
   });
 
-  it('sorts after the season file’s queue and is named in HELD.md as HOLD, before the season file', () => {
+  it('is named in HELD.md, before the season file', () => {
     const held = readFileSync(join(MIGRATIONS, 'HELD.md'), 'utf8');
-    expect(held).toMatch(/^\| `20261118030000_golf_countable_round_helpers\.sql` \| \*\*HOLD\*\* \|/m);
-    expect(held).toMatch(/Step 7b\.\*\* `20261118030000_golf_countable_round_helpers\.sql`, then `20261024151000_golf_player_standing_season\.sql`/);
+    expect(held).toMatch(/^\| `20261118030000_golf_countable_round_helpers\.sql` \| \*\*/m);
+    expect(held).toMatch(/Step 7b\.[^`]*`20261118030000_golf_countable_round_helpers\.sql`, then `20261024151000_golf_player_standing_season\.sql`/);
     expect(SEASON).toContain('Apply 20261118030000_golf_countable_round_helpers.sql');
   });
 });

@@ -7,10 +7,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * HELD (supabase/migrations/HELD.md).
  *
  * The code already handles each missing object as designed:
- * - `refresh_player_standing_season` — standing-refresh-dirty returns
- *   `skipped: 'season-not-applied'` on PGRST202 (refresh-queue.ts).
- * - `golf_player_standing_season` — loadPlayerSeasonStandingMap returns
- *   `{ status: 'missing' }` on PGRST205 (standing/loader.ts).
  * - the three extended columns of `golf_prediction_model_performance` — the
  *   prediction-performance writer retries without them on PGRST204.
  *
@@ -64,10 +60,14 @@ async function serverIgnoreErrors(runtime: 'nodejs' | 'edge'): Promise<Array<str
   return mocks.init.mock.calls[0]![0].ignoreErrors as Array<string | RegExp>;
 }
 
-/** The PostgREST messages Sentry recorded in production, verbatim. */
-const HELD_SEASON_RPC =
+/**
+ * The PostgREST messages Sentry recorded in production, verbatim. The season
+ * pair is no longer held: 20261024151000 was applied on 2026-11-18, so a
+ * missing season RPC or table must page again.
+ */
+const APPLIED_SEASON_RPC =
   'Could not find the function public.refresh_player_standing_season(p_team_ids) in the schema cache';
-const HELD_SEASON_TABLE = "Could not find the table 'public.golf_player_standing_season' in the schema cache";
+const APPLIED_SEASON_TABLE = "Could not find the table 'public.golf_player_standing_season' in the schema cache";
 const heldPerfColumn = (column: string) =>
   `Could not find the '${column}' column of 'golf_prediction_model_performance' in the schema cache`;
 const EXTENDED_COLUMNS = ['naive_mean_absolute_error', 'naive_sample_count', 'interval_coverage'];
@@ -84,12 +84,9 @@ describe('server ignoreErrors — objects whose migration is HELD', () => {
         patterns = await serverIgnoreErrors(runtime);
       });
 
-      it('drops the held season-standing RPC (standing-refresh-dirty, every 5 minutes)', () => {
-        expect(isIgnored(patterns, HELD_SEASON_RPC)).toBe(true);
-      });
-
-      it('drops the held season-standing table read', () => {
-        expect(isIgnored(patterns, HELD_SEASON_TABLE)).toBe(true);
+      it('pages again for the season-standing RPC and table, now that 20261024151000 is applied', () => {
+        expect(isIgnored(patterns, APPLIED_SEASON_RPC)).toBe(false);
+        expect(isIgnored(patterns, APPLIED_SEASON_TABLE)).toBe(false);
       });
 
       it('drops each held extended column of golf_prediction_model_performance', () => {
@@ -134,7 +131,6 @@ describe('the suppressed migrations are still HELD', () => {
   const held = readFileSync(join(process.cwd(), 'supabase/migrations/HELD.md'), 'utf8');
 
   it.each([
-    ['20261024151000_golf_player_standing_season.sql'],
     ['20261023150000_golf_prediction_perf_extended_columns.sql'],
   ])('%s is listed as HOLD', (file) => {
     const row = held.split('\n').find((line) => line.startsWith(`| \`${file}\``));

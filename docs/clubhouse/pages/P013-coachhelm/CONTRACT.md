@@ -99,8 +99,8 @@ Standing covers this season (owner decision 9, 2026-10-24): every row is from
 names the window first ("This season from Aug 1"), and each row says how many
 rounds it stands on. A row from before this season's 1 August is dropped, never
 labelled as this season's. The lifetime scoring average is not stated under
-"This season". Until the season table's migration (`20261024151000`, held) is
-applied, the page reads the lifetime table, says "Rounds on file" and shows no
+"This season". The season table's migration (`20261024151000`) was applied on
+2026-11-18. If that table is missing or empty, the page reads the lifetime table, says "Rounds on file" and shows no
 row counts. It never says "All time": that table's pressure rows are the last
 90 days, which the Pressure group says (DF-P-05). When the player has a test
 round on file, which that table counts, the hero adds "test rounds included".
