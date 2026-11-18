@@ -99,25 +99,31 @@ const coachPlanOnce = cache(loadCoachPlan);
 const playerPlanOnce = cache(loadPlayerPlan);
 const drillOnce = cache(loadDrill);
 
+/** A tab title's read that threw: logged, and the generic title stands. */
+const titleReadFailed = (read: string) => (err: unknown): null => {
+  chLogServer('practice', `title.${read}`, err);
+  return null;
+};
+
 /**
  * GAP-R-08: the tab and the app switcher name the plan itself ("Tuesday short game"), as the page's title does, not
  * "Practice plan" on every plan. The generic name stands when the plan can't be read; the page says why.
  */
 export async function practicePlanTitle(planId: string, fallback = 'Practice plan'): Promise<string> {
-  const session = await getGolfSessionProfile().catch(() => null);
+  const session = await getGolfSessionProfile().catch(titleReadFailed('session'));
   if (!session) return fallback;
   const player = session.role === 'player' ? session.player : null;
-  const load = await (player ? playerPlanOnce(planId, player.id) : coachPlanOnce(planId)).catch(() => null);
+  const load = await (player ? playerPlanOnce(planId, player.id) : coachPlanOnce(planId)).catch(titleReadFailed('plan'));
   return (load?.status === 'ready' && load.plan.title.trim()) || fallback;
 }
 
 /** GAP-R-08: a drill's tab names the drill ("Ladder putting"), or "Drill" when it can't be read. Drills are a coach's. */
 export async function practiceDrillTitle(drillId: string): Promise<string> {
-  const session = await getGolfSessionProfile().catch(() => null);
+  const session = await getGolfSessionProfile().catch(titleReadFailed('session'));
   if (!session || session.role === 'player') return 'Drill';
-  const team = await resolveClubhouseTeam(session).catch(() => null);
+  const team = await resolveClubhouseTeam(session).catch(titleReadFailed('team'));
   if (!team || team.role === 'player') return 'Drill';
-  const load = await drillOnce(team.teamId, drillId).catch(() => null);
+  const load = await drillOnce(team.teamId, drillId).catch(titleReadFailed('drill'));
   return (load?.status === 'ready' && load.data?.name.trim()) || 'Drill';
 }
 

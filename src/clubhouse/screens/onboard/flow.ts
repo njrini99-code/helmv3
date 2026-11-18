@@ -118,6 +118,7 @@ export function readDraft(raw: string | null): FlowState | null {
     if (hist.length === 0) return null;
     return { d, hist, dir: 'fwd', n: 0 };
   } catch {
+    // A draft that no longer parses: the flow starts fresh.
     return null;
   }
 }
@@ -126,6 +127,7 @@ function load(key: string): string | null {
   try {
     return window.sessionStorage.getItem(key);
   } catch {
+    // Storage blocked: no saved draft.
     return null;
   }
 }

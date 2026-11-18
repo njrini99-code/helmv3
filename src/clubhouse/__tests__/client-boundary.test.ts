@@ -72,7 +72,16 @@ describe('client boundary', () => {
     for (const d of SCANNED) walk(join(ROOT, d), files);
     // Modules only ever bundled for the client (no server importer) may share helpers with client modules freely;
     // these are the ones that do, each checked by hand.
-    const clientOnly = new Set(['src/clubhouse/screens/rounds/entry/labels.ts', 'src/clubhouse/screens/rounds/entry/setup-reads.ts']);
+    // class-day, safe-save and recover/scan call chReport; checked 2026-11-17: every value importer is a 'use client'
+    // module (class-day: ClassHomeLine, TeamBreakSheet, class-status-writes, use-class-day; safe-save: PlanCard;
+    // scan: ports, RoundRecover), and home-line imports class-day for a type only.
+    const clientOnly = new Set([
+      'src/clubhouse/screens/rounds/entry/labels.ts',
+      'src/clubhouse/screens/rounds/entry/setup-reads.ts',
+      'src/clubhouse/data/class-day.ts',
+      'src/clubhouse/screens/coachhelm/plan/safe-save.ts',
+      'src/clubhouse/screens/rounds/recover/scan.ts',
+    ]);
     const found = serverCallsIntoClient(files).filter((l) => !clientOnly.has(l.split(' <- ')[0] ?? ''));
     expect(found).toEqual([]);
   });

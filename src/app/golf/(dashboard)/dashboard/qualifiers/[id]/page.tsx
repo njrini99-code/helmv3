@@ -7,6 +7,7 @@ import { QualifierDetail } from '@/clubhouse/screens/qualifiers/QualifierDetail'
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isUuid } from '@/lib/utils/uuid';
 import { qualifierDisplayName } from '@/lib/golf/qualifier-display';
+import { chLogServer } from '@/clubhouse/lib/track-server';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -17,11 +18,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
-  const { data: qualifier } = await supabase
+  const { data: qualifier, error } = await supabase
     .from('golf_qualifiers')
     .select('name, description')
     .eq('id', id)
     .maybeSingle();
+  // The tab keeps its generic title; the page's own read says what failed.
+  if (error) chLogServer('qualifiers', 'metadata', error);
 
   return {
     title: qualifier?.name ? qualifierDisplayName(qualifier.name) : 'Qualifier',

@@ -15,6 +15,7 @@ export function deepLinkPath(raw: string | null | undefined, origin: string): st
       const url = new URL(raw);
       if (url.protocol === 'https:' && APP_HOSTS.has(url.hostname)) path = `${url.pathname}${url.search}${url.hash}`;
     } catch {
+      // Not a URL at all: dropped, as any other outside link is.
       return null;
     }
   }

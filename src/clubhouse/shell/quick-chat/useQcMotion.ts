@@ -96,7 +96,8 @@ export function useQcMotion(mode: ChMotionMode) {
             stop();
             onRest();
           })
-          .catch(() => undefined);
+          // A cancelled animation rejects `finished`: the next one has taken over.
+        .catch(() => undefined);
       };
       if (mode === 'fade') {
         const a = panel.animate([{ opacity: was.o }, { opacity: 1 }], { duration: CH_FADE_MS, easing: 'linear' });
@@ -155,6 +156,7 @@ export function useQcMotion(mode: ChMotionMode) {
           done();
           stop();
         })
+        // A cancelled animation rejects `finished`: the next one has taken over.
         .catch(() => undefined);
     },
     [mode],
@@ -189,6 +191,7 @@ export function useQcMotion(mode: ChMotionMode) {
           moving.current = false;
           stop();
         })
+        // A cancelled animation rejects `finished`: the next one has taken over.
         .catch(() => undefined);
     },
     [mode],
