@@ -4812,6 +4812,18 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
 }
 
+/* L-057: the open chevron, drawn on the phone only (its own last column), in the ledger's chevron ink. */
+.ch-rd-sc__go {
+  display: none;
+}
+.ch-rd.is-phone a.ch-rd-sc {
+  grid-template-columns: 56px minmax(0, 1fr) 56px 16px;
+}
+.ch-rd.is-phone a.ch-rd-sc .ch-rd-sc__go {
+  display: block;
+  color: var(--ch-ink-500);
+}
+
 /* ---- The phone: flush rows keep their shape; the date and the score take the same figures ---- */
 .ch-rd.is-phone .ch-rd-sc__date {
   color: var(--ch-green-700);

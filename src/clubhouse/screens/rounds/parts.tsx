@@ -2,7 +2,7 @@
 
 import { useId, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Eye, Trash2 } from 'lucide-react';
+import { ArrowRight, ChevronRight, Eye, Trash2 } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsSeason, ChRoundType, ChTeeColor, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
@@ -647,6 +647,8 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
       }}
     >
       {body}
+      {/* L-057: on the phone a row that opens says so, as the coach's rows do; the desk row's hover tint says it there. */}
+      <Icon icon={ChevronRight} size={16} className="ch-rd-sc__go" />
     </Link>
   ) : (
     <div className={'ch-rd-sc is-static' + (under ? ' is-under' : '')} role="group" aria-label={label}>
