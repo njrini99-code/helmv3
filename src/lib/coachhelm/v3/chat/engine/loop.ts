@@ -549,12 +549,19 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
     }
 
     // What is kept of the turn, and so which tool calls are answered: everything, unless a refusal fallback took over part-way.
-    const content = echoable(response.content);
+    // On the answer-only step no call is run, so none is kept: the API can still return one under tool_choice `none`, and a call
+    // stored without its result breaks every later turn of the conversation (2026-11-16, 7286de9e).
+    const content = answerOnly ? echoable(response.content).filter((b) => b.type !== 'tool_use') : echoable(response.content);
     const toolUses = content.filter(isToolUse);
     // A draft whose tool call is not kept (cut off at the length limit, or left behind by a fallback) became nothing.
     const cutOff = toolUses.length > 0 && response.stop_reason === 'max_tokens';
     endDrafts(deps, state, false, cutOff ? undefined : new Set(toolUses.map((b) => b.id)));
     if (cutOff) return { kind: 'truncated' };
+
+    // An answer-only step that returned nothing but a call leaves nothing to keep: an empty assistant message is a 400 too.
+    if (answerOnly && content.every((b) => b.type === 'thinking' || b.type === 'redacted_thinking')) {
+      return { kind: 'complete', truncated: response.stop_reason === 'max_tokens' };
+    }
 
     // Exactly what the API returned, in order.
     const assistant: ModelMessage = { role: 'assistant', content };
