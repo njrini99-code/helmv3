@@ -97,10 +97,11 @@
     text-align: right;
   }
 }
-/* What saving does, in the form's quiet well. Two classes: `.ch-root p` (base.css) would otherwise zero its margins. */
+/* What saving does, as the section's plain text (L-048: a well inside the section read as a card in a card). Two classes:
+   `.ch-root p` (base.css) would otherwise zero its margins. */
 .ch-tour-lu-form .ch-tour-lu-form__receipt {
   margin: 0;
-  padding: 12px 16px;
+  padding: 0;
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
@@ -148,6 +149,11 @@
 }
 .ch-tour-lu-form.is-phone .ch-tour-lu-form__actions .ch-btn {
   width: 100%;
+}
+/* L-005: one primary on the phone. Create spans the column; Cancel is a quiet text-width key under it, not a second bar. */
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__actions .ch-btn--ghost {
+  align-self: center;
+  width: auto;
 }
 
 /* Lineup builder: the spots, the alternate and individuals, and the roster with each player's form.

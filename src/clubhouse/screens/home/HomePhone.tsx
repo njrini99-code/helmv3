@@ -15,7 +15,6 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { WeekStrip as DayStrip } from '../../ui/WeekStrip';
 import { formatSigned, changeInk, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
-import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useChClockText } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
@@ -197,10 +196,7 @@ function NoEvents() {
           </NewEventLink>
         ))}
       </div>
-      <NewEventLink href={newEventHref()} className="ch-hm-none__add" onTap={() => haptic('press')}>
-        <Icon icon={Plus} size={16} />
-        Add event
-      </NewEventLink>
+      {/* L-005: no "Add event" here; the page's New event is the one primary, and the chips start a typed one. */}
     </div>
   );
 }
