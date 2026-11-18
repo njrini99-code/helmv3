@@ -142,7 +142,7 @@ export function groupMetaText(g: Pick<RoundGroup, 'rounds'>): string {
   const avg = full.length ? full.reduce((a, r) => a + r.score, 0) / full.length : null;
   const count = `${g.rounds.length} ${pluralWord(g.rounds.length, 'round')}`;
   if (avg == null) return count;
-  return `${count} · avg ${formatFixed(avg, 1)}${full.length < g.rounds.length ? ` · ${full.length} counted` : ''}`;
+  return `${count} · avg ${formatFixed(avg, 1)}${full.length < g.rounds.length ? ` over ${full.length}` : ''}`;
 }
 
 function groupMeta(g: RoundGroup) {

@@ -1264,7 +1264,7 @@ function CalendarBody({
             <Icon icon={ChevronDown} size={16} />
           </button>
           <div className="ch-cal-sub">
-            {data.eventsError ? "Events didn’t load" : (count === 0 && view !== 'day' ? `Nothing scheduled this ${view === 'week' ? 'week' : 'month'}` : `${count} ${coach ? 'team ' : ''}${pluralWord(count, 'event')}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`)} · {data.zoneLabel}
+            {data.eventsError ? "Events didn’t load" : (count === 0 && view !== 'day' ? `Nothing scheduled this ${view === 'week' ? 'week' : 'month'}` : `${count} team ${pluralWord(count, 'event')}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`)} · {data.zoneLabel}
           </div>
           <AnimatePresence>
             {jump && (

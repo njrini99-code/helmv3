@@ -1,6 +1,6 @@
 'use client';
 
-import { ChartLine, Plus } from 'lucide-react';
+import { Plus, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type CSSProperties } from 'react';
@@ -114,7 +114,7 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
         <EmptyState
           size="page"
           code="CH-16340"
-          icon={ChartLine}
+          icon={Trophy}
           title="No results to compare yet"
           body="Once events are finished, the team’s scoring against the course rating shows here, season by season."
           action={
