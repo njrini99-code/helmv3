@@ -1090,8 +1090,9 @@
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
+/* L-048: the squad's sum is the section's plain text, not a well that reads as a button. */
 .ch-qf-readout {
-  padding: 12px 16px;
+  padding: 0;
   font: var(--ch-type-14);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
@@ -1108,15 +1109,16 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
+  /* With no well padding (L-048), the dot's whole 16px strip sits left of the text's edge. */
   margin-left: -16px;
-  clip-path: inset(0 0 0 18px);
+  clip-path: inset(0 0 0 16px);
 }
 .ch-qf-seg {
   white-space: nowrap;
 }
 .ch-qf-readout__in > .ch-qf-seg::before {
   display: inline-block;
-  width: 18px;
+  width: 16px;
   color: var(--ch-text-tertiary);
   text-align: center;
   content: '·';

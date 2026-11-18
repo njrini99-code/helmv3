@@ -131,7 +131,8 @@ export function FeatureCard({
       </div>
       <p className="feat__p ch-num">
         {b.lede}
-        {d.closes && (
+        {/* L-076: a gap that rounds to nothing is not "worth 0.0 strokes a round"; the sentence is left out. */}
+        {d.closes && Number(d.closes.strokes.replace('\u2212', '-')) > 0 && (
           <>
             {' '}
             {mine ? <>Closing it to {anchor}</> : <>Getting to {d.closes?.anchor === 'team' && team != null ? 'the team’s number' : 'the Tour’s number'}</>} is worth <b>{d.closes.strokes} strokes a round</b>.
@@ -244,7 +245,7 @@ export function PlanCard({ plan, lens, first, onDrawn }: { plan: ChFilePlan | nu
                 <Icon icon={Users} size={16} />
               </span>
               <span className="r__t">
-                <b>{stage === 'none' ? 'CoachHelm' : `From ${plan?.coach ?? 'Your coach'}`}</b>
+                <b>{stage === 'none' ? 'CoachHelm' : plan?.coach ? `From ${plan.coach}` : 'From your coach'}</b>
                 <small>{line}</small>
               </span>
             </div>

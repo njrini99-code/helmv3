@@ -594,7 +594,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                 onChange={(next) => set('exempt', next)}
                 problem={problemOf('exempt') ?? null}
               />
-              <div className="ch-qf-readout ch-well-soft ch-num" aria-live="polite">
+              <div className="ch-qf-readout ch-num" aria-live="polite">
                 {/* The segments wrap whole, and a dot only ever sits between two on one line (qualifiers.css). */}
                 <span className="ch-qf-readout__in">
                   <span className="ch-qf-seg">
