@@ -1,4 +1,6 @@
 import 'server-only';
+import { readsOnForTeam } from './coachhelm-analyst-read';
+import { isHiddenForReads } from './coachhelm-analyst-read-shape';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getInsightsForPlayer, getTopInsightsForPlayers, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -627,7 +629,10 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   const without = roster.filter((p) => !heads.get(p.id)?.[0] && !allHeld.has(p.id) && p.name !== NO_NAME);
   const withoutNames = without.map((p) => p.name);
   const withoutIds = without.map((p) => p.id);
-  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length - allHeld.size, withoutNames, withoutIds, ...(missing ? { missing } : {}), ...(teamPatterns ? { teamPatterns } : {}), ...(isCoursePlanEnabled() ? { coursePlan: true } : {}), ...(notEnough ? { notEnough } : {}) };
+  // CoachHelm reads (flag `coachhelm_reads_v1`, listed team): a player whose top card is a "nothing found" or good-news row leaves the
+  // board's list. Nothing is deleted; every other team is exactly as before.
+  const shown = readsOnForTeam(input.teamId) ? list.filter((p) => !isHiddenForReads(p.top.kind)) : list;
+  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(shown), error: false }, withoutSignals: roster.length - shown.length - allHeld.size, withoutNames, withoutIds, ...(missing ? { missing } : {}), ...(teamPatterns ? { teamPatterns } : {}), ...(isCoursePlanEnabled() ? { coursePlan: true } : {}), ...(notEnough ? { notEnough } : {}) };
 }
 
 /**

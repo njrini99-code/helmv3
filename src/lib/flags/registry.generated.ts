@@ -285,6 +285,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Turn on in production only after coachhelm_support_v1 has written ladders (until then every brief is empty and nothing is sent) and the owner has decided to re-enable customer email. Remove the flag once the brief has served coaches for a season.",
   },
   {
+    feature_id: "coachhelm_reads_v1",
+    owner: "golf/coachhelm",
+    purpose: "Gates CoachHelm reads: one card per player built by the analyst (src/lib/coachhelm/v3/analyst/reads) with no model, kept in the held table golf_coach_reads after each posted round and nightly, and drawn on the coach's file on one player above today's cards, with the rounds behind it. Team scoped: on only for the teams listed in COACHHELM_READS_TEAM_IDS (comma-separated golf_teams ids; unset or empty is no team). For a listed team the coach's player page and the CoachHelm board also hide today's \"nothing found\" rows, good-news rows and the one-sentence root cause (nothing is deleted). Off: nothing is computed, read or written, and every screen is exactly as before.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-11-17",
+    expires_at: "2027-04-01",
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "The owner applies the held migrations, lists one team and turns the flag on. If coaches keep the reads, roll out team by team, then delete the old engine's writers and remove this flag and the team list; if not, turn it off, drop golf_coach_reads and delete the reads folder.",
+  },
+  {
     feature_id: "coachhelm_reads_v1_copy",
     owner: "golf/coachhelm",
     purpose: "Gates the CoachHelm Slice 0 output changes. Delivery: overlapping reads fold into one at delivery and each player's feeds hold 3 open reads plus 1 strength. Freshness: a new or refreshed read needs at least 3 countable rounds and its family's attempt floor or it is held back as Watching with a count-down; a new evidence revision is a new newest round in the window (or a moved window), not a changed sample count; empty window dates are filled from the rounds read; and the nightly roster sweep re-analyzes players whose newest countable round is newer than their newest read (deterministic generators only, no LLM). Round review: a player's own round shows the 30-second debrief (one number that moved, the top open read, the round's counted facts, one next step) where the recap stood. Off until the owner reviews the shorter feeds and the Watching counts.",

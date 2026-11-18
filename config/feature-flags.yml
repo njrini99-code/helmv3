@@ -1239,6 +1239,38 @@ flags:
       team list and the old drawing's fallback; if not, turn it off and
       remove MissCompass, the ui_only shot lists and the shots: selection.
 
+  # CoachHelm insights rebuild, stages 1, 2, 4 and the player's card (17 Nov 2026).
+  # Created OFF everywhere; turning it on is the owner's call, for one team, after
+  # the held golf_coach_reads migrations are applied.
+  - feature_id: coachhelm_reads_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Gates CoachHelm reads: one card per player built by the analyst
+      (src/lib/coachhelm/v3/analyst/reads) with no model, kept in the held
+      table golf_coach_reads after each posted round and nightly, and drawn
+      on the coach's file on one player above today's cards, with the rounds
+      behind it. Team scoped: on only for the teams listed in
+      COACHHELM_READS_TEAM_IDS (comma-separated golf_teams ids; unset or
+      empty is no team). For a listed team the coach's player page and the
+      CoachHelm board also hide today's "nothing found" rows, good-news rows
+      and the one-sentence root cause (nothing is deleted). Off: nothing is
+      computed, read or written, and every screen is exactly as before.
+    type: experiment
+    status: active
+    created_at: "2026-11-17"
+    expires_at: "2027-04-01"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      The owner applies the held migrations, lists one team and turns the
+      flag on. If coaches keep the reads, roll out team by team, then delete
+      the old engine's writers and remove this flag and the team list; if
+      not, turn it off, drop golf_coach_reads and delete the reads folder.
+
   # Launch readiness DD-01 (15 Nov 2026): the daily demo team refresh. Created
   # OFF everywhere; turning it on is the owner's call, after the generator's
   # migration is applied and its first run (scripts/golf-demo-refresh.ts) is

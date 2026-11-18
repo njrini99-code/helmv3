@@ -8,6 +8,7 @@ import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
 import { COURSE_TAB } from '@/lib/coachhelm/v3/team-board/flag';
 import { loadCoachPlayerFile, loadFileRoster, loadPlayerYourWeek } from '../data/coachhelm-file';
+import { loadCoachAnalystRead } from '../data/coachhelm-analyst-read';
 import { FileSkeleton } from '../screens/coachhelm/file/FileSkeleton';
 import { PlayerFile } from '../screens/coachhelm/file/PlayerFile';
 import { YourWeek } from '../screens/coachhelm/file/YourWeek';
@@ -125,8 +126,8 @@ async function CoachPlayerFilePage({ coachId, teamId, playerId, at, insight }: {
 }
 
 async function CoachPlayerFileRead({ scope, at, insight }: { scope: ChCoachPlayerScope; at?: PlayerFileCard; insight?: string }) {
-  const [load, roster] = await Promise.all([loadCoachPlayerFile({ scope }), loadFileRoster(scope)]);
-  return <PlayerFile load={load} at={at} insight={insight} roster={roster} />;
+  const [load, roster, analyst] = await Promise.all([loadCoachPlayerFile({ scope }), loadFileRoster(scope), loadCoachAnalystRead({ teamId: scope.teamId, playerId: scope.playerId })]);
+  return <PlayerFile load={load} at={at} insight={insight} roster={roster} analyst={analyst} />;
 }
 
 async function PlayerYourWeek({ playerId }: { playerId: string }) {
