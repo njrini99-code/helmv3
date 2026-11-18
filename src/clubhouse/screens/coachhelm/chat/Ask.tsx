@@ -326,6 +326,8 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         players={data.players}
         onApprove={chat.approve}
         onDeny={chat.deny}
+        onSettled={chat.settle}
+        onResume={chat.resume}
         onSend={ask}
         onStop={stop}
         stoppedTurn={stoppedTurn}

@@ -45,8 +45,8 @@ export type ClaimResult =
    * A run sat in 'approved' past {@link APPROVED_RUN_TTL_MS} — its execution
    * crashed or timed out somewhere between the claim and `recordOutcome`. It
    * has just been marked 'failed' and is NOT re-executed here: the write may
-   * or may not have landed (see the TTL doc comment), so the coach checks and
-   * retries explicitly. `message` is coach-facing.
+   * or may not have landed (see the TTL doc comment), so the coach checks the
+   * destination before starting a new intent. `message` is coach-facing.
    */
   | { kind: 'stale_failed'; message: string }
   | { kind: 'error'; message: string };
@@ -68,8 +68,8 @@ export type ClaimResult =
  * no unique constraint behind them. The crashed attempt may have created the
  * eight practices before it died, so silently re-running would double them.
  * A stale run is therefore moved to 'failed' with an error that tells the
- * coach to check first; 'failed' is re-claimable, so their next confirmation
- * is the explicit retry.
+ * coach to check first, with a non-retryable receipt. Only failures known to
+ * have written nothing may re-claim the same key.
  */
 export const APPROVED_RUN_TTL_MS = 10 * 60 * 1000;
 
@@ -142,8 +142,8 @@ export async function recordProposal(
  * two concurrent confirmations race on the database rather than in application
  * code and exactly one wins. The loser reads the winner's state.
  *
- * `failed` is re-claimable on purpose: a run that failed wrote nothing worth
- * protecting, and the coach should be able to retry.
+ * `failed` is re-claimable only when its receipt permits retry (or a legacy
+ * row has no receipt). Partial or interrupted writes must not run twice.
  */
 export async function claimForExecution(
   sb: Sb,
@@ -167,6 +167,16 @@ export async function claimForExecution(
   if (row.status === 'completed' && row.result) {
     return { kind: 'already_completed', receipt: row.result };
   }
+  if (row.status === 'cancelled') {
+    return { kind: 'error', message: 'That action was undone. Nothing was saved.' };
+  }
+  // A failed attempt can have left a real row behind. Only a receipt that
+  // explicitly permits retry may be claimed again; partial writes are final.
+  if (row.status === 'failed' && row.result && (!row.result.retryable || row.result.created.some((item) => item.count > 0))) {
+    return { kind: 'error', message: row.result.error ?? row.result.summary };
+  }
+  // Already held by the confirm request. A second caller must not claim it and must not treat the miss as "could not start".
+  if (row.status === 'held') return { kind: 'in_flight' };
   if (row.status === 'approved') {
     const decidedMs = row.decided_at ? Date.parse(row.decided_at) : NaN;
     const cutoffMs = Date.now() - APPROVED_RUN_TTL_MS;
@@ -177,6 +187,11 @@ export async function claimForExecution(
       const { data: failed, error: failErr } = await fromUntyped(sb, TABLE)
         .update({
           status: 'failed',
+          result: {
+            status: 'failed', action: '', summary: STALE_RUN_MESSAGE,
+            created: [], notifications: [], partial_failures: [],
+            error: STALE_RUN_ERROR, retryable: false, at: new Date().toISOString(),
+          } as never,
           error_message: STALE_RUN_ERROR,
           completed_at: new Date().toISOString(),
         })
@@ -225,16 +240,21 @@ export async function recordOutcome(
     receipt: ActionReceipt;
   },
 ): Promise<void> {
-  await fromUntyped(sb, TABLE)
+  // A failure after rows landed must never become a fresh create on retry.
+  const receipt: ActionReceipt = args.receipt.status === 'failed' && args.receipt.created.some((item) => item.count > 0)
+    ? { ...args.receipt, retryable: false }
+    : args.receipt;
+  const { error } = await fromUntyped(sb, TABLE)
     .update({
-      status: args.receipt.status === 'failed' ? 'failed' : 'completed',
-      result: args.receipt as never,
-      error_message: args.receipt.error ?? null,
+      status: receipt.status === 'failed' ? 'failed' : 'completed',
+      result: receipt as never,
+      error_message: receipt.error ?? null,
       partial_failures:
-        args.receipt.partial_failures.length > 0 ? (args.receipt.partial_failures as never) : null,
+        receipt.partial_failures.length > 0 ? (receipt.partial_failures as never) : null,
       completed_at: new Date().toISOString(),
     })
     .eq('id', args.run_id);
+  if (error) throw new Error('Could not save the action receipt. Check the destination before trying again.');
 }
 
 /**

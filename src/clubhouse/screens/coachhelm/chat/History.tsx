@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { Button } from '../../../ui/Button';
 import { MessagesSquare, PanelLeftClose, SquarePen } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useRef } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { filterConversations, groupConversations, type ChAskConversation } from '../../../data/coachhelm-chat-shape';
 import { useDialogLifetime } from '../../../lib/dialog-lifetime';
 import { useSheetDrag } from '../../../lib/sheet-drag';
@@ -46,7 +46,25 @@ export function conversationHref(id: string): string {
 function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigate, onOpen }: AskHistoryProps) {
   // The search comes back when the coach returns to the page (owner rule 8), restored after mount (`drafts.ts`).
   const [q, setQ] = useAskKept<string>('askHistorySearch', '');
-  const groups = useMemo(() => groupConversations(filterConversations(conversations.list, q), nowIso, timezone), [conversations.list, q, nowIso, timezone]);
+  // Paging is over the returned snapshot, not a claim that the server returned every saved chat.
+  const [page, setPage] = useAskKept<string>('askHistoryPage', '');
+  const query = q.trim().toLowerCase();
+  const [pageQuery, pageCount] = page.split('\u0000');
+  const count = Number(pageCount);
+  const limit = pageQuery === query && Number.isSafeInteger(count) && count > 0 ? Math.max(20, count) : 20;
+  const matches = useMemo(() => filterConversations(conversations.list, q), [conversations.list, q]);
+  // A restored deep link must be visible even before More is pressed.
+  const selected = matches.findIndex((c) => c.id === openId);
+  const visible = Math.min(matches.length, Math.max(limit, selected + 1));
+  const groups = useMemo(() => groupConversations(matches.slice(0, visible), nowIso, timezone), [matches, visible, nowIso, timezone]);
+  const listId = useId();
+  const scroll = useRef<HTMLDivElement>(null);
+  const [scrollAt, setScrollAt] = useAskKept<string>('askHistoryScroll', '');
+  useLayoutEffect(() => {
+    const [savedQuery, offset] = scrollAt.split('\u0000');
+    const top = Number(offset);
+    if (scroll.current) scroll.current.scrollTop = savedQuery === query && Number.isFinite(top) && top >= 0 ? top : 0;
+  }, [scrollAt, query, visible]);
 
   if (conversations.error) {
     return <RefreshNotice code="CH-13222" title="Your chats didn’t load" body="Nothing is lost. Your past chats are still saved; try again in a moment." />;
@@ -68,7 +86,7 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
   return (
     <>
       <SearchField label="Search chats" placeholder="Search chats" value={q} onChange={setQ} className="ch-ask-hist__search" />
-      <div className="ch-ask-hist__scroll">
+      <div ref={scroll} className="ch-ask-hist__scroll" id={listId} onScroll={(e) => setScrollAt(`${query}\u0000${e.currentTarget.scrollTop}`)}>
         {groups.length === 0 ? (
           <p className="ch-ask-hist__nomatch" data-ch-code="CH-13324">
             No chats match “{q.trim()}”.
@@ -88,8 +106,9 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
                         aria-current={on ? 'page' : undefined}
                         data-ch-code={on ? 'CH-13823' : undefined}
                         onClick={(e) => {
+                          if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
                           onNavigate?.();
-                          if (!onOpen || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                          if (!onOpen) return;
                           e.preventDefault();
                           onOpen(c.id);
                         }}
@@ -103,6 +122,12 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
             </section>
           ))
         )}
+        {visible < matches.length && (
+          <Button variant="ghost" className="ch-aki-history-more" aria={{ controls: listId }} onClick={() => setPage(`${query}\u0000${visible + 20}`)}>
+            More chats
+          </Button>
+        )}
+        {matches.length > 0 && <p className="ch-aki-history-count" role="status">Showing {visible} of {matches.length} loaded chats{query ? ' matching your search' : ''}.</p>}
       </div>
     </>
   );

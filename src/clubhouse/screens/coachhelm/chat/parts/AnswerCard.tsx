@@ -111,7 +111,7 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
           // A plan and its intake sit on the thread, beside this bubble (PP-2).
           if (b.kind === 'plan' || (b.kind === 'brief' && b.brief.intake)) return null;
           if (b.kind === 'brief') return <BriefCard key={b.key} title={b.brief.title} questions={b.brief.questions} onDone={(_a, line) => onSend(line || 'Skip, just build')} />;
-          if (b.kind === 'handoff') return <HandoffCard key={b.key} handoff={b.handoff} tiles={b.handoff.kind === 'board' ? boardTiles : undefined} />;
+          if (b.kind === 'handoff') return <HandoffCard key={b.key} handoff={b.handoff} tiles={b.handoff.kind === 'board' ? boardTiles : undefined} fresh={fresh} />;
           if (b.kind === 'composition') {
             const drawn = <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
             return ghost && b.key === lastChart ? (

@@ -29,6 +29,8 @@ import * as React from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses } from 'ai';
 import type { UIMessage } from 'ai';
+import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
+import { sealConfirmedParts } from '@/lib/coachhelm/v3/chat/seal-confirm';
 
 const STREAM_ENDPOINT = '/api/coachhelm/v3/chat/stream';
 
@@ -89,6 +91,10 @@ export interface UseCoachHelmChatResult {
    */
   approve: (approvalId: string) => void;
   deny: (approvalId: string) => void;
+  /** The confirm request already wrote the action. Record that on the message without resubmitting the thread. */
+  settle: (key: string, approvalId: string, receipt: ActionReceipt) => void;
+  /** Send the approved thread again after a confirm whose stream died before a receipt. A new turn key, so it is not replayed as the already-answered question. */
+  resume: () => void;
 }
 
 export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmChatResult {
@@ -265,6 +271,23 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     [chat],
   );
 
+  const settle = React.useCallback(
+    (key: string, approvalId: string, receipt: ActionReceipt) => {
+      chat.setMessages((messages) => messages.map((message) => {
+        if (message.role !== 'assistant') return message;
+        const parts = message.parts ?? [];
+        if (!parts.some((part) => part.type.startsWith('tool-') && (part as { approval?: { id?: string } }).approval?.id === approvalId) && !parts.some((part) => part.type === 'data-action-proposal' && (part as { data?: { idempotency_key?: string } }).data?.idempotency_key === key)) return message;
+        return { ...message, parts: sealConfirmedParts(parts, key, receipt, approvalId) as UIMessage['parts'] };
+      }));
+    },
+    [chat],
+  );
+
+  const resume = React.useCallback(() => {
+    turnKey.current = newKey();
+    void chat.regenerate();
+  }, [chat]);
+
   const busy = chat.status === 'submitted' || chat.status === 'streaming';
 
   return {
@@ -282,6 +305,8 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     newConversation,
     approve,
     deny,
+    settle,
+    resume,
   };
 }
 

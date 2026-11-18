@@ -1,6 +1,7 @@
 'use client';
 
 import type { UIMessage } from 'ai';
+import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowDown, CircleAlert, RotateCw } from 'lucide-react';
@@ -45,9 +46,13 @@ export interface AskThreadProps {
   players: Array<{ id: string; name: string }>;
   /** Who is asking: a player's next steps are read-only and about their own game. */
   viewer?: 'coach' | 'player';
-  /** Both receive the APPROVAL id (`part.approval.id`). */
+  /** Both receive the APPROVAL id (`part.approval.id`). Confirm does not call onApprove; that resubmits the thread. */
   onApprove: (approvalId: string) => void;
   onDeny: (approvalId: string) => void;
+  /** A confirm POST returned a receipt. Record it on the message without another request. */
+  onSettled?: (key: string, approvalId: string, receipt: ActionReceipt) => void;
+  /** Re-send a confirm whose stream died before a receipt. */
+  onResume?: () => void;
   onSend: (text: string) => boolean | void;
   onStop: () => void;
   onRetry: () => void;
@@ -78,7 +83,7 @@ function fromBottom(sp: HTMLElement | null): { gap: number; screen: number } {
  * the coach sends, and stays where the coach scrolled to while an answer streams. Streamed text
  * does not animate; a new turn arrives with the base fade.
  */
-export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
+export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSettled, onResume, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
   const toast = useToast();
   const reduced = useChReducedMotion();
   const turns = useMemo(() => buildTurns(messages, { busy }), [messages, busy]);
@@ -222,13 +227,16 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
                     key={b.key}
                     view={b.view}
                     inlineReceipt={null}
-                    // A live answer takes over from the placeholder, so the turn's own `fresh` is false; what counts is that it was streaming as the card arrived.
-                    fresh={turn.active}
+                    // The avatar may continue a placeholder; a proposal first arriving in that answer still fills once.
+                    fresh={!initial.current?.has(turn.id)}
                     roster={players}
                     team={team}
                     evidence={focus && evidenceAvailable(messages, focus) ? { open: evidenceFocus?.key === b.view.key, onOpen: () => onOpenEvidence(focus) } : undefined}
                     onApprove={onApprove}
                     onDeny={onDeny}
+                    onSettled={onSettled}
+                    onResume={onResume}
+                    busy={busy}
                     onSend={onSend}
                   />
                 );

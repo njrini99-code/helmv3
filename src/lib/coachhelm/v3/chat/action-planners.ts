@@ -268,15 +268,16 @@ export async function executeTask(plan: TaskPlan): Promise<ActionReceipt> {
   );
 
   if (!result.success) {
+    const saved = !!result.data?.taskId;
     return {
-      status: 'failed',
+      status: saved ? 'partial' : 'failed',
       action: 'Assign a task',
-      summary: 'The task was not created.',
-      created: [],
+      summary: saved ? 'The task was created but could not be assigned. Open Tasks to finish assigning it.' : 'The task was not created.',
+      created: saved ? [{ kind: 'task', count: 1, href: '/golf/dashboard/tasks', label: plan.title }] : [],
       notifications: [],
-      partial_failures: [],
+      partial_failures: saved ? [result.error ?? 'The task could not be assigned.'] : [],
       error: result.error ?? 'Tasks rejected it.',
-      retryable: true,
+      retryable: !saved,
       at,
     };
   }
@@ -386,15 +387,16 @@ export async function executeAnnouncement(plan: AnnouncementPlan): Promise<Actio
   });
 
   if (!result.success) {
+    const saved = !!result.data?.announcementId;
     return {
-      status: 'failed',
+      status: saved ? 'partial' : 'failed',
       action: 'Send a team update',
-      summary: 'The update was not sent.',
-      created: [],
+      summary: saved ? 'The update may be visible to the whole team. Open Announcements to check it.' : 'The update was not sent.',
+      created: saved ? [{ kind: 'team update', count: 1, href: '/golf/dashboard/announcements', label: plan.title }] : [],
       notifications: [],
-      partial_failures: [],
+      partial_failures: saved ? [result.error ?? 'The chosen recipients could not be saved.'] : [],
       error: result.error ?? 'Announcements rejected it.',
-      retryable: true,
+      retryable: !saved,
       at,
     };
   }

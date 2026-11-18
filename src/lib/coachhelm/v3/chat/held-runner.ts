@@ -4,11 +4,12 @@ import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
 import { executeAnnouncement, executeFocusArea, executeTask } from './action-planners';
 import type { ActionReceipt } from './action-types';
-import { CREATE_FLOWS, LINEUP_FLOWS, flowCommit, type FlowDef } from './create-tools';
+import { CREATE_FLOWS, LINEUP_FLOWS, drillFlow, flowCommit, type FlowDef } from './create-tools';
 import { publishFlow } from './practice-draft';
+import { executeRecurringPractice } from './practice-planner';
 import type { HeldCommit, HeldRow } from './undo-hold';
 
-const FLOWS: ReadonlyArray<FlowDef<never>> = [...CREATE_FLOWS, ...LINEUP_FLOWS, publishFlow as unknown as FlowDef<never>];
+const FLOWS: ReadonlyArray<FlowDef<never>> = [...CREATE_FLOWS, ...LINEUP_FLOWS, drillFlow as unknown as FlowDef<never>, publishFlow as unknown as FlowDef<never>];
 
 const unwritable = (tool: string): HeldCommit => ({
   run: async () => ({ status: 'failed', action: tool, summary: 'That didn’t go through. Nothing was saved.', created: [], notifications: [], partial_failures: [], error: 'The held action could not be rebuilt.', retryable: false, at: new Date().toISOString() } satisfies ActionReceipt),
@@ -29,5 +30,6 @@ export function heldCommitFor(sb: SupabaseClient<Database>, ctx: CoachChatContex
   if (row.tool_name === 'create_focus_area') return { run: () => executeFocusArea(row.proposed_input as never) };
   if (row.tool_name === 'create_task') return { run: () => executeTask(row.proposed_input as never) };
   if (row.tool_name === 'create_team_announcement') return { run: () => executeAnnouncement(row.proposed_input as never) };
+  if (row.tool_name === 'create_recurring_practice') return { run: () => executeRecurringPractice(ctx, row.proposed_input as never) };
   return unwritable(row.tool_name);
 }

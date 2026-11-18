@@ -23,6 +23,7 @@ import { Menu } from '../../../ui/Menu';
 import { useToast } from '../../../ui/Toast';
 import { Tooltip } from '../../../ui/Tooltip';
 import { useAskDraft } from './drafts';
+import { AskPresence } from './AskPresence';
 
 /** The text box grows with its text and stops here; past it the box scrolls (a taller one hides the answer it is about). */
 const MAX_HEIGHT = 168;
@@ -262,6 +263,17 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
   const slashes = useMemo(() => (typedSlash === null || dismissed ? [] : matchSlash(slash, typedSlash)), [slash, typedSlash, dismissed]);
   const [slashAt, setSlashAt] = useState(0);
   const slashActive = Math.min(slashAt, Math.max(0, slashes.length - 1));
+  const slashOpen = slashes.length > 0;
+  const slashListId = `${listId}-commands`;
+  const slashRoom = usePickerRoom(frame, slashOpen, hero && !phone);
+  useEffect(() => {
+    if (!pickerOpen && !slashOpen) return;
+    const outside = (e: PointerEvent) => {
+      if (!frame.current?.contains(e.target as Node)) setDismissed(true);
+    };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [pickerOpen, slashOpen]);
 
   const focusEnd = useCallback(() => {
     // Focus inside the tap itself, so a phone raises its keyboard (or keeps it up); the caret goes to the end once the new
@@ -310,6 +322,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
     haptic('select');
     setValue(c.seed);
     setSlashAt(0);
+    setDismissed(true);
     focusEnd();
   };
 
@@ -379,7 +392,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
       }))}
       trigger={(t) => (
         <Tooltip>
-          <button type="button" className="ch-ask-cmp__round" aria-label="Add to your question" data-ch-press="" {...t}>
+          <button type="button" className="ch-ask-cmp__round ch-aki-plus" aria-label="Add to your question" data-ch-press="" {...t}>
             <Icon icon={Plus} size={18} />
           </button>
         </Tooltip>
@@ -408,7 +421,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
   const pickLabel = roster ? 'Mention a player or stat' : 'Mention a stat';
 
   return (
-    <div className={'ch-ask-cmp is-' + variant + (phone ? ' is-phone' : '')}>
+    <div className={'ch-ask-cmp ch-aki-composer is-' + variant + (phone ? ' is-phone' : '')}>
       <div className="ch-ask-cmp__box" ref={frame}>
         {scopeChips.length > 0 && (
           <div className="ch-ak-cscope" role="group" aria-label="What the next answer reads">
@@ -432,11 +445,12 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
           autoComplete="off"
           aria-describedby={blocked ? `${listId}-blocked` : undefined}
           aria-autocomplete="list"
-          aria-controls={pickerOpen ? pickIds.list : undefined}
-          aria-activedescendant={pickerOpen && pickable ? pickIds.active : undefined}
+          aria-controls={pickerOpen ? pickIds.list : slashOpen ? slashListId : undefined}
+          aria-activedescendant={pickerOpen && pickable ? pickIds.active : slashOpen ? `${slashListId}-${slashActive}` : undefined}
           onChange={(e) => {
             setValue(e.target.value);
             setDismissed(false);
+            setSlashAt(0);
             opened.current = null;
           }}
           onKeyDown={onKeyDown}
@@ -483,24 +497,23 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
           )}
           {send}
         </div>
-        {slashes.length > 0 && (
-          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- not a control; it only keeps the focus in the text box
-          <div className="ch-ask-pick" data-ch-code="CH-13821" onMouseDown={(e) => e.preventDefault()}>
-            <div className="ch-ask-pick__list" role="listbox" aria-label="Commands">
+        {(
+          <AskPresence open={slashOpen} className="ch-ask-pick ch-aki-picker" data-ch-code="CH-13821" style={slashRoom === null ? undefined : { ['--ch-ask-pick-room' as string]: `${slashRoom}px` }} onMouseDown={(e) => e.preventDefault()}>
+            <div id={slashListId} className="ch-ask-pick__list" role="listbox" aria-label="Commands">
               {slashes.map((c, i) => (
-                <button key={c.command} type="button" role="option" aria-selected={i === slashActive} data-selected={i === slashActive ? 'true' : undefined} className="ch-ask-pick__row" onClick={() => pickSlash(c)}>
+                <button id={`${slashListId}-${i}`} key={c.command} type="button" role="option" aria-selected={i === slashActive} data-selected={i === slashActive ? 'true' : undefined} className="ch-ask-pick__row" onClick={() => pickSlash(c)}>
                   <span className="ch-ask-pick__name">{c.command}</span>
                   <span>{c.label}</span>
                 </button>
               ))}
             </div>
-          </div>
+          </AskPresence>
         )}
-        {pickerOpen && (
+        {(
           // A press on the picker never moves the focus: the text box keeps it, and the phone its keyboard.
-          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- not a control; it only keeps the focus in the text box
-          <div
-            className="ch-ask-pick"
+          <AskPresence
+            open={pickerOpen}
+            className="ch-ask-pick ch-aki-picker"
             data-ch-code="CH-13821"
             // The CSS caps the list by this, so a short sheet or a raised keyboard never cuts it off.
             style={room === null ? undefined : { ['--ch-ask-pick-room' as string]: `${room}px` }}
@@ -553,7 +566,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
               </Command.List>
               <PickerIdsProbe list={cmdList} onIds={setPickIds} />
             </Command>
-          </div>
+          </AskPresence>
         )}
       </div>
       {blocked && (

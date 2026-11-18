@@ -2,13 +2,22 @@
 import { Button } from '../../../../ui/Button';
 
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { PhoneScreen } from '../../../../shell/PhoneScreen';
 import { PhoneBar } from '../../../../ui/PhoneBar';
 import { Icon } from '../../../../ui/Icon';
 import { AskProse } from '../Prose';
 import { KIND_LABEL, type AskArtifact } from './artifacts';
 import { SaveCard } from './SaveCard';
+import { useDialogLifetime } from '../../../../lib/dialog-lifetime';
+import { useChReducedMotion } from '../../../../lib/reduced-motion';
+
+const OVERLAY_QUERY = '(min-width: 821px) and (max-width: 1279px)';
+const subscribeOverlay = (change: () => void) => {
+  const query = window.matchMedia(OVERLAY_QUERY);
+  query.addEventListener('change', change);
+  return () => query.removeEventListener('change', change);
+};
 
 /** A card in the stream: the tile scans while it writes. */
 export function ArtifactCard({ artifact, writing, onOpen }: { artifact: AskArtifact; writing: boolean; onOpen: () => void }) {
@@ -112,18 +121,43 @@ export function ArtifactView({ artifact, phone, body, onClose, builderHref = nul
   // M-ASK-30: it slides back out, then leaves. With nothing to wait for (Animations off), it leaves at once.
   const root = useRef<HTMLElement>(null);
   const [leaving, setLeaving] = useState(false);
+  const reduced = useChReducedMotion();
+  const overlay = useSyncExternalStore(subscribeOverlay, () => window.matchMedia(OVERLAY_QUERY).matches, () => false) && !phone;
+  const { ref: dialog } = useDialogLifetime(overlay, { direction: 'center', surfaceSelector: '.ch-aki-artifact', focusSelector: '.ch-aki-artifact .sb' });
+  const finish = useRef(onClose);
+  finish.current = onClose;
+  useLayoutEffect(() => {
+    if (phone || overlay) return;
+    const opener = document.activeElement;
+    const pane = root.current;
+    pane?.querySelector<HTMLElement>('.sb')?.focus({ preventScroll: true });
+    return () => {
+      if (opener instanceof HTMLElement && opener.isConnected && (pane?.contains(document.activeElement) || document.activeElement === document.body)) opener.focus({ preventScroll: true });
+    };
+  }, [phone, overlay]);
+  useEffect(() => {
+    if (phone || overlay) return;
+    const escape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('dialog[open]')) return;
+      if (!root.current?.contains(document.activeElement)) return;
+      e.preventDefault();
+      setLeaving(true);
+    };
+    document.addEventListener('keydown', escape);
+    return () => document.removeEventListener('keydown', escape);
+  }, [phone, overlay]);
   useEffect(() => {
     if (!leaving) return;
-    const running = root.current?.getAnimations?.() ?? [];
-    if (running.length === 0) return onClose();
+    const running = reduced ? [] : root.current?.getAnimations?.() ?? [];
+    if (running.length === 0) return finish.current();
     let live = true;
     void Promise.allSettled(running.map((a) => a.finished)).then(() => {
-      if (live) onClose();
+      if (live) finish.current();
     });
     return () => {
       live = false;
     };
-  }, [leaving, onClose]);
+  }, [leaving, reduced]);
   const close = () => setLeaving(true);
   // A pushed screen: edge swipe back, focus and modality come with it, and its bar is the only one (ASK-3, MOB-ASK-5, MOB-ASK-19, MOT-14).
   if (phone) {
@@ -138,8 +172,8 @@ export function ArtifactView({ artifact, phone, body, onClose, builderHref = nul
       </PhoneScreen>
     );
   }
-  return (
-    <aside ref={root} className={'ch-ak-pane' + (leaving ? ' is-leaving' : '')} aria-label={artifact.title}>
+  const pane = (
+    <aside ref={root} className={'ch-ak-pane ch-aki-artifact' + (leaving ? ' is-leaving' : '')} inert={leaving || undefined} aria-label={artifact.title}>
       <header>
         <span>
           <b>{artifact.title}</b>
@@ -153,5 +187,13 @@ export function ArtifactView({ artifact, phone, body, onClose, builderHref = nul
       <div className="apb">{v && body(v.body)}</div>
       <Actions artifact={artifact} body={v?.body} builderHref={builderHref} onPublish={onPublish} />
     </aside>
+  );
+  if (!overlay) return pane;
+  return (
+    // Native dialog owns the scrim, focus trap and focus return, just like the shared sheets.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
+    <dialog ref={dialog} className="ch-aki-artifact-overlay" aria-label={artifact.title} onCancel={(e) => { e.preventDefault(); close(); }} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+      {pane}
+    </dialog>
   );
 }

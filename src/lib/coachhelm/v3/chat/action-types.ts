@@ -47,15 +47,28 @@ export interface ProposalFact {
  * every recipient count, every notification that will fire is on the card. If a
  * field could surprise someone afterwards, it belongs in `facts`.
  */
+/** Optional, server-read context. Absence means unknown, never a demo fallback. */
+export interface DraftCalendar {
+  timeZone: string;
+  checkedAt: string;
+  days: Array<{ date: string; hasEvent: boolean }>;
+  events: Array<{ date: string; title: string; start: string; end: string | null }>;
+}
+export interface DraftStanding {
+  name: string;
+  score: number | null;
+  tied?: boolean;
+}
 export type TaskVisual =
-  | { kind: 'cal'; date: string; start: string | null; end: string | null; title: string; where: string | null; who: string; rsvp: boolean }
+  | { kind: 'cal'; date: string; start: string | null; end: string | null; title: string; where: string | null; who: string; rsvp: boolean; calendar?: DraftCalendar }
   | { kind: 'msg'; conversationId: string; thread: string; count: number; last: string | null; draft: string }
-  | { kind: 'qual'; title: string; rounds: number; start: string; total: number; picks: number; field: number; deadline: string | null }
-  | { kind: 'task'; title: string; due: string | null; who: string[] }
-  | { kind: 'goal'; player: string; stat: string; target: number; days: number }
-  | { kind: 'note'; player: string; note: string }
-  | { kind: 'trip'; from: string | null; to: string; how: string; leave: string; back: string | null }
-  | { kind: 'lineup'; seats: Array<{ slot: number | null; name: string; alternate: boolean }> };
+  | { kind: 'qual'; title: string; rounds: number; start: string; total: number; picks: number; field: number; deadline: string | null; players?: string[]; roundDetails?: Array<{ date?: string; course?: string; holes?: number }> }
+  | { kind: 'task'; title: string; due: string | null; who: string[]; reminder?: string | null; countsFrom?: string; repeats?: string }
+  | { kind: 'goal'; player: string; stat: string; target: number; days: number; history?: Array<{ at: string; value: number }>; targetBand?: { low: number; high: number }; historyNote?: string }
+  | { kind: 'note'; player: string; note: string; course?: string; roundDate?: string; hole?: number; holes?: Array<{ number: number; par: number; score: number | null }> }
+  | { kind: 'trip'; from: string | null; to: string; how: string; leave: string; back: string | null; hotel?: string; rooms?: string; gear?: string[]; uniform?: string }
+  | { kind: 'lineup'; seats: Array<{ slot: number | null; name: string; alternate: boolean; locked?: boolean; tied?: boolean; history?: string }>; standings?: DraftStanding[]; locked?: boolean; source?: string }
+  | { kind: 'drill'; name: string; area: 'putting' | 'short_game' | 'bunker' | 'approach' | 'tee' | 'course' | 'fitness' | 'mental'; minutes: number; setup?: string; goal?: string; diagram?: { kind: 'gate'; balls?: number; distance?: number; unit?: 'ft' | 'yd' | 'm' } };
 
 export interface ActionProposal {
   /** A plan's publish: who hears (as coins) and one player's own line, for the card to draw. Every value is also in `facts`. */

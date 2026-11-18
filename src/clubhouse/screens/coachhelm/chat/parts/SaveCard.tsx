@@ -29,6 +29,8 @@ type Phase =
 export function SaveCard({ title, body, onClose }: { title: string; body: string; onClose: () => void }) {
   const reduced = useChReducedMotion();
   const [folders, setFolders] = useState<Folder[] | null>(null);
+  const [folderError, setFolderError] = useState(false);
+  const [folderVersion, setFolderVersion] = useState(0);
   const [folder, setFolder] = useState(ROOT);
   const [open, setOpen] = useState(false);
   const [naming, setNaming] = useState(false);
@@ -38,23 +40,26 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
   const [problem, setProblem] = useState<string | null>(null);
   const page = useRef<HTMLSpanElement>(null);
   const icon = useRef<HTMLSpanElement>(null);
+  const saving = useRef(false);
 
   useEffect(() => {
     let live = true;
+    setFolderError(false);
     void askArtifactFolders()
       .then((r) => {
         if (!live) return;
         setFolders(r.folders);
+        setFolderError(!!r.error);
         // The most used folder is the likely one; the coach can pick another before anything is saved.
         if (r.folders[0]) setFolder((f) => (f === ROOT ? r.folders[0]!.name : f));
       })
       .catch(() => {
-        if (live) setFolders([]);
+        if (live) { setFolders([]); setFolderError(true); }
       });
     return () => {
       live = false;
     };
-  }, []);
+  }, [folderVersion]);
 
   const list = folders ?? [];
   const clean = name.trim().slice(0, FIELD_MAX);
@@ -64,17 +69,22 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
   const undoOpen = useUndoWindow(phase.k === 'saved' ? phase.until : null);
 
   const save = async () => {
+    if (saving.current) return;
+    saving.current = true;
     setPhase({ k: 'saving' });
     setProblem(null);
     setOpen(false);
     const r = await saveAskArtifact({ title, body, folder: folder || null }).catch(() => ({ success: false, error: 'That didn’t save. Try again.' }) as { success: boolean; error?: string; id?: string; folder?: string | null; savedAt?: string });
     if (!r.success) {
+      saving.current = false;
       setPhase({ k: 'failed', error: r.error ?? 'That didn’t save. Try again.' });
       return;
     }
     // Saved with a note means the folder step failed and the draft is in Documents itself: say where it is.
     const landed = r.folder ?? (r.error ? ROOT : folder);
-    if (landed && page.current && icon.current) {
+    const savedAt = r.savedAt ?? new Date().toISOString();
+    const until = new Date(Date.parse(savedAt) + 8000).toISOString();
+    if (page.current && icon.current) {
       await flyPageToFolder(page.current, icon.current, reduced).catch(() => undefined);
       setFolders((l) => {
         const cur = l ?? [];
@@ -82,7 +92,8 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
       });
       await squashFolder(icon.current, reduced).catch(() => undefined);
     }
-    setPhase({ k: 'saved', id: r.id ?? null, savedAt: r.savedAt ?? new Date().toISOString(), folder: landed || ROOT, until: new Date(Date.now() + 8000).toISOString(), note: r.error ?? null });
+    setPhase({ k: 'saved', id: r.id ?? null, savedAt, folder: landed || ROOT, until, note: r.error ?? null });
+    saving.current = false;
   };
 
   const undo = () => {
@@ -114,6 +125,7 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
       </div>
       {!done && (
         <>
+          {folderError && <p className="bad" role="alert">Couldn’t read your folders. You can still save in Documents. <button type="button" className="lk" onClick={() => setFolderVersion((v) => v + 1)}>Try folders again</button></p>}
           <button type="button" className="row" aria-expanded={open} disabled={busy || folders === null} onClick={() => setOpen((v) => !v)}>
             <span ref={icon} className="fi" aria-hidden="true">
               <Icon icon={FolderClosed} size={18} />
@@ -234,7 +246,7 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
             <button type="button" className="lk undo" data-ch-ask-undo="" disabled={undoing} aria-label="Undo, 8 seconds" onClick={undo}>
               <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" aria-hidden="true">
                 <circle className="trk" cx="12" cy="12" r="10" />
-                <circle className="drn" cx="12" cy="12" r="10" suppressHydrationWarning />
+                <circle className="drn" cx="12" cy="12" r="10" suppressHydrationWarning style={{ animationDuration: `${Math.max(0, Date.parse(phase.until) - Date.now())}ms` }} />
               </svg>
               {undoing ? 'Undoing' : 'Undo'}
             </button>

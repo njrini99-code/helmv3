@@ -3,9 +3,9 @@ import { holdForExecution } from '../undo-hold';
 
 /** W-QC-12, W-ASK-12: a stack without HM1 never fakes an Undo. Only a missing column means "no hold"; any other error is reported as an error. */
 
-const client = (error: { code: string } | null) => {
+const client = (error: { code: string } | null, data: { id: string } | null = { id: 'r1' }) => {
   const update = vi.fn(() => chain);
-  const chain = { update, eq: vi.fn(() => chain), then: (ok: (r: { error: unknown }) => unknown) => Promise.resolve({ error }).then(ok) };
+  const chain = { update, eq: vi.fn(() => chain), select: vi.fn(() => chain), maybeSingle: async () => ({ data, error }) };
   return { from: () => chain, update } as never as Parameters<typeof holdForExecution>[0] & { update: typeof update };
 };
 
@@ -22,5 +22,9 @@ describe('holdForExecution', () => {
 
   it('any other failure stays an error, told apart from a missing column', async () => {
     await expect(holdForExecution(client({ code: '57014' }), { run_id: 'r1' })).resolves.toEqual({ kind: 'error' });
+  });
+
+  it('does not offer Undo when the conditional update matched no run', async () => {
+    await expect(holdForExecution(client(null, null), { run_id: 'r1' })).resolves.toEqual({ kind: 'error' });
   });
 });

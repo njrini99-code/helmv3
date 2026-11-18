@@ -33,8 +33,8 @@ describe('the Confirm card', () => {
   it('draws the real week for a calendar draft, with the open slot, the day from the proposal and the week the read returned', () => {
     const v = view({}, { visual: { kind: 'cal', date: '2026-11-04', start: '16:00', end: '17:00', title: 'Team meeting', where: null, who: '7 players', rsvp: true } });
     const { container } = render(<QcSeam.Provider value={{ week: { days: [{ date: '2026-11-02', hasEvent: true }], items: [{ title: 'Lift', start: '2026-11-04T15:00:00Z', end: '2026-11-04T16:00:00Z' }], timeZone: 'UTC' } }}>{card(v)}</QcSeam.Provider>);
-    expect(container.querySelector('.ch-ak-wk .slot.is-open')).not.toBeNull();
-    expect(container.querySelector('.ch-ak-wk .busy')?.textContent).toBe('Lift');
+    expect(container.querySelector('.ch-ak-dv-week[data-state="draft"] .ch-ak-dv-slot')).not.toBeNull();
+    expect(container.querySelector('.ch-ak-dv-day[data-date="2026-11-04"] .ch-ak-dv-busy')?.textContent).toBe('Lift');
     expect(container.querySelector('.ch-ak-hs')).toBeNull();
   });
 
@@ -132,9 +132,15 @@ describe('the week grid', () => {
   const cal = { kind: 'cal', date: '2026-11-07', start: '10:00', end: '11:00', title: 'Saturday session', where: null, who: '7 players', rsvp: false } as const;
   it('a weekend day shows Wednesday to Sunday, every day inside the week it read, and says nothing of a day until the read answers', () => {
     const { container } = render(card(view({}, { visual: cal })));
-    const days = [...container.querySelectorAll('.ch-ak-wk .wh > span b')].map((b) => b.textContent);
+    const days = [...container.querySelectorAll('.ch-ak-dv-days > div b')].map((b) => b.textContent);
     expect(days).toEqual(['4', '5', '6', '7', '8']);
-    expect(container.querySelector('.ch-ak-wk em.is-free, .ch-ak-wk em.is-busy')).toBeNull();
+    expect(container.querySelector('.ch-ak-dv-day-dot[data-busy]')).toBeNull();
+  });
+  it('places each source event on its own date in the team timezone', () => {
+    const { container } = render(<QcSeam.Provider value={{ week: { days: [{ date: '2026-11-06', hasEvent: true }, { date: '2026-11-07', hasEvent: true }], items: [{ title: 'Friday late practice', start: '2026-11-07T01:00:00Z', end: '2026-11-07T02:00:00Z' }, { title: 'Saturday lift', start: '2026-11-07T15:00:00Z', end: '2026-11-07T16:00:00Z' }], timeZone: 'America/New_York' } }}>{card(view({}, { visual: { ...cal, start: '20:00', end: '21:00' } }))}</QcSeam.Provider>);
+    expect(container.querySelector('.ch-ak-dv-day[data-date="2026-11-06"] .ch-ak-dv-busy')?.textContent).toBe('Friday late practice');
+    expect(container.querySelector('.ch-ak-dv-day[data-date="2026-11-07"] .ch-ak-dv-busy')).toBeNull(); // Saturday's event is outside this time window.
+    expect(container.querySelector('.ch-ak-dv-slot')?.getAttribute('data-conflict')).toBe('false');
   });
 });
 

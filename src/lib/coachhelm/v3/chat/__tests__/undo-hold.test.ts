@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ActionReceipt } from '../action-types';
-import { cancelHeld, commitHeldNow, sweepHeld, type HeldRow } from '../undo-hold';
+import { cancelHeld, commitHeldNow, releaseHeld, sweepHeld, type HeldRow } from '../undo-hold';
 
 type Row = HeldRow & { coach_id: string; idempotency_key: string; status: string; decided_at: string | null; result: ActionReceipt | null };
 
@@ -35,6 +35,49 @@ function ledger(rows: Row[], hooks: { beforeUpdate?: () => void } = {}) {
 }
 
 const row = (over: Partial<Row> = {}): Row => ({ id: 'r1', coach_id: 'c1', team_id: 't1', idempotency_key: 'k1', tool_name: 'create_event', proposed_input: {}, status: 'held', run_at: '2020-01-01T00:00:00.000Z', decided_at: '2020-01-01T00:00:00.000Z', result: null, ...over });
+
+afterEach(() => vi.useRealTimers());
+
+describe('releaseHeld after the response', () => {
+  it('does not write or notify before eight seconds, and shares the atomic claim with reload', async () => {
+    vi.useFakeTimers();
+    const rows = [row({ run_at: new Date(Date.now() + 8000).toISOString() })];
+    const sb = ledger(rows);
+    const notify = vi.fn();
+    const run = vi.fn(async () => { notify(); return receipt(); });
+    // The deferred function is still pending after the request returns.
+    const deferred = releaseHeld(sb, { run_id: 'r1', run_at: rows[0]!.run_at, run });
+    await vi.advanceTimersByTimeAsync(7999);
+    expect(run).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await deferred;
+    expect(run).toHaveBeenCalledTimes(1);
+    await commitHeldNow(sb, { coach_id: 'c1', idempotency_key: 'k1', due_only: true, resolve: () => ({ run }) });
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(rows[0]!.status).toBe('completed');
+  });
+
+  it('a cancelled action never writes when its deferred release wakes up', async () => {
+    vi.useFakeTimers();
+    const rows = [row({ run_at: new Date(Date.now() + 8000).toISOString() })];
+    const sb = ledger(rows);
+    const run = vi.fn(async () => receipt());
+    const deferred = releaseHeld(sb, { run_id: 'r1', run_at: rows[0]!.run_at, run });
+    expect(await cancelHeld(sb, { coach_id: 'c1', idempotency_key: 'k1' })).toBe('cancelled');
+    await vi.advanceTimersByTimeAsync(8000);
+    expect(await deferred).toBeNull();
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it('persists an exception as a failed, non-retryable receipt', async () => {
+    const rows = [row()];
+    const result = await releaseHeld(ledger(rows), { run_id: 'r1', run_at: rows[0]!.run_at, run: async () => { throw new Error('write interrupted'); } });
+    expect(result).toMatchObject({ status: 'failed', retryable: false });
+    expect(rows[0]!.result).toEqual(result);
+    expect(rows[0]!.status).toBe('failed');
+  });
+});
 
 describe('sweepHeld', () => {
   it('commits an overdue held row once, and records the outcome', async () => {

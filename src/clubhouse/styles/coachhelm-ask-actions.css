@@ -1,0 +1,42 @@
+/* The action's source, its destination, and its durable outcome share one card. */
+.ch-ak-action [data-ch-ask-lifted] { opacity: 0; }
+.ch-ak-action [data-ch-ask-flyer] { overflow: hidden; }
+.ch-ak-action .ch-ak-hs .hsr.nw:not(.is-in) { background: var(--ch-selected-tint); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); }
+.ch-ak-action .ch-ak-hs .hsr.nw:not(.is-in) > * { visibility: hidden; }
+.ch-ak-action.has-arrived:not(.is-pub) > .evd { display: none; }
+.ch-ak-action.is-cancelled > .evd, .ch-ak-action.is-undone > .evd { color: var(--ch-text-tertiary); }
+.ch-ak-action .receipt { flex-wrap: wrap; }
+.ch-ak-action .receipt > div { flex-basis: 120px; }
+.ch-ak-action .receipt.is-fail, .ch-ak-action .told.is-warning { color: var(--ch-loss); }
+.ch-ak-action .ch-ak-focus-avatar { position: relative; display: inline-flex; border-radius: 50%; }
+.ch-ak-action .ch-ak-focus-home[data-moving] .ch-ak-focus-avatar::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; background: var(--ch-selected-tint); pointer-events: none; animation: ch-ak-action-ping var(--ch-dur-reveal) var(--ch-ease) both; }
+.ch-ak-action .ch-ak-publish-draft { display: grid; gap: 12px; margin: 12px 16px; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); }
+.ch-ak-action .ch-ak-publish-document { display: flex; gap: 12px; align-items: center; }
+.ch-ak-action .ch-ak-publish-document b, .ch-ak-action .ch-ak-publish-document small { display: block; }
+.ch-ak-action .ch-ak-publish-document b { font: var(--ch-type-15-strong); color: var(--ch-text-primary); }
+.ch-ak-action .ch-ak-publish-document small { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-ak-action .ch-ak-publish-paper { display: grid; place-items: center; width: 40px; height: 48px; flex: none; color: var(--ch-ask-accent); background: var(--ch-card-bg); border-radius: var(--ch-radius-sm); box-shadow: var(--ch-card-shadow); }
+.ch-ak-action .ch-ak-publish-destinations { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.ch-ak-action .ch-ak-publish-people { display: flex; align-items: center; gap: 4px; }
+.ch-ak-action .ch-ak-publish-person { position: relative; display: inline-flex; }
+.ch-ak-action .ch-ak-publish-copy { position: absolute; display: grid; place-items: center; right: -2px; bottom: -2px; width: 16px; height: 16px; border-radius: 50%; background: var(--ch-card-bg); color: var(--ch-ask-accent); opacity: 0; }
+.ch-ak-action .ch-ak-publish-draft[data-landed] .ch-ak-publish-copy { opacity: 1; }
+.ch-ak-action .ch-ak-publish-folder { display: inline-flex; align-items: center; gap: 6px; color: var(--ch-text-secondary); font: var(--ch-type-13); }
+.ch-ak-action .ch-ak-lock-next { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px 16px; }
+.ch-ak-action .ch-ak-lock-next > span { flex: 1; min-width: 160px; }
+.ch-ak-action .ch-ak-lock-next b { display: block; color: var(--ch-text-primary); font: var(--ch-type-14-strong); }
+.ch-ak-action .ch-ak-lock-next small { display: block; color: var(--ch-text-secondary); font: var(--ch-type-13); }
+.ch-ak-action .ch-ak-message-home { display: grid; gap: 8px; margin: 12px 16px; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); }
+.ch-ak-action .ch-ak-message-home > small { font: var(--ch-type-12); color: var(--ch-text-secondary); }
+.ch-ak-action .ch-ak-message-home > b { font: var(--ch-type-14-strong); color: var(--ch-text-primary); }
+.ch-ak-action .ch-ak-message-composer { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); font: var(--ch-type-13); color: var(--ch-text-tertiary); }
+.ch-ak-action .ch-ak-message-attachment { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: var(--ch-radius-sm); background: var(--ch-selected-tint); color: var(--ch-ask-accent); }
+.ch-ak-action.is-fresh .ch-ak-handoff-body { animation: ch-ak-action-enter var(--ch-dur-base) var(--ch-ease-spring-smooth) both; }
+.ch-ak-action.is-fresh .ch-ak-board .bt, .ch-ak-action.is-fresh .ch-ak-pollp .pr { animation: ch-ak-action-enter var(--ch-dur-base) var(--ch-ease-spring-pop) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press)); }
+.ch-ak-action.has-handoff .ch-ak-message-attachment { background: var(--ch-ask-accent); color: var(--ch-card-bg); }
+@keyframes ch-ak-action-enter { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes ch-ak-action-ping { 0% { opacity: 0; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.25); } 100% { opacity: 0; transform: scale(1.4); } }
+@media (prefers-reduced-motion: reduce) {
+  .ch-ak-action .ch-ak-focus-home[data-moving] .ch-ak-focus-avatar::after, .ch-ak-action.is-fresh .ch-ak-handoff-body, .ch-ak-action.is-fresh .ch-ak-board .bt, .ch-ak-action.is-fresh .ch-ak-pollp .pr { animation: none; }
+}
+[data-motion='off'] .ch-ak-action .ch-ak-focus-home[data-moving] .ch-ak-focus-avatar::after, [data-motion='off'] .ch-ak-action.is-fresh .ch-ak-handoff-body, [data-motion='off'] .ch-ak-action.is-fresh .ch-ak-board .bt, [data-motion='off'] .ch-ak-action.is-fresh .ch-ak-pollp .pr { animation: none; }

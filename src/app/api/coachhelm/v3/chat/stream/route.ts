@@ -108,7 +108,8 @@ import {
   touchConversation,
   upsertUserTurn,
 } from '@/lib/coachhelm/v3/chat/persistence';
-import { linkProposalsToMessage, proposalKeysFromParts } from '@/lib/coachhelm/v3/chat/action-runs';
+import { linkProposalsToMessage, proposalKeysFromParts, recordDenial } from '@/lib/coachhelm/v3/chat/action-runs';
+import { continuationParts, deniedProposalKeys } from './continuation-parts';
 import { denyAbandonedApprovals } from '@/lib/coachhelm/v3/chat/abandoned-approvals';
 import { storedTurnChunks } from '@/lib/coachhelm/v3/chat/restore';
 // `publishableParts` also drops dangling tool calls: storing one poisons the
@@ -408,6 +409,8 @@ export async function POST(req: NextRequest) {
   // stored turn and it would INSERT the coach's question a second time. Every
   // approved action would leave a duplicate of the question above it.
   const isApprovalContinuation = uiMessages[uiMessages.length - 1]?.role !== 'user';
+  const continuedParts = isApprovalContinuation ? structuredClone(uiMessages.at(-1)?.parts ?? []) : [];
+  const modelThread = denyAbandonedApprovals(uiMessages);
 
   // Bound request concurrency at the door, independent of the dollar gate
   // below — this is what actually shrinks the check-then-act race window on
@@ -480,6 +483,9 @@ export async function POST(req: NextRequest) {
 
   // Ask v2 only where Clubhouse is on for the team: this route also serves Fairway's chat (coachhelm-ask 02, hard rules).
   const askV2 = isClubhouseForTeam(ctx.team_id);
+  // Denying or moving on is durable too. The conditional ledger update only
+  // touches proposals: it cannot undo a held or already-executing action.
+  await Promise.all(deniedProposalKeys(modelThread).map((key) => recordDenial(supabase, { coach_id: ctx.coach_id, idempotency_key: key })));
   // The user turn and the coach's standing notes are independent; a conversation made a moment ago has no tone set yet, so it skips that read.
   const [, knows] = await Promise.all([
     userText && !isApprovalContinuation
@@ -634,7 +640,7 @@ export async function POST(req: NextRequest) {
       perf.mark('tools_built');
       const systemPrompt = systemBlocks(buildInstructionBlocks(ctx, new Date().toISOString(), claimsBlockEnabled, { askV2, knows: knows ? knowsSection(knows) : null }));
       const modelMessages = await convertToModelMessages(
-        denyAbandonedApprovals(uiMessages).map((m) => ({
+        modelThread.map((m) => ({
           ...m,
           parts: m.parts.filter((p) => !isIncompleteToolPart(p)),
         })),
@@ -1138,7 +1144,7 @@ export async function POST(req: NextRequest) {
         if (!lastAssistant) return;
         // On a continuation the builder hands back the earlier message with this stream's parts appended; the earlier parts were stored with the
         // first leg, so this row holds only what this stream added (as it did when the row was built from this stream alone).
-        const assistant = isApprovalContinuation ? { ...lastAssistant, parts: lastAssistant.parts.slice(uiMessages[uiMessages.length - 1]?.parts.length ?? 0) } : lastAssistant;
+        const assistant = isApprovalContinuation ? { ...lastAssistant, parts: continuationParts(continuedParts, lastAssistant.parts) } : lastAssistant;
 
         // Prefer the exact string `execute` streamed and verified — see
         // `turnVerdict`'s declaration above — over independently

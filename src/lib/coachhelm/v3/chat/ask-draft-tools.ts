@@ -106,7 +106,9 @@ export function askDraftTools({ sb, ctx, writer, practicePlans = false, surface 
               const { data, error } = await sb.from('golf_conversations').select('id, title, golf_conversation_participants(user_id)').eq('team_id', ctx.team_id).eq('id', conversation_id).maybeSingle();
               if (error) return { status: 'failed', message: 'Could not read that thread.' };
               if (!data) return { status: 'refused', message: 'That thread is not on your team.' };
-              if ((data.golf_conversation_participants?.length ?? 0) < 3) return { status: 'refused', message: 'A poll goes in a group thread.' };
+              // A count of 0 is a hidden member list, not proof of a direct message. Only a list we can see, with fewer than three people, is a DM.
+              const members = data.golf_conversation_participants?.length ?? 0;
+              if (members > 0 && members < 3) return { status: 'refused', message: 'A poll goes in a group thread.' };
               const thread = data.title ?? 'this thread';
               writer.write({ type: 'data-handoff', id: `handoff-${(n += 1)}`, data: { kind: 'poll', players: [], conversationId: data.id, title: `Poll for ${thread}`, thread, draft: '', poll: { question, options, ...(multi ? { multi: true } : {}), ...(closes_at ? { closes: closes_at } : {}) } } });
               return { status: 'shown', message: 'The poll is ready to open in Messages. Nothing was posted.' };

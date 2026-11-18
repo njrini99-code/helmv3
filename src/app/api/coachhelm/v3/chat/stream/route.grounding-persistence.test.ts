@@ -59,7 +59,7 @@ const mocks = vi.hoisted(() => ({
   upsertUserTurn: vi.fn(async () => {}),
   listMessages: vi.fn(async (): Promise<Record<string, unknown>[]> => []),
   listRecentMessages: vi.fn(async (..._args: unknown[]): Promise<Record<string, unknown>[]> => []),
-  buildCoachTools: vi.fn(() => ({})),
+  buildCoachTools: vi.fn((_args?: { writer: { write: (part: unknown) => void } }) => ({})),
   buildInstructions: vi.fn(() => 'system prompt'),
   // Forced non-empty regardless of input text: the numeric-claim audit's own
   // behavior has its own suite (chat-provenance.test.ts) — this file only
@@ -324,5 +324,25 @@ describe('POST /coachhelm/v3/chat/stream — an approval continuation (real ai S
     const parts = row.ui_parts ?? [];
     expect(parts.some((p) => p.text === 'Here is the practice for you to confirm.')).toBe(false);
     expect(parts.some((p) => p.type === 'text' && /76\.5/.test(p.text ?? ''))).toBe(true);
+  });
+
+  it('persists a final receipt that replaced a held receipt in place, without duplicating the prior card or prose', async () => {
+    const { tool } = await import('ai');
+    const { z } = await import('zod');
+    const final = { status: 'completed', summary: 'Practice saved.', created: [], notifications: [], partial_failures: [], retryable: false, action: 'create_event', at: '2026-11-08T00:00:00Z' };
+    mocks.buildCoachTools.mockImplementationOnce((args) => ({
+      create_event: tool({ inputSchema: z.object({ title: z.string() }), execute: async () => {
+        args!.writer.write({ type: 'data-action-receipt', id: 'receipt-k', data: final });
+        return { status: 'already_done' };
+      } }),
+    }));
+    const request = structuredClone(thread);
+    const parts = request.messages[1]!.parts as unknown[];
+    parts.push({ type: 'data-action-receipt', id: 'receipt-k', data: { status: 'held', summary: 'Waiting' } });
+    await runPostAndSettle(request);
+    const stored = mocks.appendMessage.mock.calls.find((call) => call[1].role === 'assistant')![1];
+    expect(stored.ui_parts).toContainEqual({ type: 'data-action-receipt', id: 'receipt-k', data: final });
+    expect(stored.ui_parts).not.toContainEqual({ type: 'text', text: 'Here is the practice for you to confirm.' });
+    expect((stored.ui_parts as Array<{ type: string }>).filter((p) => p.type === 'data-action-receipt')).toHaveLength(1);
   });
 });

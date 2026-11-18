@@ -7,6 +7,32 @@ const settled = async (a: Animation | undefined) => {
 };
 /** Lifts 140 ms first, as both flights do. */
 const LIFT_MS = 140;
+const COPY_STAGGER_MS = 70;
+
+function motionOff(): boolean {
+  return typeof document !== 'undefined' && document.documentElement.dataset.motion === 'off';
+}
+
+/** A moving copy is decoration: cloned ids, links and controls must never enter the document's focus order. */
+function decorativeCopy(source: HTMLElement): HTMLElement {
+  const copy = source.cloneNode(true) as HTMLElement;
+  copy.setAttribute('aria-hidden', 'true');
+  copy.inert = true;
+  for (const node of [copy, ...copy.querySelectorAll('[id]')]) node.removeAttribute('id');
+  return copy;
+}
+
+async function play(node: HTMLElement, frames: Keyframe[], options: KeyframeAnimationOptions, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted || motionOff() || !node.animate) return;
+  const animation = node.animate(frames, options);
+  const cancel = () => animation.cancel();
+  signal?.addEventListener('abort', cancel, { once: true });
+  try {
+    await settled(animation);
+  } finally {
+    signal?.removeEventListener('abort', cancel);
+  }
+}
 
 function arc(dx: number, dy: number, sx: number, sy: number): Keyframe[] {
   return Array.from({ length: 21 }, (_, i) => {
@@ -20,34 +46,43 @@ function arc(dx: number, dy: number, sx: number, sy: number): Keyframe[] {
 }
 
 /** M-ASK-45 and 46: a copy of the draft flies into its home slot inside the card, and the slot pops as it lands. */
-export async function flyDraftHome(card: HTMLElement, draft: HTMLElement, slot: HTMLElement, reduced: boolean): Promise<void> {
+export async function flyDraftHome(card: HTMLElement, draft: HTMLElement, slot: HTMLElement, reduced: boolean, options: { signal?: AbortSignal; stagger?: number; copy?: boolean } = {}): Promise<void> {
+  if (motionOff() || options.signal?.aborted) return;
   if (reduced) {
-    await settled(slot.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS, easing: 'linear' }));
+    await play(slot, [{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS, easing: 'linear' }, options.signal);
     return;
   }
   if (!slot.animate) return;
   const c = card.getBoundingClientRect();
   const a = draft.getBoundingClientRect();
   const b = slot.getBoundingClientRect();
-  const flyer = draft.cloneNode(true) as HTMLElement;
-  Object.assign(flyer.style, { position: 'absolute', left: `${a.left - c.left}px`, top: `${a.top - c.top}px`, width: `${a.width}px`, height: `${a.height}px`, margin: '0', zIndex: '3', pointerEvents: 'none', transformOrigin: '0 0', background: 'var(--ch-card-bg)', borderRadius: 'var(--ch-radius-md)', boxShadow: 'var(--ch-elevation-lifted)' });
-  flyer.setAttribute('aria-hidden', 'true');
-  flyer.removeAttribute('id');
+  const scale = card.offsetWidth ? c.width / card.offsetWidth : 1;
+  const flyer = decorativeCopy(draft);
+  flyer.dataset.chAskFlyer = '';
+  Object.assign(flyer.style, { position: 'absolute', left: `${(a.left - c.left) / scale}px`, top: `${(a.top - c.top) / scale}px`, width: `${a.width / scale}px`, height: `${a.height / scale}px`, margin: '0', zIndex: '3', pointerEvents: 'none', transformOrigin: '0 0', background: 'var(--ch-card-bg)', borderRadius: 'var(--ch-radius-md)', boxShadow: 'var(--ch-elevation-lifted)' });
   card.appendChild(flyer);
   try {
     const smooth = chSpringCurve('smooth');
-    const frames = arc(b.left - a.left, b.top - a.top, b.width / Math.max(a.width, 1), b.height / Math.max(a.height, 1));
-    await settled(flyer.animate(frames, { duration: smooth.ms, delay: LIFT_MS, easing: smooth.linear, fill: 'both' }));
+    const frames = arc((b.left - a.left) / scale, (b.top - a.top) / scale, b.width / Math.max(a.width, 1), b.height / Math.max(a.height, 1));
+    if (!options.copy) draft.dataset.chAskLifted = '';
+    await play(flyer, frames, { duration: smooth.ms, delay: LIFT_MS + (options.stagger ?? 0), easing: smooth.linear, fill: 'both' }, options.signal);
+    if (options.signal?.aborted || !slot.isConnected) return;
     const pop = chSpringCurve('pop');
-    await settled(slot.animate([{ transform: 'scale(0.9)' }, { transform: 'none' }], { duration: pop.ms, easing: pop.linear }));
+    await play(slot, [{ transform: 'scale(0.9)' }, { transform: 'none' }], { duration: pop.ms, easing: pop.linear }, options.signal);
   } finally {
+    delete draft.dataset.chAskLifted;
     flyer.remove();
   }
 }
 
+/** Publishing sends a copy toward each named recipient and its folder; the original stays on the card. */
+export async function flyDraftCopies(card: HTMLElement, draft: HTMLElement, slots: readonly HTMLElement[], reduced: boolean, signal?: AbortSignal): Promise<void> {
+  await Promise.all(slots.map((slot, i) => flyDraftHome(card, draft, slot, reduced, { signal, stagger: i * COPY_STAGGER_MS, copy: true })));
+}
+
 /** M-ASK-77: a sheet of paper from the plan lands on the folder's art. The caller ticks the count, then calls `squashFolder`. */
 export async function flyPageToFolder(page: HTMLElement, folder: HTMLElement, reduced: boolean): Promise<void> {
-  if (reduced || !folder.animate) return;
+  if (reduced || motionOff() || !folder.animate) return;
   const a = page.getBoundingClientRect();
   const b = folder.getBoundingClientRect();
   const sheet = document.createElement('div');
@@ -66,7 +101,7 @@ export async function flyPageToFolder(page: HTMLElement, folder: HTMLElement, re
 
 /** M-ASK-78: the folder takes the page, 1.08 by 0.94 back to rest. */
 export async function squashFolder(folder: HTMLElement, reduced: boolean): Promise<void> {
-  if (reduced || !folder.animate) return;
+  if (reduced || motionOff() || !folder.animate) return;
   const pop = chSpringCurve('pop');
   await settled(folder.animate([{ transform: 'scale(1.08, 0.94)' }, { transform: 'none' }], { duration: pop.ms, easing: pop.linear }));
 }

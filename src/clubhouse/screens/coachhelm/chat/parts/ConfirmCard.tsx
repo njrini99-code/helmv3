@@ -1,21 +1,25 @@
 'use client';
 
+import { Receipt } from './Receipt';
+export { Receipt } from './Receipt';
+
 import { Button } from '../../../../ui/Button';
 
-import { Check, CircleAlert, ClipboardCheck, ArrowUpRight, Flag, Lock, Megaphone, CalendarPlus, StickyNote, Truck, Trophy, Target, Users, type LucideIcon } from 'lucide-react';
+import { Bus, CircleDot, ClipboardCheck, ArrowUpRight, Flag, FolderClosed, House, Lock, Megaphone, MessageCircle, CalendarPlus, StickyNote, Truck, Trophy, Target, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import { formatWith } from '../../../../lib/dates';
 import type { AskProposalView } from '../../../../data/coachhelm-chat-thread';
-import { askLinkHref } from '../../../../data/coachhelm-chat-links';
 import { CoachMark } from '../CoachMark';
 import { Avatar } from '../../../../ui/Avatar';
 import { Badge } from '../../../../ui/Badge';
 import { Icon } from '../../../../ui/Icon';
 import { Switch } from '../../../../ui/Switch';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
-import { flyDraftHome } from '../ask-flight';
-import { DateTile, GoalDraft, LineupDraft, NoteDraft, TaskDraft, TripDraft, draftDate, LockPreview, QualDraft, WeekDraft } from './DraftVisual';
+import { flyDraftCopies, flyDraftHome } from '../ask-flight';
+import { FocusHome, PublishDraft } from './ActionHomes';
+import { DateTile, DraftVisual, draftDate, LockPreview, WeekDraft } from './DraftVisual';
+import { calendarNote, confirmSentence, spokenLine, speakFact } from './fact-speech';
 
 const KIND: Record<string, { icon: LucideIcon; verb: (n: number) => string; busy: string; chip: string }> = {
   create_recurring_practice: { icon: CalendarPlus, verb: () => 'Add to calendar', busy: 'Adding…', chip: 'Added' },
@@ -38,9 +42,10 @@ const FLOWS: Record<string, { verb: string; busy: string; chip: string }> = {
   create_recruit: { verb: 'Add recruit', busy: 'Adding…', chip: 'Added' },
 };
 FLOWS.create_drill = { verb: 'Add to drill bank', busy: 'Adding…', chip: 'Added' };
+FLOWS.send_message = { verb: 'Send', busy: 'Sending…', chip: 'Sent' };
 FLOWS.publish_practice_plan = { verb: 'Publish', busy: 'Publishing…', chip: 'Published' };
 /** Where a confirmed draft lands (the page's `hs`): the screen and section, with this row on top. Its neighbours would need a read per screen, so only the new row draws. */
-const APP_ICON: Record<string, LucideIcon> = { Calendar: CalendarPlus, Messages: Megaphone, Hub: Flag, Qualifiers: Flag, Tournaments: Flag, Tasks: ClipboardCheck, Stats: Flag, Home: Flag, Rounds: StickyNote, Practice: ClipboardCheck };
+const APP_ICON: Record<string, LucideIcon> = { Calendar: CalendarPlus, Messages: Megaphone, Hub: Bus, Qualifiers: Trophy, Tournaments: Users, Tasks: ClipboardCheck, Stats: Target, Home: House, Rounds: StickyNote, Practice: CircleDot, Documents: FolderClosed };
 const LANDS: Record<string, { app: string; where: string }> = {
   create_event: { app: 'Calendar', where: 'Wednesday' },
   publish_practice_plan: { app: 'Documents', where: 'Practice plans' },
@@ -55,10 +60,12 @@ const LANDS: Record<string, { app: string; where: string }> = {
   create_goal: { app: 'Stats', where: 'Goals' },
   create_focus_area: { app: 'Home', where: 'Focus' },
   add_round_note: { app: 'Rounds', where: 'Coach notes' },
+  send_message: { app: 'Messages', where: 'Thread' },
 };
 /** The section it lands in; an event's is its own day. */
 export function landsWhere(tool: string, visual: ActionProposal['visual']): string {
   if (tool === 'create_event' && visual?.kind === 'cal' && visual.date) return formatWith(new Date(`${visual.date}T12:00:00`), { weekday: 'short', month: 'short', day: 'numeric' });
+  if (tool === 'send_message' && visual?.kind === 'msg') return visual.thread;
   return LANDS[tool]?.where ?? '';
 }
 /** The kit's head per flow (06 kit ②): what it will become, with its own mark. */
@@ -74,6 +81,8 @@ const HEAD: Record<string, { icon: LucideIcon; title: string }> = {
   lock_lineup: { icon: Lock, title: 'Lock the lineup' },
   create_team_announcement: { icon: Megaphone, title: 'New announcement' },
   create_announcement: { icon: Megaphone, title: 'New announcement' },
+  create_drill: { icon: CircleDot, title: 'New drill' },
+  send_message: { icon: MessageCircle, title: 'New message' },
 };
 const fallback = { icon: ClipboardCheck, verb: () => 'Confirm', busy: 'Working…', chip: 'Done' };
 /** S-ASK.*.undone: each flow's own line. A held run never wrote, so nothing is left behind whatever the words. */
@@ -90,8 +99,8 @@ const UNDONE: Record<string, string> = {
   create_focus_area: 'Undone. The focus was removed.',
   add_round_note: 'Undone. Your earlier notes are back as they were.',
   set_lineup: 'Undone. The earlier lineup is back.',
+  send_message: 'Undone. The message was not sent.',
 };
-const UNDONE_DEFAULT = 'Undone. Nothing was saved, and nobody was told.';
 
 /** The Told row's coins, only where the card knows who: named players, or the whole roster when the count is the roster's. */
 function coinNames(p: AskProposalView['proposal'], roster: ReadonlyArray<{ name: string }>): string[] {
@@ -101,13 +110,34 @@ function coinNames(p: AskProposalView['proposal'], roster: ReadonlyArray<{ name:
   return p.affects.some((a) => a.kind === 'team') ? roster.map((r) => r.name) : [];
 }
 
+function CalendarConfirm({ date, facts, cancelled }: { date: string; facts: ReadonlyArray<{ label: string; value: string }>; cancelled: boolean }) {
+  const value = (label: string) => facts.find((f) => f.label === label)?.value;
+  const where = value('Where');
+  return (
+    <div className={'evd has-dt ch-ak-confirm' + (cancelled ? ' dim' : '')}>
+      <DateTile date={date} />
+      <div className="ch-ak-confirm-copy">
+        <p className="ch-ak-confirm-time">{speakFact('When', value('When') ?? '', true)}</p>
+        <p className="ch-ak-confirm-line">
+          <span className="ch-ak-confirm-type">{speakFact('Type', value('Type') ?? 'Event', true)}</span>
+          {where && where !== 'Not set' && <span className="ch-ak-confirm-where">{where}</span>}
+        </p>
+        <p className="ch-ak-confirm-quiet">{calendarNote(value('Invited'), value('Replies'))}</p>
+      </div>
+    </div>
+  );
+}
+
 /** Kit ② to ⑤: the draft as what it will become, who hears about it, then the capsule, the receipt with 8 seconds of Undo, and the Told row. Nothing is written before the named button. */
-export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fresh = false, roster = [], team, evidence }: { view: AskProposalView; inlineReceipt: ActionReceipt | null; onApprove: (id: string) => void; onDeny: (id: string) => void; onSend?: (text: string) => void; /** The card arrived in this visit: its fields fill one at a time (M-ASK-42). A reloaded card draws still. */ fresh?: boolean; roster?: ReadonlyArray<{ name: string }>; team?: string; /** Opens the reads behind this draft, when it has any. */ evidence?: { open: boolean; onOpen: () => void } }) {
+export function ConfirmCard({ view, inlineReceipt, onDeny, onSettled, onSend, busy = false, fresh = false, roster = [], team, evidence }: { view: AskProposalView; inlineReceipt: ActionReceipt | null; /** Kept so older callers still type-check. Confirm does not use it: that resubmits the thread. */ onApprove?: (id: string) => void; onDeny: (id: string) => void; /** The confirm request returned a receipt. Record it on the message. Does not resubmit the thread. */ onSettled?: (key: string, approvalId: string, receipt: ActionReceipt) => void; onSend?: (text: string) => void; /** Unused. Confirm retries the same POST; it does not resubmit the thread. */ onResume?: () => void; /** The approval stream is still open. */ busy?: boolean; /** The card arrived in this visit: its fields fill one at a time (M-ASK-42). A reloaded card draws still. */ fresh?: boolean; roster?: ReadonlyArray<{ name: string }>; team?: string; /** Opens the reads behind this draft, when it has any. */ evidence?: { open: boolean; onOpen: () => void } }) {
   const { proposal: p, status } = view;
   const flow = FLOWS[view.tool];
   const kind = KIND[view.tool] ?? (flow ? { icon: ClipboardCheck, verb: () => flow.verb, busy: flow.busy, chip: flow.chip } : { ...fallback, verb: () => p.action });
   const [pressed, setPressed] = useState(false);
-  const receipt = inlineReceipt ?? view.receipt;
+  const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [resolvedReceipt, setResolvedReceipt] = useState<ActionReceipt | null>(null);
+  const receipt = resolvedReceipt ?? inlineReceipt ?? view.receipt;
   const reduced = useChReducedMotion();
   const cardRef = useRef<HTMLElement>(null);
   const [filling] = useState(fresh && !receipt && (status === 'live' || status === 'preparing'));
@@ -115,27 +145,66 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
   // M-ASK-45: the write answered in this visit, so the draft flies home. A reloaded receipt draws still.
   const hadReceipt = useRef(!!receipt);
   const [landing, setLanding] = useState(false);
+  const [arrived, setArrived] = useState(!!receipt);
+  const flight = useRef<AbortController | null>(null);
+  useEffect(() => () => flight.current?.abort(), []);
+  useEffect(() => {
+    if (reduced && flight.current) {
+      flight.current.abort();
+      setLanding(false);
+      setArrived(true);
+    }
+  }, [reduced]);
   useEffect(() => {
     if (hadReceipt.current || !receipt) return;
     hadReceipt.current = true;
     if (receipt.status === 'failed') return;
     const card = cardRef.current;
-    const draft = card?.querySelector<HTMLElement>('.ls');
-    const slot = card?.querySelector<HTMLElement>('.ch-ak-hs .hsr.nw, .ch-ak-wk .slot');
+    const draft = card?.querySelector<HTMLElement>(p.publish ? '.ch-ak-publish-paper' : '.evd');
+    const slot = card?.querySelector<HTMLElement>('.ch-ak-hs .hsr.nw, .ch-ak-dv-slot');
     // The event takes the slot as the copy arrives; the flash and the chip's pop belong to this one landing.
     setLanding(true);
-    if (card && draft && slot) void flyDraftHome(card, draft, slot, reduced);
-  }, [receipt, reduced]);
+    setArrived(false);
+    const controller = new AbortController();
+    flight.current = controller;
+    const copies = card ? [...card.querySelectorAll<HTMLElement>('[data-ch-publish-slot]')] : [];
+    const travel = card && draft ? p.publish ? flyDraftCopies(card, draft, copies, reduced, controller.signal) : slot ? flyDraftHome(card, draft, slot, reduced, { signal: controller.signal }) : Promise.resolve() : Promise.resolve();
+    void travel.catch(() => undefined).finally(() => {
+      if (controller.signal.aborted) return;
+      setArrived(true);
+      setLanding(false);
+    });
+  }, [receipt, reduced, p.publish]);
   const landed = !!receipt && receipt.status !== 'failed' && !undone;
   const players = p.affects.filter((a) => a.kind === 'player').length;
   const wholeTeam = p.affects.some((a) => a.kind === 'team');
   const count = players || (wholeTeam ? Number(p.facts.find((f) => /player|recipient/i.test(f.label))?.value.match(/\d+/)?.[0] ?? 0) : 0);
   const cancelled = status === 'cancelled' || status === 'abandoned';
   const undecided = status === 'live' || status === 'preparing';
+  const confirmWrite = () => {
+    setSaving(true);
+    setSaveFailed(false);
+    // This POST is the write. Do not also approve through the chat stream: that resubmits the same
+    // message, the tool loses the claim, and the model says the draft failed.
+    void fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(view.key)}?confirm=1`, { method: 'POST' })
+      .then(async (res) => {
+        const row = res.ok ? await res.json().catch(() => null) as { receipt?: ActionReceipt } | null : null;
+        if (!row?.receipt || !view.approvalId) {
+          setSaveFailed(true);
+          setPressed(false);
+          return;
+        }
+        setResolvedReceipt(row.receipt);
+        onSettled?.(view.key, view.approvalId, row.receipt);
+      })
+      .catch(() => { setSaveFailed(true); setPressed(false); })
+      .finally(() => setSaving(false));
+  };
   const answer = (ok: boolean) => {
     if (pressed || !view.approvalId) return;
     setPressed(true);
-    (ok ? onApprove : onDeny)(view.approvalId);
+    if (ok) confirmWrite();
+    else onDeny(view.approvalId);
   };
   // A confirmed proposal is exactly what it said, so a change replaces it with a new one rather than editing this one.
   const replaceWith = (text: string) => {
@@ -148,17 +217,18 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
   const rest = allFacts.filter((f) => !worked.includes(f));
   const facts = rest.length ? rest : allFacts;
   const visual = p.visual;
+  const draftState = undone || cancelled ? 'gone' : !landed ? 'draft' : landing ? 'landing' : 'landed';
   const date = p.publish ? null : draftDate(visual);
   const announcement = view.tool === 'create_team_announcement' || view.tool === 'create_announcement';
   return (
-    <section ref={cardRef} className={'conf' + (p.publish ? ' is-pub' : '') + (landing && landed ? ' flash' : '') + (filling ? ' is-fill' : '')} style={filling ? { ['--ch-n' as string]: facts.length } : undefined} aria-label={p.action}>
+    <section ref={cardRef} className={'conf ch-ak-action' + (p.publish ? ' is-pub' : '') + (landing && landed ? ' flash is-landing' : '') + (landed && arrived ? ' has-arrived' : '') + (filling ? ' is-fill' : '') + (cancelled ? ' is-cancelled' : '') + (undone ? ' is-undone' : '')} data-ch-action-state={undone ? 'undone' : cancelled ? 'cancelled' : receipt?.status ?? status} style={filling ? { ['--ch-n' as string]: facts.length } : undefined} aria-label={p.action}>
       <div className="hd">
         <span className="ico">
           <Icon icon={HEAD[view.tool]?.icon ?? kind.icon} size={17} />
         </span>
         <span className="tt">
           <b>{p.publish ? p.publish.heading : (HEAD[view.tool]?.title ?? p.action)}</b>
-          {!(p.publish && receipt) && <span>{p.summary}</span>}
+          {!(p.publish && receipt) && !announcement && <span>{p.summary}</span>}
         </span>
         {!(p.publish && !landed) && <span className={'dchip' + (landing && landed ? ' is-pop' : '')}><Badge tone={landed ? 'positive' : 'neutral'}>{landed ? kind.chip : undone ? 'Undone' : 'Draft'}</Badge></span>}
       </div>
@@ -182,17 +252,18 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
           </div>
         </div>
       )}
-      {!cancelled && announcement && <LockPreview proposal={p} team={team} />}
-      {!cancelled && visual?.kind === 'qual' && <QualDraft visual={visual} />}
-      {!cancelled && visual?.kind === 'task' && <TaskDraft visual={visual} today={new Date().toISOString().slice(0, 10)} />}
-      {!cancelled && visual?.kind === 'goal' && <GoalDraft visual={visual} />}
-      {!cancelled && visual?.kind === 'note' && <NoteDraft visual={visual} />}
-      {!cancelled && visual?.kind === 'trip' && <TripDraft visual={visual} />}
-      {!cancelled && visual?.kind === 'lineup' && <LineupDraft visual={visual} />}
-      <div className={'evd' + (cancelled ? ' dim' : '') + (date ? ' has-dt' : '')}>
+      {p.publish && !cancelled && <PublishDraft proposal={p} landed={landed && arrived} />}
+      {!cancelled && announcement && <LockPreview proposal={p} team={team} fresh={filling} state={draftState} />}
+      {!cancelled && visual?.kind !== 'cal' && <DraftVisual visual={visual} fresh={filling} state={draftState} />}
+      {visual?.kind === 'cal' && date ? (
+        <CalendarConfirm date={date} facts={facts} cancelled={cancelled} />
+      ) : announcement ? (
+        <p className={'ch-ak-meta' + (cancelled ? ' dim' : '')}>{facts.filter((f) => f.label !== 'Title' && f.label !== 'Message' && !f.missing).map((f) => spokenLine(f.label, f.value, false)).join(' · ')}</p>
+      ) : (
+      <div className={'evd is-said' + (cancelled ? ' dim' : '') + (date ? ' has-dt' : '')}>
         {date && <DateTile date={date} />}
         <div className="ls">
-          {facts.map((f, i) =>
+          {facts.filter((f) => f.value !== 'Not set' && !(announcement && (f.label === 'Title' || f.label === 'Message'))).map((f, i) =>
             p.publish && f.label === 'Tells' ? (
               <div key={f.label} className="f ch-cpv-pub">
                 <span className="k">Tells</span>
@@ -212,16 +283,17 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
                 </span>
               </div>
             ) : (
-            <div key={f.label} className="f" style={{ ['--ch-i' as string]: i }}>
-              <span className="k">{f.label}</span>
-              {f.missing ? <span className="ns">Not set</span> : <span className="v">{f.value}</span>}
+            <div key={f.label} className={'f' + (f.label === 'Title' ? ' t' : '') + (f.label === 'When' ? ' is-when' : '')} style={{ ['--ch-i' as string]: i }}>
+              {f.missing ? <span className="ns">Not set</span> : <span className="v">{spokenLine(f.label, f.value, !!date)}</span>}
             </div>
             ),
           )}
         </div>
       </div>
-      {!cancelled && visual?.kind === 'cal' && <WeekDraft visual={visual} state={undone ? 'gone' : !landed ? 'draft' : landing ? 'landing' : 'landed'} />}
-      {!cancelled && visual?.kind !== 'cal' && LANDS[view.tool] && (
+      )}
+      {!cancelled && visual?.kind === 'cal' && <WeekDraft visual={visual} fresh={filling} state={draftState} />}
+      {!cancelled && view.tool === 'create_focus_area' && <FocusHome proposal={p} landed={landed && arrived} moving={landing} />}
+      {!cancelled && visual?.kind !== 'cal' && view.tool !== 'create_focus_area' && !p.publish && LANDS[view.tool] && (
         <div className="ch-ak-hs">
           <div className="hs-h">
             <span className="hi">
@@ -231,17 +303,17 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
             <span>{landsWhere(view.tool, visual)}</span>
             <small>Where it lands</small>
           </div>
-          <div className={'hsr nw' + (receipt ? ' is-in' : '')}>
+          <div className={'hsr nw' + (landed && arrived ? ' is-in' : '')}>
             <span className="ri">
               <Icon icon={HEAD[view.tool]?.icon ?? kind.icon} size={15} />
             </span>
             <span className="rx">
               <b>{p.summary}</b>
-              <small>{receipt ? 'Just now' : 'Draft'}</small>
+              <small>{receipt?.status === 'held' ? 'Waiting for Undo to close' : landed ? 'Just now' : 'Draft'}</small>
             </span>
             <span className="rt acc">New</span>
           </div>
-          {p.neighbours?.map((n) => (
+          {p.neighbours?.filter((n) => n.sub !== 'Invalid Date' && !/\d{2}:\d{2}:\d{2}|\bQA\b|MOMENTIC/i.test(n.title)).map((n) => (
             <div key={n.title + n.sub} className="hsr">
               <span className="ri">
                 <Icon icon={HEAD[view.tool]?.icon ?? kind.icon} size={15} />
@@ -282,7 +354,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
       )}
       {undecided && (
         <p className="oncf">
-          <b>On confirm:</b> {p.notifications.length ? p.notifications.join(' ') : 'Nothing is sent.'}
+          <b>On confirm:</b> {confirmSentence(view.tool, p.notifications)}
         </p>
       )}
       {undecided && evidence && (
@@ -290,193 +362,41 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
           See what this is based on
         </button>
       )}
-      {undecided && (
-        <div className="btns">
-          <Button variant="ghost" disabled={pressed || !view.approvalId} onClick={() => answer(false)}>
-            Cancel
-          </Button>
-          {pressed ? <span className="p cap">{kind.busy}</span> : <Button variant="primary" disabled={pressed || !view.approvalId || p.missing.length > 0} onClick={() => answer(true)}>{p.publish ? p.action : kind.verb(count)}</Button>}
-        </div>
-      )}
-      {status === 'confirmed' && !receipt && (
+      {undecided && !receipt && (saving || (pressed && !saveFailed)) && (
         <div className="btns">
           <span className="p cap">{kind.busy}</span>
         </div>
       )}
+      {undecided && !saving && saveFailed && (
+        <div className="ch-ak-confirm-failed">
+          <p>That didn’t save. Nothing was added.</p>
+          <Button variant="primary" onClick={() => { setPressed(true); confirmWrite(); }}>Try again</Button>
+        </div>
+      )}
+      {undecided && !saving && !saveFailed && !pressed && (
+        <div className="btns">
+          <Button variant="ghost" disabled={pressed || !view.approvalId} onClick={() => answer(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" disabled={pressed || !view.approvalId || p.missing.length > 0} onClick={() => answer(true)}>{p.publish ? p.action : kind.verb(count)}</Button>
+        </div>
+      )}
+      {status === 'confirmed' && !receipt && (
+        busy || saving ? (
+          <div className="btns">
+            <span className="p cap">{kind.busy}</span>
+          </div>
+        ) : (
+          <div className="ch-ak-confirm-failed">
+            <p>That didn’t save. Nothing was added.</p>
+            <Button variant="primary" onClick={() => { setPressed(true); confirmWrite(); }}>Try again</Button>
+          </div>
+        )
+      )}
       {cancelled && <p className="cxl">Cancelled. Nothing was created.</p>}
-      {receipt && <Receipt failedLine={view.tool === 'publish_practice_plan' ? 'Nothing was sent.' : undefined} onRetry={onSend ? () => onSend(`Try that again: ${p.action}, ${p.summary}`) : undefined} receipt={receipt} idempotencyKey={view.key} undoneLine={UNDONE[view.tool]} telling={p.notifications.length > 0 && !p.notifications.every((n) => /^(nobody|nothing)/i.test(n))} coins={coinNames(p, roster)} onUndone={() => setUndone(true)} />}
+      {receipt && <Receipt failedLine={view.tool === 'publish_practice_plan' ? 'Nothing was sent.' : undefined} onRetry={onSend ? () => onSend(`Try that again: ${p.action}, ${p.summary}`) : undefined} receipt={receipt} idempotencyKey={view.key} undoneLine={UNDONE[view.tool]} telling={p.notifications.length > 0 && !p.notifications.every((n) => /^(nobody|nothing)/i.test(n))} coins={coinNames(p, roster)} onResolved={setResolvedReceipt} onUndone={() => setUndone(true)} />}
+      {view.tool === 'set_lineup' && receipt?.status === 'completed' && !undone && onSend && <div className="ch-ak-lock-next"><Icon icon={Lock} size={18} /><span><b>The lineup is set. It isn’t locked.</b><small>Review the lock separately. Locking cannot be undone.</small></span><Button variant="secondary" size="sm" onClick={() => onSend(`Review locking the lineup for ${p.summary}`)}>Review lock</Button></div>}
     </section>
   );
 }
 
-type Phase = { kind: 'held' } | { kind: 'undoing' } | { kind: 'undone' } | { kind: 'done'; receipt: ActionReceipt };
-
-/** The receipt row. While held: the ring drains over the time left, and Undo cancels the run on the server. A reload past the window draws the durable receipt with no Undo. */
-export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, telling = false, coins = [], onUndone, failedLine = 'Nothing was saved.', onRetry }: { failedLine?: string; onRetry?: () => void; receipt: ActionReceipt; idempotencyKey: string; undoneLine?: string; /** Someone hears about this once the window closes. */ telling?: boolean; /** Who was told, where the card knows. */ coins?: readonly string[]; onUndone?: () => void }) {
-  const held = receipt.status === 'held' && receipt.held_until ? receipt.held_until : null;
-  const [phase, setPhase] = useState<Phase>(held ? { kind: 'held' } : { kind: 'done', receipt });
-  // Late: the server said the window had closed (409). A refused or dropped Undo is its own line and can be pressed again.
-  const [late, setLate] = useState(false);
-  const [undoFailed, setUndoFailed] = useState(false);
-  const [left] = useState(() => (held ? Math.max(0, Date.parse(held) - Date.now()) : 0));
-  // M-ASK-51: at the ring's end the control fades and takes no presses, whatever the server has said yet.
-  const [closed, setClosed] = useState(!!held && left === 0);
-  const undoing = useRef(false);
-  // The Told row's coins light only when it follows a window this visit watched; a reloaded one draws still.
-  const watched = useRef(!!held);
-  const line = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!held || phase.kind !== 'held' || closed) return;
-    const t = setTimeout(() => setClosed(true), Math.max(0, Date.parse(held) - Date.now()));
-    return () => clearTimeout(t);
-  }, [held, phase.kind, closed]);
-  useEffect(() => {
-    if (phase.kind === 'undone') line.current?.focus();
-  }, [phase.kind]);
-  useEffect(() => {
-    if (!held || phase.kind !== 'held') return;
-    let alive = true;
-    const end = setTimeout(async () => {
-      // The server has until the function's end to finish it; ask until it says so, a few times.
-      for (let i = 0; i < 5 && alive; i++) {
-        const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}`).catch(() => null);
-        const row = (await res?.json().catch(() => null)) as { receipt?: ActionReceipt | null } | null;
-        if (row?.receipt) {
-          if (alive) setPhase({ kind: 'done', receipt: row.receipt });
-          return;
-        }
-        await new Promise((r) => setTimeout(r, 900));
-      }
-    }, Math.max(0, Date.parse(held) - Date.now()) + 200);
-    return () => {
-      alive = false;
-      clearTimeout(end);
-    };
-  }, [held, phase.kind, idempotencyKey]);
-  const undo = async () => {
-    if (undoing.current) return;
-    undoing.current = true;
-    setUndoFailed(false);
-    setPhase({ kind: 'undoing' });
-    const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}`, { method: 'DELETE' }).catch(() => null);
-    undoing.current = false;
-    if (res?.ok) {
-      setPhase({ kind: 'undone' });
-      onUndone?.();
-    } else {
-      if (res?.status === 409) setLate(true);
-      else setUndoFailed(true);
-      setPhase({ kind: 'held' });
-    }
-  };
-  if (phase.kind === 'undone')
-    return (
-      <div ref={line} className="receipt undone" role="status" tabIndex={-1}>
-        <div>
-          <b>{undoneLine}</b>
-        </div>
-      </div>
-    );
-  if (phase.kind === 'held' || phase.kind === 'undoing')
-    return (
-      <div className="receipt in" role="status">
-        <span className="ck">
-          <Icon icon={Check} size={13} />
-        </span>
-        <div>
-          <b>{receipt.summary}</b>
-          {late ? <span className="sub">Too late to undo. It’s done. Open it to change it.</span> : undoFailed ? <span className="sub">Couldn’t undo that. Try again.</span> : telling && !closed && <span className="sub">Players are told when Undo closes</span>}
-        </div>
-        <button
-          type="button"
-          className="lk"
-          disabled={phase.kind === 'undoing'}
-          onClick={async () => {
-            const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}?now=1`, { method: 'POST' }).catch(() => null);
-            const row = (await res?.json().catch(() => null)) as { receipt?: ActionReceipt | null } | null;
-            const href = row?.receipt?.created.find((c) => c.href)?.href ?? receipt.created.find((c) => c.href)?.href;
-            if (href) window.location.assign(askLinkHref(href) ?? href);
-          }}
-        >
-          Open
-          <Icon icon={ArrowUpRight} size={14} />
-        </button>
-        {!late && (
-          <button type="button" className={'lk undo' + (closed ? ' gone' : '')} data-ch-ask-undo="" disabled={phase.kind === 'undoing' || closed} aria-label={closed ? 'Undo closed' : `Undo, ${Math.round(left / 1000)} seconds`} onClick={() => void undo()}>
-            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" aria-hidden="true">
-              <circle className="trk" cx="12" cy="12" r="10" />
-              <circle className="drn" cx="12" cy="12" r="10" suppressHydrationWarning style={{ animationDuration: `${left}ms` }} />
-            </svg>
-            {phase.kind === 'undoing' ? 'Undoing' : 'Undo'}
-          </button>
-        )}
-      </div>
-    );
-  const r = phase.receipt;
-  if (r.status === 'failed')
-    return (
-      <div className="receipt is-fail" role="alert">
-        <span className="ck warn">
-          <Icon icon={CircleAlert} size={15} />
-        </span>
-        <div>
-          <b>{r.summary}</b>
-          <span className="sub">{failedLine}</span>
-        </div>
-        {onRetry && (
-          <Button variant="secondary" size="sm" onClick={onRetry}>
-            Try again
-          </Button>
-        )}
-      </div>
-    );
-  const link = r.created.find((c) => c.href);
-  const delivered = r.notifications.filter((n) => n.status !== 'failed');
-  return (
-    <>
-      <div className="receipt in" role="status">
-        <span className="ck">
-          <Icon icon={Check} size={13} />
-        </span>
-        <div>
-          <b>{r.summary}</b>
-          {r.status === 'partial' && <span className="sub">{r.partial_failures.join(' ')} Check what was created before you try again.</span>}
-        </div>
-        {link?.href && (
-          <a className="lk" href={askLinkHref(link.href) ?? link.href}>
-            Open
-            <Icon icon={ArrowUpRight} size={14} />
-          </a>
-        )}
-      </div>
-      {delivered.length > 0 && (
-        <p className={'told' + (watched.current ? ' is-live' : '')}>
-          {/* Coins say who, so they show only when they're everyone the count says was told. */}
-          {coins.length > 0 && delivered.some((n) => n.recipients === coins.length) && (
-            <span className="coins" aria-hidden="true">
-              {coins.slice(0, 4).map((name, i) => (
-                <span key={name} className="coin" style={{ ['--ch-i' as string]: i }}>
-                  <Avatar name={name} size="xs" />
-                </span>
-              ))}
-              {coins.length > 4 && (
-                <span className="coin more ch-num" style={{ ['--ch-i' as string]: 4 }}>
-                  +{coins.length - 4}
-                </span>
-              )}
-            </span>
-          )}
-          <span className="tx">
-            Told{' '}
-            {delivered.map((n, i) => (
-              <span key={n.channel}>
-                {i > 0 ? ', ' : ''}
-                <b className="ch-num">{n.recipients}</b> by {n.channel}
-              </span>
-            ))}
-          </span>
-        </p>
-      )}
-    </>
-  );
-}

@@ -26,15 +26,22 @@ const ctx = { coach_id: 'c1', user_id: 'u1', team_id: 'team-1', team_name: 'T', 
 function setup() {
   // `prepare` reads the note once; the write reads it again, so a second read means the write ran.
   const reads = { n: 0 };
-  const chain = {
-    select: () => chain,
-    eq: () => chain,
+  const noteChain = {
+    select: () => noteChain,
+    eq: () => noteChain,
     maybeSingle: async () => {
       reads.n += 1;
       return { data: { coach_notes: '' }, error: null };
     },
   };
-  const tools = buildCoachTools({ sb: { from: () => chain } as never, ctx, conversationId: 'c', writer: { write: vi.fn() } as never, collect: vi.fn(), askV2: true, defer: vi.fn() } as never);
+  const chain = {
+    select: () => chain,
+    eq: () => chain,
+    maybeSingle: async () => ({ data: null, error: null }),
+  };
+  // Draft visuals may also read round metadata. Count the note reads that
+  // distinguish prepare from execution, not unrelated preview-only reads.
+  const tools = buildCoachTools({ sb: { from: (table: string) => table === 'golf_round_reviews' ? noteChain : chain } as never, ctx, conversationId: 'c', writer: { write: vi.fn() } as never, collect: vi.fn(), askV2: true, defer: vi.fn() } as never);
   return { reads, tool: tools.add_round_note as unknown as { execute: (i: unknown, o: unknown) => Promise<{ status: string; message: string }> } };
 }
 const input = { player_id: PLAYER, round_id: ROUND, note: 'Good wedge numbers' };

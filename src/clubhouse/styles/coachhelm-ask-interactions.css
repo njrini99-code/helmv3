@@ -1,0 +1,79 @@
+/* Ask interaction lifetimes. Import after coachhelm-ask-v2.css. Existing shell and menu primitives keep ownership. */
+.ch-aki-presence.is-leaving { pointer-events: none; }
+.ch-aki-read-popover.cpop { animation: ch-aki-picker-in var(--ch-dur-quick) var(--ch-ease) both; }
+.ch-aki-read-popover.cpop.is-leaving { animation-direction: reverse; pointer-events: none; }
+.ch-aki-picker { animation: ch-aki-picker-in var(--ch-dur-quick) var(--ch-ease) both; }
+.ch-aki-composer.is-hero:not(.is-phone) .ch-aki-picker { animation-name: ch-aki-picker-down; }
+.ch-aki-composer .ch-aki-picker.is-leaving { animation: ch-aki-picker-in var(--ch-dur-quick) var(--ch-ease) reverse both; }
+.ch-aki-composer.is-hero:not(.is-phone) .ch-aki-picker.is-leaving { animation-name: ch-aki-picker-down; }
+@keyframes ch-aki-picker-in { from { opacity: 0; transform: translateY(var(--ch-space-1)) scale(.985); } }
+@keyframes ch-aki-picker-down { from { opacity: 0; transform: translateY(calc(-1 * var(--ch-space-1))) scale(.985); } }
+.ch-aki-plus svg { transition: transform var(--ch-dur-quick) var(--ch-ease); }
+.ch-aki-plus[aria-expanded='true'] svg { transform: rotate(45deg); }
+
+.ch-aki-source-body.in.ch-aki-presence, .ch-aki-step-body { animation: ch-aki-unfold var(--ch-dur-marks) var(--ch-ease-spring-smooth) both; }
+.ch-aki-source-body.in.is-leaving, .ch-aki-step-body.is-leaving { animation-direction: reverse; }
+.ch-aki-step-body.is-live { animation: none; }
+.ch-aki-step-body.is-live.is-leaving { animation: ch-aki-unfold var(--ch-dur-marks) var(--ch-ease-spring-smooth) reverse both; }
+@keyframes ch-aki-unfold { from { clip-path: inset(0 0 100% 0); opacity: 0; } to { clip-path: inset(0); opacity: 1; } }
+
+/* The specific gate overrides the older ancestor-only rule, including under reduced motion. */
+.ch-aki-followups { --ch-aki-follow-animation: none; }
+.ch-aki-followups[data-fresh] { --ch-aki-follow-animation: ch-aki-follow-in var(--ch-dur-base) var(--ch-ease-spring-settle) both; }
+.ch-aki-followups.chips .chip, .ch-aki-followups.chips:is(.ch-ak-turn.is-new *) .chip { animation: var(--ch-aki-follow-animation); }
+@keyframes ch-aki-follow-in { from { opacity: 0; transform: translateY(var(--ch-space-1_5)); } }
+
+.ch-aki-history-more { width: 100%; margin-top: var(--ch-space-2); }
+.ch-aki-history-count { margin: var(--ch-space-2) 0; font: var(--ch-type-12); color: var(--ch-text-secondary); }
+
+/* Real bounds earn the target size, rather than pseudo-elements overlapping nearby controls. No target token exists. */
+.ch-aki-composer, .ch-aki-sources, .ch-aki-artifact, .ch-aki-followups { --ch-aki-target: 44px; }
+.ch-aki-composer button.ch-ask-cmp__round,
+.ch-aki-composer button.ch-ask-cmp__send,
+.ch-aki-composer button.ch-ask-cmp__chip,
+.ch-aki-composer .ch-ask-pick__row,
+.ch-aki-followups .chip,
+.ch-aki-sources .srcs { min-height: var(--ch-aki-target); }
+.ch-aki-composer button.ch-ask-cmp__round,
+.ch-aki-composer button.ch-ask-cmp__send,
+.ch-aki-artifact .sb { min-width: var(--ch-aki-target); min-height: var(--ch-aki-target); }
+.ch-aki-followups .chip::after, .ch-aki-sources .srcs::after, .ch-aki-artifact .sb::after { content: none; }
+.ch-aki-composer button:focus-visible, .ch-aki-sources button:focus-visible, .ch-aki-artifact button:focus-visible, .ch-aki-followups button:focus-visible {
+  outline: var(--ch-space-0_5) solid var(--ch-border-focus);
+  outline-offset: var(--ch-space-0_5);
+}
+.ch-aki-artifact { min-width: 0; max-width: 100%; }
+.ch-aki-artifact-overlay {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(452px, calc(100vw - var(--ch-space-8)));
+  height: 100dvh;
+  max-height: 100dvh;
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ch-text-primary);
+  overflow: hidden;
+}
+.ch-aki-artifact-overlay::backdrop { background: var(--ch-scrim); }
+.ch-aki-artifact-overlay .ch-aki-artifact { width: 100%; height: 100%; box-shadow: var(--ch-elevation-overlay); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-aki-read-popover.cpop, .ch-aki-source-body.in.ch-aki-presence, .ch-aki-step-body,
+  .ch-aki-composer .ch-aki-picker.is-leaving,
+  .ch-aki-composer.is-hero:not(.is-phone) .ch-aki-picker,
+  .ch-aki-composer.is-hero:not(.is-phone) .ch-aki-picker.is-leaving,
+  .ch-aki-composer .ch-aki-picker, .ch-aki-step-body.is-live.is-leaving { animation: none; }
+  .ch-aki-followups[data-fresh] { --ch-aki-follow-animation: none; }
+  .ch-aki-plus svg { transition: none; }
+}
+[data-motion='off'] .ch-aki-read-popover.cpop, [data-motion='off'] .ch-aki-source-body.in.ch-aki-presence, [data-motion='off'] .ch-aki-step-body,
+[data-motion='off'] .ch-aki-composer .ch-aki-picker.is-leaving,
+[data-motion='off'] .ch-aki-composer.is-hero:not(.is-phone) .ch-aki-picker,
+[data-motion='off'] .ch-aki-composer.is-hero:not(.is-phone) .ch-aki-picker.is-leaving,
+[data-motion='off'] .ch-aki-composer .ch-aki-picker,
+[data-motion='off'] .ch-aki-step-body.is-live.is-leaving { animation: none; }
+[data-motion='off'] .ch-aki-followups[data-fresh] { --ch-aki-follow-animation: none; }
+[data-motion='off'] .ch-aki-plus svg { transition: none; }

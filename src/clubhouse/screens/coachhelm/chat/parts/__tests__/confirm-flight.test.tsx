@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AskProposalView } from '../../../../../data/coachhelm-chat-thread';
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
@@ -33,6 +33,42 @@ afterEach(() => {
   delete (Element.prototype as { animate?: unknown }).animate;
 });
 const flights = () => animate.mock.calls.filter(([, o]) => (o as { delay?: number })?.delay === 140);
+
+describe('a confirm that never came back', () => {
+  it('stops saying it is adding and posts the same confirm again, without resubmitting the chat', () => {
+    const onResume = vi.fn();
+    const onApprove = vi.fn();
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)));
+    render(<ConfirmCard view={{ ...view(), status: 'confirmed' }} inlineReceipt={null} onApprove={onApprove} onDeny={vi.fn()} busy={false} onResume={onResume} />);
+    expect(screen.queryByText('Adding…')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onResume).not.toHaveBeenCalled();
+    expect(onApprove).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
+  });
+
+  it('does not approve through the chat when Add to calendar is clicked', () => {
+    const onApprove = vi.fn();
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)));
+    render(<ConfirmCard view={view()} inlineReceipt={null} onApprove={onApprove} onDeny={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add to calendar' }));
+    expect(onApprove).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps saying it is adding while the confirm request is still out', () => {
+    vi.stubGlobal('fetch', () => new Promise<Response>(() => undefined));
+    const live = view();
+    const { rerender } = render(<ConfirmCard view={live} inlineReceipt={null} onApprove={vi.fn()} onDeny={vi.fn()} busy={false} onResume={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add to calendar' }));
+    rerender(<ConfirmCard view={{ ...live, status: 'confirmed' }} inlineReceipt={null} onApprove={vi.fn()} onDeny={vi.fn()} busy={false} onResume={vi.fn()} />);
+    expect(screen.getByText('Adding…')).toBeTruthy();
+    expect(screen.queryByText(/didn’t save/)).toBeNull();
+    vi.unstubAllGlobals();
+  });
+});
 
 describe('the draft flying home (M-ASK-45)', () => {
   it('flies when the write answers during this visit', () => {

@@ -475,6 +475,7 @@ async function createTaskImpl(
         );
         return {
           success: false,
+          ...(!rolledBack ? { data: { taskId: task.id } } : {}),
           error: rolledBack
             ? "Couldn't assign the task to those players, so it wasn't created. Please try again."
             : 'The task was created but could not be assigned. Open it from Tasks and assign it there; do not create it again.',

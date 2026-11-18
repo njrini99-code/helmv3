@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
-const hold = vi.hoisted(() => ({ cancelHeld: vi.fn(), commitHeldNow: vi.fn(), receiptFor: vi.fn(), heldCommitFor: vi.fn() }));
+const hold = vi.hoisted(() => ({ cancelHeld: vi.fn(), commitHeldNow: vi.fn(), receiptFor: vi.fn(), heldCommitFor: vi.fn(), confirmProposed: vi.fn() }));
 const state = vi.hoisted(() => ({ user: { id: 'u1' } as { id: string } | null, coach: { id: 'coach-1' } as { id: string } | null, ctx: { coach_id: 'coach-1' } as { coach_id: string } | null }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -12,7 +12,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 vi.mock('@/lib/coachhelm/v3/chat/context', () => ({ resolveCoachChatContext: async () => state.ctx }));
 vi.mock('@/lib/coachhelm/v3/chat/held-runner', () => ({ heldCommitFor: hold.heldCommitFor }));
-vi.mock('@/lib/coachhelm/v3/chat/undo-hold', () => ({ cancelHeld: hold.cancelHeld, commitHeldNow: hold.commitHeldNow, receiptFor: hold.receiptFor }));
+vi.mock('@/lib/coachhelm/v3/chat/undo-hold', () => ({ cancelHeld: hold.cancelHeld, commitHeldNow: hold.commitHeldNow, receiptFor: hold.receiptFor, confirmProposed: hold.confirmProposed }));
 
 import { DELETE, GET, POST } from '../route';
 
@@ -64,6 +64,15 @@ describe('the Told counts (W-QC-14)', () => {
 });
 
 describe('Open', () => {
+  it('confirm=1 holds the proposal and returns its receipt', async () => {
+    const receipt = { status: 'held', summary: 'Motion check is on its way to the calendar.', held_until: new Date(Date.now() + 8000).toISOString() };
+    hold.confirmProposed.mockResolvedValue(receipt);
+    const res = await POST(req('?confirm=1'), params);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ status: 'held', receipt });
+    expect(hold.commitHeldNow).not.toHaveBeenCalled();
+  });
+
   it('without now=1 nothing commits', async () => {
     const res = await POST(req(), params);
     expect(res.status).toBe(400);
@@ -86,6 +95,19 @@ describe('Open', () => {
 });
 
 describe('Undo and the receipt', () => {
+  it('repeated Undo returns the durable cancellation rather than saying it is too late', async () => {
+    hold.receiptFor.mockResolvedValue({ status: 'cancelled', receipt: null, run_at: null });
+    expect(await (await DELETE(req('', 'DELETE'), params)).json()).toEqual({ status: 'cancelled' });
+    expect(hold.cancelHeld).not.toHaveBeenCalled();
+  });
+
+  it.each(['failed', 'cancelled', 'completed'])('reload exposes the durable %s state without executing it', async (status) => {
+    const row = { status, receipt: status === 'failed' ? { status: 'failed', retryable: false, summary: 'Check Tasks before trying again.' } : null, run_at: null };
+    hold.receiptFor.mockResolvedValue(row);
+    expect(await (await GET(req('', 'GET'), params)).json()).toEqual(row);
+    expect(hold.commitHeldNow).not.toHaveBeenCalled();
+  });
+
   it('Undo inside the window cancels; after it answers late with 409', async () => {
     hold.receiptFor.mockResolvedValue(held());
     hold.cancelHeld.mockResolvedValueOnce('cancelled').mockResolvedValueOnce('late');

@@ -106,6 +106,7 @@ import {
 } from './practice-planner';
 import type { ActionProposal, ActionReceipt, RecurringPracticePlan } from './action-types';
 import { claimForExecution, recordOutcome, recordProposal } from './action-runs';
+import { receiptFor } from './undo-hold';
 import { runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
 import {
   ActionPlanError,
@@ -574,7 +575,17 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       return { status: 'already_done', message: 'That was already done.' };
     }
     if (claim.kind === 'in_flight') {
-      return { status: 'in_flight', message: 'That action is already running.' };
+      // The confirm request already holds this row. Tell the model that, and do not invite another attempt.
+      const existing = await receiptFor(sb, { coach_id: ctx.coach_id, idempotency_key: proposal.idempotency_key });
+      const receipt: ActionReceipt | null = existing?.receipt ?? (existing?.status === 'held' ? {
+        status: 'held', held_until: existing.run_at ?? undefined, action: proposal.action, summary: proposal.summary,
+        created: [], notifications: [], partial_failures: [], retryable: false, at: nowIso(),
+      } : null);
+      if (receipt) {
+        writer.write({ type: 'data-action-receipt', id: `receipt-${proposal.idempotency_key}`, data: receipt });
+        return { status: receipt.status, message: `${receipt.summary} Already confirmed. Do not create it again.` };
+      }
+      return { status: 'in_flight', message: 'That action is already running. Do not create it again.' };
     }
     if (claim.kind === 'stale_failed') {
       // A prior attempt died mid-write; never re-run it silently (action-runs.ts APPROVED_RUN_TTL_MS).

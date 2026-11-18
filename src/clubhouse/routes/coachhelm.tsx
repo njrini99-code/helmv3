@@ -51,6 +51,9 @@ import '../styles/coachhelm-team.css';
 import '../styles/coachhelm-read.css';
 import '../styles/coachhelm-file.css';
 import '../styles/coachhelm-ask-v2.css';
+import '../styles/coachhelm-ask-actions.css';
+import '../styles/coachhelm-ask-interactions.css';
+import '../styles/coachhelm-ask-drafts.css';
 import '../styles/coachhelm-plan.css';
 
 /**

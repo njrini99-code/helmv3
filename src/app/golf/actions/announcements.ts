@@ -436,6 +436,7 @@ async function createEnrichedAnnouncementImpl(input: {
         );
         return {
           success: false,
+          ...(!discarded ? { data: { announcementId } } : {}),
           error: discarded
             ? "Couldn't address the announcement to the players you picked, so it wasn't sent. Please try again."
             : "Couldn't address the announcement to the players you picked, and it may be visible to the whole team. Open Announcements and delete it if you see it.",

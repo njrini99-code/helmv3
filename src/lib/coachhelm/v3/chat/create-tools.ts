@@ -21,8 +21,11 @@ import type { CoachChatContext } from './context';
 import { requireRosterPlayer } from './context';
 import { askTables } from './ask-db';
 import { APPROVED_RUN_TTL_MS } from './action-runs';
+import { getPlayerTrend } from './read-tools';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { clockIn, localDateIn, quickChatWeekBounds, quickChatWeekDays, quickChatWeekOf } from './quick-chat-week';
 import { ActionPlanError } from './action-planners';
-import type { ActionProposal, ActionReceipt, ProposalFact } from './action-types';
+import type { ActionProposal, ActionReceipt, DraftCalendar, ProposalFact, TaskVisual } from './action-types';
 
 type Sb = SupabaseClient<Database>;
 
@@ -122,18 +125,29 @@ export function eventEnd(i: { event_type: string; start?: string; end?: string; 
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 const eventDone = (i: z.infer<typeof eventInput>): FlowDone => ({ summary: `${i.title} is on the calendar.`, kind: 'event', label: i.title, href: '/golf/dashboard/calendar' });
-const eventFlow: FlowDef<z.infer<typeof eventInput>> = {
+type EventInput = z.infer<typeof eventInput> & { draftCalendar?: DraftCalendar };
+const eventFlow: FlowDef<EventInput> = {
   name: 'create_event',
   landed: { table: 'golf_events', done: eventDone },
   description: 'Add one event to the team calendar, including a single practice. Ask first for the type if two fit, for the start if timed and not given, for the end if timed and not a practice, and who is invited to a meeting. A practice with a start needs nothing else: do not ask how long, call this and the card shows the usual length. REQUIRES the coach to confirm.',
   input: eventInput,
+  prepare: async (sb, ctx, i) => {
+    names(ctx, i.invite_player_ids);
+    const bounds = quickChatWeekBounds(quickChatWeekDays(i.date));
+    const { data, error } = await fetchAllRowsResult((from, to) => sb.from('golf_events').select('id, title, start_time, end_time').eq('team_id', ctx.team_id).gte('start_time', bounds.from).lte('start_time', bounds.to).order('id').range(from, to));
+    if (error) return { ...i, draftCalendar: undefined };
+    const rows = data ?? [];
+    const week = quickChatWeekOf(i.date, rows, ctx.timezone);
+    const time = (at: string) => { const c = clockIn(at, ctx.timezone); return `${String(c.hours).padStart(2, '0')}:${String(c.minutes).padStart(2, '0')}`; };
+    return { ...i, draftCalendar: { timeZone: ctx.timezone, checkedAt: new Date().toISOString(), days: week.days, events: rows.map((r) => ({ date: localDateIn(r.start_time, ctx.timezone), title: r.title, start: time(r.start_time), end: r.end_time ? (localDateIn(r.end_time, ctx.timezone) === localDateIn(r.start_time, ctx.timezone) ? time(r.end_time) : '24:00') : null })) } };
+  },
   plan: (ctx, i) => {
     const end = eventEnd(i);
     if (!i.all_day && (!i.start || !end)) throw new ActionPlanError('A timed event needs a start and an end. Ask the coach.');
     if (!i.all_day && end! <= i.start!) throw new ActionPlanError('The end has to be after the start.');
     const who = names(ctx, i.invite_player_ids);
     return {
-      visual: { kind: 'cal', date: i.date, start: i.all_day ? null : (i.start ?? null), end: i.all_day ? null : end, title: i.title, where: i.location ?? null, who: who.length ? `${who.length} players` : 'Not asked', rsvp: i.requires_rsvp },
+      visual: { kind: 'cal', date: i.date, start: i.all_day ? null : (i.start ?? null), end: i.all_day ? null : end, title: i.title, where: i.location ?? null, who: who.length ? `${who.length} players` : 'Not asked', rsvp: i.requires_rsvp, ...(i.draftCalendar ? { calendar: i.draftCalendar } : {}) },
       action: 'Add to calendar',
       summary: i.title,
       facts: [fact('When', i.all_day ? `${i.date}, all day` : `${i.date}, ${i.start} to ${end}`, false), ...(!i.all_day && !i.end ? [{ label: 'Length', value: `${USUAL_PRACTICE_MINUTES / 60} hours`, source: 'The usual practice. Tell me if it should end earlier or later.' }] : []), fact('Type', i.event_type, false), fact('Where', i.location), fact('Invited', who.length ? who.join(', ') : null), fact('Replies', i.requires_rsvp ? 'Asked for' : 'Not asked for')],
@@ -155,7 +169,7 @@ const tripFlow: FlowDef<z.infer<typeof tripInput>> = {
   plan: (_ctx, i) => {
     if (i.return_date && i.return_date < i.departure_date) throw new ActionPlanError('The return is before the leave date. Ask the coach.');
     return {
-      visual: { kind: 'trip', from: i.departure_location ?? null, to: i.destination, how: i.transportation_type, leave: i.departure_date, back: i.return_date ?? null },
+      visual: { kind: 'trip', from: i.departure_location ?? null, to: i.destination, how: i.transportation_type, leave: i.departure_date, back: i.return_date ?? null, hotel: i.hotel_name, rooms: i.room_assignments, gear: i.gear_list, uniform: i.uniform_requirements },
       action: 'Add the trip',
       summary: `${i.event_name} · ${i.destination}`,
       facts: [fact('Leaves', [i.departure_date, i.departure_time].filter(Boolean).join(' '), false), fact('How', i.transportation_type, false), fact('From', i.departure_location), fact('Back', [i.return_date, i.return_time].filter(Boolean).join(' ')), fact('Hotel', i.hotel_name), fact('Rooms', i.room_assignments), fact('Uniform', i.uniform_requirements), fact('Gear', i.gear_list?.join(', '))],
@@ -178,7 +192,7 @@ const qualifierFlow: FlowDef<z.infer<typeof qualifierInput>> = {
     if (i.selection_slots_coach_pick > i.selection_slots_total) throw new ActionPlanError('Coach picks can’t be more than the squad.');
     const who = names(ctx, i.player_ids);
     return {
-      visual: { kind: 'qual', title: i.name, rounds: i.num_rounds, start: i.start_date, total: i.selection_slots_total, picks: i.selection_slots_coach_pick, field: who.length, deadline: i.entry_deadline ?? null },
+      visual: { kind: 'qual', title: i.name, rounds: i.num_rounds, start: i.start_date, total: i.selection_slots_total, picks: i.selection_slots_coach_pick, field: who.length, deadline: i.entry_deadline ?? null, players: who },
       action: 'Set qualifier',
       summary: i.name,
       facts: [fact('Starts', i.start_date, false), fact('Rounds', i.num_rounds, false), fact('Squad', `${i.selection_slots_total}, coach picks ${i.selection_slots_coach_pick}`, false), fact('Players', who.join(', '), false), fact('Rules', i.rules)],
@@ -194,13 +208,23 @@ const qualifierFlow: FlowDef<z.infer<typeof qualifierInput>> = {
 
 const GOAL_STATS = ['sg_total', 'sg_ott', 'sg_approach', 'sg_around_green', 'sg_putting', 'gir_pct', 'scrambling_pct_sand', 'penalty_rate_per_round'] as const;
 const goalInput = z.object({ player_id: z.string().uuid(), metric_id: z.enum(GOAL_STATS), label: z.string().max(60), window_days: z.number().int().min(7).max(365), target_value: z.number(), mode: z.enum(['mandatory', 'suggested']) });
-const goalFlow: FlowDef<z.infer<typeof goalInput>> = {
+type GoalInput = z.infer<typeof goalInput> & { draftHistory?: Extract<TaskVisual, { kind: 'goal' }>['history']; draftHistoryNote?: string };
+const goalFlow: FlowDef<GoalInput> = {
   name: 'create_goal',
   description: 'Give a player a goal on one of eight stats. Ask if the stat is ambiguous, for by-when, and whether it is assigned or suggested. REQUIRES the coach to confirm.',
   input: goalInput,
+  prepare: async (sb, ctx, i) => {
+    requireRosterPlayer(ctx, i.player_id);
+    // Reuse the canonical countable-round read; cache averages are not per-round points.
+    const metric = i.metric_id === 'sg_ott' ? 'sg_tee' : i.metric_id;
+    if (!metric.startsWith('sg_')) return { ...i, draftHistory: undefined, draftHistoryNote: 'Round history is not available for this metric.' };
+    const trend = await getPlayerTrend(sb, ctx, { player_id: i.player_id, metric_id: metric, last_n: 8 });
+    const history = trend.series[0]?.points.flatMap((p) => p.at && Number.isFinite(p.value) ? [{ at: p.at, value: p.value }] : []) ?? [];
+    return { ...i, draftHistory: history, draftHistoryNote: trend.coverage_note ?? undefined };
+  },
   plan: (ctx, i) => {
     const p = requireRosterPlayer(ctx, i.player_id);
-    return { visual: { kind: 'goal', player: p.name, stat: i.label, target: i.target_value, days: i.window_days }, action: 'Set goal', summary: `${i.label}, ${i.window_days}-day goal for ${p.name}`, facts: [fact('Player', p.name, false), fact('Target', i.target_value, false), fact('By', `${i.window_days} days`, false), fact('How', i.mode === 'mandatory' ? 'Assigned' : 'Suggested', false)], notifications: [`${p.name} gets a push once Undo closes.`], key: ['goal', p.id, i.metric_id, i.target_value, i.window_days] };
+    return { visual: { kind: 'goal', player: p.name, stat: i.label, target: i.target_value, days: i.window_days, history: i.draftHistory, historyNote: i.draftHistoryNote }, action: 'Set goal', summary: `${i.label}, ${i.window_days}-day goal for ${p.name}`, facts: [fact('Player', p.name, false), fact('Target', i.target_value, false), fact('By', `${i.window_days} days`, false), fact('How', i.mode === 'mandatory' ? 'Assigned' : 'Suggested', false)], notifications: [`${p.name} gets a push once Undo closes.`], key: ['goal', p.id, i.metric_id, i.target_value, i.window_days] };
   },
   run: async (ctx, i) => {
     const res = (await createGoal({ team_id: ctx.team_id, player_id_if_coach_creating: i.player_id, metric_id: i.metric_id, title: `${i.label}, ${i.window_days}-day goal`, category: 'manual', ends_at: new Date(Date.now() + i.window_days * 86_400_000).toISOString(), target_value: i.target_value, target_source: 'manual', baseline_value: null, coach_assignment_mode: i.mode })) as { ok?: boolean; success?: boolean; error?: string };
@@ -209,9 +233,9 @@ const goalFlow: FlowDef<z.infer<typeof goalInput>> = {
 };
 
 const NOTE_MAX = 2000;
-const noteInput = z.object({ round_id: z.string().uuid(), player_id: z.string().uuid(), note: z.string().min(1).max(NOTE_MAX) });
+const noteInput = z.object({ round_id: z.string().uuid(), player_id: z.string().uuid(), note: z.string().min(1).max(NOTE_MAX), hole_number: z.number().int().min(1).max(18).optional().describe('Only the hole explicitly named in the note; leave out for a whole-round note.') });
 /** `existing` is what the card shows, read from the round before Confirm; the write reads it again. The model never supplies it. */
-type NoteInput = z.infer<typeof noteInput> & { existing?: string };
+type NoteInput = z.infer<typeof noteInput> & { existing?: string; draftRound?: Pick<Extract<TaskVisual, { kind: 'note' }>, 'holes' | 'course' | 'roundDate'> };
 
 /** The note already on the round. `saveRoundCoachNote` replaces the column, so nothing appends without this. */
 async function roundNote(sb: Sb, roundId: string): Promise<string | null> {
@@ -233,15 +257,19 @@ const noteFlow: FlowDef<NoteInput> = {
   name: 'add_round_note',
   description: 'Add a coach note to a round, under any earlier note, which stays. The player always sees it. REQUIRES the coach to confirm.',
   input: noteInput,
-  prepare: async (sb, _ctx, i) => {
+  prepare: async (sb, ctx, i) => {
+    requireRosterPlayer(ctx, i.player_id);
     const existing = await roundNote(sb, i.round_id);
     if (existing === null) throw new ActionPlanError('Could not read the note already on this round.');
-    return { ...i, existing };
+    const { data: round, error: roundError } = await sb.from('golf_rounds').select('course_name, round_date').eq('id', i.round_id).eq('team_id', ctx.team_id).eq('player_id', i.player_id).eq('is_test', false).maybeSingle();
+    if (roundError || !round?.round_date) return { ...i, existing, draftRound: undefined };
+    const { data: holes, error: holesError } = await sb.from('golf_holes').select('hole_number, par, score').eq('round_id', i.round_id).order('hole_number').limit(18);
+    return { ...i, existing, draftRound: { course: round.course_name ?? undefined, roundDate: round.round_date, ...(holesError ? {} : { holes: (holes ?? []).map((h) => ({ number: h.hole_number, par: h.par, score: h.score })) }) } };
   },
   plan: (ctx, i) => {
     const p = requireRosterPlayer(ctx, i.player_id);
     if (i.existing && appendedNote(i.existing, i.note).kind === 'too_long') throw new ActionPlanError(NOTE_TOO_LONG);
-    return { visual: { kind: 'note', player: p.name, note: i.note }, action: 'Add note', summary: `A note on ${p.name}’s round`, facts: [...(i.existing ? [fact('Earlier note', i.existing)] : []), fact('Adding', i.note, false)], notifications: [`${p.name} will see this note, once Undo closes.`], key: ['note', i.round_id, i.note] };
+    return { visual: { kind: 'note', player: p.name, note: i.note, hole: i.hole_number, ...i.draftRound }, action: 'Add note', summary: `A note on ${p.name}’s round`, facts: [...(i.existing ? [fact('Earlier note', i.existing)] : []), fact('Adding', i.note, false)], notifications: [`${p.name} will see this note, once Undo closes.`], key: ['note', i.round_id, i.note] };
   },
   run: async (_ctx, i, { sb }) => {
     const done = { summary: 'The note is on the round.', kind: 'note' };
@@ -255,14 +283,33 @@ const noteFlow: FlowDef<NoteInput> = {
   },
 };
 
-const lineupInput = z.object({ tournament_id: z.string().uuid(), version: z.number().int(), entries: z.array(z.object({ player_id: z.string().uuid(), role: z.enum(['lineup', 'alternate', 'individual']), slot: z.number().int().min(1).max(9).nullable(), reasoning: z.string().max(500).optional() })).min(1).max(20) });
-export const lineupFlow: FlowDef<z.infer<typeof lineupInput>> = {
+const lineupInput = z.object({ tournament_id: z.string().uuid(), source_qualifier_id: z.string().uuid().optional().describe('Only the qualifier explicitly used to choose this lineup. Never infer one.'), version: z.number().int(), entries: z.array(z.object({ player_id: z.string().uuid(), role: z.enum(['lineup', 'alternate', 'individual']), slot: z.number().int().min(1).max(9).nullable(), reasoning: z.string().max(500).optional() })).min(1).max(20) });
+type LineupInput = z.infer<typeof lineupInput> & { draftLineup?: Pick<Extract<TaskVisual, { kind: 'lineup' }>, 'locked' | 'standings' | 'source'> };
+export const lineupFlow: FlowDef<LineupInput> = {
   name: 'set_lineup',
   description: 'Set a tournament lineup. A tie for the last spot always waits for the coach. Locking is a separate step. REQUIRES the coach to confirm.',
   input: lineupInput,
+  prepare: async (sb, ctx, i) => {
+    names(ctx, i.entries.map((e) => e.player_id));
+    const { data: tournament, error } = await sb.from('golf_tournaments').select('lineup_locked_at').eq('id', i.tournament_id).eq('team_id', ctx.team_id).maybeSingle();
+    const draftLineup: NonNullable<LineupInput['draftLineup']> = {};
+    if (!error && tournament) draftLineup.locked = !!tournament.lineup_locked_at;
+    if (i.source_qualifier_id) {
+      const { data: qualifier, error: qualifierError } = await sb.from('golf_qualifiers').select('name').eq('id', i.source_qualifier_id).eq('team_id', ctx.team_id).eq('is_test', false).maybeSingle();
+      if (!qualifierError && qualifier) {
+        const { data: entries, error: entriesError } = await fetchAllRowsResult((from, to) => sb.from('golf_qualifier_entries').select('id, player_id, total_to_par, is_tied, position').eq('qualifier_id', i.source_qualifier_id!).order('position', { nullsFirst: false }).order('id').range(from, to));
+        if (!entriesError) {
+          const roster = new Map(ctx.roster.map((p) => [p.id, p.name]));
+          draftLineup.source = `${qualifier.name} · saved standings`;
+          draftLineup.standings = (entries ?? []).flatMap((e) => roster.has(e.player_id) ? [{ name: roster.get(e.player_id)!, score: e.total_to_par, tied: e.is_tied === true }] : []);
+        }
+      }
+    }
+    return { ...i, draftLineup };
+  },
   plan: (ctx, i) => {
     const rows = i.entries.map((e) => `${e.slot ?? '—'} ${requireRosterPlayer(ctx, e.player_id).name} (${e.role})`);
-    return { visual: { kind: 'lineup', seats: i.entries.map((e) => ({ slot: e.slot, name: requireRosterPlayer(ctx, e.player_id).name, alternate: e.role === 'alternate' })) }, action: 'Set lineup', summary: 'Tournament lineup', facts: [fact('Lineup', rows.join(', '), false)], notifications: ['Nobody is told.'], key: ['lineup', i.tournament_id, i.version, rows.join(',')] };
+    return { visual: { kind: 'lineup', ...i.draftLineup, seats: i.entries.map((e) => ({ slot: e.slot, name: requireRosterPlayer(ctx, e.player_id).name, alternate: e.role === 'alternate', tied: i.draftLineup?.standings?.find((s) => s.name === requireRosterPlayer(ctx, e.player_id).name)?.tied })) }, action: 'Set lineup', summary: 'Tournament lineup', facts: [fact('Lineup', rows.join(', '), false)], notifications: ['Nobody is told.'], key: ['lineup', i.tournament_id, i.version, rows.join(',')] };
   },
   run: async (_ctx, i) => {
     const res = (await setTournamentEntries(i.tournament_id, i.entries.map((e) => ({ playerId: e.player_id, role: e.role, slot: e.slot, reasoning: e.reasoning })), i.version)) as { ok?: boolean; success?: boolean; error?: string };
@@ -410,12 +457,23 @@ const drillInput = z.object({
   goal: z.string().max(200).optional(),
 });
 const AREA_WORDS: Record<z.infer<typeof drillInput>['area'], string> = { putting: 'Putting', short_game: 'Short game', bunker: 'Bunker', approach: 'Approach', tee: 'Tee', course: 'On course', fitness: 'Fitness', mental: 'Mental' };
+/** Only literal setup measurements: the schematic must never supply the demo's eight balls or five feet. */
+export function drillDiagram(name: string, setup?: string): Extract<TaskVisual, { kind: 'drill' }>['diagram'] {
+  const words = `${name} ${setup ?? ''}`;
+  if (!/\bgate\b/i.test(words)) return undefined;
+  const count = setup?.match(/\b(\d+)\s+balls?\b/i);
+  const ring = words.match(/\b(\d+(?:\.\d+)?)\s*(ft|feet|foot|yd|yards?|m|met(?:er|re)s?)\s+(?:radius\s+)?ring\b/i);
+  const unit = ring?.[2]?.toLowerCase();
+  const balls = count ? Number(count[1]) : undefined;
+  return { kind: 'gate', ...(balls !== undefined && balls > 0 && balls <= 40 ? { balls } : {}), ...(ring ? { distance: Number(ring[1]), unit: unit?.startsWith('f') ? 'ft' : unit?.startsWith('y') ? 'yd' : 'm' } : {}) };
+}
 /** TASK_FIELDS 5.14: one drill bank, N-00's `golf_team_drills`. Registered only with the practice plans flag, which waits on that held migration. */
 export const drillFlow: FlowDef<z.infer<typeof drillInput>> = {
   name: 'create_drill',
   description: 'Add a new drill to the team drill bank. Players see it only when a published plan uses it. REQUIRES the coach to confirm.',
   input: drillInput,
   plan: (_ctx, i) => ({
+    visual: { kind: 'drill', name: i.name, area: i.area, minutes: i.minutes, setup: i.setup, goal: i.goal, ...(i.area === 'putting' ? { diagram: drillDiagram(i.name, i.setup) } : {}) },
     action: 'Add drill',
     summary: i.name,
     facts: [fact('Area', AREA_WORDS[i.area], false), fact('Length', `${i.minutes} min`, false), ...(i.setup ? [fact('Setup', i.setup, false)] : []), ...(i.goal ? [fact('Goal', i.goal, false)] : [])],

@@ -1,8 +1,9 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { after, NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { heldCommitFor } from '@/lib/coachhelm/v3/chat/held-runner';
-import { cancelHeld, commitHeldNow, receiptFor } from '@/lib/coachhelm/v3/chat/undo-hold';
+import { persistSealedConfirm } from '@/lib/coachhelm/v3/chat/seal-confirm-message';
+import { cancelHeld, commitHeldNow, confirmProposed, receiptFor } from '@/lib/coachhelm/v3/chat/undo-hold';
 
 /** A commit runs the write and its fan-out here, as the stream route's release does. */
 export const maxDuration = 60;
@@ -46,8 +47,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ key
 export async function POST(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   const who = await coachId();
   if (!who) return none();
-  if (req.nextUrl.searchParams.get('now') !== '1') return NextResponse.json({ error: 'Bad request' }, { status: 400 });
   const { key } = await params;
+  if (req.nextUrl.searchParams.get('confirm') === '1') {
+    const ctx = await resolveCoachChatContext(who.sb).catch(() => null);
+    if (!ctx || ctx.coach_id !== who.coach) return none();
+    const receipt = await confirmProposed(who.sb, {
+      coach_id: who.coach,
+      idempotency_key: key,
+      resolve: (row) => heldCommitFor(who.sb, ctx, row),
+      schedule: (fn) => after(() => fn()),
+    });
+    if (!receipt) return NextResponse.json({ error: 'Could not confirm' }, { status: 409 });
+    await persistSealedConfirm(who.sb, { coach_id: who.coach, idempotency_key: key, receipt });
+    return NextResponse.json({ status: receipt.status, receipt });
+  }
+  if (req.nextUrl.searchParams.get('now') !== '1') return NextResponse.json({ error: 'Bad request' }, { status: 400 });
   const found = await receiptFor(who.sb, { coach_id: who.coach, idempotency_key: key });
   if (!found) return none();
   if (found.status === 'held') await commit(who, key, false);
@@ -61,6 +75,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { key } = await params;
   const found = await receiptFor(who.sb, { coach_id: who.coach, idempotency_key: key });
   if (!found) return none();
+  if (found.status === 'cancelled') return NextResponse.json({ status: 'cancelled' });
   const res = await cancelHeld(who.sb, { coach_id: who.coach, idempotency_key: key });
   if (res === 'cancelled') return NextResponse.json({ status: 'cancelled' });
   if (res === 'late') return NextResponse.json({ status: 'late' }, { status: 409 });

@@ -136,6 +136,8 @@ export default function AskSheetBody({
                     players={[]}
                     onApprove={chat.approve}
                     onDeny={chat.deny}
+                    onSettled={chat.settle}
+                    onResume={chat.resume}
                     onSend={send}
                     onStop={chat.stop}
                     onRetry={chat.retry}

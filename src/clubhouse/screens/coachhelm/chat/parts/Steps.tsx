@@ -3,10 +3,11 @@
 import { ChevronDown } from 'lucide-react';
 import { PlanPreview } from '../../plan/PlanCard';
 import { ReadPicture } from '../../plan/ReadPicture';
-import { useContext, useEffect, useId, useRef, useState } from 'react';
+import { useContext, useLayoutEffect, useId, useRef, useState } from 'react';
 import { stepsReceipt, type AskStep } from '../../../../data/coachhelm-chat-thread';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
 import { Icon } from '../../../../ui/Icon';
+import { AskPresence } from '../AskPresence';
 
 function Glyph({ state, active }: { state: AskStep['state']; active: boolean }) {
   // An amber ring with a bar (the board's step states); red means under par and nothing else.
@@ -45,28 +46,29 @@ export function Steps({ steps, active, seconds, waiting = false, stopped = false
   const id = useId();
   const reduced = useChReducedMotion();
   // M-ASK-11: the list a visit watched stays open 380ms after the last step, then folds over 360ms. One opened with the thread is folded already.
-  const [fold, setFold] = useState<'none' | 'hold' | 'closing'>('none');
+  const [hold, setHold] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasLive = useRef(active);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (active) {
       wasLive.current = true;
+      setHold(false);
       return;
     }
+    if (reduced || waiting || stopped) setHold(false);
     if (!wasLive.current) return;
     wasLive.current = false;
     if (waiting || stopped || reduced) return;
-    setFold('hold');
-    const closing = setTimeout(() => setFold('closing'), 380);
-    const shut = setTimeout(() => setFold('none'), 380 + 360);
+    setHold(true);
+    timer.current = setTimeout(() => setHold(false), 380);
     return () => {
-      clearTimeout(closing);
-      clearTimeout(shut);
+      if (timer.current) clearTimeout(timer.current);
     };
   }, [active, waiting, stopped, reduced]);
   if (steps.length === 0) return null;
   const last = steps.length - 1;
   const list = (live: boolean) => (
-    <ol id={live ? undefined : id} className={'steps' + (live ? ' is-live' : '')} aria-label="What CoachHelm is doing">
+    <ol className={'steps' + (live ? ' is-live' : '')} aria-label="What CoachHelm is doing">
       {steps.map((s, i) => {
         // Stop freezes the row that was running: its dash stands in for the check it never earned (S-ASK.steps.stopped).
         const cut = stopped && (s.state === 'active' || (!s.state && i === last));
@@ -110,41 +112,35 @@ export function Steps({ steps, active, seconds, waiting = false, stopped = false
       )}
     </ol>
   );
-  if (active || waiting || stopped) {
-    return (
-      <div className="work open">
-        {active && (
+  const live = active || waiting || stopped;
+  const shown = live || open || hold;
+  return (
+    <div className={'work ch-aki-steps' + (shown ? ' open' : '')}>
+        {active ? (
           <div className="sum is-live" aria-hidden="true">
             <span className="t">
               <span className="shim">Working</span>
             </span>
           </div>
-        )}
-        {list(true)}
-      </div>
-    );
-  }
-  const shown = open || fold !== 'none';
-  return (
-    <div className={'work' + (shown && fold !== 'closing' ? ' open' : '')}>
+        ) : !live ? (
       <button
         type="button"
         className="sum"
-        aria-expanded={open}
+        aria-expanded={shown}
         aria-controls={id}
         onClick={() => {
-          setFold('none');
-          setOpen((v) => !(v || fold === 'hold'));
+          if (timer.current) clearTimeout(timer.current);
+          setHold(false);
+          setOpen(!shown);
         }}
       >
         <span className="t ch-num">{stepsReceipt(steps, seconds)}</span>
         <Icon icon={ChevronDown} size={16} className="chev" />
       </button>
-      {shown && (
-        <div className={'fold' + (fold === 'closing' ? ' is-closing' : fold === 'none' ? ' is-opening' : '')}>
-          <div>{list(false)}</div>
-        </div>
-      )}
+      ) : null}
+      <AskPresence open={shown} id={id} className={'fold ch-aki-step-body' + (live || hold ? ' is-live' : '')}>
+        {list(live)}
+      </AskPresence>
     </div>
   );
 }

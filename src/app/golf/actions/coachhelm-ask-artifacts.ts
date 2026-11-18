@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { logServerError } from '@/lib/server-error-logger';
+import { isUuid } from '@/lib/utils/uuid';
 import { deleteDocument, saveTextDocument, updateDocument } from './documents';
 
 const FOLDER_MAX = 60;
@@ -48,11 +49,14 @@ async function saveAskArtifactImpl(input: { title: string; body: string; folder:
  * a document, so there is nothing else to remove). Only a private document the signed-in coach created a moment ago is touched.
  */
 async function undoAskArtifactImpl(input: { id: string; savedAt: string }): Promise<{ success: boolean; error?: string }> {
-  if (!input.id || Date.now() - Date.parse(input.savedAt) > UNDO_MS) return { success: false, error: 'Too late to undo. It’s saved in Documents.' };
+  const requestedAt = typeof input?.savedAt === 'string' ? Date.parse(input.savedAt) : NaN;
+  const now = Date.now();
+  if (!isUuid(input?.id) || !Number.isFinite(requestedAt) || requestedAt > now || now - requestedAt > UNDO_MS) return { success: false, error: 'Too late to undo. It’s saved in Documents.' };
   const sb = await createClient();
   const ctx = await resolveCoachChatContext(sb).catch(() => null);
   if (!ctx) return { success: false, error: 'Unauthorized' };
   const { data: user } = await sb.auth.getUser();
+  if (!user.user) return { success: false, error: 'Unauthorized' };
   const { data: row, error } = await sb.from('golf_documents').select('id, team_id, is_public, uploaded_by, created_at').eq('id', input.id).maybeSingle();
   if (error) {
     await logServerError(`undoAskArtifact read failed: ${error.message}`, { action: 'coachhelm.ask.undoArtifact' });
@@ -60,6 +64,12 @@ async function undoAskArtifactImpl(input: { id: string; savedAt: string }): Prom
   }
   if (!row) return { success: true };
   if (row.team_id !== ctx.team_id || row.is_public !== false || row.uploaded_by !== user.user?.id) return { success: false, error: 'That wasn’t undone.' };
+  // savedAt is browser input, not proof that this document was just created.
+  // Use the persisted timestamp and re-read the server clock after the query:
+  // forging a fresh savedAt must never turn Undo into Delete for an old file.
+  const createdAt = typeof row.created_at === 'string' ? Date.parse(row.created_at) : NaN;
+  const checkedAt = Date.now();
+  if (!Number.isFinite(createdAt) || createdAt > checkedAt || checkedAt - createdAt > UNDO_MS) return { success: false, error: 'Too late to undo. It’s saved in Documents.' };
   const gone = await deleteDocument(input.id);
   return gone.success ? { success: true } : { success: false, error: 'That wasn’t undone.' };
 }
