@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { chReport } from '../../lib/track';
 import { useToast } from '../../ui/Toast';
 import { PIN_LIMIT, readPinned, usePinned, withPin, writePinned, type ChPins } from './pinned';
 
@@ -24,11 +25,18 @@ interface RpcError {
 
 const isMissing = (e: RpcError | null | undefined) => e?.code === '42P01' || e?.code === 'PGRST205' || e?.code === 'PGRST202';
 
+/** A pins read or write that failed for a reason other than the held table or the two refusals PIN-SYNC answers in words. */
+function reportPinError(e: RpcError, action: string, severity: 'low' | 'high'): void {
+  if (isMissing(e)) return;
+  chReport(new Error(e.message || 'pins request failed'), { surface: 'messages.pins', action, severity, extra: e.code ? { code: e.code } : undefined });
+}
+
 function detailList(e: RpcError): string[] | null {
   try {
     const parsed: unknown = JSON.parse(e.details ?? '');
     return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : null;
   } catch {
+    // A refusal without the list in its details: the caller puts the old list back.
     return null;
   }
 }
@@ -74,6 +82,8 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
     const { data, error } = await (team ? q.eq('team_id', team) : q.is('team_id', null)).order('position');
     if (error) {
       if (isMissing(error)) unavailableUntil = Date.now() + UNAVAILABLE_MS;
+      // Device pins show instead, as with the held table; any other failure is reported.
+      else reportPinError(error, 'golf_conversation_pins', 'low');
       return null;
     }
     return (data ?? []).map((r) => r.conversation_id);
@@ -96,6 +106,7 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
       try {
         if (localStorage.getItem(importKey(viewer, team))) return;
       } catch {
+        // No storage (private mode): the import can't remember it ran, so it doesn't run.
         return;
       }
       const inbox = new Set(knownRef.current ? knownRef.current.split('\u0000') : []);
@@ -107,6 +118,7 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
         if (error) {
           if (error.message === 'pin_limit') break;
           if (error.message === 'not_a_member') continue;
+          reportPinError(error, 'importPins', 'low');
           return;
         }
         if (next) {
@@ -152,7 +164,10 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
       if (!list) return;
       probedFor.current = `${viewer}:${team}`;
       setServer(list);
-      await Promise.resolve(db.realtime.setAuth?.()).catch(() => undefined);
+      await Promise.resolve(db.realtime.setAuth?.()).catch((err: unknown) => {
+        // The private join below is then refused, and pins from other devices arrive on the next focus instead.
+        chReport(err, { surface: 'messages.pins', action: 'setAuth', severity: 'low' });
+      });
       if (!live) return;
       const ch = db.channel(`golf-pins:${viewer}`, { config: { private: true } });
       channel = ch;
@@ -171,7 +186,10 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
       const ops = [...queue.current];
       queue.current.clear();
       void (async () => {
-        for (const [id, pin] of ops) await send(id, pin);
+        for (const [id, pin] of ops) {
+          const { error } = await send(id, pin);
+          if (error) reportPinError(error, 'flushQueuedPins', 'high');
+        }
         refetch();
       })();
     };
@@ -218,7 +236,10 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
           } else if (error.message === 'not_a_member') {
             setServer((cur) => (cur ?? before).filter((x) => x !== id));
             toast({ title: 'You’re not in this conversation anymore.' });
-          } else setServer(before);
+          } else {
+            reportPinError(error, pin ? 'pin' : 'unpin', 'high');
+            setServer(before);
+          }
           return;
         }
         if (list) setServer(list);

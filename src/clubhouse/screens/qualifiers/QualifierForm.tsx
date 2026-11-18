@@ -131,15 +131,28 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       // The tie rule rides after the create (F-04): the qualifier exists either way, and a rule that didn't save is said in the toast.
       let rulesFailed = false;
       if (normalise(res).success && res.data?.qualifierId && data.rulesState === 'ok') {
-        const ruled = await writes.saveRules(res.data.qualifierId, { tieRule: v.tieRule, countBest: v.countBest }).catch(() => ({ success: false as const }));
-        rulesFailed = !normalise(ruled).success;
+        let thrown: unknown = null;
+        const ruled = await writes.saveRules(res.data.qualifierId, { tieRule: v.tieRule, countBest: v.countBest }).catch((err: unknown) => {
+          thrown = err;
+          return { success: false as const };
+        });
+        const rulesResult = normalise(ruled);
+        rulesFailed = !rulesResult.success;
+        // The action itself succeeded, so useAction reports nothing: a rule that didn't save is reported here (the toast tells the coach).
+        if (!rulesResult.success) chReport(thrown ?? new Error(rulesResult.error || 'tie rule not saved'), { surface: 'qualifiers.form', action: 'qualifiers.saveRules', severity: 'high', extra: { qualifierId: res.data.qualifierId } });
       }
       // Who is exempt (F-06) rides after the create too: the players are entered by then.
       const exempt = enteredExempt(v);
       let exemptFailed = false;
       if (normalise(res).success && res.data?.qualifierId && data.exemptState === 'ok' && exempt.length && writes.saveExemptions) {
-        const saved = await writes.saveExemptions(res.data.qualifierId, exempt).catch(() => ({ success: false as const }));
-        exemptFailed = !normalise(saved).success;
+        let thrown: unknown = null;
+        const saved = await writes.saveExemptions(res.data.qualifierId, exempt).catch((err: unknown) => {
+          thrown = err;
+          return { success: false as const };
+        });
+        const exemptResult = normalise(saved);
+        exemptFailed = !exemptResult.success;
+        if (!exemptResult.success) chReport(thrown ?? new Error(exemptResult.error || 'exemptions not saved'), { surface: 'qualifiers.form', action: 'qualifiers.saveExemptions', severity: 'high', extra: { qualifierId: res.data.qualifierId } });
       }
       // The form has done its job: replaced, so Back from the new qualifier does not return to a form whose Create would make a second one.
       if (normalise(res).success) {

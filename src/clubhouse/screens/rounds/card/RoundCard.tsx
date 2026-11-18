@@ -7,7 +7,7 @@ import type { ChRoundReview } from '../../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../../lib/format';
 import { NoData } from '../../../ui/NoData';
 import { haptic } from '../../../lib/haptics';
-import { chTrail } from '../../../lib/track';
+import { chReport, chTrail } from '../../../lib/track';
 import { Button } from '../../../ui/Button';
 import { Modal } from '../../../ui/Modal';
 import { Switch } from '../../../ui/Switch';
@@ -241,7 +241,8 @@ function ShareSheet({ open, onClose, model, dateIso }: { open: boolean; onClose:
       setFile(f);
       setSrc(url);
       setCanShare(canShareFile(typeof navigator === 'undefined' ? undefined : navigator, f));
-    })().catch(() => {
+    })().catch((err: unknown) => {
+      chReport(err, { surface: 'rounds.card', action: 'rounds.card.render', severity: 'low' });
       if (alive) setFailed(true);
     });
     return () => {
@@ -260,6 +261,7 @@ function ShareSheet({ open, onClose, model, dateIso }: { open: boolean; onClose:
       if (res === 'downloaded') toast({ tone: 'done', title: 'Card saved', body: name, code: 'CH-11922' });
       onClose();
     } catch {
+      // The share sheet or download was refused by the browser (deliverCard already turns a cancel into 'cancelled'): told, not reported.
       chTrail('rounds card share failed');
       haptic('error');
       toast({ tone: 'error', title: 'Couldn’t share the card', body: 'Try again, or save the image from the preview.', code: 'CH-11923' });

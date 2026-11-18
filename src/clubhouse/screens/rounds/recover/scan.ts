@@ -3,6 +3,7 @@ import { getFailedRounds, getPendingRounds, type OfflineRound as QueuedRound } f
 import { getRoundRecoverySnapshots, type RoundRecoverySnapshot } from '@/lib/offline/shot-storage';
 import type { HoleStats } from '@/lib/types/golf';
 import { wasRoundDiscarded } from '@/lib/utils/emergency-save';
+import { chReport } from '../../../lib/track';
 import type { ChRoundType } from '../../../data/rounds-shape';
 
 /**
@@ -352,7 +353,7 @@ export async function deleteLegacyRound(id: string, acknowledgedTimestamp?: numb
   try {
     db = await openLegacyDatabase();
   } catch {
-    // No such database: nothing to remove.
+    // No such database: nothing to remove. (It rejects on every device that never had it, so this is not reported.)
     return;
   }
   try {
@@ -416,6 +417,10 @@ export interface ChDeviceScan {
 export async function scanDevice(playerId: string, readers: ChDeviceReaders = LIVE_DEVICE_READERS): Promise<ChDeviceScan> {
   const [cache, queue, legacy] = await Promise.allSettled([readers.recoveryCache(), readers.queue(), readers.legacy()]);
   const ok = (result: PromiseSettledResult<ChDeviceCopy[]>) => (result.status === 'fulfilled' ? result.value : []);
+  // A store that failed reads as empty, so a round kept in it is not offered: reported. The old database is left out,
+  // since it rejects on every device that never had it.
+  if (cache.status === 'rejected') chReport(cache.reason, { surface: 'rounds.recover', action: 'rounds.recover.readCache', severity: 'high' });
+  if (queue.status === 'rejected') chReport(queue.reason, { surface: 'rounds.recover', action: 'rounds.recover.readQueue', severity: 'high' });
   const rounds = buildRecoverRounds([...ok(cache), ...ok(queue), ...ok(legacy), ...readers.emergencySaves()], playerId, (id) => readers.discarded?.(id, playerId) ?? false);
   const unreadable = rounds.length === 0 && cache.status === 'rejected' && queue.status === 'rejected' && legacy.status === 'rejected';
   return { rounds, unreadable };

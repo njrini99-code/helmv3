@@ -36,6 +36,7 @@ export function zoneWallParts(at: number, timeZone: string): { year: number; mon
     if (![year, month, day, hour, minute].every(Number.isFinite)) return null;
     return { year, month, day, hour: hour % 24, minute };
   } catch {
+    // A zone this engine does not know: the caller's null path, not a failure to report.
     return null;
   }
 }

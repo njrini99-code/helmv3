@@ -120,10 +120,11 @@ Tested in `coachhelm-standing.test.tsx` and
 
 Status: DEFINED
 
-The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
-in the signed-in role's shape (130204); a write in flight says so on its button
-(Assigning, Dismissing, Undoing: CH-13403). CoachHelm loads no section on its
-own after the server render, so there are no section skeletons.
+The route skeleton is a Clubhouse one inside the shell and Fairway's outside it
+(until 2026-11-14; since then always the Clubhouse one), in the signed-in role's
+shape (130204); a write in flight says so on its button (Assigning, Dismissing,
+Undoing: CH-13403). CoachHelm loads no section on its own after the server
+render, so there are no section skeletons.
 
 The view switch (the coach's Team and Ask; the player's Board, Standing, Deep
 dive and Ask) is one row the route mounts once above the view
@@ -362,17 +363,18 @@ its own.
 Status: DEFINED
 
 Who may open the page: a coach or a player with `golf_clubhouse_ui` on; anyone
-else gets the Fairway page (130805). The role decides the view: only the coach's
-board has Assign, Dismiss and Undo, and the player's board has no write
-(130801). A coach reads only the active players of the team the shell resolved,
-whichever other teams they staff (130802), and a player reads only their own
-insights, with or without a team (130803). Assign is offered only for an insight
-that has no focus made from it, a strength included (130806, Q-80). Off a team a
-coach gets the no-team page (CH-13308, category 04). The server actions are the
-gate that counts (130804, reserved: read, not run). The program pulse is the
-coach's own (`getCoachProgramPulse` takes no team) and this page's team comes
-from `resolveClubhouseTeam`; both follow the active-team cookie and nothing here
-proves they can never differ.
+else gets the Fairway page (130805). Since 2026-11-14 the flag and the Fairway
+page are gone and every signed-in coach or player gets the Clubhouse route. The
+role decides the view: only the coach's board has Assign, Dismiss and Undo, and
+the player's board has no write (130801). A coach reads only the active players
+of the team the shell resolved, whichever other teams they staff (130802), and a
+player reads only their own insights, with or without a team (130803). Assign is
+offered only for an insight that has no focus made from it, a strength included
+(130806, Q-80). Off a team a coach gets the no-team page (CH-13308, category
+04). The server actions are the gate that counts (130804, reserved: read, not
+run). The program pulse is the coach's own (`getCoachProgramPulse` takes no
+team) and this page's team comes from `resolveClubhouseTeam`; both follow the
+active-team cookie and nothing here proves they can never differ.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

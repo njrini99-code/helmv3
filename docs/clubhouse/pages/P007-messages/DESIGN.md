@@ -170,7 +170,8 @@ on 2026-10-08 (71103).
 
 `getGolfConversationFiles` (Details' Files, phone and desktop): built, and HELD
 behind `isClubhouseFor` (`docs/clubhouse/held/features/conversation-files.md`,
-D-61).
+D-61). Since Fairway's retirement on 2026-11-14 that gate is a role check only,
+so the action answers every coach and player.
 
 ### New data/schema
 

@@ -13,9 +13,14 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Reference: `design/handoff/auth/` (the owner's handoff: `README.md`, `Sign in.html`, `Sign in - Mobile.html`, `Sign in - Times of day.html`, `Sign up.html`, `Sign up - Mobile.html`, `src/`, `screenshots/`; owner decisions Q-96); spec `docs/clubhouse/phone/auth.md`
-Routes: `/golf/login` and `/golf/welcome` (built), `/golf/signup` and onboarding (phase 2, not built)   Surface tag: `auth` (Sentry `surface=auth.<section>`)
-Flag: `golf_clubhouse_front_door` (off in production). Page: P015, `pages/P015-auth/`.
+Reference: `design/handoff/auth/` (the owner's handoff: `README.md`, `Sign
+in.html`, `Sign in - Mobile.html`, `Sign in - Times of day.html`, `Sign
+up.html`, `Sign up - Mobile.html`, `src/`, `screenshots/`; owner decisions
+Q-96); spec `docs/clubhouse/phone/auth.md` Routes: `/golf/login` and
+`/golf/welcome` (built), `/golf/signup` and onboarding (phase 2, built since)
+Surface tag: `auth` (Sentry `surface=auth.<section>`) Flag: none since
+2026-11-14 (`golf_clubhouse_front_door` was removed with Fairway; every entrance
+page draws Clubhouse). Page: P015, `pages/P015-auth/`.
 
 ## spec
 

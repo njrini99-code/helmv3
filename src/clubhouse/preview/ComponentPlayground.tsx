@@ -71,6 +71,7 @@ export function ComponentPlayground() {
         <Button variant="primary" onClick={download}>Download CSS</Button>
         <Button onClick={async () => {
           try { await navigator.clipboard.writeText(css); setStatus('CSS proposal copied.'); }
+          // Clipboard refused (permissions, an old browser): said in the status line, nothing to report.
           catch { setStatus('Clipboard unavailable. Select the CSS below or download it.'); }
         }}>Copy CSS</Button>
         <p role="status">{status}</p>

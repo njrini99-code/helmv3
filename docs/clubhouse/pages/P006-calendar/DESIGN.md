@@ -70,6 +70,15 @@ a time band, `CancelEvent`, `SubscribeSheet` (`editor.tsx`); `BusyDetail`,
 `DayView` and `MonthGrid`; `CalendarSkeleton`, `CalendarNoTeam`; the pure model
 in `model.ts`.
 
+Added since this handoff (2026-10-25 on; the changes/ fragments and WIRING.md
+carry each): drag and drop (P-4: `use-time-drag.ts`, `use-bar-drag.ts`,
+`month-dnd.tsx`, `day-timeline.tsx`, `drag-popovers.tsx`), the editor's
+tournament section and round editor (P-5: `editor-tournament.tsx`,
+`editor-round.tsx`, `cancel-round.tsx`, `round-label.tsx`), change marks (P-14:
+`change-note.tsx`), the live row and dot (P-6: `live-events.tsx`), the event
+peek (`peek.tsx`), `CalendarFirstRun`, and Practice hours (`hours/`, launch
+readiness F-03, 2026-11-15).
+
 ### Modified Clubhouse components
 
 None for this page beyond the foundation's v2 changes (motion, haptics, page
@@ -114,7 +123,9 @@ day's agenda with classes and the now line), Month (a compact grid, competition
 days dark), List (the desktop agenda), an event in a sheet (the desktop panel),
 and New event as a sheet (the full desktop editor). The coach's top bar is the
 tab root with New event (D-66); a player reaches Calendar from More and has Add
-to calendar app. Differences from the board are Q-67.
+to calendar app. Differences from the board are Q-67. (Since 2026-10-13 both
+roles reach Calendar from the section strip, the tab bar and More are gone, and
+since 2026-10-24 the coach's More menu is on the phone too.)
 
 The look follows the owner's "Mobile clubhouse pass" board (2026-10-08, carried
 from Coach Home): no cards. The month opens under the engraved double rule as
@@ -153,13 +164,17 @@ New event seeded from the event) were built 2026-09-30 (CLICKABLES gaps 9 and
 ## Existing backend capabilities used
 
 `createGolfEvent`, `updateGolfEvent`, `deleteGolfEvent` (a soft cancel),
-`respondToEvent`, `addCoachBlockedTime`, `deleteCoachBlockedTime` (`golf.ts`);
-`createRecurringEvent`, `editRecurringEvent`, `deleteRecurringEvent`
-(`recurring-events.ts`); `getAttendanceReport`, `markAttendance`
-(`attendance.ts`); `getEventDocuments`, `attachDocumentToEvent`,
-`detachDocumentFromEvent` (`event-documents.ts`); `getDocuments`
-(`documents.ts`); `getCalendarFeeds`, `createCalendarFeed`
-(`calendar-feeds.ts`). WIRING.md maps each.
+`respondToEvent` (`golf.ts`, now `calendar-events.ts`), `addCoachBlockedTime`,
+`deleteCoachBlockedTime` (`golf.ts`, now `calendar-blocked-time.ts`; `golf.ts`
+was split on 2026-10-08, #2176); `createRecurringEvent`, `editRecurringEvent`,
+`deleteRecurringEvent` (`recurring-events.ts`); `getAttendanceReport`,
+`markAttendance` (`attendance.ts`); `getEventDocuments`,
+`attachDocumentToEvent`, `detachDocumentFromEvent` (`event-documents.ts`);
+`getDocuments` (`documents.ts`); `getCalendarFeeds`, `createCalendarFeed`
+(`calendar-feeds.ts`); since 2026-10-25 `createTournamentFromCalendar`,
+`updateTournamentRound`, `setTournamentCancelled` (`tournaments-calendar.ts`)
+and since 2026-11-15 `saveHoursSettings`, `saveHoursAdjustment` (`hours.ts`).
+WIRING.md maps each.
 
 ## HELD requirements
 

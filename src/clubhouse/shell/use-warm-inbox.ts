@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { conversationsCacheKey, loadGolfConversationRail } from '@/hooks/golf/use-golf-messages';
 import { getCacheEpoch, readCachedResource, writeCachedResourceIfCurrent } from '@/lib/golf/client-resource-cache';
 import { prefetchAllowed } from './use-prefetch-tabs';
+import { chReport } from '../lib/track';
 
 /**
  * Fills the inbox's session cache once the shell is idle, so the first visit to Messages paints its list at once
@@ -20,7 +21,11 @@ export function useWarmInbox(userId: string | undefined, teamId: string | undefi
     let cancelled = false;
     const run = async () => {
       const epoch = getCacheEpoch();
-      const result = await loadGolfConversationRail(createClient(), userId).catch(() => null);
+      // A refused read is logged by the loader; a throw is reported here. Messages reads the list itself either way.
+      const result = await loadGolfConversationRail(createClient(), userId).catch((err: unknown) => {
+        chReport(err, { surface: 'shell.warmInbox', action: 'conversations', severity: 'low' });
+        return null;
+      });
       if (!cancelled && result?.ok) writeCachedResourceIfCurrent(key, result.rows, epoch);
     };
     const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };

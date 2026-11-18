@@ -28,6 +28,7 @@ export function openedFromLibrary(roundId: string): boolean {
     const note = JSON.parse(sessionStorage.getItem(FROM_KEY) ?? 'null') as { roundId?: string } | null;
     return note?.roundId === roundId.toLowerCase();
   } catch {
+    // No storage, or a note that doesn't parse: Back goes to the library's address.
     return false;
   }
 }

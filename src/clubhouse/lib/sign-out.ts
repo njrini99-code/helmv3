@@ -35,7 +35,10 @@ export async function chEndSession(surface: string): Promise<void> {
     .catch((err: unknown) => err);
   if (error) {
     chReport(error, { surface, action: 'signOutFallback', severity: 'low' });
-    await sb.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    await sb.auth.signOut({ scope: 'local' }).catch((err: unknown) => {
+      // Reported, never awaited on: the login page loads either way.
+      chReport(err, { surface, action: 'signOutLocal', severity: 'medium' });
+    });
   }
 }
 
@@ -53,6 +56,7 @@ export const CH_PUSH_TEARDOWN_WAIT_MS = 1500;
  * (use-prefetch-tabs), so Back cannot return to the signed-out person's pages.
  */
 export async function chSignOut(): Promise<void> {
+  // teardownDeviceTokenOnSignOut never rejects (it warns itself); the catch only keeps a surprise from holding sign-out up.
   const teardown = Promise.resolve(teardownDeviceTokenOnSignOut()).catch(() => undefined);
   await Promise.race([teardown, new Promise((done) => window.setTimeout(done, CH_PUSH_TEARDOWN_WAIT_MS))]);
   await chEndSession('settings.session');

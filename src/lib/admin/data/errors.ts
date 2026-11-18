@@ -44,6 +44,7 @@ import {
 } from '@/lib/admin/incident-report';
 import { rcaAnalysisSchema, type RcaAnalysis } from '@/lib/admin/rca';
 import { extractEventErrorCode } from '@/lib/admin/data/event-error-code';
+import { scopeAdminEvents, type BridgeUiScope } from '@/lib/admin/bridge-scope';
 
 export interface ErrorsTabFilters {
   sport?: 'golf' | 'baseball' | 'shared';
@@ -65,6 +66,11 @@ export interface ErrorsTabFilters {
    * - a specific IncidentClass → just that kind.
    */
   kind?: IncidentClass | 'all';
+  /**
+   * The product UI the view is narrowed to (src/lib/admin/bridge-scope.ts). Never read from the URL: a Bridge page
+   * sets it from BRIDGE_UI_SCOPE, so every count on the page and the list below them read the same population.
+   */
+  scope?: BridgeUiScope;
 }
 
 const SPORTS = new Set(['golf', 'baseball', 'shared']);
@@ -156,6 +162,7 @@ export function describeErrorsFilters(filters: ErrorsTabFilters): string {
           : 'actionable only'
     }`,
   );
+  if (filters.scope && filters.scope !== 'all') parts.push(`ui=${filters.scope}`);
   if (filters.sport) parts.push(`sport=${filters.sport}`);
   if (filters.severity) parts.push(`severity=${filters.severity}`);
   if (filters.source) parts.push(`source=${filters.source}`);
@@ -253,11 +260,14 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
     severity: filters.severity,
     source: filters.source,
     feature: filters.feature,
+    ...(filters.scope ? { scope: filters.scope } : {}),
   };
+  const scope = filters.scope;
 
   let rlsQuery = admin.from('admin_events').select('id', { count: 'exact', head: true })
     .eq('source', 'rls_denial').gte('created_at', ago24h);
   if (filters.sport) rlsQuery = rlsQuery.eq('sport', filters.sport);
+  rlsQuery = scopeAdminEvents(rlsQuery, scope);
 
   const widerSince =
     filters.windowHours < 168
@@ -273,17 +283,21 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
         .gte('created_at', widerSince)
     : null;
   if (widerQuery && filters.sport) widerQuery = widerQuery.eq('sport', filters.sport);
+  if (widerQuery) widerQuery = scopeAdminEvents(widerQuery, scope);
 
   const widerUntaggedQuery =
     widerSince && filters.sport
-      ? admin
-          .from('admin_events')
-          .select('id', { count: 'exact', head: true })
-          .eq('event_type', 'error')
-          .eq('resolved', false)
-          .in('severity', INCIDENT_SEVERITIES)
-          .gte('created_at', widerSince)
-          .is('sport', null)
+      ? scopeAdminEvents(
+          admin
+            .from('admin_events')
+            .select('id', { count: 'exact', head: true })
+            .eq('event_type', 'error')
+            .eq('resolved', false)
+            .in('severity', INCIDENT_SEVERITIES)
+            .gte('created_at', widerSince)
+            .is('sport', null),
+          scope,
+        )
       : null;
 
   // Window-over-window. Rows WRITTEN in each window, resolved or not — a
@@ -302,7 +316,7 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
       .gte('created_at', fromIso);
     if (toIso) q = q.lt('created_at', toIso);
     if (filters.sport) q = q.eq('sport', filters.sport);
-    return q;
+    return scopeAdminEvents(q, scope);
   };
 
   const [hourly, deploys, rlsRes, widerRes, widerUntaggedRes, feed, currentRowsRes, priorRowsRes] =

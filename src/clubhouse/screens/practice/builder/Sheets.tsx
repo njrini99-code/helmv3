@@ -8,6 +8,7 @@ import type { PlanBlock, PlanBodyV2, StationsBlock } from '@/lib/coachhelm/v3/pr
 import { stationsLen } from '@/lib/coachhelm/v3/practice-plan/model';
 import type { ChBankDrill } from '../../../data/practice-home-shape';
 import { haptic } from '../../../lib/haptics';
+import { chReport } from '../../../lib/track';
 import { Button } from '../../../ui/Button';
 import { PracticeSheet } from '../PracticeSheet';
 import { Icon } from '../../../ui/Icon';
@@ -244,7 +245,8 @@ export function NewDrillSheet({ open, onClose, teamId, onSaved, preview = false 
       }
       onSaved({ ref: `team:${res.id}`, name: name.trim(), area: DRILL_AREAS.find((a) => a.value === area)?.label ?? area, kind, minutes, source: 'Your bank' });
       setName('');
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'practice.builder', action: 'practice.createDrill', severity: 'high' });
       setError('Couldn’t save the drill. Try again.');
     } finally {
       setBusy(false);
