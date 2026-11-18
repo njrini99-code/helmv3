@@ -124,6 +124,8 @@ function ProspectTable({ c }: { c: RecCtx }) {
   const table = useRef<HTMLTableElement>(null);
   useRovingRows(table, '.ch-rec-tb__name');
   usePageKeys('Recruiting', ROW_KEYS);
+  // L-079: a column of dashes says nothing; it shows once any prospect has a step (or the list is sorted by it).
+  const nextCol = c.nextStep && (c.sort === 'next' || c.rows.some((p) => nextStepLine(p, c.now, c.tz)));
   return (
     <table ref={table} className="ch-rec-tb" data-ch-code="CH-14802">
       <caption className="ch-sr-only">Prospects, {c.rows.length} shown</caption>
@@ -137,7 +139,7 @@ function ProspectTable({ c }: { c: RecCtx }) {
             Hometown
           </th>
           <th scope="col">Stage</th>
-          {c.nextStep && (
+          {nextCol && (
             <th scope="col" className="is-next">
               Next step
             </th>
@@ -168,7 +170,7 @@ function ProspectTable({ c }: { c: RecCtx }) {
               <td>
                 <StageChip stage={p.stage} />
               </td>
-              {c.nextStep && <NextCell p={p} c={c} />}
+              {nextCol && <NextCell p={p} c={c} />}
               <td className="is-when ch-num">{whenLabel(p.updatedAt, c.now, c.tz)}</td>
             </tr>
           );
