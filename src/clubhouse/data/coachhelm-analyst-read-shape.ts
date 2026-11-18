@@ -92,6 +92,24 @@ export function toChAnalystRead(p: ReadPayload, href: (roundId: string) => strin
   };
 }
 
+/**
+ * The player's own card, from a payload already through `forPlayer`. Belt and braces: every coach field is emptied here
+ * too, so a mistake upstream still cannot draw the team sentence, the coach's verdict, the focus or an action on it.
+ */
+export function toPlayerRead(stripped: ReadPayload): ChAnalystRead {
+  const r = toChAnalystRead(stripped);
+  return {
+    ...r,
+    cardKey: null,
+    focusDraft: null,
+    team: null,
+    suppressed: null,
+    focus: null,
+    parts: r.parts.map((x) => ({ ...x, team: null })),
+    signals: r.signals.map((x) => ({ ...x, team: null })),
+  };
+}
+
 /** The coach's own actions since the read was saved, as the card's loader reads them (held tables; RLS). */
 export interface ChReadActions {
   feedback: { card_key: string; verdict: 'not_useful' | 'wrong'; reason: string; created_at: string } | null;

@@ -8,12 +8,13 @@ import 'server-only';
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { readsEnabled } from '@/lib/coachhelm/v3/analyst/reads/flag';
-import { forPlayer } from '@/lib/coachhelm/v3/analyst/reads/player-card';
+import { forPlayer, isSuppressed } from '@/lib/coachhelm/v3/analyst/reads/player-card';
 import { loadCurrentReads, loadPlayerReadActions } from '@/lib/coachhelm/v3/analyst/reads/store';
 import type { ReadPayload } from '@/lib/coachhelm/v3/analyst/reads/types';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
-import { toChAnalystRead, withCoachActions, type ChAnalystReadLoad } from './coachhelm-analyst-read-shape';
+import { toChAnalystRead, toPlayerRead, withCoachActions, type ChAnalystReadLoad } from './coachhelm-analyst-read-shape';
 
 const log = (where: string, err: unknown) => chLogServer('coachhelm.reads', where, err, 'coachhelm');
 
@@ -66,7 +67,40 @@ export async function loadPlayerOwnRead(input: { teamId: string; playerId: strin
       return { status: 'failed' };
     }
     const row = res.data.get(input.playerId);
-    return row ? { status: 'ready', payload: forPlayer(row.payload) } : { status: 'none' };
+    // A read the coach marked "not useful" or "wrong" is not shown to the player at all (and the verdict never is).
+    if (!row || isSuppressed(row.payload)) return { status: 'none' };
+    return { status: 'ready', payload: forPlayer(row.payload) };
+  } catch (err) {
+    log('player', err);
+    return { status: 'failed' };
+  }
+}
+
+/**
+ * The signed-in player's own card, for their CoachHelm (Your week), behind `coachhelm_reads_v1` for their team.
+ *
+ * Security: `golf_coach_reads` has no player SELECT policy, by design. A saved read carries coach-only blocks (the team
+ * sentence, the teammates' middle figures, the coach's own verdict and the focus verdict), and an RLS policy grants a row, not
+ * a part of one. So the player's card is read on the server with the service role, for exactly one row: the team comes
+ * from the player's own active membership read with their session (RLS), the player id is the session's (never the
+ * address's), and the payload is passed through `forPlayer` before it leaves the server. Nothing else of the row reaches the
+ * page: the card is built from the stripped payload alone.
+ */
+export async function loadPlayerOwnAnalystRead(input: { playerId: string }, deps: { client?: SupabaseClient; admin?: () => SupabaseClient; enabled?: (teamId: string) => boolean } = {}): Promise<ChAnalystReadLoad> {
+  try {
+    const sb = deps.client ?? ((await createClient()) as unknown as SupabaseClient);
+    const { data, error } = await sb.from('golf_team_members').select('team_id').eq('player_id', input.playerId).eq('status', 'active');
+    if (error) {
+      log('player.team', error);
+      return { status: 'failed' };
+    }
+    const on = deps.enabled ?? readsOnForTeam;
+    const teamId = [...new Set(((data ?? []) as Array<{ team_id: string }>).map((r) => r.team_id))].sort().find((t) => on(t));
+    if (!teamId) return { status: 'off' };
+    const admin = deps.admin ? deps.admin() : (createAdminClient() as unknown as SupabaseClient);
+    const own = await loadPlayerOwnRead({ teamId, playerId: input.playerId }, { admin, enabled: true });
+    if (own.status !== 'ready') return own;
+    return { status: 'ready', read: toPlayerRead(own.payload) };
   } catch (err) {
     log('player', err);
     return { status: 'failed' };

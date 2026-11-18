@@ -8,7 +8,7 @@ import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
 import { COURSE_TAB } from '@/lib/coachhelm/v3/team-board/flag';
 import { loadCoachPlayerFile, loadFileRoster, loadPlayerYourWeek } from '../data/coachhelm-file';
-import { loadCoachAnalystRead } from '../data/coachhelm-analyst-read';
+import { loadCoachAnalystRead, loadPlayerOwnAnalystRead } from '../data/coachhelm-analyst-read';
 import { FileSkeleton } from '../screens/coachhelm/file/FileSkeleton';
 import { PlayerFile } from '../screens/coachhelm/file/PlayerFile';
 import { YourWeek } from '../screens/coachhelm/file/YourWeek';
@@ -131,8 +131,9 @@ async function CoachPlayerFileRead({ scope, at, insight }: { scope: ChCoachPlaye
 }
 
 async function PlayerYourWeek({ playerId }: { playerId: string }) {
-  const { load } = await loadPlayerYourWeek({ playerId });
-  return <YourWeek load={load} />;
+  // The player's own CoachHelm read (flag `coachhelm_reads_v1`, their team listed) beside the week: off is nothing drawn.
+  const [{ load }, own] = await Promise.all([loadPlayerYourWeek({ playerId }), loadPlayerOwnAnalystRead({ playerId })]);
+  return <YourWeek load={load} own={own} />;
 }
 
 /** One read for a player: the session's id, never the address's; gated as `PlayerHelmView`. */

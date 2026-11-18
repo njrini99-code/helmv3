@@ -51,6 +51,85 @@ export function AnalystReadCard({ load, first, writes = LIVE_ANALYST_READ_WRITES
   return <ReadCard read={load.read} first={first} writes={writes} />;
 }
 
+/**
+ * The player's own read on Your week (flag `coachhelm_reads_v1`, their team listed), spoken to them: where their strokes
+ * go, how sure, how it was found, what would change it and the rounds behind it. No team figure, no coach's verdict, no
+ * focus and no actions: the loader serves a payload already stripped (`forPlayer`, `toPlayerRead`). Nothing is drawn when
+ * it is off or no read is saved yet.
+ */
+export function PlayerReadCard({ load }: { load: ChAnalystReadLoad | null | undefined }) {
+  const [open, setOpen] = useState(false);
+  if (!load || load.status === 'off' || load.status === 'none') return null;
+  if (load.status === 'failed') {
+    return (
+      <section className="card ch-hf-an" data-ch-anchor="analyst" role="status" data-ch-code="CH-13216">
+        <CardHead title="CoachHelm’s read of your game" />
+        <p className="card__n ch-hf-an__fail">
+          <Icon icon={TriangleAlert} size={16} />
+          Couldn’t load your read. The rest of your week is below.
+        </p>
+      </section>
+    );
+  }
+  const r = load.read;
+  return (
+    <section className="card ch-hf-an" aria-labelledby="ch-hf-an-me" data-ch-anchor="analyst" data-ch="analyst-read-player">
+      <CardHead id="ch-hf-an-me" title="CoachHelm’s read of your game" meta={<span className="ch-num">{r.through}</span>} />
+      <div className="ch-hf-an__body">
+        {r.improvement && <p className="ch-hf-an__p ch-hf-an__team">{r.improvement}</p>}
+        {r.changed && <p className="ch-hf-an__p">{r.changed}</p>}
+        <p className="ch-hf-an__head">
+          {r.certainty && <Badge tone={r.certainty === 'Clear' ? 'warning' : 'neutral'}>{r.certainty}</Badge>}
+          <b>{r.headline}</b>
+        </p>
+        {r.stale && <p className="ch-hf-an__stale">{r.stale}</p>}
+        {r.missing && <p className="ch-hf-an__p">{r.missing}</p>}
+        {r.where && <p className="ch-hf-an__p">{r.where}</p>}
+        {r.written && <WrittenBlock w={r.written} />}
+        {r.how.length > 0 && (
+          <div className="ch-hf-an__how">
+            <h5>How we found this</h5>
+            <ul>
+              {r.how.map((s) => (
+                <li key={s}>{s}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {r.change && (
+          <div className="ch-hf-an__how">
+            <h5>What would change this</h5>
+            <p>{r.change}</p>
+          </div>
+        )}
+        {r.parts.length > 0 && (
+          <div className="ch-hf-an__how" data-ch-an-parts="">
+            <h5>Your four parts</h5>
+            <ul>
+              {r.parts.map((x) => (
+                <li key={x.label}>
+                  <b>{x.label}.</b> {x.text}
+                  {x.where ? ` ${x.where}` : ''}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {r.rounds.length > 0 && (
+          <div className="ch-hf-an__foot">
+            <Button variant="secondary" size="lg" data={{ 'data-ch-an-rounds': '' }} onClick={() => setOpen(true)}>
+              The {r.rounds.length} rounds behind it
+            </Button>
+          </div>
+        )}
+      </div>
+      <Modal open={open} onClose={() => setOpen(false)} title="The rounds behind it" className="ch-htb-sheet ch-htb ch-hf ch-hf-sheet" width={480}>
+        <EvidenceRounds read={r} />
+      </Modal>
+    </section>
+  );
+}
+
 type Mark = { id: string; playerId: string; cardKey: string; verdict: 'not_useful' | 'wrong'; reason?: string | null };
 
 function ReadCard({ read: r, first, writes }: { read: ChAnalystRead; first: string; writes: ChAnalystReadWrites }) {
