@@ -785,6 +785,12 @@
 .ch-setm-skel {
   display: none;
 }
+/* The phone tree never paints on desktop. A device whose last layout was phone (the ch_phone cookie) is server-rendered
+   as the phone screen, and until hydration swaps it for the desktop page, or for as long as hydration is stuck, that tree
+   would show here unstyled as a run-on string (audit L-001, 2026-11-18). The phone query below turns it back on. */
+.ch-setm {
+  display: none;
+}
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-set:not([aria-busy='true']) {
     visibility: hidden;
