@@ -2417,7 +2417,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     it('81901 CH-8505 Turn off CoachHelm asks first; Cancel leaves the switch on', async () => {
       const { user, writes } = phone();
       await openRow(user, /^CoachHelm/);
-      const power = await screen.findByRole('region', { name: 'CoachHelm' });
+      const power = await screen.findByRole('region', { name: 'On and off' });
       const dash = within(power).getByRole('switch', { name: 'CoachHelm on your dashboards' });
       hapticSpy.mockClear();
       await user.click(dash);
@@ -2724,7 +2724,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       // An assistant coach is "Coach", not "Head coach".
       expect(screen.getByRole('button', { name: 'Maya Reyes Coach · Varsity' })).toBeTruthy();
       await openRow(first.user, /^CoachHelm/);
-      const power = await screen.findByRole('region', { name: 'CoachHelm' });
+      const power = await screen.findByRole('region', { name: 'On and off' });
       expect(within(power).getByRole('switch', { name: 'CoachHelm for the whole team' })).toBeDisabled();
       expect(within(power).getByText('Only the head coach can change this.')).toBeTruthy();
       first.unmount();
