@@ -961,9 +961,12 @@ function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'sco
     );
     after = (
       <>
-        <ShsCard title="What changed">
-          <WhatChanged data={data} />
-        </ShsCard>
+        {/* L-011: on the desk the pane sits beside the summary, which already shows What changed; the phone's pushed screen keeps it. */}
+        {!beside && (
+          <ShsCard title="What changed">
+            <WhatChanged data={data} />
+          </ShsCard>
+        )}
         <AgainstBefore compare={x.compare} rows={COMPARE_ROWS.all} previous={previous} how={SHS_HOW.scoring} />
       </>
     );
