@@ -76,9 +76,11 @@
   }
 }
 .ch-tour-cmp-tag.is-b {
-  background: var(--ch-on-fill-100);
-  box-shadow: inset 0 0 0 1.5px var(--ch-green-800);
-  color: var(--ch-green-800);
+  /* B is the page's own surface with a ringed mark, so it follows the theme (A is the filled one): in the dark it was a
+     cream tile left behind (L-060). */
+  background: var(--ch-bg-surface);
+  box-shadow: inset 0 0 0 1.5px var(--ch-chart-gain);
+  color: var(--ch-chart-gain);
 }
 
 /* The two sides (board .cd-scopes, .cd-scope) */
@@ -165,9 +167,9 @@
   box-shadow: 0 0 0 2px var(--ch-bg-surface);
 }
 .ch-tour-cmp-face__tag.is-b {
-  background: var(--ch-on-fill-100);
-  color: var(--ch-green-800);
-  box-shadow: inset 0 0 0 1.5px var(--ch-green-800), 0 0 0 2px var(--ch-bg-surface);
+  background: var(--ch-bg-surface);
+  color: var(--ch-chart-gain);
+  box-shadow: inset 0 0 0 1.5px var(--ch-chart-gain), 0 0 0 2px var(--ch-bg-surface);
 }
 .ch-tour-cmp-title {
   display: block;
@@ -309,7 +311,8 @@
   width: 10px;
   height: 10px;
   border-radius: var(--ch-radius-full);
-  background: var(--ch-green-800);
+  /* The deep green is the page's own ground at night (L-008): the chart gain ink is deep green by day, mint by night. */
+  background: var(--ch-chart-gain);
   transform: rotate(45deg);
 }
 .ch-tour-cmp-tl__legend .q {

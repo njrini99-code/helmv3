@@ -643,7 +643,7 @@ path.ch-rt-map__shot {
 .ch-rt-rs__n.is-sand,
 .ch-rt-rs__n.is-other,
 .ch-rt-rs__n.is-penalty {
-  background: #8e7b4e;
+  background: #75653f; /* ivory numeral 5.3:1 (was #8e7b4e, 3.7:1) */
 }
 .ch-rt-log__dots i.is-hole,
 .ch-rt-log__n.is-hole,
@@ -2049,7 +2049,7 @@ path.ch-rt-map__shot {
 :where(html[data-fw-theme='dark']) .ch-rt-rs__n.is-sand,
 :where(html[data-fw-theme='dark']) .ch-rt-rs__n.is-other,
 :where(html[data-fw-theme='dark']) .ch-rt-rs__n.is-penalty {
-  background: #75653f;
+  background: #6b5c38;
 }
 :where(html[data-fw-theme='dark']) .ch-rt-panel {
   box-shadow:
@@ -2162,7 +2162,7 @@ path.ch-rt-map__shot {
   overflow: hidden;
 }
 .ch-rtcv-d::backdrop {
-  background: rgb(4 20 12 / 0.62);
+  background: var(--ch-scrim-deep, rgb(28 25 18 / 0.38));
   /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
   opacity: var(--ch-scrim-a, 1);
   transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));

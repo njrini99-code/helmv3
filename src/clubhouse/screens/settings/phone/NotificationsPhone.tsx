@@ -129,7 +129,7 @@ function DeliveryPhone({
               onChange={() => {}}
             />
           ) : (
-            <SwitchRow label="Weekly team email" checked={dg} disabled={emailPaused} busy={pending.has('digest')} onChange={flipDigest} />
+            <SwitchRow label="Weekly team email" help={emailPaused ? 'Email is paused for everyone right now.' : undefined} checked={dg} disabled={emailPaused} busy={pending.has('digest')} onChange={flipDigest} />
           )}
         </Group>
       )}

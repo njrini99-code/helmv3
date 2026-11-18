@@ -65,7 +65,7 @@ describe('chart marks hold 3:1 on what they sit on', () => {
   it('keeps a station and a coin readable off the hole, on the lightest stage green', () => {
     const stage = '#0f4430';
     const station = Number(ruleDecl(team, '.ch-htb .hole.offh .stn', 'opacity'));
-    const coin = Number(ruleDecl(team, '.ch-htb .hole.offh .scn', 'opacity'));
+    const coin = Number(ruleDecl(team, '.ch-htb .hole.offh .scn circle', 'opacity'));
     expect(ratio(mix(firstDecl(tokens, '--ch-feature-loss'), stage, station), stage)).toBeGreaterThanOrEqual(3);
     expect(ratio(mix(firstDecl(tokens, '--ch-feature-ink'), stage, coin), stage)).toBeGreaterThanOrEqual(3);
   });

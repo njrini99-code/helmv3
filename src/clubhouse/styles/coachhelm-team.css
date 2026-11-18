@@ -321,6 +321,11 @@
 .ch-htb .hudsvg [data-year='fr'] {
   --ch-coin:var(--ch-yr-fr);
 }
+/* A coin with no class year is the flat chart grey, light at night: white initials were 2.1:1 on it (L-010). */
+.ch-htb .scn:not([data-year], .early, .is-more) text,
+.ch-htb .hudsvg .hp:not([data-year], .early) text {
+  fill:var(--ch-chart-flat-ink);
+}
 .ch-htb .scn text {
   fill:var(--ch-yr-ink);
   text-anchor:middle;
@@ -444,7 +449,8 @@
 .ch-htb .hole.offh .stn {
   opacity:.6;
 }
-.ch-htb .hole.offh .scn {
+/* Only the disc steps back: its initials keep full ink (L-010: faded text read 2.7:1). */
+.ch-htb .hole.offh .scn circle {
   opacity:.65;
   transition:opacity var(--ch-dur-base) var(--ch-ease);
 }
@@ -944,8 +950,8 @@
   stroke-dasharray:4 4;
 }
 .ch-htb .hudsvg .q {
-  fill:var(--ch-ink-500);
-  font: var(--ch-type-11); letter-spacing: var(--ch-track-11); }
+  fill:var(--ch-text-secondary);
+  font: var(--ch-type-caption); }
 .ch-htb .hudsvg .axl {
   fill:var(--ch-ink-600);
   font: var(--ch-type-caption);

@@ -1839,6 +1839,11 @@
   font: 600 11px var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   fill: var(--ch-text-secondary);
+  /* A card-coloured halo behind every value, so a mean line, a gridline or the next label never strikes through it (L-009). */
+  stroke: var(--ch-sheet-bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  paint-order: stroke;
 }
 .ch-ph-chart__val.is-under {
   fill: var(--ch-score-under);
@@ -1983,10 +1988,11 @@
   flex: 1;
   height: 8px;
   border-radius: var(--ch-radius-full);
-  background: var(--ch-ivory-300);
+  /* A round over par: a mark at 3:1 on the card, not the ivory wash it was (L-008). */
+  background: var(--ch-ink-400);
 }
 .ch-ph-viz--rounds i.is-even {
-  background: var(--ch-green-200);
+  background: var(--ch-green-400);
 }
 .ch-ph-viz--rounds i.is-under {
   background: var(--ch-score-under);

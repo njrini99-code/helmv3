@@ -481,6 +481,11 @@
   letter-spacing: var(--ch-track-11);
   fill: var(--ch-text-secondary);
   font-variant-numeric: tabular-nums;
+  /* The ground's colour as a halo, so a gridline or the average line does not strike through the figure (L-009). */
+  stroke: var(--ch-rd-halo, var(--ch-sheet-bg));
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  paint-order: stroke;
 }
 .ch-rd-rib__v.is-under {
   fill: var(--ch-score-under);
@@ -3047,6 +3052,20 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
+/* The recap sits on the page at every width, so the debrief's labels take the page's inks: --ch-hero-mint is a dark-hero
+   token and was nearly invisible here on desk (RC-4). */
+.ch-rv .ch-rv-debrief__l dt {
+  color: var(--ch-text-tertiary);
+}
+.ch-rv .ch-rv-debrief__l dd {
+  color: var(--ch-text-secondary);
+}
+.ch-rv .ch-rv-debrief__l dd b {
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rv-debrief__why {
+  color: var(--ch-accent-ink);
+}
 .ch-rv .ch-rv-recap__by {
   font: var(--ch-type-13);
 
@@ -4027,6 +4046,13 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   background-clip: text;
   color: transparent;
 }
+/* At night green-900 is near the zone's own ground and the figure's lower half vanished (L-025): the same mint stops as
+   .ch-znbig (ui.css). */
+:where(html[data-fw-theme='dark']) .ch-rv .ch-rzpair b {
+  background: linear-gradient(180deg, var(--ch-forest-900), var(--ch-green-700));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
 
 /* costliest holes */
 .ch-rv .ch-rzcost__n {
@@ -4332,6 +4358,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   --ch-rd-chip: rgb(231 184 102 / 0.16);
   --ch-rd-chip-ring: rgb(231 184 102 / 0.5);
   --ch-rd-under-ink: var(--ch-stage-gain);
+  --ch-rd-halo: var(--ch-stage-bg);
   position: relative;
   margin-top: 32px;
   padding: 16px 24px 8px;
@@ -4542,6 +4569,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   --ch-rd-avg-ink: var(--ch-green-500);
   --ch-rd-chip: var(--ch-green-50);
   --ch-rd-chip-ring: rgb(21 90 57 / 0.25);
+  --ch-rd-halo: var(--ch-sheet-bg);
   margin-top: 4px;
   padding: 0;
   border-radius: 0;

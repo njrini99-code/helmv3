@@ -108,7 +108,7 @@
   /* Status (text on tint) */
   --ch-positive-600: #1c6b43;
   --ch-positive-100: #e6f2ea;
-  --ch-warning-600: #8a5a0c;
+  --ch-warning-600: #7a4e09; /* was #8a5a0c: 4.4:1 on the sheet's parchment, 5.4:1 now (L-023) */
   --ch-warning-100: #faf0dc;
   --ch-danger-600: #b03a2e;
   --ch-danger-100: #fbe9e6;
@@ -729,6 +729,7 @@
   --ch-loss: var(--ch-chart-loss);
   --ch-flag: #b3261e;
   --ch-chart-flat: #6b675f;
+  --ch-chart-flat-ink: #ffffff; /* initials on the flat coin: 5.5:1 */
   /* S2.6: track and par stay light; their 1px --ch-border-control ring is what reaches 3:1 (3.72:1). */
   --ch-chart-track: #e3ddcf;
   /* A track and a par bar are light fills (1.30:1); their 1px control ring is what holds 3:1 on the card (audit S2.6). */
@@ -950,6 +951,7 @@
      never a blur, which re-blurs the page on every frame of a WebKit open. Read by ::backdrop, which inherits it from
      the dialog; each use keeps the light value as its fallback. */
   --ch-scrim: rgb(28 25 18 / 0.24); /* the one scrim under sheets and dialogs (MOTION-AND-VISUAL 4.6) */
+  --ch-scrim-deep: rgb(28 25 18 / 0.38); /* the heavy case: a centred card, a peek, the track's sheet. Two levels only (L-052) */
   /* Materials on the green hero (the content layer is dark there). Raised: a lighter tonal green with a mint-lit top
      edge and a deep green cast shadow (ink shadows vanish on green). Well: one recess darker than the hero. Control: a
      raised green face that compresses on press. */
@@ -1078,6 +1080,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-loss: var(--ch-chart-loss);
   --ch-flag: #f28b7d;
   --ch-chart-flat: #a39d90;
+  --ch-chart-flat-ink: #151a16; /* initials on the flat coin at night: about 7:1 */
   --ch-chart-track: #2c322d;
   --ch-separator-chart: #7a7568;
   --ch-chart-gilt: var(--ch-champagne-500);
@@ -1347,6 +1350,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-raised-bg: var(--ch-bg-elevated);
   --ch-sheet-bg: var(--ch-card-bg);
   --ch-scrim: rgb(2 6 4 / 0.58);
+  --ch-scrim-deep: rgb(2 6 4 / 0.66);
   --ch-skel-base: #2f382f;
   --ch-skel-sheen: #3c463d;
 }

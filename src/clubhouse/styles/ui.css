@@ -1286,7 +1286,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 /* A solid wash, never a blur (motion pass 2026-10-22, mot-02): the backdrop fades in, and a blur under a fading layer
    re-blurs the page on every frame of the open and the close. The deeper tint keeps the card lifted. */
 .ch-peek::backdrop {
-  background: rgb(20 20 18 / 0.36);
+  background: var(--ch-scrim-deep, rgb(28 25 18 / 0.38));
   /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
   opacity: var(--ch-scrim-a, 1);
   transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
@@ -1405,18 +1405,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   gap: 4px;
   padding: 0 4px;
 }
-:where(html[data-fw-theme='dark']) .ch-peek::backdrop {
-  background: rgb(0 0 0 / 0.5);
-}
-/* The phone's tint is a shade deeper again (motion audit 2026-10-12): the card covers more of a small screen. */
-@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-peek::backdrop {
-    background: rgb(20 20 18 / 0.4);
-  }
-  :where(html[data-fw-theme='dark']) .ch-peek::backdrop {
-    background: rgb(0 0 0 / 0.58);
-  }
-}
+/* One deep scrim on every size and theme (L-052: the peek had four dim levels of its own); the token flips at night. */
 
 /* The player peek's card (ui/PlayerPeek.tsx, CH-1832). The reason is ink; its icon carries the amber (D5-1). */
 .ch-ppeek {
@@ -1575,6 +1564,9 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: var(--ch-text-primary);
   font: var(--ch-type-body);
   text-align: right;
+}
+.ch-set-course__pin::placeholder {
+  color: var(--ch-text-placeholder);
 }
 .ch-set-course__save {
   color: var(--ch-green-700);

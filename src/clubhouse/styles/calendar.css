@@ -198,6 +198,15 @@
   margin-right: 8px;
   border-radius: 50%;
 }
+/* The legend's markers are non-text marks and hold 3:1 in both themes (L-008): the tournament dot is the chart's deep green
+   by day and mint at night (green-800 is the page's own ground then), and travel a ring, as the month's marker is. */
+.ch-cal-legend i.ch-dot-tournament {
+  background: var(--ch-chart-gain);
+}
+.ch-cal-legend i.ch-dot-travel {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500);
+}
 .ch-dot-practice,
 .ch-dot-workout {
   background: var(--ch-green-fill-500);

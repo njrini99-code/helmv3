@@ -1,5 +1,31 @@
 # Clubhouse changelog
 
+## 2026-11-18 — Polish sweep, waves 1 and 2: contrast, night parity, one scrim pair
+
+```text
+Design package: none
+PR/commit:      agent/clubhouse-polish-fixes
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Token level: `--ch-warning-600` light is #7a4e09 (was #8a5a0c, 4.4:1 on the sheet parchment), new `--ch-chart-flat-ink`
+  (initials on the flat chart coin) and `--ch-scrim-deep` (the heavy dim; `--ch-scrim` stays the light one).
+- Contrast: the "How stats are counted" link uses `--ch-accent-ink`; the Hub task box, the qualifier thru ring, the Home
+  under-par pips and the Calendar and Compare legend marks reach 3:1; the CoachHelm coin initials keep full ink off the
+  hole and on the flat coin at night; the Round Review pair figures take the night gradient; the desk qualifier plate
+  takes the page's under-par ink; the Home course placeholder takes `--ch-text-placeholder`.
+- Chart value labels (Home Scoring, Rounds ribbon) draw a ground-coloured halo behind the figure.
+- One disabled state for the CoachHelm send key (muted fill, tertiary ink), one rounded-square shape.
+- Compare's B badge follows the theme. The New round desk dock is 0.97 opaque, the empty scorecard's hole numbers are
+  not faded.
+- Overlays: peek, modal and the track's sheet use `--ch-scrim-deep`; the stale `rgb(20 20 18 / .36)` fallbacks match the
+  token. Test: `src/clubhouse/__tests__/polish-contrast-w1.test.ts`.
+
 ## 2026-10-21 — Two imports at once save a class once (doc-61)
 
 ```text
