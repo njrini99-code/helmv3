@@ -232,7 +232,7 @@ function TeammateList({ rows, view, q, onClearSearch, clock }: { rows: ChTeammat
             <span className="ch-rs-face__meta">{[p.isYou ? 'You' : null, yearLineOf(p.gradYear, clock)].filter(Boolean).join(' · ') || ' '}</span>
             <span className="ch-rs-face__figs ch-rs-face__figs--one">
               <span>
-                <b className="ch-num">{formatHcp(p.handicap)}</b>HCP
+                <b className="ch-num">{formatHcp(p.handicap)}</b>Handicap
               </span>
             </span>
           </li>
@@ -246,7 +246,7 @@ function TeammateList({ rows, view, q, onClearSearch, clock }: { rows: ChTeammat
         <span role="columnheader">Player</span>
         <span role="columnheader">Class</span>
         <span role="columnheader" className="r">
-          HCP
+          Handicap
         </span>
       </div>
       {rows.map((p) => (

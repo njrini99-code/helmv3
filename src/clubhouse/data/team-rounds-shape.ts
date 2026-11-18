@@ -1,4 +1,5 @@
 import { countsTowardAverage, toLibraryRound, type ChLibraryRound, type ChRoundListRow } from './rounds-shape';
+import { mean } from '../lib/stats-signal';
 
 /**
  * The coach's Team rounds list: the data shapes and the pure steps that build them, kept apart from the server loader
@@ -69,7 +70,6 @@ export function toTeamRounds(rows: readonly ChTeamRoundRow[], names: ReadonlyMap
   return { list, unscored };
 }
 
-const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
 /** The team's season figures from the listed rounds: countable, 18 holes, since `since` (the rule the player's Rounds season uses). */
 export function teamSeasonFrom(list: readonly ChTeamRound[], since: string): ChTeamSeason {

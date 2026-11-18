@@ -2074,6 +2074,9 @@ main.ch-prc-planpage > .ch-backlink {
 .ch-prc-glance li > span:first-child {
   color: var(--ch-text-secondary);
 }
+.ch-prc-glance__more > span:last-child {
+  color: var(--ch-text-secondary);
+}
 .ch-prc-checks {
   display: grid;
   margin: 0;

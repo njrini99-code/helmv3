@@ -1,5 +1,5 @@
 import { formatMetricText, getMetricDefinition, isGolfMetricId } from '@/lib/golf/metrics/display-registry';
-import { NO_DATA } from '../../lib/format';
+import { formatSigned, NO_DATA } from '../../lib/format';
 
 /**
  * Focus areas and goals as people read them (F-54): a metric goal titled by its id ("Goal — putts_made_3_5ft_pct")
@@ -23,6 +23,8 @@ export function devMetric(title: string, metric?: string | null): string | null 
 
 export function devValue(v: number | null | undefined, metric: string | null): string {
   if (v == null || !Number.isFinite(v)) return NO_DATA;
+  // Strokes gained is signed at one decimal everywhere (owner decision 11); the registry's two places were "−1.54" beside "−1.7" (L-016).
+  if (metric && isGolfMetricId(metric) && getMetricDefinition(metric).kind === 'strokes_gained') return formatSigned(v, 1);
   if (metric) return formatMetricText(metric, v);
   return String(Math.round(v * 100) / 100);
 }

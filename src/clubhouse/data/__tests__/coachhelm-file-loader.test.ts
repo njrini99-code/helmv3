@@ -324,7 +324,7 @@ describe('Where the strokes go reads the rounds, the one strokes-gained source',
     expect(sg?.rows.map((r) => r.figure)).toEqual(['−0.5', '−0.5', '−0.5', '−0.5']);
     expect(sg?.rows.every((r) => r.team == null)).toBe(true);
     expect(sg?.hasTeam).toBe(false);
-    expect(sg?.source).toBe('Last 4 rounds · strokes per round');
+    expect(sg?.source).toBe('Based on the last 4 rounds');
     expect(load.data.failed.sg).toBeUndefined();
     // No shot rows for these rounds: their strokes gained was estimated from the scorecard, and the card carries that.
     expect(sg?.mix).toEqual({ measured: 0, estimated: 4, estimatedCounted: true });

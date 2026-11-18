@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { boardRoundsWords, courseReads, stationOrder, readsDrawn, type ChReadWorth, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { boardRoundsWords, courseReads, stationOrder, readsDrawn, STATIONS, type ChReadWorth, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { formatSigned } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
@@ -11,7 +11,7 @@ import { useRefresh } from '../../../lib/use-refresh';
 import { CoachHelmHead } from '../CoachHelmHead';
 import { useChSessionState } from '../../../lib/session-state';
 import { plural } from '../../../lib/plural';
-import { sgBaseline } from '../../../lib/sg';
+import { sgBaseline, sgPartsRoundOff, SG_ROUNDING_NOTE } from '../../../lib/sg';
 import { Notice, ReadWorthContext } from './parts';
 import { rebuiltHref } from '../../../shell/nav';
 import { CoachHelmOffNotice } from '../CoachHelmOffNotice';
@@ -93,6 +93,9 @@ function Hero({
   const est = has && sgIsEstimate(data.teamTotal.sgMix);
   const mixLine = has ? (est ? 'Estimated from the scorecard' : sgMixShort(data.teamTotal.sgMix)) : null;
   const mixSaid = has ? sgMixWords(data.teamTotal.sgMix) : null;
+  // The four parts print at one decimal and the total on its own, so they can sit 0.1 off it (−5.7 against −5.8): said, never forced to add up (L-060).
+  const legTeam = STATIONS.map((st) => data.stations[st].team);
+  const partsRoundOff = legTeam.every((v) => v != null) && sgPartsRoundOff(legTeam, data.teamTotal.strokes);
   // The sign carries the direction for the eye; the words carry it for a screen reader (QA-7).
   const figure = (
     <div className="hn" role="group" aria-label={`${formatSigned(data.teamTotal.strokes)} a round ${betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}, ${windowLine.toLowerCase()}${mixSaid ? `. ${mixSaid}` : ''}`}>
@@ -108,6 +111,12 @@ function Hero({
           <>
             <br />
             <span data-ch-sg-mix="">{mixLine}</span>
+          </>
+        )}
+        {partsRoundOff && (
+          <>
+            <br />
+            <span data-ch-sg-round="">{SG_ROUNDING_NOTE}</span>
           </>
         )}
       </span>

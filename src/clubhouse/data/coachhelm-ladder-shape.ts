@@ -1,6 +1,7 @@
 import type { InsightCategory } from '@/lib/coachhelm/v2/insights/types';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { formatSigned } from '../lib/format';
+import { SG_LEG_LABEL } from '../lib/sg';
 import { PLAYER_HELM_HREF } from './coachhelm-views-shape';
 
 /**
@@ -66,10 +67,10 @@ export interface ChLadder {
 }
 
 const AREAS: ReadonlyArray<{ id: ChLadderAreaId; label: string; metric: string }> = [
-  { id: 'tee', label: 'Off the tee', metric: 'sg_ott' },
-  { id: 'approach', label: 'Approach', metric: 'sg_approach' },
-  { id: 'short_game', label: 'Around the green', metric: 'sg_around_green' },
-  { id: 'putting', label: 'Putting', metric: 'sg_putting' },
+  { id: 'tee', label: SG_LEG_LABEL.tee, metric: 'sg_ott' },
+  { id: 'approach', label: SG_LEG_LABEL.approach, metric: 'sg_approach' },
+  { id: 'short_game', label: SG_LEG_LABEL.around, metric: 'sg_around_green' },
+  { id: 'putting', label: SG_LEG_LABEL.putting, metric: 'sg_putting' },
 ];
 
 /** The strokes-gained metrics the ladder draws; the Standing groups leave them out so no number is drawn twice. */

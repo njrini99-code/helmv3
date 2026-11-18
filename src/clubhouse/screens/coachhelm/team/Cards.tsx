@@ -72,7 +72,7 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
     <section className={'card' + (phone ? '' : ' rost')} data-ch-team-card="roster" aria-label="Roster">
       <div className="ch">
         <h4>Roster</h4>
-        <span className="meta">{phone ? 'T · A · S · P' : 'Finger-print: tee, approach, short game, putting'}</span>
+        <span className="meta">{phone ? 'T · A · S · P' : 'Fingerprint: off the tee, approach, around the green, putting'}</span>
       </div>
       {sorted.map((p) => {
         const open = p.reads.needs.length + p.reads.working.length;

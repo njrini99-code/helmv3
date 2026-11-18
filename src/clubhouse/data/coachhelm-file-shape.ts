@@ -11,6 +11,7 @@ import type { ChCoachPlayerHead } from './coachhelm-views-shape';
 import type { ChHelmLifecycle } from './coachhelm-shape';
 import { changeTone, formatSigned, formatFixed } from '../lib/format';
 import { plural } from '../lib/plural';
+import { SG_LEG_LABEL } from '../lib/sg';
 import { deltaTone, sampleSd, standardError } from '../lib/stats-signal';
 import type { ChFigures, ChLegKey } from './figure-window';
 import type { ChSgMix } from './stats-sg-mix';
@@ -34,9 +35,9 @@ export interface ChFileSgRow {
 export interface ChFileSg {
   rows: ChFileSgRow[];
   hasTeam: boolean;
-  /** "Against the Tour, off the tee costs Eli 0.9 a round; against the team, 0.7." */
+  /** "Off the tee costs Eli 0.9 strokes a round against the Tour, and 0.7 against the team." */
   note: string | null;
-  /** "Last 10 rounds · strokes per round": the rounds the figures read. */
+  /** "Based on the last 10 rounds (8 with hole scores)": the rounds the figures read. */
   source: string;
   /** The Standing page's own window ("All time", "This season"), said on the link to it: its legs are that window's, not these. */
   standing?: string | null;
@@ -90,10 +91,10 @@ export function toChFileSg(ladder: ChLadder, rows: readonly PlayerStanding[], wh
 export const FILE_TEAM_FLOOR = 5;
 
 const FILE_LEGS: ReadonlyArray<{ id: string; label: string; key: ChLegKey }> = [
-  { id: 'tee', label: 'Off the tee', key: 'tee' },
-  { id: 'approach', label: 'Approach', key: 'approach' },
-  { id: 'short_game', label: 'Around the green', key: 'around' },
-  { id: 'putting', label: 'Putting', key: 'putting' },
+  { id: 'tee', label: SG_LEG_LABEL.tee, key: 'tee' },
+  { id: 'approach', label: SG_LEG_LABEL.approach, key: 'approach' },
+  { id: 'short_game', label: SG_LEG_LABEL.around, key: 'around' },
+  { id: 'putting', label: SG_LEG_LABEL.putting, key: 'putting' },
 ];
 
 /** The window line under the card: the rounds the figures really read, so it can never be taken for another screen's window. */
@@ -101,9 +102,9 @@ const FILE_LEGS: ReadonlyArray<{ id: string; label: string; key: ChLegKey }> = [
 export const FILE_SG_FLOOR = 3;
 
 export function fileSgSource(fig: Pick<ChFigures, 'rounds' | 'holeRounds'>): string {
-  if (fig.rounds === 0) return 'No counted rounds yet · strokes per round';
-  const window = fig.rounds >= 10 ? 'Last 10 rounds' : `Last ${plural(fig.rounds, 'round')}`;
-  return `${window}${fig.holeRounds < fig.rounds ? ` · ${fig.holeRounds} with hole scores` : ''} · strokes per round`;
+  if (fig.rounds === 0) return 'No counted rounds yet';
+  const window = fig.rounds >= 10 ? 'the last 10 rounds' : `the last ${plural(fig.rounds, 'round')}`;
+  return `Based on ${window}${fig.holeRounds < fig.rounds ? ` (${fig.holeRounds} with hole scores)` : ''}`;
 }
 
 /**
@@ -126,10 +127,11 @@ export function toChFileSgOver(fig: ChFigures, team: { legs: ReadonlyArray<numbe
   const costs = (v: number) => formatFixed(Math.abs(v), 1);
   let note: string | null = null;
   if (worst && Number(formatFixed(worst.strokes as number, 1)) < 0) {
-    note = `Against the Tour, ${worst.label.toLowerCase()} costs ${who.you ? 'you' : who.first} ${costs(worst.strokes as number)} a round`;
+    // The unit is in the sentence ("3.1 strokes a round"), and the window is the source line's, so no clause dangles.
+    note = `${worst.label} costs ${who.you ? 'you' : who.first} ${costs(worst.strokes as number)} strokes a round against the Tour`;
     // "Against the team" only when the player is behind the team there, and by a figure that prints.
     const gap = worst.team == null ? null : (worst.strokes as number) - worst.team;
-    note += gap != null && Number(formatFixed(gap, 1)) < 0 ? `; against the team, ${costs(gap)}.` : '.';
+    note += gap != null && Number(formatFixed(gap, 1)) < 0 ? `, and ${costs(gap)} against the team.` : '.';
   }
   // No figure at all: either no round was posted hole by hole, or there are fewer than the three such rounds a figure needs. The card
   // used to give the first reason for both, which told a player with two hole-by-hole rounds that those rounds were missing.
@@ -313,10 +315,10 @@ export const FILE_ALERTS: ReadonlyArray<{ id: AlertPosture; label: string }> = [
   { id: 'silent', label: 'Silent' },
 ];
 export const FILE_AREAS: ReadonlyArray<{ id: string; label: string }> = [
-  { id: 'tee', label: 'Off the tee' },
-  { id: 'approach', label: 'Approach' },
-  { id: 'short_game', label: 'Around the green' },
-  { id: 'putting', label: 'Putting' },
+  { id: 'tee', label: SG_LEG_LABEL.tee },
+  { id: 'approach', label: SG_LEG_LABEL.approach },
+  { id: 'short_game', label: SG_LEG_LABEL.around },
+  { id: 'putting', label: SG_LEG_LABEL.putting },
   { id: 'course_management', label: 'Course management' },
 ];
 

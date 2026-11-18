@@ -44,9 +44,15 @@ function sourceLine(data: ChHoursData): string {
   return 'Division I until you set your limits';
 }
 
-function DayCell({ day, flags }: { day: ChHoursRow['days'][number]; flags: ChHoursFlag[] }) {
+/**
+ * A week with nothing logged at all is no data, not seven days off: its cells are "—" (L-018). "Off" is for a day with nothing
+ * counted in a week where the player did log hours, so it still means a real day off.
+ */
+const noHoursLogged = (r: ChHoursRow) => r.total === 0 && r.days.every((d) => d.off && !d.unknown);
+
+function DayCell({ day, flags, none }: { day: ChHoursRow['days'][number]; flags: ChHoursFlag[]; none: boolean }) {
   const warn = flags.some((f) => f.date === day.date && DAY_FLAGS.has(f.kind));
-  const text = day.off ? 'Off' : hoursCell(day.hours, day.unknown);
+  const text = day.off && !none ? 'Off' : hoursCell(day.hours, day.unknown);
   return (
     <span role="cell" className={'r ch-num ch-hrs-td' + (warn ? ' is-warn' : '') + (day.off ? ' is-off' : '') + (day.competition ? ' is-comp' : '')}>
       {text}
@@ -106,13 +112,13 @@ function HoursTable({ week, title }: { week: ChHoursWeek; title: string }) {
                 {r.year && <span className="ch-hrs-who__y">{r.year}</span>}
               </span>
               {r.days.map((d) => (
-                <DayCell key={d.date} day={d} flags={r.flags} />
+                <DayCell key={d.date} day={d} flags={r.flags} none={noHoursLogged(r)} />
               ))}
               <span role="cell" className={'r ch-num ch-hrs-td ch-hrs-td--wk' + (weekWarn ? ' is-warn' : '')}>
                 {weekCellText(r, week.limits)}
               </span>
               <span role="cell" className={'r ch-num ch-hrs-td' + (offWarn ? ' is-warn' : '')}>
-                {r.off}
+                {noHoursLogged(r) ? hoursCell(0) : r.off}
               </span>
             </div>
             {r.flags.length > 0 && (
@@ -150,7 +156,7 @@ function HoursList({ week, self }: { week: ChHoursWeek; self: boolean }) {
                   </span>
                   <span className="ch-num">
                     <span className="ch-sr-only">{shortDay(d.date)}: </span>
-                    {d.off ? 'Off' : hoursCell(d.hours, d.unknown)}
+                    {d.off && !noHoursLogged(r) ? 'Off' : hoursCell(d.hours, d.unknown)}
                   </span>
                 </li>
               );

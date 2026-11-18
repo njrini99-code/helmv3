@@ -1,5 +1,6 @@
 import { clampRadius } from '../../../lib/chart-geometry';
 import { TERMS } from '../../../lib/glossary';
+import { SG_LEG_LABEL } from '../../../lib/sg';
 import type { ChStation } from '../../../data/coachhelm-team-shape';
 
 /** The page's `HOLE.v` and `HOLE.h` tables, as typed constants; the key names move to the app's stations (AC-HOLE-03). */
@@ -138,5 +139,6 @@ export function coinSlots(H: HoleGeometry, s: ChStation, r: number, drawn: numbe
   return slots.map(([x, y]) => [x + dx, y + dy]);
 }
 
-export const STATION_NAME: Record<ChStation, string> ={ tee: 'Off the tee', approach: 'Approach', short_game: 'Around the green', putting: 'Putting' };
+export const STATION_NAME: Record<ChStation, string> = { tee: SG_LEG_LABEL.tee, approach: SG_LEG_LABEL.approach, short_game: SG_LEG_LABEL.around, putting: SG_LEG_LABEL.putting };
+// The worm's compact names (its drawing sizes to them, and the leg picker reads their first letters): `STATION_NAME` is the one full name.
 export const STATION_SHORT: Record<ChStation, string> = { tee: 'Tee', approach: 'Approach', short_game: TERMS.shortGame.short, putting: 'Putting' };

@@ -188,7 +188,7 @@ describe('words', () => {
     expect(thruText(lane({ thru: 0 }))).toBe('not started');
   });
   it('says to-par in words, even par included', () => {
-    expect([-2, 0, 3, null].map(toParWords)).toEqual(['2 under par', 'even par', '3 over par', 'no score yet']);
+    expect([-2, 0, 3, null].map((v) => toParWords(v))).toEqual(['2 under par', 'even par', '3 over par', 'no score yet']);
   });
   it('reads a lane as one sentence for VoiceOver, stale and quiet lanes included', () => {
     expect(laneAria(lane({ toPar: -2, thru: 3, currentHole: 4 }), NOW)).toBe('Sofia Reyes, 2 under par through 3, playing hole 4, par 3. Qualifier, round 2.');

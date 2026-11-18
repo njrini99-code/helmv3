@@ -11,7 +11,7 @@ import { useRefresh } from '../../lib/use-refresh';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useHScroll, useKeepInView } from '../../ui/use-hscroll';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { PhoneIconAction } from '../../ui/PhoneBar';
 import { Avatar } from '../../ui/Avatar';
@@ -469,16 +469,28 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
   );
 }
 
+/** The blocks a template card lists before "+N more blocks". */
+const GLANCE_BLOCKS = 3;
+
 /** A template's first few rows, from its own body: the same glance Documents draws. */
 function BodyGlance({ body }: { body: PlanBodyV2 }) {
+  const blocks = body.variants.main.blocks;
+  const more = blocks.length - GLANCE_BLOCKS;
   return (
     <ul className="ch-prc-glance" aria-hidden="true">
-      {body.variants.main.blocks.slice(0, 3).map((b) => (
+      {blocks.slice(0, GLANCE_BLOCKS).map((b) => (
         <li key={b.id}>
           <span className="ch-num">{b.len} min</span>
           <span>{b.title}</span>
         </li>
       ))}
+      {/* The three rows are not the whole session: say how many more there are, so the glance adds up to the card's total (L-019). */}
+      {more > 0 && (
+        <li className="ch-prc-glance__more">
+          <span aria-hidden="true" />
+          <span>{`+${more} more ${pluralWord(more, 'block')}`}</span>
+        </li>
+      )}
     </ul>
   );
 }

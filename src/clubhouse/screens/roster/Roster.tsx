@@ -880,7 +880,7 @@ function RosterList({
                 </SortHeader>
               )}
               <SortHeader k="hcp" sort={sortBy} onSort={onSort} end>
-                HCP
+                Handicap
               </SortHeader>
               <span role="columnheader" className="r">{'SG/rd'}</span>
               <SortHeader k="rounds" sort={sortBy} onSort={onSort} end>

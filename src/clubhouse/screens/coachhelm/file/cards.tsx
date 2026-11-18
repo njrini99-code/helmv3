@@ -12,7 +12,8 @@ import type { ReactNode } from 'react';
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import { FILE_SG_FLOOR, FILE_SIGN, fileAimLabel, fileAlertLabel, fileAreaLabel, playerKicker, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileSg, type ChFileStage, type ChFileTrack } from '../../../data/coachhelm-file-shape';
 import { stanceOf, type ChInsight } from '../../../data/coachhelm-shape';
-import { formatFixed } from '../../../lib/format';
+import { formatFixed, MINUS } from '../../../lib/format';
+import { sgScale, sgShare } from '../../../lib/sg';
 import { Icon } from '../../../ui/Icon';
 import { lineY } from '../../../ui/charts/Line';
 import type { ChFocusActions } from '../parts';
@@ -375,6 +376,7 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
   // Where the rounds' strokes gained came from (stats-sg-mix.ts): figures that are all estimate are marked in the head, and the note
   // says how many rounds were shot-tracked. Nothing is added when every round was.
   const mix = sg.needsHoles ? null : sgMixWords(sg.mix);
+  const scale = sgScale([...sg.rows.map((r) => r.strokes), ...sg.rows.map((r) => r.team)]);
   const est = !sg.needsHoles && sgIsEstimate(sg.mix);
   return (
     <section className="card" aria-labelledby="ch-hf-sg" data-ch-anchor="sg">
@@ -383,13 +385,16 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
       <div className="card__b">
         <div className="sg">
           {sg.rows.map((r) => {
-            const width = r.strokes == null ? 0 : Math.min(1, Math.abs(r.strokes)) * 50;
+            // A bar's length is its value on the card's own scale (the largest figure, whole strokes, never under 1), so −1.7 and −3.1
+            // are not both a full bar; a leg that prints 0.0 draws nothing, not a nub (L-014).
+            const shown = r.strokes != null && Number(formatFixed(r.strokes, 1)) !== 0;
+            const width = r.strokes == null ? 0 : sgShare(r.strokes, scale) * 50;
             return (
               <div className="sg__row" key={r.id}>
                 <span>{r.label}</span>
                 <div className="sg__trk">
-                  {r.strokes != null && <i className={`sg__bar ${toneOfStrokes(r.strokes)}`} style={{ width: `${width}%` }} />}
-                  {r.team != null && <i className="sg__team" style={{ left: `${50 + Math.max(-1, Math.min(1, r.team)) * 50}%` }} />}
+                  {shown && <i className={`sg__bar ${toneOfStrokes(r.strokes!)}`} style={{ width: `${width}%` }} />}
+                  {r.team != null && <i className="sg__team" style={{ left: `${50 + Math.max(-1, Math.min(1, r.team / scale)) * 50}%` }} />}
                 </div>
                 <b className={r.tone === 'none' ? 'none' : r.tone}>{r.figure}</b>
               </div>
@@ -398,9 +403,9 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
           <div className="sg__axis">
             <span />
             <div>
-              <span>−1.0</span>
+              <span>{`${MINUS}${scale.toFixed(1)}`}</span>
               <span>Tour</span>
-              <span>+1.0</span>
+              <span>{`+${scale.toFixed(1)}`}</span>
             </div>
             <span />
           </div>
@@ -415,7 +420,7 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
       <p className="card__n ch-num">
         {sg.needsHoles ? (sg.needs === 'rounds' ? `Strokes gained shows from ${FILE_SG_FLOOR} rounds posted hole by hole. ` : 'Strokes gained needs hole-by-hole scores. ') : sg.note ? `${sg.note} ` : ''}
         {/* A separator never starts a line: the space before each "·" does not break. */}
-        {sg.source.replace(/ · /g, '\u00a0· ')}.{mix && <span data-ch-sg-mix=""> {mix}.</span>}
+        {sg.source}.{mix && <span data-ch-sg-mix=""> {mix}.</span>}
         {standingHref && (
           <>
             {' '}

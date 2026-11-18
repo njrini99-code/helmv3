@@ -277,7 +277,7 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
   const hcp = data.golf && !data.golf.error ? shownHandicapIndex(data.golf.value) : '';
   const line = coach
     ? [head ? 'Head coach' : 'Coach', data.teamName].filter(Boolean).join(' · ')
-    : ['Player', data.teamName, hcp ? `HCP ${hcp}` : null].filter(Boolean).join(' · ');
+    : ['Player', data.teamName, hcp ? `Handicap ${hcp}` : null].filter(Boolean).join(' · ');
   return (
     <>
       {everyReadFailed(data) && <InlineNotice code="CH-8214" title="Settings didn’t load" body="Nothing was changed. Try again." onRetry={writes.refresh} />}
