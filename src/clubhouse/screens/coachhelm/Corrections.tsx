@@ -4,6 +4,7 @@ import { createContext, useContext, useId, useState } from 'react';
 import { CORRECTION_REASONS, SNOOZE_CHECKPOINTS, type CorrectionKind, type CorrectionReason } from '@/lib/coachhelm/v3/corrections/types';
 import type { ChCorrectionAnswer, ChCorrections } from '../../data/coachhelm-engine-shape';
 import { haptic } from '../../lib/haptics';
+import { chReport } from '../../lib/track';
 import { LIVE_CORRECTION_WRITES, type ChCorrectionWrites } from './writes';
 
 /**
@@ -82,7 +83,8 @@ export function CorrectionChips({ c, held = null, onHeld, code = 'CH-13970' }: {
     try {
       const res = await writes.record({ insightId: c.insightId, kind, reason });
       status = res.status === 'recorded' || res.status === 'not_available' ? res.status : 'failed';
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'coachhelm.corrections', action: 'recordCorrection', severity: 'high', extra: { insightId: c.insightId, kind } });
       status = 'failed';
     }
     setSaving(false);

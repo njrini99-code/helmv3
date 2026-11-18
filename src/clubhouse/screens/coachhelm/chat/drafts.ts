@@ -28,6 +28,7 @@ function read(key: string): string | null {
   try {
     return window.sessionStorage.getItem(key);
   } catch {
+    // Storage blocked: nothing was kept.
     return null;
   }
 }

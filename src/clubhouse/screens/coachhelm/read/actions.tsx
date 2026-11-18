@@ -166,7 +166,10 @@ export function CoachActions({
         void writes
           .removeFocus(focusAreaId)
           .then((res) => normalise(res))
-          .catch(() => ({ success: false as const, error: null }))
+          .catch((err: unknown) => {
+            chReport(err, { surface: 'coachhelm.read', action: 'removeFocus', severity: 'high', extra: { focusAreaId } });
+            return { success: false as const, error: null };
+          })
           .then((res) => {
             setRemoving(false);
             if (res.success) return refresh();

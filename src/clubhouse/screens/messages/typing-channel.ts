@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
+import { chReport } from '../../lib/track';
 
 /**
  * Clubhouse typing on its own private channel (M4, docs/clubhouse/messages-v2/DATA.md): `golf-typing:<conversationId>`, joined with
@@ -31,8 +32,9 @@ export function joinPrivateTyping(supabase: SupabaseClient, conversationId: stri
   const ready = (async () => {
     try {
       await supabase.realtime.setAuth();
-    } catch {
+    } catch (err) {
       // No session token: the private join below is refused by the server and typing stays on the public topic.
+      chReport(err, { surface: 'messages.typing', action: 'setAuth', severity: 'low', extra: { conversationId } });
     }
     if (left) return null;
     try {
@@ -43,7 +45,8 @@ export function joinPrivateTyping(supabase: SupabaseClient, conversationId: stri
           if (userId) onEvent({ userId, isTyping: !!isTyping });
         })
         .subscribe();
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'messages.typing', action: 'joinPrivateTyping', severity: 'low', extra: { conversationId } });
       return null;
     }
     return channel;
@@ -52,6 +55,7 @@ export function joinPrivateTyping(supabase: SupabaseClient, conversationId: stri
     ready,
     leave: () => {
       left = true;
+      // Cleanup on leave: a channel that will not close is dropped with the page; nothing to tell.
       if (channel) void Promise.resolve(supabase.removeChannel(channel)).catch(() => undefined);
     },
   };
@@ -88,6 +92,7 @@ export function usePrivateTyping(conversationId: string | null, viewerUserId: st
       timers.set(userId, window.setTimeout(() => drop(userId), expiryMs));
       setIds((now) => (now.includes(userId) ? now : [...now, userId]));
     });
+    // ready never rejects (both of its steps catch and report); this catch only keeps a rejection off the console.
     void joined.ready.then((c) => {
       channelRef.current = c;
     }).catch(() => undefined);
