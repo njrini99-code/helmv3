@@ -582,7 +582,7 @@
     --ch-modal-max-h: 92dvh;
     max-height: var(--ch-modal-max-h);
     padding-bottom: env(safe-area-inset-bottom);
-    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
+    border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
     /* It rises over the reveal beat on the iOS sheet curve, 520ms, as the bell does (S3.2, motion spec 15 Nov 3.4): it
        leaves at speed and settles with no overshoot. It leaves over 280ms on the same curve (lib/dialog-lifetime.ts). */
     animation: ch-rise var(--ch-dur-reveal) var(--ch-ease-sheet);
@@ -1596,7 +1596,7 @@ body.keyboard-open .ch-fsheet-act {
   max-height: calc(100dvh - 54px);
   padding: 8px 16px max(40px, calc(16px + env(safe-area-inset-bottom)));
   overflow: hidden;
-  border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
+  border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
   background: var(--ch-bg-page);
   box-shadow: var(--ch-elevation-sheet);
   animation: ch-rise var(--ch-dur-reveal) var(--ch-ease-sheet);
@@ -1714,7 +1714,7 @@ body.keyboard-open .ch-fsheet__body > * {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: rgb(253 252 248 / 0.97);
 }
 .ch-fsheet-act__msg {
@@ -1762,7 +1762,7 @@ body.keyboard-open .ch-fsheet__body > * {
 }
 .ch-fsheet-act__cancel {
   flex: none;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   font-weight: 600;
   color: var(--ch-green-600);

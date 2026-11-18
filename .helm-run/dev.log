@@ -1,0 +1,24 @@
+
+> helmv3@1.0.0 dev
+> node scripts/dev.mjs
+
+[dev] http://localhost:3188  (from PORT)
+▲ Next.js 16.4.3 (webpack)
+- Local:         http://localhost:3188
+- Network:       http://192.168.1.46:3188
+- Environments: .env.development.local
+✓ Ready in 519ms
+✓ Running next.config.mjs took 925ms
+[Sentry] Node runtime initialized { release: 'none', hasDsn: true }
+- Experiments (use with caution):
+  · cpus: 3
+  · optimizePackageImports
+  · serverActions
+  ✓ webpackMemoryOptimizations
+
+○ Compiling /page ...
+ GET / 200 in 1059ms (next.js: 520ms, proxy.ts: 21ms, application-code: 518ms)
+○ Compiling /golf/(dashboard)/dashboard/page ...
+ GET /golf/dashboard 200 in 25.3s (next.js: 14.7s, proxy.ts: 521ms, application-code: 10.1s)
+○ Compiling /golf/(dashboard)/dashboard/calendar/page ...
+ GET /golf/dashboard/calendar 200 in 25.4s (next.js: 15.5s, proxy.ts: 491ms, application-code: 9.4s)
