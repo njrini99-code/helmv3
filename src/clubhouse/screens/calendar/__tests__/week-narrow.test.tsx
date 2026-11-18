@@ -74,12 +74,24 @@ describe('the week grid in narrow columns', () => {
 describe('the cascade step', () => {
   it('a block on its own fills the column; a later lane steps in, by half the step in a column under 120px', () => {
     expect(laneBox(0, 1)).toEqual({ left: 'calc(0% + 3px)', width: 'calc(100% - 6px)' });
-    expect(laneBox(0, 2)).toEqual({ left: 'calc(0% + 3px)', width: 'calc(100% - 6px)' });
+    // R-5 (owner, 18 Nov 2026): a pair in a column 140px or wider sits side by side; under it, the cascade.
+    expect(laneBox(0, 2)).toEqual({ left: 'calc(0% + 3px)', width: 'calc(100% - 6px - clamp(0px, (100% - 140px) * 999, 50% - 2px))' });
     const second = laneBox(1, 2);
-    expect(second.left).toBe('calc(23% + clamp(0px, (100% - 120px) * 999, 23%) + 3px)');
-    expect(second.width).toBe('calc(100% - (23% + clamp(0px, (100% - 120px) * 999, 23%)) - 6px)');
+    expect(second.left).toBe('calc(23% + clamp(0px, (100% - 120px) * 999, 23%) + clamp(0px, (100% - 140px) * 999, 4%) + 3px)');
+    expect(second.width).toBe('calc(100% - (23% + clamp(0px, (100% - 120px) * 999, 23%) + clamp(0px, (100% - 140px) * 999, 4%)) - 6px)');
     // Three lanes share 70%: 35 a step, so the third starts at 70% in a wide column and 35% in a narrow one.
     expect(laneBox(2, 3).left).toBe('calc(35% + clamp(0px, (100% - 120px) * 999, 35%) + 3px)');
+  });
+
+  it('R-5 (owner, 18 Nov 2026): a one-day column sets overlaps side by side, each its own share, nothing over another', () => {
+    expect(laneBox(0, 1, true)).toEqual({ left: 'calc(0% + 3px)', width: 'calc(100% - 6px)' });
+    expect(laneBox(0, 2, true)).toEqual({ left: 'calc(0% + 3px)', width: 'calc(50% - 4px)' });
+    expect(laneBox(1, 2, true)).toEqual({ left: 'calc(50% + 3px)', width: 'calc(50% - 4px)' });
+    const a = ev({ id: 'a', type: 'practice', start: 14, end: 15 });
+    const b = ev({ id: 'b', type: 'meeting', start: 14, end: 15 });
+    const { container } = render(<TimeGrid pack dates={[DAY]} events={[a, b]} people={new Map()} now={{ date: '2026-10-20', hour: 12 }} selId={null} flagged={new Set()} onSelect={() => {}} onDay={() => {}} />);
+    const lefts = [...container.querySelectorAll<HTMLElement>('[data-ev-id]')].map((x) => x.style.left).sort();
+    expect(lefts).toEqual(['calc(0% + 3px)', 'calc(50% + 3px)']);
   });
 });
 

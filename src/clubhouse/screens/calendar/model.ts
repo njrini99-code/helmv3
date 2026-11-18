@@ -460,12 +460,20 @@ export function layoutLanes<E extends { start: number | null; end: number | null
  * Where a block sits across its day's column, as CSS. Overlapping events cascade (each later lane steps right and lies
  * over the earlier ones, to the column's right edge). In a column under 120px (the desktop week at 1440px is 100) the
  * step is halved, so the block on top keeps about 70px for its words instead of 47: the clamp is the switch, nothing
- * under 120px and the rest of the step from there up.
+ * under 120px and the rest of the step from there up. `packed`: the lanes sit side by side instead.
  */
-export function laneBox(lane: number, lanes: number): { left: string; width: string } {
+export function laneBox(lane: number, lanes: number, packed = false): { left: string; width: string } {
+  // R-5 (owner, 18 Nov 2026): a one-day column (the Day view) is wide enough to give each overlapping event its own lane
+  // side by side, so neither title is hidden under the other ("Confirn"). The multi-day week keeps the cascade.
+  if (packed && lanes > 1) return { left: `calc(${(lane * 100) / lanes}% + 3px)`, width: `calc(${100 / lanes}% - 4px)` };
+  // R-5: two overlapping events in a week column 140px or wider (the desk week at 1440 is about 150) sit side by side too (the clamp is the switch, as below);
+  // narrower, or three or more, keep the cascade.
+  const PAIR = 'clamp(0px, (100% - 140px) * 999, 50% - 2px)';
+  if (lanes === 2 && lane === 0) return { left: 'calc(0% + 3px)', width: `calc(100% - 6px - ${PAIR})` };
   const step = (lanes > 1 ? Math.min(46, 70 / (lanes - 1)) : 0) * lane;
   if (!step) return { left: 'calc(0% + 3px)', width: 'calc(100% - 6px)' };
-  const x = `${step / 2}% + clamp(0px, (100% - 120px) * 999, ${step / 2}%)`;
+  const pair = lanes === 2 ? ' + clamp(0px, (100% - 140px) * 999, 4%)' : '';
+  const x = `${step / 2}% + clamp(0px, (100% - 120px) * 999, ${step / 2}%)${pair}`;
   return { left: `calc(${x} + 3px)`, width: `calc(100% - (${x}) - 6px)` };
 }
 
