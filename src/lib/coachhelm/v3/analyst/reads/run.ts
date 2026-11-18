@@ -104,7 +104,8 @@ export async function refreshReadsAfterRound(sb: SupabaseClient, args: { playerI
     const { data, error } = await sb.from('golf_team_members').select('team_id').eq('player_id', args.playerId).eq('status', 'active');
     if (error) {
       await logServerError(`coachhelm.reads round: reading the player's teams failed: ${error.message}`, { action: 'coachhelm.reads.round', featureArea: 'coachhelm', playerId: args.playerId, extra: { roundId: args.roundId } }, 'warning').catch(() => undefined);
-      return [];
+      // Said as a failure, not as "no team to refresh": the nightly pass redoes it.
+      return [{ kind: 'failed', teamId: 'unknown', error: `reading the player's teams failed: ${error.message}` }];
     }
     const teams = [...new Set(((data ?? []) as Array<{ team_id: string }>).map((r) => r.team_id))].filter((t) => readsEnabled(t, args.flag ?? {}));
     const out: TeamReadsOutcome[] = [];

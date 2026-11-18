@@ -19,14 +19,14 @@ Held items:     flag coachhelm_reads_v1 is off everywhere; COACHHELM_READS_TEAM_
   Leaning), one level down (the distance, lie or kind of tee shot, else "spread
   across the part") with the counted pattern, the team sentence (coach only),
   "How we found this" in three sentences, "What would change this", and
-  "Through <date>, N rounds" (with "No new rounds since <date>" after three
+  `Through {date}, N rounds` (with `No new rounds since {date}` after three
   weeks). A player without five rounds with every shot logged reads what is
   missing ("Needs 5 ...; has 3.").
 - "The N rounds behind it" opens a sheet: each round worst first, with date,
   course, score and what in it carries the read, and the shots, each round
   opening the round (`/golf/dashboard/rounds/<id>`).
 - States: nothing drawn when the flag is off, the table is not applied, or no
-  read is saved yet; "Couldn't load <first>'s read" when the read fails, the
+  read is saved yet; `Couldn't load {first}'s read` when the read fails, the
   rest of the file unchanged.
 
 ### Changed

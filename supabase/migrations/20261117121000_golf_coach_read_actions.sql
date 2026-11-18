@@ -78,7 +78,7 @@ create table if not exists public.golf_coach_read_focus (
     part text not null,
     set_on date not null,
     value_on_day numeric not null,
-    rounds_on_day integer not null check (rounds_on_day >= 0),
+    rounds_on_day bigint not null check (rounds_on_day >= 0),
     team_lost_on_day numeric,
     created_at timestamptz not null default now()
 );
@@ -95,13 +95,15 @@ on public.golf_coach_read_focus (focus_area_id);
 alter table public.golf_coach_read_feedback enable row level security;
 alter table public.golf_coach_read_focus enable row level security;
 
-drop policy if exists golf_coach_read_feedback_select on public.golf_coach_read_feedback;
+drop policy if exists golf_coach_read_feedback_select
+on public.golf_coach_read_feedback;
 create policy golf_coach_read_feedback_select
 on public.golf_coach_read_feedback
 for select to authenticated
 using (public.is_team_coach(team_id));
 
-drop policy if exists golf_coach_read_feedback_insert on public.golf_coach_read_feedback;
+drop policy if exists golf_coach_read_feedback_insert
+on public.golf_coach_read_feedback;
 create policy golf_coach_read_feedback_insert
 on public.golf_coach_read_feedback
 for insert to authenticated
@@ -113,13 +115,15 @@ with check (
     )
 );
 
-drop policy if exists golf_coach_read_focus_select on public.golf_coach_read_focus;
+drop policy if exists golf_coach_read_focus_select
+on public.golf_coach_read_focus;
 create policy golf_coach_read_focus_select
 on public.golf_coach_read_focus
 for select to authenticated
 using (public.is_team_coach(team_id));
 
-drop policy if exists golf_coach_read_focus_insert on public.golf_coach_read_focus;
+drop policy if exists golf_coach_read_focus_insert
+on public.golf_coach_read_focus;
 create policy golf_coach_read_focus_insert
 on public.golf_coach_read_focus
 for insert to authenticated

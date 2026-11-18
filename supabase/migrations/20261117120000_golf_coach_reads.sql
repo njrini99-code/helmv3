@@ -61,7 +61,7 @@ create table if not exists public.golf_coach_reads (
     ) on delete cascade,
     computed_at timestamptz not null default now(),
     through_date date,
-    n_rounds integer not null check (n_rounds >= 0),
+    n_rounds bigint not null check (n_rounds >= 0),
     signature text,
     certainty text check (certainty in ('clear', 'likely', 'leaning')),
     analyst_version text not null,
