@@ -8,9 +8,10 @@ here too and are named where they carry a category. `clubhouse:check` holds this
 file to the registry.
 
 Status: the base only (types, fixtures, primitives, placeholders, preview
-screens). Several lanes build the views in
-parallel; each fills the categories its view touches, from its own serial range
-in the catalog.
+screens). Several lanes build the views in parallel; each fills the categories
+its view touches, from its own serial range in the catalog. (Checked 2026-11-17:
+every view is now built and wired, the last placeholders on 2026-11-07; the
+categories still marked N/A below have no rows yet.)
 
 ## 01 — Default / core UI
 
@@ -59,7 +60,8 @@ Status: DEFINED
 Every view takes `load`; `loading` draws the view's head and body as
 placeholders in place, marked busy (CH-16401). A built view replaces the
 placeholder with its own skeleton at its final geometry and keeps the code. The
-route skeletons arrive with the routes (Phase 7).
+route skeletons arrive with the routes (Phase 7); they did, as each route's
+`loading.tsx` drawing `TournamentsLoading`.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

@@ -16,27 +16,33 @@ counts include wrappers rather than unique popups.
 ## Entry points
 
 The library, the review and round entry (setup, then the shot screen) are
-routed, each behind `golf_clubhouse_ui` for the player. Round entry runs over
-the round engine in `src/lib/golf/round-session/` (#2104), the same hooks the
-Fairway clients use; the dev preview is unchanged.
+routed. Until 2026-11-14 each was behind `golf_clubhouse_ui` for the player;
+since Fairway's retirement that day (#2527) every page below is Clubhouse only,
+chosen by the dashboard role (`getGolfDashboardRole`). Round entry runs over the
+round engine in `src/lib/golf/round-session/` (#2104), which the Fairway clients
+also used until then; the dev preview is unchanged. Since this map was first
+written the page also holds a coach's team rounds (2026-10-21), a course's
+history (2026-10-25), the live view (P-6) and the recovery page; their blocks
+follow.
 
 ```text
 LIBRARY (routed)
 Route:                   /golf/dashboard/rounds
-Page:                    src/app/golf/(dashboard)/dashboard/rounds/page.tsx (a player with golf_clubhouse_ui on -> Clubhouse,
-                         everyone else -> Fairway; force-dynamic)
+Page:                    src/app/golf/(dashboard)/dashboard/rounds/page.tsx (dashboard role player -> ClubhouseRoundsRoute,
+                         coach -> ClubhouseTeamRoundsRoute (TEAM ROUNDS below), else nothing; force-dynamic)
 Clubhouse route adapter: src/clubhouse/routes/rounds.tsx ClubhouseRoundsRoute (session; a coach renders nothing; the
                          team only sets today's time zone)
 Server loader:           src/clubhouse/data/rounds.ts loadRoundsLibrary (pure steps in data/rounds-shape.ts; each failed
                          read logs through chLogServer('rounds', …) and never throws)
 Screen:                  src/clubhouse/screens/rounds/RoundsLibrary.tsx -> parts.tsx (UnfinishedCard, SeasonCard, Ribbon, RoundRow)
-Skeleton:                src/clubhouse/screens/rounds/RoundsSkeleton.tsx (CH-11401), from rounds/loading.tsx through ClubhouseSwitch
+Skeleton:                src/clubhouse/screens/rounds/RoundsSkeleton.tsx (CH-11401), from rounds/loading.tsx, which draws
+                         TeamRoundsSkeleton instead for a coach (useClubhouseRole; ClubhouseSwitch was deleted)
 Route error:             rounds/error.tsx (the shared RouteErrorBoundary, which draws Clubhouse's RouteErrorView inside the Clubhouse shell; corrected 2026-10-17)
 
 REVIEW (routed)
 Route:                   /golf/dashboard/rounds/[id]
 Page:                    src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx (after the uuid check and the session:
-                         a coach or a player with the flag on for their role -> Clubhouse, else Fairway)
+                         always ClubhouseRoundReviewRoute, with ?hole= and ?from=)
 Clubhouse route adapter: src/clubhouse/routes/round-review.tsx ClubhouseRoundReviewRoute (viewer: a player who is not a coach,
                          or the coach's active team; no viewer is the same "not here" page; a round in progress redirects
                          to /rounds/continue/[id]; CH-11307 is the not-here page)
@@ -45,24 +51,25 @@ Server loader:           src/clubhouse/data/round-review.ts loadRoundReview (pur
                          (data/rounds-type-options.ts readRoundTypeOptions, CH-11522)
 Screen:                  src/clubhouse/screens/rounds/RoundReview.tsx (ReviewNine, HoleCard) and ReviewLoadFailed.tsx (CH-11206)
 Recap:                   screens/rounds/use-round-recap.ts useRoundRecap: a completed round with no stored recap (`recapPending`)
-                         asks generateRoundRecap once after mount, as Fairway's useDeferredRoundRecap does (111504)
-Skeleton:                RoundReviewSkeleton from rounds/[id]/loading.tsx through ClubhouseSwitch (110206; corrected 2026-10-17)
+                         asks generateRoundRecap once after mount, as Fairway's useDeferredRoundRecap did (111504)
+Skeleton:                RoundReviewSkeleton from rounds/[id]/loading.tsx (110206; ClubhouseSwitch was deleted)
 Route error:             rounds/[id]/error.tsx (the shared RouteErrorBoundary; Clubhouse's view inside the shell)
 
 NEW ROUND (routed, player)
 Route:                   /golf/dashboard/rounds/new
-Page:                    src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx (after the player check: isClubhouseFor('player') ->
-                         Clubhouse, else Fairway's NewRoundClient; a coach keeps the legacy message)
+Page:                    src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx (no player profile -> the shell's
+                         PlayersOnlyRounds; dashboard role player -> ClubhouseNewRoundRoute, else nothing)
 Clubhouse route adapter: src/clubhouse/routes/round-new.tsx ClubhouseNewRoundRoute({ playerId })
 Round screen:            src/clubhouse/screens/rounds/entry/NewRound.tsx (useNewRoundSession over setup, then RoundRuntime)
-Skeleton:                RoundEntrySkeleton (CH-11407) from rounds/new/loading.tsx through ClubhouseSwitch
+Skeleton:                RoundEntrySkeleton (CH-11407) from rounds/new/loading.tsx
 Preview:                 /clubhouse-preview/setup -> PreviewSetup.tsx (fake ports), /clubhouse-preview/entry (the round-entry states)
 
 CONTINUE (routed, player)
 Route:                   /golf/dashboard/rounds/continue/[id] (the brief's "/rounds/[id]/continue"; /rounds/[id] redirects here for a
                          round still in progress, 110109)
 Page:                    src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx (loads the round once, then
-                         isClubhouseFor('player') -> Clubhouse with the loaded round, else the Fairway client with its round-type editor)
+                         Clubhouse with the loaded round; a completed round redirects to its review; the Fairway client
+                         and its round-type editor were removed on 2026-11-14)
 Clubhouse route adapter: src/clubhouse/routes/round-continue.tsx ClubhouseContinueRoundRoute(props)
 Round screen:            src/clubhouse/screens/rounds/entry/ContinueRound.tsx (useContinueRoundSession, then RoundRuntime)
 Skeleton:                RoundEntrySkeleton (CH-11407) from rounds/continue/[id]/loading.tsx
@@ -91,8 +98,36 @@ Ports:                   entry/ports.ts useRoundPorts (the engine's showToast ->
 Recovery:                entry/RoundRuntime.tsx RecoveryHost (RecoveryDialog), InProgressConflictDialog (new round only)
 Qualifier round number:  entry/QualifierRoundSheet.tsx (Continue's Submit opens it when the round is a qualifier)
 Logic:                   src/hooks/golf/use-shot-tracking.ts useShotTracking(props, ports), shared with the Fairway screen
-                         (FairwayShotTracking); rules in src/lib/golf/shot-entry-rules.ts
+                         (FairwayShotTracking) until 2026-11-14; rules in src/lib/golf/shot-entry-rules.ts
 Dev preview:             /clubhouse-preview/track -> PreviewTracking.tsx (the stand-in round screen)
+
+TEAM ROUNDS (routed, coach; 2026-10-21, #2293)
+Route:                   /golf/dashboard/rounds for a coach
+Clubhouse route adapter: src/clubhouse/routes/team-rounds.tsx ClubhouseTeamRoundsRoute (no team -> NoTeam; also loads the
+                         team's live lanes, loadLiveRounds)
+Server loader:           src/clubhouse/data/team-rounds.ts loadTeamRounds (pure steps in team-rounds-shape.ts)
+Screen:                  src/clubhouse/screens/rounds/TeamRounds.tsx, ExportRounds.tsx; skeleton TeamRoundsSkeleton.tsx
+
+COURSE HISTORY (routed; 2026-10-25, #2368)
+Route:                   /golf/dashboard/rounds/course/[key] (?player=, ?hole=, ?w=)
+Clubhouse route adapter: src/clubhouse/routes/course-history.tsx ClubhouseCourseHistoryRoute (the key parsed by
+                         data/course-key.ts; a bad key -> ClubhouseNotFound)
+Server loader:           src/clubhouse/data/course-history.ts loadCourseHistory (course-history-shape.ts, course-page-shape.ts)
+Screen:                  src/clubhouse/screens/rounds/CoursePage.tsx (CourseArc, HoleMap, HowItPlays, RecordChips, RoundsHere,
+                         course-motion.tsx) and CourseLoadFailed.tsx
+
+LIVE (routed, coach; P-6, 2026-10-25)
+Route:                   /golf/dashboard/live (scope from the address, live/scope.ts)
+Page:                    src/app/golf/(dashboard)/dashboard/live/page.tsx (no coach profile -> NotRebuilt, coach only)
+Clubhouse route adapter: src/clubhouse/routes/live.tsx ClubhouseLiveRoute (LiveNoTeam, LiveDenied)
+Server loader:           src/clubhouse/data/live-rounds.ts loadLiveRounds, loadEventScope
+Screen:                  src/clubhouse/screens/live/LiveView.tsx, LiveViewPhone.tsx, PlayerLiveSheet.tsx, use-live-view.ts
+
+RECOVER (routed, player)
+Route:                   /golf/dashboard/rounds/recover (?from=submit)
+Page:                    src/app/golf/(dashboard)/dashboard/rounds/recover/page.tsx (no player profile -> PlayersOnlyRounds;
+                         dashboard role player -> ClubhouseRoundRecoverRoute)
+Screen:                  src/clubhouse/screens/rounds/recover/RoundRecover.tsx
 ```
 
 ## Failed reads and page states (2026-10-01)
@@ -137,7 +172,7 @@ Client controller: useAction (offline refusal CH-1903, slow notice CH-1902, chRe
 ↓
 Writes: LIVE_ROUNDS_WRITES (writes.ts): discard -> deleteInProgressRound, then clearEmergencySave(roundId, playerId) when it worked
 ↓
-Server action: src/app/golf/actions/golf.ts deleteInProgressRound (checks the caller, deletes by round, player and
+Server action: src/app/golf/actions/round-partial.ts deleteInProgressRound (golf.ts until the 2026-10-08 split, #2176; checks the caller, deletes by round, player and
                in-progress status)
 ↓
 Data: golf_rounds (its holes and shots cascade), and the device's emergency copy
@@ -194,7 +229,6 @@ no test). The failure toast carries Retry, which runs the whole action again
 | --- | --- | --- | --- | --- | --- |
 | ACT-P011-DISCARD | The trash button on the round card and on each "more unfinished" row, then Discard round in the question | `askDiscard` (warning haptic first, CH-11701) -> `confirmDiscard` -> `discard.run` | `discardRound` -> `writes.discard` -> `deleteInProgressRound`, then `clearEmergencySave` | golf_rounds (holes and shots cascade), the device's emergency copy | question 111101 · done 110901 · refused 110601 · waits for the server 111301 · Retry 111401 · server gate 110804 (read, not run) |
 | ACT-P011-TRY-AGAIN | Try again on a failed-read notice: the library's posted rounds and in-progress check, the review's card, shots and round | `refresh` (`useRefresh`: `router.refresh` in a transition; a second tap while it runs does nothing) | the server route, read again | (every read) | notices 110602 · 110603 · 110605 · 110606 · 110607 · recovery 111402 |
-
 | ACT-P011-START | Start round in setup | `start.run(form)` (useAction `rounds.start`) -> `ports.start(form)` -> `latest.current.start(toStartForm(form))` | the new-round engine's `start(form)` (`use-new-round-session.ts`); its refusals come back as `startRefusal` states | golf_rounds, the player's saved courses | refused CH-11007 · Retry 111404 · blocked 110510 · offline 10703 · conflict CH-11514 · qualifier open CH-11907 · closed CH-11014 · unverified CH-11015 · duplicate CH-11016 |
 | ACT-P011-SAVE-FOR-LATER | Save for later in the Exit sheet and the closed-qualifier sheet | `save.run` (useAction `rounds.saveForLater`) -> `handleSaveForLater` / `handleSubmitSaveAndExit` | `savePartialRound` | golf_rounds, golf_holes, golf_shots, the device's emergency copy | failed CH-11010 · Retry 111404 · offline 10703 |
 | ACT-P011-DISCARD-ROUND | Discard round in the Exit sheet (asks again) and the closed-qualifier sheet | `discard.run` (useAction `rounds.discardRound`) -> `handleDeleteRound` / `handleSubmitDiscard` | `deleteInProgressRound` | golf_rounds (holes and shots cascade), the device's emergency copy | asks CH-11507 · failed CH-11006 (inline in Exit) or CH-11011 (toast, sheet closed) · Retry 111404 |
@@ -202,6 +236,8 @@ no test). The failure toast carries Retry, which runs the whole action again
 | ACT-P011-CHANGE-ROUND-TYPE | Continue round: Exit › Change round type, then Practice / Tournament / Qualifier (which one, which round) and Save | `changeType.run` (useAction `rounds.changeType`, the engine's `offline`) in `ContinueRound`, then `router.refresh` in a transition; auto-save is held while the sheet is open and until the refreshed setup arrives, and the engine's qualifier round number is set to the new one | `updateRoundType`; options from `loadRoundTypeOptions` (`routes/round-continue.tsx`: the player's `golf_qualifier_entries`, and the slots their other non-abandoned rounds hold) | golf_rounds (round_type, qualifier_id, qualifier_round_number); golf_qualifier_entries, golf_rounds (read) | sheet 111121 · in flight 110212 · failed 110638 (CH-11020, permission and inactive-member copy) · didn't load 110639 · no qualifier 110417 · every round held 110511 · offline CH-1903 · Retry 111404 |
 | ACT-P011-REVIEW-CHANGE-ROUND-TYPE | Review of a submitted round: Change round type (the owning player, or a coach of the player's team), then Practice / Tournament / Qualifier (which one, which round) and Save | `change.run` (useAction `rounds.review.changeType`) in `RoundReview`'s `ChangeRoundType`, then `router.refresh` | `updateRoundType` (a coach's save inserts the player's `golf_qualifier_entries` row first, as on Fairway); options from `loadRoundReview` -> `readRoundTypeOptions` (`data/rounds-type-options.ts`: the player's entries, for a coach the round's team's non-test qualifiers, and the slots the player's other non-abandoned rounds hold) | golf_rounds (round_type, qualifier_id, qualifier_round_number, via `reclassify_golf_round`); golf_qualifier_entries (read; insert on a coach's save); golf_qualifiers (read) | button 111122 · sheet 111121 · in flight 110212 · failed 110638 (CH-11020, coach and player copy) · didn't load 110639 · no qualifier 110417 · every round held 110511 · Retry 111404 |
 | ACT-P011-SUBMIT-ROUND | Submit on Round complete, and Retry on the Submitting overlay | `RoundCompleteSheet` onSubmit -> `handleRoundSubmit` (new) / `requestRoundSubmission` (continue, which asks the qualifier round number first) | `submitGolfRoundComprehensive` | golf_rounds, golf_holes, golf_shots, the player stats cache | posted 110902 · failed CH-11005 · Try again 111403 · slow CH-11909 · saved on the device CH-11905 |
+| ACT-P011-COACH-NOTE | Leave or edit the coach's note on a round's review (coach; 2026-10-21) | `save.run` (useAction `rounds.review.coachNote`) in `CoachNote` | `saveRoundCoachNote` (`actions/round-coach-note.ts`) | golf_round_reviews (coach_notes), golf_rounds | fails 110640 · did not load 110644 |
+| ACT-P011-EXPORT-ROUNDS | Export rounds with their holes (player Rounds, coach Team rounds) | `ExportButton` in `ExportRounds` | `readRoundHolesForExport` (`actions/rounds-export.ts`), then the CSV (`export.ts`) | golf_holes (read through RLS), a CSV file on the device | reading 110280 · lands 110980 · fails 110680 |
 
 ### Controls inside round entry (not registered)
 
@@ -234,6 +270,16 @@ the ports.
 
 | Path | Purpose | States |
 | --- | --- | --- |
+| `screens/rounds/TeamRounds.tsx`, `TeamRoundsSkeleton.tsx` | A coach's team rounds (2026-10-21) | — |
+| `screens/rounds/ExportRounds.tsx`, `export.ts` | Export rounds with their holes | 110280, 110980, 110680 |
+| `screens/rounds/CoachNote.tsx` | The coach's note on a review | 110640, 110644 |
+| `screens/rounds/CoursePage.tsx`, `CourseArc.tsx`, `HoleMap.tsx`, `HowItPlays.tsx`, `RecordChips.tsx`, `RoundsHere.tsx`, `course-motion.tsx`, `CourseLoadFailed.tsx` | Course history (2026-10-25) | — |
+| `screens/rounds/CourseLink.tsx` | The review's way to the player's history at this course (P-7) | — |
+| `screens/rounds/RoundZones.tsx`, `RoundSays.tsx`, `round-insights.ts` | The review's pictures and "What the round says" (P-7), from one set of figures | — |
+| `screens/rounds/recap-check.ts` | The stored recap checked against the round's figures before it shows | — |
+| `screens/rounds/round-window.tsx` | How many rounds a list draws first ("Show earlier rounds", 2026-11-15) | — |
+| `screens/rounds/card/` | The round card after a submit and its share image (`RoundCard`, `share-card.ts`) | — |
+| `screens/live/` | The live view (LIVE block above) | — |
 | `screens/rounds/RoundsLibrary.tsx` | The library container: header, the two cards, more unfinished rounds, tools, the book, the discard question | 110101 · CH-11301, CH-11303 · CH-11201 · CH-11501 |
 | `screens/rounds/parts.tsx` | `UnfinishedCard`, `SeasonCard`, `Ribbon`, `RoundRow`, `TeeSwatch`, `TypePill` | CH-11202, CH-11302, CH-11304 · CH-11802, CH-11803, CH-11801 |
 | `screens/rounds/writes.ts` | The writes interface and `LIVE_ROUNDS_WRITES`; preview and tests pass their own set | (none) |
@@ -255,11 +301,11 @@ the ports.
 | Path | Type | Used by |
 | --- | --- | --- |
 | `src/clubhouse/lib/use-action.ts` (`useAction`, `normalise`, `isOffline`; options `quiet`, `retry: false \| label`, `offline`; its in-flight gate is a ref) | Clubhouse | RoundsLibrary (`rounds.discard`), RoundSetup (`rounds.start`), RoundRuntime (`rounds.saveForLater`, `rounds.discardRound`, `rounds.saveAsPractice`), HoleReview |
-| `src/lib/golf/round-session/` (`useNewRoundSession`, `useContinueRoundSession`) | Shared with the Fairway clients (#2104; not edited here) | NewRound, ContinueRound |
+| `src/lib/golf/round-session/` (`useNewRoundSession`, `useContinueRoundSession`) | Shared with the Fairway clients until 2026-11-14 (#2104; not edited here) | NewRound, ContinueRound |
 | `src/clubhouse/screens/rounds/entry/ports.ts` (`useRoundPorts`) | Clubhouse | NewRound, ContinueRound |
 | `src/clubhouse/lib/use-phone.ts` (`useChPhone`), `shell/phone-chrome.tsx` (`PhoneTop`, `usePhoneTabsHidden`) | Clubhouse | the library, the review, setup, the shot screen |
 | `src/clubhouse/lib/haptics.ts`, `track.ts`, `reduced-motion.ts` | Clubhouse | throughout |
-| `src/hooks/golf/use-shot-tracking.ts` (`useShotTracking`, `ShotTrackingPorts`) with `use-shot-state-machine.ts`, `use-edit-shot-modal.ts`, `use-undo-manager.ts`, `use-penalty-handler.ts` and `use-distance-units.ts` | Shared (the Fairway screen runs the same) | RoundTracking, ShotEntry |
+| `src/hooks/golf/use-shot-tracking.ts` (`useShotTracking`, `ShotTrackingPorts`) with `use-shot-state-machine.ts`, `use-edit-shot-modal.ts`, `use-undo-manager.ts`, `use-penalty-handler.ts` and `use-distance-units.ts` | Shared (the Fairway screen ran the same until 2026-11-14) | RoundTracking, ShotEntry |
 
 There are no realtime hooks: the library and the review are read once on the
 server per visit.
@@ -268,15 +314,18 @@ server per visit.
 
 | Name | Path | Existing/New/Held | Purpose |
 | --- | --- | --- | --- |
-| deleteInProgressRound | actions/golf.ts | Existing (the legacy library's and continue-round's Discard) | Discard: deletes by round, player and in-progress status |
+| deleteInProgressRound | actions/round-partial.ts (golf.ts until 2026-10-08) | Existing (the legacy library's and continue-round's Discard) | Discard: deletes by round, player and in-progress status |
 | clearEmergencySave | src/lib/utils/emergency-save.ts | Existing | drops the device's copy after a discard that worked |
-| updateShot, deleteShot | actions/golf.ts | Existing (through `useShotTracking`) | change, delete and undo a shot |
+| updateShot, deleteShot | actions/shot-actions.ts (golf.ts until 2026-10-08) | Existing (through `useShotTracking`) | change, delete and undo a shot |
 | getPlayerSavedCourses, touchSavedCourse | actions/saved-courses.ts | Existing (Fairway's setup reads and touches the same) | "Your courses" in the picker, and noting a saved course's use when a round starts from it |
 | listCoursesStrict, getRecentlyPlayedCourses, getTeamSavedCourses, getCourseDetail, getTeeWithHoles | actions/course-library.ts | Existing (supplied to setup as ports by `setup-reads.ts`) | the course picker |
 | getNextQualifierRoundNumber and the qualifier reads | actions/ (the ones the legacy setup used) | Existing | the setup's open qualifiers (`loadSetupQualifiers`) and Continue's round-number question |
-| savePartialRound, updateRoundType, submitGolfRoundComprehensive | actions/golf.ts, actions/round-type.ts | Existing | Save for later, Change to practice and Submit, through the engine |
+| savePartialRound, updateRoundType, submitGolfRoundComprehensive | actions/round-partial.ts, actions/round-type.ts, actions/round-submit.ts (the first and last were in golf.ts until 2026-10-08) | Existing | Save for later, Change to practice and Submit, through the engine |
+| saveRoundCoachNote | actions/round-coach-note.ts | Existing (2026-10-21) | a coach's note on a round's review (golf_round_reviews.coach_notes) |
+| readRoundHolesForExport | actions/rounds-export.ts | Existing (2026-11-15) | the holes behind Export on Team rounds |
+| loadTeamRounds, loadCourseHistory, loadLiveRounds | src/clubhouse/data/ | Existing | Team rounds, Course history and Live (blocks above) |
 | the round's start, checkpoints, autosave, discard-from-Exit and submit | src/lib/golf/round-session/ (`useNewRoundSession`, `useContinueRoundSession`) | Existing (moved from the legacy clients in #2104) | reach the screens as `ChSetupPorts.start` and the round screen's session |
-| generateRoundRecap | actions/round-recap.ts | Existing (Fairway's round page calls it the same way) | writes `golf_rounds.ai_recap` once, from the review of a completed round that has none (useRoundRecap) |
+| generateRoundRecap | actions/round-recap.ts | Existing (Fairway's round page called it the same way) | writes `golf_rounds.ai_recap` once, from the review of a completed round that has none (useRoundRecap) |
 | isCountableRound, withCanonicalRoundTotal | src/lib/golf/round-countable.ts, src/lib/golf/round-total.ts | Existing (shared with Home and Stats) | what counts and the one total |
 
 ## Data resources
@@ -300,16 +349,24 @@ Write path: deleteInProgressRound through writes.ts; the shot screen's writes th
 ## Held dependencies
 
 None. A coach's note on a round and the recap's Focus and Keep each need data or
-a decision the owner has not approved (Q-72f).
+a decision the owner has not approved (Q-72f). (Since 2026-10-21 a coach's note
+is built, ACT-P011-COACH-NOTE, on `golf_round_reviews.coach_notes`.)
 
 ## Impact notes
 
-- `deleteInProgressRound` is shared with Fairway's library and continue-round: a
-  change there changes both UIs.
-- `useShotTracking` and `shot-entry-rules` are shared with the Fairway shot
+- Since 2026-11-14 (#2527) there are no Fairway clients and no
+  `golf_clubhouse_ui` flag. The notes below that compare with Fairway, or say
+  what happens with the flag off, record how things stood before then; the
+  source-text tests they name (`new-round-client.*.test.ts`,
+  `continue-round-client.*.test.ts`, `FairwayRecoverRound`'s) went with Fairway,
+  and `round-lifecycle-parity.test.tsx` remains.
+- `deleteInProgressRound` was shared with Fairway's library and continue-round
+  until Fairway's retirement on 2026-11-14.
+- `useShotTracking` and `shot-entry-rules` were shared with the Fairway shot
   screen (the parity tests `FairwayShotTracking.ready-state-parity.test.ts` and
-  `.stale-checkpoint.test.ts` guard the move): a change to either changes both
-  screens.
+  `.stale-checkpoint.test.ts` guarded the move). Both screen and tests were
+  deleted on 2026-11-14 and are kept in the tag `archive/fairway-2026-11-15`;
+  the hooks are now Clubhouse's alone.
 - Engine change, opt-in (2026-10-17): `NewRoundStartForm.yardage` ('every' by
   default; Clubhouse passes 'none' for a library tee and 'any' for a saved
   course, Fairway's preloaded-start rules) and `NewRoundStartForm.libraryOffer`
@@ -364,8 +421,8 @@ a decision the owner has not approved (Q-72f).
   its entries (and, for a coach, the team's qualifiers) ride in the holes' wave,
   and only the taken-slot read follows, when there is a qualifier to offer
   (`rounds-reads.test.ts`).
-- The entry routes' `error.tsx` files are still the shared Fairway
-  `RouteErrorBoundary`.
+- The entry routes' `error.tsx` files are still the shared `RouteErrorBoundary`
+  (`src/components/errors/`), once Fairway's too.
 - The start's city and state (2026-10-17): a setup pick carries the course's own
   `city` and `state` (`ChSetupPick`), and `toStartForm` saves those; `place` is
   display only. A pick without them (an older fixture) still splits `place`.

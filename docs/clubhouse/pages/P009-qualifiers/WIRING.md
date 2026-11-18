@@ -18,10 +18,11 @@ counts include wrappers rather than unique popups.
 ```text
 Routes:                  /golf/dashboard/qualifiers, /qualifiers/new, /qualifiers/[id], /qualifiers/[id]/edit,
                          /qualifiers/[id]/selection; /golf/dashboard/my-qualifiers redirects to
-                         /golf/dashboard/qualifiers in Clubhouse (retired 2026-11-11; Fairway keeps its page)
-Pages:                   src/app/golf/(dashboard)/dashboard/qualifiers/**/page.tsx and my-qualifiers/page.tsx
-                         (session; isClubhouseFor -> Clubhouse, else Fairway; the selection page sends the
-                         Fairway side to the CoachHelm qualifying workspace)
+                         /golf/dashboard/qualifiers (retired 2026-11-11; since 2026-11-14 a redirect in
+                         next.config.mjs, and my-qualifiers/page.tsx is deleted)
+Pages:                   src/app/golf/(dashboard)/dashboard/qualifiers/**/page.tsx (session -> ClubhouseQualifiersRoute;
+                         the flag, the Fairway branch and the selection page's hand-off to the CoachHelm qualifying
+                         workspace were removed on 2026-11-14, #2527)
 Clubhouse route adapter: src/clubhouse/routes/qualifiers.tsx ClubhouseQualifiersRoute({ view, id })
                          (views: list, detail, new, edit, selection; no session -> nothing;
                          no team -> QualifiersNoTeam, CH-09309; a player on new/edit/selection -> CoachOnly, CH-09311;
@@ -35,13 +36,15 @@ Server loaders:          src/clubhouse/data/qualifiers.ts loadQualifierList, loa
 Screens:                 src/clubhouse/screens/qualifiers/ QualifiersList, QualifierDetail (+ QualifierSections,
                          QualifierDetailPhone, streamed.tsx), QualifierForm (+ CoursePicker), QualifierSelection
 Skeletons:               QualifiersSkeleton.tsx: QualifiersSkeleton (CH-09401), QualifierDetailSkeleton (CH-09402),
-                         QualifierFormSkeleton (CH-09403), through ClubhouseSwitch in each loading.tsx.
+                         QualifierFormSkeleton (CH-09403), each loading.tsx rendering its own (ClubhouseSwitch was
+                         deleted).
                          QualifierSelectionSkeleton (CH-09409) for [id]/selection.
-                         qualifiers, my-qualifiers, [id], new, [id]/edit and [id]/selection each have a loading.tsx.
+                         qualifiers, [id], new, [id]/edit and [id]/selection each have a loading.tsx.
                          The role's own parts come from the shell's role (useClubhouseRole): SkeletonCoachActions.tsx
                          (a qualifier's coach actions) and SkeletonListParts.tsx (the list's Create action, its lede
                          sentence from model.ts listLede, by role, and a player's Mine lines).
-                         my-qualifiers/loading.tsx holds the list's skeleton while the address redirects.
+                         (my-qualifiers/loading.tsx, which held the list's skeleton while the address redirected, went
+                         with the page on 2026-11-14.)
                          The phone skeletons draw the pages' own sentences from model.ts: listLede, FORM_LEDE,
                          FORM_HELP and stageNoteText, which QualifiersList, QualifierForm and QualifierSelection
                          render too.
@@ -58,7 +61,8 @@ Action: useAction(name, run, copy) in the screen (offline refusal CH-1903, slow 
 Client writes: src/clubhouse/screens/qualifiers/writes.ts (LIVE_WRITES, LIVE_SELECTION_WRITES; one interface,
                faked whole in tests)
 ↓
-Server actions: src/app/golf/actions/golf.ts, qualifier-setup.ts (HELD gate), v3/qualifying.ts, course-library.ts
+Server actions: src/app/golf/actions/qualifier-actions.ts (split out of golf.ts on 2026-10-08, #2176), qualifier-setup.ts
+                (HELD gate), qualifier-rules.ts, qualifier-exemptions.ts, v3/qualifying.ts, course-library.ts
 ↓
 Data: golf_qualifiers, golf_qualifier_entries, golf_qualifier_round_courses, golf_qualifier_selections,
       golf_rounds, golf_holes, golf_team_members, golf_courses, golf_course_tees, golf_team_saved_courses
@@ -98,6 +102,9 @@ a failed one reports through `chReport` (92301).
 | ACT-P009-LIST-TEES | Course picker › a course | `writes.tees` | `getCourseDetail` | golf_courses, golf_course_tees | loading 90204 · none 90410 · fails 90614 |
 | ACT-P009-OPEN-SCORECARDS | A leaderboard row | `toggle` (Leaderboard) | none: the holes arrived with the page; a player opens only their own | golf_holes | no card 90407 · fails 90609 · player scope 90806 · keyboard 92003 · kept 91204 |
 | ACT-P009-LIVE-STANDINGS | (automatic on a live qualifier) | `useLiveStandings` | `live.ts`: a realtime channel that ends in `router.refresh()` | golf_rounds | 90304 · announced 91803 |
+| ACT-P009-EXPORT-STANDINGS | Export on a qualifier (coach; F-02, 2026-11-15) | `ExportButton` in `ExportStandings` | `saveCsv` (`src/clubhouse/lib/csv.ts`), built from the board on screen (`export.ts`) | a CSV file on the device | lands 90980 · fails 90680 |
+| ACT-P009-TIE-RULE | The form's tie rule and count best (coach; F-04, F-06) | create then `saveRules`; Edit's `runEditPlan` step "the tie rule" in `QualifierForm` | `saveQualifierRules` (`actions/qualifier-rules.ts`) | golf_qualifier_rules | lands 90981 · fails 90681 |
+| ACT-P009-EXEMPT | The form's exempt players (coach; F-06) | create then `saveExemptions`; `runEditPlan` step "the exemptions" in `QualifierForm#ExemptField` | `saveQualifierExemptions` (`actions/qualifier-exemptions.ts`) | golf_qualifier_exemptions, golf_qualifier_selections (coach_pick written at close) | lands 90982 · fails 90602 |
 
 Retry (91401) re-runs the same action with the same arguments and finishes what
 the button would have done, for all eight writes. Until 2026-09-30 it re-sent
@@ -121,6 +128,13 @@ only the write (CHANGELOG).
 | `screens/qualifiers/writes.ts` | Every write and lookup behind `ChQWrites` and `ChQSelectionWrites`; `selectionReason` | 90809, 92303, 92304 |
 | `screens/qualifiers/live.ts` | `useLiveStandings` | 90304 |
 | `screens/qualifiers/parts.tsx` | `StatusPill`, `StateBadge`, `ToPar`, `Meta` | (shared inside the page) |
+| `screens/qualifiers/ExportStandings.tsx`, `export.ts` | Export: the standings in the board's order as a spreadsheet (F-02) | 90980, 90680 |
+| `screens/qualifiers/LiveOnCourse.tsx`, `on-course.ts` | Who is on the course above a live qualifier's board (P-6 4.7) | CH-16621 |
+| `screens/qualifiers/RoundsShowcase.tsx` | A player's rounds in this qualifier beside the leaderboard | — |
+| `screens/qualifiers/StandingsSpread.tsx` | The field's spread on one line, with the top-score cut | — |
+| `screens/qualifiers/RulesText.tsx` | The scoring rules, said once and folded when long | — |
+| `screens/qualifiers/RankSlot.tsx`, `rank-slide.ts` | The board's row slides, held while the reader scrolls | — |
+| `screens/qualifiers/PrintHead.tsx` | The printed sheet's head | — |
 | `routes/qualifiers.tsx` | The adapter, `QualifiersNoTeam`, `CoachOnly`, `NotFound`, `SelectionDidNotLoad` | 90105, 90408, 90627, 90801 to 90804 |
 
 ## Hooks
@@ -141,10 +155,12 @@ only the write (CHANGELOG).
 
 | Name | Path | Existing/New/Held | Purpose |
 | --- | --- | --- | --- |
-| createGolfQualifier | actions/golf.ts | Existing (shared with Fairway) | create, with entrants and round courses |
-| updateGolfQualifierDetails, setQualifierRoundCourses | actions/golf.ts | Existing (shared with Fairway) | edit |
-| updateQualifierStatus | actions/golf.ts | Existing (shared with Fairway) | close and reopen (organisation compare) |
-| setQualifierSquadSize, setQualifierEntrants | actions/qualifier-setup.ts | **Held** (D-61; refuses unless `isClubhouseFor('coach')`) | Edit's squad and players |
+| createGolfQualifier | actions/qualifier-actions.ts | Existing (shared with Fairway until 2026-11-14) | create, with entrants and round courses |
+| updateGolfQualifierDetails, setQualifierRoundCourses | actions/qualifier-actions.ts | Existing (shared with Fairway until 2026-11-14) | edit |
+| updateQualifierStatus | actions/qualifier-actions.ts | Existing (shared with Fairway until 2026-11-14) | close and reopen (organisation compare) |
+| setQualifierSquadSize, setQualifierEntrants | actions/qualifier-setup.ts | **Held** (D-61; refuses unless `isClubhouseFor('coach')`, which since 2026-11-14 is a role check only) | Edit's squad and players |
+| saveQualifierRules | actions/qualifier-rules.ts | Existing (golf_qualifier_rules, 20261115240000, applied 2026-11-16) | the tie rule and count best (F-04, F-06) |
+| saveQualifierExemptions | actions/qualifier-exemptions.ts | Existing (golf_qualifier_exemptions, 20261116100000, applied 2026-11-16) | exempt players (F-06) |
 | advanceSelectionState, setQualifierCoachPick, removeQualifierCoachPick, confirmQualifierSelection | actions/v3/qualifying.ts | Existing (shared with the CoachHelm qualifying workspace) | Manage selections; `getAuthedCoachContext` and `verifyPlayersOnTeam` gate them |
 | listCoursesStrict, getTeamSavedCourses, getCourseDetail | actions/course-library.ts | Existing | the course picker |
 | loadQualifyingWorkspace | lib/coachhelm/v3/qualifying/loader.ts | Existing (same loader the confirm and the tie places use) | Manage selections' read. A failed qualifier, picks, reasons or rounds read returns null (callers: the Fairway workspace page, the Clubhouse loader, `chooseTiePlace`, `confirmSelection`), never a workspace that looks empty |
@@ -161,7 +177,8 @@ RPCs:     golf_qualifier_selection_reasons (via readQualifierSelectionReasons; t
           until the D-35 migration is applied)
 Storage:  none
 Realtime: ch-qualifier-<id>: golf_rounds filtered to the qualifier, live qualifiers only
-Cache:    none on the Clubhouse side. The Fairway page sets revalidate 300; the Clubhouse route is a server render.
+Cache:    none on the Clubhouse side. qualifiers/page.tsx sets revalidate 300 (once the Fairway page's); the Clubhouse route
+          is a server render.
 Refresh:  a live `router.refresh()` is a transition: the page on screen (standings, courses, cards) stays until the new render,
           including its streamed part, has landed, and then changes in one commit. Where a refresh is not a transition (a
           test), the streamed places show their placeholders and the standings are the new ones at once. A refresh whose
@@ -181,22 +198,23 @@ The board's rounds are `golf_rounds` linked by `qualifier_id` (never by date),
 entered players only; a second round in one numbered slot counts once (the first
 by id), a round with no number always counts. `model.ts` `countsOnBoard` and
 `roundOfRow` hold the rule; `readRounds` filters the query on it and again after
-it. Order is `ranking.ts` `rankStandings`, the one order (owner, 2026-10-28:
-the server decides tie order once): a card a round short below every full
-card (owner decision 10), then to par, strokes, more rounds, name; ties on to par
-and strokes share a T position, inside one group only; players level across the
-last place on score are "Tie at cut" (Q-114); Manage selections, the tie choice
-and Confirm squad, on Clubhouse and Fairway alike, read the workspace in that
-order with no caller-chosen order (owner decision A: "Match the board"), so the
-squad confirmed is the one shown above the
-line; the Bubble is the places below the line on score down to
-the squad size, with at least ⌈rounds ÷ 2⌉ rounds in (P009-C2). Status is the
-stored column; only the first round moves upcoming to live, and only the coach
-closes.
+it. Order is `ranking.ts` `rankStandings`, the one order (owner, 2026-10-28: the
+server decides tie order once): a card a round short below every full card
+(owner decision 10), then to par, strokes, more rounds, name; ties on to par and
+strokes share a T position, inside one group only; players level across the last
+place on score are "Tie at cut" (Q-114); Manage selections, the tie choice and
+Confirm squad, on Clubhouse and (until 2026-11-14) Fairway alike, read the
+workspace in that order with no caller-chosen order (owner decision A: "Match
+the board"), so the squad confirmed is the one shown above the line; the Bubble
+is the places below the line on score down to the squad size, with at least
+⌈rounds ÷ 2⌉ rounds in (P009-C2). Status is the stored column; only the first
+round moves upcoming to live, and only the coach closes.
 
 Against production
 (`src/components/fairway/pages/qualifiers/__tests__/standings-parity.test.tsx`
-runs all three; Fairway's live leaderboard follows the rule since 2026-10-17):
+ran all three; Fairway's live leaderboard followed the rule from 2026-10-17. The
+test and the Fairway leaderboard were deleted on 2026-11-14 and are kept in the
+tag `archive/fairway-2026-11-15`; the table is the record as of then):
 
 | Behaviour | Selection workspace (confirm) | Fairway live leaderboard | Clubhouse |
 | --- | --- | --- | --- |
@@ -223,11 +241,12 @@ rounds.
 
 ## Impact notes
 
-- The five server actions in `golf.ts` and the four in `v3/qualifying.ts` are
-  shared. Fairway's Qualifiers and the CoachHelm qualifying workspace call them
-  too, so a change to their wording or result shape changes both UIs;
-  `selectionReason` maps their refusal strings to sentences and falls back to
-  the toast's own hint for a string it does not know. Its cases are written from
+- The server actions in `qualifier-actions.ts` (once `golf.ts`) and the four in
+  `v3/qualifying.ts` are shared. The CoachHelm qualifying workspace calls them
+  too (as Fairway's Qualifiers did until 2026-11-14), so a change to their
+  wording or result shape changes both; `selectionReason` maps their refusal
+  strings to sentences and falls back to the toast's own hint for a string it
+  does not know. Its cases are written from
   `lib/coachhelm/v3/qualifying/service.ts`'s exact sentences
   (`qualifier-write-parity.test.tsx`), the specific ones before the general
   "cannot confirm" and "could not verify"; a reworded service refusal falls back

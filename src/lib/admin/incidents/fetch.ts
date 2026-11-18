@@ -16,6 +16,7 @@ import {
   type StaleUnresolvedResult,
 } from '@/lib/admin/data/incident-feed';
 import type { CorrelatedSignal } from '@/lib/reliability/types';
+import { isScoped, type BridgeUiScope } from '@/lib/admin/bridge-scope';
 
 import { correlateIncidents, type CorrelationSourceHealth, type IncidentDraft } from './correlate';
 import { deriveLifecycle } from './lifecycle';
@@ -475,6 +476,26 @@ export interface IncidentBoard {
    * and must never take the rest of the board down with it.
    */
   staleUnresolved: StaleUnresolvedResult;
+  /**
+   * The product UI this board was narrowed to (src/lib/admin/bridge-scope.ts), so a page can say so. Absent on an
+   * unscoped (machinery) read.
+   */
+  scope?: BridgeUiScope;
+}
+
+/**
+ * Under a UI scope, an incident is kept only when something attributable to that UI is behind it: an app fingerprint
+ * (admin_events rows already narrowed by the scope) or a Sentry issue (already narrowed by `ui:<scope>`). A
+ * reliability-only incident (a Supabase or Vercel signal the collector correlated, with no app or Sentry contributor)
+ * cannot be attributed to a UI, so it stays out of the scoped views; folded into a kept incident, it still shows there
+ * as evidence. Pure, exported for tests.
+ */
+export function keepScopedDrafts<T extends Pick<IncidentDraft, 'appFingerprints' | 'sentryIssueIds'>>(
+  drafts: readonly T[],
+  scope: BridgeUiScope | undefined,
+): T[] {
+  if (!isScoped(scope)) return [...drafts];
+  return drafts.filter((d) => d.appFingerprints.length > 0 || d.sentryIssueIds.length > 0);
 }
 
 function toAnalysis(stored: RcaAnalysis, repairVerdict: IncidentAnalysis['repairVerdict']): IncidentAnalysis {
@@ -577,7 +598,7 @@ export async function fetchIncidentBoard(
     // resolve, so this does not need to wait on it (see
     // `excludeInWindowFingerprints`'s own doc comment for why exclusion is a
     // separate, pure step rather than a second query parameter).
-    queryStaleUnresolvedIncidents(filters.windowHours),
+    queryStaleUnresolvedIncidents(filters.windowHours, filters.scope),
   ]);
 
   const nowIso = new Date(now).toISOString();
@@ -620,11 +641,14 @@ export async function fetchIncidentBoard(
     eventIdsByFingerprint.set(item.fingerprint, item.eventIds);
   }
 
-  const drafts: IncidentDraft[] = correlateIncidents({
-    triage: feed.incidents,
-    reliabilitySignals: reliability.signals,
-    sourceHealth,
-  });
+  const drafts: IncidentDraft[] = keepScopedDrafts(
+    correlateIncidents({
+      triage: feed.incidents,
+      reliabilitySignals: reliability.signals,
+      sourceHealth,
+    }),
+    filters.scope,
+  );
 
   // Analyses are keyed by the incident's own id: a bare fingerprint for
   // app-origin incidents, `rel:<signature>` for reliability-origin ones. Both
@@ -791,6 +815,7 @@ export async function fetchIncidentBoard(
     computedAt: nowIso,
     windowHours: filters.windowHours,
     staleUnresolved,
+    ...(filters.scope ? { scope: filters.scope } : {}),
   };
 }
 
@@ -832,8 +857,8 @@ export async function fetchIncidentById(
  * time — a memoisation that looks applied and does nothing. The same trap
  * `cachedIncidentFeed` documents, one layer up.
  */
-export const cachedIncidentBoard = cache((windowHours: number) =>
-  fetchIncidentBoard({ windowHours }),
+export const cachedIncidentBoard = cache((windowHours: number, scope?: BridgeUiScope) =>
+  fetchIncidentBoard(scope ? { windowHours, scope } : { windowHours }),
 );
 
 /**
