@@ -88,7 +88,8 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
                 {p.heldBack ? ` · ${p.heldBack} held back` : ''}
               </span>
             </span>
-            {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">{STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">No rounds yet</span>)}
+            {/* L-075: a player with no rounds says so once, in the line under the name; a chip in the stat column repeated it off-centre. */}
+            {!phone && (p.rounds && p.worst ? <span className="lm"><Badge tone="warning">{STATION_SHORT[p.worst]}</Badge></span> : <span />)}
             {p.rounds ? (
               <>
                 <FingerPrint player={p} labels={!phone} scale={ruler} />
