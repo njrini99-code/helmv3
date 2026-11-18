@@ -58,10 +58,11 @@ export const HOLE: Record<'v' | 'h', HoleGeometry> = {
       putting: { x: 170, y: 76, lx: 252, ly: 58, a: 'start' },
     },
     coins: {
+      // L-030: tucked against the Approach mark (110, 250), not 80 units away at the drawing's edge.
       approach: [
-        [40, 292],
-        [64, 292],
-        [88, 292],
+        [72, 274],
+        [70, 300],
+        [96, 310],
       ],
       // Off the bunker at (110, 100), where a hollow coin read as a broken mark (TEAM-11).
       putting: [

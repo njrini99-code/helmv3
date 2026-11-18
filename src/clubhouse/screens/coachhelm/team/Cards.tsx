@@ -246,7 +246,13 @@ export function RecordCard({ part, desk = false, recheck = null }: { part: ChTea
           )}
           <span>{checked > 0 ? 'reads held up when re-checked' : r.program}</span>
         </div>
-        {r.rungs.map((g) => (
+        {/* L-002: with no level drawn there is nothing to list; say it once, not five times. */}
+        {r.rungs.every((g) => !g.bar) && (
+          <p className="n" data-ch-record-none="">
+            {checked > 0 ? 'Not enough re-checked reads at any level yet.' : 'No reads re-checked yet.'}
+          </p>
+        )}
+        {r.rungs.some((g) => g.bar) && r.rungs.map((g) => (
           <div className="lv" key={g.id}>
             <span>{g.word}</span>
             {g.bar ? (
@@ -266,7 +272,7 @@ export function RecordCard({ part, desk = false, recheck = null }: { part: ChTea
         ))}
       </div>
       <div className="recfoot">
-        <span>Line: the target for that level</span>
+        {r.rungs.some((g) => g.bar) && <span>Line: the target for that level</span>}
         {recheck}
       </div>
     </section>

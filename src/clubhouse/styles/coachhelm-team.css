@@ -88,7 +88,7 @@
    longer stretches every tile to the one with a picture, and the byline follows the title instead of sinking to the foot. */
 .ch-htb .tiles {
   display:flex;
-  align-items:flex-start;
+  align-items:stretch;
   gap:8px;
   overflow-x:auto;
   scrollbar-width:none;
@@ -124,6 +124,14 @@
   height:44px;
   display:flex;
   align-items:center;
+}
+.ch-htb .tile .tvk {
+  margin-top:-4px;
+  font: var(--ch-type-11-medium);
+  color:var(--ch-ink-600);
+}
+.ch-htb.is-desk .tile .tvk {
+  display:none;
 }
 .ch-htb .tv-holes {
   display:grid;
@@ -2146,6 +2154,9 @@
   .ch-htb .tiles {
     scroll-padding-inline:16px;
     overscroll-behavior-x:contain;
+    /* L-029: the cut-off tile fades out instead of ending mid-word. */
+    -webkit-mask-image:linear-gradient(90deg, black calc(100% - 28px), transparent);
+    mask-image:linear-gradient(90deg, black calc(100% - 28px), transparent);
   }
 }
 

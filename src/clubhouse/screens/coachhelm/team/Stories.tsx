@@ -387,9 +387,13 @@ export function StoriesCard({
           // desk it closes the row, so every row's words start on one line whether it has a picture or not (W10, staging 11 Nov: of
           // three rows, the one picture pushed the middle row's words in, beside a target tick that read as a divider).
           const figure = (s.kind === 'read' ? roundOf(s) : s.kind === 'working' ? s.progress : null) ? (
-            <span className="tv">
-              <TileVisual story={s} round={roundOf(s)} />
-            </span>
+            <>
+              <span className="tv">
+                <TileVisual story={s} round={roundOf(s)} />
+              </span>
+              {/* L-029: the gauge says what its marks are. */}
+              {phone && s.kind === 'working' && <span className="tvk">Start · now · goal</span>}
+            </>
           ) : null;
           return (
             <button

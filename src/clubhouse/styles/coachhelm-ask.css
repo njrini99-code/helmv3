@@ -138,7 +138,8 @@
 .ch-ask-foot.is-home {
   max-width: 680px;
   margin-inline: auto;
-  padding: 0 16px;
+  /* L-031: its own breathing room under the board line and above the frame's edge. */
+  padding: var(--ch-space-3) 16px var(--ch-space-4);
 }
 /* Q2 A: on a desk the new chat's home fills the pane (coachhelm-ask-v2.css, .ch-ak-home), with this line under it. */
 .ch-ask:not(.is-phone) .ch-ask-scroll.is-home {

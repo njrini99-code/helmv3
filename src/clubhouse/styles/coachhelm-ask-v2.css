@@ -431,7 +431,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   background: var(--ch-ink-300);
 }
 .ch-ak-home:not(.is-phone) .pulse small {
-  margin-top: var(--ch-space-1);
+  margin-top: var(--ch-space-2);
   color: var(--ch-text-tertiary);
 }
 .ch-ak-th .work .sum.is-live {
