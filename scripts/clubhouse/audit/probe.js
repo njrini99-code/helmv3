@@ -522,6 +522,11 @@
       seen.add(el);
       const range = document.createRange();
       range.selectNodeContents(node);
+      // Screen-reader-only text is hidden on screen by design (a 13 Nov false positive): skip it by class or by the clip
+      // that hides it.
+      if (el.closest('.sr-only, .ch-sr-only, .visually-hidden, [data-sr-only]')) continue;
+      const hid = getComputedStyle(el);
+      if ((hid.clip && hid.clip !== 'auto') || /inset\(50%\)/.test(hid.clipPath) || (parseFloat(hid.width) <= 1 && parseFloat(hid.height) <= 1)) continue;
       const full = range.getBoundingClientRect();
       if (full.width < 2 || full.height < 2 || full.bottom < 0 || full.top > innerHeight) continue;
       // Measure only what can be seen: clip to the viewport and to every ancestor that clips its overflow. Text scrolled
