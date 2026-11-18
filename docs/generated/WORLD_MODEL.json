@@ -1919,6 +1919,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/hooks/golf/use-push-subscription.ts",
+        "pattern": "src/hooks/golf/use-push-subscription.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/hooks/golf/use-surface-prewarm.ts",
         "pattern": "src/hooks/golf/use-surface-prewarm.ts",
         "category": "services"
@@ -2483,6 +2488,11 @@
       {
         "id": "tests:src/hooks/golf/__tests__/use-golf-messages.send-integrity.test.ts",
         "pattern": "src/hooks/golf/__tests__/use-golf-messages.send-integrity.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/hooks/golf/__tests__/use-push-subscription.test.tsx",
+        "pattern": "src/hooks/golf/__tests__/use-push-subscription.test.tsx",
         "category": "tests"
       },
       {
@@ -25421,6 +25431,18 @@
     },
     {
       "source": "settings_preferences",
+      "target": "services:src/hooks/golf/use-push-subscription.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/use-push-subscription.ts"
+        }
+      ]
+    },
+    {
+      "source": "settings_preferences",
       "target": "services:src/lib/coachhelm/v3/foundation/generator-toggles.ts",
       "kind": "feature_service",
       "evidence": [
@@ -25452,6 +25474,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/hooks/golf/__tests__/use-appearance-preferences.test.tsx"
+        }
+      ]
+    },
+    {
+      "source": "settings_preferences",
+      "target": "tests:src/hooks/golf/__tests__/use-push-subscription.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/__tests__/use-push-subscription.test.tsx"
         }
       ]
     },
