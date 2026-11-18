@@ -41,9 +41,15 @@ Where things live:
 
 - **Page IDs** are permanent (D-60): P001 Shell, P002 Home, P003 Roster,
   P004 Stats team, P005 Stats player, P006 Calendar, P007 Messages, P008
-  Settings, P009 Qualifiers. A new page takes the next free ID when its
+  Settings, P009 Qualifiers, P010 Team Hub, P011 Rounds (with Live rounds),
+  P012 Classes, P013 CoachHelm (with What's New's catalog rows), P014
+  Recruiting, P015 Auth (with onboarding), P016 Tournaments, P017 Practice
+  (the list is `config/clubhouse/pages/`; `generated/CLUBHOUSE_PAGE_MAP.md`
+  is its read-only view). A new page takes the next free ID when its
   build starts, and its Bridge namespace is its number (P010 is 10). A page
-  that isn't being built yet has no ID.
+  that isn't being built yet has no ID. A page may have no catalog file of its
+  own (P017 Practice: its rows are the "Practice:" rows of `catalog/coachhelm.md`,
+  so its Bridge IDs are P013's).
 - **CH- codes** (`catalog/README.md`) sit on elements (`data-ch-code`, or a
   component's `code` prop) and name the tests. They never change.
 - **Bridge IDs** (D-68) are the namespace, a two-digit category and a
@@ -251,7 +257,8 @@ All of these are off in every environment (`config/feature-flags.yml`).
 - `clubhouse_stats_redesign_v1`: see `memory/features/stats-analytics.md`.
 - The Messages redesign flag: see `memory/features/team-communications.md`.
 - The CoachHelm flags: see `memory/features/coachhelm-ai.md`.
-- The practice plan flag: see `memory/features/team-operations.md`.
+- The practice plan flag (`golf_practice_plans`) is retired: the plan page and its
+  writes are always on (`memory/features/team-operations.md`, "Practice plans").
 
 The redesign's migrations are written and not applied.
 `supabase/migrations/HELD.md`

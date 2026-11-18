@@ -36,21 +36,25 @@ contracts that cover them are P013's (CONTRACT.md).
 | ACT-P017-SAVE-TEMPLATE | Save, rename, delete a template | `LibraryPages` | `savePracticeTemplate`, `renamePracticeTemplate`, `deletePracticeTemplate` |
 | ACT-P017-NEW-PRACTICE | A new practice | `NewPlanSheet` | `createGolfEvent` (calendar-events.ts) |
 
-Server actions live in `src/app/golf/actions/practice-{plans,publish,library}.ts`;
+Server actions live in
+`src/app/golf/actions/practice-{plans,publish,library}.ts`;
 their error codes are the design's CH-17xxx (PAGE.md). The plan's body model and
 limits are `src/lib/coachhelm/v3/practice-plan/model.ts`; the helper is
-`builder/HelperSession.tsx` through `useCoachHelmChat({ surface: 'practice_helper' })`.
+`builder/HelperSession.tsx` through `useCoachHelmChat({ surface:
+'practice_helper' })`.
 
 ## Data
 
 Tables: `golf_practice_plans`, `golf_practice_plan_versions`,
 `golf_practice_plan_lines`, `golf_practice_plan_opens`,
 `golf_practice_plan_formats`, `golf_practice_groups`,
-`golf_practice_templates`, `golf_team_drills`; Documents rows for published plans
+`golf_practice_templates`, `golf_team_drills`; Documents rows for published
+plans
 (`golf_documents.practice_plan_id`). A player reads only the published version.
 
 ## Impact notes
 
-Team Hub deletes a draft through `deletePracticePlan`; the plan sheet and player plan page are P013's; Calendar
+Team Hub deletes a draft through `deletePracticePlan`; the plan sheet and
+player plan page are P013's; Calendar
 creates the practice for New plan. A change to `model.ts` limits changes the
 server's validation codes.

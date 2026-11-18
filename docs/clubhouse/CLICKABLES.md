@@ -255,7 +255,7 @@ controls).
 | Undo (toast action after New session) | Toast stack, bottom, after New session | No toast: New event navigates to the editor, nothing is drafted to undo; D-4, docs/clubhouse/PROGRESS.md:164 | `decided` | Board's toast Undo has no handler on the board. Follows from D-4 replacing the draft with the editor link. |
 | Previous round (chevron-left) | Latest round pane, header pager | Steps to the previous of the latest three rounds, src/clubhouse/screens/home/LatestRound.tsx:81 | `works` | Pager hidden when fewer than two rounds (LatestRound.tsx:76). |
 | Next round (chevron-right) | Latest round pane, header pager | Steps to the next round, src/clubhouse/screens/home/LatestRound.tsx:82 | `works` | Same pager rule. |
-| Open recap | Latest round pane, footer right | "<First name>'s stats": link to Stats `?player=<id>`, src/clubhouse/screens/home/LatestRound.tsx:167; D-17 docs/clubhouse/PROGRESS.md:176, Q-66 docs/clubhouse/PROGRESS.md:292 | `GAP` | Build in src/clubhouse/screens/home/LatestRound.tsx: link "Open recap" to `rebuiltHref(/golf/dashboard/rounds/${r.id}, 'coach')` (review is rebuilt for coach, src/clubhouse/shell/nav.ts:140), Player stats only as the null fallback. Reach high: on the main card every session. Reclassified from `decided`: D-17 and Q-66 (docs/clubhouse/PROGRESS.md:176, :292) rest on 'no round review is rebuilt', which is no longer true; Stats already links it (src/clubhouse/screens/stats/StatsPlayer.tsx:384). No handler on the board. |
+| Open recap | Latest round pane, footer right | "\<First name>'s stats": link to Stats `?player=<id>`, src/clubhouse/screens/home/LatestRound.tsx:167; D-17 docs/clubhouse/PROGRESS.md:176, Q-66 docs/clubhouse/PROGRESS.md:292 | `GAP` | Build in src/clubhouse/screens/home/LatestRound.tsx: link "Open recap" to `rebuiltHref(/golf/dashboard/rounds/${r.id}, 'coach')` (review is rebuilt for coach, src/clubhouse/shell/nav.ts:140), Player stats only as the null fallback. Reach high: on the main card every session. Reclassified from `decided`: D-17 and Q-66 (docs/clubhouse/PROGRESS.md:176, :292) rest on 'no round review is rebuilt', which is no longer true; Stats already links it (src/clubhouse/screens/stats/StatsPlayer.tsx:384). No handler on the board. |
 | Full roster | Leaderboard section header, right | Link to Roster, src/clubhouse/screens/home/Leaderboard.tsx:83 (rebuiltHref at :69) | `works` | No handler on the board. |
 | Leaderboard row (x6) | Leaderboard, each player row | Row is a Link to that player's Stats `?player=<id>`, src/clubhouse/screens/home/Leaderboard.tsx:58 (href at :27); route reads it at src/clubhouse/routes/stats.tsx:34 | `works` | Board draws rows as buttons with no handler. |
 | Invite players | Empty state (EMPTY.home.coach), primary | Link to Roster, src/clubhouse/screens/home/CoachHome.tsx:82 (HomeFirstRun, CH-2308, D-71) | `works` | Board goes to Coach - Roster.html; same destination. |
@@ -361,7 +361,7 @@ again state is drawn.
 - Q-69 (PROGRESS.md:295) and phone/home-player.md:24 and :29 have two stale
   clauses: Add classes now draws (Classes rebuilt for players), and Open recap's
   "until a round recap exists" is met by the round review at
-  /golf/dashboard/rounds/<id>. The Home line under Data gaps (PROGRESS.md:386)
+  /golf/dashboard/rounds/\<id>. The Home line under Data gaps (PROGRESS.md:386)
   is stale for the same reason.
 - Every Post a round and Start a round row turns `works` once
   `/golf/dashboard/rounds/new` joins CH_REBUILT_ROUTES.player (Q-78); the N
@@ -409,7 +409,7 @@ handler), recent-round rows in the panel (no handler).
 | Coach's note (textarea) | Player panel, Coach's note section | Saves on blur through setIntent, src/clubhouse/screens/roster/RosterPeek.tsx:245; server upserts at src/app/golf/actions/v3/intent.ts:71 | `works` | CH-3004, CH-3101, CH-3209; board has no save handler, build saves |
 | Open full profile | Player panel, footer (primary) | Link to stats?player=id, src/clubhouse/screens/roster/RosterPeek.tsx:187 | `works` | Same destination as the board (Coach - Stats.html?player=) |
 | Copy | Invite players modal, join code well | Copies the join code with a toast, src/clubhouse/screens/roster/Roster.tsx:610 (useCopyText.ts:13) | `works` | CH-3006 on failure; CH-3207 or CH-3304 when there is no code |
-| player@email.com field and Send | Invite players modal, Or send an invite | Not drawn; replaced by the invite link with Share (or Copy), src/clubhouse/screens/roster/Roster.tsx:618 | `data-gap` | No invite-by-email action (docs/clubhouse/PROGRESS.md:391); D-54 restates no invite by email (PROGRESS.md:202) |
+| <player@email.com> field and Send | Invite players modal, Or send an invite | Not drawn; replaced by the invite link with Share (or Copy), src/clubhouse/screens/roster/Roster.tsx:618 | `data-gap` | No invite-by-email action (docs/clubhouse/PROGRESS.md:391); D-54 restates no invite by email (PROGRESS.md:202) |
 | Done | Invite players modal, footer | Closes the modal, src/clubhouse/screens/roster/Roster.tsx:603 | `works` | |
 | Invite players | Empty state (EMPTY.roster), primary | Opens the Invite players modal, src/clubhouse/screens/roster/Roster.tsx:332 | `works` | No handler on the board (EMPTY.roster has no href). Body copy changed to team code (PROGRESS.md:383) |
 | Copy team code | Empty state (EMPTY.roster), secondary | Copies the join code, src/clubhouse/screens/roster/Roster.tsx:338 | `works` | No handler on the board. Shown only when the team has a code (catalog/roster.md:47) |
@@ -966,8 +966,8 @@ scaffolding: board labels, SafariBar, inline qm-tabs tab bar, the top bar bell
 | Leaderboard row card (x N) | 02 Detail, Leaderboard | Opens the PlayerRounds sheet, src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx:277 | `works` | Player can open only their own row (:226) |
 | Close (x) and scrim tap | 03 Player rounds sheet, header right / backdrop | Modal close button and backdrop dismiss, src/clubhouse/ui/Modal.tsx:90 and :74 | `works` | Also drag to dismiss on phone (Modal.tsx:44) |
 | Round chips R1 to Rn (x N) | 03 Player rounds sheet, chip row | Select a round; unplayed disabled, src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx:363 | `works` | |
-| Message | 03 Player rounds sheet, footer left | Link to /golf/dashboard/messages?player=<id> through rebuiltHref, src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx:325 and :338 | `works` | No handler on the board. Deep link opens or starts the thread (src/clubhouse/screens/messages/Messages.tsx:103). Coach only |
-| Stats | 03 Player rounds sheet, footer right | Link to /golf/dashboard/stats?player=<id> through rebuiltHref, src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx:326 and :343 | `works` | No handler on the board. Stats route takes player (src/app/golf/(dashboard)/dashboard/stats/page.tsx:49) |
+| Message | 03 Player rounds sheet, footer left | Link to /golf/dashboard/messages?player=\<id> through rebuiltHref, src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx:325 and :338 | `works` | No handler on the board. Deep link opens or starts the thread (src/clubhouse/screens/messages/Messages.tsx:103). Coach only |
+| Stats | 03 Player rounds sheet, footer right | Link to /golf/dashboard/stats?player=\<id> through rebuiltHref, src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx:326 and :343 | `works` | No handler on the board. Stats route takes player (src/app/golf/(dashboard)/dashboard/stats/page.tsx:49) |
 | Cancel | 04 Create, top bar left | PhoneTop back runs cancel (discard confirm when dirty), src/clubhouse/screens/qualifiers/QualifierForm.tsx:190 | `works` | |
 | Create | 04 Create, top bar right | PhoneTextAction submit to createGolfQualifier, src/clubhouse/screens/qualifiers/QualifierForm.tsx:192 | `works` | Board goes to a fixed detail; built validates and opens the new one |
 | Qualifier name, Description | 04 Create, Basics | Controlled inputs, src/clubhouse/screens/qualifiers/QualifierForm.tsx:241 and :253 | `works` | |
@@ -1015,12 +1015,12 @@ hover title (no action).
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
 | New round | Library header, right | Not drawn: `roundsLinks.newRound` is rebuiltHref('/golf/dashboard/rounds/new','player'), src/clubhouse/screens/rounds/RoundsLibrary.tsx:29, gated at :105 | `hidden-until-rebuilt` | /golf/dashboard/rounds/new is not in CH_REBUILT_ROUTES.player (src/clubhouse/shell/nav.ts:123) nor the uuid pattern (:141). Q-78 (PROGRESS.md:304); ROUNDS_PLAN.md:25 |
-| In-progress card, Continue at hole 4 (whole card is a button) | Library hero, left card | Card drawn; Continue link not drawn: rebuiltHref('/golf/dashboard/rounds/continue/<id>','player') RoundsLibrary.tsx:30, rendered only if set at src/clubhouse/screens/rounds/parts.tsx:147 | `hidden-until-rebuilt` | continue/<id> not in nav.ts:123 or :141 (player). Q-78. Built puts the action on the CTA link, not the whole card; Discard (trash) is built-only |
+| In-progress card, Continue at hole 4 (whole card is a button) | Library hero, left card | Card drawn; Continue link not drawn: rebuiltHref('/golf/dashboard/rounds/continue/\<id>','player') RoundsLibrary.tsx:30, rendered only if set at src/clubhouse/screens/rounds/parts.tsx:147 | `hidden-until-rebuilt` | continue/\<id> not in nav.ts:123 or :141 (player). Q-78. Built puts the action on the CTA link, not the whole card; Discard (trash) is built-only |
 | Show example | Library hero, idle card, top right | Not drawn | `decided` | Board device, dropped: docs/clubhouse/phone/rounds.md:34 and ROUNDS_PLAN.md:80 |
 | Start a round | Library hero, idle card footer | Not drawn: startHref is the same newHref, parts.tsx:107, passed at RoundsLibrary.tsx:137 | `hidden-until-rebuilt` | /rounds/new not rebuilt for player (nav.ts:123). Q-78; catalog/rounds.md:67 (CH-11304). Same rule as Home's Start a round (Q-69, PROGRESS.md:295) |
 | Search course… | Book toolbar, left | Filters the book by course name, SearchField src/clubhouse/screens/rounds/RoundsLibrary.tsx:185, filter in groupRounds :35-37 | `works` | No match shows CH-11303 (RoundsLibrary.tsx:198) |
 | By month / By course (x 2) | Book toolbar, right | Segmented regroups the book, src/clubhouse/screens/rounds/RoundsLibrary.tsx:186-195, grouping key at :40 | `works` | |
-| Round card (x N) | Book, each round row | Link to the round's review /golf/dashboard/rounds/<id>, src/clubhouse/screens/rounds/parts.tsx:363, href from src/clubhouse/screens/rounds/RoundsLibrary.tsx:31 and :222 | `works` | Review is rebuilt for player by the uuid pattern nav.ts:141; its contents belong to Rounds part B |
+| Round card (x N) | Book, each round row | Link to the round's review /golf/dashboard/rounds/\<id>, src/clubhouse/screens/rounds/parts.tsx:363, href from src/clubhouse/screens/rounds/RoundsLibrary.tsx:31 and :222 | `works` | Review is rebuilt for player by the uuid pattern nav.ts:141; its contents belong to Rounds part B |
 | Course row (x N: Recently played, Team courses, Course library, Results) | Course picker sheet, lists | Opens that course's tees, src/clubhouse/screens/rounds/setup/CoursePicker.tsx:98-105 | `decided` | [preview-only] setup mounts only at /clubhouse-preview/setup (src/clubhouse/preview/PreviewSetup.tsx:30); /rounds/new not rebuilt, Q-78 (PROGRESS.md:304) |
 | Search courses | Course picker sheet, top | Filters the lists with groupCourses, CoursePicker.tsx:77 and :72 | `decided` | [preview-only] Q-78. No-match copy CH-11310 (CoursePicker.tsx:121-126) |
 | Add a course | Course picker sheet, below the lists | Closes the picker and opens Add a course, CoursePicker.tsx:127 into RoundSetup.tsx:367-370 | `decided` | [preview-only] Q-78 |
@@ -1066,12 +1066,12 @@ GHBoards switcher; tracking and review frames (Rounds part B); the Started view
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
 | New round | 01 Rounds, page header right | Not drawn: rebuiltHref('/golf/dashboard/rounds/new','player'), src/clubhouse/screens/rounds/RoundsLibrary.tsx:29, gated at :105 | `hidden-until-rebuilt` | /rounds/new not in CH_REBUILT_ROUTES.player (src/clubhouse/shell/nav.ts:123) or :141. Q-78 (PROGRESS.md:304) |
-| In-progress card, Continue at hole 4 (whole card is a button) | 01 Rounds, round card | Card drawn; Continue link not drawn, src/clubhouse/screens/rounds/parts.tsx:147, href RoundsLibrary.tsx:30 | `hidden-until-rebuilt` | /rounds/continue/<id> not in nav.ts:123 or :141. Q-78 |
+| In-progress card, Continue at hole 4 (whole card is a button) | 01 Rounds, round card | Card drawn; Continue link not drawn, src/clubhouse/screens/rounds/parts.tsx:147, href RoundsLibrary.tsx:30 | `hidden-until-rebuilt` | /rounds/continue/\<id> not in nav.ts:123 or :141. Q-78 |
 | Show example | 02 Rounds · none in progress, idle card top right | Not drawn | `decided` | Board device, dropped: docs/clubhouse/phone/rounds.md:34, ROUNDS_PLAN.md:80 |
 | Start a round | 02 Rounds · none in progress, idle card footer | Not drawn, parts.tsx:107 (startHref null) | `hidden-until-rebuilt` | /rounds/new not rebuilt (nav.ts:123). Q-78; same rule as Home (Q-69, PROGRESS.md:295) |
 | Search course… | 01 Rounds, book toolbar | Filters by course, src/clubhouse/screens/rounds/RoundsLibrary.tsx:185, groupRounds :35-37 | `works` | |
 | By month / By course (x 2) | 01 Rounds, book toolbar | Segmented, src/clubhouse/screens/rounds/RoundsLibrary.tsx:186-195 | `works` | |
-| Round card (x N) | 01 Rounds, book rows | Link to /golf/dashboard/rounds/<id>, src/clubhouse/screens/rounds/parts.tsx:363, href src/clubhouse/screens/rounds/RoundsLibrary.tsx:31 | `works` | Phone row drops the grid and meters below 640px (phone/rounds.md:64) |
+| Round card (x N) | 01 Rounds, book rows | Link to /golf/dashboard/rounds/\<id>, src/clubhouse/screens/rounds/parts.tsx:363, href src/clubhouse/screens/rounds/RoundsLibrary.tsx:31 | `works` | Phone row drops the grid and meters below 640px (phone/rounds.md:64) |
 | Course row (x N) | 03 Course picker, lists | Opens that course's tees, src/clubhouse/screens/rounds/setup/CoursePicker.tsx:98-105 | `decided` | [preview-only] /clubhouse-preview/setup only (src/clubhouse/preview/PreviewSetup.tsx:30); Q-78 |
 | Search courses | 03 Course picker, top | Filters, CoursePicker.tsx:77 | `decided` | [preview-only] Q-78 |
 | Add a course | 03 Course picker, bottom | Opens Add a course, CoursePicker.tsx:127, RoundSetup.tsx:367-370 | `decided` | [preview-only] Q-78 |
@@ -1112,7 +1112,7 @@ GHBoards switcher; tracking and review frames (Rounds part B); the Started view
   ChSetupPorts and the route is added to CH_REBUILT_ROUTES.player.
 - New round, Start a round (idle card and EMPTY.rounds) and Continue are all
   gated by rebuiltHref (RoundsLibrary.tsx:29-30); adding
-  /golf/dashboard/rounds/new and a continue/<id> pattern to nav.ts draws them at
+  /golf/dashboard/rounds/new and a continue/\<id> pattern to nav.ts draws them at
   once, as with Home's Q-69 controls.
 - gh-states.jsx defines no failed state or Try again for rounds; the loading
   skeletons have no controls.
@@ -1134,7 +1134,7 @@ EMPTY.rounds and the rounds skeleton (library states, Rounds part A).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
-| Exit | Tracking, top bar, left | Pill calls onExit; the preview opens the Exit sheet, src/clubhouse/screens/rounds/track/RoundTracking.tsx:75, src/clubhouse/preview/PreviewTracking.tsx:78 | `decided` | [preview-only] Q-78 (docs/clubhouse/PROGRESS.md:304): /golf/dashboard/rounds/new and /continue/<id> are not rebuilt (src/clubhouse/shell/nav.ts:123, 141) |
+| Exit | Tracking, top bar, left | Pill calls onExit; the preview opens the Exit sheet, src/clubhouse/screens/rounds/track/RoundTracking.tsx:75, src/clubhouse/preview/PreviewTracking.tsx:78 | `decided` | [preview-only] Q-78 (docs/clubhouse/PROGRESS.md:304): /golf/dashboard/rounds/new and /continue/\<id> are not rebuilt (src/clubhouse/shell/nav.ts:123, 141) |
 | Scorecard | Tracking, top bar, right | Pill opens the Scorecard sheet, src/clubhouse/screens/rounds/track/RoundTracking.tsx:92, src/clubhouse/screens/rounds/track/round-sheets.tsx:88 | `decided` | [preview-only] Q-78 (docs/clubhouse/PROGRESS.md:304) |
 | Hole cell (x 18) | Tracking, hole strip | Goes to that hole (earlier, scored, or the next unplayed), src/clubhouse/screens/rounds/track/parts.tsx:84 | `decided` | [preview-only] The board opens the Scorecard sheet on a done hole; built navigates to it, CH-11805 (docs/clubhouse/catalog/rounds.md:132), docs/clubhouse/phone/rounds.md:75. Q-78 |
 | Shot log header (expand, chevron) | Tracking, hole hero, under the map | Toggles the full shot list, src/clubhouse/screens/rounds/track/parts.tsx:202 | `decided` | [preview-only] Q-78 (docs/clubhouse/PROGRESS.md:304); CH-11602 |
@@ -1168,7 +1168,7 @@ EMPTY.rounds and the rounds skeleton (library states, Rounds part A).
 | Back to hole 18 | Round complete sheet, footer | Closes the sheet, src/clubhouse/screens/rounds/track/round-sheets.tsx:247 | `decided` | [preview-only] Q-78 (docs/clubhouse/PROGRESS.md:304) |
 | Submit round | Round complete sheet, footer, primary | Calls onSubmit, src/clubhouse/screens/rounds/track/round-sheets.tsx:250; the preview fakes submitting (PreviewTracking.tsx:58) | `decided` | [preview-only] The submit overlay must own the success navigation, haptic and escape, docs/clubhouse/ROUNDS_PLAN.md:65. Q-78 |
 | View round review | Round posted overlay | Link to reviewHref, src/clubhouse/screens/rounds/track/round-sheets.tsx:322; the preview passes /clubhouse-preview/round | `decided` | [preview-only] Q-78 (docs/clubhouse/PROGRESS.md:304); CH-11603 |
-| Rounds (back) | Round review, top left | Link to /golf/dashboard/rounds for the player; a coach gets the player's name, to stats?player=<id>&tab=rounds, src/clubhouse/screens/rounds/RoundReview.tsx:212 | `works` | The coach variant is not on the board (D-53, docs/clubhouse/phone/rounds.md:46); href from reviewBack, RoundReview.tsx:25 |
+| Rounds (back) | Round review, top left | Link to /golf/dashboard/rounds for the player; a coach gets the player's name, to stats?player=\<id>&tab=rounds, src/clubhouse/screens/rounds/RoundReview.tsx:212 | `works` | The coach variant is not on the board (D-53, docs/clubhouse/phone/rounds.md:46); href from reviewBack, RoundReview.tsx:25 |
 | Hole number (x 18) | Round review, Scorecard, header row | Selects the hole, with a selection tick, src/clubhouse/screens/rounds/RoundReview.tsx:57 | `works` | CH-11704, CH-11804 |
 | Score cell (x 18) | Round review, Scorecard, Score row | Not tappable: a plain cell with the ScoreMark, src/clubhouse/screens/rounds/RoundReview.tsx:76 | `GAP` | Build in src/clubhouse/screens/rounds/RoundReview.tsx: make each score cell select its hole (onClick on the cell, no second tab stop). Reach medium: the board's own tap-a-hole target. |
 | Previous hole | Round review, hole card, header | Steps back one hole, disabled on hole 1, src/clubhouse/screens/rounds/RoundReview.tsx:135 | `works` | step() at RoundReview.tsx:191; CH-11704 |
@@ -1187,7 +1187,7 @@ GHBoards, MTop and MTabs, library and setup frames (Rounds part A).
 
 | Control (as labelled on the board) | Where on the board | Clubhouse today | Status | Note |
 | --- | --- | --- | --- | --- |
-| Exit | Tracking frames, top bar, left | Pill calls onExit; the preview opens the Exit sheet, src/clubhouse/screens/rounds/track/RoundTracking.tsx:75 | `decided` | [preview-only] Q-78 (docs/clubhouse/PROGRESS.md:304): /rounds/new and /continue/<id> not rebuilt (src/clubhouse/shell/nav.ts:123, 141) |
+| Exit | Tracking frames, top bar, left | Pill calls onExit; the preview opens the Exit sheet, src/clubhouse/screens/rounds/track/RoundTracking.tsx:75 | `decided` | [preview-only] Q-78 (docs/clubhouse/PROGRESS.md:304): /rounds/new and /continue/\<id> not rebuilt (src/clubhouse/shell/nav.ts:123, 141) |
 | Scorecard | Tracking frames, top bar, right | Opens the Scorecard sheet, src/clubhouse/screens/rounds/track/RoundTracking.tsx:92 | `decided` | [preview-only] An icon on the phone, docs/clubhouse/phone/rounds.md:86. Q-78 |
 | Hole cell (x 18) | Tracking frames, hole strip (scrolls sideways) | Goes to that hole, src/clubhouse/screens/rounds/track/parts.tsx:84 | `decided` | [preview-only] The board opens the Scorecard on a done hole; built navigates, docs/clubhouse/catalog/rounds.md:132, docs/clubhouse/phone/rounds.md:75. Q-78 |
 | Shot log header | Tracking frames, under the map | Toggles the shot list, src/clubhouse/screens/rounds/track/parts.tsx:202 | `decided` | [preview-only] Q-78 (docs/clubhouse/PROGRESS.md:304) |
@@ -1370,18 +1370,18 @@ classes/loading.tsx:19.
 | Edit class | Class detail sheet, footer right | Opens the form sheet on the class, src/clubhouse/screens/classes/ClassDetail.tsx:92 to ClassesView.tsx:320 | `works` | No handler on the board |
 | Close (X) / scrim tap | Add a class sheet, header | Close asks "Discard your changes?" when dirty, src/clubhouse/screens/classes/ClassForm.tsx:115, :135 | `works` | CH-12502 |
 | Mon to Fri day toggles (x 5) | Add a class sheet, Days | aria-pressed day buttons, src/clubhouse/screens/classes/ClassForm.tsx:226 | `works` | A weekend day already on the class is also offered (ClassForm.tsx:85) |
-| Cancel | Add a class sheet, footer | Closes (or asks to discard), src/clubhouse/screens/classes/ClassForm.tsx:141 | `works` |  |
+| Cancel | Add a class sheet, footer | Closes (or asks to discard), src/clubhouse/screens/classes/ClassForm.tsx:141 | `works` | |
 | Add class | Add a class sheet, footer (primary) | Validates, inserts into golf_player_classes, then syncClassToCalendar, src/clubhouse/screens/classes/ClassForm.tsx:144, ClassesView.tsx:133, writes.ts:108 | `works` | No handler on the board |
 | Close (X) / scrim tap | Import schedule sheet, header | Modal Close, src/clubhouse/ui/Modal.tsx:90; ImportSchedule.tsx:108 | `works` | A read in flight is dropped |
 | Screenshot or file / Paste text (tabs x 2) | Import schedule sheet, tab strip | Segmented control, src/clubhouse/screens/classes/ImportSchedule.tsx:307 | `works` | Board also shows the tabs in the error views; built offers Choose another file / Paste text there instead |
 | Drop your schedule here | Import schedule sheet, file tab | Button opens the file picker; a drop is read, src/clubhouse/screens/classes/ImportSchedule.tsx:325, :331, reader import-read.ts:234 | `works` | Image via extractClassesFromScheduleImage, PDF/TXT locally |
 | Read schedule | Import schedule sheet, paste tab | Reads pasted text with parseScheduleText, src/clubhouse/screens/classes/ImportSchedule.tsx:387; import-read.ts:228 | `works` | Empty text says "Paste your schedule text first." (CH-12110) |
-| Choose another file | Import error views (not a schedule, too large, unsupported), primary | Back to the file tab, src/clubhouse/screens/classes/ImportSchedule.tsx:225 | `works` |  |
+| Choose another file | Import error views (not a schedule, too large, unsupported), primary | Back to the file tab, src/clubhouse/screens/classes/ImportSchedule.tsx:225 | `works` | |
 | Paste text instead | Import error views, secondary; primary in reader failed | Switches to the paste tab, src/clubhouse/screens/classes/ImportSchedule.tsx:235 | `works` | Primary for fault, ghost otherwise (ImportSchedule.tsx:236) |
-| Paste text | Import error view, No classes found | Switches to the paste tab, src/clubhouse/screens/classes/ImportSchedule.tsx:242 | `works` |  |
+| Paste text | Import error view, No classes found | Switches to the paste tab, src/clubhouse/screens/classes/ImportSchedule.tsx:242 | `works` | |
 | Edit {code} (pencil, x N) | Import review, each row | Not drawn | `decided` | phone/classes.md:31: rows are removed in review and edited from the class once imported; no handler on the board |
-| Remove {code} (trash, x N) | Import review, each row | Removes the row from the review, src/clubhouse/screens/classes/ImportSchedule.tsx:295 | `works` |  |
-| Start over | Import review, footer left | Clears rows, back to pick, src/clubhouse/screens/classes/ImportSchedule.tsx:176 | `works` |  |
+| Remove {code} (trash, x N) | Import review, each row | Removes the row from the review, src/clubhouse/screens/classes/ImportSchedule.tsx:295 | `works` | |
+| Start over | Import review, footer left | Clears rows, back to pick, src/clubhouse/screens/classes/ImportSchedule.tsx:176 | `works` | |
 | Import N classes | Import review, footer right (primary) | Inserts the reviewed rows then syncs each, src/clubhouse/screens/classes/ImportSchedule.tsx:185, ClassesView.tsx:175, writes.ts:158 | `works` | CH-12004 on failure |
 | View classes | Import success, footer | Closes the sheet onto the updated list, src/clubhouse/screens/classes/ImportSchedule.tsx:171 | `works` | List already updated in importAction (ClassesView.tsx:183) |
 
@@ -1399,34 +1399,34 @@ classes.jsx components.
 | --- | --- | --- | --- | --- |
 | ‹ More (back) | Top bar, every frame | PhoneTop back to More, src/clubhouse/screens/classes/ClassesView.tsx:234 (useBackFromMore :44) | `works` | D-66: Classes opens from More |
 | Sync calendar (with "Calendar synced · 2 min ago") | 01 Classes, header actions | Not drawn; status only while syncing or after a failure, src/clubhouse/screens/classes/parts.tsx:326 | `decided` | docs/clubhouse/phone/classes.md:29 |
-| Retry sync | 12 Sync failed, header actions | Retry sync replays the failed syncs, src/clubhouse/screens/classes/parts.tsx:344, ClassesView.tsx:245 | `works` |  |
+| Retry sync | 12 Sync failed, header actions | Retry sync replays the failed syncs, src/clubhouse/screens/classes/parts.tsx:344, ClassesView.tsx:245 | `works` | |
 | Import schedule | 01 Classes, header actions | Opens the import bottom sheet, src/clubhouse/screens/classes/ClassesView.tsx:246 | `works` | Not drawn in the empty frame (catalog/classes.md:61) |
 | Add class | 01 Classes, header actions | Opens the Add a class bottom sheet, src/clubhouse/screens/classes/ClassesView.tsx:249 | `works` | Not drawn in the empty frame (catalog/classes.md:61) |
-| Class card (x N) | 01 Classes, deck | Opens the class sheet, src/clubhouse/screens/classes/parts.tsx:162, ClassesView.tsx:293 | `works` |  |
+| Class card (x N) | 01 Classes, deck | Opens the class sheet, src/clubhouse/screens/classes/parts.tsx:162, ClassesView.tsx:293 | `works` | |
 | Add a class (dashed tile) | 01 Classes, end of deck | Opens the Add a class bottom sheet, src/clubhouse/screens/classes/parts.tsx:237 | `decided` | Q-75b (PROGRESS.md:301), phone/classes.md:27 |
 | Cancel (X) | 14 Add a class, inline card | Sheet Cancel / Close instead, src/clubhouse/screens/classes/ClassForm.tsx:141 | `decided` | Q-75b (PROGRESS.md:301) |
 | Mon to Fri day toggles (x 5) | 14 Add a class, inline card Days | In the sheet, src/clubhouse/screens/classes/ClassForm.tsx:226 | `decided` | Q-75b (PROGRESS.md:301) |
 | Add {code} | 14 Add a class, inline card bottom | Sheet Add class saves, src/clubhouse/screens/classes/ClassForm.tsx:144, writes.ts:108 | `decided` | Q-75b (PROGRESS.md:301) |
 | Import schedule | 02 Empty state, primary | Opens the import sheet, src/clubhouse/screens/classes/ClassesView.tsx:266 | `works` | CH-12301 |
 | Add a class | 02 Empty state, secondary | Opens the Add a class sheet, src/clubhouse/screens/classes/ClassesView.tsx:271 | `works` | CH-12301 |
-| Close (X) / scrim tap | 13 Class detail sheet | Close button, backdrop, or drag down, src/clubhouse/ui/Modal.tsx:90, :74, :44 | `works` |  |
+| Close (X) / scrim tap | 13 Class detail sheet | Close button, backdrop, or drag down, src/clubhouse/ui/Modal.tsx:90, :74, :44 | `works` | |
 | Share class times with coach (switch) | 13 Class detail sheet, body | Not drawn, src/clubhouse/screens/classes/ClassDetail.tsx:25 | `decided` | Q-75d (PROGRESS.md:301), phone/classes.md:28 |
 | Remove class | 13 Class detail sheet, footer | Confirm then removeClassFromCalendar and delete, src/clubhouse/screens/classes/ClassDetail.tsx:81, ClassesView.tsx:360, writes.ts:120 | `works` | No handler on the board |
 | Edit class | 13 Class detail sheet, footer | Opens the form sheet, src/clubhouse/screens/classes/ClassDetail.tsx:92 | `works` | No handler on the board |
 | Close (X) / scrim tap | Add a class sheet (from header Add class or empty state) | Close, discard question when dirty, src/clubhouse/screens/classes/ClassForm.tsx:115 | `works` | No frame draws this sheet open; reached from the header and empty-state buttons |
 | Day toggles (x 5), Cancel, Add class | Add a class sheet | src/clubhouse/screens/classes/ClassForm.tsx:226, :141, :144 | `works` | Board's Add class has no handler |
-| Close (X) / scrim tap | 03 to 11 Import sheet, header | src/clubhouse/ui/Modal.tsx:90; ImportSchedule.tsx:108 | `works` |  |
-| Screenshot or file / Paste text (tabs x 2) | 03 Import pick, 04 Import paste | Segmented, src/clubhouse/screens/classes/ImportSchedule.tsx:307 | `works` |  |
-| Drop your schedule here | 03 Import pick | Opens the file picker, src/clubhouse/screens/classes/ImportSchedule.tsx:325 | `works` |  |
-| Read schedule | 04 Import paste text | src/clubhouse/screens/classes/ImportSchedule.tsx:387 | `works` |  |
-| Choose another file | 08 Not a schedule, 09 Too large, primary | src/clubhouse/screens/classes/ImportSchedule.tsx:225 | `works` |  |
-| Paste text instead | 08, 09 secondary; 10 Reader failed primary | src/clubhouse/screens/classes/ImportSchedule.tsx:235 | `works` |  |
-| Paste text | 11 No classes found | src/clubhouse/screens/classes/ImportSchedule.tsx:242 | `works` |  |
+| Close (X) / scrim tap | 03 to 11 Import sheet, header | src/clubhouse/ui/Modal.tsx:90; ImportSchedule.tsx:108 | `works` | |
+| Screenshot or file / Paste text (tabs x 2) | 03 Import pick, 04 Import paste | Segmented, src/clubhouse/screens/classes/ImportSchedule.tsx:307 | `works` | |
+| Drop your schedule here | 03 Import pick | Opens the file picker, src/clubhouse/screens/classes/ImportSchedule.tsx:325 | `works` | |
+| Read schedule | 04 Import paste text | src/clubhouse/screens/classes/ImportSchedule.tsx:387 | `works` | |
+| Choose another file | 08 Not a schedule, 09 Too large, primary | src/clubhouse/screens/classes/ImportSchedule.tsx:225 | `works` | |
+| Paste text instead | 08, 09 secondary; 10 Reader failed primary | src/clubhouse/screens/classes/ImportSchedule.tsx:235 | `works` | |
+| Paste text | 11 No classes found | src/clubhouse/screens/classes/ImportSchedule.tsx:242 | `works` | |
 | Edit {code} (pencil, x N) | 06 Review, each row | Not drawn | `decided` | phone/classes.md:31; no handler on the board |
-| Remove {code} (trash, x N) | 06 Review, each row | src/clubhouse/screens/classes/ImportSchedule.tsx:295 | `works` |  |
-| Start over | 06 Review, footer | src/clubhouse/screens/classes/ImportSchedule.tsx:176 | `works` |  |
-| Import N classes | 06 Review, footer (primary) | Inserts then syncs, src/clubhouse/screens/classes/ImportSchedule.tsx:185, writes.ts:158 | `works` |  |
-| View classes | 07 Imported, footer | Closes onto the updated list, src/clubhouse/screens/classes/ImportSchedule.tsx:171 | `works` |  |
+| Remove {code} (trash, x N) | 06 Review, each row | src/clubhouse/screens/classes/ImportSchedule.tsx:295 | `works` | |
+| Start over | 06 Review, footer | src/clubhouse/screens/classes/ImportSchedule.tsx:176 | `works` | |
+| Import N classes | 06 Review, footer (primary) | Inserts then syncs, src/clubhouse/screens/classes/ImportSchedule.tsx:185, writes.ts:158 | `works` | |
+| View classes | 07 Imported, footer | Closes onto the updated list, src/clubhouse/screens/classes/ImportSchedule.tsx:171 | `works` | |
 
 #### Notes (again, 11)
 

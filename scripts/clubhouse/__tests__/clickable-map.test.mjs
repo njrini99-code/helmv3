@@ -46,4 +46,5 @@ test('the map is deterministic and puts unclaimed files last under Shared', () =
   assert.equal(a, buildMap({ files: Object.fromEntries(Object.entries(files).reverse()), manifests }));
   assert.ok(a.indexOf('## P001 Shell') < a.indexOf('## Shared'));
   assert.doesNotMatch(a, /Generated (on|at) /);
+  assert.match(a, /^- 5 `button` "Save plan" \(button, onClick\) CH-9001$/m);
 });
