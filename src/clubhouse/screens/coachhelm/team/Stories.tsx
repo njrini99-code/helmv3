@@ -356,7 +356,20 @@ export function StoriesCard({
       <div className="ch">
         <h4>This week</h4>
         {/* Four zeros in a row say nothing (QA-8). */}
-        {brief?.counts && /[1-9]/.test(brief.counts) && <span className="meta">{brief.counts}</span>}
+        {brief?.counts && /[1-9]/.test(brief.counts) && (
+          <span className="meta">
+            {/* L-029: the non-zero counts only, each one whole, so the line never strands a "0". */}
+            {brief.counts
+              .split(' · ')
+              .filter((c) => !/^0\s/.test(c))
+              .map((c, i) => (
+                <span key={c} style={{ whiteSpace: 'nowrap' }}>
+                  {i > 0 && ' · '}
+                  {c}
+                </span>
+              ))}
+          </span>
+        )}
       </div>
       <div className="tiles">
         {all.map((s, i) => {

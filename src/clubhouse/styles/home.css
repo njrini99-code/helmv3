@@ -4371,7 +4371,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     flex-wrap: wrap;
     align-items: center;
     gap: 12px 8px;
-    margin: 0 0 16px;
+    margin: var(--ch-space-3) 0 16px;
     padding: 12px;
     border-radius: var(--ch-radius-md);
     background: var(--ch-well-bg-flat);
@@ -5825,7 +5825,12 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* The first controls a new coach taps: 44 tall, 8 apart (MOB-CRH-2). */
   .ch-hm-none__q {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+  .ch-hm-none__chip {
+    justify-content: center;
   }
   .ch-hm-none__chip {
     min-height: 44px;

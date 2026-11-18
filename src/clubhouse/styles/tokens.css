@@ -672,7 +672,8 @@
   --ch-elevation-reading-accent: var(--ch-elevation-card);
   /* The page empty's medallion tile, cast on its rings (Tournaments' first run; the route error and every page empty,
      shell.css .ch-empty-page__ic / .ch-es__tile; W19 B). The danger tone casts its own. */
-  --ch-medallion-shadow: 0 16px 30px -14px rgb(11 58 37 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.1);
+  /* L-047: one quiet cast, not a 30px drop that muddies the ring under it. */
+  --ch-medallion-shadow: 0 1px 2px rgb(11 58 37 / 0.18), 0 4px 10px -4px rgb(11 58 37 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.1);
   /* A control's contact shadow only: no lit white rim and no sun drift (S1.5, nothing white). */
   --ch-elevation-control: 0 0 0 0 transparent;
   /* Row 40: three elevation levels. Reading (a card at rest, above), raised (a menu, a popover, a lifted control) and

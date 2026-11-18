@@ -245,6 +245,7 @@ export function TripTile({ trips: teamTrips, role, days, error, covered, onEdit,
           </p>
         </div>
       </div>
+      {(away || ev || (coach && onPlan)) && (
       <div className="ch-hw-trip__f">
         {/* GAP-H-25: "No trips planned" is the coach's phrase; a player is told about the team's travel. */}
         <span className="ch-hw-you">{away ? `Team away · ${away.name} · ${keepTokens(away.dates)}` : ev ? (coach ? 'No trips planned' : 'No team travel coming up') : ''}</span>
@@ -257,6 +258,7 @@ export function TripTile({ trips: teamTrips, role, days, error, covered, onEdit,
           )}
         </span>
       </div>
+      )}
     </Tile>
   );
 }

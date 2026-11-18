@@ -128,12 +128,13 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
                 <li key={`${h.course}#${h.hole}`}>
                   <span className="ch-gx-rank__n ch-num">{i + 1}</span>
                   <b>
-                    Hole {h.hole} · {h.course} · Par {h.par}
+                    Hole {h.hole} · Par {h.par}
+                    <small className="ch-gx-rank__course">{h.course}</small>
                   </b>
                   <em className="ch-num">
                     {h.plays} plays · {h.doublePlus} double or worse
                   </em>
-                  <span className={'ch-num ' + changeInk(h.avgToPar, true, 2)}>{formatSigned(h.avgToPar, 2)}</span>
+                  <span className={'ch-num ' + changeInk(h.avgToPar, true, 1)}>{formatSigned(h.avgToPar, 1)}</span>
                 </li>
               ))}
             </ol>

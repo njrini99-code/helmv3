@@ -191,6 +191,12 @@
   justify-content: flex-end;
   margin: 0 0 var(--ch-space-2);
 }
+/* L-034: the legend wraps inside the head instead of clipping at the grid's right edge. */
+.ch-wk__top > .ch-cal-legend {
+  min-width: 0;
+  max-width: 100%;
+  row-gap: 4px;
+}
 .ch-cal-legend i {
   display: inline-block;
   width: 8px;
