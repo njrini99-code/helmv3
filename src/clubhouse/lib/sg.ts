@@ -79,7 +79,8 @@ export function sgTint(value: number | null, scale: number, digits = 1): string 
  * `figure` is whether the signed number belongs after the words.
  */
 export function sgExtremeWords(kind: 'gains' | 'loses', value: number, many: boolean, digits = 1): { words: string; figure: boolean } {
-  const printed = Number(value.toFixed(digits));
+  const step = 10 ** digits;
+  const printed = Math.round(value * step) / step;
   if (printed === 0) return { words: many ? 'break even' : 'breaks even', figure: false };
   if (kind === 'gains') return printed > 0 ? { words: many ? 'gain most' : 'gains most', figure: true } : { words: many ? 'are least behind' : 'is least behind', figure: true };
   return printed < 0 ? { words: many ? 'lose most' : 'loses most', figure: true } : { words: many ? 'gain least' : 'gains least', figure: true };

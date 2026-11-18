@@ -156,9 +156,11 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
               options={[
                 { value: 'all', label: `All ${c.all}` },
                 // A kind that didn't load has no count (— is no data), never a 0 that reads as "none this week".
-                { value: 'insights', label: `Insights ${countOf('insights')}` },
-                { value: 'patterns', label: `Patterns ${countOf('patterns')}` },
-                { value: 'focus', label: `Focus areas ${countOf('focus')}` },
+                // A kind that loaded with nothing this week is not offered (owner-approved, 18 Nov 2026: "Patterns 0"
+                // filtered to an empty list), unless it is the one picked now.
+                ...(['insights', 'patterns', 'focus'] as const)
+                  .filter((k) => k === filter || data.failed.includes(k) || c[k] > 0)
+                  .map((k) => ({ value: k, label: `${KIND_NAME[k]} ${countOf(k)}` })),
               ]}
             />
           </div>

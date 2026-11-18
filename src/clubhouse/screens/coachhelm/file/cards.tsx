@@ -403,9 +403,9 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
           <div className="sg__axis">
             <span />
             <div>
-              <span>{`${MINUS}${scale.toFixed(1)}`}</span>
+              <span>{`${MINUS}${formatFixed(scale, 1)}`}</span>
               <span>Tour</span>
-              <span>{`+${scale.toFixed(1)}`}</span>
+              <span>{`+${formatFixed(scale, 1)}`}</span>
             </div>
             <span />
           </div>

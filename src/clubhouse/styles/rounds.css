@@ -108,8 +108,8 @@
 .ch-rd-unf .ch-lv-sharechip {
   margin-top: 8px;
   background: transparent;
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) rgb(244 241 232 / 0.28);
-  color: rgb(244 241 232 / 0.86);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-on-green-ring);
+  color: var(--ch-on-green-2);
 }
 /* The holes so far, set like the scoreboard: centred in the card's free height so the card never ends in a dead
    band, with the board's finishes (a red disc under par, an ivory outline over it). */

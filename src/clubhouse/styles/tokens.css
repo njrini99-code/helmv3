@@ -834,6 +834,10 @@
   --ch-on-green-chip: #e3f5e9;
   --ch-on-green-chip-bg: rgb(123 199 154 / 0.18);
   --ch-on-green-rule: rgb(244 241 232 / 0.14);
+  --ch-on-green-ring: rgb(244 241 232 / 0.28); /* a hairline ring around a chip on the green card */
+  --ch-mask-solid: #000; /* the opaque stop of a fade mask: masks read alpha only */
+  /* Sign up's opaque ivory paper, phone and desktop panes alike (P015 D1; owner, 2026-11-15). */
+  --ch-ox-paper: linear-gradient(170deg, rgb(250 248 241), rgb(245 241 231) 55%, rgb(241 236 223));
   --ch-on-green-mark: rgb(244 241 232 / 0.5);
   --ch-switch-on: #2e8a57;
   --ch-crh-card-shadow: var(--ch-elevation-card);
