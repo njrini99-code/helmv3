@@ -272,7 +272,7 @@ export const CH_ALIASED_ROUTES: Readonly<Record<ChRole, readonly RegExp[]>> = ((
   // them). A role with no target is not waiting on a redirect: it sees its own page at once (F-0055).
   const rows: Array<[RegExp, ChRole[]]> = [
     [/^\/golf\/dashboard\/team$/, both],
-    [/^\/golf\/dashboard\/intelligence$/, ['coach']],
+    [/^\/golf\/dashboard\/intelligence$/, both],
     // Courses has no Clubhouse page for either role: both open Home (GAP-R-12).
     [/^\/golf\/dashboard\/courses$/, both],
     [/^\/golf\/dashboard\/roster\/[^/]+$/, both],
@@ -284,6 +284,12 @@ export const CH_ALIASED_ROUTES: Readonly<Record<ChRole, readonly RegExp[]>> = ((
     // Rebuilt for one role and moved for the other (a player's Team stats to their Stats, What's new and Live to Home):
     // the segment must render for its redirect to run.
     [/^\/golf\/dashboard\/(stats\/team|whats-new|live)$/, ['player']],
+    // L-004 (owner, 18 Nov 2026): a role's dead ends go to that role's nearest page instead of a lock. Only the addresses
+    // not rebuilt for that role are rows here; New qualifier and Tournaments' pages are rebuilt for both, so the frame
+    // already renders them and their layouts' redirects run.
+    [/^\/golf\/dashboard\/coachhelm\/genome\/compare$/, ['player']],
+    [/^\/golf\/dashboard\/recruiting$/, ['player']],
+    [/^\/golf\/dashboard\/(classes|rounds\/(new|recover))$/, ['coach']],
   ];
   return { coach: rows.filter(([, r]) => r.includes('coach')).map(([re]) => re), player: rows.filter(([, r]) => r.includes('player')).map(([re]) => re) };
 })();

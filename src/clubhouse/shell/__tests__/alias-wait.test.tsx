@@ -48,7 +48,9 @@ describe('aliasSkeletonFor: each alias draws where its layout sends that role', 
 
   it('names nothing for an address it does not know, or a role that is not sent on', () => {
     expect(aliasSkeletonFor('/golf/dashboard/elsewhere', 'coach')).toBeNull();
-    expect(aliasSkeletonFor('/golf/dashboard/intelligence', 'player')).toBeNull();
+    expect(aliasSkeletonFor('/golf/dashboard/live', 'coach')).toBeNull();
+    // L-004 (owner, 18 Nov 2026): a player's Intelligence address now opens their CoachHelm, and waits on its skeleton.
+    expect(aliasSkeletonFor('/golf/dashboard/intelligence', 'player')).toBe('coachhelm');
   });
 });
 

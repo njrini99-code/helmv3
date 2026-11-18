@@ -6,6 +6,8 @@ import { intelligenceTarget } from '@/clubhouse/data/coachhelm-coach-brief-shape
 export default async function IntelligenceLayout({ children }: { children: React.ReactNode }) {
   await redirectToClubhouse({
     coach: (q) => intelligenceTarget(q, aliasId(q, 'player')),
+    // L-004 (owner, 18 Nov 2026): a player's address opens their own CoachHelm instead of a lock.
+    player: '/golf/dashboard/coachhelm',
   });
   return children;
 }

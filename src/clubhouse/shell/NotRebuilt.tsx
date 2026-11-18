@@ -84,12 +84,15 @@ export function aliasSkeletonFor(pathname: string, role: string | null | undefin
   const coach = role === 'coach';
   const player = role === 'player';
   if (path === '/team') return coach ? 'settings-team' : player ? 'settings-golf' : null;
-  if (path === '/intelligence') return coach ? 'coachhelm' : null;
+  if (path === '/intelligence') return coach || player ? 'coachhelm' : null;
+  // L-004: a role's dead ends wait on the page they open.
+  if (path === '/recruiting') return player ? 'home' : null;
+  if (path === '/classes') return coach ? 'home' : null;
   if (path === '/courses') return coach ? 'home' : null;
   if (path === '/whats-new' || path === '/live') return player ? 'home' : null;
   if (path === '/stats/team') return player ? 'stats-own' : null;
   if (/^\/roster\/[^/]+$/.test(path)) return coach ? 'stats-profile' : player ? 'roster' : null;
-  if (path === '/coachhelm/genome/compare') return coach ? 'stats-team' : null;
+  if (path === '/coachhelm/genome/compare') return coach ? 'stats-team' : player ? 'stats-own' : null;
   if (/^\/players\/[^/]+(\/.*)?$/.test(path) || /^\/coachhelm\/genome\/[^/]+$/.test(path)) return coach ? 'stats-profile' : null;
   if (path === '/coachhelm/chat') return coach ? 'ask' : player ? 'coachhelm' : null;
   if (/^\/coachhelm\/qualifying\/[^/]+$/.test(path)) return coach ? 'qualifier-selection' : player ? 'qualifier' : null;

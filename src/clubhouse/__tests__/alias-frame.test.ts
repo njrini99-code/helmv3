@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { isAliased, isRebuilt } from '../shell/nav';
+import { isAliased, isRebuilt, isRebuiltDynamicChild } from '../shell/nav';
 
 // A computed specifier, so check:cycles (madge) does not walk from this test into next.config.mjs's build-only imports.
 const NEXT_CONFIG_URL = pathToFileURL(join(process.cwd(), 'next.config.mjs')).href;
@@ -36,11 +36,14 @@ describe('old addresses Clubhouse moved (Simulator, 2026-10-14)', () => {
   it('every route that redirects into Clubhouse is on the frame’s aliased list', () => {
     const addresses = aliasedAddresses();
     expect(addresses.length).toBeGreaterThan(10);
-    expect(addresses.filter((a) => !isAliased(a))).toEqual([]);
+    // L-004: a redirect on a screen the frame already renders for both roles (New qualifier, Tournaments' pages: a coach's
+    // screen, a player's segment) runs without a row; the list is for segments the frame would otherwise not render.
+    const rendered = (a: string) => (['coach', 'player'] as const).every((r) => isRebuilt(a, r, { tournaments: true }) || isRebuiltDynamicChild(a, r, { tournaments: true }));
+    expect(addresses.filter((a) => !isAliased(a) && !rendered(a))).toEqual([]);
   });
 
   it('the aliased list names only old addresses, never a rebuilt screen', () => {
-    for (const a of aliasedAddresses()) expect(isRebuilt(a, 'coach') && isRebuilt(a, 'player'), a).toBe(false);
+    for (const a of aliasedAddresses().filter((x) => isAliased(x))) expect(isRebuilt(a, 'coach') && isRebuilt(a, 'player'), a).toBe(false);
     expect(isAliased('/golf/dashboard/team-hub')).toBe(false);
     expect(isAliased('/golf/dashboard')).toBe(false);
   });
@@ -53,8 +56,9 @@ describe('old addresses Clubhouse moved (Simulator, 2026-10-14)', () => {
     }
     expect(isRebuilt('/golf/dashboard/rounds', 'coach')).toBe(true);
     expect(isAliased('/golf/dashboard/rounds')).toBe(false);
-    // Not their children: a coach's /rounds/new and a round's page are their own screens.
-    expect(isAliased('/golf/dashboard/rounds/new')).toBe(false);
+    // L-004 (owner, 18 Nov 2026): a coach's /rounds/new now moves on to the team's Rounds; a player's is their own screen.
+    expect(isAliased('/golf/dashboard/rounds/new', 'coach')).toBe(true);
+    expect(isAliased('/golf/dashboard/rounds/new', 'player')).toBe(false);
   });
 
   it('a player on the coach-only Team stats address moves on to their own Stats', () => {
