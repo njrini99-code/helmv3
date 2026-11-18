@@ -241,9 +241,12 @@ export function TodayCard({ classes, term, todayIso, week, onOpen }: { classes: 
           from 7 to 5. Nothing here reads a clock, so the server and the phone draw the same line. */}
       {first && (
         <div className="ch-cl-today2">
+          {/* L-071: the card's title already says Today; this is its caption, not a second header. */}
           <div className="ch-cl-today2__h">
-            <b className="ch-num">{plural(today.length, 'class', 'classes')} today</b>
-            {first.start && <span className="ch-num">First at {timeLabel(first.start, hours)}</span>}
+            <span className="ch-num">
+              {plural(today.length, 'class', 'classes')}
+              {first.start ? `, first at ${timeLabel(first.start, hours)}` : ''}
+            </span>
           </div>
           <DayRibbon iso={todayIso} classes={today} events={events} />
         </div>

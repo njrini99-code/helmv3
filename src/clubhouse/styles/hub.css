@@ -3833,7 +3833,8 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-tlist button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 64px;
-  align-items: center;
+  /* L-064: the "0/7" count sits on the title's baseline, its bar under it, whatever the row's height. */
+  align-items: first baseline;
   gap: 12px;
   width: 100%;
   min-height: 48px;
@@ -3851,10 +3852,16 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   min-width: 0;
 }
 .ch-hw-tlist b {
+  display: -webkit-box;
   overflow: hidden;
   font: var(--ch-type-14-strong);
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  /* L-057/L-064: titles wrap to two lines on both roles, as the player's queue does, instead of cutting at one. */
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.ch-hw-tlist .ch-hw-mini b {
+  display: block;
 }
 @media (hover: hover) {
   .ch-hw-tlist button:hover b {

@@ -50,8 +50,9 @@ describe('TodayCard', () => {
   it('a class day draws the day strip too (how many, when the first starts, where they fall from 7 to 5), then the rows, the time one node', () => {
     const { container } = render(<TodayCard classes={[cls('a')]} term={TERM} todayIso="2026-11-02" week={WEEK} onOpen={() => {}} />);
     const strip = container.querySelector('.ch-cl-today2')!;
-    expect(strip.querySelector('.ch-cl-today2__h b')?.textContent).toBe('1 class today');
-    expect(strip.querySelector('.ch-cl-today2__h span')?.textContent).toMatch(/^First at /);
+    // L-071: the card's title says Today, so the strip's line is one caption, not a second header.
+    expect(strip.querySelector('.ch-cl-today2__h b')).toBeNull();
+    expect(strip.querySelector('.ch-cl-today2__h span')?.textContent).toMatch(/^1 class, first at /);
     // Today's own day on the ribbon, one block for the one class; it is not the "no classes" state.
     expect(strip.querySelectorAll('.ch-cl-ribbon > i')).toHaveLength(1);
     expect(strip.getAttribute('data-ch-code')).toBeNull();

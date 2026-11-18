@@ -3079,6 +3079,10 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   .ch-calm-head .ch-intro__row {
     align-items: center;
   }
+  /* L-069: the year follows the month on its line, quieter, as the desk title reads ("November 2026"). */
+  .ch-calm-title__yr {
+    margin-right: auto;
+  }
   /* B10.4: Today, when the page is away from it, at the right of the year's line; out of flow, so nothing moves. */
   /* The head opens the sheet with no rule above it, 8px in: the kit's intro does that itself now (ui.css .ch-intro). */
   .ch-calm-head {

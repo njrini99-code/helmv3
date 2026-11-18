@@ -113,12 +113,10 @@ export function CalendarPhone({
       ) : (
         <PhoneTop title="Calendar" start action={<PhoneIconAction icon={Rss} label="Add to calendar app" onClick={onSubscribe} />} />
       )}
-      {/* The page's opening (the Ledger kit's PageIntro, as an h2: the bar holds the page's h1): the year and the team's
-          timezone engraved over the month, and the view switch beside it. */}
+      {/* The page's opening (the Ledger kit's PageIntro, as an h2: the bar holds the page's h1): the team's timezone engraved
+          over the month and its year (L-069: month then year, as the desk reads), and the view switch beside it. */}
       <header className="ch-intro ch-calm-head">
-        <span className="ch-intro__eyebrow ch-num">
-          {yearOf(anchor)} · {data.zoneLabel}
-        </span>
+        <span className="ch-intro__eyebrow">{data.zoneLabel}</span>
         {/* On the eyebrow's line at the right, so it takes no room when it comes and goes. */}
         {away && (
           <Button size="sm" variant="ghost" className="ch-calm-today" leftIcon={CalendarCheck} onClick={goToday} feel={null}>
@@ -127,6 +125,7 @@ export function CalendarPhone({
         )}
         <span className="ch-intro__row">
           <h2 className="ch-intro__title ch-calm-title">{monthName(anchor)}</h2>
+          <span className="ch-cal-title__yr ch-calm-title__yr">{yearOf(anchor)}</span>
           <span className="ch-intro__action">
             <Segmented<ChCalPhoneView> redraws
               size="sm"

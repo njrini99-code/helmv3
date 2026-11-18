@@ -251,7 +251,7 @@ export function RosterPhoneCrh({
                         padded={false}
                         title="Active"
                         actions={<span className="ch-rsx-meta ch-num">{plural(playing.length, 'player')}</span>}
-                        footerNote={data.statsError ? undefined : 'Bars are the last five rounds this season. Green beats the team average.'}
+                        footerNote={data.statsError ? undefined : playing.some((p) => p.trend.length > 0 && p.trend.length < 3) ? 'Bars are the last five rounds this season; two grey stubs mean fewer than three. Green beats the team average.' : 'Bars are the last five rounds this season. Green beats the team average.'}
                       >
                         <GroupList>
                           {playing.map((p) => (
