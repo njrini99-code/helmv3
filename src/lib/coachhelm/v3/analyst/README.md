@@ -308,29 +308,6 @@ Stage 1 of the insights rebuild (`COACHHELM_2_TO_10.md` section 6). No model. Fl
 Held tables: `20261117120000_golf_coach_reads.sql` (the reads) and `20261117121000_golf_coach_read_actions.sql` (coach
 feedback and focus links; no screen writes them yet).
 
-Stage 2 adds the counted reads beside the priority (still no model, still behind `coachhelm_reads_v1`):
-
-| File | What it is |
-| --- | --- |
-| `reads/parts.ts` | `partReads`: off the tee, approach, around the green and putting side by side. Strokes a round over the season (measured rounds only), the last 10 against the 10 before, the team's middle (coach only), and one level down. The fact sheet's numbers; nothing new measured. |
-| `reads/catalogue.ts` | The catalogue reads ranked 3 to 12: doubles and their make-up, the mistakes count, tee penalties by kind and club, tee miss side, approach length, first-putt length, chip leave and the putt after, long three-putts, par 5 seconds (described only, never a signal). Each has a floor. Signals are rule (b) one level down (the player against the teammates' median, leave one out) with Benjamini-Hochberg, worse direction only, at most three, one per family. |
-| `reads/team-page.ts` | `teamPage`: the shared part said once, the exceptions, who improved, and the share on the same card. Coach only. |
-| `reads/engine-gates.ts` | `readsReplaceCards(teamId)`: for a team on reads, the old engine's Tier-1 checks stop writing cards (rows already written stay). `v2WriterStopped()`: the hidden v2 writer stops behind its own flag `coachhelm_v2_writer_stop_v1`, off everywhere. |
-
-Stage 4 is memory and the focus verdict; stage 5's buildable part is the weekly brief as data:
-
-| File | What it is |
-| --- | --- |
-| `reads/memory.ts` | `decideNext(previous, fresh)`: numbers refresh nightly, the words change only at a checkpoint (3 new rounds or 20 new shots of that kind). Stronger or weaker says what changed in one line ("Was likely, now clear: 4 more rounds."). A card retires when another part clearly takes over or after two weak checkpoints, an improvement says was and now first, a returning card says it is back, and every retirement is in history with its reason. A coach's "not useful" or "wrong" keeps it down unless the evidence moves materially (another part, a step up in how sure, or half a stroke a round). A new season starts again. |
-| `reads/focus.ts` | A focus made from a card keeps the card id and the number on the day: a "since" line, then at 8 rounds one word (worked, moved, did not move, got worse, too early, cannot tell) against the drift the number would have had anyway (`shrinkToward` the team's middle, one-sided 90%). It says "after", never "because of". |
-| `reads/team-brief.ts` | `weeklyTeamBrief`: what the team shares, which cards changed this week and how, which cleared, which focus areas reached their word, who has no new rounds. Data only: no screen, no send. |
-| `reads/run.ts` | Each fresh read meets the last saved one, the coach's feedback and the focus link. The held tables read as empty when missing. |
-
-Stage 4 storage is HELD too (`supabase/migrations/20261117121000_golf_coach_read_actions.sql`, HELD.md):
-`golf_coach_read_feedback` and `golf_coach_read_focus`, append-only, coach-only RLS, a coach inserts only as
-themselves. No screen writes either table yet: the coach's "not useful", "wrong" and "make it a focus" buttons are a
-follow-up.
-
 The Stage 3 seam: `ReadPayload.written?: { what, rules_in_out, this_week, watch, model, checked_at }`, written by
 `analyst/writer/` after code checks it. The card draws it when present; absent, the Stage 1 card stands.
 
@@ -350,5 +327,5 @@ Storage is HELD (`supabase/migrations/20261117120000_golf_coach_reads.sql`, HELD
 | `stats-parity.test.ts` | The fact sheet against the Clubhouse functions over the same rows. |
 | `priority.test.ts` | The priority and each certainty, the team shape, the season read, and the make-rate definition count. |
 | `breakdown.test.ts` | The bands of each area (lay-ups apart, bands adding up to the round), each counted pattern and when it is not traced, the teammates' median, naming a band or saying spread evenly, the evidence rounds, the lead pattern, and the distinctness count. |
-| `reads/__tests__/*.test.ts` | The words (every number in the text is a payload figure; no em dashes; the missing line; freshness), the evidence rounds, parity of the saved payload with Stats' `sgOver`, the hash and the changed-rows rule, the flag (off unless listed), the hooks (no listed team, no database call), the catalogue floors and signal test, the engine gates, the memory rules, a season replayed in date order (no flicker, no repeats, every retirement explained), the focus words, and the brief. |
+| `reads/__tests__/*.test.ts` | The words (every number in the text is a payload figure; no em dashes; the missing line; freshness), the evidence rounds, parity of the saved payload with Stats' `sgOver`, the hash and the changed-rows rule, the flag (off unless listed), and the hooks (no listed team, no database call). |
 | `dry-run.test.ts` | Flags, the production refusal, the team report, ten ordinary players, and the Supabase sources over a client that can only select (paging past 1,000 rows, id chunks). |
