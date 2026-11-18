@@ -146,12 +146,19 @@
   display: inline-flex;
   flex: none;
 }
-.ch-tour-cmp-face.is-stack > * + * {
+.ch-tour-cmp-face.is-stack > .ch-avatar + .ch-avatar {
   /* L-032: a light overlap, each face ringed in the surface, so every set of initials reads whole. */
   margin-left: calc(var(--ch-tour-cmp-face) * -0.12);
 }
 .ch-tour-cmp-face.is-stack > .ch-avatar {
   box-shadow: 0 0 0 2px var(--ch-bg-surface);
+}
+/* The A/B badge sits past the last face's edge, not on its initials (the stack's second face was clipped by it). */
+.ch-tour-cmp-face.is-stack {
+  margin-inline-end: 12px;
+}
+.ch-tour-cmp-face.is-stack > .ch-tour-cmp-face__tag {
+  right: -12px;
 }
 .ch-tour-cmp-face__tag {
   position: absolute;

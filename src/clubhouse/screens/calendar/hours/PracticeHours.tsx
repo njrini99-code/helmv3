@@ -40,7 +40,7 @@ const divisionLabel = (d: ChHoursLimits['division']) => HOURS_DIVISIONS.find((x)
 
 function sourceLine(data: ChHoursData): string {
   if (data.settingsFrom === 'saved') return 'Your saved limits';
-  if (data.settingsFrom === 'division') return 'From your division on Settings, Team';
+  if (data.settingsFrom === 'division') return 'From your division in Settings > Team';
   return 'Division I until you set your limits';
 }
 
@@ -327,8 +327,8 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
           <span>
             This week is read against{' '}
             {sourceLine(data)
-              .toLowerCase()
-              .replace(/^from /, '')}
+              .replace(/^From /, '')
+              .replace(/^Your /, 'your ')}
             . Saving your limits and changing how an event counts arrive with the next update.
           </span>
         </div>

@@ -80,7 +80,9 @@
 .ch-btn--primary:disabled:not([aria-busy='true']) {
   opacity: 1;
   filter: none;
-  color: var(--ch-ink-400);
+  /* A disabled key reads as deliberately resting, not faded: ink-400 on the well was 2.6:1 (L-020); this holds 3:1+ and the
+     well carries the "off". Night keeps ink-400 (4.3:1) because ink-500 flips light there. */
+  color: var(--ch-ink-500);
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
@@ -1122,6 +1124,7 @@ button.ch-feat {
 /* B21 (X-6, 4.32.1): at night the primary key is a lighter Augusta face than the cards' green (tokens.css
    --ch-primary-bg), so it stands off them; ivory words read 4.5:1 at rest and on hover. */
 html[data-fw-theme='dark'] .ch-btn--primary:disabled:not([aria-busy='true']) {
+  color: var(--ch-ink-400);
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.4);
 }
 :where(html[data-fw-theme='dark']) .ch-btn--ink {
