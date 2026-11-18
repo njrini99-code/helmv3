@@ -27,6 +27,12 @@ export interface LiveRealtime {
 export const BACKOFF_MS = [1_000, 2_000, 4_000, 8_000, 16_000, 30_000] as const;
 /** A hidden tab leaves the channel after this long. */
 export const HIDDEN_LEAVE_MS = 5 * 60_000;
+/**
+ * Failed joins in a row before a drop is reported. A channel that drops and rejoins is the network (a phone changing
+ * towers, a laptop waking, a token refresh), not a defect, and reporting every drop filled the Bridge with low-severity
+ * noise. Four failures is about 7 seconds of backoff without one SUBSCRIBED; one report per outage.
+ */
+export const REPORT_AFTER_FAILURES = 4;
 
 export const LIVE_EVENTS = ['lane', 'hide', 'gone'] as const;
 
@@ -46,6 +52,14 @@ export function joinLiveTopic(args: {
   let retry: number | undefined;
   let leave: number | undefined;
   let up = false;
+  let failures = 0;
+  let reported = false;
+  const failed = (error: unknown, status: string) => {
+    failures += 1;
+    if (reported || failures < REPORT_AFTER_FAILURES) return;
+    reported = true;
+    chReport(error, { surface, severity: 'low', extra: { status, failures } });
+  };
   const hidden = () => document.visibilityState === 'hidden';
   const setUp = (value: boolean) => {
     if (up === value) return;
@@ -75,7 +89,7 @@ export function joinLiveTopic(args: {
     if (!alive || hidden() || channel) return;
     try {
       rt = args.realtime ? args.realtime() : (createClient() as unknown as LiveRealtime);
-      // A failed setAuth surfaces as the join's CHANNEL_ERROR, which is reported below.
+      // A failed setAuth surfaces as the join's CHANNEL_ERROR, which counts as a failed join below.
       await Promise.resolve(rt.setAuth?.()).catch(() => undefined);
       if (!alive || channel) return;
       const ch = rt.channel(topic, { config: { private: true } });
@@ -85,15 +99,17 @@ export function joinLiveTopic(args: {
         if (!alive || channel !== ch) return;
         if (status === 'SUBSCRIBED') {
           attempt = 0;
+          failures = 0;
+          reported = false;
           setUp(true);
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          chReport(new Error(`live channel ${status}`), { surface, severity: 'low' });
+          failed(new Error(`live channel ${status}`), status);
           drop();
           rejoinLater();
         }
       });
     } catch (error) {
-      chReport(error, { surface, severity: 'low' });
+      failed(error, 'THROWN');
       drop();
       rejoinLater();
     }
