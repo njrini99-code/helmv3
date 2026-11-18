@@ -30,6 +30,10 @@ export interface ChAnalystRead {
   change: string | null;
   missing: string | null;
   rounds: ChReadRound[];
+  /** Stage 2: the four parts side by side. */
+  parts: Array<{ label: string; text: string; where: string | null; team: string | null }>;
+  /** Stage 2: at most three counted reads that stand out in the team. */
+  signals: Array<{ text: string; team: string | null }>;
   /** Stage 3: the analyst's paragraph, when the writer has checked one. */
   written: { what: string; rulesInOut: string; thisWeek: string; watch: string } | null;
 }
@@ -61,6 +65,8 @@ export function toChAnalystRead(p: ReadPayload, href: (roundId: string) => strin
       line: e.line,
       shots: e.carry.map((s) => ({ id: s.shot_id, text: s.text })),
     })),
+    parts: (p.parts ?? []).map((x) => ({ label: x.label, text: x.text, where: x.where_text, team: x.team?.value.text ?? null })),
+    signals: (p.signals ?? []).map((x) => ({ text: x.text, team: x.team_text?.value ?? null })),
     written: p.written ? { what: p.written.what, rulesInOut: p.written.rules_in_out, thisWeek: p.written.this_week, watch: p.written.watch } : null,
   };
 }

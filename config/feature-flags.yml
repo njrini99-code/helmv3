@@ -1271,6 +1271,32 @@ flags:
       the old engine's writers and remove this flag and the team list; if
       not, turn it off, drop golf_coach_reads and delete the reads folder.
 
+  # CoachHelm insights rebuild, stage 2 (17 Nov 2026): stopping the hidden v2
+  # writer needs the owner's yes. Created OFF everywhere: off is today's behaviour.
+  - feature_id: coachhelm_v2_writer_stop_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Stops the hidden v2 writer in triggerPlayerInsightsAfterRound: the rows
+      stamped engine_version v2 that no screen shows (the visibility filter
+      drops them), with their after-round push. On: the engine still runs,
+      the v3 cards and every other step are unchanged, and no new v2 row is
+      written. Off: exactly as today. Applies to every team.
+    type: operations_kill_switch
+    status: active
+    created_at: "2026-11-17"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: >-
+      Turning it off restores the v2 writer on the next run; rows written
+      before stay as they were.
+    cleanup_plan: >-
+      Once the owner has run with it on for a release, delete the v2 writer
+      (the convertV2ToInsightRecord loop and its push) and remove this flag.
+
   # Launch readiness DD-01 (15 Nov 2026): the daily demo team refresh. Created
   # OFF everywhere; turning it on is the owner's call, after the generator's
   # migration is applied and its first run (scripts/golf-demo-refresh.ts) is

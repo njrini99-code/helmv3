@@ -21,6 +21,8 @@ export function cardText(p: ReadPayload): string {
       }
     }
   }
+  for (const part of p.parts ?? []) lines.push(`  ${part.label}: ${part.text}${part.where_text ? ' ' + part.where_text : ''}`);
+  for (const sig of p.signals ?? []) lines.push(`  Signal: ${sig.text} (${sig.team_text.value})`);
   lines.push('  Grade: right / wrong / so what. Note: ____');
   return lines.join('\n');
 }

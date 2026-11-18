@@ -28,7 +28,13 @@ function isCoachOnly(v: unknown): boolean {
   return !!v && typeof v === 'object' && (v as { audience?: unknown }).audience === 'coach_only';
 }
 
+const ownFigures = (figures: Record<string, string>) => Object.fromEntries(Object.entries(figures).filter(([k]) => !TEAM_FIGURES.test(k)));
+
 export function forPlayer(payload: ReadPayload): ReadPayload {
   const stripped = stripCoachOnly(payload);
-  return { ...stripped, figures: Object.fromEntries(Object.entries(stripped.figures).filter(([k]) => !TEAM_FIGURES.test(k))) };
+  return {
+    ...stripped,
+    figures: ownFigures(stripped.figures),
+    ...(stripped.parts ? { parts: stripped.parts.map((p) => ({ ...p, figures: ownFigures(p.figures) })) } : {}),
+  };
 }

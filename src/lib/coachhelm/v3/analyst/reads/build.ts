@@ -10,7 +10,10 @@ import { STROKES_GAINED_AREA_IDS } from '../measures';
 import { assembleFactSheets, type TeamRows } from '../fact-sheet';
 import { findNotable, type Notability } from '../notability';
 import type { FactSheet } from '../types';
+import { catalogueReads, type CatalogueResult } from './catalogue';
 import { evidenceRounds } from './evidence';
+import { partReads } from './parts';
+import { teamPage, type TeamPage } from './team-page';
 import { Figures } from './format';
 import { CERTAINTY_WORD, PART_LABEL, freshnessText, missingText, priorityWords } from './words';
 import type { PartId, PriorityCard, ReadPayload } from './types';
@@ -25,7 +28,7 @@ function scopeShots(n: Notability): number {
   return w.bands.reduce((a, b) => a + b.shots, 0);
 }
 
-export function buildReadPayload(sheet: FactSheet, notability: Notability, rows: Pick<TeamRows, 'rounds' | 'shots' | 'holes'>): ReadPayload {
+export function buildReadPayload(sheet: FactSheet, notability: Notability, rows: Pick<TeamRows, 'rounds' | 'shots' | 'holes'>, catalogue?: CatalogueResult): ReadPayload {
   const f = new Figures();
   const season = sheet.windows.season;
   const freshness = freshnessText(season.to, season.rounds, sheet.as_of, f);
@@ -83,6 +86,8 @@ export function buildReadPayload(sheet: FactSheet, notability: Notability, rows:
     priority,
     missing: p ? null : missingText(notability.priority_missing, f),
     figures: f.all,
+    parts: partReads(sheet),
+    ...(catalogue ? { signals: catalogue.signals } : {}),
   };
 }
 
@@ -90,11 +95,16 @@ export interface TeamReads {
   sheets: FactSheet[];
   notables: Notability[];
   payloads: ReadPayload[];
+  /** Every player's catalogue reads (stage 2), signals or not. */
+  catalogue: CatalogueResult[];
+  team: TeamPage;
 }
 
 /** Every active player's read for one team, ordered by player id. */
 export function buildTeamReads(rows: TeamRows): TeamReads {
   const sheets = assembleFactSheets(rows);
   const notables = sheets.map(findNotable);
-  return { sheets, notables, payloads: sheets.map((s, i) => buildReadPayload(s, notables[i]!, rows)) };
+  const catalogue = catalogueReads(sheets, rows);
+  const payloads = sheets.map((s, i) => buildReadPayload(s, notables[i]!, rows, catalogue[i]));
+  return { sheets, notables, payloads, catalogue, team: teamPage(rows.team.id, payloads, notables) };
 }

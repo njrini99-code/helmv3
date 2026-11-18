@@ -150,6 +150,10 @@ export interface ReadPayload {
   missing: MissingRead | null;
   /** Each formatted number, by name, that the words above use. */
   figures: Record<string, string>;
+  /** Stage 2: the four parts side by side (parts.ts). */
+  parts?: import('./parts').PartRead[];
+  /** Stage 2: counted reads that cleared their test, at most three, one per family (catalogue.ts). */
+  signals?: import('./catalogue').SignalRead[];
   /** Stage 3 seam. */
   written?: WrittenRead;
 }

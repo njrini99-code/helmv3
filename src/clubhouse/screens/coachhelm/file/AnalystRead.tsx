@@ -59,6 +59,33 @@ export function AnalystReadCard({ load, first }: { load: ChAnalystReadLoad | nul
             <p>{r.change}</p>
           </div>
         )}
+        {r.parts.length > 0 && (
+          <div className="ch-hf-an__how" data-ch-an-parts="">
+            <h5>The four parts</h5>
+            <ul>
+              {r.parts.map((x) => (
+                <li key={x.label}>
+                  <b>{x.label}.</b> {x.text}
+                  {x.where ? ` ${x.where}` : ''}
+                  {x.team ? ` ${x.team}` : ''}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {r.signals.length > 0 && (
+          <div className="ch-hf-an__how" data-ch-an-signals="">
+            <h5>Also unusual</h5>
+            <ul>
+              {r.signals.map((x) => (
+                <li key={x.text}>
+                  {x.text}
+                  {x.team ? ` ${x.team}` : ''}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {r.rounds.length > 0 && (
           <div className="ch-hf-an__foot">
             <Button variant="secondary" size="lg" data={{ 'data-ch-an-rounds': '' }} onClick={() => setOpen(true)}>
