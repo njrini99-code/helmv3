@@ -6,7 +6,8 @@ import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ChTeamReads, ChTeamReadsLoad, ChTeamReadsPlayer } from '../../../data/coachhelm-team-reads-shape';
 import { COACH_BOARD_HREF } from '../../../data/coachhelm-track-record-shape';
-import { useChPhone } from '../../../lib/use-phone';
+import { plural } from '../../../lib/plural';
+$1
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Badge } from '../../../ui/Badge';
 import { Icon } from '../../../ui/Icon';
@@ -99,7 +100,7 @@ function Ready({ d }: { d: ChTeamReads }) {
         </Surface>
       )}
       {d.groups.map((g) => (
-        <Surface key={g.label} id={`ch-htrd-${g.label.toLowerCase().replace(/\W+/g, '-')}`} title={g.label} subtitle={`Costs the most for ${g.players.length} ${g.players.length === 1 ? 'player' : 'players'}`}>
+        <Surface key={g.label} id={`ch-htrd-${g.label.toLowerCase().replace(/\W+/g, '-')}`} title={g.label} subtitle={`Costs the most for ${plural(g.players.length, 'player')}`}>
           <ul className="ch-htrd-list">
             {g.players.map((p) => (
               <PlayerRow key={p.id} p={p} />
@@ -108,7 +109,7 @@ function Ready({ d }: { d: ChTeamReads }) {
         </Surface>
       ))}
       {d.waiting.length > 0 && (
-        <Surface id="ch-htrd-wait" title="No read yet" subtitle={`${d.waiting.length} ${d.waiting.length === 1 ? 'player' : 'players'}`}>
+        <Surface id="ch-htrd-wait" title="No read yet" subtitle={plural(d.waiting.length, 'player')}>
           <ul className="ch-htrd-list is-quiet">
             {d.waiting.map((p) => (
               <li key={p.id}>
