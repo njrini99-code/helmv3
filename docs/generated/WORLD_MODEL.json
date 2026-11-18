@@ -4200,6 +4200,10 @@
         "definedIn": "supabase/migrations/20260613190000_course_library_normalize_unique.sql"
       },
       {
+        "id": "golf_current_coach_team_ids",
+        "definedIn": "supabase/migrations/20261117010000_golf_events_policy_team_sets.sql"
+      },
+      {
         "id": "golf_day_token_dow",
         "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
       },
