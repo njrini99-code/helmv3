@@ -25,7 +25,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runRegistryCheck } from './registry.mjs';
+import { runRegistryCheck, mergeRouteLabel } from './registry.mjs';
 import { checkClassOwners } from './css-owners.mjs';
 import { loadManifests, runChangelogGate } from './changelog-gate.mjs';
 import { checkScreenshotLog } from './shots.mjs';
@@ -400,6 +400,29 @@ export function checkScreens(md, rebuilt) {
 }
 
 /**
+ * The routing labels (each manifest's `screens`) agree with the frame's lists: a coach screen is not rebuilt for the
+ * player, a player screen is not rebuilt for the coach, and a shared address that one role's list names is named by
+ * the other's too. Addresses the lists don't name exactly (children, patterns, Practice and Tournaments, which decide
+ * for themselves) are held by the registry's component checks instead.
+ */
+export function checkLabelsAgainstNav(manifests, rebuilt, otherRoutes = []) {
+  const other = new Set(otherRoutes.map((o) => o.route));
+  const v = [];
+  const byRoute = new Map();
+  for (const m of manifests) for (const s of m.screens ?? []) if (!s.view && s.route.startsWith('/golf/dashboard')) byRoute.set(s.route, [...(byRoute.get(s.route) ?? []), s]);
+  for (const [route, entries] of byRoute) {
+    const { audience } = mergeRouteLabel(entries);
+    const c = rebuilt.coach.has(route);
+    const p = rebuilt.player.has(route);
+    if (audience === 'coach' && p) v.push(`${route}: labelled coach, but CH_REBUILT_ROUTES.player lists it`);
+    if (audience === 'player' && c) v.push(`${route}: labelled player, but CH_REBUILT_ROUTES.coach lists it`);
+    if (audience === 'shared' && c !== p) v.push(`${route}: labelled shared, but only CH_REBUILT_ROUTES.${c ? 'coach' : 'player'} lists it`);
+  }
+  for (const r of ['coach', 'player']) for (const route of rebuilt[r]) if (!byRoute.has(route) && !other.has(route)) v.push(`${route}: CH_REBUILT_ROUTES.${r} lists it, but neither a page manifest's "screens" nor config/clubhouse/other-routes.json labels it`);
+  return v;
+}
+
+/**
  * A 'use client' file may import only types from a server-only module (`import 'server-only'`): a value
  * import makes `next build` fail, and typecheck can't see it (the Stats phone shipped one once).
  * `sources` maps repo-relative paths under src/clubhouse to their text.
@@ -454,8 +477,11 @@ function main() {
   }
 
   const screens = join(root, 'docs/clubhouse/SCREENS.md');
+  const rebuilt = readRebuiltRoutes(readFileSync(join(root, 'src/clubhouse/shell/nav.ts'), 'utf8'));
   if (!existsSync(screens)) violations.push('docs/clubhouse/SCREENS.md is missing');
-  else violations.push(...checkScreens(readFileSync(screens, 'utf8'), readRebuiltRoutes(readFileSync(join(root, 'src/clubhouse/shell/nav.ts'), 'utf8'))));
+  else violations.push(...checkScreens(readFileSync(screens, 'utf8'), rebuilt));
+  const otherRoutesFile = join(root, 'config/clubhouse/other-routes.json');
+  violations.push(...checkLabelsAgainstNav(loadManifests(root), rebuilt, existsSync(otherRoutesFile) ? JSON.parse(readFileSync(otherRoutesFile, 'utf8')) : []));
 
   // Foundation V2 registry: page manifests, Bridge IDs, contracts, held plans, generated docs.
   const registry = runRegistryCheck(root);

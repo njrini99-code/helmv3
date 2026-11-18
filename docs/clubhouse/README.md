@@ -26,9 +26,10 @@ Where things live:
 | Current state, how to turn on, rollback, remaining work, open owner decisions | [`STATUS.md`](STATUS.md) |
 | The design system: laws, surfaces, colour, type, the one toggle, charts, banned list, generated token tables | [`DESIGN_LANGUAGE.md`](../../design-refresh/DESIGN_LANGUAGE.md) |
 | Which screens exist, and which are rebuilt | `SCREENS.md` |
+| Who each address is for (routing): **coach**, **player**, **shared** or **signed-out**, and the component each role gets | [`generated/CLUBHOUSE_ROUTE_MAP.md`](generated/CLUBHOUSE_ROUTE_MAP.md), from each manifest's `screens` and `config/clubhouse/other-routes.json` (checked) |
 | Gates, decisions (latest: D-72 to D-79, 2026-10-19), questions, data gaps, verification log | `PROGRESS.md` (the overview) |
 | Which handoff files are current | `design/handoff/VERSIONS.md` |
-| One manifest per page: identity, routes, features, paths, status, actions, held plans | `config/clubhouse/pages/P###-<slug>.json` |
+| One manifest per page: identity, routes, who each route is for (`screens`), features, paths, status, actions, held plans | `config/clubhouse/pages/P###-<slug>.json` |
 | Every state and outcome, numbered | `catalog/<slug>.md` (CH- codes) and `config/clubhouse/bridge-contracts.json` (Bridge IDs) |
 | The six page docs | `pages/P###-<slug>/` (PAGE, DESIGN, CONTRACT, WIRING, VERIFY, CHANGELOG) |
 | The per-gate checklist | `screens/<slug>.md` |
@@ -126,6 +127,7 @@ the manifest's `status.docs` to `current`. From then on:
 | Server loader (one pass, reports each failed read, never throws for a partial read) | `src/clubhouse/data/<slug>.ts` |
 | Route entry, flag check, not-on-team and no-team states | `src/clubhouse/routes/<slug>.tsx`, called from the page under `src/app/golf/(dashboard)/dashboard/…` through `isClubhouseFor` |
 | Nav: the page shows in Clubhouse only once listed | `CH_REBUILT_ROUTES` in `src/clubhouse/shell/nav.ts`, and tick it in `SCREENS.md` (checked) |
+| Label every new route: coach, player, shared or signed-out | the page manifest's `screens` (one entry per route, plus one per query view that is a screen of its own), or `config/clubhouse/other-routes.json` for an old address; `clubhouse:check` fails on any unlabelled `page.tsx` under `src/app/golf` |
 | Styles, `.ch-*` classes and `--ch-*` tokens only | `src/clubhouse/styles/<slug>.css` |
 | Preview with sample data and every state (`?state=empty\|failed\|partial\|loading`) | `src/app/clubhouse-preview/[screen]/page.tsx`, fixtures in `src/clubhouse/preview/` |
 | Mutations go through `useAction` (offline, slow, error toast, haptic, Sentry) | `src/clubhouse/lib/` |

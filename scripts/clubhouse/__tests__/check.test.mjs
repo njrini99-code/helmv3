@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkSource, checkProgress, checkCatalog, checkScreens, readRebuiltRoutes, checkServerOnlyImports, offToneDeclarations } from '../check.mjs';
+import { checkSource, checkProgress, checkCatalog, checkScreens, readRebuiltRoutes, checkServerOnlyImports, offToneDeclarations, checkLabelsAgainstNav } from '../check.mjs';
 
 test('flags Fairway imports and tokens', () => {
   const v = checkSource('src/clubhouse/x.tsx', "import { Button } from '@/components/fairway/controls';\nconst s = { color: 'var(--fw-ink)' };");
@@ -210,4 +210,18 @@ test('a gain or loss tone paints only with the chart pair; its shape is not pain
   assert.deepEqual(offToneDeclarations('.ch-x.is-loss', 'border-top-color: var(--ch-chart-loss); border: 1px solid var(--ch-chart-loss)'), []);
   assert.deepEqual(offToneDeclarations('.ch-x.is-gain', 'color: var(--ch-green-600); border-inline-start: 2px solid #fff'), ['color: var(--ch-green-600)', 'border-inline-start: 2px solid #fff']);
   assert.deepEqual(offToneDeclarations('.ch-x:not(.is-gain)', 'color: var(--ch-ink-400)'), []);
+});
+
+test('routing labels agree with CH_REBUILT_ROUTES', () => {
+  const rebuilt = { coach: new Set(['/golf/dashboard/live', '/golf/dashboard/messages', '/golf/dashboard/old']), player: new Set(['/golf/dashboard/live', '/golf/dashboard/classes']) };
+  const manifests = [
+    { screens: [{ route: '/golf/dashboard/live', audience: 'coach' }] },
+    { screens: [{ route: '/golf/dashboard/messages', audience: 'shared' }, { route: '/golf/dashboard/messages', view: '?x=1', audience: 'coach' }] },
+    { screens: [{ route: '/golf/dashboard/classes', audience: 'player' }] },
+  ];
+  const v = checkLabelsAgainstNav(manifests, rebuilt, [{ route: '/golf/dashboard/old' }]);
+  assert.deepEqual(v, [
+    '/golf/dashboard/live: labelled coach, but CH_REBUILT_ROUTES.player lists it',
+    '/golf/dashboard/messages: labelled shared, but only CH_REBUILT_ROUTES.coach lists it',
+  ]);
 });

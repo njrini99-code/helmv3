@@ -1,0 +1,143 @@
+[
+  {
+    "route": "/golf",
+    "kind": "redirect",
+    "audience": "shared",
+    "coach": "/golf/dashboard",
+    "player": "/golf/dashboard",
+    "visitor": "/golf/login (no golf profile: /golf/signup)",
+    "source": "src/app/golf/page.tsx"
+  },
+  {
+    "route": "/golf/forgot-password",
+    "kind": "redirect",
+    "audience": "signed-out",
+    "visitor": "/golf/login?view=forgot",
+    "source": "src/app/golf/(auth)/forgot-password/layout.tsx",
+    "note": "A signed-in visitor still gets the old page.tsx (a Fairway-era client page, not Clubhouse)."
+  },
+  {
+    "route": "/golf/join",
+    "kind": "screen",
+    "audience": "signed-out",
+    "visitor": "src/clubhouse/screens/auth/JoinCode.tsx#JoinCode",
+    "source": "src/app/golf/join/page.tsx",
+    "note": "No page ID: it lives outside the (auth) group, so P015 does not list it. Anyone can open it; it reads no session."
+  },
+  {
+    "route": "/golf/join/[code]",
+    "kind": "screen",
+    "audience": "player",
+    "player": "src/clubhouse/screens/auth/JoinTeam.tsx#JoinTeam",
+    "coach": "redirect to the coach's entry (resolveGolfCoachEntry)",
+    "visitor": "/golf/signup?returnTo=…",
+    "source": "src/app/golf/join/[code]/page.tsx",
+    "note": "No page ID (outside the (auth) group). A player who has not onboarded goes to /golf/player?joinCode= first."
+  },
+  {
+    "route": "/golf/staff/join/[token]",
+    "kind": "screen",
+    "audience": "coach",
+    "coach": "src/clubhouse/screens/auth/StaffInvite.tsx#StaffInvite",
+    "source": "src/app/golf/staff/join/[token]/page.tsx",
+    "note": "No page ID (outside the (auth) group). An invited assistant coach opens it, usually signed out."
+  },
+  {
+    "route": "/golf/dashboard/[...missing]",
+    "kind": "not-found",
+    "audience": "shared",
+    "coach": "src/clubhouse/shell/NotFound.tsx#ClubhouseNotFound",
+    "player": "src/clubhouse/shell/NotFound.tsx#ClubhouseNotFound",
+    "source": "src/app/golf/(dashboard)/dashboard/[...missing]/page.tsx"
+  },
+  {
+    "route": "/golf/dashboard/stats/team",
+    "kind": "redirect",
+    "audience": "shared",
+    "coach": "/golf/dashboard/stats",
+    "player": "/golf/dashboard/stats",
+    "source": "next.config.mjs",
+    "note": "next.config.mjs redirects it before its page.tsx runs. CH_REBUILT_ROUTES.coach still lists it (src/clubhouse/shell/nav.ts)."
+  },
+  {
+    "route": "/golf/dashboard/coachhelm/chat",
+    "kind": "redirect",
+    "audience": "shared",
+    "coach": "/golf/dashboard/coachhelm?view=ask",
+    "player": "/golf/dashboard/coachhelm",
+    "source": "src/app/golf/(dashboard)/dashboard/coachhelm/chat/layout.tsx"
+  },
+  {
+    "route": "/golf/dashboard/coachhelm/genome/compare",
+    "kind": "redirect",
+    "audience": "coach",
+    "coach": "/golf/dashboard/stats",
+    "player": "coach-only state (CH-1301)",
+    "source": "src/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/layout.tsx"
+  },
+  {
+    "route": "/golf/dashboard/coachhelm/qualifying/[id]",
+    "kind": "redirect",
+    "audience": "shared",
+    "coach": "/golf/dashboard/qualifiers/[id]/selection",
+    "player": "/golf/dashboard/qualifiers/[id]",
+    "source": "src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/[id]/layout.tsx"
+  },
+  {
+    "route": "/golf/dashboard/courses",
+    "kind": "redirect",
+    "audience": "shared",
+    "coach": "/golf/dashboard",
+    "player": "/golf/dashboard",
+    "source": "src/app/golf/(dashboard)/dashboard/courses/layout.tsx",
+    "note": "No Clubhouse course library for either role (GAP-R-12)."
+  },
+  {
+    "route": "/golf/dashboard/intelligence",
+    "kind": "redirect",
+    "audience": "coach",
+    "coach": "/golf/dashboard/coachhelm (keeps ?player= and the Ask view)",
+    "player": "coach-only state (CH-1301)",
+    "source": "src/app/golf/(dashboard)/dashboard/intelligence/layout.tsx"
+  },
+  {
+    "route": "/golf/dashboard/players/[playerId]/game",
+    "kind": "redirect",
+    "audience": "coach",
+    "coach": "/golf/dashboard/stats?player=<id>&tab=game",
+    "player": "coach-only state (CH-1301)",
+    "source": "src/app/golf/(dashboard)/dashboard/players/[playerId]/layout.tsx"
+  },
+  {
+    "route": "/golf/dashboard/players/[playerId]/game/print",
+    "kind": "redirect",
+    "audience": "coach",
+    "coach": "/golf/dashboard/stats?player=<id>&tab=game",
+    "player": "coach-only state (CH-1301)",
+    "source": "src/app/golf/(dashboard)/dashboard/players/[playerId]/layout.tsx"
+  },
+  {
+    "route": "/golf/dashboard/players/[playerId]/genome",
+    "kind": "redirect",
+    "audience": "coach",
+    "coach": "/golf/dashboard/stats?player=<id>&tab=game",
+    "player": "coach-only state (CH-1301)",
+    "source": "src/app/golf/(dashboard)/dashboard/players/[playerId]/layout.tsx"
+  },
+  {
+    "route": "/golf/dashboard/roster/[id]",
+    "kind": "redirect",
+    "audience": "shared",
+    "coach": "/golf/dashboard/stats?player=<id>",
+    "player": "/golf/dashboard/roster",
+    "source": "src/app/golf/(dashboard)/dashboard/roster/[id]/layout.tsx"
+  },
+  {
+    "route": "/golf/dashboard/team",
+    "kind": "redirect",
+    "audience": "shared",
+    "coach": "/golf/dashboard/settings?section=team",
+    "player": "/golf/dashboard/settings?section=golf",
+    "source": "src/app/golf/(dashboard)/dashboard/team/layout.tsx"
+  }
+]

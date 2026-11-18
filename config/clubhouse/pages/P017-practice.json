@@ -18,6 +18,64 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/practice",
+      "audience": "shared",
+      "name": "Practice (coach: plans; player: their practice)",
+      "coach": "src/clubhouse/screens/practice/PracticeHome.tsx#PracticeHome",
+      "player": "src/clubhouse/screens/practice/PlayerPracticeHome.tsx#PlayerPracticeHome"
+    },
+    {
+      "route": "/golf/dashboard/practice/drills",
+      "audience": "coach",
+      "name": "Drills",
+      "coach": "src/clubhouse/screens/practice/LibraryPages.tsx#DrillsPage"
+    },
+    {
+      "route": "/golf/dashboard/practice/drills/[drillId]",
+      "audience": "coach",
+      "name": "Drill",
+      "coach": "src/clubhouse/screens/practice/LibraryPages.tsx#DrillPage"
+    },
+    {
+      "route": "/golf/dashboard/practice/groups",
+      "audience": "coach",
+      "name": "Groups",
+      "coach": "src/clubhouse/screens/practice/LibraryPages.tsx#GroupsPage"
+    },
+    {
+      "route": "/golf/dashboard/practice/templates",
+      "audience": "coach",
+      "name": "Templates",
+      "coach": "src/clubhouse/screens/practice/LibraryPages.tsx#TemplatesPage"
+    },
+    {
+      "route": "/golf/dashboard/practice/format",
+      "audience": "coach",
+      "name": "Plan format",
+      "coach": "src/clubhouse/screens/coachhelm/plan/format/PlanFormat.tsx#PlanFormat"
+    },
+    {
+      "route": "/golf/dashboard/practice/plan/[planId]",
+      "audience": "shared",
+      "name": "Practice plan",
+      "coach": "src/clubhouse/routes/practice.tsx#PracticePlanRoute",
+      "player": "src/clubhouse/screens/coachhelm/plan/player/PlayerPractice.tsx#PlayerPractice"
+    },
+    {
+      "route": "/golf/dashboard/practice/plan/[planId]/edit",
+      "audience": "coach",
+      "name": "Plan builder",
+      "coach": "src/clubhouse/screens/practice/builder/Builder.tsx#Builder"
+    },
+    {
+      "route": "/golf/dashboard/practice/print/[planId]",
+      "audience": "coach",
+      "name": "Print studio",
+      "coach": "src/clubhouse/screens/practice/PrintStudio.tsx#PrintStudio"
+    }
+  ],
   "semanticFeatures": [
     "team_operations",
     "coachhelm_ai"

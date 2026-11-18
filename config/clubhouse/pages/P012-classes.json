@@ -9,6 +9,14 @@
   "roles": [
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/classes",
+      "audience": "player",
+      "name": "Classes",
+      "player": "src/clubhouse/screens/classes/Classes.tsx#Classes"
+    }
+  ],
   "semanticFeatures": [
     "calendar_events"
   ],

@@ -307,6 +307,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/generated/CLUBHOUSE_CLICKABLE_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_HELD_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_PAGE_MAP.md` | generated | - | - | - | - |
+| `docs/clubhouse/generated/CLUBHOUSE_ROUTE_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_STATUS.md` | generated | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/PAGE.md` | generated | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/PAGE.md` | generated | - | - | yes | - |
@@ -973,7 +974,7 @@ them would bury everything above.
 | `docs/clubhouse/QUALITY_TOOLING.md` | current | - | - | - | - |
 | `docs/clubhouse/QUEUE.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
-| `docs/clubhouse/SCREENS.md` | current | - | - | - | 1 |
+| `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/STATUS.md` | current | - | - | yes | - |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
 | `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |

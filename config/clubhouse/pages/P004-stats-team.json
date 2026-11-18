@@ -4,11 +4,18 @@
   "slug": "stats-team",
   "bridgeNamespace": 4,
   "routes": [
-    "/golf/dashboard/stats",
-    "/golf/dashboard/stats/team"
+    "/golf/dashboard/stats"
   ],
   "roles": [
     "coach"
+  ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/stats",
+      "audience": "coach",
+      "name": "Team stats",
+      "coach": "src/clubhouse/screens/stats/StatsTeam.tsx#StatsTeam"
+    }
   ],
   "semanticFeatures": [
     "stats_analytics"

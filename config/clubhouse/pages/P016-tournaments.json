@@ -18,6 +18,64 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/tournaments",
+      "audience": "shared",
+      "name": "Tournaments (coach: season home; player: their event)",
+      "coach": "src/clubhouse/screens/tournaments/TournamentsHome.tsx#TournamentsHome",
+      "player": "src/clubhouse/screens/tournaments/PlayerEvent.tsx#PlayerEvent"
+    },
+    {
+      "route": "/golf/dashboard/tournaments/[id]",
+      "audience": "shared",
+      "name": "Event (coach: event desk; player: their line)",
+      "coach": "src/clubhouse/screens/tournaments/EventDesk.tsx#EventDesk",
+      "player": "src/clubhouse/screens/tournaments/PlayerEvent.tsx#PlayerEvent"
+    },
+    {
+      "route": "/golf/dashboard/tournaments/new",
+      "audience": "coach",
+      "name": "New event",
+      "coach": "src/clubhouse/screens/tournaments/EventForm.tsx#EventForm"
+    },
+    {
+      "route": "/golf/dashboard/tournaments/compare",
+      "audience": "coach",
+      "name": "Compare",
+      "coach": "src/clubhouse/screens/tournaments/Compare.tsx#Compare"
+    },
+    {
+      "route": "/golf/dashboard/tournaments/history",
+      "audience": "coach",
+      "name": "History",
+      "coach": "src/clubhouse/screens/tournaments/History.tsx#History"
+    },
+    {
+      "route": "/golf/dashboard/tournaments/links",
+      "audience": "coach",
+      "name": "Link inbox",
+      "coach": "src/clubhouse/screens/tournaments/LinkInbox.tsx#LinkInbox"
+    },
+    {
+      "route": "/golf/dashboard/tournaments/[id]/edit",
+      "audience": "coach",
+      "name": "Edit event",
+      "coach": "src/clubhouse/screens/tournaments/EventForm.tsx#EventForm"
+    },
+    {
+      "route": "/golf/dashboard/tournaments/[id]/lineup",
+      "audience": "coach",
+      "name": "Lineup",
+      "coach": "src/clubhouse/screens/tournaments/LineupBuilder.tsx#LineupBuilder"
+    },
+    {
+      "route": "/golf/dashboard/tournaments/[id]/live",
+      "audience": "coach",
+      "name": "Live round",
+      "coach": "src/clubhouse/screens/tournaments/LiveRound.tsx#LiveRound"
+    }
+  ],
   "semanticFeatures": [
     "calendar_events",
     "stats_analytics"
