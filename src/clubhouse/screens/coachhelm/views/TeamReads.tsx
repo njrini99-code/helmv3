@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import type { ChTeamReads, ChTeamReadsLoad, ChTeamReadsPlayer } from '../../../data/coachhelm-team-reads-shape';
 import { COACH_BOARD_HREF } from '../../../data/coachhelm-track-record-shape';
 import { plural } from '../../../lib/plural';
-$1
+import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Badge } from '../../../ui/Badge';
 import { Icon } from '../../../ui/Icon';
