@@ -37,7 +37,7 @@ function exposureTable(insertImpl: () => Promise<{ error: { message: string; cod
   const insertSpy = vi.fn(insertImpl);
   return {
     table: {
-      select: () => ({ in: () => ({ gte: async () => ({ data: [], error: null }) }) }),
+      select: () => ({ in: () => ({ gte: () => ({ gte: async () => ({ data: [], error: null }) }) }) }),
       insert: insertSpy,
     },
     insertSpy,

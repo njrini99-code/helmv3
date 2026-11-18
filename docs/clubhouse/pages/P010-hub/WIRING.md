@@ -17,19 +17,23 @@ counts include wrappers rather than unique popups.
 
 ```text
 Route:                   /golf/dashboard/team-hub
-Page:                    src/app/golf/(dashboard)/dashboard/team-hub/page.tsx (isClubhouseFor -> Clubhouse, else Fairway)
+Page:                    src/app/golf/(dashboard)/dashboard/team-hub/page.tsx (no session -> login; always ClubhouseHubRoute, with
+                         ?tab=, ?task= and ?trip=; the flag and the Fairway branch were removed on 2026-11-14, #2527)
 Clubhouse route adapter: src/clubhouse/routes/hub.tsx ClubhouseHubRoute (session, team; no team -> the no-team page, CH-10309)
 Server loader:           src/clubhouse/data/hub.ts loadTeamHub (one read for either role; each failed read logs through
                          chLogServer('hub', …) and never throws)
 Screen:                  src/clubhouse/screens/hub/TeamHub.tsx (the container) -> parts.tsx (the cards) and sheets.tsx (the forms)
-Skeleton:                src/clubhouse/screens/hub/HubSkeleton.tsx (CH-10405), from team-hub/loading.tsx through ClubhouseSwitch
+Skeleton:                src/clubhouse/screens/hub/HubSkeleton.tsx (CH-10405, its phone top in the role's shape from
+                         HubSkeletonTop.tsx), from team-hub/loading.tsx (ClubhouseSwitch was deleted)
 Route error:             src/app/golf/(dashboard)/dashboard/team-hub/error.tsx (the shared RouteErrorBoundary)
 ```
 
 ## End-to-end graph
 
 ```text
-UI (Rsvps, Announcement, Tasks, Documents, NewAnnouncementLine; ComposeSheet (New announcement and Edit announcement, with DocumentPicks), TripSheet, AssignSheet, ConfirmDelete)
+UI (Home as widgets: TripTile, WeekTile, WaitingOn, PostTile; HubStrip, TaskBoard; Rsvps, Announcement, Tasks, Documents,
+    NewAnnouncementLine; ComposeSheet (New announcement and Edit announcement, with DocumentPicks), TripSheet, TripEditSheet,
+    TravelerClasses, AssignSheet, ConfirmDelete)
 ↓
 Action (an onX handler in TeamHub, or the sheet's own submit: each calls run() on a useAction and does nothing after it)
 ↓
@@ -39,7 +43,9 @@ Client controller: useAction (offline refusal CH-1903, slow notice CH-1902, chRe
 ↓
 Writes: LIVE_HUB_WRITES (writes.ts), one method per server action
 ↓
-Server actions: src/app/golf/actions/golf.ts, communication.ts, tasks.ts, documents.ts, announcements.ts, travel.ts
+Server actions: src/app/golf/actions/calendar-events.ts (was golf.ts until the 2026-10-08 split, #2176), communication.ts,
+                tasks.ts, documents.ts, announcements.ts, travel.ts, player-hub-data.ts, player-notifications.ts,
+                unified-notifications.ts, practice-plans.ts
 ↓
 Data: golf_event_attendance, golf_announcement_acknowledgements, golf_task_assignments, golf_documents (+ storage documents),
       golf_announcements (+ recipients), golf_travel_itineraries, golf_tasks
@@ -85,6 +91,11 @@ failure toast carries Retry, which runs the whole action again (101401).
 | --- | --- | --- |
 | `screens/hub/TeamHub.tsx` | The container: header, tabs, the empty page, the optimistic state and every action; holds the post open in the edit sheet and the edits that have landed | 100101, 100102, 100410, CH-10305, CH-10306, every toast |
 | `screens/hub/parts.tsx` | `Rsvps`, `Announcement` (a coach's More menu: Edit announcement, Delete announcement), `TripPass`, `Updates`, `Tasks`, `Documents`, `NewAnnouncementLine` | 101xx empties and 102xx notices, CH-10401 |
+| `screens/hub/widgets.tsx` | Home as widgets (owner, 2026-10-21): `TripTile`, `WeekTile`, `WaitingOn`, `PostTile` | — |
+| `screens/hub/band.tsx`, `hub-summary.ts` | The strip under the title and the coach's task board, and the rules behind them and Home's widgets | — |
+| `screens/hub/trip-edit.tsx` | `TripEditSheet`: edit a saved trip | — |
+| `screens/hub/HubSkeletonTop.tsx` | The phone skeleton's top in the role's shape | CH-10405 |
+| `screens/hub/radio.ts` | Roving radio groups (one Tab stop, arrow keys) | — |
 | `screens/hub/sheets.tsx` | `ComposeSheet` (New announcement, and the same sheet in edit mode: two instances, so a new post's draft survives an edit), `DocumentPicks` (chips and the list to attach from), `TripSheet`, `AssignSheet` (each with its own action), `ConfirmDelete` | 101xx validation, CH-10209, CH-10311, CH-10402 to CH-10404, CH-10406, CH-10501 to CH-10503 |
 | `screens/hub/upload-rules.ts` | `HUB_UPLOAD_TYPES` / `HUB_UPLOAD_ACCEPT` (the bucket's and Fairway Documents' types), `HUB_UPLOAD_MAX_BYTES` (25 MB), `uploadRefusal` | the refusal toasts |
 | `screens/hub/TravelerClasses.tsx` | `useClassCheck` (the read, its settle time, dropping an answer for travelers or days no longer on screen) and `ClassClashes` (the warning row and what else the check can say) | CH-10110, CH-10212, CH-10315, CH-10407 |
@@ -108,12 +119,14 @@ There are no realtime hooks: the page is read once on the server.
 
 | Name | Path | Existing/New/Held | Purpose |
 | --- | --- | --- | --- |
-| respondToEvent | actions/golf.ts | Existing (Calendar's reply) | a player's reply |
+| respondToEvent | actions/calendar-events.ts (was golf.ts) | Existing (Calendar's reply) | a player's reply |
 | acknowledgeAnnouncement | actions/communication.ts | Existing | Got it |
 | completeTask, uncompleteTask, createTask, deleteTask | actions/tasks.ts | Existing (uncompleteTask new 2026-09-30) | a player's check, a coach's assign and delete |
 | getPreviewUrl, uploadGolfDocument, createGolfDocument, deleteGolfDocument, getDocuments | actions/documents.ts | Existing | the files; the same `getDocuments` read (already in the page's data) is what Attach from Documents lists, so it has no read of its own |
 | createEnrichedAnnouncement, updateAnnouncement, deleteAnnouncement, getAnnouncementsWithMeta | actions/announcements.ts | Existing (`createEnrichedAnnouncement` returns `attachmentsError` beside the id when the files did not link, 2026-09-30) | a coach's posts (with `documentIds` for the files attached), the fix to a post's wording, and their receipts |
 | createGolfTravelItinerary | actions/travel.ts | Existing | Plan a trip |
+| updateGolfTravelItinerary, deleteGolfTravelItinerary | actions/travel.ts | Existing | Edit a trip (`TripEditSheet`) and delete one (`writes.deleteTrip`, through ACT-P010-DELETE's dialog) |
+| deletePracticePlan | actions/practice-plans.ts | Existing | delete a practice plan listed in Documents (through ACT-P010-DELETE's dialog) |
 | getTravelerClassConflicts | actions/travel.ts | New 2026-09-30 | the trip builder's class check: a coach's read of the chosen travelers' classes that overlap the trip, returning only `{ playerId, title, days, time }` (no name, avatar, instructor, room or other busy time) |
 | getPlayerHubSummaryData | actions/player-hub-data.ts | Existing (the player hub's aggregate) | a player's events, trips, tasks and posts |
 | getPlayerHubAnnouncements | actions/player-notifications.ts | Existing | a player's posts when the aggregate fails |
@@ -148,8 +161,9 @@ action change the owner has not approved (Q-70, Q-71).
 ## Impact notes
 
 - `respondToEvent`, `acknowledgeAnnouncement`, `completeTask`, `createTask` and
-  the document actions are shared with Fairway's Calendar, Team Hub and coach
-  pages: a change there changes both UIs.
+  the document actions were shared with Fairway's Calendar, Team Hub and coach
+  pages until Fairway's retirement on 2026-11-14; they are still shared with
+  Calendar and Messages.
 - `getPlayerHubSummaryData` is the player hub's own aggregate; the loader relies
   on its shape, and on it throwing when the events, travel or tasks read fails
   (the loader catches that and flags those three sections). Its trips select no

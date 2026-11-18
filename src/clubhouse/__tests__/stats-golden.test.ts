@@ -31,6 +31,7 @@ vi.mock('@/app/golf/actions/stats-data', () => ({
 
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import { calculateStatsFromShots } from '@/lib/utils/golf-stats-calculator-shots';
+import { holeScramble } from '@/lib/golf/stat-formulas';
 import { playerFiguresOver } from '../data/player-figures';
 import { statsRowsOf } from './stats-rows';
 import { loadSeasonRounds } from '../data/season';
@@ -103,7 +104,14 @@ describe('G1 through the tracker (calculateHoleStats)', () => {
 
   it('the round figures', () => {
     const gir = stats.filter((s) => s.greenInRegulation);
-    const scr = stats.filter((s) => s.scrambleAttempt);
+    // The round's scrambling figure is holeScramble over each hole (sand saves count since
+    // 20261116200000). The tracker's own per-hole scrambleAttempt/Made is golf_holes.up_and_down,
+    // which stays a missed-green-only flag.
+    const scr = G1_HOLES.map((h, i) => {
+      const s = stats[i]!;
+      const r = holeScramble({ missedGreen: !s.greenInRegulation, score: s.score, par: h.par, sandSave: s.sandSaveAttempt ? s.sandSaveMade : null });
+      return { scrambleAttempt: r.attempt, scrambleMade: r.made };
+    }).filter((s) => s.scrambleAttempt);
     expect(sum(stats.map((s) => s.score))).toBe(G1_EXPECTED.total);
     expect(sum(stats.map((s) => s.putts))).toBe(G1_EXPECTED.putts);
     expect(gir.length).toBe(G1_EXPECTED.gir.made);

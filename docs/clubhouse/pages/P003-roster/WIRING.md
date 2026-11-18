@@ -17,9 +17,9 @@ counts include wrappers rather than unique popups.
 
 ```text
 Route:                   /golf/dashboard/roster
-Page:                    src/app/golf/(dashboard)/dashboard/roster/page.tsx (a coach with golf_clubhouse_ui on, or a player
-                         with no coach profile and the flag on -> ClubhouseRosterRoute, else Fairway)
-Old link:                roster/[id]/layout.tsx: with Clubhouse on, a coach goes
+Page:                    src/app/golf/(dashboard)/dashboard/roster/page.tsx (any signed-in session -> ClubhouseRosterRoute;
+                         the flag and the Fairway branch were removed on 2026-11-14)
+Old link:                roster/[id]/layout.tsx: redirectToClubhouse sends a coach
                          to stats?player=<id>, a player to roster (30806)
 Clubhouse route adapter: src/clubhouse/routes/roster.tsx (session, then the active team through resolveClubhouseTeam;
                          the resolved role decides, not the coach row: coach -> the coach's screen, 30801; player ->
@@ -31,18 +31,19 @@ Server loader:           src/clubhouse/data/roster.ts loadRoster (team, members 
 Player loader:           src/clubhouse/data/roster-player.ts loadPlayerRoster (the team row and the team's active members in one
                          parallel round; no coach read, join code, request, note or round, 30805; a failed read logs through
                          chLogServer('roster', …) and is a failed roster, CH-3210, never an empty one)
-Screen:                  src/clubhouse/screens/roster/Roster.tsx (live container) -> RosterList + RosterPeek (desktop)
-                         | RosterPhone (useChPhone, 820px)
-Player screen:           src/clubhouse/screens/roster/TeamRoster.tsx (desktop, and the phone switch) | TeamRosterPhone.tsx;
+Screen:                  src/clubhouse/screens/roster/Roster.tsx (live container) -> RosterTeamCard, RosterLeaders,
+                         RosterLimitLine, RosterList + RosterPeek (desktop; opens on the cards, 9e6db115f3)
+                         | RosterPhoneCrh (useChPhone, 820px; the classes-roster-home phone, approved 31 Oct)
+Player screen:           src/clubhouse/screens/roster/TeamRoster.tsx (desktop, and the phone switch) | TeamRosterPhoneCrh.tsx;
                          read-only, 30804, CH-3807
-Skeleton:                src/clubhouse/screens/roster/RosterSkeleton.tsx (CH-3401), from roster/loading.tsx through ClubhouseSwitch
+Skeleton:                src/clubhouse/screens/roster/RosterSkeleton.tsx (CH-3401), from roster/loading.tsx
 Route error view:        roster/error.tsx (RouteErrorBoundary)
 ```
 
 ## End-to-end graph
 
 ```text
-UI (RosterList, RosterPeek, RosterRequests, InviteModal | RosterPhone, RosterProfile, RequestsSheet, PlayerActions)
+UI (RosterTeamCard, RosterLeaders, RosterList, RosterPeek, RosterRequests, InviteModal | RosterPhoneCrh, RosterProfileCrh, RequestsSheetCrh, PlayerActionsCrh)
 ↓
 Action (useAction 'roster.<name>' in Roster.tsx, useJoinRequests.ts and RosterPeek.tsx; exportCsv and useCopyText are local)
 ↓
@@ -63,7 +64,7 @@ Tests: src/clubhouse/__tests__/roster.test.tsx (63 cases), roster-player.test.ts
 ```
 
 The player's path is shorter: `loadPlayerRoster` → `TeamRoster` or
-`TeamRosterPhone`, with no action that writes, no revalidation and no server
+`TeamRosterPhoneCrh`, with no action that writes, no revalidation and no server
 action: search, layout and sort change only what the screen lists, and Try again
 re-reads the page.
 
@@ -77,7 +78,7 @@ refused before anything is sent (30701, the shell's 10703, CH-1903).
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
 | ACT-P003-REMOVE-PLAYER | Row menu › Remove from team; phone ⋯ › Remove from team; then Remove player | `remove.run` (Roster) | `removePlayerFromTeam` | golf_team_members | confirm 31101 · warning 31704 · in flight 30301 · lands 30901 · fails 30601 · refused 30803 · Retry 31403 |
-| ACT-P003-CHANGE-STATUS | Row menu › Mark inactive / Mark active; phone ⋯ › the same; then the confirm | `changeStatus.run` (Roster), confirm in `StatusConfirm` (`RosterStatus.tsx`) | `updatePlayerStatus` (resolves the coach's active team through `resolveCoachActiveTeam` with the active-team cookie, as the route's `resolveClubhouseTeam` does) | golf_team_members (status) | confirm 31102 · in flight 30202 · lands 30901 · fails 30619 · refused 30803 · Retry 31403 |
+| ACT-P003-CHANGE-STATUS | Row menu › Mark inactive / Mark active; phone ⋯ › the same; then the confirm | `changeStatus.run` (Roster), confirm in `StatusConfirm` (`screens/roster/RosterStatus.tsx`) | `updatePlayerStatus` (resolves the coach's active team through `resolveCoachActiveTeam` with the active-team cookie, as the route's `resolveClubhouseTeam` does) | golf_team_members (status) | confirm 31102 · in flight 30202 · lands 30901 · fails 30619 · refused 30803 · Retry 31403 |
 | ACT-P003-APPROVE-REQUEST | Approve (desktop card; phone sheet) | `jr.decide(request, true)` | `acceptJoinRequest` | golf_team_join_requests, golf_team_members, notifications | optimistic 31301 · lands 30901 · fails 30602 · refused 30803 · Retry 31403 |
 | ACT-P003-DECLINE-REQUEST | Decline (desktop card; phone sheet) | `jr.decide(request, false)` | `rejectJoinRequest` | golf_team_join_requests, notifications | optimistic 31301 · lands 30901 · fails 30603 · refused 30803 · Retry 31403 |
 | ACT-P003-APPROVE-ALL | Phone sheet › Approve all | `jr.approveAll` | `acceptJoinRequest`, one at a time (D-55) | golf_team_join_requests, golf_team_members, notifications | in flight 30302 · lands 30901 · some fail 30607 · Retry re-runs the failures 31401 |
@@ -85,15 +86,15 @@ refused before anything is sent (30701, the shell's 10703, CH-1903).
 | ACT-P003-EXPORT-CSV | Export (desktop) | `exportCsv` | — (a download from the rows on screen) | — | names written as text 30502 · lands 31702 · blocked 30605 |
 | ACT-P003-COPY-JOIN-CODE | Copy (Invite sheet, empty state, phone requests sheet) | `copy` (`useCopyText`) | clipboard | — | lands 31703 · fails 30606 · no code 30404 · code didn't load 30614 |
 | ACT-P003-SHARE-INVITE | Share (Invite sheet) | `share` (InviteModal) | `navigator.share`, then copy | — | fails 30606 |
-| ACT-P003-EMAIL-INVITES | Send invite / Send n invites (Invite sheet › Or email them) | `submit` (`InviteByEmail`, through `useAction`) | `emailPlayerInvites` (`team-management.ts`; `gateUserAction`, then `sendGolfPlayerInviteEmails` behind `gateCustomerEmail`) | golf_coaches, golf_teams (read); Resend (send) | fails 30680 · unreadable address 30580 · labelled chips 31880 · email off 30780 |
+| ACT-P003-EMAIL-INVITES | Send invite / Send n invites (Invite sheet › Or email them) | `submit` (`InviteByEmail`, through `useAction`) | `emailPlayerInvites` (`src/app/golf/actions/team-management.ts`; `gateUserAction`, then `sendGolfPlayerInviteEmails` behind `gateCustomerEmail`) | golf_coaches, golf_teams (read); Resend (send) | fails 30680 · unreadable address 30580 · labelled chips 31880 · email off 30780 |
 | ACT-P003-OPEN-INVITE | Invite players (header, empty state, phone top bar), or arriving with `?invite=1` (Home's first run) | `setInvite(true)`; the arrival through the `linkedInvite` effect in `Roster` | — | — | opens once, param dropped 30102 |
 | ACT-P003-OPEN-PLAYER | A card, a table row, a Needs a look chip; phone row | `select`, `openPlayer` | — (already loaded) | — | ready 30101 · link 30102 · no rounds 30405 · counts didn't load 30615 · tick 31701 |
 | ACT-P003-FILTER-PLAYERS | Search, the status pills, the sort | `setQ`, `setShow`, `setSort` | — | — | nobody matches 30402 · nobody in the filter 30403 · tick 31701 |
 | ACT-P003-CHANGE-LAYOUT | The cards or list toggle (desktop) | `changeView` | — (stored on the device) | — | kept 31202 · tick 31701 · table roles 31801 |
 | ACT-P003-TRY-AGAIN | Try again on the roster, stats, requests or join code notice | `router.refresh` | — (the page is read again) | — | follows the refresh 30303 · whole page 31402 · roster 30608 · stats 30609 · requests 30610 |
 
-The player's view (`TeamRoster`, `TeamRosterPhone`) has no write and no link out
-(30804, CH-3807):
+The player's view (`TeamRoster`, `TeamRosterPhoneCrh`) has no write and no link
+out (30804, CH-3807):
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -122,26 +123,30 @@ rebuilt for the role is not offered:
 | `screens/roster/RosterStatus.tsx` | The Mark inactive / Mark active confirm (`StatusConfirm`) and its toast copy (`statusCopy`) | 30202, 30619, 31102 |
 | `screens/roster/RosterPeek.tsx` | The desktop panel and `CoachNote` (shared with the phone profile) | 30405, 30501, 30604, 30615, 30616, 31201, 31203, 32001 |
 | `screens/roster/RosterRequests.tsx` | The desktop join requests card | 30610, 31301 |
+| `screens/roster/RosterTeamCard.tsx` | The team card (coach and player, one card; a player's holds no injured, waiting or top five) | 30804 |
+| `screens/roster/RosterLeaders.tsx` | The leader cards, each naming its figure's window (season average over three or more rounds, last three, strokes gained a round; prod audit 2026-11-15) | 30615 |
+| `screens/roster/RosterLimit.tsx` | The roster limit (F-05, NCAA D-I 17.2: 9 count): the header's count, the over-limit warning (CH-3981), the limit sheet and a row's "doesn't count" (CH-3082); the division default until its held migration is applied | CH-3981, CH-3082 |
+| `screens/roster/InviteByEmail.tsx` | Invite sheet › Or email them: address chips and one send | 30680, 30580, 31880, 30780 |
 | `screens/roster/useJoinRequests.ts` | The requests, optimistic; Approve and Decline; Approve all | 30302, 30602, 30603, 30607, 31301, 31401, 31403 |
-| `screens/roster/RosterPhone.tsx` | The phone list, banner, requests sheet (opened once by the bell's `?tab=requests`; on desktop `Roster.tsx` focuses the `RosterRequests` card for it instead) and ⋯ sheet | 30102, 30302, 30401, 30608 to 30610, 31901 |
-| `screens/roster/RosterProfile.tsx` | The phone's pushed profile | 30405, 30609, 31203 |
+| `screens/roster/RosterPhoneCrh.tsx` | The phone list (`RosterPhoneCrh`; was `RosterPhone.tsx`, renamed when the classes-roster-home flag was removed, 2026-11-11), the requests row and sheet (`RequestsRow`, `RequestsSheetCrh`; opened once by the bell's `?tab=requests`; on desktop `Roster.tsx` focuses the `RosterRequests` card for it instead) and ⋯ sheet | 30102, 30302, 30401, 30608 to 30610, 31901 |
+| `screens/roster/RosterProfileCrh.tsx` | The phone's pushed profile (was `RosterProfile.tsx`): This season, Scoring trend, Recent rounds, About, Availability, Coach's note, CoachHelm | 30405, 30609, 31203 |
 | `screens/roster/RosterSkeleton.tsx` | Route skeleton | 30201 |
 | `screens/roster/RosterNoTeam.tsx` | No team (`viewer`: a coach's or a player's words) | CH-3306, CH-3308 |
 | `screens/roster/TeamRoster.tsx` | The player's roster: header, search, layout, sort, cards or table (plain text), the phone switch | 30804, 30402, 30617, 30618, 30407, 31807 |
-| `screens/roster/TeamRosterPhone.tsx` | The player's phone list: the back link, the sort, plain rows | 30804, 30617, 30407, 31807 |
+| `screens/roster/TeamRosterPhoneCrh.tsx` | The player's phone list (was `TeamRosterPhone.tsx`): the team card with active and class mix, a sticky sort, then Coaches and Players as plain rows | 30804, 30617, 30407, 31807 |
 | `screens/roster/team.ts` | The player's sort (name, class, handicap) and the "You · Senior" line | 30804 |
-| `screens/roster/useCopyText.ts`, `format.ts` | Copy with a toast; handicap and row-note formatting | 30606, 31703 |
+| `screens/roster/useCopyText.ts`, `screens/roster/format.ts` | Copy with a toast; handicap and row-note formatting | 30606, 31703 |
 
 ## Hooks
 
 | Path | Type | Used by |
 | --- | --- | --- |
 | `src/clubhouse/lib/use-action.ts` (`useAction`) | Clubhouse | Roster.tsx, useJoinRequests.ts, RosterPeek.tsx |
-| `src/clubhouse/screens/roster/useJoinRequests.ts` | Clubhouse | Roster.tsx, RosterRequests.tsx, RosterPhone.tsx |
-| `src/clubhouse/screens/roster/useCopyText.ts` | Clubhouse | Roster.tsx, RosterPhone.tsx |
+| `src/clubhouse/screens/roster/useJoinRequests.ts` | Clubhouse | Roster.tsx, RosterRequests.tsx, RosterPhoneCrh.tsx |
+| `src/clubhouse/screens/roster/useCopyText.ts` | Clubhouse | Roster.tsx, RosterPhoneCrh.tsx |
 | `src/clubhouse/lib/use-phone.ts` (`useChPhone`) | Clubhouse | Roster.tsx, TeamRoster.tsx |
-| `src/clubhouse/shell/phone-chrome.tsx` (`PhoneTop`, `useBackFromMore`, `usePhoneStackHistory`) | Clubhouse | RosterPhone.tsx, TeamRosterPhone.tsx (`PhoneTop`, `useBackFromMore`) |
-| `src/clubhouse/lib/haptics.ts`, `track.ts`, `motion.ts`, `reduced-motion.ts`, `format.ts` | Clubhouse | throughout |
+| `src/clubhouse/shell/phone-chrome.tsx` (`PhoneTop`, `useBackFromMore`, `usePhoneStackHistory`) | Clubhouse | RosterPhoneCrh.tsx, TeamRosterPhoneCrh.tsx (`PhoneTop`, `useBackFromMore`) |
+| `src/clubhouse/lib/haptics.ts`, `lib/track.ts`, `lib/motion.ts`, `lib/reduced-motion.ts`, `screens/roster/format.ts` | Clubhouse | throughout |
 
 ## Services / server actions
 
@@ -225,7 +230,7 @@ Answer:   ChRoster.helm = { status: 'on', byPlayer } | { status: 'off' } |
           { status: 'failed' } (CH-3212)
 Legs:     ChRosterPlayer.sgLegs from summarizePlayer (data/season.ts, already
           loaded); the caption is legsCaption (screens/roster/format.ts)
-Screen:   RosterPeek HelmBlock and LegsCaption; RosterProfile HelmPanel and
+Screen:   RosterPeek HelmBlock and LegsCaption; RosterProfileCrh HelmPanel and
           LegsCaption
 ```
 
@@ -236,10 +241,9 @@ Screen:   RosterPeek HelmBlock and LegsCaption; RosterProfile HelmPanel and
 
 ## Impact notes
 
-- `removePlayerFromTeam`, the join request actions and `setIntent` are shared
-  with Fairway. A change to what they return or refuse changes both UIs. Roster
-  shows the server's `error` when it is one short sentence, and its own hint
-  otherwise.
+- `removePlayerFromTeam`, the join request actions and `setIntent` live outside
+  `src/clubhouse` (they served Fairway too until 2026-11-14). Roster shows the
+  server's `error` when it is one short sentence, and its own hint otherwise.
 - `useAction` re-runs only the action function on Retry. Anything the screen
   must do after a success therefore lives inside the action (31403).
 - `data.players` and `data.requests` are the server's. The screen holds only
@@ -247,9 +251,9 @@ Screen:   RosterPeek HelmBlock and LegsCaption; RosterProfile HelmPanel and
 - The sidebar's join requests count is the shell's own read (10609 when it
   fails). Roster does not update it. Not verified: whether it refreshes after an
   approval.
-- `/golf/dashboard/roster/[id]` is Fairway's player page and is not rebuilt:
-  with Clubhouse on its layout sends a coach to `stats?player=<id>` and a
-  player to the roster (30806).
+- `/golf/dashboard/roster/[id]` was Fairway's player page and is not rebuilt:
+  its layout sends a coach to `stats?player=<id>` and a player to the roster
+  (30806).
 - The player's view reads through a separate loader on purpose. Adding a field
   to `ChTeammate` is a privacy decision (30805): the test that lists the
   selected columns and the tables asked for fails until it is made on purpose.

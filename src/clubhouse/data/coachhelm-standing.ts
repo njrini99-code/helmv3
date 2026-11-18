@@ -109,7 +109,13 @@ async function readLadderReads(supabase: Supabase, playerId: string, viewer: ChV
     if (team.error || team.tourError) return { status: 'failed' };
     if (feed.length === 0) {
       const [visible, dismissed] = await Promise.all([loadVisible(supabase, [playerId]), loadPlayerDismissed(supabase, playerId)]);
-      if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return { status: 'failed' };
+      if (visible.error || dismissed.error) return { status: 'failed' };
+      // Reads the player has not dismissed that the feed could draw: the feed failed without saying so.
+      const undrawn = visible.rows.filter((r) => !dismissed.ids.has(r.id)).length;
+      if (undrawn > 0) {
+        log('standing.reads', new Error(`the feed came back empty with ${undrawn} visible read(s)`));
+        return { status: 'failed' };
+      }
       return { status: 'ok', list: [] };
     }
     const mine = feed.filter((r) => r.player_id === playerId);

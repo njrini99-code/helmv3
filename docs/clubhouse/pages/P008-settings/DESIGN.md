@@ -147,7 +147,8 @@ rail page: a different screen over the same data, writes and catalog numbers
   summary and a chevron (coach: Account, Notifications, Team, CoachHelm,
   Preferences; player: Account, Golf profile, Notifications, Preferences); Help
   and legal (Report a problem, Privacy policy, Terms of service); and Sign out,
-  a red row on its own rule. The tab bar stays.
+  a red row on its own rule. The tab bar stays (since 2026-10-13 the section
+  strip, which replaced the tab bar).
 - **Sections push** over the list (CH-8609): the section slides in from the
   right as the list fades under it, and Back slides it off the same way; instant
   with reduced motion, and after an iOS back-swipe that already drew the pop.

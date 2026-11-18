@@ -24,6 +24,7 @@ import type {
   StatComparison,
 } from './round-review-system';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { holeScramble } from '@/lib/golf/stat-formulas';
 import { PUTT_DISTANCE_BUCKETS, puttStartFeet } from '@/lib/golf/putt-distance-buckets';
 
 // Hole-level data from golf_holes table (carries known par, score, etc.) —
@@ -42,6 +43,8 @@ export interface HoleParRow {
   putts: number | null;
   fairway_hit: boolean | null;
   gir: boolean | null;
+  /** golf_holes.sand_save: null = no greenside-bunker visit (Tour rule, any score). */
+  sand_save?: boolean | null;
 }
 
 export interface ComparisonRoundRow {
@@ -612,7 +615,7 @@ export function generateReviewContent(
   if (scramblePct !== null && scramblePct >= 50) {
     highlights.push({
       title: `${scramblePct}% Scrambling`,
-      description: `Saved par ${scrambleSuccessList.length} of ${scrambleAttemptsList.length} times when missing the green.`,
+      description: `Got up and down ${scrambleSuccessList.length} of ${scrambleAttemptsList.length} times after missing the green or finding a greenside bunker.`,
     });
   }
   if (fairwayPct !== null && fairwayPct >= 65) {
@@ -772,6 +775,20 @@ export function calculateComparisonAverages(rounds: ComparisonRoundRow[]): Compa
 }
 
 /**
+ * A hole's scramble once its estimated score moves. The sand save does not
+ * move with the score (Tour rule: holed in two from the bunker, any score), so
+ * only the missed-green half of holeScramble is re-read.
+ */
+function rescoredScramble(h: HoleBreakdown): boolean {
+  return holeScramble({
+    missedGreen: !h.gir,
+    score: h.score,
+    par: h.par,
+    sandSave: h.sandSaveAttempt ? h.sandSaveSuccess : null,
+  }).made;
+}
+
+/**
  * Build per-hole breakdowns from shot-level data.
  *
  * Key design decisions:
@@ -816,14 +833,16 @@ export function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars
       const puttCount = knownHole.putts ?? 2;
       const fairwayHit = par >= 4 ? (knownHole.fairway_hit ?? null) : null;
       const gir = knownHole.gir ?? false;
+      const sandFlag = knownHole.sand_save ?? null;
+      const scramble = holeScramble({ missedGreen: !gir, score, par, sandSave: sandFlag });
       holes.push({
         hole: h, par, score, scoreToPar,
         putts: puttCount, fairwayHit, gir,
         threePutt: puttCount >= 3, onePutt: puttCount === 1,
         penalties: 0,
-        scrambleAttempt: !gir,
-        scrambleSuccess: !gir && scoreToPar <= 0,
-        sandSaveAttempt: false, sandSaveSuccess: false,
+        scrambleAttempt: scramble.attempt,
+        scrambleSuccess: scramble.made,
+        sandSaveAttempt: sandFlag !== null, sandSaveSuccess: sandFlag === true,
         driveClub: null, driveDist: null, driveMiss: null,
         firstPuttFeet: null, approachClub: null, approachDist: null, approachMiss: null,
       });
@@ -891,16 +910,27 @@ export function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars
     }
     const gir = knownHole?.gir ?? (greenReachedAt > 0 && greenReachedAt <= girShotLimit);
 
-    const scrambleAttempt = !gir;
-    const scrambleSuccess = scrambleAttempt && scoreToPar <= 0;
+    // Sand save: the stored golf_holes.sand_save flag when the hole carries one
+    // (the Tour rule the cache counts); otherwise the same rule over the shots:
+    // the first greenside-bunker shot, holed in two strokes or fewer counting
+    // it, whatever the score. A visit is the attempt; GIR does not gate it.
+    let sandFlag: boolean | null;
+    if (knownHole?.sand_save !== undefined) {
+      sandFlag = knownHole.sand_save;
+    } else {
+      const strokes = holeShots.filter(s => !s.is_penalty);
+      const bunkerAt = strokes.findIndex(s => s.shot_type === 'around_green' && s.lie_before === 'sand');
+      sandFlag = bunkerAt < 0 ? null : (holedOut && strokes.length - bunkerAt <= 2);
+    }
+    const sandSaveAttempt = sandFlag !== null;
+    const sandSaveSuccess = sandFlag === true;
 
-    const hadBunkerShot = holeShots.some(s =>
-      (s.shot_type === 'around_green' || s.shot_type === 'approach') && s.lie_before === 'sand'
-    );
-    // A greenside-bunker visit is the sand-save attempt; do NOT gate on !gir
-    // (canonical denominator = bunker visits, matching the cache — STAGE 4).
-    const sandSaveAttempt = hadBunkerShot;
-    const sandSaveSuccess = sandSaveAttempt && scoreToPar <= 0;
+    // Scrambling (holeScramble, the cache's rule): a missed green or a
+    // greenside-bunker visit is a chance; par or better after the miss, or a
+    // sand save, is made.
+    const { attempt: scrambleAttempt, made: scrambleSuccess } = holeScramble({
+      missedGreen: !gir, score, par, sandSave: sandFlag,
+    });
 
     const driveDist = teeShot?.shot_distance ? parseFloat(teeShot.shot_distance) : null;
     const driveMiss = teeShot?.miss_direction ?? null;
@@ -971,8 +1001,7 @@ export function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars
           const finalAdj = Math.abs(remaining) < Math.abs(clampedAdj) ? remaining : clampedAdj;
           h.score += finalAdj;
           h.scoreToPar = h.score - h.par;
-          h.scrambleSuccess = h.scrambleAttempt && h.scoreToPar <= 0;
-          h.sandSaveSuccess = h.sandSaveAttempt && h.scoreToPar <= 0;
+          h.scrambleSuccess = rescoredScramble(h);
           remaining -= finalAdj;
         }
 
@@ -988,8 +1017,7 @@ export function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars
             const adj = remaining > 0 ? 1 : -1;
             h.score += adj;
             h.scoreToPar = h.score - h.par;
-            h.scrambleSuccess = h.scrambleAttempt && h.scoreToPar <= 0;
-            h.sandSaveSuccess = h.sandSaveAttempt && h.scoreToPar <= 0;
+            h.scrambleSuccess = rescoredScramble(h);
             remaining -= adj;
           }
         }

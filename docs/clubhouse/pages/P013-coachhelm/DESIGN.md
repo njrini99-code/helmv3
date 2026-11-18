@@ -367,9 +367,10 @@ motion. `?insight=<id>` opens on a read, checked against the player's own list.
 
 The player's two views, read by their coach, at
 `/golf/dashboard/coachhelm?view=deep-dive|standing&player=<golf_players.id>`
-(`view=profile&player=` opens Standing at How Jonah plays).
-Spec: `coach-parity/spec-A-coach-player-pages.md` (decided). It supersedes the
-non-goal below that a coach reads a player only through the Board and Ask.
+(`view=profile&player=` opens Standing at How Jonah plays). Spec:
+`coach-parity/spec-A-coach-player-pages.md` (decided; the file is not in the
+repository, so this section is the record of it). It supersedes the non-goal
+below that a coach reads a player only through the Board and Ask.
 
 - Address and entry. The Deep dive is the landing view. In: the Board's
   selected-player card ("All of Jonah’s reads", a ghost button with an arrow

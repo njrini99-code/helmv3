@@ -18,8 +18,9 @@ counts include wrappers rather than unique popups.
 ```text
 Route:                   /golf/dashboard/recruiting
 Page:                    src/app/golf/(dashboard)/dashboard/recruiting/page.tsx
-                         (no session -> login; a player -> redirect('/golf/dashboard'), as before; a coach with the
-                         Clubhouse on (isClubhouseFor('coach')) -> Clubhouse; otherwise the existing Fairway page)
+                         (no session -> login; not a coach -> redirect('/golf/dashboard'), as before; dashboard role
+                         coach -> Clubhouse; otherwise nothing. The flag and the Fairway page were removed on 2026-11-14,
+                         #2527)
 Clubhouse route adapter: src/clubhouse/routes/recruiting.tsx ClubhouseRecruitingRoute()
                          (no session.coach -> nothing, CH-14902; no team -> RecruitingNoTeam, CH-14306;
                          otherwise Recruiting)
@@ -27,8 +28,11 @@ Server loader:           src/clubhouse/data/recruiting.ts loadRecruiting (calls 
                          flagged, not empty, and logs chLogServer('recruiting', 'prospects'); the `no_team` answer
                          becomes the no-team page)
 Screens:                 src/clubhouse/screens/recruiting/ Recruiting (live wrapper), RecruitingView (state and
-                         writes), RecruitingDesktop, RecruitingPhone, Pipeline, Documents, ProspectForm, RecSheet
-Skeleton:                RecruitingSkeleton.tsx (CH-14401) through ClubhouseSwitch in recruiting/loading.tsx
+                         writes, with ctx.ts the shape it hands both layouts), RecruitingDesktop, RecruitingPhone,
+                         Pipeline, Documents, ProspectForm, RecSheet; parts.tsx (StageChip, ProspectAvatar, the next-step
+                         plate) and add-request.ts (which prospect an Add is for, so a repeated Add is not sent twice)
+Skeleton:                RecruitingSkeleton.tsx (CH-14401), drawn directly by recruiting/loading.tsx (ClubhouseSwitch was
+                         deleted)
 Navigation:              src/clubhouse/shell/nav.ts (CH_NAV_COACH: Recruiting after Roster, Team section;
                          '/golf/dashboard/recruiting' in the coach's CH_REBUILT_ROUTES)
 Preview:                 src/app/clubhouse-preview/[screen]/page.tsx, screen `recruiting`

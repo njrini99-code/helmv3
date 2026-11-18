@@ -72,9 +72,12 @@ and Fairway's outside it (`rounds/loading.tsx` through `ClubhouseSwitch`);
 nothing shows for the first 150ms, then a fade (the shell's 11609). The review
 loads under its Clubhouse skeleton (CH-11406) inside the shell, at `rounds/[id]`
 and at the old `rounds/[id]/review` address, and under Fairway's outside it
-(110206). Setup and the shot screen load in place: the course library
-(CH-11403), a course's tees (CH-11404), the scorecard (CH-11405), and a hole
-saving (CH-11402).
+(110206). Since Fairway's retirement on 2026-11-14 there is no outside and no
+`ClubhouseSwitch`: `rounds/loading.tsx` draws the library's skeleton for a
+player and Team rounds' for a coach, and the `rounds/[id]/review` address was
+deleted. Setup and the shot screen load in place: the course library (CH-11403),
+a course's tees (CH-11404), the scorecard (CH-11405), and a hole saving
+(CH-11402).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -196,7 +199,8 @@ its section (CH-11203, `SectionBoundary`). A partial read still renders the rest
 (110619). A player whose team membership read fails gets the route's error view,
 never "no team" (shared with every page, `routes/team.ts`; not tested here).
 Neither route has a Clubhouse error view: `rounds/error.tsx` and
-`rounds/[id]/error.tsx` are the shared Fairway boundary.
+`rounds/[id]/error.tsx` are the shared boundary (`src/components/errors/`), once
+Fairway's too.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -297,22 +301,23 @@ Status: DEFINED
 
 Who may open the page: a player, or a coach for a review, with
 `golf_clubhouse_ui` on for that role (the shell's gate); anyone else gets the
-Fairway page. The library is for players: the library route renders nothing for
-a coach, whose Rounds page is Team rounds (`ClubhouseTeamRoundsRoute`, chosen by
-the page; the shell lists `/golf/dashboard/rounds` as rebuilt for a coach)
-(110801). A round's review opens
-for the player who played it and a coach of their team, and everyone else gets
-the same not-here page, so it never confirms that someone else's round exists; a
-failed check is an error, never "not found" (110802). The library reads only the
-player's own rounds (110803, tested in `rounds-contracts.test.tsx`). Discard is
-checked again by its server action (110804, run in
-`rounds-actions-contracts.test.ts`; another player's round the caller can see is
-refused, and one it cannot see reads as already gone; nothing is deleted either
-way), which is the legacy library's action, unchanged. A qualifier with no round
-open cannot be chosen (110805). `/rounds/new` and `/rounds/continue/[id]` are
-rebuilt for a player (the page branches on the flag for the player's role,
-110114); a coach on `/rounds/new` keeps the legacy message. `/rounds/recover` is
-not rebuilt, so nothing links to it.
+Fairway page (until 2026-11-14; since then the page follows the dashboard role
+alone, and there is no Fairway page). The library is for players: the library
+route renders nothing for a coach, whose Rounds page is Team rounds
+(`ClubhouseTeamRoundsRoute`, chosen by the page; the shell lists
+`/golf/dashboard/rounds` as rebuilt for a coach) (110801). A round's review
+opens for the player who played it and a coach of their team, and everyone else
+gets the same not-here page, so it never confirms that someone else's round
+exists; a failed check is an error, never "not found" (110802). The library
+reads only the player's own rounds (110803, tested in
+`rounds-contracts.test.tsx`). Discard is checked again by its server action
+(110804, run in `rounds-actions-contracts.test.ts`; another player's round the
+caller can see is refused, and one it cannot see reads as already gone; nothing
+is deleted either way), which is the legacy library's action, unchanged. A
+qualifier with no round open cannot be chosen (110805). `/rounds/new` and
+`/rounds/continue/[id]` are rebuilt for a player (the page branches on the flag
+for the player's role, 110114); a coach on `/rounds/new` keeps the legacy
+message. `/rounds/recover` is not rebuilt, so nothing links to it.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

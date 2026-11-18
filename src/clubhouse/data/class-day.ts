@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { inferTermForImport } from '@/lib/golf/semester';
+import { chReport } from '../lib/track';
 import { toClassDay, toMyClassDay, type ChClassDay, type ChClassTerm, type ChMyClassDay } from './class-day-shape';
 
 /**
@@ -62,6 +63,13 @@ export async function loadMyClassDay(sb: SupabaseClient, on?: string): Promise<C
 
 const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
 
+/** A read below that answers null ("could not read"): every caller is a browser component, so it is reported here, once. */
+function reportUnread(surface: string, action: string, error: unknown, severity: 'low' | 'medium'): null {
+  const err = error instanceof Error ? error : new Error((error as { message?: string } | null)?.message || `${action} read failed`);
+  chReport(err, { surface, action, severity });
+  return null;
+}
+
 /** The table or function is not there yet (its migration is held): the answer is "none saved", not a failed read. */
 const NOT_APPLIED = new Set(['42P01', 'PGRST205', 'PGRST202', '42883']);
 /** What a failed read of a held table answers: an empty list when the table is not applied yet, otherwise null ("could not read"), so a caller keeps what it had. */
@@ -76,7 +84,7 @@ export async function loadTeamTerms(sb: SupabaseClient, teamId: string): Promise
       .eq('team_id', teamId)
       .order('classes_start', { ascending: false });
     const { data, error } = await query;
-    if (error) return emptyOrUnread<ChClassTerm>(error);
+    if (error) return emptyOrUnread<ChClassTerm>(error) ?? reportUnread('home.classLine', 'loadTeamTerms', error, 'low');
     if (!Array.isArray(data)) return null;
     const out: ChClassTerm[] = [];
     for (const r of data as Record<string, unknown>[]) {
@@ -89,8 +97,8 @@ export async function loadTeamTerms(sb: SupabaseClient, teamId: string): Promise
       if (id && label && timeZone && classesStart && classesEnd && examsEnd) out.push({ id, label, classesStart, classesEnd, examsEnd, timeZone, phase: 'classes' });
     }
     return out;
-  } catch {
-    return null;
+  } catch (error) {
+    return reportUnread('home.classLine', 'loadTeamTerms', error, 'low');
   }
 }
 
@@ -108,7 +116,7 @@ export async function loadTeamBreaks(sb: SupabaseClient, teamId: string, fromDay
       .gte('ends_on', fromDay)
       .order('starts_on', { ascending: true });
     const { data, error } = await query;
-    if (error) return emptyOrUnread<ChTeamBreak>(error);
+    if (error) return emptyOrUnread<ChTeamBreak>(error) ?? reportUnread('classes.breaks', 'loadTeamBreaks', error, 'medium');
     if (!Array.isArray(data)) return null;
     const out: ChTeamBreak[] = [];
     for (const r of data as Record<string, unknown>[]) {
@@ -118,8 +126,8 @@ export async function loadTeamBreaks(sb: SupabaseClient, teamId: string, fromDay
       if (id && startsOn && endsOn) out.push({ id, startsOn, endsOn, label: str(r.label) });
     }
     return out;
-  } catch {
-    return null;
+  } catch (error) {
+    return reportUnread('classes.breaks', 'loadTeamBreaks', error, 'medium');
   }
 }
 
@@ -143,7 +151,8 @@ export async function loadScheduleCoverage(sb: SupabaseClient, playerIds: readon
     const labels = new Map<string, { n: number; label: string }>();
     for (const ids of chunkIds(playerIds)) {
       const { data, error } = await (sb.from('golf_player_classes').select('player_id, semester').in('player_id', ids).limit(1000) as unknown as RowsQuery);
-      if (error || !Array.isArray(data)) return null;
+      if (error) return reportUnread('home.classLine', 'loadScheduleCoverage', error, 'low');
+      if (!Array.isArray(data)) return null;
       for (const r of data as { player_id: string; semester: string | null }[]) {
         have.add(r.player_id);
         const label = r.semester?.trim().replace(/\s+/g, ' ');
@@ -155,7 +164,7 @@ export async function loadScheduleCoverage(sb: SupabaseClient, playerIds: readon
     }
     const top = [...labels.values()].sort((a, b) => b.n - a.n)[0];
     return { players: have.size, label: top?.label ?? inferTermForImport(todayIso) };
-  } catch {
-    return null;
+  } catch (error) {
+    return reportUnread('home.classLine', 'loadScheduleCoverage', error, 'low');
   }
 }
