@@ -85,7 +85,7 @@ const notToldFromZero = (c: PriorityCard) => c.numbers.lost_low <= 0;
 /** The previous card’s words over the fresh numbers: between checkpoints a card does not change what it says. */
 function holdWords(prev: PriorityCard, fresh: PriorityCard | null): PriorityCard {
   if (!fresh || fresh.area !== prev.area) return prev;
-  return { ...fresh, key: prev.key, certainty: prev.certainty, certainty_word: prev.certainty_word, headline: prev.headline, where_text: prev.where_text, where: prev.where, pattern: prev.pattern, how_we_found: prev.how_we_found, what_would_change: prev.what_would_change, team: prev.team };
+  return { ...fresh, key: prev.key, certainty: prev.certainty, certainty_word: prev.certainty_word, headline: prev.headline, where_text: prev.where_text, where: prev.where, pattern: prev.pattern, how_we_found: prev.how_we_found, player_how_we_found: prev.player_how_we_found, what_would_change: prev.what_would_change, team: prev.team };
 }
 
 function fresh_memory(p: ReadPayload, base: Partial<ReadMemory> = {}): ReadMemory {

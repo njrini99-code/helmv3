@@ -30,14 +30,30 @@ function isCoachOnly(v: unknown): boolean {
 
 const ownFigures = (figures: Record<string, string>) => Object.fromEntries(Object.entries(figures).filter(([k]) => !TEAM_FIGURES.test(k)));
 
+/**
+ * The player's own read. Besides the coach-only blocks and teammates' figures, three things never reach a player: the
+ * coach's "not useful" or "wrong" and its reason (`memory.suppressed`; a read the coach marked down is not shown, see
+ * `isSuppressed`), the focus verdict (`focus`: its "expected without the focus" is shrunk toward the team's middle, a
+ * teammate figure), and the coach's paragraph. "How we found this" is the player's version ("your four parts").
+ */
 export function forPlayer(payload: ReadPayload): ReadPayload {
   const stripped = stripCoachOnly(payload);
-  const { written: _coachText, written_player: playerText, ...rest } = stripped;
+  const { written: _coachText, written_player: playerText, focus: _focus, memory, priority, ...rest } = stripped;
   return {
     ...rest,
+    priority: priority ? playerPriority(priority) : null,
     // The player reads their own paragraph, never the coach's.
     ...(playerText ? { written: playerText } : {}),
+    ...(memory ? { memory: { ...memory, suppressed: null, history: [] } } : {}),
     figures: ownFigures(stripped.figures),
     ...(stripped.parts ? { parts: stripped.parts.map((p) => ({ ...p, figures: ownFigures(p.figures) })) } : {}),
   };
 }
+
+function playerPriority(c: NonNullable<ReadPayload['priority']>): NonNullable<ReadPayload['priority']> {
+  const { player_how_we_found: mine, ...rest } = c;
+  return { ...rest, team: null, how_we_found: mine ?? c.how_we_found };
+}
+
+/** The coach marked this read "not useful" or "wrong" and nothing material changed: the player is shown no read at all. */
+export const isSuppressed = (payload: ReadPayload): boolean => !!payload.memory?.suppressed;

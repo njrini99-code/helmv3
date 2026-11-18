@@ -39,7 +39,10 @@ export function buildReadPayload(sheet: FactSheet, notability: Notability, rows:
     const measured = sheet.strokes_gained_by_round_season.filter((r) => r.measured);
     const dates = measured.map((r) => r.date).sort();
     const shots = scopeShots(notability);
-    const words = priorityWords(p, { from: dates[0] ?? null, to: dates[dates.length - 1] ?? null, shots }, f, 'coach');
+    const ctx = { from: dates[0] ?? null, to: dates[dates.length - 1] ?? null, shots };
+    const words = priorityWords(p, ctx, f, 'coach');
+    // The player's words use the same figures (the same numbers, put under the same names), spoken to them.
+    const mine = priorityWords(p, ctx, f, 'player');
     const lead = p.where.lead_pattern;
     priority = {
       key: `priority:${area}`,
@@ -56,9 +59,10 @@ export function buildReadPayload(sheet: FactSheet, notability: Notability, rows:
       },
       pattern: words.pattern,
       how_we_found: words.how_we_found,
+      player_how_we_found: mine.how_we_found,
       what_would_change: words.what_would_change,
       team: words.team_text
-        ? { audience: 'coach_only', value: { text: words.team_text, pattern_median: lead?.team?.median ?? null, differs: lead?.differs_from_team ?? false, direction: lead?.direction ?? null } }
+        ? { audience: 'coach_only', value: { text: words.team_text, pattern_median: lead?.team?.median ?? null, differs: lead?.differs_from_team ?? false, direction: lead?.direction ?? null, part_team_lost: p.team_shape ? r4(-p.team_shape.player_vs_team.team_median) : null } }
         : null,
       evidence: evidenceRounds(sheet, area, p.where, rows),
       numbers: {

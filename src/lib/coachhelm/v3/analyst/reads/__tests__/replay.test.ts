@@ -5,7 +5,7 @@ vi.mock('server-only', () => ({}));
 import { TeamFixture, tenRounds } from '../../__tests__/fixtures';
 import type { TeamRows } from '../../fact-sheet';
 import { buildTeamReads } from '../build';
-import { FOCUS_HORIZON_ROUNDS, focusRead } from '../focus';
+import { FOCUS_HORIZON_ROUNDS, focusJustSet, focusRead } from '../focus';
 import { decideNext } from '../memory';
 import type { ReadPayload } from '../types';
 
@@ -84,8 +84,11 @@ describe('stage 4: since the focus was set', () => {
   it('says the rounds since and the number on the day', () => {
     const r = focusRead({ ...link, set_on: dates[dates.length - 4]! }, sheet);
     expect(r.rounds_since).toBe(3);
-    expect(r.since_text).toMatch(/^Since the focus was set \(3 rounds\): 0\.\d a round lost, was 2\.0\.$/);
+    expect(r.since_text).toMatch(/^Focus set \d{1,2} [A-Z][a-z]{2} on approach, 2\.0 strokes a round lost then\. Since then: 3 rounds, from 2\.0 to 0\.\d strokes a round lost\.$/);
     expect(r.word).toBe('too_early');
+    expect(r.word_text).toBe('Too early: the verdict comes after 8 rounds');
+    const figures = Object.values(r.figures).join(' ');
+    for (const n of `${r.since_text} ${r.word_text}`.match(/\d+(?:\.\d+)?/g) ?? []) expect(figures).toContain(n);
   });
   it('at the horizon gives one word against the drift the number would have had anyway', () => {
     const r = focusRead({ ...link, set_on: dates[9]! }, sheet);
@@ -95,7 +98,15 @@ describe('stage 4: since the focus was set', () => {
     const worse = focusRead({ ...link, value_on_day: 0.1, team_lost_on_day: 0.1, set_on: dates[9]! }, { strokes_gained_by_round_season: sheet.strokes_gained_by_round_season.map((x) => ({ ...x, approach: (x.approach ?? 0) - 3 })) });
     expect(worse.word).toBe('got_worse');
   });
-  it('cannot tell with no round logged since', () => {
-    expect(focusRead({ ...link, set_on: '2099-01-01' }, sheet).word).toBe('cant_tell');
+  it('says too early, honestly, with no round logged since', () => {
+    const r = focusRead({ ...link, set_on: '2099-01-01' }, sheet);
+    expect(r.word).toBe('too_early');
+    expect(r.rounds_since).toBe(0);
+    expect(r.since_text).toMatch(/No round with every shot logged since\.$/);
+  });
+  it('the line the moment a focus is set: no round counted yet', () => {
+    const r = focusJustSet({ ...link, set_on: '2026-11-03' });
+    expect(r.since_text).toBe('Focus set 3 Nov on approach, 2.0 strokes a round lost then. No round counted since yet.');
+    expect(r.word).toBe('too_early');
   });
 });

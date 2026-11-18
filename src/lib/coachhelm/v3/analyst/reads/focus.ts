@@ -14,6 +14,7 @@ import { meanSummary, tQuantile } from '../stats';
 import type { FactSheet, RoundStrokesGained } from '../types';
 import { Figures, dayText, oneDecimal, whole } from './format';
 import type { PartId } from './types';
+import { PART_LABEL } from './words';
 
 /** Rounds after the focus before the verdict is given. */
 export const FOCUS_HORIZON_ROUNDS = 8;
@@ -68,14 +69,15 @@ export function focusRead(link: FocusLink, sheet: Pick<FactSheet, 'strokes_gaine
     .slice(0, FOCUS_HORIZON_ROUNDS);
   const lost = after.map((r) => -(PICK[link.part](r) as number));
   const expected = shrinkToward(link.value_on_day, link.rounds_on_day, link.team_lost_on_day ?? link.value_on_day, FOCUS_KAPPA_ROUNDS);
-  const was = f.put('focus_was', oneDecimal(link.value_on_day));
-  const day = f.put('focus_day', dayText(link.set_on));
+  const set = focusSetText(link, f);
   if (!lost.length) {
-    return { card_key: link.card_key, set_on: link.set_on, rounds_since: 0, since_text: `Focus set ${day}: no round with every shot logged since.`, word: 'cant_tell', word_text: WORDS.cant_tell, expected_without_focus: expected, figures: f.all };
+    return { card_key: link.card_key, set_on: link.set_on, rounds_since: 0, since_text: `${set} No round with every shot logged since.`, word: 'too_early', word_text: WORDS.too_early, expected_without_focus: expected, figures: f.all };
   }
   const s = meanSummary(lost)!;
   const n = f.put('focus_rounds', whole(lost.length));
-  const since_text = `Since the focus was set (${n} ${lost.length === 1 ? 'round' : 'rounds'}): ${f.put('focus_now', oneDecimal(s.mean))} a round lost, was ${was}.`;
+  const was = f.put('focus_was', oneDecimal(link.value_on_day));
+  const now = f.put('focus_now', oneDecimal(s.mean));
+  const since_text = `${set} Since then: ${n} ${lost.length === 1 ? 'round' : 'rounds'}, from ${was} to ${now} strokes a round lost.`;
   let word: VerdictWord;
   if (lost.length < FOCUS_HORIZON_ROUNDS || s.se == null || s.df == null) word = 'too_early';
   else {
@@ -87,5 +89,33 @@ export function focusRead(link: FocusLink, sheet: Pick<FactSheet, 'strokes_gaine
     else if (upper < expected) word = s.mean <= target ? 'worked' : 'moved';
     else word = 'did_not_move';
   }
-  return { card_key: link.card_key, set_on: link.set_on, rounds_since: lost.length, since_text, word, word_text: WORDS[word], expected_without_focus: expected, figures: f.all };
+  const word_text = word === 'too_early' ? `${WORDS.too_early}: the verdict comes after ${f.put('focus_horizon', whole(FOCUS_HORIZON_ROUNDS))} rounds` : `${WORDS[word]}: ${MEANING[word]}`;
+  return { card_key: link.card_key, set_on: link.set_on, rounds_since: lost.length, since_text, word, word_text, expected_without_focus: expected, figures: f.all };
+}
+
+/** What each word means, said once beside it. "After", never "because of". */
+const MEANING: Record<VerdictWord, string> = {
+  worked: 'a real drop, beyond what the rounds would have drifted to anyway',
+  moved: 'a real drop, smaller than the change worth calling worked',
+  did_not_move: 'within what the rounds would have drifted to anyway',
+  got_worse: 'a real rise in strokes lost since the focus',
+  too_early: 'too few rounds yet',
+  cant_tell: 'the rounds since cannot tell',
+};
+
+/** "Focus set 3 Nov on approach, 1.4 strokes a round lost then." From the link alone. */
+export function focusSetText(link: Pick<FocusLink, 'set_on' | 'part' | 'value_on_day'>, f: Figures = new Figures()): string {
+  const day = f.put('focus_day', dayText(link.set_on));
+  const was = f.put('focus_was', oneDecimal(link.value_on_day));
+  return `Focus set ${day} on ${PART_LABEL[link.part].toLowerCase()}, ${was} strokes a round lost then.`;
+}
+
+/**
+ * The card between the focus being set and the next saved read (the read refreshes after a posted round and nightly):
+ * nothing has been counted since, so it says only that. Shown by the coach's loader over a saved read without a `focus`.
+ */
+export function focusJustSet(link: FocusLink): FocusRead {
+  const f = new Figures();
+  const set = focusSetText(link, f);
+  return { card_key: link.card_key, set_on: link.set_on, rounds_since: 0, since_text: `${set} No round counted since yet.`, word: 'too_early', word_text: WORDS.too_early, expected_without_focus: link.value_on_day, figures: f.all };
 }

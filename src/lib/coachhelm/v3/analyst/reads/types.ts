@@ -90,8 +90,13 @@ export interface PriorityCard {
   how_we_found: [string, string, string];
   /** "What would change this": one sentence. */
   what_would_change: string;
-  /** Against the team. Coach-only. */
-  team: CoachOnly<{ text: string; pattern_median: number | null; differs: boolean; direction: 'above' | 'below' | null }> | null;
+  /** The same "how we found this" spoken to the player ("your four parts"). forPlayer swaps it in. */
+  player_how_we_found?: [string, string, string];
+  /**
+   * Against the team. Coach-only. `part_team_lost` is the teammates' middle loss in this part, strokes a round (positive is a
+   * loss): the drift a focus verdict measures against (focus.ts). Null without a team figure.
+   */
+  team: CoachOnly<{ text: string; pattern_median: number | null; differs: boolean; direction: 'above' | 'below' | null; part_team_lost?: number | null }> | null;
   evidence: EvidenceRound[];
   /** The raw numbers behind the card, for the parity test and memory. Strokes per round lost is positive. */
   numbers: {

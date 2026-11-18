@@ -134,7 +134,7 @@ export function priorityWords(p: Priority, ctx: { from: string | null; to: strin
     change = `This would change as soon as another part fell below ${lower(label)}.`;
   } else if (p.certainty === 'clear') {
     const gap = f.put('gap_to_other_parts', oneDecimal(-vs.value));
-    change = `This steps down if ${lower(label)} stops costing more than the other parts: today it costs ${gap} more a round than their average.`;
+    change = `This steps down if ${lower(label)} stops costing more than the other parts: today it costs ${gap} more a round than the other three parts on average.`;
   } else if (p.certainty === 'likely') {
     const more = roundsToSettle(p.rounds, vs.value, vsHalf);
     const gap = f.put('gap_to_other_parts', oneDecimal(Math.abs(vs.value)));
