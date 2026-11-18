@@ -112,6 +112,70 @@ export async function insertReads(sb: SupabaseClient, rows: readonly CoachReadIn
   return { status: 'ok', data: rows.length };
 }
 
+export const FEEDBACK_TABLE = 'golf_coach_read_feedback';
+export const FOCUS_TABLE = 'golf_coach_read_focus';
+
+export interface ReadFeedbackInsert {
+  id: string;
+  team_id: string;
+  player_id: string;
+  coach_id: string;
+  card_key: string;
+  verdict: CoachFeedback['verdict'];
+  reason: string;
+  lost_per_round: number;
+  certainty: CoachFeedback['certainty'];
+  area: string;
+}
+
+export interface ReadFocusInsert {
+  id: string;
+  team_id: string;
+  player_id: string;
+  coach_id: string;
+  focus_area_id: string | null;
+  card_key: string;
+  part: FocusLink['part'];
+  set_on: string;
+  value_on_day: number;
+  rounds_on_day: number;
+  team_lost_on_day: number | null;
+}
+
+interface Upsertable {
+  upsert(row: object, opts: { onConflict: string; ignoreDuplicates: boolean }): PromiseLike<{ error: QueryError }>;
+}
+
+/**
+ * One coach action, written once. The id is made by the coach's page once per intent, so a second tap or a Retry sends
+ * the same id and `ON CONFLICT (id) DO NOTHING` keeps the first (an ignore needs only the INSERT the policy grants;
+ * there is no update policy). RLS decides the rest: a coach of the team, inserting as themselves.
+ */
+export async function insertReadAction(sb: SupabaseClient, name: typeof FEEDBACK_TABLE | typeof FOCUS_TABLE, row: ReadFeedbackInsert | ReadFocusInsert): Promise<ReadsResult<true>> {
+  const { error } = await (sb as unknown as { from(t: string): Upsertable }).from(name).upsert(row, { onConflict: 'id', ignoreDuplicates: true });
+  if (error) return isMissingSchemaError(error) ? { status: 'held' } : { status: 'failed', error: error.message };
+  return { status: 'ok', data: true };
+}
+
+/** One player's latest feedback and focus link on a team (the coach's card overlays them until the next saved read). */
+export async function loadPlayerReadActions(sb: SupabaseClient, teamId: string, playerId: string): Promise<ReadsResult<{ feedback: (CoachFeedback & { created_at: string }) | null; focus: (FocusLink & { created_at: string }) | null }>> {
+  const from = (t: string) => (sb as unknown as { from(t: string): Untyped }).from(t);
+  const [fb, fo] = await Promise.all([
+    from(FEEDBACK_TABLE).select('card_key, verdict, reason, created_at, lost_per_round, certainty, area').eq('team_id', teamId).eq('player_id', playerId).order('created_at', { ascending: false }).range(0, 0),
+    from(FOCUS_TABLE).select('card_key, part, set_on, value_on_day, rounds_on_day, team_lost_on_day, created_at').eq('team_id', teamId).eq('player_id', playerId).order('created_at', { ascending: false }).range(0, 0),
+  ]);
+  for (const r of [fb, fo]) if (r.error) return isMissingSchemaError(r.error) ? { status: 'held' } : { status: 'failed', error: r.error.message };
+  const f = (fb.data ?? [])[0] as { card_key: string; verdict: CoachFeedback['verdict']; reason: string; created_at: string; lost_per_round: number | string; certainty: CoachFeedback['certainty']; area: string } | undefined;
+  const l = (fo.data ?? [])[0] as { card_key: string; part: FocusLink['part']; set_on: string; value_on_day: number | string; rounds_on_day: number; team_lost_on_day: number | string | null; created_at: string } | undefined;
+  return {
+    status: 'ok',
+    data: {
+      feedback: f ? { card_key: f.card_key, verdict: f.verdict, reason: f.reason, at: f.created_at, created_at: f.created_at, lost_per_round: Number(f.lost_per_round), certainty: f.certainty, area: f.area } : null,
+      focus: l ? { card_key: l.card_key, part: l.part, set_on: l.set_on, value_on_day: Number(l.value_on_day), rounds_on_day: l.rounds_on_day, team_lost_on_day: l.team_lost_on_day == null ? null : Number(l.team_lost_on_day), created_at: l.created_at } : null,
+    },
+  };
+}
+
 /** Stage 4 (held: 20261117121000): each player’s latest "not useful" or "wrong" on a team. A missing table is none. */
 export async function loadLatestFeedback(sb: SupabaseClient, teamId: string): Promise<Map<string, CoachFeedback>> {
   const out = new Map<string, CoachFeedback>();
