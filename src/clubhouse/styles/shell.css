@@ -1561,8 +1561,9 @@ button.ch-more__row[disabled] {
 }
 .ch-bell__count {
   position: absolute;
-  top: 6px;
-  right: 4px;
+  /* Outside the 16px glyph (R-4): 6/4 sat the badge on the bell's clapper and handle. */
+  top: -4px;
+  right: -4px;
   display: grid;
   place-items: center;
   min-width: 16px;

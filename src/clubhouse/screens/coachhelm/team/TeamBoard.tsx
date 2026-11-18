@@ -113,15 +113,15 @@ function Hero({
             <span data-ch-sg-mix="">{mixLine}</span>
           </>
         )}
-        {partsRoundOff && (
-          <>
-            <br />
-            <span data-ch-sg-round="">{SG_ROUNDING_NOTE}</span>
-          </>
-        )}
       </span>
     </div>
   );
+  // A footnote under the hero row, full width: beside the figure it wrapped in a narrow column (R-2).
+  const roundNote = partsRoundOff ? (
+    <p className="hn-note" data-ch-sg-round="">
+      {SG_ROUNDING_NOTE}
+    </p>
+  ) : null;
   const chips = <StationControl value={station} onChange={pick} stations={data.stations} courseReads={course} courseTab={courseTab} />;
   return (
     <section className="feat hero ch-htb-feat" data-ch-team-card="hole" aria-label={`Where ${data.team.name} gives back strokes`}>
@@ -129,6 +129,7 @@ function Hero({
         <>
           <div className="hk">Where {data.team.name} gives back strokes</div>
           {figure}
+          {roundNote}
         </>
       ) : (
         <div className="top">
@@ -139,6 +140,7 @@ function Hero({
           {chips}
         </div>
       )}
+      {!phone && roundNote}
       <div className={'hole' + (station === 'course' ? ' offh' : '')}>
         <TeamHole stations={data.stations} players={list} station={station} onStation={pick} orientation={phone ? 'v' : 'h'} arrive picks={picks} />
       </div>
@@ -478,6 +480,8 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
           ? (data.course.history?.courses.find((c) => c.id === open.id)?.name ?? 'Course')
           : 'Story';
 
+  // Inside the page's own column, so it keeps the gutter the cards above it use (R-3: outside, it ran edge to edge).
+  const orphanRecheck = !data.record && recheck ? <section className="card recfoot ch-htb-orphan-rck">{recheck}</section> : null;
   return (
     <ReadWorthContext.Provider value={worth}>
     <main ref={top} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} data-ch-screen="coachhelm-team">
@@ -486,14 +490,15 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
         <div className="sheet">
           {head}
           {body}
+          {orphanRecheck}
         </div>
       ) : (
         <div className="ch-htb-desk">
           {head}
           {body}
+          {orphanRecheck}
         </div>
       )}
-      {!data.record && recheck && <section className="card recfoot">{recheck}</section>}
       {phone ? (
         <Modal open={!!openPanel} onClose={close} title={panelTitle} className="ch-htb-sheet" bare>
           <div className="ins">{openPanel}</div>
