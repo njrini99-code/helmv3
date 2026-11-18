@@ -92,7 +92,8 @@ export function aliasSkeletonFor(pathname: string, role: string | null | undefin
   if (path === '/whats-new' || path === '/live') return player ? 'home' : null;
   if (path === '/stats/team') return player ? 'stats-own' : null;
   if (/^\/roster\/[^/]+$/.test(path)) return coach ? 'stats-profile' : player ? 'roster' : null;
-  if (path === '/coachhelm/genome/compare') return coach ? 'stats-team' : player ? 'stats-own' : null;
+  // A player's compare address (L-004) waits on the shell's plain skeleton: their own Stats' skeleton is not a table entry.
+  if (path === '/coachhelm/genome/compare') return coach ? 'stats-team' : null;
   if (/^\/players\/[^/]+(\/.*)?$/.test(path) || /^\/coachhelm\/genome\/[^/]+$/.test(path)) return coach ? 'stats-profile' : null;
   if (path === '/coachhelm/chat') return coach ? 'ask' : player ? 'coachhelm' : null;
   if (/^\/coachhelm\/qualifying\/[^/]+$/.test(path)) return coach ? 'qualifier-selection' : player ? 'qualifier' : null;
