@@ -47,6 +47,7 @@ export function parseCourseKey(raw: string): ChCourseKey | null {
   try {
     decoded = decodeURIComponent(raw.slice(NAME_PREFIX.length));
   } catch {
+    // A malformed escape in a hand-edited address: not a course key, nothing failed.
     return null;
   }
   // Read back through the same normalizer, so a hand-edited address cannot name a group no round belongs to.

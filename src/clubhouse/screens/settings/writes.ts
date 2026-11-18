@@ -250,6 +250,7 @@ export function createLiveWrites(ctx: {
 
     async deleteAccount() {
       const r = await fetch('/api/account/delete', { method: 'DELETE' });
+      // A body that is not JSON (a proxy's error page): the status goes into the error the toast shows.
       const body = (await r.json().catch(() => ({}))) as { success?: boolean; error?: string };
       return r.ok && body.success ? { success: true } : { success: false, error: body.error || `Delete failed (${r.status})` };
     },

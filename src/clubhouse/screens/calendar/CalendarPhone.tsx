@@ -334,6 +334,7 @@ function useDragHint() {
     try {
       setShow(window.localStorage.getItem(HINT_KEY) !== 'done');
     } catch {
+      // No storage (a private window): no hint rather than one that can never be dismissed for good.
       setShow(false);
     }
   }, []);

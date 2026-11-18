@@ -3,10 +3,10 @@ import { LIBRARY_DRILL_KINDS } from '@/lib/coachhelm/v3/practice-plan/library-ki
 import { createClient } from '@/lib/supabase/server';
 import { practiceTables } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
-import { logServerError } from '@/lib/server-error-logger';
-import { loadActiveRoster } from '@/lib/coachhelm/v3/chat/context';
+import { loadActiveRosterResult } from '@/lib/coachhelm/v3/chat/context';
 import { parsePlanBody, type DrillKind, type PlanArea } from '@/lib/coachhelm/v3/practice-plan/model';
 import { AREA_WORDS } from '../screens/practice/starters';
+import { chLogServer } from '../lib/track-server';
 import type { ChDrillDetail, ChDrillRow, ChLibraryLoad, ChPracticeGroup, ChPracticeTemplate, ChRosterRow } from './practice-library-shape';
 
 /** N-00 4.7: what a library category becomes on a copy. A category with no match keeps its own word. */
@@ -43,6 +43,11 @@ function missing(code?: string | null) {
   return isPracticeMissing(code ?? null);
 }
 
+/** A library read that failed: every page draws its own "didn't load", and the failure is reported here. */
+function log(read: string, error: unknown) {
+  chLogServer('practice.library', read, error, 'practice_plans');
+}
+
 export async function loadDrills(teamId: string): Promise<ChLibraryLoad<{ team: ChDrillRow[]; library: ChDrillRow[] }>> {
   const sb = await createClient();
   const [team, lib] = await Promise.all([
@@ -51,10 +56,13 @@ export async function loadDrills(teamId: string): Promise<ChLibraryLoad<{ team: 
   ]);
   if (team.error) {
     if (missing(team.error.code)) return { status: 'unavailable' };
-    await logServerError(`loadDrills: ${team.error.message}`, { action: 'practice.drills' }, 'warning');
+    log('team drills', team.error);
     return { status: 'failed' };
   }
-  if (lib.error) return { status: 'failed' };
+  if (lib.error) {
+    log('library drills', lib.error);
+    return { status: 'failed' };
+  }
   return { status: 'ready', data: { team: ((team.data ?? []) as unknown as TeamDrillFull[]).map(teamRow), library: (lib.data ?? []).map(libRow) } };
 }
 
@@ -63,16 +71,24 @@ export async function loadDrill(teamId: string, drillId: string): Promise<ChLibr
   const db = practiceTables(sb);
   const team = await db.from('golf_team_drills').select(TEAM_COLUMNS).eq('team_id', teamId).eq('id', drillId).maybeSingle();
   if (team.error && missing(team.error.code)) return { status: 'unavailable' };
-  if (team.error) return { status: 'failed' };
+  if (team.error) {
+    log('team drill', team.error);
+    return { status: 'failed' };
+  }
   if (team.data) {
     const d = team.data as unknown as TeamDrillFull;
     // Counted from the plans themselves: a drill ref lives in the plan's body, and there's no index of them.
     const used = await db.from('golf_practice_plans').select('body').eq('team_id', teamId).limit(500);
+    // "Used in" is left off when the plans don't read.
+    if (used.error) log('drill usage', used.error);
     const usedIn = used.error ? null : ((used.data ?? []) as Array<{ body: unknown }>).filter((r) => JSON.stringify(r.body).includes(d.id)).length;
     return { status: 'ready', data: { ...teamRow(d), setup: d.setup, goal: d.goal, equipment: d.equipment ?? [], scoring: d.scoring ?? [], tags: d.tags ?? [], mediaUrl: d.media_url, usedIn, archived: !!d.archived_at } };
   }
   const lib = await sb.from('golf_drills').select('id, title, category, duration_min, description').eq('id', drillId).maybeSingle();
-  if (lib.error) return { status: 'failed' };
+  if (lib.error) {
+    log('library drill', lib.error);
+    return { status: 'failed' };
+  }
   if (!lib.data) return { status: 'ready', data: null };
   return { status: 'ready', data: { ...libRow(lib.data), setup: lib.data.description ?? '', goal: '', equipment: [], scoring: [], tags: [], mediaUrl: null, usedIn: null, archived: false } };
 }
@@ -81,15 +97,27 @@ export async function loadGroups(teamId: string): Promise<ChLibraryLoad<{ groups
   const sb = await createClient();
   const [groups, roster] = await Promise.all([
     practiceTables(sb).from('golf_practice_groups').select('id, name, player_ids').eq('team_id', teamId).order('name'),
-    loadActiveRoster(sb, teamId).catch(() => null),
+    // The result form: a failed membership read is the page's "didn't load", never a roster of nobody to put in a group.
+    loadActiveRosterResult(sb, teamId).catch((err: unknown) => {
+      log('roster', err);
+      return null;
+    }),
   ]);
-  if (groups.error) return missing(groups.error.code) ? { status: 'unavailable' } : { status: 'failed' };
+  if (groups.error) {
+    if (missing(groups.error.code)) return { status: 'unavailable' };
+    log('groups', groups.error);
+    return { status: 'failed' };
+  }
   if (!roster) return { status: 'failed' };
+  if (roster.failed) {
+    log('roster', new Error('the active roster did not read'));
+    return { status: 'failed' };
+  }
   return {
     status: 'ready',
     data: {
       groups: ((groups.data ?? []) as Array<{ id: string; name: string; player_ids: string[] }>).map((g) => ({ id: g.id, name: g.name, playerIds: g.player_ids ?? [], usedIn: null })),
-      roster: roster.map((p) => ({ id: p.id, name: p.name })),
+      roster: roster.roster.map((p) => ({ id: p.id, name: p.name })),
     },
   };
 }
@@ -97,7 +125,11 @@ export async function loadGroups(teamId: string): Promise<ChLibraryLoad<{ groups
 export async function loadTemplates(teamId: string): Promise<ChLibraryLoad<ChPracticeTemplate[]>> {
   const sb = await createClient();
   const { data, error } = await practiceTables(sb).from('golf_practice_templates').select('id, name, kind, minutes, body').eq('team_id', teamId).order('name');
-  if (error) return missing(error.code) ? { status: 'unavailable' } : { status: 'failed' };
+  if (error) {
+    if (missing(error.code)) return { status: 'unavailable' };
+    log('templates', error);
+    return { status: 'failed' };
+  }
   const rows = (data ?? []) as Array<{ id: string; name: string; kind: ChPracticeTemplate['kind']; minutes: number | null; body: unknown }>;
   return { status: 'ready', data: rows.flatMap((r) => {
     const body = parsePlanBody(r.body);

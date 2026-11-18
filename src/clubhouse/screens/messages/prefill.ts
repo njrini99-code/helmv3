@@ -79,6 +79,7 @@ export function takePrefill(params: { get: (k: string) => string | null }): ChPr
     raw = window.sessionStorage.getItem(STORE + key);
     window.sessionStorage.removeItem(STORE + key);
   } catch {
+    // No storage (private mode, blocked): Messages opens with an empty composer.
     return null;
   }
   if (!raw) return null;
@@ -99,6 +100,7 @@ export function takePrefill(params: { get: (k: string) => string | null }): ChPr
     heldFiles.delete(key);
     return { players, draft, title, ...(conversationId ? { conversationId } : {}), ...(poll ? { poll } : {}), ...(returnTo ? { returnTo } : {}), ...(files?.length ? { files } : {}) };
   } catch {
+    // A stored entry that does not parse is no prefill.
     return null;
   }
 }

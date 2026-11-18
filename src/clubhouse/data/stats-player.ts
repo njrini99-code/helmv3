@@ -717,11 +717,15 @@ export async function loadPlayerProfile(input: {
 async function attestingCoachName(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<string | null> {
   try {
     const staff = await supabase.from('golf_team_coach_staff').select('coach_id, is_primary').eq('team_id', teamId).limit(10);
+    // A failed read draws no attesting coach's name: reported, then the same null as "no coach".
+    if (staff.error) chLogServer('stats', 'attestingCoach', staff.error, 'teams');
     if (staff.error || !staff.data?.length) return null;
     const lead = [...staff.data].sort((a, b) => Number(!!b.is_primary) - Number(!!a.is_primary))[0]!;
     const coach = await supabase.from('golf_coaches').select('full_name').eq('id', lead.coach_id).maybeSingle();
+    if (coach.error) chLogServer('stats', 'attestingCoach', coach.error, 'teams');
     return coach.error ? null : coach.data?.full_name?.trim() || null;
-  } catch {
+  } catch (err) {
+    chLogServer('stats', 'attestingCoach', err, 'teams');
     return null;
   }
 }

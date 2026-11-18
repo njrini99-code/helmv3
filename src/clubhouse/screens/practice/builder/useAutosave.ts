@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { savePracticePlanDraft } from '@/app/golf/actions/coachhelm-practice-plans';
 import { savePracticePlan } from '@/app/golf/actions/practice-plans';
 import type { PlanBodyV2, PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
+import { chReport } from '../../../lib/track';
 import type { BuilderStep } from './builder-model';
 
 export type SaveStatus = 'saved' | 'saving' | 'offline' | 'failed' | 'stale';
@@ -38,6 +39,7 @@ export function restoredDraft(planId: string): Snapshot | null {
     const raw = window.sessionStorage.getItem(storeKey(planId));
     return raw ? (JSON.parse(raw) as Snapshot) : null;
   } catch {
+    // No storage, or a kept draft that doesn't parse: the plan opens as the server has it.
     return null;
   }
 }
@@ -95,9 +97,11 @@ export function useAutosave({ planId, version, snapshot, folder = 'Practice plan
         forget(planId);
         if (JSON.stringify(latest.current) === json) setStatus('saved');
         else timer.current = window.setTimeout(() => void run(), DEBOUNCE_MS);
-      } catch {
+      } catch (err) {
         tries.current += 1;
         if (tries.current >= MAX_TRIES) {
+          // Reported once, when the retries run out and the head says Failed; a throw a retry recovers from is not a lost save.
+          chReport(err, { surface: 'practice.builder', action: 'practice.autosave', severity: 'high', extra: { planId, tries: tries.current } });
           // A throw has no reason of its own to give (a catch-all guesses: error copy, row 62), so the head says only that the save failed.
           setError(null);
           setStatus('failed');

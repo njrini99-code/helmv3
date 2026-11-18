@@ -1,6 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import { logServerError } from '@/lib/server-error-logger';
+import { chLogServer } from '../lib/track-server';
 import { isFlagEnabled } from '@/lib/flags';
 import { buildFieldDayContext } from '@/lib/coachhelm/v3/field-day/field';
 import { loadTeamFieldRounds } from '@/lib/coachhelm/v3/field-day/loader';
@@ -28,7 +28,8 @@ import type { ChStanding } from './coachhelm-standing-shape';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
-const log = (where: string, err: unknown) => void logServerError(err instanceof Error ? err.message : String(err), { action: `coachhelm.file.${where}`, featureArea: 'coachhelm' });
+// Through chLogServer, so the file's failures carry ui=clubhouse like every other Clubhouse read (they went out untagged).
+const log = (where: string, err: unknown) => chLogServer('coachhelm.file', where, err, 'coachhelm');
 
 /** The desktop rail: the team's active players, each with their top read, or the class year when there is none (CP-LNS-18). Only the reads the rail draws count as shown (CT0a). */
 export async function loadFileRoster(scope: ChCoachPlayerScope): Promise<ChFileRosterRow[] | null> {
@@ -112,6 +113,7 @@ async function filePractice(supabase: Supabase, row: { id: string; drill_ids: st
     let drill: string | null = null;
     if (drillId) {
       const d = await supabase.from('golf_drills').select('title').eq('id', drillId).maybeSingle();
+      if (d.error) log('practice.drill', d.error);
       drill = d.error ? null : (d.data?.title ?? null);
     }
     if (!drill) return null;
@@ -124,7 +126,10 @@ async function filePractice(supabase: Supabase, row: { id: string; drill_ids: st
 
 async function coachLabel(supabase: Supabase, coachId: string): Promise<string> {
   const { data, error } = await supabase.from('golf_coaches').select('full_name').eq('id', coachId).maybeSingle();
-  if (error) return 'Your coach';
+  if (error) {
+    log('coach label', error);
+    return 'Your coach';
+  }
   const last = data?.full_name?.trim().split(/\s+/).pop();
   return last ? `Coach ${last}` : 'Your coach';
 }

@@ -141,6 +141,8 @@ function weekTiles<T extends { event: EventRow; state: ChPracticeState; href: st
 /** The team's name and its clock: the settings zone every Clubhouse loader reads (`loadTeamZone`; DF-C-07, never `golf_teams.timezone`). */
 async function teamBasics(sb: Sb, teamId: string) {
   const [{ data, error }, zone] = await Promise.all([sb.from('golf_teams').select('name, organization_id').eq('id', teamId).maybeSingle(), loadTeamZone(sb, teamId, 'practice')]);
+  // Every caller turns null into the page's "didn't load"; the failure is reported here, once.
+  if (error) chLogServer('practice', 'team', error, 'practice_plans');
   return error || !data ? null : { name: data.name ?? '', zone, org: data.organization_id };
 }
 
@@ -150,7 +152,10 @@ async function activeRoster(sb: Sb, teamId: string): Promise<Array<{ id: string;
     sb.from('golf_team_members').select('player_id').eq('team_id', teamId).eq('status', 'active'),
     readGolfPlayerProfiles(sb, { teamIds: [teamId] }),
   ]);
-  if (error || profiles.error) return null;
+  if (error || profiles.error) {
+    chLogServer('practice', 'roster', error ?? profiles.error, 'practice_plans');
+    return null;
+  }
   const byId = profilesById(profiles.data);
   return (data ?? []).flatMap((m) => {
     const p = m.player_id ? byId.get(m.player_id) : undefined;
@@ -183,9 +188,14 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
   if (!team) return { status: 'failed' };
   const { name: teamName, zone } = team;
   const plansRes = await plansRead;
-  if (plansRes.error) return isPracticeMissing(plansRes.error.code) ? { status: 'unavailable' } : { status: 'failed' };
+  if (plansRes.error) {
+    if (isPracticeMissing(plansRes.error.code)) return { status: 'unavailable' };
+    chLogServer('practice.home', 'plans', plansRes.error, 'practice_plans');
+    return { status: 'failed' };
+  }
   const plans = (plansRes.data ?? []) as PlanRow[];
   const [upcoming, roster] = await windowRead;
+  if (upcoming.error) chLogServer('practice.home', 'practices', upcoming.error, 'practice_plans');
   if (upcoming.error || !roster) return { status: 'failed' };
   const byEvent = new Map(plans.filter((p) => p.event_id).map((p) => [p.event_id!, p]));
   const known = new Map<string, EventRow>((upcoming.data ?? []).map((e) => [e.id, e]));
@@ -196,7 +206,10 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
   const missing = plans.map((p) => p.event_id).filter((id): id is string => !!id && !known.has(id));
   if (missing.length) {
     const older = await sb.from('golf_events').select(EVENT_COLUMNS).in('id', missing.slice(0, 200));
-    if (older.error) return { status: 'failed' };
+    if (older.error) {
+      chLogServer('practice.home', 'older practices', older.error, 'practice_plans');
+      return { status: 'failed' };
+    }
     for (const e of older.data ?? []) (isCancelled(e) ? calledOff : known).set(e.id, e);
   }
   type Row = ChPracticeRow & { at: string; ended: boolean };
@@ -272,11 +285,18 @@ export async function loadPlayerPracticeHome(teamId: string, playerId: string, n
   if (!team) return { status: 'failed' };
   const { zone } = team;
   const { data, error } = await liveRead;
-  if (error) return isPracticeMissing(error.code) ? { status: 'unavailable' } : { status: 'failed' };
+  if (error) {
+    if (isPracticeMissing(error.code)) return { status: 'unavailable' };
+    chLogServer('practice.home', 'live plans', error, 'practice_plans');
+    return { status: 'failed' };
+  }
   const live = (data ?? []) as PracticePlanVersionRow[];
   const ids = live.map((v) => v.event_id).filter((id): id is string => !!id);
   const eventsRes = ids.length ? await sb.from('golf_events').select(EVENT_COLUMNS).eq('team_id', teamId).in('id', ids) : { data: [] as EventRow[], error: null };
-  if (eventsRes.error) return { status: 'failed' };
+  if (eventsRes.error) {
+    chLogServer('practice.home', 'practices', eventsRes.error, 'practice_plans');
+    return { status: 'failed' };
+  }
   // A practice the coach called off is no practice to a player (DF-P-09): its live plan stays until the coach takes it down, so the
   // read drops it here, as Home and Calendar do, and as the plan page reads it as gone.
   const eventOf = new Map<string, EventRow>((eventsRes.data ?? []).filter((e) => !isCancelled(e)).map((e) => [e.id, e]));
@@ -340,14 +360,22 @@ const SG_NAMES: Record<string, string> = { tee: 'Off the tee', approach: 'Approa
 /** What the helper's card leads with: the team's biggest loss and the next event after this practice. Only what was read; a failed read is a line left out. */
 async function helperFacts(sb: Sb, teamId: string, after: Date, zone: string): Promise<Array<{ lead: string; text: string }>> {
   const facts: Array<{ lead: string; text: string }> = [];
-  const ctx = await resolveCoachChatContext(sb).catch(() => null);
+  // Best-effort lines: a failed read leaves its line out, and is reported.
+  const ctx = await resolveCoachChatContext(sb).catch((err: unknown) => {
+    chLogServer('practice.builder', 'helper context', err, 'practice_plans');
+    return null;
+  });
   if (ctx && ctx.team_id === teamId) {
-    const sg = await getTeamStrokesGained((window) => loadTeamStrokesGained(sb, { timezone: ctx.timezone, playerIds: ctx.roster.map((p) => p.id) }, window), { id: ctx.team_id, name: ctx.team_name }, { window: 'last10' }).catch(() => null);
+    const sg = await getTeamStrokesGained((window) => loadTeamStrokesGained(sb, { timezone: ctx.timezone, playerIds: ctx.roster.map((p) => p.id) }, window), { id: ctx.team_id, name: ctx.team_name }, { window: 'last10' }).catch((err: unknown) => {
+      chLogServer('practice.builder', 'helper strokes gained', err, 'practice_plans');
+      return null;
+    });
     const areas = (sg?.detail as { areas?: Record<string, number | null> } | undefined)?.areas;
     const worst = areas ? Object.entries(areas).filter((e): e is [string, number] => typeof e[1] === 'number' && e[1] < 0).sort((a, b) => a[1] - b[1])[0] : undefined;
     if (worst) facts.push({ lead: SG_NAMES[worst[0]] ?? worst[0], text: `loses ${formatFixed(Math.abs(worst[1]))} a round, the most of any part of the game` });
   }
   const { data, error } = await sb.from('golf_events').select('title, start_time').eq('team_id', teamId).in('event_type', ['tournament', 'qualifier']).is('cancelled_at', null).gt('start_time', after.toISOString()).lte('start_time', new Date(after.getTime() + 14 * DAY).toISOString()).order('start_time').limit(1).maybeSingle();
+  if (error) chLogServer('practice.builder', 'helper next event', error, 'practice_plans');
   if (!error && data) facts.push({ lead: data.title, text: `starts ${formatWith(new Date(data.start_time), { weekday: 'long', timeZone: zone })}` });
   return facts;
 }
@@ -375,7 +403,8 @@ export async function loadPlanForBuilder(planId: string): Promise<{ status: 'rea
   }
   if (!event) return { status: 'gone' };
   // What players have now, for What changed on Republish. A version that won't read leaves the plain sheet.
-  const { data: live } = row.status === 'published' && row.published_version != null ? await practiceTables(sb).from('golf_practice_plan_versions').select('body').eq('plan_id', row.id).eq('version', row.published_version).maybeSingle() : { data: null };
+  const { data: live, error: liveError } = row.status === 'published' && row.published_version != null ? await practiceTables(sb).from('golf_practice_plan_versions').select('body').eq('plan_id', row.id).eq('version', row.published_version).maybeSingle() : { data: null, error: null };
+  if (liveError) chLogServer('practice.builder', 'live version', liveError, 'practice_plans');
   const team = await teamBasics(sb, row.team_id);
   const roster = await activeRoster(sb, row.team_id);
   // The team and roster reads answer for a plan that exists, so a null here is a failed read, not a removed plan.
@@ -389,6 +418,9 @@ export async function loadPlanForBuilder(planId: string): Promise<{ status: 'rea
     // A read that fails leaves the default folder; `practice_plan_id` comes with the held migrations, so the column isn't in the generated types yet.
     practiceTables(sb).from('golf_documents').select('folder').eq('practice_plan_id', row.id).maybeSingle(),
   ]);
+  if (coaches.error) chLogServer('practice.builder', 'coaches', coaches.error, 'practice_plans');
+  // The folder column comes with the held migrations: only a failure other than "not there yet" is reported.
+  if (filed.error && !isPracticeMissing(filed.error.code)) chLogServer('practice.builder', 'folder', filed.error, 'practice_plans');
   return {
     status: 'ready',
     data: {
