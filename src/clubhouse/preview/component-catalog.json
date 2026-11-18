@@ -25276,6 +25276,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-signup-paper",
+          "value": "linear-gradient(170deg, rgb(250 248 241), rgb(245 241 231) 55%, rgb(241 236 223))",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-on-fill-0",
           "value": "#ffffff",
           "scope": "[data-ui='clubhouse']"

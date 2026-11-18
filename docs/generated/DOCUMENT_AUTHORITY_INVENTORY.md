@@ -1154,6 +1154,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-16-stat-definitions.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-16-story-and-refresh-keyframes.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-18-signup-paper-token.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -2131,6 +2132,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-15-phone-pane-ivory.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-18-signup-paper-token.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/DESIGN.md` | current | - | - | - | - |
