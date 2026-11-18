@@ -10,6 +10,7 @@ import {
   recruitDocMaxBytes,
 } from '@/app/golf/actions/recruit-documents-limits';
 import type { ChDivision, ChProgramGender } from './recruiting-calendar';
+import { wholePercents } from '../lib/shares';
 import { RECRUIT_FILM_ENABLED } from './recruiting-film';
 import { plural } from '../lib/plural';
 import { isoDay } from '../lib/dates';
@@ -122,15 +123,7 @@ export function countByStage(list: readonly { stage: ChStage }[]): Record<ChStag
 export function sharesOf(counts: Record<ChStage, number>): Record<ChStage, number> | null {
   const total = CH_STAGES.reduce((n, s) => n + counts[s.value], 0);
   if (total === 0) return null;
-  const exact = CH_STAGES.map((s) => (counts[s.value] * 100) / total);
-  const floors = exact.map(Math.floor);
-  let left = 100 - floors.reduce((a, b) => a + b, 0);
-  const order = exact.map((x, i) => ({ i, frac: x - Math.floor(x) })).sort((a, b) => b.frac - a.frac || a.i - b.i);
-  for (const { i } of order) {
-    if (left <= 0) break;
-    floors[i]! += 1;
-    left -= 1;
-  }
+  const floors = wholePercents(CH_STAGES.map((s) => counts[s.value]));
   return Object.fromEntries(CH_STAGES.map((s, i) => [s.value, floors[i]!])) as Record<ChStage, number>;
 }
 

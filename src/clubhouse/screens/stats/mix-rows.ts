@@ -1,4 +1,5 @@
 import { plural } from '../../lib/plural';
+import { wholePercents } from '../../lib/shares';
 /**
  * The scoring mix as rows (stats-visuals spec 4.4, decision Q11): every scored hole by its result, in the bar's order from
  * left to right. Par sits in the middle; going out from it, birdie then eagle or better to the left (under par), bogey then
@@ -32,25 +33,8 @@ export interface MixRow {
   perRound: number | null;
 }
 
-/**
- * Whole percents that add up to 100 (largest remainder): each share is floored, and the points left over go to the shares
- * with the largest remainders (a tie goes to the larger share, then to the earlier result). So a 100% bar's labels always
- * sum to 100, and no share is off its exact value by a point or more. All zeros stay zeros.
- */
-export function mixPercents(counts: readonly number[]): number[] {
-  const total = counts.reduce((a, c) => a + Math.max(0, c), 0);
-  if (total <= 0) return counts.map(() => 0);
-  const exact = counts.map((c) => (Math.max(0, c) / total) * 100);
-  const out = exact.map(Math.floor);
-  let left = 100 - out.reduce((a, b) => a + b, 0);
-  const order = exact.map((e, i) => ({ i, r: e - Math.floor(e), e })).sort((a, b) => b.r - a.r || b.e - a.e || a.i - b.i);
-  for (const { i } of order) {
-    if (left <= 0) break;
-    out[i]! += 1;
-    left -= 1;
-  }
-  return out;
-}
+/** Whole percents that add up to 100: the one largest-remainder rule (lib/shares), so a 100% bar's labels always sum to 100. */
+export const mixPercents = wholePercents;
 
 export function pctText(count: number, pct: number): string {
   if (count <= 0) return '0%';

@@ -2,6 +2,7 @@ import { createContext, useContext, type ReactNode } from 'react';
 import type { ChWindow } from '../../data/stats-common';
 import type { ChSprayGroup } from '../../data/stats-detail';
 import { formatFixed, NO_DATA } from '../../lib/format';
+import { wholePercents } from '../../lib/shares';
 import { ScrollRegion } from '../../ui/ScrollRegion';
 import { NoData } from '../../ui/NoData';
 
@@ -308,21 +309,6 @@ const SIDES: ReadonlyArray<readonly ['left' | 'center' | 'right', string]> = [
   ['right', 'Right'],
 ];
 
-/** Whole-number shares of `counts` that add to exactly 100 (largest remainder); all zero when there is nothing. */
-export function wholeShares(counts: readonly number[]): number[] {
-  const total = counts.reduce((a, b) => a + b, 0);
-  if (total <= 0) return counts.map(() => 0);
-  const raw = counts.map((c) => (c / total) * 100);
-  const out = raw.map(Math.floor);
-  const order = raw.map((r, i) => ({ i, rem: r - Math.floor(r) })).sort((a, b) => b.rem - a.rem || a.i - b.i);
-  let short = 100 - out.reduce((a, b) => a + b, 0);
-  for (let k = 0; short > 0; k++, short--) {
-    const i = order[k % order.length]!.i;
-    out[i] = (out[i] ?? 0) + 1;
-  }
-  return out;
-}
-
 /**
  * Tee shots on one row: Left, Center, Right. The logger records a tee shot's side only, so the long and short rows
  * of the grid were always empty. A shot that an older edit logged as short or long counts as center, a diagonal as
@@ -334,7 +320,7 @@ export function teeSides(g: ChSprayGroup): Array<{ key: 'left' | 'center' | 'rig
     const side = SIDE_OF[b.sector];
     if (side) counts[side] += b.count;
   }
-  const shares = wholeShares(SIDES.map(([k]) => counts[k]));
+  const shares = wholePercents(SIDES.map(([k]) => counts[k]));
   return SIDES.map(([key, label], i) => ({ key, label, count: counts[key], pct: shares[i]! }));
 }
 
