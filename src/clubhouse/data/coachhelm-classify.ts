@@ -3,6 +3,8 @@ import type { InsightComparisonSource, InsightEvidence } from '@/lib/coachhelm/v
 import { deriveTone, isNegativePolarityMetric } from '@/lib/coachhelm/tone-derivation';
 import { getMetricDefinition, isGolfMetricId } from '@/lib/golf/metrics/display-registry';
 import type { ChKind, ChTourBaseline } from './coachhelm-shape';
+// The note pattern lives beside the reads rule that hides notes outside the board (one copy, no drift).
+import { NOTE_SIGNATURE } from '@/lib/coachhelm/v3/analyst/reads/visibility';
 
 /**
  * What a CoachHelm card states and whether it is current (Clubhouse P013). Pure, over the fields both the delivery shape
@@ -18,7 +20,6 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
  * performing") and `inconclusive` ("no clear preference"), putt-bias.ts `balanced` ("no directional bias detected"). The titles are
  * not matched: the stored wording differs from the source's (an em dash for its colon).
  */
-const NOTE_SIGNATURE = /(?:^|:)(?:tee_strategy:(?:sharp|inconclusive)|putt_bias:balanced)$/;
 
 /**
  * A card that states no finding: the generators' own "nothing to fix" rows, and every row stamped `feed_exempt`, which is how a
