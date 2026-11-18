@@ -11,6 +11,7 @@ import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
 import { Switch } from '../../ui/Switch';
 import { useToast } from '../../ui/Toast';
+import { chReport } from '../../lib/track';
 import { stepLength } from './builder/builder-model';
 
 const QUARTER = 15 * 60_000;
@@ -95,13 +96,19 @@ export function PlanRun({ planId, title, version, body, start, zone, serverNow }
     if (!moving) return;
     setBusy(true);
     const next = shiftBody(body, currentBlockIndex(body, start, now), moving);
-    const saved = await savePracticePlan({ planId, expectedVersion: version, title, step: 'blocks', body: next }).catch(() => ({ success: false as const, error: 'That didn’t move.' }));
+    const saved = await savePracticePlan({ planId, expectedVersion: version, title, step: 'blocks', body: next }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.run', action: 'practice.moveBlocks', severity: 'high' });
+      return { success: false as const, error: 'That didn’t move.' };
+    });
     if (!saved.success) {
       setBusy(false);
       setMoving(null);
       return toast({ tone: 'error', title: saved.error ?? 'That didn’t move.' });
     }
-    const published = await publishPracticePlan({ planId, expectedVersion: saved.version, notify: tell ? 'now' : 'none' }).catch(() => ({ success: false as const, error: 'Saved, but players still see the old times.' }));
+    const published = await publishPracticePlan({ planId, expectedVersion: saved.version, notify: tell ? 'now' : 'none' }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.run', action: 'practice.republish', severity: 'high' });
+      return { success: false as const, error: 'Saved, but players still see the old times.' };
+    });
     setBusy(false);
     setMoving(null);
     if (!published.success) return toast({ tone: 'error', title: published.error ?? 'Saved, but players still see the old times.' });

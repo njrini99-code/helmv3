@@ -12,6 +12,7 @@ import { Menu } from '../../ui/Menu';
 import { Modal } from '../../ui/Modal';
 import { Switch } from '../../ui/Switch';
 import { useToast } from '../../ui/Toast';
+import { chReport } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
 
 export interface ChPlanStatus {
@@ -42,17 +43,24 @@ export function CoachPlanBar({ status, after = null }: { status: ChPlanStatus; a
       await navigator.clipboard.writeText(`${window.location.origin}${base}`);
       toast({ title: 'Link copied. Only your team can open it.' });
     } catch {
+      // Clipboard refused (permission, insecure context): a browser limit, not a failure to report. The toast says so.
       toast({ tone: 'error', title: 'Couldn’t copy the link' });
     }
   };
   const toChat = async () => {
-    const r = await postPracticePlanToChat({ planId: status.planId }).catch(() => ({ success: false as const, error: 'Couldn’t post to team chat.' }));
+    const r = await postPracticePlanToChat({ planId: status.planId }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.plan', action: 'practice.postToChat', severity: 'high' });
+      return { success: false as const, error: 'Couldn’t post to team chat.' };
+    });
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t post to team chat.' });
     toast({ title: 'Posted in team chat' });
   };
   const takeDown = async () => {
     setBusy(true);
-    const r = await takeDownPracticePlan({ planId: status.planId, expectedVersion: status.version, notify: tell, title: status.title }).catch(() => ({ success: false as const, error: 'Couldn’t take the plan down. Players can still see it.' }));
+    const r = await takeDownPracticePlan({ planId: status.planId, expectedVersion: status.version, notify: tell, title: status.title }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.plan', action: 'practice.takeDown', severity: 'high' });
+      return { success: false as const, error: 'Couldn’t take the plan down. Players can still see it.' };
+    });
     setBusy(false);
     setDownOpen(false);
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t take the plan down. Players can still see it.' });
