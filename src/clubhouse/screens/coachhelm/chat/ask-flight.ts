@@ -3,6 +3,7 @@ import { CH_FADE_MS, chSpringCurve } from '../../../lib/motion';
 /** Ask's landings (ask 07, M-ASK-45, 46, 77, 78). Transform and opacity only; under Reduce Motion nothing travels. */
 
 const settled = async (a: Animation | undefined) => {
+  // A cancelled animation rejects its finished promise; the flight just ends.
   await a?.finished.catch(() => undefined);
 };
 /** Lifts 140 ms first, as both flights do. */

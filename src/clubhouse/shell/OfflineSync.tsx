@@ -31,7 +31,11 @@ export function OfflineSync() {
       onSyncComplete: (result) => {
         useOfflineSyncStore.getState().completeSync(result.syncedRounds + result.syncedHoles + result.syncedShots > 0);
       },
-      onSyncError: (error) => useOfflineSyncStore.getState().failSync(error.message),
+      onSyncError: (error) => {
+        // The whole pass failed (the engine caught it): the banner shows it, and it is reported once per pass.
+        chReport(error, { surface: 'offline-sync', action: 'sync.failed', severity: 'low' });
+        useOfflineSyncStore.getState().failSync(error.message);
+      },
       // A queued round, hole or shot that fails to sync used to leave no server signal, so a round stranded on a phone was
       // invisible (swap audit §18). Every failure is reported; the one that ends the retries is high severity.
       onItemFailed: (type, offlineId, error) => {
@@ -52,10 +56,12 @@ export function OfflineSync() {
         useOfflineSyncStore.getState().setReady(true);
         await useOfflineSyncStore.getState().refreshPendingCounts();
       })
-      .catch(() => {
-        // The engine retries on the next reconnect; a round screen still syncs on its own.
+      .catch((err: unknown) => {
+        // The engine retries on the next reconnect; a round screen still syncs on its own. Reported: queued rounds wait until then.
+        chReport(err, { surface: 'offline-sync', action: 'initialize', severity: 'low' });
       });
     const onSwSync = () => {
+      // syncAll catches its own failures and reports them through onSyncError above; this only keeps a surprise quiet.
       engine.syncAll().catch(() => {});
     };
     window.addEventListener('sw-sync-requested', onSwSync);

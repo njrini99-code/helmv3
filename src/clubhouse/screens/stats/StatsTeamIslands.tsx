@@ -755,6 +755,7 @@ function focusVisible(el: Element): boolean {
   try {
     return el.matches(':focus-visible');
   } catch {
+    // An engine without :focus-visible: treated as a click.
     return false;
   }
 }

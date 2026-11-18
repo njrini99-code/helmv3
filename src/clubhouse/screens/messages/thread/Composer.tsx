@@ -11,7 +11,7 @@ import { useComposerInset } from '../composer-inset';
 import { CH_MS } from '../../../lib/motion';
 import { msAnimate } from '../motion/messages-motion';
 import { HOUSE_EASE, playArrowLeave } from '../motion/messages-beats';
-import { chTrail } from '../../../lib/track';
+import { chReport, chTrail } from '../../../lib/track';
 import { haptic } from '../../../lib/haptics';
 import { useClassText } from '../../../ui/ClassStatusLine';
 import { sendNotify, isNotifyChord, notifyChordLabel } from '../notify-anyway';
@@ -176,7 +176,8 @@ export function Composer({
       }
       setChecking(false);
       onSendingChange?.(!!pending || !!recovery);
-    }).catch(() => {
+    }).catch((err: unknown) => {
+      chReport(err, { surface: 'messages.composer', action: 'checkPendingAttachmentSend', extra: { conversationId: conv.id } });
       if (!mounted) return;
       setChecking(false);
       setCheckFailed(true);

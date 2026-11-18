@@ -257,8 +257,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
       router.replace('/golf/dashboard/messages', { scroll: false });
       // A thread the list doesn't hold yet (one just started with the viewer) is looked for once more before it is
       // opened; one that still isn't there says so (CH-7015, MessagesScreen) rather than opening nothing.
-      if (convs.length && !convs.some((c) => c.id === conv)) void refetch().catch(() => undefined).then(() => select(conv));
-      else select(conv);
+      if (convs.length && !convs.some((c) => c.id === conv)) {
+        void refetch()
+          .catch((err: unknown) => chReport(err, { surface: 'messages.conversations', action: 'refetchForLink', severity: 'low' }))
+          .then(() => select(conv));
+      } else select(conv);
     } else if (compose) {
       router.replace('/golf/dashboard/messages', { scroll: false });
       setPrefill({ to: [], draft: '', title: '' });
@@ -377,7 +380,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         setStarted({ id: res.conversationId, group: false, channel: false, title: dir?.name ?? 'Conversation', subtitle: dir?.subtitle ?? '', memberIds: [userId], memberCount: 2, unread: 0, lastAt: new Date().toISOString(), lastSenderId: null, lastText: '', creatorId: data.viewerUserId });
         setSelectedId(res.conversationId);
         haptic('success');
-        void refetch().catch(() => undefined);
+        void refetch().catch((err: unknown) => chReport(err, { surface: 'messages.conversations', action: 'refetchAfterStart', severity: 'low' }));
       });
     },
     [convs, people, data.teamId, data.viewerUserId, refetch, attempt, landDraft],

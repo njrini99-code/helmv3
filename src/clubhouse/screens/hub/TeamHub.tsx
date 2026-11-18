@@ -18,7 +18,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useSlidePlate } from '../../lib/slide-plate';
 import { haptic } from '../../lib/haptics';
 import { plural } from '../../lib/plural';
-import { chTrail } from '../../lib/track';
+import { chReport, chTrail } from '../../lib/track';
 import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
@@ -193,6 +193,7 @@ export function TeamHub({
   // Team Hub's badge (a player's unread posts, open tasks and new trips) is a polled feed: a write that changes it reads
   // it again at once, as production's hub does after Got it and a task's tick, instead of up to 45s later.
   const badges = useNotificationBadges();
+  // refetch catches its own failures and holds the last count; this catch only keeps a rejection off the console.
   const recount = () => void badges.refetch().catch(() => {});
 
   // Every follow-up to a write (the optimistic tick and its undo, the tab that opens, the refresh, the row that leaves,
@@ -346,8 +347,12 @@ export function TeamHub({
     setReadUpdates(withId(n.id));
     void writes
       .markUpdateRead(n.id, n.source)
-      .then(recount)
-      .catch(() => {});
+      .then((res) => {
+        const read = normalise(res);
+        if (!read.success) chReport(new Error(read.error || 'update read mark failed'), { surface: 'hub.updates', action: 'markUpdateRead', severity: 'low', extra: { notificationId: n.id } });
+        recount();
+      })
+      .catch((err: unknown) => chReport(err, { surface: 'hub.updates', action: 'markUpdateRead', severity: 'low', extra: { notificationId: n.id } }));
   };
 
   // A player's Travel tab clears the travel part of the badge, once a visit: production's Travel page does this on
@@ -359,9 +364,11 @@ export function TeamHub({
     void writes
       .markTravelSeen()
       .then((res) => {
-        if (normalise(res).success) recount();
+        const seen = normalise(res);
+        if (seen.success) recount();
+        else chReport(new Error(seen.error || 'travel seen mark failed'), { surface: 'hub.travel', action: 'markTravelSeen', severity: 'low' });
       })
-      .catch(() => {});
+      .catch((err: unknown) => chReport(err, { surface: 'hub.travel', action: 'markTravelSeen', severity: 'low' }));
     // recount reads the badge context of this render; it is stable enough for a one-off.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coach, shownTab, writes]);

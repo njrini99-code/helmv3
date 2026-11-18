@@ -125,6 +125,7 @@ export function codeFromSearch(search: string): string | null {
       try {
         linkCode = decodeURIComponent(match[1]);
       } catch {
+        // A malformed escape in the address: the code as written.
         linkCode = match[1];
       }
     }

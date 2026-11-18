@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, Timer } from 'lucide-react';
 import { Icon } from '../../../../ui/Icon';
 import { requestAskCredits, undoAskCredits } from '@/app/golf/actions/coachhelm-ask-credits';
+import { chReport } from '../../../../lib/track';
 import type { AskAllowanceBucket } from '../../../../data/coachhelm-chat-shape';
 
 const UNDO_MS = 8_000;
@@ -74,7 +75,10 @@ export function PlayerOut({ live = false, from }: { live?: boolean; from: string
   const send = async () => {
     setStage('sending');
     setError(null);
-    const r = await requestAskCredits(REQUEST_WORDS).catch(() => ({ success: false, id: undefined, error: 'That didn’t go in. Try again.' }));
+    const r = await requestAskCredits(REQUEST_WORDS).catch((err: unknown) => {
+      chReport(err, { surface: 'coachhelm.ask.allowance', action: 'requestAskCredits', severity: 'high' });
+      return { success: false, id: undefined, error: 'That didn’t go in. Try again.' };
+    });
     if (!r.success) {
       if (r.error?.includes('already')) {
         setAlready(true);
@@ -90,7 +94,10 @@ export function PlayerOut({ live = false, from }: { live?: boolean; from: string
   const undo = async () => {
     if (timer.current) clearTimeout(timer.current);
     setStage('undoing');
-    const r = id.current ? await undoAskCredits(id.current).catch(() => ({ success: false })) : { success: false };
+    const r = id.current ? await undoAskCredits(id.current).catch((err: unknown) => {
+          chReport(err, { surface: 'coachhelm.ask.allowance', action: 'undoAskCredits', severity: 'high', extra: { requestId: id.current } });
+          return { success: false };
+        }) : { success: false };
     // Too late or unreachable: it's on its way, and the card says so rather than promising it was stopped.
     setStage(r.success ? 'undone' : 'told');
   };

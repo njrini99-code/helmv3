@@ -193,7 +193,8 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
     try {
       await navigator.clipboard.writeText(turn.answerText);
       toast({ title: 'Copied' });
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'coachhelm.ask.answer', action: 'copy', severity: 'low', extra: { messageId: turn.id } });
       toast({ title: 'Couldn’t copy that' });
     }
   };

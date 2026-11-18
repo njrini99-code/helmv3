@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { chReport } from '../../lib/track';
 
 /**
  * The inbox's mute glyph (Messages redesign): one read of the viewer's own participant rows, only with the flag on, so flag off runs
@@ -26,6 +27,8 @@ export function useRowMutes(viewerUserId: string, enabled: boolean): { muted: Re
       .select('conversation_id, notification_level, muted_until')
       .eq('user_id', viewerUserId)
       .then(({ data, error }) => {
+        // A failed read draws no glyph, as before; it is reported, not drawn.
+        if (error) chReport(new Error(error.message), { surface: 'messages.mutes', action: 'golf_conversation_participants', severity: 'low' });
         if (!live || error) return;
         setMuted(new Set((data ?? []).filter((r) => isMutedRow(r)).map((r) => r.conversation_id)));
       });
