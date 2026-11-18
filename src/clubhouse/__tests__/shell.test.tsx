@@ -1287,22 +1287,24 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(routerSpy.replace).not.toHaveBeenCalled();
   });
 
-  it('10802 a player on a page rebuilt for coaches only is told it is a coach\u2019s page; on an unbuilt one, that it is not available', () => {
+  it('10802 L-004: a role on the other role’s page waits on its own nearest page, never a lock or “isn’t available here”', () => {
     const { unmount } = render(
       <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/recruiting">
         <p>Recruiting body</p>
       </ClubhouseFrame>,
     );
-    expect(screen.queryByText('Recruiting body')).toBeNull();
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Only coaches use Recruiting');
+    // L-004 (owner, 18 Nov 2026): a player's Recruiting and Intelligence addresses move on (Home, their CoachHelm). The frame
+    // waits on the destination and renders the segment hidden so its layout's redirect runs; no lock is drawn first.
+    expect(screen.queryByRole('heading', { level: 1, name: /^Only coaches use / })).toBeNull();
+    expect(document.querySelector('[data-ch-alias-wait]')).not.toBeNull();
     unmount();
-    // A coach's old page that moves for coaches only: a player is told the same, not that it is unavailable.
     const old = render(
       <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/intelligence">
         <p>Intelligence body</p>
       </ClubhouseFrame>,
     );
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/^Only coaches use /);
+    expect(screen.queryByRole('heading', { level: 1, name: /^Only coaches use / })).toBeNull();
+    expect(document.querySelector('[data-ch-alias-wait]')).not.toBeNull();
     old.unmount();
     // Courses has nothing of either role's, so a player is sent Home like a coach (GAP-R-12): the wait for that, never
     // "Courses isn’t available here".
@@ -1313,13 +1315,14 @@ describe('Shell · behaviour contracts (P001)', () => {
     );
     expect(screen.queryByRole('heading', { level: 1, name: /isn.t available here$|^Only coaches use / })).toBeNull();
     courses.unmount();
-    // A coach on an address rebuilt for players only (Classes) still reads the plain notice.
+    // L-004: a coach on Classes (rebuilt for players only) waits on Home, not "isn't available here".
     render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/classes">
         <p>Classes body</p>
       </ClubhouseFrame>,
     );
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/isn.t available here$/);
+    expect(screen.queryByRole('heading', { level: 1, name: /isn.t available here$/ })).toBeNull();
+    expect(document.querySelector('[data-ch-alias-wait]')).not.toBeNull();
   });
 
   it('10301 the bell reads its list again every time it opens', async () => {
