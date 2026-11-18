@@ -1679,7 +1679,7 @@
 .ch-htb.is-desk .huddle .hud {
   flex:1;
   display:grid;
-  align-items:center;
+  align-content:start;
 }
 .ch-htb.is-desk .recc {
   display:flex;

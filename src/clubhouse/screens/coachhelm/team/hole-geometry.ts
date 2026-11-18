@@ -121,12 +121,13 @@ const COIN_GAP = 3;
  * 11 Nov). The slots fan out from the first one, by just enough that every two rings keep a gap, and the coins drawn are moved
  * together, never apart, so the whole group sits inside the drawing.
  */
+// Only + - * / and sqrt below (exactly rounded in Node and Safari), so the server's coins match the client's: hypot differs in the last digit.
 export function coinSlots(H: HoleGeometry, s: ChStation, r: number, drawn: number): Array<[number, number]> {
   const all = H.coins[s];
   const [ox, oy] = all[0] ?? [0, 0];
   let closest = Infinity;
   for (let i = 0; i < all.length; i++) {
-    for (let j = i + 1; j < all.length; j++) closest = Math.min(closest, Math.hypot(all[i]![0] - all[j]![0], all[i]![1] - all[j]![1]));
+    for (let j = i + 1; j < all.length; j++) closest = Math.min(closest, Math.sqrt((all[i]![0] - all[j]![0]) * (all[i]![0] - all[j]![0]) + (all[i]![1] - all[j]![1]) * (all[i]![1] - all[j]![1])));
   }
   const fan = Number.isFinite(closest) && closest > 0 ? Math.max(1, (2 * r + COIN_RING + COIN_GAP) / closest) : 1;
   const slots = all.slice(0, Math.max(0, drawn)).map(([x, y]): [number, number] => [ox + (x - ox) * fan, oy + (y - oy) * fan]);
