@@ -4130,6 +4130,16 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   flex: none;
   color: var(--ch-text-tertiary);
 }
+/* L-068: on a wide page the band hugs its words, so the chevron sits by the label, not 350px off. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-ph-asks {
+    width: fit-content;
+    max-width: 100%;
+  }
+  .ch-ph-asks__v {
+    flex: 0 1 auto;
+  }
+}
 /* A tap on the row shows, as the hover does (the press controller marks links, lib/press.ts). */
 .ch-ph-asks {
   transition: background-color var(--ch-dur-press) var(--ch-ease);

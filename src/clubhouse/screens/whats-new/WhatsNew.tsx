@@ -44,7 +44,7 @@ export const whatsNewLink = (it: Pick<ChWhatsNewItem, 'playerId' | 'kind'>) =>
  * column and the chevron left the text about 22 characters a line (design review, 10 Nov 2026), so the time opens the
  * line under the title instead and the title and body take the row's width.
  */
-function WhatsNewRow({ it, phone }: { it: ChWhatsNewItem; phone: boolean }) {
+function WhatsNewRow({ it, phone, repeat = false }: { it: ChWhatsNewItem; phone: boolean; repeat?: boolean }) {
   const href = whatsNewLink(it);
   const time = useChClockText()(it.time);
   return (
@@ -54,8 +54,13 @@ function WhatsNewRow({ it, phone }: { it: ChWhatsNewItem; phone: boolean }) {
       meta={
         <span className="ch-wn-meta">
           <span className="ch-wn-who">
-            {phone && <span className="ch-num">{time} · </span>}
-            {it.player} · <span className={it.good ? 'ch-wn-what is-gain' : 'ch-wn-what'}>{it.what}</span>
+            {phone && <span className="ch-num">{time}{repeat ? '' : ' · '}</span>}
+            {/* L-065: the same player and kind as the row above is said once, on the first of the run. */}
+            {!repeat && (
+              <>
+                {it.player} · <span className={it.good ? 'ch-wn-what is-gain' : 'ch-wn-what'}>{it.what}</span>
+              </>
+            )}
           </span>
           {it.detail && <span className="ch-wn-detail">{it.detail}</span>}
         </span>
@@ -73,8 +78,8 @@ function Days({ days, phone }: { days: ChWhatsNewDay[]; phone: boolean }) {
       {days.map((d) => (
         <Section key={d.key} id={`ch-wn-${d.key}`} title={d.label} meta={<span className="ch-num">{d.items.length} {pluralWord(d.items.length, 'update')}</span>}>
           <LedgerList label={`${d.label}, ${d.items.length} updates`}>
-            {d.items.map((it) => (
-              <WhatsNewRow key={it.key} it={it} phone={phone} />
+            {d.items.map((it, i) => (
+              <WhatsNewRow key={it.key} it={it} phone={phone} repeat={i > 0 && d.items[i - 1]!.playerId === it.playerId && d.items[i - 1]!.what === it.what} />
             ))}
           </LedgerList>
         </Section>
