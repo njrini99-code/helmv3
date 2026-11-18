@@ -963,6 +963,11 @@
   stroke-dasharray:4 4;
 }
 .ch-htb .hudsvg .q {
+  /* A card-coloured halo so the dashed average line never runs through the words (R-1). */
+  stroke:var(--ch-card-bg);
+  stroke-width:4px;
+  paint-order:stroke;
+  stroke-linejoin:round;
   fill:var(--ch-text-secondary);
   font: var(--ch-type-caption); }
 .ch-htb .hudsvg .axl {
