@@ -7,6 +7,7 @@ import { floorShare, shareControl, shareOptions } from '../../../live/share';
 import type { LiveSharePorts } from '../../../live/share-ports';
 import { Segmented } from '../../../ui/Segmented';
 import { Switch } from '../../../ui/Switch';
+import { chReport } from '../../../lib/track';
 import '../../../styles/live.css';
 
 /** Tournament rounds have no control: coaches see them. No catalog code (a plain statement, not a state). */
@@ -66,6 +67,9 @@ export function LiveShareField({ type, ports }: { type: LiveRoundType; ports: Li
         sent.current = `${good.current}:${remember}`;
         setLevel(good.current);
       }
+    }, (err: unknown) => {
+      // A throw (a dropped request) used to be an unhandled rejection: the field kept the level the server never took.
+      chReport(err, { surface: 'rounds.setup', action: 'rounds.setNextLiveShare', severity: 'medium' });
     });
     return () => {
       alive = false;

@@ -65,6 +65,7 @@ function take(key: string, qualifierId: string): Note | null {
     sessionStorage.removeItem(key);
     return kept;
   } catch {
+    // No storage, or a note that doesn't parse: Back goes to the address.
     return null;
   }
 }

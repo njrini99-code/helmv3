@@ -22,6 +22,7 @@ function readStore(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
   } catch {
+    // No storage (private mode, blocked): the default view.
     return null;
   }
 }
