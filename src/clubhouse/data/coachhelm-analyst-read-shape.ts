@@ -30,6 +30,14 @@ export interface ChAnalystRead {
   change: string | null;
   missing: string | null;
   rounds: ChReadRound[];
+  /** Stage 4: "was X, now Y", shown first the night a card clears. */
+  improvement: string | null;
+  /** Stage 4: what changed since the last checkpoint, once. */
+  changed: string | null;
+  /** Stage 4: the coach said "not useful" or "wrong" and nothing material changed. */
+  suppressed: { verdict: string; reason: string } | null;
+  /** Stage 4: the focus set from this card. */
+  focus: { since: string; word: string } | null;
   /** Stage 2: the four parts side by side. */
   parts: Array<{ label: string; text: string; where: string | null; team: string | null }>;
   /** Stage 2: at most three counted reads that stand out in the team. */
@@ -65,6 +73,10 @@ export function toChAnalystRead(p: ReadPayload, href: (roundId: string) => strin
       line: e.line,
       shots: e.carry.map((s) => ({ id: s.shot_id, text: s.text })),
     })),
+    improvement: p.memory?.improvement ?? null,
+    changed: p.memory?.improvement ? null : (p.memory?.change_line ?? null),
+    suppressed: p.memory?.suppressed ? { verdict: p.memory.suppressed.verdict === 'wrong' ? 'Wrong' : 'Not useful', reason: p.memory.suppressed.reason } : null,
+    focus: p.focus ? { since: p.focus.since_text, word: p.focus.word_text } : null,
     parts: (p.parts ?? []).map((x) => ({ label: x.label, text: x.text, where: x.where_text, team: x.team?.value.text ?? null })),
     signals: (p.signals ?? []).map((x) => ({ text: x.text, team: x.team_text?.value ?? null })),
     written: p.written ? { what: p.written.what, rulesInOut: p.written.rules_in_out, thisWeek: p.written.this_week, watch: p.written.watch } : null,

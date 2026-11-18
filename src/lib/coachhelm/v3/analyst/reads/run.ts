@@ -14,7 +14,9 @@ import { loadTeamRows } from '../fact-sheet';
 import { supabaseAnalystSources } from '../supabase-sources';
 import { buildTeamReads } from './build';
 import { readsEnabled, readsEnabledTeams } from './flag';
-import { changedRows, insertReads, loadCurrentReads } from './store';
+import { focusRead } from './focus';
+import { decideNext } from './memory';
+import { changedRows, insertReads, loadCurrentReads, loadFocusLinks, loadLatestFeedback } from './store';
 import type { ReadTrigger } from './types';
 
 /** A run past this is abandoned (its result is ignored; the next round or night redoes it). */
@@ -45,8 +47,16 @@ async function computeTeam(sb: SupabaseClient, teamId: string, trigger: ReadTrig
   if (current.status === 'held') return { kind: 'held', teamId };
   if (current.status === 'failed') return { kind: 'failed', teamId, error: current.error };
   const rows = await loadTeamRows(supabaseAnalystSources(sb as never), { teamId, now });
-  const { payloads } = buildTeamReads(rows);
-  const inserts = changedRows(payloads, current.data, trigger, roundId);
+  const { payloads, sheets } = buildTeamReads(rows);
+  // Stage 4: each fresh read meets the last saved one (words held between checkpoints, what changed said once), the
+  // coach's feedback, and the focus set from the card. Both tables are held; missing, they read as none.
+  const [feedback, focus] = await Promise.all([loadLatestFeedback(sb, teamId), loadFocusLinks(sb, teamId)]);
+  const decided = payloads.map((fresh, i) => {
+    const next = decideNext(current.data.get(fresh.player_id)?.payload ?? null, fresh, { feedback: feedback.get(fresh.player_id) ?? null });
+    const link = focus.get(fresh.player_id);
+    return link && next.priority && link.card_key === next.priority.key ? { ...next, focus: focusRead(link, sheets[i]!) } : next;
+  });
+  const inserts = changedRows(decided, current.data, trigger, roundId);
   const res = await insertReads(sb, inserts);
   if (res.status === 'held') return { kind: 'held', teamId };
   if (res.status === 'failed') return { kind: 'failed', teamId, error: res.error };

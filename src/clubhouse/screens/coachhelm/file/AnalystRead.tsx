@@ -30,10 +30,22 @@ export function AnalystReadCard({ load, first }: { load: ChAnalystReadLoad | nul
     );
   }
   const r = load.read;
+  if (r.suppressed) {
+    return (
+      <section className="card ch-hf-an" data-ch-anchor="analyst" data-ch="analyst-read">
+        <CardHead title="CoachHelm’s read" meta={<span className="ch-num">{r.through}</span>} />
+        <p className="card__n">
+          You marked this read {r.suppressed.verdict.toLowerCase()}: {r.suppressed.reason}. It stays down until the evidence changes.
+        </p>
+      </section>
+    );
+  }
   return (
     <section className="card ch-hf-an" aria-labelledby="ch-hf-an" data-ch-anchor="analyst" data-ch="analyst-read">
       <CardHead id="ch-hf-an" title="CoachHelm’s read" meta={<span className="ch-num">{r.through}</span>} />
       <div className="ch-hf-an__body">
+        {r.improvement && <p className="ch-hf-an__p ch-hf-an__team">{r.improvement}</p>}
+        {r.changed && <p className="ch-hf-an__p">{r.changed}</p>}
         <p className="ch-hf-an__head">
           {r.certainty && <Badge tone={r.certainty === 'Clear' ? 'warning' : 'neutral'}>{r.certainty}</Badge>}
           <b>{r.headline}</b>
@@ -42,6 +54,11 @@ export function AnalystReadCard({ load, first }: { load: ChAnalystReadLoad | nul
         {r.missing && <p className="ch-hf-an__p">{r.missing}</p>}
         {r.where && <p className="ch-hf-an__p">{r.where}</p>}
         {r.team && <p className="ch-hf-an__p ch-hf-an__team">{r.team}</p>}
+        {r.focus && (
+          <p className="ch-hf-an__p" data-ch-an-focus="">
+            <Badge tone="neutral">{r.focus.word}</Badge> {r.focus.since}
+          </p>
+        )}
         {r.written && <WrittenBlock w={r.written} />}
         {r.how.length > 0 && (
           <div className="ch-hf-an__how">

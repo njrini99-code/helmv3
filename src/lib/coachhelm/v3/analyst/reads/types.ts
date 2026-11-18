@@ -154,6 +154,10 @@ export interface ReadPayload {
   parts?: import('./parts').PartRead[];
   /** Stage 2: counted reads that cleared their test, at most three, one per family (catalogue.ts). */
   signals?: import('./catalogue').SignalRead[];
+  /** Stage 4: memory, what changed since the last saved read, history (memory.ts). */
+  memory?: import('./memory').ReadMemory;
+  /** Stage 4: the focus a coach set from this card, and how it went (focus.ts). */
+  focus?: import('./focus').FocusRead;
   /** Stage 3 seam. */
   written?: WrittenRead;
 }

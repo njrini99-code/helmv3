@@ -13,6 +13,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { isMissingSchemaError } from '@/lib/coachhelm/v3/verdicts/schema-missing';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { contentHash } from './hash';
+import type { FocusLink } from './focus';
+import type { CoachFeedback } from './memory';
 import { READS_ANALYST_VERSION, type ReadPayload, type ReadTrigger } from './types';
 
 export const READS_TABLE = 'golf_coach_reads';
@@ -108,4 +110,34 @@ export async function insertReads(sb: SupabaseClient, rows: readonly CoachReadIn
   const { error } = await table(sb, READS_TABLE).insert(rows);
   if (error) return isMissingSchemaError(error) ? { status: 'held' } : { status: 'failed', error: error.message };
   return { status: 'ok', data: rows.length };
+}
+
+/** Stage 4 (held: 20261117121000): each player’s latest "not useful" or "wrong" on a team. A missing table is none. */
+export async function loadLatestFeedback(sb: SupabaseClient, teamId: string): Promise<Map<string, CoachFeedback>> {
+  const out = new Map<string, CoachFeedback>();
+  const q = (sb as unknown as { from(t: string): Untyped }).from('golf_coach_read_feedback');
+  const { data, error } = await q.select('player_id, card_key, verdict, reason, created_at, lost_per_round, certainty, area').eq('team_id', teamId).order('created_at', { ascending: false }).range(0, 999);
+  if (error) {
+    if (isMissingSchemaError(error)) return out;
+    throw new Error(`reads: reading golf_coach_read_feedback failed: ${error.message}`);
+  }
+  for (const r of (data ?? []) as Array<{ player_id: string; card_key: string; verdict: CoachFeedback['verdict']; reason: string; created_at: string; lost_per_round: number | string; certainty: CoachFeedback['certainty']; area: string }>) {
+    if (!out.has(r.player_id)) out.set(r.player_id, { card_key: r.card_key, verdict: r.verdict, reason: r.reason, at: r.created_at, lost_per_round: Number(r.lost_per_round), certainty: r.certainty, area: r.area });
+  }
+  return out;
+}
+
+/** Stage 4 (held): each player’s latest focus link on a team. A missing table is none. */
+export async function loadFocusLinks(sb: SupabaseClient, teamId: string): Promise<Map<string, FocusLink>> {
+  const out = new Map<string, FocusLink>();
+  const q = (sb as unknown as { from(t: string): Untyped }).from('golf_coach_read_focus');
+  const { data, error } = await q.select('player_id, card_key, part, set_on, value_on_day, rounds_on_day, team_lost_on_day, created_at').eq('team_id', teamId).order('created_at', { ascending: false }).range(0, 999);
+  if (error) {
+    if (isMissingSchemaError(error)) return out;
+    throw new Error(`reads: reading golf_coach_read_focus failed: ${error.message}`);
+  }
+  for (const r of (data ?? []) as Array<{ player_id: string; card_key: string; part: FocusLink['part']; set_on: string; value_on_day: number | string; rounds_on_day: number; team_lost_on_day: number | string | null }>) {
+    if (!out.has(r.player_id)) out.set(r.player_id, { card_key: r.card_key, part: r.part, set_on: r.set_on, value_on_day: Number(r.value_on_day), rounds_on_day: r.rounds_on_day, team_lost_on_day: r.team_lost_on_day == null ? null : Number(r.team_lost_on_day) });
+  }
+  return out;
 }
