@@ -28,6 +28,10 @@ Held items: none
   sign-in room instead of the platform page. Admin keeps the platform 404
   (`golf/admin/not-found.tsx`).
 - `forgot-state.ts`: comment only (the rules came from the retired page).
+- The onboarding pane's ivory paper gradient (#2530) is a named token,
+  `--ch-au-paper` in `auth-tokens.css`, used by the desktop and phone panes;
+  `onboard.css` drops from 144 to 139 literal colours (raw-colour ratchet).
+- `GateNotFound`'s Back to Home is `ui/Button`, not raw `ch-btn` markup.
 
 ### Why
 

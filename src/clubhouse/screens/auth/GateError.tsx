@@ -1,5 +1,7 @@
 'use client';
 
+import { House } from 'lucide-react';
+import { Button } from '../../ui/Button';
 import { routeErrorWords, type RouteErrorViewProps } from '../../ui/Notices';
 import { AuthNotice } from './AuthNotice';
 import { GateFrame } from './GateFrame';
@@ -48,9 +50,9 @@ export function GateNotFound() {
         <h1>We couldn’t find that</h1>
         <p className="ch-au-sub">It may have been deleted, or the link is wrong. Everything else is where you left it.</p>
         <div className="ch-au-submit">
-          <a href="/golf" className="ch-btn ch-btn--primary ch-btn--lg">
+          <Button variant="primary" size="lg" leftIcon={House} href="/golf">
             Back to Home
-          </a>
+          </Button>
         </div>
       </div>
     </GateFrame>
