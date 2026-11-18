@@ -68,9 +68,10 @@ bars, the players as rows, and Team putting.
 `StatsTeamFrame`, `TeamHeadActions`, `TeamCharts`, `ShowSeason` (the empty
 window's one primary action) and `RetryNotice` (on `RefreshNotice`, so Try again
 says so while it runs; `covered` under the page notice) (the client islands in
-`StatsTeamIslands.tsx`), `StatsTeamPhone` (with `ScoreLine`), `StatsSkeleton`,
-`WindowSwitch`, and the charts in `charts.tsx` (`FigureCards`, `YardagePage`,
-`PuttingRings`), which the player profile shares.
+`StatsTeamIslands.tsx`), `StatsTeamPhone` (with `ScoreLine`; since 2026-11-11
+the phone draws `StatsTeamPhoneShs`, the Stats v2 phone, over its parts),
+`StatsSkeleton`, `WindowSwitch`, and the charts in `charts.tsx` (`FigureCards`,
+`YardagePage`, `PuttingRings`), which the player profile shares.
 
 ### Modified Clubhouse components
 
@@ -117,11 +118,14 @@ The page never scrolls sideways.
 
 ## Phone
 
-Approved spec `docs/clubhouse/phone/stats-team.md`, built as `StatsTeamPhone` below 820px: the
-window switch, four figures with their change (green when better, amber when worse, D-42), the
-scoring line with its mean, strokes gained by leg as bars either side of zero, the players sorted by
-Avg or SG (a row opens their profile), and Team putting. Season bests and Export stay on desktop
-(Q-68). The phone is a different structure, never the desktop shrunk.
+Approved spec `docs/clubhouse/phone/stats-team.md`, built as `StatsTeamPhone`
+below 820px (since 2026-11-11 `StatsTeamPhoneShs`, the Stats v2 phone in
+`docs/clubhouse/stats-v2/`, with its flag removed; it keeps the parts below):
+the window switch, four figures with their change (green when better, amber when
+worse, D-42), the scoring line with its mean, strokes gained by leg as bars
+either side of zero, the players sorted by Avg or SG (a row opens their
+profile), and Team putting. Season bests and Export stay on desktop (Q-68). The
+phone is a different structure, never the desktop shrunk.
 
 In the Mobile clubhouse pass (owner, 2026-10-08) the page is the parchment sheet
 with no cards. It opens on the Ledger's page intro: the team and its count as

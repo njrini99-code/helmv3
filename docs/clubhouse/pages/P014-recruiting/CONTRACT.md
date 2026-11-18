@@ -70,9 +70,10 @@ Status: DEFINED
 The route skeleton (140201, CH-14401) draws the header, the pipeline, the table
 and the panel in their final slots, and on a phone the search, the timeline and
 seven rows; it is `recruiting/loading.tsx`, through `ClubhouseSwitch`, so it
-shows only inside the Clubhouse. A prospect's documents have their own two-row
-skeleton (140202, CH-14402), marked busy. v2 timing: nothing for 150ms, then a
-fade (the shell's 11609).
+shows only inside the Clubhouse (since 2026-11-14 the loading file draws it
+directly; `ClubhouseSwitch` was deleted with Fairway). A prospect's documents
+have their own two-row skeleton (140202, CH-14402), marked busy. v2 timing:
+nothing for 150ms, then a fade (the shell's 11609).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
