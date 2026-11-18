@@ -316,7 +316,8 @@
   --ch-focus-halo: rgb(21 90 57 / 0.13);
 
   /* Type */
-  --ch-font-sans: var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif;
+  /* L-091: the separator face first; it holds only U+00B7 (lib/fonts.ts). */
+  --ch-font-sans: var(--ch-font-separator, var(--ch-font-instrument)), var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif;
   /* No serif (owner, 2026-10-07: "bold sans, like the bundle"; the Mobile clubhouse pass board): the serif slot now
      resolves to the sans, so any title still naming it reads in the house sans. */
   --ch-font-serif: var(--ch-font-sans);
