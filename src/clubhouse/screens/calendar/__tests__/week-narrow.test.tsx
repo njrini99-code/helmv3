@@ -294,7 +294,7 @@ describe('the desktop week takes the full width', () => {
   it('with something open the panel is beside the grid, down both rows, and the summary keeps the grid’s column', () => {
     // Open, no week rule sets the columns: the body is the side-by-side layout every view has.
     expect(css.match(/\.ch-cal-body\[data-view='week'\](?:\[data-open\])? \{/)).toBeNull();
-    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap:not\(\[data-under\]\) \{\s*grid-column: 2;\s*grid-row: 1 \/ span 2;[\s\S]*?max-height: calc\(100vh - 144px\);\s*\}/);
+    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap:not\(\[data-under\]\) \{\s*grid-column: 2;\s*grid-row: 1 \/ span 2;[\s\S]*?max-height: calc\(100dvh - 144px\);\s*\}/);
     // A narrow canvas stacks the three.
     expect(css).toMatch(/@container \(max-width: 1060px\) \{\s*\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap:not\(\[data-under\]\) \{\s*grid-column: auto;\s*grid-row: auto;\s*max-height: none;\s*\}\s*\}/);
   });

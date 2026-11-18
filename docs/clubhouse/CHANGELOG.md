@@ -1,5 +1,28 @@
 # Clubhouse changelog
 
+## 2026-11-18 — Polish sweep, wave 3: native mobile feel
+
+```text
+Design package: none
+PR/commit:      agent/clubhouse-polish-fixes
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Phone: `100vh` is `100dvh` in the five Clubhouse files that held it; controls (button, tab, switch, summary) are not
+  selectable; the CoachHelm board's tail clears the safe area (`--ch-page-bottom-phone-open`) instead of 110px; the bell count sits 3px further in; Practice's week strip takes focus so a keyboard can scroll it.
+- Hit areas: the Hub task box is a 44px target at every width; the Home team-game player names reach 44px on touch.
+- Stats' window switch is an opaque surface with a soft edge once it sticks.
+- Huddle: coins on the same or near figures are drawn apart (at most 14 from their point), the plot has more room under
+  its x-label. Home Scoring value labels step off the mean and par lines and drop out when they would still collide.
+- Segmented block controls size by their labels ("Coaches and team" stays in its well).
+- Course page: "Your rounds here" takes the phone row, the four figures sit 2 by 2, and a tee that already says "tees"
+  is printed once.
+
 ## 2026-11-18 — Polish sweep, waves 1 and 2: contrast, night parity, one scrim pair
 
 ```text

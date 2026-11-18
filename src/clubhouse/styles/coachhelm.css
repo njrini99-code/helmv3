@@ -912,7 +912,7 @@
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hl.is-phone {
     gap: var(--ch-gap-section-phone);
-    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-open);
   }
   .ch-hl.is-phone > .ch-hl-h {
     display: flex;

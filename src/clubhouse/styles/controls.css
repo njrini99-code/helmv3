@@ -78,7 +78,10 @@
   display: flex;
 }
 .ch-seg--block .ch-seg__b {
-  flex: 1;
+  flex: 1 1 auto;
+  /* The options share the row but size from their labels, with less side padding, so the longest ("Coaches and team") never
+     runs past the well on a phone (L-021). */
+  padding-inline: 8px;
 }
 .ch-seg__pill {
   position: absolute;

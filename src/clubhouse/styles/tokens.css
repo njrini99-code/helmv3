@@ -498,6 +498,8 @@
   --ch-page-bottom-phone: var(--ch-space-8);
   --ch-page-top-phone-docked: 14px;
   --ch-page-bottom-phone-docked: 110px;
+  /* A phone page with no bar docked at its foot: the page's own bottom, plus the home indicator (CoachHelm's board, L-099). */
+  --ch-page-bottom-phone-open: calc(var(--ch-page-bottom-phone) + env(safe-area-inset-bottom));
   /* Phone gaps between a page's sections (32 on the docked pages, 24 and 16 elsewhere), and within a group; on the 4pt
      scale (row 33): 28 -> 32, 22 -> 24. */
   --ch-gap-section-phone: var(--ch-space-8);

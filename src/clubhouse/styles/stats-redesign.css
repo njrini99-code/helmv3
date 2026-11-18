@@ -2051,6 +2051,21 @@ p.ch-shs-mini-cap {
 .ch-shs-ctl.is-stuck::before {
   opacity: 1;
 }
+/* Stuck, the switch is a real surface: the canvas under it, opaque, so no figure shows through before the top bar has
+   taken its own paper (L-006). A soft edge below it says content has gone under. */
+.ch-shs .ch-shs-ctl.is-stuck {
+  background: var(--ch-light-paper), var(--ch-workspace);
+}
+.ch-shs-ctl.is-stuck::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 10px;
+  background: linear-gradient(var(--ch-workspace), transparent);
+  pointer-events: none;
+}
 
 /* Reduce Motion and Animations off: nothing travels. */
 @media (prefers-reduced-motion: reduce) {

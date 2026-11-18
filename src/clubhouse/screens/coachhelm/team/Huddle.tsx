@@ -8,11 +8,11 @@ import { coinYear } from './TeamHole';
 import { STATION_SHORT } from './hole-geometry';
 
 const W = 320;
-const H = 256;
+const H = 262;
 const L = 36;
 const R = 12;
 const T = 16;
-const B = 36;
+const B = 40;
 /** A coin's tap circle: 44 across. */
 const HIT = 22;
 
@@ -34,6 +34,54 @@ export function huddleRange(points: ReadonlyArray<{ x: number; y: number }>): { 
   return { lo, hi };
 }
 
+/** A coin's drawn radius. */
+const COIN = 13;
+
+/**
+ * Coins that land on one another (two players with the same figures, or within a coin's width) are drawn apart: each pair closer than
+ * two radii is pushed along the line between them, at most 14 from the true point, and kept inside the plot. The data and the
+ * tap circle's meaning don't change: the coin is a hair off, not a different figure (L-024).
+ */
+export function spreadCoins(pts: ReadonlyArray<{ x: number; y: number }>, bounds: { x0: number; x1: number; y0: number; y1: number }): { x: number; y: number }[] {
+  const MAX = 14;
+  const gap = COIN * 2 + 1;
+  const out = pts.map((p) => ({ ...p }));
+  for (let pass = 0; pass < 24; pass++) {
+    let moved = false;
+    for (let i = 0; i < out.length; i++) {
+      for (let j = i + 1; j < out.length; j++) {
+        const a = out[i]!;
+        const b = out[j]!;
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let d = Math.hypot(dx, dy);
+        if (d >= gap) continue;
+        if (d < 0.01) {
+          dx = 1;
+          dy = 0;
+          d = 1;
+        }
+        const push = (gap - d) / 2;
+        const ux = dx / d;
+        const uy = dy / d;
+        a.x -= ux * push;
+        a.y -= uy * push;
+        b.x += ux * push;
+        b.y += uy * push;
+        moved = true;
+      }
+    }
+    for (let i = 0; i < out.length; i++) {
+      const o = out[i]!;
+      const t = pts[i]!;
+      o.x = Math.min(bounds.x1, Math.max(bounds.x0, Math.min(t.x + MAX, Math.max(t.x - MAX, o.x))));
+      o.y = Math.min(bounds.y1, Math.max(bounds.y0, Math.min(t.y + MAX, Math.max(t.y - MAX, o.y))));
+    }
+    if (!moved) break;
+  }
+  return out;
+}
+
 /** Where a player stood over their first 10 rounds this season, when the board carries that window (`first10`: twenty or more counted season rounds, 02-PLAN 9.2 B). */
 function firstPoint(p: ChTeamPlayer): { x: number; y: number } | null {
   const f = p.first10;
@@ -51,6 +99,10 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
   const { lo, hi } = huddleRange([...plotted.map((x) => x.at), ...trails.map((t) => t.from)]);
   const X = (v: number) => L + ((v - lo) / (hi - lo)) * (W - L - R);
   const Y = (v: number) => T + ((hi - v) / (hi - lo)) * (H - T - B);
+  const drawn = spreadCoins(
+    plotted.map(({ at }) => ({ x: X(at.x), y: Y(at.y) })),
+    { x0: L + COIN, x1: W - R, y0: T, y1: H - B - COIN },
+  );
   const st = data.stations;
   // A station nobody has a figure for isn't zero, so its average isn't drawn on the Tour line (FID-TEAM-17).
   const as = st.tee.team == null || st.approach.team == null ? null : st.tee.team + st.approach.team;
@@ -92,7 +144,7 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
               Strikes well, leaks scoring
             </ChartText>
           )}
-          <ChartText className="axl" size={12} x={(L + W - R) / 2} y={H - 10} textAnchor="middle">
+          <ChartText className="axl" size={12} x={(L + W - R) / 2} y={H - 12} textAnchor="middle">
             Ball striking: tee and approach
           </ChartText>
           <ChartText className="axl" size={12} transform={`translate(12 ${(T + H - B) / 2}) rotate(-90)`} textAnchor="middle">
@@ -104,7 +156,7 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
               <line className="trail" x1={X(from.x)} y1={Y(from.y)} x2={X(at.x)} y2={Y(at.y)} />
             </g>
           ))}
-          {plotted.map(({ p, at }) => (
+          {plotted.map(({ p, at }, i) => (
             <g
               key={p.id}
               className={'hp' + (p.early ? ' early' : '')}
@@ -121,9 +173,9 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
                 }
               }}
             >
-              <circle className="hit" cx={X(at.x)} cy={Y(at.y)} r={HIT} fill="transparent" />
-              <circle className="dotc" cx={X(at.x)} cy={Y(at.y)} r={13} />
-              <ChartText size={12} weight={600} x={X(at.x)} y={Y(at.y)}>
+              <circle className="hit" cx={drawn[i]!.x} cy={drawn[i]!.y} r={HIT} fill="transparent" />
+              <circle className="dotc" cx={drawn[i]!.x} cy={drawn[i]!.y} r={COIN} />
+              <ChartText size={12} weight={600} x={drawn[i]!.x} y={drawn[i]!.y}>
                 {initials(p.name)}
               </ChartText>
             </g>

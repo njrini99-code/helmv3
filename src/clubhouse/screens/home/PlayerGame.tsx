@@ -282,6 +282,21 @@ export function ScoreChart({
     const n = [scores[i - 1], scores[i + 1]].filter((v): v is number => v != null);
     return n.some((v) => v < scores[i]!) && n.every((v) => v <= scores[i]!);
   };
+  // Value labels (L-009): a label that would sit on the mean line, the par line or the plot's floor goes to the dot's other side;
+  // one that still strikes a line, or lands on the label before it, is dropped (its dot and the line still say the number).
+  const lines = [y(mean), ...(par != null ? [y(par)] : [])];
+  const strikes = (ly: number) => lines.some((ly0) => Math.abs(ly - 4 - ly0) < 7);
+  const placed: { x: number; y: number }[] = [];
+  const valueAt = pts.map(([px, py], i) => {
+    if (!labelled) return null;
+    let ly = below(i) ? py + 18 : py - 10;
+    if (strikes(ly)) ly = ly === py - 10 ? py + 18 : py - 10;
+    if (strikes(ly) || ly > H - B - 2 || ly < T - 2) return null;
+    const w = String(format(scores[i]!)).length * 6.6 + 4;
+    if (placed.some((q) => Math.abs(q.x - px) < w && Math.abs(q.y - ly) < 12)) return null;
+    placed.push({ x: px, y: ly });
+    return ly;
+  });
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
@@ -325,8 +340,8 @@ export function ScoreChart({
       {pts.map(([px, py], i) => (
         <g key={points[i]!.id}>
           <circle cx={px} cy={py} r={i === last ? 5 : points.length > 10 ? 2.6 : 3.4} className={'ch-ph-chart__dot' + (under(i) ? ' is-under' : '')} />
-          {labelled && (
-            <text x={px} y={below(i) ? py + 18 : py - 10} textAnchor="middle" className={'ch-ph-chart__val' + (under(i) ? ' is-under' : '')}>
+          {labelled && valueAt[i] != null && (
+            <text x={px} y={valueAt[i]!} textAnchor="middle" className={'ch-ph-chart__val' + (under(i) ? ' is-under' : '')}>
               {format(scores[i]!)}
             </text>
           )}

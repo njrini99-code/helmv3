@@ -6094,6 +6094,17 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   color: var(--ch-green-600);
   text-decoration: none;
 }
+@media (pointer: coarse) {
+  /* A name in a sentence stays a name, but a finger gets a 44px-tall hit area (L-050). */
+  .ch-ph-leg__who {
+    position: relative;
+  }
+  .ch-ph-leg__who::after {
+    position: absolute;
+    inset: -14px -4px;
+    content: '';
+  }
+}
 @media (hover: hover) {
   .ch-ph-leg__who:hover {
     text-decoration: underline;

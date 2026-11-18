@@ -601,7 +601,7 @@ section.ch-lv-card {
 .ch-lv-panel {
   position: sticky;
   top: var(--ch-space-4);
-  max-height: calc(100vh - var(--ch-space-8));
+  max-height: calc(100dvh - var(--ch-space-8));
   padding: var(--ch-space-4);
   overflow: auto;
   overscroll-behavior: contain;

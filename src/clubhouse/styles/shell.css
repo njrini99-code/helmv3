@@ -516,7 +516,7 @@
 .ch-empty-page {
   display: grid;
   place-items: center;
-  min-height: calc(100vh - 140px);
+  min-height: calc(100dvh - 140px);
   padding: 56px 24px;
 }
 /* A screen's own empty is the card that would have held its data, not a block floating on the page. A dead end (not
@@ -1371,7 +1371,7 @@ button.ch-more__row[disabled] {
     right: 0;
     bottom: 100%;
     left: 0;
-    height: 100vh;
+    height: 100dvh;
     background: var(--ch-phone-bar-bg);
     pointer-events: none;
   }
@@ -1561,8 +1561,8 @@ button.ch-more__row[disabled] {
 }
 .ch-bell__count {
   position: absolute;
-  top: 3px;
-  right: 2px;
+  top: 6px;
+  right: 4px;
   display: grid;
   place-items: center;
   min-width: 16px;

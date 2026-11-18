@@ -1883,7 +1883,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   top: calc(var(--ch-topbar-h) + var(--ch-space-2));
   /* A size container (the column is a fixed 340), so the change note reads the panel's width (F-0028). */
   container-type: inline-size;
-  max-height: calc(100vh - 110px);
+  max-height: calc(100dvh - 110px);
   overflow: auto;
   /* The panel scrolls itself (usePanelSmoothScroll): its ends don't hand the wheel on to the canvas behind it, and
      Lenis eases it with no native smooth scrolling underneath. */
@@ -2801,7 +2801,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   /* The toolbar's button takes the page to its end, where a row of the list opens this panel: it must fit between the
      top bar and the page's foot there (72px above, 64px and the frame's 8px below), or its Back link slides under the
      bar (at the 790px it has beside the other views, by 34px). */
-  max-height: calc(100vh - 144px);
+  max-height: calc(100dvh - 144px);
 }
 /* Closed, the panel is empty and has no place in the grid; it stays on the page as the live region that says what
    opens (CH-6802). */

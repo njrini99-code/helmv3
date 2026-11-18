@@ -86,6 +86,7 @@ const TOKENS: Record<string, string> = {
   '--ch-page-bottom-phone': 'var(--ch-space-8)',
   '--ch-page-top-phone-docked': '14px',
   '--ch-page-bottom-phone-docked': '110px',
+  '--ch-page-bottom-phone-open': 'calc(var(--ch-page-bottom-phone) + env(safe-area-inset-bottom))',
   '--ch-gap-section-phone': 'var(--ch-space-8)',
   '--ch-gap-section-phone-snug': 'var(--ch-space-6)',
   '--ch-gap-section-phone-tight': 'var(--ch-space-4)',

@@ -1401,7 +1401,7 @@ html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F
   gap: 12px;
   position: sticky;
   top: 0;
-  max-height: calc(100vh - 160px);
+  max-height: calc(100dvh - 160px);
   overflow-y: auto;
   padding: 16px;
 }
