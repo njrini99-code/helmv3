@@ -17,33 +17,44 @@ counts include wrappers rather than unique popups.
 
 ```text
 Route:                   /golf/dashboard
-Page:                    src/app/golf/(dashboard)/dashboard/page.tsx (isClubhouseFor -> Clubhouse, else Fairway).
-                         There is no route adapter in src/clubhouse/routes/: the page branches on the session itself.
-Coach:                   flag on -> no team: CoachHomeNoTeam (CH-2307); else loadCoachHome -> CoachHome
-Player:                  player profile and flag on -> resolveClubhouseTeam (src/clubhouse/routes/team.ts);
-                         no team: PlayerHomeNoTeam (CH-2313); else loadPlayerHome -> PlayerHome
+Page:                    src/app/golf/(dashboard)/dashboard/page.tsx (Clubhouse only since 2026-11-14; no flag,
+                         no Fairway branch). There is no route adapter in src/clubhouse/routes/: the page branches
+                         on the dashboard role (getGolfDashboardRole) itself. `?range=` picks Team scoring's window
+                         (parseFormWindow, formWindowSpan in data/span.ts: Last 10, Season, All time)
+Coach:                   no team: CoachHomeNoTeam (CH-2307); else loadCoachHome beside loadLiveRounds
+                         (data/live-rounds.ts) -> CoachHome
+Player:                  resolveClubhouseTeam (src/clubhouse/routes/team.ts);
+                         no team: PlayerHomeNoTeam (CH-2313); else loadPlayerHome beside loadPlayerLive -> PlayerHome
 Server loaders:          src/clubhouse/data/home.ts loadCoachHome (and the shared homeClock, loadHomeWeek,
                          latestWithHoles); src/clubhouse/data/player-home.ts loadPlayerHome
                          (each failed read logs through chLogServer('home', …) and never throws)
-Screens:                 CoachHome.tsx -> HomeActions, Week, LatestRound, Leaderboard | HomePhone.tsx (useChPhone, 820px)
-                         PlayerHome.tsx -> Week, LatestRound (mine), PlayerGame | PlayerHomePhone.tsx
-Skeleton:                src/clubhouse/screens/home/HomeSkeleton.tsx (CH-2401), used by dashboard/loading.tsx through
-                         ClubhouseSwitch (the same skeleton for both roles and widths)
+Screens:                 CoachHome.tsx -> HomeActions, DeskNext, CoachQueue, LiveNowCard, ClassHomeLine, Week,
+                         LatestRound, TeamScoring, TeamGame | HomePhone.tsx (useChPhone, 820px) -> UpNext,
+                         CoachQueue, CoachLatest, TeamScoring, TeamGame, NewEventLink
+                         PlayerHome.tsx -> Week, LatestRound (mine), PlayerGame, OwnLiveCard, TeammatesLiveCard,
+                         CoachAsks | PlayerHomePhone.tsx
+Skeleton:                src/clubhouse/screens/home/HomeSkeleton.tsx (CH-2401), declared once by
+                         src/app/golf/(dashboard)/dashboard/loading.tsx (the same page shape for both roles since
+                         2026-11-15; ClubhouseSwitch and the duplicate (dashboard)/loading.tsx are gone)
 ```
 
 ## End-to-end graph
 
 ```text
-UI (CoachHome / HomePhone, PlayerHome / PlayerHomePhone, Week, LatestRound, Leaderboard, PlayerGame, Countdown)
+UI (CoachHome / HomePhone, PlayerHome / PlayerHomePhone, Week, LatestRound, CoachLatest, TeamScoring, TeamGame,
+    CoachQueue, the live cards, PlayerGame, Countdown)
 ↓
-Action (a link, the latest-round pager, the Scoring window, the N key, Try again: Home has no write)
+Action (a link, the latest-round pager, the Scoring and Team scoring windows, the N key, Add event in place,
+        Try again: Home has no write of its own; an event saved from the in-place editor is Calendar's write)
 ↓
 Client controller: none for data (no client fetch); useNow and Countdown keep the clock; RefreshNotice -> router.refresh
 ↓
-Server: the dashboard page (session, flag, team) -> loadCoachHome | loadPlayerHome (the signed-in user's own client)
+Server: the dashboard page (session, role, team, ?range=) -> loadCoachHome + loadLiveRounds | loadPlayerHome +
+        loadPlayerLive (the signed-in user's own client); getEventEditorInputs on a press of Add event
 ↓
 Data: golf_team_settings, golf_team_members, golf_players, golf_teams, golf_coaches, golf_conversations, golf_events,
-      golf_event_attendance, golf_rounds, golf_holes, golf_round_stats_cache, golf_pga_standards
+      golf_event_attendance, golf_rounds, golf_holes, golf_round_stats_cache, golf_pga_standards,
+      golf_travel_itineraries, and Waiting on you's tables (DATA-COACH-HOME)
 ↓
 Contract outcomes: CONTRACT.md (Bridge IDs 2ccii, catalog CH-2xxx)
 ↓
@@ -89,20 +100,25 @@ shell's Try again offline is 10704).
 
 | Path | Purpose | States |
 | --- | --- | --- |
-| `screens/home/CoachHome.tsx` | Coach Home: header, sheet, leaderboard; the phone switch; `HomeFirstRun`, `CoachHomeNoTeam` | 20101, 20407, 20408, 20605 to 20607 |
+| `screens/home/CoachHome.tsx` | Coach Home (desktop, drawn as Player Home since 2026-11-15): the framed head with Up next, Waiting on you, the week beside the latest round, Team scoring, the team's game; the phone switch; `HomeFirstRun`, `CoachHomeNoTeam` | 20101, 20407, 20408, 20605 to 20607 |
 | `screens/home/HomeActions.tsx` | Message team, New event, the N key | 20103, 21801, 21702 |
 | `screens/home/Week.tsx` | This week: the days and the agenda (shared by both roles; `between` holds the player's Up next; the coach's Next row adds who hasn't replied and Nudge, `nextReplies`) | 20401, 20601, 20609, 20103 |
 | `screens/home/CoachQueue.tsx` | Waiting on you (coach desktop, phone, first run): `queueParts`, `CoachQueue` | 20104, 20621 |
-| `screens/home/TeamLegs.tsx` | The team's game (coach): `TeamLegs` (desktop ledger), `TeamLegsPhone` (rows) | 20105, 20414, 20415, 20619, 20620, 20622 |
+| `screens/home/TeamGame.tsx`, `screens/home/TeamLegs.tsx` | The team's game (coach) as Player Home's four cards (`TeamGame`, over `TeamLegs`' names and links) | 20105, 20414, 20415, 20619, 20620, 20622 |
+| `screens/home/TeamScoring.tsx`, `screens/home/HomeSpanSwitch.tsx` | Team scoring on the player's `ScoreChart` with the team average dashed, and its Last 10, Season, All time switch | — |
+| `screens/home/CoachLatest.tsx` | The coach's latest round as the player's paged card (player, scorecard, GIR, putts, strokes gained, recap or stats) | 20402, 20403 |
+| `screens/home/LiveNowCard.tsx`, `OwnLiveCard.tsx`, `TeammatesLiveCard.tsx` | Who is on the course (coach), the player's own round in progress, teammates on the course (P-6) | — |
+| `screens/home/ClassHomeLine.tsx`, `CoachAsks.tsx`, `DayCard.tsx`, `NextBeyond.tsx` | The class-awareness line, what the coach asked a player, Since you last looked, and what comes after the week (CH-2316) | — |
+| `screens/home/NewEventLink.tsx` | Add event and its quick types on the phone: Calendar's editor opened on Home (`getEventEditorInputs`), else Calendar `?new=1` | 20103 |
 | `screens/home/LatestRound.tsx` | The latest round, paged (shared; `mine` for the player) | 20402, 20403, 20602, 20603, 21701 |
-| `screens/home/Leaderboard.tsx` | Season leaderboard | 20404 to 20406, 20604, 20607 |
-| `screens/home/HomePhone.tsx` | Coach phone Home: hero, Up next, Today, Form, WeekStrip, Rounds, RoundSheet (`UpNext`, `Today`, `WeekStrip` are shared with the player's phone) | 20409, 20611 to 20614, 21901 |
+| `screens/home/Leaderboard.tsx` | Season leaderboard. Since 2026-11-15 only its `leaderPeek` (the phone's player peek) is drawn on Home; leaderboards live on Roster and Stats | 20404 to 20406, 20604, 20607 |
+| `screens/home/HomePhone.tsx` | Coach phone Home, drawn as Player Home's phone page since 2026-11-15: hero, Up next, Waiting on you, the week with today, `CoachLatest`, Team scoring, the team's game (`UpNext`, `WeekStrip` are shared with the player's phone; the round sheet, trend sparks and Nudge left the phone page) | 20409, 20611 to 20614, 21901 |
 | `screens/home/PlayerHome.tsx` | Player Home: header, sheet with Up next (`DeskNext`), Scoring and parts of the game; `PlayerFirstRun`, `PlayerHomeNoTeam` | 20102, 20412, 20413, 20805 |
 | `screens/home/PlayerHomePhone.tsx` | Player phone Home, with the paged `Latest` | 20409, 20615, 21901 |
 | `screens/home/PlayerGame.tsx` | Scoring (chart, four figures, a sentence) and By part of the game | 20410, 20411, 20615 to 20617 |
 | `screens/home/Countdown.tsx` | The player's countdown | 20301, 21807 |
 | `screens/home/HomeSkeleton.tsx` | Route skeleton | 20201 |
-| `screens/home/model.ts`, `player-links.ts` | Derived copy (the brief, agenda details); Message coach, Post a round, My stats links | 20103, 20805 |
+| `screens/home/model.ts`, `screens/home/player-links.ts`, `screens/home/event-links.ts` | Derived copy (the brief, agenda details); Message coach, New round, My stats links; event and Calendar links | 20103, 20805 |
 
 ## Hooks
 
@@ -111,11 +127,14 @@ shell's Try again offline is 10704).
 | `src/clubhouse/lib/use-phone.ts` (`useChPhone`) | Clubhouse | CoachHome, PlayerHome |
 | `src/clubhouse/lib/use-now.ts` (`useNow`, once a minute) | Clubhouse | HomePhone, PlayerHomePhone, PlayerHome (`DeskNext`) |
 | `src/clubhouse/shell/phone-chrome.tsx` (`usePhoneHero`) | Clubhouse shell | HomePhone, PlayerHomePhone |
-| `src/clubhouse/lib/reduced-motion.ts`, `motion.ts` (`chSwap`), `haptics.ts`, `track.ts` | Clubhouse | LatestRound, the phone screens |
+| `src/clubhouse/lib/reduced-motion.ts`, `lib/motion.ts` (`chSwap`), `lib/haptics.ts`, `lib/track.ts` | Clubhouse | LatestRound, the phone screens |
+| `screens/home/use-day-rollover.ts` (`useHomeDayRollover`) | Clubhouse | CoachHome, PlayerHome (refresh when the day turns) |
 
 ## Services / server actions
 
-Home calls no server action. The loaders are the services.
+Home calls one server action, `getEventEditorInputs`
+(`src/clubhouse/data/event-editor-inputs.ts`), when Add event opens the editor
+in place; the event it saves is Calendar's write. The loaders are the services.
 
 | Name | Path | Existing/New/Held | Purpose |
 | --- | --- | --- | --- |
@@ -131,6 +150,9 @@ Home calls no server action. The loaders are the services.
 | loadSeasonRounds, summarizePlayer, isFull18 | data/season.ts | New (Clubhouse) | Season rounds and the derived figures, shared with Roster and Stats |
 | loadRoundCache, loadTourBenchmarks, tourForGender | data/stats-common.ts | New (Clubhouse) | Per-round aggregates and Tour benchmarks, shared with Stats |
 | resolveClubhouseTeam | routes/team.ts | New (Clubhouse) | The player's team, throwing when the membership read fails |
+| the week's trips (`loadHomeWeek`), tripTitle, tripLeaves, tripBack | data/home.ts, data/home-trips.ts | New (Clubhouse) | Trips with no calendar event, on the week and Up next (F-0001, 2026-11-13); a failed read is logged and leaves the week as its events say |
+| loadLiveRounds, loadPlayerLive | data/live-rounds.ts | New (Clubhouse) | Who is on the course (P-6), read beside Home and never failing it |
+| getEventEditorInputs | data/event-editor-inputs.ts | New (Clubhouse) | The in-place event editor's week and roster, through Calendar's loader |
 
 ## Data resources
 
@@ -144,7 +166,7 @@ Tables:   golf_team_settings (timezone), golf_team_members joined to golf_player
           Waiting on you: golf_team_join_requests (count only), golf_events
           and golf_event_attendance (this week's replies), golf_tasks and
           golf_task_assignments, golf_announcements with their recipients
-          and acknowledgements
+          and acknowledgements; trips: golf_travel_itineraries
 RPCs:     none
 Storage:  none
 Realtime: none
@@ -179,12 +201,13 @@ None.
 - `homeClock`, `loadHomeWeek` and `latestWithHoles` serve both roles. A change
   to them changes Coach Home and Player Home together; `loadPlayerHome` passes
   `loadHomeWeek` no names, and that argument is the player's privacy (20804).
-- `page.tsx` also renders the Fairway dashboards; only its two Clubhouse
-  branches belong to Home, and the Fairway branches must keep working while the
-  flag is off (20801).
+- `page.tsx` renders only Clubhouse's Home (the Fairway dashboards and the flag
+  were removed on 2026-11-14); a role or team change in it changes both Homes
+  (20801).
 - Home imports the event type label and icon from Calendar's screens
   (`calendar/model`, `calendar/views`) and `formatHcp` from Roster's
-  (`roster/format`); `ui/Nine` is shared with Qualifiers.
+  (`roster/format`); `ui/Nine` is shared with Qualifiers. The phone's Add event
+  opens Calendar's editor (`NewEventLink`), so an editor change reaches Home.
 - Message coach depends on Messages accepting `?user=` (Messages.tsx, CH-7001).
   If that deep link changes, `messageCoachHref` (`player-links.ts`) changes with
   it.

@@ -228,28 +228,28 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-The coach's roster is a coach's page. The page takes the Clubhouse branch for a
-coach with golf_clubhouse_ui on (the shell's 10801), and the route checks the
-session again before any read (30801). The screen follows the team the dashboard
-role resolves to (`resolveClubhouseTeam`, golf-dashboard-role.ts), never "has a
-coach row": a user whose player profile is the onboarded one beside an
-unfinished coach profile gets the player's roster, and the no-team page speaks
-to that role. A player on this address is handed their own read-only roster
-instead (owner, 2026-10-01): the same layout with name, class year and handicap
-of the active members and nothing to open or do (30804), over a loader that
-never asks for the coach's reads, the join code, a note, an email, a phone or a
-round (30805); an old /roster/[id] link goes to that list (30806). The player
-never gets the coach's list, the notes or the join requests. A coach with no
-active team gets the page empty state (CH-3306, category 04); a player with none
-gets CH-3308. The loader reads only the coach's active team, and only the notes
-this coach wrote (30802). The server decides every change and Roster shows its
-answer (30803). removePlayerFromTeam refuses a caller who is not a coach, has no
-team, or whose team the player is not on, and it refuses while the player has a
-saved round in progress. acceptJoinRequest and rejectJoinRequest refuse a
-request that is not for the coach's own team or is already processed, and
-approval refuses a player who is already on a team. setIntent refuses a player
-the coach does not coach. RLS is the second gate. A ?player= link for someone
-who is not on this roster opens nothing (30102).
+The coach's roster is a coach's page. The page always takes the Clubhouse route
+(the shell's 10801; no flag since 2026-11-14), and the route checks the session
+again before any read (30801). The screen follows the team the dashboard role
+resolves to (`resolveClubhouseTeam`, golf-dashboard-role.ts), never "has a coach
+row": a user whose player profile is the onboarded one beside an unfinished
+coach profile gets the player's roster, and the no-team page speaks to that
+role. A player on this address is handed their own read-only roster instead
+(owner, 2026-10-01): the same layout with name, class year and handicap of the
+active members and nothing to open or do (30804), over a loader that never asks
+for the coach's reads, the join code, a note, an email, a phone or a round
+(30805); an old /roster/[id] link goes to that list (30806). The player never
+gets the coach's list, the notes or the join requests. A coach with no active
+team gets the page empty state (CH-3306, category 04); a player with none gets
+CH-3308. The loader reads only the coach's active team, and only the notes this
+coach wrote (30802). The server decides every change and Roster shows its answer
+(30803). removePlayerFromTeam refuses a caller who is not a coach, has no team,
+or whose team the player is not on, and it refuses while the player has a saved
+round in progress. acceptJoinRequest and rejectJoinRequest refuse a request that
+is not for the coach's own team or is already processed, and approval refuses a
+player who is already on a team. setIntent refuses a player the coach does not
+coach. RLS is the second gate. A ?player= link for someone who is not on this
+roster opens nothing (30102).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

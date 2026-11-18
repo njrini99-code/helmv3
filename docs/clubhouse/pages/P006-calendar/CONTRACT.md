@@ -306,7 +306,8 @@ page sends the visitor to login and the route renders nothing; a coach or player
 with no team gets the no-team page and nothing is read; a player whose team
 membership cannot be read gets the route error view with Try again and is never
 told they have no team (60805). With the Clubhouse off for the caller the page
-is the existing Fairway calendar (the shell's 10801).
+was the existing Fairway calendar (the shell's 10801); since Fairway's
+retirement on 2026-11-14 every coach and player gets this page.
 
 What a coach has. Everything: New event, the N key and `?new=1` with its seeds,
 editing, moving and cancelling any event of the team (a series by scope),

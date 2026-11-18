@@ -53,16 +53,19 @@ Player: know what is next and how the game is going.
 
 ## Visual hierarchy
 
-Coach desktop: header (date, greeting, brief, two actions); one sheet holding
-the week and the latest round side by side; the leaderboard below. Coach phone:
-on the parchment sheet under the green chassis, the date, the greeting and the
-brief, Up next as the one green card, then Today, the team's scoring, This week
-and Latest rounds flush under engraved double rules, each round opening a card
-in a sheet. Player desktop: header (date, greeting, brief, Message coach); the
-sheet with the week (Up next and its countdown between the days and the agenda)
-beside Your latest round; Scoring; By part of the game. Player phone: the hero
-with Up next, its countdown and the two actions, then This week, Today, My
-latest round (paged, its card inline), Scoring and the parts of the game.
+Coach (since 2026-11-15, owner: coach Home is drawn as Player Home, phone and
+desktop, with the coach's own content): the framed head (date, greeting, brief,
+Message team and New event) with Up next and Waiting on you; the week with today
+inside it beside the latest round (`CoachLatest`, the player's paged card); Team
+scoring on the player's scoring chart with the team average dashed and its Last
+10, Season and All time switch; the team's game as the player's four cards. The
+coach-only green hero card, its cards grid and the desktop leaderboard left
+Home; the phone dropped the round sheet, the trend sparks and Nudge. Player
+desktop: header (date, greeting, brief, Message coach); the sheet with the week
+(Up next and its countdown between the days and the agenda) beside Your latest
+round; Scoring; By part of the game. Player phone: the hero with Up next, its
+countdown and the two actions, then This week, Today, My latest round (paged,
+its card inline), Scoring and the parts of the game.
 
 ## Components
 
@@ -81,6 +84,12 @@ Calendar's screens (`calendar/model`, `calendar/views`) and the handicap format
 from Roster's (`roster/format`).
 
 ### New Clubhouse components
+
+Since 2026-11-15 the coach's page also draws `CoachLatest`, `TeamScoring` (with
+`HomeSpanSwitch`), `TeamGame`, `CoachQueue`, `LiveNowCard`, `ClassHomeLine` and
+`NextBeyond`, and the phone's Add event is `NewEventLink` (Calendar's editor on
+Home, 2026-11-16); the desktop `Leaderboard` and the phone's `RoundSheet` are no
+longer drawn. The list below is the page as first built.
 
 Coach: `CoachHome` (with `HomeFirstRun` and `CoachHomeNoTeam`), `HomeActions`,
 `Week`, `LatestRound`, `Leaderboard`, `HomeSkeleton` (shared by both roles; its
@@ -136,8 +145,10 @@ team. Home makes no change, so it has no success or error haptic (21703).
 
 ## Desktop
 
-Coach: a 1280px canvas holds the header, then one lit sheet in two columns (the
-week, the latest round), then the leaderboard table. Player: the same sheet,
+Coach: a 1280px canvas holds Player Home's framed head on the canopy, the week
+beside the latest round with Up next leading it (or "Nothing else this week" and
+what comes after, CH-2316), Team scoring under the hairline, and the team's game
+below (2026-11-15; the leaderboard table left Home). Player: the same sheet,
 then Scoring (a chart of the last 5, 10 or 20 scores against par and the
 player's own mean, four figures and one sentence), then the four parts of the
 game. Below a 860px canvas (a container query) the sheet stacks into one column.
@@ -153,17 +164,20 @@ holds the date, the greeting, the brief and Up next. At 820px and below the
 phone Home takes over from the desktop page; it is never the desktop shrunk
 (21901).
 
-The coach's phone follows the owner's "Coach - Home - Mobile v2" board
-(`m-clubhouse.css`, the Mobile clubhouse pass, its three rounds in order). The
-sheet is the canvas' own parchment (`--ch-workspace`) from the greeting to the
-tab bar, so a short page has no seam. The date is the page intro's eyebrow
-(12px, the phone text floor) under the engraved double rule, the greeting the
-bold condensed sans in forest ink, the brief under it. Up next is the screen's
-one green feature card: the event's type, the countdown chip, the title, the
-time and place and who is going; with nothing ahead it is the card's empty, with
-the quick event types and Add event. Today, the team's scoring, This week and
-Latest rounds sit flush under their double rules, their titles in the Ledger's
-phone heading (600 19px, forest). Today's rows and the latest rounds sit on the
+Since 2026-11-15 the coach's phone is Player Home's phone page with the coach's
+content (the paragraph after this one describes the player's page it now
+follows). The rest of this paragraph is the coach's phone as it was built from
+the owner's "Coach - Home - Mobile v2" board (the Mobile clubhouse pass, its
+three rounds in order; its stylesheet is not in the handoff folder). The sheet
+is the canvas' own parchment (`--ch-workspace`) from the greeting to the tab
+bar, so a short page has no seam. The date is the page intro's eyebrow (12px,
+the phone text floor) under the engraved double rule, the greeting the bold
+condensed sans in forest ink, the brief under it. Up next is the screen's one
+green feature card: the event's type, the countdown chip, the title, the time
+and place and who is going; with nothing ahead it is the card's empty, with the
+quick event types and Add event. Today, the team's scoring, This week and Latest
+rounds sit flush under their double rules, their titles in the Ledger's phone
+heading (600 19px, forest). Today's rows and the latest rounds sit on the
 section's edge between soft seams, the time at the edge as the board sets it;
 This week draws today as the solid green key and a competition day as a soft
 green tint with its trophy, as the player's does. Every control answers a press

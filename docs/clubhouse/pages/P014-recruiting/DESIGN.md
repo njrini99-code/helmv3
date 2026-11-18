@@ -163,7 +163,8 @@ columns; with a Next step column, Class and Hometown move under the name below
 Approved spec `docs/clubhouse/phone/recruiting.md`. The list sits under a "‹
 More" top bar with "+" as its one action; a prospect is a pushed screen (an iOS
 edge swipe pops it); the edit form, the stage picker and delete are bottom
-sheets that drag to dismiss; the sort is a menu. The tab bar stays.
+sheets that drag to dismiss; the sort is a menu. The tab bar stays (since
+2026-10-13 the section strip).
 
 Its look is the Coach Home "Mobile clubhouse pass" board (owner, 2026-10-08:
 round 3, "fewer containers, one feature card"): the page opens on the engraved
@@ -204,10 +205,11 @@ school, a last-contacted date, or a stage history. The monogram is the initials.
 (`src/app/golf/actions/recruiting.ts`) and `getRecruitDocuments`,
 `deleteRecruitDocument`, `getRecruitDocumentUrl` and, for an upload,
 `prepareRecruitDocumentUpload` then `completeRecruitDocumentUpload`
-(`recruit-documents.ts`; the Fairway page now uses the same two steps). Two
-additions on the server, both optional for the current page: `createRecruit`
-takes a request id, and the two upload steps send the file straight to Storage
-(a server action's body is capped far below a film). WIRING.md maps each.
+(`recruit-documents.ts`; the Fairway page used the same two steps until its
+retirement on 2026-11-14). Two additions on the server, both optional for the
+current page: `createRecruit` takes a request id, and the two upload steps send
+the file straight to Storage (a server action's body is capped far below a
+film). WIRING.md maps each.
 
 ## HELD requirements
 

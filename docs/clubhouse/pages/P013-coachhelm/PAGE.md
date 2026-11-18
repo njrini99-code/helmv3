@@ -159,9 +159,10 @@ Status:           approved
 ### Enters from
 
 The sidebar (coach and player) and the phone tab bar (CoachHelm is one of each
-role's four tabs, D-66). A coach's view of one player: from the board's
-selected-player card ("All of Jonah’s reads"), the names under the list that
-have no insights yet, and Roster's View insights (the Deep dive).
+role's four tabs, D-66; since 2026-10-13 the section strip). A coach's view of
+one player: from the board's selected-player card ("All of Jonah’s reads"), the
+names under the list that have no insights yet, and Roster's View insights (the
+Deep dive).
 
 ### Exits to
 
@@ -182,8 +183,8 @@ player and CoachHelm settings (when it is off for the player's team).
 ```text
 Design:          the owner (Claude Design)
 Implementation:  src/clubhouse/screens/coachhelm, on the delivery actions and
-                 the server actions the Fairway Brief already uses (one write
-                 path per behaviour)
+                 the server actions the Fairway Brief used until its
+                 retirement on 2026-11-14 (one write path per behaviour)
 Data:            coachhelm_ai, player_coachhelm_development,
                  coach_intelligence_triage: golf_coach_insights (and the
                  player's feedback on them), golf_drills,

@@ -117,8 +117,9 @@ Status:           approved
 
 ### Enters from
 
-The sidebar (coach and player), the phone tab bar (a player) and the More sheet (a coach) (D-66),
-and any link to `?tab=`.
+The sidebar (coach and player) and, on the phone, the section strip (both roles;
+it replaced the tab bar and the More sheet of D-66 on 2026-10-13), and any link
+to `?tab=` (also `?task=` and `?trip=`, which Calendar's View itinerary uses).
 
 ### Exits to
 
