@@ -139,6 +139,11 @@ describe('writeRead', () => {
     const reply = { ...submit(good), model: 'claude-sonnet-5', usage: { input_tokens: 10, output_tokens: 10, iterations: [{ type: 'message', model: 'claude-sonnet-5-5', input_tokens: 5, output_tokens: 5 }, { type: 'fallback_message', model: 'claude-sonnet-5', input_tokens: 5, output_tokens: 5 }] } };
     const out = await writeRead({ view: 'coach', sheet: irons.sheet, notability: irons.notability }, deps(fake([reply]).client));
     expect(out.written?.model).toBe('claude-sonnet-5');
+    // A fallback on the first attempt does not name the model of a second attempt that passed on Sonnet 5.5.
+    const first = { ...reply, ...submit(bad) };
+    const later = await writeRead({ view: 'coach', sheet: irons.sheet, notability: irons.notability }, deps(fake([first, submit(good, 'tu_2')]).client));
+    expect(later.attempts).toBe(2);
+    expect(later.written?.model).toBe('claude-sonnet-5-5');
   });
 });
 

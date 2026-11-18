@@ -102,8 +102,14 @@ describe('causes the data cannot show', () => {
     expect(rules(with_({ this_week: 'Work on tempo with 30 balls from 190 yards.', declared: [{ value: 30, kind: 'prescription', unit: 'reps' }, { value: 190, kind: 'prescription', unit: 'yards' }] }))).toEqual(['unsupported_cause']);
   });
 
-  it('allows one named only to say the data cannot tell', () => {
+  it('allows one named only to say the data cannot tell, and only where the read says what it rules in and out', () => {
     expect(rules(with_({ rules_in_out: 'The shots cannot tell whether it is the swing, the wind or the club choice.' }))).toEqual([]);
+    // "whether" alone is not a limitation; the advice never names a cause; "unknown" does not excuse a guess.
+    const reps = [{ value: 30, kind: 'prescription' as const, unit: 'reps' as const }];
+    expect(rules(with_({ this_week: 'Hit 30 balls and check whether your tempo holds.', declared: reps }))).toEqual(['unsupported_cause']);
+    expect(rules(with_({ this_week: 'Hit 30 balls. The shots cannot tell whether it is tempo.', declared: reps }))).toEqual(['unsupported_cause']);
+    expect(rules(with_({ what: 'Nerves decide whether the long approaches find the green.' }))).toEqual(['unsupported_cause']);
+    expect(rules(with_({ rules_in_out: 'The cause is unknown, probably her grip.' }))).toEqual(['unsupported_cause']);
   });
 
   it('lets watch ask to record a cause that can be recorded, but not one that cannot', () => {

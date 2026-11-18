@@ -76,16 +76,20 @@ export const UNSUPPORTED_CAUSES = [
   { id: 'fitness', recordable: false, terms: [/\btired\b/i, /\bfatigue\w*/i, /\bfitness\b/i, /\benergy\b/i] },
 ] as const;
 
-/** A sentence that says the data cannot tell may name a cause in order to rule it out of what is known. */
+/**
+ * A sentence that says the data cannot tell may name a cause in order to rule it out of what is known. Negated forms
+ * only: a bare "whether" or "unknown" would let "check whether your tempo holds" through.
+ */
 export const LIMITATION_MARKERS: readonly RegExp[] = [
   /\bcan(?:not|'t|not yet) (?:tell|say|show|see)\b/i,
   /\b(?:do|does|did)(?: not|n't) (?:show|tell|say|record|capture)\b/i,
   /\bnot (?:recorded|logged|tracked|captured|in the data|something (?:we|the data))\b/i,
   /\bno (?:data|record) (?:on|of|for)\b/i,
   /\bwe (?:do not|don't) know\b/i,
-  /\bunknown\b/i,
-  /\bwhether\b/i,
 ];
+
+/** The fields where naming a cause to rule it out of what is known is allowed. The advice and the "what" never name one. */
+const LIMITATION_FIELDS: ReadonlySet<DraftField> = new Set(['rules_in_out', 'watch']);
 
 /** A `watch` sentence that asks for something to be noted next time. */
 const RECORDING = /\b(?:note|record|log|write down|mark|track|keep a note)\b/i;
@@ -226,7 +230,7 @@ export function checkDraft(draft: Draft, payload: WriterPayload, opts: CheckOpti
   // 3. Causes the data cannot show.
   for (const field of DRAFT_FIELDS) {
     for (const s of sentences(draft[field])) {
-      const limited = LIMITATION_MARKERS.some((m) => m.test(s));
+      const limited = LIMITATION_FIELDS.has(field) && LIMITATION_MARKERS.some((m) => m.test(s));
       for (const group of UNSUPPORTED_CAUSES) {
         for (const term of group.terms) {
           const hit = s.match(term);

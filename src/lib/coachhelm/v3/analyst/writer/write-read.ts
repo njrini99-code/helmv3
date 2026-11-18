@@ -90,6 +90,9 @@ export async function writeRead(input: WriterInput, deps: WriterDeps): Promise<W
       return done(null, attempt);
     }
     addUsage(usage, response, WRITER_PROFILE.modelId);
+    // This response alone: the model named on the card is the one that wrote the passing text, not an earlier attempt's.
+    const own = emptyUsage();
+    addUsage(own, response, WRITER_PROFILE.modelId);
 
     if (response.stop_reason === 'refusal') {
       rejections.push({ attempt, reasons: [{ rule: 'refused', field: 'draft', detail: 'the model declined to write this read' }] });
@@ -119,7 +122,7 @@ export async function writeRead(input: WriterInput, deps: WriterDeps): Promise<W
           rules_in_out: draft.rules_in_out.trim(),
           this_week: draft.this_week.trim(),
           watch: draft.watch.trim(),
-          model: fallbackModelOf(usage) ?? response.model ?? WRITER_PROFILE.modelId,
+          model: fallbackModelOf(own) ?? response.model ?? WRITER_PROFILE.modelId,
           checked_at: deps.now().toISOString(),
         },
         attempt,

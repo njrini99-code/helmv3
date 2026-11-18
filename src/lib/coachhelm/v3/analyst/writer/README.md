@@ -72,7 +72,7 @@ Deterministic, no model and no clock. Every rule has a test that fires it and a 
 | `prescription_outside_advice` | a prescribed number (reps, a target) written in `what` or `rules_in_out` | the same number in `this_week` or `watch`, declared |
 | `prescription_out_of_range` | a practice distance outside the bands of the advice areas. When the priority names a band, a distance in the priority's area must sit inside that band. Also reps over 200 and a percentage over 100. | "30 balls from 180 to 200 yards" on a 175-and-longer band |
 | `date_not_in_facts` | "25 October" when no round or window has that date | evidence round dates, window dates |
-| `unsupported_cause` | `UNSUPPORTED_CAUSES`: swing mechanics, grip, tempo, intent and club choice, the head (nerves, pressure, focus lost, mental), conditions (wind, weather, green speed, pins), equipment, fitness | a term a counted fact's label names; a sentence that says the data cannot tell ("cannot tell whether it is the swing"); in `watch`, a recordable cause to note ("note the wind") |
+| `unsupported_cause` | `UNSUPPORTED_CAUSES`: swing mechanics, grip, tempo, intent and club choice, the head (nerves, pressure, focus lost, mental), conditions (wind, weather, green speed, pins), equipment, fitness. In `what` and `this_week` always. | a term a counted fact's label names; in `rules_in_out` and `watch`, a sentence that says in negated form that the data cannot tell ("cannot tell whether it is the swing"; a bare "whether" or "unknown" is not enough); in `watch`, a recordable cause to note ("note the wind") |
 | `teammate_reference` | player view: team, teammates, squad, median, the others | coach view |
 | `change_claim_unsupported` | "improved", "getting worse", "lately", "down from 3" | a `changed` reason (rule (a)) in that direction, in a candidate or good news |
 | `overstated_certainty` | "clear", "clearly", "definitely", "obviously" on a leaning read | the same words on a clear or likely read |
@@ -87,7 +87,10 @@ The pool is every number in the projection (and the numbers inside its labels, s
 for complements. Because the pool comes from the projection, a teammate's figure is not in it in the player view.
 
 Known limits: matching is lexical, so a cause said in words the lists lack gets through, and a harmless sentence that
-uses a listed word is turned down. That is why the eval and the owner's graded set stay the real measure.
+uses a listed word is turned down. A number is matched against the pool, not against the claim it sits in: with 30 to
+45 facts in a pool, most small whole numbers round to one of them, so "3 of 10 rounds" can pass when the true count
+differs. The follow-up is to bind each number to the fact it states (a fact id per number, as the claims block of
+`llm/compose.ts` does). The eval and the owner's graded set stay the real measure.
 
 ## The repair loop
 
