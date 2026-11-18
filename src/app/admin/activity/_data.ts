@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { excludeAuthNoise } from '@/lib/admin/data/triage';
 import { FAILURE_SEVERITIES } from '@/lib/admin/severity';
+import { BRIDGE_UI_SCOPE, scopeAdminEvents } from '@/lib/admin/bridge-scope';
 
 /**
  * Activity tab — LOCAL, single-purpose reads owned by this route only (the
@@ -76,15 +77,22 @@ export async function fetchActivityTodayStats(now: Date = new Date()): Promise<A
       .gte('created_at', todayStart),
     admin.from('users').select('id', { count: 'exact', head: true })
       .gte('created_at', yesterdayStart).lt('created_at', todayStart),
-    excludeAuthNoise(
-      admin.from('admin_events').select('id', { count: 'exact', head: true })
-        .eq('event_type', 'error').in('severity', FAILURE_SEVERITIES).eq('resolved', false)
-        .gte('created_at', todayStart),
+    // The error tiles are Clubhouse only, like every Bridge error view (src/lib/admin/bridge-scope.ts).
+    scopeAdminEvents(
+      excludeAuthNoise(
+        admin.from('admin_events').select('id', { count: 'exact', head: true })
+          .eq('event_type', 'error').in('severity', FAILURE_SEVERITIES).eq('resolved', false)
+          .gte('created_at', todayStart),
+      ),
+      BRIDGE_UI_SCOPE,
     ),
-    excludeAuthNoise(
-      admin.from('admin_events').select('id', { count: 'exact', head: true })
-        .eq('event_type', 'error').in('severity', FAILURE_SEVERITIES).eq('resolved', false)
-        .gte('created_at', yesterdayStart).lt('created_at', todayStart),
+    scopeAdminEvents(
+      excludeAuthNoise(
+        admin.from('admin_events').select('id', { count: 'exact', head: true })
+          .eq('event_type', 'error').in('severity', FAILURE_SEVERITIES).eq('resolved', false)
+          .gte('created_at', yesterdayStart).lt('created_at', todayStart),
+      ),
+      BRIDGE_UI_SCOPE,
     ),
   ]);
 

@@ -15,6 +15,7 @@ import {
   buildIncidentFeedFromSources,
   queryAppErrorEvents,
 } from '@/lib/admin/data/incident-feed';
+import { BRIDGE_UI_SCOPE } from '@/lib/admin/bridge-scope';
 import {
   fetchFeatureHealth,
   summarizeFeatureHealth,
@@ -182,7 +183,8 @@ export const BRIDGE_INCIDENT_CACHE_TAG = 'bridge-incidents';
 export const fetchBridgeErrorBadge = unstable_cache(
   async (): Promise<number | null> => {
     try {
-      const rows = await queryAppErrorEvents({ windowHours: DEFAULT_INCIDENT_WINDOW_HOURS });
+      // Scoped like the Incidents page it links to (src/lib/admin/bridge-scope.ts), so the badge and the list agree.
+      const rows = await queryAppErrorEvents({ windowHours: DEFAULT_INCIDENT_WINDOW_HOURS, scope: BRIDGE_UI_SCOPE });
       const { counts } = buildIncidentFeedFromSources(rows, [], DEFAULT_INCIDENT_WINDOW_HOURS);
       return counts.actionableGroups;
     } catch (error) {
@@ -235,7 +237,10 @@ export const fetchOverviewSnapshot = cache(async () => {
     // The wrapper takes a PRIMITIVE window on purpose: React cache() keys on
     // argument reference identity, so passing `{ windowHours: 24 }` from two
     // call sites would be two keys and would never hit.
-    cachedIncidentFeed(DEFAULT_INCIDENT_WINDOW_HOURS),
+    // Scoped to the Bridge's UI (src/lib/admin/bridge-scope.ts): the KPI tiles and the banner count what the
+    // Incidents page lists. The "Error pipeline" watcher below stays unscoped: it asks whether the pipeline writes at
+    // all, which any app's row answers.
+    cachedIncidentFeed(DEFAULT_INCIDENT_WINDOW_HOURS, BRIDGE_UI_SCOPE),
     admin.from('admin_events').select('id', { count: 'exact', head: true })
       .eq('event_type', 'security').gte('created_at', ago24h),
     admin.from('users').select('id', { count: 'exact', head: true })

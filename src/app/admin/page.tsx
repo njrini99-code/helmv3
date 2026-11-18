@@ -17,6 +17,7 @@ import { PanelStale } from './_components/PanelStates';
 import { FeatureHealthRollup } from './_components/FeatureHealthRollup';
 import { Skeleton, SkeletonStat, SkeletonList, Surface, Eyebrow, StatStrip } from '@/components/fairway';
 import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
+import { BRIDGE_UI_SCOPE } from '@/lib/admin/bridge-scope';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { fetchChangeTimeline } from '@/lib/admin/data/change-timeline';
 import { ChangeTimeline } from './_components/ChangeTimeline';
@@ -245,7 +246,7 @@ async function FeatureHealthPanel() {
  * cause would be a claim the data does not support.
  */
 async function ChangeTimelinePanel() {
-  const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
+  const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS, BRIDGE_UI_SCOPE);
   const timeline = await fetchChangeTimeline(board.incidents);
   if (timeline.status !== 'ok' || !timeline.data) {
     return <PanelStale label="Change timeline" error={timeline.error} />;
@@ -263,7 +264,7 @@ export default async function AdminOverviewPage() {
       {/* The one header every Bridge tab carries (TabHeader renders a plain
           <header>, no aria-label: overview-composition.test.ts pins this
           file's labelled sections to exactly the three below the Deck). */}
-      <TabHeader title="Overview" />
+      <TabHeader title="Overview" description="Incidents and error counts cover Clubhouse only." />
 
       {/* HELM COMMAND DECK (brief §10; bridge redesign plan §2) — THE
           Overview. Posture sentence + blindness beacon, System Orbit,

@@ -870,6 +870,7 @@ export async function loadHomeWeek(
         ),
       ),
     );
+    // A rejected roster read rejects the loader's own Promise.all too (and a failed one is logged there): here it only drops the filter.
     const members = input.members ? await input.members.catch(() => null) : null;
     for (const { data, error } of attendance) {
       if (error) {

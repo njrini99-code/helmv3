@@ -194,7 +194,13 @@ async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list
     const tourName: ChDeepDive['tour'] = team.tour?.tour === 'lpga' ? 'LPGA Tour' : 'Tour';
     if (feed.length === 0) {
       const [visible, dismissed] = await Promise.all([loadVisible(supabase, [playerId]), loadPlayerDismissed(supabase, playerId)]);
-      if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return done({ status: 'failed' });
+      if (visible.error || dismissed.error) return done({ status: 'failed' });
+      // Reads the player has not dismissed that the feed could draw: the feed failed without saying so (visible and dismissed report their own).
+      const undrawn = visible.rows.filter((r) => !dismissed.ids.has(r.id)).length;
+      if (undrawn > 0) {
+        log('dive.feed', new Error(`the feed came back empty with ${undrawn} visible read(s)`));
+        return done({ status: 'failed' });
+      }
       return done({ status: 'ready', data: EMPTY_DIVE(await countCountableRounds(supabase, playerId), tourName) });
     }
     // A card that states no finding is not drawn on the Board, and is not here.
