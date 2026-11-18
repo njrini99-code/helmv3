@@ -9,14 +9,6 @@
     "source": "src/app/golf/page.tsx"
   },
   {
-    "route": "/golf/forgot-password",
-    "kind": "redirect",
-    "audience": "signed-out",
-    "visitor": "/golf/login?view=forgot",
-    "source": "src/app/golf/(auth)/forgot-password/layout.tsx",
-    "note": "A signed-in visitor still gets the old page.tsx (a Fairway-era client page, not Clubhouse)."
-  },
-  {
     "route": "/golf/join",
     "kind": "screen",
     "audience": "signed-out",
@@ -30,7 +22,7 @@
     "audience": "player",
     "player": "src/clubhouse/screens/auth/JoinTeam.tsx#JoinTeam",
     "coach": "redirect to the coach's entry (resolveGolfCoachEntry)",
-    "visitor": "/golf/signup?returnTo=…",
+    "visitor": "/golf/signup?returnTo=\u2026",
     "source": "src/app/golf/join/[code]/page.tsx",
     "note": "No page ID (outside the (auth) group). A player who has not onboarded goes to /golf/player?joinCode= first."
   },
@@ -49,15 +41,6 @@
     "coach": "src/clubhouse/shell/NotFound.tsx#ClubhouseNotFound",
     "player": "src/clubhouse/shell/NotFound.tsx#ClubhouseNotFound",
     "source": "src/app/golf/(dashboard)/dashboard/[...missing]/page.tsx"
-  },
-  {
-    "route": "/golf/dashboard/stats/team",
-    "kind": "redirect",
-    "audience": "shared",
-    "coach": "/golf/dashboard/stats",
-    "player": "/golf/dashboard/stats",
-    "source": "next.config.mjs",
-    "note": "next.config.mjs redirects it before its page.tsx runs. CH_REBUILT_ROUTES.coach still lists it (src/clubhouse/shell/nav.ts)."
   },
   {
     "route": "/golf/dashboard/coachhelm/chat",

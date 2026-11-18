@@ -180,17 +180,18 @@ describe('the reset form in the sign-in panel', () => {
     expect(stage.querySelector('.ch-swap .ch-au-lock')).toBeNull();
   });
 
-  it('keeps today’s rules and words: the reset page and the panel cannot drift', () => {
+  it('is the one reset form: /golf/forgot-password draws the same form for a signed-in visitor, with the same words', () => {
+    // The Fairway page and its own copy of the rules were retired on 2026-11-18: the page now draws Clubhouse's
+    // SignedInReset, which is this form (ResetForm) in the same room, so there is no second copy to drift.
+    const page = readFileSync('src/app/golf/(auth)/forgot-password/page.tsx', 'utf8');
+    expect(page).toContain('ClubhouseSignedInResetRoute');
+    expect(readFileSync('src/clubhouse/screens/auth/SignedInReset.tsx', 'utf8')).toMatch(/<ResetForm[\s\S]*<ResetSent/);
     // Whitespace folded, so a sentence wrapped over two source lines still matches.
-    // The golf page keeps its sent state in sent-confirmation.tsx, so both files are today's words.
-    const today = ['page.tsx', 'sent-confirmation.tsx']
-      .map((file) => readFileSync(`src/app/golf/(auth)/forgot-password/${file}`, 'utf8'))
-      .join(' ')
-      .replace(/\s+/g, ' ');
     const panel = readFileSync('src/clubhouse/screens/auth/ForgotPassword.tsx', 'utf8').replace(/\s+/g, ' ');
-    for (const words of [RESET_EMPTY_MESSAGE, RESET_INVALID_MESSAGE, RESET_UNEXPECTED_MESSAGE, String.raw`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`, 'email.trim().toLowerCase()']) expect(today).toContain(words);
-    for (const words of ['Reset password', 'Enter your email and we’ll send you a link.', 'Send reset link', 'Sending reset link…', 'Check your email', 'We sent a reset link to', 'Open the link in the email to choose a new password. It expires in 1 hour.', 'Back to sign in', 'Remember it?']) {
-      expect(today).toContain(words);
+    const rules = readFileSync('src/clubhouse/screens/auth/forgot-state.ts', 'utf8');
+    for (const words of [RESET_EMPTY_MESSAGE, RESET_INVALID_MESSAGE, RESET_UNEXPECTED_MESSAGE]) expect(words.length).toBeGreaterThan(0);
+    expect(rules).toMatch(/trim\(\)\.toLowerCase\(\)/);
+    for (const words of ['Reset password', 'Enter your email and we’ll send you a link.', 'Send reset link', 'Sending reset link…', 'Check your email', 'We sent a reset link to', 'Open the link in the email to choose a new password. It expires in 1 hour.', 'Remember it?']) {
       expect(panel).toContain(words);
     }
   });

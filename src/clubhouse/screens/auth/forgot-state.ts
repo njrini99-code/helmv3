@@ -1,7 +1,7 @@
 /**
- * The reset form's rules and words: today's (`src/app/golf/(auth)/forgot-password/page.tsx`), unchanged. The address is
+ * The reset form's rules and words, carried over unchanged from the retired Fairway reset page. The address is
  * trimmed and lowercased before it is checked or sent, and a malformed one never reaches the server (a "sent" screen
- * for an address that cannot exist was the 2026-09-02 audit finding). auth-forgot.test holds the two copies together.
+ * for an address that cannot exist was the 2026-09-02 audit finding; signed-in-reset.test and auth-forgot.test guard it).
  */
 export const RESET_EMPTY_MESSAGE = 'Enter your email address.';
 export const RESET_INVALID_MESSAGE = 'Enter a valid email address.';

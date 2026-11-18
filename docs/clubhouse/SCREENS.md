@@ -78,9 +78,9 @@ appears under both.
   strokes gained by leg per player, trends, putting, season bests and export.
   `?player=` is the coach's drill-down into one player (`StatsPlayer`). A player
   at the same address gets My stats.
-- [x] **Team stats, old link** `/stats/team` · old address, **shared** — The old nav's Team stats
-  address. `next.config.mjs` sends both roles to `/stats` before its page runs.
-  It stays ticked because `CH_REBUILT_ROUTES.coach` still lists it.
+- [ ] **Team stats, old link** `/stats/team` · old address, **shared** — The old nav's Team stats
+  address. `next.config.mjs` sends both roles to `/stats`. Its page file was
+  deleted and it left `CH_REBUILT_ROUTES` on 2026-11-18
 - [x] **Calendar** `/calendar` · **shared** — Practices, qualifiers, tournaments, travel and
   meetings; week, month and agenda; attendance, overlaps, files
 - [ ] **Practice** `/practice` · **shared** — Plan a practice (blocks, groups, drills), publish
@@ -252,6 +252,10 @@ Each has a label too, because some are reached by one role only:
   `phone/join-team.md`)
 - **Staff invite** `/golf/staff/join/[token]` · **coach** (phone
   `phone/staff-invite.md`)
-- **Forgot password** `/golf/forgot-password` · old address, **signed-out**: it
-  sends a signed-out visitor to `/golf/login?view=forgot`. A signed-in visitor
-  still gets an old Fairway-era page there
+- **Forgot password** `/golf/forgot-password` · **shared**: a signed-in coach
+  or player gets Clubhouse's reset form in the same room (`SignedInReset`). A
+  signed-out visitor is sent to `/golf/login?view=forgot`
+
+Every error page and the 404 outside the dashboard are drawn in the same room
+too (`GateError`, `GateNotFound`), so no GolfHelm address outside admin draws
+anything but Clubhouse. `clubhouse:check` holds that.

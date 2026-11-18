@@ -12,7 +12,8 @@
     "/golf/reset-password",
     "/golf/coach",
     "/golf/coach/pending",
-    "/golf/demo"
+    "/golf/demo",
+    "/golf/forgot-password"
   ],
   "roles": [],
   "screens": [
@@ -39,6 +40,13 @@
       "audience": "signed-out",
       "name": "Reset password",
       "visitor": "src/clubhouse/screens/auth/ResetPassword.tsx#ResetPassword"
+    },
+    {
+      "route": "/golf/forgot-password",
+      "audience": "shared",
+      "name": "Forgot password, signed in (a signed-out visitor is sent to sign in's reset form)",
+      "coach": "src/clubhouse/screens/auth/SignedInReset.tsx#SignedInReset",
+      "player": "src/clubhouse/screens/auth/SignedInReset.tsx#SignedInReset"
     },
     {
       "route": "/golf/welcome",

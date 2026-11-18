@@ -39,7 +39,6 @@ describe('aliasSkeletonFor: each alias draws where its layout sends that role', 
     ['/golf/dashboard/coachhelm/qualifying/q1', 'player', 'qualifier'],
     ['/golf/dashboard/coachhelm/genome/p1', 'coach', 'stats-profile'],
     ['/golf/dashboard/coachhelm/genome/compare', 'coach', 'stats-team'],
-    ['/golf/dashboard/stats/team', 'player', 'stats-own'],
     ['/golf/dashboard/whats-new', 'player', 'home'],
     ['/golf/dashboard/live/', 'player', 'home'],
   ] as const)('%s for a %s → %s', (path, role, which) => {
