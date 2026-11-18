@@ -26672,7 +26672,7 @@
         },
         {
           "name": "--ch-page-top-home-player",
-          "value": "38px",
+          "value": "calc(var(--ch-page-head-top) + 2px)",
           "scope": "[data-ui='clubhouse']"
         },
         {

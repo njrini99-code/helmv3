@@ -141,6 +141,41 @@ describe('POST /api/log-error', () => {
     expect(adminEvent?.payload.source).toBe('client');
   });
 
+  it('tags a report from a Clubhouse page ui=clubhouse at the top level of both rows, and leaves others untagged', async () => {
+    const run = async (body: Record<string, unknown>) => {
+      mockAnonymousUser();
+      const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
+      createAdminMock.mockReturnValueOnce({
+        from: vi.fn((table: string) => ({
+          insert: vi.fn(async (payload: Record<string, unknown>) => {
+            inserts.push({ table, payload });
+            return { error: null };
+          }),
+        })),
+      } as never);
+      const res = await POST(request(JSON.stringify(body)));
+      expect(res.status).toBe(200);
+      const errorLog = inserts.find((i) => i.table === 'error_logs');
+      const adminEvent = inserts.find((i) => i.table === 'admin_events');
+      return {
+        errorLogUi: (errorLog?.payload.context as Record<string, unknown>).ui,
+        adminUi: (adminEvent?.payload.metadata as Record<string, unknown>).ui,
+      };
+    };
+
+    // An error boundary on a Clubhouse page, with no ui of its own.
+    expect(await run({ message: 'render failed', url: '/golf/dashboard/rounds', context: { route: '/golf/dashboard/rounds' } }))
+      .toEqual({ errorLogUi: 'clubhouse', adminUi: 'clubhouse' });
+    // chReport's own tag is kept.
+    expect(await run({ message: 'x', context: { ui: 'clubhouse', surface: 'home.leaderboard' } }))
+      .toEqual({ errorLogUi: 'clubhouse', adminUi: 'clubhouse' });
+    // A baseball page and a golf admin page are not Clubhouse.
+    expect(await run({ message: 'x', url: '/baseball/dashboard', context: { route: '/baseball/dashboard' } }))
+      .toEqual({ errorLogUi: undefined, adminUi: undefined });
+    expect(await run({ message: 'x', url: '/golf/admin/crm', context: { route: '/golf/admin/crm' } }))
+      .toEqual({ errorLogUi: undefined, adminUi: undefined });
+  });
+
   it('gives repeated client errors for the same route+message the same fingerprint', async () => {
     createClientMock.mockResolvedValue({
       auth: {

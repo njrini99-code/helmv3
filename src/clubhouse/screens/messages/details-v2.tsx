@@ -8,6 +8,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { MS_BEATS, chSpringCurve, msAnimate } from './motion/messages-motion';
 import '../../styles/messages-overlays.css';
 import { haptic } from '../../lib/haptics';
+import { chReport } from '../../lib/track';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
@@ -396,7 +397,9 @@ function PhotoTile({ api, file, onOpen }: { api: ChMessagesApi; file: ChFile; on
         setUrl(found);
         setFailed(!found);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        // A null list is reported where it is read; a throw is reported here.
+        chReport(err, { surface: 'messages.attachments', action: 'photoTile', severity: 'low', extra: { messageId: file.messageId } });
         if (live) setFailed(true);
       });
     return () => {

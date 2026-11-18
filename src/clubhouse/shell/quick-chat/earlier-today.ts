@@ -6,9 +6,24 @@ import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import { formatClock, isoDay } from '../../lib/dates';
 import { plural } from '../../lib/plural';
+import { chReport, type ChSeverity } from '../../lib/track';
 import { QC_RESTORE_MS, qcTeamOf } from './qc-team';
 
 export type QcEarlier = { title: string; line: string; at: string };
+
+/** A chat read's JSON, or null when it failed; a failure is reported (the caller falls back as before). */
+function readJson(url: string, action: string, severity: ChSeverity): Promise<unknown> {
+  return fetch(url)
+    .then((r) => {
+      if (r.ok) return r.json();
+      chReport(new Error(`chat read answered ${r.status}`), { surface: 'shell.quickChat', action, severity, extra: { status: r.status } });
+      return null;
+    })
+    .catch((err: unknown) => {
+      chReport(err, { surface: 'shell.quickChat', action, severity });
+      return null;
+    });
+}
 
 /** A conversation's last receipt, as the row shows it. A receipt that didn't land isn't "done earlier". */
 export function earlierOf(messages: ReadonlyArray<{ ui_parts?: unknown; created_at?: string }>, at: string, tz?: string): QcEarlier | null {
@@ -32,11 +47,11 @@ export function useEarlierToday(open: boolean, enabled: boolean): QcEarlier | nu
     if (!open || !enabled) return;
     let live = true;
     void (async () => {
-      const list = await fetch('/api/coachhelm/v3/chat/conversations').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const list = (await readJson('/api/coachhelm/v3/chat/conversations', 'earlierToday.list', 'low')) as { conversations?: unknown } | null;
       const today = isoDay(new Date());
       const first = (list?.conversations as Array<{ id: string; created_at: string }> | undefined)?.find((c) => isoDay(c.created_at) === today);
       if (!first) return;
-      const one = await fetch(`/api/coachhelm/v3/chat/conversations/${encodeURIComponent(first.id)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const one = (await readJson(`/api/coachhelm/v3/chat/conversations/${encodeURIComponent(first.id)}`, 'earlierToday.thread', 'low')) as { messages?: unknown } | null;
       if (live && Array.isArray(one?.messages)) setRow(earlierOf(one.messages, first.created_at));
     })();
     return () => {
@@ -54,8 +69,7 @@ export function useEarlierToday(open: boolean, enabled: boolean): QcEarlier | nu
  */
 export async function readTodayThread(now: Date = new Date(), teamId: string | null = null): Promise<{ id: string; messages: ChatUIMessage[] } | null> {
   if (!teamId) return null;
-  const get = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  const list = (await get('/api/coachhelm/v3/chat/conversations')) as { conversations?: Array<{ id: string; created_at: string; updated_at?: string; surface?: string | null }> } | null;
+  const list = (await readJson('/api/coachhelm/v3/chat/conversations', 'restore.list', 'medium')) as { conversations?: Array<{ id: string; created_at: string; updated_at?: string; surface?: string | null }> } | null;
   const today = isoDay(now);
   // This team's, and touched in the last 30 minutes (coach audit, 13 Nov 2026): another team's thread, or one with no team on
   // record in this browser, opens fresh.
@@ -68,7 +82,7 @@ export async function readTodayThread(now: Date = new Date(), teamId: string | n
   );
   const first = mine[0];
   if (!first) return null;
-  const one = (await get(`/api/coachhelm/v3/chat/conversations/${encodeURIComponent(first.id)}`)) as { messages?: ChatMessage[] } | null;
+  const one = (await readJson(`/api/coachhelm/v3/chat/conversations/${encodeURIComponent(first.id)}`, 'restore.thread', 'medium')) as { messages?: ChatMessage[] } | null;
   if (!Array.isArray(one?.messages) || !one.messages.length) return null;
   return { id: first.id, messages: restoreUIMessages(one.messages) };
 }

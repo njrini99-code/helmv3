@@ -1850,7 +1850,9 @@
     overscroll-behavior: contain;
     padding: 24px 20px 32px;
     border-radius: var(--ch-radius-xl);
-    background: linear-gradient(165deg, rgb(252 251 247), rgb(248 246 240));
+    /* The same opaque ivory paper as the desktop pane (P015 D1). The near-white stops were the handoff's glass tint;
+       made opaque they read as white on a phone (owner, 2026-11-15). */
+    background: var(--ch-ox-grain), linear-gradient(170deg, rgb(250 248 241), rgb(245 241 231) 55%, rgb(241 236 223));
     box-shadow: var(--ch-elevation-overlay);
   }
   .ch-ox-stage::before,

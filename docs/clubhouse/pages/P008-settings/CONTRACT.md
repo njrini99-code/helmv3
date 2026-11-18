@@ -73,9 +73,10 @@ Status: DEFINED
 One route skeleton in Settings' own shape (80201): the title, the rail and two
 cards. It is `settings/loading.tsx`, and since 2026-09-30 also the loading file
 of the two old links, which used to show the Fairway skeleton inside the
-Clubhouse frame. Nothing on the page loads by itself after first paint
-(everything is read on the server, 82101), so there is no skeleton per section.
-v2 timing: nothing for 150ms, then a fade (the shell's 11609).
+Clubhouse frame (Fairway was retired on 2026-11-14). Nothing on the page loads
+by itself after first paint (everything is read on the server, 82101), so there
+is no skeleton per section. v2 timing: nothing for 150ms, then a fade (the
+shell's 11609).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

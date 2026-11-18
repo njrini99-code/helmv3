@@ -13,6 +13,12 @@ import {
   type TriageItem,
   type TriageSeverity,
 } from '@/lib/admin/data/triage';
+import {
+  scopeAdminEvents,
+  scopedSentryUnresolvedQuery,
+  sentryScopeTokens,
+  type BridgeUiScope,
+} from '@/lib/admin/bridge-scope';
 
 /** Default window shared by Overview KPIs, triage queue, and Errors tab. */
 /**
@@ -37,6 +43,11 @@ export interface IncidentFeedFilters {
   severity?: TriageSeverity;
   source?: string;
   feature?: FeatureKey;
+  /**
+   * The product UI to narrow to (src/lib/admin/bridge-scope.ts). Bridge PAGES pass BRIDGE_UI_SCOPE; the machinery
+   * (digest cron, self-heal, auto-resolve) leaves it out and reads the whole feed, exactly as before.
+   */
+  scope?: BridgeUiScope;
 }
 
 export interface IncidentFeedCounts {
@@ -134,7 +145,7 @@ const MERGED_SENTRY_ENVIRONMENTS = ['production'] as const;
  * Sentry issue doesn't outlive an equivalent app-origin info event.
  */
 export function buildSentrySearchQuery(
-  filters: Pick<IncidentFeedFilters, 'severity' | 'sport' | 'source' | 'feature'>,
+  filters: Pick<IncidentFeedFilters, 'severity' | 'sport' | 'source' | 'feature' | 'scope'>,
 ): string {
   const tokens = ['is:unresolved'];
   if (filters.severity) {
@@ -145,6 +156,7 @@ export function buildSentrySearchQuery(
   if (filters.sport) tokens.push(`sport:${filters.sport}`);
   if (filters.feature) tokens.push(`feature:${filters.feature}`);
   if (filters.source && filters.source !== 'sentry') tokens.push(`error_source:${filters.source}`);
+  tokens.push(...sentryScopeTokens(filters.scope));
   return tokens.join(' ');
 }
 
@@ -248,7 +260,7 @@ export async function queryAppErrorEvents(
     if (filters.source) query = query.eq('source', filters.source);
     if (filters.feature) query = query.eq('feature', filters.feature);
 
-    return query;
+    return scopeAdminEvents(query, filters.scope);
   });
 
   if (error) {
@@ -438,8 +450,11 @@ export async function fetchIncidentFeed(
   // ones — this is the P0 fix (filter chips silently doing nothing to Sentry
   // rows). `prefetched.sentry` (no live caller today) opts out of the extra
   // round trip and reuses the raw pull for both.
+  // Under a scope (a Bridge page) the "org-wide" pull is narrowed to that UI too, so the Sentry panel, the per-row
+  // Sentry sparklines and the counts all read the same population as the list.
   const [sentry, filteredSentry, appEvents, deploy] = await Promise.all([
-    prefetched?.sentry ?? fetchSentryIssues({ limit: 50 }),
+    prefetched?.sentry ??
+      fetchSentryIssues(filters.scope ? { query: scopedSentryUnresolvedQuery(filters.scope), limit: 50 } : { limit: 50 }),
     prefetched?.sentry
       ? null
       : fetchSentryIssues({
@@ -523,8 +538,8 @@ export async function fetchIncidentFeed(
  * admin-digest cron calls `fetchTriageQueue`) gets a fresh fetch per call,
  * which is what it wants.
  */
-export const cachedIncidentFeed = cache((windowHours: number) =>
-  fetchIncidentFeed({ windowHours }),
+export const cachedIncidentFeed = cache((windowHours: number, scope?: BridgeUiScope) =>
+  fetchIncidentFeed(scope ? { windowHours, scope } : { windowHours }),
 );
 
 // ---------------------------------------------------------------------------
@@ -643,18 +658,24 @@ export function excludeInWindowFingerprints(
  * a thrown error (this must never take the Errors tab down with it) and
  * never a silent empty list presented as "nothing is stale".
  */
-export async function queryStaleUnresolvedIncidents(windowHours: number): Promise<StaleUnresolvedResult> {
+export async function queryStaleUnresolvedIncidents(
+  windowHours: number,
+  scope?: BridgeUiScope,
+): Promise<StaleUnresolvedResult> {
   const admin = createAdminClient();
   const since = new Date(Date.now() - windowHours * 3600_000).toISOString();
 
-  const { data, error } = await admin
-    .from('admin_events')
-    .select('title, severity, fingerprint, created_at')
-    .eq('event_type', 'error')
-    .eq('resolved', false)
-    .in('severity', FAILURE_SEVERITIES)
-    .not('fingerprint', 'is', null)
-    .lt('created_at', since)
+  const { data, error } = await scopeAdminEvents(
+    admin
+      .from('admin_events')
+      .select('title, severity, fingerprint, created_at')
+      .eq('event_type', 'error')
+      .eq('resolved', false)
+      .in('severity', FAILURE_SEVERITIES)
+      .not('fingerprint', 'is', null)
+      .lt('created_at', since),
+    scope,
+  )
     .order('created_at', { ascending: false })
     .limit(STALE_UNRESOLVED_ROW_LIMIT);
 

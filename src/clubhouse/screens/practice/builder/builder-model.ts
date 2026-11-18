@@ -226,6 +226,7 @@ export function takeAskPicks(planId: string): AskPicks | null {
     const areas = Array.isArray(v.areas) ? v.areas.filter((a): a is string => typeof a === 'string').map((a) => a.slice(0, 40)) : [];
     return { minutes, areas };
   } catch {
+    // No storage, or picks that don't parse: the builder asks with its best guesses.
     return null;
   }
 }

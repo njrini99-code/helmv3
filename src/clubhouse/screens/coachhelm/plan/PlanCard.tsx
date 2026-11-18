@@ -214,7 +214,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     if (preview) return null;
     // The stored version from the last save of this plan, and null for a plan not saved yet. `draft.version` counts this card's edits: the database has never seen it.
     const target = savedPlanFor(planKey(plan));
-    const res = await safeSave(() => savePracticePlanDraft({ eventId: plan.eventId, planId: target?.planId ?? null, version: target?.version ?? null, title: plan.title, draft, folder }));
+    const res = await safeSave(() => savePracticePlanDraft({ eventId: plan.eventId, planId: target?.planId ?? null, version: target?.version ?? null, title: plan.title, draft, folder }), 'savePracticePlanDraft');
     if (!res.success) {
       setError(res.error);
       setState({ k: 'failed' });
@@ -229,6 +229,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     if (fold && artRef.current) {
       const page = artRef.current;
       const landing = (async () => {
+        // Motion only: the plan is saved already, so a flight that cannot run changes nothing.
         await flyPageToFolder(page, fold, reduced).catch(() => {});
         setFolders((list) => (list.some((f) => f.name === folder) ? list.map((f) => (f.name === folder ? { ...f, count: f.count + 1 } : f)) : [...list, { name: folder, count: 1 }]));
         await squashFolder(fold, reduced).catch(() => {});
@@ -249,7 +250,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     if (state.k !== 'saved') return;
     if (preview) return setState({ k: 'undone' });
     setUndoing(true);
-    void safeSave(() => undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }))
+    void safeSave(() => undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }), 'undoPracticePlanDraft')
       .then((r) => {
         if (!r.success) return setError('Too late to undo. It’s saved.');
         forgetSavedPlan(planKey(plan));

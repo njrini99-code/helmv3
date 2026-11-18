@@ -8,6 +8,7 @@ import { type KeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEve
 import { REACTIONS, REACTION_ICON } from './reactions';
 import { personOf } from '../person-of';
 import { haptic } from '../../../lib/haptics';
+import { chReport } from '../../../lib/track';
 import { Icon } from '../../../ui/Icon';
 import { createPortal } from 'react-dom';
 import { Avatar } from '../../../ui/Avatar';
@@ -325,7 +326,8 @@ export function useBubbleActions({ api, m, group, picking, setPicking, onEdit, o
       await navigator.clipboard.writeText(m.text);
       haptic("success");
       toast({ title: "Copied" });
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: "messages.thread", action: "copyMessage", severity: "low", extra: { messageId: m.id } });
       haptic("error");
       toast({ tone: "error", title: "Couldn’t copy the message", body: "Try again in a moment.", code: "CH-7020" });
     }

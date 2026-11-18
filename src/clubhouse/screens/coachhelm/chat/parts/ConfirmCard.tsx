@@ -15,6 +15,7 @@ import { Icon } from '../../../../ui/Icon';
 import { Switch } from '../../../../ui/Switch';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
 import { haptic } from '../../../../lib/haptics';
+import { chReport } from '../../../../lib/track';
 import { plural } from '../../../../lib/plural';
 import { flyDraftHome } from '../ask-flight';
 import { isOutOfDate } from '../cards/truth';
@@ -425,8 +426,13 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
     let alive = true;
     const end = setTimeout(async () => {
       // A fallback: the stream delivers the outcome when the hold ends. This asks only if it has not (a lost connection), a few times.
+      let lastErr: unknown = null;
       for (let i = 0; i < 5 && alive; i++) {
-        const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}`).catch(() => null);
+        const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}`).catch((err: unknown) => {
+          lastErr = err;
+          return null;
+        });
+        // A body that is not JSON (a proxy's error page) reads as no receipt yet; the next try asks again.
         const row = (await res?.json().catch(() => null)) as { receipt?: ActionReceipt | null } | null;
         if (row?.receipt) {
           if (alive) setPhase({ kind: 'done', receipt: row.receipt });
@@ -434,6 +440,8 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
         }
         await new Promise((r) => setTimeout(r, 900));
       }
+      // Every ask failed to reach the server: the card stays held with no outcome. Reported once, not per try.
+      if (alive && lastErr) chReport(lastErr, { surface: 'coachhelm.ask.confirm', action: 'actionOutcome', severity: 'medium' });
     }, Math.max(0, Date.parse(held) - Date.now()) + 1500);
     return () => {
       alive = false;
@@ -446,7 +454,10 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
     setUndoFailed(false);
     haptic('warning');
     setPhase({ kind: 'undoing' });
-    const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}`, { method: 'DELETE' }).catch(() => null);
+    const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}`, { method: 'DELETE' }).catch((err: unknown) => {
+      chReport(err, { surface: 'coachhelm.ask.confirm', action: 'undoAction', severity: 'high' });
+      return null;
+    });
     undoing.current = false;
     if (res?.ok) {
       setPhase({ kind: 'undone' });
@@ -457,7 +468,11 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
     }
   };
   const saveNow = async () => {
-    const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}?now=1`, { method: 'POST' }).catch(() => null);
+    const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}?now=1`, { method: 'POST' }).catch((err: unknown) => {
+      chReport(err, { surface: 'coachhelm.ask.confirm', action: 'saveActionNow', severity: 'high' });
+      return null;
+    });
+    // A body that is not JSON falls back to the card's own receipt link below.
     const row = (await res?.json().catch(() => null)) as { receipt?: ActionReceipt | null } | null;
     const href = row?.receipt?.created.find((c) => c.href)?.href ?? receipt.created.find((c) => c.href)?.href;
     if (!href) return;
