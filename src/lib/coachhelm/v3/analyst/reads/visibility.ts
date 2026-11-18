@@ -12,8 +12,9 @@
 import { deriveTone } from '@/lib/coachhelm/tone-derivation';
 import { readsEnabled } from './flag';
 
-/** "Nothing found" reads (shared with the Clubhouse classifier, which imports it). */
-export const NOTE_SIGNATURE = /(?:^|:)(?:tee_strategy:(?:sharp|inconclusive)|putt_bias:balanced)$/;
+import { NOTE_SIGNATURE } from './note-signature';
+
+export { NOTE_SIGNATURE };
 
 export interface ReadsHideableRow {
   signature?: string | null;

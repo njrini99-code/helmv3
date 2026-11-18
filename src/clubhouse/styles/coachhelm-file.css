@@ -358,13 +358,13 @@
 /* CoachHelm's read (flag coachhelm_reads_v1, the listed team only): the analyst's card above today's cards, and its rounds sheet. */
 .ch-hf .ch-hf-an__body { padding: 4px 16px 16px; display: grid; gap: 12px; }
 .ch-hf .ch-hf-an__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; color: var(--ch-hf-a-ink); }
-.ch-hf .ch-hf-an__head b { font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
-.ch-hf .ch-hf-an__p, .ch-hf .ch-hf-an__how p { margin: 0; font: var(--ch-type-15); color: var(--ch-hf-a-ink-2); letter-spacing: var(--ch-track-15); }
+.ch-hf .ch-hf-an__head b { font: var(--ch-type-headline); }
+.ch-hf .ch-hf-an__p, .ch-hf .ch-hf-an__how p { margin: 0; font: var(--ch-type-body); color: var(--ch-hf-a-ink-2); }
 .ch-hf .ch-hf-an__team { padding: 8px 12px; border-radius: var(--ch-radius-sm); background: var(--ch-hf-a-well); }
-.ch-hf .ch-hf-an__stale { margin: 0; font: var(--ch-type-13); color: var(--ch-hf-a-ink-3); }
+.ch-hf .ch-hf-an__stale { margin: 0; font: var(--ch-type-footnote); color: var(--ch-hf-a-ink-3); }
 .ch-hf .ch-hf-an__how { display: grid; gap: 4px; padding-top: 12px; border-top: var(--ch-hairline-w) solid var(--ch-hf-a-sep); }
-.ch-hf .ch-hf-an__how h5 { margin: 0; font: var(--ch-type-13-strong); color: var(--ch-hf-a-ink); }
-.ch-hf .ch-hf-an__how ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font: var(--ch-type-15); color: var(--ch-hf-a-ink-2); letter-spacing: var(--ch-track-15); }
+.ch-hf .ch-hf-an__how h5 { margin: 0; font: var(--ch-type-callout); color: var(--ch-hf-a-ink); }
+.ch-hf .ch-hf-an__how ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font: var(--ch-type-body); color: var(--ch-hf-a-ink-2); }
 .ch-hf .ch-hf-an__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
 .ch-hf .ch-hf-an__acts { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .ch-hf .ch-hf-an__focus { display: grid; gap: 2px; padding: 8px 12px; border-radius: var(--ch-radius-sm); border: var(--ch-hairline-w) solid var(--ch-hf-a-sep); }
@@ -375,6 +375,6 @@
 .ch-hf .ch-hf-an__round { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; color: var(--ch-hf-a-ink); text-decoration: none; border-radius: var(--ch-radius-sm); }
 .ch-hf .ch-hf-an__round:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; }
 .ch-hf .ch-hf-an__rt { display: grid; gap: 2px; }
-.ch-hf .ch-hf-an__rt b { font: var(--ch-type-15-strong); }
-.ch-hf .ch-hf-an__rt small { font: var(--ch-type-13); color: var(--ch-hf-a-ink-2); }
-.ch-hf .ch-hf-an__shots { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 2px; font: var(--ch-type-13); color: var(--ch-hf-a-ink-3); }
+.ch-hf .ch-hf-an__rt b { font: var(--ch-type-figure); }
+.ch-hf .ch-hf-an__rt small { font: var(--ch-type-footnote); color: var(--ch-hf-a-ink-2); }
+.ch-hf .ch-hf-an__shots { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 2px; font: var(--ch-type-footnote); color: var(--ch-hf-a-ink-3); }

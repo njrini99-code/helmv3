@@ -5,6 +5,7 @@
  * imports only types from here. The words are the analyst's, assembled from counted facts (src/lib/coachhelm/v3/analyst/reads).
  */
 import { focusJustSet, type FocusLink } from '@/lib/coachhelm/v3/analyst/reads/focus';
+import { oneDecimal } from '@/lib/coachhelm/v3/analyst/reads/format';
 import type { ReadPayload } from '@/lib/coachhelm/v3/analyst/reads/types';
 import type { ChDeepInsight } from './coachhelm-dive-shape';
 import type { ChKind } from './coachhelm-shape';
@@ -63,7 +64,7 @@ export function toChAnalystRead(p: ReadPayload, href: (roundId: string) => strin
   return {
     playerId: p.player_id,
     cardKey: c?.key ?? null,
-    focusDraft: c ? `Focus set today on ${c.area_label.toLowerCase()}, ${p.figures.lost_per_round ?? c.numbers.lost_per_round.toFixed(1)} strokes a round lost then. No round counted since yet.` : null,
+    focusDraft: c ? `Focus set today on ${c.area_label.toLowerCase()}, ${p.figures.lost_per_round ?? oneDecimal(c.numbers.lost_per_round)} strokes a round lost then. No round counted since yet.` : null,
     headline: c ? c.headline : 'Where the strokes go',
     certainty: c?.certainty_word ?? null,
     through: p.freshness.through_text,

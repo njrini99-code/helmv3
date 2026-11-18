@@ -4,7 +4,7 @@
  */
 import type { Notability } from '../notability';
 import { MIN_TEAMMATES } from '../notability';
-import { Figures, whole } from './format';
+import { Figures, oneDecimal, whole } from './format';
 import { PART_LABEL } from './words';
 import type { PartId, ReadPayload } from './types';
 
@@ -108,7 +108,7 @@ export function teamReadsPage(rows: readonly SavedRead[]): TeamReadsPage {
         let exception: string | null = null;
         if (shared && c.area !== shared.part) exception = `Not ${PART_LABEL[shared.part].toLowerCase()}, as for most of the team.`;
         else if (c.team?.value.differs && c.pattern) exception = 'Same part as the team, a different pattern.';
-        const lost_text = gaining ? `${p.figures.gain_per_round ?? (-c.numbers.lost_per_round).toFixed(1)} a round gained` : `${p.figures.lost_per_round ?? c.numbers.lost_per_round.toFixed(1)} a round`;
+        const lost_text = gaining ? `${p.figures.gain_per_round ?? oneDecimal(-c.numbers.lost_per_round)} a round gained` : `${p.figures.lost_per_round ?? oneDecimal(c.numbers.lost_per_round)} a round`;
         return { player_id: p.player_id, lost_text, certainty_word: c.certainty_word, distinct: c.where_text, exception };
       }),
   }));

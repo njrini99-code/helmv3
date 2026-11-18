@@ -4,7 +4,7 @@ import { deriveTone, isNegativePolarityMetric } from '@/lib/coachhelm/tone-deriv
 import { getMetricDefinition, isGolfMetricId } from '@/lib/golf/metrics/display-registry';
 import type { ChKind, ChTourBaseline } from './coachhelm-shape';
 // The note pattern lives beside the reads rule that hides notes outside the board (one copy, no drift).
-import { NOTE_SIGNATURE } from '@/lib/coachhelm/v3/analyst/reads/visibility';
+import { NOTE_SIGNATURE } from '@/lib/coachhelm/v3/analyst/reads/note-signature';
 
 /**
  * What a CoachHelm card states and whether it is current (Clubhouse P013). Pure, over the fields both the delivery shape

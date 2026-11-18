@@ -63,7 +63,7 @@ export function TeamReads({ load }: { load: ChTeamReadsLoad }) {
   if (d.playersRead === 0 && d.waiting.length === 0) {
     return (
       <Frame>
-        <EmptyState size="section" code="CH-13316" title="No reads saved yet" body="CoachHelm saves a read for each player after their next posted round, and every night." />
+        <EmptyState size="section" code="CH-13316" kind="first-run" title="No reads saved yet" body="CoachHelm saves a read for each player after their next posted round, and every night." />
       </Frame>
     );
   }
