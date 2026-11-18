@@ -296,6 +296,18 @@ Stage 1 of the insights rebuild (`COACHHELM_2_TO_10.md` section 6). No model. Fl
 | `reads/player-card.ts` | `forPlayer`: removes every coach-only block and team figure, for the player's own card. |
 | `reads/card-text.ts` | A card as text, for the owner's grading sheet (the dry run prints one per player). |
 
+| `reads/parts.ts` | Stage 2: the four parts side by side (season, last 10 against the 10 before, the team middle coach-only, one level down). |
+| `reads/catalogue.ts` | Stage 2: the counted reads ranked 3 to 12 (doubles and their make-up, mistakes, tee penalties by kind and club, tee miss side, approach length, first-putt length, chip leave and the putt after, long three-putts, par 5 seconds described only), each with its floor. A signal is rule (b) one level down: robust z against the teammates, own range clear of the median, Benjamini-Hochberg at 0.10, worse direction only, at most three, one per family. |
+| `reads/team-page.ts` | Stage 2: the shared part said once, the exceptions, who improved, the same-card share. Coach only. |
+| `reads/engine-gates.ts` | Stage 2: for a team on reads the old Tier-1 checks stop writing cards (the philosophy gate); the hidden v2 writer stops only behind `coachhelm_v2_writer_stop_v1` (off everywhere). |
+| `reads/memory.ts` | Stage 4: `decideNext(previous, fresh)`. Words change only at a checkpoint (3 rounds or 20 shots); stronger or weaker said once; cleared after two weak checkpoints ("was X, now Y" first), retired with a reason when another part clearly takes over, "back" when it returns; a coach's "not useful" or "wrong" keeps it down unless the evidence moves materially; a new season starts again. |
+| `reads/focus.ts` | Stage 4: the "since the focus was set" line and the one-word verdict, the verdict words and `shrinkToward` drift from `v3/verdicts` and `v3/support`. |
+| `reads/team-brief.ts` | Stage 5: the weekly team brief as data (no screen, no send). |
+| `reads/written.ts` | Stage 3 wiring: behind `coachhelm_reads_written_v1` (team list `COACHHELM_READS_WRITTEN_TEAM_IDS`) as well as `coachhelm_reads_v1`; a paragraph only where the card's words changed; the player's paragraph is its own call (`written_player`). |
+
+Held tables: `20261117120000_golf_coach_reads.sql` (the reads) and `20261117121000_golf_coach_read_actions.sql` (coach
+feedback and focus links; no screen writes them yet).
+
 The Stage 3 seam: `ReadPayload.written?: { what, rules_in_out, this_week, watch, model, checked_at }`, written by
 `analyst/writer/` after code checks it. The card draws it when present; absent, the Stage 1 card stands.
 
