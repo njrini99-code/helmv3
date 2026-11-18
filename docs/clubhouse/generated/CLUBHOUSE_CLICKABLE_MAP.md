@@ -31,16 +31,16 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/shell/Bell.tsx`
 
-- 450 `button` "(aria-label built at run time)" (button)
-- 458 `Button` "Mark all read" (button, onClick)
-- 495 `Button` "Show all" (button, onClick)
-- 512 `PresenceRow` "(label built at run time)" (onClick)
-- 543 `button` "(aria-label built at run time)" (button, onClick, onPointerDown)
-- 590 `m.div` "(no label)" (onClick)
-- 640 `div` "(label built at run time)" (onPointerDown) CH-1811
-- 643 `button` "Mark all read" (button, onClick) CH-1811
-- 650 `div` "(label built at run time)" (onClick) CH-1811
-- 660 `div` "(label built at run time)" (onPointerDown) CH-1811
+- 453 `button` "(aria-label built at run time)" (button)
+- 461 `Button` "Mark all read" (button, onClick)
+- 498 `Button` "Show all" (button, onClick)
+- 515 `PresenceRow` "(label built at run time)" (onClick)
+- 546 `button` "(aria-label built at run time)" (button, onClick, onPointerDown)
+- 593 `m.div` "(no label)" (onClick)
+- 643 `div` "(label built at run time)" (onPointerDown) CH-1811
+- 646 `button` "Mark all read" (button, onClick) CH-1811
+- 653 `div` "(label built at run time)" (onClick) CH-1811
+- 663 `div` "(label built at run time)" (onPointerDown) CH-1811
 
 ### `src/clubhouse/shell/BellHeldRow.tsx`
 
@@ -167,8 +167,8 @@ says so. This supersedes the 2026-09-30 snapshot in
 - 198 `Link` "(label built at run time)" (link, href)
 - 238 `Link` "(label built at run time)" (link, href)
 - 253 `Link` "Calendar" (link, href)
-- 417 `LedgerRow` "(no label)" (onClick)
-- 419 `LedgerRow` "(no label)" (href)
+- 418 `LedgerRow` "(no label)" (onClick)
+- 420 `LedgerRow` "(no label)" (href)
 
 ### `src/clubhouse/screens/home/HomeActions.tsx`
 
@@ -226,7 +226,7 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/home/NewEventLink.tsx`
 
-- 57 `Link` "(label built at run time)" (link, onClick, onPointerDown, href)
+- 61 `Link` "(label built at run time)" (link, onClick, onPointerDown, href)
 
 ### `src/clubhouse/screens/home/NextBeyond.tsx`
 
@@ -289,21 +289,21 @@ says so. This supersedes the 2026-09-30 snapshot in
 ### `src/clubhouse/screens/roster/Roster.tsx`
 
 - 70 `button` "(label built at run time)" (button, onClick)
-- 456 `Button` "(label built at run time)" (button, onClick) CH-3501
-- 459 `Button` "(label built at run time)" (button, onClick) CH-3501
-- 556 `Button` "Export" (button, onClick)
-- 562 `Button` "Invite players" (button, onClick)
-- 616 `Button` "Invite players" (button, onClick) CH-3301
-- 622 `Button` "Copy team code" (button, onClick) CH-3301
-- 789 `Button` "Show everyone" (button, onClick)
-- 794 `button` "(aria-label built at run time)" (button, onClick)
-- 902 `button` "(aria-label built at run time)" (button, onClick)
-- 946 `IconButton` "(no label)" (button)
-- 1013 `Button` "Done" (button, onClick)
-- 1020 `Button` "Copy" (button, onClick)
-- 1038 `Button` "Share" (button, onClick)
-- 1042 `Button` "Copy" (button, onClick)
-- 1066 `Button` "Open team settings" (button, href) CH-3304
+- 457 `Button` "(label built at run time)" (button, onClick) CH-3501
+- 460 `Button` "(label built at run time)" (button, onClick) CH-3501
+- 557 `Button` "Export" (button, onClick)
+- 563 `Button` "Invite players" (button, onClick)
+- 617 `Button` "Invite players" (button, onClick) CH-3301
+- 623 `Button` "Copy team code" (button, onClick) CH-3301
+- 790 `Button` "Show everyone" (button, onClick)
+- 795 `button` "(aria-label built at run time)" (button, onClick)
+- 903 `button` "(aria-label built at run time)" (button, onClick)
+- 947 `IconButton` "(no label)" (button)
+- 1015 `Button` "Done" (button, onClick)
+- 1022 `Button` "Copy" (button, onClick)
+- 1040 `Button` "Share" (button, onClick)
+- 1044 `Button` "Copy" (button, onClick)
+- 1068 `Button` "Open team settings" (button, href) CH-3304
 
 ### `src/clubhouse/screens/roster/RosterLeaders.tsx`
 
@@ -372,7 +372,7 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/routes/stats.tsx`
 
-- 80 `Button` "Back to roster" (button, href)
+- 85 `Button` "Back to roster" (button, href)
 
 ### `src/clubhouse/screens/stats/BestCard.tsx`
 
@@ -467,15 +467,15 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/stats/StatsPlayerPhoneShs.tsx`
 
-- 236 `Button` "Add focus area" (button, onClick) CH-5207
-- 353 `PhoneIconAction` "(no label)" (onClick)
-- 386 `Link` "(aria-label built at run time)" (link, href)
-- 595 `button` " …" (button, onClick)
-- 1120 `button` "(aria-label built at run time)" (button, onClick)
-- 1150 `button` "(label built at run time)" (button, onClick)
-- 1222 `Link` "(aria-label built at run time)" (link, href)
-- 1257 `GoalSetButton` "(no label)" (button)
-- 1307 `Button` "Add focus area" (button, onClick)
+- 237 `Button` "Add focus area" (button, onClick) CH-5207
+- 354 `PhoneIconAction` "(no label)" (onClick)
+- 387 `Link` "(aria-label built at run time)" (link, href)
+- 596 `button` " …" (button, onClick)
+- 1121 `button` "(aria-label built at run time)" (button, onClick)
+- 1151 `button` "(label built at run time)" (button, onClick)
+- 1223 `Link` "(aria-label built at run time)" (link, href)
+- 1258 `GoalSetButton` "(no label)" (button)
+- 1308 `Button` "Add focus area" (button, onClick)
 
 ### `src/clubhouse/screens/stats/StatsTeam.tsx`
 
@@ -491,9 +491,9 @@ says so. This supersedes the 2026-09-30 snapshot in
 - 194 `Button` "Export" (button, onClick)
 - 207 `Button` "Show the season" (button, onClick)
 - 714 `button` "(label built at run time)" (button, onClick)
-- 842 `button` "(label built at run time)" (button, onClick)
-- 973 `Link` "(label built at run time)" (link, href)
-- 988 `Link` "(aria-label built at run time)" (link, href)
+- 843 `button` "(label built at run time)" (button, onClick)
+- 974 `Link` "(label built at run time)" (link, href)
+- 989 `Link` "(aria-label built at run time)" (link, href)
 
 ### `src/clubhouse/screens/stats/StatsTeamPhone.tsx`
 
@@ -554,11 +554,11 @@ says so. This supersedes the 2026-09-30 snapshot in
 - 114 `PhoneIconAction` "Add to calendar app" (onClick)
 - 124 `Button` "Today" (button, onClick)
 - 144 `IconButton` "More" (button)
-- 454 `IconButton` "Previous week" (button, onClick)
-- 455 `IconButton` "Next week" (button, onClick)
-- 462 `IconButton` "Dismiss" (button, onClick)
-- 476 `Button` "New event" (button, onClick) CH-6308
-- 509 `button` "(label built at run time)" (button, onClick)
+- 455 `IconButton` "Previous week" (button, onClick)
+- 456 `IconButton` "Next week" (button, onClick)
+- 463 `IconButton` "Dismiss" (button, onClick)
+- 477 `Button` "New event" (button, onClick) CH-6308
+- 510 `button` "(label built at run time)" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/cancel-round.tsx`
 
@@ -786,28 +786,28 @@ says so. This supersedes the 2026-09-30 snapshot in
 - 59 `button` "(label built at run time)" (button, onClick)
 - 94 `button` "(label built at run time)" (button, onClick)
 - 127 `button` "earlier …" (button, onClick)
-- 205 `IconButton` "All conversations" (button, onClick)
-- 246 `Button` "(label built at run time)" (button, onClick)
-- 298 `Button` "Mark done" (button, onClick)
-- 320 `button` "(aria-label built at run time)" (button, onClick)
+- 212 `IconButton` "All conversations" (button, onClick)
+- 253 `Button` "(label built at run time)" (button, onClick)
+- 305 `Button` "Mark done" (button, onClick)
+- 327 `button` "(aria-label built at run time)" (button, onClick)
 
 ### `src/clubhouse/screens/messages/details-v2.tsx`
 
-- 158 `div` "(no label)" (onClick)
-- 161 `button` "(label built at run time)" (button, onClick, role=menuitem)
-- 209 `button` "(aria-label built at run time)" (button, onClick)
-- 226 `button` "(label built at run time)" (button, onClick)
-- 230 `button` "(label built at run time)" (button, onClick)
-- 235 `Link` "(label built at run time)" (link, href)
-- 241 `button` "(label built at run time)" (button, onClick)
-- 247 `button` "(label built at run time)" (button, onClick)
-- 288 `button` "Cancel" (button, onClick)
-- 336 `button` "(aria-label built at run time)" (button, onClick)
-- 345 `button` "(aria-label built at run time)" (button, onClick)
-- 353 `button` "Show all …" (button, onClick)
-- 407 `button` "(aria-label built at run time)" (button, onClick)
-- 427 `button` "See all" (button, onClick)
-- 452 `button` "(label built at run time)" (button, onClick)
+- 159 `div` "(no label)" (onClick)
+- 162 `button` "(label built at run time)" (button, onClick, role=menuitem)
+- 210 `button` "(aria-label built at run time)" (button, onClick)
+- 227 `button` "(label built at run time)" (button, onClick)
+- 231 `button` "(label built at run time)" (button, onClick)
+- 236 `Link` "(label built at run time)" (link, href)
+- 242 `button` "(label built at run time)" (button, onClick)
+- 248 `button` "(label built at run time)" (button, onClick)
+- 289 `button` "Cancel" (button, onClick)
+- 337 `button` "(aria-label built at run time)" (button, onClick)
+- 346 `button` "(aria-label built at run time)" (button, onClick)
+- 354 `button` "Show all …" (button, onClick)
+- 410 `button` "(aria-label built at run time)" (button, onClick)
+- 430 `button` "See all" (button, onClick)
+- 455 `button` "(label built at run time)" (button, onClick)
 
 ### `src/clubhouse/screens/messages/details/Details.tsx`
 
@@ -844,14 +844,14 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/messages/details/group-modals.tsx`
 
-- 27 `Button` "Stay" (button, onClick) CH-7502
-- 30 `Button` "(label built at run time)" (button, onClick) CH-7502
-- 65 `Button` "Keep conversation" (button, onClick) CH-7503
-- 68 `Button` "(label built at run time)" (button, onClick) CH-7503
-- 109 `Button` "(label built at run time)" (button, onClick) CH-7504
-- 112 `Button` "(label built at run time)" (button, onClick) CH-7504
-- 168 `Button` "Done" (button, onClick)
-- 201 `button` "(aria-label built at run time)" (button, onClick)
+- 28 `Button` "Stay" (button, onClick) CH-7502
+- 31 `Button` "(label built at run time)" (button, onClick) CH-7502
+- 66 `Button` "Keep conversation" (button, onClick) CH-7503
+- 69 `Button` "(label built at run time)" (button, onClick) CH-7503
+- 110 `Button` "(label built at run time)" (button, onClick) CH-7504
+- 113 `Button` "(label built at run time)" (button, onClick) CH-7504
+- 173 `Button` "Done" (button, onClick)
+- 206 `button` "(aria-label built at run time)" (button, onClick)
 
 ### `src/clubhouse/screens/messages/hold-lift.tsx`
 
@@ -883,7 +883,7 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/messages/message-hits.tsx`
 
-- 78 `button` "(label built at run time)" (button, onClick)
+- 82 `button` "(label built at run time)" (button, onClick)
 
 ### `src/clubhouse/screens/messages/overlays/GlassMenu.tsx`
 
@@ -896,10 +896,10 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/messages/overlays/bubble-actions.tsx`
 
-- 94 `button` "(aria-label built at run time)" (button, onClick)
-- 143 `button` "(label built at run time)" (button, onClick)
-- 455 `button` "(aria-label built at run time)" (button, onClick, role=menuitem)
-- 511 `button` "(label built at run time)" (button, onClick, role=menuitem)
+- 95 `button` "(aria-label built at run time)" (button, onClick)
+- 144 `button` "(label built at run time)" (button, onClick)
+- 457 `button` "(aria-label built at run time)" (button, onClick, role=menuitem)
+- 513 `button` "(label built at run time)" (button, onClick, role=menuitem)
 
 ### `src/clubhouse/screens/messages/overlays/message-modals.tsx`
 
@@ -970,12 +970,12 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/messages/thread/Composer.tsx`
 
-- 343 `IconButton` "Cancel edit" (button, onClick)
-- 350 `IconButton` "Cancel reply" (button, onClick)
-- 355 `button` "(aria-label built at run time)" (button, onClick)
-- 364 `div` "(label built at run time)" (onClick)
-- 421 `Button` "Keep my draft" (button, onClick)
-- 424 `Button` "Replace" (button, onClick)
+- 344 `IconButton` "Cancel edit" (button, onClick)
+- 351 `IconButton` "Cancel reply" (button, onClick)
+- 356 `button` "(aria-label built at run time)" (button, onClick)
+- 365 `div` "(label built at run time)" (onClick)
+- 422 `Button` "Keep my draft" (button, onClick)
+- 425 `Button` "Replace" (button, onClick)
 
 ### `src/clubhouse/screens/messages/thread/MessageText.tsx`
 
@@ -984,17 +984,17 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/messages/thread/PhoneThread.tsx`
 
-- 142 `button` "(aria-label built at run time)" (button, onClick)
-- 153 `PhoneIconAction` "Details" (onClick)
-- 225 `SheetRow` "Reply" (onClick)
-- 227 `SheetRow` "(no label)" (onClick)
-- 228 `SheetRow` "Edit" (onClick)
-- 231 `SheetRow` "Delete" (onClick)
-- 249 `button` "(aria-label built at run time)" (button, onClick) CH-7604
-- 268 `SheetRow` "Reply" (onClick) CH-7604
-- 271 `SheetRow` "(no label)" (onClick) CH-7604
-- 274 `SheetRow` "Edit" (onClick) CH-7604
-- 277 `SheetRow` "Delete" (onClick) CH-7604
+- 144 `button` "(aria-label built at run time)" (button, onClick)
+- 155 `PhoneIconAction` "Details" (onClick)
+- 227 `SheetRow` "Reply" (onClick)
+- 229 `SheetRow` "(no label)" (onClick)
+- 230 `SheetRow` "Edit" (onClick)
+- 233 `SheetRow` "Delete" (onClick)
+- 251 `button` "(aria-label built at run time)" (button, onClick) CH-7604
+- 270 `SheetRow` "Reply" (onClick) CH-7604
+- 273 `SheetRow` "(no label)" (onClick) CH-7604
+- 276 `SheetRow` "Edit" (onClick) CH-7604
+- 279 `SheetRow` "Delete" (onClick) CH-7604
 
 ### `src/clubhouse/screens/messages/thread/Thread.tsx`
 
@@ -1080,12 +1080,12 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/settings/course-location.tsx`
 
-- 198 `Button` "Clear" (button, onClick) CH-8320
-- 202 `Button` "Save" (button, onClick) CH-8320
-- 213 `Button` "(label built at run time)" (button, onClick) CH-8320
-- 258 `button` "(label built at run time)" (button, onClick) CH-8320
-- 272 `button` "(label built at run time)" (button, onClick) CH-8320
-- 277 `button` "(label built at run time)" (button, onClick) CH-8320
+- 199 `Button` "Clear" (button, onClick) CH-8320
+- 203 `Button` "Save" (button, onClick) CH-8320
+- 214 `Button` "(label built at run time)" (button, onClick) CH-8320
+- 259 `button` "(label built at run time)" (button, onClick) CH-8320
+- 273 `button` "(label built at run time)" (button, onClick) CH-8320
+- 278 `button` "(label built at run time)" (button, onClick) CH-8320
 
 ### `src/clubhouse/screens/settings/parts.tsx`
 
@@ -1218,16 +1218,16 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/qualifiers/QualifierForm.tsx`
 
-- 290 `PhoneTextAction` "(label built at run time)" (onClick)
-- 306 `BackLink` "(label built at run time)" (link, href)
-- 338 `Button` "Invite players" (button, href) CH-09305
-- 504 `Button` "(label built at run time)" (button, onClick) CH-09216
-- 600 `Button` "Cancel" (button, onClick) CH-09216
-- 603 `Button` "(label built at run time)" (button) CH-09216
-- 622 `Button` "Keep editing" (button, onClick) CH-09502
-- 625 `Button` "Discard" (button, onClick) CH-09502
-- 671 `Button` " …" (button, onClick)
-- 676 `Button` "Clear " (button, onClick)
+- 303 `PhoneTextAction` "(label built at run time)" (onClick)
+- 319 `BackLink` "(label built at run time)" (link, href)
+- 351 `Button` "Invite players" (button, href) CH-09305
+- 517 `Button` "(label built at run time)" (button, onClick) CH-09216
+- 613 `Button` "Cancel" (button, onClick) CH-09216
+- 616 `Button` "(label built at run time)" (button) CH-09216
+- 635 `Button` "Keep editing" (button, onClick) CH-09502
+- 638 `Button` "Discard" (button, onClick) CH-09502
+- 684 `Button` " …" (button, onClick)
+- 689 `Button` "Clear " (button, onClick)
 
 ### `src/clubhouse/screens/qualifiers/QualifierSections.tsx`
 
@@ -1279,10 +1279,10 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/hub/TeamHub.tsx`
 
-- 606 `PhoneIconAction` "(no label)" (onClick)
-- 616 `Button` "(label built at run time)" (button, onClick)
-- 635 `button` "(label built at run time)" (button, onClick, role=tab)
-- 674 `Button` "Plan a trip" (button, onClick)
+- 613 `PhoneIconAction` "(no label)" (onClick)
+- 623 `Button` "(label built at run time)" (button, onClick)
+- 642 `button` "(label built at run time)" (button, onClick, role=tab)
+- 681 `Button` "Plan a trip" (button, onClick)
 
 ### `src/clubhouse/screens/hub/TravelerClasses.tsx`
 
@@ -1294,25 +1294,25 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/hub/parts.tsx`
 
-- 74 `button` "(label built at run time)" (button, onClick)
-- 96 `Button` "Got it" (button, onClick)
-- 157 `button` "(label built at run time)" (button, onClick)
-- 186 `button` "(aria-label built at run time)" (button)
-- 197 `button` "(label built at run time)" (button, onClick)
-- 266 `button` "(label built at run time)" (button, onClick)
-- 279 `button` "Try again" (button, onClick)
-- 289 `button` "(aria-label built at run time)" (button, onClick)
-- 374 `button` "(aria-label built at run time)" (button)
-- 483 `Link` "(label built at run time)" (link, onClick, href)
-- 557 `Button` "Assign" (button, onClick)
-- 574 `button` "Done ( ) …" (button, onClick)
-- 645 `PresenceRow` "(label built at run time)" (onPointerDown)
-- 657 `button` "(aria-label built at run time)" (button, onClick)
-- 679 `button` "(aria-label built at run time)" (button)
-- 739 `button` "(label built at run time)" (button, onClick)
-- 792 `button` "(aria-label built at run time)" (button, onClick)
-- 810 `button` "(aria-label built at run time)" (button)
-- 830 `button` "(label built at run time)" (button, onClick)
+- 75 `button` "(label built at run time)" (button, onClick)
+- 97 `Button` "Got it" (button, onClick)
+- 158 `button` "(label built at run time)" (button, onClick)
+- 187 `button` "(aria-label built at run time)" (button)
+- 198 `button` "(label built at run time)" (button, onClick)
+- 271 `button` "(label built at run time)" (button, onClick)
+- 284 `button` "Try again" (button, onClick)
+- 294 `button` "(aria-label built at run time)" (button, onClick)
+- 379 `button` "(aria-label built at run time)" (button)
+- 488 `Link` "(label built at run time)" (link, onClick, href)
+- 562 `Button` "Assign" (button, onClick)
+- 579 `button` "Done ( ) …" (button, onClick)
+- 650 `PresenceRow` "(label built at run time)" (onPointerDown)
+- 662 `button` "(aria-label built at run time)" (button, onClick)
+- 684 `button` "(aria-label built at run time)" (button)
+- 744 `button` "(label built at run time)" (button, onClick)
+- 797 `button` "(aria-label built at run time)" (button, onClick)
+- 815 `button` "(aria-label built at run time)" (button)
+- 835 `button` "(label built at run time)" (button, onClick)
 
 ### `src/clubhouse/screens/hub/sheets.tsx`
 
@@ -1500,10 +1500,10 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/rounds/card/RoundCard.tsx`
 
-- 281 `Button` "Cancel" (button, onClick) CH-11921
-- 284 `Button` "(label built at run time)" (button, onClick) CH-11921
-- 367 `Button` "Share card" (button, onClick) CH-11920
-- 371 `Button` "Print" (button, onClick) CH-11920
+- 283 `Button` "Cancel" (button, onClick) CH-11921
+- 286 `Button` "(label built at run time)" (button, onClick) CH-11921
+- 369 `Button` "Share card" (button, onClick) CH-11920
+- 373 `Button` "Print" (button, onClick) CH-11920
 
 ### `src/clubhouse/screens/rounds/entry/CourseNudge.tsx`
 
@@ -1533,7 +1533,7 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/rounds/entry/RoundRuntime.tsx`
 
-- 287 `Button` "Review and post" (button, onClick) CH-11910
+- 298 `Button` "Review and post" (button, onClick) CH-11910
 
 ### `src/clubhouse/screens/rounds/entry/RoundTypeSheet.tsx`
 
@@ -1749,18 +1749,18 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/classes/ImportSchedule.tsx`
 
-- 236 `Button` "View classes" (button, onClick)
-- 241 `Button` "Start over" (button, onClick)
-- 244 `Button` "(label built at run time)" (button, onClick)
-- 282 `Button` "Try again" (button, onClick)
-- 286 `Button` "Choose another file" (button, onClick)
-- 296 `Button` "(label built at run time)" (button, onClick)
-- 362 `button` "(aria-label built at run time)" (button, onClick)
-- 390 `button` "(label built at run time)" (button, onClick)
-- 452 `Button` "Read schedule" (button, onClick)
-- 480 `Button` "Keep reviewing" (button, onClick) CH-12504
-- 484 `Button` "Start over" (button, onClick) CH-12504
-- 559 `button` "(aria-label built at run time)" (button, onClick)
+- 239 `Button` "View classes" (button, onClick)
+- 244 `Button` "Start over" (button, onClick)
+- 247 `Button` "(label built at run time)" (button, onClick)
+- 285 `Button` "Try again" (button, onClick)
+- 289 `Button` "Choose another file" (button, onClick)
+- 299 `Button` "(label built at run time)" (button, onClick)
+- 365 `button` "(aria-label built at run time)" (button, onClick)
+- 393 `button` "(label built at run time)" (button, onClick)
+- 455 `Button` "Read schedule" (button, onClick)
+- 483 `Button` "Keep reviewing" (button, onClick) CH-12504
+- 487 `Button` "Start over" (button, onClick) CH-12504
+- 562 `button` "(aria-label built at run time)" (button, onClick)
 
 ### `src/clubhouse/screens/classes/InClassSheet.tsx`
 
@@ -1807,11 +1807,11 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/coachhelm/Corrections.tsx`
 
-- 111 `button` "Change your answer on this read" (button, onClick) CH-13971
-- 134 `button` "(aria-label built at run time)" (button, onClick)
-- 154 `button` "(aria-label built at run time)" (button, onClick)
-- 158 `button` "Not this, with no reason" (button, onClick)
-- 168 `button` "Keep your answer on this read" (button, onClick)
+- 113 `button` "Change your answer on this read" (button, onClick) CH-13971
+- 136 `button` "(aria-label built at run time)" (button, onClick)
+- 156 `button` "(aria-label built at run time)" (button, onClick)
+- 160 `button` "Not this, with no reason" (button, onClick)
+- 170 `button` "Keep your answer on this read" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/EngineState.tsx`
 
@@ -1922,14 +1922,14 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/Allowance.tsx`
 
-- 51 `Button` "(label built at run time)" (button, onClick)
-- 137 `Button` "Cancel" (button, onClick)
-- 143 `Button` "Send request" (button, onClick)
-- 159 `button` "(label built at run time)" (button, onClick)
+- 52 `Button` "(label built at run time)" (button, onClick)
+- 144 `Button` "Cancel" (button, onClick)
+- 150 `Button` "Send request" (button, onClick)
+- 166 `button` "(label built at run time)" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/AnswerCard.tsx`
 
-- 256 `button` "Copy" (button, onClick)
+- 257 `button` "Copy" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/Artifact.tsx`
 
@@ -1952,16 +1952,16 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/ConfirmCard.tsx`
 
-- 193 `button` "(label built at run time)" (button, onClick)
-- 230 `Button` "Change" (button, onClick)
-- 311 `button` "See what this is based on" (button, onClick)
-- 319 `Button` "Cancel" (button, onClick)
-- 328 `Button` "(label built at run time)" (button, onClick)
-- 507 `button` "Save now and open" (button, onClick)
-- 514 `Button` "Undo" (button, onClick)
-- 537 `Button` "Ask again" (button, onClick)
-- 542 `Button` "Try again" (button, onClick)
-- 566 `a` "Open" (link, onClick, href)
+- 194 `button` "(label built at run time)" (button, onClick)
+- 231 `Button` "Change" (button, onClick)
+- 312 `button` "See what this is based on" (button, onClick)
+- 320 `Button` "Cancel" (button, onClick)
+- 329 `Button` "(label built at run time)" (button, onClick)
+- 522 `button` "Save now and open" (button, onClick)
+- 529 `Button` "Undo" (button, onClick)
+- 552 `Button` "Ask again" (button, onClick)
+- 557 `Button` "Try again" (button, onClick)
+- 581 `a` "Open" (link, onClick, href)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/FollowUps.tsx`
 
@@ -1969,7 +1969,7 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/HandoffCard.tsx`
 
-- 84 `Button` "Open in Messages" (button, onClick)
+- 88 `Button` "Open in Messages" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/KnowsPanel.tsx`
 
@@ -1988,15 +1988,15 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/SaveCard.tsx`
 
-- 117 `button` "(label built at run time)" (button, onClick)
-- 130 `button` "(label built at run time)" (button, onClick)
-- 183 `Button` "Create" (button)
-- 189 `button` "(label built at run time)" (button, onClick)
-- 205 `Button` "Cancel" (button, onClick)
-- 213 `Button` "(label built at run time)" (button, onClick)
-- 229 `a` "Open" (link, href)
-- 234 `button` "Undo, 8 seconds" (button, onClick)
-- 247 `Button` "Done" (button, onClick)
+- 127 `button` "(label built at run time)" (button, onClick)
+- 140 `button` "(label built at run time)" (button, onClick)
+- 193 `Button` "Create" (button)
+- 199 `button` "(label built at run time)" (button, onClick)
+- 215 `Button` "Cancel" (button, onClick)
+- 223 `Button` "(label built at run time)" (button, onClick)
+- 239 `a` "Open" (link, href)
+- 244 `button` "Undo, 8 seconds" (button, onClick)
+- 257 `Button` "Done" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/Sources.tsx`
 
@@ -2101,33 +2101,33 @@ says so. This supersedes the 2026-09-30 snapshot in
 ### `src/clubhouse/screens/coachhelm/plan/PlanCard.tsx`
 
 - 143 `button` "Send" (button, onClick)
-- 356 `button` "(aria-label built at run time)" (button, onClick)
-- 369 `button` "More for this plan" (button)
-- 377 `button` "Earlier version" (button, onClick)
-- 381 `button` "Later version" (button, onClick)
-- 400 `button` "Undo" (button, onClick)
-- 407 `Button` "Edit in builder" (button, onClick)
-- 412 `Button` "(label built at run time)" (button, onClick)
-- 416 `Button` "Publish…" (button, onClick)
-- 436 `Button` "Open" (button, onClick)
-- 489 `button` "(label built at run time)" (button, onClick)
-- 516 `button` "(label built at run time)" (button, onClick)
-- 533 `button` "(label built at run time)" (button, onClick)
-- 585 `button` "Open" (button, onClick)
-- 589 `button` "Undo" (button, onClick)
-- 600 `Button` "Publish…" (button, onClick)
-- 606 `button` "(label built at run time)" (button, onClick)
-- 616 `button` "(label built at run time)" (button, onClick)
-- 650 `Button` "Create" (button)
-- 656 `button` "(label built at run time)" (button, onClick)
-- 675 `Button` "(label built at run time)" (button, onClick)
-- 678 `Button` "Publish…" (button, onClick)
-- 702 `button` "(label built at run time)" (button, onClick)
-- 719 `button` "Shorter" (button, onClick)
-- 731 `button` "Longer" (button, onClick)
-- 761 `button` "› …" (button, onClick)
-- 774 `button` "› …" (button, onClick)
-- 815 `Button` "Use" (button, onClick)
+- 357 `button` "(aria-label built at run time)" (button, onClick)
+- 370 `button` "More for this plan" (button)
+- 378 `button` "Earlier version" (button, onClick)
+- 382 `button` "Later version" (button, onClick)
+- 401 `button` "Undo" (button, onClick)
+- 408 `Button` "Edit in builder" (button, onClick)
+- 413 `Button` "(label built at run time)" (button, onClick)
+- 417 `Button` "Publish…" (button, onClick)
+- 437 `Button` "Open" (button, onClick)
+- 490 `button` "(label built at run time)" (button, onClick)
+- 517 `button` "(label built at run time)" (button, onClick)
+- 534 `button` "(label built at run time)" (button, onClick)
+- 586 `button` "Open" (button, onClick)
+- 590 `button` "Undo" (button, onClick)
+- 601 `Button` "Publish…" (button, onClick)
+- 607 `button` "(label built at run time)" (button, onClick)
+- 617 `button` "(label built at run time)" (button, onClick)
+- 651 `Button` "Create" (button)
+- 657 `button` "(label built at run time)" (button, onClick)
+- 676 `Button` "(label built at run time)" (button, onClick)
+- 679 `Button` "Publish…" (button, onClick)
+- 703 `button` "(label built at run time)" (button, onClick)
+- 720 `button` "Shorter" (button, onClick)
+- 732 `button` "Longer" (button, onClick)
+- 762 `button` "› …" (button, onClick)
+- 775 `button` "› …" (button, onClick)
+- 816 `Button` "Use" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/plan/PlanIntake.tsx`
 
@@ -2148,15 +2148,15 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/coachhelm/plan/format/PlanFormat.tsx`
 
-- 163 `BackLink` "Practice" (link, href)
-- 214 `Button` "Try another" (button, onClick)
-- 217 `Button` "Use this format" (button, onClick)
-- 237 `a` "(label built at run time)" (link, href)
-- 242 `button` "Undo …" (button, onClick)
-- 280 `Button` "Upload a plan" (button, onClick)
-- 314 `button` "Choose file …" (button, onClick)
-- 318 `button` "Photo library …" (button, onClick)
-- 322 `button` "Take a photo …" (button, onClick)
+- 171 `BackLink` "Practice" (link, href)
+- 222 `Button` "Try another" (button, onClick)
+- 225 `Button` "Use this format" (button, onClick)
+- 245 `a` "(label built at run time)" (link, href)
+- 250 `button` "Undo …" (button, onClick)
+- 291 `Button` "Upload a plan" (button, onClick)
+- 325 `button` "Choose file …" (button, onClick)
+- 329 `button` "Photo library …" (button, onClick)
+- 333 `button` "Take a photo …" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/plan/player/PlayerPractice.tsx`
 
@@ -2174,14 +2174,14 @@ says so. This supersedes the 2026-09-30 snapshot in
 ### `src/clubhouse/screens/coachhelm/read/actions.tsx`
 
 - 136 `Button` "Message …" (button, href)
-- 227 `Button` "Undo" (button, onClick) CH-13901
-- 239 `Button` "Message …" (button, href) CH-13601
-- 244 `Button` "Remove focus" (button, onClick) CH-13601
-- 253 `Button` "Dismiss" (button, onClick)
-- 285 `Button` "Re-check now" (button, onClick)
-- 289 `Button` "(label built at run time)" (button, onClick)
-- 335 `Button` "Ask about this" (button, href)
-- 340 `Button` "Message …" (button, href)
+- 230 `Button` "Undo" (button, onClick) CH-13901
+- 242 `Button` "Message …" (button, href) CH-13601
+- 247 `Button` "Remove focus" (button, onClick) CH-13601
+- 256 `Button` "Dismiss" (button, onClick)
+- 288 `Button` "Re-check now" (button, onClick)
+- 292 `Button` "(label built at run time)" (button, onClick)
+- 338 `Button` "Ask about this" (button, href)
+- 343 `Button` "Message …" (button, href)
 
 ### `src/clubhouse/screens/coachhelm/read/parts.tsx`
 
@@ -2311,16 +2311,16 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/recruiting/Documents.tsx`
 
-- 257 `button` "Upload …" (button, onClick)
-- 284 `button` "(label built at run time)" (button, onClick)
-- 289 `button` "(aria-label built at run time)" (button, onClick)
-- 335 `Button` "Keep it" (button, onClick) CH-14502
-- 338 `Button` "(label built at run time)" (button, onClick) CH-14502
-- 388 `Button` "Cancel" (button, onClick)
-- 391 `Button` "Choose another file" (button, onClick)
-- 397 `Button` "Cancel" (button, onClick)
-- 400 `Button` "(label built at run time)" (button, onClick)
-- 438 `button` "(no label)" (button)
+- 259 `button` "Upload …" (button, onClick)
+- 286 `button` "(label built at run time)" (button, onClick)
+- 291 `button` "(aria-label built at run time)" (button, onClick)
+- 337 `Button` "Keep it" (button, onClick) CH-14502
+- 340 `Button` "(label built at run time)" (button, onClick) CH-14502
+- 390 `Button` "Cancel" (button, onClick)
+- 393 `Button` "Choose another file" (button, onClick)
+- 399 `Button` "Cancel" (button, onClick)
+- 402 `Button` "(label built at run time)" (button, onClick)
+- 440 `button` "(no label)" (button)
 
 ### `src/clubhouse/screens/recruiting/Pipeline.tsx`
 
@@ -2375,9 +2375,9 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/auth/CoachPending.tsx`
 
-- 80 `Link` "Sign up with your team code" (link, href)
-- 124 `GateKey` "(no label)" (onClick) CH-15961
-- 126 `button` "(label built at run time)" (button, onClick) CH-15960
+- 82 `Link` "Sign up with your team code" (link, href)
+- 126 `GateKey` "(no label)" (onClick) CH-15961
+- 128 `button` "(label built at run time)" (button, onClick) CH-15960
 
 ### `src/clubhouse/screens/auth/DemoEntry.tsx`
 
@@ -2403,12 +2403,12 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/auth/JoinTeam.tsx`
 
-- 108 `button` "Not you?" (button, onClick) CH-15938
-- 127 `GateKey` "(no label)" (onClick) CH-15432
-- 129 `Link` "Not now" (link, href) CH-15934
-- 151 `GateKey` "(no label)" (onClick)
-- 166 `GateKey` "(no label)" (onClick) CH-15935
-- 168 `Link` "Go to dashboard" (link, href) CH-15935
+- 110 `button` "Not you?" (button, onClick) CH-15938
+- 129 `GateKey` "(no label)" (onClick) CH-15432
+- 131 `Link` "Not now" (link, href) CH-15934
+- 153 `GateKey` "(no label)" (onClick)
+- 168 `GateKey` "(no label)" (onClick) CH-15935
+- 170 `Link` "Go to dashboard" (link, href) CH-15935
 
 ### `src/clubhouse/screens/auth/ResetPassword.tsx`
 
@@ -2437,14 +2437,14 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/auth/StaffInvite.tsx`
 
-- 142 `Button` "Go to sign in" (button, href) CH-15940
-- 232 `button` "Not you?" (button, onClick) CH-15943
-- 248 `Button` "Switch account" (button, onClick) CH-15941
-- 251 `Button` "Accept invitation" (button) CH-15941
-- 256 `GateKey` "(no label)" (onClick) CH-15433
-- 343 `Button` "Go to sign in" (button, href) CH-15945
-- 355 `Link` "Sign in" (link, href) CH-15945
-- 376 `GateKey` "(no label)" (onClick) CH-15946
+- 143 `Button` "Go to sign in" (button, href) CH-15940
+- 234 `button` "Not you?" (button, onClick) CH-15943
+- 250 `Button` "Switch account" (button, onClick) CH-15941
+- 253 `Button` "Accept invitation" (button) CH-15941
+- 258 `GateKey` "(no label)" (onClick) CH-15433
+- 346 `Button` "Go to sign in" (button, href) CH-15945
+- 358 `Link` "Sign in" (link, href) CH-15945
+- 379 `GateKey` "(no label)" (onClick) CH-15946
 
 ### `src/clubhouse/screens/auth/Welcome.tsx`
 
@@ -2572,16 +2572,16 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/tournaments/ImportResults.tsx`
 
-- 314 `Button` "Done" (button, onClick)
-- 319 `Button` "Start over" (button, onClick)
-- 322 `Button` "(label built at run time)" (button, onClick)
-- 348 `Button` "Choose another file" (button, onClick) CH-16180
-- 357 `Button` "Paste instead" (button, onClick) CH-16180
-- 413 `button` "(label built at run time)" (button, onClick)
-- 471 `Button` "Read results" (button, onClick)
-- 489 `Button` "Keep checking" (button, onClick) CH-16580
-- 493 `Button` "Start over" (button, onClick) CH-16580
-- 563 `Button` "Columns" (button, onClick)
+- 317 `Button` "Done" (button, onClick)
+- 322 `Button` "Start over" (button, onClick)
+- 325 `Button` "(label built at run time)" (button, onClick)
+- 351 `Button` "Choose another file" (button, onClick) CH-16180
+- 360 `Button` "Paste instead" (button, onClick) CH-16180
+- 416 `button` "(label built at run time)" (button, onClick)
+- 474 `Button` "Read results" (button, onClick)
+- 492 `Button` "Keep checking" (button, onClick) CH-16580
+- 496 `Button` "Start over" (button, onClick) CH-16580
+- 566 `Button` "Columns" (button, onClick)
 
 ### `src/clubhouse/screens/tournaments/LineupBuilder.tsx`
 
@@ -2725,52 +2725,52 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/practice/CoachPlanBar.tsx`
 
-- 76 `Button` "Seen by of …" (button, onClick)
-- 84 `Button` "Edit" (button, href)
-- 89 `Button` "Print" (button, href)
-- 97 `Button` "Share" (button)
-- 138 `Button` "Keep it up" (button, onClick)
-- 141 `Button` "Take down" (button, onClick)
+- 84 `Button` "Seen by of …" (button, onClick)
+- 92 `Button` "Edit" (button, href)
+- 97 `Button` "Print" (button, href)
+- 105 `Button` "Share" (button)
+- 146 `Button` "Keep it up" (button, onClick)
+- 149 `Button` "Take down" (button, onClick)
 
 ### `src/clubhouse/screens/practice/LibraryPages.tsx`
 
-- 44 `PhoneIconAction` "(no label)" (onClick)
-- 49 `Button` "(label built at run time)" (button, onClick)
-- 64 `Link` "(label built at run time)" (link, href)
-- 99 `button` "All" (button, onClick)
-- 103 `button` "(label built at run time)" (button, onClick)
-- 115 `Button` "New drill" (button, onClick)
-- 125 `DrillRowLink` "(no label)" (link) CH-13204
-- 131 `DrillRowLink` "(no label)" (link) CH-13204
-- 203 `Button` "Archive" (button, onClick)
-- 204 `Button` "Edit" (button, onClick)
-- 209 `Button` "Copy to your bank" (button, onClick)
-- 300 `Button` "Keep" (button, onClick)
-- 303 `Button` "Archive" (button, onClick)
-- 376 `Button` "New group" (button, onClick)
-- 386 `button` "(label built at run time)" (button, onClick) CH-13204
-- 418 `input` "(no label)" (type=checkbox)
-- 429 `Button` "Delete group" (button, onClick)
-- 443 `Button` "Keep" (button, onClick)
-- 446 `Button` "Delete" (button, onClick)
-- 520 `button` "(label built at run time)" (button, onClick) CH-13204
-- 526 `IconButton` "(no label)" (button) CH-13204
+- 45 `PhoneIconAction` "(no label)" (onClick)
+- 50 `Button` "(label built at run time)" (button, onClick)
+- 65 `Link` "(label built at run time)" (link, href)
+- 100 `button` "All" (button, onClick)
+- 104 `button` "(label built at run time)" (button, onClick)
+- 116 `Button` "New drill" (button, onClick)
+- 126 `DrillRowLink` "(no label)" (link) CH-13204
+- 132 `DrillRowLink` "(no label)" (link) CH-13204
+- 213 `Button` "Archive" (button, onClick)
+- 214 `Button` "Edit" (button, onClick)
+- 219 `Button` "Copy to your bank" (button, onClick)
+- 310 `Button` "Keep" (button, onClick)
+- 313 `Button` "Archive" (button, onClick)
+- 392 `Button` "New group" (button, onClick)
+- 402 `button` "(label built at run time)" (button, onClick) CH-13204
+- 434 `input` "(no label)" (type=checkbox)
+- 445 `Button` "Delete group" (button, onClick)
+- 459 `Button` "Keep" (button, onClick)
+- 462 `Button` "Delete" (button, onClick)
 - 545 `button` "(label built at run time)" (button, onClick) CH-13204
-- 553 `IconButton` "(no label)" (button) CH-13204
-- 591 `Button` "Keep" (button, onClick)
-- 594 `Button` "Delete" (button, onClick)
+- 551 `IconButton` "(no label)" (button) CH-13204
+- 570 `button` "(label built at run time)" (button, onClick) CH-13204
+- 578 `IconButton` "(no label)" (button) CH-13204
+- 616 `Button` "Keep" (button, onClick)
+- 619 `Button` "Delete" (button, onClick)
 
 ### `src/clubhouse/screens/practice/NewPlanSheet.tsx`
 
-- 34 `button` "(label built at run time)" (button, onClick)
-- 220 `button` "(label built at run time)" (button, onClick) CH-13395
+- 35 `button` "(label built at run time)" (button, onClick)
+- 222 `button` "(label built at run time)" (button, onClick) CH-13395
 
 ### `src/clubhouse/screens/practice/PlanRun.tsx`
 
-- 146 `Button` "5 min earlier" (button, onClick)
-- 149 `Button` "5 min later" (button, onClick)
-- 180 `Button` "Cancel" (button, onClick)
-- 183 `Button` "Move" (button, onClick)
+- 153 `Button` "5 min earlier" (button, onClick)
+- 156 `Button` "5 min later" (button, onClick)
+- 187 `Button` "Cancel" (button, onClick)
+- 190 `Button` "Move" (button, onClick)
 
 ### `src/clubhouse/screens/practice/PlayerPracticeHome.tsx`
 
@@ -2808,50 +2808,50 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/screens/practice/builder/Builder.tsx`
 
-- 338 `button` "Try again" (button, onClick)
-- 348 `Button` "Load latest" (button, onClick) CH-13580
-- 374 `Button` "Change" (button, onClick)
-- 392 `button` "Add block …" (button)
-- 416 `Button` "Send" (button)
-- 421 `button` "Or tell it what you want" (button, onClick)
-- 431 `Button` "(label built at run time)" (button, onClick)
-- 450 `Button` "Remove all" (button, onClick)
-- 455 `Button` "Keep all" (button, onClick)
-- 460 `Button` "Undo" (button, onClick)
-- 465 `Button` "Go to Groups" (button, onClick)
-- 494 `Button` "Keep" (button, onClick)
-- 498 `Button` "Swap" (button, onClick)
-- 502 `Button` "Remove" (button, onClick)
-- 531 `button` "(aria-label built at run time)" (button)
-- 560 `button` "(label built at run time)" (button, onClick)
-- 617 `Button` "Split evenly" (button, onClick)
-- 618 `Button` "Add group" (button, onClick)
-- 628 `button` "(aria-label built at run time)" (button, onClick)
-- 675 `button` "(label built at run time)" (button)
-- 705 `Button` "Clear" (button, onClick)
-- 709 `Button` "(label built at run time)" (button, onClick)
-- 734 `button` "(label built at run time)" (button, onClick)
-- 753 `Button` "Print" (button, onClick)
-- 755 `Button` "Delete draft" (button, onClick)
-- 761 `Button` "(label built at run time)" (button, onClick)
-- 813 `Button` "Not yet" (button, onClick) CH-13081
-- 816 `Button` "(label built at run time)" (button, onClick) CH-13081
-- 890 `Button` "Cancel" (button, onClick)
-- 893 `Button` "Move practice" (button, onClick)
-- 924 `button` "(label built at run time)" (button, onClick) CH-13895
-- 941 `PhoneIconAction` "Print" (onClick)
-- 960 `BackLink` "Practice" (link, onClick)
-- 971 `Button` "Preview" (button, onClick)
-- 972 `Button` "(label built at run time)" (button, onClick)
+- 344 `button` "Try again" (button, onClick)
+- 354 `Button` "Load latest" (button, onClick) CH-13580
+- 380 `Button` "Change" (button, onClick)
+- 398 `button` "Add block …" (button)
+- 422 `Button` "Send" (button)
+- 427 `button` "Or tell it what you want" (button, onClick)
+- 437 `Button` "(label built at run time)" (button, onClick)
+- 456 `Button` "Remove all" (button, onClick)
+- 461 `Button` "Keep all" (button, onClick)
+- 466 `Button` "Undo" (button, onClick)
+- 471 `Button` "Go to Groups" (button, onClick)
+- 500 `Button` "Keep" (button, onClick)
+- 504 `Button` "Swap" (button, onClick)
+- 508 `Button` "Remove" (button, onClick)
+- 537 `button` "(aria-label built at run time)" (button)
+- 566 `button` "(label built at run time)" (button, onClick)
+- 623 `Button` "Split evenly" (button, onClick)
+- 624 `Button` "Add group" (button, onClick)
+- 634 `button` "(aria-label built at run time)" (button, onClick)
+- 681 `button` "(label built at run time)" (button)
+- 711 `Button` "Clear" (button, onClick)
+- 715 `Button` "(label built at run time)" (button, onClick)
+- 740 `button` "(label built at run time)" (button, onClick)
+- 759 `Button` "Print" (button, onClick)
+- 761 `Button` "Delete draft" (button, onClick)
+- 767 `Button` "(label built at run time)" (button, onClick)
+- 819 `Button` "Not yet" (button, onClick) CH-13081
+- 822 `Button` "(label built at run time)" (button, onClick) CH-13081
+- 896 `Button` "Cancel" (button, onClick)
+- 899 `Button` "Move practice" (button, onClick)
+- 930 `button` "(label built at run time)" (button, onClick) CH-13895
+- 947 `PhoneIconAction` "Print" (onClick)
+- 966 `BackLink` "Practice" (link, onClick)
+- 977 `Button` "Preview" (button, onClick)
+- 978 `Button` "(label built at run time)" (button, onClick)
 
 ### `src/clubhouse/screens/practice/builder/Sheets.tsx`
 
-- 30 `button` "(aria-label built at run time)" (button, onClick)
-- 44 `button` "(aria-label built at run time)" (button, onClick)
-- 128 `Button` "Delete block" (button, onClick)
-- 183 `button` "(aria-label built at run time)" (button, onClick)
-- 198 `button` "(label built at run time)" (button, onClick)
-- 208 `button` "New drill …" (button, onClick)
+- 31 `button` "(aria-label built at run time)" (button, onClick)
+- 45 `button` "(aria-label built at run time)" (button, onClick)
+- 129 `Button` "Delete block" (button, onClick)
+- 184 `button` "(aria-label built at run time)" (button, onClick)
+- 199 `button` "(label built at run time)" (button, onClick)
+- 209 `button` "New drill …" (button, onClick)
 
 ## Shared (no page manifest claims these files)
 
