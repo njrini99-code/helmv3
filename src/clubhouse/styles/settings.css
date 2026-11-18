@@ -1650,6 +1650,14 @@
     font-weight: 600;
     color: var(--ch-champagne-300);
   }
+  /* L-038: New code stops the code players hold, so it is not Copy code's twin: quieter ink and set apart at the far edge,
+     where a thumb going for Copy code does not land on it. The sheet behind it still says the old code stops working. */
+  .ch-setm-link.is-on-green.is-quiet {
+    margin-left: auto;
+    font-weight: 500;
+    color: var(--ch-on-green-ink);
+    opacity: 0.78;
+  }
   .ch-setm-pill:focus-visible,
   .ch-setm-link:focus-visible {
     outline: 2px solid var(--ch-border-focus);

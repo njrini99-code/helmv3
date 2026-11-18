@@ -881,7 +881,9 @@
   --ch-primary-bg: var(--ch-field-green);
   --ch-primary-bg-hover: #124b2e;
   --ch-primary-bg-press: #08301e;
-  --ch-primary-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(12 65 40 / 0.22);
+  /* L-093: the primary's drop matches the secondary's cast (--ch-btn-secondary-shadow), so two raised keys side by side share one
+     edge recipe; only the 1px ring follows each face's own colour. */
+  --ch-primary-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), var(--ch-elevation-cast);
   --ch-primary-shadow-press: 0 0 0 1px #0e462c, inset 0 1px 3px rgb(0 0 0 / 0.25);
   --ch-btn-secondary-bg: var(--ch-bg-elevated);
   --ch-btn-secondary-bg-hover: var(--ch-bg-surface);

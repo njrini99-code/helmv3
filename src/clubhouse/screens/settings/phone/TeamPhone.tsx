@@ -111,7 +111,7 @@ function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettin
           <button type="button" className="ch-setm-link is-on-green" onClick={() => void copy('code')}>
             {copied === 'code' ? 'Copied' : 'Copy code'}
           </button>
-          <button type="button" className="ch-setm-link is-on-green" disabled={regen.pending} onClick={() => setAsking(true)}>
+          <button type="button" className="ch-setm-link is-on-green is-quiet" disabled={regen.pending} onClick={() => setAsking(true)}>
             {regen.pending ? 'Making…' : 'New code'}
           </button>
         </span>

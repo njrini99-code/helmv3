@@ -944,6 +944,14 @@ path.ch-rt-map__shot {
   color: var(--ch-on-fill-100);
   box-shadow: none;
 }
+/* L-084: on the desk card the prompt's choices drew ivory on ivory and read as text beside the "Shot result" keys; they take
+   the phone's raised key face at every width, so "Clear shot" and "Recovery / layup" look pressable before and picked after. The :where keeps this
+   under the picked rule above, so a picked chip keeps its green. */
+.ch-rt-ask :where(.ch-rt-tags) button {
+  background: var(--ch-raised-bg);
+  color: var(--ch-ink-900);
+  box-shadow: var(--ch-key-raised-shadow), 0 0 0 1px var(--ch-border-subtle);
+}
 
 /* The result's place (owner, 2026-11-11: nothing moves under the thumb). It holds two faces: the results to pick from,
    and what a picked result asks next, with the pick folded into that question's heading ("Rough · Change"). On the desk

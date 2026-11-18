@@ -1272,11 +1272,6 @@ a.ch-rs-peek__dev:focus-visible,
     font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
   }
-  /* L-047: the sort pill sits in the soft recess, not the deep well. */
-  .ch-rsm-sort .ch-seg.ch-well {
-    background: var(--ch-well-soft-bg);
-    box-shadow: var(--ch-well-soft-shadow);
-  }
   /* Drawn at 26px; the hit area reaches 44. */
   .ch-rsm-sort .ch-seg__b::after {
     content: '';
