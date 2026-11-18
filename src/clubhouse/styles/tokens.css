@@ -458,9 +458,11 @@
   --ch-page-top-eyebrow-low-2: calc(var(--ch-page-head-top) - 2px); /* Stats' eyebrow sits 2px lower */
   /* The redesigned desks (coach Home, Roster, Classes) open on a plain head with no 12px padding of its own: the top adds it. */
   --ch-page-top-crh: calc(var(--ch-page-head-top) + 12px);
-  /* Player Home is the owner's 28 Oct version, held as built: the top it was built on (the old 34px head top and its date
-     line's 4px), so it does not move with the frame. Whether it joins the frame is the owner's call. */
-  --ch-page-top-home-player: 38px;
+  /* Home (player and coach) on the frame (owner, 16 Nov 2026: "Top bar is smooshed on player dash"): its head is the tight
+     head every other page has, and its date line's 18px and 4px put the greeting's top on every page title's line. It was
+     38px with the full head's double rule above, which stood 38px under the bar with nothing in between and set the
+     greeting 44px lower than every other title. */
+  --ch-page-top-home-player: calc(var(--ch-page-head-top) + 2px);
   --ch-page-top-coachhelm: 36px;
   /* A detail page on a desk (one that opens with its way back: a qualifier and its forms, a round, an event's pages, a
      coach's view of a player's stats, a practice plan): one line for every title, the qualifier's (owner, 11 Nov 2026).
