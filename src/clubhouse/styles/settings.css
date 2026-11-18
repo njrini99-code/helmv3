@@ -1603,6 +1603,11 @@
     padding: 0;
     background: none;
   }
+  /* L-102: the grip's centre on the chevrons' column. The page's rows bleed 12px, so a chevron centres 8px in from the
+     edge; the 44px key centred its grip 22px in. Pulled 12px out, it centres 10px in, and keeps its 44px target. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank > .ch-setm-rank__i > .ch-setm-rank__h {
+    margin-inline-end: -12px;
+  }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank > .ch-setm-rank__i ~ .ch-setm-rank__i::before {
     left: 0;
     background: var(--ch-ledger-rule-soft);
