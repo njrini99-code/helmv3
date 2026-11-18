@@ -2454,6 +2454,13 @@ p.ch-shs-mini-cap {
 .ch-shs-dhead__id h1 {
   margin: 0;
 }
+/* L-052: the eyebrow over the title, in the tertiary ink Roster's team line uses. */
+.ch-shs-dhead__k {
+  display: block;
+  margin-bottom: 4px;
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-tertiary);
+}
 .ch-shs-dhead__id p {
   margin: 4px 0 0;
   font: var(--ch-type-15);

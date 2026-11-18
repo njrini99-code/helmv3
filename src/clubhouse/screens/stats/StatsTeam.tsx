@@ -70,9 +70,12 @@ export function StatsTeam({
             <header className="ch-shs-dhead" data-canopy-head="tight">
               <div className="ch-shs-dhead__row">
                 <div className="ch-shs-dhead__id">
+                  {/* L-052 (owner, 18 Nov 2026): the team and season over the title, as Roster and Tournaments set them; the line
+                      under it says what the figures count. The team is named once, here. */}
+                  <span className="ch-shs-dhead__k">{[data.teamName, data.season].filter(Boolean).join('\u00a0· ')}</span>
                   <h1 className="ch-display">Team stats</h1>
-                  {/* The team is named once, here. A roster that did not load is not "0 active players"; no figure sits in the head. */}
-                  <p>{[data.teamName, data.season, data.roundsError ? null : `${data.activeCount} active ${pluralWord(data.activeCount, 'player')}`, 'countable rounds only'].filter(Boolean).join('\u00a0· ')}</p>
+                  {/* A roster that did not load is not "0 active players"; no figure sits in the head. */}
+                  <p>{[data.roundsError ? null : `${data.activeCount} active ${pluralWord(data.activeCount, 'player')}`, 'countable rounds only'].filter(Boolean).join('\u00a0· ')}</p>
                 </div>
                 <div className="ch-shs-dhead__act">
                   {/* Never export a half-loaded window. */}
