@@ -809,7 +809,7 @@ function RoundsCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => voi
         </div>
         <div>
           <RoundTicker rounds={tickerRounds(data)} />
-          {n > 1 && <div className="ch-shs-mini-cap">Taller is lower; best in green</div>}
+          {n > 1 && <div className="ch-shs-mini-cap">Higher is a better score; best round in green</div>}
         </div>
       </div>
     </SummaryCard>
@@ -1189,7 +1189,7 @@ function RoundsDetail({ data }: { data: ChPlayerProfile }) {
   return (
     <>
       <DetailHero figure={String(n)} caption={`Rounds · averaging ${formatFixed(data.win.avg)} · ${label}`} chips={<span className="ch-num">{countWords(n, data.win.effRounds)} in this window.</span>} />
-      <ShsCard title="Round by round" meta="Taller is lower">
+      <ShsCard title="Round by round" meta="Higher is a better score">
         <RoundTicker rounds={tickerRounds(data)} />
         <p className="ch-shs-mini-cap">{n > 1 ? 'Best round in green. Score by round is on the Scoring page.' : 'Score by round is on the Scoring page.'}</p>
       </ShsCard>
