@@ -571,11 +571,12 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
       <section className="ch-prc-sec" aria-label="Your templates">
         <div className="ch-prc-sec__h">
           <h2>Your templates</h2>
-          <Segmented size="sm" label="Kind" value={kind} onChange={setKind} options={[{ value: 'session', label: 'Session' }, { value: 'block', label: 'Block' }, { value: 'week', label: 'Week' }]} />
+          {/* L-002: nothing to filter until there is a template of some kind. */}
+          {templates.length > 0 && <Segmented size="sm" label="Kind" value={kind} onChange={setKind} options={[{ value: 'session', label: 'Session' }, { value: 'block', label: 'Block' }, { value: 'week', label: 'Week' }]} />}
         </div>
         <SectionBoundary surface="practice.templates.team" label="Your templates" code="CH-13204">
         {mine.length === 0 ? (
-          <p className="ch-prc-none">Save a plan as a template from the builder’s menu, and it shows up here.</p>
+          <p className="ch-prc-none">{templates.length > 0 ? `No ${kind} templates yet. Save a plan as one from the builder’s menu.` : 'Save a plan as a template from the builder’s menu, and it shows up here.'}</p>
         ) : (
           <ul className="ch-prc-cards">
             {mine.map((t) => (

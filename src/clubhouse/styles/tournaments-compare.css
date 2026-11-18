@@ -535,6 +535,12 @@ html[data-fw-theme='dark'] .ch-tour-cmp-tl__dot.is-event {
 /* The metric groups (board .cd-groups; phone .tm-groups) */
 /* The well is still; the row of groups scrolls inside it, so the edge fade (.ch-hscroll) falls on the groups and the
    well keeps its own edge. */
+/* L-002: in place of the metrics while a side holds no rounds. */
+.ch-tour-cmp-none {
+  margin: 0;
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-secondary);
+}
 .ch-tour-cmp-groups {
   padding: 4px;
   border-radius: var(--ch-radius-lg);
