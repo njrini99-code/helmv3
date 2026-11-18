@@ -4,7 +4,7 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { GripVertical } from 'lucide-react';
 import { DeltaChip, deltaState } from '../../../ui/DeltaChip';
 import { Icon } from '../../../ui/Icon';
-import { NO_DATA } from '../format';
+import { NoData } from '../../../ui/NoData';
 import { METRICS, type TourMetricKey } from '../metrics';
 import { deltaUnit, figureText, sampleWords, verdict, type SideFigure } from './model';
 
@@ -44,16 +44,16 @@ function scaleOf(a: SideFigure, b: SideFigure) {
 function Value({ keyName, side, f, other, lo, hi, onOpen }: { keyName: TourMetricKey; side: 'a' | 'b'; f: SideFigure; other: SideFigure; lo: number; hi: number; onOpen: GridProps['onOpen'] }) {
   const def = METRICS[keyName];
   const empty = f.state === 'none';
-  const text = empty ? NO_DATA : figureText(def, f.result.value);
+  const text = empty ? null : figureText(def, f.result.value);
   return (
     <button
       type="button"
       className={'ch-tour-cmp-v' + (empty ? ' is-empty' : '') + (f.state === 'early' ? ' is-early' : '')}
       onClick={() => onOpen(side, keyName)}
-      aria-label={`${def.label}, ${side.toUpperCase()}: ${empty ? 'no data' : text}. ${sampleWords(def, f)}. Open the rounds behind it.`}
+      aria-label={`${def.label}, ${side.toUpperCase()}: ${text ?? 'no data'}. ${sampleWords(def, f)}. Open the rounds behind it.`}
     >
       <span className="ch-tour-cmp-v__top">
-        <span className="ch-tour-cmp-v__n ch-num">{text}</span>
+        <span className="ch-tour-cmp-v__n ch-num">{text ?? <NoData />}</span>
         <span className="ch-tour-cmp-v__d">{sampleWords(def, f)}</span>
       </span>
       {!empty && <Strip values={f.values} lo={lo} hi={hi} mean={f.state !== 'none' ? f.result.value : null} other={other.state !== 'none' ? other.result.value : null} />}
@@ -68,7 +68,9 @@ function Difference({ keyName, a, b, labA }: { keyName: TourMetricKey; a: SideFi
   if (v.kind === 'none')
     return (
       <>
-        <b className="ch-tour-cmp-dl__none">{NO_DATA}</b>
+        <b className="ch-tour-cmp-dl__none">
+          <NoData />
+        </b>
         <span>{v.why}</span>
       </>
     );

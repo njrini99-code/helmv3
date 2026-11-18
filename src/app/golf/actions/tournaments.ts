@@ -341,57 +341,55 @@ async function saveTournamentReviewImpl(id: string, review: TourReviewInput): Pr
 
 // ── Exports (each observed; refusals are expected answers, so only thrown errors and `failed` are reported) ────
 
-const OBSERVE = { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false } as const;
-
-const observedCreate = withAdminObserved('createTournament', OBSERVE, createTournamentImpl);
+const observedCreate = withAdminObserved('createTournament', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, createTournamentImpl);
 export async function createTournament(input: TourCreateInput) {
   return observedCreate(input);
 }
-const observedUpdate = withAdminObserved('updateTournament', OBSERVE, updateTournamentImpl);
+const observedUpdate = withAdminObserved('updateTournament', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, updateTournamentImpl);
 export async function updateTournament(id: string, input: Partial<TourEventInput>, version: number) {
   return observedUpdate(id, input, version);
 }
-const observedDelete = withAdminObserved('deleteTournament', OBSERVE, deleteTournamentImpl);
+const observedDelete = withAdminObserved('deleteTournament', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, deleteTournamentImpl);
 export async function deleteTournament(id: string, unlink = false) {
   return observedDelete(id, unlink);
 }
-const observedEntries = withAdminObserved('setTournamentEntries', OBSERVE, setTournamentEntriesImpl);
+const observedEntries = withAdminObserved('setTournamentEntries', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, setTournamentEntriesImpl);
 export async function setTournamentEntries(id: string, entries: TourEntriesInput, version: number | null) {
   return observedEntries(id, entries, version);
 }
-const observedLock = withAdminObserved('lockTournamentLineup', OBSERVE, lockTournamentLineupImpl);
+const observedLock = withAdminObserved('lockTournamentLineup', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, lockTournamentLineupImpl);
 export async function lockTournamentLineup(id: string) {
   return observedLock(id);
 }
-const observedSubstitute = withAdminObserved('substituteTournamentPlayer', OBSERVE, substituteTournamentPlayerImpl);
+const observedSubstitute = withAdminObserved('substituteTournamentPlayer', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, substituteTournamentPlayerImpl);
 export async function substituteTournamentPlayer(roundEventId: string, outId: string, inId: string) {
   return observedSubstitute(roundEventId, outId, inId);
 }
-const observedRoundStatus = withAdminObserved('setTournamentRoundStatus', OBSERVE, setTournamentRoundStatusImpl);
+const observedRoundStatus = withAdminObserved('setTournamentRoundStatus', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, setTournamentRoundStatusImpl);
 export async function setTournamentRoundStatus(roundEventId: string, status: TourRoundStatusInput, reason: string | null = null) {
   return observedRoundStatus(roundEventId, status, reason);
 }
-const observedMark = withAdminObserved('markTournament', OBSERVE, markTournamentImpl);
+const observedMark = withAdminObserved('markTournament', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, markTournamentImpl);
 export async function markTournament(id: string, state: 'official' | 'reopened', reason: string | null = null) {
   return observedMark(id, state, reason);
 }
-const observedPublish = withAdminObserved('publishTournamentLineup', OBSERVE, publishTournamentLineupImpl);
+const observedPublish = withAdminObserved('publishTournamentLineup', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, publishTournamentLineupImpl);
 export async function publishTournamentLineup(id: string, at: string | null = null) {
   return observedPublish(id, at);
 }
-const observedLink = withAdminObserved('linkTournamentRound', OBSERVE, linkTournamentRoundImpl);
+const observedLink = withAdminObserved('linkTournamentRound', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, linkTournamentRoundImpl);
 export async function linkTournamentRound(roundEventId: string, playerId: string, roundId: string) {
   return observedLink(roundEventId, playerId, roundId);
 }
-const observedScore = withAdminObserved('enterTournamentScore', OBSERVE, enterTournamentScoreImpl);
+const observedScore = withAdminObserved('enterTournamentScore', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, enterTournamentScoreImpl);
 export async function enterTournamentScore(roundEventId: string, playerId: string, score: TourScoreInput) {
   return observedScore(roundEventId, playerId, score);
 }
-const observedDismiss = withAdminObserved('dismissTournamentLink', OBSERVE, dismissTournamentLinkImpl);
+const observedDismiss = withAdminObserved('dismissTournamentLink', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, dismissTournamentLinkImpl);
 export async function dismissTournamentLink(roundId: string) {
   return observedDismiss(roundId);
 }
-const observedReview = withAdminObserved('saveTournamentReview', OBSERVE, saveTournamentReviewImpl);
+const observedReview = withAdminObserved('saveTournamentReview', { sport: 'golf', feature: 'calendar_events', demoSafe: true, observeSoftFailures: false }, saveTournamentReviewImpl);
 export async function saveTournamentReview(id: string, review: TourReviewInput) {
   return observedReview(id, review);
 }

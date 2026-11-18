@@ -1,7 +1,8 @@
 'use client';
 
-import { Database, Lock, SearchX, Users } from 'lucide-react';
+import { Database, Lock, SearchX } from 'lucide-react';
 import { Button } from '../../ui/Button';
+import { NoTeam } from '../../ui/NoTeam';
 import { EmptyState } from '../../ui/States';
 import { TourFailed, TourHead, TourMain, TourPhoneTop, useTourPhone } from './parts';
 import { useTourPaths } from './paths';
@@ -41,13 +42,7 @@ export function TourNotice({ kind, coach = true, title = 'Tournaments', phone: f
           body={coach ? 'Your events, lineups and results show here once Tournaments is set up for your team. Nothing is missing: there is nothing saved here yet.' : 'Your team’s events show here once your coach’s Tournaments is set up.'}
         />
       ) : kind === 'no_team' ? (
-        <EmptyState
-          size="page"
-          code="CH-16303"
-          icon={Users}
-          title="You aren’t on a team yet"
-          body={coach ? 'Tournaments fill in once your team is set up.' : 'Your team’s events show here once a coach adds you to a team roster.'}
-        />
+        <NoTeam code="CH-16303" coach={coach} body={coach ? 'Tournaments fill in once your team is set up.' : 'Your team’s events show here once a coach adds you to a team roster.'} />
       ) : kind === 'not_found' ? (
         <EmptyState size="page" code="CH-16304" icon={SearchX} title="That event isn’t on your team" body="It may have been deleted, or the link is from another team." action={back('Back to tournaments')} />
       ) : (

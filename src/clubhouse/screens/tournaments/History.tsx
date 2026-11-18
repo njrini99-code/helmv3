@@ -10,7 +10,8 @@ import { Section } from '../../ui/Section';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
 import { useRefresh } from '../../lib/use-refresh';
-import { formatSigned, NO_DATA, tourDay } from './format';
+import { NoData } from '../../ui/NoData';
+import { formatSigned, tourDay } from './format';
 import { seasonRuns, trendNote, trendPoints, trendScale, trendX, trendY, type TrendPoint } from './history-model';
 import { TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, TourViewSwitch, tourGate, useTourPhone } from './parts';
 import { useTourPaths } from './paths';
@@ -73,7 +74,7 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
   };
   const empty = data.events.length === 0 && !data.errors.trend;
   const current = data.seasons[0]?.id ?? '';
-  const courseName = (id: string | undefined) => (id ? (data.courses[id]?.name ?? NO_DATA) : NO_DATA);
+  const courseName = (id: string | undefined) => (id ? (data.courses[id]?.name ?? null) : null);
   const points = trendPoints(data, state);
   const note = trendNote(data, state);
 
@@ -123,7 +124,7 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
             }
           >
             {data.errors.trend ? (
-              <InlineNotice code="CH-16236" title="The trend didn’t load" body="The events below are unaffected. Try again; the error has been reported." onRetry={refresh} retrying={refreshing} />
+              <InlineNotice code="CH-16236" title="The trend didn’t load" body="The events below are unaffected. Try again." onRetry={refresh} retrying={refreshing} />
             ) : phone ? (
               <TrendBars points={points} data={data} state={state} note={note} />
             ) : (
@@ -198,7 +199,7 @@ function Trend({ points, state, note }: { points: TrendPoint[]; state: ChTourHis
       <ol className="ch-tour-rev-trend__labels" style={{ gridTemplateColumns: `repeat(${Math.max(n, 1)}, minmax(0, 1fr))` }}>
         {points.map((p) => (
           <li key={p.event.id}>
-            <b className="ch-num">{p.value == null ? NO_DATA : formatSigned(p.value, 1)}</b>
+            <b className="ch-num">{p.value == null ? <NoData /> : formatSigned(p.value, 1)}</b>
             {when(p)}
           </li>
         ))}
@@ -222,7 +223,7 @@ function TrendBars({ points, data, state, note }: { points: TrendPoint[]; data: 
         {points.map((p) => (
           <li key={p.event.id}>
             <Link href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
-              <b className="ch-num">{p.value == null ? NO_DATA : formatSigned(p.value, 1)}</b>
+              <b className="ch-num">{p.value == null ? <NoData /> : formatSigned(p.value, 1)}</b>
               <i style={{ height: p.value == null ? 14 : 14 + (1 - trendY(p.value, lo, hi)) * 70 }} />
               <span>{p.event.short}</span>
             </Link>

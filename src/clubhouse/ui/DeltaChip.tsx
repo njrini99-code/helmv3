@@ -1,4 +1,5 @@
-import { NO_DATA, formatSigned } from '../lib/format';
+import { formatFixed, formatSigned } from '../lib/format';
+import { NoData } from './NoData';
 import { deltaTone } from '../lib/stats-signal';
 
 /**
@@ -64,22 +65,20 @@ export function DeltaChip({
   if (state == null || value == null) {
     return (
       <span className="ch-delta ch-delta--none">
-        <span className="ch-delta__v ch-num" aria-hidden="true">
-          {NO_DATA}
-        </span>
-        <span className="ch-sr-only">No data</span>
+        <NoData />
       </span>
     );
   }
   const d = digits ?? DIGITS[unit];
   const shown = `${formatSigned(value, d)}${SUFFIX[unit]}`;
-  const size = Math.abs(Number(value.toFixed(d)));
+  const sizeText = formatFixed(Math.abs(value), d);
+  const size = Number(sizeText);
   const words = SPOKEN[unit][size === 1 ? 0 : 1];
   const tail = against ? ` ${against}` : '';
   const spoken =
     state === 'level'
       ? `Level: ${shown.replace('−', 'minus ')} ${words}, no clear change${tail}`
-      : `${state === 'gain' ? 'Better' : 'Worse'} by ${size.toFixed(d)} ${words}${tail}`;
+      : `${state === 'gain' ? 'Better' : 'Worse'} by ${sizeText} ${words}${tail}`;
   return (
     <span className={`ch-delta ch-delta--${state}`} data-ch-delta={state}>
       <Glyph state={state} />

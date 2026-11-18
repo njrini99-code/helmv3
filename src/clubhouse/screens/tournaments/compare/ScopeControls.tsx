@@ -4,7 +4,8 @@ import { Avatar, AVATAR_SIZES } from '../../../ui/Avatar';
 import { pluralWord } from '../../../lib/plural';
 import { Segmented } from '../../../ui/Segmented';
 import { Select } from '../../../ui/Select';
-import { NO_DATA, plural, tourDay } from '../format';
+import { NoData } from '../../../ui/NoData';
+import { plural, tourDay } from '../format';
 import type { ChTourEvent, ChTourPlayer, ChTourScope, ChTourScopeContext, ChTourScopePeriod, ChTourScopeSubject } from '../types';
 import { contextWords, subjectName, type ScopeNames, type ScopeSummary } from './scope';
 
@@ -168,7 +169,7 @@ export function ScopeTitle({ scope, names }: { scope: ChTourScope; names: ScopeN
   return (
     <span className="ch-tour-cmp-title">
       <span className="ch-tour-cmp-title__n">{subjectName(scope.subject, names)}</span>
-      <span className="ch-tour-cmp-title__t">{contextWords(scope, names, day) || NO_DATA}</span>
+      <span className="ch-tour-cmp-title__t">{contextWords(scope, names, day) || <NoData />}</span>
     </span>
   );
 }

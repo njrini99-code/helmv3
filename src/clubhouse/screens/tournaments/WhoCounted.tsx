@@ -3,7 +3,8 @@
 import { Avatar } from '../../ui/Avatar';
 import { SideScroll } from '../../ui/SideScroll';
 import { byTotal, notCounted, scoreWords, type DeskRow } from './desk-model';
-import { formatToPar, NO_DATA, plural } from './format';
+import { NoData } from '../../ui/NoData';
+import { formatToPar, plural } from './format';
 import { ToPar } from './parts';
 import type { ChTourEvent, ChTourPlayerRound } from './types';
 
@@ -61,7 +62,7 @@ export function WhoCounted({
       <span role="cell" className="ch-tour-desk-ct__who">
         {!phone && <Avatar name={x.player?.name ?? '—'} size="sm" />}
         <span>
-          <span className="ch-tour-desk-ct__n">{phone ? (x.player?.first ?? NO_DATA) : (x.player?.name ?? NO_DATA)}</span>
+          <span className="ch-tour-desk-ct__n">{phone ? (x.player?.first ?? 'Player') : (x.player?.name ?? 'Player')}</span>
           <span className="ch-tour-desk-ct__s">
             {x.individual
               ? phone
@@ -91,7 +92,9 @@ export function WhoCounted({
                 {nc && <em aria-hidden="true">NC</em>}
               </button>
             ) : (
-              <span className="ch-tour-desk-sc is-none ch-num">{NO_DATA}</span>
+              <span className="ch-tour-desk-sc is-none ch-num">
+                <NoData />
+              </span>
             )}
           </span>
         );
@@ -103,11 +106,11 @@ export function WhoCounted({
       ) : (
         <>
           <span role="cell" className="is-r ch-num ch-tour-desk-ct__tot">
-            {x.total ?? NO_DATA}
+            {x.total ?? <NoData />}
           </span>
           {!phone && (
             <span role="cell" className="is-r ch-tour-desk-ct__cnt">
-              {x.individual ? NO_DATA : `${x.counted}/${x.played}`}
+              {x.individual ? <NoData label="Not counted" /> : `${x.counted}/${x.played}`}
             </span>
           )}
         </>
@@ -124,7 +127,7 @@ export function WhoCounted({
         const tr = event.team.rounds[i];
         return (
           <span role="cell" key={r.number} className="ch-tour-desk-ct__c ch-num ch-tour-desk-ct__fin">
-            {tr?.total ?? NO_DATA}
+            {tr?.total ?? <NoData />}
           </span>
         );
       })}
@@ -135,7 +138,7 @@ export function WhoCounted({
       ) : (
         <>
           <span role="cell" className="is-r ch-num ch-tour-desk-ct__fin">
-            {result.total ?? NO_DATA} <ToPar value={result.toPar} />
+            {result.total ?? <NoData />} <ToPar value={result.toPar} />
           </span>
           {!phone && (
             <span role="cell" className="is-r ch-tour-desk-ct__cnt">
@@ -207,13 +210,13 @@ export function WhoCounted({
 function RoundNote({ event, round, rows }: { event: ChTourEvent; round: number; rows: readonly DeskRow[] }) {
   const tr = event.team.rounds.find((r) => r.roundNumber === round);
   if (!tr) return null;
-  const name = (id: string) => rows.find((x) => x.entry.playerId === id)?.player?.first ?? NO_DATA;
+  const name = (id: string) => rows.find((x) => x.entry.playerId === id)?.player?.first ?? 'A player';
   const at = Math.max(0, event.rounds.findIndex((r) => r.number === round));
   const score = (id: string) => rows.find((x) => x.entry.playerId === id)?.cells[at]?.total ?? null;
-  const list = (ids: readonly string[]) => ids.map((id) => `${name(id)} ${score(id) ?? NO_DATA}`).join(', ');
+  const list = (ids: readonly string[]) => ids.map((id) => `${name(id)} ${score(id) ?? 'no score'}`).join(', ');
   return (
     <p className="ch-tour-desk-note">
-      Round {round}: the lowest {tr.counting.length} of {tr.counting.length + tr.dropped.length} whole-round scores counted for {tr.total ?? NO_DATA} ({formatToPar(tr.toPar)}). Counted: {list(tr.counting)}.
+      Round {round}: the lowest {tr.counting.length} of {tr.counting.length + tr.dropped.length} whole-round scores counted for {tr.total ?? <NoData />} ({formatToPar(tr.toPar)}). Counted: {list(tr.counting)}.
       {tr.dropped.length > 0 && ` Not counted: ${list(tr.dropped)}.`}
       {tr.tiedAtBoundary.length > 0 && ` ${plural(tr.tiedAtBoundary.length, 'score')} tied at the line.`}
     </p>

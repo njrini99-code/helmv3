@@ -14,7 +14,7 @@ import { tabListKeys } from '../../lib/tabs';
 import { useRefresh } from '../../lib/use-refresh';
 import { deskRows, roundSets, type DeskRow, type HoleCardRow } from './desk-model';
 import { EvidenceDrawer, type DeskEvidence } from './EvidenceDrawer';
-import { countLabel, countsEachRound, formatToPar, holesLabel, NO_DATA, playLabel, tourDayTime, tourRange } from './format';
+import { countLabel, countsEachRound, formatToPar, holesLabel, playLabel, tourDayTime, tourRange } from './format';
 import { HoleGrid } from './HoleGrid';
 import { Review } from './Review';
 import { TourChip, TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, ToPar, tourGate, useTourPhone } from './parts';
@@ -204,7 +204,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
         </div>
       )}
       {data.errors.field && (
-        <InlineNotice code="CH-16221" title="The field didn’t load" body="Where the team finished needs the field, so it is left out for now. Scores are unaffected. Try again; the error has been reported." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-16221" title="The field didn’t load" body="Where the team finished needs the field, so it is left out for now. Scores are unaffected. Try again." onRetry={refresh} retrying={refreshing} />
       )}
 
       <DeskTabs tabs={tabs} tab={tab} onPick={pickTab} reviewCount={data.review?.layers.length ?? 0} />
@@ -348,7 +348,7 @@ function CountedTools({ event, round, view, phone, onRound, onView }: { event: C
 }
 
 function RoundsFailed({ onRetry, retrying }: { onRetry: () => void; retrying: boolean }) {
-  return <InlineNotice code="CH-16222" title="The rounds didn’t load" body="Scores are saved; they just can’t be shown right now. Try again; the error has been reported." onRetry={onRetry} retrying={retrying} />;
+  return <InlineNotice code="CH-16222" title="The rounds didn’t load" body="Scores are saved; they just can’t be shown right now. Try again." onRetry={onRetry} retrying={retrying} />;
 }
 
 /** Nothing scored yet: the empty line, and where the event stands. */
@@ -362,7 +362,7 @@ function NoScores({ event: e }: { event: ChTourEvent }) {
         : l.status === 'locked'
           ? 'The lineup is locked.'
           : `Lineup ${l.status}${l.seen ? ` · seen by ${l.seen.by} of ${l.seen.of}` : ''}.`;
-  return <EmptyState compact code="CH-16320" title="No scores yet" body={`Scores show here as rounds are entered. ${state}${e.note ? ` ${e.note}.` : ''}`} />;
+  return <EmptyState compact kind="first-run" code="CH-16320" title="No scores yet" body={`Scores show here as rounds are entered. ${state}${e.note ? ` ${e.note}.` : ''}`} />;
 }
 
 /** A finding (board `tr-find__c`): a chip, the finding, what it rests on, and where to see it. */
@@ -405,16 +405,16 @@ function scoreEvidence(data: ChTourDeskData, row: DeskRow | null, pr: ChTourPlay
   return {
     ref: {
       title: `${name} · round ${pr.roundNumber}`,
-      figure: pr.total == null ? NO_DATA : `${pr.total} (${formatToPar(pr.toPar)})`,
+      figure: pr.total == null ? null : `${pr.total} (${formatToPar(pr.toPar)})`,
       formula: individual ? 'An individual entry is shown with the field and is never part of the team score.' : `The team’s round is the lowest ${e.format.counting} of ${e.format.players} whole-round scores.`,
       denominator: individual ? 'Not in the team score' : `${lineup.length} lineup scores in round ${pr.roundNumber}`,
       rounds: individual
-        ? [{ key: `${pr.playerId}-${pr.roundNumber}`, label: name, date, value: pr.total == null ? NO_DATA : String(pr.total), included: false, reason: 'individual' as const }]
+        ? [{ key: `${pr.playerId}-${pr.roundNumber}`, label: name, date, value: pr.total == null ? null : String(pr.total), included: false, reason: 'individual' as const }]
         : lineup.map((p) => ({
             key: `${p.playerId}-${p.roundNumber}`,
             label: `${nameOf(p.playerId)}${sets.tied.includes(p.playerId) ? ' · tied at the line' : ''}`,
             date,
-            value: p.total == null ? NO_DATA : String(p.total),
+            value: p.total == null ? null : String(p.total),
             included: p.count === 'counted',
             reason: p.status === 'wd' ? ('wd' as const) : p.status === 'dq' ? ('dq' as const) : null,
           })),

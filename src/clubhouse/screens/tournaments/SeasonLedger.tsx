@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { Icon } from '../../ui/Icon';
 import { EmptyState } from '../../ui/States';
 import { SideScroll } from '../../ui/SideScroll';
-import { countShort, firstNames, holesLabel, NO_DATA, tourDay, tourRange } from './format';
+import { NoData } from '../../ui/NoData';
+import { countShort, firstNames, holesLabel, tourDay, tourRange } from './format';
 import { Coverage, ToPar } from './parts';
 import { useTourPaths } from './paths';
 import type { ChTourEvent, ChTourPlayer, ChTourSeason } from './types';
@@ -28,7 +29,7 @@ export function SeasonLedger({
   seasons: readonly ChTourSeason[];
   players: readonly ChTourPlayer[];
   /** A course's name by id (the event's first course). */
-  courseName: (id: string | undefined) => string;
+  courseName: (id: string | undefined) => string | null;
   currentSeasonId: string;
   phone: boolean;
 }) {
@@ -92,11 +93,11 @@ export function SeasonLedger({
 }
 
 function NoneYet() {
-  return <EmptyState compact code="CH-16311" title="No finished events yet" body="Results show here once an event is complete." />;
+  return <EmptyState compact kind="first-run" code="CH-16311" title="No finished events yet" body="Results show here once an event is complete." />;
 }
 
 /** One finished event as a desktop row: every cell under its header, the name the one link. */
-function DeskRow({ event: e, course, players }: { event: ChTourEvent; course: string; players: readonly ChTourPlayer[] }) {
+function DeskRow({ event: e, course, players }: { event: ChTourEvent; course: string | null; players: readonly ChTourPlayer[] }) {
   const paths = useTourPaths();
   const r = e.team.result;
   const lineup = e.entries.filter((x) => x.role === 'lineup').map((x) => x.playerId);
@@ -107,7 +108,7 @@ function DeskRow({ event: e, course, players }: { event: ChTourEvent; course: st
           {e.name}
         </Link>
         <span className="ch-tour-led__t2">
-          {course} · {firstNames(lineup, players)}
+          {course ?? <NoData label="No course" />} · {firstNames(lineup, players)}
         </span>
       </span>
       <span role="cell" className="ch-tour-led__t2">
@@ -122,7 +123,7 @@ function DeskRow({ event: e, course, players }: { event: ChTourEvent; course: st
             <span className="ch-num">{r.total}</span> <ToPar value={r.toPar} />
           </>
         ) : (
-          NO_DATA
+          <NoData />
         )}
       </span>
       <span role="cell" className="is-r ch-tour-led__fin">
@@ -132,7 +133,7 @@ function DeskRow({ event: e, course, players }: { event: ChTourEvent; course: st
             <em> of {e.finish.of}</em>
           </>
         ) : (
-          NO_DATA
+          <NoData />
         )}
       </span>
       <span role="cell">
@@ -146,7 +147,7 @@ function DeskRow({ event: e, course, players }: { event: ChTourEvent; course: st
 }
 
 /** One finished event as a phone row (board `tm-row`): name and date over the finish and the team's score. */
-function PhoneRow({ event: e, course, past }: { event: ChTourEvent; course: string; past: boolean }) {
+function PhoneRow({ event: e, course, past }: { event: ChTourEvent; course: string | null; past: boolean }) {
   const paths = useTourPaths();
   const r = e.team.result;
   const cardsOnly = e.coverage.withShots === 0;
@@ -156,18 +157,24 @@ function PhoneRow({ event: e, course, past }: { event: ChTourEvent; course: stri
         <span className="ch-tour-led__mt">
           <b>{e.name}</b>
           <em>
-            {past ? tourDay(e.startDate, { month: 'short', year: 'numeric' }) : `${tourDay(e.startDate)} · ${course}`}
+            {past ? (
+              tourDay(e.startDate, { month: 'short', year: 'numeric' })
+            ) : (
+              <>
+                {tourDay(e.startDate)} · {course ?? <NoData label="No course" />}
+              </>
+            )}
             {past && cardsOnly ? ' · scorecards only' : ''}
           </em>
         </span>
         <span className="ch-tour-led__mv">
           <b className="ch-num">
-            {e.finish ? e.finish.place : NO_DATA}
+            {e.finish ? e.finish.place : <NoData />}
             {e.finish && <small> of {e.finish.of}</small>}
           </b>
           <em className="ch-num">
             {past || r?.total == null ? '' : `${r.total} · `}
-            {r?.toPar != null ? <ToPar value={r.toPar} /> : NO_DATA}
+            {r?.toPar != null ? <ToPar value={r.toPar} /> : <NoData />}
           </em>
         </span>
         <Icon icon={ChevronRight} size={15} className="ch-tour-led__go" />

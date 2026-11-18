@@ -6,7 +6,8 @@
 import { TERMS } from '../../../lib/glossary';
 import { changeSe, type SampleState } from '../../../lib/stats-signal';
 import { exclusionWords, metric, METRICS, tourSampleState, TOUR_FLOORS, type MetricDef, type MetricResult, type TourMetricKey, type TourMetricRound } from '../metrics';
-import { formatFixed, formatSigned, formatToPar, NO_DATA, plural, tourDay } from '../format';
+import { formatPct as formatPercent } from '../../../lib/format';
+import { formatFixed, formatSigned, formatToPar, plural, tourDay } from '../format';
 import type { ChTourCompareRound, ChTourEvent, ChTourEvidenceRef, ChTourScope } from '../types';
 
 /** The metric groups (the board's strip), each with the catalogue rows that can be read from the loaded rounds. */
@@ -71,8 +72,7 @@ const SIGNED: ReadonlySet<TourMetricKey> = new Set(['to_par_avg', 'vs_field']);
 
 /** A figure the way the row writes it: true minus where it is signed, whole percents, one decimal on strokes, two on strokes gained. */
 export function figureText(def: MetricDef, v: number | null): string {
-  if (v == null) return NO_DATA;
-  if (def.unit === '%') return `${Math.round(v)}%`;
+  if (def.unit === '%') return formatPercent(v);
   if (def.unit === 'sg') return formatSigned(v, 2);
   return SIGNED.has(def.key) ? formatSigned(v, 1) : formatFixed(v, 1);
 }
@@ -140,7 +140,7 @@ export function figureEvidence(args: {
           key: r.id,
           label: `${roundLabel(r, events)} · ${args.firstName(r.playerId)} · ${args.courseName(r.courseId)} · ${r.score} (${formatToPar(r.toPar)})`,
           date: r.date,
-          value: value == null ? NO_DATA : per(value),
+          value: value == null ? null : per(value),
           included: value != null,
           reason: null,
           reasonWords: ex ? exclusionWords(ex) : value == null ? 'Not part of this figure' : 'Used',

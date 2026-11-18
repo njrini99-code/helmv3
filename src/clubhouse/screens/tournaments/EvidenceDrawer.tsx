@@ -3,7 +3,8 @@
 import { Modal } from '../../ui/Modal';
 import '../../styles/tournaments-desk.css';
 import { ScoreMark } from '../../ui/ScoreMark';
-import { formatToPar, NO_DATA, tourDay } from './format';
+import { NoData } from '../../ui/NoData';
+import { formatToPar, tourDay } from './format';
 import type { ChTourEvidenceRef, ChTourExclusion, ChTourHoleScore } from './types';
 
 /** A scorecard to show under the figure's rounds: one player's card for one round. */
@@ -51,7 +52,7 @@ export function EvidenceDrawer({ evidence, onClose }: { evidence: DeskEvidence |
           <dl className="ch-tour-desk-ev__fig">
             <div>
               <dt>Value</dt>
-              <dd className="ch-num">{ref.figure}</dd>
+              <dd className="ch-num">{ref.figure ?? <NoData />}</dd>
             </div>
             <div>
               <dt>Out of</dt>
@@ -72,7 +73,7 @@ export function EvidenceDrawer({ evidence, onClose }: { evidence: DeskEvidence |
                   {r.label}
                   <em>{r.reasonWords ?? (r.included ? 'Counted' : r.reason ? `Left out: ${REASON[r.reason]}` : 'Not counted')}</em>
                 </span>
-                <span className="ch-tour-desk-ev__v ch-num">{r.value}</span>
+                <span className="ch-tour-desk-ev__v ch-num">{r.value ?? <NoData />}</span>
               </li>
             ))}
           </ul>
@@ -125,13 +126,13 @@ function Card({ card }: { card: DeskCard }) {
               </span>
             ))}
             <span role="cell" className="ch-num ch-tour-desk-ev__tot">
-              {sum(half.map((h) => h.strokes)) ?? NO_DATA}
+              {sum(half.map((h) => h.strokes)) ?? <NoData />}
             </span>
           </div>
         </div>
       ))}
       <p>
-        {total != null ? `${total} (${formatToPar(total - par)})` : NO_DATA}
+        {total != null ? `${total} (${formatToPar(total - par)})` : <NoData />}
         {card.startHole > 1 ? ` · started on ${card.startHole}` : ''}
         {card.shotData == null ? '' : card.shotData ? ' · shot data' : ' · scorecard only'}
       </p>

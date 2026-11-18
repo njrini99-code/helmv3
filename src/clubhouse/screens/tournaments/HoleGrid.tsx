@@ -7,7 +7,8 @@ import { Segmented } from '../../ui/Segmented';
 import { SideScroll } from '../../ui/SideScroll';
 import { EmptyState } from '../../ui/States';
 import { costliest, holeAverages, holeRows, sumHoles, type HoleCardRow } from './desk-model';
-import { formatSigned, formatToPar, NO_DATA, plural } from './format';
+import { NoData } from '../../ui/NoData';
+import { formatSigned, formatToPar, plural } from './format';
 import type { ChTourEvent, ChTourHoleLedger, ChTourPlayer } from './types';
 
 type Mode = 'to-par' | 'scores' | 'counting';
@@ -46,9 +47,9 @@ export function HoleGrid({
   retrying: boolean;
 }) {
   if (failed)
-    return <InlineNotice code="CH-16220" title="The scorecards didn’t load" body="Team scores are unaffected. Try again; the error has been reported." onRetry={onRetry} retrying={retrying} />;
+    return <InlineNotice code="CH-16220" title="The scorecards didn’t load" body="Team scores are unaffected. Try again." onRetry={onRetry} retrying={retrying} />;
   if (!ledger || ledger.cards.length === 0)
-    return <EmptyState compact code="CH-16321" title="No hole-by-hole scores yet" body="Holes show here once scorecards are in. Team scores use whole rounds either way." />;
+    return <EmptyState compact kind="first-run" code="CH-16321" title="No hole-by-hole scores yet" body="Holes show here once scorecards are in. Team scores use whole rounds either way." />;
 
   const rows = holeRows(event, ledger, round);
   const pars = ledger.pars;
@@ -62,7 +63,7 @@ export function HoleGrid({
   const cols = `${phone ? 76 : 160}px ${nines.map((n) => `repeat(${n.length}, 34px) 44px`).join(' ')} ${nines.length > 1 ? '50px' : ''}`;
   const parOf = (from: number, n: number) => pars.slice(from, from + n).reduce((a, b) => a + b, 0);
   const label = (r: HoleCardRow) => {
-    const first = name(r.playerId)?.first ?? NO_DATA;
+    const first = name(r.playerId)?.first ?? 'Player';
     return `${first}${r.count === 'dropped' || r.count === 'tie' ? ' · NC' : r.count === 'individual' ? ' · Ind.' : ''}`;
   };
 
@@ -75,7 +76,7 @@ export function HoleGrid({
       <span key={i} role="cell" className={'ch-tour-desk-hg__c' + (disputed ? ' is-disputed' : '')}>
         <button type="button" className="ch-tour-desk-hg__cell" onClick={() => onOpen(r)} aria-label={`${name(r.playerId)?.name ?? 'Player'} hole ${i + 1}: ${s ?? 'no score'}, par ${par}${disputed ? ', disputed' : ''}. Open the evidence`}>
           {mode === 'to-par' ? (
-            <span className={'ch-num ch-tour-desk-hg__tp' + (d != null && d < 0 ? ' ch-tour-under' : '')}>{d == null ? NO_DATA : formatToPar(d)}</span>
+            <span className={'ch-num ch-tour-desk-hg__tp' + (d != null && d < 0 ? ' ch-tour-under' : '')}>{d == null ? <NoData /> : formatToPar(d)}</span>
           ) : (
             <ScoreMark score={s} par={par} size="sm" />
           )}
@@ -94,13 +95,13 @@ export function HoleGrid({
         <span key={k} className="ch-tour-desk-hg__nine" role="presentation">
           {n.map((_, j) => cell(r, k * 9 + j))}
           <span role="cell" className="ch-tour-desk-hg__tot ch-num">
-            {(k ? r.inn : r.out) ?? NO_DATA}
+            {(k ? r.inn : r.out) ?? <NoData />}
           </span>
         </span>
       ))}
       {nines.length > 1 && (
         <span role="cell" className="ch-tour-desk-hg__tot ch-num">
-          {r.total ?? NO_DATA}
+          {r.total ?? <NoData />}
         </span>
       )}
     </div>
@@ -132,7 +133,7 @@ export function HoleGrid({
         />
       </div>
       {rows.length === 0 ? (
-        <EmptyState compact code="CH-16321" title="No hole-by-hole scores yet" body={`Round ${round} has no scorecards with holes. Team scores use whole rounds either way.`} />
+        <EmptyState compact kind="first-run" code="CH-16321" title="No hole-by-hole scores yet" body={`Round ${round} has no scorecards with holes. Team scores use whole rounds either way.`} />
       ) : (
         <SideScroll className="ch-tour-desk-hg__scroll" role="table" aria-label={`Hole-by-hole scores, round ${round}`} {...(phone ? { tabIndex: 0 } : {})}>
           <div className="ch-tour-desk-hg__row is-head" role="row" style={{ gridTemplateColumns: cols }}>
@@ -183,10 +184,10 @@ export function HoleGrid({
                   {n.map((_, j) => {
                     const i = k * 9 + j;
                     const v = avgs[i] ?? null;
-                    const tone = worst.includes(i) ? ' is-worst' : v != null && v > 0.5 ? ' is-bad' : v != null && v < -0.1 ? ' is-good' : '';
+                    const tone = worst.includes(i) ? ' is-worst' : v != null && v > 0.5 ? ' is-over' : v != null && v < -0.1 ? ' is-under' : '';
                     return (
                       <span key={j} role="cell">
-                        <i className={'ch-tour-desk-heat ch-num' + tone}>{v == null ? NO_DATA : Math.abs(v) < 0.05 ? 'E' : formatSigned(v, 1)}</i>
+                        <i className={'ch-tour-desk-heat ch-num' + tone}>{v == null ? <NoData /> : Math.abs(v) < 0.05 ? 'E' : formatSigned(v, 1)}</i>
                         {worst.includes(i) && <span className="ch-sr-only"> costly hole</span>}
                       </span>
                     );

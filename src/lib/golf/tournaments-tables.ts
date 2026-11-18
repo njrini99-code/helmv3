@@ -3,14 +3,14 @@
  * tables"; handoff 11.7), shared by the Clubhouse loaders and the server actions.
  * They come with supabase/migrations/20261024100000_golf_tournaments.sql, which is HELD, so they are not in
  * src/lib/types/database.ts yet and `npm run db:types` must not be run for them. Every read and write of a tournament
- * table goes through `tourTable` here, the one escape hatch, so the PR that applies the migrations and regenerates the
- * types deletes this file and its callers switch to `supabase.from(...)` with the generated rows.
+ * table goes through `tourTable` here, which types the client with `TourDatabase` (the rows below in the generated
+ * types' shape), so the PR that applies the migrations and regenerates the types deletes this file and its callers
+ * switch to `supabase.from(...)` with the generated rows.
  *
  * Columns are the migration's, one for one; only the shapes the loaders and actions read are spelled out. Pure types and
  * one helper: no I/O of its own.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fromUntyped } from '@/lib/supabase/untyped';
 
 export const TOUR_TABLES = [
   'golf_tournaments',
@@ -229,8 +229,40 @@ export const TOUR_COLUMNS = {
   golf_tournament_link_dismissals: 'team_id, round_id, dismissed_at',
 } as const satisfies Partial<Record<TourTableName, string>>;
 
-/** The one escape hatch onto a held tournament table (until `db:types` runs after the apply). */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function tourTable(supabase: SupabaseClient<any, any, any>, table: TourTableName) {
-  return fromUntyped(supabase, table);
+/** A row as the generated types spell one: a type alias (an interface has no index signature, so PostgREST's typing refuses it). */
+type Plain<T> = { [K in keyof T]: T[K] };
+/** `Writes` are columns the actions write but no loader reads (who wrote it), so they stay off the read rows. */
+type HeldTable<Row, Writes = unknown> = { Row: Plain<Row>; Insert: Partial<Plain<Row & Writes>>; Update: Partial<Plain<Row & Writes>>; Relationships: [] };
+
+/** The held tables the loaders and actions touch, in `src/lib/types/database.ts`'s shape, until `db:types` covers them. */
+export type TourDatabase = {
+  __InternalSupabase: { PostgrestVersion: '14.15' };
+  public: {
+    Tables: {
+      golf_tournaments: HeldTable<TourRow>;
+      golf_tournament_rounds: HeldTable<TourRoundRow>;
+      golf_tournament_entries: HeldTable<TourEntryRow>;
+      golf_tournament_round_lineups: HeldTable<TourRoundLineupRow>;
+      golf_tournament_player_rounds: HeldTable<TourPlayerRoundRow, { updated_by: string | null }>;
+      golf_tournament_field_teams: HeldTable<TourFieldTeamRow>;
+      golf_tournament_field_scores: HeldTable<TourFieldScoreRow>;
+      golf_tournament_result_marks: HeldTable<TourResultMarkRow>;
+      golf_tournament_reviews: HeldTable<TourReviewRow, { updated_by: string | null }>;
+      golf_tournament_player_notes: HeldTable<TourPlayerNoteRow>;
+      golf_tournament_reflections: HeldTable<TourReflectionRow>;
+      golf_tournament_advice_givers: HeldTable<TourAdviceGiverRow>;
+      golf_team_seasons: HeldTable<TourTeamSeasonRow>;
+      golf_tournament_link_dismissals: HeldTable<TourLinkDismissalRow, { dismissed_by: string | null }>;
+    };
+    Views: Record<never, never>;
+    Functions: Record<never, never>;
+    Enums: Record<never, never>;
+    CompositeTypes: Record<never, never>;
+  };
+};
+export type TourTypedTable = keyof TourDatabase['public']['Tables'];
+
+/** A held tournament table, on the caller's client typed with `TourDatabase` (until `db:types` runs after the apply). */
+export function tourTable<T extends TourTypedTable>(supabase: object, table: T) {
+  return (supabase as SupabaseClient<TourDatabase>).from(table);
 }

@@ -79,6 +79,12 @@ export function formatDistance(value: number | null | undefined, unit = 'yds', d
   return `${value.toFixed(digits)} ${unit}`;
 }
 
+/** A finishing place: "1", "T3", or the no-data dash when there is no place. */
+export function formatPlace(place: number | null | undefined, tied = false): string {
+  if (place == null) return NO_DATA;
+  return `${tied ? 'T' : ''}${place}`;
+}
+
 export function formatFixed(value: number | null | undefined, digits = 1): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;
   return value.toFixed(digits);

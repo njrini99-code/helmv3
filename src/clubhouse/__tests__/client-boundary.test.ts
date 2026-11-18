@@ -24,7 +24,9 @@ function walk(dir: string, out: string[]) {
 const clientCache = new Map<string, boolean>();
 function isClient(file: string) {
   if (!clientCache.has(file)) {
-    clientCache.set(file, /^\s*(?:\/\/[^\n]*\n\s*|\/\*[\s\S]*?\*\/\s*)*['"]use client['"]/.test(readFileSync(file, 'utf8')));
+    // A block comment is matched without crossing its own `*/` (`[^*]*\*+(?:[^/*][^*]*\*+)*`), so the scan is linear: the
+    // lazy `[\s\S]*?` form backtracked through every later `*/` in a long module that is not a client one (94s on a 40 KB file).
+    clientCache.set(file, /^\s*(?:\/\/[^\n]*\n\s*|\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\/\s*)*['"]use client['"]/.test(readFileSync(file, 'utf8')));
   }
   return clientCache.get(file)!;
 }

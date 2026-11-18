@@ -9,7 +9,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
 import { useRefresh } from '../../lib/use-refresh';
-import { countLabel, countsEachRound, holesLabel, inDays, daysUntil, NO_DATA, plural, playLabel, tourDay, tourRange } from './format';
+import { countLabel, countsEachRound, holesLabel, inDays, daysUntil, plural, playLabel, tourDay, tourRange } from './format';
 import { SeasonLedger } from './SeasonLedger';
 import { TourChip, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, TourViewSwitch, tourGate, useTourPhone } from './parts';
 import { useTourPaths } from './paths';
@@ -69,7 +69,7 @@ function HomeReady({ data, phone }: { data: ChTourHomeData; phone: boolean }) {
   const { refresh, refreshing } = useRefresh();
   const thisSeason = data.events.filter((e) => e.seasonId === data.season.id);
   const empty = !data.errors.events && thisSeason.length === 0;
-  const courseName = (id: string | undefined) => (id ? (data.courses[id]?.name ?? NO_DATA) : NO_DATA);
+  const courseName = (id: string | undefined) => (id ? (data.courses[id]?.name ?? null) : null);
   const upcoming = useMemo(() => data.events.filter((e) => e.status !== 'complete').sort((a, b) => a.startDate.localeCompare(b.startDate)), [data.events]);
   const hero = (data.next && upcoming.find((e) => e.id === data.next?.eventId)) ?? upcoming[0] ?? null;
   const others = upcoming.filter((e) => e !== hero);
@@ -97,7 +97,7 @@ function HomeReady({ data, phone }: { data: ChTourHomeData; phone: boolean }) {
         }
       />
       {data.errors.events ? (
-        <InlineNotice code="CH-16210" title="The events didn’t load" body="Nothing has changed. Try again; the error has been reported." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-16210" title="The events didn’t load" body="Nothing has changed. Try again." onRetry={refresh} retrying={refreshing} />
       ) : empty ? (
         <EmptyState
           size="page"
@@ -117,7 +117,7 @@ function HomeReady({ data, phone }: { data: ChTourHomeData; phone: boolean }) {
             // The phone board (MEvents): the card, then the ledger's own season headings. Other events on the calendar
             // are not on the board; they follow the card so none is unreachable.
             <>
-              {hero ? <NextCard event={hero} data={data} phone /> : <EmptyState compact code="CH-16312" title="Nothing on the calendar" body="Add an event and it shows here with its lineup and travel." />}
+              {hero ? <NextCard event={hero} data={data} phone /> : <EmptyState compact kind="first-run" code="CH-16312" title="Nothing on the calendar" body="Add an event and it shows here with its lineup and travel." />}
               {others.length > 0 && (
                 <Section id="ch-tour-home-more" title="Coming up">
                   <OtherEvents events={others} data={data} />
@@ -134,7 +134,7 @@ function HomeReady({ data, phone }: { data: ChTourHomeData; phone: boolean }) {
                     {others.length > 0 && <OtherEvents events={others} data={data} />}
                   </div>
                 ) : (
-                  <EmptyState compact code="CH-16312" title="Nothing on the calendar" body="Add an event and it shows here with its lineup and travel." />
+                  <EmptyState compact kind="first-run" code="CH-16312" title="Nothing on the calendar" body="Add an event and it shows here with its lineup and travel." />
                 )}
               </Section>
               <Section id="ch-tour-home-led" title="Season ledger" meta="Official finish and counting totals · open an event for rounds and players">
