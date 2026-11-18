@@ -600,6 +600,21 @@ export function mergeRouteLabel(entries) {
   return { audience, coach: pick('coach'), player: pick('player'), visitor: pick('visitor') };
 }
 
+/** Prose wrapped at 80 columns for markdownlint (MD013); an inline code span is never split. */
+function wrap80(text) {
+  const words = text.match(/`[^`]*`[^\s`]*|\S+/g) ?? [];
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    if (line && line.length + 1 + w.length > 80) {
+      lines.push(line);
+      line = w;
+    } else line = line ? `${line} ${w}` : w;
+  }
+  if (line) lines.push(line);
+  return lines.join('\n');
+}
+
 function renderRouteMap({ pages, otherRoutes = [] }) {
   const code = (x) => (x ? `\`${cell(x)}\`` : '—');
   const rows = new Map();
@@ -619,16 +634,14 @@ function renderRouteMap({ pages, otherRoutes = [] }) {
     if (!r.view) count[l.audience] = (count[l.audience] ?? 0) + 1;
     body += `| \`${r.route}\` | ${r.view ? `\`${cell(r.view)}\`` : '—'} | **${l.audience}** | ${cell([...new Set(r.names)].join('; '))} | ${code(l.coach)} | ${code(l.player)} | ${code(l.visitor)} | ${[...new Set(r.pages)].join(', ')} |\n`;
   }
-  let md = GEN_HEAD(
-    'Clubhouse route map',
-    'Who each Clubhouse address is for, for routing: **coach** (only a coach gets a screen there), **player** (only a player), **shared** (both roles get a screen there: the same component, or one each, as the columns show) or **signed-out** (drawn before sign-in). Sources: each page manifest\'s `screens` (`config/clubhouse/pages/*.json`) and `config/clubhouse/other-routes.json`. `clubhouse:check` fails if a `page.tsx` under `src/app/golf` (outside `admin/`) has no label, if a named component does not exist, or if a label disagrees with `CH_REBUILT_ROUTES`.',
-  );
-  md += `\n${sorted.filter((r) => !r.view).length} page addresses: ${count.coach} coach, ${count.player} player, ${count.shared} shared, ${count['signed-out']} signed out; ${sorted.filter((r) => r.view).length} query views that are screens of their own; ${otherRoutes.length} other addresses below.\n`;
-  md += '\nA role that has no screen at an address gets the frame\'s state instead: Clubhouse\'s coach-only state (CH-1301, or the page\'s own, such as Qualifiers\' CH-09311 and Tournaments\' coach-only notice), a coach on a player\'s round flow gets CH-11390, or the page sends that role elsewhere. Practice\'s coach-only pages send a player to `/golf/dashboard/practice`.\n';
+  let md = GEN_HEAD('Clubhouse route map', 'Who each Clubhouse address is for, for routing.');
+  md += `\n${wrap80('**coach**: only a coach gets a screen there. **player**: only a player. **shared**: both roles get a screen there, the same component or one each, as the columns show. **signed-out**: drawn before sign-in. Sources: each page manifest\'s `screens` (`config/clubhouse/pages/*.json`) and `config/clubhouse/other-routes.json`. `clubhouse:check` fails if a `page.tsx` under `src/app/golf` (outside `admin/`) has no label, if a named component does not exist, or if a label disagrees with `CH_REBUILT_ROUTES`.')}\n`;
+  md += `\n${wrap80(`${sorted.filter((r) => !r.view).length} page addresses: ${count.coach} coach, ${count.player} player, ${count.shared} shared, ${count['signed-out']} signed out; ${sorted.filter((r) => r.view).length} query views that are screens of their own; ${otherRoutes.length} other addresses below.`)}\n`;
+  md += `\n${wrap80('A role that has no screen at an address gets the frame\'s state instead: Clubhouse\'s coach-only state (CH-1301, or the page\'s own, such as Qualifiers\' CH-09311 and Tournaments\' coach-only notice), a coach on a player\'s round flow gets CH-11390, or the page sends that role elsewhere. Practice\'s coach-only pages send a player to `/golf/dashboard/practice`.')}\n`;
   md += `\n## Screens\n${body}`;
-  md += '\n## Other addresses\n\nOld addresses, the join links that sit outside the `(auth)` group, and the dashboard\'s not-found page. A redirect row says where each role lands.\n\n| Route | Kind | Audience | Coach | Player | Signed out | Source | Note |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n';
+  md += `\n## Other addresses\n\n${wrap80('Old addresses, the join links that sit outside the `(auth)` group, and the dashboard\'s not-found page. A redirect row says where each role lands.')}\n\n| Route | Kind | Audience | Coach | Player | Signed out | Source | Note |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n`;
   for (const o of [...otherRoutes].sort((a, b) => a.route.localeCompare(b.route))) {
-    md += `| \`${o.route}\` | ${o.kind} | **${o.audience}** | ${code(o.coach)} | ${code(o.player)} | ${code(o.visitor)} | \`${o.source}\` | ${cell(o.note ?? '')} |\n`;
+    md += `| \`${o.route}\` | ${o.kind} | **${o.audience}** | ${code(o.coach)} | ${code(o.player)} | ${code(o.visitor)} | \`${o.source}\` | ${o.note ? cell(o.note) : '—'} |\n`;
   }
   return md;
 }

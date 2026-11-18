@@ -28,8 +28,9 @@ The current architecture uses cached stats for performance. Cache invalidation m
 
 ### Routes
 
-- `src/app/golf/(dashboard)/dashboard/stats/page.tsx` (Team stats for a coach, My stats for a player; the old
-  `/stats/team` is a `next.config.mjs` redirect here, its page deleted 2026-11-18)
+- `src/app/golf/(dashboard)/dashboard/stats/page.tsx` (Team stats for a
+  coach, My stats for a player; the old `/stats/team` is a
+  `next.config.mjs` redirect here, its page deleted 2026-11-18)
 - Roster player profile stats surfaces under `src/app/golf/(dashboard)/dashboard/roster/**`
 
 ### Components
