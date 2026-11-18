@@ -745,7 +745,7 @@ function ExemptField({
         Exempt players <span className="ch-field__opt">Optional</span>
       </legend>
       <span id="qf-exempt-h" className={'ch-field__help' + (problem ? ' is-error' : '')} role={problem ? 'alert' : undefined} data-ch-code={problem?.code}>
-        {problem?.text ?? `An exempt player needn’t play: they take one of the ${plural(picks, 'coach’s pick')} when selection closes. Only you see the reason.`}
+        {problem?.text ?? `An exempt player needn’t play: they use ${plural(picks, 'coach’s pick')} when selection closes. Only you see the reason.`}
       </span>
       {players.map((p) => (
         <div key={p.id} className="ch-field">

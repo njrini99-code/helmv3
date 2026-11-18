@@ -217,7 +217,7 @@
 .ch-field__opt {
   margin-left: auto;
   font: var(--ch-type-footnote);
-  color: var(--ch-green-700);
+  color: var(--ch-text-secondary);
 }
 .ch-field__help {
   font: var(--ch-type-13);

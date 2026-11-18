@@ -1264,7 +1264,7 @@ function CalendarBody({
             <Icon icon={ChevronDown} size={16} />
           </button>
           <div className="ch-cal-sub">
-            {data.eventsError ? "Events didn’t load" : `${count} team ${pluralWord(count, 'event')}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`} · {data.zoneLabel}
+            {data.eventsError ? "Events didn’t load" : (count === 0 && view !== 'day' ? `Nothing scheduled this ${view === 'week' ? 'week' : 'month'}` : `${count} ${coach ? 'team ' : ''}${pluralWord(count, 'event')}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`)} · {data.zoneLabel}
           </div>
           <AnimatePresence>
             {jump && (
@@ -1373,7 +1373,7 @@ function CalendarBody({
                           code="CH-6301"
                           icon={CalendarDays}
                           title={sel.length ? 'Nothing on these players’ schedules in this range.' : 'Nothing on the calendar in this range.'}
-                          body={coach ? 'Events you publish show here, with any overlaps and replies.' : 'Events your coach invites you to show here.'}
+                          body={coach ? 'Events you publish show here, with any overlaps and replies.' : 'Events your coach invites you to will show up here.'}
                         />
                       </div>
                     ))}

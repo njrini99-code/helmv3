@@ -169,6 +169,7 @@ html[data-fw-theme='dark'] .ch-prc-day__bar i[data-tone='random'] { background: 
 }
 .ch-prc-tile__d b {
   font: var(--ch-type-17-strong);
+  font-variant-numeric: tabular-nums;
   letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }

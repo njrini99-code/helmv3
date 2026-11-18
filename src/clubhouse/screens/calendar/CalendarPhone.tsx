@@ -171,7 +171,7 @@ export function CalendarPhone({
               (events.some((e) => e.date >= now.date) ? (
                 <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} viewerId={viewerId} movedAway={data.movedAway} onOpenAt={onOpen} />
               ) : (
-                <EmptyState code="CH-6301" icon={CalendarDays} title="Nothing on the calendar in this range" body={coach ? 'Events you publish show here, with any overlaps and replies.' : 'Events your coach invites you to show here.'} />
+                <EmptyState code="CH-6301" icon={CalendarDays} title="Nothing on the calendar in this range" body={coach ? 'Events you publish show here, with any overlaps and replies.' : 'Events your coach invites you to will show up here.'} />
               ))}
           </Swap>
         </SectionBoundary>
@@ -471,7 +471,7 @@ function DayPage({
           code="CH-6308"
           icon={CalendarDays}
           title="Nothing on this day"
-          body={coach ? 'Plan something for the team.' : 'Events your coach invites you to show here.'}
+          body={coach ? 'Plan something for the team.' : 'Events your coach invites you to will show up here.'}
           action={
             coach && onNew ? (
               <Button size="sm" variant="ghost" leftIcon={Plus} onClick={() => onNew(anchor)}>

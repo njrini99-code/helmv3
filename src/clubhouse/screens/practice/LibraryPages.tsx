@@ -481,7 +481,7 @@ function BodyGlance({ body }: { body: PlanBodyV2 }) {
     <ul className="ch-prc-glance" aria-hidden="true">
       {blocks.slice(0, GLANCE_BLOCKS).map((b) => (
         <li key={b.id}>
-          <span className="ch-num">{b.len} min</span>
+          <span className="ch-num">{hours(b.len)}</span>
           <span>{b.title}</span>
         </li>
       ))}

@@ -409,7 +409,7 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
                 body={
                   coach
                     ? 'Practices, qualifiers, tournaments and meetings you add show here with their hours.'
-                    : 'Events your coach invites you to show here with their hours.'
+                    : 'Events your coach invites you to will show up here with their hours.'
                 }
               />
             ) : (
