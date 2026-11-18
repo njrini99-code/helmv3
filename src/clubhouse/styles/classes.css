@@ -1975,7 +1975,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   display: flex;
   flex: none;
   align-items: baseline;
-  gap: 3px;
+  gap: 4px;
   width: calc(74 * var(--ch-type-k));
   white-space: nowrap;
 }

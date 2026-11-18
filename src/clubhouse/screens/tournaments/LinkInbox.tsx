@@ -116,6 +116,7 @@ function LinkRow({
   const event = events.find((e) => e.id === eventId);
   const name = player?.first ?? 'the player';
   const conf = c.suggestion ? CONFIDENCE_WORDS[c.suggestion.confidence] : null;
+  const pickedRound = event?.rounds.find((r) => r.roundEventId === roundEventId);
 
   const link = useAction<[], null>(
     'tournaments.link',
@@ -164,6 +165,18 @@ function LinkRow({
             <span className="ch-tour-links-muted">{conf.why}</span>
           </div>
         )}
+        {/* L-033: a row that starts on a suggestion says it in one line, and the pickers wait behind Change, so 79 rounds are not
+            79 stacks of four controls. A row with no suggestion opens on the pickers. Closed, they stay in the page. */}
+        <details className="ch-tour-links-row__more" open={!start || undefined}>
+          {start && (
+            <summary className="ch-tour-links-row__to">
+              <span>
+                Links to <b>{eventName(eventId)}</b>
+                {pickedRound ? <span className="ch-tour-links-muted"> · {roundOption(pickedRound, (d) => tourDay(d))}</span> : null}
+              </span>
+              <span className="ch-tour-links-row__chg">Change</span>
+            </summary>
+          )}
         <div className="ch-tour-links-row__sel">
           <Select
             label={`Event for ${name}’s round`}
@@ -183,6 +196,7 @@ function LinkRow({
             options={[{ value: NONE, label: event ? 'Pick a round' : 'Pick an event first' }, ...(event?.rounds ?? []).map((r) => ({ value: r.roundEventId, label: roundOption(r, (d) => tourDay(d)) }))]}
           />
         </div>
+        </details>
       </div>
       <div className="ch-tour-links-row__act">
         <Button variant="secondary" size="sm" busy={link.pending} disabled={!roundEventId || dismiss.pending} onClick={() => void link.run()}>
