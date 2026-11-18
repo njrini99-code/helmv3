@@ -17741,6 +17741,39 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130651,
+    "page": "P013",
+    "category": 6,
+    "item": 51,
+    "name": "COACHHELM_READS_SET_AS_FOCUS_ON_THE",
+    "chCode": "CH-13015",
+    "meaning": "CoachHelm reads (`coachhelm_reads_v1`): Set as focus on the analyst's card fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130652,
+    "page": "P013",
+    "category": 6,
+    "item": 52,
+    "name": "COACHHELM_READS_NOT_USEFUL_ON_THE_ANALYSTS",
+    "chCode": "CH-13016",
+    "meaning": "CoachHelm reads: Not useful on the analyst's card fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130653,
+    "page": "P013",
+    "category": 6,
+    "item": 53,
+    "name": "COACHHELM_READS_WRONG_ON_THE_ANALYSTS_CARD",
+    "chCode": "CH-13017",
+    "meaning": "CoachHelm reads: Wrong (with its reason) on the analyst's card fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130690,
     "page": "P013",
     "category": 6,

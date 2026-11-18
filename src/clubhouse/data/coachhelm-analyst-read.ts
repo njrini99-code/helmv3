@@ -9,11 +9,11 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { readsEnabled } from '@/lib/coachhelm/v3/analyst/reads/flag';
 import { forPlayer } from '@/lib/coachhelm/v3/analyst/reads/player-card';
-import { loadCurrentReads } from '@/lib/coachhelm/v3/analyst/reads/store';
+import { loadCurrentReads, loadPlayerReadActions } from '@/lib/coachhelm/v3/analyst/reads/store';
 import type { ReadPayload } from '@/lib/coachhelm/v3/analyst/reads/types';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
-import { toChAnalystRead, type ChAnalystReadLoad } from './coachhelm-analyst-read-shape';
+import { toChAnalystRead, withCoachActions, type ChAnalystReadLoad } from './coachhelm-analyst-read-shape';
 
 const log = (where: string, err: unknown) => chLogServer('coachhelm.reads', where, err, 'coachhelm');
 
@@ -38,7 +38,13 @@ export async function loadCoachAnalystRead(input: { teamId: string; playerId: st
       return { status: 'failed' };
     }
     const row = res.data.get(input.playerId);
-    return row ? { status: 'ready', read: toChAnalystRead(row.payload) } : { status: 'none' };
+    if (!row) return { status: 'none' };
+    const read = toChAnalystRead(row.payload);
+    // The coach's own focus or verdict since this read was saved (held tables; a missing one is none). A failed read of
+    // them is logged and the card stands as saved: the actions are still offered, and a repeat is written once.
+    const actions = await loadPlayerReadActions(sb, input.teamId, input.playerId);
+    if (actions.status === 'failed') log('actions', new Error(actions.error));
+    return { status: 'ready', read: actions.status === 'ok' ? withCoachActions(read, row.computed_at, actions.data) : read };
   } catch (err) {
     log('load', err);
     return { status: 'failed' };

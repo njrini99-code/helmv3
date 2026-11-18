@@ -165,7 +165,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 3 | 10 | — | 18 | 10 | 25 | 1 | 4 | 1 | — | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 | — | 1 | 1 | — | 92 |
 | P011 | 16 | 16 | — | 28 | 11 | 47 | 22 | 5 | 3 | — | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 | — | 1 | 2 | — | 217 |
 | P012 | 3 | 3 | — | 8 | 19 | 22 | 3 | 3 | 2 | — | 5 | 1 | — | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 | — | 1 | 1 | — | 96 |
-| P013 | 6 | 13 | — | 33 | 3 | 44 | 63 | 7 | 3 | — | 3 | 1 | — | 3 | 3 | 4 | 10 | 19 | 1 | — | 1 | — | 1 | — | — | 218 |
+| P013 | 6 | 13 | — | 33 | 3 | 47 | 63 | 7 | 3 | — | 3 | 1 | — | 3 | 3 | 4 | 10 | 19 | 1 | — | 1 | — | 1 | — | — | 221 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 | — | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 | — | — | — | — | — | 69 |
 | P015 | — | 7 | 2 | 3 | 12 | 22 | 27 | 2 | 2 | — | — | 3 | — | 1 | — | 17 | 7 | 6 | 2 | 1 | 1 | — | 1 | — | — | 116 |
 | P016 | 33 | 2 | 1 | 29 | 4 | 40 | 3 | 1 | 2 | 2 | 6 | 1 | — | — | 5 | 2 | — | 4 | — | — | — | — | — | — | — | 135 |
@@ -1781,6 +1781,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130648 | CH-13083 | 06 Server / system error | `PRACTICE_A_NEW_DRILL_SAVED` | implemented | Practice: a new drill saved |
 | 130649 | CH-13084 | 06 Server / system error | `PRACTICE_OFFLINE_WHILE_EDITING` | implemented | Practice: offline while editing |
 | 130650 | CH-13008 | 06 Server / system error | `REMOVE_FOCUS_ON_A_READ_FAILS` | implemented | Remove focus on a read fails (written when its Undo toast goes) |
+| 130651 | CH-13015 | 06 Server / system error | `COACHHELM_READS_SET_AS_FOCUS_ON_THE` | implemented | CoachHelm reads (`coachhelm_reads_v1`): Set as focus on the analyst's card fails |
+| 130652 | CH-13016 | 06 Server / system error | `COACHHELM_READS_NOT_USEFUL_ON_THE_ANALYSTS` | implemented | CoachHelm reads: Not useful on the analyst's card fails |
+| 130653 | CH-13017 | 06 Server / system error | `COACHHELM_READS_WRONG_ON_THE_ANALYSTS_CARD` | implemented | CoachHelm reads: Wrong (with its reason) on the analyst's card fails |
 | 130690 | CH-13285 | 06 Server / system error | `WHATS_NEW_ONE_OR_TWO_KINDS_DONT` | implemented | What’s new: one or two kinds don’t load (insights, patterns or the roster behind them, focus areas) while the rest answered (GAP-S-02) |
 | 130691 | CH-13286 | 06 Server / system error | `PRACTICE_ONE_PART_OF_A_PAGE_DOESNT` | implemented | Practice: one part of a page doesn’t load: the team's plan format (on a plan, or on Plan format), a saved template picked for New plan, or part of the drill bank (GAP-S-03, GAP-S-07, GAP-S-28, GAP-S-37) |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |

@@ -4,19 +4,38 @@ import Link from 'next/link';
 import { ChevronRight, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import type { ChAnalystRead, ChAnalystReadLoad } from '../../../data/coachhelm-analyst-read-shape';
+import { normalise, useAction } from '../../../lib/use-action';
 import { Badge } from '../../../ui/Badge';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
+import { LIVE_ANALYST_READ_WRITES, type ChAnalystReadWrites } from '../writes';
 import { CardHead } from './cards';
+
+/** The longest reason a "Wrong" keeps (the table's check). */
+export const WRONG_REASON_MAX = 500;
+
+/** A fresh id for one tap. A Retry of the same tap sends it again, so the server writes the row once. */
+export function newReadActionId(): string {
+  const c = globalThis.crypto;
+  if (typeof c.randomUUID === 'function') return c.randomUUID();
+  const b = c.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6]! & 0x0f) | 0x40;
+  b[8] = (b[8]! & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
 
 /**
  * CoachHelm's read of one player (flag `coachhelm_reads_v1`, the listed team only): where the strokes go, how sure, one
  * level down, the rounds behind it, how it was found and what would change it. Drawn above today's cards; nothing is
  * drawn when the flag is off or no read is saved yet. The rounds open in a sheet, each opening its round.
+ *
+ * The coach acts on it here: Set as focus (the card then says, honestly, what happened since), Not useful, or Wrong with a
+ * reason (the card steps down until the evidence changes). Each change shows at once and goes back, with an error toast
+ * and Try again, when the server says no.
  */
-export function AnalystReadCard({ load, first }: { load: ChAnalystReadLoad | null | undefined; first: string }) {
-  const [open, setOpen] = useState(false);
+export function AnalystReadCard({ load, first, writes = LIVE_ANALYST_READ_WRITES }: { load: ChAnalystReadLoad | null | undefined; first: string; writes?: ChAnalystReadWrites }) {
   if (!load || load.status === 'off' || load.status === 'none') return null;
   if (load.status === 'failed') {
     return (
@@ -29,13 +48,55 @@ export function AnalystReadCard({ load, first }: { load: ChAnalystReadLoad | nul
       </section>
     );
   }
-  const r = load.read;
-  if (r.suppressed) {
+  return <ReadCard read={load.read} first={first} writes={writes} />;
+}
+
+type Mark = { id: string; playerId: string; cardKey: string; verdict: 'not_useful' | 'wrong'; reason?: string | null };
+
+function ReadCard({ read: r, first, writes }: { read: ChAnalystRead; first: string; writes: ChAnalystReadWrites }) {
+  const [open, setOpen] = useState(false);
+  const [focus, setFocus] = useState(r.focus);
+  const [suppressed, setSuppressed] = useState(r.suppressed);
+  const [wrongOpen, setWrongOpen] = useState(false);
+  const [reason, setReason] = useState('');
+
+  const focusAct = useAction(
+    'coachhelm.reads.focus',
+    async (a: { id: string; playerId: string; cardKey: string }) => {
+      // Shown at once; taken back if the server says no.
+      setFocus({ setOn: '', since: r.focusDraft ?? '', word: 'Too early' });
+      const res = await writes.focus(a);
+      const ok = normalise(res);
+      if (ok.success && ok.data) setFocus(ok.data);
+      else setFocus(null);
+      return res;
+    },
+    { done: `Focus set for ${first}`, failed: `Couldn’t set the focus for ${first}`, hint: 'Nothing was saved. Try again.', code: 'CH-13015' },
+  );
+  const markAct = useAction(
+    'coachhelm.reads.mark',
+    async (a: Mark) => {
+      setSuppressed({ verdict: a.verdict === 'wrong' ? 'Wrong' : 'Not useful', reason: a.reason?.trim() || 'Not useful' });
+      const res = await writes.mark(a);
+      if (normalise(res).success) setReason('');
+      else setSuppressed(null);
+      return res;
+    },
+    (a: Mark) =>
+      a.verdict === 'wrong'
+        ? { done: '', failed: `Couldn’t mark ${first}’s read as wrong`, hint: 'The read is still up. Try again.', code: 'CH-13017' }
+        : { done: '', failed: `Couldn’t mark ${first}’s read as not useful`, hint: 'The read is still up. Try again.', code: 'CH-13016' },
+  );
+  const busy = focusAct.pending || markAct.pending;
+  const key = r.cardKey;
+
+  if (suppressed) {
     return (
       <section className="card ch-hf-an" data-ch-anchor="analyst" data-ch="analyst-read">
         <CardHead title="CoachHelm’s read" meta={<span className="ch-num">{r.through}</span>} />
-        <p className="card__n">
-          You marked this read {r.suppressed.verdict.toLowerCase()}: {r.suppressed.reason}. It stays down until the evidence changes.
+        <p className="card__n" data-ch-an-suppressed="">
+          You marked this read of {first} {suppressed.verdict.toLowerCase()}
+          {suppressed.reason && suppressed.reason !== 'Not useful' ? `: ${suppressed.reason}` : ''}. It stays down until the evidence changes.
         </p>
       </section>
     );
@@ -54,10 +115,11 @@ export function AnalystReadCard({ load, first }: { load: ChAnalystReadLoad | nul
         {r.missing && <p className="ch-hf-an__p">{r.missing}</p>}
         {r.where && <p className="ch-hf-an__p">{r.where}</p>}
         {r.team && <p className="ch-hf-an__p ch-hf-an__team">{r.team}</p>}
-        {r.focus && (
-          <p className="ch-hf-an__p" data-ch-an-focus="">
-            <Badge tone="neutral">{r.focus.word}</Badge> {r.focus.since}
-          </p>
+        {focus && (
+          <div className="ch-hf-an__focus" data-ch-an-focus="" aria-live="polite">
+            <p className="ch-hf-an__p">{focus.since}</p>
+            <p className="ch-hf-an__stale">{focus.word}.</p>
+          </div>
         )}
         {r.written && <WrittenBlock w={r.written} />}
         {r.how.length > 0 && (
@@ -103,17 +165,69 @@ export function AnalystReadCard({ load, first }: { load: ChAnalystReadLoad | nul
             </ul>
           </div>
         )}
-        {r.rounds.length > 0 && (
+        {(r.rounds.length > 0 || key) && (
           <div className="ch-hf-an__foot">
-            <Button variant="secondary" size="lg" data={{ 'data-ch-an-rounds': '' }} onClick={() => setOpen(true)}>
-              The {r.rounds.length} rounds behind it
-            </Button>
+            {r.rounds.length > 0 && (
+              <Button variant="secondary" size="lg" data={{ 'data-ch-an-rounds': '' }} onClick={() => setOpen(true)}>
+                The {r.rounds.length} rounds behind it
+              </Button>
+            )}
+            {key && (
+              <div className="ch-hf-an__acts" role="group" aria-label={`Act on ${first}’s read`}>
+                {!focus && (
+                  <Button variant="secondary" data={{ 'data-ch-an-act': 'focus' }} busy={focusAct.pending} disabled={busy && !focusAct.pending} onClick={() => void focusAct.run({ id: newReadActionId(), playerId: r.playerId, cardKey: key })}>
+                    Set as focus
+                  </Button>
+                )}
+                <Button variant="ghost" data={{ 'data-ch-an-act': 'not-useful' }} busy={markAct.pending} disabled={busy && !markAct.pending} onClick={() => void markAct.run({ id: newReadActionId(), playerId: r.playerId, cardKey: key, verdict: 'not_useful' })}>
+                  Not useful
+                </Button>
+                <Button variant="ghost" data={{ 'data-ch-an-act': 'wrong' }} disabled={busy} onClick={() => setWrongOpen(true)}>
+                  Wrong
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
       <Modal open={open} onClose={() => setOpen(false)} title="The rounds behind it" className="ch-htb-sheet ch-htb ch-hf ch-hf-sheet" width={480}>
         <EvidenceRounds read={r} />
       </Modal>
+      {key && (
+        <Modal
+          open={wrongOpen}
+          onClose={() => setWrongOpen(false)}
+          title={`What’s wrong with this read of ${first}?`}
+          description="The read steps down until the evidence changes. Only coaches see what you write."
+          className="ch-htb-sheet ch-htb ch-hf ch-hf-sheet"
+          width={480}
+          initialFocus="textarea"
+        >
+          <form
+            className="ch-hf-an__wrong"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const text = reason.trim();
+              if (!text) return;
+              setWrongOpen(false);
+              void markAct.run({ id: newReadActionId(), playerId: r.playerId, cardKey: key, verdict: 'wrong', reason: text });
+            }}
+          >
+            <label className="ch-field">
+              Reason
+              <textarea className="ch-textarea" rows={4} maxLength={WRONG_REASON_MAX} value={reason} onChange={(e) => setReason(e.target.value)} data-ch-an-reason="" />
+            </label>
+            <div className="ch-hf-an__wrong-foot">
+              <Button variant="secondary" onClick={() => setWrongOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" disabled={!reason.trim()} data={{ 'data-ch-an-wrong-send': '' }}>
+                Mark as wrong
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </section>
   );
 }

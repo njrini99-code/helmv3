@@ -18,7 +18,7 @@ const payload: ReadPayload = { ...built, team_id: TEAM, player_id: PLAYER };
 
 /** A stand-in for the coach's RLS client: the roster, the current read, and the two held tables (an id written once). */
 function fakeDb(opts: { member?: boolean; current?: ReadPayload | null; missingTable?: boolean; insertError?: string } = {}) {
-  const written: Record<string, Map<string, Record<string, unknown>>> = { golf_coach_read_feedback: new Map(), golf_coach_read_focus: new Map() };
+  const written: { golf_coach_read_feedback: Map<string, Record<string, unknown>>; golf_coach_read_focus: Map<string, Record<string, unknown>> } = { golf_coach_read_feedback: new Map(), golf_coach_read_focus: new Map() };
   const upserts: Array<{ table: string; opts: unknown }> = [];
   const from = (table: string) => {
     const b: Record<string, unknown> = {};
@@ -34,7 +34,7 @@ function fakeDb(opts: { member?: boolean; current?: ReadPayload | null; missingT
         upserts.push({ table, opts: o });
         if (opts.missingTable) return { error: { message: 'relation does not exist', code: '42P01' } };
         if (opts.insertError) return { error: { message: opts.insertError, code: '42501' } };
-        const m = written[table]!;
+        const m = written[table as keyof typeof written];
         if (!m.has(row.id as string)) m.set(row.id as string, row);
         return { error: null };
       },

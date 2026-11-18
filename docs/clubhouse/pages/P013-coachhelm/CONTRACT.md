@@ -284,6 +284,9 @@ the whole change again, follow-ups included (131401).
 | 130648 | CH-13083 | `PRACTICE_A_NEW_DRILL_SAVED` | Practice: a new drill saved |
 | 130649 | CH-13084 | `PRACTICE_OFFLINE_WHILE_EDITING` | Practice: offline while editing |
 | 130650 | CH-13008 | `REMOVE_FOCUS_ON_A_READ_FAILS` | Remove focus on a read fails (written when its Undo toast goes) |
+| 130651 | CH-13015 | `COACHHELM_READS_SET_AS_FOCUS_ON_THE` | CoachHelm reads (`coachhelm_reads_v1`): Set as focus on the analyst's card fails |
+| 130652 | CH-13016 | `COACHHELM_READS_NOT_USEFUL_ON_THE_ANALYSTS` | CoachHelm reads: Not useful on the analyst's card fails |
+| 130653 | CH-13017 | `COACHHELM_READS_WRONG_ON_THE_ANALYSTS_CARD` | CoachHelm reads: Wrong (with its reason) on the analyst's card fails |
 | 130690 | CH-13285 | `WHATS_NEW_ONE_OR_TWO_KINDS_DONT` | What’s new: one or two kinds don’t load (insights, patterns or the roster behind them, focus areas) while the rest answered (GAP-S-02) |
 | 130691 | CH-13286 | `PRACTICE_ONE_PART_OF_A_PAGE_DOESNT` | Practice: one part of a page doesn’t load: the team's plan format (on a plan, or on Plan format), a saved template picked for New plan, or part of the drill bank (GAP-S-03, GAP-S-07, GAP-S-28, GAP-S-37) |
 
