@@ -9,6 +9,7 @@ import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { clearEmergencySave, clearEmergencySaveThrough, markRoundDiscarded } from '@/lib/utils/emergency-save';
 import { describeRoundWriteResult, isQualifierClosedError, writeRoundRecreatingIfMissing } from '@/lib/golf/round-missing-recovery';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
+import { chReport } from '../../../lib/track';
 import { normalise, type ServerResult } from '../../../lib/use-action';
 import { ROUNDS_LIBRARY } from '../entry/routes';
 import { LIVE_ROUNDS_WRITES } from '../writes';
@@ -108,8 +109,9 @@ async function clearAcknowledged(round: ChRecoverRound, playerId: string): Promi
       if (copy.source === 'modern-indexeddb') await deleteOfflineRoundThrough(copy.id, through);
       else if (copy.source === 'recovery-cache') await clearRoundRecoverySnapshotThrough(key, playerId, through);
       else if (copy.source === 'legacy-indexeddb') await deleteLegacyRound(copy.id, through);
-    } catch {
-      // See above.
+    } catch (err) {
+      // See above: never thrown on. Reported, since a copy left behind offers the round again on the next scan.
+      chReport(err, { surface: 'rounds.recover', action: 'rounds.recover.clearCopy', severity: 'medium', extra: { source: copy.source } });
     }
   }
 }
@@ -149,6 +151,8 @@ async function resume(round: ChRecoverRound, playerId: string): Promise<ServerRe
     await clearAcknowledged(round, playerId);
     return { success: true, data: { href: `${ROUNDS_LIBRARY}/${result.data.roundId}`, done: 'Round submitted' } };
   } catch (err) {
+    // useAction only tracks the message (low); this keeps the throw itself, on the path that holds a player's scores.
+    chReport(err, { surface: 'rounds.recover', action: 'rounds.recover.resume', severity: 'high' });
     return { success: false, error: err instanceof Error ? err.message : undefined };
   }
 }
@@ -182,6 +186,8 @@ async function discard(round: ChRecoverRound, playerId: string): Promise<ServerR
     await clearDeviceCopies(round, playerId);
     return { success: true };
   } catch (err) {
+    // useAction only tracks the message (low); this keeps the throw itself, on the path that holds a player's scores.
+    chReport(err, { surface: 'rounds.recover', action: 'rounds.recover.discard', severity: 'high' });
     return { success: false, error: err instanceof Error ? err.message : undefined };
   }
 }
@@ -194,6 +200,8 @@ async function retrySync(): Promise<ServerResult<ChSyncOutcome>> {
     if (!result.success) return { success: false, error: result.errors[0] };
     return { success: true, data: { synced: result.syncedRounds, declined: false } };
   } catch (err) {
+    // useAction only tracks the message (low); this keeps the throw itself, on the path that holds a player's scores.
+    chReport(err, { surface: 'rounds.recover', action: 'rounds.recover.retrySync', severity: 'high' });
     return { success: false, error: err instanceof Error ? err.message : undefined };
   }
 }

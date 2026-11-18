@@ -13,6 +13,7 @@ function readScroll(): { summary: number; detail: number } | null {
     const raw = window.sessionStorage.getItem(scrollKey());
     return raw ? (JSON.parse(raw) as { summary: number; detail: number }) : null;
   } catch {
+    // Private browsing, or a kept position that doesn't parse: the page opens at its top.
     return null;
   }
 }

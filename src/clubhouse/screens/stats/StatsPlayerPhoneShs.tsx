@@ -181,6 +181,7 @@ export function StatsPlayerPhoneShs({
       haptic('success');
       toast({ title: 'Link copied', body: `Coaches on your team can open ${first}’s stats from it.` });
     } catch (e) {
+      // Closing the share sheet is not a failure; a share or copy the browser refused is told, not reported.
       if (e instanceof DOMException && e.name === 'AbortError') return;
       chTrail('stats share failed');
       haptic('error');

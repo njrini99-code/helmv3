@@ -389,6 +389,7 @@ export function Roster({ data }: { data: ChRoster; }) {
       haptic('success');
       toast({ title: `Roster exported · ${plural(rows.length, 'player')}` });
     } catch {
+      // The browser refused the download (a blob or link it won't open): told, not reported.
       haptic('error');
       toast({ tone: 'error', title: 'Couldn’t export the roster', body: 'Your browser blocked the download. Try again, or use a desktop browser.', code: 'CH-3005' });
     }
@@ -998,6 +999,7 @@ function InviteModal({
     try {
       await navigator.share({ title: `Join ${teamName} on GolfHelm`, text: `Join ${teamName} on GolfHelm with code ${code}.`, url: link });
     } catch (e) {
+      // Closing the share sheet is not a failure; any other refusal falls back to copying the link.
       if (e instanceof Error && e.name === 'AbortError') return;
       void copy(link, 'Invite link');
     }

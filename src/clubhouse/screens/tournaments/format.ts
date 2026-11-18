@@ -33,6 +33,7 @@ export function teamToday(now: string, timezone: string): string {
   try {
     return isoDay(now, timezone);
   } catch {
+    // A zone the browser doesn't know: the UTC date, as before the zone was read.
     return now.slice(0, 10);
   }
 }
