@@ -97,7 +97,7 @@ export async function refreshReadsAfterRound(sb: SupabaseClient, args: { playerI
 export async function refreshReadsNightly(sb: SupabaseClient, opts: { budgetMs: number; flag?: { teams?: string; flagOn?: () => boolean } }): Promise<{ teams: number; written: number; held: number; failed: number; deferred: number }> {
   const started = Date.now();
   const summary = { teams: 0, written: 0, held: 0, failed: 0, deferred: 0 };
-  let teams: string[] = [];
+  let teams: string[];
   try {
     teams = readsEnabledTeams(opts.flag ?? {});
   } catch {
