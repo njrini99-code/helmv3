@@ -151,9 +151,9 @@ editor with the player invited (phone Plan 1:1 and the desktop panel's Schedule
 1:1, `calendar?new=1&with=<id>`, D-52), and Settings › Team when the team has no
 join code.
 
-`/golf/dashboard/roster/[id]` (the Fairway player page) is not part of this
-page: with Clubhouse on, a coach goes to `stats?player=<id>` and a player goes to
-the roster (30806).
+`/golf/dashboard/roster/[id]` (once the Fairway player page, retired with
+Fairway on 2026-11-14) is not part of this page: its layout sends a coach to
+`stats?player=<id>` and a player to the roster (30806).
 
 ## Ownership
 

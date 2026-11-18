@@ -121,9 +121,10 @@ Status:           draft (built to D-18; the owner has not reviewed the built scr
 
 ### Enters from
 
-The top bar's Settings gear (desktop), the More sheet (phone, D-41), Roster's invite state ("Open team
-settings" opens `?section=team`), and the two old links (`/settings/notifications`,
-`/settings/coaching-intelligence`).
+The top bar's Settings gear (desktop), the account sheet (phone; it replaced the
+More sheet of D-41 on 2026-10-13), the sidebar's Settings and Help, Roster's
+invite state ("Open team settings" opens `?section=team`), and the two old links
+(`/settings/notifications`, `/settings/coaching-intelligence`).
 
 ### Exits to
 

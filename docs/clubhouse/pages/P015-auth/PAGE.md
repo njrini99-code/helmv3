@@ -33,7 +33,7 @@ earlier observations below retain their original date and scope.
 The entrance to GolfHelm, drawn for someone with no role yet: sign in, then a
 welcome that says who is here and what has happened since they were last in.
 Sign up and a new player's onboarding are on this page too, built behind the
-same flag.
+same flag (removed on 2026-11-14: every entrance page now draws Clubhouse).
 
 ## Identity
 
@@ -46,11 +46,14 @@ Bridge Namespace:   15 (Bridge IDs 15ccii, D-68; catalog codes CH-15xxx)
 Roles:              none: drawn for a visitor with no role (the manifest's area is "auth")
 Implementation Root: src/clubhouse/screens/auth
 Manifest:           config/clubhouse/pages/P015-auth.json
-Flag:               golf_clubhouse_front_door (release, off in production, on in preview and development)
+Flag:               none (golf_clubhouse_front_door was removed on 2026-11-14, #2527)
 ```
 
-The flag chooses which page is drawn and nothing else. With it off, the current pages render exactly as before. With it
-on, both call the same server action (`loginAction`) and follow the same redirects.
+Until 2026-11-14 the flag chose which page was drawn and nothing else; with it
+off, the old pages rendered, and with it on, both called the same server action
+(`loginAction`) and followed the same redirects. Since then every entrance page
+draws Clubhouse and the old pages are deleted (tag
+`archive/fairway-2026-11-15`).
 
 ## Purpose
 
@@ -142,7 +145,7 @@ Data:            users, golf_coaches, golf_players, golf_team_coach_staff (read 
 
 ```text
 Design:         approved
-Implementation: in_progress (sign in, the welcome, sign up and onboarding built behind the flag)
+Implementation: in_progress (sign in, the welcome, sign up and onboarding built; drawn for everyone since the flag was removed on 2026-11-14)
 Contract:       partial (CONTRACT.md covers sign in and its reset views, the welcome, sign up and onboarding)
 Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
 Data:           existing (no migration)

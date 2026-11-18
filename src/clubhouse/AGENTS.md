@@ -76,9 +76,9 @@ and its consumer before copying a pattern; comments may describe older values.
 - Card/well: `ui/Surface.tsx`, `styles/ui.css` and `styles/tokens.css`. Preserve
   shared heading/body/footer and Inset. Current styles own depth; do not
   restore decorative rings from old comments.
-- Pushed phone detail: `shell/PhoneScreen.tsx` and `shell/PhoneBar.tsx`.
-  Preserve immersive shell, title focus, covered-screen inertness,
-  keyboard-aware scroll lock, base transition or immediate reduced-motion swap.
+- Pushed phone detail: `shell/PhoneScreen.tsx` and `ui/PhoneBar.tsx`. Preserve
+  immersive shell, title focus, covered-screen inertness, keyboard-aware scroll
+  lock, base transition or immediate reduced-motion swap.
 - Routine route change: `shell/RouteFrame.tsx`, `styles/shell.css`,
   `lib/reduced-motion.ts` and `lib/motion.ts`. Content is visible immediately.
   Preserve the desktop crossfade with anchored chrome and Back/Forward
