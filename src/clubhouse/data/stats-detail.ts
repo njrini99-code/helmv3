@@ -28,7 +28,9 @@ export async function statsActionContext(supabase: Supabase, playerId: string): 
     const authorization = await verifyPlayerAccess(playerId, user.id, supabase);
     if (!authorization.allowed) return null;
     return { supabase, user, requestedPlayerId: playerId, authorization: { ...authorization, allowed: true } };
-  } catch {
+  } catch (err) {
+    // The actions still check for themselves, so the page is unchanged; the throw is reported so a slow or broken check is seen.
+    chLogServer('stats', 'actionContext', err, 'stats_analytics');
     return null;
   }
 }

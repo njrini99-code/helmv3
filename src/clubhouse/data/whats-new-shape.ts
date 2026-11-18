@@ -78,6 +78,7 @@ function validZone(zone: string | null | undefined): string {
     new Intl.DateTimeFormat('en-US', { timeZone: zone });
     return zone;
   } catch {
+    // A stored name Intl doesn't know: read the week in the default zone, nothing failed.
     return WHATS_NEW_DEFAULT_ZONE;
   }
 }
