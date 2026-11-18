@@ -2,10 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-import { NOW, TeamFixture, tenRounds } from '../../__tests__/fixtures';
-import type { TeamRows } from '../../fact-sheet';
 import { buildTeamReads } from '../build';
-import { FOCUS_HORIZON_ROUNDS, focusRead } from '../focus';
 import { CHECKPOINT_ROUNDS, decideNext, type CoachFeedback } from '../memory';
 import type { PriorityCard, ReadPayload } from '../types';
 import { readsTeam } from './team';
