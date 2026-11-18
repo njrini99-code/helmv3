@@ -2,8 +2,10 @@
  * Genome dimension: scrambling_rate.
  *
  * Category: recovery_patterns.
- * The canonical golf definition: of the greens you MISSED in regulation, the
- * fraction you still finished at par or better. Returns a value in [0, 1].
+ * The canonical definition (holeScramble, the stats cache's rule since
+ * 20261116200000): of the holes where you missed the green in regulation or
+ * found a greenside bunker, the fraction you got up and down: par or better
+ * after the miss, or a sand save. Returns a value in [0, 1].
  *
  * WHY THIS IS NOT A PROXIMITY MEASURE. Until 2026-08-17 this dimension counted
  * short-game shots from rough/sand that finished within 10 ft, and its own
@@ -28,6 +30,7 @@
  * genome flagged one. Coaches were being told a weakness was a strength.
  */
 
+import { holeScramble } from '@/lib/golf/stat-formulas';
 import type { DimensionResult, GenomeContext, GenomeDimension } from '../types';
 
 /**
@@ -56,18 +59,24 @@ const dim: GenomeDimension = {
   label: 'Scrambling rate',
 
   compute(ctx: GenomeContext): DimensionResult {
-    // A hole with no `gir` recorded cannot be classified either way, and a null
-    // read as "missed" would invent attempts. A missed green with no score is
-    // skipped for the same reason the stats calculator skips it: we cannot know
-    // whether it converted.
-    const attempts = ctx.hole_scores.filter(
-      (h) => h.gir === false && typeof h.score === 'number' && typeof h.par === 'number',
-    );
+    // A hole with no `gir` recorded is not a missed green (a null read as
+    // "missed" would invent attempts); it is still a chance when it carries a
+    // greenside-bunker visit. A hole with no score is skipped for the same
+    // reason the stats calculator skips it: we cannot know whether it converted.
+    const holes = ctx.hole_scores
+      .filter((h) => typeof h.score === 'number' && typeof h.par === 'number')
+      .map((h) => holeScramble({
+        missedGreen: h.gir === false,
+        score: h.score,
+        par: h.par,
+        sandSave: h.sand_save ?? null,
+      }));
+    const attempts = holes.filter((h) => h.attempt);
     if (attempts.length < MIN_ATTEMPTS) {
       return { value: null, confidence: null };
     }
 
-    const saves = attempts.filter((h) => h.score <= h.par);
+    const saves = attempts.filter((h) => h.made);
     const rate = saves.length / attempts.length;
     const confidence = Math.min(1, attempts.length / 30);
     const label =

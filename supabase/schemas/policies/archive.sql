@@ -258,7 +258,7 @@ CREATE POLICY "bsm_select" ON "graveyard"."baseball_soreness_maps" FOR SELECT TO
 
 CREATE POLICY "bsm_update" ON "graveyard"."baseball_soreness_maps" FOR UPDATE TO "authenticated" USING (("player_id" = "public"."get_my_baseball_player_id"())) WITH CHECK (("player_id" = "public"."get_my_baseball_player_id"()));
 
-CREATE POLICY "golf_tracer_health_snapshot_admin_read" ON "graveyard"."golf_tracer_health_snapshot" FOR SELECT TO "authenticated" USING ("public"."is_admin"());
+CREATE POLICY "golf_tracer_health_snapshot_admin_read" ON "graveyard"."golf_tracer_health_snapshot" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
 CREATE POLICY "golf_tracer_health_snapshot_service_write" ON "graveyard"."golf_tracer_health_snapshot" TO "service_role" USING ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text")) WITH CHECK ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text"));
 

@@ -49,7 +49,38 @@ export function computeGirPct(greensHit: number, greensTotal: number): number | 
   return pct(greensHit, greensTotal);
 }
 
-/** Scrambling %. attempts = missed-GIR holes; converted = made par-or-better. */
+/**
+ * One hole's scramble chance (2026-11-16, at a coach's ask: Scrambling counts
+ * sand saves). Mirrors the DB cache writers `update_round_stats_cache` and
+ * `refresh_player_stats_cache` exactly
+ * (supabase/migrations/20261116200000_golf_scrambling_counts_sand_saves.sql):
+ *
+ *  - attempt = a scored hole that missed the green in regulation OR had a
+ *    greenside-bunker visit (`sand_save` not null);
+ *  - made    = a missed green saved for par or better OR a sand save
+ *    (`sand_save` true, the Tour's sand-save rule: out in two, any score).
+ *
+ * A hole is one chance however many of the two it meets, so nothing counts
+ * twice. A hole with no score is never a chance: we cannot know whether it
+ * converted. Sand saves stay their own figure too (`computeSandSavePct`).
+ * Because of the bunker holes, this is not the Tour's own Scrambling
+ * definition (missed greens only); a Tour comparison says so.
+ */
+export function holeScramble(h: {
+  /** The hole missed the green in regulation (callers decide how a missing `gir` reads). */
+  missedGreen: boolean;
+  score: number | null | undefined;
+  par: number;
+  sandSave: boolean | null | undefined;
+}): { attempt: boolean; made: boolean } {
+  if (h.score == null) return { attempt: false, made: false };
+  const bunker = h.sandSave != null;
+  const attempt = h.missedGreen || bunker;
+  const made = (h.missedGreen && h.score <= h.par) || h.sandSave === true;
+  return { attempt, made };
+}
+
+/** Scrambling %. attempts and converted are `holeScramble` counts: missed greens and greenside-bunker visits, pars-or-better and sand saves. */
 export function computeScramblingPct(converted: number, attempts: number): number | null {
   return pct(converted, attempts);
 }

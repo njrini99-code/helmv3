@@ -143,8 +143,8 @@ export const STAT_DEFINITIONS: Readonly<Record<ChStatKey, ChStatDefinition>> = {
   scrambling: {
     key: 'scrambling',
     name: 'Scrambling',
-    means: 'Making par or better after missing the green in regulation, also called up and down.',
-    counted: `Pars or better over greens missed, pooled across the window. ${HOLES_ONLY}`,
+    means: 'Getting up and down: par or better after missing the green in regulation, or a sand save from a greenside bunker at any score.',
+    counted: `Up and downs over chances, pooled across the window. A chance is a missed green or a greenside bunker, once per hole, so a sand save is never counted twice. The Tour line counts missed greens only, so read it as a guide. ${HOLES_ONLY}`,
     better: 'higher',
   },
   sandSaves: {

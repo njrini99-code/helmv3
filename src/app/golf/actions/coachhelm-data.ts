@@ -940,7 +940,7 @@ async function getPlayerShotContextImpl(
     // Fetch holes for scramble rate
     const { data: holesData, error: holesError } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_holes')
-      .select('hole_number, par, score, gir, putts, round_id')
+      .select('hole_number, par, score, gir, putts, round_id, sand_save')
       .in('round_id', roundIds)
       .order('id', { ascending: true })
       .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerShotContext', feature: 'intelligence_dashboard', sport: 'golf' }); // paginate past PostgREST 1000-row cap
@@ -966,6 +966,7 @@ async function getPlayerShotContextImpl(
         gir: h.gir,
         par: h.par,
         score: h.score,
+        sandSave: h.sand_save,
       }));
 
     const scrambleRate = calculateScrambleRate(scrambleHoles);

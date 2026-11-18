@@ -128,6 +128,8 @@ function build(specs: Spec[], teams: Array<{ id: string; players: string[]; gend
       round_id: s.id, player_id: s.player, total_score: total, score_to_par: toPar, front_nine: front, back_nine: back,
       fairways_hit: tot.total_fairways_hit, fairways_total: tot.total_fairways, greens_hit: tot.total_gir, greens_total: tot.total_gir_possible, total_putts: tot.total_putts,
       one_putts: withPutts.filter((h) => h.putts === 1).length, three_putts: withPutts.filter((h) => (h.putts as number) >= 3).length,
+      // Scrambling as the retired Fairway Team page counted it (missed greens only), so the recorded figures still key to these
+      // rows. Today's trigger also counts sand saves (20261116200000); stats-production-parity builds both.
       scrambles_converted: hs.filter((h) => h.gir === false && dd(h) <= 0).length, scramble_attempts: hs.filter((h) => h.gir === false).length,
       sand_saves: hs.filter((h) => h.sand_save === true).length, sand_attempts: hs.filter((h) => h.sand_save != null).length,
       eagles: hs.filter((h) => dd(h) <= -2).length, birdies: hs.filter((h) => dd(h) === -1).length, pars: hs.filter((h) => dd(h) === 0).length,
