@@ -86,7 +86,7 @@ export function PlayerPracticeHome({ data }: { data: ChPlayerPracticeHome }) {
         </SectionBoundary>
       )}
       {none ? (
-        <EmptyState size="page" title="No plan yet" body="Your coach hasn’t published a plan for this practice yet." code="CH-13397" />
+        <EmptyState compact kind="first-run" title="No plan yet" body="Your coach hasn’t published a plan for this practice yet." code="CH-13397" />
       ) : (
         <section className="ch-prc-sec" aria-labelledby="ch-prc-wk">
           <h2 id="ch-prc-wk">This week</h2>

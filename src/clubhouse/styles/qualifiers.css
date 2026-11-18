@@ -1522,7 +1522,7 @@
     color: var(--ch-text-secondary);
   }
   .ch-qf--list .ch-qf-head__act .ch-btn {
-    width: 100%;
+    width: auto;
     height: 44px;
   }
   .ch-qf--list .ch-qf-eyebrow__k {

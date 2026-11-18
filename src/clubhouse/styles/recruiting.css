@@ -830,6 +830,11 @@
   .ch-recm-skel__list > .ch-recm-count {
     min-height: 44px;
   }
+  .ch-recm-row__go {
+    flex: none;
+    margin-left: -8px;
+    color: var(--ch-ink-500);
+  }
   .ch-recm-row--static {
     cursor: default;
   }

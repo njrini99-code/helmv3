@@ -147,7 +147,11 @@
   flex: none;
 }
 .ch-tour-cmp-face.is-stack > * + * {
-  margin-left: calc(var(--ch-tour-cmp-face) * -0.3);
+  /* L-032: a light overlap, each face ringed in the surface, so every set of initials reads whole. */
+  margin-left: calc(var(--ch-tour-cmp-face) * -0.12);
+}
+.ch-tour-cmp-face.is-stack > .ch-avatar {
+  box-shadow: 0 0 0 2px var(--ch-bg-surface);
 }
 .ch-tour-cmp-face__tag {
   position: absolute;

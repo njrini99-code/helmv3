@@ -251,7 +251,7 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
             {said}
           </p>
           <div className="ch-tour-lu-form__actions">
-            <Button variant={phone ? 'secondary' : 'ghost'} href={back}>
+            <Button variant="ghost" href={back}>
               Cancel
             </Button>
             <Button variant="primary" type="submit" busy={save.pending}>

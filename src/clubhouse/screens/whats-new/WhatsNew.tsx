@@ -145,6 +145,7 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
               redraws
               label="Show"
               size="sm"
+              block={phone}
               value={filter}
               onChange={setFilter}
               options={[

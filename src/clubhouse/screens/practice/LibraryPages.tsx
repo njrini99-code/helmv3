@@ -58,7 +58,8 @@ function LibraryHead({ tab, title, actionLabel, onAction }: { tab: PracticeTab; 
   );
 }
 
-function DrillRowLink({ d }: { d: ChDrillRow }) {
+/** `tagged` shows the GolfHelm chip; the GolfHelm section's heading already says it, so only the team's own list asks (L-011). */
+function DrillRowLink({ d, tagged = true }: { d: ChDrillRow; tagged?: boolean }) {
   const facts = [d.areaLabel, d.kind ? KIND_WORD[d.kind] : null, d.minutes != null ? `${d.minutes} min` : null, d.players].filter(Boolean).join(' · ');
   return (
     <li>
@@ -66,7 +67,7 @@ function DrillRowLink({ d }: { d: ChDrillRow }) {
         <span className="ch-prc-row__m">
           <span className="ch-prc-row__top">
             <b>{d.name}</b>
-            {d.source === 'lib' && <Badge>GolfHelm</Badge>}
+            {tagged && d.source === 'lib' && <Badge>GolfHelm</Badge>}
           </span>
           <span className="ch-prc-row__w ch-num">{facts}</span>
           {d.levels && <span className="ch-prc-row__l ch-num">{d.levels}</span>}
@@ -129,7 +130,7 @@ export function DrillsPage({ teamId, team, library, preview = false }: { teamId:
           <section className="ch-prc-sec" aria-label="GolfHelm drills">
             <h2>GolfHelm drills</h2>
             <SectionBoundary surface="practice.drills.library" label="GolfHelm drills" code="CH-13204">
-              {theirs.length ? <ul className="ch-prc-list is-drills">{theirs.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{area === 'bunker' || area === 'fitness' ? `No GolfHelm drills for ${AREA_WORDS[area]} yet.` : 'None in this area.'}</p>}
+              {theirs.length ? <ul className="ch-prc-list is-drills">{theirs.map((d) => <DrillRowLink key={d.id} d={d} tagged={false} />)}</ul> : <p className="ch-prc-none">{area === 'bunker' || area === 'fitness' ? `No GolfHelm drills for ${AREA_WORDS[area]} yet.` : 'None in this area.'}</p>}
             </SectionBoundary>
           </section>
         </>
@@ -382,7 +383,7 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
   };
   return (
     <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
-      <LibraryHead tab="groups" title="Groups" actionLabel="New group" onAction={() => open('new')} />
+      <LibraryHead tab="groups" title="Groups" actionLabel={groups.length > 0 ? 'New group' : undefined} onAction={() => open('new')} />
       {groups.length === 0 ? (
         <EmptyState
           kind="first-run"

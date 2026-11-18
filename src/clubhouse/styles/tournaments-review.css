@@ -434,8 +434,9 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
 }
+/* L-033: event and round side by side, so a round is one short block, not four stacked controls. */
 .ch-tour-links-row.is-phone .ch-tour-links-row__sel {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 .ch-tour-links-row__act {
   display: flex;
