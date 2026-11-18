@@ -1271,6 +1271,36 @@ flags:
       the old engine's writers and remove this flag and the team list; if
       not, turn it off, drop golf_coach_reads and delete the reads folder.
 
+  # CoachHelm insights rebuild, stage 3 wiring (18 Nov 2026): the model-written
+  # paragraph on a read. Created OFF everywhere; meaningful only with
+  # coachhelm_reads_v1 on for the same team.
+  - feature_id: coachhelm_reads_written_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the model-written paragraph on a CoachHelm read (what is going on,
+      what the evidence rules in and out, one thing this week, one thing to
+      watch), written by src/lib/coachhelm/v3/analyst/writer and kept only when
+      code has checked every number and cause. Team scoped: the registry flag
+      on AND the team listed in COACHHELM_READS_WRITTEN_TEAM_IDS AND
+      coachhelm_reads_v1 on for that team. A paragraph is written only when the
+      read changed; the player's card gets its own call without team figures.
+      Off: no model call, and the card is the counted read alone.
+    type: experiment
+    status: active
+    created_at: "2026-11-18"
+    expires_at: "2027-04-01"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      The owner approves the model writing coach-facing text, the cost cap and
+      the tone from samples, then lists one team. If kept, fold it into
+      coachhelm_reads_v1 and remove this flag; if not, turn it off and delete
+      the writer folder and the written field.
+
   # CoachHelm insights rebuild, stage 2 (17 Nov 2026): stopping the hidden v2
   # writer needs the owner's yes. Created OFF everywhere: off is today's behaviour.
   - feature_id: coachhelm_v2_writer_stop_v1

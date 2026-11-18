@@ -32,8 +32,11 @@ const ownFigures = (figures: Record<string, string>) => Object.fromEntries(Objec
 
 export function forPlayer(payload: ReadPayload): ReadPayload {
   const stripped = stripCoachOnly(payload);
+  const { written: _coachText, written_player: playerText, ...rest } = stripped;
   return {
-    ...stripped,
+    ...rest,
+    // The player reads their own paragraph, never the coach's.
+    ...(playerText ? { written: playerText } : {}),
     figures: ownFigures(stripped.figures),
     ...(stripped.parts ? { parts: stripped.parts.map((p) => ({ ...p, figures: ownFigures(p.figures) })) } : {}),
   };

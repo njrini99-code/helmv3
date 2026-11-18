@@ -158,6 +158,8 @@ export interface ReadPayload {
   memory?: import('./memory').ReadMemory;
   /** Stage 4: the focus a coach set from this card, and how it went (focus.ts). */
   focus?: import('./focus').FocusRead;
-  /** Stage 3 seam. */
+  /** Stage 3 seam: the coach’s paragraph. */
   written?: WrittenRead;
+  /** Stage 3: the player’s own paragraph (written without team figures). Coach-only storage; forPlayer moves it to written. */
+  written_player?: WrittenRead;
 }

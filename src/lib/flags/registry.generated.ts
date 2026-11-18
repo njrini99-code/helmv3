@@ -319,6 +319,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "When the owner turns production on and the 3 + 1 feeds and the floors have held for an observation window, make fold and cap the only behavior in insight-delivery.ts, delete the legacy branches the freshness part guards (revision-key.ts legacy key, the floor and bounds branches in read-window.ts, the sweep's legacy-only path), and delete this flag in the same change. Turning it off restores the old gates, key and sweep for every later write; reads already archived or matured while it was on stay as they are until their next refresh.",
   },
   {
+    feature_id: "coachhelm_reads_written_v1",
+    owner: "golf/coachhelm",
+    purpose: "Gates the model-written paragraph on a CoachHelm read (what is going on, what the evidence rules in and out, one thing this week, one thing to watch), written by src/lib/coachhelm/v3/analyst/writer and kept only when code has checked every number and cause. Team scoped: the registry flag on AND the team listed in COACHHELM_READS_WRITTEN_TEAM_IDS AND coachhelm_reads_v1 on for that team. A paragraph is written only when the read changed; the player's card gets its own call without team figures. Off: no model call, and the card is the counted read alone.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-11-18",
+    expires_at: "2027-04-01",
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "The owner approves the model writing coach-facing text, the cost cap and the tone from samples, then lists one team. If kept, fold it into coachhelm_reads_v1 and remove this flag; if not, turn it off and delete the writer folder and the written field.",
+  },
+  {
     feature_id: "coachhelm_recap_claim_packet",
     owner: "golf/coachhelm",
     purpose: "Gates whether the round recap's compose() call also receives a typed EvidencePacket (Package 8), engaging claim-validator.ts's wrong-metric/wrong-player/wrong-window/unsupported-cause checks for this one LLM surface, on top of the existing flat numeric scan; default off pending real-world evidence this doesn't over-reject otherwise-good recaps into the deterministic fallback. A recap discarded to the fallback is cached forever (round-recap.ts only ever generates once per round; there is no regenerate path) — this flag must stay off in production until one exists, so a false-positive rejection isn't permanent for that round.",

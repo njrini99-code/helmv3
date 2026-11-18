@@ -17,10 +17,14 @@ import { readsEnabled, readsEnabledTeams } from './flag';
 import { focusRead } from './focus';
 import { decideNext } from './memory';
 import { changedRows, insertReads, loadCurrentReads, loadFocusLinks, loadLatestFeedback } from './store';
-import type { ReadTrigger } from './types';
+import type { ReadPayload, ReadTrigger } from './types';
+import { addWritten, readsWrittenEnabled } from './written';
+import type { WriterDeps } from '../writer/types';
 
 /** A run past this is abandoned (its result is ignored; the next round or night redoes it). */
 export const READS_TIME_LIMIT_MS = 20_000;
+/** With the written paragraph on, the model calls take longer: the run is still cut, later. */
+export const READS_WRITTEN_TIME_LIMIT_MS = 240_000;
 
 export type TeamReadsOutcome =
   | { kind: 'written'; teamId: string; players: number; written: number }
@@ -42,12 +46,12 @@ export async function withTimeLimit<T>(work: Promise<T>, ms: number, timedOut: (
   }
 }
 
-async function computeTeam(sb: SupabaseClient, teamId: string, trigger: ReadTrigger, roundId: string | null, now: Date): Promise<TeamReadsOutcome> {
+async function computeTeam(sb: SupabaseClient, teamId: string, trigger: ReadTrigger, roundId: string | null, now: Date, writer?: () => Promise<WriterDeps>): Promise<TeamReadsOutcome> {
   const current = await loadCurrentReads(sb, teamId);
   if (current.status === 'held') return { kind: 'held', teamId };
   if (current.status === 'failed') return { kind: 'failed', teamId, error: current.error };
   const rows = await loadTeamRows(supabaseAnalystSources(sb as never), { teamId, now });
-  const { payloads, sheets } = buildTeamReads(rows);
+  const { payloads, sheets, notables } = buildTeamReads(rows);
   // Stage 4: each fresh read meets the last saved one (words held between checkpoints, what changed said once), the
   // coach's feedback, and the focus set from the card. Both tables are held; missing, they read as none.
   const [feedback, focus] = await Promise.all([loadLatestFeedback(sb, teamId), loadFocusLinks(sb, teamId)]);
@@ -56,7 +60,16 @@ async function computeTeam(sb: SupabaseClient, teamId: string, trigger: ReadTrig
     const link = focus.get(fresh.player_id);
     return link && next.priority && link.card_key === next.priority.key ? { ...next, focus: focusRead(link, sheets[i]!) } : next;
   });
-  const inserts = changedRows(decided, current.data, trigger, roundId);
+  // Stage 3 (coachhelm_reads_written_v1, listed team): the checked paragraph, only where the card's words changed.
+  let saved: ReadPayload[] = decided;
+  if (readsWrittenEnabled(teamId)) {
+    const previous = new Map([...current.data].map(([id, row]) => [id, row.payload]));
+    const deps = writer ? await writer() : await defaultWriterDeps();
+    const res = await addWritten({ payloads: decided, sheets, notables, previous }, deps);
+    saved = res.payloads;
+    await logServerEvent('coachhelm.reads written', { action: 'coachhelm.reads.written', featureArea: 'coachhelm', extra: { teamId, ...res.summary } }, 'info').catch(() => undefined);
+  }
+  const inserts = changedRows(saved, current.data, trigger, roundId);
   const res = await insertReads(sb, inserts);
   if (res.status === 'held') return { kind: 'held', teamId };
   if (res.status === 'failed') return { kind: 'failed', teamId, error: res.error };
@@ -64,11 +77,11 @@ async function computeTeam(sb: SupabaseClient, teamId: string, trigger: ReadTrig
 }
 
 /** One team's reads, with the time limit. Never throws. */
-export async function refreshTeamReads(sb: SupabaseClient, args: { teamId: string; trigger: ReadTrigger; roundId?: string | null; now?: Date; timeLimitMs?: number }): Promise<TeamReadsOutcome> {
+export async function refreshTeamReads(sb: SupabaseClient, args: { teamId: string; trigger: ReadTrigger; roundId?: string | null; now?: Date; timeLimitMs?: number; writer?: () => Promise<WriterDeps> }): Promise<TeamReadsOutcome> {
   const { teamId, trigger } = args;
   const outcome = await withTimeLimit<TeamReadsOutcome>(
-    computeTeam(sb, teamId, trigger, args.roundId ?? null, args.now ?? new Date()).catch((err: unknown): TeamReadsOutcome => ({ kind: 'failed', teamId, error: describeError(err) })),
-    args.timeLimitMs ?? READS_TIME_LIMIT_MS,
+    computeTeam(sb, teamId, trigger, args.roundId ?? null, args.now ?? new Date(), args.writer).catch((err: unknown): TeamReadsOutcome => ({ kind: 'failed', teamId, error: describeError(err) })),
+    args.timeLimitMs ?? (readsWrittenEnabled(teamId) ? READS_WRITTEN_TIME_LIMIT_MS : READS_TIME_LIMIT_MS),
     () => ({ kind: 'timed_out', teamId }),
   );
   const context = { action: `coachhelm.reads.${trigger}`, featureArea: 'coachhelm', extra: { teamId, roundId: args.roundId ?? null, kind: outcome.kind, ...(outcome.kind === 'written' ? { players: outcome.players, written: outcome.written } : {}) } };
@@ -125,4 +138,10 @@ export async function refreshReadsNightly(sb: SupabaseClient, opts: { budgetMs: 
     else summary.failed += 1;
   }
   return summary;
+}
+
+/** The production model client, loaded only when the written switch is on for a team (the key is server-side). */
+async function defaultWriterDeps(): Promise<WriterDeps> {
+  const { anthropicModelClient } = await import('@/lib/coachhelm/v3/chat/engine/model');
+  return { client: anthropicModelClient(), now: () => new Date() };
 }
