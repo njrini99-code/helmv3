@@ -16,7 +16,7 @@ A dependency graph over `memory/registry.yml`'s feature ownership, not a second 
 
 Admin Incidents · active · criticality high · owner platform
 
-- **Relations:** 8 doc/structurally-evidenced, 2 import-graph-only (weak)
+- **Relations:** 9 doc/structurally-evidenced, 2 import-graph-only (weak)
 - **Tables:** `helm_debug`
 - **RPCs:** `admin_unresolve_error_fingerprint`, `resolve_admin_event`
 - **Test surfaces:** 7
@@ -106,7 +106,7 @@ Calendar And Events · active · criticality high · owner product
 
 Clubhouse UI (the coach and player UI) · active · criticality medium · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** `golf_class_exceptions`, `golf_class_hold_dirty`, `golf_player_class_settings`, `golf_push_hold_heartbeat`, `golf_push_holds`, `golf_saved_comparisons`, `golf_team_seasons`, `golf_team_terms`, `golf_tournament_advice_givers`, `golf_tournament_coach_presence`, `golf_tournament_entries`, `golf_tournament_entry_notes`, `golf_tournament_field_scores`, `golf_tournament_field_teams`, `golf_tournament_link_dismissals`, `golf_tournament_player_notes`, `golf_tournament_player_rounds`, `golf_tournament_reflections`, `golf_tournament_result_marks`, `golf_tournament_reviews`, `golf_tournament_round_lineups`, `golf_tournament_rounds`, `golf_tournaments`
 - **RPCs:** `golf_coachhelm_shown_reads`, `golf_event_attendance_counts`, `golf_tournament_link_candidates`, `golf_tournament_my_lineup`, `sg_scale_for_player`
 - **Test surfaces:** 2
@@ -368,6 +368,7 @@ Team Operations · active · criticality high · owner product
 | `admin_incidents` | `admin_reliability_collector` | feature_doc_contract |
 | `admin_incidents` | `admin_selfheal` | feature_doc_contract, import_graph |
 | `admin_incidents` | `auth_onboarding_join` | import_graph (weak) |
+| `admin_incidents` | `clubhouse` | feature_doc_contract |
 | `admin_incidents` | `player_coachhelm_development` | import_graph (weak) |
 | `admin_platform` | `admin_incidents` | feature_doc_contract, import_graph |
 | `admin_platform` | `admin_reliability_collector` | feature_doc_contract |
