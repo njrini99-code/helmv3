@@ -68,6 +68,8 @@ function TeamLeg({ leg, tour }: { leg: ChTeamLeg; tour: ChSgTour }) {
   // Against the Tour as the two figures print; level is neither, and an early read is never toned (A2, A7).
   const against = stat.value != null && stat.tour != null && !stat.early ? changeTone(stat.value - stat.tour, lowerIsBetter, stat.unit === '%' ? 0 : stat.digits) : '';
   const change = legChange(leg);
+  // L-062: a bar that sits under "No clear change" stays neutral; amber/green only when the change itself is clear.
+  const barTone = change.tone === '' ? '' : against;
   const id = `ch-ph-tm-leg-${leg.key}`;
   return (
     <article className="ch-ph-leg" aria-labelledby={id}>
@@ -89,7 +91,7 @@ function TeamLeg({ leg, tour }: { leg: ChTeamLeg; tour: ChSgTour }) {
       {stat.value != null && stat.tour != null && (
         <div className="ch-ph-bench">
           <span className="ch-ph-bench__t" aria-hidden="true">
-            <i className={against} style={{ width: `${pos(stat.value)}%` }} />
+            <i className={barTone} style={{ width: `${pos(stat.value)}%` }} />
             <em style={{ left: `${pos(stat.tour)}%` }} />
           </span>
           <span className="ch-ph-bench__k ch-num">

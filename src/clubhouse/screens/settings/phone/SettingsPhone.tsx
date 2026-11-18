@@ -300,7 +300,7 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
       <nav className="ch-setm-group" aria-label="Settings sections">
         <div className="ch-setm-card">
           {SECTIONS[data.role].map((s) => (
-            <NavRow key={s.id} label={s.label} value={SUMMARY[data.role][s.id]} icon={ICON[s.id]} dark={s.id === 'coachhelm'} onClick={() => onOpen(s.id)} />
+            <NavRow key={s.id} label={s.label} value={SUMMARY[data.role][s.id]} icon={ICON[s.id]} onClick={() => onOpen(s.id)} />
           ))}
         </div>
       </nav>

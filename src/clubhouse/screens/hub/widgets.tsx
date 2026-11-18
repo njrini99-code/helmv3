@@ -226,7 +226,7 @@ export function TripTile({ trips: teamTrips, role, days, error, covered, onEdit,
   const day = d >= 0 ? days[d]! : null;
   const ev = day?.events[0] ?? null;
   return (
-    <Tile id="ch-hw-trip" title="Next up" span={7} dark>
+    <Tile id="ch-hw-trip" title="Up next" span={7} dark className={!ev && !away ? 'is-bare' : undefined}>
       <div className="ch-hw-count">
         {ev && (
           <span className={'ch-hw-count__n' + (countLabel(d) ? ' is-word' : '')}>
@@ -904,7 +904,7 @@ export function QueueTile({ items, left, failed, covered, replies, isPending, on
               <li key={q.key} className={'is-task' + (d ? ' is-done' : '')}>
                 <QueueTask t={q.t} d={d} pending={taskPending(q.t)} onToggle={onToggle} />
                 <span className="ch-hw-q__b">
-                  <span className="ch-hw-q__k">Task</span>
+                  {/* L-068: the kicker names a row that is not the list's usual kind; a task is the usual kind. */}
                   <b>{q.t.title}</b>
                   <span
                     className={'ch-num' + (late ? ' is-warn' : '')}

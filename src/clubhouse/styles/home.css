@@ -2158,6 +2158,7 @@
 .ch-ph-leg > .ch-ph-leg__n {
   margin: 4px 0 0;
   padding-top: 6px;
+  text-wrap: balance; /* L-067: a two-line caption splits evenly, never one word on the second line. */
   font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);

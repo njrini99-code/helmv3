@@ -474,7 +474,7 @@ function DayPage({
           body={coach ? 'Plan something for the team.' : 'Events your coach invites you to show here.'}
           action={
             coach && onNew ? (
-              <Button size="sm" leftIcon={Plus} onClick={() => onNew(anchor)}>
+              <Button size="sm" variant="ghost" leftIcon={Plus} onClick={() => onNew(anchor)}>
                 New event
               </Button>
             ) : undefined
