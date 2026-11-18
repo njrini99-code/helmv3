@@ -40,17 +40,19 @@ Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
   count is fewer than the window's says "Hole stats from X of Y rounds".
 
 Parity with production (2026-10-17, `stats-production-parity.test.ts`): on the
-same rounds, every figure is the Fairway Team stats page's (scoring average of
-18-hole rounds, greens, scrambling, putts and birdies pooled over the holes,
-strokes gained per round, rounds counted), checked against that page's own
-code and against every production team's rows (read-only). Birdies are holes
-one under par: an eagle is not a birdie (the card says "Eagles not counted",
-and Season bests' Most birdies counts the same holes). A round with no putt
-recorded has no putts figure (production writes 0 putts for it). The rules
-that differ on purpose: a round posted as a total only counts in scoring
-(Q-123; production counts it nowhere), strokes gained waits for three whole
-rounds (production shows any), and with both lengths in a nine-hole round
-counts half (production averages per round of either length).
+same rounds, every figure was the Fairway Team stats page's (Fairway was retired
+on 2026-11-14; since then the test pairs each player against `getDetailedStats`
+and the Standing strip only) (scoring average of 18-hole rounds, greens,
+scrambling, putts and birdies pooled over the holes, strokes gained per round,
+rounds counted), checked against that page's own code and against every
+production team's rows (read-only). Birdies are holes one under par: an eagle is
+not a birdie (the card says "Eagles not counted", and Season bests' Most birdies
+counts the same holes). A round with no putt recorded has no putts figure
+(production writes 0 putts for it). The rules that differ on purpose: a round
+posted as a total only counts in scoring (Q-123; production counts it nowhere),
+strokes gained waits for three whole rounds (production shows any), and with
+both lengths in a nine-hole round counts half (production averages per round of
+either length).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

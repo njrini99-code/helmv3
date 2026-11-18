@@ -543,10 +543,11 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 Status: DEFINED
 
 At 820px and below a qualifier is one column with a rounds sheet (91901), the
-form puts Cancel and Create in the top bar and hides the tab bar (91902), Manage
-selections has its own top bar and a foot for its primary action (91903), and
-the list is the desktop list with phone CSS under a "‹ More" top bar (91904).
-The phone spec is `docs/clubhouse/phone/qualifiers.md` (approved).
+form puts Cancel and Create in the top bar and hides the tab bar, now the
+section strip (91902), Manage selections has its own top bar and a foot for its
+primary action (91903), and the list is the desktop list with phone CSS under a
+"‹ More" top bar (91904). The phone spec is `docs/clubhouse/phone/qualifiers.md`
+(approved).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -619,7 +620,8 @@ under surface `qualifiers` and the write's own name (`qualifiers.create`,
 the picker reports under `qualifiers.picker` and the live feed under
 `qualifiers.live`. Server reads log through `chLogServer('qualifiers', <read>)`.
 The selection actions' own refusal text is kept in the trail (92303), and the
-held setup actions refuse when the Clubhouse is off (92302).
+held setup actions refuse when the Clubhouse is off (92302; since 2026-11-14
+"off" means the caller is not a coach).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

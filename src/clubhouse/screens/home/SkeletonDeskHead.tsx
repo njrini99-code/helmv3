@@ -27,7 +27,7 @@ export function SkeletonDeskHead() {
   const player = useClubhouseRole() === 'player';
   return (
     // Line for line as loaded (perf 2026-10-01, measured with `npm run clubhouse:perf`): the date, the greeting, a two-line sentence and the two actions.
-    <header className="ch-h-head" data-canopy-head="">
+    <header className="ch-h-head" data-canopy-head="tight">
       <Line height={18}>
         <Skeleton width={140} height={13} />
       </Line>

@@ -101,9 +101,9 @@ rows stacked below 640px.
 ## Phone
 
 Approved spec `docs/clubhouse/phone/team-hub.md`: a player reaches Team Hub from
-the tab bar and a coach from More (a "‹ More" top bar); the tabs are a strip
-under the top bar; compose, trip and task forms and the Delete question are
-bottom sheets.
+the tab bar and a coach from More (a "‹ More" top bar; since 2026-10-13 both
+reach it from the section strip); the tabs are a strip under the top bar;
+compose, trip and task forms and the Delete question are bottom sheets.
 
 The look follows the owner's "Mobile clubhouse pass" board (2026-10-08, carried
 from Coach Home): no cards. The page opens under the engraved double rule with
