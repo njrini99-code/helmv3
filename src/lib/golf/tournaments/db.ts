@@ -177,6 +177,8 @@ export interface TourRpcs {
   golf_tournament_set_cancelled: { args: SetCancelledRpcArgs; result: SetCancelledRpcResult };
   golf_tournament_untrack: { args: UntrackRpcArgs; result: null };
   golf_team_timezone: { args: { p_team_id: string }; result: string };
+  /** golf_tournament_update(p_id, p_payload, p_version) returns the new version; a key left out of the payload is kept. */
+  golf_tournament_update: { args: { p_id: string; p_payload: Record<string, unknown>; p_version: number }; result: number };
 }
 
 /** Call a P-5 RPC that is not in the generated types yet. */

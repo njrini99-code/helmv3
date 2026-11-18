@@ -841,7 +841,7 @@ async function computeAndStoreRoundReview(
     // hole records."
     const { data: holeRows, error: holesError } = await supabase
       .from('golf_holes')
-      .select('hole_number, par, score, putts, fairway_hit, gir')
+      .select('hole_number, par, score, putts, fairway_hit, gir, sand_save')
       .eq('round_id', roundId)
       .order('hole_number', { ascending: true });
     if (holesError) {
@@ -1009,7 +1009,7 @@ async function computeAndStoreRoundReview(
 
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath(`/golf/dashboard/rounds/${roundId}`);
-    revalidatePath(`/golf/dashboard/rounds/${roundId}/review`);
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
 
     const review: RoundReviewWithRound = {
       id: reviewId,

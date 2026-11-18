@@ -1,39 +1,37 @@
 'use client';
 
-import { DeskHead, DeskNext, DeskRounds, DeskToday, DeskTodayFirst } from './HomeDeskCrh';
-import { DeskNextBeyond } from './NextBeyond';
-import { CALENDAR } from './event-links';
-import { CalendarPlus, ChevronRight, Flag, Sparkles, UserPlus } from 'lucide-react';
+import { CalendarPlus, ChevronRight, Flag, UserPlus } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo } from 'react';
 import type { ChCoachHome } from '../../data/home';
 import { Icon } from '../../ui/Icon';
 import { useChPhone } from '../../lib/use-phone';
-import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { LatestRound } from './LatestRound';
-import { CRH_PART_FAILED, CrhFailedCard, Form, HomePhone, WeekStrip } from './HomePhone';
+import { HomePhone, WeekStrip } from './HomePhone';
 import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
 import { ClassHomeLine } from './ClassHomeLine';
 import { LiveNowCard } from './LiveNowCard';
 import type { LiveSnapshot } from '../../live/model';
-import { TeamLegsPhone } from './TeamLegs';
+import { HomeActions } from './HomeActions';
+import { DeskNext } from './PlayerHome';
+import { DeskNextBeyond } from './NextBeyond';
+import { TeamGame } from './TeamGame';
+import { TeamScoring, TeamScoringFailed } from './TeamScoring';
+import { Week } from './Week';
 import { useHomeDayRollover } from './use-day-rollover';
 import { ChangeMarksProvider } from '../../lib/use-change-marks';
 import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
-/** The latest round's pane. Its own component, so a malformed read throws inside the section's boundary (CH-2206) and not in the page above it. */
-function DeskLatest({ data, covered }: { data: ChCoachHome['latestRounds']; covered: boolean }) {
-  return data.rounds.length === 0 ? <LatestRound data={data} covered={covered} /> : <DeskRounds rounds={data.recent ?? data.rounds} />;
-}
-
 /**
- * Coach Home (handoff: Coach Home v3). The coach's day at a glance: the week
- * and the latest round in one lit sheet, then the season leaderboard. Calm
- * and not card-heavy (the owner rejected card grids and imagery).
+ * Coach Home, drawn as Player Home (lay-01, owner 15 Nov 2026: "I want the coach home page matching the players. Both
+ * mobile and desktop."): the framed head on the canopy with Message team and New event, what is waiting on the coach,
+ * then one continuous surface (the week beside the latest round, Up next leading it; Team scoring on the shared scoring
+ * line under a hairline) and the team's game below it, as the player's own Home lays out the player's. The coach's
+ * content stays the coach's: the team's events with their replies, the team's rounds, the team's figures.
  */
 export function CoachHome(props: { data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string; live?: LiveSnapshot }) {
   return (
@@ -43,110 +41,70 @@ export function CoachHome(props: { data: ChCoachHome; /** Preview and tests: a f
   );
 }
 
-function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; live?: LiveSnapshot; }) {
+function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; live?: LiveSnapshot }) {
   const phone = useChPhone();
-  const clockNow = useNow();
-  const ticking = useMemo(() => (now ? new Date(now) : clockNow), [now, clockNow]);
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
-  if (isFirstRun(data)) return <HomeFirstRun data={data} phone={phone} now={now} ticking={ticking} />;
+  if (isFirstRun(data)) return <HomeFirstRun data={data} phone={phone} now={now} />;
   if (phone) return <HomePhone data={data} now={now} live={live} />;
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = coachFailedParts(data, true);
   const covered = failed.length > 1;
-  // Up next is the hero's; Today lists the rest of the day, so one event isn't drawn twice.
-  const todayRest = data.phone.today.filter((e) => e.id !== data.phone.next?.id);
-  const showToday = data.week.error || todayRest.length > 0 || !data.phone.next;
-  // Players but no round yet: the leaderboard's line says so (CH-2305), so the latest round's pane steps aside. A
-  // malformed read is left to its section's boundary (CH-2206), so this never throws above it.
-  const noRounds = !data.latestRounds.error && Array.isArray(data.latestRounds.rounds) && data.latestRounds.rounds.length === 0 && !data.leaderboard.error && data.leaderboard.rosterSize > 0;
+  const next = data.phone.next;
+  // Up next leads the latest round, as on Player Home; with nothing left this week, what comes after it (CH-2316, F-0006).
+  const lead = next ? <DeskNext e={next} frozen={now} /> : data.phone.after ? <DeskNextBeyond e={data.phone.after} /> : null;
   return (
-      <main className="ch-h-main ch-h-main--desk" data-ch-crh="on">
-        <header className="ch-h-herocard">
-          <div>
-            <span className="ch-h-head__date">{data.todayLabel}</span>
-            <h1 className="ch-display">{data.greeting}</h1>
-            {(data.subline || failed.length > 0) && (
-              <p className="ch-h-head__sub ch-dh-brief">
-                <Icon icon={Sparkles} size={14} />
-                {failed.length > 0 ? CRH_PART_FAILED : data.subline}
-              </p>
-            )}
-            {data.teamId && data.clock && <ClassHomeLine teamId={data.teamId} today={data.clock.day} teamTimeZone={data.clock.tz} variant="desktop" />}
-            <CoachQueue queue={data.queue} covered={covered} phone />
+    <main className="ch-h-main ch-h-main--desk" data-canopy="">
+      <DeskHead data={data} />
+      <CoachQueue queue={data.queue} covered={covered} />
+      <PageRefreshNotice parts={failed} />
+      {data.teamId && data.clock && <ClassHomeLine teamId={data.teamId} today={data.clock.day} teamTimeZone={data.clock.tz} variant="desktop" />}
+      {live && (
+        <SectionBoundary surface="home.live" label="Live now">
+          <div className="ch-lv-deskwrap">
+            <LiveNowCard initial={live} phone={false} frozen={now !== undefined} now={now !== undefined ? Date.parse(now) : undefined} />
           </div>
-          {/* A trip reads the live clock once the page is up (F-0001): whether the team has left is the whole of its when. */}
-          {data.phone.next ? <DeskNext e={data.phone.next} now={data.phone.next.trip ? ticking : now ? new Date(now) : null} /> :!data.week.error && data.phone.after ? <DeskNextBeyond e={data.phone.after} /> : null}
-        </header>
-        {live && (
-          <SectionBoundary surface="home.live" label="Live now">
-            <div className="ch-lv-deskwrap">
-              <LiveNowCard initial={live} phone={false} frozen={now !== undefined} now={now !== undefined ? Date.parse(now) : undefined} />
-            </div>
+        </SectionBoundary>
+      )}
+      {/* One continuous surface, as Player Home's: the week and the latest round, then Team scoring under a hairline. */}
+      <div className="ch-h-flow ch-sheet">
+        <div className="ch-h-sheet">
+          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
+            {/* The team's events today carry their replies, for the Next row's reply line and Nudge. */}
+            <Week week={data.week} events={data.phone.today} covered={covered} />
           </SectionBoundary>
-        )}
-        {/* The phone's design laid out wider: the day over the latest rounds in the first column, Team scoring filling the second
-            at the same height (its plot takes the room), then the team's game across the page, where its four parts have the
-            width. Leaderboards live on Roster and Stats and the week on Calendar (one place per number). With no Today card
-            (Up next is the whole day) the latest rounds sit beside Team scoring. */}
-        {showToday ? (
-          <>
-            <div className="ch-h-grid is-level">
-            <div className="ch-h-col">
-            {(data.week.error || todayRest.length > 0 || !data.phone.next) && (
-              <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-                {data.week.error ? (
-                  <CrhFailedCard id="ch-dh-today-failed" title="Today" href={CALENDAR} link="Calendar" code="CH-2201" what="Today didn’t load" body="Your events are safe. Try again." />
-                ) : (
-                  <DeskToday events={todayRest} now={ticking} />
-                )}
-              </SectionBoundary>
-            )}
-            {!noRounds && !data.latestRounds.error && (
-              <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-                <DeskLatest data={data.latestRounds} covered={covered} />
-              </SectionBoundary>
-            )}
-            </div>
-            {data.phone.form ? (
-              <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
-                <Form form={data.phone.form} />
-              </SectionBoundary>
-            ) : data.latestRounds.error ? (
-              <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
-            ) : null}
-            </div>
-            {data.phone.form && data.legs && !noRounds && (
-              <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-                <TeamLegsPhone legs={data.legs} covered={covered} />
-              </SectionBoundary>
-            )}
-          </>
-        ) : (
-          <>
-            <div className="ch-h-grid">
-            {data.phone.form ? (
-              <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
-                <Form form={data.phone.form} />
-              </SectionBoundary>
-            ) : data.latestRounds.error ? (
-              <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
-            ) : null}
-            {!noRounds && !data.latestRounds.error && (
-              <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-                <DeskLatest data={data.latestRounds} covered={covered} />
-              </SectionBoundary>
-            )}
-            </div>
-          {data.phone.form && data.legs && !noRounds && (
-            <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-              <TeamLegsPhone legs={data.legs} covered={covered} />
-            </SectionBoundary>
-          )}
-          </>
-        )}
-      </main>
-    );
+          <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
+            <LatestRound data={data.latestRounds} lead={lead} covered={covered} />
+          </SectionBoundary>
+        </div>
+        {data.phone.form ? (
+          <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
+            <TeamScoring form={data.phone.form} phone={false} />
+          </SectionBoundary>
+        ) : data.latestRounds.error ? (
+          <TeamScoringFailed phone={false} covered={covered} />
+        ) : null}
+      </div>
+      {data.phone.form && data.legs && (
+        <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
+          <TeamGame legs={data.legs} phone={false} covered={covered} />
+        </SectionBoundary>
+      )}
+    </main>
+  );
+}
+
+/** The framed head, as Player Home's: the day, the greeting, who needs a look, Message team and New event. */
+function DeskHead({ data, title }: { data: ChCoachHome; title?: string }) {
+  return (
+    <header className="ch-h-head" data-canopy-head="tight">
+      <span className="ch-h-head__date">{data.todayLabel}</span>
+      <h1 className="ch-display">{title ?? data.greeting}</h1>
+      {/* A count from the rounds, not AI output: no glyph (HOME-P-02). */}
+      {!title && data.subline && <p className="ch-h-head__sub">{data.subline}</p>}
+      <HomeActions teamChatId={data.teamChatId} />
+    </header>
+  );
 }
 
 /**
@@ -188,60 +146,53 @@ function SetupRows({ roster }: { roster: string | null }) {
 }
 
 /**
- * The first run (gh-states.jsx, EMPTY.home.coach; D-71): the three first steps under the loaded page's own head, the green
- * hero on the phone and the hero card on a desk, so a new team's Home is the same page with less on it. Once the calendar
- * has something this week it shows as it does on the loaded page: the week on the phone, Up next and Today on a desk.
+ * The first run (gh-states.jsx, EMPTY.home.coach; D-71): the three first steps under the loaded page's own head, so a new
+ * team's Home is the same page with less on it, drawn as Player Home is (lay-01). Once the calendar has something this
+ * week it shows as it does on the loaded page: the week, and Up next leading it on a desk.
  */
-function HomeFirstRun({ data, phone, now, ticking }: { data: ChCoachHome; phone: boolean; /** Preview and tests: the frozen clock (ISO). */ now?: string; ticking: Date | null }) {
+function HomeFirstRun({ data, phone, now }: { data: ChCoachHome; phone: boolean; /** Preview and tests: the frozen clock (ISO). */ now?: string }) {
   // Opens Roster's invite sheet, not only the page (Roster reads `?invite=1` once).
   const roster = rebuiltHref('/golf/dashboard/roster?invite=1');
   const events = data.week.days.some((d) => d.eventCount > 0);
+  const brief = events ? 'Add your players and this week fills in with who’s going.' : 'Set up your team and your first week shows here.';
+  const setup = (
+    <section className="ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
+      <h2 id="ch-hm-setup-t">Get your team set up</h2>
+      <SetupRows roster={roster} />
+    </section>
+  );
   if (phone)
     return (
-      <main className="ch-hm" aria-label="Home" data-ch-crh="on">
+      <main className="ch-hm ch-hm--coach" aria-label="Home">
         <header className="ch-hm-hero">
           <span className="ch-hm-hero__date">{data.todayLabel}</span>
           <h1>Welcome to Clubhouse</h1>
-          <p className="ch-hm-hero__brief">
-            <Icon icon={Sparkles} size={14} />
-            {events ? 'Add your players and this week fills in with who’s going.' : 'Set up your team and your first week shows here.'}
-          </p>
-          {/* On the hero's green, as every other Home draws it: on the page its ivory words measured 1.01:1 (CRH-5). */}
+          <p className="ch-hm-hero__brief">{brief}</p>
           <CoachQueue queue={data.queue} phone />
         </header>
         <div className="ch-hm-body">
           {events && <WeekStrip calendar days={data.week.days} note={data.phone.weekNote} />}
-          <section className="ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
-            <h2 id="ch-hm-setup-t">Get your team set up</h2>
-            <SetupRows roster={roster} />
-          </section>
+          {setup}
         </div>
       </main>
     );
-  // Up next is the hero's and Today lists the rest of the day, as on the loaded page; with nothing on today the card offers the first event.
-  const todayRest = data.phone.today.filter((e) => e.id !== data.phone.next?.id);
   return (
-    <main className="ch-h-main ch-h-main--desk" data-ch-crh="on">
-      <header className="ch-h-herocard">
-        <div>
-          <span className="ch-h-head__date">{data.todayLabel}</span>
-          <h1 className="ch-display">Welcome to Clubhouse</h1>
-          <p className="ch-h-head__sub ch-dh-brief">
-            <Icon icon={Sparkles} size={14} />
-            {events ? 'Add your players and this week fills in with who’s going.' : 'Set up your team and your first week shows here.'}
-          </p>
-          {/* What is waiting on the coach (join requests above all) shows on the first run too. */}
-          <CoachQueue queue={data.queue} phone />
-        </div>
-        {data.phone.next && <DeskNext e={data.phone.next} now={now ? new Date(now) : null} />}
+    <main className="ch-h-main ch-h-main--desk ch-h-main--setup" data-canopy="">
+      <header className="ch-h-head" data-canopy-head="tight">
+        <span className="ch-h-head__date">{data.todayLabel}</span>
+        <h1 className="ch-display">Welcome to Clubhouse</h1>
+        <p className="ch-h-head__sub">{brief}</p>
       </header>
-      <div className="ch-h-grid">
-        <section className="ch-dh-card ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
-          <DeskHead id="ch-hm-setup-t" title="Get your team set up" href={null} link="" />
-          <SetupRows roster={roster} />
-        </section>
-        {todayRest.length > 0 ? <DeskToday events={todayRest} now={ticking} /> : !data.phone.next ? <DeskTodayFirst /> : null}
-      </div>
+      {/* What is waiting on the coach (join requests above all) shows on the first run too. */}
+      <CoachQueue queue={data.queue} />
+      {events && (
+        <div className="ch-h-sheet ch-sheet is-solo">
+          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
+            <Week week={data.week} between={data.phone.next ? <DeskNext e={data.phone.next} frozen={now} /> : null} events={data.phone.today} />
+          </SectionBoundary>
+        </div>
+      )}
+      {setup}
     </main>
   );
 }

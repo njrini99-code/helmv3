@@ -14,6 +14,18 @@ describe('Ask chart blocks', () => {
     expect(container.querySelectorAll('.ch-aks-miss__wedge.is-most')).toHaveLength(1);
     expect([...container.querySelectorAll('.ch-aks-miss__side text')].map((t) => t.textContent)).toEqual(['Long', 'Short', 'Left', 'Right']);
   });
+  it('miss pattern is a named group whose wedge keys reach a screen reader, each the whole sector so a small share is still a target (SWP-05, SWP-08)', () => {
+    const { container } = render(<MissPattern block={{ type: 'miss_pattern', total: 9, no_direction: 0, inside_15: 1, inside_25: 3, wedges: [{ direction: 'short', count: 6, avg_left_ft: 30 }, { direction: 'right', count: 1, avg_left_ft: 15 }] }} />);
+    const svg = container.querySelector('.ch-aks-miss > svg')!;
+    expect(svg.getAttribute('role')).toBe('group');
+    expect(svg.getAttribute('aria-label')).toMatch(/^9 shots by miss direction/);
+    const keys = [...svg.querySelectorAll('[role="button"]')];
+    expect(keys.map((k) => k.getAttribute('aria-label'))).toEqual(['Ask about short misses, 6', 'Ask about right misses, 1']);
+    // Every key's hit path runs out to the ring (radius 70), whatever its wedge's share.
+    const hits = keys.map((k) => k.querySelector('.ch-aks-miss__hit')!.getAttribute('d')!);
+    for (const d of hits) expect(d).toMatch(/A70,70 /);
+    expect(keys[1]!.querySelector('.ch-aks-miss__wedge')!.getAttribute('d')).not.toMatch(/A70,70 /);
+  });
   it('putt profile says the season rate in words under the figure, and nothing without one; no track, no tick', () => {
     const { container } = render(<Studio part={{ kind: 'distance_profile', data: { form: 'putts', putts: { type: 'putt_profile', buckets: [{ id: 'a', label: '3 to 6 ft', attempts: 20, made: 15, rate: 75, season_rate: 68 }, { id: 'b', label: '6 to 10 ft', attempts: 4, made: 1, rate: 25 }] } } }} size="compact" />);
     const rows = [...container.querySelectorAll('.ch-aks-dist__row')];

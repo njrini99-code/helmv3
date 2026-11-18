@@ -9,7 +9,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
-import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
+import { changeSe, deltaTone, deltaWords, halvesChange, type DeltaTone } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
 import { useChSessionState } from '../../lib/session-state';
@@ -36,6 +36,15 @@ export function PlayerGame({ data, phone = false, part, covered = false }: { dat
 }
 
 /** The par every round in the window was played to, or null when they differ (a par line would be wrong for some). */
+/**
+ * The average's change against the rounds before, after its window: a clear change is signed with its words ("−0.8 · Better than previous
+ * 5"), one inside its standard error says only that (a signed figure beside "No clear change" read as a result; PL-HOME-02, CONS-20).
+ */
+export function averageChange(delta: number, tone: DeltaTone, previous: number): string {
+  const words = deltaWords(delta, tone, `vs previous ${previous}`);
+  return tone === '' ? words : `${formatSigned(delta)} · ${words}`;
+}
+
 function commonPar(points: ChScoringPoint[]): number | null {
   const pars = points.map((p) => p.par).filter((v): v is number => v != null);
   return pars.length > 0 && pars.length === points.length && pars.every((v) => v === pars[0]) ? pars[0]! : null;
@@ -86,16 +95,18 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
     ) : null,
   };
   const figs: Array<[string, string, string, string]> = [
-    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} · ${deltaWords(delta, deltaSignal, `vs previous ${before.length}`)}`, deltaSignal],
-    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
+    // Every figure names its window (prod audit 2026-11-15, PL-HOME-02): the average and under par are the rounds picked below, strokes gained
+    // is always the last ten (figure-window.ts, QA-1; PL-HOME-01) and the handicap is the index.
+    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `Last ${shown.length} · ${averageChange(delta, deltaSignal, before.length)}`, deltaSignal],
+    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Last 10, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
     ['Handicap', formatHcp(data.handicap), 'Index', ''],
-    ['Under par', withPar.length ? `${under} of ${withPar.length}` : NO_DATA, withPar.length < shown.length ? 'Rounds with par recorded' : 'Rounds in this window', ''],
+    ['Under par', withPar.length ? `${under} of ${withPar.length}` : NO_DATA, withPar.length < shown.length ? `In last ${shown.length} with par recorded` : `In last ${shown.length}`, ''],
   ];
   const par = commonPar(shown);
   // The phone's card always offers all three windows, as the board's does; the desktop's only the ones with rounds to fill them.
   const options = (phone ? SPANS : SPANS.filter((k) => k === 5 || all.length > k / 2)).map((k) => ({ value: `${k}` as `${Span}`, label: `Last ${k}` }));
   const picker = (
-    <Segmented<`${Span}`> weight="filter" redraws size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
+    <Segmented<`${Span}`> redraws size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
   );
   const body = data.scoring.error ? (
     <RefreshNotice code="CH-2215" title="Your rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
@@ -206,8 +217,33 @@ export function scoreTicks(lo: number, hi: number, max: number): number[] {
   return out;
 }
 
-/** Scores against par (hatched below it) and the player's own mean, the best round pinned. Lower scores sit higher. */
-function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolean }) {
+/**
+ * Scores against par (hatched below it) and the player's own mean, the best round pinned. Lower scores sit higher. The one
+ * scoring line on Home (SYS-04): coach Home draws the team's average on each round day with it, so `format` prints a value
+ * (the team's are tenths), `pin` names the best point and `label` reads the whole chart; left out, the player's.
+ */
+export function ScoreChart({
+  points,
+  phone,
+  format = String,
+  pin = 'low',
+  label,
+  mean: meanAt,
+  best: bestAt,
+  dodge = false,
+}: {
+  points: ChScoringPoint[];
+  phone: boolean;
+  format?: (v: number) => string;
+  pin?: string;
+  label?: string;
+  /** The dashed line's value when it is not the plotted points' own mean (the team's average rests on rounds, not days). */
+  mean?: number;
+  /** The pinned point's index when the best one is chosen by the caller (the team's best day skips one-round days); null pins none. */
+  best?: number | null;
+  /** Moves a value under its dot where the line runs down into that dot from both sides (the team's tenths are wide enough to sit on the line). */
+  dodge?: boolean;
+}) {
   const uid = useId().replace(/:/g, '');
   const W = phone ? 340 : 760;
   // Desktop draws taller so the line fills the space beside the four figures.
@@ -219,33 +255,39 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
   const scores = points.map((p) => p.score);
   // The par line requires a known, identical par for every round; each known round is still marked against its own par.
   const par = commonPar(points);
-  const lo = Math.min(...scores, par ?? Infinity) - 1;
-  const hi = Math.max(...scores, par ?? -Infinity) + 1;
+  const lo = Math.min(...scores, par ?? Infinity, meanAt ?? Infinity) - 1;
+  const hi = Math.max(...scores, par ?? -Infinity, meanAt ?? -Infinity) + 1;
   const x = (i: number) => L + (i * (W - L - R)) / Math.max(1, points.length - 1);
   const y = (v: number) => T + ((v - lo) / (hi - lo)) * (H - T - B);
-  const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const mean = meanAt ?? scores.reduce((a, b) => a + b, 0) / scores.length;
   const pts = scores.map((v, i) => [x(i), y(v)] as const);
   let d = `M${pts[0]![0].toFixed(1)},${pts[0]![1].toFixed(1)}`;
+  // Straight segments between rounds (one chart line, S2.4): a curve invents scores between the dots.
   for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1]!;
     const [x1, y1] = pts[i]!;
-    const cx = (x0 + x1) / 2;
-    d += ` C${cx.toFixed(1)},${y0.toFixed(1)} ${cx.toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`;
+    d += ` L${x1.toFixed(1)},${y1.toFixed(1)}`;
   }
-  const best = Math.min(...scores);
-  const bi = scores.lastIndexOf(best);
+  const bi = bestAt === undefined ? scores.lastIndexOf(Math.min(...scores)) : bestAt;
+  const best = bi == null ? Math.min(...scores) : scores[bi]!;
   const last = points.length - 1;
   const labelled = points.length <= 10;
   const step = points.length <= 5 ? 1 : points.length <= 10 ? (phone ? 3 : 1) : phone ? 5 : 2;
   const ticks = scoreTicks(lo, hi, phone ? 6 : 8);
   // Under par against that round's own par, so a dot is green and a label red even where the par line is not drawn.
   const under = (i: number) => points[i]!.par != null && scores[i]! < points[i]!.par!;
+  // Where the line comes down into a dot (no neighbour sits lower on screen and at least one sits higher), the value
+  // above would sit on that line, so it goes below the dot.
+  const below = (i: number) => {
+    if (!dodge) return false;
+    const n = [scores[i - 1], scores[i + 1]].filter((v): v is number => v != null);
+    return n.some((v) => v < scores[i]!) && n.every((v) => v <= scores[i]!);
+  };
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
       className="ch-ph-chart"
       role="img"
-      aria-label={`Your scores over the last ${points.length} rounds, from ${scores[0]} to ${scores[last]}; your mean is ${formatFixed(mean)} and your best is ${best}.`}
+      aria-label={label ?? `Your scores over the last ${points.length} rounds, from ${scores[0]} to ${scores[last]}; your mean is ${formatFixed(mean)} and your best is ${best}.`}
     >
       <defs>
         <linearGradient id={`${uid}f`} x1="0" x2="0" y1="0" y2="1">
@@ -284,19 +326,19 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
         <g key={points[i]!.id}>
           <circle cx={px} cy={py} r={i === last ? 5 : points.length > 10 ? 2.6 : 3.4} className={'ch-ph-chart__dot' + (under(i) ? ' is-under' : '')} />
           {labelled && (
-            <text x={px} y={py - 10} textAnchor="middle" className={'ch-ph-chart__val' + (under(i) ? ' is-under' : '')}>
-              {scores[i]}
+            <text x={px} y={below(i) ? py + 18 : py - 10} textAnchor="middle" className={'ch-ph-chart__val' + (under(i) ? ' is-under' : '')}>
+              {format(scores[i]!)}
             </text>
           )}
         </g>
       ))}
-      {!phone && (
+      {!phone && bi != null && (
         <g transform={`translate(${x(bi).toFixed(1)},${(y(best) - (labelled ? 14 : 4)).toFixed(1)})`} className="ch-ph-pinflag">
           <line y1="-6" y2="-34" />
           <path d="M0,-34 L16,-29 L0,-24 Z" />
           {/* Near the right edge the label reads to the left of the pole, inside the chart. */}
           <text x={x(bi) > W - 160 ? -6 : 20} y="-26" textAnchor={x(bi) > W - 160 ? 'end' : 'start'} className="ch-ph-chart__ann">
-            low · {best}
+            {pin} · {format(best)}
           </text>
         </g>
       )}
@@ -318,17 +360,17 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
   return (
     <section className={phone ? 'ch-hm-sec ch-ph-legs-sec is-phone' : 'ch-ph-legs-sec'} aria-labelledby="ch-ph-legs">
       {phone ? (
-        // The board's one-line meta beside the title. The stats are the last 10 rounds and each part's strokes gained is the season's: each pill says so to a screen reader, and the desktop's caption in full.
+        // The board's one-line meta beside the title. The stats and each part's strokes gained are the last 10 rounds (figure-window.ts, QA-1): the meta names the window (PL-HOME-03), each pill says so to a screen reader.
         <div className="ch-hm-sec__h">
           <h2 id="ch-ph-legs">Your game</h2>
-          <span className="ch-hm-meta">Strokes gained {sgBaseline(tour).vs}</span>
+          <span className="ch-hm-meta">Last 10 rounds · strokes gained {sgBaseline(tour).vs}</span>
         </div>
       ) : (
         <div className="ch-ph-game__h">
           <div>
             <h2 id="ch-ph-legs">Your game</h2>
-            {/* The stats are the last 10 rounds; each part's strokes gained is the season's, against the Tour; a stat with a Tour average draws it as a mark. */}
-            <span>Last 10 rounds · strokes gained this season {sgBaseline(tour).vs}</span>
+            {/* The stats and each part's strokes gained are the last 10 rounds, against the Tour (PL-HOME-01); a stat with a Tour average draws it as a mark. */}
+            <span>Last 10 rounds · strokes gained {sgBaseline(tour).vs}</span>
           </div>
         </div>
       )}
@@ -364,7 +406,7 @@ function Leg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
         {g.sg != null && (
           <span className={'ch-ph-leg__sg ch-num ' + (changeTone(g.sg, false) || 'is-flat')}>
             {formatSigned(g.sg)}
-            <span className="ch-sr-only"> strokes gained a round this season</span>
+            <span className="ch-sr-only"> strokes gained a round, last 10 rounds</span>
           </span>
         )}
       </div>

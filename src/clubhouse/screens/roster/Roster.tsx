@@ -43,10 +43,11 @@ import { availabilityCopy, RosterPeek, type AvailabilityControl } from './Roster
 import { RequestsRow, RequestsSheetCrh, RosterPhoneCrh } from './RosterPhoneCrh';
 import { RosterLeaders } from './RosterLeaders';
 import { RosterTeamCard } from './RosterTeamCard';
+import { RosterLimitLine, useRosterLimit } from './RosterLimit';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
 import { useHomeDayRollover } from '../home/use-day-rollover';
 import { Tooltip } from '../../ui/Tooltip';
-import { AVAILABILITY_WORD, availabilityLine, lastFive, rosterFailedParts, rosterStandings, sgBarScale, sgBarWidth, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
+import { AVAILABILITY_WORD, availabilityLine, lastFive, rosterFailedParts, rosterStandings, roundsPlayed, sgBarScale, sgBarWidth, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import { classNoteFor, type RosterClassLines } from './class-line';
 import { useRosterClassLines } from './useClassLines';
@@ -106,6 +107,8 @@ export function Roster({ data }: { data: ChRoster; }) {
     setSeen(data.players);
     setPlayers(data.players);
   }
+  // F-05: the roster limit's count, sheet and row-menu items (the count reads `players`, so a mark shows at once).
+  const limit = useRosterLimit(data, players, setPlayers);
   // Search, filter, sort and layout come back when the coach returns to Roster (PAGE_PERFORMANCE.md rule 1).
   const [q, setQ] = useChSessionState('q', '');
   const [show, setShow] = useChSessionState<Show>('show', 'active');
@@ -367,7 +370,7 @@ export function Roster({ data }: { data: ChRoster; }) {
         p.classYear ?? '',
         p.status,
         AVAILABILITY_WORD[p.availability ?? 'available'],
-        p.rounds,
+        roundsPlayed(p),
         p.avg?.toFixed(1) ?? '',
         p.sgPerRound?.toFixed(2) ?? '',
         p.handicap ?? '',
@@ -391,7 +394,7 @@ export function Roster({ data }: { data: ChRoster; }) {
     }
   };
 
-  const statsHref = (p: ChRosterPlayer) => rebuiltHref(`/golf/dashboard/stats?player=${p.id}`);
+  const statsHref = (p: ChRosterPlayer) => rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season`);
   const menuFor = (p: ChRosterPlayer): MenuItem[] => {
     const items: MenuItem[] = [];
     // The board's first row item: CoachHelm's Deep dive of this player (spec A).
@@ -409,6 +412,8 @@ export function Roster({ data }: { data: ChRoster; }) {
     const now = p.availability ?? 'available';
     items.push(...(now === 'available' ? [markInjured, markAway] : now === 'injured' ? [markAvailable, markAway] : [markAvailable, markInjured]));
     items.push({ kind: 'separator' });
+    const limitItems = limit.menuItems(p);
+    if (limitItems.length) items.push(...limitItems, { kind: 'separator' });
     items.push(
       p.status === 'active'
         ? { label: 'Mark inactive', icon: UserX, onSelect: () => setRestatus(p) }
@@ -427,6 +432,7 @@ export function Roster({ data }: { data: ChRoster; }) {
 
   const dialogs = (
     <>
+      {limit.dialogs}
       <InviteModal
         open={invite || inviteLink.open}
         atRest={inviteLink.atRest}
@@ -495,6 +501,7 @@ export function Roster({ data }: { data: ChRoster; }) {
           classLines={classLines}
           hold={hold}
           onRetry={() => router.refresh()}
+          limit={limit}
         >
           {dialogs}
         </RosterPhoneCrh>
@@ -542,6 +549,7 @@ export function Roster({ data }: { data: ChRoster; }) {
               {players.some((p) => p.sgPerRound != null) && <> {sgBaseline(data.sgTour ?? null).whyNamed}</>}
             </p>
           )}
+          {!data.playersError && players.length > 0 && <RosterLimitLine ctl={limit} />}
         </div>
         <div className="ch-rs-head__act">
           {players.length > 0 && (
@@ -624,7 +632,7 @@ export function Roster({ data }: { data: ChRoster; }) {
             <SearchField className="ch-rs-search" value={q} onChange={setQ} placeholder="Search players by name" label="Search players" />
             <div className="ch-rs-bar__r">
               <>
-                  <Segmented<Show> weight="filter"
+                  <Segmented<Show>
                     size="sm"
                     label="Status"
                     value={show}
@@ -646,7 +654,7 @@ export function Roster({ data }: { data: ChRoster; }) {
                     ]}
                   />
                 </>
-              <Segmented<Sort> weight="filter"
+              <Segmented<Sort>
                 size="sm"
                 label="Sort players"
                 value={sortBy}
@@ -711,7 +719,7 @@ const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between players', keys: [
 
 /** A player's profile, where Stats is rebuilt for the coach; otherwise null (the peek opens instead). */
 // `from=roster`: the profile keeps Roster lit in the sidebar and as its way back (coach audit 13 Nov 2026, §8 #7).
-const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}&from=roster`);
+const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}&window=season&from=roster`);
 
 /**
  * The roster itself, as cards or a table. Its own component so the
@@ -827,7 +835,7 @@ function RosterList({
                   <Avatar name={p.name} id={p.id} size={76} year={yearKeyOf(p.gradYear, clock)} dim={p.status === 'inactive'} />
                 </span>
                 <span className="ch-rs-face__name">{p.name}</span>
-                <span className="ch-rs-face__meta">{[p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
+                <span className="ch-rs-face__meta">{[p.rosterExempt ? 'Not counted' : null, p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
                 <span className="ch-rs-face__form">
                   <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
                 </span>
@@ -930,7 +938,7 @@ function RosterList({
                 <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
                   {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
                 </span>
-                <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
+                <span role="cell" className="r ch-num ch-rs-num2">{roundsPlayed(p)}</span>
                 <span role="cell" className="r">
                   <Menu
                     label={`Actions for ${p.name}`}
@@ -1146,7 +1154,8 @@ function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): str
  */
 function RowMeta({ p, line: classLine }: { p: ChRosterPlayer; line?: ReturnType<typeof classNoteFor> }) {
   const line = availabilityLine(p);
-  const rest = [p.classYear, p.hometown].filter(Boolean).join(' · ');
+  // F-05: a player marked as not counting toward the roster limit says so first in the line.
+  const rest = [p.rosterExempt ? 'Not counted' : null, p.classYear, p.hometown].filter(Boolean).join(' · ');
   // P-10: a trip or a class leads the line, as the availability word does ("In class until 11:50 AM · Sophomore · Charlotte, NC").
   if (classLine) {
     const all = [classLine.text, rest || null].filter(Boolean).join(' · ');

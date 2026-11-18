@@ -4,34 +4,42 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Owner, 2026-10-29: "fix the motion and thinking animation… it should be a lot smoother". Ask's working state moves only
- * on the compositor: the avatar's wheel turns (transform) and the current step's dot breathes (transform and opacity).
- * The words themselves hold still in readable ink; the old shimmer repainted them every frame. Every loop stops for
- * reduced motion and for Settings > Animations off (both forms of the attribute).
+ * on the compositor: the avatar's wheel turns (transform), on the working beat, while CoachHelm works. MOTION-AND-VISUAL
+ * 3.1 and 3.12 (2026-11-15): that wheel is the thread's one loop; the step dot's breath, the step rise, the new turn's rise
+ * and the streamed paragraph's fade are gone, and the wheel's keyframes live in styles/motion.css. The words themselves
+ * hold still in readable ink; the old shimmer repainted them every frame. The loop stops for reduced motion and for
+ * Settings > Animations off (both forms of the attribute).
  */
 const css = readFileSync(join(__dirname, '..', 'styles/coachhelm-thread.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const motion = readFileSync(join(__dirname, '..', 'styles/motion.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
 /** The body of the block opened by `head` (a media query or a selector list), braces balanced. */
-function block(head: string, from = 0): string {
-  const at = css.indexOf(head, from);
+function block(head: string, from = 0, text = css): string {
+  const at = text.indexOf(head, from);
   if (at < 0) return '';
-  let i = css.indexOf('{', at) + 1;
+  let i = text.indexOf('{', at) + 1;
   const start = i;
-  for (let depth = 1; depth > 0 && i < css.length; i += 1) {
-    if (css[i] === '{') depth += 1;
-    else if (css[i] === '}') depth -= 1;
+  for (let depth = 1; depth > 0 && i < text.length; i += 1) {
+    if (text[i] === '{') depth += 1;
+    else if (text[i] === '}') depth -= 1;
   }
-  return css.slice(start, i - 1);
+  return text.slice(start, i - 1);
 }
-const keyframes = (name: string) => block(`@keyframes ${name} `);
-const LOOPS = ['.ch-th-mark.is-working .ch-th-mk', '.ch-th-dot::before'];
+const keyframes = (name: string) => block(`@keyframes ${name} `, 0, motion);
+const LOOPS = ['.ch-th-mark.is-working .ch-th-mk'];
 
 describe('Ask working motion is smooth and respects motion settings', () => {
-  it('animates only transform and opacity', () => {
-    for (const name of ['ch-th-turn', 'ch-th-dot', 'ch-th-step', 'ch-th-rise', 'ch-th-in']) {
-      const props = [...keyframes(name).matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
-      expect(props.length, name).toBeGreaterThan(0);
-      expect(props.every((p) => p === 'transform' || p === 'opacity'), `${name}: ${props.join(', ')}`).toBe(true);
-    }
+  it('animates only transform and opacity, and keeps no keyframes of its own', () => {
+    const props = [...keyframes('ch-th-turn').matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
+    expect(props).toEqual(['transform']);
+    expect(css).not.toMatch(/@keyframes/);
+  });
+
+  it('the wheel is the one loop, on the working beat (3.1)', () => {
+    const loops = [...css.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter((m) => /\binfinite\b/.test(m[2]!));
+    expect(loops.map((m) => m[1]!.trim())).toEqual(['.ch-th-mark.is-working .ch-th-mk']);
+    expect(loops[0]![2]).toMatch(/animation: ch-th-turn var\(--ch-dur-typing\) var\(--ch-ease-typing\) infinite;/);
+    expect(css).not.toMatch(/animation:[^;]*\bch-th-(?:dot|step|rise|in)\b/);
   });
 
   it('the live words never shimmer', () => {

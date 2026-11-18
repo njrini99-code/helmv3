@@ -78,13 +78,25 @@ export interface ChStandGroup {
   rows: ChStandRow[];
 }
 
-/** `season`: this season's table (owner decision 9). `all_time`: the lifetime table, read while the season table is not deployed. */
+/**
+ * `season`: this season's table (owner decision 9). `all_time`: the lifetime table, read while the season table is not deployed. The
+ * lifetime table is not one window (DF-P-05): its cache rows are every round on file, its pressure rows the last 90 days (the group
+ * says so) and its approach rows every round on file, so the page calls it "Rounds on file", never "All time".
+ */
+/** The lifetime table's label (DF-P-05). */
+export const ALL_ROUNDS_LABEL = 'Rounds on file';
+
 export type ChStandWindowKind = 'season' | 'all_time';
 
 export interface ChStandWindow {
   kind: ChStandWindowKind;
-  /** "This season" or "All time": the hero names it, so no number on the page passes for a window it is not. */
+  /** "This season" or "Rounds on file": the hero names it, so no number on the page passes for a window it is not. */
   label: string;
+  /**
+   * The lifetime table's rows count this player's test rounds (its refresh keeps them until the held OD-01 chain is applied), and the
+   * hero says so. Only on `all_time`, and only when the player has a test round on file; absent otherwise and when that read failed.
+   */
+  testRounds?: true;
   /** "Aug 1": the first day the season rows cover; null on the lifetime table and before any season row exists. */
   since: string | null;
 }
@@ -99,8 +111,13 @@ export interface ChStanding {
    * on file (`golf_player_stats_cache.rounds_played`). Null when unknown.
    */
   rounds: number | null;
-  /** Their scoring average, the base every projection starts from ("77.2"); null below the projection floor or when unknown. */
+  /**
+   * Their scoring average this season, the base every projection starts from ("77.2"); null below the projection floor or when
+   * unknown. It is never the lifetime stats cache's (SC-01), whatever window the rows are.
+   */
   scoringAverage: string | null;
+  /** The rounds this season behind the scoring average (a nine is one of them); null when unknown. */
+  scoringRounds: number | null;
   /** The scoring-average read failed: the projections are missing, and the page says so. */
   baselineFailed: boolean;
   /** The newest refresh among the rows ("Sep 30"). */
@@ -127,12 +144,14 @@ export interface ChStanding {
 }
 
 /**
- * The scoring-average read the screen needs (`golf_player_stats_cache`). `attemptsPerRound`: the player's own attempts a round for a
- * metric the counterfactual sizes by them (putts in each band, sand shots), from the same cache row the generators read them from,
- * so a row's projection is the one its insight card states.
+ * The scoring-average read the screen needs. `scoringAverage` and `scoringRounds`: this season's, as Stats counts them
+ * (`season-figures.ts`, SC-01); without `scoringRounds` the average rests on `roundsPlayed`. `roundsPlayed`: rounds on file in the
+ * stats cache, the count an all-time page names. `attemptsPerRound`: the player's own attempts a round for a metric the
+ * counterfactual sizes by them (putts in each band, sand shots), from the same cache row the generators read them from, so a row's
+ * projection is the one its insight card states.
  */
 export type ChStandBaselineRead =
-  | { status: 'ok'; roundsPlayed: number | null; scoringAverage: number | null; attemptsPerRound?: Partial<Record<MetricId, number>> }
+  | { status: 'ok'; roundsPlayed: number | null; scoringAverage: number | null; scoringRounds?: number | null; attemptsPerRound?: Partial<Record<MetricId, number>> }
   | { status: 'failed' };
 
 /** Rounds a projection needs before it starts from the scoring average: the Fairway loader's own rule (`loadPlayerScoringBaseline`). */
@@ -352,7 +371,9 @@ export function toChStanding(
   windowKind: ChStandWindowKind = 'all_time',
 ): ChStanding {
   const roundsPlayed = baseline.status === 'ok' ? baseline.roundsPlayed : null;
-  const average = baseline.status === 'ok' && roundsPlayed != null && roundsPlayed >= MIN_PROJECTION_ROUNDS ? baseline.scoringAverage : null;
+  // The rounds the scoring average rests on: this season's when the read names them, else the rounds on file.
+  const behind = baseline.status === 'ok' ? (baseline.scoringRounds !== undefined ? baseline.scoringRounds : roundsPlayed) : null;
+  const average = baseline.status === 'ok' && behind != null && behind >= MIN_PROJECTION_ROUNDS ? baseline.scoringAverage : null;
   const byId = new Map(rows.map((r) => [r.metric_id as string, r]));
   const attempts = baseline.status === 'ok' ? (baseline.attemptsPerRound ?? {}) : {};
   const drawn: Array<{ id: MetricId; row: ChStandRow }> = [];
@@ -381,10 +402,11 @@ export function toChStanding(
   const withTeam = all.filter((r) => r.vsTeam);
   return {
     // A failed scoring-average read is not an early read: it is not known how many rounds there are, and the page says the read failed.
-    state: all.length === 0 ? 'empty' : baseline.status === 'ok' && (roundsPlayed == null || roundsPlayed < MIN_PROJECTION_ROUNDS) ? 'early' : 'ready',
-    window: { kind: windowKind, label: windowKind === 'season' ? 'This season' : 'All time', since: dayLabel(since) },
+    state: all.length === 0 ? 'empty' : baseline.status === 'ok' && (behind == null || behind < MIN_PROJECTION_ROUNDS) ? 'early' : 'ready',
+    window: { kind: windowKind, label: windowKind === 'season' ? 'This season' : ALL_ROUNDS_LABEL, since: dayLabel(since) },
     rounds: windowKind === 'season' ? (counted.length > 0 ? Math.max(...counted) : null) : roundsPlayed,
     scoringAverage: average != null ? oneDecimal(average) : null,
+    scoringRounds: baseline.status === 'ok' && baseline.scoringRounds !== undefined ? baseline.scoringRounds : null,
     baselineFailed: baseline.status === 'failed',
     refreshed: refreshedOn(newest, timeZone),
     tour: rows.some((r) => r.is_womens === true) ? 'LPGA Tour' : 'Tour',

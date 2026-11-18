@@ -50,7 +50,12 @@
       "src/clubhouse/__tests__/qualifiers.test.tsx",
       "src/app/golf/actions/__tests__/qualifier-setup.test.ts",
       "src/app/golf/actions/__tests__/qualifying-coach-gate.test.ts",
-      "src/app/golf/actions/__tests__/golf-qualifier-manual-close.test.ts"
+      "src/app/golf/actions/__tests__/golf-qualifier-manual-close.test.ts",
+      "src/clubhouse/__tests__/exports.test.tsx",
+      "src/clubhouse/screens/qualifiers/__tests__/export.test.ts",
+      "src/clubhouse/__tests__/qualifier-ties.test.tsx",
+      "src/app/golf/actions/__tests__/qualifier-rules.test.ts",
+      "src/lib/coachhelm/v3/qualifying/__tests__/ranking-ties.test.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/qualifiers.md",
@@ -338,6 +343,62 @@
       },
       "tests": [
         "src/clubhouse/__tests__/qualifiers.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P009-EXPORT-STANDINGS",
+      "label": "Export a qualifier's standings (coach)",
+      "component": "src/clubhouse/screens/qualifiers/ExportStandings.tsx#ExportStandings",
+      "handler": "ExportButton run",
+      "service": "src/clubhouse/lib/csv.ts#saveCsv",
+      "data": [
+        "a CSV file on the device"
+      ],
+      "bridge": {
+        "success": 90980,
+        "failure": 90680
+      },
+      "tests": [
+        "src/clubhouse/__tests__/exports.test.tsx",
+        "src/clubhouse/screens/qualifiers/__tests__/export.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P009-TIE-RULE",
+      "label": "Choose a qualifier's tie rule (coach, create and edit)",
+      "component": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#QualifierForm",
+      "handler": "create then saveRules; runEditPlan step \"the tie rule\"",
+      "service": "src/app/golf/actions/qualifier-rules.ts#saveQualifierRules",
+      "data": [
+        "golf_qualifier_rules (migration 20261115240000, HELD)"
+      ],
+      "bridge": {
+        "success": 90981,
+        "failure": 90681
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifier-ties.test.tsx",
+        "src/app/golf/actions/__tests__/qualifier-rules.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P009-EXEMPT",
+      "label": "Exempt players from a qualifier before it starts (coach, create and edit)",
+      "component": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#ExemptField",
+      "handler": "create then saveExemptions; runEditPlan step \"the exemptions\"",
+      "service": "src/app/golf/actions/qualifier-exemptions.ts#saveQualifierExemptions",
+      "data": [
+        "golf_qualifier_exemptions (migration 20261116100000, HELD)",
+        "golf_qualifier_selections (coach_pick written at close)"
+      ],
+      "bridge": {
+        "success": 90982,
+        "failure": 90602
+      },
+      "tests": [
+        "src/clubhouse/__tests__/qualifier-f06.test.tsx",
+        "src/app/golf/actions/__tests__/qualifier-exemptions.test.ts",
+        "src/lib/coachhelm/v3/qualifying/__tests__/exemptions.test.ts"
       ]
     }
   ],

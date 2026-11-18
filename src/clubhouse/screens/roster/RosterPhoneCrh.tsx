@@ -3,6 +3,7 @@
 import { ChartColumn, Check, ChevronRight, CircleAlert, Copy, Ellipsis, RotateCw, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { DocumentTitle } from '../../lib/document-title';
 import { useRouter } from 'next/navigation';
 import { Component, useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { chReport } from '../../lib/track';
@@ -14,7 +15,7 @@ import { CrhStateBlock } from '../../ui/CrhStateBlock';
 import { FormBars, FormRange } from '../../ui/FormLine';
 import { GroupList, GroupRow } from '../../ui/GroupList';
 import { Icon } from '../../ui/Icon';
-import { InlineNotice } from '../../ui/Notices';
+import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
 import { LargeTitle, LargeTitleContext } from '../../ui/LargeTitle';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 import { Modal } from '../../ui/Modal';
@@ -36,11 +37,12 @@ import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
 import { classNoteFor, NO_CLASS_LINES, type RosterClassLine, type RosterClassLines } from './class-line';
-import { hcpWords, lastFive, rosterFailedParts, rosterPeek, rowNote, yearKeyOf, yearLineOf, type RosterClock } from './format';
+import { earlyNeed, lastFive, rosterFailedParts, rosterPeek, rowNote, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import type { AvailabilityControl, NoteSaved } from './RosterPeek';
 import { RosterLeaders } from './RosterLeaders';
 import { RosterProfileCrh } from './RosterProfileCrh';
 import { RosterTeamCard } from './RosterTeamCard';
+import { RosterLimitLine, type RosterLimitControl } from './RosterLimit';
 import { useRosterSort, type PhoneSort } from './sort';
 import { useFlipRows } from './use-flip-rows';
 import { useGuardedPhoneHistory } from './use-guarded-history';
@@ -71,6 +73,7 @@ export function RosterPhoneCrh({
   classLines = NO_CLASS_LINES,
   hold,
   onRetry,
+  limit,
   children,
 }: {
   data: ChRoster;
@@ -89,6 +92,8 @@ export function RosterPhoneCrh({
   classLines?: RosterClassLines;
   hold?: { onPointerDownCapture: () => void };
   onRetry: () => void;
+  /** F-05: the roster limit's line and the row items (Roster owns its state). Absent: nothing drawn. */
+  limit?: RosterLimitControl;
   children?: ReactNode;
 }) {
   const copy = useCopyText();
@@ -179,7 +184,7 @@ export function RosterPhoneCrh({
 
         {data.playersError ? (
           <Surface variant="card" level={2} padded={false} title="Players">
-            <CrhStateBlock kind="failed" code="CH-3201" title="The roster didn’t load" body="Try again. Nothing was lost.">
+            <CrhStateBlock kind="failed" code="CH-3201" title="The roster didn’t load" body={FAILURE_COPY.page}>
               <Button leftIcon={RotateCw} onClick={onRetry}>
                 Try again
               </Button>
@@ -201,6 +206,11 @@ export function RosterPhoneCrh({
         ) : (
           <>
             <RosterTeamCard viewer="coach" season={data.season} players={players} waiting={data.requestsError ? null : jr.reqs.length} statsError={data.statsError} clock={clock} />
+            {limit?.state && (
+              <div className="ch-rsx-sec is-tight ch-rs-limitp">
+                <RosterLimitLine ctl={limit} />
+              </div>
+            )}
             <div className="ch-rsx-sec is-tight">
               <RosterLeaders players={players} statsError={data.statsError} clock={clock} onOpen={onOpen} />
             </div>
@@ -216,7 +226,7 @@ export function RosterPhoneCrh({
                 (a one-option control read as a broken bar). */}
             {!data.statsError && (
               <div className="ch-stickybar ch-rsx-sort">
-                <Segmented<PhoneSort> weight="filter"
+                <Segmented<PhoneSort>
                   block
                   label="Sort by"
                   value={sortBy}
@@ -284,6 +294,8 @@ export function RosterPhoneCrh({
         {open && (
           <PhoneScreen key={`player-${open.id}`} keyboardAware immersive={false} labelledBy="ch-rsm-prof-title" className="ch-rsm-screen ch-rsx-screen">
             <PhoneBar back={{ label: 'Roster', onBack: guardedClose }} title={open.name} titleId="ch-rsm-prof-title" action={<PhoneIconAction icon={Ellipsis} label="Player actions" onClick={() => setActing(true)} />} />
+            {/* The tab and the app switcher read the player while the profile is up, and "Roster" again as it closes (PLAYER-04). */}
+            <DocumentTitle title={open.name} />
             <div className="ch-rsm-scroll" onClickCapture={onProfileClick}>
               <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
                 <RosterProfileCrh
@@ -316,6 +328,19 @@ export function RosterPhoneCrh({
           setActing(false);
           onStatus(p);
         }}
+        extra={(p) =>
+          (limit?.menuItems(p) ?? []).map((it) =>
+            'onSelect' in it && it.onSelect
+              ? {
+                  ...it,
+                  onSelect: () => {
+                    setActing(false);
+                    it.onSelect?.();
+                  },
+                }
+              : it,
+          )
+        }
       />
       <SheetGuard>
         <RequestsSheetCrh open={requestsOpen} atRest={link.atRest} onClose={closeRequests} data={data} jr={jr} clock={clock} />
@@ -355,7 +380,7 @@ function ProfilePresence({ atRest, children }: { atRest: boolean; children: Reac
 /** The two neutral stubs under three rounds: an honest "not enough rounds" where the bars would be. */
 export function FormStubs() {
   return (
-    <span className="ch-formbars is-stub" role="img" aria-label={STUB_LABEL}>
+    <span className="ch-formbars is-stub" aria-hidden="true">
       <i />
       <i />
     </span>
@@ -391,15 +416,19 @@ export function RosterRowCrh({
   const bySg = sort === 'sg';
   const sg = p.sgPerRound;
   const shown = lastFive(p.trend);
+  const hcp = !bySg && p.handicap != null ? `${TERMS.handicap.long} ${formatHcp(p.handicap)}` : null;
+  const lead = classLine ? <ClassStatusLine kind={classLine.kind} text={classLine.text} /> : note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : p.rosterExempt ? 'Not counted' : null;
+  const early = p.avg != null && !bySg ? earlyNeed(p.rounds) : null;
   const label = [
     p.name,
     p.classYear,
     kind === 'injured' ? 'injured' : kind === 'inactive' ? 'inactive' : null,
+    p.rosterExempt ? 'not counted toward the roster limit' : null,
     note?.text,
     bySg ? (sg != null ? `strokes gained ${formatSigned(sg)} a round` : 'no strokes gained yet') : null,
-    p.avg != null ? `average ${formatFixed(p.avg)}` : null,
+    p.avg != null ? `average ${formatFixed(p.avg)}${early ? `, early read, ${early.toLowerCase()} to rank` : ''}` : null,
     !bySg && p.handicap != null ? `handicap ${formatHcp(p.handicap).replace('+', 'plus ')}` : null,
-    kind !== 'inactive' && p.trend.length >= 3 ? `last five rounds: ${shown.join(', ')}` : null,
+    kind !== 'inactive' && p.trend.length >= 3 ? `last five rounds: ${shown.join(', ')}` : kind === 'active' && p.trend.length > 0 ? STUB_LABEL.toLowerCase() : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -421,15 +450,21 @@ export function RosterRowCrh({
                 Injured
               </span>
             ) : (
-              <span>
-                {classLine ? <ClassStatusLine kind={classLine.kind} text={classLine.text} /> : note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : ' '}
-              </span>
+              <>
+                {(lead || !hcp) && <span>{lead ?? ' '}</span>}
+                {/* ROSTER-11 (prod audit 2026-11-15): the handicap is spelled out, not an "HCP" under the average. Its own line, as
+                    Mail gives a message its subject and preview: beside the note it squeezed "4 rounds under average · Handicap
+                    5.1" into three lines of two words beside the form bars on a 390 phone (CRH-3). */}
+                {hcp && <span className="ch-num">{hcp}</span>}
+              </>
             )}
           </span>
           {kind === 'active' && (p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : p.trend.length > 0 ? <FormStubs /> : null)}
           <span className="ch-rsm-row__v ch-rsx-row__v" data-sort={bySg ? 'sg' : undefined} aria-hidden="true">
             <b className={`ch-num ${bySg ? (sg == null ? 'is-none' : changeTone(sg, false)) : p.avg == null ? 'is-none' : ''}`.trim()}>{bySg ? (sg == null ? <NoData /> : formatSigned(sg)) : p.avg == null ? <NoData /> : formatFixed(p.avg)}</b>
-            <span className="ch-num">{bySg ? 'SG / rd' : (hcpWords(p.handicap) ?? '')}</span>
+            {/* The figure says what it is (ROSTER-11), and an early read says how many more rounds rank it (ROSTER-02): the list
+                ranks by the leader cards' floor, so a player with one round no longer tops it unmarked. */}
+            <span className="ch-num">{bySg ? 'SG a round' : p.avg == null ? '' : (earlyNeed(p.rounds) ?? 'average')}</span>
           </span>
           <span className="ch-rsm-row__chev" aria-hidden="true">
             <Icon icon={ChevronRight} size={15} />
@@ -568,13 +603,27 @@ class SheetGuard extends Component<{ children: ReactNode }, { failed: boolean }>
   }
 }
 
-function PlayerActionsCrh({ p, onClose, onRemove, onStatus }: { p: ChRosterPlayer | undefined; onClose: () => void; onRemove: (p: ChRosterPlayer) => void; onStatus: (p: ChRosterPlayer) => void }) {
-  const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}`) : null;
+function PlayerActionsCrh({
+  p,
+  onClose,
+  onRemove,
+  onStatus,
+  extra,
+}: {
+  p: ChRosterPlayer | undefined;
+  onClose: () => void;
+  onRemove: (p: ChRosterPlayer) => void;
+  onStatus: (p: ChRosterPlayer) => void;
+  /** F-05: the roster limit's item for this player, before Mark inactive. */
+  extra?: (p: ChRosterPlayer) => MenuItem[];
+}) {
+  const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season`) : null;
   // The shared sheet of actions (ui MenuSheet), not a list drawn here: its rows, its keys and its destructive row are the app's own.
   const items: MenuItem[] = !p
     ? []
     : [
         ...(statsHref ? [{ label: 'View stats', icon: ChartColumn, href: statsHref } satisfies MenuItem] : []),
+        ...(extra?.(p) ?? []),
         { label: p.status === 'active' ? 'Mark inactive' : 'Mark active', icon: p.status === 'active' ? UserX : UserCheck, onSelect: () => onStatus(p) },
         { label: 'Remove from team', icon: UserMinus, danger: true, onSelect: () => onRemove(p) },
       ];

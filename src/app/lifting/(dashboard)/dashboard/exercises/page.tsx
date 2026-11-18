@@ -13,6 +13,9 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveLiftingAccess, resolveLiftingOrgIdForUser } from '@/lib/lifting/access';
 import { ExerciseLibraryClient } from '@/components/lifting/exercises/ExerciseLibraryClient';
 import type { HelmLiftingExerciseRow } from '@/lib/types/helm-lifting-data';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Exercises' };
 
 
 async function getExercises(orgId: string): Promise<HelmLiftingExerciseRow[]> {

@@ -27,12 +27,14 @@ import { EmptyState } from '../../ui/States';
 import { Tooltip } from '../../ui/Tooltip';
 import { monthLabel, MonthSpark, RoundRow, SeasonCard, shortDay, UnfinishedCard } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
+import { ShowEarlier, useRoundWindow } from './round-window';
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from './writes';
 import { pluralWord } from '../../lib/plural';
 import { browserSharePorts, type LiveSharePorts } from '../../live/share-ports';
 import { useRoundSharing } from './track/LiveShareSheet';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { courseHref, groupCourseRounds } from '../../data/course-key';
+import { ExportRounds, LIVE_READ_ROUND_HOLES, type ChReadRoundHoles } from './ExportRounds';
 
 type Group = 'month' | 'course';
 
@@ -98,7 +100,20 @@ const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between rounds', keys: ['
  * in progress, the season's scoring, then every posted round by month or by
  * course.
  */
-export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRITES, sharePorts = browserSharePorts }: { data: ChRoundsLibrary; playerId: string; writes?: ChRoundsWrites; sharePorts?: LiveSharePorts }) {
+export function RoundsLibrary({
+  data: fresh,
+  playerId,
+  writes = LIVE_ROUNDS_WRITES,
+  sharePorts = browserSharePorts,
+  readHoles = LIVE_READ_ROUND_HOLES,
+}: {
+  data: ChRoundsLibrary;
+  playerId: string;
+  writes?: ChRoundsWrites;
+  sharePorts?: LiveSharePorts;
+  /** Export's one read (F-02): the holes of the rounds it holds. */
+  readHoles?: ChReadRoundHoles;
+}) {
   const phone = useChPhone();
   const { refresh, refreshing } = useRefresh();
   usePageKeys('Rounds', phone ? null : ROW_KEYS);
@@ -118,6 +133,13 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
   const list = data.rounds.list;
   const unfinished = useMemo(() => data.unfinished.list.filter((r) => !discarded.has(r.id)), [data.unfinished.list, discarded]);
   const groups = useMemo(() => groupRounds(list, group, q), [list, group, q]);
+  // Export takes the rounds the search leaves, newest first whatever the grouping (F-02).
+  const shown = useMemo(() => {
+    const ids = new Set(groups.flatMap((g) => g.rounds.map((r) => r.id)));
+    return list.filter((r) => ids.has(r.id));
+  }, [groups, list]);
+  // The newest two months draw at first; older ones wait for "Show earlier rounds" (PMAC-02).
+  const win = useRoundWindow<ChLibraryRound, (typeof groups)[number]>(groups, group === 'month');
   const newHref = roundsLinks.newRound();
   const counted = data.season.rounds;
 
@@ -286,8 +308,8 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
               {/* B11: on desktop, Up and Down walk the rounds that open (their links), Home and End go to the ends; one Tab stop. */}
               {!phone && <RovingRows selector=".ch-rd-book a.ch-rd-sc" within=".ch-rd" />}
               <div className="ch-rd-tools">
-                <SearchField value={q} onChange={setQ} placeholder="Search course…" label="Search rounds by course" />
-                <Segmented weight="filter" redraws
+                <SearchField value={q} onChange={setQ} placeholder={phone ? 'Search…' : 'Search course…'} label="Search rounds by course" />
+                <Segmented redraws
                   label="Group rounds"
                   size="sm"
                   value={group}
@@ -297,11 +319,12 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                     { value: 'course', label: 'By course' },
                   ]}
                 />
+                {shown.length > 0 && <ExportRounds rounds={shown} team={false} name={['rounds']} read={readHoles} icon={phone} />}
               </div>
               {groups.length === 0 ? (
                 <EmptyState code="CH-11303" kind="filtered" compact title={`No rounds at “${q.trim()}”`} body="Check the spelling, or search part of the course name." />
               ) : (
-                groups.map((g) => {
+                win.shown.map(({ group: g, rows }) => {
                   // The rounds the season card reads, 18 holes, counted and not practice: a round marked "Not counted" became a group's low.
                   const full = g.rounds.filter((r) => r.holes === 18 && r.countable !== false && countsTowardAverage(r));
                   return (
@@ -326,7 +349,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                         )}
                       </GroupHead>
                       <div className="ch-rd-book">
-                        {g.rounds.map((r) => (
+                        {rows.map((r) => (
                           <RoundRow key={r.id} r={r} href={roundsLinks.review(r.id)} onOpen={() => noteOpenedFromLibrary(r.id)} bind={postedCtx.bind(r)} />
                         ))}
                       </div>
@@ -334,6 +357,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                   );
                 })
               )}
+              {groups.length > 0 && <ShowEarlier className="ch-rd-earlier-more" hidden={win.hidden} onMore={win.more} />}
             </SectionBoundary>
           )}
 

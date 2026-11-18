@@ -12,17 +12,19 @@ appearance-store repair and remaining motion/profiling findings. Older
 measurements below retain their original source and device scope. Production
 state and release acceptance are tracked in [STATUS.md](STATUS.md).
 
-How a page goes from a design in `design/handoff/` to a verified page behind
-the `golf_clubhouse_ui` flag. This is the Foundation V2 process (D-60 to
-D-69; the owner's plan is in `foundation-v2/`). The rules that hold
-throughout are in `.claude/rules/clubhouse.md`, and `npm run clubhouse:check`
-enforces every step marked (checked).
+How a page goes from a design in `design/handoff/` to a verified Clubhouse page
+(the `golf_clubhouse_ui` flag it was once built behind was removed with Fairway
+on 2026-11-14, #2527). This is the Foundation V2 process (D-60 to D-69; the
+owner's plan is in `foundation-v2/`). The rules that hold throughout are in
+`.claude/rules/clubhouse.md`, and `npm run clubhouse:check` enforces every step
+marked (checked).
 
 Where things live:
 
 | What | Where |
 | --- | --- |
 | Current state, how to turn on, rollback, remaining work, open owner decisions | [`STATUS.md`](STATUS.md) |
+| The design system: laws, surfaces, colour, type, the one toggle, charts, banned list, generated token tables | [`DESIGN_LANGUAGE.md`](../../design-refresh/DESIGN_LANGUAGE.md) |
 | Which screens exist, and which are rebuilt | `SCREENS.md` |
 | Gates, decisions (latest: D-72 to D-79, 2026-10-19), questions, data gaps, verification log | `PROGRESS.md` (the overview) |
 | Which handoff files are current | `design/handoff/VERSIONS.md` |
@@ -239,7 +241,12 @@ for smoke checks and `npm run clubhouse:quality:full` for the larger matrix.
 
 ## Redesign flags
 
-All of these are off in every environment (`config/feature-flags.yml`).
+Retired. The redesign is the only version of each page (owner decision,
+2026-11-07), and these flags were removed from `config/feature-flags.yml` with
+the release train of 2026-11-11 (#2497).
+`src/clubhouse/__tests__/redesign-shared-guards.test.ts` holds that none comes
+back. `data-ch-refresh="on"` is now always set by `shell/ClubhouseFrame.tsx`.
+The list below is the record of what they were.
 
 - `clubhouse_refresh_v1` is the foundation. It sets `data-ch-refresh="on"` on
   the
@@ -252,6 +259,5 @@ All of these are off in every environment (`config/feature-flags.yml`).
 - The CoachHelm flags: see `memory/features/coachhelm-ai.md`.
 - The practice plan flag: see `memory/features/team-operations.md`.
 
-The redesign's migrations are written and not applied.
-`supabase/migrations/HELD.md`
-is authoritative.
+The redesign's migrations were written held; many have since been applied.
+`supabase/migrations/HELD.md` is authoritative for each one's state.

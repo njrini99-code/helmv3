@@ -62,3 +62,32 @@ test('new shadow token references must exist in the Clubhouse styles', () => {
   assert.deepEqual(inspectCSS('.ch-card{box-shadow:var(--ch-elevation-reading)}', { tokens }), []);
   assert.equal(inspectCSS('.ch-card{box-shadow:var(--ch-elevation-typo)}', { tokens }).length, 1);
 });
+test('the system ratchet counts raw radii, raw shadows, raw motion and stray keyframes (MOTION-AND-VISUAL build step 7)', async () => {
+  const { ratchetCounts, compareRatchet } = await import('../css-quality.mjs');
+  const css = [
+    '.ch-a{border-radius:var(--ch-radius-md)} .ch-b{border-radius:var(--ch-radius-sm) var(--ch-radius-sm) 0 0} .ch-c{border-radius:50%}',
+    '.ch-d{border-radius:14px} .ch-e{border-top-left-radius:999px}',
+    '.ch-f{box-shadow:var(--ch-elevation-card)} .ch-g{box-shadow:none} .ch-h{box-shadow:0 0 0 0 transparent}',
+    '.ch-i{box-shadow:0 4px 12px rgb(0 0 0 / .2)} .ch-j{box-shadow:var(--ch-elevation-card), 0 0 0 1px red}',
+    '.ch-k{transition:opacity var(--ch-dur-base) var(--ch-ease)} .ch-l{transition:opacity 200ms ease} .ch-m{animation-timing-function:cubic-bezier(.2,0,0,1)}',
+    '.ch-n{transition:opacity var(--ch-dur-base, 260ms)} @keyframes ch-x{to{opacity:0}}',
+  ].join('\n');
+  const f0 = 'src/clubhouse/styles/x.css';
+  const c = ratchetCounts(css, f0);
+  assert.equal(c['raw-radius'], 2);
+  assert.equal(c['raw-shadow'], 2);
+  assert.equal(c['raw-motion'], 2);
+  assert.equal(c.keyframes, 1);
+  // tokens.css and motion.css hold the raw motion values and the keyframes.
+  assert.equal(ratchetCounts('.ch-l{transition:opacity 200ms ease}', 'src/clubhouse/styles/tokens.css')['raw-motion'], 0);
+  assert.equal(ratchetCounts('@keyframes ch-x{to{opacity:0}}', 'src/clubhouse/styles/motion.css').keyframes, 0);
+  // A zero is no motion (Nick, 16 Nov 2026), as the motion gate reads it; any other literal still counts.
+  const zeros = '.ch-o:hover{transition-duration:0s} .ch-p{transition:opacity var(--ch-dur-quick), visibility 0s linear var(--ch-dur-quick)} .ch-q{animation:ch-w 0ms var(--ch-dur-busy-delay) backwards}';
+  assert.equal(ratchetCounts(zeros, f0)['raw-motion'], 0);
+  assert.equal(ratchetCounts('.ch-r{transition:opacity 0.2s} .ch-s{transition-delay:1.0s} .ch-t{animation-delay:-1.2s} .ch-u{transition:color .05s}', f0)['raw-motion'], 4);
+  // Radius and shadow only fall; motion and keyframes are ceilings, so a lower count there is not a finding.
+  const f = 'src/clubhouse/styles/x.css';
+  assert.equal(compareRatchet({ [f]: { 'raw-radius': 1 } }, { [f]: { 'raw-radius': 2 } }).length, 1);
+  assert.equal(compareRatchet({ [f]: { 'raw-motion': 1, keyframes: 0 } }, { [f]: { 'raw-motion': 2, keyframes: 1 } }).length, 0);
+  assert.equal(compareRatchet({ [f]: { keyframes: 2 } }, { [f]: { keyframes: 1 } }).length, 1);
+});

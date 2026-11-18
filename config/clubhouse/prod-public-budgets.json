@@ -1,0 +1,40 @@
+{
+  "$comment": "Budgets for scripts/clubhouse/audit/prod-public.mjs, the logged-out production lane (tier W). Lowering a budget or emptying a known list is always fine; adding to a known list needs the reason in the PR. knownWrites are regexes over 'METHOD host/path' of write attempts the page makes on load and the lane aborts. knownSmallTargets were recorded from the first run on 2026-11-15 (production db3a99ee1): each is a real finding under the 44 pt rule, listed so the lane fails on a new one; fix one and delete its line.",
+  "device": "iPhone 17 Pro",
+  "settleMs": 4000,
+  "pages": [
+    "/",
+    "/golf/login",
+    "/golf/signup",
+    "/golf/demo",
+    "/golf/forgot-password"
+  ],
+  "lcpMs": 2500,
+  "origins": [
+    "https://helmsportslabs.com"
+  ],
+  "knownWrites": [],
+  "beaconsExpected": false,
+  "knownSmallTargets": {
+    "/": [
+      "91x34 a.flex.items-center.gap-[11px] \"Helm Sports Labs — home\"",
+      "180x30 a.group.inline-flex.items-center \"Explore GolfHelm→\"",
+      "41x24 a.text-body.font-medium.text-[oklch(0.86_0.008_85)] \"Log in\"",
+      "35x44 a.-my-2.inline-flex.min-h-11 \"About\"",
+      "41x44 a.-my-2.inline-flex.min-h-11 \"Pricing\"",
+      "87x20 button.relative.overflow-hidden.inline-flex \"Request Demo\""
+    ],
+    "/golf/login": [
+      "121x34 a.ch-au-skip \"Skip to sign in\""
+    ],
+    "/golf/signup": [
+      "48x31 a \"Sign in\""
+    ],
+    "/golf/demo": [
+      "135x34 a.ch-au-skip \"Skip to the form\""
+    ],
+    "/golf/forgot-password": [
+      "121x34 a.ch-au-skip \"Skip to sign in\""
+    ]
+  }
+}

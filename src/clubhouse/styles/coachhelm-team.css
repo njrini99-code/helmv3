@@ -22,7 +22,7 @@
 }
 /* Rows tint, they don't scale (lib/press.ts). */
 .ch-htb .tapp[data-ch-pressed] {
-  background-color: var(--ch-press-wash, var(--ch-well-bg-flat));
+  background-color: var(--ch-sel);
   transition-duration:var(--ch-dur-press);
 }
 /* Rows tint on press; only keys and tiles scale (MOT-40). */
@@ -31,7 +31,7 @@
 .ch-htb .rd.tapp[data-ch-pressed],
 .ch-htb .cr.tapp[data-ch-pressed] {
   transform:none;
-  background:var(--ch-ledger-row-press);
+  background:var(--ch-sel);
 }
 .ch-htb .sheet {
   display:flex;
@@ -133,7 +133,7 @@
 }
 .ch-htb .tv-holes i {
   height:18px;
-  border-radius:var(--ch-radius-xs);
+  border-radius:var(--ch-radius-sm);
   background:var(--ch-chart-track);
 }
 .ch-htb .tv-holes i.is-birdie {
@@ -178,7 +178,7 @@
   margin-top:8px;
 }
 .ch-htb .feat .hn b {
-  font: var(--ch-type-figure-40-500);
+  font: var(--ch-type-figure-hero);
   font-variation-settings:'wdth' 88;
   letter-spacing: -0.038em;
   }
@@ -245,7 +245,7 @@
 .ch-htb .stn {
   cursor:pointer;
   transform-box:view-box;
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-spring),opacity var(--ch-dur-quick) var(--ch-ease);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios),opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-htb .stn .halo {
   fill:color-mix(in srgb, var(--ch-feature-loss) 17%, transparent);
@@ -331,6 +331,8 @@
   fill:var(--ch-feature-bg);
 }
 .ch-htb .scn.early circle {
+  /* Hollow on the stage, so the dashed ring carries the coin: the full feature ink, not the solid coin's 55% rim. */
+  stroke:var(--ch-feature-ink);
   stroke-dasharray:3 2.4;
 }
 .ch-htb .scn.early text {
@@ -361,20 +363,8 @@
 .ch-htb .holefx__ring.is-even {
   box-shadow:inset 0 0 0 1.5px var(--ch-feature-ink-2);
 }
-/* The selected station's pulse (M-TEAM-06): 1 to 1.7 over 2.4s, twice, then still. */
-.ch-htb .holefx__ring.is-pulse {
-  animation:ch-htb-pulse var(--ch-dur-station-pulse) var(--ch-ease) 2;
-}
-@keyframes ch-htb-pulse {
-  from {
-    opacity:.7;
-    transform:scale(1);
-  }
-  to {
-    opacity:0;
-    transform:scale(1.7);
-  }
-}
+/* The selected station's pulse (M-TEAM-06) is gone (MOTION-AND-VISUAL 3.1, 3.12): the picked station's own state says
+   which it is. The ring stays unseen. */
 .ch-htb .holefx__fly {
   position:absolute;
   left:0;
@@ -414,7 +404,7 @@
   border-radius: var(--ch-radius-sm);
   padding:8px 2px;
   text-align:center;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color:var(--ch-feature-ink-2);
   transition:background-color var(--ch-dur-base) var(--ch-ease),color var(--ch-dur-base) var(--ch-ease);
 }
@@ -447,13 +437,15 @@
   color:var(--ch-feature-ink);
   font-weight:var(--ch-fw-500);}
 .ch-htb .hole .stn {
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-spring),opacity var(--ch-dur-base) var(--ch-ease);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios),opacity var(--ch-dur-base) var(--ch-ease);
 }
+/* Off the hole, a station and a coin step back but stay marks: .6 holds a station core at 3.2:1 and .65 a coin's ink
+   ring at 5.1:1 on the stage's lightest green (charts contrast pass, 16 Nov). */
 .ch-htb .hole.offh .stn {
-  opacity:.38;
+  opacity:.6;
 }
 .ch-htb .hole.offh .scn {
-  opacity:.5;
+  opacity:.65;
   transition:opacity var(--ch-dur-base) var(--ch-ease);
 }
 .ch-htb .stchips button[aria-pressed="true"] {
@@ -497,8 +489,9 @@
 .ch-htb .br .bt {
   position:relative;
   height:14px;
-  border-radius: var(--ch-radius-tail);
+  border-radius: var(--ch-radius-sm);
   background:var(--ch-chart-track);
+  box-shadow:var(--ch-chart-track-ring);
 }
 .ch-htb .br .bt .z {
   position:absolute;
@@ -507,7 +500,7 @@
   left:84%;
   width:1.5px;
   background:var(--ch-chart-zero);
-  border-radius: var(--ch-radius-mark);}
+  border-radius: var(--ch-radius-full);}
 .ch-htb .br .bt .avg {
   position:absolute;
   top:-3px;
@@ -519,7 +512,7 @@
   position:absolute;
   top:0;
   bottom:0;
-  border-radius: var(--ch-radius-tail);
+  border-radius: var(--ch-radius-sm);
   transition:transform var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
 }
 .ch-htb .br .bf.l {
@@ -720,7 +713,7 @@
   width:14px;
   height:0;
   border-top:2.2px solid var(--ch-green-600);
-  border-radius: var(--ch-radius-mark);}
+  border-radius: var(--ch-radius-full);}
 .ch-htb .tkey i.ka {
   border-top:1.4px dashed var(--ch-ink-500);
 }
@@ -788,7 +781,7 @@
 }
 .ch-htb .shape .sl {
   display:block;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color:var(--ch-ink-600);
 }
 .ch-htb .shape .sv {
@@ -866,7 +859,7 @@
   position:absolute;
   top:6px;
   height:2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background:var(--ch-chart-loss-fill);
 }
 .ch-htb .db i.g {
@@ -900,7 +893,7 @@
   font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-htb .cp .v span {
   display:block;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color:var(--ch-ink-500);
 }
 .ch-htb .cp .v .l {
@@ -928,7 +921,6 @@
 }
 .ch-htb .ins .cnote {
   font: var(--ch-type-14);}
-@keyframes ch-htb-fadein {from{opacity:0;transform:translateY(6px);}}
 .ch-htb .hud {
   padding:0 8px 4px;
 }
@@ -956,7 +948,7 @@
   font: var(--ch-type-11); letter-spacing: var(--ch-track-11); }
 .ch-htb .hudsvg .axl {
   fill:var(--ch-ink-600);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   }
 .ch-htb .hudsvg .tl {
   fill:var(--ch-gain);
@@ -1088,12 +1080,11 @@
 }
 .ch-htb .ringc .fil {
   stroke:var(--ch-chart-gain-fill);
-  transition:stroke-dashoffset var(--ch-dur-sweep) var(--ch-ease);
+  transition:stroke-dashoffset var(--ch-dur-marks) var(--ch-ease-ios);
 }
 .ch-htb .ringc .fil.mid {
   stroke:var(--ch-chart-flat);
 }
-@keyframes ch-htb-popin {from{opacity:0;transform:scale(.94);}}
 .ch-htb .rec {
   padding:0 16px 16px;
   display:grid;
@@ -1128,13 +1119,14 @@
 .ch-htb .lv .t {
   position:relative;
   height:10px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background:var(--ch-chart-track);
+  box-shadow:var(--ch-chart-track-ring);
 }
 .ch-htb .lv .t i {
   position:absolute;
   inset:0 auto 0 0;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background:var(--ch-chart-gain-fill);
 }
 .ch-htb .lv .t i.na {
@@ -1146,7 +1138,7 @@
   bottom:-4px;
   width:2px;
   background:var(--ch-ink-900);
-  border-radius: var(--ch-radius-mark);}
+  border-radius: var(--ch-radius-full);}
 .ch-htb .lv .n {
   font: var(--ch-type-14);
   color:var(--ch-ink-600);
@@ -1240,7 +1232,7 @@
   box-shadow:0 0 0 var(--ch-hairline-w) var(--ch-card-ring);
 }
 .ch-htb .ins h3 {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   letter-spacing: -0.02em;}
 .ch-htb .ins .lede {
   font: var(--ch-type-16);
@@ -1263,17 +1255,27 @@
   font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
 .ch-htb .ld .t {
   height:12px;
-  border-radius: var(--ch-radius-tail);
+  border-radius: var(--ch-radius-sm);
   background:var(--ch-chart-track);
+  box-shadow:var(--ch-chart-track-ring);
   position:relative;
   overflow:hidden;
 }
 .ch-htb .ld .t i {
   position:absolute;
   inset:0 auto 0 0;
-  border-radius: var(--ch-radius-tail);
+  border-radius: var(--ch-radius-sm);
   background:var(--ch-chart-flat);
   transition:transform var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
+}
+/* A signed figure's zero rule: a loss runs left of it (CH-23). */
+.ch-htb .ld .t b {
+  position:absolute;
+  top:0;
+  bottom:0;
+  z-index:1;
+  width:var(--ch-hairline-w);
+  background:var(--ch-chart-zero);
 }
 .ch-htb .ld .t i.you {
   background:var(--ch-chart-loss-fill);
@@ -1334,7 +1336,6 @@
   stroke-dasharray:24;
   stroke-dashoffset:24;
 }
-@keyframes ch-htb-draw {to{stroke-dashoffset:0;}}
 .ch-htb .pbars {
   display:grid;
   gap:8px;
@@ -1365,7 +1366,7 @@
 .ch-htb .prog i {
   flex:1;
   height:3px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background:color-mix(in srgb, var(--ch-feature-ink) 25%, transparent);
   overflow:hidden;
 }
@@ -1434,7 +1435,6 @@
   display:flex;
   gap:8px;
 }
-@keyframes ch-htb-storyin {from{opacity:0;transform:translateX(24px);}}
 .ch-htb .holes18 {
   display:grid;
   grid-template-columns:repeat(9,1fr);
@@ -1501,41 +1501,28 @@
   bottom:-4px;
   width:2px;
   background:var(--ch-feature-ink);
-  border-radius: var(--ch-radius-mark);}
+  border-radius: var(--ch-radius-full);}
 .ch-htb .sbar2 .t s {
   position:absolute;
   top:-22px;
   transform:translateX(-50%);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   text-decoration:none;
   color:var(--ch-feature-ink-2);
   white-space:nowrap;
 }
+/* Static blocks that wait the busy delay, as .ch-skel does (MOTION-AND-VISUAL 3.9; shell.css ch-busy-wait). */
 .ch-htb .skl {
   display:block;
   background:var(--ch-well-bg-flat);
   border-radius: var(--ch-radius-sm);
   position:relative;
   overflow:hidden;
-}
-.ch-htb .skl::after {
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(90deg,transparent,color-mix(in srgb, var(--ch-ivory-0) 45%, transparent),transparent);
-  transform:translateX(-100%);
-  animation:ch-htb-shim var(--ch-dur-shimmer) var(--ch-ease) infinite;
-}
-html[data-fw-theme='dark'] .ch-htb .skl::after {
-  background:linear-gradient(90deg,transparent,color-mix(in srgb, var(--ch-ivory-0) 6%, transparent),transparent);
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
 .ch-htb .feat .skl {
   background:color-mix(in srgb, var(--ch-feature-ink) 9%, transparent);
 }
-.ch-htb .feat .skl::after {
-  background:linear-gradient(90deg,transparent,color-mix(in srgb, var(--ch-feature-ink) 10%, transparent),transparent);
-}
-@keyframes ch-htb-shim {to{transform:translateX(100%);}}
 .ch-htb .sklc {
   padding:16px;
   display:grid;
@@ -1616,7 +1603,6 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   font: var(--ch-type-14);
   color:var(--ch-ink-600);
 }
-@keyframes ch-htb-rmfade {from{opacity:0;}to{opacity:1;}}
 .ch-htb .dgrid {
   --ch-htb-rail:clamp(320px,30%,440px);
   display:grid;
@@ -1788,14 +1774,6 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   color:var(--ch-green-600);
 }
 
-/* Reduce Motion: var(--ch-dur-quick) opacity only (.dev[data-rm] on the page). */
-@media (prefers-reduced-motion: reduce) {
-  .ch-htb .skl::after {
-    animation: none;
-    opacity: 0;
-  }
-}
-
 /* The app's own frame around the page's blocks. */
 .ch-htb.is-phone .sheet {
   padding: 6px var(--ch-page-x-phone, 16px) calc(48px + env(safe-area-inset-bottom));
@@ -1943,7 +1921,8 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   padding: 0 16px 12px;
 }
 
-/* Stories: the viewer covers the board, and its progress fill scales instead of growing a width. */
+/* Stories: the viewer covers the board, and its progress fill scales instead of growing a width. The fill is the story's
+   real clock, on motion.css's kept ch-fill (3.12). */
 .ch-htb .story {
   position: fixed;
   z-index: var(--ch-z-panel);
@@ -1957,21 +1936,16 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   transform: scaleX(1);
 }
 .ch-htb .prog i.now b {
-  animation: ch-htb-prog var(--ch-dur-story) linear both;
+  animation: ch-fill var(--ch-dur-story) linear both;
 }
 .ch-htb .story.is-held .prog i.now b {
   animation-play-state: paused;
-}
-@keyframes ch-htb-prog {
-  to {
-    transform: scaleX(1);
-  }
 }
 .ch-htb-storydesk {
   padding: 16px;
 }
 .ch-htb-storydesk h3 {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   letter-spacing: -0.01em;
 }
 .ch-htb .rec .lv .t i {
@@ -1997,8 +1971,12 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   transform: none;
   transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
 }
+/* The viewer a tap opens rises from below over the reveal beat on the iOS curve; each story's body arrives 24px from the
+   trailing side over the base beat. Both on motion.css's ch-arrive (3.12). */
 .ch-htb .story {
-  animation: ch-htb-rise var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
+  --ch-arrive-o: 1;
+  --ch-arrive-t: translateY(102%);
+  animation: ch-arrive var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 .ch-htb .story {
   user-select:none;
@@ -2009,27 +1987,10 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb .sto-b {
   min-height:0;
   overflow-y:auto;
-  animation: ch-htb-slide var(--ch-dur-story-body) var(--ch-ease-spring-smooth);
-}
-@keyframes ch-htb-rise {
-  from {
-    transform: translateY(102%);
-  }
-}
-@keyframes ch-htb-slide {
-  from {
-    opacity: 0;
-    transform: translateX(24px);
-  }
-}
-@keyframes ch-htb-wk {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-}
-.ch-htb .wk.is-new {
-  animation: ch-htb-wk var(--ch-dur-reveal) var(--ch-ease-spring);
+  /* The viewer's own --ch-arrive-o (1) is inherited, so the body names its own fade from 0. */
+  --ch-arrive-o: 0;
+  --ch-arrive-t: translateX(24px);
+  animation: ch-arrive var(--ch-dur-base) var(--ch-ease-ios);
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-htb .insp {
@@ -2043,27 +2004,19 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   /* base.css runs a keyframe in 1ms under Reduce Motion unless its rule asks for the fade. */
   .ch-htb .story {
     --ch-rm-animation: var(--ch-dur-crossfade-rm);
-    animation-name: ch-htb-fade;
+    animation-name: ch-in;
     animation-timing-function: linear;
   }
   .ch-htb .sto-b,
-  .ch-htb .wk.is-new,
   .ch-htb .prog i.now b {
     animation: none;
   }
 }
 /* Animations off: the duration tokens are 0 there (tokens.css), so a transition lands at once; these are the keyframes. */
-[data-motion='off'] .ch-htb .skl::after,
 [data-motion='off'] .ch-htb .story,
 [data-motion='off'] .ch-htb .sto-b,
-[data-motion='off'] .ch-htb .wk.is-new,
 [data-motion='off'] .ch-htb .prog i.now b {
   animation: none;
-}
-@keyframes ch-htb-fade {
-  from {
-    opacity: 0;
-  }
 }
 
 /* The story's picture (AC-STORY-03): 18 holes in 9 columns, or before and now against the line. */
@@ -2109,15 +2062,51 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
 }
-.ch-htb .sto-bar i {
-  grid-column: 1 / -1;
-  height: 12px;
-  min-width: 8px;
-  border-radius: 999px;
+.ch-htb .sto-axis {
+  position: relative;
+  height: 20px;
+  margin-top: 4px;
+}
+.ch-htb .sto-axis::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: var(--ch-radius-xs); /* a 2px line: the corners clamp to round ends */
   background: color-mix(in srgb, var(--ch-feature-ink) 25%, transparent);
 }
-.ch-htb .sto-bar.is-now i {
-  background: color-mix(in srgb, var(--ch-feature-gain) 80%, transparent);
+.ch-htb .sto-axis i,
+.ch-htb .sto-axis s,
+.ch-htb .sto-axis em {
+  position: absolute;
+  translate: -50% 0;
+}
+.ch-htb .sto-axis i {
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.ch-htb .sto-axis i.is-from {
+  border: 2px solid var(--ch-feature-ink-2);
+  background: var(--ch-feature-bg);
+}
+.ch-htb .sto-axis i.is-now {
+  background: var(--ch-feature-ink);
+}
+.ch-htb .sto-axis s {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ch-feature-ink);
+}
+.ch-htb .sto-axis em {
+  top: 5px;
+  bottom: 5px;
+  width: var(--ch-hairline-w);
+  background: var(--ch-feature-ink-2);
 }
 .ch-htb > .story {
   z-index: var(--ch-z-sheet);
@@ -2234,12 +2223,17 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-htb[aria-busy='true']:not([aria-label^='Loading']) > * {
-  opacity: 0.55;
   pointer-events: none;
 }
+/* The dim waits the busy delay and holds the busy hold (data-ch-busy, lib/use-busy.ts; MOTION-AND-VISUAL 3.9). */
+.ch-htb[data-ch-busy='skeleton'] > * {
+  opacity: 0.55;
+}
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  /* The view that lands rises from the dimmed opacity, as coachhelm.css's view roots (motion.css ch-arrive; 3.12). */
   .ch-htb[data-ch-enter]:not(.is-phone) > * {
-    animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
+    --ch-arrive-o: var(--ch-enter-from, 0.55);
+    animation: ch-arrive var(--ch-dur-quick) var(--ch-ease-ios) backwards;
   }
 }
 /* The hole and its chips sit on the green in both themes, so their gain is the on-green one. */

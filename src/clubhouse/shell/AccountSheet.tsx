@@ -1,30 +1,33 @@
 'use client';
 
 import Link from 'next/link';
-import { AnimatePresence, m } from 'motion/react';
-import { ChevronRight, LifeBuoy, LogOut, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronRight, LifeBuoy, LogOut, Sparkles } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
+import { Modal } from '../ui/Modal';
 import { useToast } from '../ui/Toast';
 import { chSignOut } from '../lib/sign-out';
 import { SIGN_OUT_FAILED } from '../lib/sign-out-copy';
 import { chReport } from '../lib/track';
 import { haptic } from '../lib/haptics';
-import { chFade, chSpring, chTween } from '../lib/motion';
-import { chThrownExit, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
-import { OverlayScrollLock } from '../lib/overlay-scroll';
-import { usePaintedAfter } from '../lib/use-painted';
-import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
+import { chSetScrim } from '../lib/sheet-drag';
 import type { ChRole } from './nav';
-import { focusSectionTitle, useSectionSwitch } from './section-switch';
+import { sectionTitle, useSectionSwitch } from './section-switch';
 import { MoreTeamSwitch } from './TeamSwitch';
 import type { ChTeamSwitch } from './team-switch';
+
+const SHEET_ID = 'ch-account';
 
 /**
  * The phone's account sheet (CH-1802), opened from the section strip's last pill (docs/clubhouse/phone/section-strip.md).
  * It was the More sheet (D-41); the sections it listed are on the strip now, so what stays is the v2 More board's
  * (m-ch.jsx `MoreM`) who you are (it opens Settings), the coach's team switch, Help and Sign out.
+ *
+ * It is the shared Modal (OVL-12, OVL-17): the native dialog in the top layer, so the page under it is inert and Tab
+ * stays inside without a hand-written trap; its dim and its panel run on one clock; the grab, the header or a pull from
+ * the top of its body drags it shut. The strip that held its opener has shut by the time it closes, so focus goes back
+ * to the section title, which opens the strip again.
  */
 export function AccountSheet({
   pathname,
@@ -54,171 +57,65 @@ export function AccountSheet({
       toast({ tone: 'error', title: SIGN_OUT_FAILED.title, body: SIGN_OUT_FAILED.body, code: 'CH-1002', action: { label: SIGN_OUT_FAILED.retry, run: () => void signOut() } });
     }
   };
-  const reduced = useChReducedMotion();
-  // Reduce Motion fades the sheet and its dim over the quick beat (owner decision 2, OQ-15); Animations off is instant.
-  const mode = useChMotionMode();
   const sw = useSectionSwitch();
   const moreOpen = sw?.accountOpen ?? false;
   const setMoreOpen = useCallback((open: boolean) => sw?.setAccountOpen(open), [sw]);
-
-  const sheet = useRef<HTMLDivElement>(null);
-  const painted = usePaintedAfter(moreOpen);
-  const scrim = useRef<HTMLDivElement>(null);
   const closeMore = useCallback(() => setMoreOpen(false), [setMoreOpen]);
-  // A row that navigates (native-feel audit 2026-10-08, P0-3): the sheet and its scrim leave at once, in the tap, before
+  // A row that navigates (native-feel audit 2026-10-08, P0-3): the sheet and its dim leave at once, in the tap, before
   // the router starts. Left to slide out, they sat in the page transition's snapshot over the old page and the new one.
-  const jumped = useRef(false);
   const leaveForPage = useCallback(() => {
     haptic('select');
-    jumped.current = true;
-    for (const el of [sheet.current, scrim.current]) el?.style.setProperty('visibility', 'hidden');
+    const dialog = document.getElementById(SHEET_ID);
+    if (dialog) {
+      dialog.style.visibility = 'hidden';
+      chSetScrim(dialog, 0, 0);
+    }
     setMoreOpen(false);
   }, [setMoreOpen]);
-  const drag = useSheetDrag(sheet, closeMore, { reduced });
-  // CH-1602: More rises on the smooth spring and leaves on it too, at the speed it was thrown when swiped shut (CH-1611),
-  // ending as it leaves sight. Read as the exit begins, since the sheet's props are fixed once it is removed.
-  // A transform string, not framer's `y`: Motion hands transform and opacity to the compositor (WAAPI), so the sheet
-  // keeps moving while the page under it is busy (owner, 2026-10-15: "All transitions need fixed. All popups").
-  const sheetMotion = {
-    shown: { transform: 'translateY(0%)', opacity: 1, transition: reduced ? chFade(mode) : chSpring('smooth') },
-    gone: () => {
-      if (jumped.current) return { opacity: 0, transition: { duration: 0 } };
-      if (reduced) return { transform: 'translateY(0%)', opacity: 0, transition: chFade(mode) };
-      const el = sheet.current;
-      const travel = el?.offsetHeight ?? 0;
-      if (!el || !travel) return { transform: 'translateY(100%)', transition: chTween('base') };
-      // From where it is now (mid rise, when closed early), plus the frame a throw has already carried it.
-      const from = new DOMMatrixReadOnly(getComputedStyle(el).transform).m42 || 0;
-      const out = chThrownExit(takeSheetFling(el, { peek: true }), travel - from);
-      return { transform: [`translateY(${from + out.lead}px)`, `translateY(${travel}px)`], transition: { duration: out.ms / 1000, ease: out.ease } };
-    },
-  };
+  // Opened again after a row hid it: seen again (the Modal shows it in this same commit, before paint).
+  useLayoutEffect(() => {
+    if (moreOpen) document.getElementById(SHEET_ID)?.style.removeProperty('visibility');
+  }, [moreOpen]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- a new address closes the sheet; setMoreOpen is stable enough
   useEffect(() => setMoreOpen(false), [pathname]);
-  // P001-D3: the page, its bars and the dock go inert under the sheet, so VoiceOver's swipe can't reach them (aria-modal
-  // alone is not enough in Safari). Making the whole page inert is a full style pass (6 to 20ms a frame in WebKit, motion
-  // audit 2026-10-12), so it happens once the sheet has settled, and is undone once it has left, never mid-slide.
-  const shielded = useRef<{ el: HTMLElement; was: boolean }[] | null>(null);
-  const shield = useCallback(() => {
-    if (shielded.current) return;
-    shielded.current = Array.from(document.querySelectorAll<HTMLElement>('.ch-root > .ch-app, .ch-root > .ch-strip, .ch-root > .ch-dock, .ch-root > .ch-skip')).map((el) => {
-      const was = el.inert;
-      el.inert = true;
-      return { el, was };
-    });
-  }, []);
-  const unshield = useCallback(() => {
-    shielded.current?.forEach(({ el, was }) => {
-      el.inert = was;
-    });
-    shielded.current = null;
-  }, []);
-  // Gone with the shell (a sign-out, a route that drops it): the page is put back all the same.
-  useEffect(() => unshield, [unshield]);
-  // The sheet is modal: focus moves into it, Tab stays inside and Esc closes it. Focus returns to the section title once
-  // it has left (CH-1802).
-  useEffect(() => {
-    if (!moreOpen) return;
-    // A fresh open leaves on the spring again, whatever the last one did.
-    jumped.current = false;
-    // The sheet mounts in the same commit, so it can take focus right away.
-    sheet.current?.querySelector<HTMLElement>('a, button')?.focus({ preventScroll: true });
-    // Reduced motion has no rise to wait for.
-    if (reduced) shield();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') return setMoreOpen(false);
-      if (e.key !== 'Tab' || !sheet.current) return;
-      const els = Array.from(sheet.current.querySelectorAll<HTMLElement>('a, button'));
-      const first = els[0];
-      const last = els[els.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last?.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first?.focus();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [moreOpen, setMoreOpen, reduced, shield]);
-  const left = useCallback(() => {
-    unshield();
-    // Back on the section title without a ring after a tap (F-46); a keyboard user still lands on it.
-    focusSectionTitle();
-  }, [unshield]);
 
   return (
-    <AnimatePresence onExitComplete={left}>
-        {moreOpen && (
-          <>
-            <m.div
-              ref={scrim}
-              key="scrim"
-              className="ch-scrim"
-              initial={{ opacity: 0 }}
-              animate={painted ? { opacity: 1 } : undefined}
-              exit={{ opacity: 0 }}
-              transition={reduced ? chFade(mode) : chTween('base')}
-              onClick={() => setMoreOpen(false)}
-            />
-            <m.div
-              ref={sheet}
-              key="sheet"
-              id="ch-account"
-              data-ch-code="CH-1802"
-              role="dialog"
-              // Read by the iOS swipe-back guard (NativeSwipeBackBridge): no edge swipe while the sheet is up.
-              data-state="open"
-              aria-modal="true"
-              aria-label="Account"
-              className="ch-more"
-              initial={reduced ? { opacity: 0 } : { transform: 'translateY(100%)' }}
-              variants={sheetMotion}
-              // Rises once its first frame is on screen (lib/use-painted.ts).
-              animate={painted ? 'shown' : undefined}
-              exit="gone"
-              onAnimationComplete={(done) => {
-                if (done === 'shown') shield();
-              }}
-            >
-              <OverlayScrollLock />
-              <div className="ch-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
-              <div className="ch-more__head" onPointerDown={drag.onPointerDown}>
-                <span>Account</span>
-                <button type="button" className="ch-more__x" aria-label="Close" onClick={() => setMoreOpen(false)}>
-                  <Icon icon={X} size={16} />
-                </button>
-              </div>
-              {user && (
-                <Link href="/golf/dashboard/settings" className="ch-more__me" onClick={leaveForPage}>
-                  <Avatar name={user.name} size={44} />
-                  <span className="ch-more__me-t">
-                    <b>{user.name}</b>{' '}
-                    <em>{[role === 'coach' ? (user.headCoach ? 'Head coach' : 'Coach') : 'Player', user.teamName].filter(Boolean).join(' · ')}</em>
-                  </span>
-                  <Icon icon={ChevronRight} size={16} />
-                </Link>
-              )}
-              {teamSwitch && <MoreTeamSwitch model={teamSwitch} onSwitched={closeMore} />}
-              <div className="ch-more__list">
-                <Link href="/golf/dashboard/settings#set-help" className="ch-more__row" onClick={leaveForPage}>
-                  <span className="ch-more__ic">
-                    <Icon icon={LifeBuoy} size={17} />
-                  </span>
-                  <span className="ch-more__label">Help</span>
-                </Link>
-                <button type="button" className="ch-more__row" onClick={() => void signOut()} disabled={leaving}>
-                  <span className="ch-more__ic">
-                    <Icon icon={LogOut} size={17} />
-                  </span>
-                  <span className="ch-more__label">{leaving ? 'Signing out…' : 'Sign out'}</span>
-                </button>
-              </div>
-            </m.div>
-          </>
+    <Modal open={moreOpen} onClose={closeMore} title="Account" code="CH-1802" id={SHEET_ID} className="ch-acct" fallbackFocus={sectionTitle}>
+      {user && (
+        <Link href="/golf/dashboard/settings" className="ch-more__me" onClick={leaveForPage}>
+          <Avatar name={user.name} size={44} />
+          <span className="ch-more__me-t">
+            <b>{user.name}</b>{' '}
+            <em>{[role === 'coach' ? (user.headCoach ? 'Head coach' : 'Coach') : 'Player', user.teamName].filter(Boolean).join(' · ')}</em>
+          </span>
+          <Icon icon={ChevronRight} size={16} />
+        </Link>
+      )}
+      {teamSwitch && <MoreTeamSwitch model={teamSwitch} onSwitched={closeMore} />}
+      <div className="ch-more__list">
+        {/* A coach's What's new (GAP-R-06): the phone's way to it, as the desktop account menu's row. */}
+        {role === 'coach' && (
+          <Link href="/golf/dashboard/whats-new" className="ch-more__row" onClick={leaveForPage}>
+            <span className="ch-more__ic">
+              <Icon icon={Sparkles} size={17} />
+            </span>
+            <span className="ch-more__label">What’s new</span>
+          </Link>
         )}
-    </AnimatePresence>
+        <Link href="/golf/dashboard/settings#set-help" className="ch-more__row" onClick={leaveForPage}>
+          <span className="ch-more__ic">
+            <Icon icon={LifeBuoy} size={17} />
+          </span>
+          <span className="ch-more__label">Help</span>
+        </Link>
+        <button type="button" className="ch-more__row" onClick={() => void signOut()} disabled={leaving}>
+          <span className="ch-more__ic">
+            <Icon icon={LogOut} size={17} />
+          </span>
+          <span className="ch-more__label">{leaving ? 'Signing out…' : 'Sign out'}</span>
+        </button>
+      </div>
+    </Modal>
   );
 }

@@ -195,17 +195,18 @@ describe('the phone card is laid out to hold still (rounds-track.css)', () => {
     const heldFace = rule(phone, '.ch-rt-face[inert]');
     expect(heldFace).not.toMatch(/transform/);
     expect(heldFace).toMatch(/opacity var\(--ch-dur-quick\) var\(--ch-ease\)/);
-    expect(rule(phone, ".ch-rt-slot[data-turn] .ch-rt-face:not([inert])")).toMatch(/animation: ch-rt-face-in var\(--ch-dur-spring-settle\) var\(--ch-ease-spring-settle\) backwards;/);
-    expect(css).toMatch(/@keyframes ch-rt-face-in \{\s*from \{\s*transform: translateY\(6px\);\s*\}\s*\}/);
+    // The arriving face no longer rises (MOTION-AND-VISUAL 3.12): it crossfades, and the sheet keeps no keyframe of its own.
+    expect(phone).not.toContain('\n  .ch-rt-slot[data-turn] .ch-rt-face:not([inert]) {');
+    expect(css).not.toMatch(/@keyframes/);
     for (const selector of ['.ch-rt-slot', '.ch-rt-face', '.ch-rt-face[inert]', '.ch-rt-card']) {
       expect(rule(phone, selector), selector).not.toMatch(/transition:[^;]*\b(all|height|max-height|min-height|top|margin|padding|grid)/);
     }
   });
 
-  it('a turned place takes no tap for one base beat', () => {
-    expect(css).toMatch(/\.ch-rt-slot\[data-turn='a'\]::after \{\s*animation: ch-rt-face-hold-a var\(--ch-dur-base\) step-end;/);
-    expect(css).toMatch(/\.ch-rt-slot\[data-turn='b'\]::after \{\s*animation: ch-rt-face-hold-b var\(--ch-dur-base\) step-end;/);
-    expect(css).toMatch(/@keyframes ch-rt-face-hold-a \{\s*from \{\s*visibility: visible;/);
+  it('a turned place takes no tap for one base beat: one hold, restarted by whichever face arrives (PL-TRK-03)', () => {
+    expect(css).toMatch(/\n\.ch-rt-slot\[data-turn\] \.ch-rt-face:not\(\[inert\]\)::after \{[^}]*visibility: hidden;[^}]*--ch-rm-animation: var\(--ch-dur-base\);\s*animation: ch-hold var\(--ch-dur-base\) step-end;/);
+    const motion = readFileSync(join(process.cwd(), 'src/clubhouse/styles/motion.css'), 'utf8');
+    expect(motion).toMatch(/@keyframes ch-hold \{\s*from \{\s*visibility: visible;/);
   });
 
   it('the card has one least height and the hero gives the screen’s spare height up, so the page has nothing to scroll', () => {

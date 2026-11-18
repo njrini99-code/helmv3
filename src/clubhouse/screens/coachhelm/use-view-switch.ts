@@ -3,6 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition, type CSSProperties } from 'react';
 import { fetchAhead, prefetchAllowed, whenIdle } from '../../shell/use-prefetch-tabs';
+import { CH_BUSY } from '../../lib/motion';
+import { fullPrefetchAllowed } from '../../lib/prefetch-guard';
+import { useBusy } from '../../lib/use-busy';
 
 /**
  * A switch between views of the CoachHelm page (Board, Ask, Standing, Deep dive), each its own address. The same
@@ -14,9 +17,10 @@ import { fetchAhead, prefetchAllowed, whenIdle } from '../../shell/use-prefetch-
  * `active` is the view the server last drew. Choosing the one already shown does nothing; choosing the one on screen while
  * another is loading sends the page back to it.
  *
- * The other `views` are fetched whole once the page is idle, as the phone's tabs are (use-prefetch-tabs): a default prefetch
- * stops at the route's loading boundary, so every switch waited on the server for the whole page (owner, desktop Safari,
- * 2026-10-16). Skipped with Data Saver on or offline; Next prefetches only in production builds.
+ * The other `views` are prefetched once the page is idle, as the phone's tabs are (use-prefetch-tabs): whole where the address
+ * allows it, and otherwise (every CoachHelm address, whose loaders record what they return as shown: CH-R1, lib/prefetch-guard.ts)
+ * with the route's own prefetch, which stops at its loading boundary and runs no loader (N13C-67, N13P-18). Skipped with Data Saver
+ * on or offline; Next prefetches only in production builds.
  *
  * `enter`: the view that lands from a switch settles in instead of snapping (owner, desktop, 2026-10-29: "the transition in the
  * CoachHelm tabs and subtabs is not good"). The view it replaces was dimming (coachhelm.css) from the tap on, so the new one starts at
@@ -31,7 +35,10 @@ export function useViewSwitch<V extends string>(active: V, hrefOf: (view: V) => 
   useEffect(() => {
     if (!others || !prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
     return whenIdle(() => {
-      for (const href of others.split('|')) fetchAhead(router, href, Date.now());
+      for (const href of others.split('|')) {
+        if (fullPrefetchAllowed(href)) fetchAhead(router, href, Date.now());
+        else router.prefetch(href);
+      }
     });
   }, [others, router]);
   const [pending, start] = useTransition();
@@ -63,7 +70,11 @@ export function useViewSwitch<V extends string>(active: V, hrefOf: (view: V) => 
       inFlight = null;
     }
   }, [pending]);
-  return { shown, pending, go, enter };
+  // The dim is the wait's visible half (MOTION-AND-VISUAL 3.9, lib/use-busy.ts): `pending` marks the page busy and stops its taps
+  // from the tap on, and `busy` dims what is changing only once the switch has taken the busy delay, holding it at least the busy
+  // hold, so a view that lands within 150 ms swaps with no dim at all. The owner sets `data-ch-busy={sw.busy}` beside `aria-busy`.
+  const busy = useBusy(pending) === 'skeleton' ? ('skeleton' as const) : undefined;
+  return { shown, pending, busy, go, enter };
 }
 
 /** The switch the tap started: where it goes and when the tap was, for the view that lands (one at a time, as the tabs are). */
@@ -78,7 +89,8 @@ const DIM_TO = 0.55;
 
 /** The opacity the dimming view had reached `ms` after the tap: where the view that replaces it starts. */
 export function dimmedAt(ms: number): number {
-  const x = Math.min(1, Math.max(0, ms / DIM_MS));
+  // The dim starts once the busy delay has passed (useBusy), so a view that lands sooner starts at full opacity.
+  const x = Math.min(1, Math.max(0, (ms - CH_BUSY.delay) / DIM_MS));
   return 1 - (1 - DIM_TO) * (1 - (1 - x) ** 5);
 }
 

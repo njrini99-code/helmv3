@@ -38,8 +38,8 @@
 }
 .ch-hs-hero h2 {
   max-width: 30ch;
-  font: var(--ch-type-serif-l);
-  letter-spacing: -0.008em;
+  font: var(--ch-type-title);
+  letter-spacing: var(--ch-track-title);
   color: var(--ch-forest-800); /* visual pass: field-green is 1.36:1 on the dark page; forest-800 flips to #cfe6d7 */
   text-wrap: balance;
 }
@@ -137,7 +137,7 @@
   flex-wrap: wrap;
   gap: 2px 8px;
   margin: 4px 0 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
 }
 /* A row's own round count: a quiet fact after the comparison, never a verdict colour. */
 .ch-hs-n {
@@ -161,7 +161,7 @@
 .ch-hs-tr {
   position: relative;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.08);
 }
 .ch-hs-tr__tour,
@@ -171,7 +171,7 @@
   bottom: -6px;
   width: 2px;
   margin-left: -1px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-900);
 }
 .ch-hs-tr__team {
@@ -189,9 +189,7 @@
   margin: -8px 0 0 -8px;
   border-radius: 50%;
   background: var(--ch-ivory-25);
-  box-shadow:
-    0 0 0 3px var(--ch-hs-tone),
-    0 2px 6px rgb(0 0 0 / 0.2);
+  box-shadow: 0 0 0 3px var(--ch-hs-tone);
 }
 
 /* The three figures, each with the key to its mark */
@@ -211,7 +209,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -220,7 +218,7 @@
   flex: none;
   width: 3px;
   height: 11px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ink-900);
 }
 .ch-hs-r__f .is-you dt::before {
@@ -273,7 +271,7 @@
   gap: 4px;
   width: fit-content;
   margin-top: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-green-700);
   text-decoration: none;
   border-radius: var(--ch-radius-sm);
@@ -460,14 +458,14 @@
     gap: 12px;
   }
   .ch-hs-hero__k {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-hero-mint);
   }
   .ch-hs-hero__k span:last-child {
     color: var(--ch-on-green-ink-muted);
   }
   .ch-hs-hero h2 {
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     letter-spacing: -0.03em;
     color: var(--ch-on-green-ink);
@@ -609,7 +607,7 @@
 }
 .ch-hs-ld__bar {
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: color-mix(in srgb, var(--ch-green-fill-600) 10%, transparent);
 }
 .ch-hs-ld__bar > i {
@@ -653,7 +651,7 @@
 .ch-hs-ld__why:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-hs-ld__b {
   display: grid;
@@ -681,17 +679,29 @@
   gap: 4px;
   padding: 8px 0;
 }
+/* Open, nothing in the list is clipped: a read's link reaches 44 under a finger past its row (SWP-32). */
+.ch-hs-ld__b[data-open='true'] > ul {
+  overflow: visible;
+}
 .ch-hs-ld__b a {
+  position: relative;
   font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
   text-decoration: underline;
   text-decoration-color: var(--ch-border-hairline);
   text-underline-offset: 3px;
 }
+@media (pointer: coarse) {
+  .ch-hs-ld__b a::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 22px)) 0;
+    content: '';
+  }
+}
 .ch-hs-ld__b a:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-hs-ld__b p {
   margin: 0;
@@ -699,7 +709,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-hs-ld__b em {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -708,11 +718,11 @@
     border-top-color: var(--ch-ledger-rule-soft);
   }
   .ch-hs-ld__why[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hs-ld__why:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
 }
@@ -785,7 +795,7 @@ main[data-canopy] .ch-hs-g__h {
 }
 .ch-hs-tally > span {
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
 }
@@ -810,7 +820,7 @@ main[data-canopy] .ch-hs-r.is-ahead,
    track, the gap to the Tour filled green when ahead and amber when behind, your mark a solid dot ringed in ivory. */
 [data-ui='clubhouse'] .ch-hs-tr {
   height: 10px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: color-mix(in srgb, var(--ch-green-fill-600) 14%, var(--ch-bg-surface));
   box-shadow: inset 0 1px 2px rgb(11 58 37 / 0.12);
 }
@@ -818,7 +828,7 @@ main[data-canopy] .ch-hs-r.is-ahead,
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-hs-tone);
   opacity: 0.85;
 }
@@ -930,7 +940,7 @@ main[data-canopy] .ch-hs-r:not(:first-child) .ch-hs-r__f dt {
   min-width: 0;
 }
 .ch-hs-hero__figs > p {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-hs-hero__figs dl {
@@ -946,12 +956,12 @@ main[data-canopy] .ch-hs-r:not(:first-child) .ch-hs-r__f dt {
   min-width: 0;
 }
 .ch-hs-hero__figs dt {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
 }
 .ch-hs-hero__figs dd {
   margin: 0;
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-22);
   color: var(--ch-text-primary);

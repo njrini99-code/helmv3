@@ -13,6 +13,9 @@ import { resolveLiftingAccess, resolveLiftingOrgIdForUser } from '@/lib/lifting/
 import { StrengthGroupsClient } from '@/components/lifting/groups/StrengthGroupsClient';
 import type { HelmLiftingGroupRow } from '@/lib/types/helm-lifting-data';
 import type { HelmLiftingAthleteRow } from '@/lib/types/helm-lifting';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Groups' };
 
 export interface GroupWithMembers extends HelmLiftingGroupRow {
   member_count: number;

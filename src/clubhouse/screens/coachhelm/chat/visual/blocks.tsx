@@ -13,7 +13,7 @@ const said = (direction: string) => direction.replace('_', ' ');
 
 /**
  * Eight wedges by miss direction (shots store a direction and a distance, so nothing is placed on a map), in the yardage
- * book's hand: a ruled ring around the pin, each wedge as long as its share of the misses, the commonest one in the loss
+ * book's hand: a ruled ring around the pin, each wedge's area its share of the misses, the commonest one in the loss
  * ink, and a dot for how far those shots finished. The four sides are named at the ring, so nothing has to be decoded.
  */
 export function MissPattern({ block }: { block: MissPatternBlock }) {
@@ -25,12 +25,35 @@ export function MissPattern({ block }: { block: MissPatternBlock }) {
   const wedge = (deg: number, r: number) => `M${C},${C} L${at(deg - 22, r)} A${r},${r} 0 0 1 ${at(deg + 22, r)} Z`;
   return (
     <figure className="ch-aks-miss">
-      <svg viewBox="-14 0 236 208" role="img" aria-label={`${block.total} shots by miss direction: ${block.wedges.map((w) => `${said(w.direction)} ${w.count}`).join(', ')}`}>
+      {/* A named group, not an image: the wedges are buttons, and an image's children are hidden from a screen reader (SWP-08).
+         Each wedge's key is the whole 45° sector out to the ring, drawn clear over the visible wedge, so the smallest share is
+         still a thumb-sized target (SWP-05: a 14-unit wedge was 19 by 19 points). */}
+      <svg viewBox="-14 0 236 208" role="group" aria-label={`${block.total} shots by miss direction: ${block.wedges.map((w) => `${said(w.direction)} ${w.count}`).join(', ')}`}>
         <circle cx={C} cy={C} r={R} className="ch-aks-miss__ring" />
         <circle cx={C} cy={C} r={R / 2} className="ch-aks-miss__ring is-minor" />
-        {block.wedges.map((w) => (
-          <path key={w.direction} d={wedge(ANGLE[w.direction] ?? 0, 14 + (w.count / max) * (R - 14))} className={'ch-aks-miss__wedge' + (w.count === max && w.count > 0 ? ' is-most' : '')} role="button" tabIndex={0} aria-label={`Ask about ${said(w.direction)} misses, ${w.count}`} onClick={() => askAbout(`${said(w.direction)} misses, ${w.count} shots`)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); askAbout(`${said(w.direction)} misses, ${w.count} shots`); } }} />
-        ))}
+        {block.wedges.filter((w) => w.count > 0).map((w) => {
+          const deg = ANGLE[w.direction] ?? 0;
+          const ask = () => askAbout(`${said(w.direction)} misses, ${w.count} shots`);
+          return (
+            <g
+              key={w.direction}
+              className="ch-aks-miss__key"
+              role="button"
+              tabIndex={0}
+              aria-label={`Ask about ${said(w.direction)} misses, ${w.count}`}
+              onClick={ask}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  ask();
+                }
+              }}
+            >
+              <path d={wedge(deg, R)} className="ch-aks-miss__hit" fill="transparent" />
+              <path d={wedge(deg, R * Math.sqrt(w.count / max))} className={'ch-aks-miss__wedge' + (w.count === max && w.count > 0 ? ' is-most' : '')} />
+            </g>
+          );
+        })}
         {/* Dots by distance left: the wedge says how often, the dot how far (ASK_REDESIGN 3.4). */}
         {block.wedges.map((w) => {
           if (w.avg_left_ft == null || w.count === 0) return null;
@@ -105,7 +128,7 @@ const toParSaid = (n: number | null) => (n == null ? 'no score' : n === 0 ? 'par
 
 /**
  * A round hole by hole, to par: the two nines as ruled lines of figures under their hole numbers, flat on the paper.
- * Red only under par (D-42); over par is plain ink. Each hole asks about itself.
+ * The gain only under par (MOTION-AND-VISUAL 4.7); over par is plain ink. Each hole asks about itself.
  */
 export function HoleStrip({ block }: { block: HoleStripBlock }) {
   const nines = [block.holes.filter((h) => h.hole_number <= 9), block.holes.filter((h) => h.hole_number > 9)].filter((n) => n.length > 0);

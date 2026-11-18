@@ -16,7 +16,7 @@ A dependency graph over `memory/registry.yml`'s feature ownership, not a second 
 
 Admin Incidents · active · criticality high · owner platform
 
-- **Relations:** 8 doc/structurally-evidenced, 2 import-graph-only (weak)
+- **Relations:** 9 doc/structurally-evidenced, 2 import-graph-only (weak)
 - **Tables:** `helm_debug`
 - **RPCs:** `admin_unresolve_error_fingerprint`, `resolve_admin_event`
 - **Test surfaces:** 7
@@ -96,7 +96,7 @@ BaseballHelm (recruiting + team management + Lift Lab) · active · criticality 
 
 Calendar And Events · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
 - **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
 - **RPCs:** `golf_event_attendance_counts`, `golf_import_player_classes`
 - **Test surfaces:** 3
@@ -106,7 +106,7 @@ Calendar And Events · active · criticality high · owner product
 
 Clubhouse UI (the coach and player UI) · active · criticality medium · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** `golf_class_exceptions`, `golf_class_hold_dirty`, `golf_player_class_settings`, `golf_push_hold_heartbeat`, `golf_push_holds`, `golf_saved_comparisons`, `golf_team_seasons`, `golf_team_terms`, `golf_tournament_advice_givers`, `golf_tournament_coach_presence`, `golf_tournament_entries`, `golf_tournament_entry_notes`, `golf_tournament_field_scores`, `golf_tournament_field_teams`, `golf_tournament_link_dismissals`, `golf_tournament_player_notes`, `golf_tournament_player_rounds`, `golf_tournament_reflections`, `golf_tournament_result_marks`, `golf_tournament_reviews`, `golf_tournament_round_lineups`, `golf_tournament_rounds`, `golf_tournaments`
 - **RPCs:** `golf_coachhelm_shown_reads`, `golf_event_attendance_counts`, `golf_tournament_link_candidates`, `golf_tournament_my_lineup`, `sg_scale_for_player`
 - **Test surfaces:** 2
@@ -126,7 +126,7 @@ Coach Intelligence Triage · active · criticality high · owner product
 
 CoachHelm AI · active · criticality high · owner product
 
-- **Relations:** 5 doc/structurally-evidenced, 16 import-graph-only (weak)
+- **Relations:** 5 doc/structurally-evidenced, 15 import-graph-only (weak)
 - **Tables:** `ask_credit_requests`, `ask_usage_weekly`, `golf_coachhelm_action_runs`, `golf_coachhelm_coach_facts`, `golf_coachhelm_corrections`, `golf_coachhelm_player_state`, `golf_coachhelm_run_log`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
 - **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_division_cohort`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`
 - **Test surfaces:** 3
@@ -166,10 +166,10 @@ Feature Awareness System · active · criticality high · owner platform
 
 Golf Round Lifecycle · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 27 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 28 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_discards`, `golf_round_live`, `golf_round_live_prefs`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`, `helm_private`
 - **RPCs:** `golf_player_private_fields`, `golf_player_profiles`, `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
-- **Test surfaces:** 3
+- **Test surfaces:** 4
 - **Sentry/admin_events signals:** `course_library`, `round_tracking`
 
 ### `ios_native_shell`
@@ -226,7 +226,7 @@ Player CoachHelm And Development · active · criticality high · owner product
 
 Player Hub · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `get_coach_today_schedule`, `get_player_hub_events`
 - **Test surfaces:** 1
@@ -237,9 +237,9 @@ Player Hub · active · criticality high · owner product
 Qualifiers · active · criticality high · owner product
 
 - **Relations:** 1 doc/structurally-evidenced, 8 import-graph-only (weak)
-- **Tables:** `golf_qualifier_round_courses`
+- **Tables:** `golf_qualifier_exemptions`, `golf_qualifier_round_courses`, `golf_qualifier_rules`
 - **RPCs:** `golf_qualifier_selection_reasons`
-- **Test surfaces:** 5
+- **Test surfaces:** 8
 - **Sentry/admin_events signals:** `my_qualifiers`, `qualifiers`
 
 ### `recruiting`
@@ -257,9 +257,9 @@ Recruiting HQ · active · criticality medium · owner product
 Roster And Team · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
-- **Tables:** `baseball_seasons`, `golf_player_availability_coach_notes`, `golf_team_drills`
+- **Tables:** `baseball_seasons`, `golf_hours_adjustments`, `golf_player_availability_coach_notes`, `golf_roster_exemptions`, `golf_team_drills`, `golf_team_hours_settings`, `golf_team_roster_limits`
 - **RPCs:** `get_coach_today_schedule`, `golf_join_team_with_code`, `golf_my_join_requests`, `golf_team_by_join_code`, `sg_scale_for_player`
-- **Test surfaces:** 1
+- **Test surfaces:** 3
 - **Sentry/admin_events signals:** `roster_management`, `team_info`
 
 ### `settings_preferences`
@@ -287,7 +287,7 @@ Shot Tracking · active · criticality high · owner product
 Stats And Analytics · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
-- **Tables:** `baseball_legacy_backfill_manifest`, `golf_division_cohort`, `golf_player_standing_season`, `golf_standing_refresh_queue`
+- **Tables:** `baseball_legacy_backfill_manifest`, `golf_division_cohort`, `golf_player_standing_season`, `golf_standing_refresh_queue`, `helm_private`
 - **RPCs:** `recalculate_round_strokes_gained`, `recompute_team_sg`, `refresh_player_stats_cache`, `sg_scale_for_player`
 - **Test surfaces:** 4
 - **Sentry/admin_events signals:** `my_game_profile`, `stats_analytics`
@@ -341,6 +341,7 @@ Team Operations · active · criticality high · owner product
 | `vercel_cron:/api/cron/db-stat-delta` | vercel_cron | `admin_platform` |
 | `vercel_cron:/api/cron/db-table-health` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/event-reminders` | vercel_cron | _unmapped_ |
+| `vercel_cron:/api/cron/golf-demo-refresh` | vercel_cron | `golf_round_lifecycle` |
 | `vercel_cron:/api/cron/helm-debug-prune` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/ingest-gmail-replies` | vercel_cron | `crm_outreach` |
 | `vercel_cron:/api/cron/integrity-check` | vercel_cron | _unmapped_ |
@@ -367,6 +368,7 @@ Team Operations · active · criticality high · owner product
 | `admin_incidents` | `admin_reliability_collector` | feature_doc_contract |
 | `admin_incidents` | `admin_selfheal` | feature_doc_contract, import_graph |
 | `admin_incidents` | `auth_onboarding_join` | import_graph (weak) |
+| `admin_incidents` | `clubhouse` | feature_doc_contract |
 | `admin_incidents` | `player_coachhelm_development` | import_graph (weak) |
 | `admin_platform` | `admin_incidents` | feature_doc_contract, import_graph |
 | `admin_platform` | `admin_reliability_collector` | feature_doc_contract |
@@ -447,6 +449,7 @@ Team Operations · active · criticality high · owner product
 | `feature_awareness_system` | `admin_selfheal` | feature_doc_contract |
 | `golf_round_lifecycle` | `admin_platform` | import_graph (weak) |
 | `golf_round_lifecycle` | `auth_onboarding_join` | import_graph (weak) |
+| `golf_round_lifecycle` | `calendar_events` | import_graph (weak) |
 | `golf_round_lifecycle` | `coach_intelligence_triage` | import_graph (weak) |
 | `golf_round_lifecycle` | `coachhelm_ai` | import_graph (weak) |
 | `golf_round_lifecycle` | `email_outbound` | import_graph (weak) |
@@ -489,7 +492,6 @@ Team Operations · active · criticality high · owner product
 | `player_hub` | `admin_platform` | import_graph (weak) |
 | `player_hub` | `auth_onboarding_join` | import_graph (weak) |
 | `player_hub` | `calendar_events` | import_graph (weak) |
-| `player_hub` | `coachhelm_ai` | import_graph (weak) |
 | `player_hub` | `golf_round_lifecycle` | import_graph (weak) |
 | `player_hub` | `team_communications` | import_graph (weak) |
 | `qualifiers` | `admin_platform` | import_graph (weak) |

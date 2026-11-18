@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { tokenHex } from '../../../__tests__/_tokens';
 
 /**
  * A plan's groups wear the app's own tones (owner, 11 Nov 2026): green, ochre, slate, clay, stone and ink. Never the blue and purple the
@@ -106,7 +107,7 @@ describe('the kinds of work', () => {
   });
 
   it('stand 3:1 off the card they are drawn on, by day and at night', () => {
-    for (const fill of [hex('--ch-yr-so'), hex('--ch-plan-group-d'), hex('--ch-run-group-a')]) expect(contrast(fill, '#fffefb'), fill).toBeGreaterThanOrEqual(3);
-    for (const fill of [hex('--ch-champagne-500', true), hex('--ch-plan-group-d-night'), hex('--ch-run-group-a', true)]) expect(contrast(fill, hex('--ch-card-bg', true)), fill).toBeGreaterThanOrEqual(3);
+    for (const fill of [hex('--ch-yr-so'), hex('--ch-plan-group-d'), hex('--ch-run-group-a')]) expect(contrast(fill, tokenHex('--ch-card-bg', 'light')), fill).toBeGreaterThanOrEqual(3);
+    for (const fill of [hex('--ch-champagne-500', true), hex('--ch-plan-group-d-night'), hex('--ch-run-group-a', true)]) expect(contrast(fill, tokenHex('--ch-card-bg', 'dark')), fill).toBeGreaterThanOrEqual(3);
   });
 });

@@ -4,11 +4,11 @@ import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { animate, m, useMotionValue, useTransform, type AnimationPlaybackControls, type MotionValue } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import type { ChShellData } from '../data/shell';
 import { haptic } from '../lib/haptics';
-import { CH_DUR, CH_EASE, chSpring, chSpringCurve } from '../lib/motion';
+import { CH_DUR, CH_EASE, CH_SWIPE, chSpring, chSpringCurve } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { Icon } from '../ui/Icon';
 import { phoneSectionFor, phoneSectionsFor, type ChNavItem, type ChRole } from './nav';
@@ -71,10 +71,9 @@ export function useSectionSwitch(): ChSectionSwitch | null {
 }
 
 /** The title button that is visible now (the shell bar's, or a page's own start title), for focus to return to. */
-export function focusSectionTitle(): void {
+export function sectionTitle(): HTMLElement | null {
   const all = Array.from(document.querySelectorAll<HTMLElement>('.ch-root .ch-sw'));
-  const el = all.find((b) => b.offsetParent !== null) ?? all[0];
-  el?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+  return all.find((b) => b.offsetParent !== null) ?? all[0] ?? null;
 }
 
 export function SectionSwitchProvider({
@@ -217,7 +216,7 @@ export function SectionSwitchProvider({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       setOpen(false);
-      focusSectionTitle();
+      sectionTitle()?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -311,6 +310,9 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
     watch.observe(label);
     return () => watch.disconnect();
   }, [key, reduced]);
+  // The dot's words describe the switch rather than name it: inside the bar's h1, a name would make every page's heading
+  // "Practice, something new in another section" (PMAC-13). A hidden element still describes.
+  const newsId = useId();
   if (!sw?.enabled) return <>{children}</>;
   return (
     <button
@@ -319,6 +321,7 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
       data-ch-code="CH-1816"
       aria-expanded={sw.open}
       aria-controls="ch-strip"
+      aria-describedby={sw.attention ? newsId : undefined}
       onClick={() => sw.setOpen(!sw.open)}
     >
       <m.span className="ch-sw__track" style={{ x: sw.dragX, opacity: fade }}>
@@ -337,7 +340,11 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
         </m.span>
         {sw.attention && <span className="ch-sw__dot" aria-hidden="true" />}
       </span>
-      {sw.attention && <span className="ch-sr-only">, something new in another section</span>}
+      {sw.attention && (
+        <span id={newsId} hidden>
+          Something new in another section
+        </span>
+      )}
     </button>
   );
 }
@@ -397,7 +404,8 @@ export function useSectionGestures(bar: RefObject<HTMLElement | null>, enabled: 
     };
     const down = (e: PointerEvent) => {
       if (!window.matchMedia(PHONE).matches || (e.pointerType === 'mouse' && e.button !== 0)) return;
-      if (e.clientX < 20) return;
+      // The left edge is the back swipe's (CH_SWIPE.edge, MOTION-AND-VISUAL 3.3).
+      if (e.clientX < CH_SWIPE.edge) return;
       const t = e.target instanceof Element ? e.target : null;
       if (t?.closest('.ch-topbar__actions, .ch-pbar__right, .ch-pbar__back, .ch-pbar__text, .ch-pbar__icon')) return;
       const now = performance.now();

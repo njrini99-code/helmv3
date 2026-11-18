@@ -26,7 +26,7 @@ import '../../styles/class-awareness.css';
  * quiet notices (classes with no term, classes that cannot be used, calendar times that disagree). Players see exactly
  * what coaches see before anything is held.
  *
- * A card (--ch-radius-card, a full hairline ring, no left edge, no tint). Loading draws the panel with the top line
+ * A card (--ch-radius-lg, a full hairline ring, no left edge, no tint). Loading draws the panel with the top line
  * empty and a fixed height; an error says so with Try again; an RPC that is not there yet (the migrations are held), or a
  * player with no team, draws nothing. The caller draws it only with `class_awareness_v1` on.
  */

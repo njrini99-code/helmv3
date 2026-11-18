@@ -8,7 +8,8 @@
  * standalone player "Hub" front door). The Target IA (PRODUCTION_READINESS_
  * MISSION_2026-07-09.md) merges the Hub INTO the Dashboard — the player gets
  * ONE home instead of two — so the same triage data (tasks / RSVP events /
- * announcements / upcoming trips + the top CoachHelm signal) is now fetched
+ * announcements / upcoming trips; the top CoachHelm signal was dropped on
+ * 15 Nov 2026, DF-P-02, since nothing drew it and reading it recorded it) is now fetched
  * by the Dashboard route and rendered as a section there. /dashboard/hub
  * itself becomes a server-redirect to /golf/dashboard (see that route).
  *
@@ -20,8 +21,6 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
-import { getTopInsightForPlayer } from '@/app/golf/actions/insight-delivery';
-import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { TripData, PlayerTask, EventInvite } from '@/lib/golf/player-hub-types';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -35,12 +34,16 @@ import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 const DEFAULT_TEAM_TIME_ZONE = 'America/New_York';
 
 export interface PlayerHubSummaryData {
+  /**
+   * Which of the three reads failed (GAP-H-03, 15 Nov 2026). Each fails on its own, its list left empty, so a failed travel
+   * read never blanks the replies or the tasks. A caller draws a failed leg as "didn't load", never as an empty list.
+   */
+  failed: { events: boolean; travel: boolean; tasks: boolean };
   trips: TripData[];
   tasks: PlayerTask[];
   events: EventInvite[];
   announcements: GolfAnnouncementMeta[];
   announcementsLoadError: boolean;
-  topInsight: EvidenceInsight | null;
 }
 
 /** Whether a task expects the player to submit a file (see hub/page.tsx history). */
@@ -51,11 +54,11 @@ function taskRequiresUpload(taskType: string | null, category: string | null): b
 
 /**
  * Fetch the player's triage data (tasks / RSVP events / announcements /
- * upcoming trips / top insight) for a resolved team + player. Returns honest
+ * upcoming trips) for a resolved team + player. Returns honest
  * empty arrays on a genuinely-empty team, never fabricated data; a real
- * DB/network failure is allowed to throw (the route's error.tsx / retry
- * boundary is the correct place to surface that — mirrors the pattern the
- * former hub/page.tsx and dashboard/page.tsx already both rely on).
+ * DB/network failure of the events, travel or tasks read is reported in
+ * `failed`, one leg at a time (GAP-H-03), so the hub says which part didn't
+ * load and keeps the others. It throws only when it cannot run at all.
  */
 async function getPlayerHubSummaryDataImpl(
   teamId: string,
@@ -107,7 +110,9 @@ async function getPlayerHubSummaryDataImpl(
   const eventSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const tripsSince = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const [teamZoneResult, tripsResult, tasksRaw, eventsResult, announcementsResult, topInsight] = await Promise.all([
+  // No CoachHelm insight is read here (prod launch-readiness 2026-11-15, DF-P-02): `getTopInsightForPlayer` records what it returns as
+  // shown (`hub_signal`), and no screen draws it, so every Team Hub open counted a read nobody saw.
+  const [teamZoneResult, tripsResult, tasksRaw, eventsResult, announcementsResult] = await Promise.all([
     // Read for the task-overdue comparison below, not for display. This is a
     // server action, so its ambient clock is the deploy's zone (UTC on Vercel);
     // "overdue" is a claim about the team's wall-clock day. Same resolution and
@@ -134,13 +139,11 @@ async function getPlayerHubSummaryDataImpl(
     }),
 
     getPlayerHubAnnouncements(teamId, playerId),
-
-    getTopInsightForPlayer(playerId),
   ]);
 
   // The docstring above states the intended contract: a genuinely empty team
-  // returns empty arrays, and a real DB/network failure is ALLOWED TO THROW so
-  // the route's error.tsx retry boundary can surface it.
+  // returns empty arrays, and a real DB/network failure is never passed off as
+  // one (each leg below names its own failure in `failed`, GAP-H-03).
   //
   // That contract was never actually met. supabase-js RESOLVES database errors
   // as `{ data: null, error }` — it does not throw — so all three of these legs
@@ -173,21 +176,22 @@ async function getPlayerHubSummaryDataImpl(
   const parsedEvents = eventsResult.error ? null : parsePlayerHubEvents(eventsResult.data);
   const eventsShapeError = parsedEvents && !parsedEvents.ok ? new Error(`unexpected get_player_hub_events shape: ${parsedEvents.reason}`) : null;
 
-  const failedLeg = (
-    [
-      ['events', eventsResult.error ?? eventsShapeError],
-      ['travel', tripsResult.error],
-      ['tasks', tasksRaw.error],
-    ] as const
-  ).find(([, error]) => Boolean(error));
-
-  if (failedLeg) {
-    const [leg, error] = failedLeg;
+  // GAP-H-03 (15 Nov 2026): each leg fails on its own. The first failed leg used to throw the whole summary, so a failed
+  // travel read blanked the replies, the week and the tasks as well. A failed leg is logged and named in `failed`, its
+  // list left empty for the caller to draw as "didn't load", never as "none".
+  const legErrors = [
+    ['events', eventsResult.error ?? eventsShapeError],
+    ['travel', tripsResult.error],
+    ['tasks', tasksRaw.error],
+  ] as const;
+  const failed = { events: false, travel: false, tasks: false };
+  for (const [leg, error] of legErrors) {
+    if (!error) continue;
+    failed[leg] = true;
     await logServerError(
       `[getPlayerHubSummaryData] ${leg} read failed — refusing to render an empty hub: ${describeError(error)}`,
       { action: 'playerHub.summary', featureArea: 'player_hub', playerId, teamId },
     );
-    throw new Error("Couldn't load your hub just now. Please try again.");
   }
 
   const trips: TripData[] = (tripsResult.data || []).map((item) => ({
@@ -239,22 +243,22 @@ async function getPlayerHubSummaryDataImpl(
   const teamTimeZone = teamZoneResult.data?.timezone || DEFAULT_TEAM_TIME_ZONE;
 
   let tasks: PlayerTask[] = [];
-  if (taskIds.length > 0) {
+  if (taskIds.length > 0 && !failed.tasks) {
     const { data: taskDetails, error: taskDetailsError } = await supabase
       .from('golf_tasks')
       .select('id, title, description, due_date, category, task_type')
       .in('id', taskIds)
       .eq('team_id', teamId)
       .order('due_date', { ascending: true, nullsFirst: false });
-    // The assignments read is guarded above; a failed details read drew the same empty task list.
+    // The assignments read is guarded above; a failed details read drew the same empty task list. It fails the tasks leg alone.
     if (taskDetailsError) {
+      failed.tasks = true;
       await logServerError(`[getPlayerHubSummaryData] task details read failed — refusing to render an empty hub: ${describeError(taskDetailsError)}`, {
         action: 'playerHub.summary',
         featureArea: 'player_hub',
         playerId,
         teamId,
       });
-      throw new Error("Couldn't load your hub just now. Please try again.");
     }
 
     tasks = (taskDetails || []).map((t) => {
@@ -309,7 +313,7 @@ async function getPlayerHubSummaryDataImpl(
   const announcements = announcementsResult.success ? (announcementsResult.data ?? []) : [];
   const announcementsLoadError = !announcementsResult.success;
 
-  return { trips, tasks, events, announcements, announcementsLoadError, topInsight };
+  return { trips, tasks, events, announcements, announcementsLoadError, failed };
 }
 
 const observedGetPlayerHubSummaryData = withAdminObserved(

@@ -12,6 +12,7 @@ import { Icon } from '../../../../ui/Icon';
 import { LargeTitle } from '../../../../ui/LargeTitle';
 import { Segmented } from '../../../../ui/Segmented';
 import { EmptyState } from '../../../../ui/States';
+import { SectionBoundary } from '../../../../ui/SectionBoundary';
 import { wholeFacts } from '../../../practice/facts';
 
 export interface PlayerStop {
@@ -109,20 +110,25 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
       {tab === 'mine' && stops.length === 0 ? (
         <EmptyState kind="first-run" title="No stops for you in this one" body="Your coach hasn’t put you in a group on this plan yet." />
       ) : tab === 'mine' ? (
-        <section className="art" aria-label="Your stops">
-          {stops.map((s) => (
-            <div className="stop" key={s.time + s.place}>
-              <span className="tm ch-num">{s.time}</span>
-              <div>
-                <div className="pl">{s.place}</div>
-                <div className="dr">{wholeFacts(s.line)}</div>
+        // Each view fails on its own (GAP-S-10, CH-13204): the head, the switch and Documents stay.
+        <SectionBoundary surface="practice.plan.stops" label="Your stops" code="CH-13204">
+          <section className="art" aria-label="Your stops">
+            {stops.map((s) => (
+              <div className="stop" key={s.time + s.place}>
+                <span className="tm ch-num">{s.time}</span>
+                <div>
+                  <div className="pl">{s.place}</div>
+                  <div className="dr">{wholeFacts(s.line)}</div>
+                </div>
+                {s.now ? <span className="now">Now</span> : s.next ? <span className="nx">Next</span> : <span />}
               </div>
-              {s.now ? <span className="now">Now</span> : s.next ? <span className="nx">Next</span> : <span />}
-            </div>
-          ))}
-        </section>
+            ))}
+          </section>
+        </SectionBoundary>
       ) : (
-        everyone
+        <SectionBoundary surface="practice.plan.sheet" label="Your sheet" code="CH-13204">
+          {everyone}
+        </SectionBoundary>
       )}
       {data.documents && (
         <section className="art is-docs">

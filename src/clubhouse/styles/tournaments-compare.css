@@ -29,10 +29,10 @@
   height: 32px;
   padding: 0 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   cursor: pointer;
@@ -97,7 +97,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -215,7 +215,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -253,7 +253,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -308,7 +308,7 @@
 .ch-tour-cmp-tl__mk .f {
   width: 10px;
   height: 10px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-800);
   transform: rotate(45deg);
 }
@@ -393,13 +393,15 @@
 .ch-tour-cmp-tl__yk.is-bottom {
   bottom: 5px;
 }
+/* A practice round is the quiet dot, but still a mark the eye must find: ink-400 read 2.7:1 on the ivory band, under the 3:1 a
+   chart mark needs (stats and charts audit, checked on #2542's ivory). */
 .ch-tour-cmp-tl__dot {
   position: absolute;
   width: 7px;
   height: 7px;
   margin: -3.5px 0 0 -3.5px;
   border-radius: 50%;
-  background: var(--ch-ink-400);
+  background: var(--ch-ink-500);
 }
 .ch-tour-cmp-tl__dot.is-event {
   width: 9px;
@@ -420,14 +422,14 @@
   right: 0;
   left: 0;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-bg-inset);
 }
 .ch-tour-cmp-tl__sel {
   position: absolute;
   top: 72px;
   height: 14px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-ring);
   box-shadow: inset 0 0 0 1.5px var(--ch-green-600);
   cursor: grab;
@@ -568,7 +570,7 @@
   --ch-tour-cmp-dcol: 200px;
   position: relative;
   display: grid;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -587,7 +589,7 @@
 .ch-tour-cmp-hd > div {
   padding: 16px 16px 16px;
   box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-border-hairline);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
 .ch-tour-cmp-hd > div b {
@@ -639,7 +641,7 @@
 .ch-tour-cmp-v:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 .ch-tour-cmp-v__top {
   display: flex;
@@ -721,7 +723,7 @@
   width: 3px;
   height: 24px;
   margin-left: -1.5px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-forest-800);
 }
 .ch-tour-cmp-strip__other {
@@ -790,7 +792,7 @@
   gap: 16px;
   grid-column: 1 / -1;
   padding: 12px 16px;
-  border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
+  border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
   font: var(--ch-type-13);
@@ -806,7 +808,7 @@
   padding: 0;
   border: 0;
   background: none;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
@@ -820,7 +822,7 @@
 }
 .ch-tour-cmp-block {
   padding: 12px 12px 8px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }

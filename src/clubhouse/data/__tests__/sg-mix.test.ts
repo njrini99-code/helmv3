@@ -45,8 +45,11 @@ const team = (shots = shotsAnswer(TRACKED)) => ({
   golf_shots: shots,
 });
 
+/** The policy as it ships, put back after every test that sets it. */
+const SHIPPED = sgPolicy.estimated;
+
 afterEach(() => {
-  sgPolicy.estimated = 'include';
+  sgPolicy.estimated = SHIPPED;
   tables.current = {};
 });
 
@@ -138,6 +141,7 @@ describe('the one flag: sgPolicy.estimated', () => {
   });
 
   it('Team stats, include: every round counts, and the split is said', async () => {
+    sgPolicy.estimated = 'include';
     tables.current = team();
     const stats = await loadTeamStats({ teamId: 't1', window: 'last10', filter: filterFor('last10') });
     // (6 x -2) + (4 x -4) + (2 x -0.5) over 12 rounds.
@@ -164,6 +168,7 @@ describe('the one flag: sgPolicy.estimated', () => {
   });
 
   it('Ask’s team read follows the same flag, and carries the split for its reader', async () => {
+    sgPolicy.estimated = 'include';
     tables.current = team();
     const sb = await createClient();
     const inc = await loadTeamStrokesGained(sb, { timezone: 'America/New_York', playerIds: ['ada', 'bo'] }, 'last10');
@@ -180,7 +185,8 @@ describe('the one flag: sgPolicy.estimated', () => {
   it('every loader that draws strokes gained applies the policy where its rounds load', () => {
     const src = (f: string) => readFileSync(join(process.cwd(), 'src/clubhouse/data', f), 'utf8');
     for (const f of ['stats-team.ts', 'stats-player.ts', 'coachhelm-team.ts', 'coachhelm-file.ts', 'team-sg.ts']) expect(src(f), f).toMatch(/sgPolicyAtSource\(/);
-    // The flag is one line, and it ships as `include`: whether estimated rounds count is the owner's decision.
-    expect(src('stats-sg-mix.ts')).toMatch(/export const sgPolicy: \{ estimated: 'include' \| 'exclude' \} = \{ estimated: 'include' \};/);
+    // The flag is one line, and it ships as `exclude` (SC-07): an estimate is not on the Tour scale. The owner approves it in review;
+    // reverting that one commit puts `include` back.
+    expect(src('stats-sg-mix.ts')).toMatch(/export const sgPolicy: \{ estimated: 'include' \| 'exclude' \} = \{ estimated: 'exclude' \};/);
   });
 });

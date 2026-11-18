@@ -15,15 +15,26 @@ Rules every view keeps (plan 0.4 and sections 8 and 9):
 - Clubhouse tokens and `ui/*` primitives only, `.ch-tour-*` classes; Instrument
   Sans, sentence case, tabular figures, the true minus, `E` for even, `—` for no
   data.
-- Red only for under par and destructive actions. Gain and loss are close in
-  lightness, so a signed mark always carries a side, a sign triangle or a word
-  (DeltaChip draws the triangle).
+- Red only for errors and destructive actions; under par is the gain
+  (MOTION-AND-VISUAL 4.7). Gain and loss are close in lightness, so a signed
+  mark always carries a side, a sign triangle or a word (DeltaChip draws the
+  triangle).
 - Motion: durations 0, 110, 180, 260, 280, 520 ms from `lib/motion.ts`; nothing
   on first paint; a changed value takes its new value in place with the 520 ms
   changed-wash; Reduce Motion respected.
 
 Each lane records here, for its views, every element on the boards it matches
 and every one it leaves out with the reason (plan Phase 2 acceptance).
+
+Checked against the code on 2026-11-17: the sections below cover the season
+home, the event desk, the review, history and compare. The views built since
+have no section here yet, and their record is in their change fragments: the
+new-event and edit forms (`changes/2026-10-25-new-event-form.md`), the link
+inbox, lineup builder, live round and the player's view
+(`changes/2026-11-07-first-release-screens.md`), results import and the hole
+grid (`changes/2026-11-15-results-import.md`), export
+(`changes/2026-11-15-export.md`) and the B team
+(`changes/2026-11-16-b-team-lock-by.md`).
 
 ## Season home
 

@@ -67,7 +67,8 @@ describe('READ-S2 the rounds behind a read', () => {
       ['r1', 'Oct 8', 'Lonnie Poole', '72'],
     ]);
     expect(out.data.failed.rounds).toBe(false);
-    const window = asked.find((f) => has(f, 'gte', 'round_date'))!;
+    // The read's window is the one rounds read with both ends; the themes' season read beside it (SC-01) has only a start.
+    const window = asked.find((f) => has(f, 'lte', 'round_date'))!;
     expect(has(window, 'eq', 'player_id')).toBe(PID);
     expect(has(window, 'eq', 'is_test')).toBe(false);
     expect(has(window, 'eq', 'status')).toBe('completed');
@@ -94,7 +95,7 @@ describe('READ-S2 the rounds behind a read', () => {
     if (out.status !== 'ready') throw new Error(out.status);
     expect(out.data.read!.rounds.total).toBe(1);
     expect(out.data.read!.rounds.list.map((r) => r.id)).toEqual(['r1']);
-    expect(asked.some((f) => has(f, 'gte', 'round_date'))).toBe(false);
+    expect(asked.some((f) => has(f, 'lte', 'round_date'))).toBe(false);
   });
 
   it('a failed read of the window is its own state, never no rounds', async () => {

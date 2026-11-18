@@ -24,7 +24,7 @@ import { ScoutPacketsFairway } from '@/components/baseball/passport/ScoutPackets
 import { fairwayScope } from '@/lib/redesign/flag';
 
 export const metadata = {
-  title: 'Scout Packets · BaseballHelm',
+  title: 'Scout Packets',
 };
 
 export default async function ScoutPacketsHubPage() {

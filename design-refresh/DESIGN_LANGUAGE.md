@@ -1,98 +1,204 @@
-# Clubhouse design language (phone first refresh, 31 Oct 2026)
+# Clubhouse design system
 
-One language for the four redesigns: Messages, phone Stats plus player Home, Classes plus Roster plus coach Home, and the gradient text sweep. Every page in the refresh follows this file. Where a thread already chose something better, it says so in the "Adopted from threads" log at the end and this file is updated.
+The one source for how Clubhouse (the GolfHelm coach and player UI) looks: the laws, the surfaces, the colour, the type, the toggle, the charts and what is banned. Every page follows this file. The values are not typed here: the tables in §3 are generated from `src/clubhouse/styles/tokens.css` by `scripts/clubhouse/design-language.mjs`, and `clubhouse:check` fails when they drift. Change a value in tokens.css, run the script, and say why in the same pull request.
 
-Bar: Apple. Smooth, accurate motion. Handcrafted, not basic. Design only: nothing here changes app code until the build brief.
+Bar: Apple's own iOS apps. Smooth, accurate motion. Handcrafted, not basic.
 
-Sources read for this file:
-- Nick's Claude Design reference: `design/handoff/` in helmv3 (the "Fairway, Clubhouse Edition" system in `design/handoff/_ds/fairway-clubhouse-edition-*/readme.md`, the mobile boards `Coach - * - Mobile.html`, `Player - * - Mobile.html`, `m.css`, `m-shell.jsx`, screenshots in `design/handoff/screenshots/*-mobile.jpg`)
-- Today's runtime: `src/clubhouse/styles/tokens.css`, `shell.css`, `ui/Section.tsx`, `ui/Surface.tsx`, `ui/PhoneBar.tsx`, `ui/LargeTitle.tsx`
-- Nick's screenshot of phone Stats, 31 Oct, 8:15am
+Last change: 15 Nov 2026, the production audit (`clubhouse-handoff/prod-audit-2026-11-15/CLUBHOUSE-PROD-AUDIT-FINAL.md`, specs S1.1 to S2.8), Nick's calls of that day ("Bring the ivory gradient back", "Ivory cards, deeper page", "The Practice-style toggle everywhere") and the visual half of his motion and visual system (`clubhouse-handoff/launch-readiness-2026-11-15/MOTION-AND-VISUAL.md` §4.1 to §4.8: one bar material, the Practice style's three sizes, nine type roles, five radii, three elevations, and colour roles: red for errors only, under par in the gain). Where that file differs from the audit (the hero figure's weight, the bubble radius), it wins. It replaces the 31 Oct flat page (#2497, law 2 then read "The page is one flat color").
+
+Companions, each generated or owned elsewhere:
+- Values: `src/clubhouse/styles/tokens.css` (light root, dark root, phone, Increase Contrast and Reduce Transparency blocks).
+- Components: `src/clubhouse/AGENTS.md` (the shared owners: Surface, Segmented, Modal, Menu, Button, PhoneScreen) and the generated catalog `src/clubhouse/preview/component-catalog.json`.
+- The shared design system artifact, "Helm Clubhouse UI", republished from these tokens with each change to them.
+- Doctrine the compiler cannot hold: `.claude/rules/clubhouse.md`, enforced by `scripts/clubhouse/check.mjs`.
+
+Sources for the 31 Oct edition, still the base of §5 to §7: Nick's Claude Design reference in `design/handoff/` (the "Fairway, Clubhouse Edition" system, the mobile boards `Coach - * - Mobile.html` and `Player - * - Mobile.html`, `m.css`, `m-shell.jsx`, `design/handoff/screenshots/*-mobile.jpg`).
 
 ---
 
-## 1. What is wrong today, in one paragraph
+## 1. What changed on 15 Nov, in one paragraph
 
-On phone the page behind the cards is not a color, it is a moving light: `--ch-workspace #f5f0e4` plus `--ch-light-paper` (a warm #e8b46a wash that strengthens toward golden hour) plus `--ch-light-canvas` (a radial key light at the top). At 8:15am that renders as a tan, uneven beige. Then `ui/Section.tsx` (the Oct 7 "Ledger": headings flush on the canvas, no card) puts section titles, meta and captions straight onto that light. The text passes WCAG numerically (ink 900 on the tinted canvas is about 13.5:1), so this is not a contrast-ratio bug. It is a structure bug: dark text floats on a muddy, shifting field between white cards that barely separate from it (card to page is under 1.1:1 luminance). The Claude Design boards never do this. In every mobile board the section title lives inside its card's header, the note lives in the card, and the page holds only the large title.
+The 31 Oct edition flattened the page to one #f2f0e9 and pushed cards to near-white #fffefb (1.09:1 against the page). Nick's 15 Nov read of production: "There's too much white." Near-white covered 25 to 56% of most phone screens and 73% of Drills. This edition brings back the Oct 21 page (the time-of-day light and paper tint of d0f467a73) over a deeper linen (#e8e3d5), puts every card on ivory paper (#faf7ef, 1.20:1 on the linen), and makes nothing white. The 31 Oct structure fix stays: text lives on a surface (law 1), so the light shows only between cards, where there is no body text.
 
 ## 2. The six laws
 
 1. **Text lives on a surface.** On phone, the only text allowed directly on the page is the large title and its one context line. Section titles, meta, notes, counts and captions go inside a card or a grouped list. No exceptions for "small" captions. One agreed exception, Nick's call on 31 Oct ("Keep as drawn"): the Stats page as drawn (v7) has no large title and puts section names such as "Overview" on the page. Build it as drawn.
-2. **The page is one flat color.** No radial light, no paper tint, no wash behind content, in light or dark. The time-of-day light stays on the green frame (desktop sidebar and frame) where there is no body text.
-3. **Depth comes from surfaces, not from color.** Cards separate from the page with a hairline ring plus a soft two-layer shadow, never with a colored border, a tinted fill or a gradient.
-4. **No accent left-border cards, ever** (Nick, Oct 24). No thick left rule, no colored edge bar, no stripe. Status shows as a dot, a chip or colored text.
-5. **One feature card per view.** Deep green, used once, for the single most important thing on the screen. Everything else is paper.
+2. **The page is the ivory light over a deeper linen** (Nick, 15 Nov). One paint, `--ch-page-paint` (the time-of-day light, the paper tint, the linen `--ch-workspace`), serves the phone page, a pushed screen, a crash screen and every page copy that slides during a push, so one walk through the app crosses one page. The desktop canvas paints the same layers plus the sidebar bleed and the green mist in its top-left corner, scrolling with the page (the pre-11 Nov gradient, Nick 15 Nov); the desk top bar is clear at rest so that corner shows, solid once the canvas scrolls under it, and solid always under Reduce Transparency. Cards are ivory paper on it, tiles and wells inside a card are a step deeper, and **nothing is white**: no surface reaches #fcfcfc, and none is lighter than the elevated #fcfaf5. Every text spot holds 4.5:1 at the light's darkest point, light and dark. `src/clubhouse/styles/__tests__/page-colour.test.ts` holds this law.
+3. **Depth comes from surfaces, not from colour.** Three elevations and no others (§4, MOTION-AND-VISUAL 4.6): flat (the page), card, and raised (sheets, menus, the palette, pins), plus the scrim under a sheet. Never a coloured border, a tinted fill or a gradient to separate a card.
+4. **No accent left-border cards, ever** (Nick, Oct 24). No thick left rule, no coloured edge bar, no stripe. Status shows as a dot, a chip or coloured text.
+5. **One feature card per view.** Deep green, flat, used once, for the single most important thing on the screen. Everything else is ivory paper.
 6. **Organized, airy, visual first** (Nick, 31 Oct, on the first Stats page: "too busy, complicated, and not airy modern and visual", then "Not fewer. Just better organized."). Keep all the content; organize it so the screen reads calmly:
    - Group by question. Related figures share one card under one title; each group answers one question ("How am I scoring?", "Where do I gain and lose?", "Recent rounds"). Order the groups from the headline down to detail.
    - Clear hierarchy in every card: one lead visual or figure, then supporting figures smaller and quieter, then the note. The eye should land in one place first.
    - Picture first, words second: a chart, bar or ring carries the data, labels and sentences support it. On phone, prefer a chart or a grouped list over a table.
-   - Generous, even spacing: 24pt between cards, 20pt card padding (list rows keep their 16pt inset), the hero chart at least 160pt tall. Same gaps on every screen so the rhythm is predictable.
+   - Generous, even spacing: 24pt between cards, 16pt card padding on phone and 20pt on desktop (list rows keep their 16pt inset), the hero chart at least 160pt tall. Same gaps on every screen so the rhythm is predictable.
    - Notes stay short (one or two lines) and inside their card.
-   - Nothing is removed to get there. Where a group is long, it can collapse behind a "Show all" row or a segmented switch inside its card, but the content stays on the screen.
+   - Nothing is removed to get there. Where a group is long, it can collapse behind a "Show all" row or the toggle inside its card, but the content stays on the screen.
 
-## 3. Color tokens
-
-New semantic tokens sit on top of today's primitives in `tokens.css`. Names are the build brief's; values are final. Ratios are WCAG 2.x, measured against both the page and the card.
-
-### Light
-
-| Token | Value | Role | On page | On card |
-|---|---|---|---|---|
-| `--ch-grouped-bg` | `#F2F0E9` | Phone page, flat. Replaces workspace + light + paper on phone | | |
-| `--ch-card-bg` | `#FFFEFB` | Cards and grouped lists | | |
-| `--ch-well-bg-flat` | `#F6F4EE` | Recessed wells inside a card (evidence, segmented track) | | |
-| `--ch-text-primary` | `#1C1B18` (ink 900) | Titles, values | 15.1 | 17.1 |
-| `--ch-text-secondary` | `#46433D` (ink 600) | Meta, notes, row subtitles | 8.6 | 9.8 |
-| `--ch-text-tertiary` | `#5F5C55` (ink 500) | Axis labels, timestamps only | 5.9 | 6.6 |
-| `--ch-gain` | `#14613D` | Gains, positive deltas | 6.6 | 7.4 |
-| `--ch-loss` | `#9A5700` | Losses, below benchmark (amber, not brown) | 4.9 | 5.6 |
-| `--ch-flag` | `#B3261E` | Under par only | 5.7 | 6.5 |
-| `--ch-accent` | `#155A39` | Links, active tab, primary button fill | 7.2 | 8.2 |
-| `--ch-separator` | `rgb(28 27 24 / 0.10)` | Row hairlines, inset 16px from the leading edge | | |
-| `--ch-card-ring` | `rgb(28 27 24 / 0.07)` | 1px ring around every card | | |
-
-### Dark
-
-| Token | Value | On page | On card |
-|---|---|---|---|
-| `--ch-grouped-bg` | `#0E120F` | | |
-| `--ch-card-bg` | `#191E1A` | | |
-| `--ch-well-bg-flat` | `#141815` | | |
-| `--ch-text-primary` | `#F1ECDF` | 16.0 | 14.3 |
-| `--ch-text-secondary` | `#D0C9B8` | 11.5 | 10.3 |
-| `--ch-text-tertiary` | `#ADA697` | 7.8 | 7.0 |
-| `--ch-gain` | `#7CC79B` | 9.4 | 8.5 |
-| `--ch-loss` | `#E7AE57` | 9.5 | 8.5 |
-| `--ch-flag` | `#F28B7D` | 7.9 | 7.1 |
-| `--ch-accent` | `#7CC79B` | 9.4 | 8.5 |
-| `--ch-separator` | `rgb(241 236 223 / 0.10)` | | |
-| `--ch-card-ring` | `rgb(255 255 255 / 0.06)` | | |
+## 3. Colour
 
 Rules:
-- Body and meta text use primary or secondary only. Tertiary is for axis labels and timestamps, never for a sentence.
-- Target 4.9:1 for all text, floor 4.5:1, 3:1 for chart marks and control borders, checked in light and dark against the surface the text actually sits on.
-- Color law from the Claude Design system holds: red means under par and nothing else; gains green; losses amber; over par on a scoreboard is ink.
-- No pale mint highlight fills (the Stats "Team total" row). A summary row is a summary by weight and a top rule, not by tint.
+- Body and meta text use primary or secondary only. Tertiary is for axis labels and timestamps (13px semibold or 15px regular and up), never for a sentence; it and the placeholder share `--ch-ink-500` (S1.7).
+- Target 4.9:1 for all text, floor 4.5:1, 3:1 for chart marks, icons that must be seen and control borders (`--ch-border-control`), checked in light and dark against the surface the text actually sits on, at the light's darkest point.
+- Colours come from tokens only. A page stylesheet names `var(--ch-*)`; a literal colour lives in tokens.css with a dark value. `src/clubhouse/styles/__tests__/raw-colour.test.ts` counts the literals left in page stylesheets and lets the count only fall.
+- Gain means better and loss means worse, in every chart and stat: green for gains, amber for losses, ink for a change within noise ("No clear change"). Every gain or loss mark and number carries a sign or arrow (S2.5).
+- **Red is for errors only** (MOTION-AND-VISUAL 4.7, Nick 15 Nov 2026; this retires D-42's "red means under par"). `--ch-flag` and the danger family mark an error or a destructive action; the pin flag (`--ch-chart-flag`) and a penalty stake keep their red because they are drawn as they stand on the course. `RED_TOKENS` in `scripts/clubhouse/check.mjs` flags any other red.
+- **Under par is the gain.** `--ch-score-under` reads `--ch-chart-gain` (`#0f5233` text), `--ch-score-under-fill` the gain fill (`#0b3a25`, ivory numeral), `--ch-score-under-bg` the gain tint. In the scoring mix and the live beads birdie is a step lighter (`--ch-score-birdie-fill`) than eagle or better (the full gain fill). On the deep green (a stage, a board, the shot screen's strip) under par is the feature gain: `#8fd3aa` text, the `#6fc096` mint disc under the deep green numeral.
+- **Hole chips** (4.7): under par a solid gain fill with an ivory numeral, par ivory, over par an amber wash with loss text, the current hole a 2px green-500 ring. No thick left borders. Over par on a scoreboard is ink.
+- **Attention** is champagne, `--ch-champagne-100` with `--ch-champagne-ink` (`#efe6d2` / `#725b2c`): a due date and the personal-best badge. Nothing else should use it, so it means "look here"; the older champagne rules and gilt are still to be retired.
+- The selected fill (`--ch-bg-selected`) always comes with a non-colour cue: a check, a bold label or the focus ring. Never a thick left border (S1.8b).
+- No pale mint highlight fills. A summary row is a summary by weight and a top rule, not by tint.
 
-## 4. Surfaces
+### Generated tables
 
-| Surface | Light | Dark | Radius | Use |
+<!-- AUTOGEN:clubhouse-design-tokens:start (node scripts/clubhouse/design-language.mjs; do not edit inside) -->
+Generated from `src/clubhouse/styles/tokens.css` (the light root and the dark root). Ratios are WCAG 2.x, alpha composited, measured against the token named after each ratio (`card-bg` is the ivory card, `workspace` the linen page base). Edit tokens.css, then run `node scripts/clubhouse/design-language.mjs`.
+
+The page paint, once for every page, pushed screen and page copy: `var(--ch-light-canvas), var(--ch-light-paper), var(--ch-workspace)`.
+
+#### Page and surfaces
+
+| Token | Light | Dark | Role | On the page, light | On the page, dark |
+|---|---|---|---|---|---|
+| `--ch-workspace` | `#e8e3d5` | `#131814` | The linen page, under the light and the paper tint (S1.1) | — | — |
+| `--ch-bg-page` | `#e8e3d5` | `#111512` | The recessed page: desktop main column, inset grouped lists (S1.2) | 1.00 | 1.03 |
+| `--ch-card-bg` | `#faf7ef` | `#212722` | The one card; `--ch-bg-surface`, sheets, the chart paper and bubbles name it (S1.3) | 1.20 | 1.18 |
+| `--ch-bg-surface` | `#faf7ef` | `#212722` | Same card | 1.20 | 1.18 |
+| `--ch-bg-elevated` | `#fcfaf5` | `#2c322d` | Raised surfaces: menus, popovers, the secondary key (S1.6) | 1.23 | 1.37 |
+| `--ch-bg-subtle` | `#f1ede2` | `#181d19` | Tiles and wells inside a card; `--ch-well-bg-flat` names it | 1.10 | 1.05 |
+| `--ch-bg-selected` | `#ebe4d2` | `#2c322d` | Selected row or option, always with a non-colour cue (S1.8b) | 1.01 | 1.37 |
+| `--ch-feature-bg` | `#0b3a25` | `#123d29` | The one deep green feature card per view | 9.95 | 1.48 |
+
+#### Ink
+
+| Token | Light | Dark | Role | Light ratios | Dark ratios |
+|---|---|---|---|---|---|
+| `--ch-text-primary` | `#1c1b18` | `#f1ecdf` | Titles, values | 16.09 on card-bg, 13.43 on workspace | 12.92 on card-bg, 15.24 on workspace |
+| `--ch-text-secondary` | `#3a3833` | `#e2dccd` | Meta, notes, row subtitles | 10.94 on card-bg, 9.13 on workspace | 11.14 on card-bg, 13.14 on workspace |
+| `--ch-text-tertiary` | `#46433d` | `#d0c9b8` | Axis labels, timestamps; never a sentence | 9.21 on card-bg, 7.69 on workspace | 9.24 on card-bg, 10.89 on workspace |
+| `--ch-ink-500` | `#55524b` | `#c4bdad` | Placeholder and the quietest text (S1.7) | 7.28 on card-bg, 6.08 on workspace | 8.15 on card-bg, 9.61 on workspace |
+| `--ch-accent-ink` | `#155a39` | `#7cc79b` | Links and accent text; `--ch-accent` is the fill, never text | 7.68 on card-bg, 6.41 on workspace | 7.62 on card-bg, 8.99 on workspace |
+| `--ch-on-green-ink` | `#f4eedd` | `#f4eedd` | Text on the green frame and feature card | 11.01 on feature-bg | 10.50 on feature-bg |
+| `--ch-text-on-accent` | `#ffffff` | `#f4eedd` | Text on a primary key | 12.76 on primary-bg | 4.98 on primary-bg |
+
+#### Edges
+
+| Token | Light | Dark | Role | Light ratios | Dark ratios |
+|---|---|---|---|---|---|
+| `--ch-card-ring` | `rgb(28 25 18 / 0.08)` | `rgb(241 236 223 / 0.08)` | The card edge, drawn as `0 0 0 1px` (S1.4); a boundary, not a 3:1 line | 1.17 on card-bg, 1.17 on workspace | 1.25 on card-bg, 1.22 on workspace |
+| `--ch-separator` | `rgb(28 27 24 / 0.1)` | `rgb(241 236 223 / 0.1)` | Row hairlines, inset 16 from the leading edge | 1.22 on card-bg | 1.33 on card-bg |
+| `--ch-border-control` | `#85817a` | `#807b6e` | Inputs, search, chips, switch off-ring, chart track rings (S1.8, 3:1) | 3.62 on card-bg, 3.02 on workspace | 3.61 on card-bg, 4.26 on workspace |
+| `--ch-border-focus` | `#1f6b45` | `#6db488` | Keyboard focus ring, 2px | 6.04 on card-bg, 5.04 on workspace | 6.19 on card-bg, 7.30 on workspace |
+
+#### Data marks
+
+| Token | Light | Dark | Role | Light ratios | Dark ratios |
+|---|---|---|---|---|---|
+| `--ch-chart-gain` | `#0f5233` | `#a9e0c0` | Gain text and signed numbers (S2.5) | 8.62 on card-bg | 10.24 on card-bg |
+| `--ch-chart-loss` | `#7a4500` | `#f5c982` | Loss text and signed numbers (S2.5) | 7.32 on card-bg | 9.84 on card-bg |
+| `--ch-chart-gain-fill` | `#0b3a25` | `#c2f2d3` | Gain bars and marks | 11.92 on card-bg, 9.42 on chart-track | 12.29 on card-bg, 10.58 on chart-track |
+| `--ch-chart-loss-fill` | `#b06e0e` | `#b36c10` | Loss bars and marks; 3:1 on the card and on the track itself | 3.86 on card-bg, 3.05 on chart-track | 3.68 on card-bg, 3.17 on chart-track |
+| `--ch-chart-flat` | `#6b675f` | `#a39d90` | Steady or within-noise marks, drawn in ink | 5.26 on card-bg, 4.16 on chart-track | 5.65 on card-bg, 4.86 on chart-track |
+| `--ch-chart-line` | `#2d6a47` | `#6db488` | The series line, 2px, one dot on the newest round (S2.4) | 6.01 on card-bg | 6.19 on card-bg |
+| `--ch-chart-zero` | `#5f5c55` | `#ada697` | Mean and zero rules, 1px dashed | 6.23 on card-bg | 6.30 on card-bg |
+| `--ch-separator-chart` | `#8a867c` | `#7a7568` | Gridlines, 1px, dashed 2 4, at most three (S2.2) | 3.39 on card-bg | 3.32 on card-bg |
+| `--ch-chart-track` | `#e3ddcf` | `#2c322d` | Bar and progress tracks, ringed with `--ch-chart-track-ring` (S2.6) | 1.26 on card-bg | 1.16 on card-bg |
+| `--ch-chart-par` | `#c9c2b1` | `#3a403b` | Par segments, ringed like the track | 1.66 on card-bg | 1.43 on card-bg |
+| `--ch-chart-gilt` | `#927840` | `#c9ad74` | Qualifying line and its legend key | 3.94 on card-bg | 7.05 on card-bg |
+| `--ch-score-under` | `#0f5233` | `#a9e0c0` | Under par, text and rings: the gain (MOTION-AND-VISUAL 4.7) | 8.62 on card-bg | 10.24 on card-bg |
+| `--ch-score-under-fill` | `#0b3a25` | `#c2f2d3` | A filled under-par mark or hole chip, under `--ch-score-fill-ink` (4.7) | 11.92 on card-bg, 11.92 on score-fill-ink | 12.29 on card-bg, 12.45 on score-fill-ink |
+| `--ch-score-birdie-fill` | `#2a7d53` | `#5fa57a` | The scoring mix and live beads: birdie, a step lighter than eagle or better | 4.72 on card-bg, 2.53 on score-eagle-fill | 5.19 on card-bg, 2.37 on score-eagle-fill |
+| `--ch-champagne-100` | `#efe6d2` | `#2b2619` | Attention (4.7): a due date and the personal-best badge, with `--ch-champagne-ink` | 1.16 on card-bg, 5.21 on champagne-ink | 1.01 on card-bg, 7.96 on champagne-ink |
+| `--ch-chart-flag` | `#b03a2e` | `#ef8576` | The pin flag, drawn as on the course | 5.62 on card-bg | 6.01 on card-bg |
+| `--ch-flag` | `#b3261e` | `#f28b7d` | Errors and destructive actions: red means nothing else (4.7) | 6.11 on card-bg | 6.36 on card-bg |
+
+#### Keys
+
+| Token | Light | Dark | Role | Light ratios | Dark ratios |
+|---|---|---|---|---|---|
+| `--ch-primary-bg` | `#0b3a25` | `#25734d` | Primary key, solid (no gradient) | 11.92 on card-bg | 2.64 on card-bg |
+| `--ch-primary-bg-hover` | `#124b2e` | `#2c7a52` | Primary key, hover | 9.47 on card-bg | 2.91 on card-bg |
+| `--ch-primary-bg-press` | `#08301e` | `#17543a` | Primary key, pressed | 13.51 on card-bg | 1.72 on card-bg |
+| `--ch-btn-secondary-bg` | `#fcfaf5` | `#2c322d` | Secondary key | 1.03 on card-bg | 1.16 on card-bg |
+
+#### The one toggle
+
+| Token | Light | Dark | Role |
+|---|---|---|---|
+| `--ch-well-bg` | `linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%)` | `linear-gradient(180deg, #0a0d0b 0%, #0d110e 55%, #101411 100%)` | The toggle well (recessed linen) |
+| `--ch-well-shadow` | `inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16), inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.13), 0 1px 0 #fff, 0 0 0 1px rgb(255 255 255 / 0.35)` | `inset 0 2px 3px rgb(0 0 0 / 0.5), inset 0 4px 10px -2px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.4), 0 1px 0 rgb(255 255 255 / 0.05)` | Its inset |
+| `--ch-seg-on-bg` | `linear-gradient(180deg, var(--ch-green-fill-500) 0%, var(--ch-green-fill-700) 100%)` | `linear-gradient(180deg, var(--ch-green-fill-600) 0%, var(--ch-green-fill-700) 100%)` | The raised green pill |
+| `--ch-seg-on-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -1px 0 rgb(0 0 0 / 0.12), 0 1px 2px rgb(11 58 37 / 0.35), 0 3px 8px -2px rgb(11 58 37 / 0.3)` | `inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.5), 0 3px 8px -2px rgb(0 0 0 / 0.45)` | Its soft drop shadow |
+| `--ch-seg-on-ink` | `#f9f7f1` | same | The pill label |
+
+#### The three elevations
+
+| Token | Light | Dark | Role |
+|---|---|---|---|
+| `--ch-elevation-card` | `0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08)` | `0 0 0 1px rgb(241 236 223 / 0.08)` | Card: every card (MOTION-AND-VISUAL 4.6). Flat, the page, is none |
+| `--ch-elevation-raised` | `0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18)` | `0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55)` | Raised: sheets, menus, the palette, pins, toasts (MOTION-AND-VISUAL 4.6) |
+| `--ch-scrim` | `rgb(28 25 18 / 0.24)` | `rgb(2 6 4 / 0.58)` | The scrim under a sheet or dialog |
+
+#### Radii
+
+| Token | Value |
+|---|---|
+| `--ch-radius-sm` | `8px` |
+| `--ch-radius-md` | `12px` |
+| `--ch-radius-lg` | `16px` |
+| `--ch-radius-xl` | `20px` |
+| `--ch-radius-full` | `999px` |
+| `--ch-radius-xs` | `4px` |
+| `--ch-radius-bubble` | `18px` |
+| `--ch-radius-tail` | `6px` |
+
+#### Type roles
+
+| Role | Token | Desktop: weight, size / leading | Phone: weight, size / leading |
+|---|---|---|---|
+| Large title: the page title | `--ch-type-large-title` | 700, 30 / 36 | 700, 34 / 41 |
+| Title: card hero titles, a hole number | `--ch-type-title` | 600, 22 / 28 | same |
+| Headline: card heads, bar titles, row titles that lead | `--ch-type-headline` | 600, 16 / 22 | 600, 17 / 22 |
+| Body: prose, CoachHelm answers | `--ch-type-body` | 400, 15 / 22 | 400, 17 / 24 |
+| Callout: row titles, controls, secondary prose | `--ch-type-callout` | 500, 14 / 20 | 500, 15 / 20 |
+| Footnote: row meta, eyebrows, captions under figures | `--ch-type-footnote` | 500, 13 / 18 | same |
+| Caption: axis labels, legends, chips | `--ch-type-caption` | 500, 12 / 16 | same |
+| Hero figure, tabular: the one number a screen leads with | `--ch-type-figure-hero` | 600, 56 / 1 | 600, 44 / 1 |
+| Row figure, tabular: scores and averages in rows | `--ch-type-figure` | 600, 15 / 20 | 600, 17 / 22 |
+
+Sizes are at the default Text Size: every role multiplies by `--ch-type-k`, so text follows iPhone Text Size.
+<!-- AUTOGEN:clubhouse-design-tokens:end -->
+
+### Open calls (Nick's)
+
+1. **Red for scores (PL-HOME-05, S2.5): settled 15 Nov by MOTION-AND-VISUAL 4.7.** Red is for errors only and under par is the gain (rules above). The change is its own commit, so it can be dropped on its own.
+2. **Wave 3 design F (colour, surfaces, switches) and J (Practice look, Documents, Stats categories, Roster trends).** Rows that wait on these keep today's look; nothing in this file pre-empts them.
+
+## 4. Surfaces and elevation
+
+| Surface | Fill | Edge and elevation | Radius | Use |
 |---|---|---|---|---|
-| Card | `--ch-card-bg`, 1px `--ch-card-ring`, shadow `0 1px 2px rgb(28 25 18/.05), 0 8px 20px -12px rgb(28 25 18/.12)` | ring only plus `0 1px 0 rgb(255 255 255/.04) inset` | 16 | Every content group |
-| Grouped list | Card with rows; no inner cards | same | 16 | Settings-like lists, roster, classes |
-| Well | `--ch-well-bg-flat`, `inset 0 1px 2px rgb(28 25 18/.06)` | `--ch-well-bg-flat` | 12 | Segmented track, evidence band, search field |
-| Feature card | `--ch-green-800 #0B3A25`, flat (no radial light; SHARED-2 allows no gradient but the segmented chip; fixed 4 Nov, completeness pass); text `#F4F1E8` (9.1:1 on the green) | `#123D29` | 16 | Once per view |
-| Sheet | `--ch-card-bg`, top radius 20, grabber 36x5 | `#1B201C` | 20 | Modals, pickers |
-| Glass | `rgb(253 251 247 / 0.78)`, `backdrop-filter: blur(24px) saturate(170%)`, bottom hairline appears only once content scrolls under | `rgb(22 27 23 / 0.74)` | n/a | Nav bar, tab bar, composer, menus. Never behind data |
+| Page | `--ch-page-paint` (light, paper tint, linen) | none | n/a | Every page, pushed screen and page copy |
+| Recessed page | `--ch-bg-page`, the linen | none | n/a | Desktop main column, inset grouped lists |
+| Card | `--ch-card-bg`, ivory paper | `--ch-elevation-card`: ring plus two soft layers by day, ring only at night | 16 (`--ch-radius-lg`) | Every content group; `ui/Surface.tsx` |
+| Tile or well in a card | `--ch-bg-subtle` | a hairline, or the toggle well's inset | 12 | Evidence bands, figure tiles, the search field |
+| Raised | `--ch-bg-elevated` | `--ch-elevation-raised` | 12 or 16 | Menus, popovers, the palette, pins, the floating compose key, toasts |
+| Sheet | `--ch-sheet-bg` (the card) over `--ch-scrim` (`rgb(28 25 18 / 0.24)` by day) | `--ch-elevation-raised` (`--ch-elevation-sheet` names it) | 20 (`--ch-radius-xl`) | Sheets and dialogs |
+| Feature card | `--ch-feature-bg`, flat deep green, text `--ch-on-green-ink` | `--ch-elevation-feature` | 16 | Once per view |
+| The bar material | `--ch-glass-bg`: `color-mix(in oklab, var(--ch-workspace) 78%, transparent)` under `blur(20px) saturate(140%)`, both themes | a hairline once content is under it | n/a | The one material, for the bar that appears on scroll and other chrome over scrolling content (the strip, the message composer, its date pill and jump key, the round bar). Never behind data, sheets or menus, and never on something nothing scrolls under (MOT-16): Home's today key and the course view's keys are opaque. Increase Contrast and Reduce Transparency make it the solid page |
 
-Card anatomy (the fix for Nick's screenshot):
+These three elevations (flat, card, raised) are the only ones (MOTION-AND-VISUAL 4.6; S1.5 to S1.5c). Every other elevation token is an alias of one of them, or none. Green controls keep their inset highlight (`--ch-seg-on-shadow`): it is part of the control, not an elevation. Message bubbles, pills and chips are flat. No card inside a card. No lit inset rim, no sun drift, no third ambient layer. A drop shadow written in a page stylesheet instead of a token is counted per file by `npm run clubhouse:css` (`config/clubhouse/css-ratchet.json`) and may only fall.
+
+Radii: five steps (MOTION-AND-VISUAL 4.5): `--ch-radius-sm` 8 (menu items, small chips, kbd, chart pins), `-md` 12 (buttons, inputs, hole chips, menus), `-lg` 16 (cards, toasts, options), `-xl` 20 (sheets and the phone lip) and `-full` (pills, the toggle, avatars). Three shapes sit outside the steps on purpose: `--ch-radius-xs` 4 for the bogey square (a square must not read as a circle), and a message bubble's 18 (`--ch-radius-bubble`) with its 6 corner (`--ch-radius-tail`). Chart marks take the stroke's cap, not a radius. A border-radius that is not a token is counted by the same ratchet; there are five left.
+
+Card anatomy:
 ```
 ┌─────────────────────────────────────────┐
-│ Strokes gained by leg     Per round · vs Tour │  ← header: title 17/600 primary, meta 15/400 secondary, 16px pad
+│ Strokes gained by leg     Per round · vs Tour │  ← header: title 17/600 primary, meta secondary, 16px pad
 │─────────────────────────────────────────│  ← hairline, inset 16
 │  body rows …                              │
 │─────────────────────────────────────────│
-│ Three legs are losing strokes: Approach,  │  ← note: 15/400 secondary, inside the card
+│ Three legs are losing strokes: Approach,  │  ← note: secondary, inside the card
 │ Around green and Putting.                 │
 └─────────────────────────────────────────┘
   Hole stats from 56 of 70 rounds            ← NOT allowed on the page. Moves into the card's note.
@@ -104,14 +210,14 @@ Card anatomy (the fix for Nick's screenshot):
    - Bar: `--ch-frame` (#0a331f light, #08150e dark), about 98pt tall including the status bar. No glass, no hairline.
    - Left: the section name is the switcher ("Stats ⌄", "Roster ⌄"), 16px from the edge, 18pt semibold in on-green ink `#f4eedd` (12.0:1 light, 16.1:1 dark), with the chevron and the champagne dot (news in another section) after it. It opens the section strip (`docs/clubhouse/phone/section-strip.md`, approved 12 Oct).
    - Right: the bell with its count badge, or the page's own action in its place where the page has one today (+ on Classes, add-player on Roster). Bare 44pt icons in `rgb(240 233 214 / .86)` (8.9:1).
-   - Sheet: the flat page (`--ch-grouped-bg`, the parchment) tucks under the bar with today's 16px rounded lip (the mask on `PhoneTop`). No green fading into a beige wash.
+   - Sheet: the page (the page paint: the ivory light over the linen, law 2) tucks under the bar with a 20px rounded lip, the sheet radius (`--ch-radius-xl`, MOTION-AND-VISUAL 4.1; the masks under the bar, the strip and pull-to-refresh). No green fading into a beige wash.
    - On scroll the bar stays put and keeps its title; only a soft 14px shade fades in under it after 8px.
    - Pushed pages (player profile): same green bar, "‹ Roster" in champagne on the left, the page's name centred in on-green ink, a more button on the right.
    - Home: the same green bar with the team mark and "Home ⌄", over the flat deep green hero.
    - Code: `shell/phone-chrome.tsx`, `ui/PhoneBar.tsx`, `PhoneTop`, the section switch. The refresh changes nothing about the bar's look, gestures or contents. No ivory or glass bar replaces it.
-2. **Large title** (optional per screen, 34pt `--ch-type-large-title`) on the sheet under the bar, as the page's heading. It opens nothing; the bar's title is always visible above it. On scroll it shrinks about 14% and fades; nothing moves into the bar. Reduce Motion: fade only.
+2. **Large title** (optional per screen, 34pt `--ch-type-large-title`) on the sheet under the bar, as the page's heading. It opens nothing; the bar's title is always visible above it. On scroll it fades to 10% over the first 52px as it goes under the bar, on the scroll itself, and never scales (production audit 2026-11-15, S4.3; the 14% shrink is gone, an interim call for Nick, MOT-06); nothing moves into the bar. Reduce Motion: the same fade, since the person's own scroll drives it.
 3. **Context line** under the large title: 15pt secondary, one line ("Varsity · 7 active · countable rounds").
-4. **Controls** (the green segmented) directly under the context line, sticky under the green bar when scrolled, on the page colour.
+4. **Controls** (the one toggle, §9) directly under the context line, sticky under the green bar when scrolled. A sticky bar is transparent at rest and paints the paper over the linen only once content is under it (S1.9).
 5. **Cards**, 24pt apart, grouped by question (law 6).
 6. **No tab bar.** The phone uses the section strip; nothing sits at the bottom except the Resume round accessory and a page's thumb dock, as today.
 
@@ -119,21 +225,11 @@ Edges: 16px page edge, 20px on large phones (≥ 414pt wide), already `--ch-page
 
 ## 6. Type
 
-Instrument Sans only (`--ch-font-sans`). Every size scales with iPhone Text Size through `--ch-type-k` (from `-apple-system-body`, capped at XXL), as it does today. No tracked caps, no serif, sentence case everywhere.
+Instrument Sans only (`--ch-font-sans`). Every size scales with iPhone Text Size through `--ch-type-k` (from `-apple-system-body`, capped at XXL). No tracked caps, no serif, sentence case everywhere. Nine roles (MOTION-AND-VISUAL 4.3), their desktop and phone values in the generated "Type roles" table in §3: large title (the page title), title (card hero titles, a hole number), headline (card heads, bar titles, row titles that lead), body (prose; 16/24 inside a CoachHelm thread), callout (row titles, controls, secondary prose), footnote (row meta, eyebrows, captions under figures), caption (axis labels, legends, chips), the hero figure (the one number a screen leads with, 600) and the row figure (scores and averages in rows, 600). Secondary text is weight 500 for contrast on ivory. Meta is never larger than body. Weights are 400, 500, 600 and 700 only.
 
-| Role | Token | Size/leading (at default Text Size) | Weight |
-|---|---|---|---|
-| Large title | `--ch-type-large-title` | 34/41 | 600, width 88, −0.034em |
-| Bar title | `--ch-type-bar-title` | 17/22 | 600 |
-| Card title | `--ch-type-card-title` | 17/22 | 600 |
-| Body | `--ch-type-body-l` | 16/24 | 400 |
-| Row title | new `--ch-type-row` | 16/21 | 500 |
-| Meta, notes, subtitles | new `--ch-type-meta` | 15/20 | 400, secondary |
-| Caption (axis, time) | `--ch-type-caption` | 13/18 | 400, tertiary |
-| Hero figure | new `--ch-type-figure-hero` | 40/1 | 500, width 92, −0.04em, tabular |
-| Row figure | new `--ch-type-figure` | 17/1 | 600, tabular |
+A new rule reads a role. The numeric steps (`--ch-type-11` to `-34`) that the roles replace are still read in older stylesheets; `src/clubhouse/__tests__/legacy-type-roles.test.ts` counts them per file and lets the count only fall, and no older named role (serif, display, label, eyebrow, meta, row, section, bar or card title) may come back.
 
-Numbers: tabular figures everywhere, a true minus (−), "E" for even, "—" for no data, window and sample stated ("Last 10 rounds · 142 shots"). The Stats hero drops from about 64pt to 40pt: one number per card is the headline, it should not shout.
+Numbers: tabular figures everywhere, a true minus (−), "E" for even, "—" for no data, window and sample stated ("Last 10 rounds · 142 shots"). One number per card is the headline; it should not shout.
 
 ## 7. Lists and rows
 
@@ -144,6 +240,8 @@ Numbers: tabular figures everywhere, a true minus (−), "E" for even, "—" for
 - Summary row (team total): 600 weight, a full-width top hairline at 16% ink, no fill.
 
 ## 8. Motion
+
+Owned by the navigation motion work (audit Batches 2 and 4); this section changes with that work, not with a colour or surface change.
 
 One motion set, already in `tokens.css`; this file fixes which to use where.
 
@@ -164,21 +262,29 @@ Frame budget: animate only transform and opacity. No animated blur, no animated 
 
 ## 9. Components every thread uses
 
-- **Card** = today's `ui/Surface.tsx` (`title`, `subtitle`, `actions`, `footerNote`). The note moves into `footerNote`; that is the whole fix for most caption-on-page cases.
-- **Section on phone**: `ui/Section.tsx` keeps its API, but on phone (≤ 820px) its head renders as the card header of the first card inside it, or as a grouped list header inside the list's card. Desktop keeps the flush Ledger head, on a flat canvas.
-- **Feature card**: once per view, `--ch-feature-bg`, flat. No radial light (SHARED-2; fixed 4 Nov, completeness pass).
-- **Segmented**: today's `ui/Segmented.tsx` and `.ch-seg` in `controls.css`, unchanged in look: a recessed well (`--ch-well-bg`) with the green chip (`--ch-seg-on-bg`, keeping its top-to-bottom shade, Nick's 16 Oct call and the one allowed exception to the no-gradient rule) and an ivory label (9.6:1). Nick approved this on the Roster sort (Avg / SG / Name). Every segmented control in the refresh uses it, including the Stats window switch (the Stats page drew a paper thumb; build it green). It sits in the sticky bar under the large title with no "Sort by" label.
-- **Summary to detail (the Stats pattern)** (Nick, 31 Oct: "they should be able to tap on the summary that has a visual in each stats tab, and then the detailed version with other visuals as well"; desktop production already does this with Overview zones opening Game detail at that leg). Each area gets one summary card: title, the lead figure, one visual, a one-line note, and a chevron. The whole card is the tap target (press 0.97), and it pushes that area's detail page: the same green bar with "‹ Stats" in champagne and the area's name centred, then the area's full set of visuals, grouped by question as law 6 says. Back returns to the summary at the same scroll. Nothing is cut: the summary is the way in, the detail holds everything. Use it wherever a screen has areas with deeper data (Stats first; any later screen with the same shape).
-- **Chips**: status as text on a 10% tint of its own color, 7 radius, 13/600. Never a colored edge.
+- **Card** = `ui/Surface.tsx` (`title`, `subtitle`, `actions`, `footerNote`): radius 16, padding 16 on phone and 20 on desktop, the rest elevation. The note goes in `footerNote`.
+- **Section on phone**: `ui/Section.tsx` keeps its API; on phone (≤ 820px) its head renders as the card header of the first card inside it, or as a grouped list header inside the list's card.
+- **Feature card**: once per view, `--ch-feature-bg`, flat.
+- **The one toggle, the Practice style** (Nick, 15 Nov: "The Practice-style toggle everywhere"; S4.5, SYS-10; MOTION-AND-VISUAL 4.2): `ui/Segmented.tsx` and `.ch-seg` in `controls.css`, with no weights. A recessed linen well (`--ch-well-bg`, `--ch-well-shadow`) and a raised green thumb (`--ch-seg-on-bg`, its soft drop shadow `--ch-seg-on-shadow`), both capsules, the thumb 3px in (`--ch-seg-inset`), ivory text on it (`--ch-seg-on-ink`) and secondary ink at 600 off it. Three sizes: 44 for a page-level toggle on the phone (`size="lg"`, or `md` on the phone), 36 on the desktop and inside a card (`md`), 32 only in a dense card (`sm`). A 44px tap area on the phone. A page never sets the toggle's height, padding, gap or radius. It replaces every other toggle, segment and tab family, including the 11 Nov "filter" weight. `src/clubhouse/ui/__tests__/segmented-weight-css.test.ts` fails on a new selected-state style outside Segmented and holds the remaining page paints to a falling count. The pill's gradient is the one allowed gradient on a control.
+- **Keys**: the primary key is solid `--ch-primary-bg` with `--ch-primary-shadow` (hover and press step the fill, never a gradient); the secondary key is `--ch-btn-secondary-bg` on the raised surface with a control edge.
+- **Charts** (S2.1 to S2.8): one line component in the Oct 21 style (`ui/Line`): `--ch-chart-line` 2px, straight segments, one 6px dot on the newest round with a card-colour halo, the mean as an unlabelled 1px dashed `--ch-chart-zero` line named in the legend, the legend under the chart. Gridlines are `--ch-separator-chart`, 1px, dashed 2 4, at most three, none on a sparkline. Tracks and par segments carry the `--ch-chart-track-ring` so a fill on them meets 3:1. Charts sit on the ivory card, never on a green slab. Better is up, and the legend says "Lower is better" once.
+- **Summary to detail (the Stats pattern)** (Nick, 31 Oct). Each area gets one summary card: title, the lead figure, one visual, a one-line note and a chevron. The whole card is the tap target and pushes that area's detail page. Nothing is cut: the summary is the way in, the detail holds everything.
+- **Chips**: status as text on a 10% tint of its own colour, 13/600. Never a coloured edge.
 - **Empty and failed states**: inside the card that would have held the data, not floating on the page.
 
 ## 10. Banned list (check every design and PR against it)
 
 - Text directly on the phone page other than the large title and its context line
-- Radial light, paper tint or any gradient behind text
-- Accent left-border or colored edge cards
+- A white or near-white surface (any channel at 253 or more), and a second ivory on a sticky bar
+- A gradient behind text inside a card; a flat page colour in place of the page paint
+- Accent left-border or coloured edge cards
 - Pale mint or tinted highlight rows
 - Brown for losses (use `--ch-loss` amber)
+- A fourth elevation, a lit inset rim, a drop shadow under a sheet, a drop shadow that is not an elevation token
+- A radius off the five steps; a raw `999px` (use `--ch-radius-full`)
+- A type token other than the nine roles in a new rule
+- A toggle, segment or tab family other than Segmented
+- A literal colour in a page stylesheet
 - Tracked uppercase, serif, emoji
 - Count-up numbers, entrance staggers on page load
 - Glass behind data
@@ -187,13 +293,12 @@ Frame budget: animate only transform and opacity. No animated blur, no animated 
 
 ## 11. Hand-off
 
-- Threads: build your pages to this file. If you need a token that is not here, name it in your report and I'll add it so all four stay in step.
-- Build brief: `BUILD_BRIEF.md` in this folder (next), PR-sized and in order, starting with the page background, which takes the gradient off every screen at once. Moving text into cards is per screen (only 17 files use `ui/Section.tsx`), so each redesign PR moves its own. The 34 screens no redesign covers are listed under "Later" at the end of the brief.
+- Build pages to this file. A token that is not here goes into tokens.css first, then the generated tables (`node scripts/clubhouse/design-language.mjs`), then the artifact.
 - Nothing here changes what shot tracking collects.
 
 ## Adopted from threads
 
-Approved by Nick on 31 Oct (Classes, Roster and coach Home page), plus the phone Stats page. These are now part of the language.
+Approved by Nick on 31 Oct (Classes, Roster and coach Home page), plus the phone Stats page. These are part of the language.
 
 **Class-year colours** (avatars, leader cards, class-mix bar, year chip). White initials on the fill. Coaches and unknown years keep the neutral coin.
 
@@ -212,17 +317,19 @@ A year-coloured surface (leader card) is the year colour at 11% over `--ch-card-
 
 **Leader cards**: a horizontal snap row of three year-coloured cards (best average, best SG, most improved) under the team card on phone; across the top on desktop.
 
-**Chart marks** (from the Stats page): bar fills a step stronger than text tones so marks hold 3:1 on their track. Light: gain fill `#1F6B45`, loss fill `#B86F0C`, neutral `#6B675F`, track `#EBE5D8`, zero rule `#5F5C55`. Dark: `#4FA877`, `#E09A35`, `#A39D90`, `#2C322D`, `#ADA697`. Steady sparklines use the neutral ink (5.6:1), turning green or amber only when the change is past its likely error.
+**Chart marks**: superseded on 15 Nov by spec S2.5 and S2.6; the values are the "Data marks" table in §3. Steady sparklines use the neutral ink, turning green or amber only when the change is past its likely error.
 
-**Feature card text** on the green: primary `#F4F1E8`, secondary `#D3D9CB`, gain `#8FD3AA`, loss `#EDB867`, under par `#F49A8D`.
+**Feature card text** on the green: primary `#F4F1E8`, secondary `#D3D9CB`, gain and under par `#8FD3AA` (4.7), loss `#EDB867`.
 
-**Home**: player and coach Home both keep the green bar and the flat deep green hero under it (no glow behind text), greeting at 34pt, hero bottom radius 24, and an ivory lip into the flat page. On Home the bar takes `--ch-frame` too (the hero-mode bar rule in shell.css), so bar and hero read as one green. Every other section keeps the same green bar with its switcher and bell; the page under it is flat.
+**Home**: player and coach Home both keep the green bar and the flat deep green hero under it (no glow behind text), greeting at 34pt, hero bottom radius 24, and an ivory lip into the page. On Home the bar takes `--ch-frame` too (the hero-mode bar rule in shell.css), so bar and hero read as one green. Every other section keeps the same green bar with its switcher and bell.
 
-**Settled from the Classes thread's open calls** (31 Oct): the phone keeps the section strip, no tab bar; year colours replace the B19 id tone for players whose year is known; the green segmented chip keeps its shade; tinted identity cards (class binders, leader cards) count as identity, not a second card style, and the one-feature-card rule still holds. Settled at 13:47: no Captain tag; a plain "Injured" chip with no date; nothing on Classes without a source (no finals, holidays or travel); desktop drops the "Needs a look" strip.
+**Settled from the Classes thread's open calls** (31 Oct): the phone keeps the section strip, no tab bar; year colours replace the B19 id tone for players whose year is known; tinted identity cards (class binders, leader cards) count as identity, not a second card style, and the one-feature-card rule still holds. Settled at 13:47: no Captain tag; a plain "Injured" chip with no date; nothing on Classes without a source (no finals, holidays or travel); desktop drops the "Needs a look" strip.
 
-**Completeness pass, 4 Nov 2026** (every lane checked so one agent can build it all; full list in `COMPLETENESS.md`):
+**Completeness pass, 4 Nov 2026** (full list in `COMPLETENESS.md`):
 - Practice groups D to F (N-00 allows six): D slate `--gD` #435466 with a white letter (7.78:1), dark #9FB0C2 with a #0E120F letter (8.51:1), tint #E8ECF0 / #1F252B; E and F the neutral coin #5F5C55 (white 6.67:1), dark #ADA697 (#0E120F 7.8:1), tint #EFEDE7 / #24261F. Groups are always told apart by their letter, never by colour alone. A to C as before (C plum).
 - Feature cards are flat: no radial light anywhere (SHARED-2).
-- Breakpoints: phone up to 820 (`useChPhone()`); above that, desktop. Between 821 and the full layout each lane's 05 gives its narrow-desktop rule (rails fold or overlay, panes become pushes): Team, Read and Lenses go full at 1180, Ask at 1280, Documents per N-10 §12.14. Desktop captures stay at 1280.
+- Breakpoints: phone up to 820 (`useChPhone()`); above that, desktop. Between 821 and the full layout each lane's 05 gives its narrow-desktop rule: Team, Read and Lenses go full at 1180, Ask at 1280, Documents per N-10 §12.14. Desktop captures stay at 1280.
 - XXL Text Size is `--ch-type-scale` 1.36. Where a lane file says 1.35 or 1.353, read 1.36.
 - Motion clip checks compare springs and curves against `tokens.css` and `lib/motion.ts`, never against a design page's `linear()` strings.
+
+**15 Nov 2026, production audit** (this edition): law 2 rewritten, §3 and §4 regenerated from tokens, the one toggle, solid keys, three elevations, container radii on five steps, chart rules S2.1 to S2.8, meta under body, the raw-colour ratchet.

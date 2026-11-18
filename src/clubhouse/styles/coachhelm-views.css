@@ -35,7 +35,7 @@
   height: 36px;
   padding: 0 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-25);
   color: var(--ch-text-secondary);
   font: var(--ch-type-14-medium);
@@ -197,11 +197,11 @@
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
   }
   .ch-hv-chip[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hv-chip:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-hv-chip[aria-current='true'] {
@@ -233,11 +233,11 @@
     border-top-color: var(--ch-ledger-rule-soft);
   }
   .ch-hv-link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hv-link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   /* A section's head while the view loads: the heading's line and its caption. */

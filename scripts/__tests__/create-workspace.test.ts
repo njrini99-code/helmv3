@@ -28,6 +28,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import { createWorkspace, renderSummary } from '../lib/create-workspace.mjs';
+import { keyForDir, seedStore } from '../lib/deps-store.mjs';
 import { shareWorkspaceRuntime } from '../lib/shared-workspace-runtime.mjs';
 
 const REPO = resolve(__dirname, '../..');
@@ -53,6 +54,10 @@ beforeEach(() => {
   // manufacture false budget refusals elsewhere in this repo (see
   // workspace-identity.mjs's own comment on the same trap).
   tmp = realpathSync(mkdtempSync(join(tmpdir(), 'helmv3-cw-')));
+  // Dependencies come from a deps store (scripts/lib/deps-store.mjs): keep it
+  // inside the fixture, and give a clone no floor, for the same reason as above.
+  vi.stubEnv('HELM_DEPS_STORE', join(tmp, 'deps-store'));
+  vi.stubEnv('HELM_CLONE_RESERVE_GIB', '0');
   const origin = join(tmp, 'origin.git');
   seed = join(tmp, 'seed');
   home = join(tmp, 'home');
@@ -73,6 +78,8 @@ beforeEach(() => {
   mkdirSync(join(seed, 'node_modules'), { recursive: true });
   writeFileSync(join(seed, 'node_modules/marker.json'), '{}\n');
   writeFileSync(join(seed, '.node-version'), '22\n');
+  writeFileSync(join(seed, 'package.json'), '{"name":"seed","private":true}\n');
+  writeFileSync(join(seed, 'package-lock.json'), '{"name":"seed","lockfileVersion":3,"packages":{"":{"name":"seed"}}}\n');
   writeFileSync(join(seed, 'app.txt'), 'app\n');
   git(['add', '-A'], seed);
   git(['commit', '-qm', 'seed'], seed);
@@ -184,12 +191,24 @@ describe('createWorkspace — what it writes', () => {
     expect(marker.parkPolicy).toBe('KEEP');
   });
 
-  it('symlinks node_modules to the source repo by default', async () => {
-    const result = await createWorkspace({ name: 'symlinked', repo: seed, home });
+  it('never symlinks node_modules: with an empty deps store it reports missing and links nothing', async () => {
+    vi.stubEnv('HELM_DEPS_STORE', join(tmp, 'deps-store'));
+    const result = await createWorkspace({ name: 'nostore', repo: seed, home });
+    expect(existsSync(join(result.path, 'node_modules'))).toBe(false);
+    expect(['missing', 'none']).toContain(result.deps);
+  });
+
+  it("clones node_modules from the deps store entry for the worktree's lockfile", async () => {
+    const store = join(tmp, 'deps-store');
+    vi.stubEnv('HELM_DEPS_STORE', store);
+    const key = keyForDir(seed);
+    expect(key).toBeTruthy();
+    expect(seedStore({ key, fromNodeModules: join(seed, 'node_modules'), root: store, source: 'test' }).ok).toBe(true);
+    const result = await createWorkspace({ name: 'cloned', repo: seed, home });
     const nm = join(result.path, 'node_modules');
-    expect(lstatSync(nm).isSymbolicLink()).toBe(true);
+    expect(lstatSync(nm).isSymbolicLink()).toBe(false);
     expect(existsSync(join(nm, 'marker.json'))).toBe(true);
-    expect(result.deps).toBe('symlinked');
+    expect(result.deps).toBe('cloned');
   });
 
   it('copies .node-version from the source repo', async () => {

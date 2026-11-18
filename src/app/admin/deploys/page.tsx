@@ -20,6 +20,9 @@ import { fetchReleaseRunway } from '@/lib/admin/triage/release-runway';
 import { ReleaseRunwayStrip } from '@/components/admin/triage/ReleaseRunwayStrip';
 import { ReleaseIntelPanel } from './_components/ReleaseIntelPanel';
 import { SectionLabel } from '../_components/SectionLabel';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Deploys & Infra' };
 
 /** Phone card list (below `md`) shows this many deploys before "Show more" —
  *  keeps the default view inside the ~3-screen-height scroll budget (Mobile

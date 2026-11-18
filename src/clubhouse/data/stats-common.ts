@@ -1,7 +1,9 @@
 import 'server-only';
+import { reviewTour } from './round-review-shape';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { PUTT_MAKE_BANDS, PUTT_REPORT_BAND_OF, puttMakeBandFor, type PuttMakeBandId, type PuttReportBandId } from '@/lib/golf/putt-make';
+import { puttBandTourRate } from '@/lib/golf/benchmarks/putting';
 import { fetchAllRowsTogether } from './paging';
 import { chLogServer } from '../lib/track-server';
 import { lastTenFloor, seasonStartDate, type ChRound } from './season';
@@ -138,6 +140,8 @@ export interface ChRoundCache {
   triple_plus: number | null;
   pars?: number | null;
   bogeys?: number | null;
+  /** Holes finished in one putt; like three-putts, read only when the round's putts were recorded (`cachedPutts`). */
+  one_putts?: number | null;
 }
 
 const HOLE_COUNTS = ['eagles', 'birdies', 'pars', 'bogeys', 'double_bogeys', 'triple_plus'] as const;
@@ -169,7 +173,7 @@ export async function loadRoundCache(
       supabase
         .from('golf_round_stats_cache')
         .select(
-          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts, penalty_strokes, double_bogeys, triple_plus, pars, bogeys',
+          'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, birdies, eagles, sand_attempts, sand_saves, three_putts, one_putts, penalty_strokes, double_bogeys, triple_plus, pars, bogeys',
         )
         .in('round_id', ids),
     ),
@@ -193,7 +197,7 @@ export async function loadRoundCache(
  * way. The Fairway pages leave such a round out of putts per round (calculatePuttsPerRound, aggregateCountableRounds: putts > 0),
  * so a zero here is "not recorded", never a round holed in no putts. Three-putts follow: no putts recorded, no three-putt count.
  */
-export function cachedPutts(c: ChRoundCache | undefined, key: 'total_putts' | 'three_putts' = 'total_putts'): number | null {
+export function cachedPutts(c: ChRoundCache | undefined, key: 'total_putts' | 'three_putts' | 'one_putts' = 'total_putts'): number | null {
   if (!c || typeof c.total_putts !== 'number' || c.total_putts <= 0) return null;
   const v = c[key];
   return typeof v === 'number' ? v : null;
@@ -227,11 +231,6 @@ export function rateSample(rows: ChRoundCache[], total: keyof ChRoundCache, unit
   return n;
 }
 
-export function perRound(rows: ChRoundCache[], key: keyof ChRoundCache): number | null {
-  const vals = rows.map((r) => r[key]).filter((v): v is number => typeof v === 'number');
-  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-}
-
 export type ChTour = 'pga' | 'lpga';
 
 /**
@@ -245,21 +244,60 @@ export async function loadTourBenchmarks(supabase: Supabase, tour: ChTour, surfa
 
 /** `loadTourBenchmarks` with its failure told apart from a tour with no rows: `error` when the read failed (logged). */
 export async function readTourBenchmarks(supabase: Supabase, tour: ChTour, surface: string): Promise<{ bench: Map<string, number>; error: boolean }> {
-  const bench = new Map<string, number>();
-  const { data, error } = await supabase.from('golf_pga_standards').select('metric_id, pga_tour_value').eq('tour', tour);
+  const { values, error } = await readTourStandards(supabase, tour, surface);
+  return { bench: values, error };
+}
+
+/** A golf_pga_standards row as a grade reads it; `source_url` exists once migration 20261115223000 is applied. */
+type TourStandardRow = { metric_id: string; pga_tour_value: number | string | null; source_url?: string | null };
+
+/**
+ * Whether a standards row may grade a figure (SC-08): only one that names the page its value comes from. A null `source_url` is
+ * a row nobody has sourced, so its figure shows without a grade. A row read before the column existed has no `source_url` key
+ * at all and grades as it always has, so the app can ship before the migration.
+ */
+export function gradesAgainstTour(row: { source_url?: string | null }): boolean {
+  if (row.source_url === undefined) return true;
+  return typeof row.source_url === 'string' && row.source_url.startsWith('https://');
+}
+
+/**
+ * The Tour's value for each metric that may grade a figure, for one tour: the one read behind every Tour grade in Clubhouse
+ * (Stats, Home, CoachHelm). `select('*')` so it never names a column that may not be there yet (recruiting.ts does the same).
+ * `error` when the read failed (logged under `surface`).
+ */
+export async function readTourStandards(supabase: Supabase, tour: ChTour, surface: string): Promise<{ values: Map<string, number>; error: boolean }> {
+  const values = new Map<string, number>();
+  const { data, error } = await supabase.from('golf_pga_standards').select('*').eq('tour', tour);
   if (error) {
     chLogServer(surface, 'tourBenchmarks', error);
-    return { bench, error: true };
+    return { values, error: true };
   }
-  for (const r of data ?? []) {
+  for (const r of (data ?? []) as TourStandardRow[]) {
+    if (!gradesAgainstTour(r)) continue;
     const v = r.pga_tour_value == null ? null : Number(r.pga_tour_value);
-    if (v != null && Number.isFinite(v)) bench.set(r.metric_id, v);
+    if (v != null && Number.isFinite(v)) values.set(r.metric_id, v);
   }
-  return { bench, error: false };
+  return { values, error: false };
 }
 
 export function tourForGender(gender: string | null | undefined): ChTour {
   return gender === 'womens' || gender === 'women' || gender === 'female' ? 'lpga' : 'pga';
+}
+
+/** The columns a team read selects so `teamTour` can name its Tour: the gender, and the team's own strokes gained baseline. */
+export const TEAM_TOUR_COLUMNS = 'gender, golf_team_settings(sg_baseline)';
+
+type TeamTourRow = { gender?: string | null; golf_team_settings?: { sg_baseline?: string | null } | Array<{ sg_baseline?: string | null }> | null };
+
+/**
+ * The Tour a team's strokes gained is measured against (DF-P-13): its own baseline (`golf_team_settings.sg_baseline`, which recomputes
+ * the stored figures when it changes), else its gender's. The round review reads the same rule (`reviewTour`), so Home, Stats, Roster,
+ * CoachHelm and the review never name two Tours for one team. A settings row the reader cannot see reads as no baseline.
+ */
+export function teamTour(team: TeamTourRow | null | undefined): ChTour {
+  const settings = Array.isArray(team?.golf_team_settings) ? team?.golf_team_settings[0] : team?.golf_team_settings;
+  return reviewTour(tourForGender(team?.gender), settings?.sg_baseline ?? null);
 }
 
 /** Monday (UTC date string) of the week a calendar date falls in. */
@@ -334,11 +372,20 @@ export const PUTT_BANDS: PuttBandDef[] = (Object.keys(TOUR_METRIC_OF) as PuttRep
  */
 export const PUTT_BANDS_NINE: PuttBandDef[] = PUTT_MAKE_BANDS.map((b) => bandDef([b.id], TOUR_METRIC_OF[PUTT_REPORT_BAND_OF[b.id]]));
 
-/** The putts in `rows` counted into the bands, with each band's Tour make rate where there is one. */
+/**
+ * The putts in `rows` counted into the bands, with each band's Tour make rate where there is one: the Tour's rate at the
+ * distances these putts were from, putt by putt (SC-08, `puttBandTourRate`), not the band's plain average.
+ */
 export function bandPutts(rows: ChPuttRow[], bench: Map<string, number>, bands: PuttBandDef[] = PUTT_BANDS): ChPuttBand[] {
   return bands.map((b) => {
     const inBand = rows.filter((r) => b.fine.includes(puttMakeBandFor(r.feet)));
-    return { label: b.label, attempts: inBand.length, made: inBand.filter((r) => r.made).length, bench: b.metric ? (bench.get(b.metric) ?? null) : null };
+    const tour = b.metric ? (bench.get(b.metric) ?? null) : null;
+    return {
+      label: b.label,
+      attempts: inBand.length,
+      made: inBand.filter((r) => r.made).length,
+      bench: tour == null || !b.metric ? null : puttBandTourRate(b.metric, tour, inBand.map((r) => r.feet)),
+    };
   });
 }
 

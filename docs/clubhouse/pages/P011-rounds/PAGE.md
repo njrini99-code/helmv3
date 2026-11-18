@@ -23,7 +23,7 @@ earlier observations below retain their original date and scope.
 | Checklist | [screens/rounds.md](../../screens/rounds.md) |
 | Phone spec | [phone/rounds.md](../../phone/rounds.md) |
 | Design boards | [Player - Rounds.html](../../../../design/handoff/Player%20-%20Rounds.html) · [rounds-flow.jsx](../../../../design/handoff/rounds-flow.jsx) · [rounds-course.jsx](../../../../design/handoff/rounds-course.jsx) · [rounds-track.jsx](../../../../design/handoff/rounds-track.jsx) · [rounds-review.jsx](../../../../design/handoff/rounds-review.jsx) · [rounds-flow.css](../../../../design/handoff/rounds-flow.css) · [rounds-track.css](../../../../design/handoff/rounds-track.css) · [rounds-data.js](../../../../design/handoff/rounds-data.js) · [Player - Rounds - Mobile.html](../../../../design/handoff/Player%20-%20Rounds%20-%20Mobile.html) · [rounds-flow.jsx](../../../../design/handoff/rounds-flow.jsx) |
-| Code | [rounds](../../../../src/clubhouse/screens/rounds) · [rounds.ts](../../../../src/clubhouse/data/rounds.ts) · [rounds.tsx](../../../../src/clubhouse/routes/rounds.tsx) · [rounds.css](../../../../src/clubhouse/styles/rounds.css) · [round-new.tsx](../../../../src/clubhouse/routes/round-new.tsx) · [round-continue.tsx](../../../../src/clubhouse/routes/round-continue.tsx) · [round-recover.tsx](../../../../src/clubhouse/routes/round-recover.tsx) · [round-review.tsx](../../../../src/clubhouse/routes/round-review.tsx) · [course-history.tsx](../../../../src/clubhouse/routes/course-history.tsx) · [team-rounds.tsx](../../../../src/clubhouse/routes/team-rounds.tsx) · [live.tsx](../../../../src/clubhouse/routes/live.tsx) · [live](../../../../src/clubhouse/screens/live) · [live](../../../../src/clubhouse/live) · [live.css](../../../../src/clubhouse/styles/live.css) · [live-rounds.ts](../../../../src/clubhouse/data/live-rounds.ts) · [round-debrief.ts](../../../../src/clubhouse/data/round-debrief.ts) · [round-debrief-shape.ts](../../../../src/clubhouse/data/round-debrief-shape.ts) · [round-history.ts](../../../../src/clubhouse/data/round-history.ts) · [round-history-shape.ts](../../../../src/clubhouse/data/round-history-shape.ts) · [round-review.ts](../../../../src/clubhouse/data/round-review.ts) · [round-review-shape.ts](../../../../src/clubhouse/data/round-review-shape.ts) · [rounds-shape.ts](../../../../src/clubhouse/data/rounds-shape.ts) · [rounds-type-options.ts](../../../../src/clubhouse/data/rounds-type-options.ts) · [team-rounds.ts](../../../../src/clubhouse/data/team-rounds.ts) · [team-rounds-shape.ts](../../../../src/clubhouse/data/team-rounds-shape.ts) · [course-history.ts](../../../../src/clubhouse/data/course-history.ts) · [course-history-shape.ts](../../../../src/clubhouse/data/course-history-shape.ts) · [course-key.ts](../../../../src/clubhouse/data/course-key.ts) · [course-glance.ts](../../../../src/clubhouse/data/course-glance.ts) · [course-page-shape.ts](../../../../src/clubhouse/data/course-page-shape.ts) · [compare-rounds.ts](../../../../src/clubhouse/data/compare-rounds.ts) · [record-marks.ts](../../../../src/clubhouse/data/record-marks.ts) |
+| Code | [rounds](../../../../src/clubhouse/screens/rounds) · [rounds.ts](../../../../src/clubhouse/data/rounds.ts) · [rounds.tsx](../../../../src/clubhouse/routes/rounds.tsx) · [rounds.css](../../../../src/clubhouse/styles/rounds.css) · [round-new.tsx](../../../../src/clubhouse/routes/round-new.tsx) · [round-continue.tsx](../../../../src/clubhouse/routes/round-continue.tsx) · [round-recover.tsx](../../../../src/clubhouse/routes/round-recover.tsx) · [round-review.tsx](../../../../src/clubhouse/routes/round-review.tsx) · [course-history.tsx](../../../../src/clubhouse/routes/course-history.tsx) · [team-rounds.tsx](../../../../src/clubhouse/routes/team-rounds.tsx) · [live.tsx](../../../../src/clubhouse/routes/live.tsx) · [live](../../../../src/clubhouse/screens/live) · [live](../../../../src/clubhouse/live) · [live.css](../../../../src/clubhouse/styles/live.css) · [live-rounds.ts](../../../../src/clubhouse/data/live-rounds.ts) · [round-debrief.ts](../../../../src/clubhouse/data/round-debrief.ts) · [round-debrief-shape.ts](../../../../src/clubhouse/data/round-debrief-shape.ts) · [round-history.ts](../../../../src/clubhouse/data/round-history.ts) · [round-history-shape.ts](../../../../src/clubhouse/data/round-history-shape.ts) · [round-review.ts](../../../../src/clubhouse/data/round-review.ts) · [round-review-shape.ts](../../../../src/clubhouse/data/round-review-shape.ts) · [rounds-shape.ts](../../../../src/clubhouse/data/rounds-shape.ts) · [rounds-type-options.ts](../../../../src/clubhouse/data/rounds-type-options.ts) · [team-rounds.ts](../../../../src/clubhouse/data/team-rounds.ts) · [team-rounds-shape.ts](../../../../src/clubhouse/data/team-rounds-shape.ts) · [course-history.ts](../../../../src/clubhouse/data/course-history.ts) · [course-history-shape.ts](../../../../src/clubhouse/data/course-history-shape.ts) · [course-key.ts](../../../../src/clubhouse/data/course-key.ts) · [course-glance.ts](../../../../src/clubhouse/data/course-glance.ts) · [course-page-shape.ts](../../../../src/clubhouse/data/course-page-shape.ts) · [compare-rounds.ts](../../../../src/clubhouse/data/compare-rounds.ts) · [record-marks.ts](../../../../src/clubhouse/data/record-marks.ts) · [rounds-export.ts](../../../../src/app/golf/actions/rounds-export.ts) · [export-holes.ts](../../../../src/clubhouse/preview/export-holes.ts) |
 | Held plans | [live-rounds.md](../../held/data/live-rounds.md) · [live-rounds-realtime.md](../../held/data/live-rounds-realtime.md) |
 | Audits | [ROUNDS_PLAN](../../ROUNDS_PLAN.md) · [PAGE_PERFORMANCE](../../PAGE_PERFORMANCE.md) · [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Rounds" |
@@ -42,20 +42,26 @@ the round engine (see "What is live" below).
 ```text
 Page ID:            P011
 Page Name:          Rounds
-Route:              /golf/dashboard/rounds (the library, player)
+Route:              /golf/dashboard/rounds (the library, player; team rounds, coach)
                     /golf/dashboard/rounds/[id] (a round's review, player and coach of the player's team)
                     /golf/dashboard/rounds/new (setup, then the shot screen, player)
                     /golf/dashboard/rounds/continue/[id] (the shot screen for a round in progress, player)
+                    /golf/dashboard/rounds/recover (a submit that could not reach the server, player)
+                    /golf/dashboard/rounds/course/[key] (a course's history, 2026-10-25)
+                    /golf/dashboard/live (who is on the course, coach; P-6)
 Bridge Namespace:   11 (Bridge IDs 11ccii, D-68; catalog codes CH-11xxx)
-Roles:              player (library, setup, shot screen); player and coach (review)
+Roles:              player (library, setup, shot screen, recover); coach (team rounds, live);
+                    player and coach (review, course history)
 Implementation Root: src/clubhouse/screens/rounds (setup/ and track/ inside it)
 Manifest:           config/clubhouse/pages/P011-rounds.json
 ```
 
 ## What is live, and what is preview only
 
-Everything below is Clubhouse, behind the `golf_clubhouse_ui` flag
-(`isClubhouseFor`), which stays off in production.
+Everything below is Clubhouse. It was behind the `golf_clubhouse_ui` flag
+(`isClubhouseFor`) until 2026-11-14, when Fairway was retired (#2527) and
+Clubhouse became the only coach and player UI. Course history, Live and Recover
+are routed too; WIRING.md has their blocks.
 
 | Surface | Address | Who | State today | Code | Preview |
 | --- | --- | --- | --- | --- | --- |
@@ -71,10 +77,11 @@ first, the engine move, then the wiring: #2104 moved the engines to
 entry routes are in the shell's rebuilt list for a player, so the library's New
 round, Start a round and Continue, and Home's and CoachHelm's "post a round"
 links, are drawn (`nav.rebuiltHref`); a coach's are not. With the flag off the
-pages render Fairway's clients exactly as before. `/rounds/[id]/review`
-(CoachHelm's AI review) is not part of this page and stays as it is.
-`/rounds/recover` is rebuilt for a player (swap audit F-02): where a submit that
-could not reach the server lands, with no link from the Library.
+pages rendered Fairway's clients until 2026-11-14; there is no flag now.
+`/rounds/[id]/review` (CoachHelm's AI review) was not part of this page; it was
+deleted with Fairway on 2026-11-14. `/rounds/recover` is rebuilt for a player
+(swap audit F-02): where a submit that could not reach the server lands, with no
+link from the Library.
 
 ## Purpose
 
@@ -159,10 +166,10 @@ Status:           approved
 ### Enters from
 
 The player's sidebar (My game › Rounds) and the phone tab bar's Rounds tab
-(D-66). A round's review from the library's rows and from the Stats player
-page's Rounds list (for a player and for a coach, through `rebuiltHref` with the
-viewer's role); the review's Back goes to Rounds, or for a coach to that
-player's rounds on Stats (D-53).
+(D-66; since 2026-10-13 the section strip). A round's review from the library's
+rows and from the Stats player page's Rounds list (for a player and for a coach,
+through `rebuiltHref` with the viewer's role); the review's Back goes to Rounds,
+or for a coach to that player's rounds on Stats (D-53).
 
 ### Exits to
 
@@ -179,7 +186,7 @@ to `/rounds/continue/[id]`, as on the legacy page.
 Design:          the owner (Claude Design)
 Implementation:  src/clubhouse/screens/rounds, on the actions the legacy library and round entry already use
                  (one write path per behaviour); the shot screen's logic is src/hooks/golf/use-shot-tracking.ts
-                 and src/lib/golf/shot-entry-rules.ts, shared with the Fairway screen
+                 and src/lib/golf/shot-entry-rules.ts, shared with the Fairway screen until 2026-11-14
 Data:            golf_round_lifecycle: golf_rounds, golf_holes, golf_shots, golf_course_tees, golf_team_members
                  (a coach's access), golf_players (a coach's view of the name); setup's course library reads
                  through actions/course-library.ts, supplied as ports

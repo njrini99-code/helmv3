@@ -29,7 +29,6 @@ const ALLOW_TOFIXED: Record<string, number> = {
   'screens/auth/SceneMount.tsx': 1,
   'screens/auth/scene-geometry.ts': 4,
   'screens/calendar/extras.tsx': 1,
-  'screens/home/HomePhone.tsx': 1,
   'screens/home/PlayerGame.tsx': 5,
   'screens/messages/files.ts': 1,
   'screens/roster/Roster.tsx': 2,

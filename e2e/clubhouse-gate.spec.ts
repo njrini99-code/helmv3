@@ -37,7 +37,19 @@ async function scan(page: Page, url: string, tap: string | undefined, theme: str
   await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   await page.waitForTimeout(250);
   // Land every entrance now (TEAM-33's fly-in holds marks at opacity 0 for 2 seconds); loops have no end and are left running.
-  await page.evaluate(() => { for (const a of document.getAnimations()) { if (a.effect?.getComputedTiming().iterations !== Infinity) a.finish(); } });
+  // Only time-based ones: a scroll-driven animation (the phone large title's fade under the bar, S4.3) follows the scroll, so
+  // finishing it would scan the page as if scrolled 52px down, with the title faded to 0.1. The style above also set its
+  // duration to 0s, which on a scroll timeline puts it past its range at any scroll (the same 0.1 title): give it back
+  // the timeline's own length so it reads the real scroll position.
+  await page.evaluate(() => {
+    for (const a of document.getAnimations()) {
+      if (a.timeline === document.timeline) {
+        if (a.effect?.getComputedTiming().iterations !== Infinity) a.finish();
+      } else if (a.timeline) {
+        a.effect?.updateTiming({ duration: 'auto' });
+      }
+    }
+  });
   const findings = await page.evaluate(scanPage, { phone });
   const axe = await new AxeBuilder({ page }).withRules(['color-contrast']).analyze();
   for (const violation of axe.violations) {

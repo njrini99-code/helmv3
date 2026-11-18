@@ -26,6 +26,7 @@ import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { EmptyState } from '../../ui/States';
+import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { NewDrillSheet } from './builder/Sheets';
 import { PracticeTabs, type PracticeTab } from './PracticeTabs';
@@ -40,7 +41,7 @@ function LibraryHead({ tab, title, actionLabel, onAction }: { tab: PracticeTab; 
   const phone = useChPhone();
   return (
     <>
-      {phone && <PhoneTop start title={title} action={actionLabel && onAction ? <PhoneIconAction icon={Plus} label={actionLabel} onClick={onAction} /> : undefined} />}
+      {phone && <PhoneTop start heading={false} title={title} action={actionLabel && onAction ? <PhoneIconAction icon={Plus} label={actionLabel} onClick={onAction} /> : undefined} />}
       <header className="ch-prc-h">
         <LargeTitle id="ch-prc-title">{title}</LargeTitle>
         {!phone && actionLabel && onAction && (
@@ -120,11 +121,15 @@ export function DrillsPage({ teamId, team, library, preview = false }: { teamId:
         <>
           <section className="ch-prc-sec" aria-label="Your drills">
             <h2>Your drills</h2>
-            {mine.length ? <ul className="ch-prc-list is-drills">{mine.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{team.length ? 'None in this area.' : 'None yet. Copy a GolfHelm drill, or add your own.'}</p>}
+            <SectionBoundary surface="practice.drills.team" label="Your drills" code="CH-13204">
+              {mine.length ? <ul className="ch-prc-list is-drills">{mine.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{team.length ? 'None in this area.' : 'None yet. Copy a GolfHelm drill, or add your own.'}</p>}
+            </SectionBoundary>
           </section>
           <section className="ch-prc-sec" aria-label="GolfHelm drills">
             <h2>GolfHelm drills</h2>
-            {theirs.length ? <ul className="ch-prc-list is-drills">{theirs.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{area === 'bunker' || area === 'fitness' ? `No GolfHelm drills for ${AREA_WORDS[area]} yet.` : 'None in this area.'}</p>}
+            <SectionBoundary surface="practice.drills.library" label="GolfHelm drills" code="CH-13204">
+              {theirs.length ? <ul className="ch-prc-list is-drills">{theirs.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{area === 'bunker' || area === 'fitness' ? `No GolfHelm drills for ${AREA_WORDS[area]} yet.` : 'None in this area.'}</p>}
+            </SectionBoundary>
           </section>
         </>
       )}
@@ -374,6 +379,7 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
           }
         />
       ) : (
+        <SectionBoundary surface="practice.groups" label="Groups" code="CH-13204">
         <ul className="ch-prc-cards">
           {groups.map((g) => (
             <li key={g.id}>
@@ -390,6 +396,7 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
             </li>
           ))}
         </ul>
+        </SectionBoundary>
       )}
       <PracticeSheet open={!!editing} onClose={() => setEditing(null)} title={editing === 'new' ? 'New group' : 'Edit group'} onAction={() => void save()} actionDisabled={!name.trim()} busy={busy} full>
         <div className="ch-prc-fields">
@@ -506,6 +513,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
       {kind === 'session' && (
         <section className="ch-prc-sec" aria-label="From GolfHelm">
           <h2>From GolfHelm</h2>
+          <SectionBoundary surface="practice.templates.starters" label="From GolfHelm" code="CH-13204">
           <ul className="ch-prc-cards">
             {PLAN_STARTERS.map((s) => (
               <li key={s.id} className="ch-prc-card ch-prc-tmpl">
@@ -519,13 +527,15 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
               </li>
             ))}
           </ul>
+          </SectionBoundary>
         </section>
       )}
       <section className="ch-prc-sec" aria-label="Your templates">
         <div className="ch-prc-sec__h">
           <h2>Your templates</h2>
-          <Segmented weight="filter" size="sm" label="Kind" value={kind} onChange={setKind} options={[{ value: 'session', label: 'Session' }, { value: 'block', label: 'Block' }, { value: 'week', label: 'Week' }]} />
+          <Segmented size="sm" label="Kind" value={kind} onChange={setKind} options={[{ value: 'session', label: 'Session' }, { value: 'block', label: 'Block' }, { value: 'week', label: 'Week' }]} />
         </div>
+        <SectionBoundary surface="practice.templates.team" label="Your templates" code="CH-13204">
         {mine.length === 0 ? (
           <p className="ch-prc-none">Save a plan as a template from the builder’s menu, and it shows up here.</p>
         ) : (
@@ -558,6 +568,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
             ))}
           </ul>
         )}
+        </SectionBoundary>
       </section>
       <PracticeSheet open={!!renaming} onClose={() => setRenaming(null)} title="Rename template" onAction={() => void rename()} actionDisabled={!name.trim()} busy={busy}>
         <div className="ch-prc-fields">

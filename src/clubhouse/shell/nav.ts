@@ -242,6 +242,8 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
  */
 const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
   '/golf/dashboard/qualifiers': /^\/golf\/dashboard\/qualifiers\/(new|[0-9a-f-]{36}(\/(edit|selection))?)$/i,
+  // Launch readiness F-03: Practice hours, the coach's team log and a player's own week.
+  '/golf/dashboard/calendar': /^\/golf\/dashboard\/calendar\/hours$/,
 };
 
 const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice(\/(format|drills(\/[^/]+)?|groups|templates|print\/[^/]+|plan\/[^/]+(\/edit)?))?$/;
@@ -270,7 +272,9 @@ export const CH_ALIASED_ROUTES: Readonly<Record<ChRole, readonly RegExp[]>> = ((
   // them). A role with no target is not waiting on a redirect: it sees its own page at once (F-0055).
   const rows: Array<[RegExp, ChRole[]]> = [
     [/^\/golf\/dashboard\/team$/, both],
-    [/^\/golf\/dashboard\/(intelligence|courses)$/, ['coach']],
+    [/^\/golf\/dashboard\/intelligence$/, ['coach']],
+    // Courses has no Clubhouse page for either role: both open Home (GAP-R-12).
+    [/^\/golf\/dashboard\/courses$/, both],
     [/^\/golf\/dashboard\/roster\/[^/]+$/, both],
     // A player's old pages and everything under them: next.config sends /players/<id> on to /players/<id>/game, and an old
     // genome link to /players/<id>/genome, before any layout runs (A30), so those are the addresses that arrive here.
@@ -355,6 +359,32 @@ export function isRebuilt(pathname: string, role: ChRole = 'coach', features?: C
   return Object.entries(CH_REBUILT_CHILDREN).some(([parent, child]) => CH_REBUILT_ROUTES[role].includes(parent) && child.test(path));
 }
 
+/**
+ * The dynamic children of rebuilt screens, whatever their id looks like (GAP-R-03). `isRebuilt` matches only a well-formed
+ * uuid, which is right for link targets; but an address with a malformed id is still that screen's, and its segment answers
+ * for itself (its own not-found), so the frame renders it instead of "not rebuilt". /rounds/new and /rounds/recover are not
+ * ids, and stay with `isRebuilt`.
+ */
+const CH_DYNAMIC_CHILDREN: Record<ChRole, readonly RegExp[]> = {
+  coach: [/^\/golf\/dashboard\/qualifiers\/[^/]+(\/(edit|selection))?$/, /^\/golf\/dashboard\/rounds\/(?!(new|recover|continue|course)$)[^/]+$/],
+  player: [/^\/golf\/dashboard\/qualifiers\/[^/]+(\/(edit|selection))?$/, /^\/golf\/dashboard\/rounds\/(?!(new|recover|continue|course)$)[^/]+$/, /^\/golf\/dashboard\/rounds\/continue\/[^/]+$/],
+};
+const CH_FEATURE_DYNAMIC: Record<keyof typeof CH_FEATURE_ROUTES, RegExp> = {
+  tournaments: /^\/golf\/dashboard\/tournaments\/[^/]+(\/(edit|lineup|live))?$/,
+};
+
+/** A player's own round flow (log, recover, continue): a coach there is told only players log rounds (CH-11390, GAP-R-12). */
+export function isPlayerRoundFlow(pathname: string): boolean {
+  return /^\/golf\/dashboard\/rounds\/(new|recover|continue\/[^/]+)$/.test(pathname.replace(/\/$/, ''));
+}
+
+/** An address under a rebuilt screen's dynamic child, id well-formed or not: the frame renders its segment (GAP-R-03). */
+export function isRebuiltDynamicChild(pathname: string, role: ChRole = 'coach', features?: ChNavFeatures | null): boolean {
+  const path = pathname.replace(/\/$/, '') || '/';
+  if (CH_DYNAMIC_CHILDREN[role].some((re) => re.test(path))) return true;
+  return (Object.keys(CH_FEATURE_DYNAMIC) as Array<keyof typeof CH_FEATURE_DYNAMIC>).some((key) => Boolean(features?.[key]) && CH_FEATURE_DYNAMIC[key].test(path));
+}
+
 /** A link target only once its screen is rebuilt; until then the control isn't rendered. */
 export function rebuiltHref(href: string, role: ChRole = 'coach', features?: ChNavFeatures | null): string | null {
   return isRebuilt(href.split('?')[0] ?? href, role, features) ? href : null;
@@ -402,6 +432,8 @@ const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpE
   { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+\/edit$/, top: (role) => (role === 'coach' ? { back: 'Practice', title: '', parent: '/golf/dashboard/practice' } : null) },
   // P-7: no parent, so Back steps back to the round or the library it came from (D-41).
   { path: /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, top: (role) => ({ back: role === 'coach' ? 'Round' : 'Rounds', title: 'Course' }) },
+  // F-03: Practice hours opens from Calendar's More and goes back to it.
+  { path: /^\/golf\/dashboard\/calendar\/hours$/, top: (role) => ({ back: 'Calendar', title: role === 'coach' ? 'Practice hours' : 'Your practice hours', parent: '/golf/dashboard/calendar' }) },
 ];
 
 const SETTINGS = '/golf/dashboard/settings';

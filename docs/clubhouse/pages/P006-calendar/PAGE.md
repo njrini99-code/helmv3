@@ -23,7 +23,7 @@ earlier observations below retain their original date and scope.
 | Checklist | [screens/calendar.md](../../screens/calendar.md) |
 | Phone spec | [phone/calendar.md](../../phone/calendar.md) |
 | Design boards | [Coach - Calendar.html](../../../../design/handoff/Coach%20-%20Calendar.html) · [Calendar.html](../../../../design/handoff/Calendar.html) · [cal-views.jsx](../../../../design/handoff/cal-views.jsx) · [cal-inspector.jsx](../../../../design/handoff/cal-inspector.jsx) · [cal-editor.jsx](../../../../design/handoff/cal-editor.jsx) · [Coach - Calendar - Mobile.html](../../../../design/handoff/Coach%20-%20Calendar%20-%20Mobile.html) · [m-cal.jsx](../../../../design/handoff/m-cal.jsx) |
-| Code | [calendar](../../../../src/clubhouse/screens/calendar) · [calendar.ts](../../../../src/clubhouse/data/calendar.ts) · [calendar.tsx](../../../../src/clubhouse/routes/calendar.tsx) · [calendar.css](../../../../src/clubhouse/styles/calendar.css) · [attendance-counts.ts](../../../../src/clubhouse/data/attendance-counts.ts) · [calendar-rounds.ts](../../../../src/clubhouse/data/calendar-rounds.ts) |
+| Code | [calendar](../../../../src/clubhouse/screens/calendar) · [calendar.ts](../../../../src/clubhouse/data/calendar.ts) · [calendar.tsx](../../../../src/clubhouse/routes/calendar.tsx) · [calendar.css](../../../../src/clubhouse/styles/calendar.css) · [attendance-counts.ts](../../../../src/clubhouse/data/attendance-counts.ts) · [calendar-rounds.ts](../../../../src/clubhouse/data/calendar-rounds.ts) · [hours.ts](../../../../src/clubhouse/data/hours.ts) · [calendar-hours.tsx](../../../../src/clubhouse/routes/calendar-hours.tsx) · [hours.css](../../../../src/clubhouse/styles/hours.css) · [hours.ts](../../../../src/app/golf/actions/hours.ts) · [practice-hours.ts](../../../../src/lib/golf/practice-hours.ts) · [fixtures-hours.ts](../../../../src/clubhouse/preview/fixtures-hours.ts) |
 | Held plans | [tournaments-from-calendar.md](../../held/data/tournaments-from-calendar.md) · [tournaments-calendar-sync.md](../../held/data/tournaments-calendar-sync.md) |
 | Audits | [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Calendar" |
@@ -42,7 +42,9 @@ own classes.
 Page ID:            P006
 Page Name:          Calendar
 Route:              /golf/dashboard/calendar (coach and player); ?view=day|week|month|agenda,
-                    ?date=YYYY-MM-DD, ?event=<id>, ?new=1 (&with=<player>, &type=<type>)
+                    ?date=YYYY-MM-DD, ?event=<id> (&setup=1 from Tournaments: the editor with Track on),
+                    ?new=1 (&with=<player>, &type=<type>)
+                    /golf/dashboard/calendar/hours (Practice hours, since 2026-11-15; ?date=)
 Bridge Namespace:   6 (Bridge IDs 6ccii, D-68; catalog codes CH-6xxx)
 Roles:              coach, player
 Implementation Root: src/clubhouse/screens/calendar
@@ -75,12 +77,15 @@ make it).
 ### Secondary actions
 
 Move to another day, week or month, or to the agenda; open an event and see its
-responses (coach),
-edit or cancel it, take attendance, attach a file from Documents, review a
-schedule overlap and pick
-one of the suggested open times; choose whose schedule to show (coach); add busy
-time of your own
-(coach); add the calendar to Apple, Google or Outlook; copy an event's link.
+responses (coach), edit or cancel it, take attendance, attach a file from
+Documents, review a schedule overlap and pick one of the suggested open times;
+choose whose schedule to show (coach); add busy time of your own (coach); add
+the calendar to Apple, Google or Outlook; copy an event's link. Since 2026-10-25
+a coach also drags an event to move or resize it (P-4), sets up and keeps a
+tournament from the editor's Track section (P-5), and sees who is on the course
+for an event (P-6); an event that moved or changed shows its change mark (P-14).
+Since 2026-11-15 Practice hours (`/calendar/hours`) shows the week's countable
+hours a player, with a coach's limits, adjustments and Export.
 
 ### Information hierarchy
 
@@ -140,20 +145,22 @@ Status:           approved
 
 ### Enters from
 
-The sidebar (both roles) and the phone tab bar (coach; a player opens it from
-More, D-66); Home's New
-event (`?new=1`) and its phone quick chips (`?new=1&type=`); Roster's Plan 1:1
-(`?new=1&with=<player>`,
-D-52); Messages' Schedule (`?new=1`, D-47); Team Hub's Create event (`?new=1`)
-and each event in its
-reply list (`?date=&event=`); the shell's next-event card (`?event=<id>`).
+The sidebar (both roles) and, on the phone, the section strip (both roles, since
+2026-10-13; the tab bar and More, D-66, are gone); Home's New event (`?new=1`)
+and its phone quick chips (`?new=1&type=`); Roster's Plan 1:1
+(`?new=1&with=<player>`, D-52); Messages' Schedule (`?new=1`, D-47); Team Hub's
+Create event (`?new=1`) and each event in its reply list (`?date=&event=`);
+Tournaments' Set up from calendar (`?event=<id>&setup=1`). The shell's
+next-event card (`?event=<id>`) was removed on 2026-11-07.
 
 ### Exits to
 
 The files attached to an event, which open in a new tab from Documents; a
-calendar app, through the
-`webcal:` link Add to calendar app hands out. Calendar has no link into another
-Clubhouse screen.
+calendar app, through the `webcal:` link Add to calendar app hands out. Since
+this was written the Calendar links into other Clubhouse screens: View itinerary
+opens Team Hub's Travel, an event's live row opens the live view (P-6), the
+peek's Nudge opens Messages prefilled, and a coach's Practice hours sits under
+the Calendar.
 
 ## Ownership
 
@@ -162,7 +169,10 @@ Design:          the owner (Claude Design)
 Implementation:  src/clubhouse/screens/calendar, on the existing server actions
 Data:            calendar_events: golf_events, golf_event_attendance, golf_player_classes,
                  golf_coach_blocked_time, golf_event_documents, golf_calendar_feeds,
-                 golf_team_settings (timezone)
+                 golf_team_settings (timezone), golf_travel_itineraries (trips, 2026-11-15),
+                 golf_practice_plans and versions (a practice's plan), the tournament
+                 tables (P-5), golf_team_hours_settings and golf_hours_adjustments
+                 (Practice hours)
 ```
 
 ## Current status

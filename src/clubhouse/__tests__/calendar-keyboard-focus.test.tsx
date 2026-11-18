@@ -218,7 +218,7 @@ describe('Calendar keyboard · coach only', () => {
   it('A-24 the people picker takes focus into its search as it opens; Esc and Done hand it back to its button, and Esc leaves the open event alone', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_CALENDAR, { initialEvent: 'e9' });
-    const trigger = screen.getByRole('button', { name: /^People:/ });
+    const trigger = screen.getByRole('button', { name: /, choose people$/ });
     await user.click(trigger);
     const pop = screen.getByRole('dialog', { name: 'Choose people' });
     expect(document.activeElement).toBe(within(pop).getByRole('searchbox', { name: 'Find a player' }));

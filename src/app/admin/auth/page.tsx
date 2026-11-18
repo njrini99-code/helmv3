@@ -25,6 +25,9 @@ import { TabHeader } from '../_components/TabHeader';
 import { LocalTime } from '../_components/LocalTime';
 import { AuthFilterChips, type AuthFilterChip } from './AuthFilterChips';
 import { ActivationRunway } from './ActivationRunway';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Auth & Sign-ins' };
 
 export const dynamic = 'force-dynamic';
 

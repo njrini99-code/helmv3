@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * The round filter on the server: what the loaders read and count under it (team and profile), and how the route turns the
@@ -27,6 +27,13 @@ import { filterFor, PICK_LIST_MAX, withPick, withRange, withTypes, type ChFilter
 import { resolveClubhouseTeam } from '../routes/team';
 import { ClubhouseStatsRoute } from '../routes/stats';
 import { PREVIEW_PLAYER } from '../preview/fixtures-stats';
+import { sgPolicy } from '../data/stats-sg-mix';
+
+// These tests pin figures and reads written for every stored strokes gained figure, so they run under `include`. The shipped policy
+// (`exclude`, SC-07) and what it changes are pinned in src/clubhouse/data/__tests__/sg-mix.test.ts.
+const SG_POLICY_SHIPPED = sgPolicy.estimated;
+beforeEach(() => { sgPolicy.estimated = 'include'; });
+afterEach(() => { sgPolicy.estimated = SG_POLICY_SHIPPED; });
 
 type Filters = Array<[string, unknown[]]>;
 type Row = Record<string, unknown> & { id: string; player_id: string; round_date: string };
@@ -473,7 +480,16 @@ describe('nine- and eighteen-hole rounds', () => {
   });
 
   it('bests list 18-hole and 9-hole rounds apart: a 33 over nine holes is not a best score', async () => {
-    profileOf([...[74, 70, 74].map((s, i) => longR(`l${i}`, OWN, inSeason(10 + i), { total_score: s, score_to_par: s - 72, total_putts: 28 + i, total_gir: i === 0 ? 17 : 9 })), ...[38, 33].map((s, i) => shortR(`s${i}`, OWN, inSeason(20 + i), { total_score: s, score_to_par: s - 36, total_putts: 12 + i }))]);
+    const rows = [...[74, 70, 74].map((s, i) => longR(`l${i}`, OWN, inSeason(10 + i), { total_score: s, score_to_par: s - 72, total_putts: 28 + i, total_gir: i === 0 ? 17 : 9 })), ...[38, 33].map((s, i) => shortR(`s${i}`, OWN, inSeason(20 + i), { total_score: s, score_to_par: s - 36, total_putts: 12 + i }))];
+    profileOf(rows);
+    // Bests read greens and putts from each round's stats row (DF-P-01): here the rows carry each round's own figures.
+    const rowOf = (id: string) => rows.find((r) => r.id === id)!;
+    tables.current = {
+      ...tables.current,
+      golf_round_stats_cache: (f: Filters) => ({
+        data: ((f.find(([k]) => k === 'in')?.[1][1] ?? []) as string[]).map((id) => ({ round_id: id, greens_hit: rowOf(id).total_gir, greens_total: rowOf(id).total_gir_possible, total_putts: rowOf(id).total_putts })),
+      }),
+    };
     const both = (await profileLoad(holes('all')))!;
     expect(both.extra.bests.score!.value).toBe(70);
     expect(both.extra.bests.putts!.value).toBe(28);
@@ -490,6 +506,20 @@ describe('nine- and eighteen-hole rounds', () => {
     const long = (await profileLoad(holes('18')))!;
     expect(long.extra.bests.score!.value).toBe(70);
     expect(long.extra.bests9).toBeNull();
+  });
+
+  it('My stats compares the window with the one before on the same stats rows (DF-P-01)', async () => {
+    // Fourteen rounds: Last 10 is the newest ten, and the four before them are the compare card's "previous".
+    const rows = Array.from({ length: 14 }, (_, i) => longR(`l${i}`, OWN, inSeason(10 + i)));
+    profileOf(rows);
+    reads.cacheIds = [];
+    const p = (await profileLoad(holes('18', 'last10')))!;
+    // The earlier window's rows were read with the window's, so its greens and putts are the rows' (12 of 18 and 30 in this fake),
+    // not the round header's 9 of 18.
+    expect(reads.cacheIds).toEqual(expect.arrayContaining(['l0', 'l1', 'l2', 'l3']));
+    const gir = p.extra.compare!.rows.find((r) => r.label === 'Greens in regulation')!;
+    expect(gir.previous).toBeCloseTo((12 / 18) * 100, 1);
+    expect(gir.last).toBeCloseTo((12 / 18) * 100, 1);
   });
 
   it('the calculator\'s per-round counts are restated per 18 when a nine-hole round is in the window, and left alone when none is', async () => {
@@ -510,10 +540,11 @@ describe('nine- and eighteen-hole rounds', () => {
 
   it('a coach\'s team figure under Both weighs the teammates\' nine-hole rounds the same way', async () => {
     profileOf([...mixedLengths(OWN), ...mixedLengths('p2').map((r) => ({ ...r, ...(r.holes_played === 9 ? { total_score: 40, front_nine: 40 } : rescore(76)) }))]);
+    // DF-C-17: the figure is the rest of the team's, so the player's own rounds (72s and 38s) are left out.
     const p = (await profileLoad(holes('all')))!;
-    expect(p.teamAvg).toBeCloseTo((4 * 72 + 3 * 38 + 4 * 76 + 3 * 40) / 11, 10);
+    expect(p.teamAvg).toBeCloseTo((4 * 76 + 3 * 40) / 5.5, 10);
     const nines = (await profileLoad(holes('9')))!;
-    expect(nines.teamAvg).toBeCloseTo((3 * 38 + 3 * 40) / 3, 10);
+    expect(nines.teamAvg).toBeCloseTo((3 * 40) / 1.5, 10);
   });
 
   it('the address carries the holes to the loader, and a value it does not know is 18', async () => {

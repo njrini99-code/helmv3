@@ -101,9 +101,9 @@ describe('every figure on the file names the window it reads (one number, one so
     const card = document.querySelector('[data-ch-anchor="sg"]') as HTMLElement;
     expect(card.textContent).toContain('Last 10 rounds');
     expect(card.textContent).not.toContain('All time ·');
-    expect(within(card).getByRole('link', { name: 'Full standing, all time' })).toBeTruthy();
+    expect(within(card).getByRole('link', { name: 'Full standing, rounds on file' })).toBeTruthy();
     // A separator never starts a line, and the link keeps the space before it (it sat two pixels over it).
-    expect(card.querySelector('.card__n')!.textContent).toContain('Last 10 rounds\u00a0· strokes per round. Full standing, all time');
+    expect(card.querySelector('.card__n')!.textContent).toContain('Last 10 rounds\u00a0· strokes per round. Full standing, rounds on file');
     const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-file.css'), 'utf8');
     expect(css).toMatch(/\.ch-hf p \.lnk \{ position: relative; margin: 0; \}/);
   });
@@ -185,7 +185,7 @@ describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
     expect(screen.queryByRole('button', { name: /Assign|Dismiss|Undo|Share/ })).toBeNull();
   });
 
-  it('on a desk the page opens with the player’s CoachHelm head: the page title, the line, and the views inside the head', () => {
+  it('on a desk the page opens with the player’s CoachHelm head: the page title and the line; the views are the route’s switch, not the head’s', () => {
     render(<YourWeek load={{ status: 'ready', data: week('default') }} />, { wrapper: Wrap });
     const main = screen.getByRole('main');
     // The canopy is what gives the head the page title's style (shell.css), and the tight head has no rule over the title.
@@ -195,8 +195,10 @@ describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
     const title = within(head).getByRole('heading', { level: 1, name: 'Your week' });
     expect(main.getAttribute('aria-labelledby')).toBe(title.id);
     expect(head.textContent).toMatch(/21 rounds · refreshed/);
-    // The views stand in the head's own aside (inside the page's gutter), never in the 300px box that ran them to the page's edge.
-    expect(within(head.querySelector('.ch-hl-h__aside') as HTMLElement).getByRole('radiogroup', { name: 'CoachHelm view' })).toBeTruthy();
+    // The views are not drawn in the head any more: the switch is the route's, mounted once above every view in the same place
+    // (SwitchFrame, N13P-18, production audit 2026-11-15 P1-19), so the head has no aside and the page draws no switch of its own.
+    expect(head.querySelector('.ch-hl-h__aside')).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'CoachHelm view' })).toBeNull();
     expect(main.querySelector('.dhead, .aseg')).toBeNull();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
@@ -213,6 +215,24 @@ describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
     render(<YourWeek load={{ status: 'ready', data: week('default') }} />, { wrapper: Wrap });
     expect(document.querySelector('.dots')).not.toBeNull();
     expect(teammateDots()).toHaveLength(0);
+  });
+
+  it('GAP-H-10 Accept acts on the proposal the plan card is (by id), never the first one listed', async () => {
+    const writes: ChPlayerWrites = { accept: vi.fn(async () => ({ success: true })), decline: vi.fn(async () => ({ success: true })) };
+    const base = week('proposed');
+    const data: ChPlayerWeek = { ...base, proposals: { ...base.proposals, list: [{ id: 'fa-other', title: 'Lag putting', from: null, coachName: 'Coach Reyes' }, ...base.proposals.list] } };
+    render(<YourWeek load={{ status: 'ready', data }} writes={writes} />, { wrapper: Wrap });
+    const keys = document.querySelector('.ch-hf-prop') as HTMLElement;
+    await userEvent.click(within(keys).getByRole('button', { name: 'Accept' }));
+    expect(writes.accept).toHaveBeenCalledWith('fa-1');
+  });
+
+  it('GAP-H-10 with no proposal that is the plan card, the card offers no Accept or Decline', () => {
+    const base = week('proposed');
+    // Same title, another row: a title is not an identity.
+    const data: ChPlayerWeek = { ...base, proposals: { ...base.proposals, list: [{ id: 'fa-other', title: 'Penalty strokes', from: null, coachName: 'Coach Reyes' }] } };
+    render(<YourWeek load={{ status: 'ready', data }} />, { wrapper: Wrap });
+    expect(document.querySelector('.ch-hf-prop')).toBeNull();
   });
 
   it('Accept calls the player write once with the proposal id; a refusal shows CH-13004 and keeps the buttons', async () => {

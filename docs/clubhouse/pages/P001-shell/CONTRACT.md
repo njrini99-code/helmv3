@@ -28,7 +28,9 @@ reserve new IDs or mark manual contracts verified.
 <!-- clubhouse:release-audit:end -->
 
 Everything the Clubhouse frame promises on every page, by the 25 V2 categories
-(D-69): the sidebar, the top bar and bell, the phone tab bar and More sheet, the
+(D-69): the sidebar, the top bar and bell, the phone section strip and account
+sheet (which replaced the tab bar and the More sheet on 2026-10-13; contracts
+written for those keep their IDs and now hold for their replacements), the
 offline banner, the toasts, the route error views and the not-rebuilt notice. A
 contract's number is its Bridge ID (D-68: namespace 1, category, item); `Code`
 is the catalog code on the element and in the test
@@ -64,7 +66,8 @@ bar from its address while the page loads and in the server's first paint
 (10202, since 2026-10-08): the back link and title stand where the page's own
 bar puts them, so nothing in the bar moves when it arrives. The query decides a
 Settings section's bar and a coach's player's on Stats, a form's back is its
-Cancel, and a full-screen flow hides the tab bar from its first frame.
+Cancel, and a full-screen flow hides the phone chrome (the section switch and
+the dock) from its first frame.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -76,12 +79,15 @@ Cancel, and a full-screen flow hides the tab bar from its first frame.
 Status: DEFINED
 
 The bell reads its list again on every open, and a list already shown stays
-while it does (10301). The sidebar's next event and Roster badge are read on the
-server with each page load. A stored link (a bell row, a universal link, a
-tapped push) to the screen already open that names another item through its
-query (`?conversation=`, `?event=`) mounts that screen again once the new
-address arrives, so the item opens as it does from any other screen; the
-screen's own address changes (a week, a tab) keep its state (`shell/relink.ts`).
+while it does (10301). The Roster badge, a player's round in progress and a
+coach's role are read on the server with each page load; a failed round or role
+read keeps what the shell last knew in this session (GAP-S-14). The sidebar's
+next event was cut on 2026-11-07, with its read. A stored link (a bell row, a
+universal link, a tapped push) to the screen already open that names another
+item through its query (`?conversation=`, `?event=`) mounts that screen again
+once the new address arrives, so the item opens as it does from any other
+screen; the screen's own address changes (a week, a tab) keep its state
+(`shell/relink.ts`).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -92,12 +98,10 @@ screen's own address changes (a week, a tab) keep its state (`shell/relink.ts`).
 Status: DEFINED
 
 A page not rebuilt yet (10401), an empty bell (10402), a bell filter with
-nothing (10403), no next event (10404, the card is left out), and a team that is
-a plain label because there is nothing to switch to (10405). For a player the
-next event is the next one their Calendar shows: a meeting nobody is invited to
-is the coach's own and is skipped (D2-8); a failed invite read hides nothing.
-Each page's own
-first-run and filtered empties are in its contract.
+nothing (10403), no next event (10404; since 2026-11-07 the sidebar has no
+next-event card, so this state is never drawn; the week's events are on Home),
+and a team that is a plain label because there is nothing to switch to (10405).
+Each page's own first-run and filtered empties are in its contract.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -105,7 +109,7 @@ first-run and filtered empties are in its contract.
 | 10402 | CH-1302 | `THE_BELL_HAS_NOTHING` | The bell has nothing |
 | 10403 | CH-1303 | `THE_BELLS_FILTER_HAS_NOTHING` | The bell's filter has nothing |
 | 10405 | CH-1305 | `A_COACH_WITH_ONE_TEAM_A_COACH` | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
-| 10406 | CH-1306 | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell |
+| 10406 | CH-1306 | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | A dashboard URL that matches nothing, or an id that answered with no row (a deleted round, player, plan or drill, or a malformed id), inside the Clubhouse shell |
 | 10407 | CH-1307 | `MORE_UNREAD_THAN_THE_BELL_LISTS` | More unread than the bell lists |
 
 ## 05 — Validation
@@ -145,6 +149,7 @@ one read fails (10614, `EmptyState size="page" tone="danger"`).
 | 10615 | CH-1270 | `DELIVER_NOW_IN_THE_BELL_IS_REFUSED` | Deliver now in the bell is refused (P-10) |
 | 10616 | CH-1271 | `A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS` | A player's pushes are held for class (P-10) |
 | 10617 | CH-1004 | `OPENING_OR_CLEARING_A_NOTIFICATION_THE_SERVER` | Opening or clearing a notification: the server did not keep the read (it answered `success: false`, or the call failed) |
+| 10690 | CH-1290 | `A_ROUTE_FAILS_TO_LOAD_WHILE_THE` | A route fails to load (a transient or load error) while the device is offline (GAP-S-05, GAP-S-30, GAP-S-35) |
 
 ## 07 — Network / offline
 
@@ -174,6 +179,8 @@ remain four seconds and errors eight seconds.
 | 10704 | CH-1905 | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | Someone presses Try again on a notice, or on a page that didn't load, while offline |
 | 10705 | CH-1909 | `IN_THE_IPHONE_APP_PULLING_A_PHONE` | In the iPhone app, pulling a phone page down from its top |
 | 10706 | CH-1910 | `TWO_NOTICES_ABOUT_THE_SAME_THING_IN` | Two notices about the same thing in a row (Conversation muted, then Notifications back on) |
+| 10790 | CH-1990 | `A_SAVE_STILL_HASNT_ANSWERED_AFTER_20` | A save still hasn’t answered after 20 seconds (GAP-S-31) |
+| 10791 | CH-1991 | `SOMEONE_PRESSED_CANCEL_ON_CH_1990_OR` | Someone pressed Cancel on CH-1990, or presses Save again while that stopped save is still out |
 
 ## 08 — Permission / authorization
 
@@ -270,18 +277,18 @@ shell keeps nothing of its own that it refreshes.
 
 Status: DEFINED
 
-v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the
-bell, toasts, the offline banner, the press, the focus ring, reduced motion, the
-skeleton delay, pushed screens, sheet drags, the phone bell, the sidebar's
-gliding plate, a toast held or thrown, the segmented pill, content swaps, and
-the press on a choice or the feature card, which tints or shades and never
-scales (11601 to 11617). Since 2026-10-08 (a D-64 extension, a lead decision
-under the owner's full-auto brief, owner-confirmed), what moves and can be
-interrupted or thrown rides the D-64 springs (`CH_SPRINGS`, bounce 0 to 0.1):
-the More and bell sheets, pushed screens, the plate, the pill and a swap's
-incoming copy. Sheets rubber-band past their open position, spring back from the
-finger's speed, drag from their body at the top, and carry a throw into the
-close (11611).
+v2 motion (D-64) for every page: the route reveal, the account sheet and the
+section strip, menus and the bell, toasts, the offline banner, the press, the
+focus ring, reduced motion, the skeleton delay, pushed screens, sheet drags, the
+phone bell, the sidebar's gliding plate, a toast held or thrown, the segmented
+pill, content swaps, and the press on a choice or the feature card, which tints
+or shades and never scales (11601 to 11617). Since 2026-10-08 (a D-64 extension,
+a lead decision under the owner's full-auto brief, owner-confirmed), what moves
+and can be interrupted or thrown rides the D-64 springs (`CH_SPRINGS`, bounce 0
+to 0.1): the More and bell sheets, pushed screens, the plate, the pill and a
+swap's incoming copy. Sheets rubber-band past their open position, spring back
+from the finger's speed, drag from their body at the top, and carry a throw into
+the close (11611).
 
 Approved by the owner on 2026-10-08: the page beneath a pushed screen draws
 back about a quarter of the width and dims, on the screen's own curves, frame
@@ -322,7 +329,7 @@ motion and Animations off keep each still or instant.
 Status: DEFINED
 
 v2 haptics (D-70) for every page: a tab change, a save that lands, a failure,
-the More sheet, the bell and menus, the connection dropping, picking another
+the account sheet, the bell and menus, the connection dropping, picking another
 team, and a finger scrubbing a slider, with the Taptic Engine warmed as it lands
 (11701 to 11708). In the iPhone app a pull to refresh taps once, medium, as it
 passes its trigger (11709, owner-approved 2026-10-08).
@@ -343,11 +350,12 @@ passes its trigger (11709, owner-approved 2026-10-08).
 
 Status: DEFINED
 
-Skip to content, the modal More sheet, the current page and named landmarks,
-announced toasts, the bell as a dialog, focus rings, axe clean, the phone tab
-bar, pushed screens named and focused, the phone top bar, the phone bell as a
-modal sheet, the team switcher on desktop and on the phone, and every phone key
-reaching 44 by 44, the search field included (11801 to 11815).
+Skip to content, the modal account sheet (was More), the current page and named
+landmarks, announced toasts, the bell as a dialog, focus rings, axe clean, the
+phone section strip (was the tab bar), pushed screens named and focused, the
+phone top bar, the phone bell as a modal sheet, the team switcher on desktop and
+on the phone, and every phone key reaching 44 by 44, the search field included
+(11801 to 11815).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -372,8 +380,6 @@ reaching 44 by 44, the search field included (11801 to 11815).
 | 11819 | CH-1830 | `ON_A_TOUCH_SCREEN_HOLDING_A_PEEKABLE` | On a touch screen, holding a peekable object (a player's name) for about 450ms ticks once and raises its card over the dimmed, softened page where the row was, its actions listed under it (the native context menu's anatomy); the tap the hold ends with does not open the row, a scroll or drag past 8px cancels the hold, and iOS's link callout stays out of it. Esc, a tap outside or an action closes it, but not the lift that ends the hold; focus returns to the row |
 | 11820 | CH-1831 | `ON_A_DESKTOP_RESTING_THE_POINTER_ON` | On a desktop, resting the pointer on it for 400ms (or focusing it from the keyboard for 600ms) opens a hover card beside it with the same actions as small keys; leaving the target and the card, Esc, or a scroll that moves the target closes it |
 | 11821 | CH-1832 | `THE_PLAYER_PEEK_NAME_AND_CLASS_WHY` | The player peek: name and class, why they need a look (ink, the amber on its icon), the last round, the average and a word-sized line of the last scores; Message opens Messages with the player as the recipient (never sends), View stats and Plan 1:1 open their pages, and CoachHelm the player's deep dive (`coachhelm?view=deep-dive&player=`, not drawn until CoachHelm is rebuilt for coaches). Wired on Home's leaderboard; other pages wrap their names in `PlayerPeek` |
-| 11822 | CH-1840 | `A_COACHS_TOP_BAR_CARRIES_AN_ASK` | A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page |
-| 11823 | CH-1841 | `THE_ASK_SHEET_IS_COACHHELMS_ASK_OVER` | The Ask sheet is CoachHelm's Ask over any screen: the same chat hook and route (no new model or spend), the thread and the message box, saved like any chat; Open in CoachHelm goes to it there. Phone: a bottom sheet that opens at half height with the page in view and grows to full when a thread starts (the grab or the chevron toggles); desktop: a centred sheet. Its heading takes focus, Esc, Close or the backdrop close it, and a new page (or another player) closes it and starts the next one fresh; in the app it sits above the keyboard |
 | 11824 | CH-1842 | `THE_SHEET_NAMES_WHAT_THE_COACH_IS` | The sheet names what the coach is looking at (“Looking at: Stats · Jonah Okafor”, from the page's trail or the navigation); a page about one player (`?player=`) also hands the chat that player as its context chip |
 | 11825 | CH-1816 | `ON_THE_PHONE_THE_SECTIONS_NAME_IN` | On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls="ch-strip"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section |
 | 11826 | CH-1817 | `A_TOAST_IS_CLOSED_WITHOUT_A_FINGER` | A toast is closed without a finger: on a device with a mouse (`hover: hover`) it has a ghost Dismiss X ("Dismiss notification"), and Esc closes it while focus is inside it. Focus goes back where it was before it came into the toast; inside an open dialog (CH-1812) Esc closes only the toast. Closing it counts as letting it run out: held work (a calendar move, CH-6015) is written |
@@ -384,8 +390,10 @@ reaching 44 by 44, the search field included (11801 to 11815).
 
 Status: DEFINED
 
-On a phone the sidebar gives way to the role's tab bar and the More sheet
-(11901, D-66). The phone spec is `docs/clubhouse/phone/foundation.md`.
+On a phone the sidebar gives way to the role's section strip and the account
+sheet (11901, D-66; the strip replaced the tab bar and the More sheet's rows on
+2026-10-13). The phone specs are `docs/clubhouse/phone/foundation.md` and
+`docs/clubhouse/phone/section-strip.md`.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

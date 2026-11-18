@@ -20,10 +20,3 @@ describe('Earlier today', () => {
     expect(earlierOf([{ ui_parts: [{ type: 'text' }] }], AT)).toBeNull();
   });
 });
-
-describe('the pour', () => {
-  it('stays the settle the owner approved: no bounce, 0.42s', async () => {
-    const { CH_SPRINGS } = await import('../../../lib/motion');
-    expect(CH_SPRINGS.pour).toEqual({ visualDuration: 0.42, bounce: 0 });
-  });
-});

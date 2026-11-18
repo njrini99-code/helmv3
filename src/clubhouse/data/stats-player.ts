@@ -24,7 +24,8 @@ import {
   roundsInFilter,
   seasonOnly,
   sgChange,
-  tourForGender,
+  teamTour,
+  TEAM_TOUR_COLUMNS,
   type ChPuttBand,
   type ChRoundCache,
   type ChSgChange,
@@ -36,7 +37,8 @@ import { sgMixOf, type ChSgMix } from './stats-sg-mix';
 import { holeRounds } from './round-scope';
 import { floorRate } from '../lib/stats-signal';
 import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
-import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, windowChangeSe, type ChWindowSeason } from './stats-weight';
+import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, windowChangeSe, withRoundRates, type ChWindowSeason } from './stats-weight';
+import { figureSetOver } from './figure-window';
 import { approachBands, inStatsContext, loadApproachShots, loadHoles, loadSpray, statsActionContext, type ChApproachBand, type ChSpray } from './stats-detail';
 import {
   openingDelta,
@@ -257,7 +259,7 @@ export async function loadPlayerProfile(input: {
   //     (focus areas, goals), and the viewer's identity and access for the shot-level actions;
   //   at once after the player's own rounds: the shot-level reads and the player's own round cache (nothing else is needed for them);
   //   as the team list answers (a coach): the teammates' rounds, then their cache, which only the comparisons read.
-  const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender').eq('id', input.teamId).maybeSingle());
+  const teamRead = Promise.resolve(supabase.from('golf_teams').select(TEAM_TOUR_COLUMNS).eq('id', input.teamId).maybeSingle());
   const playerRead = Promise.resolve(
     supabase.from('golf_players').select('id, first_name, last_name, graduation_year, hometown, state, handicap, handicap_index').eq('id', input.playerId).maybeSingle(),
   );
@@ -312,7 +314,7 @@ export async function loadPlayerProfile(input: {
           .limit(3),
       );
   // CH-5208: without the team's row its tour is unknown, so no benchmark is claimed (a women's team is never graded against the men's).
-  const benchRead = teamRead.then((t) => (t.error ? null : loadTourBenchmarks(supabase, tourForGender(t.data?.gender), 'stats')));
+  const benchRead = teamRead.then((t) => (t.error ? null : loadTourBenchmarks(supabase, teamTour(t.data), 'stats')));
   const sharedContext = statsActionContext(supabase, input.playerId);
   // The team's ids, the player first, then the list's order.
   const teamIdsRead = (teamMembersRead ?? Promise.resolve(null)).then((res) => {
@@ -353,7 +355,7 @@ export async function loadPlayerProfile(input: {
   if (!p || !memberRes.data) return null;
 
   // CH-5208 again: the tour is the team's.
-  const tour = teamRes.error ? null : tourForGender(teamRes.data?.gender);
+  const tour = teamRes.error ? null : teamTour(teamRes.data);
   const [ownRead, teamIds] = await Promise.all([ownRoundsRead, teamIdsRead]);
   const ownRes = trim(ownRead);
 
@@ -362,6 +364,8 @@ export async function loadPlayerProfile(input: {
   const ownByPlayer = groupByPlayer(ownRes.rounds);
   const ownWin = roundsInFilter(counted(ownByPlayer.get(input.playerId) ?? []), f, start);
   const ownHole = holeRounds(ownWin);
+  // The window before this one, for My stats' compare card: its greens, fairways and putts read the same stats rows (DF-P-01).
+  const ownPrevHole = holeRounds(previousInFilter(counted(ownByPlayer.get(input.playerId) ?? []), f, start) ?? []);
   // Every shot-level figure counts exactly the window's own rounds with their holes (the ones the Rounds table lists, of the lengths the filter chose),
   // newest 100 at most: the detail read is given these ids instead of a date preset, which would count a different set.
   const scopeIds = ownHole.slice(0, DETAIL_MAX_ROUNDS).map((r) => r.id);
@@ -375,7 +379,7 @@ export async function loadPlayerProfile(input: {
           },
         )
       : Promise.resolve({ stats: null, error: false }),
-    loadRoundCache(supabase, ownHole.map((r) => r.id), 'stats'),
+    loadRoundCache(supabase, [...new Set([...ownHole, ...ownPrevHole].map((r) => r.id))], 'stats'),
     // The same shot-level bands as Team stats, so the make-rate curve reaches 25+ feet with exact counts.
     loadPutts(supabase, scopeIds),
     loadHoles(supabase, scopeIds),
@@ -420,8 +424,10 @@ export async function loadPlayerProfile(input: {
   // Q-123: a round posted as a total only is a score and nothing else. Every hole-level figure reads the window's rounds with their holes.
   const holeWin = holeRounds(winRounds);
 
-  // Team rounds in the same window, for coach comparisons only (scores: all of them; hole-level: those with their holes).
-  const teamWin = coach ? teamIds.flatMap((id) => roundsInFilter(counted(byPlayer.get(id) ?? []), f, start)) : [];
+  // The rest of the team's rounds in the same window, for coach comparisons only (scores: all of them; hole-level: those with their
+  // holes). DF-C-17 (owner, 16 Nov: take the recommendation): the player is left out, so the line is "Rest of team", never an
+  // average that includes the player it is set against.
+  const teamWin = coach ? teamIds.filter((id) => id !== input.playerId).flatMap((id) => roundsInFilter(counted(byPlayer.get(id) ?? []), f, start)) : [];
   const teamHole = holeRounds(teamWin);
   // The player's own cache rows and the teammates' (the comparisons' team column), one lookup as before.
   const cache = { byRound: new Map([...cacheOwn.byRound, ...cacheOthers.byRound]), error: cacheOwn.error || cacheOthers.error };
@@ -471,7 +477,9 @@ export async function loadPlayerProfile(input: {
   // a round posted as a total only: restated (stats-weight).
   const perRoundStats = detailFailed || !detail.stats ? null : perEighteen(detail.stats, winRounds);
   // GameMore's by-type row compares practice with tournament play, so its Practice cell keeps the uncut window on purpose.
-  const s = perRoundStats && practiceCut(f) ? withPracticeRow(perRoundStats, roundsInFilter(allMine, f, start)) : perRoundStats;
+  const practiceRow = perRoundStats && practiceCut(f) ? withPracticeRow(perRoundStats, roundsInFilter(allMine, f, start)) : perRoundStats;
+  // DF-C-02: the rates every layout prints (desktop comparisons, phone tiles, Game detail) are the round stats rows', one source.
+  const s = practiceRow ? withRoundRates(practiceRow, figureSetOver(winRounds, cacheOwn.byRound)) : null;
 
   // Strokes gained against the previous 10 matching rounds; only the newest-ten cut has one (not a range, not picked rounds).
   const prevList = previousInFilter(mine, f, start);
@@ -513,6 +521,8 @@ export async function loadPlayerProfile(input: {
     const b = band(label);
     return b && b.attempts >= 10 ? (b.made / b.attempts) * 100 : null;
   };
+  // A band's Tour rate at the distances its putts were from (SC-08, bandPutts); with no putts read, the row's own value.
+  const bandBench = (label: string) => band(label)?.bench ?? undefined;
   const prox = (label: string) => approach?.find((b) => b.label === label)?.value ?? null;
   const row = (
     group: string,
@@ -523,13 +533,13 @@ export async function loadPlayerProfile(input: {
     unit: ChComparison['unit'],
     digits: number,
     lowerIsBetter: boolean,
-    opts: { signed?: boolean; floor?: string; early?: string } = {},
+    opts: { signed?: boolean; floor?: string; early?: string; bench?: number | null } = {},
   ): ChComparison => ({
     label,
     group,
     you,
     team,
-    bench: benchMetric ? (bench.get(benchMetric) ?? null) : null,
+    bench: opts.bench !== undefined ? opts.bench : benchMetric ? (bench.get(benchMetric) ?? null) : null,
     unit,
     digits,
     lowerIsBetter,
@@ -570,11 +580,11 @@ export async function loadPlayerProfile(input: {
     row('Short game', 'Sand saves', sand.value, teamRate('sand_saves', 'sand_attempts'), 'scrambling_pct_sand', '%', 0, false, sand.opts),
     row('Putting', 'Putts per round', perPutts(holeWin, 'total_putts'), teamPerPutts('total_putts'), null, '', 1, true),
     row('Putting', '3-putts per round', perPutts(holeWin, 'three_putts'), teamPerPutts('three_putts'), null, '', 2, true),
-    row('Putting', 'Make 3–5 ft', makeRate('3–5 ft'), null, 'putts_made_3_5ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
-    row('Putting', 'Make 5–10 ft', makeRate('5–10 ft'), null, 'putts_made_5_10ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
-    row('Putting', 'Make 10–15 ft', makeRate('10–15 ft'), null, 'putts_made_10_15ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
-    row('Putting', 'Make 15–25 ft', makeRate('15–25 ft'), null, 'putts_made_15_25ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
-    row('Putting', 'Make 25+ ft', makeRate('25+ ft'), null, 'putts_made_25_plus_ft_pct', '%', 0, false, { floor: BAND_FLOOR }),
+    row('Putting', 'Make 3–5 ft', makeRate('3–5 ft'), null, 'putts_made_3_5ft_pct', '%', 0, false, { floor: BAND_FLOOR, bench: bandBench('3–5 ft') }),
+    row('Putting', 'Make 5–10 ft', makeRate('5–10 ft'), null, 'putts_made_5_10ft_pct', '%', 0, false, { floor: BAND_FLOOR, bench: bandBench('5–10 ft') }),
+    row('Putting', 'Make 10–15 ft', makeRate('10–15 ft'), null, 'putts_made_10_15ft_pct', '%', 0, false, { floor: BAND_FLOOR, bench: bandBench('10–15 ft') }),
+    row('Putting', 'Make 15–25 ft', makeRate('15–25 ft'), null, 'putts_made_15_25ft_pct', '%', 0, false, { floor: BAND_FLOOR, bench: bandBench('15–25 ft') }),
+    row('Putting', 'Make 25+ ft', makeRate('25+ ft'), null, 'putts_made_25_plus_ft_pct', '%', 0, false, { floor: BAND_FLOOR, bench: bandBench('25+ ft') }),
     row('Course management', 'Penalty strokes', per(holeWin, 'penalty_strokes'), teamPer('penalty_strokes'), 'penalty_rate_per_round', '', 1, true),
     row('Pressure', 'Pressure gap', pressure.gap, null, 'practice_tournament_delta', '', 1, true, { signed: true, floor: 'Needs 3 tournament or qualifier rounds and 3 practice rounds.' }),
     row('Pressure', 'Opening hole', opening?.delta ?? null, null, 'opening_hole_delta', '', 1, true, { signed: true, floor: 'Needs 5 rounds scored hole by hole.' }),
@@ -623,11 +633,11 @@ export async function loadPlayerProfile(input: {
     puttBands,
     extra: {
       // An 18-hole score and a 9-hole score are not the same best: each length is listed on its own.
-      bests: personalBests(winRounds.filter((r) => (r.holes_played ?? 18) === 18)),
-      bests9: winRounds.some((r) => r.holes_played === 9) ? personalBests(winRounds.filter((r) => r.holes_played === 9)) : null,
+      bests: personalBests(winRounds.filter((r) => (r.holes_played ?? 18) === 18), cacheOwn.byRound),
+      bests9: winRounds.some((r) => r.holes_played === 9) ? personalBests(winRounds.filter((r) => r.holes_played === 9), cacheOwn.byRound) : null,
       nineRounds: winRounds.filter((r) => r.holes_played === 9).length,
-      series: perRoundSeries(winRounds),
-      compare: windowCompare(winRounds, prevList),
+      series: perRoundSeries(winRounds, cacheOwn.byRound),
+      compare: windowCompare(winRounds, prevList, cacheOwn.byRound),
       pressure,
       opening,
       toughest,
@@ -707,11 +717,15 @@ export async function loadPlayerProfile(input: {
 async function attestingCoachName(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<string | null> {
   try {
     const staff = await supabase.from('golf_team_coach_staff').select('coach_id, is_primary').eq('team_id', teamId).limit(10);
+    // A failed read draws no attesting coach's name: reported, then the same null as "no coach".
+    if (staff.error) chLogServer('stats', 'attestingCoach', staff.error, 'teams');
     if (staff.error || !staff.data?.length) return null;
     const lead = [...staff.data].sort((a, b) => Number(!!b.is_primary) - Number(!!a.is_primary))[0]!;
     const coach = await supabase.from('golf_coaches').select('full_name').eq('id', lead.coach_id).maybeSingle();
+    if (coach.error) chLogServer('stats', 'attestingCoach', coach.error, 'teams');
     return coach.error ? null : coach.data?.full_name?.trim() || null;
-  } catch {
+  } catch (err) {
+    chLogServer('stats', 'attestingCoach', err, 'teams');
     return null;
   }
 }

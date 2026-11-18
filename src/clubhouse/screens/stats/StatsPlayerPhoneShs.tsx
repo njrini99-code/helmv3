@@ -567,13 +567,16 @@ function WhatChanged({ data }: { data: ChPlayerProfile }) {
       )}
       {bars.length > 0 && (
         <div className="ch-shs-cmp" aria-hidden="true" data-ch-stats-changed={bars[0]!.measure}>
-          {/* The bars are one measure and say which. */}
-          <div className="ch-shs-cmp-h">{measureName(bars[0]!.measure)}</div>
+          {/* The bars are one measure and say which; a figure that is not a rate is two dots, and says which way is better (CH-04). */}
+          <div className="ch-shs-cmp-h">
+            {measureName(bars[0]!.measure)}
+            {bars[0]!.width == null && ' · better to the right'}
+          </div>
           {bars.map((b) => (
             <div className="ch-shs-cmp-row" key={b.label}>
               <span className="k ch-num">{b.label}</span>
-              <span className="ch-shs-cmp-track">
-                <i className={`ch-shs-fill-${b.tone}`} style={{ width: `${formatFixed(b.width, 1)}%` }} />
+              <span className={'ch-shs-cmp-track' + (b.width == null ? ' is-dot' : '')}>
+                {b.width != null ? <i className={`ch-shs-fill-${b.tone}`} style={{ width: `${formatFixed(b.width, 1)}%` }} /> : <i className={`ch-shs-fill-${b.tone}`} style={{ left: `${formatFixed(b.at ?? 50, 1)}%` }} />}
               </span>
               <span className="v">{formatFixed(b.value)}{b.unit}</span>
             </div>
@@ -924,7 +927,7 @@ function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'sco
       coach && data.teamAvg != null ? (
         <div className="ch-shs-d-hero">
           <p className="ch-shs-d-hero__cap">
-            Team average <b className="ch-num">{formatAvg(data.teamAvg)}</b> · {label}
+            Rest of team <b className="ch-num">{formatAvg(data.teamAvg)}</b> · {label}
           </p>
         </div>
       ) : null

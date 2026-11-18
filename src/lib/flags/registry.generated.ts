@@ -523,6 +523,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Turn on only after the owner applies 20261020120000_golf_focus_area_prescription.sql (HELD.md row; the code treats the missing columns as not available, so the order is not a correctness issue) and runs npm run test:rls. Remove the flag and its checks once the Layout 5 verdict view ships and the verdict job has run stably for a month.",
   },
   {
+    feature_id: "golf_demo_refresh_v1",
+    owner: "golf/demo",
+    purpose: "Gates the daily cron /api/cron/golf-demo-refresh, which regenerates the demo team (Demo University Golf, DEMO_TEAM_ID only) for today in the team's zone and writes the difference through the generator's database functions (20261115211000): new and changed rows, and rows it wrote before that the team no longer has; rows it did not write are never touched. Reason: the demo shows a prospect a team whose season is in progress today, not frozen months ago. Off: the cron returns before it reads or writes anything. The manual script works with the flag off.",
+    type: "operations_kill_switch",
+    status: "active",
+    created_at: "2026-11-15",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: "Turning it off stops the daily refresh at its first line: the demo team keeps the rows of the last run and simply stops moving forward a day. Nothing else reads the flag. The owner turns it on or off; each run is recorded in background_job_logs (golf-demo-refresh) and admin_events.",
+    cleanup_plan: "No planned removal: it is the off switch for a job that writes the demo team every day.",
+  },
+  {
     feature_id: "golf_tournaments_v1",
     owner: "golf/clubhouse",
     purpose: "Draws the Clubhouse Tournaments pages (season home, event desk, review, history, comparison, link inbox, event form, lineup and live round) and their nav entry for coaches and players, and lets the tournament server actions run. Off: the routes answer not found and the nav entry is hidden.",

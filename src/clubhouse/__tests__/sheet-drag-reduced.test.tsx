@@ -47,7 +47,7 @@ describe('sheet drag under Reduce Motion (F-0018)', () => {
   });
 
   it('no sheet turns its drag off for reduced motion', () => {
-    const sites = ['ui/Modal.tsx', 'ui/FormSheet.tsx', 'shell/AccountSheet.tsx', 'shell/AskSheetBody.tsx', 'screens/coachhelm/chat/History.tsx'];
+    const sites = ['ui/Modal.tsx', 'ui/FormSheet.tsx', 'screens/coachhelm/chat/History.tsx'];
     for (const f of sites) {
       const src = readFileSync(join(process.cwd(), 'src/clubhouse', f), 'utf8');
       expect(src, f).toMatch(/useSheetDrag\([^)]*reduced[^)]*\)/);

@@ -1,4 +1,6 @@
 import { LazyMotion, domAnimation } from 'motion/react';
+import { expectLabelInName } from './label-in-name';
+import { roundSummary } from './round-row';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -225,8 +227,8 @@ describe('112401 Rounds library, on screen', () => {
     // The headline never breaks "18- / hole": a plain hyphen in a no-wrap span, since the font has no U+2011 (A23).
     await expectCode('CH-11302', /Your season starts with your first 18-hole round/);
     expect(code('CH-11302')!.querySelector('.ch-nowrap')?.textContent).toBe('18-hole');
-    const row = screen.getByRole('link', { name: 'Sep 9, Finley GC, 38 (+2)' });
-    expect(within(row).getByText('Holes').nextSibling!.textContent).toBe('9');
+    const row = screen.getByRole('link', { name: /^9 Wed Sep Finley GC .* \+2 38$/ });
+    expect(within(row).getByText('Holes').nextElementSibling!.textContent).toBe('9');
     expect(screen.getByText('Since August 1')).toBeTruthy();
   });
 
@@ -240,7 +242,7 @@ describe('112401 Rounds library, on screen', () => {
     expect(document.querySelector('[data-ch-code="CH-11303"]')!.getAttribute('data-ch-state')).toBe('filtered');
     await user.clear(search);
     await user.type(search, 'hope');
-    expect(screen.getAllByRole('link').map((g) => g.getAttribute('aria-label')).filter(Boolean)).toEqual(['Sep 18, Hope Valley CC, 71 (+1)', 'Sep 12, Hope Valley CC, 74 (+4)']);
+    expect(screen.getAllByRole('link').map(roundSummary).filter(Boolean)).toEqual(['Sep 18, Hope Valley CC, 71 (+1)', 'Sep 12, Hope Valley CC, 74 (+4)']);
   });
 
   it('110108 groups by month (newest first) or by course, each with its count and low', async () => {
@@ -260,17 +262,22 @@ describe('112401 Rounds library, on screen', () => {
   it('110107 a round under par is marked in red on its score only; a round that does not count says Not counted', () => {
     const nc = toLibraryRound({ ...previewRow(30, ['2026-09-01', 'Finley GC', 'Blue', 'practice', 40, 72, 20, [2, 14], 2, 20]) });
     show({ ...PREVIEW_ROUNDS_IDLE, rounds: { list: [...PREVIEW_ROUNDS_IDLE.rounds.list, nc!], error: false } });
-    const under = screen.getByRole('link', { name: 'Aug 18, Carolina GC, 69 (−3)' });
+    const under = screen.getByRole('link', { name: /^18 Tue Aug Carolina GC .* −3 69$/ });
     expect(under.querySelector('.ch-rd-sc__s')!.className).toContain('is-under');
-    expect(screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' }).querySelector('.ch-rd-sc__s')!.className).not.toContain('is-under');
-    expect(within(screen.getByRole('link', { name: 'Sep 1, Finley GC, 40 (−32)' })).getByText('Not counted')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /^26 Sat Sep Finley GC .* E 72$/ }).querySelector('.ch-rd-sc__s')!.className).not.toContain('is-under');
+    expect(within(screen.getByRole('link', { name: /^1 Tue Sep Finley GC .* −32 40$/ })).getByText('Not counted')).toBeTruthy();
   });
 
   it('CH-11702 CH-11801 each round is one named link to its review, silent as navigation is (A14)', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_IDLE);
-    const r = screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' });
+    const r = screen.getByRole('link', { name: /^26 Sat Sep Finley GC .* E 72$/ });
     expect(r.getAttribute('href')).toBe('/golf/dashboard/rounds/a0000000-0000-4000-8000-000000000001');
+    // MAC-09, PMAC-07 (Voice Control): no aria-label on any round; each is named by its face, from the day it shows.
+    for (const row of document.querySelectorAll('a.ch-rd-sc')) {
+      expect(row.hasAttribute('aria-label')).toBe(false);
+      expectLabelInName(row, row.querySelector('.ch-rd-sc__date b')!.textContent!);
+    }
     await user.click(r);
     expect(hapticSpy).not.toHaveBeenCalledWith('select');
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-rd-title');
@@ -412,7 +419,7 @@ describe('Rounds library: never a false empty or a wrong figure', () => {
     expect(code('CH-11201')).toBeNull();
     expect(code('CH-11301')).toBeNull();
     expect(screen.getByRole('searchbox')).toBeTruthy();
-    expect(screen.getAllByRole('link').filter((l) => /^Sep 26, Finley GC/.test(l.getAttribute('aria-label') ?? ''))).toHaveLength(1);
+    expect(screen.getAllByRole('link').filter((l) => /^Sep 26, Finley GC/.test(roundSummary(l) ?? ''))).toHaveLength(1);
   });
 
   it('a discarded card stays out of a refreshed page that still lists it, and a new card still comes in', async () => {

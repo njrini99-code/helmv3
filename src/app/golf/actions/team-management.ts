@@ -86,7 +86,9 @@ async function createAnnouncementImpl(data: {
       return { success: false, error: 'Failed to create announcement. Please try again.' };
     }
 
-    revalidatePath('/golf/dashboard/announcements');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
+    revalidatePath('/golf/dashboard/messages');
     updateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, data: { announcementId: announcement.id } };

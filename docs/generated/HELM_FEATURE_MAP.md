@@ -80,7 +80,7 @@ is a second thing to keep true.
 **Golf Round Lifecycle** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/hooks/golf/use-shot-tracking.ts`, `src/app/api/golf/rounds/**`, `src/app/golf/actions/round-submit.ts`, `src/app/golf/actions/round-partial.ts`, `src/app/golf/actions/saved-courses.ts` … and 37 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/hooks/golf/use-shot-tracking.ts`, `src/app/api/golf/rounds/**`, `src/app/api/cron/golf-demo-refresh/**`, `src/app/golf/actions/round-submit.ts`, `src/app/golf/actions/round-partial.ts` … and 47 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
 - **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md`, `memory/incidents/golf_round_lifecycle/INC-2026-10-20-round-start-retypes-empty-shell.md`
 - **Repair units:** `player-lookup-maybe-single-2026-09-25` (verified)
@@ -102,7 +102,7 @@ is a second thing to keep true.
 **Qualifiers** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/qualifiers.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/qualifiers/**`, `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`, `src/clubhouse/screens/qualifiers/**`, `src/clubhouse/data/qualifiers.ts`, `src/clubhouse/routes/qualifiers.tsx`, `src/app/golf/actions/qualifier-actions.ts` … and 12 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/qualifiers/**`, `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`, `src/clubhouse/screens/qualifiers/**`, `src/clubhouse/data/qualifiers.ts`, `src/clubhouse/routes/qualifiers.tsx`, `src/app/golf/actions/qualifier-actions.ts` … and 17 more in the registry
 - **Telemetry:** `qualifiers` (golfhelm, med), `my_qualifiers` (golfhelm, low)
 - **Incidents:** `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md`
 - **Repair units:** `qualifier-manual-close-only-2026-08-22` (verified_in_production)
@@ -124,7 +124,7 @@ is a second thing to keep true.
 **Stats And Analytics** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/stats-analytics.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/clubhouse/screens/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 29 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/clubhouse/screens/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 33 more in the registry
 - **Telemetry:** `stats_analytics` (golfhelm, high), `my_game_profile` (golfhelm, low)
 - **Incidents:** `memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md`
 - **Repair units:** `worst-hole-indexed-read-2026-10-05` (verified_in_production)
@@ -170,8 +170,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/team-communications.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/clubhouse/screens/messages/**`, `src/clubhouse/styles/messages.css`, `src/app/actions/messages.ts`, `src/app/golf/actions/messages.ts`, `src/app/golf/actions/message-attachments.ts` … and 50 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
-- **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`, `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md`
-- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified), `conversation-rail-deadline-abort-2026-10-07` (verified), `last-read-deadline-abort-2026-10-13` (released)
+- **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`, `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md`, `memory/incidents/team_communications/INC-2026-11-15-thread-day-key-collision.md`
+- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified), `conversation-rail-deadline-abort-2026-10-07` (verified), `last-read-deadline-abort-2026-10-13` (released), `thread-day-key-collision-2026-11-15` (verified)
 - **History:** `memory/ledgers/changes/team_communications.md`, `memory/ledgers/tests/team_communications.md`
 
 ## `team_operations`
@@ -190,7 +190,7 @@ is a second thing to keep true.
 **Roster And Team** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/roster-team.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/app/api/golf/players/**`, `src/app/golf/actions/roster.ts`, `src/app/golf/actions/team-management.ts`, `src/app/golf/actions/teams.ts` … and 10 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/app/api/golf/players/**`, `src/app/golf/actions/roster.ts`, `src/app/golf/actions/team-management.ts`, `src/app/golf/actions/teams.ts` … and 15 more in the registry
 - **Telemetry:** `roster_management` (golfhelm, med), `team_info` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

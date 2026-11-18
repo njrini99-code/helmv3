@@ -231,14 +231,14 @@ export default function LiftingForgotPasswordPage() {
           {!success && (
             <p className="text-center mt-6 text-warm-600 text-sm">
               Remember your password?{' '}
-              <Link href="/lifting/login" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
+              <Link href="/lifting/login" className="py-3 text-primary-600 font-semibold hover:text-primary-700 transition-colors">
                 Sign in
               </Link>
             </p>
           )}
 
           <p className="text-center mt-4 text-warm-500 text-sm">
-            <Link href="/" className="hover:text-warm-700 transition-colors">
+            <Link href="/" className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg">
               ← Back to HelmLabs
             </Link>
           </p>

@@ -8,8 +8,7 @@ import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Button, IconButton } from '../../ui/Button';
 import { PhoneIconAction } from '../../ui/PhoneBar';
-import { MenuSheet } from '../../ui/ContextMenu';
-import type { MenuItem } from '../../ui/Menu';
+import { Menu, type MenuItem } from '../../ui/Menu';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { ScrollPager } from '../../ui/ScrollPager';
 import { Segmented } from '../../ui/Segmented';
@@ -20,7 +19,7 @@ import { useChClock } from '../../lib/use-clock';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { claimTouch } from '../../lib/touch-claim';
 import type { PeekLift } from '../../ui/Peek';
-import { DayTimeline, flipFrom, rectsOf, usePhoneDayDrag } from './day-timeline';
+import { DayTimeline, flipFrom, holdCardStill, rectsOf, usePhoneDayDrag } from './day-timeline';
 import type { ChMoveTarget } from './drag-model';
 import { EventPeek } from './peek';
 import { MarkBadge, MovedAwayRow, useRowMark } from './change-note';
@@ -106,7 +105,6 @@ export function CalendarPhone({
     haptic('select');
     onView(view, now.date);
   };
-  const [moreOpen, setMoreOpen] = useState(false);
 
   return (
     <main className="ch-calm" aria-label="Calendar">
@@ -141,12 +139,12 @@ export function CalendarPhone({
                 { value: 'list', label: 'List' },
               ]}
             />
-            {/* Row 81: the coach's More, beside the view switch; the top bar keeps its one action, New event (B10.1). */}
-            {!!more?.length && <IconButton icon={Ellipsis} label="More" className="ch-calm-more" onClick={() => setMoreOpen(true)} />}
+            {/* Row 81: the coach's More, beside the view switch; the top bar keeps its one action, New event (B10.1). Two
+                items: a menu anchored to the key, not a sheet with a title, a grab and a Close (CALMORE-03, S3.5). */}
+            {!!more?.length && <Menu label="More" items={more} trigger={(t) => <IconButton icon={Ellipsis} label="More" className="ch-calm-more" menu={t} />} />}
           </span>
         </span>
       </header>
-      {more && <MenuSheet open={moreOpen} title="Calendar" label="More" items={more} onClose={() => setMoreOpen(false)} />}
       {notices}
       {data.eventsError &&
         (pv === 'day' ? (
@@ -511,12 +509,16 @@ function DayPage({
                   <button
                     type="button"
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '') + (lift ? ' is-movable' : '') + (liftedId === e.id ? ' is-lifted' : '')}
+                    ref={lift ? holdCardStill : undefined}
                     onTouchStart={lift ? () => claimTouch('pending') : undefined}
-                    aria-label={`${roundLabel(e, title).name}${roundLabel(e, title).spokenRound}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${clash ? `, ${clash.charAt(0).toLowerCase()}${clash.slice(1)}` : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}`}
                     // D-70: opening an event is plain navigation, so it is silent (F-0071).
                     onClick={() => onOpen(e.id, e.date)}
                   >
-                    <span className="ch-calm-ev__t ch-num">
+                    {/* SWP-03 (WCAG 2.5.3 Label in Name): the row is named by the title it shows, then hidden words with its
+                        time and state. An aria-label named it in other words than its face ("6:30 7:30 Strength Weight
+                        room"), which axe and Voice Control could not match. The time, the line under the title and the
+                        badge are for the eye (aria-hidden); the hidden words say them. */}
+                    <span className="ch-calm-ev__t ch-num" aria-hidden="true">
                       {startLabel(e, false, clock)}
                       {!e.allDay && <em>{fmtHour(e.end!, false, clock)}</em>}
                     </span>
@@ -526,10 +528,13 @@ function DayPage({
                     </span>
                     <span className="ch-calm-ev__b">
                       <b>{title}</b>
+                      <span className="ch-sr-only">{`${roundLabel(e, title).spokenRound}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${clash ? `, ${clash.charAt(0).toLowerCase()}${clash.slice(1)}` : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}`}</span>
                       {/* A class's code is already in its title ("Priya · STAT 201"), so its line names only the room. */}
-                      <span className={mark?.sub ? 'ch-calm-ev__sub' : undefined}>{mark?.sub ?? (block && e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : [roundLabel(e, title).caption, e.location].filter(Boolean).join(' · '))}</span>
+                      <span className={mark?.sub ? 'ch-calm-ev__sub' : undefined} aria-hidden="true">
+                        {mark?.sub ?? (block && e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : [roundLabel(e, title).caption, e.location].filter(Boolean).join(' · '))}
+                      </span>
                       {clash && (
-                        <span className="ch-calm-ev__clash">
+                        <span className="ch-calm-ev__clash" aria-hidden="true">
                           <Icon icon={TriangleAlert} size={13} />
                           {clash}
                         </span>
@@ -537,14 +542,20 @@ function DayPage({
                     </span>
                     {reply ? (
                       // The reply is the action on this row; an overlap reads on its own line under the place.
-                      <Badge tone="warning">Reply</Badge>
+                      <Badge tone="warning" decorative>
+                        Reply
+                      </Badge>
                     ) : e.cancelled ? (
-                      <Badge tone="warning">Cancelled</Badge>
+                      <Badge tone="warning" decorative>
+                        Cancelled
+                      </Badge>
                     ) : mark ? (
                       // A live event that moved shows Moved, not Now, until Got it (P-14).
-                      <MarkBadge change={mark.change} />
+                      <MarkBadge change={mark.change} decorative />
                     ) : live ? (
-                      <Badge tone="accent">Now</Badge>
+                      <Badge tone="accent" decorative>
+                        Now
+                      </Badge>
                     ) : null}
                   </button>
                 </EventPeek>

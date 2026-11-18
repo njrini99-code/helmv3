@@ -74,10 +74,10 @@ coach, events or not, the week above it once there are some), and a player with
 no round gets it with nothing on the calendar (20412, D-71); with the team's
 events, that player's loaded page keeps the week and shows the welcome in place
 of the rounds. The coach first run's Invite players opens Roster with its invite
-sheet (`/golf/dashboard/roster?invite=1`, P003 30102). Every
-link Home hands out is 20103. Home reads no Clubhouse query parameter: the
-Fairway dashboard's `?range=` is ignored here, and there is no deep link into
-Home.
+sheet (`/golf/dashboard/roster?invite=1`, P003 30102). Every link Home hands out
+is 20103. Home reads one query parameter: `?range=`, Team scoring's window (Last
+10, Season or All time, 2026-11-15; `data/span.ts`). There is no deep link into
+an item on Home.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -263,20 +263,20 @@ is the browser's, not tested here.
 | 20701 | CH-2970 | `THE_SHEET_IS_OPEN_WHILE_OFFLINE` | The sheet is open while offline |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
 Status: DEFINED
 
 Which Home a viewer gets (20801). `/golf/dashboard` is one address for both
-roles. A signed-in coach with `golf_clubhouse_ui` on gets Coach Home, a
-signed-in player with it on gets Player Home, and with the flag off each gets
-the existing GolfHelm dashboard (the shell's gate, 10801; the per-role
-navigation is 10802). A session holding both a coach and a player profile is
-treated as a coach: the coach branch runs first, so that session never reaches
-Player Home, even with the coach flag off. No session is sent to sign in, and a
-session with neither profile to sign up.
+roles. A signed-in coach gets Coach Home and a signed-in player gets Player Home
+(the shell's gate, 10801; the per-role navigation is 10802). Since 2026-11-14
+there is no flag and no Fairway dashboard to fall back to. A session holding
+both a coach and a player profile follows the dashboard layout's role
+(`getGolfDashboardRole`): it is a coach unless that role is player (an
+unfinished coach profile beside an onboarded player one). No session is sent to
+sign in, and a session with neither profile to sign up.
 
 Which team (20802). Neither Home takes a team from the address. The coach's team
 is the active team the request resolves (`resolveCoachActiveTeamIdForRequest`;
@@ -499,8 +499,8 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
-11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
-11824 CH-1842, 11825 CH-1816, 11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11824 CH-1842, 11825 CH-1816,
+11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
 
 ## 19 — Responsive layout
 

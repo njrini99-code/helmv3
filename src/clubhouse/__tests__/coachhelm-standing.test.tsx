@@ -37,6 +37,7 @@ import { breakBias, penalties, slope } from '../preview/fixtures-coachhelm';
 import { figure, groupOf, MIN_PROJECTION_ROUNDS, toChStanding, versus } from '../data/coachhelm-standing-shape';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { underSwitch } from '../screens/coachhelm/__tests__/under-switch';
 import {
   PREVIEW_STANDING,
   PREVIEW_STANDING_EARLY,
@@ -277,6 +278,25 @@ describe('the standing rows as the page draws them', () => {
   });
 });
 
+/**
+ * This season's rounds behind the scoring average (SC-01): 18-hole tournament rounds with both nines on the season's first day,
+ * so every one counts, whatever today is. Five of them average 77.2.
+ */
+const seasonRounds = (scores: number[] = [77, 77, 77, 78, 77]) => ({
+  data: scores.map((score, i) => ({
+    id: `sr${i}`,
+    player_id: 'pl-jonah',
+    round_date: seasonStartDate(new Date(), 'America/New_York'),
+    total_score: score,
+    score_to_par: score - 72,
+    front_nine: Math.ceil(score / 2),
+    back_nine: Math.floor(score / 2),
+    holes_played: 18,
+    status: 'completed',
+    round_type: 'tournament',
+  })),
+});
+
 describe('the loader reads the signed-in player’s own standing, and says when it could not', () => {
   const rows = (id: string): PlayerStanding[] => STANDING_ROWS.map((r) => ({ ...r, player_id: id }));
   const map = (list: PlayerStanding[]) => new Map(list.map((r) => [r.metric_id, r]));
@@ -288,7 +308,37 @@ describe('the loader reads the signed-in player’s own standing, and says when 
         filters.push(f);
         return { data: { rounds_played: 14, scoring_average: 77.2 } };
       },
+      golf_rounds: seasonRounds(),
     };
+  });
+
+  it('SC-01 the scoring average is this season’s rounds, never the lifetime cache’s, and says how many rounds it rests on', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    // Production's lifetime row still counts test rounds (a 37 among them): it says 74.1; this season's six rounds say 78.0.
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 74.1 } }, golf_rounds: seasonRounds([78, 78, 78, 78, 78, 78]) };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data).toMatchObject({ state: 'ready', scoringAverage: '78.0', scoringRounds: 6, rounds: 14, baselineFailed: false });
+    render(wrap(<Standing load={standingLoad(out.data)} />));
+    expect(screen.getByText(/^Rounds on file · 14 rounds · Scoring average 78\.0 this season, 6 rounds/)).toBeTruthy();
+  });
+
+  it('SC-01 under five rounds this season is an early read, whatever the lifetime row holds', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 40, scoring_average: 74.1 } }, golf_rounds: seasonRounds([78, 79, 80]) };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data).toMatchObject({ state: 'early', scoringAverage: null, scoringRounds: 3 });
+    render(wrap(<Standing load={standingLoad(out.data)} />));
+    expect(document.querySelector('.ch-hs-early')!.textContent).toMatch(/^3 rounds this season, so this is an early read/);
+  });
+
+  it('SC-01 a season that does not read fails the scoring average, as a failed cache row does', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 77.2 } }, golf_rounds: { error: { message: 'boom' } } };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data).toMatchObject({ baselineFailed: true, scoringAverage: null });
   });
 
   it('ready: the standing map for the player id it was given, and their own cache row, filtered to that id', async () => {
@@ -318,7 +368,32 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     expect(out.data.groups.flatMap((g) => g.rows).find((r) => r.id === 'gir_pct')!.rounds).toBe(13);
   });
 
-  it('while the season table is not deployed, the lifetime map, labelled "All time" and with no row counts', async () => {
+  it('DF-P-05: the lifetime map is "Rounds on file", never "All time", and says when it counts the player’s test rounds', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    const rounds = seasonRounds([78, 78, 78, 78, 78, 78]);
+    const withTests = (f: Array<[string, unknown[]]>) => (f.some(([k, a]) => k === 'eq' && a[0] === 'is_test') ? { count: 2 } : rounds);
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 74.1 } }, golf_rounds: withTests };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data.window).toEqual({ kind: 'all_time', label: 'Rounds on file', since: null, testRounds: true });
+    render(wrap(<Standing load={standingLoad(out.data)} />));
+    expect(screen.getByText(/^Rounds on file · test rounds included · 14 rounds/)).toBeTruthy();
+    expect(document.body.textContent).not.toContain('All time');
+    // The pressure rows are the last 90 days, and their group says so.
+    expect(out.data.groups.find((g) => g.id === 'pressure')?.description ?? 'last 90 days').toContain('last 90 days');
+  });
+
+  it('DF-P-05: no test round on file, or a failed read of them, says nothing about test rounds', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    const rounds = seasonRounds([78, 78, 78, 78, 78, 78]);
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 14 } }, golf_rounds: (f) => (f.some(([k, a]) => k === 'eq' && a[0] === 'is_test') ? { error: { message: 'timeout' } } : rounds) };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data.window.testRounds).toBeUndefined();
+    expect(logServer).toHaveBeenCalledWith('coachhelm', 'standing.test_rounds', expect.anything(), 'coachhelm');
+  });
+
+  it('while the season table is not deployed, the lifetime map, labelled "Rounds on file" and with no row counts', async () => {
     standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
     expect(out.status).toBe('ready');
@@ -375,6 +450,7 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
     tables.current = {
       golf_player_stats_cache: { data: { rounds_played: 10, scoring_average: 77.2, putt_attempts_3_5ft: 24, putt_attempts_5_10ft: 0, putt_attempts_10_15ft: 31, sand_attempts: 12 } },
+      golf_rounds: seasonRounds(),
     };
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
     if (out.status !== 'ready') throw new Error('not ready');
@@ -545,8 +621,9 @@ describe('the Standing screen', () => {
 
   it('CH-13204 a section that crashes while drawing is contained: the page’s head and view strip stay, and it says so', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    // A ladder that can't be read throws inside the standing's own boundary only.
-    show(standingLoad({ ...PREVIEW_STANDING, ladder: null as never }));
+    // A ladder that can't be read throws inside the standing's own boundary only. The page as the route composes it: the switch is
+    // the route's, above the view (N13P-18, production audit 2026-11-15 P1-19).
+    render(wrap(underSwitch('standing', <Standing load={standingLoad({ ...PREVIEW_STANDING, ladder: null as never })} />)));
     await waitFor(() => expect(code('CH-13204')).not.toBeNull());
     expect(code('CH-13204')!.textContent).toMatch(/couldn’t be shown/);
     expect(screen.getByRole('heading', { level: 1, name: 'Standing' })).toBeTruthy();
@@ -590,7 +667,7 @@ describe('the Standing screen', () => {
     show(standingLoad(toChStanding(STANDING_ROWS, ok)));
     const life = screen.getByRole('heading', { name: 'Greens in regulation' }).closest('li')!;
     expect(life.querySelector('.ch-hs-n')).toBeNull();
-    expect(screen.getByText('All time · 14 rounds · Scoring average 77.2, practice included · Refreshed Sep 29')).toBeTruthy();
+    expect(screen.getByText('Rounds on file · 14 rounds · Scoring average 77.2, practice included · Refreshed Sep 29')).toBeTruthy();
   });
 
   it('the track is decoration, hidden from assistive tech: every number is in the text beside it', () => {
@@ -620,7 +697,7 @@ describe('the Standing screen', () => {
     expect(code('CH-13371')!.textContent).toBe('3 rounds so far, so this is an early read. Projections start at 5 rounds.');
     expect(document.querySelector('.ch-hs-proj')).toBeNull();
     expect(screen.queryByText('Most to gain')).toBeNull();
-    expect(screen.getByText('All time · 3 rounds · Refreshed Sep 29').textContent).toBe('All time\u00a0· 3 rounds\u00a0· Refreshed Sep\u00a029');
+    expect(screen.getByText('Rounds on file · 3 rounds · Refreshed Sep 29').textContent).toBe('Rounds on file\u00a0· 3 rounds\u00a0· Refreshed Sep\u00a029');
   });
 
   it('CH-13371 the early notice names the team floor only where a row is short of teammates', () => {
@@ -669,12 +746,12 @@ describe('the Standing screen', () => {
     expect(code('CH-13930')).toBeNull();
   });
 
-  it('CH-13470 loading: the page’s own shape, busy and named, with the sub-navigation’s place held', () => {
+  it('CH-13470 loading: the page’s own shape, busy and named; the switch is not in it (the route holds it above the view, N13P-18)', () => {
     render(wrap(<StandingSkeleton />));
     const main = screen.getByRole('main', { name: 'Loading your standing' });
     expect(main.getAttribute('aria-busy')).toBe('true');
     expect(code('CH-13470')).not.toBeNull();
-    expect(main.querySelector('.ch-hv-sk-tabs')).not.toBeNull();
+    expect(main.querySelector('.ch-hv-sk-tabs')).toBeNull();
     expect(main.querySelectorAll('.ch-hs-sk__g').length).toBeGreaterThanOrEqual(3);
   });
 
@@ -728,7 +805,8 @@ describe('the Standing screen', () => {
 
   it('on the phone it is its own layout: the same page under the top bar, the views as chips', () => {
     phoneState.on = true;
-    show();
+    // The chips are the route's switch, a row above the view (N13P-18).
+    render(wrap(underSwitch('standing', <Standing load={standingLoad(PREVIEW_STANDING)} />)));
     expect(document.querySelector('.ch-hl.is-phone')).not.toBeNull();
     expect(document.querySelector('.ch-hv-tabs.is-phone .ch-hv-chips')).not.toBeNull();
   });

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { getDemoSessions } from '@/app/golf/actions/demo-tracking';
 import { IconUsers, IconChevronRight, IconActivity } from '@/components/icons';
 
-export const metadata = { title: 'Demo Sessions' };
+export const metadata = { title: 'Demo sessions' };
 
 // Admin data is per-request (cookies + live session rows). Without this,
 // build/ISR prerender attempts throw DYNAMIC_SERVER_USAGE inside

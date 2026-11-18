@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -15,7 +15,7 @@ vi.mock('@/app/golf/actions/coachhelm-corrections', () => ({ recordCoachHelmCorr
 vi.mock('@/app/golf/actions/insights-coachhelm', () => ({ refreshTeamAnalysisAsCoach: vi.fn() }));
 vi.mock('@/app/golf/actions/coachhelm-course-plan', () => ({ getCoursePlan: vi.fn(), getMyCoursePlan: vi.fn(), listCoursePlanCourses: vi.fn(), listMyCoursePlanCourses: vi.fn() }));
 
-import { ToastProvider } from '../ui/Toast';
+import { CH_TOAST_ACTION_MS, ToastProvider } from '../ui/Toast';
 import { previewReadHead, previewReadView } from '../preview/fixtures-coachhelm-read';
 import type { ChReadWrites } from '../screens/coachhelm/read/actions';
 import { ReadPage } from '../screens/coachhelm/read/ReadPage';
@@ -47,17 +47,24 @@ describe('Remove focus on a read, refused (CH-13008)', () => {
             writes={{ assign: ok, dismiss: ok, undo: ok }}
             playerWrites={{ accept: ok, decline: ok }}
             readWrites={readWrites}
-            holdMs={40}
             hrefOf={(id: string) => `/read/${id}`}
           />
         </ToastProvider>
       </LazyMotion>,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Remove focus' }));
-    await waitFor(() => expect(readWrites.removeFocus).toHaveBeenCalledWith('fa-read'), { timeout: 4000 });
-    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13008"]')?.textContent).toContain('It is still in place. Try again.'), { timeout: 4000 });
-    expect(screen.getByRole('main').getAttribute('data-ch-read-state')).toBe('assigned');
-    expect(screen.getByRole('button', { name: 'Remove focus' })).toBeTruthy();
-    expect(router.refresh).not.toHaveBeenCalled();
+    // Every Undo window is ten seconds (NP-06): a fake clock that also moves with real time jumps past it.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'], shouldAdvanceTime: true });
+    try {
+      await userEvent.click(screen.getByRole('button', { name: 'Remove focus' }));
+      act(() => vi.advanceTimersByTime(CH_TOAST_ACTION_MS));
+      await waitFor(() => expect(readWrites.removeFocus).toHaveBeenCalledWith('fa-read'));
+      await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13008"]')?.textContent).toContain('It is still in place. Try again.'));
+      expect(screen.getByRole('main').getAttribute('data-ch-read-state')).toBe('assigned');
+      expect(screen.getByRole('button', { name: 'Remove focus' })).toBeTruthy();
+      expect(router.refresh).not.toHaveBeenCalled();
+    } finally {
+      await vi.runOnlyPendingTimersAsync();
+      vi.useRealTimers();
+    }
   });
 });

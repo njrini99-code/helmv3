@@ -444,6 +444,8 @@ features:
       flows:
         - docs/features/SHOT_TRACKING_DATA_FLOW.md
         - docs/features/SHOT_TRACKING_VERIFICATION.md
+        # The generated demo team (src/lib/golf/demo, launch readiness DD-01).
+        - memory/features/golf-demo-team.md
       ui:
         - memory/projects/golfhelm.md
       business_logic:
@@ -459,6 +461,7 @@ features:
         - src/hooks/golf/use-shot-tracking.ts
       api:
         - src/app/api/golf/rounds/**
+        - src/app/api/cron/golf-demo-refresh/**
       actions:
         # golf.ts was split by domain (plan phase 7a); round-submit.ts and
         # round-partial.ts are also covered by the round-*.ts glob below.
@@ -474,6 +477,11 @@ features:
         - src/lib/golf/**
         - src/lib/coachhelm/v2/post-round-trigger.ts
         - scripts/coachhelm-prewarm-round-reviews.ts
+        # The demo team generator's scripts and owner SQL.
+        - scripts/golf-demo-refresh.ts
+        - scripts/verify-golf-demo-coverage.ts
+        - scripts/sql/golf-demo-cleanup.sql
+        - scripts/sql/strip-demo-seed-tags.sql
       db:
         - supabase/migrations/*golf_round*.sql
         - supabase/migrations/*golf_shot*.sql
@@ -494,6 +502,11 @@ features:
         - supabase/migrations/*ingest_external_round*.sql
         - supabase/migrations/*stranded_predictions*.sql
         - supabase/migrations/*golf_demo_sessions*.sql
+        # Demo team generator, write guard and is_test (held).
+        - supabase/migrations/*golf_demo_generator*.sql
+        - supabase/migrations/*golf_demo_write_guard*.sql
+        - supabase/migrations/*golf_demo_owner_editors*.sql
+        - supabase/migrations/*golf_messages_events_is_test*.sql
         - supabase/migrations/*preserve_golf_history*.sql
         - supabase/migrations/*preserve_started_round*.sql
         - supabase/migrations/*single_flight*.sql
@@ -510,6 +523,7 @@ features:
         - src/app/golf/actions/__tests__/golf-schemas.test.ts
         - src/test/coachhelm/v2/post-round-trigger.test.ts
         - e2e/golf-round.spec.ts
+        - supabase/tests/rls/golf_demo_*.sql
     integrations:
       - supabase
       - coachhelm_ai
@@ -615,9 +629,11 @@ features:
         - src/app/golf/actions/v3/qualifying.ts
         - src/app/golf/actions/qualifier-progress.ts
         - src/app/golf/actions/qualifier-setup.ts
+        - src/app/golf/actions/qualifier-exemptions.ts
       services:
         - src/lib/coachhelm/v3/qualifying/**
         - src/lib/golf/qualifier-selection-reasons.ts
+        - src/lib/golf/qualifier-exemptions.ts
       db:
         - supabase/migrations/*qualifier*.sql
       tests:
@@ -626,6 +642,9 @@ features:
         - src/app/golf/actions/__tests__/qualifier-setup.test.ts
         - src/clubhouse/__tests__/qualifiers.test.tsx
         - supabase/tests/rls/golf_qualifier_db_hardening.sql
+        - src/clubhouse/__tests__/qualifier-f06.test.tsx
+        - src/app/golf/actions/__tests__/qualifier-exemptions.test.ts
+        - supabase/tests/rls/golf_qualifier_exemptions.sql
     integrations:
       - supabase
       - coachhelm_ai
@@ -801,6 +820,13 @@ features:
         - supabase/migrations/*pressure_gate*.sql
         - supabase/migrations/*standing_pressure_gap*.sql
         - supabase/migrations/*_standards.sql
+        # Stats audit 2026-11-15 (PR #2536, held): sand saves on the Tour
+        # definition, cited Tour standards, one GIR rule.
+        - supabase/migrations/*golf_sand_save*.sql
+        - supabase/migrations/*golf_pga_standards*.sql
+        - supabase/migrations/*golf_one_gir_rule*.sql
+        # Scrambling counts sand saves (2026-11-16, held).
+        - supabase/migrations/*golf_scrambling_counts_sand_saves*.sql
       tests:
         - src/app/golf/actions/__tests__/stats-data.test.ts
         - src/clubhouse/data/__tests__/stats-reads.test.ts
@@ -1277,8 +1303,10 @@ features:
         - src/app/golf/actions/player-profile-stats.ts
         - src/app/golf/actions/team-switcher.ts
         - src/app/golf/actions/team-switcher.constants.ts
+        - src/app/golf/actions/roster-limit.ts
       services:
         - src/lib/auth/**
+        - src/lib/golf/roster-limit.ts
       db:
         - supabase/migrations/*team*.sql
         - supabase/migrations/*coach_staff*.sql
@@ -1288,8 +1316,12 @@ features:
         - supabase/migrations/*organizations*.sql
         # Roster availability: the coach-only reason (held, 2026-10-22).
         - supabase/migrations/*availability_coach_notes*.sql
+        # F-05 roster limit and exemptions (held, 2026-11-16).
+        - supabase/migrations/*golf_roster_limits*.sql
       tests:
         - src/app/golf/actions/__tests__/dashboard-data.test.ts
+        - src/app/golf/actions/__tests__/roster-limit.test.ts
+        - src/lib/golf/__tests__/roster-limit.test.ts
     integrations:
       - supabase
       - team_access_control

@@ -41,6 +41,14 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
     return true;
   };
   const skip = (el: Element) => !!el.closest('nextjs-portal, script, style, template, [data-ch-gate-skip], .ch-sr-only:not(:focus)');
+  // The words a person sees: a screen reader's name (.ch-sr-only) is in textContent but takes no room on the page (CRH-3, the
+  // week strip's "Thursday 12 November, today" behind "T 12").
+  const shownText = (el: Element) => {
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let text = '';
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) if (!n.parentElement?.closest('.ch-sr-only:not(:focus)')) text += n.textContent ?? '';
+    return text.trim();
+  };
   const isCard = (el: Element) => {
     if (el instanceof SVGElement || /^(BUTTON|A|INPUT|SELECT|TEXTAREA|LABEL|IMG|SPAN|LI|TR|TD|TH|DIALOG|MAIN|BODY|HTML)$/.test(el.tagName)) return false;
     if (el.getAttribute('role') === 'button' || el.getAttribute('role') === 'dialog') return false;
@@ -106,7 +114,7 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
         const range = document.createRange();
         range.selectNodeContents(el);
         const lines = new Set(Array.from(range.getClientRects()).filter((b) => b.width > 0 && b.height > 0).map((b) => Math.round(b.bottom / 4))).size;
-        const words = (el.textContent ?? '').trim().split(/\s+/).length;
+        const words = shownText(el).split(/\s+/).length;
         if (lines >= 3 && words >= lines && words / lines < 3) add('cramped-text', el, `${words} words on ${lines} lines, ${r.width.toFixed(0)} wide`);
       }
     }
@@ -115,7 +123,7 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
     if (args.phone && !(el instanceof SVGElement) && getComputedStyle(el).display.endsWith('grid')) {
       const cols = getComputedStyle(el).gridTemplateColumns.split(' ').filter((t) => /px$/.test(t)).length;
       const kids = Array.from(el.children).filter((c) => visible(c));
-      const wordy = kids.find((c) => (c.textContent ?? '').trim().split(/\s+/).length >= 8 && c.getBoundingClientRect().width < 180);
+      const wordy = kids.find((c) => shownText(c).split(/\s+/).length >= 8 && c.getBoundingClientRect().width < 180);
       if (cols >= 2 && wordy) add('cramped-text', el, `${cols} columns, ${wordy.getBoundingClientRect().width.toFixed(0)} wide, holding sentences`);
     }
 

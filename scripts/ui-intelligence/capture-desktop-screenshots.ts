@@ -1,4 +1,9 @@
 /**
+ * SUPERSEDED (15 Nov 2026): `scripts/screens/list.mjs` lists every screen of every product from the filesystem and
+ * `scripts/screens/sweep.mjs` opens each in WebKit and Chromium into one gallery. This golf-only, hand-kept, Fairway-era
+ * pipeline stays until the owner decides to delete it; it refuses production (scripts/lib/production-site-guard.mjs).
+ */
+/**
  * capture-desktop-screenshots.ts
  *
  * Captures full-page desktop (1440x900) screenshots for every enabled route in
@@ -16,8 +21,11 @@ config({ path: '.env' });
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { refuseProduction } from '../lib/production-site-guard.mjs';
 
 const BASE = process.env.GOLFHELM_BASE_URL || 'http://localhost:3000';
+// It signs in as a player and a coach from .env.local, and a signed-in page writes on open: never production by accident.
+refuseProduction({ what: 'ui:screenshots (capture-desktop-screenshots.ts)', baseUrl: BASE, supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL });
 
 // Per-route navigation timeout (ms). Override for heavy SSR pages on a cold
 // dev server, e.g. UI_GOTO_TIMEOUT=120000.

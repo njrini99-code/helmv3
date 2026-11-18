@@ -393,7 +393,8 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(screen.getByText('Sophomore · Class of 2029')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=jonah');
     expect(screen.getByRole('link', { name: 'Plan 1:1' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1&with=jonah');
-    expect(screen.getByRole('link', { name: 'All 21 rounds this season' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=jonah&window=season&tab=rounds');
+    // DF-C-05: "All N" counts nine-hole rounds too, so the list it opens shows both lengths.
+    expect(screen.getByRole('link', { name: 'All 21 rounds this season' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=jonah&window=season&holes=all&tab=rounds');
     // Real facts only (D-51): no birthday, home course or major.
     expect(screen.getByText('Hometown')).toBeTruthy();
     expect(screen.queryByText(/Birthday|Home course/)).toBeNull();
@@ -655,8 +656,9 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
   it("32401 this file and the player roster's file name every Roster catalog code they force, in a test title", () => {
     const self = fileURLToPath(import.meta.url);
     const catalog = readFileSync(resolve(dirname(self), '../../../docs/clubhouse/catalog/roster.md'), 'utf8');
-    // The player's roster (CH-3210, CH-3211, CH-3307, CH-3308) is tested in its own file, and so is inviting by email (CH-3080, CH-3180).
-    const titles = [self, resolve(dirname(self), 'roster-player.test.tsx'), resolve(dirname(self), 'roster-invite-email.test.tsx')]
+    // The player's roster (CH-3210, CH-3211, CH-3307, CH-3308) is tested in its own file, and so are inviting by email (CH-3080,
+    // CH-3180) and the roster limit (F-05: CH-3081, CH-3082, CH-3283).
+    const titles = [self, resolve(dirname(self), 'roster-player.test.tsx'), resolve(dirname(self), 'roster-invite-email.test.tsx'), resolve(dirname(self), 'roster-limit.test.tsx')]
       .flatMap((file) => readFileSync(file, 'utf8').split('\n'))
       .filter((line) => /^\s*(it|describe)\(/.test(line))
       .join('\n');
@@ -956,13 +958,16 @@ describe('Roster · the redesigned screens: changes, failures and edge states', 
     expect(code('CH-3305')!.closest('.ch-surface')!.querySelector('svg.ch-formline, .ch-rsx-chart svg')).toBeNull();
   });
 
-  it('CH-3212 when CoachHelm\u2019s counts did not load the profile shows dashes and says so, never zero or "No reads yet"', () => {
+  it('CH-3212 when CoachHelm\u2019s counts did not load the profile says so in one line with Try again, never a dash in a sentence, zero or "No reads yet" (GAP-S-09)', () => {
     phone(PREVIEW_ROSTER_HELM_FAILED);
     expect(code('CH-3212')).not.toBeNull();
-    expect(code('CH-3212')!.textContent).toMatch(/— costing strokes · — working/);
-    expect(screen.getByText(/Didn’t load\. Refresh to try again\./)).toBeTruthy();
-    expect(code('CH-3212')!.textContent).not.toMatch(/No reads yet/);
-    expect(code('CH-3212')!.textContent).not.toMatch(/\b0 costing strokes/);
+    expect(code('CH-3212')!.textContent).toMatch(/Counts didn’t load/);
+    expect(within(code('CH-3212') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    const panel = code('CH-3212')!.closest('section')!;
+    expect(panel.textContent).not.toMatch(/—/);
+    expect(panel.textContent).not.toMatch(/costing strokes/);
+    expect(panel.textContent).not.toMatch(/No reads yet/);
+    expect(panel.textContent).not.toMatch(/\b0 costing strokes/);
   });
 
   it('31402 Try again on a roster that did not load asks the server for the whole page again', async () => {

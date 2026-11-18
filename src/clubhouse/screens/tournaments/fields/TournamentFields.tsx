@@ -20,12 +20,15 @@ import { RoundRow } from './RoundRow';
 import {
   COUNTING_OPTIONS,
   EVENT_KIND_OPTIONS,
+  tiebreakHelp,
+  tiebreakOptions,
   FORMAT_OPTIONS,
   MAX_ROUNDS,
   addRound,
   daysBetween,
   inRoundOrder,
   lockLine,
+  lockMinuteOptions,
   removeLastRound,
   roundsFromRange,
   sortRounds,
@@ -337,6 +340,30 @@ export function TournamentFields({
               <Select id={`${idPrefix}-kind`} value={s.eventKind} options={EVENT_KIND_OPTIONS} onChange={(eventKind) => set({ eventKind })} />
             </div>
           </div>
+          <div className="ch-tfx__row">
+            <label className="ch-tfx__lbl" htmlFor={`${idPrefix}-ties`}>
+              Ties
+            </label>
+            <div>
+              <Select id={`${idPrefix}-ties`} value={s.tiebreak} options={tiebreakOptions(s.tiebreak)} onChange={(tiebreak) => set({ tiebreak })} describedBy={`${idPrefix}-ties-h`} />
+              <p id={`${idPrefix}-ties-h`} className="ch-tfx__help">
+                {tiebreakHelp(s.tiebreak)}
+              </p>
+            </div>
+          </div>
+          {!individual && (
+            <div className="ch-tfx__row">
+              <label className="ch-tfx__lbl" htmlFor={`${idPrefix}-lock`}>
+                Lineup lock
+              </label>
+              <div>
+                <Select id={`${idPrefix}-lock`} value={String(s.lockMinutes)} options={lockMinuteOptions(s.lockMinutes)} onChange={(v) => set({ lockMinutes: Number(v) })} describedBy={`${idPrefix}-lock-h`} />
+                <p id={`${idPrefix}-lock-h`} className="ch-tfx__help">
+                  When you mean to lock the lineup, before round 1’s first tee. It locks itself when round 1 starts.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="ch-tfx__row">
             <label className="ch-tfx__lbl" htmlFor={`${idPrefix}-field`}>
               Teams in the field

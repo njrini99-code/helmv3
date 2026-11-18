@@ -35,7 +35,9 @@ Status:   approved
 ## Design objective
 
 A green frame with an inset ivory canvas and a quiet sidebar on wide screens,
-and a full-bleed canvas with an ivory glass tab bar on phones. The frame carries
+and a full-bleed canvas on phones, with nothing at the bottom of the screen: the
+top bar's title opens the section strip (`phone/section-strip.md`, approved
+2026-10-12, which replaced the ivory glass tab bar). The frame carries
 navigation and status and stays out of the page's way.
 
 ## Problems being solved
@@ -43,7 +45,9 @@ navigation and status and stays out of the page's way.
 The old app layered new styles on Fairway, and the owner rejected the result.
 Clubhouse is a fresh tree, so the frame has to supply everything the old shell
 did: navigation, notifications, offline and error handling, toasts, motion and
-haptics. It never nests a Fairway component.
+haptics. It never nests a Fairway component. Since 2026-11-14 it is the only
+frame: the owner retired Fairway's coach and player screens, and the dashboard
+layout always draws Clubhouse.
 
 ## User goal
 
@@ -52,10 +56,11 @@ action.
 
 ## Visual hierarchy
 
-Canvas first. Then the sidebar (the brand, the navigation in its v2 sections,
-the next-event card), then the top bar (breadcrumb, bell, settings). On the
-phone: the page, the top bar (the title and the bell, or a page's own back
-link), then the tab bar.
+Canvas first. Then the sidebar (the brand, the navigation in its v2 sections, a
+player's Resume card; the next-event card was cut on 2026-11-07), then the top
+bar (breadcrumb, search pill, bell, settings). On the phone: the page, the top
+bar (the section title that opens the strip and the bell, or a page's own back
+link), then the dock when a page or a round in progress puts something in it.
 
 ## Components
 
@@ -68,12 +73,15 @@ link), then the tab bar.
 ### New Clubhouse components
 
 `ClubhouseShell` (the providers), `ClubhouseFrame` (the UI), `Sidebar`,
-`TopBar`, `Bell`, `TabBar` with the More sheet, `OfflineBanner`, `RouteFrame`
-(the navigation crossfade and the press), `NotRebuilt`, `NextEventCard`,
-`PhoneScreen` and `phone-chrome` (pushed screens, the page top), `crumbs`,
-`ClubhouseSwitch`, `TeamSwitch` (the team switcher: `TeamSwitch` in the
-sidebar, `MoreTeamSwitch` in the More sheet) with `team-switch` (the gate and
-the action).
+`TopBar`, `Bell`, `SectionStrip` and `AccountSheet` (the phone's navigation and
+the old More sheet's account rows), `Dock` (the phone's dock and Resume round),
+`OfflineBanner`, `RouteFrame` (the navigation crossfade and the press),
+`NotRebuilt`, `PhoneScreen` and `phone-chrome` (pushed screens, the page top),
+`crumbs`, the command palette (`shell/command/`), Quick chat
+(`shell/quick-chat/`), `TeamSwitch` (the team switcher: `TeamSwitch` in the
+sidebar, `MoreTeamSwitch` in the account sheet) with `team-switch` (the gate and
+the action). `TabBar`, `NextEventCard` and `ClubhouseSwitch` are gone
+(2026-10-13, 2026-11-07 and 2026-11-14).
 
 ### Modified Clubhouse components
 
@@ -134,10 +142,12 @@ that flips above its field grows from its bottom edge).
 
 ## Phone
 
-Approved spec `docs/clubhouse/phone/foundation.md`: the tab bar (coach Home,
-CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub; then
-More), the More sheet, the top bar's root and pushed variants, the bell as a
-modal sheet, and pushed screens with the edge swipe.
+Approved spec `docs/clubhouse/phone/foundation.md`, with its navigation replaced
+by `docs/clubhouse/phone/section-strip.md` (approved 2026-10-12): the section
+strip (every section the role has as a pill, then the account pill that opens
+the account sheet), the top bar's root and pushed variants, the bell as a modal
+sheet, and pushed screens with the edge swipe. The tab bar and the More sheet's
+navigation rows (D-40, D-41) are retired.
 
 A pushed page's bar is drawn from its address until the page's own arrives
 (CH-1402): the loading state and the server's first paint already show the back
@@ -149,10 +159,10 @@ phone are opaque: the sheet's ivory by day, the raised surface at night (H16,
 40px disc in a 44px key, a sheet's Close, and the 36px search field. A choice
 answers a press with the Ledger's tint, never a scale (CH-1617).
 
-For a head coach on two or more teams the More sheet lists the teams under who
-they are, as a captioned "Team" list in the sheet's own rows: the current team
-is ticked, and a switch closes the sheet on the new team. The sheet scrolls on
-a short screen, for every role. The Home hero bar's team stays a label.
+For a head coach on two or more teams the account sheet lists the teams under
+who they are, as a captioned "Team" list in the sheet's own rows: the current
+team is ticked, and a switch closes the sheet on the new team. The sheet scrolls
+on a short screen, for every role. The Home hero bar's team stays a label.
 
 ## Shared states (2026-10-08)
 
@@ -172,8 +182,9 @@ blocks in `styles/shell.css`) now draws one family:
 - **Notice** (`InlineNotice`, `RefreshNotice`): flush, sitting between the
   section's own engraved rules with no fill, no ring and no stripe, its icon on
   the heading's edge. The icon is in the danger ink, the title in the page's
-  ink (red is for under par and destructive actions) and the body in the
-  secondary ink. In a full-width notice the words keep a 30rem measure and Try
+  ink (red is for errors and destructive actions only, MOTION-AND-VISUAL 4.7)
+  and the body in the secondary ink. In a full-width notice the words keep a
+  30rem measure and Try
   again is pinned to the row's end, centred on them (visual pass 2026-10-28); it
   sits under them in anything narrower than 640px (a container query: a rail, a
   half column) and on the phone, so notices side by side read alike. The inks
@@ -246,16 +257,18 @@ phone its rows are buttons marked `aria-current` (11814).
 
 ## Data assumptions
 
-Only data the app has. The v2 top bar's search field is not rendered, because no
-search source exists (PROGRESS data gaps). There is no dead control.
+Only data the app has. The v2 top bar's search field is the search pill
+(`shell/command/SearchPill.tsx`, desktop only): it opens the command palette,
+whose sources are the role's pages, a coach's players and the team's tournaments
+and qualifiers. There is no dead control.
 
 ## Existing backend capabilities used
 
 `getUnifiedNotifications`, `markNotificationRead`, `markAllNotificationsRead`
 (`src/app/golf/actions/unified-notifications.ts`); `setActiveTeam`
-(`src/app/golf/actions/team-switcher.ts`, shared with Fairway); the badge
-context (`useNotificationBadges`); the shell loader's three reads. WIRING.md
-maps each.
+(`src/app/golf/actions/team-switcher.ts`); the badge context
+(`useNotificationBadges`); the shell loader's reads (WIRING.md lists them).
+WIRING.md maps each.
 
 ## HELD requirements
 
@@ -276,11 +289,13 @@ motion set approved on 2026-10-08 (CH-1618 to CH-1622, CH-1709, CH-1909).
 
 ## Explicit non-goals
 
-Top-bar search (no source yet), and any Fairway page inside the Clubhouse frame
-(a page not rebuilt shows the notice instead). The team switcher was a non-goal
-until the owner asked for it (2026-10-01, Q-130): a head coach on two or more
-teams switches from the sidebar's team line and the phone More sheet (CH-1813,
-CH-1814); the Home hero bar's team chip stays a label.
+Any Fairway page inside the Clubhouse frame (a page not rebuilt shows the notice
+instead; Fairway itself was retired on 2026-11-14). Top-bar search was a
+non-goal until the command palette gave it a source (`shell/command/`: pages,
+people, events). The team switcher was a non-goal until the owner asked for it
+(2026-10-01, Q-130): a head coach on two or more teams switches from the
+sidebar's team line and the phone account sheet (CH-1813, CH-1814); the Home
+hero bar's team chip stays a label.
 
 ## Fresh-build confirmation
 

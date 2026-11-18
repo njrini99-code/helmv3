@@ -173,7 +173,10 @@ async function openReads(supabase: Supabase, scope: ChCoachPlayerScope): Promise
 export async function loadCoachPlayerStanding(input: { scope: ChCoachPlayerScope; feed?: EvidenceInsight[] }): Promise<ChViewLoad<ChStanding>> {
   const { scope } = input;
   const supabase = await createClient();
-  const [standing, reads] = await Promise.all([loadPlayerStanding({ playerId: scope.playerId, viewer: coachViewer(scope), feed: input.feed ? () => Promise.resolve(input.feed!) : () => getInsightsForCoach(scope.coachId, { player_id: scope.playerId, limit: PLAYER_FEED_LIMIT, includeMore: true }) }), openReads(supabase, scope)]);
+  // Standing draws no read: the feed only says which metric has one open. So it records nothing as shown, as the player's own
+  // Standing doesn't (launch readiness 2026-11-15, DF-P-03: the whole feed was recorded on every coach open).
+  const feed = input.feed ? () => Promise.resolve(input.feed!) : () => getInsightsForCoach(scope.coachId, { player_id: scope.playerId, limit: PLAYER_FEED_LIMIT, includeMore: true, drawnLater: NOTHING_DRAWN });
+  const [standing, reads] = await Promise.all([loadPlayerStanding({ playerId: scope.playerId, viewer: coachViewer(scope), feed }), openReads(supabase, scope)]);
   if (standing.status !== 'ready') return standing;
   return { status: 'ready', data: { ...standing.data, ...(reads ? { reads } : {}) } };
 }
@@ -207,7 +210,31 @@ export async function coachDiveCore(input: { scope: ChCoachPlayerScope }, opts: 
   return { load, raw, lens };
 }
 
+/** A surface that draws none of the reads it asks for: nothing it reads is recorded as shown. */
+const NOTHING_DRAWN = () => Promise.resolve([] as readonly string[]);
+
 async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean; lens?: boolean; behind?: string }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void, keepLens: (lens: ChDeepInsight[]) => void): Promise<ChViewLoad<ChDeepDive>> {
+  // Only the reads the dive draws are recorded as shown (DF-P-03): not a note, not one the lifecycle leaves out, not another player's.
+  // Every way out of this function says which it drew; the first answer stands, and a way out that drew nothing answers none.
+  let drew: (ids: readonly string[]) => void = () => {};
+  const drawnIds = new Promise<readonly string[]>((resolve) => {
+    drew = resolve;
+  });
+  try {
+    return await coachDiveRead(input, opts, keep, keepLens, drew, () => drawnIds);
+  } finally {
+    drew([]);
+  }
+}
+
+async function coachDiveRead(
+  input: { scope: ChCoachPlayerScope },
+  opts: { exampleRounds?: boolean; lens?: boolean; behind?: string },
+  keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void,
+  keepLens: (lens: ChDeepInsight[]) => void,
+  drew: (ids: readonly string[]) => void,
+  drawnLater: () => Promise<readonly string[]>,
+): Promise<ChViewLoad<ChDeepDive>> {
   const { scope } = input;
   const { playerId } = scope;
   try {
@@ -218,7 +245,7 @@ async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { examp
     const themesRead = handled(readThemes(playerId, 'coach'));
     let feed: EvidenceInsight[];
     try {
-      feed = await getInsightsForCoach(scope.coachId, { player_id: playerId, limit: PLAYER_FEED_LIMIT, includeMore: true });
+      feed = await getInsightsForCoach(scope.coachId, { player_id: playerId, limit: PLAYER_FEED_LIMIT, includeMore: true, drawnLater });
     } catch (err) {
       log('player.dive.feed', err);
       return { status: 'failed' };
@@ -227,7 +254,12 @@ async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { examp
     const tourName: ChDeepDive['tour'] = tour.baseline?.tour === 'lpga' ? 'LPGA Tour' : 'Tour';
     if (feed.length === 0) {
       const visible = await loadVisible(supabase, [playerId]);
-      if (visible.error || visible.rows.length > 0) return { status: 'failed' };
+      if (visible.error) return { status: 'failed' };
+      // Visible reads the feed could draw: the feed failed without saying so (loadVisible reports its own error).
+      if (visible.rows.length > 0) {
+        log('player.dive.feed', new Error(`the feed came back empty with ${visible.rows.length} visible read(s)`));
+        return { status: 'failed' };
+      }
       return { status: 'ready', data: EMPTY_DIVE(await countCountableRounds(supabase, playerId), tourName) };
     }
     // The feed is the player's, whatever it returned: a row that is anyone else's is never drawn.
@@ -294,6 +326,8 @@ async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { examp
       );
     }
     const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tour.error });
+    // Recorded only once the dive is sure to draw: a throw above ends in "didn't load", and nothing of it was seen.
+    drew(list.map((d) => d.base.id));
     return {
       status: 'ready',
       data: {

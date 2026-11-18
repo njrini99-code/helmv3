@@ -77,9 +77,9 @@
 .ch-h-main--desk > .ch-h-head + .ch-h-flow {
   margin-top: 32px;
 }
-/* The canopy rises from under the top bar: the page's top padding is part of the green. Player Home is held as built (the
-   owner's 28 Oct version): its top and its head's 4px inset are the ones it was built on, not the one frame's (tokens.css
-   --ch-page-top-home-player; owner question, 11 Nov 2026). */
+/* The canopy rises from under the top bar: the page's top padding is part of the green. Home's head is the tight head
+   (no double rule above), its greeting on every page title's line (tokens.css --ch-page-top-home-player; owner, 16 Nov
+   2026). Its head's 4px inset is still the one it was built on (owner question, 11 Nov 2026). */
 .ch-h-main--desk[data-canopy] {
   padding-top: var(--ch-page-top-home-player);
 }
@@ -124,13 +124,13 @@
 .ch-h-flow.ch-sheet {
   margin-top: 32px;
   /* Visual pass 2026-10-28 (area A R5): cards sit on 16, as every sheet on Home does. */
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
 }
 .ch-h-flow > .ch-h-sheet {
   margin-top: 0;
 }
 .ch-h-flow .ch-ph-game {
-  border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
+  border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg);
   background: none;
   box-shadow: var(--ch-seam-x);
 }
@@ -156,7 +156,7 @@
   min-height: 28px;
 }
 .ch-h-pane__head h2 {
-  font: var(--ch-type-serif-s);
+  font: var(--ch-type-title);
   letter-spacing: -0.004em;
   color: var(--ch-text-primary);
 }
@@ -217,25 +217,16 @@
   border-radius: 50%;
   background: var(--ch-green-400);
 }
-/* Today: a frosted key lifted out of the well (owner, 2026-10-06: more contrast and blur). A bright translucent face
-   over a backdrop blur, a crisp edge, a lit top and a real lift; radius concentric with the well's 4px inset. */
+/* Today: a key lifted out of the well, the ivory card on the card elevation, radius concentric with the well's 4px inset.
+   Opaque, with no blur (MOT-16: blur is for chrome over scrolling content, and nothing scrolls under this key). */
 .ch-h-day--today {
   border-radius: var(--ch-radius-md);
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.94), rgb(251 249 244 / 0.8));
-  -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.4);
-  backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.4);
-  box-shadow: var(--ch-key-frost-shadow);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-h-day--today .ch-h-day__n {
   color: var(--ch-forest-800);
   font-weight: 700;
-}
-@media (prefers-reduced-transparency: reduce) {
-  .ch-h-day--today {
-    background: #fff;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 }
 .ch-h-day--today .ch-h-day__d,
 .ch-h-day--event .ch-h-day__n {
@@ -248,7 +239,7 @@
 }
 .ch-h-agenda__label {
   padding: 0 0 6px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
@@ -267,7 +258,7 @@
   min-width: 0;
 }
 .ch-h-agenda__t {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -280,6 +271,20 @@
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
+}
+/* The coach's today rows open their event (the player's rows stay plain text). */
+.ch-h-agenda__open {
+  display: block;
+  text-decoration: none;
+  border-radius: var(--ch-radius-sm);
+}
+.ch-h-agenda__open:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ch-h-agenda__open:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
 }
 .ch-h-agenda__row.is-event .ch-h-agenda__a {
   color: var(--ch-green-700);
@@ -360,7 +365,7 @@
   gap: 8px;
 }
 .ch-h-round__score > span:first-child {
-  font: var(--ch-type-figure-l);
+  font: var(--ch-type-figure-hero);
 
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
@@ -386,7 +391,7 @@
   border-radius: var(--ch-radius-lg);
 }
 .ch-h-card--none {
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 .ch-h-nine {
@@ -419,7 +424,7 @@
   border-bottom-color: var(--ch-board-rule);
 }
 .ch-h-nine__par {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
@@ -492,7 +497,7 @@
   box-shadow: var(--ch-seam-x);
 }
 .ch-h-rail__title {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
@@ -530,11 +535,11 @@
   }
 }
 .ch-h-rail__item[data-ch-pressed] {
-  background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-h-rail__item:active {
-    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+    background: var(--ch-sel);
   }
 }
 .ch-h-rail__item.is-on {
@@ -599,12 +604,12 @@
   gap: 4px;
 }
 .ch-h-sec h2 {
-  font: var(--ch-type-serif-m);
+  font: var(--ch-type-title);
   letter-spacing: -0.006em;
   color: var(--ch-text-primary);
 }
 .ch-h-sec span {
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -643,7 +648,7 @@
 .ch-h-lb__head {
   padding-top: 12px;
   padding-bottom: 8px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
@@ -686,11 +691,11 @@
   }
 }
 .ch-h-lb__row.is-link[data-ch-pressed] {
-  background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-h-lb__row.is-link:active {
-    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+    background: var(--ch-sel);
   }
 }
 .ch-h-lb__row.is-link:has(.ch-h-lb__go:focus-visible) {
@@ -817,7 +822,7 @@
   font-variant-numeric: tabular-nums;
 }
 .ch-h-lb__sg.is-early {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -943,7 +948,7 @@
   .ch-hm-skel__bar {
     display: block;
     max-width: 100%;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
     background: rgb(244 241 232 / 0.12);
   }
   /* The invitees' avatars on their line, and the card's action at its foot. */
@@ -1003,7 +1008,7 @@
     min-height: 100%;
   }
   .ch-hm-hero__date {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-tight);
     color: rgb(244 241 232 / 0.62);
   }
@@ -1050,13 +1055,13 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-tight);
     color: rgb(244 241 232 / 0.7);
   }
   .ch-hm-next__when {
     padding: 6px 8px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: rgb(255 255 255 / 0.1);
     font: var(--ch-type-12-strong);
     line-height: var(--ch-lead-tight);
@@ -1068,7 +1073,7 @@
     color: var(--ch-green-800);
   }
   .ch-hm-next h2 {
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-22);
     color: var(--ch-on-fill-100);
@@ -1153,10 +1158,10 @@
     gap: 6px;
     height: 32px;
     padding: 0 12px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: rgb(255 255 255 / 0.06);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-tight);
     color: var(--ch-on-fill-100);
     text-decoration: none;
@@ -1204,7 +1209,7 @@
   }
   /* The one-line note beside a section title (m-player-home.css .mp-meta). */
   .ch-hm-meta {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
     text-align: right;
   }
@@ -1274,7 +1279,7 @@
     background: var(--ch-green-fill-600);
   }
   .ch-hm-tl__t {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-ink-700);
@@ -1354,7 +1359,7 @@
   }
   .ch-hm-now {
     padding: 4px 8px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-green-fill-600);
     font: var(--ch-type-11-strong);
     letter-spacing: var(--ch-track-11);
@@ -1392,8 +1397,8 @@
   .ch-hm-form {
     padding: 16px 16px 16px;
     border-radius: var(--ch-radius-xl);
-    background: linear-gradient(180deg, var(--ch-ivory-25), #f6f9f6);
-    box-shadow: 0 0 0 1px rgb(21 90 57 / 0.12), 0 10px 24px -18px rgb(11 58 37 / 0.35);
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-elevation-card);
   }
   .ch-hm-form__top {
     display: flex;
@@ -1406,14 +1411,14 @@
     gap: 8px;
   }
   .ch-hm-form__top em {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     font-style: normal;
     color: var(--ch-ink-600);
   }
   .ch-hm-form__top b {
-    font: 500 calc(44 * var(--ch-type-k))/0.9 var(--ch-font-sans);
+    font: 600 calc(44 * var(--ch-type-k))/0.9 var(--ch-font-sans);
 
     font-variant-numeric: tabular-nums;
     /* -0.035em, not tighter: the decimal point touched the 3 ("73.4" read "734"); the hero figures share it. */
@@ -1482,12 +1487,12 @@
     border-left: 1px solid color-mix(in oklab, var(--ch-green-600) 12%, transparent);
   }
   .ch-hm-form__figs dt {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
     color: var(--ch-ink-600);
   }
   .ch-hm-form__figs dd {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
@@ -1534,11 +1539,11 @@
     transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-hm-rd[data-ch-pressed] {
-    background: var(--ch-bg-hover);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hm-rd:active {
-      background: var(--ch-bg-hover);
+      background: var(--ch-sel);
     }
   }
   .ch-hm-rd__b {
@@ -1618,9 +1623,9 @@
     font-style: normal;
     color: var(--ch-ink-600);
   }
-  /* Red only under par (D-42). */
+  /* Under par is the gain (MOTION-AND-VISUAL 4.7). */
   .ch-hm-score.is-under em {
-    color: var(--ch-chart-flag);
+    color: var(--ch-score-under);
   }
   .ch-hm-sheet {
     display: flex;
@@ -1639,7 +1644,7 @@
     gap: 4px;
   }
   .ch-hm-strip dt {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
     color: var(--ch-text-tertiary);
   }
@@ -1689,7 +1694,7 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: rgb(244 241 232 / 0.7);
 }
@@ -1773,7 +1778,7 @@
 }
 .ch-ph-game__h > div > h2 {
   margin: 0 0 6px;
-  font: var(--ch-type-serif-m);
+  font: var(--ch-type-title);
   letter-spacing: -0.006em;
   color: var(--ch-text-primary);
 }
@@ -1836,7 +1841,7 @@
   fill: var(--ch-text-secondary);
 }
 .ch-ph-chart__val.is-under {
-  fill: var(--ch-chart-flag);
+  fill: var(--ch-score-under);
 }
 .ch-ph-chart__par {
   stroke: var(--ch-text-primary);
@@ -1866,8 +1871,10 @@
   stroke: var(--ch-green-600);
   stroke-width: 1.8;
 }
+/* An under-par round is a filled dot in the gain, the label's colour; the rest are hollow (PL-HOME-05, MOTION-AND-VISUAL 4.7). */
 .ch-ph-chart__dot.is-under {
-  fill: var(--ch-green-600);
+  fill: var(--ch-score-under);
+  stroke: var(--ch-score-under);
 }
 .ch-ph-pinflag line {
   stroke: var(--ch-text-primary);
@@ -1909,7 +1916,7 @@
   display: block;
   margin: 2px 0 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.06);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
 }
@@ -1919,7 +1926,7 @@
   bottom: 0;
   z-index: 1;
   width: 2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   translate: -50% 0;
 }
 .ch-ph-viz--avg i.is-was {
@@ -1956,7 +1963,7 @@
   position: absolute;
   top: 1.5px;
   bottom: 1.5px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-ph-viz--sg i.is-gain {
   background: var(--ch-chart-gain-fill);
@@ -1975,7 +1982,7 @@
 .ch-ph-viz--rounds i {
   flex: 1;
   height: 8px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-300);
 }
 .ch-ph-viz--rounds i.is-even {
@@ -1985,7 +1992,7 @@
   background: var(--ch-score-under);
 }
 .ch-ph-figs dt {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -2056,7 +2063,7 @@
 }
 .ch-ph-leg__sg {
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -2089,7 +2096,7 @@
   color: var(--ch-ink-950);
 }
 .ch-ph-leg__v em {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
@@ -2102,7 +2109,7 @@
 .ch-ph-bench__t {
   position: relative;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.08);
 }
 .ch-ph-bench__t i {
@@ -2110,7 +2117,7 @@
   top: 0;
   bottom: 0;
   left: 0;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-500));
 }
 .ch-ph-bench__t i.is-loss {
@@ -2126,7 +2133,7 @@
   bottom: -4px;
   width: 2px;
   margin-left: -1px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-text-primary);
 }
 .ch-ph-bench__k {
@@ -2154,7 +2161,8 @@
    round. Ink when steady, green when it moved the good way, amber when not. */
 .ch-ph-spark {
   margin: 4px 0 0;
-  --ch-spark: var(--ch-ink-400);
+  /* Steady is ink at 3:1 or more on the card and the linen (audit PMAC-10; ink-400 was 2.98:1). */
+  --ch-spark: var(--ch-ink-500);
 }
 .ch-ph-spark.is-gain {
   --ch-spark: var(--ch-chart-gain);
@@ -2207,7 +2215,7 @@
   display: flex;
   justify-content: space-between;
   margin-top: 8px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -2239,7 +2247,7 @@
 }
 .ch-ph-pg > span {
   padding: 0 2px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -2262,7 +2270,7 @@
   inset: 6px;
   border-radius: 50%;
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 2px rgb(28 25 18 / 0.06);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-ph-pg button svg {
   position: relative;
@@ -2303,11 +2311,12 @@
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
-/* Both nines in one shallow recess, a hairline between them: the scorecard reads as one instrument, not two boxes. */
+/* Both nines in one shallow recess, a hairline between them: the scorecard reads as one instrument, not two boxes. The hole
+   labels and the total keep 12 off the recess's rounded edge, as every row keeps off its card's (CRH-1: they sat at 8). */
 .ch-ph-nines {
   display: flex;
   flex-direction: column;
-  padding: 2px 4px;
+  padding: 2px 8px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-well-bg-flat);
   box-shadow: var(--ch-well-soft-shadow);
@@ -2348,27 +2357,6 @@
 .ch-ph-game.is-phone .ch-seg {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 2px;
-  height: 42px;
-  padding: 4px;
-  border-radius: var(--ch-radius-lg);
-}
-/* Each segment a thumb's height (44pt) inside the well's 4px padding; with the redesign off it keeps its old height. */
-.ch-root[data-ui] .ch-ph-game.is-phone .ch-seg {
-  height: 52px;
-}
-.ch-ph-game.is-phone .ch-seg .ch-seg__b {
-  height: auto;
-  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
-  font-size: calc(14 * var(--ch-type-k));
-}
-/* Only the options off the chip take the quieter ink: the chosen one keeps the chip's own ink (controls.css). */
-.ch-ph-game.is-phone .ch-seg .ch-seg__b:not(.is-on) {
-  color: var(--ch-ink-600);
-}
-/* The chip is the green every switcher draws (controls.css, owner 2026-10-16), on this switch's tighter corner. */
-.ch-ph-game.is-phone .ch-seg .ch-seg__pill {
-  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
 }
 .ch-ph-game.is-phone .ch-ph-game__top {
   grid-template-columns: minmax(0, 1fr);
@@ -2494,7 +2482,7 @@
   width: 72px;
   height: 6px;
   margin-top: 6px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.07);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
 }
@@ -2512,7 +2500,7 @@
 }
 .ch-rviz--gir i {
   flex: 1;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-300);
 }
 .ch-rviz--gir i.is-hit {
@@ -2521,7 +2509,7 @@
 .ch-rviz--putts i {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-rviz--putts i.is-gain {
   background: var(--ch-chart-gain-fill);
@@ -2546,7 +2534,7 @@
   position: absolute;
   top: 1px;
   bottom: 1px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-rviz--sg i.is-gain {
   background: var(--ch-chart-gain-fill);
@@ -2646,7 +2634,8 @@
   }
   @media (hover: hover) {
     .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   /* The row's chevron sits in its 12px end padding, clear of the SG figure. */
@@ -2656,12 +2645,12 @@
   /* CH-2602: a press deepens the row's tint and nudges its chevron 2px on, over the press beat; letting go eases back
      over quick. A row never scales (lib/press.ts, owner F02). */
   .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2871,7 +2860,7 @@
     box-shadow:inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule-soft);
   }
   .ch-hm-score.is-under em {
-    color:#9E3B2E;
+    color: var(--ch-score-under);
   }
   .ch-hm .ch-well-soft {
     background:rgb(110 98 62/.035);
@@ -3218,8 +3207,8 @@
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* Section titles in the Ledger's phone heading (ui.css `.ch-sec__title`): the bold condensed sans in forest ink. */
   .ch-hm-sec__h h2 {
-    font: var(--ch-type-section);
-    letter-spacing: var(--ch-track-section);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
     color: var(--ch-text-primary);
   }
   /* Up next is a link: a press deepens the card's green the same beat later (CH-1606: a large surface answers with a
@@ -3242,12 +3231,10 @@
   }
   a.ch-hm-next[data-ch-pressed]::after {
     opacity: 0.38;
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     a.ch-hm-next:active::after {
       opacity: 0.38;
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   /* Today's rows sit on the section's edge like the Ledger's rows (ui.css `.ch-lgr__row.is-link`): the tap area runs
@@ -3259,13 +3246,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hm-tl__a[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hm-tl__a:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-hm-tl__a:focus-visible {
@@ -3289,13 +3274,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hm-rd[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hm-rd:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-hm-rd:focus-visible {
@@ -3310,12 +3293,10 @@
   }
   .ch-hm-link[data-ch-pressed] {
     opacity: 0.55;
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-hm-link:active {
       opacity: 0.55;
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-hm-none__chip,
@@ -3324,22 +3305,18 @@
   }
   .ch-hm-none__chip[data-ch-pressed] {
     background: rgb(255 255 255 / 0.16);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-hm-none__chip:active {
       background: rgb(255 255 255 / 0.16);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-hm-none__add[data-ch-pressed] {
     background: var(--ch-ivory-200);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-hm-none__add:active {
       background: var(--ch-ivory-200);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   /* The first-run pages (CH-2308, CH-2312): the head is the Ledger's page intro (ui/Ledger.tsx PageIntro), the date as
@@ -3354,7 +3331,7 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-h-main--first > .ch-h-head > .ch-h-head__date {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -3376,7 +3353,7 @@
     border-top: 0;
   }
   .ch-h-main--first.is-player > .ch-es--page > .ch-es__copy,
-  .ch-hm--player .ch-es--page > .ch-es__copy {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-es--page > .ch-es__copy {
     padding: 24px 16px 16px;
   }
   /* The coach's first run with events: the week strip opens a section under the intro, as on the loaded page. */
@@ -3390,140 +3367,138 @@
    the coach, above); every section below sits flush under its engraved double rule, with no white cards. Real objects
    keep their material: the scorecard its green board, the window picker its well. What both roles share (the sheet,
    the section titles, the week's keys, Today's rows, Up next's press, the first run) is in the block above; this one
-   is the player's own, scoped to `.ch-hm--player`. */
+   is the player's own, scoped to `.ch-hm--player`; coach Home's phone shares it (`.ch-hm--coach`, lay-01, owner 15 Nov 2026). */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-hm--player .ch-ph-acts {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-acts {
     gap: 8px;
     margin-top: 16px;
   }
   /* Section heads in the Ledger's phone heading (ui.css `.ch-sec__title`): the bold condensed sans in forest ink. */
-  .ch-hm--player .ch-hm-sec {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-hm-sec {
     gap: 16px;
   }
-  .ch-hm--player .ch-hm-lab {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-hm-lab {
     padding: 6px 0 0;
     font: var(--ch-type-14-strong);
     letter-spacing: -0.01em;
     color: var(--ch-ledger-ink);
   }
   /* The pager's keys sit on the sheet as hairline rings, not raised white coins; a press tints them. */
-  .ch-hm--player .ch-ph-pg button {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-pg button {
     color: var(--ch-ledger-ink);
   }
-  .ch-hm--player .ch-ph-pg button::before {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-pg button::before {
     background: none;
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm--player .ch-ph-pg button[data-ch-pressed]::before {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-pg button[data-ch-pressed]::before {
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
-    .ch-hm--player .ch-ph-pg button:active::before {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+    :is(.ch-hm--player, .ch-hm--coach) .ch-ph-pg button:active::before {
+      background: var(--ch-sel);
     }
   }
-  .ch-hm--player .ch-ph-pg button:focus-visible::before {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-pg button:focus-visible::before {
     box-shadow: 0 0 0 2px var(--ch-border-focus);
   }
   /* My latest round: no card. The round's line, its scorecard, its figures between hairlines, the way to the recap. */
-  .ch-hm--player .ch-ph-card {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-card {
     gap: 16px;
     padding: 0;
     border-radius: 0;
     background: none;
     box-shadow: none;
   }
-  .ch-hm--player .ch-ph-rd__b b {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-rd__b b {
     color: var(--ch-text-primary);
   }
-  .ch-hm--player .ch-ph-card .ch-fgr__note .ch-rviz {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-card .ch-fgr__note .ch-rviz {
     width: 100%;
   }
-  .ch-hm--player .ch-ph-card__more {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-card__more {
     margin-top: -8px;
   }
   /* Scoring: the picker, the line and the reading flush on the sheet. The line's halo and its open dots take the
      parchment, so the line reads cut out of the page. */
-  .ch-hm--player .ch-ph-game.is-phone {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-game.is-phone {
     gap: 16px;
     padding: 0;
     border-radius: 0;
     background: none;
     box-shadow: none;
   }
-  .ch-hm--player .ch-ph-chart__halo {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-chart__halo {
     stroke: var(--ch-workspace);
   }
-  .ch-hm--player .ch-ph-chart__dot {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-chart__dot {
     fill: var(--ch-workspace);
   }
-  .ch-hm--player .ch-ph-chart__dot.is-under {
-    fill: var(--ch-green-600);
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-chart__dot.is-under {
+    fill: var(--ch-score-under);
   }
   /* The four figures as the Ledger's figure row, two by two: hairlines above and below, soft rules between. */
-  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-game.is-phone .ch-ph-figs {
     border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
     border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule);
   }
-  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-game.is-phone .ch-ph-figs > div {
     gap: 4px;
     padding: 16px 0;
     box-shadow: none;
   }
-  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even) {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even) {
     padding-left: 16px;
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
-  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(n + 3) {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(n + 3) {
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
-  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even):nth-child(n + 3) {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even):nth-child(n + 3) {
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft), inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
-  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs dt {
-    font: var(--ch-type-12-medium);
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-game.is-phone .ch-ph-figs dt {
+    font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
-  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
-    font: var(--ch-type-22-strong);
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
 
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     font-variation-settings: normal;
   }
-  .ch-hm--player .ch-ph-viz--avg i.is-now {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-viz--avg i.is-now {
     box-shadow: 0 0 0 2px var(--ch-workspace);
   }
   /* The reading follows the figure row's hairline, so it drops its own dashed rule. */
-  .ch-hm--player .ch-ph-game.is-phone .ch-ph-note {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-game.is-phone .ch-ph-note {
     padding-top: 0;
     border-top: 0;
   }
   /* Your game: the four parts flush on the sheet, divided by soft rules. */
-  .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-legs {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-legs-sec.is-phone .ch-ph-legs {
     overflow: visible;
     border-radius: 0;
     background: none;
     box-shadow: none;
   }
-  .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-legs-sec.is-phone .ch-ph-leg {
     padding: 16px 0;
   }
-  .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg:first-child {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-legs-sec.is-phone .ch-ph-leg:first-child {
     padding-top: 4px;
   }
-  .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
   }
-  .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg__h b {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-legs-sec.is-phone .ch-ph-leg__h b {
     font-size: calc(15 * var(--ch-type-k));
     color: var(--ch-text-primary);
   }
-  .ch-hm--player .ch-ph-spark__dot {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-spark__dot {
     box-shadow: 0 0 0 3px var(--ch-workspace);
   }
 }
@@ -3550,8 +3525,8 @@
   }
 }
 
-/* Home's first run on desktop opens under the loaded page's framed head (states audit (c)4, 2026-10-08): the head's
-   rules run the page's width, and the date and the greeting sit where the loaded Home sets them. */
+/* Home's first run on desktop opens under the loaded page's head (states audit (c)4, 2026-10-08): the head's rule runs
+   the page's width, and the date and the greeting sit where the loaded Home sets them. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-h-main--first[data-canopy] {
     padding-top: var(--ch-page-top-home-player);
@@ -3567,17 +3542,9 @@
    into the ground at night. The frosted today key becomes a faint lit glass, white lit tops drop to a whisper, the
    forest ink on themed surfaces becomes the Ledger's night ink, and the parchment's brown rules take the champagne
    rule. The green surfaces (the scoreboard, Up next, the countdown) are green in both themes and keep their inks. */
-html[data-fw-theme='dark'] .ch-h-day--today {
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.08));
-}
 html[data-fw-theme='dark'] .ch-h-day--today .ch-h-day__n,
 html[data-fw-theme='dark'] .ch-h-agenda__row.is-next .ch-h-agenda__a {
   color: var(--ch-ledger-ink);
-}
-@media (prefers-reduced-transparency: reduce) {
-  html[data-fw-theme='dark'] .ch-h-day--today {
-    background: var(--ch-ivory-200);
-  }
 }
 html[data-fw-theme='dark'] .ch-h-nine__par {
   border-bottom-color: var(--ch-border-subtle);
@@ -3600,7 +3567,7 @@ html[data-fw-theme='dark'] .ch-ph-chart__dot {
   fill: var(--ch-workspace);
 }
 html[data-fw-theme='dark'] .ch-ph-chart__dot.is-under {
-  fill: var(--ch-green-600);
+  fill: var(--ch-score-under);
 }
 html[data-fw-theme='dark'] .ch-ph-chart__hatch {
   stroke: rgb(107 187 140 / 0.08);
@@ -3727,12 +3694,10 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   }
   .ch-hm-day:has(.ch-hm-day__open[data-ch-pressed])::after {
     opacity: 0.38;
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-hm-day:has(.ch-hm-day__open:active)::after {
       opacity: 0.38;
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   /* P002 D2: 28px coins whose 2px rings just touch, so two initials always clear the next coin. */
@@ -3789,12 +3754,10 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   }
   .ch-hm-day__act[data-ch-pressed] {
     background: rgb(244 238 221 / 0.2);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-hm-day__act:active {
       background: rgb(244 238 221 / 0.2);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-hm-day__act.is-primary[data-ch-pressed] {
@@ -4035,7 +3998,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   border-top: 0;
 }
 .ch-h-form__figs dt {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-stage-ink-soft);
 }
 .ch-h-form__figs dd {
@@ -4077,7 +4040,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
 .ch-h-form__bar {
   display: block;
   max-width: 100%;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: rgb(244 241 232 / 0.12);
 }
 html[data-fw-theme='dark'] .ch-h-form__bar {
@@ -4165,8 +4128,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   transition: background-color var(--ch-dur-press) var(--ch-ease);
 }
 .ch-ph-asks[data-ch-pressed] {
-  background: var(--ch-bg-hover);
-  transition-delay: var(--ch-dur-press-delay);
+  background: var(--ch-sel);
 }
 
 /* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
@@ -4307,7 +4269,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-h-legs__t thead th {
   padding-top: 8px;
   padding-bottom: 8px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
@@ -4348,7 +4310,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 .ch-h-legs__note {
   margin-top: 8px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 .ch-h-legs > .ch-empty {
@@ -4430,7 +4392,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     align-items: center;
     min-height: 32px;
     padding: 0 12px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: color-mix(in oklab, currentColor 9%, transparent);
     white-space: nowrap;
     transition: background-color var(--ch-dur-press) var(--ch-ease);
@@ -4442,7 +4404,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-hm-queue__a[data-ch-pressed] {
     background: color-mix(in oklab, currentColor 16%, transparent);
-    transition-delay: var(--ch-dur-press-delay);
   }
   .ch-hm-queue__fail {
     display: inline-flex;
@@ -4523,21 +4484,11 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-hm-legs__note {
     margin-top: 4px;
-    font: var(--ch-type-body-s);
+    font: var(--ch-type-callout);
     color: var(--ch-text-tertiary);
   }
 }
 
-/* Row 50: the attribute half of the today tile's solid fallback above (WebKit has no media query; the app's bridge sets
-   html[data-reduce-transparency]). */
-:root[data-reduce-transparency] .ch-h-day--today {
-  background: #fff;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-:root[data-reduce-transparency][data-fw-theme='dark'] .ch-h-day--today {
-  background: var(--ch-ivory-200);
-}
 
 /* P-14 change marks on Home. Up next wears the badge in its kicker and the old value struck under its range, in the card's
    own muted ink (the card is light or lit by theme, so the struck value takes whatever the line beside it takes). */
@@ -4553,8 +4504,9 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 /* Coach Home, phone (clubhouse_classes_roster_home_v1; 06 §11). The one phone block for the lane: every rule is under its attribute,
    so player Home and flag-off screens never see it. No hex colours here but the token-free ivory rings. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  /* The page is the canvas: its light shows between the cards (DESIGN_LANGUAGE law 2; WHITE-03). */
   .ch-hm[data-ch-crh='on'] {
-    background: var(--ch-grouped-bg);
+    background: transparent;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-hero {
     display: grid;
@@ -4634,14 +4586,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-next h2,
   .ch-hm[data-ch-crh='on'] .ch-hm-next h2 a {
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     color: var(--ch-on-green-plate); letter-spacing: var(--ch-track-22); }
   .ch-hm[data-ch-crh='on'] .ch-hm-next :is(p, .ch-hm-next__rsvp, .ch-hm-next__k) {
     color: var(--ch-on-green-2);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-next__when {
     padding: 4px 8px;
-    border-radius: var(--ch-radius-tail);
+    border-radius: var(--ch-radius-sm);
     background: rgb(123 199 154 / 0.18);
     color: var(--ch-countdown-on-green);
   }
@@ -4686,7 +4638,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-hm[data-ch-crh='on'] :is(.ch-hm-sec__h, .ch-hm-form__head) h2 {
     margin: 0;
-    font: var(--ch-type-card-title);
+    font: var(--ch-type-headline);
     color: var(--ch-text-primary);
   }
   /* The old pass reached 44 with a negative margin; the reach is a layer now, and the link sits on the card's 16. */
@@ -4696,7 +4648,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     min-height: 0;
     margin: 0;
     padding: 0;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-green-600);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-link::after {
@@ -4705,7 +4657,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     content: '';
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-meta {
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-secondary);
   }
   /* Today: a fixed time column, a Next chip, no mint row. */
@@ -4727,7 +4679,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-now {
     margin-left: auto;
     padding: 4px 8px;
-    border-radius: var(--ch-radius-tail);
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-accent-tint);
     color: var(--ch-green-600);
     font: var(--ch-type-13-strong);
@@ -4760,7 +4712,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     margin-inline-start: auto;
     font: var(--ch-type-13-strong);
     padding: 4px 8px;
-    border-radius: var(--ch-radius-tail);
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-warn-bg);
     color: var(--ch-warn-ink);
   }
@@ -4888,7 +4840,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     position: relative;
     display: block;
     height: 8px;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-well-bg-flat);
     box-shadow: var(--ch-well-shadow);
   }
@@ -4906,7 +4858,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     top: 0;
     bottom: 0;
     left: 50%;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-gain);
     transform-origin: left center;
   }
@@ -4922,7 +4874,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   /* One change line in one style in every part (W6, owner's preview, 11 Nov 2026): "No clear change" was bold black beside an
      amber "Worse", so the line that says least was the loudest. The weight is the same; only a real change takes a colour. */
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__c {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     font-style: normal;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__c:not(.is-gain, .is-loss) {
@@ -5043,7 +4995,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-h-main[data-ch-crh='on'] .ch-h-herocard__next > b {
     color: var(--ch-on-green-plate);
-    font: var(--ch-type-22-strong); letter-spacing: var(--ch-track-22); }
+    font: var(--ch-type-title); letter-spacing: var(--ch-track-22); }
   .ch-h-main[data-ch-crh='on'] .ch-h-herocard__next > p {
     margin: 0;
     font: var(--ch-type-15);
@@ -5158,7 +5110,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   gap: 8px;
   padding: 12px 12px 8px;
   overflow-x: auto;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
 }
@@ -5173,7 +5125,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   gap: 2px;
   align-items: center;
   min-height: 26px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   letter-spacing: var(--ch-track-12);
   text-align: center;
 }
@@ -5213,14 +5165,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
 }
 .ch-dh-card__t {
   margin: 0;
-  font: var(--ch-type-card-title);
-  letter-spacing: var(--ch-track-card-title);
+  font: var(--ch-type-headline);
+  letter-spacing: 0;
 }
 .ch-dh-legs {
   display: grid;
@@ -5306,7 +5258,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   gap: 4px;
   margin-inline-start: auto;
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-warning-100);
   font: var(--ch-type-12);
   letter-spacing: var(--ch-track-12);
@@ -5338,7 +5290,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   color: var(--ch-text-secondary);
 }
 .ch-dh-score.is-under em {
-  color: var(--ch-chart-flag);
+  color: var(--ch-score-under);
 }
 /* An empty week sits in the middle of the room the card keeps beside its partner. */
 .ch-dh-card > .ch-es {
@@ -5389,7 +5341,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 /* Later today and Since you last looked sit in the card that holds them, as every other section on the lane's Home (06 11). */
 [data-ch-crh='on'] .ch-hm-later .ch-hm-tl {
   padding-inline: 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
 }
@@ -5400,7 +5352,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     gap: 16px;
     margin: 0;
     padding: 16px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg, var(--ch-frame));
   }
 }
@@ -5422,7 +5374,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     flex: none;
     min-height: 34px;
     padding: 0 12px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: rgb(255 255 255 / 0.1);
     box-shadow: var(--ch-home-x1);
     color: var(--ch-on-green-plate);
@@ -5474,7 +5426,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     position: relative;
     display: block;
     height: 8px;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-well-bg-flat);
     box-shadow: var(--ch-well-shadow);
   }
@@ -5492,7 +5444,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     top: 0;
     bottom: 0;
     left: 50%;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-gain);
     transform-origin: left center;
   }
@@ -5508,7 +5460,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   /* One change line in one style in every part (W6, owner's preview, 11 Nov 2026): "No clear change" was bold black beside an
      amber "Worse", so the line that says least was the loudest. The weight is the same; only a real change takes a colour. */
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__c {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     font-style: normal;
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__c:not(.is-gain, .is-loss) {
@@ -5523,7 +5475,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__a {
     /* 18 tall was under the pointer's 24 (F-0018, WCAG 2.5.8). The link is inline: block padding grows its box, not the line. */
     padding-block: 4px;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
     color: var(--ch-text-primary);
     font: var(--ch-type-14);
     text-decoration: underline;
@@ -5569,7 +5521,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-now {
     padding: 4px 8px;
-    border-radius: var(--ch-radius-tail);
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-selected-tint);
     font: var(--ch-type-13-strong);
     color: var(--ch-green-600);
@@ -5692,7 +5644,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     align-content: start;
     overflow: hidden;
     padding: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
     color: var(--ch-text-primary);
@@ -5706,8 +5658,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-h-main[data-ch-crh='on'] .ch-hm-form__head h2,
   .ch-h-main[data-ch-crh='on'] .ch-hm-sec__h h2 {
     margin: 0;
-    font: var(--ch-type-card-title);
-    letter-spacing: var(--ch-track-card-title);
+    font: var(--ch-type-headline);
+    letter-spacing: 0;
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-form__top {
     display: flex;
@@ -5726,7 +5678,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     color: var(--ch-text-secondary);
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-form__top b {
-    font: var(--ch-type-figure-40-500);
+    font: var(--ch-type-figure-hero);
     letter-spacing: var(--ch-track-34);
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-delta {
@@ -5791,87 +5743,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
 }
 
-/* Coach Home loading, phone, behind the lane's flag (06 §11.3). */
-.ch-hm-sk-crh {
-  display: none;
-}
-@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  [data-ch-crh='on']:not([data-ch-role='player']) .ch-h-main[aria-busy='true'] > .ch-hm-skel {
-    display: none;
-  }
-  [data-ch-crh='on']:not([data-ch-role='player']) .ch-h-main[aria-busy='true'] > .ch-hm-sk-crh {
-    display: grid;
-    gap: 24px;
-  }
-  .ch-hm-sk-crh__hero {
-    display: grid;
-    gap: 12px;
-    padding: 8px var(--ch-page-x-phone) 24px;
-    border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
-    background: var(--ch-frame);
-    box-shadow: var(--ch-home-shadow-1);
-    --ch-skel-base: rgb(244 238 221 / 0.16);
-    --ch-skel-sheen: rgb(244 238 221 / 0.22);
-  }
-  /* The loaded page's own rhythm: 24 between cards. */
-  .ch-hm-sk-crh__body {
-    display: grid;
-    gap: 24px;
-    padding-inline: var(--ch-page-x-phone);
-  }
-  .ch-hm-sk-form__in {
-    display: grid;
-    gap: 12px;
-    padding: 12px 16px;
-  }
-  .ch-hm-sk-form__top {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-  }
-  .ch-hm-sk-form__figs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* The lane's desktop coach Home in waiting (SkeletonDeskCrh). */
-.ch-h-sk-dcrh {
-  display: none;
-}
-@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  [data-ch-crh='on']:not([data-ch-role='player']) .ch-h-main[aria-busy='true']:has(> .ch-h-sk-dcrh) > :not(.ch-h-sk-dcrh) {
-    display: none;
-  }
-  [data-ch-crh='on']:not([data-ch-role='player']) .ch-h-main[aria-busy='true'] > .ch-h-sk-dcrh {
-    display: grid;
-    gap: 16px;
-    /* The loading main keeps the framed page's top inset; the lane's page starts 14px higher. */
-    margin-top: calc(-1 * (var(--ch-space-3) + var(--ch-space-0_5)));
-    /* Its sides are the loading main's own: the lane's page runs the page gutter too (one frame, owner 11 Nov 2026). */
-    margin-inline: 0;
-  }
-  .ch-h-sk-dcrh__hero {
-    min-height: 215px;
-  }
-  .ch-h-sk-dcrh__lines {
-    display: grid;
-    align-content: start;
-    gap: 12px;
-  }
-  .ch-h-sk-dcrh__grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-    gap: 16px;
-  }
-  .ch-h-sk-dcrh__card {
-    display: grid;
-    align-content: start;
-    gap: 16px;
-    padding: 20px;
-  }
-}
-
 /* The older cardless phone pass pulled its rows out 12px to the page; under the lane's cards that left a row 4px from the card's edge
    (SYS-3). The row keeps the card's 16 inset itself: these cards have no padding of their own. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
@@ -5901,10 +5772,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   /* Latest rounds' type, on the roles (CRH-22). */
   .ch-hm[data-ch-crh='on'] .ch-hm-rd__b b {
-    font: var(--ch-type-row);
+    font: var(--ch-type-callout);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-rd__b span {
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-secondary);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-score em {
@@ -5933,7 +5804,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-form__noline {
     margin: 0;
     padding: 12px 16px;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-secondary);
   }
 }
@@ -6039,7 +5910,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 .ch-hm-nextrow__when {
   flex: none;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
@@ -6051,12 +5922,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   color: var(--ch-text-tertiary);
 }
 
-/* Home's segments on a phone are a thumb's height (44pt). */
-@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-hm .ch-seg__b {
-    height: 44px;
-  }
-}
 
 /* The bar reached its end: a cap at the far edge says it runs past, and the number beside it is the figure. */
 .ch-ph-viz--sg.is-over::before {
@@ -6065,7 +5930,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   bottom: 0;
   left: 0;
   width: 3px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-xs);
   background: var(--ch-chart-loss);
   content: '';
 }
@@ -6199,4 +6064,60 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-h-main[data-ch-crh='on'] .ch-hm-form__axis,
 .ch-h-main[data-ch-crh='on'] .ch-hm-form__ends {
   margin-inline: 16px;
+}
+
+/* Coach Home drawn as Player Home (lay-01, owner 15 Nov 2026): the few parts the player's page has no twin for. Team
+   scoring's window picker has two choices, not the player's three; a team part's change line is its verdict, toned only
+   when the change clears its standard error; the names under a part open that player's game. */
+.ch-ph-game.is-phone.ch-ph-tm .ch-seg {
+  grid-template-columns: repeat(2, 1fr);
+}
+.ch-ph-tm .ch-ph-leg > .ch-ph-leg__chg {
+  margin: 0;
+  font: var(--ch-type-caption);
+  line-height: var(--ch-lead-tight);
+  color: var(--ch-text-secondary);
+}
+.ch-ph-tm .ch-ph-leg > .ch-ph-leg__chg.is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-ph-tm .ch-ph-leg > .ch-ph-leg__chg.is-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-ph-leg__who {
+  color: var(--ch-green-600);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .ch-ph-leg__who:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+.ch-ph-tm-noline {
+  margin: 0;
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-tertiary);
+}
+.ch-h-main--setup > .ch-hm-setup {
+  max-width: 560px;
+  margin-top: 32px;
+}
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  /* A conflict on today's rail says so in words (the coach's Today), as a quiet warning pill that keeps to the row. */
+  .ch-hm--coach .ch-hm-tl__w {
+    display: inline-flex;
+    gap: 4px;
+    width: auto;
+    height: auto;
+    padding: 4px 8px;
+    border-radius: var(--ch-radius-sm);
+    background: var(--ch-warn-bg);
+    color: var(--ch-warn-ink);
+    font: var(--ch-type-caption);
+  }
+  /* The window picker spans the card, as the player's does. */
+  .ch-ph-game.is-phone.ch-ph-tm .ch-span .ch-seg {
+    width: 100%;
+  }
 }

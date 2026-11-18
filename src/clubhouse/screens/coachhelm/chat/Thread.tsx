@@ -16,7 +16,7 @@ import {
   type AskTurn,
   type EvidenceFocus,
 } from '../../../data/coachhelm-chat-thread';
-import { CH_FILL_EASE_POINTS, CH_MS, chSpringCurve } from '../../../lib/motion';
+import { CH_DUR_MS, CH_EASE_IOS_CSS } from '../../../lib/motion';
 import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
@@ -36,6 +36,9 @@ import type { AskArtifact } from './parts/artifacts';
 import { AskUserText } from './Prose';
 import { scopeWho } from './ask-scope-window';
 import '../../../styles/coachhelm-thread.css';
+
+/** A sent question is an insert (MOTION-AND-VISUAL 3.5): the base beat on the iOS curve, for its rise and the pages above it. */
+const SEND_INSERT: KeyframeAnimationOptions = { duration: CH_DUR_MS.base, easing: CH_EASE_IOS_CSS };
 
 export interface AskThreadProps {
   onArtifact?: (a: AskArtifact) => void;
@@ -220,20 +223,17 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
     const top = sp.scrollTop + page.getBoundingClientRect().top - sp.getBoundingClientRect().top - inset.current;
     sp.scrollTop = Math.max(0, top);
     const delta = Math.min(sp.scrollTop - before, sp.clientHeight);
-    const source = takeSendSource() ?? document.querySelector<HTMLElement>('.ch-ask-cmp textarea')?.getBoundingClientRect() ?? null;
+    // Taken so a stale one never outlives its send; the question no longer flies from it (3.5: a sent question is an insert).
+    takeSendSource();
     if (reduced || typeof col.animate !== 'function') return;
-    // The scroll position is already final. The glide shows the older pages going up and away instead of vanishing; a second
-    // send adds its own glide on top of one still running (composite add), so nothing snaps.
-    const send = chSpringCurve('send');
-    if (delta > 1) col.animate([{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0)' }], { duration: send.ms, easing: send.linear, composite: 'add' });
-    if (bubble && source) {
-      // The words rise out of the thing the coach touched (the field, a start, a follow-up), on the launch spring.
-      const rest = bubble.getBoundingClientRect();
-      const dx = Math.min(0, source.left - rest.left);
-      const dy = source.top - rest.top - delta;
-      const launch = chSpringCurve('launch');
-      bubble.animate([{ transform: `translate(${dx}px, ${dy}px) scale(0.96)` }, { transform: 'translate(0, 0) scale(1)' }], { duration: launch.ms, easing: launch.linear });
-      bubble.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: CH_MS.fillInk, easing: `cubic-bezier(${CH_FILL_EASE_POINTS.join(', ')})` });
+    // The scroll position is already final. The older pages slide up to their new places (an insert's FLIP: the base beat on the
+    // iOS curve) instead of vanishing; a second send adds its own move on top of one still running (composite add), so nothing snaps.
+    if (delta > 1) col.animate([{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0)' }], { ...SEND_INSERT, composite: 'add' });
+    if (bubble) {
+      // The question rises 8 px into its place as it fades in, on the same clock (3.5). It sits in the moving column, so its own
+      // rise starts the column's move lower: the two add up to the 8 px alone.
+      const from = delta > 1 ? delta : 0;
+      bubble.animate([{ opacity: 0, transform: `translateY(${8 - from}px)` }, { opacity: 1, transform: 'none' }], SEND_INSERT);
     }
   }, [lastUserId, reduced]);
 

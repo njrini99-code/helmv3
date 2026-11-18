@@ -21,6 +21,7 @@ the file ownership):
 | 60–69 | lineup (event form, lineup builder) |
 | 70–89 | live |
 | 90–99 | player |
+| 80–89 in kinds 0–5, 8 and 9 | launch readiness (QUEUE lr-f01 to lr-f07, the Clubhouse parity & pages window; CH-16680 to CH-16685 stay Live rounds’) |
 
 The plan's provisional codes (CH-16009 NoTeam, CH-16010 NotFound, CH-16011
 CoachOnly, CH-16400 to 16418, 16420 to 16424, 16460 to 16463 and 16520 to
@@ -48,11 +49,18 @@ sync` mints its Bridge ID.
 | CH-16071 | Live round: starting, suspending, resuming or finishing the round fails or is refused (rounds out of order, a state it can’t move to) | Error toast "Couldn’t start the round" / "…suspend the round" / "…finish the round" + the server’s words + Try again. The round stays as it was | `LivePage` (`useAction`, `setTournamentRoundStatus`) | tournaments-live.test › CH-16071 |
 | CH-16072 | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) | Error toast "Couldn’t save hole 7" + the server’s words + Try again. The sheet stays on that hole and the score is as it was. Used by the coach’s live round and the player’s own card | `HoleSheet` (`useAction`, `saveTournamentHole`) | tournaments-live.test › CH-16072 |
 | CH-16092 | Player: saving their reflection fails or is refused | Error toast "Couldn’t save your reflection" + the server’s words + Try again. What they wrote stays in the box | `Reflection` (`useAction`, `saveTournamentReflection`) | tournaments-player.test › CH-16092 |
+| CH-16080 | Import results: saving fails or is refused (the results are official, not a coach, a round that isn’t the event’s, a field row that isn’t) | Error toast “Couldn’t save the results” + the server’s words, or “Nothing new was lost. Try again; rounds already saved are left as they are.” + Try again. The check step stays as it was | `ImportResults` (`useAction`, `importTournamentResults`) | tournaments-import.test › CH-16080 |
+| CH-16081 | Enter holes: saving the grid fails or is refused | Error toast “Couldn’t save the holes” + the server’s words + Try again. The grid keeps what was typed | `HoleEntry` (`useAction`, `importTournamentResults`) | tournaments-import.test › CH-16081 |
+| CH-16082 | Export results fails: the browser refused the file (launch readiness F-02) | Error toast “Couldn’t export Oakmont’s results” + “Your browser didn’t take the file. Try again, or export from a computer.” Done: “Results exported · 12 teams, 5 players”. The key sits on Who counted (overview and its own tab) once there are scores | `EventDesk` → `ExportButton` (`resultsCsv`, `lib/csv.ts`) | exports.test › CH-16082 |
 
 ## 161xx Validation
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
+| CH-16180 | Import results: the file can’t be read (the old binary .xls, a PDF, a picture, another type, a damaged file, over 8 MB, empty) | A title and the way forward for each reason, for example “This is the old Excel format” + “Open it in Excel or Numbers, save it as .xlsx or CSV, then choose it again.” Choose another file / Paste instead | `ImportResults` (`FAIL`, `readResultsBytes`) | tournaments-import.test › CH-16180 |
+| CH-16181 | Import results: the file opened, but no column reads as players with scores | “No scores found” + “Set the columns above: the player names, then the holes or the round scores.” The column editor opens on its own, with a peek at the sheet’s first rows | `ImportResults` (`CheckView`, `ColumnEditor`) | tournaments-import.test › CH-16181 |
+| CH-16182 | Enter holes: a cell can’t be saved (not a whole number, over 15 strokes, a saved hole emptied) | The cell is marked invalid and a line under the grid names it: “Ava Lindqvist, hole 3: A saved hole can be changed here, not emptied.” Save stays off until it is fixed | `HoleEntry` (`gridErrors`) | tournaments-import.test › CH-16182 |
+| CH-16183 | Import results: Read results with nothing pasted | “Paste the results first.” under the box; nothing is read | `ImportResults` | tournaments-import.test › CH-16183 |
 
 ## 162xx Didn't load
 
@@ -76,6 +84,8 @@ sync` mints its Bridge ID.
 | CH-16293 | Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`) | "Your spot didn’t load" + "Nothing has changed. Try again in a moment." in place of the spot, so a failed read is never shown as "not published" | `InlineNotice` in `PlayerEvent` | tournaments-player.test › CH-16293 |
 | CH-16252 | Compare: the hole figures read fails (`errors.holes`) | Above the grid: "The hole figures didn’t load" + "Birdies, greens, fairways and putts are left blank. Scores and strokes gained are unaffected. Try again." + Try again | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16252 |
 | CH-16253 | Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5) | In place of Set up from calendar: "Couldn’t load your tournaments" + "The calendar’s untracked tournaments didn’t load. Try again." + Try again. The rest of the home is unaffected | `SetUpFromCalendar` | tournaments-p5.test › CH-16253 |
+| CH-16294 | A section of the live round, the lineup builder, History or Live throws while drawing (GAP-S-10) | In place of that section only: "The team line couldn’t be shown", "The lineup …", "The individuals …", "The field …" (live round); "Playing …", "Alternate and individuals …", "Roster couldn’t be shown" (lineup); "The trend …", "Every event couldn’t be shown" (History); "Players on the course …", "{name}’s round …", "Where everyone is couldn’t be shown" (Live) + the shared body + Try again, which redraws it. The rest of the page keeps working | `SectionBoundary` in `LiveRound`, `LineupBuilder`, `History`, `LiveView`, `LiveViewPhone` | tournaments-history.test, LiveView.test |
+| CH-16295 | History: the roster or the season profiles read fails (`errors.profiles`, GAP-S-08) | Above the trend: "Player names didn’t load" + "The results below are unaffected. Try again." + Try again. Before, names silently fell back and nothing said why | `InlineNotice` in `History` | tournaments-history.test › CH-16295 |
 
 ## 163xx Empty
 
@@ -83,7 +93,7 @@ sync` mints its Bridge ID.
 | --- | --- | --- | --- | --- |
 | CH-16302 | A Tournaments route opens before the held migrations are applied (a tournament table or RPC is missing: PGRST205, 42P01, PGRST202) | The head, then "Tournaments aren’t set up yet" + (coach) "Your events, lineups and results show here once Tournaments is set up for your team. Nothing is missing: there is nothing saved here yet." (player) "Your team’s events show here once your coach’s Tournaments is set up." Never an empty season, never a crash | `TourNotice kind="not_set_up"`, from every loader's `not_set_up` (`data/tournaments.ts`) | tournaments-wired.test › CH-16302 |
 | CH-16303 | A Tournaments route, signed in but on no team | "You aren’t on a team yet" + "Tournaments fill in once your team is set up." (a player: "…once a coach adds you to a team roster.") | `TourNotice kind="no_team"` in `routes/tournaments.tsx` | tournaments-wired.test › CH-16303 |
-| CH-16304 | An event address that is not this team's (deleted, another team's, not an id) | "That event isn’t on your team" + "It may have been deleted, or the link is from another team." + Back to tournaments | `TourNotice kind="not_found"` | tournaments-wired.test › CH-16304 |
+| CH-16304 | An event address that is not this team's (deleted, another team's, not an id) | "This event isn’t here" + "It may have been deleted, or the link is wrong. Everything else is where you left it." (the one not-found line, CH-1306, GAP-S-24) + Back to Tournaments | `TourNotice kind="not_found"` | tournaments-wired.test › CH-16304 |
 | CH-16305 | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) | "Only coaches open this page" + "You can see your team’s events and your own results in Tournaments." + See your tournaments | `TourNotice kind="coach_only"` | tournaments-wired.test › CH-16305 |
 | CH-16301 | Retired 2026-11-07: a view its lane hasn't built yet. Every Tournaments view is built, so no screen draws it | (retired) | `TourPlaceholder`, deleted | (retired) |
 | CH-16310 | Retired 2026-10-25 (P-5 4.11.1): replaced by CH-16352. Home: no event in the season, nothing failed | The head (without Add event), then "No tournaments yet" + "Add your first event to see who counted, how the team finished and how it compares with qualifying and last season." + Add event (the page's one primary) | `EmptyState size="page"` in `TournamentsHome` | tournaments-home.test › CH-16310 |
@@ -106,12 +116,16 @@ sync` mints its Bridge ID.
 | CH-16350 | Compare: a side selects no rounds (a player with none in that context or period) | In that side's summary: "No rounds in this sample" (the phone's card says the same under the side's label); its figures read "—" with "No data", and the difference says "No rounds on one side"; the other side is unchanged | `SummaryLine` and the phone's scope card in `Compare` | tournaments-compare.test › CH-16350 |
 | CH-16351 | Compare: there are no rounds at all (the read worked) | The head, then "No rounds to compare yet" + "Rounds from events, qualifiers and practice show here once they are in, and you can set any two samples side by side." | `EmptyState size="page"` in `Compare` | tournaments-compare.test › CH-16351 |
 | CH-16352 | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) | The head (without Add event), then "Your season starts on the calendar" + "Add a tournament on the calendar and it shows up here with its rounds, lineup and results." + Add a tournament (to the calendar's editor on Tournament, the page's one primary) and Plan from here instead, or Set up from calendar (2) when the calendar has untracked tournaments | `FirstRun` | tournaments-p5.test › CH-16352 |
+| CH-16380 | Import results: none of our players are in the file, or the file has team scores only | “None of your players are in this file” + the file’s teams and “Choose your team above if it is there under another name.”; or “No player rows in this file” + “Team scores and places can still be saved.” | `ImportResults` (`CheckView`) | tournaments-import.test › CH-16380 |
+| CH-16381 | Enter holes: no grid for the round (the course has no hole pars, no one is in the round) | “The course has no hole pars yet” + add the pars on the event; “No one is in this round yet” + set the lineup first | `HoleEntry` (`gridFor`) | tournaments-import.test › CH-16381 |
+| CH-16382 | Lineup builder: the lineup's lock time has passed and it is not locked (launch readiness F-05; nothing locks it at that time) | “The lock time, Tue 20 Oct 7:50 AM, has passed. Lock the lineup now; it locks itself when round 1 starts.” The head's chip reads “Lock by …” in amber | `LineupBuilder` | tournaments-b-team.test › CH-16382 |
 
 ## 164xx Loading
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-16401 | A Tournaments view is on its way (`load: 'loading'`) | The head's eyebrow and title as placeholders, then the body's block, in place; the page is marked busy and named "Loading [view]" | `TourLoading` / `TournamentsLoading`: each view draws its own skeleton at its final geometry | tournaments/views.test › CH-16401 |
+| CH-16480 | Import results: the file is being read on the device | Nothing for the first 150 ms, then “Reading the results…” + “Finding players, rounds and holes” with the working ring, held at least 450 ms so it never flashes | `ImportResults` | tournaments-import.test › CH-16480 |
 
 ## 165xx Confirm
 
@@ -121,6 +135,8 @@ sync` mints its Bridge ID.
 | CH-16551 | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) | "Cancel Pinehurst Invitational?" + "All 3 rounds are struck through for players. Nothing is deleted, so you can restore it." An optional reason. Keep tournament / Cancel tournament (felt: warning) | `DeskTrackMenu` | tournaments-p5.test › CH-16551 |
 | CH-16560 | Lock the lineup, from the lineup builder | "Lock the lineup?" + "3 of 5 spots are set. Once it is locked, a change is a substitution made round by round. This can’t be undone from here." Keep editing / Lock lineup. A change on screen is saved first | `LineupBuilder` (`Modal`) | tournaments-lineup.test › CH-16560 |
 | CH-16570 | Finish the round, from the live round | "Finish round 2?" + "Scores can still be corrected after this. The round counts as final and the next one can start." Keep playing / Finish round (felt: warning) | `LivePage` (`Modal`) | tournaments-live.test › CH-16570 |
+| CH-16580 | Import results: Start over once choices are made on the check step | “Start over?” + “The choices you made on this file are let go, and nothing is saved.” Keep checking / Start over (the ask is felt as a warning; the yes is silent) | `ImportResults` (`Modal`) | tournaments-import.test › CH-16580 |
+| CH-16581 | Enter holes: closing with holes typed and not saved | “Leave without saving?” + “The holes you typed for 3 players aren’t saved.” Keep typing / Leave | `HoleEntry` (`Modal`) | tournaments-import.test › CH-16581 |
 
 ## 166xx Motion
 
@@ -140,12 +156,15 @@ sync` mints its Bridge ID.
 | --- | --- | --- | --- | --- |
 | CH-16801 | A signed difference or a trust state is read | A delta says "Better by 1.4 strokes than his season average", "Worse by …" or "Level: … no clear change"; the triangle is hidden and points by better or worse, not by sign, so hue never carries the meaning alone. A trust chip says its state in words; the live dot and the check are hidden | `ui/DeltaChip.tsx`, `ui/TrustChip.tsx` | delta-chip.test, trust-chip.test |
 | CH-16850 | Home: a tournament arrives while the page is open | One polite line: "Pinehurst Invitational added to your season." | `useArrivals`, the home's status region | tournaments-p5.test |
+| CH-16880 | Enter holes: the grid by keyboard and screen reader | Each cell is named “Ava Lindqvist, hole 7, par 4”; the arrows move between cells, Enter moves down, and a whole score (2 to 9, or 10 to 15) moves on to the next hole, a 1 waits for its second digit. An invalid cell is described by its line under the grid | `HoleEntry` | tournaments-import.test › CH-16880 |
 
 ## 169xx Network and UX
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-16920 | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) | A status note under the head: "Results are provisional" + "The imported leaderboard has Sofia at 73 in round 3. The scorecard says 74. Team totals use the scorecard until you confirm which is right." (and "2 more differ."). Shown, never silently picked (D-82) | `EventDesk` (`.ch-tour-desk-warn`, `role="status"`) | tournaments-desk.test › CH-16920 |
+| CH-16980 | Import results: a round in the file differs from the player’s card or submitted round | Both are shown, never one silently picked (D-82): “Round 1: the file says 73, the card says 73. Holes 1 and 5 differ.” + Keep the card / Use the file. The card is kept by default when the totals agree. A submitted round is never changed: Use the file enters the official score, and the round stays on the player’s Rounds page | `ImportResults` (`PlayerRow`) | tournaments-import.test › CH-16980 |
+| CH-16981 | Lineup builder: the roster is over its limit (F-05) | The chip beside "x of y set" reads "Roster 10 of 9, 1 over" in amber; within the limit it reads "Roster 8 of 9" with no tone, and with the limit off there is no chip. The count is the Roster header's (active players less those marked as not counting) | `loadTournamentLineup` → `rosterLimit`, `LineupBuilder` meta | roster-limit.test › CH-16981 |
 
 ## Live rounds (P-6)
 
@@ -202,7 +221,7 @@ Where things live:
 | CH-16603 | The head of the card | "Open live view": the chevron's VoiceOver name on a phone, a text button on a wide screen | `LiveNowCard` | live-rounds-copy.test › CH-16603 |
 | CH-16604 | A live read failed or the feed dropped | "Can’t refresh right now" in the card head in place of the dot, with the lanes it has. In the live view (desktop and phone, F-0012), before any lane has loaded, a notice with the same title, "Nothing you saved is lost. Try again." and Try again; the feed chip reads "No signal" with Retry, and Connecting while the first read failed on the phone | `feedProblem`, `FreshnessChip`, `InlineNotice`, `FAILURE_COPY.page` | live-rounds-copy.test › CH-16604 |
 | CH-16605 | The device is offline while the card or the live view is open | "You’re offline" in the card head; the feed chip reads "Paused · {time}" | `feedProblem`, `FreshnessChip` | live-rounds-copy.test › CH-16605 |
-| CH-16609 | The coach has no team, or lost access to it | "You don’t have access to this team’s live rounds." | `LiveDenied` (`ClubhouseLiveRoute`) | live-rounds-copy.test › CH-16609 |
+| CH-16609 | Live: the coach has no active team, or a team they may not read (GAP-S-12) | No team: the shared not-on-a-team state, "Once your team is set up, the players out on the course show here." A team they may not read: page "Live isn’t available for this team" + "Live shows the players of the team you coach. Your team, rounds and stats are on Home." + Back to Home. Before, a bare sentence | `LiveNoTeam`, `LiveDenied` (`ClubhouseLiveRoute`) | LiveView.test › CH-16609, live-rounds-copy.test › CH-16609 |
 | CH-16610 | The live view | Title "Live" | `LiveView`, `LiveViewPhone` | live-rounds-copy.test › CH-16610 |
 | CH-16611 | Two or more round types have lanes | A filter: All, Qualifier, Practice, Tournament, showing only the types that have lanes. Hidden when only one type is live | `LiveFilter` (`Segmented`) | live-rounds-copy.test › CH-16611 |
 | CH-16612 | Lanes on the course | Group "On the course · {n}" | `LiveGroupsList` | live-rounds-copy.test › CH-16612 |

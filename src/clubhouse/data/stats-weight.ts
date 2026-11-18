@@ -2,7 +2,10 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formStatus, MIN_SG_ROUNDS, TREND_LENGTH, type ChPlayerSeason, type ChRound } from './season';
 import { hasHoleScores, holeRounds } from './round-scope';
 import { per18, roundKind, type ChRoundKind } from './stats-filter';
-import { changeSe, type SpreadKind } from '../lib/stats-signal';
+import { changeSe, MIN_TREND_POINTS, type SpreadKind } from '../lib/stats-signal';
+import type { ChFigureSet } from './figure-window';
+
+export { MIN_TREND_POINTS } from '../lib/stats-signal';
 
 export { per18, roundsWord } from './stats-filter';
 
@@ -84,22 +87,77 @@ export interface ChHalves {
   se: number | null;
 }
 
+/** The fewest players a team trend compares with themselves before it reads a change (prod audit 2026-11-15, NP-01). */
+export const MIN_TREND_PLAYERS = 3;
+/** The whole rounds a player needs in each half to count in a team trend's like-for-like change. */
+export const MIN_TREND_HALF_ROUNDS = 2;
+
 /**
  * A trend's newer half against its older half, from the rounds behind it (A1). `groups` are the rounds behind each point of the
  * trend, oldest first (a week's, a day's); the points with a value split as the form line's halves do (`halvesChange`: with an odd
  * count the middle point is in neither half). The change is the newer half's rounds' mean less the older half's, per 18 holes, and
  * its standard error is those rounds' own (`windowChangeSe`): a week's mean of eight rounds is never read as a single round, whose
- * spread would leave nearly every team trend at "No clear change". Null under three points with a value.
+ * spread would leave nearly every team trend at "No clear change". Null under `MIN_TREND_POINTS` (four) points with a value, so
+ * each half rests on two (CH-10).
+ *
+ * A team trend passes `playerOf`, and then compares each player with themselves (prod audit 2026-11-15, NP-01): "Down 5.5 strokes a
+ * round, newer half vs older half" set five one-player days against seven-round qualifier days, so it measured who played, not how
+ * the team played. The change is the mean of each player's own newer-half mean less their older-half mean, over the players with
+ * two whole rounds in each half; under three such players there is no change to read (null), and the page says why.
  */
-export function roundHalves<T extends HoleCount>(groups: T[][], pick: (r: T) => number | null | undefined, kind: SpreadKind | null): ChHalves | null {
+export function roundHalves<T extends HoleCount>(
+  groups: T[][],
+  pick: (r: T) => number | null | undefined,
+  kind: SpreadKind | null,
+  playerOf?: (r: T) => string,
+): ChHalves | null {
   const known = groups.filter((g) => g.some((r) => pick(r) != null));
-  if (known.length < 3) return null;
+  if (known.length < MIN_TREND_POINTS) return null;
   const half = Math.floor(known.length / 2);
   const older = known.slice(0, half).flat();
   const newer = known.slice(known.length - half).flat();
+  if (playerOf) return pairedHalves(newer, older, pick, kind, playerOf);
   const a = weightedMean(newer, pick);
   const b = weightedMean(older, pick);
   return a == null || b == null ? null : { delta: a - b, se: windowChangeSe(newer, older, pick, kind) };
+}
+
+/** The like-for-like change behind a team trend (`roundHalves` with `playerOf`): each player against themselves, averaged. */
+function pairedHalves<T extends HoleCount>(
+  newer: T[],
+  older: T[],
+  pick: (r: T) => number | null | undefined,
+  kind: SpreadKind | null,
+  playerOf: (r: T) => string,
+): ChHalves | null {
+  const by = (rs: T[]) => {
+    const m = new Map<string, T[]>();
+    for (const r of rs) {
+      if (pick(r) == null) continue;
+      const id = playerOf(r);
+      m.set(id, [...(m.get(id) ?? []), r]);
+    }
+    return m;
+  };
+  const nNew = by(newer);
+  const nOld = by(older);
+  const deltas: number[] = [];
+  const ses: Array<number | null> = [];
+  for (const [id, mine] of nNew) {
+    const before = nOld.get(id);
+    if (!before || effectiveCount(mine, pick) < MIN_TREND_HALF_ROUNDS || effectiveCount(before, pick) < MIN_TREND_HALF_ROUNDS) continue;
+    const a = weightedMean(mine, pick);
+    const b = weightedMean(before, pick);
+    if (a == null || b == null) continue;
+    deltas.push(a - b);
+    ses.push(windowChangeSe(mine, before, pick, kind));
+  }
+  if (deltas.length < MIN_TREND_PLAYERS) return null;
+  const k = deltas.length;
+  // The mean of independent changes: its standard error is the root of the summed variances over k. One player's unknown spread
+  // leaves the whole change unknown, so nothing is coloured on a guess.
+  const se = ses.every((v): v is number => v != null) ? Math.sqrt(ses.reduce((a, v) => a + v * v, 0)) / k : null;
+  return { delta: deltas.reduce((a, v) => a + v, 0) / k, se };
 }
 
 /** Doubles or worse as a share of holes (production's big-number rate), from the rounds' cached counts over their holes. */
@@ -156,6 +214,8 @@ export function summarizeWindow(rounds: ChRound[]): ChWindowSeason {
     avg: weightedMean(list, (r) => r.total_score),
     toPar: weightedMean(list, (r) => r.score_to_par),
     trend,
+    // The trend's round dates, oldest first, so a form line spaces its points by date (#2541), as `summarizePlayer` gives them.
+    trendDates: list.slice(0, TREND_LENGTH).reverse().map((r) => r.round_date.slice(0, 10)),
     formChange: trend.length >= 3 ? m(trend.slice(trend.length - half)) - m(trend.slice(0, half)) : null,
     sgPerRound: sg.total,
     sgRounds: sgRows.length,
@@ -179,6 +239,35 @@ export function summarizeWindow(rounds: ChRound[]): ChWindowSeason {
  * the window the scores are restated over all the window's rounds, so the Game detail's scoring average and best round are the
  * headline's and the Rounds tab's (the hole counts stay the calculator's).
  */
+/**
+ * Launch readiness 2026-11-15, DF-C-02: the desktop comparisons read greens, fairways, scrambling, sand saves and putts from each round's
+ * stats row (`figure-window.ts`, one source per rate), while the phone tiles, Game detail and the "saves N in 100" line read the shot
+ * calculator's own count of the same holes, so one player's page could show two greens figures. The calculator's rates and the counts
+ * printed beside them are restated from the figure set over the same window. Its shot-level splits (by par, by club, miss directions,
+ * putts by distance) stay its own: no stats row holds them.
+ */
+export function withRoundRates(s: GolfStats, set: Pick<ChFigureSet, 'gir' | 'fairways' | 'scrambling' | 'sand' | 'putts' | 'threePutts'>): GolfStats {
+  return {
+    ...s,
+    girTotal: set.gir.made,
+    girOpportunities: set.gir.chances,
+    girPercentage: set.gir.pct,
+    // Greens a round, per 18 holes: every hole is a chance at a green.
+    girPerRound: set.gir.pct == null ? null : (set.gir.pct * 18) / 100,
+    fairwaysHit: set.fairways.made,
+    fairwayOpportunities: set.fairways.chances,
+    fairwayPercentage: set.fairways.pct,
+    scramblesMade: set.scrambling.made,
+    scrambleAttempts: set.scrambling.chances,
+    scramblingPercentage: set.scrambling.pct,
+    sandSavesMade: set.sand.made,
+    sandSaveAttempts: set.sand.chances,
+    sandSavePercentage: set.sand.pct,
+    puttsPerRound: set.putts.value,
+    threePuttsPerRound: set.threePutts.value,
+  };
+}
+
 export function perEighteen(s: GolfStats, rounds: ChRound[]): GolfStats {
   // A nine-hole round always has its holes (only an 18-hole total can be posted without them), so the calculator read it.
   const nine = rounds.some((r) => (r.holes_played ?? 18) !== 18) && s.holesPlayed > 0;

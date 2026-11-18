@@ -71,13 +71,14 @@ Floors live in `lib/stats-signal.ts`.
 Parity with production (2026-10-17, `stats-production-parity.test.ts`): on the
 same rounds, the comparison table's fairways, greens, putts, 3-putts,
 scrambling, sand saves, penalties and par 3/4/5 scoring, and Game detail's
-figures, are `getDetailedStats`' (the Fairway player page's calculator), and
-strokes gained is the stored per-round value production's Team stats page
-averages. Putts and 3-putts a round leave out a round with no putt recorded,
-as the calculator does. Per-round counts with nine-hole rounds in are per 18
-holes (production divides by rounds of either length). Production's Standing
-strip is its own basis (every completed round, test rounds in, a 90-day pressure
-gap and opening hole, a wider lay-up rule at 175+ yd), not this window.
+figures, are `getDetailedStats`' (the calculator the Fairway player page used
+until its retirement on 2026-11-14), and strokes gained is the stored per-round
+value production's Team stats page averages. Putts and 3-putts a round leave out
+a round with no putt recorded, as the calculator does. Per-round counts with
+nine-hole rounds in are per 18 holes (production divides by rounds of either
+length). Production's Standing strip is its own basis (every completed round,
+test rounds in, a 90-day pressure gap and opening hole, a wider lay-up rule at
+175+ yd), not this window.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -245,7 +246,7 @@ confirmations remain 4 seconds and errors 8 seconds. The offline banner
 | 50703 | CH-5903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
@@ -449,8 +450,8 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
-11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
-11824 CH-1842, 11825 CH-1816, 11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11824 CH-1842, 11825 CH-1816,
+11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
 
 ## 19 — Responsive layout
 

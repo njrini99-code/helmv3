@@ -176,6 +176,7 @@ describe('the retired entry deadline never blocks an edit (owner, 2026-10-16: no
   const writes = (): ChQWrites & { saveEdit: ReturnType<typeof vi.fn> } => ({
     create: vi.fn(),
     saveEdit: vi.fn(async () => ({ success: true })),
+    saveRules: vi.fn(async () => ({ success: true })),
     setStatus: vi.fn(),
     courses: vi.fn(async () => []),
     tees: vi.fn(async () => []),

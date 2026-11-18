@@ -56,6 +56,11 @@ workspace (90107).
 | 90105 | — | `ADDRESSES_RENDER_IN_PLACE` | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. The one exception is /my-qualifiers, retired on 2026-11-11 (owner): it opens /qualifiers. |
 | 90106 | — | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | Players have one Qualifiers page: /qualifiers puts a player's own first with where they stand. My qualifiers is retired (owner, 2026-11-11): /my-qualifiers opens /qualifiers for a coach and a player, and is no screen of its own. |
 | 90107 | — | `SELECTION_ADDRESS_OUTSIDE_THE_CLUBHOUSE` | With the Clubhouse off, /qualifiers/[id]/selection sends a coach to the CoachHelm qualifying workspace and a player to the qualifier, and a signed-out visitor to login; with it on, the route gets the address. |
+| 90180 | — | `QUALIFIER_TIE_RULE_RANKS_THE_BOARD` | A qualifier's tie rule (launch readiness F-04) ranks its board, its list leaders, the selection workspace and its confirm, and Ask's board read in the one order (ranking.ts rankStandings): 'last_round' separates players level on to par and strokes by the lower last round, then the round before, and only players still level share a place or tie at the cut; 'coach' (a qualifier with no stored rule, and every qualifier before the held migration 20261115240000) separates nobody (Q-114). The standings caption states the rule in words, to the coach and to a player. |
+| 90181 | — | `QUALIFIER_FORM_CHOOSES_THE_TIE_RULE` | The qualifier form's Ties field (F-04): a new qualifier starts on 'Last round, then the one before' (owner, 15 Nov 2026), an existing one on its own rule, with 'You decide' as the other choice and a sentence saying what the rule does. Before the rule's store exists the field is locked on You decide and says choosing waits on the update; a read that fails locks it (CH-09281) and a save leaves the rule alone. |
+| 90182 | — | `QUALIFIER_COUNTS_BEST_ROUNDS` | A qualifier can count each player's best N rounds (launch readiness F-06, held migration 20261115240000 adds count_best): the form's 'Rounds that count' offers Every round or Best N of M; the board, the selection workspace and its confirm sum only the counted rounds (one helper, ranking.ts countedRoundIndexes: lower to par, then strokes, then the earlier round), a player is short only against the counted rounds, the dropped rounds stay on the player's card marked 'Dropped, not counted', and the standings caption states the rule ('Counts each player’s best 2 of 3 rounds: the worst round is dropped.'). |
+| 90183 | — | `QUALIFIER_EXEMPT_PLAYERS` | Exempt players (F-06; owner, 16 Nov 2026: 'Exempt before, from coach picks'): before the qualifier starts the coach ticks entrants under Exempt players in the form and gives each a reason (coach-only, D-33). When selection closes each becomes one of the qualifier's coach's picks with 'Exempt: (the reason)', never past the picks there are; a pick for an exempt player needs no scored round (Q-115 waived for them only). Once the qualifier starts the exemptions are fixed and the form says to use a coach's pick. Needs held migration 20261116100000; before it the field is not offered. |
+| 90184 | — | `QUALIFIER_NEXT_ROUND_GROUPS` | Next round groups (F-06): while a qualifier is under way with a round still to play, the coach's detail shows 'Round N groups' drawn from the standings, leaders off last and players with no score off first, in threes or fours (a filter Segmented), as even as the field allows with the larger groups last. A view of the board; nothing is stored. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
@@ -168,6 +173,9 @@ start date passes it, so 90504 never fires on a field the coach can't see
 | 90512 | CH-09112 | `SAVE_PICK_WITH_NO_PLAYER_CHOSEN` | Save pick with no player chosen |
 | 90513 | — | `LOCKED_ENTRANTS_STAY` | In the edit form a player who has a round in the qualifier, or a place in its squad, stays entered: their box is ticked and disabled and says why. |
 | 90514 | — | `SQUAD_FIXED_ONCE_CONFIRMED` | Once the squad is confirmed, squad size and coach's picks are read-only in the edit form, which says the size is fixed, and a save sends no squad change. |
+| 90580 | CH-09180 | `QUALIFIER_BEST_N_NEEDS_MORE_ROUNDS` | The rounds that count would drop no round (best N of N rounds or fewer) (F-06) |
+| 90581 | CH-09181 | `QUALIFIER_MORE_EXEMPT_THAN_PICKS` | More players exempt than coach's picks (F-06) |
+| 90582 | CH-09182 | `QUALIFIER_EXEMPT_PLAYER_NEEDS_A_REASON` | An exempt player has no reason (F-06) |
 
 ## 06 — Server / system error
 
@@ -223,6 +231,10 @@ page again (91402), and Retry runs the write again (91401).
 | 90633 | CH-09220 | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
 | 90634 | CH-09223 | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | The player's rounds panel crashes (desktop, beside the leaderboard) |
 | 90635 | CH-09224 | `EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE` | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) |
+| 90680 | CH-09080 | `EXPORT_STANDINGS_FAILS_THE_BROWSER_REFUSED_THE` | Export standings fails: the browser refused the file (launch readiness F-02) |
+| 90681 | CH-09281 | `QUALIFIER_TIE_RULE_DID_NOT_LOAD` | Create or edit: the qualifier's tie rule doesn't load (launch readiness F-04) |
+| 90682 | CH-09282 | `QUALIFIER_EXEMPTIONS_DID_NOT_LOAD` | Edit: the qualifier's exemptions don't load (F-06) |
+| 90683 | CH-09283 | `NEXT_ROUND_GROUPS_CRASH` | Next round groups crash (F-06) |
 
 ## 07 — Network / offline
 
@@ -248,7 +260,7 @@ category only because its kind (network and UX) defaults here.
 | 90708 | CH-09909 | `COACH_A_ROUND_NUMBERS_CARDS_MIX_9` | Coach: a round number's cards mix 9 and 18 holes |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
@@ -343,6 +355,10 @@ scored), best effort, and a notification that fails is logged and not shown
 | --- | --- | --- | --- |
 | 90901 | — | `CHANGE_LANDED` | A write that lands (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) says what landed in a toast and fires the success haptic. |
 | 90902 | — | `QUALIFIER_OPENS_AFTER_A_CREATE_SAVE_OR_CONFIRM` | A landed create opens the new qualifier and a landed save or confirm returns to the qualifier, while close, reopen, start selecting, save a pick and remove a pick leave the coach where they are. |
+| 90980 | — | `EXPORT_STANDINGS_LANDED` | An export of standings that lands says so in a toast ("Standings exported · 9 players") with the success haptic: a download on a computer, the share sheet on a phone. |
+| 90981 | — | `QUALIFIER_TIE_RULE_SAVED` | The tie rule saves with the qualifier (F-04): on create it is saved for the new qualifier, and a rule that doesn't save is said in the done toast ('Qualifier created, but its tie rule didn’t save. Open Edit to set it.'); on edit it is a step of the save only when it changed. The server writes one row a qualifier with its team through RLS (a coach of the team), refuses another team's qualifier, and answers 'unavailable' before the migration is applied. |
+| 90982 | — | `QUALIFIER_EXEMPTIONS_SAVED` | Exemptions save with the qualifier (F-06): on create after the players are entered, and a list that doesn't save is said in the done toast ('Qualifier created, but its exemptions didn’t save. Open Edit to set them.'); on edit a step after the players and the squad, only when the list changed. The server replaces the list through RLS (a coach; each player an entrant), only while the qualifier is upcoming and never past its coach's picks. |
+| 90983 | — | `EXEMPT_PLAYERS_PLACED_AT_CLOSE` | Closing selection places each exempt entrant as a coach's pick with 'Exempt: (the reason)' in the closer's name (F-06), never past the picks, leaving a pick already made; a failure is logged and the coach can still pick them (Q-115 is waived for an exempt player). |
 
 From the shell (P001): 10901 CHANGE_LANDED.
 
@@ -519,18 +535,19 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
-11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
-11824 CH-1842, 11825 CH-1816, 11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11824 CH-1842, 11825 CH-1816,
+11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
 
 ## 19 — Responsive layout
 
 Status: DEFINED
 
 At 820px and below a qualifier is one column with a rounds sheet (91901), the
-form puts Cancel and Create in the top bar and hides the tab bar (91902), Manage
-selections has its own top bar and a foot for its primary action (91903), and
-the list is the desktop list with phone CSS under a "‹ More" top bar (91904).
-The phone spec is `docs/clubhouse/phone/qualifiers.md` (approved).
+form puts Cancel and Create in the top bar and hides the tab bar, now the
+section strip (91902), Manage selections has its own top bar and a foot for its
+primary action (91903), and the list is the desktop list with phone CSS under a
+"‹ More" top bar (91904). The phone spec is `docs/clubhouse/phone/qualifiers.md`
+(approved).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -603,14 +620,15 @@ under surface `qualifiers` and the write's own name (`qualifiers.create`,
 the picker reports under `qualifiers.picker` and the live feed under
 `qualifiers.live`. Server reads log through `chLogServer('qualifiers', <read>)`.
 The selection actions' own refusal text is kept in the trail (92303), and the
-held setup actions refuse when the Clubhouse is off (92302).
+held setup actions refuse when the Clubhouse is off (92302; since 2026-11-14
+"off" means the caller is not a coach).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 92301 | — | `FAILURES_REPORTED` | A refused write is reported through chReport at low severity and a thrown one at the default, with surface qualifiers and the write's name (qualifiers.close, qualifiers.save, ...); a crash is reported high under its section (qualifiers.leaderboard, ...), a failed picker read under qualifiers.picker, and a failed server read is logged through chLogServer('qualifiers', {read}). |
 | 92302 | — | `HELD_SETUP_ACTIONS_REFUSE_OFF` | The squad-size and entrants actions refuse before any read unless the dashboard draws the caller as a coach (D-61). The Clubhouse-UI condition they also had is always met since Fairway's retirement (2026-11-14). |
 | 92303 | — | `SELECTION_REFUSAL_KEPT_FOR_THE_TRAIL` | The selection actions' own refusal text, cut at 200 characters, goes to a chTrail breadcrumb ('qualifiers selection refused') and not to the coach, so Sentry keeps what the server said. |
-| 92304 | — | `INTENTS_LEAVE_BREADCRUMBS` | Each intent leaves a chTrail breadcrumb before anything is sent: a filter, opening the scorecards, asking to close, asking to start selecting or to confirm, Create, Save, and the write itself by name (action qualifiers.<name>). |
+| 92304 | — | `INTENTS_LEAVE_BREADCRUMBS` | Each intent leaves a chTrail breadcrumb before anything is sent: a filter, opening the scorecards, asking to close, asking to start selecting or to confirm, Create, Save, and the write itself by name (action `qualifiers.<name>`). |
 
 From the shell (P001): 12301 FAILURES_REPORTED.
 

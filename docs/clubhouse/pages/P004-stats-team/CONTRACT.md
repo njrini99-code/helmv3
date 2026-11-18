@@ -40,17 +40,19 @@ Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
   count is fewer than the window's says "Hole stats from X of Y rounds".
 
 Parity with production (2026-10-17, `stats-production-parity.test.ts`): on the
-same rounds, every figure is the Fairway Team stats page's (scoring average of
-18-hole rounds, greens, scrambling, putts and birdies pooled over the holes,
-strokes gained per round, rounds counted), checked against that page's own
-code and against every production team's rows (read-only). Birdies are holes
-one under par: an eagle is not a birdie (the card says "Eagles not counted",
-and Season bests' Most birdies counts the same holes). A round with no putt
-recorded has no putts figure (production writes 0 putts for it). The rules
-that differ on purpose: a round posted as a total only counts in scoring
-(Q-123; production counts it nowhere), strokes gained waits for three whole
-rounds (production shows any), and with both lengths in a nine-hole round
-counts half (production averages per round of either length).
+same rounds, every figure was the Fairway Team stats page's (Fairway was retired
+on 2026-11-14; since then the test pairs each player against `getDetailedStats`
+and the Standing strip only) (scoring average of 18-hole rounds, greens,
+scrambling, putts and birdies pooled over the holes, strokes gained per round,
+rounds counted), checked against that page's own code and against every
+production team's rows (read-only). Birdies are holes one under par: an eagle is
+not a birdie (the card says "Eagles not counted", and Season bests' Most birdies
+counts the same holes). A round with no putt recorded has no putts figure
+(production writes 0 putts for it). The rules that differ on purpose: a round
+posted as a total only counts in scoring (Q-123; production counts it nowhere),
+strokes gained waits for three whole rounds (production shows any), and with
+both lengths in a nine-hole round counts half (production averages per round of
+either length).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -169,7 +171,7 @@ The offline banner (10701) and Try again while offline (10704) are the shell's.
 | 40703 | CH-4903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
@@ -297,8 +299,8 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
-11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
-11824 CH-1842, 11825 CH-1816, 11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11824 CH-1842, 11825 CH-1816,
+11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
 
 ## 19 — Responsive layout
 

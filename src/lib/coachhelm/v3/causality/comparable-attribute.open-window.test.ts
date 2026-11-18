@@ -45,6 +45,7 @@ describe('computeComparableAttribution — real core, open-window short-circuit'
       const exposureBuilder = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        or: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
         maybeSingle: vi.fn().mockResolvedValue({ data: { shown_at: shownAt }, error: null }),

@@ -18,7 +18,7 @@
   gap: 12px;
 }
 .ch-tour-rev-layer {
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -56,7 +56,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -140,7 +140,7 @@
 }
 .ch-tour-rev-trend {
   padding: 16px 20px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -280,28 +280,51 @@
   overflow-wrap: anywhere;
 }
 .ch-tour-rev-bar__t {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
-/* The bar's share of the track, less the room its figure takes at the end, so the longest bar and its figure both fit. */
-.ch-tour-rev-bar i {
+/* The bars run from a zero rule (the rating or the field) on one scale, CH-02: worse to the left of it, better to the right,
+   the length the figure itself. --ch-tour-rev-zero is where the rule sits; --ch-tour-rev-len is the bar's share of the track. */
+.ch-tour-rev-bar__track {
+  position: relative;
   display: block;
-  flex: none;
-  width: calc(var(--ch-tour-rev-len, 0) * (100% - 48px));
   height: 14px;
-  border-radius: var(--ch-radius-mark) var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-mark);
+}
+.ch-tour-rev-bar__track::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: calc(var(--ch-tour-rev-zero, 0.5) * 100%);
+  width: var(--ch-hairline-w);
+  background: var(--ch-chart-zero);
+}
+.ch-tour-rev-bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(var(--ch-tour-rev-len, 0) * 100%);
   /* An earlier season is this season's green, thinned: it holds against the card in the dark too, where the pale step
      of the ramp sank into it. */
   background: color-mix(in oklab, var(--ch-green-600) 34%, transparent);
+}
+.ch-tour-rev-bar i[data-side='worse'] {
+  right: calc((1 - var(--ch-tour-rev-zero, 0.5)) * 100%);
+  border-radius: var(--ch-radius-sm) 0 0 var(--ch-radius-sm);
+}
+.ch-tour-rev-bar i[data-side='better'] {
+  left: calc(var(--ch-tour-rev-zero, 0.5) * 100%);
+  border-radius: 0 var(--ch-radius-sm) var(--ch-radius-sm) 0;
 }
 .ch-tour-rev-bar.is-now i {
   background: var(--ch-green-600);
 }
 /* Figure and event at the phone's text floor or above (Q-141). */
 .ch-tour-rev-bar b {
-  flex: none;
+  text-align: right;
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
@@ -309,7 +332,7 @@
 .ch-tour-rev-bar:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
 }
 /* G17: the phone's one filter (three views of the trend), the card's full width. The two stacked filters stood before
    any content. A label may wrap at a larger text size rather than run out of its third of the row. */
@@ -322,7 +345,7 @@
 .ch-tour-rev-hist.is-phone .ch-tour-rev-tools .ch-seg__b {
   min-width: 0;
   height: auto;
-  min-height: 26px;
+  min-height: calc(26 * var(--ch-type-k));
   padding: 4px 8px;
   white-space: normal;
 }
@@ -343,7 +366,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }

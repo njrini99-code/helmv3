@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 
-import { classifyNav, takeRunningPush } from '../lib/nav-motion';
-import { chSpringCurve } from '../lib/motion';
+import { chNavCrossfades, chTapTiming, classifyNav, takeRunningPush } from '../lib/nav-motion';
+import { CH_PUSH_MS } from '../lib/motion';
 import { prefetchAllowed } from '../shell/use-prefetch-tabs';
 
 const css = (f: string) => readFileSync(join(process.cwd(), 'src/clubhouse/styles', f), 'utf8');
@@ -15,7 +15,7 @@ const TABS = ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/c
 afterEach(() => vi.restoreAllMocks());
 
 describe('which way a phone navigation moves', () => {
-  it('a tab change crossfades, wherever it starts', () => {
+  it('a tab change neither pushes nor pops, wherever it starts', () => {
     expect(classifyNav({ from: '/golf/dashboard', to: '/golf/dashboard/calendar', tabRoots: TABS, tabBar: true })).toBe('fade');
     // From inside a drill-in, the tab bar's Home is a tab change, not a Back, though Home's path is above it.
     expect(classifyNav({ from: '/golf/dashboard/roster', to: '/golf/dashboard', tabRoots: TABS, tabBar: true })).toBe('fade');
@@ -28,12 +28,12 @@ describe('which way a phone navigation moves', () => {
     expect(classifyNav({ from: '/golf/dashboard/qualifiers', to: '/golf/dashboard/qualifiers/abc', tabRoots: TABS })).toBe('push');
   });
 
-  it('a link up to the page above pops; a link onto a tab root from a page crossfades', () => {
+  it('a link up to the page above pops; a link onto a tab root from a page swaps', () => {
     expect(classifyNav({ from: '/golf/dashboard/qualifiers/abc', to: '/golf/dashboard/qualifiers', tabRoots: TABS })).toBe('pop');
     expect(classifyNav({ from: '/golf/dashboard/stats', to: '/golf/dashboard/calendar', tabRoots: TABS })).toBe('fade');
   });
 
-  it('Back from a pushed page pops, Forward onto one pushes, and Back between tabs crossfades', () => {
+  it('Back from a pushed page pops, Forward onto one pushes, and Back between tabs swaps', () => {
     expect(classifyNav({ from: '/golf/dashboard/roster', to: '/golf/dashboard', tabRoots: TABS, back: true })).toBe('pop');
     expect(classifyNav({ from: '/golf/dashboard', to: '/golf/dashboard/roster', tabRoots: TABS, back: true })).toBe('push');
     expect(classifyNav({ from: '/golf/dashboard/calendar', to: '/golf/dashboard', tabRoots: TABS, back: true })).toBe('fade');
@@ -44,7 +44,7 @@ describe('which way a phone navigation moves', () => {
   });
 });
 
-describe('a section switch swaps at once (motion pass 2026-10-22, mot-03)', () => {
+describe('a section switch swaps at once, with no view transition (mot-03; production audit 2026-11-15, S4.4, S4.8)', () => {
   const shell = css('shell.css');
 
   function tap(container: string, href: string) {
@@ -55,51 +55,76 @@ describe('a section switch swaps at once (motion pass 2026-10-22, mot-03)', () =
   }
 
   afterEach(() => {
-    document.documentElement.removeAttribute('data-ch-tab');
     document.body.innerHTML = '';
   });
 
-  it('a tab bar or sidebar item marks the switch; any other link does not', () => {
+  it('a tab bar or sidebar item never crossfades; any other desktop link does', () => {
     tap('ch-strip', '/golf/dashboard/calendar');
-    expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(true);
+    expect(chNavCrossfades()).toBe(false);
     tap('ch-nav', '/golf/dashboard/stats');
-    expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(true);
+    expect(chNavCrossfades()).toBe(false);
+    // jsdom has no phone media query: this is the desktop, where a drill-in crossfades.
     tap('ch-page-links', '/golf/dashboard/roster');
-    expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(false);
+    expect(chNavCrossfades()).toBe(true);
   });
 
-  it('drops the fade-through: the new page at once, the old one gone or held whole until the skeleton is due', () => {
-    expect(shell).toMatch(/html\[data-ch-tab\]:has\(\[data-ui='clubhouse'\]\)::view-transition-new\(ch-page\) \{\s*animation: none;/);
-    expect(shell).toMatch(/html\[data-ch-tab\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*display: none;/);
-    expect(shell).toMatch(/html\[data-ch-tab\]\[data-ch-vt-hold\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*display: block;\s*animation: calc\(var\(--ch-dur-vt-hold\) \+ var\(--ch-dur-vt-out\)\) step-end both ch-vt-out;/);
+  // MOTION-AND-VISUAL 3.3 and 3.11: on a phone with motion on a section switch swaps at once; under Reduce Motion it
+  // becomes the 180 ms crossfade, like a push and a pop.
+  it('on a phone a section switch swaps at once, and under Reduce Motion crossfades like any other page change', () => {
+    let reduce = false;
+    vi.mocked(window.matchMedia).mockImplementation(
+      (query: string) =>
+        ({ matches: query === '(prefers-reduced-motion: reduce)' ? reduce : query.includes('max-width: 820px'), media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }) as unknown as MediaQueryList,
+    );
+    tap('ch-strip', '/golf/dashboard/calendar');
+    expect(chNavCrossfades()).toBe(false);
+    tap('ch-page-links', '/golf/dashboard/roster');
+    expect(chNavCrossfades()).toBe(false);
+    reduce = true;
+    tap('ch-strip', '/golf/dashboard/stats');
+    expect(chNavCrossfades()).toBe(true);
+    tap('ch-page-links', '/golf/dashboard/roster');
+    expect(chNavCrossfades()).toBe(true);
+  });
+
+  it('marks nothing on <html> (MOT-20), and the shell keeps no tab or fade-through rules', () => {
+    tap('ch-strip', '/golf/dashboard/calendar');
+    expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(false);
+    expect(shell).not.toContain('data-ch-tab');
+    expect(css('tokens.css')).not.toContain('--ch-dur-vt-gap');
   });
 });
 
-describe('the push and the pop', () => {
+describe('the push and the pop (S4.1)', () => {
   const shell = css('shell.css');
   const tokens = css('tokens.css');
 
-  it('ride the smooth spring a pushed phone screen rides, sampled the same', () => {
-    const curve = chSpringCurve('smooth');
-    expect(tokens).toContain(`--ch-ease-vt-push: ${curve.linear};`);
-    expect(tokens).toContain(`--ch-dur-vt-push: ${curve.ms}ms;`);
-    expect(tokens).toContain('--ch-vt-parallax: -24%;');
+  it('ride the reveal beat on the one curve, with a third of parallax under a 0.075 black dim', () => {
+    expect(CH_PUSH_MS).toBe(520);
+    expect(chTapTiming().timing).toEqual({ duration: 520, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' });
+    expect(chTapTiming().curve.ease(0.5)).toBeGreaterThan(0.9);
+    expect(tokens).toContain('--ch-ease-ios: cubic-bezier(0.32, 0.72, 0, 1);');
+    expect(tokens).toContain('--ch-push-parallax: -30%;');
+    expect(tokens).toContain('--ch-push-dim: rgb(0 0 0 / 0.075);');
   });
 
-  it('push: drawn by the live page over a copy (C1), so the view transition swaps at once; pop: the leaving page on top', () => {
-    expect(shell).not.toContain('@keyframes ch-vt-push-in');
-    expect(shell).toMatch(/html\[data-ch-nav='push'\]:has\(\[data-ui='clubhouse'\]\)::view-transition-new\(ch-page\) \{\s*animation: none;/);
+  it('drawn by the live page over a copy (C1), never by a view transition; promoted and edged only while it moves', () => {
+    expect(shell).not.toMatch(/ch-vt-pop|ch-vt-push|data-ch-nav/);
     // The copy beneath sits under the page that slides over it; both under the bars.
     expect(shell).toMatch(/\.ch-root\.ch-frame-under \{\s*z-index: calc\(var\(--ch-z-sticky\) - 2\);/);
     expect(shell).toMatch(/\.ch-frame-route\[data-ch-pushing\] \{\s*position: relative;\s*z-index: calc\(var\(--ch-z-sticky\) - 1\);/);
-    expect(shell).toMatch(/@keyframes ch-vt-pop-in \{\s*from \{\s*transform: translateX\(var\(--ch-vt-parallax\)\);/);
-    expect(shell).toMatch(/html\[data-ch-nav='pop'\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*z-index: 1;/);
+    const page = shell.slice(shell.indexOf('.ch-frame-route[data-ch-pushing] {'));
+    const rule = page.slice(0, page.indexOf('}'));
+    expect(rule).toContain('box-shadow: var(--ch-push-edge);');
+    expect(tokens).toMatch(/--ch-push-edge: -1px 0 0 var\(--ch-card-ring\);/);
+    expect(rule).toContain('will-change: transform;');
+    const under = shell.slice(shell.indexOf('.ch-root.ch-frame-under {'));
+    expect(under.slice(0, under.indexOf('}'))).toContain('will-change: transform;');
   });
 
-  it('only on a phone, with the iOS-animated Back and reduced motion still instant', () => {
-    const start = shell.indexOf('@keyframes ch-vt-pop-in');
-    const block = shell.slice(start, shell.indexOf("@media (prefers-reduced-motion: reduce)", start));
-    expect(block).toContain('@media (max-width: 820px)');
+  it('only on a phone, with the iOS-animated Back still instant', () => {
+    const at = shell.indexOf('.ch-root.ch-frame-under {');
+    expect(shell.slice(shell.lastIndexOf('@media', at), at)).toContain('@media (max-width: 820px)');
     expect(shell).toMatch(/html\[data-ch-ua-pop\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(\*\)/);
   });
 });

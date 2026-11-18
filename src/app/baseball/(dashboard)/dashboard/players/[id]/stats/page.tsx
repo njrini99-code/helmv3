@@ -9,6 +9,9 @@ import { PaperCard, EditorsLetter } from '@/components/baseball/living-annual';
 import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Player Stats' };
 
 interface PageProps {
   params: Promise<{ id: string }>;

@@ -12,10 +12,12 @@ export function sheetSettleHaptic(): void {
   haptic('commit');
 }
 
-/** A drag down past this many pixels closes the sheet. */
+/** A drag down past this share of the sheet's height closes it (motion spec 15 Nov 3.4, S3.3: 25%). */
+export const CH_SHEET_CLOSE_FRACTION = 0.25;
+/** Where a sheet has no measured height yet (a test page, a sheet still laying out), past this many pixels instead. */
 export const CH_SHEET_CLOSE_PX = 80;
-/** So does a flick faster than this (px per ms), once it has moved a little. */
-const FLICK_PX_PER_MS = 0.5;
+/** So does a flick faster than this (px per ms), once it has moved a little (3.4: 0.4 px/ms). */
+export const CH_SHEET_FLICK_PX_PER_MS = 0.4;
 /** A finger that stops before it lets go is no longer flicking: its speed fades to nothing over this long. */
 const FLICK_MAX_AGE_MS = 80;
 /** The release speed is read over the last stretch of the drag, not from its last two events alone. */
@@ -80,11 +82,24 @@ export function chSupportsLinear(): boolean {
   return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('transition-timing-function', 'linear(0, 1)');
 }
 
-/** The sheet's offset now, mid spring-back included, so a new drag takes it from where it is. */
-function offsetNow(el: HTMLElement, direction: 'down' | 'left'): number {
-  const parts = getComputedStyle(el).translate.split(' ').map(parseFloat);
-  const v = direction === 'left' ? -(parts[0] ?? 0) : (parts[1] ?? 0);
+/** Which way a sheet closes: a bottom sheet down, a drawer left, a drop that hangs from the top bar (the bell) up. */
+export type ChSheetDirection = 'down' | 'left' | 'up';
+
+/** A `translate` value's distance toward closing. */
+function along(translate: string, direction: ChSheetDirection): number {
+  const parts = translate.split(' ').map(parseFloat);
+  const v = direction === 'left' ? -(parts[0] ?? 0) : direction === 'up' ? -(parts[1] ?? 0) : (parts[1] ?? 0);
   return Number.isFinite(v) ? v : 0;
+}
+
+/** The sheet's offset now, mid spring-back included, so a new drag takes it from where it is. */
+function offsetNow(el: HTMLElement, direction: ChSheetDirection): number {
+  return along(getComputedStyle(el).translate, direction);
+}
+
+/** How far a drag has carried `el` toward closing, from its inline `translate` (what an exit starts from). */
+export function sheetDragOffset(el: HTMLElement | null | undefined, direction: ChSheetDirection): number {
+  return el ? along(el.style.translate, direction) : 0;
 }
 
 /**
@@ -141,7 +156,8 @@ export function chScrimAt(offset: number, size: number): number {
 }
 
 /**
- * A phone sheet follows the finger down, and closes past 80px or on a quick flick with the medium settle haptic;
+ * A phone sheet follows the finger down, and closes past a quarter of its height or on a flick faster than 0.4 px/ms
+ * (motion spec 15 Nov 3.4) with the medium settle haptic;
  * let go sooner and it springs back on the smooth spring, starting at the speed it was moving, and a finger can catch
  * it on the way. Pulled up past its open position it gives like a rubber band, its own colour reaching under it, and
  * thrown back up hard it carries on a little past that position over the same floor. Its body drags it too, once that is
@@ -158,7 +174,7 @@ export function chScrimAt(offset: number, size: number): number {
 export function useSheetDrag(
   sheet: RefObject<HTMLElement | null>,
   onClose: () => void,
-  { enabled = true, direction = 'down', reduced = false, variant = 'default' }: { enabled?: boolean; direction?: 'down' | 'left'; reduced?: boolean; variant?: 'default' | 'messages' } = {},
+  { enabled = true, direction = 'down', reduced = false, variant = 'default' }: { enabled?: boolean; direction?: ChSheetDirection; reduced?: boolean; variant?: 'default' | 'messages' } = {},
 ) {
   const reducedRef = useRef(reduced);
   reducedRef.current = reduced;
@@ -192,7 +208,7 @@ export function useSheetDrag(
 
   const begin = useCallback(
     (el: HTMLElement, pointerId: number, at: number, timeStamp: number, capture: Element | null) => {
-      const coordinate = (event: { clientX: number; clientY: number }) => (direction === 'left' ? -event.clientX : event.clientY);
+      const coordinate = (event: { clientX: number; clientY: number }) => (direction === 'left' ? -event.clientX : direction === 'up' ? -event.clientY : event.clientY);
       flings.delete(el);
       const shown = settling.current ? offsetNow(el, direction) : 0;
       settling.current?.();
@@ -214,7 +230,7 @@ export function useSheetDrag(
       const size = direction === 'left' ? el.offsetWidth : el.offsetHeight;
       const put = (offset: number) => {
         if (offset < 0 && direction === 'down') floor();
-        el.style.translate = direction === 'left' ? `${-offset}px 0` : `0 ${offset}px`;
+        el.style.translate = direction === 'left' ? `${-offset}px 0` : direction === 'up' ? `0 ${-offset}px` : `0 ${offset}px`;
         if (dialog) chSetScrim(dialog, chScrimAt(offset, size), 0);
       };
       el.style.transition = 'none';
@@ -225,7 +241,7 @@ export function useSheetDrag(
       const move = (ev: PointerEvent) => {
         if (ev.pointerId !== pointerId) return;
         const raw = from + coordinate(ev) - at;
-        // Only a sheet rising from the bottom has a floor to stretch over; a drawer stops at its open edge.
+        // Only a sheet rising from the bottom has a floor to stretch over; a drawer or a drop stops at its open edge.
         dy = raw >= 0 ? raw : direction === 'down' ? -(messages ? msRubberBand(-raw) : rubberBand(-raw)) : 0;
         put(dy);
         samples.push([ev.timeStamp, dy]);
@@ -255,7 +271,7 @@ export function useSheetDrag(
           // Toward rest from wherever it is, at the speed it was moving (progress per second), cut within half a pixel.
           // Thrown back hard, a sheet carries on past its open position as when pulled there, over its floor; a drawer
           // stops at its open edge, so thrown back too hard to stop there it starts slower instead.
-          const curve = chSpringCurve('smooth', { velocity: (-speed * 1000) / dy, rest: 0.5 / Math.abs(dy), hold: direction === 'left' });
+          const curve = chSpringCurve('smooth', { velocity: (-speed * 1000) / dy, rest: 0.5 / Math.abs(dy), hold: direction !== 'down' });
           if (direction === 'down' && dy > 0 && Array.from({ length: 49 }, (_, i) => curve.ease(i / 48)).some((p) => p > 1)) floor();
           ms = curve.ms;
           el.style.transition = `translate ${curve.ms}ms ${curve.linear}`;
@@ -274,7 +290,8 @@ export function useSheetDrag(
         if (ev.pointerId !== pointerId) return;
         stop.current?.();
         const speed = releaseSpeed(samples, ev.timeStamp);
-        if (ev.type === 'pointerup' && (dy > (messages ? size * MS_CLOSE_FRACTION : CH_SHEET_CLOSE_PX) || (dy > 10 && speed > FLICK_PX_PER_MS))) {
+        const past = messages ? size * MS_CLOSE_FRACTION : size > 0 ? size * CH_SHEET_CLOSE_FRACTION : CH_SHEET_CLOSE_PX;
+        if (ev.type === 'pointerup' && (dy > past || (dy > 10 && speed > CH_SHEET_FLICK_PX_PER_MS))) {
           if (floored) el.style.boxShadow = '';
           flings.set(el, { speed: Math.max(0, speed), at: performance.now() });
           haptic('commit');
@@ -306,7 +323,7 @@ export function useSheetDrag(
       if (e.isPrimary === false || stop.current) return;
       if ((e.target as Element).closest('button, a, input, textarea, select')) return;
       if (typeof e.pointerId === 'number') e.currentTarget.setPointerCapture?.(e.pointerId);
-      begin(el, e.pointerId, direction === 'left' ? -e.clientX : e.clientY, e.timeStamp, e.currentTarget);
+      begin(el, e.pointerId, direction === 'left' ? -e.clientX : direction === 'up' ? -e.clientY : e.clientY, e.timeStamp, e.currentTarget);
     },
     [sheet, enabled, direction, begin],
   );

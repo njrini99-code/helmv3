@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -19,7 +19,7 @@ vi.mock('@/app/golf/actions/coachhelm-corrections', () => ({ recordCoachHelmCorr
 vi.mock('@/app/golf/actions/insights-coachhelm', () => ({ refreshTeamAnalysisAsCoach: vi.fn() }));
 vi.mock('@/app/golf/actions/coachhelm-course-plan', () => ({ getCoursePlan: vi.fn(), getMyCoursePlan: vi.fn(), listCoursePlanCourses: vi.fn(), listMyCoursePlanCourses: vi.fn() }));
 
-import { ToastProvider } from '../../../../ui/Toast';
+import { CH_TOAST_ACTION_MS, ToastProvider } from '../../../../ui/Toast';
 import { previewReadHead, previewReadView } from '../../../../preview/fixtures-coachhelm-read';
 import type { ChViewLoad, ChViewVoice } from '../../../../data/coachhelm-views-shape';
 import type { ChReadView } from '../../../../data/coachhelm-read-view-shape';
@@ -27,6 +27,21 @@ import type { ChCoachHelmWrites } from '../../writes';
 import type { ChReadWrites } from '../actions';
 import { ReadPage, ReadSkeleton, readBarTitle } from '../ReadPage';
 import '../../../../__tests__/dialog-polyfill';
+
+/**
+ * Every Undo window is ten seconds (NP-06), whatever hold a caller asks for: run it on a fake clock that also moves with
+ * real time, so clicks and Motion's frames carry on, and jump the clock past the window.
+ */
+async function pastUndo(run: () => Promise<void>) {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'], shouldAdvanceTime: true });
+  try {
+    await run();
+  } finally {
+    await vi.runOnlyPendingTimersAsync();
+    vi.useRealTimers();
+  }
+}
+const closeUndo = () => act(() => vi.advanceTimersByTime(CH_TOAST_ACTION_MS));
 
 /**
  * The read page as each viewer gets it (7 Nov design), from the real shapers: the head's four lines, the actions directly under it
@@ -209,22 +224,27 @@ describe('a coach acts on the read', () => {
     expect(writes.assign).not.toHaveBeenCalled();
   });
 
-  it('when Undo closes, one write goes for this player and the read stays assigned', async () => {
-    const writes = show('penalties', 'coach', { holdMs: 40 });
-    await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    await waitFor(() => expect(writes.assign).toHaveBeenCalledTimes(1), { timeout: 4000 });
-    expect(vi.mocked(writes.assign).mock.calls[0]?.[0]).toMatchObject({ playerId: 'pl-eli', insightId: 'in-pen' });
-    await waitFor(() => expect(main().querySelector('[data-ch-read-actions="assigned"]')?.textContent).toContain('Eli sees it as a proposal'));
-    expect(main().getAttribute('data-ch-read-state')).toBe('assigned');
-  });
+  it('when Undo closes, one write goes for this player and the read stays assigned', () =>
+    pastUndo(async () => {
+      const writes = show('penalties', 'coach');
+      await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
+      expect(writes.assign).not.toHaveBeenCalled();
+      closeUndo();
+      await waitFor(() => expect(writes.assign).toHaveBeenCalledTimes(1));
+      expect(vi.mocked(writes.assign).mock.calls[0]?.[0]).toMatchObject({ playerId: 'pl-eli', insightId: 'in-pen' });
+      await waitFor(() => expect(main().querySelector('[data-ch-read-actions="assigned"]')?.textContent).toContain('Eli sees it as a proposal'));
+      expect(main().getAttribute('data-ch-read-state')).toBe('assigned');
+    }));
 
-  it('a refused Assign puts the key back and says so (CH-13001)', async () => {
-    show('penalties', 'coach', { holdMs: 40, writes: writesSpy({ assign: vi.fn(async () => ({ success: false, error: 'nope' })) }) });
-    await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13001"]')).toBeTruthy(), { timeout: 4000 });
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy());
-    expect(main().getAttribute('data-ch-read-state')).toBe('open');
-  });
+  it('a refused Assign puts the key back and says so (CH-13001)', () =>
+    pastUndo(async () => {
+      show('penalties', 'coach', { writes: writesSpy({ assign: vi.fn(async () => ({ success: false, error: 'nope' })) }) });
+      await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
+      closeUndo();
+      await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13001"]')).toBeTruthy());
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy());
+      expect(main().getAttribute('data-ch-read-state')).toBe('open');
+    }));
 
   it('leaving the page while Undo is offered sends the held write at once', async () => {
     const writes = show('penalties', 'coach', { holdMs: 5000 });
@@ -234,14 +254,17 @@ describe('a coach acts on the read', () => {
     await waitFor(() => expect(writes.assign).toHaveBeenCalledTimes(1));
   });
 
-  it('Remove focus is offered on a focus made from this read, waits behind Undo, then deletes that focus area and reads the page again', async () => {
-    show('penalties', 'coach', { state: 'assigned', holdMs: 40 });
-    await userEvent.click(screen.getByRole('button', { name: 'Remove focus' }));
-    expect(main().getAttribute('data-ch-read-state')).toBe('removed');
-    expect(sec('plan')?.textContent).toContain('Not part of a focus or goal yet.');
-    await waitFor(() => expect(lastRead.writes.removeFocus).toHaveBeenCalledWith('fa-read'), { timeout: 4000 });
-    await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
-  });
+  it('Remove focus is offered on a focus made from this read, waits behind Undo, then deletes that focus area and reads the page again', () =>
+    pastUndo(async () => {
+      show('penalties', 'coach', { state: 'assigned' });
+      await userEvent.click(screen.getByRole('button', { name: 'Remove focus' }));
+      expect(main().getAttribute('data-ch-read-state')).toBe('removed');
+      expect(sec('plan')?.textContent).toContain('Not part of a focus or goal yet.');
+      expect(lastRead.writes.removeFocus).not.toHaveBeenCalled();
+      closeUndo();
+      await waitFor(() => expect(lastRead.writes.removeFocus).toHaveBeenCalledWith('fa-read'));
+      await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
+    }));
 
   it('Undo on Remove focus deletes nothing', async () => {
     show('penalties', 'coach', { state: 'assigned', holdMs: 5000 });
@@ -449,7 +472,7 @@ describe('how it has moved', () => {
     const card = sec('moved') as HTMLElement;
     expect(card.querySelector('.ch-line')).toBeTruthy();
     expect(card.textContent).toContain('Penalties per round, oldest to newest');
-    expect(card.textContent).toContain('1.5 a round over the last 8 rounds');
+    expect(card.textContent).toContain('1.6 a round over the last 8 rounds');
     expect(card.textContent).toContain('Dashed line: Tour 0.3');
     const win = within(card).getByRole('radiogroup', { name: 'Rounds shown' });
     expect(within(win).getAllByRole('radio').map((b) => b.textContent)).toEqual(['Last 8', 'Season']);

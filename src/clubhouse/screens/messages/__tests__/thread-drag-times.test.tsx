@@ -72,6 +72,21 @@ describe('drag for times (MOT-THR-3)', () => {
     expect(list.hasAttribute('data-ch-times')).toBe(false);
   });
 
+  it('the list has its own layer from the sideways lock until it has settled, and never for a scroll (MOT-03)', () => {
+    const { list, settles } = mount();
+    touch(list, 'pointerdown', 330);
+    touch(window, 'pointermove', 330, 360);
+    expect(list.style.willChange).toBe('');
+    touch(window, 'pointerup', 330, 360);
+    touch(list, 'pointerdown', 330);
+    touch(window, 'pointermove', 318);
+    expect(list.style.willChange).toBe('transform');
+    touch(window, 'pointerup', 318);
+    expect(list.style.willChange).toBe('transform');
+    settles[0]!.onfinish?.();
+    expect(list.style.willChange).toBe('');
+  });
+
   it('caught on its way back by a scroll, it still returns to rest and hides the times', () => {
     const { list, settles, animate } = mount();
     touch(list, 'pointerdown', 330);

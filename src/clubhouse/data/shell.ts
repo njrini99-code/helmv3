@@ -30,6 +30,12 @@ export interface ChShellData {
   roundInProgress?: ChRoundInProgress | null;
   /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
   viewerIsHeadCoach?: boolean;
+  /**
+   * The reads that failed this time (GAP-S-14), so their fallback (no Resume, plain "Coach") is not an answer: the client
+   * keeps the last value it had for each (shell/shell-memory.ts) and, with none, shows the fallback without taking it as
+   * known. Absent when every read answered.
+   */
+  unknown?: ChShellUnknown[];
   /** golf_tournaments_v1 is on (P016): the Tournaments nav entry and its routes. Set by the dashboard layout, server side. */
   tournaments?: boolean;
   /**
@@ -38,6 +44,9 @@ export interface ChShellData {
    */
   classAwareness?: boolean;
 }
+
+/** A shell value whose read can fail without taking anything away: the Resume accessory and the head coach's title. */
+export type ChShellUnknown = 'roundInProgress' | 'viewerIsHeadCoach';
 
 /** One of the coach's players, as the palette lists them: the id it opens and the name it shows. Nothing more. */
 export interface ChShellPerson {
@@ -190,12 +199,16 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   if (joinRes.error) {
     chLogServer('shell', 'joinRequests', joinRes.error, 'teams');
   }
+  // A failed read is unknown, not "no round" or "not the head coach" (GAP-S-14): the client keeps the Resume accessory and
+  // the head coach's title it last had. With nothing to keep, the plain fallback shows, without being remembered.
+  const unknown: ChShellUnknown[] = [];
   if (roundRes?.error) {
     chLogServer('shell', 'roundInProgress', roundRes.error, 'rounds');
+    unknown.push('roundInProgress');
   }
-  // A failed read leaves the plain "Coach": the label only ever falls back to the lesser title.
   if (staffRes?.error) {
     chLogServer('shell', 'staffRole', staffRes.error, 'teams');
+    unknown.push('viewerIsHeadCoach');
   }
   const round = roundRes && !roundRes.error ? roundRes.data : null;
 
@@ -209,6 +222,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     course: courseOf(courseRes),
     roundInProgress: round && playerId ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []), playerId } : null,
     viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),
+    ...(unknown.length ? { unknown } : {}),
   };
 }
 

@@ -20,7 +20,7 @@ import { CheckInsPageClient } from './check-ins-client';
 import type { HelmLiftingCoachRow, HelmLiftingSport } from '@/lib/types/helm-lifting';
 
 export const metadata = {
-  title: 'Check-In Schedules · Helm Lifting Lab',
+  title: 'Check-In Schedules',
 };
 
 export default async function CheckInsPage() {

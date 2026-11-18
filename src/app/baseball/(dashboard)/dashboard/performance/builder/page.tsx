@@ -33,6 +33,9 @@ import {
   getGroupAvailability,
 } from '@/lib/baseball/read-models/lift-builder';
 import { LiftBuilderClient } from '@/components/baseball/performance/LiftBuilderClient';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Program Builder' };
 
 // =============================================================================
 // Helpers

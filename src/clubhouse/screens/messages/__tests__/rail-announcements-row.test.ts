@@ -108,7 +108,8 @@ describe('Messages rail · Announcements is a row on the rail’s grid', () => {
     const face = decls('[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann) .ch-ms-grp');
     expect(decls(`${PHONE} .ch-ms-row.is-ann .ch-ms-grp`)).toEqual({ width: face.width, height: face.height });
     expect(face.width).toBe('40px');
-    expect(decls(`${PHONE} .ch-ms-row.is-ann[data-ch-pressed]`)).toEqual({ background: 'var(--ch-press-wash)' });
+    // Pressed, the row takes the one wash (MOTION-AND-VISUAL 3.8; was --ch-press-wash).
+    expect(decls(`${PHONE} .ch-ms-row.is-ann[data-ch-pressed]`)).toEqual({ background: 'var(--ch-sel)' });
     expect(decls(`${PHONE} .ch-ms-sec.is-ann .ch-ms-sec__card > .ch-ms-row:first-child::before`)).toMatchObject({
       left: 'var(--ch-space-4)',
       right: '0',

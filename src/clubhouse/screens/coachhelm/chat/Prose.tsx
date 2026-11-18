@@ -5,6 +5,7 @@ import { Fragment, memo, useMemo, type ReactNode } from 'react';
 import { splitReadMarkers } from '@/lib/coachhelm/v3/chat/read-markers';
 import { parseProse, splitAtMentions, splitInline, type ProseBlock } from '../../../data/coachhelm-chat-thread';
 import { settledText } from './turn-timing';
+import { revealMode } from './reveal';
 import { rebuiltHref } from '../../../shell/nav';
 import { ScrollRegion } from '../../../ui/ScrollRegion';
 
@@ -25,9 +26,11 @@ const ProseBlockView = memo(function ProseBlockView({ sig, lead, streaming, tail
   const names = useMemo(() => Object.keys(playersByName), [playersByName]);
   // A read's chip is drawn once in a paragraph, list or table: six bullets from one read are one source, not six chips.
   const seen = new Set<string>();
-  // While it streams, each word is its own inline box that fades in once, when it first exists (MOTION MO-5-1). The keys hold, so
-  // a word already in never replays; words that arrive in one burst mount in one frame and so fade as one group.
-  const words = (t: string): ReactNode => (streaming ? t.split(/(\s+)/).map((w, k) => (/\S/.test(w) ? <span key={k} className="w">{w}</span> : w)) : t);
+  // While it streams smoothly (reveal.ts), each word is its own inline box that fades in once, when the frame clock releases
+  // it (MOTION MO-5-1). The keys hold, so a word already in never replays. In `burst` mode words paint as each flush arrives,
+  // with no fade: a burst fading in as one group was decoration, not arrival (MOTION-AND-VISUAL 3.5).
+  const wrap = streaming && revealMode() === 'smooth';
+  const words = (t: string): ReactNode => (wrap ? t.split(/(\s+)/).map((w, k) => (/\S/.test(w) ? <span key={k} className="w">{w}</span> : w)) : t);
   const plainInline = (s: string) =>
     splitInline(s, names).map((seg, i) => {
       const id = seg.mention ? playersByName[seg.mention] : undefined;
@@ -169,8 +172,8 @@ export function splitLead(blocks: ProseBlock[]): ProseBlock[] {
  * An answer's text: paragraphs, lists, pipe tables, **bold** and roster names. Editorial, not a bubble. The
  * match is against the real roster passed in, so "Wake Forest" is never a link to nowhere.
  *
- * While the answer streams: half-written syntax is held back (`settledText`), each burst of words fades in once and never
- * moves, only the block being written re-renders, and when nothing has arrived for a moment the live dot sits after the last
+ * While the answer streams: half-written syntax is held back (`settledText`), each word the smooth reveal releases fades
+ * in once and never moves (burst mode paints its flushes without a fade), only the block being written re-renders, and when nothing has arrived for a moment the live dot sits after the last
  * word (`pending`). A finished or reloaded answer draws still, as plain text.
  */
 export function AskProse({ text, lead = false, playersByName, streaming = false, pending = false, chip }: { /** Ask v2: draws `[e2]` as a read chip. */ chip?: Chip; text: string; lead?: boolean; playersByName: Record<string, string>; streaming?: boolean; /** The turn is live and no words have arrived for a moment. */ pending?: boolean }) {

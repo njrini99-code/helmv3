@@ -45,7 +45,7 @@ export function RosterProfileCrh({
   const note = rowNote({ ...p, availability: 'available' }, statsError);
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${p.id}`);
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
-  const roundsHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season&tab=rounds`);
+  const roundsHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season&holes=all&tab=rounds`);
   const year = yearKeyOf(p.gradYear, clock);
   const line = yearLineOf(p.gradYear, clock);
   const out = p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null;
@@ -121,7 +121,7 @@ export function RosterProfileCrh({
                   No 18-hole rounds this season. Form appears once rounds are posted.
                 </p>
               ) : (
-                <CrhLine data={p.trend} height={84} label={`${p.name}, last rounds: ${p.trend.join(', ')}`} meanLabel={`mean ${formatFixed(p.trend.reduce((a, b) => a + b, 0) / p.trend.length)}`} />
+                <CrhLine data={p.trend} dates={p.trendDates} height={84} label={`${p.name}, last rounds: ${p.trend.join(', ')}`} meanLabel={`mean ${formatFixed(p.trend.reduce((a, b) => a + b, 0) / p.trend.length)}`} />
               )}
             </div>
           </Surface>

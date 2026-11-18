@@ -3,13 +3,15 @@
 import { useChPhone } from '../../../lib/use-phone';
 import { Notice } from './parts';
 import { Badge } from '../../../ui/Badge';
+import { Skeleton } from '../../../ui/States';
 import { formatWith } from '../../../lib/dates';
 import { pluralWord } from '../../../lib/plural';
 
-import { useRef, useState } from 'react';
+import { Suspense, use, useRef, useState, type ReactNode } from 'react';
 import { courseReads, type ChTeamBoardData, type ChTeamPlayer, type ChTourRow } from '../../../data/coachhelm-team-shape';
 import type { CourseHistory, CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { formatFixed, MINUS } from '../../../lib/format';
+import { weekShares } from '../../../lib/chart';
 import { Chevron, ReadRow } from './parts';
 import { useContentIn } from './team-motion';
 
@@ -39,7 +41,9 @@ function Trend({ history }: { history: CourseHistory }) {
   const lo = Math.min(...vs) - 0.35;
   const hi = Math.max(...vs) + 0.35;
   const n = weeks.length;
-  const x = (i: number) => L + (n < 2 ? (w - L - R) / 2 : (i * (w - L - R)) / (n - 1));
+  // Weeks sit by their dates (stats and charts audit 2026-11-15, CH-11): a month with no rounds is a month of width, not one step.
+  const share = weekShares(n, weeks.map((p) => p.start));
+  const x = (i: number) => L + share[i]! * (w - L - R);
   const y = (v: number) => T + ((v - lo) / (hi - lo)) * (h - T - B);
   const pts = weeks.map((p, i) => [x(i), y(p.value)] as const);
   const last = pts[n - 1];
@@ -198,27 +202,7 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
       {/* These six read each player's standing row, which covers every round on file (`loadPlayersStandingMap`): not the season's
           rounds the trend above reads, so the heading says so. */}
       <div className="subh">Team against Tour · all time</div>
-      {data.course.against ? (
-        <div className="shape">
-          {data.course.against.map((row) => {
-            const w = TOUR_WORDS[row.id];
-            return (
-              <div key={row.id}>
-                <span className="sl">{w.label}</span>
-                <span className="sv">{row.team == null ? '—' : w.fmt(row.team)}</span>
-                {row.team != null && (
-                  <span className="st">
-                    {w.unit}
-                    {row.tour != null ? ` · Tour ${w.fmt(row.tour)}` : ''}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        failed
-      )}
+      <AgainstRows value={data.course.against} failed={failed} />
     </div>
   );
   return (
@@ -248,5 +232,56 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
         </div>
       )}
     </section>
+  );
+}
+
+/** The six Tour rows, or the part's own failure; a comparison still on its way waits as its rows' shape (N13-13). */
+function AgainstRows({ value, failed }: { value: ChTourRow[] | null | Promise<ChTourRow[] | null>; failed: ReactNode }) {
+  if (value != null && 'then' in value)
+    return (
+      <Suspense fallback={<AgainstWaiting />}>
+        <AgainstLanded value={value} failed={failed} />
+      </Suspense>
+    );
+  return <AgainstDrawn rows={value} failed={failed} />;
+}
+
+function AgainstLanded({ value, failed }: { value: Promise<ChTourRow[] | null>; failed: ReactNode }) {
+  return <AgainstDrawn rows={use(value)} failed={failed} />;
+}
+
+function AgainstWaiting() {
+  return (
+    <div className="shape" role="status" aria-busy="true" aria-label="Loading the Tour comparison">
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} aria-hidden="true">
+          <Skeleton width={80} height={12} />
+          <Skeleton width={36} height={16} radius={4} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AgainstDrawn({ rows, failed }: { rows: ChTourRow[] | null; failed: ReactNode }) {
+  if (!rows) return <>{failed}</>;
+  return (
+    <div className="shape">
+      {rows.map((row) => {
+        const w = TOUR_WORDS[row.id];
+        return (
+          <div key={row.id}>
+            <span className="sl">{w.label}</span>
+            <span className="sv">{row.team == null ? '—' : w.fmt(row.team)}</span>
+            {row.team != null && (
+              <span className="st">
+                {w.unit}
+                {row.tour != null ? ` · Tour ${w.fmt(row.tour)}` : ''}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }

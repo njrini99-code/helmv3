@@ -133,7 +133,7 @@
     "item": 6,
     "name": "A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR",
     "chCode": "CH-1306",
-    "meaning": "A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell",
+    "meaning": "A dashboard URL that matches nothing, or an id that answered with no row (a deleted round, player, plan or drill, or a malformed id), inside the Clubhouse shell",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -336,6 +336,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10690,
+    "page": "P001",
+    "category": 6,
+    "item": 90,
+    "name": "A_ROUTE_FAILS_TO_LOAD_WHILE_THE",
+    "chCode": "CH-1290",
+    "meaning": "A route fails to load (a transient or load error) while the device is offline (GAP-S-05, GAP-S-30, GAP-S-35)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10701,
     "page": "P001",
     "category": 7,
@@ -399,6 +410,28 @@
     "chCode": "CH-1910",
     "meaning": "Two notices about the same thing in a row (Conversation muted, then Notifications back on)",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10790,
+    "page": "P001",
+    "category": 7,
+    "item": 90,
+    "name": "A_SAVE_STILL_HASNT_ANSWERED_AFTER_20",
+    "chCode": "CH-1990",
+    "meaning": "A save still hasn’t answered after 20 seconds (GAP-S-31)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10791,
+    "page": "P001",
+    "category": 7,
+    "item": 91,
+    "name": "SOMEONE_PRESSED_CANCEL_ON_CH_1990_OR",
+    "chCode": "CH-1991",
+    "meaning": "Someone pressed Cancel on CH-1990, or presses Save again while that stopped save is still out",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -522,7 +555,7 @@
     "name": "OPENING_MORE_ON_A_PHONE",
     "chCode": "CH-1602",
     "meaning": "Opening the account sheet on a phone (the strip's Account pill; once More)",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -1082,8 +1115,8 @@
     "item": 22,
     "name": "A_COACHS_TOP_BAR_CARRIES_AN_ASK",
     "chCode": "CH-1840",
-    "meaning": "A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page",
-    "status": "reserved",
+    "meaning": "Retired 2026-11-15 (the quick chat replaced the Ask key and its sheet; OVL-19). A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -1093,8 +1126,8 @@
     "item": 23,
     "name": "THE_ASK_SHEET_IS_COACHHELMS_ASK_OVER",
     "chCode": "CH-1841",
-    "meaning": "The Ask sheet is CoachHelm's Ask over any screen: the same chat hook and route (no new model or spend), the thread and the message box, saved like any chat; Open in CoachHelm goes to it there. Phone: a bottom sheet that opens at half height with the page in view and grows to full when a thread starts (the grab or the chevron toggles); desktop: a centred sheet. Its heading takes focus, Esc, Close or the backdrop close it, and a new page (or another player) closes it and starts the next one fresh; in the app it sits above the keyboard",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-15 (the quick chat replaced the Ask key and its sheet, and the unused sheet body was deleted; OVL-19). The Ask sheet is CoachHelm's Ask over any screen: the same chat hook and route (no new model or spend), the thread and the message box, saved like any chat; Open in CoachHelm goes to it there. Phone: a bottom sheet that opens at half height with the page in view and grows to full when a thread starts (the grab or the chevron toggles); desktop: a centred sheet. Its heading takes focus, Esc, Close or the backdrop close it, and a new page (or another player) closes it and starts the next one fresh; in the app it sits above the keyboard",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -1105,7 +1138,7 @@
     "name": "THE_SHEET_NAMES_WHAT_THE_COACH_IS",
     "chCode": "CH-1842",
     "meaning": "The sheet names what the coach is looking at (“Looking at: Stats · Jonah Okafor”, from the page's trail or the navigation); a page about one player (`?player=`) also hands the chat that player as its context chip",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -2303,6 +2336,33 @@
     ]
   },
   {
+    "id": 30180,
+    "page": "P003",
+    "category": 1,
+    "item": 80,
+    "name": "ROSTER_LIMIT_COUNTED_UNDER_THE_HEAD",
+    "meaning": "The coach's Roster states the team's roster limit under the head (launch readiness F-05; NCAA Division I Bylaw 17.2: 9 in golf, a conference or the coach may set fewer): '7 of 9 count toward the roster limit.', counting active players only and leaving out a player marked as not counting (a designated student-athlete or a medical exemption), who says 'Not counted' in their row. A Division I team starts on at 9 and every other team off (Set a roster limit); a saved limit (held migration 20261115250000) wins. Over the limit it says how many (CH-3981). The lineup builder states the same count (CH-16981).",
+    "status": "implemented",
+    "where": "src/lib/golf/roster-limit.ts#countRoster; src/lib/golf/roster-limit.ts#readRosterLimit; src/clubhouse/screens/roster/RosterLimit.tsx#RosterLimitLine; src/clubhouse/data/roster.ts#loadRoster",
+    "tests": [
+      "src/clubhouse/__tests__/roster-limit.test.tsx",
+      "src/lib/golf/__tests__/roster-limit.test.ts"
+    ]
+  },
+  {
+    "id": 30181,
+    "page": "P003",
+    "category": 1,
+    "item": 81,
+    "name": "MARK_A_PLAYER_WHO_DOESNT_COUNT",
+    "meaning": "A player's actions (the row menu on a computer, Player actions on the phone) offer 'Doesn’t count toward the limit…' for an active player while the limit is on and can be changed: a sheet asks why (Designated student-athlete, or Medical, can’t compete again) and says what the mark does; a marked player offers 'Count toward the roster limit'. Nothing is offered before the held migration or when who counts didn't load.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/roster/RosterLimit.tsx#useRosterLimit; src/clubhouse/screens/roster/Roster.tsx#menuFor; src/clubhouse/screens/roster/RosterPhoneCrh.tsx#PlayerActionsCrh",
+    "tests": [
+      "src/clubhouse/__tests__/roster-limit.test.tsx"
+    ]
+  },
+  {
     "id": 30201,
     "page": "P003",
     "category": 2,
@@ -2780,6 +2840,39 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30681,
+    "page": "P003",
+    "category": 6,
+    "item": 81,
+    "name": "SAVING_THE_ROSTER_LIMIT_FAILS",
+    "chCode": "CH-3081",
+    "meaning": "Saving the roster limit fails (launch readiness F-05; the limit's sheet, from the header's Roster limit)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30682,
+    "page": "P003",
+    "category": 6,
+    "item": 82,
+    "name": "MARKING_A_PLAYER_AS_NOT_COUNTING_TOWARD",
+    "chCode": "CH-3082",
+    "meaning": "Marking a player as not counting toward the roster limit, or counting them again, fails (row menu: Doesn’t count toward the limit…, Count toward the roster limit)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30683,
+    "page": "P003",
+    "category": 6,
+    "item": 83,
+    "name": "WHO_DOESNT_COUNT_TOWARD_THE_ROSTER_LIMIT",
+    "chCode": "CH-3283",
+    "meaning": "Who doesn’t count toward the roster limit doesn’t load (F-05)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -2800,6 +2893,28 @@
     "name": "CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE",
     "chCode": "CH-3980",
     "meaning": "Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`) or no mail transport is configured, so Invite players cannot email anyone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30781,
+    "page": "P003",
+    "category": 7,
+    "item": 81,
+    "name": "THE_ROSTER_IS_OVER_ITS_LIMIT",
+    "chCode": "CH-3981",
+    "meaning": "The roster is over its limit (F-05; NCAA Division I Bylaw 17.2: 9 in golf, or the coach's own number)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30782,
+    "page": "P003",
+    "category": 7,
+    "item": 82,
+    "name": "THE_ROSTER_LIMIT_CANT_BE_CHANGED_YET",
+    "chCode": "CH-3982",
+    "meaning": "The roster limit can't be changed yet (its store, held migration 20261115250000, isn't applied)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2892,6 +3007,34 @@
     "where": "src/clubhouse/lib/use-action.ts#useAction; Roster.tsx#remove",
     "tests": [
       "src/clubhouse/__tests__/roster.test.tsx"
+    ]
+  },
+  {
+    "id": 30980,
+    "page": "P003",
+    "category": 9,
+    "item": 80,
+    "name": "ROSTER_LIMIT_SAVED",
+    "meaning": "The roster limit's sheet saves the limit on or off and its number (1 to 40): 'Roster limit set to 8' with the success haptic, and the head's count follows at once. The server writes one row a team through RLS (a coach of the team) and answers 'unavailable' before the migration is applied.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/roster-limit.ts#saveRosterLimit; src/clubhouse/screens/roster/RosterLimit.tsx#useRosterLimit",
+    "tests": [
+      "src/clubhouse/__tests__/roster-limit.test.tsx",
+      "src/app/golf/actions/__tests__/roster-limit.test.ts"
+    ]
+  },
+  {
+    "id": 30981,
+    "page": "P003",
+    "category": 9,
+    "item": 81,
+    "name": "ROSTER_EXEMPTION_SAVED",
+    "meaning": "Marking a player as not counting (or counting again) shows at once in the count and the row, and lands with 'Ava Chen doesn’t count toward the roster limit'. The server writes one row a player with the reason through RLS (a coach of the team, the player on the team), deletes it to count them again, and answers 'unavailable' before the migration is applied.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/roster-limit.ts#setRosterExemption; src/clubhouse/screens/roster/RosterLimit.tsx#useRosterLimit",
+    "tests": [
+      "src/clubhouse/__tests__/roster-limit.test.tsx",
+      "src/app/golf/actions/__tests__/roster-limit.test.ts"
     ]
   },
   {
@@ -5164,11 +5307,78 @@
     "category": 1,
     "item": 4,
     "name": "TIMES_ARE_THE_TEAMS_ZONE",
-    "meaning": "The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and in the week it is one bar in the all-day lane that drags by whole days with its times kept (P-4 4.5); an all-day event keeps its stored dates, one entry for each day of a span.",
+    "meaning": "The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and in the week it is one bar in the all-day lane that drags by whole days with its times kept (P-4 4.5); an all-day event keeps its stored dates, one entry for each day of a span. The team's trips are read beside the events (golf_travel_itineraries, by team, never a test trip): a trip planned in Team Hub with no calendar event is a read-only all-day Travel row on each day it covers, its detail giving its departure and return times, its place and View itinerary to Team Hub's Travel; a trip linked to an event shows once, as that event (prod audit 2026-11-15, N13P-24).",
     "status": "implemented",
-    "where": "src/clubhouse/data/calendar.ts#loadCalendar, zoned",
+    "where": "src/clubhouse/data/calendar.ts#loadCalendar, zoned, src/clubhouse/data/calendar-trips.ts#calendarTripRows",
     "tests": [
-      "src/clubhouse/__tests__/calendar.test.tsx"
+      "src/clubhouse/__tests__/calendar.test.tsx",
+      "src/clubhouse/__tests__/calendar-trips.test.tsx"
+    ]
+  },
+  {
+    "id": 60180,
+    "page": "P006",
+    "category": 1,
+    "item": 80,
+    "name": "PRACTICE_HOURS_DRAFTS_EACH_PLAYERS_WEEK",
+    "meaning": "Practice hours (Calendar › More › Practice hours, /golf/dashboard/calendar/hours) drafts each player's week from the calendar and attendance (F-03): a day a column, the week against its limit (\"20.5 of 20\"), the days off. Practices and meetings count their length, a qualifier or tournament day counts 3 and the practice round the day before it counts as a practice day, travel and class count nothing, a player marked absent or a no-show counts nothing that day; the limits are the team's (association, season dates, week start) from Settings, Team or its own saved limits, read against cited NCAA bylaws. It is a draft for the coach's CARA form, and the page says so.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours; src/clubhouse/screens/calendar/hours/model.ts#draftHours; src/clubhouse/data/hours.ts#loadHours",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx",
+      "src/clubhouse/screens/calendar/hours/__tests__/hours.test.ts"
+    ]
+  },
+  {
+    "id": 60181,
+    "page": "P006",
+    "category": 1,
+    "item": 81,
+    "name": "SAYS_WHO_HAS_A_WARNING_AND_WHY",
+    "meaning": "A day or week over its limit, or too few days off, is a warning on the player's row and the cell it is about, in words with the bylaw behind it (never colour alone); the week's verdict is one status line (CH-6881).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx"
+    ]
+  },
+  {
+    "id": 60182,
+    "page": "P006",
+    "category": 1,
+    "item": 82,
+    "name": "WHAT_COUNTED_LISTS_EVERY_EVENT_BY_DAY",
+    "meaning": "What counted lists every event of the week by day with its time, how many players it covers, whether it counted, how much and why (\"Practice round the day before a qualifier counts 3\"); a coach's change shows as \"your change\" with its note, and a player reads it as \"your coach’s change\".",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx"
+    ]
+  },
+  {
+    "id": 60183,
+    "page": "P006",
+    "category": 1,
+    "item": 83,
+    "name": "STEPS_A_WEEK_AT_A_TIME_THROUGH_THE_ADDRESS",
+    "meaning": "Previous week, Next week and This week step through ?date=YYYY-MM-DD in the address (read on the server, so a week can be linked); the week starts on the team's week-start day.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx"
+    ]
+  },
+  {
+    "id": 60184,
+    "page": "P006",
+    "category": 1,
+    "item": 84,
+    "name": "A_PLAYER_SEES_THEIR_OWN_WEEK",
+    "meaning": "A player sees only their own week (\"Your practice hours\") and why each event counts, with no Limits and no Change; the loader reads only what RLS lets them read.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx"
     ]
   },
   {
@@ -5223,6 +5433,17 @@
     "name": "ATTENDANCE_IS_LOADING",
     "chCode": "CH-6405",
     "meaning": "Attendance is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60280,
+    "page": "P006",
+    "category": 2,
+    "item": 80,
+    "name": "PRACTICE_HOURS_IS_LOADING",
+    "chCode": "CH-6480",
+    "meaning": "Practice hours is loading",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -5370,6 +5591,39 @@
     "name": "THE_COURSE_PICKER_FINDS_NO_COURSE_FOR",
     "chCode": "CH-6340",
     "meaning": "The course picker (tournament section) finds no course for the search",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60480,
+    "page": "P006",
+    "category": 4,
+    "item": 80,
+    "name": "PRACTICE_HOURS_NO_PLAYERS_ON_THE_TEAM",
+    "chCode": "CH-6380",
+    "meaning": "Practice hours: no players on the team yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60481,
+    "page": "P006",
+    "category": 4,
+    "item": 81,
+    "name": "PRACTICE_HOURS_A_COUNTED_EVENT_HAS_NO",
+    "chCode": "CH-6381",
+    "meaning": "Practice hours: a counted event has no times (all day) and no standard for untimed practices is set",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60482,
+    "page": "P006",
+    "category": 4,
+    "item": 82,
+    "name": "PRACTICE_HOURS_NOTHING_ON_THE_CALENDAR_THIS",
+    "chCode": "CH-6382",
+    "meaning": "Practice hours: nothing on the calendar this week",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -5524,6 +5778,28 @@
     "name": "EDITING_A_CANCELLED_EVENT_OF_TYPE_TOURNAMENT",
     "chCode": "CH-6149",
     "meaning": "Editing a cancelled event of type Tournament",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60580,
+    "page": "P006",
+    "category": 5,
+    "item": 80,
+    "name": "A_PRACTICE_HOUR_LIMIT_THAT_CANT_BE",
+    "chCode": "CH-6180",
+    "meaning": "A practice hour limit that can't be saved: a season with no last day, a last day before the first, a season over 366 days, fall and spring overlapping, a Custom day over 24 or week over 168 hours, a week under a day, days off over 7, an untimed figure over 12",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60581,
+    "page": "P006",
+    "category": 5,
+    "item": 81,
+    "name": "A_CHANGE_TO_HOW_AN_EVENT_COUNTS",
+    "chCode": "CH-6181",
+    "meaning": "A change to how an event counts that can't be saved: hours that aren't a number from 0 to 24, or a note over 280 characters",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -6166,6 +6442,116 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60680,
+    "page": "P006",
+    "category": 6,
+    "item": 80,
+    "name": "SAVING_PRACTICE_HOUR_LIMITS_FAILS_PRACTICE_HOURS",
+    "chCode": "CH-6080",
+    "meaning": "Saving practice hour limits fails (Practice hours › Limits, coach; F-03)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60681,
+    "page": "P006",
+    "category": 6,
+    "item": 81,
+    "name": "CHANGING_HOW_ONE_EVENT_COUNTS_FAILS_PRACTICE",
+    "chCode": "CH-6081",
+    "meaning": "Changing how one event counts fails (Practice hours › What counted › Change, coach; F-03)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60682,
+    "page": "P006",
+    "category": 6,
+    "item": 82,
+    "name": "EXPORTING_THE_PRACTICE_HOURS_FAILS_THE_BROWSER",
+    "chCode": "CH-6082",
+    "meaning": "Exporting the practice hours fails: the browser refused the file (F-03)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60683,
+    "page": "P006",
+    "category": 6,
+    "item": 83,
+    "name": "PRACTICE_HOURS_THE_WEEKS_EVENTS_DONT_LOAD",
+    "chCode": "CH-6280",
+    "meaning": "Practice hours: the week's events don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60684,
+    "page": "P006",
+    "category": 6,
+    "item": 84,
+    "name": "PRACTICE_HOURS_ATTENDANCE_DOESNT_LOAD",
+    "chCode": "CH-6281",
+    "meaning": "Practice hours: attendance doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60685,
+    "page": "P006",
+    "category": 6,
+    "item": 85,
+    "name": "PRACTICE_HOURS_THE_ROSTER_DOESNT_LOAD_COACH",
+    "chCode": "CH-6282",
+    "meaning": "Practice hours: the roster doesn't load (coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60686,
+    "page": "P006",
+    "category": 6,
+    "item": 86,
+    "name": "PRACTICE_HOURS_THE_TEAMS_HOURS_TABLES_ARENT",
+    "chCode": "CH-6283",
+    "meaning": "Practice hours: the team's hours tables aren't in the database yet (migration 20261115232000 held)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60687,
+    "page": "P006",
+    "category": 6,
+    "item": 87,
+    "name": "PRACTICE_HOURS_THE_WEEKS_TABLE_OR_LIST",
+    "chCode": "CH-6284",
+    "meaning": "Practice hours: the week's table or list crashes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60688,
+    "page": "P006",
+    "category": 6,
+    "item": 88,
+    "name": "PRACTICE_HOURS_THE_TEAMS_SAVED_LIMITS_DONT",
+    "chCode": "CH-6285",
+    "meaning": "Practice hours: the team's saved limits don't load (coach; the tables are there)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60690,
+    "page": "P006",
+    "category": 6,
+    "item": 90,
+    "name": "A_PRACTICES_PLAN_READ_FAILS",
+    "chCode": "CH-6290",
+    "meaning": "A practice's plan read fails (`readEventPlans` answers an error that is not \"table missing\"; GAP-S-28)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -6291,6 +6677,47 @@
     "where": "src/clubhouse/screens/calendar/editor.tsx; extras.tsx; inspector.tsx (useAction copy)",
     "tests": [
       "src/clubhouse/__tests__/calendar.test.tsx"
+    ]
+  },
+  {
+    "id": 60980,
+    "page": "P006",
+    "category": 9,
+    "item": 80,
+    "name": "LIMITS_SAVED",
+    "meaning": "Saving limits that pass the check says \"Limits saved\" with the success haptic, closes the sheet and reads the week again against them.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/sheets.tsx#LimitsSheet; src/app/golf/actions/hours.ts#saveHoursSettings",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx",
+      "src/app/golf/actions/__tests__/hours.test.ts"
+    ]
+  },
+  {
+    "id": 60981,
+    "page": "P006",
+    "category": 9,
+    "item": 81,
+    "name": "CHANGE_TO_HOW_AN_EVENT_COUNTS_SAVED",
+    "meaning": "Saving how one event counts says so (\"Practice round counts 3 hours\", \"Travel briefing doesn’t count\", \"… counts as drafted\") with the success haptic, closes the sheet and reads the week again; As drafted removes the change.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/sheets.tsx#AdjustSheet; src/app/golf/actions/hours.ts#saveHoursAdjustment",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx",
+      "src/app/golf/actions/__tests__/hours.test.ts"
+    ]
+  },
+  {
+    "id": 60982,
+    "page": "P006",
+    "category": 9,
+    "item": 82,
+    "name": "PRACTICE_HOURS_EXPORT_LANDED",
+    "meaning": "An export of the week that lands says so (\"Practice hours exported · 5 players\") with the success haptic: a download on a computer, the share sheet on a phone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours (src/clubhouse/ui/ExportButton.tsx)",
+    "tests": [
+      "src/clubhouse/__tests__/practice-hours.test.tsx"
     ]
   },
   {
@@ -6719,6 +7146,28 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 61880,
+    "page": "P006",
+    "category": 18,
+    "item": 80,
+    "name": "PRACTICE_HOURS_DESKTOP_IS_A_TABLE_A",
+    "chCode": "CH-6880",
+    "meaning": "Practice hours (desktop) is a table: a row header per player, a column a day, “Week” as “20.5 of 20”, Days off; a cell over a limit carries its warning in words, never colour alone, and the warnings row names each bylaw. On the phone each player is a list item with their days as a list",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61881,
+    "page": "P006",
+    "category": 18,
+    "item": 81,
+    "name": "THE_WEEKS_VERDICT_IS_ONE_POLITE_LINE",
+    "chCode": "CH-6881",
+    "meaning": "The week's verdict is one polite line: “2 players with a warning”, “A warning this week” (a player) or “No warnings this week”",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 61901,
     "page": "P006",
     "category": 19,
@@ -6928,6 +7377,17 @@
     "name": "THE_SEEN_BY_LIST_IS_LOADING",
     "chCode": "CH-7411",
     "meaning": "The Seen by list is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70290,
+    "page": "P007",
+    "category": 2,
+    "item": 90,
+    "name": "THE_ANNOUNCEMENTS_READ_HASNT_ANSWERED_WHILE_THE",
+    "chCode": "CH-7490",
+    "meaning": "The announcements read hasn’t answered while the conversations have (GAP-S-11)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -7314,7 +7774,7 @@
     "item": 17,
     "name": "CONVERSATIONS_DONT_LOAD",
     "chCode": "CH-7201",
-    "meaning": "Conversations don't load",
+    "meaning": "Conversations don't load, or the read hasn’t answered in 15 seconds (GAP-S-11)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -7369,7 +7829,7 @@
     "item": 22,
     "name": "ANNOUNCEMENTS_DONT_LOAD",
     "chCode": "CH-7206",
-    "meaning": "Announcements don't load",
+    "meaning": "Announcements don't load, or the read hasn’t answered in 15 seconds (GAP-S-11)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -9822,6 +10282,74 @@
     ]
   },
   {
+    "id": 90180,
+    "page": "P009",
+    "category": 1,
+    "item": 80,
+    "name": "QUALIFIER_TIE_RULE_RANKS_THE_BOARD",
+    "meaning": "A qualifier's tie rule (launch readiness F-04) ranks its board, its list leaders, the selection workspace and its confirm, and Ask's board read in the one order (ranking.ts rankStandings): 'last_round' separates players level on to par and strokes by the lower last round, then the round before, and only players still level share a place or tie at the cut; 'coach' (a qualifier with no stored rule, and every qualifier before the held migration 20261115240000) separates nobody (Q-114). The standings caption states the rule in words, to the coach and to a player.",
+    "status": "implemented",
+    "where": "src/lib/coachhelm/v3/qualifying/ranking.ts#rankStandings; src/clubhouse/screens/qualifiers/model.ts#buildBoard; src/lib/coachhelm/v3/qualifying/loader.ts#rankCandidates; src/lib/golf/qualifier-rules.ts#readQualifierRules",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-ties.test.tsx",
+      "src/lib/coachhelm/v3/qualifying/__tests__/ranking-ties.test.ts"
+    ]
+  },
+  {
+    "id": 90181,
+    "page": "P009",
+    "category": 1,
+    "item": 81,
+    "name": "QUALIFIER_FORM_CHOOSES_THE_TIE_RULE",
+    "meaning": "The qualifier form's Ties field (F-04): a new qualifier starts on 'Last round, then the one before' (owner, 15 Nov 2026), an existing one on its own rule, with 'You decide' as the other choice and a sentence saying what the rule does. Before the rule's store exists the field is locked on You decide and says choosing waits on the update; a read that fails locks it (CH-09281) and a save leaves the rule alone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#TieRuleField; src/clubhouse/data/qualifiers.ts#loadQualifierForm",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-ties.test.tsx"
+    ]
+  },
+  {
+    "id": 90182,
+    "page": "P009",
+    "category": 1,
+    "item": 82,
+    "name": "QUALIFIER_COUNTS_BEST_ROUNDS",
+    "meaning": "A qualifier can count each player's best N rounds (launch readiness F-06, held migration 20261115240000 adds count_best): the form's 'Rounds that count' offers Every round or Best N of M; the board, the selection workspace and its confirm sum only the counted rounds (one helper, ranking.ts countedRoundIndexes: lower to par, then strokes, then the earlier round), a player is short only against the counted rounds, the dropped rounds stay on the player's card marked 'Dropped, not counted', and the standings caption states the rule ('Counts each player’s best 2 of 3 rounds: the worst round is dropped.').",
+    "status": "implemented",
+    "where": "src/lib/coachhelm/v3/qualifying/ranking.ts#countedRoundIndexes; src/clubhouse/screens/qualifiers/model.ts#rankRows; src/lib/coachhelm/v3/qualifying/loader.ts#loadQualifyingWorkspace; src/clubhouse/screens/qualifiers/QualifierForm.tsx#CountBestField",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-f06.test.tsx",
+      "src/app/golf/actions/__tests__/qualifier-rules.test.ts"
+    ]
+  },
+  {
+    "id": 90183,
+    "page": "P009",
+    "category": 1,
+    "item": 83,
+    "name": "QUALIFIER_EXEMPT_PLAYERS",
+    "meaning": "Exempt players (F-06; owner, 16 Nov 2026: 'Exempt before, from coach picks'): before the qualifier starts the coach ticks entrants under Exempt players in the form and gives each a reason (coach-only, D-33). When selection closes each becomes one of the qualifier's coach's picks with 'Exempt: (the reason)', never past the picks there are; a pick for an exempt player needs no scored round (Q-115 waived for them only). Once the qualifier starts the exemptions are fixed and the form says to use a coach's pick. Needs held migration 20261116100000; before it the field is not offered.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#ExemptField; src/lib/golf/qualifier-exemptions.ts; src/lib/coachhelm/v3/qualifying/service.ts#placeExemptPlayers; src/lib/coachhelm/v3/qualifying/service.ts#setCoachPick",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-f06.test.tsx",
+      "src/lib/coachhelm/v3/qualifying/__tests__/exemptions.test.ts"
+    ]
+  },
+  {
+    "id": 90184,
+    "page": "P009",
+    "category": 1,
+    "item": 84,
+    "name": "QUALIFIER_NEXT_ROUND_GROUPS",
+    "meaning": "Next round groups (F-06): while a qualifier is under way with a round still to play, the coach's detail shows 'Round N groups' drawn from the standings, leaders off last and players with no score off first, in threes or fours (a filter Segmented), as even as the field allows with the larger groups last. A view of the board; nothing is stored.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/qualifiers/model.ts#nextRoundPairings; src/clubhouse/screens/qualifiers/QualifierSections.tsx#Pairings",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-f06.test.tsx"
+    ]
+  },
+  {
     "id": 90201,
     "page": "P009",
     "category": 2,
@@ -10235,6 +10763,39 @@
     ]
   },
   {
+    "id": 90580,
+    "page": "P009",
+    "category": 5,
+    "item": 80,
+    "name": "QUALIFIER_BEST_N_NEEDS_MORE_ROUNDS",
+    "chCode": "CH-09180",
+    "meaning": "The rounds that count would drop no round (best N of N rounds or fewer) (F-06)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90581,
+    "page": "P009",
+    "category": 5,
+    "item": 81,
+    "name": "QUALIFIER_MORE_EXEMPT_THAN_PICKS",
+    "chCode": "CH-09181",
+    "meaning": "More players exempt than coach's picks (F-06)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90582,
+    "page": "P009",
+    "category": 5,
+    "item": 82,
+    "name": "QUALIFIER_EXEMPT_PLAYER_NEEDS_A_REASON",
+    "chCode": "CH-09182",
+    "meaning": "An exempt player has no reason (F-06)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90601,
     "page": "P009",
     "category": 6,
@@ -10609,6 +11170,50 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90680,
+    "page": "P009",
+    "category": 6,
+    "item": 80,
+    "name": "EXPORT_STANDINGS_FAILS_THE_BROWSER_REFUSED_THE",
+    "chCode": "CH-09080",
+    "meaning": "Export standings fails: the browser refused the file (launch readiness F-02)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90681,
+    "page": "P009",
+    "category": 6,
+    "item": 81,
+    "name": "QUALIFIER_TIE_RULE_DID_NOT_LOAD",
+    "chCode": "CH-09281",
+    "meaning": "Create or edit: the qualifier's tie rule doesn't load (launch readiness F-04)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90682,
+    "page": "P009",
+    "category": 6,
+    "item": 82,
+    "name": "QUALIFIER_EXEMPTIONS_DID_NOT_LOAD",
+    "chCode": "CH-09282",
+    "meaning": "Edit: the qualifier's exemptions don't load (F-06)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90683,
+    "page": "P009",
+    "category": 6,
+    "item": 83,
+    "name": "NEXT_ROUND_GROUPS_CRASH",
+    "chCode": "CH-09283",
+    "meaning": "Next round groups crash (F-06)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,
@@ -10874,6 +11479,60 @@
     "where": "QualifierForm.tsx#create, save; QualifierSelection.tsx#confirm",
     "tests": [
       "src/clubhouse/__tests__/qualifiers.test.tsx"
+    ]
+  },
+  {
+    "id": 90980,
+    "page": "P009",
+    "category": 9,
+    "item": 80,
+    "name": "EXPORT_STANDINGS_LANDED",
+    "meaning": "An export of standings that lands says so in a toast (\"Standings exported · 9 players\") with the success haptic: a download on a computer, the share sheet on a phone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/qualifiers/ExportStandings.tsx#ExportStandings (src/clubhouse/ui/ExportButton.tsx)",
+    "tests": [
+      "src/clubhouse/__tests__/exports.test.tsx"
+    ]
+  },
+  {
+    "id": 90981,
+    "page": "P009",
+    "category": 9,
+    "item": 81,
+    "name": "QUALIFIER_TIE_RULE_SAVED",
+    "meaning": "The tie rule saves with the qualifier (F-04): on create it is saved for the new qualifier, and a rule that doesn't save is said in the done toast ('Qualifier created, but its tie rule didn’t save. Open Edit to set it.'); on edit it is a step of the save only when it changed. The server writes one row a qualifier with its team through RLS (a coach of the team), refuses another team's qualifier, and answers 'unavailable' before the migration is applied.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/qualifier-rules.ts#saveQualifierRules; src/clubhouse/screens/qualifiers/writes.ts#runEditPlan",
+    "tests": [
+      "src/clubhouse/__tests__/qualifier-ties.test.tsx",
+      "src/app/golf/actions/__tests__/qualifier-rules.test.ts"
+    ]
+  },
+  {
+    "id": 90982,
+    "page": "P009",
+    "category": 9,
+    "item": 82,
+    "name": "QUALIFIER_EXEMPTIONS_SAVED",
+    "meaning": "Exemptions save with the qualifier (F-06): on create after the players are entered, and a list that doesn't save is said in the done toast ('Qualifier created, but its exemptions didn’t save. Open Edit to set them.'); on edit a step after the players and the squad, only when the list changed. The server replaces the list through RLS (a coach; each player an entrant), only while the qualifier is upcoming and never past its coach's picks.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/qualifier-exemptions.ts#saveQualifierExemptionsImpl; src/clubhouse/screens/qualifiers/writes.ts#runEditPlan",
+    "tests": [
+      "src/app/golf/actions/__tests__/qualifier-exemptions.test.ts",
+      "src/clubhouse/__tests__/qualifier-f06.test.tsx"
+    ]
+  },
+  {
+    "id": 90983,
+    "page": "P009",
+    "category": 9,
+    "item": 83,
+    "name": "EXEMPT_PLAYERS_PLACED_AT_CLOSE",
+    "meaning": "Closing selection places each exempt entrant as a coach's pick with 'Exempt: (the reason)' in the closer's name (F-06), never past the picks, leaving a pick already made; a failure is logged and the coach can still pick them (Q-115 is waived for an exempt player).",
+    "status": "implemented",
+    "where": "src/lib/coachhelm/v3/qualifying/service.ts#placeExemptPlayers",
+    "tests": [
+      "src/lib/coachhelm/v3/qualifying/__tests__/exemptions.test.ts"
     ]
   },
   {
@@ -11307,7 +11966,7 @@
     "category": 23,
     "item": 4,
     "name": "INTENTS_LEAVE_BREADCRUMBS",
-    "meaning": "Each intent leaves a chTrail breadcrumb before anything is sent: a filter, opening the scorecards, asking to close, asking to start selecting or to confirm, Create, Save, and the write itself by name (action qualifiers.<name>).",
+    "meaning": "Each intent leaves a chTrail breadcrumb before anything is sent: a filter, opening the scorecards, asking to close, asking to start selecting or to confirm, Create, Save, and the write itself by name (action `qualifiers.<name>`).",
     "status": "implemented",
     "where": "QualifiersList.tsx; QualifierDetail.tsx; QualifierForm.tsx; QualifierSelection.tsx; src/clubhouse/lib/use-action.ts",
     "tests": [
@@ -11361,7 +12020,7 @@
     "category": 1,
     "item": 3,
     "name": "TASK_LINK_OPENS_THE_TASK",
-    "meaning": "?task={id} (a task notification, carried through the old /tasks address, a next.config.mjs redirect) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it.",
+    "meaning": "?task={id} (a task notification, carried through the old /tasks address, a next.config.mjs redirect) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it with a still wash until the row is used (first paint is still, MOTION-AND-VISUAL 3.5; the fade it once played is gone). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it.",
     "status": "implemented",
     "where": "src/clubhouse/screens/hub/parts.tsx#TaskRow; src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute; next.config.mjs#redirects",
     "tests": [
@@ -11654,6 +12313,28 @@
     "name": "PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A",
     "chCode": "CH-10315",
     "meaning": "Plan a trip: nobody chosen has a class during the trip",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100490,
+    "page": "P010",
+    "category": 4,
+    "item": 90,
+    "name": "A_LINK_TO_A_TASK_THAT_ISNT",
+    "chCode": "CH-10390",
+    "meaning": "A link to a task (`?task=`) that isn't on the loaded list, when the list is complete and read without error (GAP-S-26)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 100491,
+    "page": "P010",
+    "category": 4,
+    "item": 91,
+    "name": "A_LINK_TO_A_TRIP_THAT_ISNT",
+    "chCode": "CH-10391",
+    "meaning": "A link to a trip (`?trip=`) that isn't loaded (GAP-S-26)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -12739,6 +13420,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110280,
+    "page": "P011",
+    "category": 2,
+    "item": 80,
+    "name": "EXPORT_IS_READING_THE_HOLES_OF_THE",
+    "chCode": "CH-11480",
+    "meaning": "Export is reading the holes of the rounds it holds (F-02)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -13000,7 +13692,7 @@
     "item": 24,
     "name": "A_COURSE_PAGE_THIS_VIEWER_HAS_NO",
     "chCode": "CH-11330",
-    "meaning": "A course page this viewer has no rounds at: an unknown key, or another player's course",
+    "meaning": "A course page this viewer has no rounds at: a valid key with no rounds, or another player's course",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -13011,7 +13703,7 @@
     "item": 25,
     "name": "A_COACHS_COURSE_PAGE_FOR_A_PLAYER",
     "chCode": "CH-11331",
-    "meaning": "A coach's course page for a player who isn't on their team, or no player named",
+    "meaning": "A coach's course page for a player who isn't on their team",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -13023,6 +13715,28 @@
     "name": "THE_COURSE_PAGES_HOLE_BY_HOLE_WITH",
     "chCode": "CH-11333",
     "meaning": "The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110490,
+    "page": "P011",
+    "category": 4,
+    "item": 90,
+    "name": "A_COACH_ON_A_PLAYERS_ROUND_FLOW",
+    "chCode": "CH-11390",
+    "meaning": "A coach on a player's round flow: /rounds/new, /rounds/recover or /rounds/continue/[id] (GAP-R-12)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110491,
+    "page": "P011",
+    "category": 4,
+    "item": 91,
+    "name": "A_COACH_ON_A_COURSE_PAGE_WITH",
+    "chCode": "CH-11391",
+    "meaning": "A coach on a course page with no player named, or a player id that isn't one (GAP-S-20)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -13637,6 +14351,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110680,
+    "page": "P011",
+    "category": 6,
+    "item": 80,
+    "name": "EXPORT_ON_ROUNDS_OR_TEAM_ROUNDS_FAILS",
+    "chCode": "CH-11080",
+    "meaning": "Export on Rounds or Team rounds fails: the holes didn’t load, or the browser refused the file (launch readiness F-02)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110690,
+    "page": "P011",
+    "category": 6,
+    "item": 90,
+    "name": "A_ROUND_REVIEWS_HISTORY_READ_FAILS_ON",
+    "chCode": "CH-11290",
+    "meaning": "A round review's history read fails, on the server or as a stream cut off in the browser (GAP-S-27)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110691,
+    "page": "P011",
+    "category": 6,
+    "item": 91,
+    "name": "A_SECTION_OF_ROUND_TRACKING_OR_OF",
+    "chCode": "CH-11291",
+    "meaning": "A section of round tracking or of the course page throws while drawing (GAP-S-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -13974,6 +14721,19 @@
     "tests": [
       "src/clubhouse/__tests__/round-tracking.test.tsx",
       "src/clubhouse/__tests__/round-entry-routes.test.tsx"
+    ]
+  },
+  {
+    "id": 110980,
+    "page": "P011",
+    "category": 9,
+    "item": 80,
+    "name": "EXPORT_ROUNDS_LANDED",
+    "meaning": "An export of rounds that lands says so in a toast (\"Rounds exported · 12 rounds\") with the success haptic: a download on a computer, the share sheet on a phone. Closing the share sheet is not a failure and says nothing.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/ExportRounds.tsx#ExportRounds (src/clubhouse/ui/ExportButton.tsx)",
+    "tests": [
+      "src/clubhouse/__tests__/exports.test.tsx"
     ]
   },
   {
@@ -16462,6 +17222,28 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130490,
+    "page": "P013",
+    "category": 4,
+    "item": 90,
+    "name": "WHATS_NEW_SOMEONE_WITH_NO_TEAM",
+    "chCode": "CH-13385",
+    "meaning": "What’s new: someone with no team (no organization, or no team resolved; GAP-S-36)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130491,
+    "page": "P013",
+    "category": 4,
+    "item": 91,
+    "name": "A_PLAYER_FILE_OR_YOUR_WEEK_FOR",
+    "chCode": "CH-13386",
+    "meaning": "A player file or Your week for a player with no rounds (GAP-S-23)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130501,
     "page": "P013",
     "category": 5,
@@ -16833,7 +17615,7 @@
     "item": 39,
     "name": "WHATS_NEW_THE_FEED_DOESNT_LOAD",
     "chCode": "CH-13231",
-    "meaning": "What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved)",
+    "meaning": "What’s new: the feed doesn’t load (the action fails, or every kind's read fails: insights, patterns with the roster behind them, and focus areas; GAP-S-02)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16955,6 +17737,28 @@
     "name": "REMOVE_FOCUS_ON_A_READ_FAILS",
     "chCode": "CH-13008",
     "meaning": "Remove focus on a read fails (written when its Undo toast goes)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130690,
+    "page": "P013",
+    "category": 6,
+    "item": 90,
+    "name": "WHATS_NEW_ONE_OR_TWO_KINDS_DONT",
+    "chCode": "CH-13285",
+    "meaning": "What’s new: one or two kinds don’t load (insights, patterns or the roster behind them, focus areas) while the rest answered (GAP-S-02)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130691,
+    "page": "P013",
+    "category": 6,
+    "item": 91,
+    "name": "PRACTICE_ONE_PART_OF_A_PAGE_DOESNT",
+    "chCode": "CH-13286",
+    "meaning": "Practice: one part of a page doesn’t load: the team's plan format (on a plan, or on Plan format), a saved template picked for New plan, or part of the drill bank (GAP-S-03, GAP-S-07, GAP-S-28, GAP-S-37)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -17640,6 +18444,17 @@
     "chCode": "CH-13999",
     "meaning": "Retired 2026-11-07 (Dashboard cuts). Brief: CoachHelm is off for the team",
     "status": "deprecated",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130790,
+    "page": "P013",
+    "category": 7,
+    "item": 90,
+    "name": "ASK_NEW_CHAT_WHILE_THE_OPEN_CHAT",
+    "chCode": "CH-13925",
+    "meaning": "Ask: New chat while the open chat has messages (GAP-H-08)",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -19547,6 +20362,17 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 150690,
+    "page": "P015",
+    "category": 6,
+    "item": 90,
+    "name": "A_NEW_PLAYERS_QUESTIONS_THE_READ_OF",
+    "chCode": "CH-15290",
+    "meaning": "A new player's questions (/golf/player): the read of who this account is fails (the coach or player profile, or the declared role when both profiles are unfinished; GAP-S-04)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 150701,
     "page": "P015",
     "category": 7,
@@ -20658,6 +21484,34 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160180,
+    "page": "P016",
+    "category": 1,
+    "item": 80,
+    "name": "LINEUP_BUILDER_B_TEAM",
+    "meaning": "Lineup builder: a B team (launch readiness F-05), offered once the event can hold one (held migration 20261116091000 adds the squad). A Team switch (A team, B team) shows the B spots and the B alternate, with 'The B team plays as individuals: its scores never count in the team's record.' A B player is stored as an individual (or the alternate) of squad B, so every team score, which reads the lineup only, leaves the B team out (D-92).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/tournaments/lineup-model.ts#place; src/clubhouse/screens/tournaments/LineupBuilder.tsx#BTeam; src/clubhouse/data/tournaments.ts#readBTeam",
+    "tests": [
+      "src/clubhouse/__tests__/tournaments-b-team.test.tsx"
+    ]
+  },
+  {
+    "id": 160181,
+    "page": "P016",
+    "category": 1,
+    "item": 81,
+    "name": "LINEUP_LOCK_BY",
+    "meaning": "The lineup's lock time is a 'lock by' (F-05): nothing locks a lineup at that time (it locks itself when round 1 starts), so the lineup head says 'Lock by …', past it CH-16382 says so, and the event form's Lineup lock sets it (10, 30 minutes, 1 or 2 hours, or the day before; a value set elsewhere stays a choice).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/tournaments/LineupBuilder.tsx#LineupPage; src/clubhouse/screens/tournaments/fields/rounds-model.ts#lockLine; src/clubhouse/screens/tournaments/fields/TournamentFields.tsx; src/app/golf/actions/tournaments-calendar.ts#createTournamentFromCalendarImpl",
+    "tests": [
+      "src/clubhouse/__tests__/tournaments-b-team.test.tsx",
+      "src/clubhouse/screens/tournaments/__tests__/edit-model-ties.test.ts",
+      "src/app/golf/actions/__tests__/tournaments-calendar.test.ts"
+    ]
+  },
+  {
     "id": 160201,
     "page": "P016",
     "category": 2,
@@ -20665,6 +21519,17 @@
     "name": "A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY",
     "chCode": "CH-16401",
     "meaning": "A Tournaments view is on its way (`load: 'loading'`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160280,
+    "page": "P016",
+    "category": 2,
+    "item": 80,
+    "name": "IMPORT_RESULTS_THE_FILE_IS_BEING_READ",
+    "chCode": "CH-16480",
+    "meaning": "Import results: the file is being read on the device",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
@@ -20962,6 +21827,83 @@
     "name": "PLAYER_EVENT_THE_TEAMS_RESULT_IS_NOT",
     "chCode": "CH-16393",
     "meaning": "Player event: the team’s result is not on the player’s page (teammates’ scores and the lineup are the coach’s until held file 4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160480,
+    "page": "P016",
+    "category": 4,
+    "item": 80,
+    "name": "IMPORT_RESULTS_NONE_OF_OUR_PLAYERS_ARE",
+    "chCode": "CH-16380",
+    "meaning": "Import results: none of our players are in the file, or the file has team scores only",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160481,
+    "page": "P016",
+    "category": 4,
+    "item": 81,
+    "name": "ENTER_HOLES_NO_GRID_FOR_THE_ROUND",
+    "chCode": "CH-16381",
+    "meaning": "Enter holes: no grid for the round (the course has no hole pars, no one is in the round)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160482,
+    "page": "P016",
+    "category": 4,
+    "item": 82,
+    "name": "LINEUP_BUILDER_THE_LINEUPS_LOCK_TIME_HAS",
+    "chCode": "CH-16382",
+    "meaning": "Lineup builder: the lineup's lock time has passed and it is not locked (launch readiness F-05; nothing locks it at that time)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160580,
+    "page": "P016",
+    "category": 5,
+    "item": 80,
+    "name": "IMPORT_RESULTS_THE_FILE_CANT_BE_READ",
+    "chCode": "CH-16180",
+    "meaning": "Import results: the file can’t be read (the old binary .xls, a PDF, a picture, another type, a damaged file, over 8 MB, empty)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160581,
+    "page": "P016",
+    "category": 5,
+    "item": 81,
+    "name": "IMPORT_RESULTS_THE_FILE_OPENED_BUT_NO",
+    "chCode": "CH-16181",
+    "meaning": "Import results: the file opened, but no column reads as players with scores",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160582,
+    "page": "P016",
+    "category": 5,
+    "item": 82,
+    "name": "ENTER_HOLES_A_CELL_CANT_BE_SAVED",
+    "chCode": "CH-16182",
+    "meaning": "Enter holes: a cell can’t be saved (not a whole number, over 15 strokes, a saved hole emptied)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160583,
+    "page": "P016",
+    "category": 5,
+    "item": 83,
+    "name": "IMPORT_RESULTS_READ_RESULTS_WITH_NOTHING_PASTED",
+    "chCode": "CH-16183",
+    "meaning": "Import results: Read results with nothing pasted",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
@@ -21351,6 +22293,61 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160680,
+    "page": "P016",
+    "category": 6,
+    "item": 80,
+    "name": "IMPORT_RESULTS_SAVING_FAILS_OR_IS_REFUSED",
+    "chCode": "CH-16080",
+    "meaning": "Import results: saving fails or is refused (the results are official, not a coach, a round that isn’t the event’s, a field row that isn’t)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160681,
+    "page": "P016",
+    "category": 6,
+    "item": 81,
+    "name": "ENTER_HOLES_SAVING_THE_GRID_FAILS_OR",
+    "chCode": "CH-16081",
+    "meaning": "Enter holes: saving the grid fails or is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160682,
+    "page": "P016",
+    "category": 6,
+    "item": 82,
+    "name": "EXPORT_RESULTS_FAILS_THE_BROWSER_REFUSED_THE",
+    "chCode": "CH-16082",
+    "meaning": "Export results fails: the browser refused the file (launch readiness F-02)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160690,
+    "page": "P016",
+    "category": 6,
+    "item": 90,
+    "name": "A_SECTION_OF_THE_LIVE_ROUND_THE",
+    "chCode": "CH-16294",
+    "meaning": "A section of the live round, the lineup builder, History or Live throws while drawing (GAP-S-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160691,
+    "page": "P016",
+    "category": 6,
+    "item": 91,
+    "name": "HISTORY_THE_ROSTER_OR_THE_SEASON_PROFILES",
+    "chCode": "CH-16295",
+    "meaning": "History: the roster or the season profiles read fails (`errors.profiles`, GAP-S-08)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160701,
     "page": "P016",
     "category": 7,
@@ -21362,15 +22359,63 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160780,
+    "page": "P016",
+    "category": 7,
+    "item": 80,
+    "name": "IMPORT_RESULTS_A_ROUND_IN_THE_FILE",
+    "chCode": "CH-16980",
+    "meaning": "Import results: a round in the file differs from the player’s card or submitted round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160781,
+    "page": "P016",
+    "category": 7,
+    "item": 81,
+    "name": "LINEUP_BUILDER_THE_ROSTER_IS_OVER_ITS",
+    "chCode": "CH-16981",
+    "meaning": "Lineup builder: the roster is over its limit (F-05)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160801,
     "page": "P016",
     "category": 8,
     "item": 1,
     "name": "THE_COACH_HAS_NO_TEAM_OR_LOST",
     "chCode": "CH-16609",
-    "meaning": "The coach has no team, or lost access to it",
+    "meaning": "Live: the coach has no active team, or a team they may not read (GAP-S-12)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160980,
+    "page": "P016",
+    "category": 9,
+    "item": 80,
+    "name": "EXPORT_RESULTS_LANDED",
+    "meaning": "An export of an event's results that lands says so in a toast (\"Results exported · 12 teams, 5 players\") with the success haptic: a download on a computer, the share sheet on a phone.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/tournaments/EventDesk.tsx#EventDesk (src/clubhouse/ui/ExportButton.tsx)",
+    "tests": [
+      "src/clubhouse/__tests__/exports.test.tsx"
+    ]
+  },
+  {
+    "id": 160981,
+    "page": "P016",
+    "category": 9,
+    "item": 81,
+    "name": "LINEUP_B_TEAM_SAVED",
+    "meaning": "A lineup saved with a B team sends each B player as an individual of squad B with their spot, and the B alternate; the A entries go as before. Before held migration 20261116091000 a B entry is refused ('A B team arrives with the next update. Nothing was saved.') and nothing is written.",
+    "status": "implemented",
+    "where": "src/app/golf/actions/tournaments.ts#setTournamentEntriesImpl",
+    "tests": [
+      "src/app/golf/actions/__tests__/tournaments-b-team.test.ts"
+    ]
   },
   {
     "id": 161001,
@@ -21435,6 +22480,28 @@
     "name": "FINISH_THE_ROUND_FROM_THE_LIVE_ROUND",
     "chCode": "CH-16570",
     "meaning": "Finish the round, from the live round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161180,
+    "page": "P016",
+    "category": 11,
+    "item": 80,
+    "name": "IMPORT_RESULTS_START_OVER_ONCE_CHOICES_ARE",
+    "chCode": "CH-16580",
+    "meaning": "Import results: Start over once choices are made on the check step",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161181,
+    "page": "P016",
+    "category": 11,
+    "item": 81,
+    "name": "ENTER_HOLES_CLOSING_WITH_HOLES_TYPED_AND",
+    "chCode": "CH-16581",
+    "meaning": "Enter holes: closing with holes typed and not saved",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
@@ -21556,6 +22623,17 @@
     "name": "HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE_2",
     "chCode": "CH-16850",
     "meaning": "Home: a tournament arrives while the page is open",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161880,
+    "page": "P016",
+    "category": 18,
+    "item": 80,
+    "name": "ENTER_HOLES_THE_GRID_BY_KEYBOARD_AND",
+    "chCode": "CH-16880",
+    "meaning": "Enter holes: the grid by keyboard and screen reader",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   }

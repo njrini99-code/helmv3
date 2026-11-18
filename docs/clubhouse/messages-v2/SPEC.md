@@ -312,9 +312,11 @@ is a row at the end of the list. **MSG-213 Typing bubble: group** [both] Ref
 bubble above the dots (`.bname`), column, gap 5, padding `7.5k 13 12`. One
 bubble per typer, each with its own name. No caption under the bubble. Under
 Reduce Motion dots hold still at opacity 1. **MSG-214 DM receipt** [both] Under
-the latest message of mine only (not polls): small paper pill (`.seen.txt`:
-padding 3 9, radius 999, surface bg, card shadow, margin 6 2 0, 12.5k/500
-ink-2). Copy: "Delivered" > "Seen 8:15 AM"; older: "Seen" / "Seen Wednesday".
+the latest message of mine only (not polls): plain caption text, no pill (the
+Nov 15 audit's DM-05: no fill, ring or shadow, margin 4 2 0, tertiary ink,
+right-aligned like iMessage's Read line). Copy: "Delivered" > "Seen 8:15 AM"
+today, then dated as the inbox rail dates: "Seen Yesterday", "Seen Sat",
+"Seen Sep 3".
 Rises 4 px in AFTER the bubble lands (MOT-SEND-8); crossfades Delivered > Seen
 180 ms. **MSG-215 Group receipt (Seen by)** [both] Ref `#seen-phone-light`.
 Under my latest message in a group: button pill (padding 3 9 3 4) with up to 5
@@ -362,8 +364,11 @@ MSG-400's menu.
 **MSG-301 Composer pill** [both] One glass pill holds + , field, send key.
 `.comp` absolute bottom, phone padding 8 10 30 (430: 8 14 30; shot 8), desk
 padding 10 28 18. Pill: padding 5, gap 6, radius 24, max-width 760 centred,
-glass-strong, blur 24 saturate 170, float shadow; focus-within ring `0 0 0 1.5px
-color-mix(in oklab, accent-text 55%, transparent)`. **MSG-302 Plus key** [both]
+glass-strong on the one glass (blur 20 saturate 140, MOTION-AND-VISUAL 4.1),
+flat with the 1px control ring `--ch-field-ring` and on the page's own gutter
+(the Nov 15 audit's DM-07; it was the gutter less 6 with the float shadow);
+focus-within ring `0 0 0 1.5px color-mix(in oklab, accent-text 55%,
+transparent)`. **MSG-302 Plus key** [both]
 36 circle, page-2 fill, ink-2 icon, aria "Add photo, file or poll",
 `aria-expanded`. Open state: icon rotates 45 degrees (MOT-ATT-1). It is the
 origin of the attach menu. **MSG-303 Field** [both] Textarea, 1 row, placeholder

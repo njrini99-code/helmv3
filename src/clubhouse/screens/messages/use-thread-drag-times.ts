@@ -43,12 +43,19 @@ export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enab
       // The times sit just past the row's edge and would peek through the page gutter at rest, so they show only while moved.
       if (x) l.setAttribute('data-ch-times', '');
     };
-    const hideTimes = (l: HTMLElement | null) => l?.removeAttribute('data-ch-times');
+    /** At rest: the times hide and the list leaves its own layer (MOT-03: it has one only while dragged or settling). */
+    const hideTimes = (l: HTMLElement | null) => {
+      l?.removeAttribute('data-ch-times');
+      if (l) l.style.willChange = '';
+    };
     let settling: Animation | null = null;
     /** Back to rest from where it is. The times hide once it has landed, unless it was grabbed again on the way. */
     const settle = () => {
       const from = current;
-      if (!from) return;
+      if (!from) {
+        if (!settling) hideTimes(list());
+        return;
+      }
       const l = list();
       paint(0);
       if (reduced || !l?.animate) {
@@ -88,6 +95,9 @@ export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enab
           return;
         }
         locked = true;
+        // MOT-03: the sideways pan is confirmed, so the whole list is composited before its first move is drawn.
+        const l = list();
+        if (l) l.style.willChange = 'transform';
       }
       paint(dragOffset(dx + start.from / FOLLOW, max));
     };

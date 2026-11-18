@@ -1,6 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { ChWindow } from '../../data/stats-common';
 import type { ChSprayGroup } from '../../data/stats-detail';
+import { dateShares } from '../../lib/chart';
 import { formatFixed, NO_DATA } from '../../lib/format';
 import { ScrollRegion } from '../../ui/ScrollRegion';
 import { NoData } from '../../ui/NoData';
@@ -167,7 +168,9 @@ export function DataTable({
 /**
  * One figure per round, oldest first, on a line with its average dashed; the values are in the label for a screen reader.
  * `lowerIsBetter` (scores): the axis turns over so a lower score sits higher, and the chart says so ("Lower is better"),
- * the one scoring-axis convention across Stats and Home (P004-D1, P005-D1).
+ * the one scoring-axis convention across Stats and Home (P004-D1, P005-D1). Rounds sit by their dates when every point has one
+ * (stats and charts audit 2026-11-15, CH-11), and the dashed average is the window's own figure when the caller passes it (`avg`,
+ * CH-12: a pooled rate or a per-18 mean, never a mean of each round's percentage).
  */
 export function RoundLine({
   points,
@@ -176,25 +179,29 @@ export function RoundLine({
   label,
   lowerIsBetter = false,
   refLine,
+  avg: given,
 }: {
-  points: Array<{ label: string; value: number }>;
+  points: Array<{ label: string; value: number; at?: string }>;
   unit?: string;
   digits?: number;
   label: string;
   lowerIsBetter?: boolean;
   /** A dashed reference (Par, or a Tour figure that is loaded) with its label at the right end. Left out, the chart is main's. */
   refLine?: { value: number; label: string };
+  /** The window's own figure for the dashed average, as the headline works it out; left out, the mean of the points. */
+  avg?: number | null;
 }) {
   const w = 690;
   const h = 150;
   const pad = 26;
   const vals = points.map((p) => p.value);
-  const lo = Math.min(...vals, ...(refLine ? [refLine.value] : []));
-  const hi = Math.max(...vals, ...(refLine ? [refLine.value] : []));
+  const avg = given ?? vals.reduce((a, b) => a + b, 0) / vals.length;
+  const lo = Math.min(...vals, avg, ...(refLine ? [refLine.value] : []));
+  const hi = Math.max(...vals, avg, ...(refLine ? [refLine.value] : []));
   const span = hi - lo || 1;
-  const x = (i: number) => pad + (i * (w - pad * 2)) / Math.max(1, points.length - 1);
+  const share = dateShares(points.map((p) => p.at));
+  const x = (i: number) => (points.length <= 1 ? w / 2 : pad + share[i]! * (w - pad * 2));
   const y = (v: number) => 30 + ((lowerIsBetter ? v - lo : hi - v) / span) * (h - 62);
-  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
   const f = (v: number) => `${formatFixed(v, digits)}${unit}`;
   const all = points.length <= 12;
   const labelled = points.map((p, i) => ({ x: x(i), y: y(p.value), text: f(p.value), shown: all || i === 0 || i === points.length - 1 }));

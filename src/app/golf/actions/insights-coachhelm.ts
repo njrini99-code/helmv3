@@ -1062,8 +1062,8 @@ async function refreshTeamAnalysisAsCoachImpl(): Promise<{
   }
 
   revalidatePath('/golf/dashboard');
-  revalidatePath('/golf/dashboard/intelligence');
-  revalidatePath('/golf/dashboard/insights');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/coachhelm');
 
   return { success: true, playersAnalyzed, insightsCreated, playersSkipped, playersFailed };
 }
@@ -1311,7 +1311,8 @@ async function updateTeamCoachHelmSettingsImpl(
   }
 
   revalidatePath('/golf/dashboard/settings/coaching-intelligence');
-  revalidatePath('/golf/dashboard/intelligence');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/coachhelm');
 
   return { success: true, settings: updated as TeamCoachHelmSettings };
 }

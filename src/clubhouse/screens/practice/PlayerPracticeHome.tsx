@@ -9,6 +9,7 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { EmptyState } from '../../ui/States';
+import { SectionBoundary } from '../../ui/SectionBoundary';
 import { wholeFacts } from './facts';
 import { PlanRows, WeekStrip } from './PracticeHome';
 
@@ -28,14 +29,16 @@ export function PlayerPracticeHome({ data }: { data: ChPlayerPracticeHome }) {
   const stops = next ? next.stops.slice(at, at + HOME_STOPS) : [];
   return (
     <main className={'ch-page ch-prc ch-prc--ply' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
-      {phone && <PhoneTop start title="Practice" />}
+      {phone && <PhoneTop start heading={false} title="Practice" />}
       <header className="ch-prc-h">
         <div>
           <LargeTitle id="ch-prc-title">Practice</LargeTitle>
           {next && <p className="ch-prc-h__line">{next.context}</p>}
         </div>
       </header>
+      {/* Each section fails on its own (GAP-S-10): the rest of Practice keeps working. */}
       {next && (
+        <SectionBoundary surface="practice.today" label="Your next practice" code="CH-13204">
         <div className="ch-cpv ch-cpv-ply ch-prc-today">
           <section className="art" aria-label="Next practice">
             <header className="art-h">
@@ -80,25 +83,32 @@ export function PlayerPracticeHome({ data }: { data: ChPlayerPracticeHome }) {
             {next.stops.length > stops.length ? `Open plan · ${next.stops.length} stops` : 'Open plan'}
           </Button>
         </div>
+        </SectionBoundary>
       )}
       {none ? (
         <EmptyState size="page" title="No plan yet" body="Your coach hasn’t published a plan for this practice yet." code="CH-13397" />
       ) : (
         <section className="ch-prc-sec" aria-labelledby="ch-prc-wk">
           <h2 id="ch-prc-wk">This week</h2>
-          <WeekStrip week={data.week} />
+          <SectionBoundary surface="practice.week" label="This week" code="CH-13204">
+            <WeekStrip week={data.week} />
+          </SectionBoundary>
         </section>
       )}
       {data.upcoming.length > 0 && (
         <section className="ch-prc-sec" aria-labelledby="ch-prc-up">
           <h2 id="ch-prc-up">Coming up</h2>
-          <PlanRows rows={data.upcoming} label="Coming up" />
+          <SectionBoundary surface="practice.upcoming" label="Coming up" code="CH-13204">
+            <PlanRows rows={data.upcoming} label="Coming up" />
+          </SectionBoundary>
         </section>
       )}
       {data.past.length > 0 && (
         <section className="ch-prc-sec" aria-labelledby="ch-prc-past">
           <h2 id="ch-prc-past">Past plans</h2>
-          <PlanRows rows={data.past.slice(0, 20)} label="Past plans" />
+          <SectionBoundary surface="practice.past" label="Past plans" code="CH-13204">
+            <PlanRows rows={data.past.slice(0, 20)} label="Past plans" />
+          </SectionBoundary>
         </section>
       )}
     </main>

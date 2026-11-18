@@ -1,10 +1,11 @@
 'use client';
 
 import { CH_PHONE_QUERY } from '../../lib/phone-query';
+import { chSafeAreaInsets } from '../../lib/safe-area';
 import { Children, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { MS_BEATS, msAnimate, sheetCloseCurve } from './motion/messages-motion';
+import { MS_BEATS, menuOpenCurve, msAnimate, sheetCloseCurve } from './motion/messages-motion';
 import '../../styles/messages-overlays.css';
 
 /** What the lift keeps from the thread: the row's box, the message's bubbles together, how pressed the stack is. */
@@ -15,17 +16,6 @@ export interface LiftGeometry {
   sink: number;
   /** The thread scope classes the clone needs to keep its look outside the thread (`ch-msp-thread`). */
   scope: string;
-}
-
-/** The notch and home bar, in pixels, from the page's own env(). */
-function safeAreaInsets(): { top: number; bottom: number } {
-  const probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)';
-  document.body.appendChild(probe);
-  const cs = getComputedStyle(probe);
-  const out = { top: parseFloat(cs.paddingTop) || 0, bottom: parseFloat(cs.paddingBottom) || 0 };
-  probe.remove();
-  return out;
 }
 
 export const rowOf = (messageId: string) => document.getElementById(`ch-ms-message-${messageId}`);
@@ -152,7 +142,7 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
     copy.current.replaceChildren(clone);
     el.style.visibility = HIDDEN;
     const phone = window.matchMedia(CH_PHONE_QUERY).matches;
-    const place = placeLift(geom, { barW: rbar.current?.offsetWidth ?? 260, menuW: menu.current?.offsetWidth ?? 236, menuH: menu.current?.offsetHeight ?? 0 }, { w: window.innerWidth, h: window.innerHeight }, { mine, phone, inset: safeAreaInsets() });
+    const place = placeLift(geom, { barW: rbar.current?.offsetWidth ?? 260, menuW: menu.current?.offsetWidth ?? 236, menuH: menu.current?.offsetHeight ?? 0 }, { w: window.innerWidth, h: window.innerHeight }, { mine, phone, inset: chSafeAreaInsets() });
     // The bar and menu are placed here, after the menu can be measured: a render alone would leave them at the unshifted spot.
     if (rbar.current) {
       rbar.current.style.top = `${place.barTop}px`;
@@ -167,9 +157,11 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
     // Where the exit's settle ends, and where Reduce Motion stands without the grow.
     copy.current.style.transform = reduced ? `translateY(${place.shift}px)` : to;
     if (scrim.current) msAnimate(scrim.current, [{ opacity: 0 }, { opacity: 1 }], 'smooth', { reduced });
-    msAnimate(copy.current, [{ transform: `translateY(0) scale(${Math.round(s0 * 1000) / 1000})` }, { transform: to }], 'lift', { reduced, rd: null });
-    if (rbar.current) msAnimate(rbar.current, [{ transform: 'scale(.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], 'pop', { reduced });
-    if (menu.current) msAnimate(menu.current, [{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], 'lift', { reduced });
+    msAnimate(copy.current, [{ transform: `translateY(0) scale(${Math.round(s0 * 1000) / 1000})` }, { transform: to }], 'settle', { reduced, rd: null });
+    // The bar and the menu arrive as a menu does, from just under full size over the quick beat, ease-out: not from half
+    // size on the overshooting pop (OVL-16), nor from 0.8 on the lift spring (OVL-15).
+    if (rbar.current) msAnimate(rbar.current, [{ transform: 'scale(.92)', opacity: 0 }, { transform: 'none', opacity: 1 }], null, { reduced, timing: menuOpenCurve });
+    if (menu.current) msAnimate(menu.current, [{ transform: 'scale(.96)', opacity: 0 }, { transform: 'none', opacity: 1 }], null, { reduced, timing: menuOpenCurve });
     // The first reaction takes focus, as the page's toolbar (its first control).
     // Not while typing on a phone: taking focus drops the keyboard, and the thread would move under what was just measured (MOB-MSG-6).
     if (!(phone && document.activeElement instanceof HTMLTextAreaElement)) rbar.current?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });

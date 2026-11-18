@@ -1,7 +1,7 @@
 'use client';
 
 import { ChartColumn, Ellipsis, Flag, Lock, LockOpen, MessageSquare, Pencil, Users } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, ViewTransition, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -23,13 +23,15 @@ import { MixedRounds, Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPa
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
-import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
+import { RankSlot, useRankSlideArmed } from './RankSlot';
+import { Courses, LiveChip, Pairings, Selections, StaleStandings } from './QualifierSections';
 import { NinesSkeleton, Streamed } from './streamed';
 import { SerifText } from '../../ui/SerifText';
 import { createOpenRow, PlayerRounds as ShowcaseRounds } from './RoundsShowcase';
 import { LiveOnCourse } from './LiveOnCourse';
 import type { ChQOnCourse } from './on-course';
 import { RulesText } from './RulesText';
+import { ExportStandings } from './ExportStandings';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -127,7 +129,7 @@ export function QualifierDetailPhone({
       />
       <header className="ch-qfm-head">
         <span className="ch-qfm-head__k">
-          <StatusPill status={status} ended={feed.ended} />
+          <StatusPill status={status} ended={feed.ended} viewer={coach ? 'coach' : 'player'} />
           <span className="ch-num">{shortRange(data.startDate, data.endDate)}</span>
         </span>
         <h1>
@@ -197,6 +199,12 @@ export function QualifierDetailPhone({
         <Board data={data} status={status} stale={stale} feed={feed} onPeek={setPeek} sheetOpen={!!peeked || actions} />
       </SectionBoundary>
 
+      {coach && data.board && (
+        <SectionBoundary surface="qualifiers.pairings" label="Next round groups" code="CH-09283">
+          <Pairings board={data.board} numRounds={data.numRounds} status={status} />
+        </SectionBoundary>
+      )}
+
       <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
         <Courses data={data} />
       </SectionBoundary>
@@ -222,6 +230,8 @@ export function QualifierDetailPhone({
           <Button leftIcon={Pencil} href={`${LIST}/${data.id}/edit`}>
             Edit details
           </Button>
+          {/* F-02: the standings as a spreadsheet, through the share sheet. */}
+          {b && b.rows.length > 0 && <ExportStandings name={data.name} board={b} numRounds={data.numRounds} label="Export standings" variant="secondary" size="md" />}
           {(status === 'in_progress' || closeDue) && (
             <Button
               leftIcon={Lock}
@@ -294,6 +304,8 @@ function Board({
   const order = useMemo(() => (b?.rows ?? []).map((r) => r.playerId), [b]);
   // P009-B1: rows slide to new ranks only when a refresh changed them, and never under an open sheet.
   const slide = useRankSlide(order, sheetOpen);
+  // pa-mot-02: the rows' boundaries mount after the board lands, so a push into the qualifier starts no view transition.
+  const armed = useRankSlideArmed();
 
   const head = (
     <div className="ch-qf-panel__head">
@@ -346,41 +358,56 @@ function Board({
         {b.rows.map((r, i) => {
           const me = r.playerId === data.viewerPlayerId;
           const note = sampleNote(r, b, data.numRounds);
+          const pace = `${r.played} of ${plural(data.numRounds, 'round')}${r.missed ? ', missed a round' : ''}`;
+          // SWP-01 (W scan, 16 Nov): the row button is named by what it draws, in the order drawn (place, name, state,
+          // to par, strokes), with the separators and the rest as hidden words, so the name starts with the visible words.
+          const sep = <span className="ch-sr-only">, </span>;
           const body = (
             <>
               <Pos position={r.position} tied={r.tied} move={r.move} />
+              {sep}
               <span className="ch-qfm-lb__n">
                 <b>
                   <span className="ch-qfm-lb__nm">{r.name}</span>
-                  {me && <span className="ch-qf-you">You</span>}
+                  {me && (
+                    <>
+                      {sep}
+                      <span className="ch-qf-you">You</span>
+                    </>
+                  )}
                 </b>
                 {(r.state || note) && (
                   <span className="ch-qfm-lb__sub">
+                    {sep}
                     <StateBadge state={r.state} />
+                    {r.state && note && sep}
                     {note && <span className="ch-qf-thin">{note}</span>}
                   </span>
                 )}
               </span>
+              {sep}
               {/* Row 75: the strokes under the plate, as desktop's Total column (they break a tie on to par). */}
               <span className="ch-qfm-lb__score">
                 <ToParPlate value={r.toPar} />
+                {sep}
                 <em className="ch-qfm-lb__tot ch-num">{r.total ?? '—'}</em>
+                {r.total != null && <span className="ch-sr-only"> strokes</span>}
               </span>
               <span className="ch-qfm-lb__thru ch-num">
-                <ThruDots played={r.played} total={data.numRounds} />
+                <ThruDots played={r.played} total={data.numRounds} hidden />
               </span>
+              {note !== pace && <span className="ch-sr-only">, {pace}</span>}
             </>
           );
           const label = `${r.name}, ${positionLabel(r)}, ${formatToPar(r.toPar)}${r.total != null ? `, ${r.total} strokes` : ''}, ${r.played} of ${plural(data.numRounds, 'round')}${r.missed ? ', missed a round' : ''}`;
           const slideRow = (
-            <ViewTransition name={`ch-rank-${r.playerId}`} update={slide ? 'ch-rank' : 'none'} enter="none" exit="none" share="none" default="none">
+            <RankSlot id={r.playerId} slide={slide} armed={armed}>
               {canOpen(r) ? (
                 <button
                   type="button"
                   data-print-visible=""
                   className={'ch-qfm-lb__row' + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
                   data-state={r.state ?? undefined}
-                  aria-label={`${label}. Show ${me ? 'your' : 'their'} rounds`}
                   onClick={() => {
                     haptic('select');
                     chTrail('qualifiers open rounds sheet');
@@ -388,13 +415,14 @@ function Board({
                   }}
                 >
                   {body}
+                  <span className="ch-sr-only">. Show {me ? 'your' : 'their'} rounds</span>
                 </button>
               ) : (
                 <div className={'ch-qfm-lb__row is-static' + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')} data-state={r.state ?? undefined} role="group" aria-label={label}>
                   {body}
                 </div>
               )}
-            </ViewTransition>
+            </RankSlot>
           );
           return (
             <li key={r.playerId}>
@@ -423,7 +451,7 @@ function Board({
         ))}
       </ol>
       <p className="ch-qf-cap">
-        {boardCaption(b, data.picks, data.numRounds, status)}
+        {boardCaption(b, data.picks, data.numRounds, status, coach)}
       </p>
     </section>
   );

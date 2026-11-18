@@ -19,7 +19,8 @@ const round = (id: string, player: string, date: string) => ({
   back_nine: 37,
   holes_played: 18,
   status: 'completed',
-  round_type: 'practice',
+  // A scoring round: practice rounds are not counted (DF-C-03, below).
+  round_type: 'tournament',
 });
 
 describe('Hub pulse windows', () => {
@@ -38,5 +39,23 @@ describe('Hub pulse windows', () => {
     expect(pulse).toMatchObject({ active14: 2, players: 3 });
     expect(pulse!.byPlayer!.find((p) => p.id === 'pa')!.recent).toBe(true);
     expect(pulse!.byPlayer!.find((p) => p.id === 'pb')!.recent).toBe(false);
+  });
+
+  it('DF-C-03: counts the rounds Home and Roster count, scoring rounds of either length, never practice', async () => {
+    tables.current = {
+      golf_rounds: {
+        data: [
+          round('a', 'pa', '2026-10-30'),
+          { ...round('n', 'pa', '2026-10-29'), holes_played: 9, back_nine: null, total_score: 38, score_to_par: 2 },
+          { ...round('p', 'pb', '2026-10-30'), round_type: 'practice' },
+          { ...round('u', 'pb', '2026-10-28'), round_type: null },
+        ],
+      },
+    };
+    const supabase = await createClient();
+    const pulse = await rosterPulse(supabase, new Map([['pa', 'Ana'], ['pb', 'Ben'], ['pc', 'Cy']]), '2026-10-31');
+    // Ana's eighteen and nine; Ben's round with no type (a scoring round); not Ben's practice round.
+    expect(pulse).toMatchObject({ rounds30: 3, active14: 2, players: 3 });
+    expect(pulse!.byPlayer!.map((p) => [p.id, p.rounds])).toEqual([['pa', 2], ['pb', 1], ['pc', 0]]);
   });
 });

@@ -18,8 +18,9 @@ counts include wrappers rather than unique popups.
 ```text
 Route:                   /golf/dashboard/recruiting
 Page:                    src/app/golf/(dashboard)/dashboard/recruiting/page.tsx
-                         (no session -> login; a player -> redirect('/golf/dashboard'), as before; a coach with the
-                         Clubhouse on (isClubhouseFor('coach')) -> Clubhouse; otherwise the existing Fairway page)
+                         (no session -> login; not a coach -> redirect('/golf/dashboard'), as before; dashboard role
+                         coach -> Clubhouse; otherwise nothing. The flag and the Fairway page were removed on 2026-11-14,
+                         #2527)
 Clubhouse route adapter: src/clubhouse/routes/recruiting.tsx ClubhouseRecruitingRoute()
                          (no session.coach -> nothing, CH-14902; no team -> RecruitingNoTeam, CH-14306;
                          otherwise Recruiting)
@@ -27,8 +28,11 @@ Server loader:           src/clubhouse/data/recruiting.ts loadRecruiting (calls 
                          flagged, not empty, and logs chLogServer('recruiting', 'prospects'); the `no_team` answer
                          becomes the no-team page)
 Screens:                 src/clubhouse/screens/recruiting/ Recruiting (live wrapper), RecruitingView (state and
-                         writes), RecruitingDesktop, RecruitingPhone, Pipeline, Documents, ProspectForm, RecSheet
-Skeleton:                RecruitingSkeleton.tsx (CH-14401) through ClubhouseSwitch in recruiting/loading.tsx
+                         writes, with ctx.ts the shape it hands both layouts), RecruitingDesktop, RecruitingPhone,
+                         Pipeline, Documents, ProspectForm, RecSheet; parts.tsx (StageChip, ProspectAvatar, the next-step
+                         plate) and add-request.ts (which prospect an Add is for, so a repeated Add is not sent twice)
+Skeleton:                RecruitingSkeleton.tsx (CH-14401), drawn directly by recruiting/loading.tsx (ClubhouseSwitch was
+                         deleted)
 Navigation:              src/clubhouse/shell/nav.ts (CH_NAV_COACH: Recruiting after Roster, Team section;
                          '/golf/dashboard/recruiting' in the coach's CH_REBUILT_ROUTES)
 Preview:                 src/app/clubhouse-preview/[screen]/page.tsx, screen `recruiting`
@@ -78,7 +82,7 @@ write re-reads the page (141501) and a failed one reports through `chReport`.
 | --- | --- | --- | --- | --- | --- |
 | ACT-P014-ADD-PROSPECT | New prospect (header, empty page, phone "+") | `addAction` in `RecruitingView`, which sends one request id per prospect being added (`requestIdFor`, `addRequestFor`) | `createRecruit(input, { requestId })`: inserts under that id; a repeat finds the row it stored and writes a corrected field to it (CH-14915) | golf_recruits | invalid 140501 · lands 140901 · fails 140601 · fields kept 141201 · Retry 141401 · repeat CH-14915 |
 | ACT-P014-SAVE-PROSPECT | Save (Edit dialog or sheet) | `saveAction`; with the next-step columns present the input carries `next_step_label` and `next_step_date` (P014 C1), absent it never names them | `updateRecruit` (passes the next step only once the server action accepts it; see CHANGELOG 2026-10-08) | golf_recruits | invalid 140501 · lands 140902 · fails 140602 · fields kept 141201 · Retry 141401 |
-| ACT-P014-MOVE-STAGE | A stage in the panel's control, the phone's stage sheet | `moveAction`, which moves, calls `updateRecruit` (status only) and puts the prospect back if it does not land; a landed move to Committed sets the one-shot `commitBeat` and its success haptic waits for the gilt rule (CH-14806) | `updateRecruit` | golf_recruits | optimistic 141301 · fails 140603 · announce 141803 · haptic 141701 · Retry 141401 · commit moment CH-14806 |
+| ACT-P014-MOVE-STAGE | A stage in the panel's control, the phone's stage sheet | `moveAction`, which moves, calls `updateRecruit` (status only) and puts the prospect back if it does not land; a landed move to Committed sets the one-shot `commitBeat` and its success haptic lands with the gilt rule (CH-14806) | `updateRecruit` | golf_recruits | optimistic 141301 · fails 140603 · announce 141803 · haptic 141701 · Retry 141401 · commit moment CH-14806 |
 | ACT-P014-DELETE-PROSPECT | Delete prospect (the panel's overflow menu on desktop, the edit sheet on the phone), after the question | `deleteAction` | `deleteRecruit` (their documents go with them) | golf_recruits, golf_recruit_documents | confirm 141101 · loading 140304 · lands 140903 · fails 140604 · haptic 141702 |
 | ACT-P014-LIST-DOCUMENTS | A prospect opens (the Documents section) | `fetchDocs` in `Documents` | `getRecruitDocuments` | golf_recruit_documents | loading 140202 · fails 140609 |
 | ACT-P014-UPLOAD-DOCUMENT | Upload (a chosen or dropped file, its title and category) | `uploadAction`, which sends one upload id per chosen file | `uploadRecruitFile`: `prepareRecruitDocumentUpload` (checks the type and size, builds the path from the recruit's team, signs an upload URL, or says the object is already there), a `PUT` of the file to that URL with progress, then `completeRecruitDocumentUpload` (reads the object's real size back, records the row; a file whose row fails stays for the Retry) | golf_recruit_documents, recruit-documents | invalid 140505, 140506 · loading 140302 · lands 140904 · fails 140605 · refused 140802 · file refused CH-14107, CH-14108 · drop CH-14109, CH-14110, CH-14917 · progress CH-14407 · repeat CH-14916 |

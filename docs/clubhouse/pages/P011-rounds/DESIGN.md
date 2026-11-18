@@ -154,12 +154,13 @@ own bands and bars.
 Approved spec `docs/clubhouse/phone/rounds.md`, from `Player - Rounds -
 Mobile.html`. The library is the tab root ("Rounds", no back link); the review's
 top bar is "Round" with "‹ Rounds" ("‹ Stats" for a coach). A new round and the
-shot screen hide the tab bar (`usePhoneTabsHidden`), with the dock above the
-home indicator and the distance box at 76px; sheets (penalty, change a shot,
-leave this shot, exit, scorecard, round complete, the picker, Add a course) are
-bottom sheets that drag to close. In the app the keyboard keeps the system's
-Done bar for the whole round (`useRoundDoneKey`, 2026-10-20), not yet felt on a
-device. Not yet: an iPhone pass.
+shot screen hide the tab bar (`usePhoneTabsHidden`; since 2026-10-13 the section
+strip and dock), with the dock above the home indicator and the distance box at
+76px; sheets (penalty, change a shot, leave this shot, exit, scorecard, round
+complete, the picker, Add a course) are bottom sheets that drag to close. In the
+app the keyboard keeps the system's Done bar for the whole round
+(`useRoundDoneKey`, 2026-10-20), not yet felt on a device. Not yet: an iPhone
+pass.
 
 **The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe
 coded"; the Coach Home board's round 3, "fewer containers, one feature card").**
@@ -234,9 +235,10 @@ A coach's note on a round needs a column or a small table the owner approves
 
 ### Owner decisions
 
-D-22 (phone), D-26 (season), D-31 (a closed qualifier is closed), D-42 (red
-means under par), D-53 (Stats rounds), D-64 (motion), D-66 (navigation), D-67
-(build order), D-70 (haptics), D-71 (page empty state); Q-72 is open, and the
+D-22 (phone), D-26 (season), D-31 (a closed qualifier is closed), D-42 as
+amended by MOTION-AND-VISUAL 4.7 (red is for errors only; under par is the
+gain), D-53 (Stats rounds), D-64 (motion), D-66 (navigation), D-67 (build
+order), D-70 (haptics), D-71 (page empty state); Q-72 is open, and the
 page is built on its recommendations (a to h).
 
 ## Strokes gained on the review (2026-09-30)

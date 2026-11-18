@@ -16,6 +16,9 @@ import { GolfPlayerDetailPanel } from './GolfPlayerDetailPanel';
 import { ViewAsButton } from './ViewAsButton';
 import { UserJourneyView } from './UserJourneyView';
 import { SectionLabel } from '../../_components/SectionLabel';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'User' };
 
 export const dynamic = 'force-dynamic';
 

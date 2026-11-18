@@ -1,29 +1,23 @@
 'use client';
 
-import { RotateCw, Sparkles, ArrowRight, ChartColumn, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
+import { RotateCw, ArrowRight, ChartColumn, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
-import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
-import type { ChYearKey } from '../../lib/class-year';
-import { Avatar } from '../../ui/Avatar';
+import type { ChCoachHome, ChHomeEvent, ChLatestRound } from '../../data/home';
 import { Button } from '../../ui/Button';
 import { CrhStateBlock } from '../../ui/CrhStateBlock';
 import { useRefresh } from '../../lib/use-refresh';
-import { EmptyState } from '../../ui/States';
-import { FormLine, FormRange } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
-import { RefreshNotice } from '../../ui/RefreshNotice';
-import { coachHelmPlayerHref, PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
+import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
+import { coachHelmPlayerHref, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { WeekStrip as DayStrip } from '../../ui/WeekStrip';
-import { withPointSpan } from '../../ui/point-span';
-import { formatFixed, formatSigned, changeInk, formatToPar } from '../../lib/format';
+import { formatSigned, changeInk, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
-import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { useChClock, useChClockText } from '../../lib/use-clock';
+import { useChClockText } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
@@ -34,29 +28,34 @@ import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
 import { LiveNowCard } from './LiveNowCard';
 import type { LiveSnapshot } from '../../live/model';
-import { TeamLegsPhone } from './TeamLegs';
 import { roundHref } from './player-links';
 import { leaderPeek } from './Leaderboard';
 import { MineBadge } from './CoachAsks';
-import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunsetExtra } from './DayCard';
-import { useLightPlace } from '../../shell/light';
+import { SinceYouLooked } from './DayCard';
+import { Countdown } from './Countdown';
+import { countdownTo } from './event-links';
+import { HomeActions } from './HomeActions';
+import { CoachLatest } from './CoachLatest';
+import { TeamScoring, TeamScoringFailed } from './TeamScoring';
+import { TeamGame } from './TeamGame';
+import { UpNext } from './UpNext';
 
 export { CALENDAR, eventHref, whenLabel } from './event-links';
 export { UpNext } from './UpNext';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { plural } from '../../lib/plural';
 import { ClassHomeLine } from './ClassHomeLine';
-import { HomeSpanSwitch } from './HomeSpanSwitch';
 import { NextBeyond } from './NextBeyond';
+import { NewEventLink } from './NewEventLink';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
- * The coach's phone Home (v2, design/handoff/Coach - Home - Mobile.html,
- * m-home.jsx): the green hero with the day, the greeting, the brief and Up
- * next; then Today, the team's form, This week and the latest rounds, each
- * opening its scorecard in a sheet. Same loader and catalog as desktop; the
- * phone's extra figures come from `data.phone`. `now` freezes the clock for
- * the preview and the tests.
+ * The coach's phone Home, drawn as Player Home's phone (lay-01, owner 15 Nov 2026: "I want the coach home page matching
+ * the players"): on the ivory sheet, the day, the greeting and the line on who needs a look; Up next as the one green
+ * card with its countdown; Message team and New event; what is waiting on the coach. Then, under engraved rules, This
+ * week with today's timeline inside it, the team's latest rounds paged with the scorecard inline, Team scoring on the
+ * shared scoring line, and the team's game. Same loader and catalog as desktop; `now` freezes the clock for the preview
+ * and the tests.
  */
 export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?: string; /** Who is on the course now (P-6); omitted, the card is not drawn. */ live?: LiveSnapshot }) {
   usePhoneHero(true);
@@ -69,119 +68,80 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
   // Two or more failed reads are told once under the greeting, with one Try again; each part keeps its title (CH-1209).
   const failed = coachFailedParts(data, true);
   const covered = failed.length > 1;
-  // The day card (phone concept board 1): the event under way or next, or the day's recap once it's over. Worked out
-  // inside each part's boundary, so a malformed event takes down only its own part.
-  const today = data.week.days.find((d) => d.isToday)?.date ?? null;
-  const rounds = data.latestRounds.error ? [] : data.latestRounds.rounds;
+  const until = phone.next ? countdownTo(phone.next) : null;
+  // A malformed read is CoachLatest's to contain (CH-2206); what changed since you looked reads no rounds from it.
+  const rounds = (data.latestRounds.error ? null : data.latestRounds.rounds) ?? [];
 
   return (
-    <main className="ch-hm" aria-label="Home" data-ch-crh="on">
+    <main className="ch-hm ch-hm--coach" aria-label="Home">
       <header className="ch-hm-hero">
         <span className="ch-hm-hero__date">{data.todayLabel}</span>
         <h1>{data.greeting}</h1>
-        {(data.subline || (failed.length > 0)) && (
-          <p className="ch-hm-hero__brief">
-            <Icon icon={Sparkles} size={14} />
-            {failed.length > 0 ? CRH_PART_FAILED : data.subline}
-          </p>
-        )}
-        <CoachQueue queue={data.queue} covered={covered} phone />
-
+        {/* Who needs a look and what's next, from the rounds: a count, not AI output, so no glyph (HOME-P-02). */}
+        {data.subline && <p className="ch-hm-hero__brief">{data.subline}</p>}
+        <PageRefreshNotice parts={failed} />
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
-          {data.week.error ? null : data.week.error ? (
-            // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
-            <FailedSec id="ch-hm-upnext-failed" title="Up next">
-              <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
-            </FailedSec>
+          {data.week.error ? (
+            <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
+          ) : phone.next ? (
+            <UpNext e={phone.next} now={now} kicker="Up next">
+              {/* A trip counts down to when it leaves (F-0001); an all-day event has no time to count to. */}
+              {until && <Countdown to={until} frozen={frozen} lead={phone.next.trip ? 'Leaves in' : undefined} />}
+            </UpNext>
+          ) : phone.after ? (
+            // Nothing left this week, but something after it (F-0006): never "No events scheduled".
+            <NextBeyond e={phone.after} />
           ) : (
-            <Day phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} years={data.yearById} />
+            <NoEvents />
           )}
         </SectionBoundary>
+        <HomeActions teamChatId={data.teamChatId} phone />
+        <CoachQueue queue={data.queue} covered={covered} phone />
       </header>
 
       <div className="ch-hm-body">
-        {/* P-10: the class line, first in the body under the Day card. Nothing with the flag off. */}
+        {/* P-10: the class line, first in the body. Nothing with the flag off. */}
         {data.teamId && data.clock && <ClassHomeLine teamId={data.teamId} today={data.clock.day} teamTimeZone={data.clock.tz} variant="phone" />}
         {live && (
           <SectionBoundary surface="home.live" label="Live now">
             <LiveNowCard initial={live} phone frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
           </SectionBoundary>
         )}
-        <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-          <Later data={data} rounds={rounds} now={now} today={today} quiet={nothingAhead} onOpenRound={setOpen} />
+        {/* P-14: what changed since this device last looked: schedule changes, and today's rounds once the rounds loaded. */}
+        <SinceYouLooked rounds={rounds} event={null} changes={data.changes ?? []} onOpenRound={setOpen} />
+        {!data.week.error && !nothingAhead ? (
+          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
+            {/* The player's This week: the days, then today's timeline as a small label inside the section. */}
+            <WeekStrip calendar days={data.week.days} note={phone.weekNote} rounds={phone.form?.roundsThisWeek}>
+              <SectionBoundary surface="home.today" label="Today" code="CH-2214">
+                <Today inline card list={phone.today} now={now} failed={false} quiet={false} />
+              </SectionBoundary>
+            </WeekStrip>
+          </SectionBoundary>
+        ) : (
+          <SectionBoundary surface="home.today" label="Today" code="CH-2214">
+            <Today list={phone.today} now={now} failed={data.week.error} quiet={nothingAhead} />
+          </SectionBoundary>
+        )}
+        <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
+          <CoachLatest data={data.latestRounds} covered={covered} years={data.yearById} />
         </SectionBoundary>
-
         {phone.form ? (
           <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
-            <Form form={phone.form} />
+            <TeamScoring form={phone.form} phone />
           </SectionBoundary>
         ) : data.latestRounds.error ? (
-          <CrhFailedCard id="ch-hm-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
-        ) : data.latestRounds.error ? (
-          <FailedSec id="ch-hm-form-failed" title="Team scoring">
-            <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
-          </FailedSec>
+          <TeamScoringFailed phone covered={covered} />
         ) : null}
-
         {phone.form && data.legs && (
           <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-            <TeamLegsPhone legs={data.legs} covered={covered} />
+            <TeamGame legs={data.legs} phone covered={covered} />
           </SectionBoundary>
         )}
-
-        {!data.week.error && !nothingAhead && (
-          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <WeekStrip calendar days={data.week.days} note={phone.weekNote} />
-          </SectionBoundary>
-        )}
-
-        {!data.latestRounds.error && <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
-          <Rounds years={data.yearById} data={data.latestRounds} trends={data.leaderboard.error ? null : data.leaderboard.rows} onOpen={setOpen} covered={covered} />
-        </SectionBoundary>}
       </div>
 
       <RoundSheet round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
     </main>
-  );
-}
-
-type DayProps = { rounds: ChLatestRound[]; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void };
-
-/** Up next's place: the day card; with nothing left this week, the next thing after it (F-0006); else how to add the first event. */
-function Day({ phone, rounds, now, today, onOpenRound, years }: DayProps & { phone: ChCoachHome['phone']; years?: Record<string, ChYearKey> }) {
-  const phase = dayPhase(phone.next, phone.today, rounds, now, today);
-  if (phase) return <DayCard years={years} phase={phase} now={now} today={today} onOpenRound={onOpenRound} />;
-  return phone.after ? <NextBeyond e={phone.after} /> : <NoEvents />;
-}
-
-/**
- * Today's place: an empty day keeps Today's own empty state (with Plan); otherwise the rail of what's left after the
- * card, and what changed since the coach last looked.
- */
-function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { data: ChCoachHome; quiet: boolean }) {
-  const { phone } = data;
-  const place = useLightPlace();
-  const clock = useChClock();
-  // The lane: one Today card with every event of the day, the next one marked (06 §11.2); "Later today" is the flag-off page's rail.
-  if (data.week.error) return <CrhFailedCard id="ch-hm-today-failed" title="Today" href={CALENDAR} link="Calendar" code="CH-2201" what="Today didn’t load" body="Your events are safe. Try again." />;
-  if (phone.today.length) {
-    return (
-      <>
-        <Today card list={phone.today} now={now} failed={false} quiet={quiet} />
-        {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={null} changes={data.changes ?? []} onOpenRound={onOpenRound} />}
-      </>
-    );
-  }
-  if (!data.week.error && !phone.today.length && quiet) return null;
-  if (data.week.error || !phone.today.length) return <Today card={true} list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
-  const phase = dayPhase(phone.next, phone.today, rounds, now, today);
-  const card = phase?.kind === 'event' ? phase.e : null;
-  const later = data.week.agenda.find((a) => a.when === 'later' && a.id !== card?.id);
-  return (
-    <>
-      <LaterToday todays={phone.today} cardId={card?.id ?? null} now={now} extras={[...sunsetExtra(today, now, place, clock), ...competitionExtra(later, clock)]} />
-      {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={card} changes={data.changes ?? []} onOpenRound={onOpenRound} />}
-    </>
   );
 }
 
@@ -231,16 +191,16 @@ function NoEvents() {
       </div>
       <div className="ch-hm-none__q">
         {QUICK.map((t) => (
-          <Link key={t} href={newEventHref(t)} className="ch-hm-none__chip" data-ch-press="">
+          <NewEventLink key={t} href={newEventHref(t)} type={t} className="ch-hm-none__chip">
             <Icon icon={TYPE_ICON[t]} size={13} />
             {TYPE_LABEL[t]}
-          </Link>
+          </NewEventLink>
         ))}
       </div>
-      <Link href={newEventHref()} className="ch-hm-none__add" onClick={() => haptic('press')}>
+      <NewEventLink href={newEventHref()} className="ch-hm-none__add" onTap={() => haptic('press')}>
         <Icon icon={Plus} size={16} />
         Add event
-      </Link>
+      </NewEventLink>
     </div>
   );
 }
@@ -328,137 +288,14 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
   );
 }
 
-const SHORT_DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
-const shortDay = (ymd: string) => SHORT_DAY.format(new Date(`${ymd}T12:00:00Z`));
-
-/** "2 of 3 rounds" when a figure rests on fewer rounds than the average; blank when it rests on all of them, or on none (the figure is then —). */
-function partOf(n: number, of: number): string {
-  return n > 0 && n < of ? `${n} of ${of} rounds` : ' ';
-}
-
-/** Under a figure's dash on the card: why there is none, so totals-only rounds read as what they are and not as a gap. */
-export function figureMissing(rounds: number, needs?: string): string {
-  return rounds > 0 ? (needs ?? 'Too few rounds') : 'Totals only so far';
-}
-
-/** What the average, greens and putts rest on: "3 rounds · Aug 2", "24 rounds · Sep 1 – Sep 28". */
-export function formBasis(b: ChTeamForm['basis']): string {
-  const span = b.from === b.to ? shortDay(b.from) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
-  return `${plural(b.rounds, 'round')} · ${span}`;
-}
+export { figureMissing, formSpan } from './TeamScoring';
 
 /**
- * The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42).
- * The average, greens and putts share one basis, which the strip states (`formBasis`); the week's count is its own.
+ * `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the
+ * calendar draws. `rounds`: the team's countable rounds this week, a count on the week's own basis, so it sits here and not in Team
+ * scoring's last-10 row (prod audit 2026-11-15, HOME-P-14).
  */
-export function Form({ form }: { form: ChTeamForm; }) {
-  const W = 320;
-  const H = 64;
-  const pts = form.line;
-  const lo = Math.min(...pts) - 0.3;
-  const hi = Math.max(...pts) + 0.3;
-  const x = (i: number) => 4 + (pts.length > 1 ? (i * (W - 8)) / (pts.length - 1) : (W - 8) / 2);
-  const y = (v: number) => 6 + ((v - lo) / (hi - lo || 1)) * (H - 12);
-  const d = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  // Lower scores and fewer putts are better; more greens are better. A change is green or amber only when it clears its standard
-  // error (stats visuals Q4); otherwise plain, and the average's says "No clear change" (F-54's zero is inside that).
-  const avgTone = deltaTone(form.delta, form.deltaSe, true);
-  // W3 (owner's preview, 11 Nov 2026): "a green area with a V in it", no dates, nothing marked. The line names its first and last
-  // days and marks its best and toughest (the lowest and highest team average; a tie goes to the newer day), saying when one rests
-  // on a single round. Only with the days known (an older fixture has none) and three points or more.
-  const days = form.lineDays?.length === pts.length ? form.lineDays : null;
-  const counts = form.lineCounts?.length === pts.length ? form.lineCounts : null;
-  let best = 0;
-  let worst = 0;
-  pts.forEach((v, i) => {
-    if (v <= pts[best]!) best = i;
-    if (v >= pts[worst]!) worst = i;
-  });
-  const marked = days != null && pts.length >= 3 && pts[best] !== pts[worst];
-  const oneRound = (i: number) => (counts?.[i] === 1 ? ' · 1 round' : '');
-  return (
-    <section className="ch-hm-form" aria-labelledby="ch-hm-form">
-      <div className="ch-hm-form__head">
-          <h2>Team scoring</h2>
-          {rebuiltHref('/golf/dashboard/stats') && (
-            <Link href={rebuiltHref('/golf/dashboard/stats') as string} className="ch-hm-link">
-              Team stats
-            </Link>
-          )}
-        </div>
-      {/* The window picker has a row of its own: between the title and the link it wrapped both to two lines on a phone. */}
-      <div className="ch-hm-form__span">
-        <HomeSpanSwitch span={form.span ?? 'season'} />
-      </div>
-      <div className="ch-hm-form__top">
-        <span>
-          {/* The lane: the label is real text, not the old rule's ::after (06 §11.2). */}
-          <em id="ch-hm-form">{form.span === 'all' ? 'Average · every round, all time' : 'Average · each player’s last 10'}</em>
-          <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
-        </span>
-        {/* A change the card calls noise is not its loudest figure (W3): plain weight, quiet ink, the words beside it. */}
-        <span className={'ch-hm-delta ch-num ' + (avgTone || (form.delta != null ? 'is-flat' : ''))}>
-          {form.delta != null && formatSigned(form.delta)}
-          {form.delta != null && <em>{deltaWords(form.delta, avgTone, 'vs previous 10')}</em>}
-          <em className="ch-hm-form__basis">{formBasis(form.basis)}</em>
-        </span>
-      </div>
-      {pts.length > 1 && (
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team’s average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
-          <path d={`${d} L${x(pts.length - 1)},${H} L${x(0)},${H} Z`} className="ch-hm-form__fill" />
-          <path d={d} className="ch-hm-form__line" vectorEffect="non-scaling-stroke" />
-          {/* The last point: a zero-length round stroke, so it stays a circle when the desktop card stretches the plot to its height. */}
-          <path d={`M${Math.round(x(pts.length - 1) * 10) / 10},${Math.round(y(pts[pts.length - 1]!) * 10) / 10} h0.01`} className="ch-hm-form__dot" vectorEffect="non-scaling-stroke" />
-          {marked &&
-            ([best, worst] as const).map((i, k) => (
-              <path key={k ? 'worst' : 'best'} d={`M${Math.round(x(i) * 10) / 10},${Math.round(y(pts[i]!) * 10) / 10} h0.01`} className={'ch-hm-form__mark ' + (k ? 'is-worst' : 'is-best')} vectorEffect="non-scaling-stroke" />
-            ))}
-        </svg>
-      )}
-      {days && pts.length > 1 && (
-        <div className="ch-hm-form__axis ch-num" aria-hidden="true">
-          <span>{shortDay(days[0]!)}</span>
-          <span>{shortDay(days[days.length - 1]!)}</span>
-        </div>
-      )}
-      {marked && (
-        <p className="ch-hm-form__ends ch-num">
-          <span>
-            <i className="is-best" aria-hidden="true" />
-            Best day {formatFixed(pts[best]!)} · {shortDay(days![best]!)}
-            {oneRound(best)}
-          </span>
-          <span>
-            <i className="is-worst" aria-hidden="true" />
-            Toughest day {formatFixed(pts[worst]!)} · {shortDay(days![worst]!)}
-            {oneRound(worst)}
-          </span>
-        </p>
-      )}
-      {pts.length <= 1 && <p className="ch-hm-form__noline">The line starts with a second round day.</p>}
-      <dl className="ch-hm-form__figs">
-        <div>
-          <dt>Rounds</dt>
-          <dd className="ch-num">{form.roundsThisWeek}</dd>
-          <dd>this week</dd>
-        </div>
-        <div>
-          <dt>GIR</dt>
-          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : <NoData />}</dd>
-          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : form.gir.pct == null ? figureMissing(form.basis.girRounds, form.gir.needs) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
-        </div>
-        <div>
-          <dt>Putts</dt>
-          <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : <NoData />}</dd>
-          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : form.putts.avg == null ? figureMissing(form.basis.puttsRounds) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
-        </div>
-      </dl>
-    </section>
-  );
-}
-
-/** `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the calendar draws. */
-export function WeekStrip({ days, note, children, calendar = false }: { calendar?: boolean; days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
+export function WeekStrip({ days, note, children, calendar = false, rounds }: { calendar?: boolean; days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode; rounds?: number }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
@@ -470,6 +307,7 @@ export function WeekStrip({ days, note, children, calendar = false }: { calendar
         )}
       </div>
       <WeekDays days={days} note={note} />
+      {rounds != null && <p className="ch-hm-week__n ch-num">{rounds ? `${plural(rounds, 'round')} posted this week` : 'No rounds posted this week yet'}</p>}
       {children}
     </section>
   );
@@ -532,92 +370,6 @@ export function CrhFailedCard({ id, title, href, link, code, what, body }: { id:
         </Button>
       </CrhStateBlock>
     </section>
-  );
-}
-
-function FailedSec({ id, title, children }: { id: string; title: string; children: ReactNode }) {
-  return (
-    <section className="ch-hm-sec is-failed" aria-labelledby={id}>
-      <div className="ch-hm-sec__h">
-        <h2 id={id}>{title}</h2>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Rounds({ years, data, trends, onOpen, covered }: { years?: Record<string, ChYearKey>; data: ChCoachHome['latestRounds']; trends: ChCoachHome['leaderboard']['rows'] | null; onOpen: (r: ChLatestRound) => void; covered: boolean }) {
-  const trendOf = new Map((trends ?? []).map((p) => [p.playerId, p.trend]));
-  const teamStats = rebuiltHref('/golf/dashboard/stats');
-  return (
-    <section className="ch-hm-sec" aria-labelledby="ch-hm-rounds">
-      <div className="ch-hm-sec__h">
-        <h2 id="ch-hm-rounds">Latest rounds</h2>
-        {/* The board's "All": a coach has no rounds library, so it opens Team stats and says so (Q-79). */}
-        {teamStats && data.rounds.length > 0 && !data.error && (
-          <Link href={teamStats} className="ch-hm-link">
-            Team stats
-          </Link>
-        )}
-      </div>
-      {data.error ? (
-        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
-      ) : !data.rounds.length ? (
-        <EmptyState code="CH-2302" shape="rows" shapeCount={2} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
-      ) : (
-        // B5: the rows' sparks share one range, so the same height is the same score down the list.
-        <FormRange trends={data.rounds.map((r) => trendOf.get(r.playerId))} earlyBelow={3}>
-          <ul className="ch-hm-list">
-            {data.rounds.map((r) => (
-              <li key={r.id}>
-                {/* P003-C1: a hold on the row peeks at the player, from what Home loaded (the board's row, else this round). */}
-                <PlayerPeek player={roundPeek(r, trends, data.rounds)}>
-                  <button
-                    data-ch-round-row=""
-                    type="button"
-                    className="ch-hm-rd"
-                    onClick={() => {
-                      haptic('select');
-                      chTrail('home open round');
-                      onOpen(r);
-                    }}
-                  >
-                    <Avatar name={r.playerName} id={r.playerId} size="sm" year={years?.[r.playerId] ?? null} />
-                    <span className="ch-hm-rd__b">
-                      <b>{r.playerName}</b>
-                      <RoundMeta meta={r.meta} />
-                    </span>
-                    {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
-                      <span className="ch-hm-rd__spark" aria-hidden="true">
-                        <FormLine data={trendOf.get(r.playerId)!} width={36} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
-                      </span>
-                    )}
-                    <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
-                      <b>{r.score}</b>
-                      <em>{formatToPar(r.toPar)}</em>
-                    </span>
-                  </button>
-                </PlayerPeek>
-              </li>
-            ))}
-          </ul>
-        </FormRange>
-      )}
-    </section>
-  );
-}
-
-/**
- * A latest round's course and date: the course gives way (ellipsis) and the date keeps its place, so a long course name
- * never pushes the date out of the row. The same words as one line ("Oakmont CC · Sun 12 Oct").
- */
-function RoundMeta({ meta }: { meta: string }) {
-  const [lead, ...rest] = meta.split(' · ').slice(0, 2);
-  return (
-    <span className="ch-hm-rd__m">
-      <span>{lead}</span>
-      {rest.length > 0 && <span className="ch-hm-rd__when">{rest.join(' · ')}</span>}
-    </span>
   );
 }
 

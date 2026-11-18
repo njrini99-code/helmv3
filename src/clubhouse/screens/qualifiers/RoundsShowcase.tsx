@@ -101,7 +101,7 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
                 type="button"
                 className={'ch-qf-prounds__r' + (isBest ? ' is-best' : '') + (isOpen ? ' is-open' : '')}
                 aria-expanded={isOpen}
-                aria-controls={`ch-qf-rv-${rd.id}`}
+                aria-controls={isOpen ? `ch-qf-rv-${rd.id}` : undefined}
                 onClick={() => {
                   haptic('select');
                   chTrail('qualifiers open round detail');
@@ -114,6 +114,9 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
                   <small className="ch-num">
                     {dayLabel(rd.date)}
                     {isBest && ' · Best round'}
+                    {row.dropped?.includes(rd.id) && (
+                      <span> · Dropped, not counted</span>
+                    )}
                   </small>
                 </span>
                 <span className="ch-qf-prounds__s ch-num">{rd.total ?? '—'}</span>
@@ -172,6 +175,22 @@ const KINDS: Array<{ key: string; label: string; test: (d: number) => boolean }>
   { key: 'double', label: 'Double+', test: (d) => d >= 2 },
 ];
 
+/** How far from par a hole's bar runs before it is drawn at the cap, broken near its end (stats and charts audit 2026-11-15, CH-17). */
+export const HOLE_BAR_CAP = 2.5;
+
+/**
+ * Each hole's bar from the par line, `unit` per stroke: none for a hole with no score, a dot at par, and past the cap a bar at the
+ * cap marked `clipped`, so a triple and a quadruple bogey never draw as the same hole with nothing to say so. The hole's own score
+ * prints in the row under the shape.
+ */
+export function holeBars(diffs: ReadonlyArray<number | null>, unit: number): Array<null | { even: true } | { even: false; under: boolean; h: number; clipped: boolean }> {
+  return diffs.map((d) => {
+    if (d == null) return null;
+    if (d === 0) return { even: true };
+    return { even: false, under: d < 0, h: Math.min(HOLE_BAR_CAP, Math.abs(d)) * unit, clipped: Math.abs(d) > HOLE_BAR_CAP };
+  });
+}
+
 /**
  * One round's visuals in the side panel: its shape against par (a bar a hole, up for under par, down for over), the
  * nines as scored marks, the counts by kind, and the way to the whole round.
@@ -214,12 +233,21 @@ function RoundVisual({ round, holes, field }: { round: ChQRound; holes: ChQHole[
       <svg className="ch-qf-rv__shape" viewBox={`0 0 ${sorted.length * W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`Round ${round.number} against par, hole by hole`}>
         <line x1={0} x2={sorted.length * W} y1={mid} y2={mid} className="is-par" />
         {sorted.length > 9 && <line x1={9 * W} x2={9 * W} y1={4} y2={H - 4} className="is-turn" />}
-        {diffs.map((d, i) => {
+        {holeBars(diffs, unit).map((b, i) => {
           const x = i * W + 2;
-          if (d == null) return null;
-          if (d === 0) return <circle key={i} cx={x + 4} cy={mid} r={2.2} className="is-even" />;
-          const h = Math.min(2.5, Math.abs(d)) * unit;
-          return <rect key={i} x={x} width={8} rx={2} y={d < 0 ? mid - h : mid} height={h} className={d < 0 ? 'is-under' : 'is-over'} />;
+          if (b == null) return null;
+          if (b.even) return <circle key={i} cx={x + 4} cy={mid} r={2.2} className="is-even" />;
+          const cls = b.under ? 'is-under' : 'is-over';
+          if (!b.clipped) return <rect key={i} x={x} width={8} rx={2} y={b.under ? mid - b.h : mid} height={b.h} className={cls} />;
+          // Past the cap: the bar is broken a little short of its end, the mark of a cut scale (CH-17).
+          const gap = 3;
+          const tip = 4;
+          return (
+            <g key={i} data-clipped="">
+              <rect x={x} width={8} rx={2} y={b.under ? mid - (b.h - gap - tip) : mid} height={b.h - gap - tip} className={cls} />
+              <rect x={x} width={8} rx={1} y={b.under ? mid - b.h : mid + b.h - tip} height={tip} className={cls} />
+            </g>
+          );
         })}
       </svg>
       <div className="ch-qf-rv__nines">

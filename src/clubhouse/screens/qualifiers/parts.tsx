@@ -11,13 +11,13 @@ import { plural, pluralWord } from '../../lib/plural';
 /**
  * Live, Upcoming or Concluded (the list's own word for a finished one). Live is a static dot: no pulse (D-33). A live
  * qualifier past its last day is "Waiting on n rounds" (or "Past last day"), never Live (P009-D3, F-0068): no dot, since nothing about it is
- * live.
+ * live. A player reads "Closed · awaiting coach’s final" there instead (N13P-51).
  */
-export function StatusPill({ status, ended = null }: { status: ChQStatus; ended?: { outstanding: number | null } | null }) {
+export function StatusPill({ status, ended = null, viewer }: { status: ChQStatus; ended?: { outstanding: number | null } | null; viewer: 'coach' | 'player' }) {
   if (ended) {
     return (
       <span className="ch-qf-status">
-        <Badge tone="neutral">{endedLabel(ended)}</Badge>
+        <Badge tone="neutral">{endedLabel(ended, viewer)}</Badge>
       </span>
     );
   }
@@ -37,14 +37,14 @@ export function StateBadge({ state }: { state: ChQRowState }) {
   return <Badge tone={s.tone}>{s.label}</Badge>;
 }
 
-/** Score to par. Red only under par. */
+/** Score to par. The gain only under par. */
 export function ToPar({ value, big = false }: { value: number | null; big?: boolean }) {
   return <span className={'ch-qf-tp' + (value != null && value < 0 ? ' is-under' : '') + (big ? ' is-big' : '')}>{formatToPar(value)}</span>;
 }
 
 /**
  * To par on a hand-hung plate (P009-A1): a fixed-aspect ivory plate with the numeral in the condensed cell role.
- * Red only under par; even and over par are ink. `size` is the board's (desktop, phone) or the list's live card.
+ * The gain only under par; even and over par are ink. `size` is the board's (desktop, phone) or the list's live card.
  */
 export function ToParPlate({ value, size = 'board' }: { value: number | null; size?: 'board' | 'card' }) {
   return (
@@ -137,17 +137,20 @@ export function qualifierPeek(r: ChQRow, numRounds: number): ChPlayerPeek {
  * Thru as dots (owner, 2026-10-16): one per scheduled round, green for each one played. A long qualifier (more than
  * eight rounds) keeps the figure, since a row of dots that long stops being countable at a glance.
  */
-export function ThruDots({ played, total }: { played: number; total: number }) {
+export function ThruDots({ played, total, hidden = false }: { played: number; total: number; hidden?: boolean }) {
   const label = `${played} of ${plural(total, 'round')}`;
+  // MAC-20: inside a button the row's own name already says it, and a button's children are presentational, so the
+  // dots are drawn only: an image role there is an invalid descendant.
+  const named = hidden ? ({ 'aria-hidden': true } as const) : ({ role: 'img', 'aria-label': label } as const);
   if (total > 8) {
     return (
-      <span role="img" className="ch-num" aria-label={label}>
+      <span className="ch-num" {...named}>
         {played}/{total}
       </span>
     );
   }
   return (
-    <span className="ch-qf-dots" role="img" aria-label={label}>
+    <span className="ch-qf-dots" {...named}>
       {Array.from({ length: total }, (_, i) => (
         <i key={i} className={i < played ? 'is-on' : undefined} />
       ))}

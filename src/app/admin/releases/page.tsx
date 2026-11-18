@@ -5,6 +5,9 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { LocalTime } from '../_components/LocalTime';
 import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Releases' };
 
 export const dynamic = 'force-dynamic';
 

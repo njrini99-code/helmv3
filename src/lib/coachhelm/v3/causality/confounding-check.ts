@@ -42,6 +42,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { trustedExposure } from './exposure-scope';
 
 type Sb = SupabaseClient<Database>;
 
@@ -87,12 +88,15 @@ export async function detectConfoundingInterventions(
   input: ConfounderCheckInput,
 ): Promise<ConfounderCheckResult> {
   const { data, error } = await fetchAllRowsResult<ExposureRow>((from, to) =>
-    sb
-      .from('golf_insight_exposure')
-      .select('insight_id, shown_at')
-      .eq('player_id', input.player_id)
-      .neq('insight_id', input.insight_id)
-      .lte('shown_at', input.windowEnd)
+    // Prefetch-era Team Hub rows are not evidence of a view (`exposure-scope.ts`).
+    trustedExposure(
+      sb
+        .from('golf_insight_exposure')
+        .select('insight_id, shown_at')
+        .eq('player_id', input.player_id)
+        .neq('insight_id', input.insight_id)
+        .lte('shown_at', input.windowEnd),
+    )
       .order('insight_id', { ascending: true })
       .order('shown_at', { ascending: true })
       .order('id', { ascending: true })

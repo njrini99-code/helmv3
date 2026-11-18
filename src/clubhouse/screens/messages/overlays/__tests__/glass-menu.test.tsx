@@ -20,6 +20,7 @@ vi.mock('../../motion/messages-motion', async (orig) => {
 });
 
 import { GlassMenu, GLASS_MENU_W, placeGlassMenu } from '../GlassMenu';
+import { menuOpenCurve } from '../../motion/messages-motion';
 
 beforeEach(() => {
   played.calls.length = 0;
@@ -88,12 +89,13 @@ describe('MSG-410 the menu', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it('opens on lift, 0.8 to 1 with opacity, the first enabled row focused', () => {
+  it('opens as every menu does, 0.97 to 1 with opacity over the quick beat, ease-out (OVL-15), the first enabled row focused', () => {
     render(<GlassMenu open anchor={anchor()} items={items()} label="x" onClose={() => {}} />);
     const open = played.calls[0]!;
-    expect(open.spring).toBe('lift');
-    expect(open.keyframes).toEqual([{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }]);
-    expect(open.opts).toMatchObject({ reduced: false });
+    expect(open.spring).toBeNull();
+    expect(open.keyframes).toEqual([{ transform: 'scale(.96)', opacity: 0 }, { transform: 'none', opacity: 1 }]);
+    expect(open.opts).toMatchObject({ reduced: false, timing: menuOpenCurve });
+    expect(menuOpenCurve.ms).toBe(180);
     expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Open conversation' }));
   });
 
@@ -154,8 +156,7 @@ describe('MSG-410 the menu', () => {
     const out = played.calls[played.calls.length - 1]!;
     rerender(<GlassMenu open anchor={a} items={items()} label="x" onClose={() => {}} />);
     const again = played.calls[played.calls.length - 1]!;
-    expect(again.spring).toBe('lift');
-    expect(again.opts).toMatchObject({ live: true });
+    expect(again.opts).toMatchObject({ live: true, timing: menuOpenCurve });
     expect(out.anim!.cancel).toHaveBeenCalled();
     expect(screen.queryByRole('menu')).not.toBeNull();
   });

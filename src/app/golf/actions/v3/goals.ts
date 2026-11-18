@@ -320,7 +320,8 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       await notifyCoachAssignedGoal({ player_id, goal_id: data.id, goal_title: input.title });
     }
 
-    revalidatePath('/golf/dashboard/my-development');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/stats');
     revalidatePath('/golf/dashboard/coachhelm');
     return { ok: true, goal_id: data.id, warning };
   } catch (err) {
@@ -700,9 +701,9 @@ async function transitionGoal(
       }
     }
 
-    revalidatePath('/golf/dashboard/my-development');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/stats');
     revalidatePath('/golf/dashboard/coachhelm');
-    revalidatePath('/golf/dashboard/intelligence');
     return { ok: true, goal_id: goalId };
   } catch (err) {
     // Reaches here for genuine faults only — e.g. createAdminClient() throwing
@@ -911,8 +912,9 @@ async function createTeamGoalImpl(input: CreateTeamGoalInput): Promise<CreateTea
   }
 
   if (created > 0) {
-    revalidatePath('/golf/dashboard/development');
-    revalidatePath('/golf/dashboard/intelligence');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/stats');
+    revalidatePath('/golf/dashboard/coachhelm');
   }
   return { ok: created > 0, created, failed, warning };
 }

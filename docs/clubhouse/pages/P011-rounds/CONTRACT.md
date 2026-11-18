@@ -72,9 +72,12 @@ and Fairway's outside it (`rounds/loading.tsx` through `ClubhouseSwitch`);
 nothing shows for the first 150ms, then a fade (the shell's 11609). The review
 loads under its Clubhouse skeleton (CH-11406) inside the shell, at `rounds/[id]`
 and at the old `rounds/[id]/review` address, and under Fairway's outside it
-(110206). Setup and the shot screen load in place: the course library
-(CH-11403), a course's tees (CH-11404), the scorecard (CH-11405), and a hole
-saving (CH-11402).
+(110206). Since Fairway's retirement on 2026-11-14 there is no outside and no
+`ClubhouseSwitch`: `rounds/loading.tsx` draws the library's skeleton for a
+player and Team rounds' for a coach, and the `rounds/[id]/review` address was
+deleted. Setup and the shot screen load in place: the course library (CH-11403),
+a course's tees (CH-11404), the scorecard (CH-11405), and a hole saving
+(CH-11402).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -93,6 +96,7 @@ saving (CH-11402).
 | 110213 | CH-11412 | `TEAM_ROUNDS_IS_REFRESHING_WITH_THE_PAGE` | Team rounds is refreshing (a Try again is running) with the page on screen |
 | 110214 | CH-11413 | `TEAM_ROUNDS_IS_LOADING` | Team rounds is loading |
 | 110215 | CH-11421 | `THE_COURSE_PAGE_DIDNT_LOAD` | The course page didn't load (P-7) |
+| 110280 | CH-11480 | `EXPORT_IS_READING_THE_HOLES_OF_THE` | Export is reading the holes of the rounds it holds (F-02) |
 
 ## 03 — Background loading / refresh
 
@@ -143,9 +147,11 @@ was empty (110413). A test covers 110413.
 | 110421 | CH-11320 | `TEAM_ROUNDS_NO_ROUND_POSTED_BY_ANYONE` | Team rounds: no round posted by anyone |
 | 110422 | CH-11321 | `TEAM_ROUNDS_THE_SEARCH_OR_PLAYER_FILTER` | Team rounds: the search or player filter matches nothing |
 | 110423 | CH-11322 | `TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE` | Team rounds: completed rounds with no score at all |
-| 110424 | CH-11330 | `A_COURSE_PAGE_THIS_VIEWER_HAS_NO` | A course page this viewer has no rounds at: an unknown key, or another player's course |
-| 110425 | CH-11331 | `A_COACHS_COURSE_PAGE_FOR_A_PLAYER` | A coach's course page for a player who isn't on their team, or no player named |
+| 110424 | CH-11330 | `A_COURSE_PAGE_THIS_VIEWER_HAS_NO` | A course page this viewer has no rounds at: a valid key with no rounds, or another player's course |
+| 110425 | CH-11331 | `A_COACHS_COURSE_PAGE_FOR_A_PLAYER` | A coach's course page for a player who isn't on their team |
 | 110426 | CH-11333 | `THE_COURSE_PAGES_HOLE_BY_HOLE_WITH` | The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load) |
+| 110490 | CH-11390 | `A_COACH_ON_A_PLAYERS_ROUND_FLOW` | A coach on a player's round flow: /rounds/new, /rounds/recover or /rounds/continue/[id] (GAP-R-12) |
+| 110491 | CH-11391 | `A_COACH_ON_A_COURSE_PAGE_WITH` | A coach on a course page with no player named, or a player id that isn't one (GAP-S-20) |
 
 ## 05 — Validation
 
@@ -193,7 +199,8 @@ its section (CH-11203, `SectionBoundary`). A partial read still renders the rest
 (110619). A player whose team membership read fails gets the route's error view,
 never "no team" (shared with every page, `routes/team.ts`; not tested here).
 Neither route has a Clubhouse error view: `rounds/error.tsx` and
-`rounds/[id]/error.tsx` are the shared Fairway boundary.
+`rounds/[id]/error.tsx` are the shared boundary (`src/components/errors/`), once
+Fairway's too.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -241,6 +248,9 @@ Neither route has a Clubhouse error view: `rounds/error.tsx` and
 | 110642 | CH-11220 | `TEAM_ROUNDS_THE_ROSTER_DOESNT_LOAD` | Team rounds: the roster doesn't load |
 | 110643 | CH-11221 | `TEAM_ROUNDS_THE_POSTED_ROUNDS_DONT_LOAD` | Team rounds: the posted rounds don't load |
 | 110644 | CH-11222 | `A_ROUNDS_COACH_NOTE_CANT_BE_CHECKED` | A round's coach note can't be checked (the read of `golf_round_reviews.coach_notes` failed) |
+| 110680 | CH-11080 | `EXPORT_ON_ROUNDS_OR_TEAM_ROUNDS_FAILS` | Export on Rounds or Team rounds fails: the holes didn’t load, or the browser refused the file (launch readiness F-02) |
+| 110690 | CH-11290 | `A_ROUND_REVIEWS_HISTORY_READ_FAILS_ON` | A round review's history read fails, on the server or as a stream cut off in the browser (GAP-S-27) |
+| 110691 | CH-11291 | `A_SECTION_OF_ROUND_TRACKING_OR_OF` | A section of round tracking or of the course page throws while drawing (GAP-S-10) |
 
 ## 07 — Network / offline
 
@@ -283,7 +293,7 @@ load, with Try again (CH-11208 to CH-11210).
 | 110762 | CH-11962 | `THE_COURSE_NUDGE_THE_ROUND_HAS_NO` | The course nudge (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the round has no library course (a course typed by hand) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
@@ -291,22 +301,23 @@ Status: DEFINED
 
 Who may open the page: a player, or a coach for a review, with
 `golf_clubhouse_ui` on for that role (the shell's gate); anyone else gets the
-Fairway page. The library is for players: the library route renders nothing for
-a coach, whose Rounds page is Team rounds (`ClubhouseTeamRoundsRoute`, chosen by
-the page; the shell lists `/golf/dashboard/rounds` as rebuilt for a coach)
-(110801). A round's review opens
-for the player who played it and a coach of their team, and everyone else gets
-the same not-here page, so it never confirms that someone else's round exists; a
-failed check is an error, never "not found" (110802). The library reads only the
-player's own rounds (110803, tested in `rounds-contracts.test.tsx`). Discard is
-checked again by its server action (110804, run in
-`rounds-actions-contracts.test.ts`; another player's round the caller can see is
-refused, and one it cannot see reads as already gone; nothing is deleted either
-way), which is the legacy library's action, unchanged. A qualifier with no round
-open cannot be chosen (110805). `/rounds/new` and `/rounds/continue/[id]` are
-rebuilt for a player (the page branches on the flag for the player's role,
-110114); a coach on `/rounds/new` keeps the legacy message. `/rounds/recover` is
-not rebuilt, so nothing links to it.
+Fairway page (until 2026-11-14; since then the page follows the dashboard role
+alone, and there is no Fairway page). The library is for players: the library
+route renders nothing for a coach, whose Rounds page is Team rounds
+(`ClubhouseTeamRoundsRoute`, chosen by the page; the shell lists
+`/golf/dashboard/rounds` as rebuilt for a coach) (110801). A round's review
+opens for the player who played it and a coach of their team, and everyone else
+gets the same not-here page, so it never confirms that someone else's round
+exists; a failed check is an error, never "not found" (110802). The library
+reads only the player's own rounds (110803, tested in
+`rounds-contracts.test.tsx`). Discard is checked again by its server action
+(110804, run in `rounds-actions-contracts.test.ts`; another player's round the
+caller can see is refused, and one it cannot see reads as already gone; nothing
+is deleted either way), which is the legacy library's action, unchanged. A
+qualifier with no round open cannot be chosen (110805). `/rounds/new` and
+`/rounds/continue/[id]` are rebuilt for a player (the page branches on the flag
+for the player's role, 110114); a coach on `/rounds/new` keeps the legacy
+message. `/rounds/recover` is not rebuilt, so nothing links to it.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -331,17 +342,18 @@ success haptic.
 
 A posted round opens its review with `?just=submitted` (the submit path's own
 navigation and its link). The review's round card (CH-11920 to CH-11924,
-`screens/rounds/card/`) settles in once on the smooth spring and says one quiet
-line about the round, using only figures the page shows; the success haptic was
-fired by the submit path and the card fires none. The parameter is taken out of
-the address after it is read, so a reload does not replay it. Share draws the
-card as a 1200px picture on the device (Canvas 2D) and hands it to the share
-sheet, or downloads it; nothing goes to a server.
+`screens/rounds/card/`) is whole in its first frame (MOTION-AND-VISUAL 3.12) and
+says one quiet line about the round, using only figures the page shows; the
+success haptic was fired by the submit path and the card fires none. The
+parameter is taken out of the address after it is read, so a reload does not
+replay it. Share draws the card as a 1200px picture on the device (Canvas 2D)
+and hands it to the share sheet, or downloads it; nothing goes to a server.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 110901 | — | `DISCARD_LANDED` | A discard that lands says so in a toast ("Round discarded") with the success haptic, and the card leaves and the idle card ("No round in progress") takes its place, whether the discard came from the question or from the toast's Retry. |
 | 110902 | — | `ROUND_POSTED_SAYS_SO` | A submitted round says "Round posted" with the course, names the coach ("Coach Reyes can see it now.", else "Your coach can see it now.") and links View round review (the round screen ticks the success haptic once and opens it after two and a half seconds). While it submits it names the real shot count, not timed steps, and a failed submit says so with Try again (CH-11005). |
+| 110980 | — | `EXPORT_ROUNDS_LANDED` | An export of rounds that lands says so in a toast ("Rounds exported · 12 rounds") with the success haptic: a download on a computer, the share sheet on a phone. Closing the share sheet is not a failure and says nothing. |
 
 From the shell (P001): 10901 CHANGE_LANDED.
 
@@ -582,8 +594,8 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
-11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
-11824 CH-1842, 11825 CH-1816, 11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11824 CH-1842, 11825 CH-1816,
+11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
 
 ## 19 — Responsive layout
 

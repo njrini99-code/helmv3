@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { accessibleName } from '../../../__tests__/label-in-name';
 
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
 
@@ -94,8 +95,8 @@ describe('a busy block under an event comes out as a tile of its own', () => {
     expect(b.style.top).toBe('338px');
     expect(b.style.height).toBe('24px');
     expect(b.className).toContain('ch-ev--under');
-    // Its name keeps its real hours.
-    expect(b.getAttribute('aria-label')).toMatch(/^Busy · staff, 12:00 – 1:00 PM/);
+    // Its name keeps its real hours. It opens with the title drawn on it, then says busy (SWP-03: label in name).
+    expect(accessibleName(b)).toMatch(/^staff, busy, 12:00 – 1:00 PM/);
   });
 
   // Owner, 2026-11-11: "Busy · Staff meeting" was cut in the week's column (136px of words in 129).
@@ -106,7 +107,7 @@ describe('a busy block under an event comes out as a tile of its own', () => {
     expect(b.className).not.toContain('ch-ev--two');
     expect(b.querySelector('.ch-ev__t')!.textContent).toBe('staff');
     expect(b.querySelector('.ch-ev__t .ch-ev__g')).not.toBeNull();
-    expect(b.getAttribute('aria-label')).toMatch(/^Busy · staff, /);
+    expect(accessibleName(b)).toMatch(/^staff, busy, /);
   });
 
   it('with a row for its time, or two lines for its title, it keeps the word', () => {
@@ -298,10 +299,11 @@ describe('the desktop week takes the full width', () => {
     expect(css).toMatch(/@container \(max-width: 1060px\) \{\s*\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap:not\(\[data-under\]\) \{\s*grid-column: auto;\s*grid-row: auto;\s*max-height: none;\s*\}\s*\}/);
   });
 
-  it('closed, the panel has no place in the grid; opened after the page is drawn it fades in, and not with motion off', () => {
+  it('closed, the panel has no place in the grid; opened after the page is drawn it crossfades in, and not with motion off', () => {
     expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\]:not\(\[data-open\]\) > \.ch-in-wrap:not\(\[data-under\]\) \{\s*position: absolute;\s*width: 0;\s*height: 0;/);
-    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: ch-cal-panel-in var\(--ch-dur-base\) var\(--ch-ease\) both;\s*\}/);
-    expect(css).toMatch(/@keyframes ch-cal-panel-in \{\s*from \{\s*opacity: 0;\s*\}\s*\}/);
+    // The shared crossfade, motion.css ch-in, on the quick beat (MOTION-AND-VISUAL 3.5, 3.12).
+    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: ch-in var\(--ch-dur-quick\) var\(--ch-ease-out\) both;\s*\}/);
+    expect(css).not.toMatch(/@keyframes/);
     expect(css).toMatch(/\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: none;/);
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: none;/);
   });

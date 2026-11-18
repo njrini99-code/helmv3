@@ -1,4 +1,5 @@
 import 'server-only';
+import { countRoster, readRosterLimit, rosterChip, rosterOverText } from '@/lib/golf/roster-limit';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
@@ -6,7 +7,10 @@ import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { isTourSchemaMissing } from '@/lib/golf/tournament-refusals';
+import { holeScramble } from '@/lib/golf/stat-formulas';
 import { isoDay } from '../lib/dates';
+import { isScoreCountable } from './round-scope';
+import { loadTeamZone } from './season';
 import { chLogServer } from '../lib/track-server';
 import { suggestLinks, type LinkCandidateRound, type LinkEventRound } from '../screens/tournaments/links';
 import {
@@ -191,13 +195,13 @@ interface TeamInfo {
 }
 
 async function readTeam(ctx: TourCtx): Promise<TeamInfo> {
-  const [{ data, error }, settings] = await Promise.all([
-    ctx.supabase.from('golf_teams').select('id, name, timezone, gender').eq('id', ctx.teamId).maybeSingle(),
-    ctx.supabase.from('golf_team_settings').select('timezone').eq('team_id', ctx.teamId).maybeSingle(),
+  const [{ data, error }, tz] = await Promise.all([
+    ctx.supabase.from('golf_teams').select('id, name, gender').eq('id', ctx.teamId).maybeSingle(),
+    loadTeamZone(ctx.supabase, ctx.teamId, 'tournaments'),
   ]);
   if (error || !data) throw new ReadFailed('team', error ?? { message: 'team not found' });
-  // The team's clock as Calendar reads it (golf_team_settings), then the team row's; a round day is a date on it.
-  const tz = (!settings.error && settings.data?.timezone) || data.timezone || 'America/New_York';
+  // The team's clock, the settings zone every Clubhouse loader reads (`loadTeamZone`); a round day is a date on it. DF-C-07: it fell
+  // back to `golf_teams.timezone`, which Settings never writes, and took a zone that isn't one as given.
   const today = todayIsoInZone(tz, new Date(ctx.now));
   const season = seasonIdOf(today);
   const label = `${data.name} · ${season.slice(0, 4)}–${season.slice(5)}`;
@@ -552,6 +556,7 @@ export async function loadTournamentDesk(ctx: TourCtx, eventId: string): Promise
       kind: 'ready',
       data: {
         now: ctx.now,
+        teamName: info.team.name,
         event,
         players,
         courses: read.courses,
@@ -641,13 +646,26 @@ export async function loadTournamentHistory(ctx: TourCtx): Promise<TourLoad<ChTo
   return guard<ChTourHistoryData>('history', async () => {
     const info = await readTeam(ctx);
     const seasonEnd = Number(seasonIdOf(info.today).slice(0, 4)) + 1;
-    const [read, players, profiles] = await Promise.all([readEvents(ctx, info.team.timezone), readPlayers(ctx, seasonEnd), readSeasonProfiles(ctx)]);
+    // The events are the page; the roster, the season profiles and the trend are its sections (GAP-S-08). A failure in one
+    // flags that section and the events still show, instead of the whole page failing.
+    const [read, roster, seasonRows] = await Promise.all([
+      readEvents(ctx, info.team.timezone),
+      section('history', 'players', () => readPlayers(ctx, seasonEnd)),
+      section('history', 'season_profiles', () => readSeasonProfiles(ctx)),
+    ]);
+    const players = roster.ok ? roster.value : [];
+    const profiles = seasonRows.ok ? seasonRows.value : [];
     const season = seasonIdOf(info.today);
     const complete = read.events.filter((e) => e.status === 'complete');
-    const matched = matchedPlayersOf(read.events, season);
-    const trend = historyTrend(complete, read.courses, matched);
-    const vals = trend.filter((t) => complete.find((e) => e.id === t.eventId)?.seasonId === season && t.actual != null).map((t) => t.actual!).sort((a, b) => a - b);
-    const q = (p: number) => vals[Math.min(vals.length - 1, Math.max(0, Math.round(p * (vals.length - 1))))]!;
+    const figures = await section('history', 'trend', async () => {
+      const matched = matchedPlayersOf(read.events, season);
+      const trend = historyTrend(complete, read.courses, matched);
+      const vals = trend.filter((t) => complete.find((e) => e.id === t.eventId)?.seasonId === season && t.actual != null).map((t) => t.actual!).sort((a, b) => a - b);
+      const q = (p: number) => vals[Math.min(vals.length - 1, Math.max(0, Math.round(p * (vals.length - 1))))]!;
+      // The middle half of this season's results; under four events there is no band to draw.
+      return { matched, trend, band: vals.length >= 4 ? { lo: q(0.25), hi: q(0.75) } : null };
+    });
+    const { matched, trend, band } = figures.ok ? figures.value : { matched: [], trend: [], band: null };
     return {
       kind: 'ready',
       data: {
@@ -658,13 +676,12 @@ export async function loadTournamentHistory(ctx: TourCtx): Promise<TourLoad<ChTo
         courses: read.courses,
         events: complete,
         trend,
-        // The middle half of this season's results; under four events there is no band to draw.
-        band: vals.length >= 4 ? { lo: q(0.25), hi: q(0.75) } : null,
+        band,
         matchedPlayers: matched,
         headToHead: headToHeadOf(read.events, season),
         // Splits by day, kind and start need the standard errors of the metrics engine's pool: not built in this pass.
         splits: [],
-        errors: {},
+        errors: { ...(roster.ok && seasonRows.ok ? {} : { profiles: true as const }), ...(figures.ok ? {} : { trend: true as const }) },
       },
     };
   });
@@ -680,6 +697,8 @@ interface PoolRound {
   course_id: string | null;
   total_score: number | null;
   holes_played: number | null;
+  front_nine: number | null;
+  back_nine: number | null;
   score_to_par: number | null;
   total_putts: number | null;
   total_penalties: number | null;
@@ -697,11 +716,16 @@ interface PoolHole {
   gir: boolean | null;
   fairway_hit: boolean | null;
   penalty_strokes: number | null;
+  /** golf_holes.sand_save: null = no greenside-bunker visit. Optional for older callers. */
+  sand_save?: boolean | null;
 }
 
 export function holeStats(holes: readonly PoolHole[], round: Pick<PoolRound, 'total_putts' | 'total_penalties'>): ChTourCompareRound['stats'] {
   const played = holes.filter((h) => h.score != null);
-  const missed = played.filter((h) => h.gir === false);
+  // Scrambling on the stats cache's rule (holeScramble): a missed green or a
+  // greenside-bunker visit is a chance; par or better after the miss, or a
+  // sand save, is made.
+  const scrambles = played.map((h) => holeScramble({ missedGreen: h.gir === false, score: h.score, par: h.par, sandSave: h.sand_save ?? null }));
   // A hole with no GIR mark is not a miss, and a hole with no putt count is not zero putts: GIR counts only marked
   // holes, and the putt total stands only when every scored hole has one (else the round's own total, else none).
   const puttsKnown = played.length > 0 && played.every((h) => h.putts != null);
@@ -712,13 +736,25 @@ export function holeStats(holes: readonly PoolHole[], round: Pick<PoolRound, 'to
     fwOf: played.filter((h) => h.par > 3 && h.fairway_hit != null).length,
     putts: puttsKnown ? played.reduce((a, h) => a + (h.putts as number), 0) : played.length ? null : (round.total_putts ?? null),
     threePutts: played.filter((h) => (h.putts ?? 0) >= 3).length,
-    scrMade: missed.filter((h) => h.score! <= h.par).length,
-    scrOf: missed.length,
+    scrMade: scrambles.filter((x) => x.made).length,
+    scrOf: scrambles.filter((x) => x.attempt).length,
     birdiesPlus: played.filter((h) => h.score! <= h.par - 1).length,
     doublesPlus: played.filter((h) => h.score! >= h.par + 2).length,
     penalties: played.length ? played.reduce((a, h) => a + (h.penalty_strokes ?? 0), 0) : (round.total_penalties ?? 0),
     proximityFt: null,
   };
+}
+
+/**
+ * Whether a GolfHelm round enters the comparison pool (launch readiness 2026-11-15, DF-P-07): a round that counts in a score, by the
+ * rule every Stats figure uses (`isScoreCountable`: 9 or 18 holes all scored, or an 18-hole total), never a 14-hole card read as 18
+ * holes (its 58 read −14 to par). A linked event round marked WD or DQ stays whatever its length, so its evidence can say why; every
+ * figure leaves it out (10.3).
+ */
+export function poolRoundCounts(r: Pick<PoolRound, 'total_score' | 'holes_played' | 'front_nine' | 'back_nine' | 'total_putts'>, own: readonly Pick<PoolHole, 'score'>[], linkedStatus: ChTourEvent['playerRounds'][number]['status'] | null): boolean {
+  if (r.total_score == null) return false;
+  if (linkedStatus === 'wd' || linkedStatus === 'dq' || linkedStatus === 'dq_pending') return true;
+  return isScoreCountable({ ...r, recorded_holes: own.filter((h) => h.score != null).length });
 }
 
 /** A WD or DQ event round stays in the pool so its evidence can say why, but every figure leaves it out (10.3). */
@@ -741,7 +777,7 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
   const rounds = await allIn<PoolRound>('poolRounds', playerIds, (chunk, from, to) =>
     ctx.supabase
       .from('golf_rounds')
-      .select('id, player_id, round_date, round_type, course_id, total_score, holes_played, score_to_par, total_putts, total_penalties, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
+      .select('id, player_id, round_date, round_type, course_id, total_score, holes_played, front_nine, back_nine, score_to_par, total_putts, total_penalties, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
       .in('player_id', chunk)
       .eq('status', 'completed')
       .eq('is_test', false)
@@ -750,7 +786,7 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
       .range(from, to),
   );
   const holes = await allIn<PoolHole>('poolHoles', rounds.map((r) => r.id), (chunk, from, to) =>
-    ctx.supabase.from('golf_holes').select('round_id, par, score, putts, gir, fairway_hit, penalty_strokes').in('round_id', chunk).order('id', { ascending: true }).range(from, to),
+    ctx.supabase.from('golf_holes').select('round_id, par, score, putts, gir, fairway_hit, penalty_strokes, sand_save').in('round_id', chunk).order('id', { ascending: true }).range(from, to),
   );
   const byRound = new Map<string, PoolHole[]>();
   for (const h of holes) byRound.set(h.round_id, [...(byRound.get(h.round_id) ?? []), h]);
@@ -772,13 +808,13 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
   };
   const out: ChTourCompareRound[] = [];
   for (const r of rounds) {
-    if (r.total_score == null) continue;
+    const own = byRound.get(r.id) ?? [];
+    const link = linkedTo.get(r.id);
+    if (r.total_score == null || !poolRoundCounts(r, own, link?.pr.status ?? null)) continue;
     const holesPlayed: 9 | 18 = (r.holes_played ?? 18) <= 9 ? 9 : 18;
     const course = r.course_id ? read.courses[r.course_id] : undefined;
-    const own = byRound.get(r.id) ?? [];
     const par = poolRoundPar(own, holesPlayed, course?.par ?? null, r.score_to_par != null ? r.total_score - r.score_to_par : null);
     const rating = course?.rating != null ? (holesPlayed === 9 ? course.rating / 2 : course.rating) : null;
-    const link = linkedTo.get(r.id);
     const sg = r.strokes_gained_tee != null && r.strokes_gained_approach != null && r.strokes_gained_around_green != null && r.strokes_gained_putting != null ? { ott: r.strokes_gained_tee, app: r.strokes_gained_approach, arg: r.strokes_gained_around_green, putt: r.strokes_gained_putting } : null;
     const fpr = link ? fieldPerRound(link.e, link.pr.roundNumber) : null;
     out.push({
@@ -932,6 +968,7 @@ function draftOf(e: ChTourEvent | null, t: TourRow | null, givers: string[]): Ch
     format: e?.format ?? { kind: '5c4', players: 5, counting: 4, holes: 18 },
     kind: e?.kind ?? 'regular',
     tiebreak: e?.tiebreak ?? 'ties_stand',
+    lockMinutes: t?.lock_minutes ?? 10,
     rounds: e ? e.rounds.map((r) => ({ date: r.date, courseId: r.courseId || null, startType: r.startType, firstTee: r.firstTeeAt })) : [{ date: '', courseId: null, startType: 'tee_times', firstTee: null }],
     fieldSize: t?.field_size ?? null,
     fieldTeams: e?.field?.teams.filter((x) => !x.us).map((x) => x.name) ?? [],
@@ -992,16 +1029,56 @@ export async function loadTournamentForm(ctx: TourCtx, eventId: string | null, f
   });
 }
 
+/**
+ * F-05: an event's B team, or null when the squad column is not there yet (held migration 20261116091000). A read that
+ * fails otherwise fails the whole lineup (ReadFailed, logged by the guard): without it the B players would read as A
+ * individuals and a save would drop their squad, so the builder shows its error and Try again instead of a lineup.
+ */
+async function readBTeam(ctx: TourCtx, eventId: string): Promise<NonNullable<ChTourLineupData['bTeam']> | null> {
+  const { data, error } = await tourTable(ctx.supabase, 'golf_tournament_entries')
+    .select('player_id, role, slot, squad' as never)
+    .eq('tournament_id', eventId)
+    .eq('squad' as never, 'B' as never);
+  if (error) {
+    if (isTourSchemaMissing(error)) return null;
+    throw new ReadFailed('bTeam', error);
+  }
+  const rows = (data ?? []) as unknown as Array<{ player_id: string; role: string; slot: number | null }>;
+  return {
+    slots: rows
+      .filter((r) => r.role === 'individual')
+      .sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99))
+      .map((r) => ({ playerId: r.player_id, slot: r.slot })),
+    alternate: rows.find((r) => r.role === 'alternate')?.player_id ?? null,
+  };
+}
+
 export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promise<TourLoad<ChTourLineupData>> {
   return guard<ChTourLineupData>('lineup', async () => {
     const info = await readTeam(ctx);
     const seasonEnd = Number(seasonIdOf(info.today).slice(0, 4)) + 1;
     // Every event of the team: a player's form and how often they counted come from the other events.
-    const [read, players] = await Promise.all([readEvents(ctx, info.team.timezone), readPlayers(ctx, seasonEnd)]);
+    const [read, players, limitRead, bRead] = await Promise.all([
+      readEvents(ctx, info.team.timezone),
+      readPlayers(ctx, seasonEnd),
+      // F-05: the roster limit, counted as the Roster header counts it. Never throws: a missing table is the division default.
+      readRosterLimit(ctx.supabase, ctx.teamId, { withExemptions: ctx.role === 'coach' }),
+      // F-05: the B team. Its column arrives with held migration 20261116091000; before then the builder offers none.
+      readBTeam(ctx, eventId),
+    ]);
     const event = read.events.find((e) => e.id === eventId);
     if (!event) return { kind: 'missing' };
     const raw = read.raws.find((r) => r.t.id === eventId);
     const lineup = event.entries.filter((x) => x.role === 'lineup');
+    // The shared event shape reads every entry as the A squad, so a B player shows there as an individual or an
+    // alternate: the A side here leaves them out.
+    const bIds = new Set(bRead ? [...bRead.slots.map((x) => x.playerId), ...(bRead.alternate ? [bRead.alternate] : [])] : []);
+    const rosterCount = countRoster(
+      players.filter((p) => !p.alumni).map((p) => p.id),
+      limitRead.exemptions,
+      limitRead.limit,
+    );
+    const chip = rosterChip(rosterCount);
     return {
       kind: 'ready',
       data: {
@@ -1012,14 +1089,16 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
         // The projected range is the projection engine's, which is not built: null, never an invented figure.
         candidates: players.filter((p) => !p.alumni).map((p) => ({ playerId: p.id, availability: p.availability, qualifying: null, ...candidateStats(p.id, read.events, eventId, event.courseIds) })),
         slots: Array.from({ length: event.format.players }, (_, i) => ({ slot: i + 1, playerId: lineup.find((x) => x.slot === i + 1)?.playerId ?? null, reason: null, squad: 'A' as const })),
-        alternate: event.entries.find((x) => x.role === 'alternate')?.playerId ?? null,
-        individuals: event.entries.filter((x) => x.role === 'individual').map((x) => x.playerId),
+        alternate: event.entries.find((x) => x.role === 'alternate' && !bIds.has(x.playerId))?.playerId ?? null,
+        individuals: event.entries.filter((x) => x.role === 'individual' && !bIds.has(x.playerId)).map((x) => x.playerId),
+        ...(bRead ? { bTeam: bRead } : {}),
         projection: null,
         projectionShort: [],
         lineup: event.lineup,
         version: raw?.t.version ?? null,
         qualifier: null,
         errors: {},
+        ...(chip ? { rosterLimit: { chip: rosterCount.over > 0 ? `${chip}, ${rosterCount.over} over` : chip, over: rosterCount.over, text: rosterCount.over > 0 ? rosterOverText(rosterCount) : null } } : {}),
       },
     };
   });

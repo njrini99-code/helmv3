@@ -67,9 +67,10 @@ describe('Team rounds · the season figures leave practice out', () => {
   it('a month’s caption averages the same rounds: October’s 72, 75 and 71', () => {
     show(PREVIEW_TEAM_ROUNDS);
     const table = screen.getByRole('table', { name: 'Team rounds' });
-    expect(within(table).getByText('7 rounds · avg 72.7')).toBeTruthy();
+    // DF-C-14: the caption says the average is over three of the seven.
+    expect(within(table).getByText('7 rounds · avg 72.7 over 3')).toBeTruthy();
     // August has one round, a practice round: listed and counted, with no average to show.
-    expect([...table.querySelectorAll('.ch-trd-grp__m')].map((m) => m.textContent)).toEqual(['7 rounds · avg 72.7', '6 rounds · avg 73.3', '1 round']);
+    expect([...table.querySelectorAll('.ch-trd-grp__m')].map((m) => m.textContent)).toEqual(['7 rounds · avg 72.7 over 3', '6 rounds · avg 73.3 over 3', '1 round']);
   });
 
   it('with no practice round the captions are as they were', () => {

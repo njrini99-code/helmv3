@@ -3,7 +3,7 @@
 -- =============================================================================
 -- PURPOSE: Creates a single shared demo coach login that visitors use at
 --   /golf/demo. This is a CO-HEAD-COACH on the existing demo team; it does NOT
---   disturb njrini99@gmail.com (Nick Rini), who remains the primary head coach.
+--   disturb the owner's own coach account, which remains the primary head coach.
 --
 -- PLACEHOLDERS — the orchestrator MUST substitute these before executing:
 --   __DEMO_EMAIL__    → the demo coach email   (e.g. demo-coach@helmsportslabs.com)
@@ -174,7 +174,7 @@ BEGIN
   -- -------------------------------------------------------------------------
   -- 5. golf_team_coach_staff — attach to the demo team as non-primary head coach
   -- -------------------------------------------------------------------------
-  -- is_primary=false so Nick Rini (njrini99) stays the primary head coach.
+  -- is_primary=false so the owner's account stays the primary head coach.
   -- The RLS function is_golf_team_coach() checks for a row in this table,
   -- so this row is what gives the shared demo account visibility into all
   -- team data.
@@ -192,7 +192,7 @@ BEGIN
     '6ecdd1a6-63fe-4beb-b094-00118f334163',    -- Demo University Golf team
     gc.id,
     'head_coach',
-    false,                                       -- Nick Rini stays primary=true
+    false,                                       -- the owner's account stays primary=true
     now()
   FROM public.golf_coaches gc
   WHERE gc.user_id = v_user_id

@@ -46,10 +46,11 @@ asserted here — see `.claude/rules/database.md`.
 | UserPromptSubmit | `(all tools)` | `.claude/hooks/route-prompt.mjs` | yes | no — records/reports only |
 | PreCompact | `(all tools)` | `.claude/hooks/save-session-state.mjs` | yes | no — records/reports only |
 | PreToolUse | `mcp__.*` | `.claude/hooks/no-prod-in-audit.mjs` | yes | yes |
+| PreToolUse | `Bash\|WebFetch` | `.claude/hooks/no-prod-in-audit.mjs` | yes | yes |
 | PostToolUse | `Write\|Edit` | `.claude/hooks/format-on-edit.mjs` | yes | no — records/reports only |
 | PostToolUse | `Bash` | `.claude/hooks/deps-hygiene.mjs` | yes | no — records/reports only |
 
-Exactly one hook can refuse a tool call: `no-prod-in-audit.mjs` under matcher `mcp__.*`. Every other wired hook observes.
+2 hooks can refuse a tool call.
 
 ## Permission rules
 

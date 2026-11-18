@@ -296,7 +296,6 @@ function Chip({ e, two = false, tab, canDrag, onPick, lifted, onAltMove }: { e: 
       {...listeners}
       tabIndex={tab ? 0 : -1}
       aria-roledescription={canDrag ? 'draggable event' : undefined}
-      aria-label={`${roundLabel(e, e.title).name}${roundLabel(e, e.title).spoken}${e.allDay || e.start == null ? '' : `, ${fmtHour(e.start, true)}`}${e.cancelled ? ', cancelled' : ''}${mk?.aria ?? ''}`}
       title={roundLabel(e, e.title).name}
       className={'ch-mo__ev' + (isMajor(e.type) ? ` is-major is-${e.type}` : '') + (two ? ' is-two' : '') + (canDrag ? ' is-draggable' : '') + (lifted ? ' is-held' : '') + (e.cancelled ? ' is-cancelled' : '')}
       onKeyDown={(ev) => {
@@ -320,6 +319,9 @@ function Chip({ e, two = false, tab, canDrag, onPick, lifted, onAltMove }: { e: 
         </time>
       )}
       <RoundTitle e={e} title={e.title} />
+      {/* SWP-03 (WCAG 2.5.3 Label in Name): named by the title it shows, then these hidden words. An aria-label named it
+          "Range and wedges, 3:30 PM" over "3:30" and "Range and wedges", which axe and Voice Control could not match. */}
+      <span className="ch-sr-only">{`${roundLabel(e, e.title).spokenRound}${e.allDay || e.start == null ? '' : `, ${fmtHour(e.start, true, clock)}`}${e.cancelled ? ', cancelled' : ''}${mk?.aria ?? ''}`}</span>
       {mk && !e.cancelled && <Icon icon={markGlyph(mk.change)} size={10} className="ch-mo__chg" />}
     </button>
   );
@@ -338,7 +340,6 @@ function Ribbon({ r, tab, canDrag, onPick, onGrab, dates, lifted }: { r: ChLaneB
       {...listeners}
       tabIndex={tab ? 0 : -1}
       aria-roledescription={canDrag ? 'draggable event' : undefined}
-      aria-label={`${roundLabel(e, e.title).name}${roundLabel(e, e.title).spoken}, ${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}`}
       title={roundLabel(e, e.title).name}
       className={`ch-mo__ribbon ch-ev--${e.type}${isMajor(e.type) ? ' is-major' : ''}${r.clipStart ? ' is-clip-start' : ''}${r.clipEnd ? ' is-clip-end' : ''}${canDrag ? ' is-draggable' : ''}${lifted ? ' is-held' : ''}`}
       style={{ ['--ch-mo-span' as string]: n, ['--ch-mo-lane' as string]: r.row } as React.CSSProperties}
@@ -354,6 +355,8 @@ function Ribbon({ r, tab, canDrag, onPick, onGrab, dates, lifted }: { r: ChLaneB
     >
       <Icon icon={TYPE_ICON[e.type]} size={11} />
       <RoundTitle e={e} title={e.title} />
+      {/* SWP-03: named by the title it shows, then the days in hidden words. */}
+      <span className="ch-sr-only">{`${roundLabel(e, e.title).spokenRound}, ${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}${e.cancelled ? ', cancelled' : ''}`}</span>
     </button>
   );
 }

@@ -3597,6 +3597,18 @@ $$;
 
 ALTER FUNCTION "public"."get_current_player_team_ids"() OWNER TO "postgres";
 
+CREATE OR REPLACE FUNCTION "public"."golf_current_coach_team_ids"() RETURNS SETOF "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT gtcs.team_id
+  FROM public.golf_team_coach_staff gtcs
+  JOIN public.golf_coaches gc ON gc.id = gtcs.coach_id
+  WHERE gc.user_id = (SELECT auth.uid());
+$$;
+
+ALTER FUNCTION "public"."golf_current_coach_team_ids"() OWNER TO "postgres";
+
 CREATE OR REPLACE FUNCTION "public"."get_db_telemetry"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_catalog'
@@ -4911,6 +4923,47 @@ $$;
 
 ALTER FUNCTION "public"."golf_event_documents_assert_same_team"() OWNER TO "postgres";
 
+CREATE OR REPLACE FUNCTION public.golf_hole_gir(p_par integer, p_score integer, p_putts integer, p_shot_to_green integer)
+RETURNS boolean
+LANGUAGE sql
+IMMUTABLE
+SET search_path = ''
+AS $$
+  -- A green in regulation: on the putting surface in par minus 2 strokes or
+  -- fewer (PGA Tour). From the shots when they record the hole, else from the
+  -- scorecard's score minus putts; unknown (NULL) when neither can tell.
+  SELECT CASE
+    WHEN p_par IS NULL OR p_score IS NULL OR p_score <= 0 THEN NULL
+    WHEN p_shot_to_green IS NOT NULL THEN p_shot_to_green <= p_par - 2
+    WHEN p_putts IS NULL THEN NULL
+    ELSE (p_score - p_putts) > 0 AND (p_score - p_putts) <= p_par - 2
+  END;
+$$;
+
+ALTER FUNCTION "public"."golf_hole_gir"("p_par" integer, "p_score" integer, "p_putts" integer, "p_shot_to_green" integer) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION public.golf_hole_shot_to_green(p_round_id uuid, p_hole_number integer, p_score integer)
+RETURNS integer
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  -- The stroke that first reached the green (or holed), counting penalty
+  -- rows, but only when the hole's shot rows are the whole hole: numbered 1
+  -- to the score with none missing. Otherwise NULL, and the rule falls back
+  -- to score minus putts (a penalty stroke never logged as a shot, a hole
+  -- logged in part).
+  SELECT CASE
+    WHEN count(*) = p_score AND min(s.shot_number) = 1 AND max(s.shot_number) = p_score
+    THEN min(s.shot_number) FILTER (WHERE s.result IN ('green', 'hole'))
+  END
+  FROM public.golf_shots AS s
+  WHERE s.round_id = p_round_id
+    AND s.hole_number = p_hole_number;
+$$;
+
+ALTER FUNCTION "public"."golf_hole_shot_to_green"("p_round_id" "uuid", "p_hole_number" integer, "p_score" integer) OWNER TO "postgres";
+
 CREATE OR REPLACE FUNCTION "public"."golf_holes_recompute_round_totals_fn"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -4948,16 +5001,27 @@ $$;
 
 ALTER FUNCTION "public"."golf_holes_recompute_round_totals_fn"() OWNER TO "postgres";
 
-CREATE OR REPLACE FUNCTION "public"."golf_holes_set_gir_fn"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
+CREATE OR REPLACE FUNCTION public.golf_holes_set_gir_fn() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public'
     AS $$
+DECLARE
+  v_shot_to_green integer;
 BEGIN
+  -- One GIR rule (20261115230000): public.golf_hole_gir, from the hole's
+  -- shots when they record the whole hole, else from score minus putts. The
+  -- round totals (recompute_golf_round_totals) read the same function.
   IF NEW.par IS NOT NULL AND NEW.score IS NOT NULL THEN
-    NEW.gir := (NEW.par >= 3
-                AND NEW.score > 0
-                AND (NEW.score - COALESCE(NEW.putts, 0)) > 0
-                AND (NEW.score - COALESCE(NEW.putts, 0)) <= (NEW.par - 2));
+    v_shot_to_green := public.golf_hole_shot_to_green(NEW.round_id, NEW.hole_number, NEW.score);
+    NEW.gir := public.golf_hole_gir(NEW.par, NEW.score, NEW.putts, v_shot_to_green);
+  END IF;
+  -- An up-and-down is a missed green got down in two: never on a GIR hole.
+  -- Only the shots clear one. Submit writes the holes before the shots, so
+  -- while the card alone decides, a recorded up-and-down is kept: the shots
+  -- that follow can still show a missed green (a putter from the fringe the
+  -- card counted as a putt), and the shot trigger clears it if they show a GIR.
+  IF NEW.gir IS TRUE AND v_shot_to_green IS NOT NULL THEN
+    NEW.up_and_down := NULL;
   END IF;
   RETURN NEW;
 END
@@ -5588,6 +5652,49 @@ CREATE OR REPLACE FUNCTION "public"."golf_shot_detail_round_ids"() RETURNS SETOF
 $$;
 
 ALTER FUNCTION "public"."golf_shot_detail_round_ids"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION public.golf_shots_refresh_hole_gir_fn() RETURNS trigger
+    LANGUAGE plpgsql
+    SECURITY DEFINER
+    SET search_path = ''
+    AS $$
+DECLARE
+  v_round uuid;
+  v_hole integer;
+BEGIN
+  FOR v_round, v_hole IN
+    SELECT DISTINCT t.round_id, t.hole_number
+    FROM (VALUES
+      (CASE WHEN TG_OP <> 'DELETE' THEN NEW.round_id END, CASE WHEN TG_OP <> 'DELETE' THEN NEW.hole_number END),
+      (CASE WHEN TG_OP <> 'INSERT' THEN OLD.round_id END, CASE WHEN TG_OP <> 'INSERT' THEN OLD.hole_number END)
+    ) AS t (round_id, hole_number)
+    WHERE t.round_id IS NOT NULL AND t.hole_number IS NOT NULL
+  LOOP
+    -- The hole's own trigger recomputes the flag on this write and clears
+    -- an up-and-down the shots show to be on a green in regulation.
+    UPDATE public.golf_holes AS gh
+    SET gir = g.gir
+    FROM (
+      SELECT h.id, s.shot_to_green, public.golf_hole_gir(
+        h.par, h.score, h.putts, s.shot_to_green
+      ) AS gir
+      FROM public.golf_holes AS h
+      CROSS JOIN LATERAL (
+        SELECT public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score) AS shot_to_green
+      ) AS s
+      WHERE h.round_id = v_round AND h.hole_number = v_hole AND h.score IS NOT NULL
+    ) AS g
+    WHERE gh.id = g.id
+      AND (
+        gh.gir IS DISTINCT FROM g.gir
+        OR (g.gir IS TRUE AND g.shot_to_green IS NOT NULL AND gh.up_and_down IS NOT NULL)
+      );
+  END LOOP;
+  RETURN NULL;
+END
+$$;
+
+ALTER FUNCTION "public"."golf_shots_refresh_hole_gir_fn"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."golf_shot_detail_round_ids"() IS 'Readable rounds whose shot details I may read on the coach/owner side (conjunct B of can_read_golf_shot_detail). Used once per statement by the putt_details and approach_miss_details SELECT policies.';
 
@@ -8180,9 +8287,10 @@ $$;
 
 ALTER FUNCTION "public"."reclassify_golf_round"("p_round_id" "uuid", "p_round_type" "text", "p_qualifier_id" "uuid", "p_qualifier_round_number" integer) OWNER TO "postgres";
 
-CREATE OR REPLACE FUNCTION "public"."recompute_golf_round_totals"("p_round_id" "uuid") RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+CREATE OR REPLACE FUNCTION public.recompute_golf_round_totals(p_round_id uuid) RETURNS void
+    LANGUAGE plpgsql
+    SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
 BEGIN
   UPDATE golf_rounds r
@@ -8216,27 +8324,27 @@ BEGIN
     END
   FROM (
     SELECT
-      SUM(putts) AS sum_putts,
+      SUM(h.putts) AS sum_putts,
       COUNT(*) AS helm_holes,
-      COUNT(score) AS helm_scored,
-      SUM(score) AS helm_score_sum,
-      SUM(par) AS helm_par_sum,
-      -- GIR needs the putt count: a hole without one is never credited.
-      SUM(CASE
-            WHEN par >= 3
-             AND score > 0
-             AND putts IS NOT NULL
-             AND (score - putts) > 0
-             AND (score - putts) <= (par - 2)
-            THEN 1 ELSE 0
-          END) AS sum_gir,
-      -- denominator: scored holes with a recorded putt count (was: every hole row)
-      SUM(CASE WHEN score > 0 AND putts IS NOT NULL THEN 1 ELSE 0 END) AS cnt_gir_known,
-      SUM(CASE WHEN par >= 4 AND fairway_hit = true THEN 1 ELSE 0 END) AS sum_fwy_hit,
+      COUNT(h.score) AS helm_scored,
+      SUM(h.score) AS helm_score_sum,
+      SUM(h.par) AS helm_par_sum,
+      -- One GIR rule (20261115230000): public.golf_hole_gir, the function the
+      -- hole's own flag is written by (shots when they record the whole hole,
+      -- else score minus putts). A hole it cannot read is in neither count.
+      SUM(CASE WHEN g.gir IS TRUE THEN 1 ELSE 0 END) AS sum_gir,
+      SUM(CASE WHEN g.gir IS NOT NULL THEN 1 ELSE 0 END) AS cnt_gir_known,
+      SUM(CASE WHEN h.par >= 4 AND h.fairway_hit = true THEN 1 ELSE 0 END) AS sum_fwy_hit,
       -- denominator: par-4/5 holes with a recorded fairway result (was: all par-4/5)
-      SUM(CASE WHEN par >= 4 AND fairway_hit IS NOT NULL THEN 1 ELSE 0 END) AS cnt_par4plus
-    FROM golf_holes
-    WHERE round_id = p_round_id
+      SUM(CASE WHEN h.par >= 4 AND h.fairway_hit IS NOT NULL THEN 1 ELSE 0 END) AS cnt_par4plus
+    FROM golf_holes AS h
+    CROSS JOIN LATERAL (
+      SELECT public.golf_hole_gir(
+        h.par, h.score, h.putts,
+        public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score)
+      ) AS gir
+    ) AS g
+    WHERE h.round_id = p_round_id
   ) t
   WHERE r.id = p_round_id;
 END
@@ -9198,8 +9306,9 @@ BEGIN
     COALESCE(r.total_putts, SUM(h.putts)),
     COALESCE(COUNT(*) FILTER (WHERE h.putts = 1), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.putts >= 3), 0),
-    COALESCE(COUNT(*) FILTER (WHERE h.gir = false AND (h.score - h.par) <= 0 AND h.score IS NOT NULL), 0),
-    COALESCE(COUNT(*) FILTER (WHERE h.gir = false AND h.score IS NOT NULL), 0),
+    -- Scrambling counts sand saves (20261116200000), as update_round_stats_cache does.
+    COALESCE(COUNT(*) FILTER (WHERE h.score IS NOT NULL AND ((h.gir = false AND (h.score - h.par) <= 0) OR h.sand_save = true)), 0),
+    COALESCE(COUNT(*) FILTER (WHERE h.score IS NOT NULL AND (h.gir = false OR h.sand_save IS NOT NULL)), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.sand_save = true), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.sand_save IS NOT NULL), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.score IS NOT NULL AND (h.score - h.par) <= -2), 0),
@@ -9476,6 +9585,25 @@ BEGIN
       AND NOT (r.front_nine IS NULL AND r.back_nine IS NULL AND r.total_score IS NOT NULL)
   ) q;
   v := v || jsonb_build_object('check', 'completed_round_zero_scored_holes',
+    'status', CASE WHEN n = 0 THEN 'pass' ELSE 'fail' END, 'count', n, 'sample', sample);
+  -- Totals follow holes (20261114090100): a completed round whose hole rows
+  -- number holes_played and are all scored stores their sum as its total.
+  SELECT count(*), COALESCE(jsonb_agg(id) FILTER (WHERE rn <= 5), '[]'::jsonb)
+  INTO n, sample
+  FROM (
+    SELECT r.id, row_number() OVER (ORDER BY r.created_at DESC) AS rn
+    FROM golf_rounds r
+    JOIN (
+      SELECT h.round_id, count(*) AS holes, count(h.score) AS scored, sum(h.score) AS score_sum
+      FROM golf_holes h
+      GROUP BY h.round_id
+    ) t ON t.round_id = r.id
+    WHERE r.status = 'completed'
+      AND t.holes = r.holes_played
+      AND t.scored = t.holes
+      AND r.total_score IS DISTINCT FROM t.score_sum
+  ) q;
+  v := v || jsonb_build_object('check', 'completed_round_total_vs_holes',
     'status', CASE WHEN n = 0 THEN 'pass' ELSE 'fail' END, 'count', n, 'sample', sample);
   RETURN v;
 END;
@@ -10653,43 +10781,48 @@ DECLARE
   n INTEGER; i INTEGER; ud NUMERIC; ld NUMERIC; us NUMERIC; ls NUMERIC;
 BEGIN
   IF p_lie = 'green' THEN
+    -- Feet. Not in Table B.1; unchanged since 20260606140000.
     v_distance  := p_distance_yards * 3.0;
     v_distances := ARRAY[90,60,50,40,30,20,15,10,9,8,7,6,5,4,3,2,1,0]::NUMERIC[];
     v_strokes   := ARRAY[2.40,2.21,2.14,2.06,1.98,1.87,1.78,1.61,1.56,1.50,
                          1.42,1.34,1.23,1.13,1.04,1.01,1.00,0]::NUMERIC[];
   ELSIF p_lie = 'tee' THEN
+    -- Broadie, Interfaces 42(2), Appendix B, Table B.1, tee column (from 100 yd).
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[600,540,400,300,240,200,150,120,100,80]::NUMERIC[];
-    v_strokes   := ARRAY[4.85,4.65,3.99,3.71,3.25,3.12,2.95,2.88,2.82,2.78]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100]::NUMERIC[];
+    v_strokes   := ARRAY[4.82,4.79,4.74,4.65,4.54,4.41,4.28,4.17,4.08,4.02,3.99,3.96,3.92,3.86,3.79,3.71,3.65,3.45,3.25,3.17,3.12,3.05,2.99,2.97,2.99,2.92]::NUMERIC[];
   ELSIF p_lie = 'fairway' THEN
+    -- Table B.1, fairway column.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[540,400,300,240,200,180,140,100,80,20]::NUMERIC[];
-    v_strokes   := ARRAY[4.78,4.11,3.78,3.45,3.19,3.08,2.91,2.80,2.75,2.40]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[4.89,4.82,4.74,4.66,4.58,4.50,4.42,4.34,4.27,4.19,4.11,4.03,3.95,3.88,3.84,3.78,3.69,3.58,3.45,3.32,3.19,3.08,2.98,2.91,2.85,2.80,2.77,2.75,2.72,2.70,2.66,2.60,2.52,2.40,2.18]::NUMERIC[];
   ELSIF p_lie = 'rough' THEN
+    -- Table B.1, rough column.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[540,400,300,240,200,100,20]::NUMERIC[];
-    v_strokes   := ARRAY[4.97,4.30,3.90,3.64,3.42,3.02,2.59]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[5.25,5.15,5.06,4.96,4.87,4.77,4.68,4.58,4.49,4.40,4.30,4.21,4.11,4.02,3.95,3.90,3.83,3.74,3.64,3.53,3.42,3.31,3.23,3.15,3.08,3.02,2.99,2.96,2.93,2.91,2.87,2.78,2.70,2.59,2.34]::NUMERIC[];
   ELSIF p_lie = 'sand' THEN
+    -- Table B.1, sand column.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[540,400,300,240,200,100,20]::NUMERIC[];
-    v_strokes   := ARRAY[5.36,4.69,4.04,3.84,3.55,3.23,2.53]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[6.10,5.96,5.82,5.68,5.54,5.40,5.25,5.11,4.97,4.83,4.69,4.55,4.41,4.26,4.12,4.04,4.00,3.93,3.84,3.70,3.55,3.40,3.28,3.22,3.21,3.23,3.24,3.24,3.21,3.15,2.92,2.82,2.66,2.53,2.43]::NUMERIC[];
   ELSIF p_lie = 'other' THEN
-    -- 'Other' (catch-all: trees, pine straw, waste, hazard edges): the rough
-    -- curve to 50 yd, halfway between rough and recovery from 100 yd, a
-    -- straight blend between (see 20261023170000).
+    -- 'Other' (catch-all: trees, pine straw, waste, hazard edges), the owner's
+    -- rule of 20261023170000 on Table B.1's rows: the rough curve to 50 yd,
+    -- halfway between rough and recovery from 100 yd, a straight blend between.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,20]::NUMERIC[];
-    v_strokes   := ARRAY[5.19,5.10,5.00,4.91,4.81,4.72,4.62,4.53,4.44,4.35,4.25,4.14,4.05,3.96,3.88,3.81,3.73,3.65,3.58,3.54,3.49,3.44,3.41,3.31,3.19,3.06,2.91,2.751,2.59]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[5.475,5.375,5.285,5.185,5.095,4.995,4.905,4.805,4.715,4.62,4.525,4.435,4.335,4.23,4.13,4.05,3.965,3.885,3.805,3.725,3.645,3.565,3.52,3.475,3.43,3.41,3.322,3.224,3.112,3.002,2.87,2.78,2.70,2.59,2.34]::NUMERIC[];
   ELSIF p_lie = 'recovery' THEN
-    -- Blocked (recovery tap): Broadie's recovery curve, Interfaces 42(2),
-    -- Appendix A, Table 9 (see 20261023170000).
+    -- Blocked (recovery tap): Table B.1, recovery column.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20]::NUMERIC[];
-    v_strokes   := ARRAY[5.70,5.60,5.51,5.41,5.32,5.22,5.13,5.03,4.94,4.84,4.75,4.66,4.56,4.44,4.31,4.20,4.10,4.03,3.97,3.92,3.87,3.82,3.81,3.80,3.78,3.80,3.82,3.84,3.84,3.83,3.79,3.71,3.57,3.51]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[5.70,5.60,5.51,5.41,5.32,5.22,5.13,5.03,4.94,4.84,4.75,4.66,4.56,4.44,4.31,4.20,4.10,4.03,3.97,3.92,3.87,3.82,3.81,3.80,3.78,3.80,3.82,3.84,3.84,3.83,3.79,3.71,3.57,3.51,3.45]::NUMERIC[];
   ELSE
+    -- Unknown lie: the fairway curve.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[540,400,300,240,200,180,140,100,80,20]::NUMERIC[];
-    v_strokes   := ARRAY[4.78,4.11,3.78,3.45,3.19,3.08,2.91,2.80,2.75,2.40]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[4.89,4.82,4.74,4.66,4.58,4.50,4.42,4.34,4.27,4.19,4.11,4.03,3.95,3.88,3.84,3.78,3.69,3.58,3.45,3.32,3.19,3.08,2.98,2.91,2.85,2.80,2.77,2.75,2.72,2.70,2.66,2.60,2.52,2.40,2.18]::NUMERIC[];
   END IF;
   IF v_distance <= 0 THEN RETURN 0; END IF;
   n := array_length(v_distances, 1);
@@ -10718,43 +10851,48 @@ DECLARE
   v_es NUMERIC;
 BEGIN
   IF p_lie = 'green' THEN
+    -- Feet. Not in Table B.1; unchanged since 20260606140000.
     v_distance  := p_distance_yards * 3.0;
     v_distances := ARRAY[90,60,50,40,30,20,15,10,9,8,7,6,5,4,3,2,1,0]::NUMERIC[];
     v_strokes   := ARRAY[2.40,2.21,2.14,2.06,1.98,1.87,1.78,1.61,1.56,1.50,
                          1.42,1.34,1.23,1.13,1.04,1.01,1.00,0]::NUMERIC[];
   ELSIF p_lie = 'tee' THEN
+    -- Broadie, Interfaces 42(2), Appendix B, Table B.1, tee column (from 100 yd).
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[600,540,400,300,240,200,150,120,100,80]::NUMERIC[];
-    v_strokes   := ARRAY[4.85,4.65,3.99,3.71,3.25,3.12,2.95,2.88,2.82,2.78]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100]::NUMERIC[];
+    v_strokes   := ARRAY[4.82,4.79,4.74,4.65,4.54,4.41,4.28,4.17,4.08,4.02,3.99,3.96,3.92,3.86,3.79,3.71,3.65,3.45,3.25,3.17,3.12,3.05,2.99,2.97,2.99,2.92]::NUMERIC[];
   ELSIF p_lie = 'fairway' THEN
+    -- Table B.1, fairway column.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[540,400,300,240,200,180,140,100,80,20]::NUMERIC[];
-    v_strokes   := ARRAY[4.78,4.11,3.78,3.45,3.19,3.08,2.91,2.80,2.75,2.40]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[4.89,4.82,4.74,4.66,4.58,4.50,4.42,4.34,4.27,4.19,4.11,4.03,3.95,3.88,3.84,3.78,3.69,3.58,3.45,3.32,3.19,3.08,2.98,2.91,2.85,2.80,2.77,2.75,2.72,2.70,2.66,2.60,2.52,2.40,2.18]::NUMERIC[];
   ELSIF p_lie = 'rough' THEN
+    -- Table B.1, rough column.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[540,400,300,240,200,100,20]::NUMERIC[];
-    v_strokes   := ARRAY[4.97,4.30,3.90,3.64,3.42,3.02,2.59]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[5.25,5.15,5.06,4.96,4.87,4.77,4.68,4.58,4.49,4.40,4.30,4.21,4.11,4.02,3.95,3.90,3.83,3.74,3.64,3.53,3.42,3.31,3.23,3.15,3.08,3.02,2.99,2.96,2.93,2.91,2.87,2.78,2.70,2.59,2.34]::NUMERIC[];
   ELSIF p_lie = 'sand' THEN
+    -- Table B.1, sand column.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[540,400,300,240,200,100,20]::NUMERIC[];
-    v_strokes   := ARRAY[5.36,4.69,4.04,3.84,3.55,3.23,2.53]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[6.10,5.96,5.82,5.68,5.54,5.40,5.25,5.11,4.97,4.83,4.69,4.55,4.41,4.26,4.12,4.04,4.00,3.93,3.84,3.70,3.55,3.40,3.28,3.22,3.21,3.23,3.24,3.24,3.21,3.15,2.92,2.82,2.66,2.53,2.43]::NUMERIC[];
   ELSIF p_lie = 'other' THEN
-    -- 'Other' (catch-all: trees, pine straw, waste, hazard edges): the rough
-    -- curve to 50 yd, halfway between rough and recovery from 100 yd, a
-    -- straight blend between (see 20261023170000).
+    -- 'Other' (catch-all: trees, pine straw, waste, hazard edges), the owner's
+    -- rule of 20261023170000 on Table B.1's rows: the rough curve to 50 yd,
+    -- halfway between rough and recovery from 100 yd, a straight blend between.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,20]::NUMERIC[];
-    v_strokes   := ARRAY[5.19,5.10,5.00,4.91,4.81,4.72,4.62,4.53,4.44,4.35,4.25,4.14,4.05,3.96,3.88,3.81,3.73,3.65,3.58,3.54,3.49,3.44,3.41,3.31,3.19,3.06,2.91,2.751,2.59]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[5.475,5.375,5.285,5.185,5.095,4.995,4.905,4.805,4.715,4.62,4.525,4.435,4.335,4.23,4.13,4.05,3.965,3.885,3.805,3.725,3.645,3.565,3.52,3.475,3.43,3.41,3.322,3.224,3.112,3.002,2.87,2.78,2.70,2.59,2.34]::NUMERIC[];
   ELSIF p_lie = 'recovery' THEN
-    -- Blocked (recovery tap): Broadie's recovery curve, Interfaces 42(2),
-    -- Appendix A, Table 9 (see 20261023170000).
+    -- Blocked (recovery tap): Table B.1, recovery column.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20]::NUMERIC[];
-    v_strokes   := ARRAY[5.70,5.60,5.51,5.41,5.32,5.22,5.13,5.03,4.94,4.84,4.75,4.66,4.56,4.44,4.31,4.20,4.10,4.03,3.97,3.92,3.87,3.82,3.81,3.80,3.78,3.80,3.82,3.84,3.84,3.83,3.79,3.71,3.57,3.51]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[5.70,5.60,5.51,5.41,5.32,5.22,5.13,5.03,4.94,4.84,4.75,4.66,4.56,4.44,4.31,4.20,4.10,4.03,3.97,3.92,3.87,3.82,3.81,3.80,3.78,3.80,3.82,3.84,3.84,3.83,3.79,3.71,3.57,3.51,3.45]::NUMERIC[];
   ELSE
+    -- Unknown lie: the fairway curve.
     v_distance  := p_distance_yards;
-    v_distances := ARRAY[540,400,300,240,200,180,140,100,80,20]::NUMERIC[];
-    v_strokes   := ARRAY[4.78,4.11,3.78,3.45,3.19,3.08,2.91,2.80,2.75,2.40]::NUMERIC[];
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20,10]::NUMERIC[];
+    v_strokes   := ARRAY[4.89,4.82,4.74,4.66,4.58,4.50,4.42,4.34,4.27,4.19,4.11,4.03,3.95,3.88,3.84,3.78,3.69,3.58,3.45,3.32,3.19,3.08,2.98,2.91,2.85,2.80,2.77,2.75,2.72,2.70,2.66,2.60,2.52,2.40,2.18]::NUMERIC[];
   END IF;
   IF v_distance <= 0 THEN RETURN 0; END IF;
   n := array_length(v_distances, 1);
@@ -10772,6 +10910,12 @@ BEGIN
         EXIT;
       END IF;
     END LOOP;
+  END IF;
+  -- The team's baseline scale prices the off-green game only (SC-04): a putt
+  -- keeps the Tour putting curve, so a holed 1-foot putt gains 0.00 on every
+  -- baseline instead of +0.083 on the women's.
+  IF p_lie = 'green' THEN
+    RETURN v_es;
   END IF;
   RETURN v_es * COALESCE(p_scale, 1.0);
 END;
@@ -12328,8 +12472,12 @@ BEGIN
   INTO v_one_putts, v_three_putts, v_total_putts_from_holes
   FROM golf_holes WHERE round_id = NEW.id AND putts IS NOT NULL;
 
-  SELECT COALESCE(SUM(CASE WHEN gir=false AND (score-par)<=0 THEN 1 ELSE 0 END),0),
-    COALESCE(SUM(CASE WHEN gir=false THEN 1 ELSE 0 END),0)
+  -- Scrambling counts sand saves (20261116200000): a chance is a missed green
+  -- or a greenside-bunker visit, one per hole; made is par or better after the
+  -- miss, or a sand save (any score). Mirrors holeScramble in
+  -- src/lib/golf/stat-formulas.ts.
+  SELECT COALESCE(SUM(CASE WHEN (gir=false AND (score-par)<=0) OR sand_save=true THEN 1 ELSE 0 END),0),
+    COALESCE(SUM(CASE WHEN gir=false OR sand_save IS NOT NULL THEN 1 ELSE 0 END),0)
   INTO v_scrambles_converted, v_scramble_attempts
   FROM golf_holes WHERE round_id = NEW.id AND score IS NOT NULL;
 
@@ -12354,7 +12502,8 @@ BEGIN
     COALESCE(NEW.total_score, v_front_nine + v_back_nine),
     COALESCE(NEW.score_to_par, (v_front_nine + v_back_nine) - (SELECT COALESCE(SUM(par),0) FROM golf_holes WHERE round_id = NEW.id)),
     v_front_nine, v_back_nine,
-    COALESCE(NEW.total_fairways_hit, (SELECT COUNT(*) FROM golf_holes WHERE round_id = NEW.id AND fairway_hit = true)),
+    -- SC-12 (20261115231000): the fallback counts par 4 and 5 fairways only, as its denominator below does.
+    COALESCE(NEW.total_fairways_hit, (SELECT COUNT(*) FROM golf_holes WHERE round_id = NEW.id AND par >= 4 AND fairway_hit = true)),
     COALESCE(NEW.total_fairways, (SELECT COUNT(*) FROM golf_holes WHERE round_id = NEW.id AND par > 3 AND fairway_hit IS NOT NULL)),
     COALESCE(NEW.total_gir, (SELECT COUNT(*) FROM golf_holes WHERE round_id = NEW.id AND gir = true)),
     COALESCE(NEW.total_gir_possible, v_hole_count),
@@ -16217,3 +16366,397 @@ BEGIN
 END $$;
 
 ALTER FUNCTION "public"."golf_team_members_identity_guard"() OWNER TO "postgres";
+
+-- Demo team generator (HELD 20261115211000): service role only, the demo team only; src/lib/golf/demo/writer.ts
+CREATE OR REPLACE FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text", "p_items" "jsonb", "p_version" integer) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE
+  v_rel regclass;
+  v_cols text[];
+  v_pk text[];
+  v_keyed jsonb;
+  v_parent record;
+  v_bad bigint;
+  v_skipped text[];
+  v_written text[];
+  v_rows jsonb;
+  v_update text;
+  v_join text;
+BEGIN
+  PERFORM helm_private.golf_demo_check(p_team, p_table);
+  IF p_version IS NULL OR p_version < 1 THEN
+    RAISE EXCEPTION 'golf_demo_apply: a generator version is required';
+  END IF;
+  IF pg_catalog.jsonb_typeof(p_items) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'golf_demo_apply: items must be a JSON array';
+  END IF;
+  IF pg_catalog.jsonb_array_length(p_items) = 0 THEN
+    RETURN pg_catalog.jsonb_build_object('written', 0, 'skipped', '[]'::jsonb);
+  END IF;
+  IF pg_catalog.jsonb_array_length(p_items) > 2000 THEN
+    RAISE EXCEPTION 'golf_demo_apply: at most 2000 rows per call';
+  END IF;
+  v_rel := pg_catalog.to_regclass('public.' || pg_catalog.quote_ident(p_table));
+
+  -- Every item is {hash, row}; every row in one call carries the same columns,
+  -- and each is a real, writable column of the table.
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.jsonb_array_elements(p_items) AS e
+     WHERE pg_catalog.jsonb_typeof(e->'row') IS DISTINCT FROM 'object'
+        OR coalesce(e->>'hash', '') = ''
+  ) THEN
+    RAISE EXCEPTION 'golf_demo_apply: every item needs a hash and a row object';
+  END IF;
+  SELECT pg_catalog.array_agg(k ORDER BY k) INTO v_cols
+    FROM pg_catalog.jsonb_object_keys(p_items->0->'row') AS k;
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.jsonb_array_elements(p_items) AS e
+     WHERE (SELECT pg_catalog.array_agg(k ORDER BY k) FROM pg_catalog.jsonb_object_keys(e->'row') AS k)
+           IS DISTINCT FROM v_cols
+  ) THEN
+    RAISE EXCEPTION 'golf_demo_apply: every row in one call must carry the same columns';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.unnest(v_cols) AS c
+     WHERE NOT EXISTS (
+       SELECT 1 FROM pg_catalog.pg_attribute AS a
+        WHERE a.attrelid = v_rel AND a.attname = c AND a.attnum > 0
+          AND NOT a.attisdropped AND a.attgenerated = '')
+  ) THEN
+    RAISE EXCEPTION 'golf_demo_apply: a row names a column % does not have', p_table;
+  END IF;
+  SELECT pg_catalog.array_agg(pk.col ORDER BY pk.ord) INTO v_pk FROM helm_private.golf_demo_pk(p_table) AS pk;
+  IF v_pk IS NULL OR NOT (v_pk <@ v_cols) THEN
+    RAISE EXCEPTION 'golf_demo_apply: every % row must carry its primary key', p_table;
+  END IF;
+
+  -- The demo team only: by the row's own team_id, or through its parent.
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.pg_attribute AS a
+     WHERE a.attrelid = v_rel AND a.attname = 'team_id' AND a.attnum > 0 AND NOT a.attisdropped
+  ) THEN
+    IF NOT ('team_id' = ANY (v_cols)) OR EXISTS (
+      SELECT 1 FROM pg_catalog.jsonb_array_elements(p_items) AS e
+       WHERE e->'row'->>'team_id' IS DISTINCT FROM p_team::text
+    ) THEN
+      RAISE EXCEPTION 'golf_demo_apply: every % row must belong to the demo team', p_table
+        USING ERRCODE = '42501';
+    END IF;
+  ELSE
+    SELECT * INTO v_parent FROM helm_private.golf_demo_parent(p_table);
+    IF v_parent.parent_table IS NOT NULL THEN
+      IF NOT (v_parent.fk_column = ANY (v_cols)) THEN
+        RAISE EXCEPTION 'golf_demo_apply: every % row must carry %', p_table, v_parent.fk_column;
+      END IF;
+      EXECUTE pg_catalog.format(
+        'SELECT pg_catalog.count(*) FROM pg_catalog.jsonb_array_elements($1) AS e
+          WHERE NOT EXISTS (
+            SELECT 1 FROM public.%I AS p
+             WHERE p.id = (e->''row''->>%L)::uuid AND p.team_id = $2)',
+        v_parent.parent_table, v_parent.fk_column)
+        INTO v_bad USING p_items, p_team;
+      IF v_bad > 0 THEN
+        RAISE EXCEPTION 'golf_demo_apply: % % rows hang off a % row that is not the demo team''s',
+          v_bad, p_table, v_parent.parent_table
+          USING ERRCODE = '42501';
+      END IF;
+    END IF;
+  END IF;
+
+  -- Key every item once.
+  EXECUTE pg_catalog.format(
+    'SELECT pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(''k'', %s, ''h'', e->>''hash'', ''row'', e->''row''))
+       FROM pg_catalog.jsonb_array_elements($1) AS e',
+    helm_private.golf_demo_key_sql(p_table, '(e->''row''->>%L)'))
+    INTO v_keyed USING p_items;
+  IF (SELECT pg_catalog.count(DISTINCT x->>'k') FROM pg_catalog.jsonb_array_elements(v_keyed) AS x)
+     <> pg_catalog.jsonb_array_length(v_keyed) THEN
+    RAISE EXCEPTION 'golf_demo_apply: the same % key appears twice in one call', p_table;
+  END IF;
+
+  -- A key that exists but is not in the ledger is someone else's row: skip it.
+  SELECT pg_catalog.string_agg(pg_catalog.format('t.%1$I = r.%1$I', c), ' AND ') INTO v_join
+    FROM pg_catalog.unnest(v_pk) AS c;
+  EXECUTE pg_catalog.format(
+    'SELECT coalesce(pg_catalog.array_agg(x->>''k''), ''{}''::text[])
+       FROM pg_catalog.jsonb_array_elements($1) AS x
+      WHERE EXISTS (
+              SELECT 1 FROM pg_catalog.jsonb_populate_record(NULL::public.%1$I, x->''row'') AS r
+              JOIN public.%1$I AS t ON %2$s)
+        AND NOT EXISTS (
+              SELECT 1 FROM helm_private.golf_demo_ledger AS l
+               WHERE l.team_id = $2 AND l.table_name = $3 AND l.row_key = x->>''k'')',
+    p_table, v_join)
+    INTO v_skipped USING v_keyed, p_team, p_table;
+
+  SELECT coalesce(pg_catalog.jsonb_agg(x->'row'), '[]'::jsonb) INTO v_rows
+    FROM pg_catalog.jsonb_array_elements(v_keyed) AS x
+   WHERE NOT ((x->>'k') = ANY (v_skipped));
+  IF pg_catalog.jsonb_array_length(v_rows) = 0 THEN
+    RETURN pg_catalog.jsonb_build_object('written', 0, 'skipped', pg_catalog.to_jsonb(v_skipped));
+  END IF;
+
+  PERFORM helm_private.golf_demo_marks(p_table);
+
+  SELECT pg_catalog.string_agg(pg_catalog.format('%1$I = EXCLUDED.%1$I', c), ', ') INTO v_update
+    FROM pg_catalog.unnest(v_cols) AS c
+   WHERE NOT (c = ANY (v_pk));
+  EXECUTE pg_catalog.format(
+    'WITH w AS (
+       INSERT INTO public.%1$I AS t (%2$s)
+       SELECT %2$s FROM pg_catalog.jsonb_populate_recordset(NULL::public.%1$I, $1)
+       ON CONFLICT (%3$s) DO %4$s
+       RETURNING %5$s AS k
+     )
+     SELECT coalesce(pg_catalog.array_agg(w.k), ''{}''::text[]) FROM w',
+    p_table,
+    (SELECT pg_catalog.string_agg(pg_catalog.quote_ident(c), ', ') FROM pg_catalog.unnest(v_cols) AS c),
+    (SELECT pg_catalog.string_agg(pg_catalog.quote_ident(c), ', ') FROM pg_catalog.unnest(v_pk) AS c),
+    CASE WHEN v_update IS NULL THEN 'NOTHING' ELSE 'UPDATE SET ' || v_update END,
+    helm_private.golf_demo_key_sql(p_table, 't.%I::text'))
+    INTO v_written USING v_rows;
+
+  INSERT INTO helm_private.golf_demo_ledger AS l (team_id, table_name, row_key, row_hash, generator_version, written_at)
+  SELECT p_team, p_table, x->>'k', x->>'h', p_version, pg_catalog.now()
+    FROM pg_catalog.jsonb_array_elements(v_keyed) AS x
+   WHERE (x->>'k') = ANY (v_written)
+  ON CONFLICT (team_id, table_name, row_key) DO UPDATE
+    SET row_hash = EXCLUDED.row_hash,
+        generator_version = EXCLUDED.generator_version,
+        written_at = EXCLUDED.written_at;
+
+  RETURN pg_catalog.jsonb_build_object(
+    'written', pg_catalog.cardinality(v_written),
+    'skipped', pg_catalog.to_jsonb(v_skipped));
+END
+$_$;
+
+
+ALTER FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text", "p_items" "jsonb", "p_version" integer) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_demo_begin"("p_team" "uuid", "p_prune" boolean DEFAULT true) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE
+  v_table text;
+  v_match text;
+  v_n integer;
+  v_pruned integer := 0;
+  v_tables jsonb;
+BEGIN
+  PERFORM helm_private.golf_demo_check(p_team, NULL);
+
+  FOREACH v_table IN ARRAY CASE WHEN p_prune THEN helm_private.golf_demo_tables() ELSE '{}'::text[] END LOOP
+    SELECT pg_catalog.string_agg(
+             pg_catalog.format('t.%I = pg_catalog.split_part(l.row_key, ''|'', %s)::%s', pk.col, pk.ord, pk.typ),
+             ' AND ' ORDER BY pk.ord)
+      INTO v_match
+      FROM helm_private.golf_demo_pk(v_table) AS pk;
+    EXECUTE pg_catalog.format(
+      'DELETE FROM helm_private.golf_demo_ledger AS l
+        WHERE l.team_id = $1 AND l.table_name = $2
+          AND NOT EXISTS (SELECT 1 FROM public.%I AS t WHERE %s)',
+      v_table, v_match)
+      USING p_team, v_table;
+    GET DIAGNOSTICS v_n = ROW_COUNT;
+    v_pruned := v_pruned + v_n;
+  END LOOP;
+
+  IF p_prune THEN
+    DELETE FROM helm_private.golf_demo_ledger AS l
+     WHERE l.team_id = p_team AND l.table_name = 'golf_rounds#finished'
+       AND NOT EXISTS (SELECT 1 FROM public.golf_rounds AS r WHERE r.id = l.row_key::uuid);
+    GET DIAGNOSTICS v_n = ROW_COUNT;
+    v_pruned := v_pruned + v_n;
+  END IF;
+
+  SELECT coalesce(pg_catalog.jsonb_object_agg(s.table_name, s.keys), '{}'::jsonb)
+    INTO v_tables
+    FROM (
+      SELECT l.table_name, pg_catalog.jsonb_object_agg(l.row_key, l.row_hash) AS keys
+        FROM helm_private.golf_demo_ledger AS l
+       WHERE l.team_id = p_team
+       GROUP BY l.table_name
+    ) AS s;
+
+  RETURN pg_catalog.jsonb_build_object('pruned', v_pruned, 'tables', v_tables);
+END
+$_$;
+
+
+ALTER FUNCTION "public"."golf_demo_begin"("p_team" "uuid", "p_prune" boolean) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_demo_finish_rounds"("p_team" "uuid", "p_rounds" "jsonb", "p_version" integer) RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_round record;
+  v_player uuid;
+  v_players uuid[] := '{}';
+  v_done integer := 0;
+BEGIN
+  PERFORM helm_private.golf_demo_check(p_team, NULL);
+  IF pg_catalog.jsonb_typeof(p_rounds) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'golf_demo_finish_rounds: rounds must be a JSON array of {id, hash}';
+  END IF;
+  IF pg_catalog.jsonb_array_length(p_rounds) > 50 THEN
+    RAISE EXCEPTION 'golf_demo_finish_rounds: at most 50 rounds per call';
+  END IF;
+
+  FOR v_round IN
+    SELECT r.id, r.player_id, x->>'hash' AS hash
+      FROM pg_catalog.jsonb_array_elements(p_rounds) AS x
+      JOIN public.golf_rounds AS r ON r.id = (x->>'id')::uuid
+     WHERE r.team_id = p_team
+       AND coalesce(x->>'hash', '') <> ''
+       AND EXISTS (
+         SELECT 1 FROM helm_private.golf_demo_ledger AS l
+          WHERE l.team_id = p_team AND l.table_name = 'golf_rounds' AND l.row_key = r.id::text)
+     ORDER BY r.round_date, r.id
+  LOOP
+    -- Each stats function may set its own mark; set ours again before each.
+    PERFORM helm_private.golf_demo_marks('golf_rounds');
+    PERFORM public.recompute_golf_round_totals(v_round.id);
+    UPDATE public.golf_rounds SET status = status WHERE id = v_round.id AND status = 'completed';
+    PERFORM helm_private.golf_demo_marks('golf_rounds');
+    PERFORM public.recalculate_round_strokes_gained(v_round.id);
+    INSERT INTO helm_private.golf_demo_ledger AS l (team_id, table_name, row_key, row_hash, generator_version, written_at)
+    VALUES (p_team, 'golf_rounds#finished', v_round.id::text, v_round.hash, p_version, pg_catalog.now())
+    ON CONFLICT (team_id, table_name, row_key) DO UPDATE
+      SET row_hash = EXCLUDED.row_hash,
+          generator_version = EXCLUDED.generator_version,
+          written_at = EXCLUDED.written_at;
+    v_players := pg_catalog.array_append(v_players, v_round.player_id);
+    v_done := v_done + 1;
+  END LOOP;
+
+  FOR v_player IN SELECT DISTINCT p FROM pg_catalog.unnest(v_players) AS p LOOP
+    PERFORM helm_private.golf_demo_marks('golf_rounds');
+    PERFORM public.update_player_stats_strokes_gained(v_player);
+    PERFORM helm_private.golf_demo_marks('golf_rounds');
+    PERFORM public.refresh_player_stats_cache(v_player);
+  END LOOP;
+
+  RETURN v_done;
+END
+$$;
+
+
+ALTER FUNCTION "public"."golf_demo_finish_rounds"("p_team" "uuid", "p_rounds" "jsonb", "p_version" integer) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_demo_remove"("p_team" "uuid", "p_table" "text", "p_keys" "jsonb") RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE
+  v_owned jsonb;
+  v_join text;
+  v_team text := '';
+  v_removed integer;
+  v_match text;
+  v_players uuid[] := '{}';
+  v_player uuid;
+BEGIN
+  PERFORM helm_private.golf_demo_check(p_team, p_table);
+  IF pg_catalog.jsonb_typeof(p_keys) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'golf_demo_remove: keys must be a JSON array of primary-key objects';
+  END IF;
+  IF pg_catalog.jsonb_array_length(p_keys) = 0 THEN
+    RETURN 0;
+  END IF;
+  IF pg_catalog.jsonb_array_length(p_keys) > 5000 THEN
+    RAISE EXCEPTION 'golf_demo_remove: at most 5000 keys per call';
+  END IF;
+
+  -- Only rows the generator wrote for the demo team.
+  EXECUTE pg_catalog.format(
+    'SELECT coalesce(pg_catalog.jsonb_agg(e), ''[]''::jsonb)
+       FROM pg_catalog.jsonb_array_elements($1) AS e
+      WHERE EXISTS (
+        SELECT 1 FROM helm_private.golf_demo_ledger AS l
+         WHERE l.team_id = $2 AND l.table_name = $3 AND l.row_key = %s)',
+    helm_private.golf_demo_key_sql(p_table, '(e->>%L)'))
+    INTO v_owned USING p_keys, p_team, p_table;
+  IF pg_catalog.jsonb_array_length(v_owned) = 0 THEN
+    RETURN 0;
+  END IF;
+
+  SELECT pg_catalog.string_agg(pg_catalog.format('t.%1$I = r.%1$I', pk.col), ' AND ' ORDER BY pk.ord) INTO v_join
+    FROM helm_private.golf_demo_pk(p_table) AS pk;
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.pg_attribute AS a
+     WHERE a.attrelid = pg_catalog.to_regclass('public.' || pg_catalog.quote_ident(p_table))
+       AND a.attname = 'team_id' AND a.attnum > 0 AND NOT a.attisdropped
+  ) THEN
+    v_team := ' AND t.team_id = $2';
+  END IF;
+
+  PERFORM helm_private.golf_demo_marks(p_table);
+  IF p_table = 'golf_rounds' THEN
+    -- The round lifecycle guard keeps completed rounds as permanent history,
+    -- and under the owner-write mark it skips a DELETE without an error (it
+    -- returns NEW, which a delete does not have). So a generator round is set
+    -- aside first (status 'abandoned', which the mark allows), then deleted
+    -- without the mark: the guard lets a round that is neither completed nor
+    -- in progress go, and no discard tombstone or live broadcast fires.
+    WITH gone AS (
+      UPDATE public.golf_rounds AS t
+         SET status = 'abandoned'
+        FROM pg_catalog.jsonb_populate_recordset(NULL::public.golf_rounds, v_owned) AS r
+       WHERE t.id = r.id AND t.team_id = p_team
+      RETURNING t.player_id
+    )
+    SELECT coalesce(pg_catalog.array_agg(DISTINCT gone.player_id), '{}') INTO v_players FROM gone;
+    PERFORM pg_catalog.set_config('helm.golf_lifecycle_write', '', true);
+  END IF;
+  EXECUTE pg_catalog.format(
+    'DELETE FROM public.%1$I AS t
+      USING pg_catalog.jsonb_populate_recordset(NULL::public.%1$I, $1) AS r
+      WHERE %2$s%3$s',
+    p_table, v_join, v_team)
+    USING v_owned, p_team;
+  GET DIAGNOSTICS v_removed = ROW_COUNT;
+
+  -- Forget only the rows that are gone: a row a trigger kept stays in the
+  -- ledger, so the next run tries again instead of losing track of it.
+  SELECT pg_catalog.string_agg(
+           pg_catalog.format('t.%I = pg_catalog.split_part(l.row_key, ''|'', %s)::%s', pk.col, pk.ord, pk.typ),
+           ' AND ' ORDER BY pk.ord)
+    INTO v_match
+    FROM helm_private.golf_demo_pk(p_table) AS pk;
+  EXECUTE pg_catalog.format(
+    'DELETE FROM helm_private.golf_demo_ledger AS l
+      USING pg_catalog.jsonb_array_elements($1) AS e
+      WHERE l.team_id = $2 AND l.table_name = $3 AND l.row_key = %s
+        AND NOT EXISTS (SELECT 1 FROM public.%I AS t WHERE %s)',
+    helm_private.golf_demo_key_sql(p_table, '(e->>%L)'), p_table, v_match)
+    USING v_owned, p_team, p_table;
+
+  IF p_table = 'golf_rounds' THEN
+    DELETE FROM helm_private.golf_demo_ledger AS l
+     WHERE l.team_id = p_team AND l.table_name = 'golf_rounds#finished'
+       AND NOT EXISTS (SELECT 1 FROM public.golf_rounds AS r WHERE r.id = l.row_key::uuid);
+    -- The season figures of the players whose rounds went.
+    FOREACH v_player IN ARRAY v_players LOOP
+      PERFORM helm_private.golf_demo_marks('golf_rounds');
+      PERFORM public.update_player_stats_strokes_gained(v_player);
+      PERFORM helm_private.golf_demo_marks('golf_rounds');
+      PERFORM public.refresh_player_stats_cache(v_player);
+    END LOOP;
+  END IF;
+
+  RETURN v_removed;
+END
+$_$;
+
+
+ALTER FUNCTION "public"."golf_demo_remove"("p_team" "uuid", "p_table" "text", "p_keys" "jsonb") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text", "p_items" "jsonb", "p_version" integer) IS 'Demo generator only (service_role): upsert rows of one generator table for the demo team, never overwriting a row the generator did not write. See src/lib/golf/demo/writer.ts.';
+COMMENT ON FUNCTION "public"."golf_demo_begin"("p_team" "uuid", "p_prune" boolean) IS 'Demo generator only (service_role): drop ledger rows whose table row is gone (unless p_prune is false), then return the ledger.';
+COMMENT ON FUNCTION "public"."golf_demo_finish_rounds"("p_team" "uuid", "p_rounds" "jsonb", "p_version" integer) IS 'Demo generator only (service_role): recompute totals, stats cache and strokes gained for generator rounds.';
+COMMENT ON FUNCTION "public"."golf_demo_remove"("p_team" "uuid", "p_table" "text", "p_keys" "jsonb") IS 'Demo generator only (service_role): delete rows the generator wrote for the demo team.';

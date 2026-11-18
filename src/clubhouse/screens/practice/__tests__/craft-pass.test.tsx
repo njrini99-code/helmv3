@@ -56,7 +56,7 @@ describe('Practice craft pass (13 Nov 2026)', () => {
   });
 
   it('a week tile is a card, on the card’s corner (CR-05)', () => {
-    expect(rule('.ch-prc-tile')).toContain('border-radius: var(--ch-radius-card)');
+    expect(rule('.ch-prc-tile')).toContain('border-radius: var(--ch-radius-lg)');
   });
 
   it('today is the date on the accent disc, as Calendar marks it, not a ring in the focus colour', () => {

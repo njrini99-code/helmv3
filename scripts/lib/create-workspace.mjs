@@ -17,28 +17,23 @@
  * classified rows, shared by the mutation-budget check, the SessionStart
  * stamp hook, and (indirectly, via scripts/lib/worktree-lifecycle.mjs) repo:doctor.
  *
- * WHAT THIS DELIBERATELY REVERSES, and why that is not a regression
+ * DEPENDENCIES: a clone, never a symlink, never a private install by default
  *
- * scripts/new-worktree.sh's own header recorded, for cause, that symlinking
- * node_modules was replaced with a real per-worktree `npm ci`: two branches
- * with different lockfiles testing against whichever tree was installed last
- * manufactures both fake failures and fake passes. This module makes the
- * symlink the DEFAULT again. That is a real, accepted hazard — not an
- * oversight — because the lesson only applies to a worktree that installs.
- * Most control-plane, docs, and config work never runs a single test, and
- * coupling every worktree to a ~3.8 GiB isolated install is what took this
- * repo's disk to zero bytes free on 2026-08-29 (see ensure-worktree-deps.mjs).
- * The escape hatch is `install: true` (`--install` on the CLI), which runs a
- * real, isolated `npm ci` via ensure-worktree-deps.mjs instead of symlinking.
- * Choose it for any task that will actually run tests against a lockfile that
- * might differ from the canonical checkout's.
+ * Every worktree gets node_modules as an APFS clone of the deps store entry
+ * for its own lockfile (scripts/lib/deps-store.mjs): a real directory, about
+ * 25 MiB, 10-20 s. Both earlier defaults failed. A symlink to the canonical
+ * checkout's tree (the default until 2026-11-15) resolved whatever versions
+ * canonical happened to have (70 packages behind main that day), was refused
+ * by Turbopack, and let an npm write in one worktree rewrite canonical's tree.
+ * A private `npm ci` per worktree is 2-4 GiB and took the disk to zero on
+ * 2026-08-29. `install: true` (`--install`) only matters on a store miss: it
+ * runs the one real `npm ci` that fills the store for that lockfile.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
   copyFileSync,
-  symlinkSync,
   writeFileSync,
   realpathSync,
 } from 'node:fs';
@@ -317,33 +312,23 @@ export async function createWorkspace(opts = {}) {
   };
   writeFileSync(join(path, '.helm/workspace.json'), `${JSON.stringify(marker, null, 2)}\n`);
 
-  // 8. Dependencies — symlinked by default (see the module header for why
-  // that default changed back), a real isolated install when asked.
-  let deps = 'symlinked';
-  if (install) {
-    deps = 'installed';
-    const depsScript = resolve(HERE, '..', 'ensure-worktree-deps.mjs');
-    const result = spawnSync('node', [depsScript, path], { encoding: 'utf-8' });
-    if (result.stdout) warn(result.stdout.trim());
-    if (result.status !== 0) {
-      deps = 'install-refused';
-      warn(
-        `dependency install refused or failed — the worktree itself is intact.\n` +
-          `Re-run: node scripts/ensure-worktree-deps.mjs ${path}`,
-      );
-      if (result.stderr) warn(result.stderr.trim());
-    }
-  } else {
-    const canonicalNodeModules = join(canonicalRoot, 'node_modules');
-    if (existsSync(canonicalNodeModules)) {
-      symlinkSync(canonicalNodeModules, join(path, 'node_modules'), 'dir');
-    } else {
-      deps = 'not-available';
-      warn(
-        `no node_modules at ${canonicalNodeModules} — nothing to symlink; ` +
-          `run --install or node scripts/ensure-worktree-deps.mjs ${path}`,
-      );
-    }
+  // 8. Dependencies — an APFS clone of the deps store for this lockfile
+  // (scripts/lib/deps-store.mjs), about 25 MiB and 10-20 s. With `install`, a
+  // store miss runs the one real `npm ci` that fills the store. Never a symlink.
+  // The post-checkout hook usually got here first (`git worktree add` above);
+  // then this reports `ok`.
+  const depsScript = resolve(HERE, '..', 'ensure-worktree-deps.mjs');
+  const depsRun = spawnSync('node', [depsScript, path, '--quiet', ...(install ? [] : ['--clone-only'])], {
+    encoding: 'utf-8',
+  });
+  const depsLine = (depsRun.stdout || '').trim().split('\n').pop() || '';
+  const deps = depsLine.startsWith('deps: ') ? depsLine.slice(6) : 'unknown';
+  if (depsRun.status !== 0 || deps === 'missing' || deps === 'unknown') {
+    warn(
+      `node_modules not ready (${deps}) — the worktree itself is intact.\n` +
+        `Run: node scripts/ensure-worktree-deps.mjs ${path}`,
+    );
+    if (depsRun.stderr) warn(depsRun.stderr.trim());
   }
 
   // 9. Node version pin, so a worktree does not silently fall back to the

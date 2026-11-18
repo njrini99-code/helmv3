@@ -10,6 +10,7 @@ import { useSmoothWheelEverywhere } from '../../lib/smooth-scroll';
 import { useAfterPaint } from '../../lib/use-painted';
 import '../../styles/tokens.css';
 import '../../styles/base.css';
+import '../../styles/motion.css';
 import '../../styles/ui.css';
 import '../../styles/auth-tokens.css';
 import '../../styles/auth.css';

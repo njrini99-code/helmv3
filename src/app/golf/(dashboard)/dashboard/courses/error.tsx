@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/courses"
       component="CoursesPage"
-      title="Failed to load courses"
-      message="We couldn't load the course library. Please try again."
       homePath="/golf/dashboard"
     />
   );

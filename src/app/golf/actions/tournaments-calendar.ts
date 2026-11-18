@@ -52,6 +52,9 @@ const createSchema = z
     counting: z.number().int().min(1).max(9).optional(),
     holesPerRound: z.union([z.literal(9), z.literal(18)]),
     eventKind: z.enum(['regular', 'conference', 'ncaa_regional', 'ncaa_championship', 'exhibition']).optional(),
+    tiebreak: z.enum(['ties_stand', 'ncaa', 'playoff', 'card_playoff']).optional(),
+    // F-05: minutes before round 1's first tee that the lineup should be locked by (the column's default is 10).
+    lockMinutes: z.number().int().min(0).max(1440).optional(),
     fieldSize: z.number().int().min(1).max(40).optional(),
     host: z.string().trim().max(120).optional(),
     resultsUrl: z.string().trim().regex(/^https:\/\//).max(500).optional(),
@@ -144,7 +147,7 @@ async function eventUserIds(supabase: Client, eventId: string, playerIds?: strin
 
 // ── Create ──
 
-async function createTournamentFromCalendarImpl(input: CreateFromCalendarInput): Promise<TourActionResult<{ tournamentId: string; version: number; replayed: boolean; rounds: { roundNumber: number; eventId: string }[] }>> {
+async function createTournamentFromCalendarImpl(input: CreateFromCalendarInput): Promise<TourActionResult<{ tournamentId: string; version: number; replayed: boolean; rounds: { roundNumber: number; eventId: string }[]; tiebreakFailed?: true; lockFailed?: true }>> {
   const g = await gate();
   if (typeof g === 'string') return refused(g);
   const parsed = createSchema.safeParse(input);
@@ -211,6 +214,23 @@ async function createTournamentFromCalendarImpl(input: CreateFromCalendarInput):
   }
   if (!out) return refused('failed', { save: 'create' });
 
+  // The create RPC takes no tiebreak (it predates F-04) and no lock time (F-05): a value other than the default is set
+  // right after, through the event's own update, on the version the create returned. A failure there leaves the event on
+  // the defaults (shared places, 10 minutes) and says so.
+  let tiebreakFailed = false;
+  let lockFailed = false;
+  const followUp: Record<string, unknown> = {};
+  if (v.tiebreak && v.tiebreak !== 'ties_stand') followUp.tiebreak = v.tiebreak;
+  if (v.lockMinutes != null && v.lockMinutes !== 10) followUp.lock_minutes = v.lockMinutes;
+  if (!out.replayed && Object.keys(followUp).length > 0) {
+    const set = await tourRpc(g.supabase, 'golf_tournament_update', { p_id: out.tournament_id, p_payload: followUp, p_version: out.version });
+    if (set.error || set.data == null) {
+      tiebreakFailed = 'tiebreak' in followUp;
+      lockFailed = 'lock_minutes' in followUp;
+      await logServerError(`createTournamentFromCalendar settings failed: ${describeError(set.error)}`, { action: 'golf.createTournamentFromCalendar', featureArea: 'calendar' }, 'warning');
+    } else out = { ...out, version: Number(set.data) };
+  }
+
   const rounds = out.rounds.map((r) => ({ roundNumber: r.round_number, eventId: r.event_id }));
   const r1 = rounds[0]?.eventId;
   // A replay (the double tap, a Retry after a lost reply, or the 23505 re-read) already told everyone the first time.
@@ -233,7 +253,7 @@ async function createTournamentFromCalendarImpl(input: CreateFromCalendarInput):
   }
 
   revalidate(out.tournament_id);
-  return { success: true, data: { tournamentId: out.tournament_id, version: out.version, replayed: out.replayed, rounds } };
+  return { success: true, data: { tournamentId: out.tournament_id, version: out.version, replayed: out.replayed, rounds, ...(tiebreakFailed ? { tiebreakFailed: true } : {}), ...(lockFailed ? { lockFailed: true } : {}) } };
 }
 
 // ── Round mode and the drag ──

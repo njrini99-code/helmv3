@@ -74,7 +74,10 @@ export async function loadCoachQueue(
     if (res.error) throw res.error;
     const weekEnd = `${addDays(ymd(now, tz), 7)}T23:59:59Z`;
     const events = (res.data ?? []).filter((e) => Date.parse(e.start_time) < Date.parse(weekEnd));
-    const attendance = await attendanceFor(supabase, events.map((e) => e.id));
+    // Today's roster only (DF-C-06): without it a departed player's unanswered row would count as waiting.
+    const members = await input.names;
+    if (!members) throw new Error('roster did not load');
+    const attendance = await attendanceFor(supabase, events.map((e) => e.id), new Set(members.keys()));
     if (attendance.error) throw new Error('attendance did not load');
     const nowMs = now.getTime();
     const queue = rsvpQueue(events.map((e) => ({ eventId: e.id, counts: rsvpCounts(attendance.byEvent.get(e.id) ?? []), open: !replyIsClosed(e, nowMs) })));
@@ -96,6 +99,8 @@ export async function loadCoachQueue(
       .from('golf_tasks')
       .select('id, due_date')
       .eq('team_id', teamId)
+      // DD-14: a QA run's task is never overdue on a coach's Home (Team Hub hides it too).
+      .eq('is_test', false)
       .is('parent_task_id', null)
       .order('due_date', { ascending: false, nullsFirst: true })
       .limit(HUB_TASK_CAP);
@@ -114,7 +119,8 @@ export async function loadCoachQueue(
     const anns = res.data ?? [];
     const names = await input.names;
     if (!names) throw new Error('roster did not load');
-    const asking = anns.filter((a) => a.requires_acknowledgement);
+    // A post marked `is_test` is shown nowhere (Messages, Team Hub), so it waits on no one here either (DD-14).
+    const asking = anns.filter((a) => a.requires_acknowledgement && (a as { is_test?: boolean | null }).is_test !== true);
     const waiting = await notAckedFor(supabase, asking.map((a) => a.id), names);
     if (!waiting) throw new Error('acknowledgements did not load');
     return unackedPostCount(asking.map((a) => ({ needAck: true, notAcked: waiting.get(a.id) ?? [] })));

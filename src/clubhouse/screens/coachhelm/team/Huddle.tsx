@@ -13,8 +13,14 @@ const L = 36;
 const R = 12;
 const T = 16;
 const B = 36;
+/** A coin's tap circle: 44 across. */
+const HIT = 22;
 
-/** Starts at −1.8 to +0.2 and widens in steps of 0.5 so no coin is clipped (AC-HUDDLE-01). */
+/**
+ * Starts at −1.8 to +0.2 and widens in steps of 0.5 so no coin is clipped (AC-HUDDLE-01). A coin's 44 tap circle stays in the
+ * drawing too (TEAM-1): on a wide range the data's 0.15 is only a few points, so a coin at the top or right edge put its circle
+ * past the chart's box. Those two edges are the range's high end (the left and bottom keep the axis margins), so it widens there.
+ */
 export function huddleRange(points: ReadonlyArray<{ x: number; y: number }>): { lo: number; hi: number } {
   let lo = -1.8;
   let hi = 0.2;
@@ -23,6 +29,8 @@ export function huddleRange(points: ReadonlyArray<{ x: number; y: number }>): { 
     while (Math.min(p.x, p.y) - pad < lo) lo -= 0.5;
     while (Math.max(p.x, p.y) + pad > hi) hi += 0.5;
   }
+  const pastEdge = () => points.some((p) => L + ((p.x - lo) / (hi - lo)) * (W - L - R) > W - HIT || T + ((hi - p.y) / (hi - lo)) * (H - T - B) < HIT);
+  for (let i = 0; i < 20 && pastEdge(); i++) hi += 0.5;
   return { lo, hi };
 }
 
@@ -57,7 +65,8 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
         <span className="meta">Strokes to Tour a round</span>
       </div>
       <div className="hud">
-        <svg className="hudsvg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Huddle chart: ball striking against scoring for each player.">
+        {/* A named group, not an image: an image's children are hidden from a screen reader, and the coins are buttons (SWP-10, as F-0007 for the hole). */}
+        <svg className="hudsvg" viewBox={`0 0 ${W} ${H}`} role="group" aria-label="Huddle chart: ball striking against scoring for each player.">
           <line className="ax" x1={L} x2={W - R} y1={H - B} y2={H - B} />
           <line className="ax" x1={L} x2={L} y1={T} y2={H - B} />
           <line className="tour" x1={X(0)} x2={X(0)} y1={T} y2={H - B} />
@@ -102,7 +111,8 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
               data-year={coinYear(p.classYear) ?? undefined}
               role="button"
               tabIndex={0}
-              aria-label={`${p.name}: striking ${formatSigned(at.x)}, scoring ${formatSigned(at.y)}`}
+              // SWP-01 (W scan, 16 Nov): the dot draws initials, so its name starts with them (WCAG 2.5.3, Voice Control).
+              aria-label={`${initials(p.name)}, ${p.name}: striking ${formatSigned(at.x)}, scoring ${formatSigned(at.y)}`}
               onClick={() => onPlayer(p.id)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -111,7 +121,7 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
                 }
               }}
             >
-              <circle className="hit" cx={X(at.x)} cy={Y(at.y)} r={22} fill="transparent" />
+              <circle className="hit" cx={X(at.x)} cy={Y(at.y)} r={HIT} fill="transparent" />
               <circle className="dotc" cx={X(at.x)} cy={Y(at.y)} r={13} />
               <ChartText size={12} weight={600} x={X(at.x)} y={Y(at.y)}>
                 {initials(p.name)}

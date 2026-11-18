@@ -17,19 +17,22 @@ counts include wrappers rather than unique popups.
 
 ```text
 Route:                   /golf/dashboard/classes
-Page:                    src/app/golf/(dashboard)/dashboard/classes/page.tsx (force-dynamic; a player with the Clubhouse on
-                         -> ClubhouseClassesRoute, everyone else -> LegacyClassesPage)
+Page:                    src/app/golf/(dashboard)/dashboard/classes/page.tsx (force-dynamic; a player profile with the
+                         dashboard role player -> ClubhouseClassesRoute, everyone else -> nothing; LegacyClassesPage was
+                         deleted with Fairway on 2026-11-14, #2527)
 Clubhouse route adapter: src/clubhouse/routes/classes.tsx ClubhouseClassesRoute (session, team; no player profile -> nothing;
                          no team, or a team where the member is not a player -> the no-team page, CH-12305)
 Server loader:           src/clubhouse/data/classes.ts loadClasses (one read for the player), with its pure steps in
                          classes-shape.ts; each failed read logs through chLogServer('classes', …) and is flagged, never
                          thrown. The loader throws only when it can find no academic term for the day
 Screen:                  src/clubhouse/screens/classes/Classes.tsx (the live wrapper) -> ClassesView.tsx -> parts.tsx,
-                         ClassForm.tsx, ClassDetail.tsx and ImportSchedule.tsx
-Skeleton:                src/clubhouse/screens/classes/ClassesSkeleton.tsx (CH-12401), from classes/loading.tsx through the
-                         shell's role (a player in the shell; Fairway's skeleton for anyone else)
+                         ClassForm.tsx, ClassDetail.tsx and ImportSchedule.tsx; since P-10 class awareness (2026-10-25)
+                         also ClassStatusPanel.tsx, ClassStatusDetail.tsx, ExamSheet.tsx and NoClassTodaySheet.tsx
+Skeleton:                src/clubhouse/screens/classes/ClassesSkeleton.tsx (CH-12401), from classes/loading.tsx (always;
+                         Fairway's skeleton for anyone else went with Fairway on 2026-11-14)
 Route error:             src/app/golf/(dashboard)/dashboard/classes/error.tsx (the shared RouteErrorBoundary)
-Legacy page:             src/app/golf/(dashboard)/dashboard/classes/LegacyClassesPage.tsx (the current page, unchanged)
+Legacy page:             none since 2026-11-14 (LegacyClassesPage.tsx was deleted; it is in the tag
+                         archive/fairway-2026-11-15)
 ```
 
 ## End-to-end graph
@@ -80,6 +83,12 @@ failure toast carries Retry, which runs the whole action again (121401).
 
 | Path | Purpose | States |
 | --- | --- | --- |
+| `screens/classes/ClassStatusPanel.tsx`, `panel-model.ts` | P-10: the player's Class status panel (now, what coaches see, the sharing switch, No class today) | — |
+| `screens/classes/ClassStatusDetail.tsx`, `ExamSheet.tsx`, `exam-form.ts` | P-10: a class's Use for class status switch and its exams | — |
+| `screens/classes/NoClassTodaySheet.tsx` | P-10: No class today | — |
+| `screens/classes/class-status-writes.ts` | P-10: the player's own RLS-scoped writes | — |
+| `screens/classes/TermSheet.tsx`, `term-form.ts`, `TeamBreakSheet.tsx`, `InClassSheet.tsx`, `TodayStrip.tsx`, `in-class-model.ts` | P-10, coach: the term, a team break and In class now, opened from Coach Home | — |
+| `screens/classes/ClassesCrh.tsx` | The week's classes for one day, once each (Classes and Roster Home redesign) | — |
 | `screens/classes/Classes.tsx` | The live wrapper: server data and the live writes | — |
 | `screens/classes/ClassesView.tsx` | The container: header, first run, the failed-read notice, overview, deck, Delete all classes, side column, every sheet, the calendar flags and every action | CH-12201, CH-12301, CH-12203, CH-12501, CH-12503, CH-12005, CH-12006, 120407 |
 | `screens/classes/parts.tsx` | `TermBar`, `ClassCard`, `AddTile`, `OverlapsCard`, `CoachNote`, `SyncStatus` | CH-12202, CH-12302, CH-12303, CH-12304, CH-12403, CH-12601, CH-12701, CH-12801 to CH-12803 |
@@ -108,7 +117,7 @@ There are no realtime hooks: the page is read once on the server.
 
 | Name | Path | Existing/New/Held | Purpose |
 | --- | --- | --- | --- |
-| syncClassToCalendar | actions/calendar-sync.ts | Existing (shared with the Fairway Classes page) | a diff-upsert of the class's weekly meetings on the team calendar, over the class's term window or from `semesterStartDate`; it deletes occurrences it no longer generates |
+| syncClassToCalendar | actions/calendar-sync.ts | Existing (shared with the Fairway Classes page until 2026-11-14) | a diff-upsert of the class's weekly meetings on the team calendar, over the class's term window or from `semesterStartDate`; it deletes occurrences it no longer generates |
 | removeClassFromCalendar | actions/calendar-sync.ts | Existing (shared) | deletes the events tagged with the class |
 | extractClassesFromScheduleImage | actions/schedule-image.ts | Existing (the current importer's reader) | reads a screenshot with the vision model |
 | parseScheduleText, generateClassColor | lib/utils/schedule-parser | Existing helpers | pasted, TXT and PDF text; the stored color |
@@ -148,9 +157,17 @@ Remove (no migration).
 
 ## Impact notes
 
-- `syncClassToCalendar` and `removeClassFromCalendar` are shared with the
-  Fairway Classes page and the calendar: a change there changes both UIs. The
-  remove order (calendar first, then the row) is the current page's.
+- `syncClassToCalendar` and `removeClassFromCalendar` were shared with the
+  Fairway Classes page until its deletion on 2026-11-14, and are still shared
+  with the calendar. The remove order (calendar first, then the row) was the
+  Fairway page's.
+- P-10 class awareness (2026-10-25) adds the player's own RLS-scoped writes in
+  `class-status-writes.ts` (`golf_player_class_settings`,
+  `golf_class_exceptions`, `golf_player_classes`' status switch and exams). The
+  coach's term, team break and In class now sheets (`TermSheet`,
+  `TeamBreakSheet`, `InClassSheet`, `TodayStrip`) live in this folder but are
+  opened from Coach Home's class line (`screens/home/ClassHomeLine.tsx`), not
+  from this page.
 - Every follow-up to a write lives inside its `useAction` function. Anything
   added after `await x.run()` in a handler is skipped when the toast's Retry
   lands (121401).

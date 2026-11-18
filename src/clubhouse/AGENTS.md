@@ -17,6 +17,9 @@ any more. Where `design-refresh/<page>/` exists it replaces the handoff for that
 page. Runtime values come from `styles/tokens.css`, `styles/auth-tokens.css` and
 `lib/fonts.ts`; handoff files are references, not a reason to restore behavior
 superseded by owner revisions.
+The design system (laws, surfaces, colour, type, the one toggle, charts, the
+banned list, and token tables generated from `styles/tokens.css`) is
+[`design-refresh/DESIGN_LANGUAGE.md`](../../design-refresh/DESIGN_LANGUAGE.md).
 `DESIGN.md` at the repo root and `docs/clubhouse/UI_OWNERSHIP.md` index these
 owners. Follow the existing approved design; new phone designs still follow
 the phone-design workflow in `.claude/rules/clubhouse.md`.
@@ -73,15 +76,18 @@ and its consumer before copying a pattern; comments may describe older values.
 - Card/well: `ui/Surface.tsx`, `styles/ui.css` and `styles/tokens.css`. Preserve
   shared heading/body/footer and Inset. Current styles own depth; do not
   restore decorative rings from old comments.
-- Pushed phone detail: `shell/PhoneScreen.tsx` and `shell/PhoneBar.tsx`.
-  Preserve immersive shell, title focus, covered-screen inertness,
-  keyboard-aware scroll lock, base transition or immediate reduced-motion swap.
+- Pushed phone detail: `shell/PhoneScreen.tsx` and `ui/PhoneBar.tsx`. Preserve
+  immersive shell, title focus, covered-screen inertness, keyboard-aware scroll
+  lock, base transition or immediate reduced-motion swap.
 - Routine route change: `shell/RouteFrame.tsx`, `styles/shell.css`,
   `lib/reduced-motion.ts` and `lib/motion.ts`. Content is visible immediately.
-  Preserve the whole-page crossfade with anchored chrome and Back/Forward
-  scroll restoration. A section switch (a tab bar or sidebar item, marked
-  `data-ch-tab` by `lib/nav-motion.ts`) swaps at once instead, owner-approved
-  2026-10-22 (mot-03). There is no routine first-paint stagger.
+  Preserve the desktop crossfade with anchored chrome and Back/Forward
+  scroll restoration. A section switch (a tab bar or sidebar item, read by
+  `lib/nav-motion.ts`) swaps at once instead, owner-approved 2026-10-22
+  (mot-03), and so does every phone navigation with motion on: a drill-in
+  pushes and Back pops on the live page (`lib/nav-motion.ts`,
+  `shell/use-route-swipe.ts`), with no view transition (audit 2026-11-15,
+  S4.1, S4.8). There is no routine first-paint stagger.
 
 The shell handoff is `design/handoff/m-shell.jsx`; depth references are
 `design/handoff/depth.css` and `design/handoff/design-system/guidelines/elevation.html`.

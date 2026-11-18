@@ -565,8 +565,9 @@ BEGIN
     COALESCE(r.total_putts, SUM(h.putts)),
     COALESCE(COUNT(*) FILTER (WHERE h.putts = 1), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.putts >= 3), 0),
-    COALESCE(COUNT(*) FILTER (WHERE h.gir = false AND (h.score - h.par) <= 0 AND h.score IS NOT NULL), 0),
-    COALESCE(COUNT(*) FILTER (WHERE h.gir = false AND h.score IS NOT NULL), 0),
+    -- Scrambling counts sand saves (20261116200000), as update_round_stats_cache does.
+    COALESCE(COUNT(*) FILTER (WHERE h.score IS NOT NULL AND ((h.gir = false AND (h.score - h.par) <= 0) OR h.sand_save = true)), 0),
+    COALESCE(COUNT(*) FILTER (WHERE h.score IS NOT NULL AND (h.gir = false OR h.sand_save IS NOT NULL)), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.sand_save = true), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.sand_save IS NOT NULL), 0),
     COALESCE(COUNT(*) FILTER (WHERE h.score IS NOT NULL AND (h.score - h.par) <= -2), 0),

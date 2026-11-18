@@ -20,7 +20,7 @@ import { readCorrections } from './coachhelm-corrections';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { speak } from './coachhelm-voice';
 import { boardMissing, firstName, partitionInsights, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChPulse, type ChPulseResult, type ChTourBaseline } from './coachhelm-shape';
-import { tourForGender } from './stats-common';
+import { readTourStandards, teamTour, TEAM_TOUR_COLUMNS } from './stats-common';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import { computeTeamPatterns, TEAM_PATTERN_MIN_ROUNDS } from '@/lib/coachhelm/v3/team-pattern/pattern';
@@ -246,25 +246,6 @@ export async function declinedByInsight(supabase: Supabase, insightIds: string[]
   return { ids: out, error: false };
 }
 
-/**
- * The Tour's values for a tour (`golf_pga_standards`), with `error` when the read failed. `loadTourBenchmarks` (stats-common) logs a
- * failed read and answers the same empty map as a tour with no rows, so this page reads it itself: a failed Tour comparison is
- * "Tour comparison unavailable" on the board, not "no comparison".
- */
-async function readTourValues(supabase: Supabase, tour: ChTourBaseline['tour']): Promise<{ values: Map<string, number>; error: boolean }> {
-  const values = new Map<string, number>();
-  const { data, error } = await supabase.from('golf_pga_standards').select('metric_id, pga_tour_value').eq('tour', tour);
-  if (error) {
-    chLogServer('coachhelm', 'tourBenchmarks', error);
-    return { values, error: true };
-  }
-  for (const r of data ?? []) {
-    const v = r.pga_tour_value == null ? null : Number(r.pga_tour_value);
-    if (v != null && Number.isFinite(v)) values.set(r.metric_id, v);
-  }
-  return { values, error: false };
-}
-
 /** What a Tour read answers: the baseline (null when none is claimed) and whether a read failed on the way. */
 export type TourRead = { baseline: ChTourBaseline | null; error: boolean };
 
@@ -272,16 +253,18 @@ export type TourRead = { baseline: ChTourBaseline | null; error: boolean };
  * The Tour's values for the team's own tour (Q-88: the Tour is the only benchmark): the LPGA's for a women's team, never the men's.
  * Without the team's row its tour is unknown, so no benchmark is claimed and a college comparison is left undrawn.
  */
-export async function tourBaselineOf(supabase: Supabase, team: { gender: string | null } | null): Promise<TourRead> {
+export async function tourBaselineOf(supabase: Supabase, team: Parameters<typeof teamTour>[0] | null): Promise<TourRead> {
   if (!team) return { baseline: null, error: false };
-  const tour = tourForGender(team.gender);
-  const { values, error } = await readTourValues(supabase, tour);
+  const tour = teamTour(team);
+  // The shared read (stats-common) with its failure told apart: a failed Tour comparison is "Tour comparison unavailable" on
+  // the board, not "no comparison". Only rows that name their source grade (SC-08).
+  const { values, error } = await readTourStandards(supabase, tour, 'coachhelm');
   return { baseline: { tour, values }, error };
 }
 
 /** The coach's team's Tour. A failed team read is logged, claims no benchmark and says so (`error`). */
 export async function coachTour(supabase: Supabase, teamId: string): Promise<TourRead> {
-  const res = await supabase.from('golf_teams').select('gender').eq('id', teamId).maybeSingle();
+  const res = await supabase.from('golf_teams').select(TEAM_TOUR_COLUMNS).eq('id', teamId).maybeSingle();
   if (res.error) {
     log('team', res.error);
     return { baseline: null, error: true };
@@ -294,12 +277,12 @@ export async function coachTour(supabase: Supabase, teamId: string): Promise<Tou
  * the team is known but the Tour's values did not read, so the cards have no Tour comparison.
  */
 export async function playerTeam(supabase: Supabase, playerId: string): Promise<{ teamId: string | null; tour: ChTourBaseline | null; error: boolean; tourError: boolean }> {
-  const res = await supabase.from('golf_team_members').select('team_id, golf_teams(gender)').eq('player_id', playerId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle();
+  const res = await supabase.from('golf_team_members').select('team_id, golf_teams(gender, golf_team_settings(sg_baseline))').eq('player_id', playerId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (res.error) {
     log('playerTeam', res.error);
     return { teamId: null, tour: null, error: true, tourError: false };
   }
-  const row = res.data as { team_id: string; golf_teams: { gender: string | null } | null } | null;
+  const row = res.data as { team_id: string; golf_teams: Parameters<typeof teamTour>[0] | null } | null;
   if (!row) return { teamId: null, tour: null, error: false, tourError: false };
   const tour = await tourBaselineOf(supabase, row.golf_teams);
   return { teamId: row.team_id, tour: tour.baseline, error: false, tourError: tour.error };

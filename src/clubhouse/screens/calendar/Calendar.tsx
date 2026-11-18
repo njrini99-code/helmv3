@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
+import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, Timer, TriangleAlert, Users, X } from 'lucide-react';
 import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type ComponentProps, type CSSProperties, type ReactNode, type RefObject } from 'react';
@@ -28,7 +28,7 @@ import { clashesAt, clashSummary } from './drag-model';
 import { writeMove, type ChMoveKind, type ChMoveScope } from './move-write';
 import { whoHears, whoHearsLine } from './who-hears';
 import { RoundMoveConfirm, SeriesScopeMenu } from './drag-popovers';
-import { useToast } from '../../ui/Toast';
+import { CH_TOAST_ACTION_MS, useToast } from '../../ui/Toast';
 import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-action';
 import { Attendance, EventDetail, Overlap, Summary, attentionOf, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type ChTournamentSaved, type EditorSeed } from './editor';
@@ -45,7 +45,7 @@ import { Modal } from '../../ui/Modal';
 import { useChPhone } from '../../lib/use-phone';
 import { useChClock } from '../../lib/use-clock';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { CH_POP, chTween } from '../../lib/motion';
+import { chMenuMotion } from '../../lib/menu-motion';
 import { useLightPlace } from '../../shell/light';
 import { canvasLenis, canvasScrollNow, usePanelSmoothScroll } from '../../lib/smooth-scroll';
 import { usePopoverFit } from '../../lib/use-popover-fit';
@@ -271,6 +271,8 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
           title: label,
           body: whoHearsLine(whoHears(base, ppl)) ?? undefined,
           replace: 'calendar-move',
+          // Ten seconds to undo before the players hear, as every Undo window (NP-06).
+          holdMs: CH_TOAST_ACTION_MS,
           action: { label: 'Undo', run: undo },
           onExpire: () => {
             if (held.current === entry) flush();
@@ -338,7 +340,7 @@ function undoHint(): string {
 }
 
 /**
- * A page popover's enter and exit (A-23, A-24): the Menu's pop on the quick tween (CH_POP); reduced motion and Animations
+ * A page popover's enter and exit (A-23, A-24): the Menu's pop (chMenuMotion: 180 in from .96, 110 out); reduced motion and Animations
  * off fade at once. The copy on its way out leaves the accessibility tree and takes no input.
  */
 function Pop({ panel, className, label, style, children }: { panel: RefObject<HTMLDivElement | null>; className: string; label: string; style?: CSSProperties; children: ReactNode }) {
@@ -353,10 +355,7 @@ function Pop({ panel, className, label, style, children }: { panel: RefObject<HT
       aria-hidden={!present || undefined}
       inert={!present}
       style={style}
-      initial={reduced ? { opacity: 0 } : CH_POP.initial}
-      animate={reduced ? { opacity: 1 } : CH_POP.animate}
-      exit={reduced ? { opacity: 0 } : CH_POP.exit}
-      transition={chTween('quick', reduced)}
+      {...chMenuMotion(reduced)}
     >
       {children}
     </m.div>
@@ -470,16 +469,20 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
   };
   return (
     <div className="ch-pp" ref={ref}>
-      <button ref={trigger} type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${label}`}>
-        <span className="ch-pp__stack">
+      {/* SWP-03 (WCAG 2.5.3 Label in Name): named by its words, "Everyone Team schedule · 6 players", then what it does. An
+          aria-label ("People: Everyone") named it in other words than its face (the faces' initials, the label and the
+          line under it), which axe and Voice Control could not match. The faces are for the eye. */}
+      <button ref={trigger} type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open}>
+        <span className="ch-pp__stack" aria-hidden="true">
           {stack.map((p) => (
             <Avatar key={p.id} name={p.name} id={p.id} size={26} />
           ))}
           {count > 4 && <span className="ch-pp__more">+{count - 4}</span>}
         </span>
         <span className="ch-pp__txt">
-          <b>{label}</b>
+          <b>{label}</b>{' '}
           <span>{detail}</span>
+          <span className="ch-sr-only">, choose people</span>
         </span>
         <Icon icon={ChevronsUpDown} size={14} />
       </button>
@@ -1025,7 +1028,10 @@ function CalendarBody({
     </div>
   );
 
+  // F-03: the week's practice hours, the coach's team log and a player's own week.
+  const hoursItem = { label: coach ? 'Practice hours' : 'Your practice hours', icon: Timer, onSelect: () => router.push('/golf/dashboard/calendar/hours') };
   const moreItems = [
+    hoursItem,
     { label: 'Add to calendar app', icon: Rss, onSelect: () => setSubs(true) },
     // The board's Print week: the browser's print of what is on screen; the print rules (calendar.css, shell.css) drop the chrome.
     { label: `Print ${view}`, icon: Printer, onSelect: () => window.print() },
@@ -1190,7 +1196,7 @@ function CalendarBody({
           onOpen={open}
           onNew={(d) => setEditor({ event: null, date: d })}
           onSubscribe={() => setSubs(true)}
-          more={coach ? moreItems.filter((i) => i.icon !== Printer) : undefined}
+          more={coach ? moreItems.filter((i) => i.icon !== Printer) : [hoursItem]}
           onMove={coach ? onGridMove : undefined}
         />
         {/* The desktop's detail panel, as a sheet (board: event detail). */}

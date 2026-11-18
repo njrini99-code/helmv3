@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { safeSave } from './safe-save';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { flyPageToFolder, squashFolder } from '../chat/ask-flight';
+import { haptic } from '../../../lib/haptics';
 import { plural } from '../../../lib/plural';
 import { useChPhone } from '../../../lib/use-phone';
 import { type DrillRef, type PlanBlock, type PlanDraft } from '@/lib/coachhelm/v3/practice-plan/model';
@@ -19,6 +20,7 @@ import { Icon } from '../../../ui/Icon';
 import { Menu } from '../../../ui/Menu';
 import { InlineNotice } from '../../../ui/Notices';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
+import { useDialogLifetime } from '../../../lib/dialog-lifetime';
 import { PracticePlanSheet } from './sheet/PracticePlanSheet';
 // The card brings its own sheet, so it is styled wherever it is drawn: quick chat on Home had none (coach audit, 13 Nov 2026).
 import '../../../styles/coachhelm-plan.css';
@@ -295,10 +297,13 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     // Once, on mount: closing the pane mid-write stays closed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // PP-32: the plan is a dialog. Esc closes it, Tab stays in it, the page behind doesn't scroll, focus comes back.
+  // MOT-10: on a phone the full plan is a native <dialog> through the shared lifetime: the top layer keeps Tab in it, the page
+  // behind is locked, it rises in and leaves on the release beat, and focus goes back to what opened it. Its title takes focus.
+  const fullLife = useDialogLifetime(full && phone, { direction: 'bottom', focusSelector: '.fbar > b' });
+  // PP-32, the Mac's pane beside the thread (S-ASKD.pane): Esc closes it, Tab stays in it, focus comes back.
   const fullRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!full) return;
+    if (!full || phone) return;
     const back = document.activeElement as HTMLElement | null;
     fullRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
@@ -322,7 +327,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
       document.removeEventListener('keydown', onKey);
       back?.focus?.();
     };
-  }, [full, sheet]);
+  }, [full, sheet, phone]);
   const swapSlot =
     sheet?.kind === 'swap'
       ? blocks.flatMap((b) => (b.kind === 'stations' ? b.stations.map((s, i) => ({ id: s.id, head: `Station ${i + 1}`, drill: s.drill })) : b.kind === 'team' ? [{ id: b.id, head: b.title, drill: b.drill }] : [])).find((s) => s.id === sheet.id)
@@ -344,6 +349,78 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     'coach',
   );
   let at = 0;
+  // The full plan's bar, sheet and dock: the phone's dialog and the Mac's pane draw the same.
+  const fullBody = (
+    <>
+      <div className="fbar">
+        <button type="button" className="back" aria-label={phone ? undefined : 'Close the plan'} onClick={() => setFull(false)}>
+          <Icon icon={phone ? ChevronLeft : X} size={18} />
+          {phone && 'Ask'}
+        </button>
+        <b title={plan.title} tabIndex={-1}>
+          {plan.title}
+        </b>
+        <span className="fmore">
+          <Menu
+            label="More for this plan"
+            align="end"
+            items={[{ label: 'Print', icon: Printer, onSelect: () => void printPlan(sheetModel) }, { label: 'Share PDF', icon: Share, onSelect: () => void sharePlanPdf(sheetModel).then((ok) => { if (!ok) toast({ tone: 'error', title: 'Couldn’t make the PDF', body: 'Print can still save one.' }); }) }]}
+            trigger={(p) => (
+              <button type="button" className="fmore__b" aria-label="More for this plan" {...p}>
+                <Icon icon={Ellipsis} size={20} />
+              </button>
+            )}
+          />
+        </span>
+        {!phone && versions.length > 0 && (
+          <span className="vsw">
+            <button type="button" aria-label="Earlier version" disabled={(viewing ?? own) <= 0} onClick={() => setViewing((viewing ?? own) - 1)}>
+              <Icon icon={ChevronLeft} size={14} />
+            </button>
+            <span className="vl ch-num">{(viewing ?? own) + 1} of {versions.length}</span>
+            <button type="button" aria-label="Later version" disabled={(viewing ?? own) >= versions.length - 1} onClick={() => setViewing((viewing ?? own) + 1)}>
+              <Icon icon={ChevronRight} size={14} />
+            </button>
+          </span>
+        )}
+      </div>
+      <div className="fbody">
+        <PracticePlanSheet plan={sheetModel} />
+      </div>
+      <div className="fdock">
+        {!saveOn ? (
+          <p className="inert fnote">Comes with the Practice tab</p>
+        ) : (
+          <>
+            {state.k === 'failed' && error && <InlineNotice title="That didn’t save" body={error} />}
+            {state.k === 'saved' && !phone && (
+              <p className="fnote is-saved" role="status">
+                <b>Plan saved · Documents · {state.folder}</b>
+                {undoOpen && (
+                  <button type="button" className="fundo" disabled={undoing} onClick={undoSave}>
+                    Undo
+                  </button>
+                )}
+              </p>
+            )}
+            {state.k === 'saved' && (
+              <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}/edit`)}>
+                Edit in builder
+              </Button>
+            )}
+            {state.k !== 'saved' && (
+              <Button variant="secondary" busy={state.k === 'saving'} onClick={() => void save()}>
+                {state.k === 'saving' ? 'Saving…' : state.k === 'failed' ? 'Try again' : 'Save draft'}
+              </Button>
+            )}
+            <Button variant="primary" onClick={() => { setFull(false); void publish(); }}>
+              Publish…
+            </Button>
+          </>
+        )}
+      </div>
+    </>
+  );
   return (
     <div className={'ch-cpv' + (phone ? '' : ' is-desk')} data-ch="plan-card">
       <section ref={artRef} className="art">
@@ -400,14 +477,18 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             const why = draft.why[b.id];
             const src = plan.sources?.[b.id] ?? why?.sources ?? [];
             return (
-              <div className="blk" key={b.id} role="button" tabIndex={0} onClick={() => setSheet({ kind: 'block', id: b.id })} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSheet({ kind: 'block', id: b.id }); } }}>
+              // The block is a plain row; its title is the real button, stretched over the row, and the source keys sit above it as
+              // its siblings. A pressable row holding buttons hid them from a screen reader (SWP-09).
+              <div className="blk" key={b.id}>
                 <div className="tm ch-num">
                   {clock(plan.start, from)}
                   <span>{b.len} min</span>
                 </div>
                 <div>
                   <div className="bt">
-                    <span className="btt">{b.title}</span>
+                    <button type="button" className="btt" onClick={() => setSheet({ kind: 'block', id: b.id })}>
+                      {b.title}
+                    </button>
                     {b.kind !== 'stations' && <KindChip kind={blockKind(b, plan.drills)} />}
                     {changed.has(b.id) && <span className="changed">Changed</span>}
                   </div>
@@ -634,11 +715,28 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                   <span className="v ch-num">{open.len} min</span>
                 ) : (
                   <span className="stepper">
-                    <button type="button" aria-label="Shorter" disabled={open.len <= 5} onClick={() => setBlockLen(Math.max(5, open.len - 5))}>
+                    {/* A stepper's change is a selection tick (MOTION-AND-VISUAL 3.10, D-70). */}
+                    <button
+                      type="button"
+                      aria-label="Shorter"
+                      disabled={open.len <= 5}
+                      onClick={() => {
+                        haptic('select');
+                        setBlockLen(Math.max(5, open.len - 5));
+                      }}
+                    >
                       <Icon icon={Minus} size={14} />
                     </button>
                     <span className="len ch-num">{open.len} min</span>
-                    <button type="button" aria-label="Longer" disabled={open.len >= 360} onClick={() => setBlockLen(Math.min(360, open.len + 5))}>
+                    <button
+                      type="button"
+                      aria-label="Longer"
+                      disabled={open.len >= 360}
+                      onClick={() => {
+                        haptic('select');
+                        setBlockLen(Math.min(360, open.len + 5));
+                      }}
+                    >
                       <Icon icon={Plus} size={14} />
                     </button>
                   </span>
@@ -756,76 +854,29 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
           </div>
         </div>
       </FormSheet>
-      {full && createPortal(
-        <div className="ch-cpv-full" role="dialog" aria-modal="true" aria-label={plan.title} ref={fullRef} tabIndex={-1}>
-          <div className="fbar">
-            <button type="button" className="back" aria-label={phone ? undefined : 'Close the plan'} onClick={() => setFull(false)}>
-              <Icon icon={phone ? ChevronLeft : X} size={18} />
-              {phone && 'Ask'}
-            </button>
-            <b title={plan.title}>{plan.title}</b>
-            <span className="fmore">
-              <Menu
-                label="More for this plan"
-                align="end"
-                items={[{ label: 'Print', icon: Printer, onSelect: () => void printPlan(sheetModel) }, { label: 'Share PDF', icon: Share, onSelect: () => void sharePlanPdf(sheetModel).then((ok) => { if (!ok) toast({ tone: 'error', title: 'Couldn’t make the PDF', body: 'Print can still save one.' }); }) }]}
-                trigger={(p) => (
-                  <button type="button" className="fmore__b" aria-label="More for this plan" {...p}>
-                    <Icon icon={Ellipsis} size={20} />
-                  </button>
-                )}
-              />
-            </span>
-            {!phone && versions.length > 0 && (
-              <span className="vsw">
-                <button type="button" aria-label="Earlier version" disabled={(viewing ?? own) <= 0} onClick={() => setViewing((viewing ?? own) - 1)}>
-                  <Icon icon={ChevronLeft} size={14} />
-                </button>
-                <span className="vl ch-num">{(viewing ?? own) + 1} of {versions.length}</span>
-                <button type="button" aria-label="Later version" disabled={(viewing ?? own) >= versions.length - 1} onClick={() => setViewing((viewing ?? own) + 1)}>
-                  <Icon icon={ChevronRight} size={14} />
-                </button>
-              </span>
-            )}
-          </div>
-          <div className="fbody">
-            <PracticePlanSheet plan={sheetModel} />
-          </div>
-          <div className="fdock">
-            {!saveOn ? (
-              <p className="inert fnote">Comes with the Practice tab</p>
-            ) : (
-              <>
-                {state.k === 'failed' && error && <InlineNotice title="That didn’t save" body={error} />}
-                {state.k === 'saved' && !phone && (
-                  <p className="fnote is-saved" role="status">
-                    <b>Plan saved · Documents · {state.folder}</b>
-                    {undoOpen && (
-                      <button type="button" className="fundo" disabled={undoing} onClick={undoSave}>
-                        Undo
-                      </button>
-                    )}
-                  </p>
-                )}
-                {state.k === 'saved' && (
-                  <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}/edit`)}>
-                    Edit in builder
-                  </Button>
-                )}
-                {state.k !== 'saved' && (
-                  <Button variant="secondary" busy={state.k === 'saving'} onClick={() => void save()}>
-                    {state.k === 'saving' ? 'Saving…' : state.k === 'failed' ? 'Try again' : 'Save draft'}
-                  </Button>
-                )}
-                <Button variant="primary" onClick={() => { setFull(false); void publish(); }}>
-                  Publish…
-                </Button>
-              </>
-            )}
-          </div>
-        </div>,
-        document.querySelector('.ch-root') ?? document.body,
-      )}
+      {phone
+        ? fullLife.present &&
+          createPortal(
+            <dialog
+              ref={fullLife.ref}
+              className="ch-cpv-full is-sheet"
+              aria-label={plan.title}
+              onCancel={(e) => {
+                e.preventDefault();
+                setFull(false);
+              }}
+            >
+              {fullLife.retainContent(full && fullBody)}
+            </dialog>,
+            document.querySelector('.ch-root') ?? document.body,
+          )
+        : full &&
+          createPortal(
+            <div className="ch-cpv-full" role="dialog" aria-modal="true" aria-label={plan.title} ref={fullRef} tabIndex={-1}>
+              {fullBody}
+            </div>,
+            document.querySelector('.ch-root') ?? document.body,
+          )}
     </div>
   );
 }

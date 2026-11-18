@@ -25,6 +25,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => router, redirect: redirectS
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 vi.mock('../lib/phone-hint', () => ({ marksHint: () => Promise.resolve([]) }));
+// Home's Add event reads the editor's inputs on a press (MAC-03); here they never come, so a click goes to Calendar as before.
+vi.mock('../data/event-editor-inputs', () => ({ getEventEditorInputs: async () => null }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 
@@ -56,11 +58,12 @@ vi.mock('@/app/golf/actions/teams', () => ({ getTeamJoinRequests: async () => ({
 
 import GolfDashboardPage from '@/app/golf/(dashboard)/dashboard/page';
 import { loadCoachHome, teamForm, type ChCoachHome, type ChHomeEvent } from '../data/home';
+import { statsRowsOf } from './stats-rows';
 import { groupByPlayer, seasonStartDate, type ChRound } from '../data/season';
 import { previousInFilter, roundsInFilter } from '../data/stats-common';
 import { filterFor } from '../data/stats-filter';
 import { weightedMean } from '../data/stats-weight';
-import { formBasis } from '../screens/home/HomePhone';
+import { formSpan } from '../screens/home/HomePhone';
 import { CoachHome, CoachHomeNoTeam, isFirstRun } from '../screens/home/CoachHome';
 import { HomeSkeleton } from '../screens/home/HomeSkeleton';
 import { LatestRound } from '../screens/home/LatestRound';
@@ -70,6 +73,9 @@ import { PlayerHome, PlayerHomeNoTeam } from '../screens/home/PlayerHome';
 import { chReport, chTrail } from '../lib/track';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
+
+/** Home's team form over rounds that carry their figures, handed over as their stats rows (DF-P-01). */
+const teamFormOf = (full: ChRound[], week: number) => teamForm(full, statsRowsOf(full), week);
 import {
   PREVIEW_HOME,
   PREVIEW_HOME_EMPTY,
@@ -326,47 +332,52 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
   it('the team form: a change green or amber only when it clears its standard error (Q4, D-42), and a text equivalent for the line', () => {
     // The preview's changes are inside their standard errors: the numbers stay, in plain ink, and the average says so.
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    let form = document.querySelector('.ch-hm-form')!;
-    expect(form.textContent).toMatch(/73\.4/);
-    expect(form.querySelector('.ch-hm-delta')!.className).not.toMatch(/is-gain|is-loss/);
-    expect(form.querySelector('.ch-hm-delta em')!.textContent).toBe('No clear change vs previous 10');
+    // Team scoring is Player Home's Scoring card (lay-01): four figures, each with its caption under it.
+    let form = document.querySelector('.ch-ph-tm .ch-ph-figs')!;
+    let avg = form.querySelector(':scope > div')!;
+    expect(avg.querySelector('dd.ch-num')!.textContent).toBe('73.4');
+    expect(avg.querySelector('.ch-ph-figs__m')!.textContent).toBe('No clear change vs previous 10');
     expect(form.querySelectorAll('dd.is-gain, dd.is-loss')).toHaveLength(0);
+    // No signed figure while the change sits inside its standard error (HOME-P-09).
+    expect(form.textContent).not.toMatch(/[+−]\d/);
     expect(screen.getByRole('img', { name: /Team scoring, the team’s average on each of its last \d+ round days/ })).toBeTruthy();
     cleanup();
-    // Measured tighter, the same changes clear it: the average down 0.9 is better, putts up 0.3 is worse.
+    // Measured tighter, the same changes clear two errors (stats and charts audit, CH-05): the average down 0.9 is better, putts up
+    // 0.3 is worse.
     const f = PREVIEW_HOME.phone.form!;
-    const sharp = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: { ...f, deltaSe: 0.5, gir: { ...f.gir, se: 4 }, putts: { ...f.putts, se: 0.2 } } } };
+    const sharp = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: { ...f, deltaSe: 0.4, gir: { ...f.gir, se: 4 }, putts: { ...f.putts, se: 0.12 } } } };
     wrap(<CoachHome data={sharp} now={PREVIEW_HOME_NOW} />);
-    form = document.querySelector('.ch-hm-form')!;
-    expect(form.querySelector('.ch-hm-delta')!.className).toMatch(/is-gain/);
-    expect(form.querySelector('.ch-hm-delta em')!.textContent).toBe('Better than previous 10');
-    expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['+0.3']);
-    expect(form.querySelectorAll('dd.is-gain')).toHaveLength(0);
+    form = document.querySelector('.ch-ph-tm .ch-ph-figs')!;
+    avg = form.querySelector(':scope > div')!;
+    expect(avg.querySelector('dd.ch-num')!.className).toMatch(/is-gain/);
+    expect(avg.querySelector('.ch-ph-figs__m')!.textContent).toBe('−0.9 · Better than previous 10');
+    expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['30.4']);
+    expect(form.querySelectorAll('dd.is-gain')).toHaveLength(1);
+    expect(form.textContent).toMatch(/\+0\.3 · Worse than previous 10/);
   });
 
-  it('P002-C2 each latest round carries its player’s trend beside the score, and none when the leaderboard failed', () => {
-    const { unmount } = wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    expect(document.querySelectorAll('.ch-hm-list .ch-hm-rd__spark svg')).toHaveLength(3);
-    unmount();
+  it('lay-01 the latest round is Player Home’s card: the player, the round, the score, paged through the newest rounds', async () => {
+    // Coach Home matches Player Home (owner, 15 Nov 2026): one round at a time with its scorecard, not a list of rows.
+    const user = userEvent.setup();
     wrap(<CoachHome data={{ ...PREVIEW_HOME, leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } }} now={PREVIEW_HOME_NOW} />);
-    expect(document.querySelector('.ch-hm-rd__spark')).toBeNull();
-    expect(screen.getByRole('button', { name: /Theo Marchetti/ })).toBeTruthy();
+    const sec = screen.getByRole('heading', { name: 'Latest rounds' }).closest('section') as HTMLElement;
+    const first = PREVIEW_HOME.latestRounds.rounds[0]!;
+    // The leaderboard failing takes nothing from the card: it reads the rounds alone.
+    expect(sec.querySelector('.ch-ph-rd__b b')!.textContent).toBe(first.playerName);
+    expect(sec.querySelector('.ch-ph-rd__b > span')!.textContent).toBe(first.meta);
+    expect(sec.querySelector('.ch-hm-score b')!.textContent).toBe(String(first.score));
+    expect(within(sec).getByText(`1 of ${PREVIEW_HOME.latestRounds.rounds.length}`)).toBeTruthy();
+    await user.click(within(sec).getByRole('button', { name: 'Next round' }));
+    expect(sec.querySelector('.ch-ph-rd__b b')!.textContent).toBe(PREVIEW_HOME.latestRounds.rounds[1]!.playerName);
+    expect(hapticSpy).toHaveBeenCalledWith('select');
   });
 
-  it('P002 a latest round’s course and date are two parts, so a long course gives way and the date stays (2026-10-18)', () => {
-    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    const meta = document.querySelector('.ch-hm-list .ch-hm-rd__m')!;
-    // The dot between them is drawn by the stylesheet (wave 4), so a large Text Size can drop it when the date moves under
-    // the course.
-    expect([...meta.children].map((c) => c.textContent)).toEqual(['Oakmont CC', 'Mon 12 Oct']);
-    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/home.css'), 'utf8');
-    expect(css).toMatch(/\.ch-hm-rd__when::before \{\s*content: ' · ';/);
-  });
-
-  it('CH-2303 a round posted as a total says so in its sheet', async () => {
+  it('CH-2303 a round posted as a total says so on its card', async () => {
     const user = userEvent.setup();
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    await user.click(screen.getByRole('button', { name: /Jonah Okafor/ }));
+    const sec = screen.getByRole('heading', { name: 'Latest rounds' }).closest('section') as HTMLElement;
+    await user.click(within(sec).getByRole('button', { name: 'Previous round' }));
+    expect(sec.querySelector('.ch-ph-rd__b b')!.textContent).toBe('Jonah Okafor');
     await expectCode('CH-2303', /Posted as a total/);
   });
 
@@ -422,16 +433,13 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
     // The first steps are the desk's own card, the three the phone lists, each a link to where it is done.
     const setup = code('CH-2308') as HTMLElement;
     expect(setup.tagName).toBe('SECTION');
-    expect(setup.closest('.ch-dh-card')).not.toBeNull();
+    expect(setup.parentElement!.tagName).toBe('MAIN');
     expect(within(setup).getByRole('heading', { name: 'Get your team set up' })).toBeTruthy();
     expect(within(setup).getByRole('link', { name: /^Invite players/ }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
     expect(within(setup).getByRole('link', { name: /^Add your season/ }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
     expect(within(setup).getByRole('link', { name: /^Post the first round/ }).getAttribute('href')).toBe('/golf/dashboard/rounds');
-    // The verb every other New event uses, once, in Today's empty card; the head's own actions (with its N key) step aside.
-    const add = screen.getByRole('link', { name: 'New event' });
-    expect(add.getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
-    expect(screen.getAllByRole('link', { name: /New event/ })).toHaveLength(1);
-    expect(add.closest('[data-ch-code="CH-2301"]')).not.toBeNull();
+    // Add your season is the way to the calendar here; the head's own actions (with its N key) step aside.
+    expect(screen.queryByRole('link', { name: /New event/ })).toBeNull();
     const head = setup.closest('main')!.querySelector(':scope > header') as HTMLElement;
     expect(head.querySelector('.ch-h-head__actions')).toBeNull();
     expect(within(head).queryByRole('button')).toBeNull();
@@ -447,28 +455,31 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
       leaderboard: { rows: [], scorecards: 0, rosterSize: 0, error: false },
       phone: { next: null, today: [], form: null, weekNote: null },
     };
-    // The loaded page's head is the green hero card (not the canopy it was on 8 Oct), so the first run's is too.
+    // The loaded page's head is Player Home's framed head on the canopy (lay-01, 15 Nov 2026), so the first run's is too.
     const loaded = wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     const loadedMain = loaded.container.querySelector('main')!;
     const loadedHead = loadedMain.querySelector(':scope > header')!;
-    expect(loadedHead.className).toBe('ch-h-herocard');
+    expect(loadedHead.className).toBe('ch-h-head');
+    expect(loadedMain.hasAttribute('data-canopy')).toBe(true);
     loaded.unmount();
     wrap(<CoachHome data={empty} />);
     const main = code('CH-2308')!.closest('main')!;
-    expect(main.className).toBe(loadedMain.className);
-    expect(main.getAttribute('data-ch-crh')).toBe(loadedMain.getAttribute('data-ch-crh'));
+    expect(main.classList.contains('ch-h-main--desk')).toBe(true);
+    expect(main.hasAttribute('data-canopy')).toBe(true);
+    expect(main.hasAttribute('data-ch-crh')).toBe(false);
     const head = main.querySelector(':scope > header')!;
     expect(head.className).toBe(loadedHead.className);
     expect(within(head as HTMLElement).getByRole('heading', { level: 1, name: 'Welcome to Clubhouse' })).toBeTruthy();
   });
 
-  it('CH-2308 with something on today the first run lists the rest of the day, and the next event sits in the hero', () => {
+  it('CH-2308 with something this week the first run keeps the week, with Up next inside it as on the loaded page', () => {
     const { container } = wrap(<CoachHome data={PREVIEW_HOME_EVENTS_ONLY} now={PREVIEW_HOME_NOW} />);
     const next = PREVIEW_HOME_EVENTS_ONLY.phone.next!;
-    expect(container.querySelector('.ch-h-herocard__next')!.textContent).toContain(next.title);
-    const today = screen.getByRole('heading', { name: 'Today' }).closest('.ch-dh-card') as HTMLElement;
-    expect(within(today).queryByText(next.title)).toBeNull();
-    expect(today.querySelectorAll('.ch-dh-rows--today > li').length).toBe(PREVIEW_HOME_EVENTS_ONLY.phone.today.filter((e) => e.id !== next.id).length);
+    // Player Home's Up next (lay-01): the week's sheet carries it, with its countdown.
+    const up = container.querySelector('.ch-h-sheet .ch-ph-next')!;
+    expect(up.textContent).toContain(next.title);
+    expect(screen.getByRole('list', { name: 'Days this week' })).toBeTruthy();
+    expect(code('CH-2308')).not.toBeNull();
     expect(screen.queryByText('Nothing on the calendar today')).toBeNull();
     expect(screen.getByText('Add your players and this week fills in with who’s going.')).toBeTruthy();
   });
@@ -530,8 +541,22 @@ describe('Home · the team’s form (teamForm)', () => {
     strokes_gained_putting: null,
   });
   const newestFirst = (n: number, make: (i: number) => ChRound) => Array.from({ length: n }, (_, i) => make(i));
+  it('DF-C-16, DF-P-01: greens and putts come from each round’s stats row, as Stats reads them, never the round’s own columns', () => {
+    // The rounds' columns say 3 of 18 greens and 40 putts (a pre-31-Oct rule); their stats rows say 12 of 18 and 30.
+    const rounds = newestFirst(10, (i) => r(72, 3, 40, { back: i }));
+    const rows = statsRowsOf(rounds);
+    for (const row of rows.values()) Object.assign(row, { greens_hit: 12, greens_total: 18, total_putts: 30 });
+    const f = teamForm(rounds, rows, 0)!;
+    expect(Math.round(f.gir.pct!)).toBe(67);
+    expect(f.putts.avg).toBe(30);
+    // A round with no stats row has no greens and no putts: not the column's.
+    const none = teamForm(rounds, new Map(), 0)!;
+    expect(none.gir.pct).toBeNull();
+    expect(none.putts.avg).toBeNull();
+  });
+
   it('averages the last ten against the ten before, and compares greens and putts the same way', () => {
-    const f = teamForm(newestFirst(20, (i) => (i < 10 ? r(72, 12, 29, { back: i }) : r(74, 9, 31, { back: i }))), 3)!;
+    const f = teamFormOf(newestFirst(20, (i) => (i < 10 ? r(72, 12, 29, { back: i }) : r(74, 9, 31, { back: i }))), 3)!;
     expect(f.avg).toBe(72);
     expect(f.delta).toBe(-2);
     expect(Math.round(f.gir.pct!)).toBe(67);
@@ -543,42 +568,49 @@ describe('Home · the team’s form (teamForm)', () => {
   });
   it('carries each change’s standard error, and reads putts as Stats does: a round written 0 putts has none (stats visuals 7.1)', () => {
     // Identical rounds measure no spread: the score falls back on the pooled 3.6, greens and putts (no pooled spread) have none.
-    const f = teamForm(newestFirst(20, (i) => (i < 10 ? r(72, 12, 29, { back: i }) : r(74, 9, 31, { back: i }))), 3)!;
+    const f = teamFormOf(newestFirst(20, (i) => (i < 10 ? r(72, 12, 29, { back: i }) : r(74, 9, 31, { back: i }))), 3)!;
     expect(f.deltaSe).toBeCloseTo(Math.sqrt(3.6 ** 2 / 10 + 3.6 ** 2 / 10), 6);
     expect(f.gir.se).toBeNull();
     expect(f.putts.se).toBeNull();
     // With a spread of their own (five rounds or more in each ten), putts have a standard error too.
-    const spread = teamForm(newestFirst(20, (i) => r(72, 10, (i < 10 ? 28 : 30) + (i % 5), { back: i })), 0)!;
+    const spread = teamFormOf(newestFirst(20, (i) => r(72, 10, (i < 10 ? 28 : 30) + (i % 5), { back: i })), 0)!;
     expect(spread.putts.delta).toBe(-2);
     expect(spread.putts.se).toBeCloseTo(Math.sqrt(2 * (20 / 9 / 10)), 6);
     // Three rounds written 0 putts are not rounds holed in no putts: the mean leaves them out, and the basis counts the rest.
-    const zeros = teamForm(newestFirst(10, (i) => r(72, 10, i < 3 ? 0 : 30, { back: i })), 0)!;
+    const zeros = teamFormOf(newestFirst(10, (i) => r(72, 10, i < 3 ? 0 : 30, { back: i })), 0)!;
     expect(zeros.putts.avg).toBe(30);
     expect(zeros.basis.puttsRounds).toBe(7);
   });
-  it('draws the line as the team’s average on each round day, the last ten days, not a point a round', () => {
+  it('draws the line as the team’s average on each round day the figures rest on, not a point a round', () => {
     // Three players on each of twelve days: thirty-six rounds, but one point a day, and each player's newest ten reach back to day 2.
     const rounds: ChRound[] = [];
     for (let d = 0; d < 12; d++) ['a', 'b', 'c'].forEach((p, i) => rounds.push(r(70 + d + i, 10, 30, { player: p, back: 11 - d })));
     const full = rounds.sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : a.id < b.id ? 1 : -1));
-    const f = teamForm(full, 0)!;
+    const f = teamFormOf(full, 0)!;
     expect(f.line).toHaveLength(10);
     // Day d's three scores are 70+d, 71+d and 72+d: a mean of 71+d. Days 2 to 11.
     expect(f.line).toEqual([73, 74, 75, 76, 77, 78, 79, 80, 81, 82]);
+    // Prod audit 2026-11-15, HOME-D-06: every day in the basis, not the last ten. Two players ten rounds each, offset by four days:
+    // fourteen days, and the line covers the dates the card states.
+    const offset: ChRound[] = [];
+    for (let d = 0; d < 10; d++) offset.push(r(72, 10, 30, { player: 'a', back: 13 - d }), r(74, 10, 30, { player: 'b', back: 9 - d }));
+    const wide = teamFormOf(offset.sort((a, b) => (a.round_date < b.round_date ? 1 : -1)), 0)!;
+    expect(wide.line).toHaveLength(14);
+    expect(wide.lineDays![0]).toBe(wide.basis.from);
+    expect(wide.lineDays![13]).toBe(wide.basis.to);
     // Rounds on one day average into one point.
-    expect(teamForm([r(70, 10, 30, { player: 'a', date: day(0) }), r(74, 10, 30, { player: 'b', date: day(0) }), r(71, 10, 30, { player: 'a', date: day(1) })].sort((a, b) => (a.round_date < b.round_date ? 1 : -1)), 0)!.line).toEqual([71, 72]);
+    expect(teamFormOf([r(70, 10, 30, { player: 'a', date: day(0) }), r(74, 10, 30, { player: 'b', date: day(0) }), r(71, 10, 30, { player: 'a', date: day(1) })].sort((a, b) => (a.round_date < b.round_date ? 1 : -1)), 0)!.line).toEqual([71, 72]);
   });
   it('colours a change that rounds to zero as shown plain: "0.0" is neither a gain nor a loss (F-54)', () => {
     const p = PREVIEW_HOME.phone;
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...p, form: { ...p.form!, delta: 0.03, gir: { pct: 61, delta: 0.4 }, putts: { avg: 30.4, delta: -0.04 } } } }} now={PREVIEW_HOME_NOW} />);
-    const form = document.querySelector('.ch-hm-form')!;
-    expect(form.querySelector('.ch-hm-delta')!.className).not.toMatch(/is-gain|is-loss/);
-    expect(form.querySelectorAll('dd.is-gain, dd.is-loss')).toHaveLength(0);
+    const form = document.querySelector('.ch-ph-tm .ch-ph-figs')!;
+    expect(form.querySelectorAll('dd.is-gain, dd.is-loss, .is-now.is-gain, .is-now.is-loss')).toHaveLength(0);
   });
   it('makes no comparison with fewer than three rounds before (the Stats rule), and nothing with no rounds', () => {
-    expect(teamForm(newestFirst(12, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBeNull();
-    expect(teamForm(newestFirst(13, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBe(0);
-    expect(teamForm([], 0)).toBeNull();
+    expect(teamFormOf(newestFirst(12, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBeNull();
+    expect(teamFormOf(newestFirst(13, (i) => r(73, 10, 30, { back: i })), 0)!.delta).toBe(0);
+    expect(teamFormOf([], 0)).toBeNull();
   });
 
   // Swap audit §10-1: Home's "last 10" was the team's newest ten rounds pooled, while Stats (Last 10, Team) pools each
@@ -587,7 +619,7 @@ describe('Home · the team’s form (teamForm)', () => {
     const busy = newestFirst(15, (i) => r(70, 10, 30, { player: 'busy', back: i }));
     const quiet = newestFirst(5, (i) => r(80, 10, 30, { player: 'quiet', back: 20 + i }));
     const full = [...busy, ...quiet].sort((a, b) => (a.round_date < b.round_date ? 1 : -1));
-    const f = teamForm(full, 0)!;
+    const f = teamFormOf(full, 0)!;
     // Hand count: busy's newest ten at 70 and quiet's five at 80 → (700 + 400) / 15.
     expect(f.avg).toBeCloseTo(1100 / 15, 10);
     expect(f.basis.rounds).toBe(15);
@@ -607,42 +639,48 @@ describe('Home · the team’s form (teamForm)', () => {
   // · Putts 38.0" with nothing saying the figures were three August rounds.
   it('§10-1 says what the average, greens and putts rest on, apart from the week’s count', () => {
     const aug2 = [r(69, 18, 37, { player: 'a', date: day(0) }), r(70, 18, 38, { player: 'b', date: day(0) }), r(71, 18, 39, { player: 'c', date: day(0) })];
-    const f = teamForm(aug2, 0)!;
+    const f = teamFormOf(aug2, 0)!;
     expect(f.avg).toBe(70);
     expect(f.gir.pct).toBe(100);
     expect(f.putts.avg).toBe(38);
     expect(f.basis).toEqual({ rounds: 3, from: day(0), to: day(0), girRounds: 3, puttsRounds: 3 });
-    expect(formBasis(f.basis)).toMatch(/^3 rounds · [A-Z][a-z]{2} \d{1,2}$/);
+    expect(formSpan(f.basis, 'last10')).toMatch(/^Each player’s last 10 · [A-Z][a-z]{2} \d{1,2}$/);
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
-    const form = document.querySelector('.ch-hm-form')!;
-    expect(form.querySelector('.ch-hm-form__basis')!.textContent).toBe(formBasis(f.basis));
+    // The window is said once, in the section's line; the Rounds figure counts in that window (HOME-P-11, HOME-P-14).
+    const form = document.querySelector('.ch-ph-tm .ch-ph-figs')!;
+    expect(document.querySelector('#ch-ph-tm-scoring + .ch-hm-meta')!.textContent).toBe(formSpan(f.basis, 'last10'));
+    const rounds = [...form.querySelectorAll(':scope > div')][3]!;
+    expect(rounds.querySelector('dt')!.textContent).toBe('Rounds');
+    expect(rounds.querySelector('dd.ch-num')!.textContent).toBe('3');
+    expect(rounds.querySelector('.ch-ph-figs__m')!.textContent).toBe('last 10 each');
     expect(form.textContent).not.toMatch(/vs previous 10/);
   });
 
   it('the greens change is in percentage points: "+3 pts", never a bare "+3" beside "61%"', () => {
-    const f = { ...PREVIEW_HOME.phone.form!, gir: { pct: 61, delta: 3 } };
+    // A change that clears its standard error prints signed (HOME-P-09).
+    const f = { ...PREVIEW_HOME.phone.form!, gir: { pct: 61, delta: 3, se: 1 } };
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
-    const gir = [...document.querySelectorAll('.ch-hm-form__figs > div')][1]!;
-    expect([...gir.querySelectorAll('dd')].map((d) => d.textContent)).toEqual(['61%', '+3 pts']);
+    const gir = [...document.querySelectorAll('.ch-ph-tm .ch-ph-figs > div')][1]!;
+    expect([...gir.querySelectorAll('dd')].map((d) => d.textContent)).toEqual(['61%', '+3 pts · Better than previous 10']);
   });
 
   it('§10-1 a figure resting on fewer rounds than the average says how many', () => {
-    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, 10, null, { back: 1 }), r(73, null, 31, { back: 2 }), r(75, null, null, { back: 3 })], 0)!;
+    const f = teamFormOf([r(72, 12, 30, { back: 0 }), r(74, 10, null, { back: 1 }), r(73, null, 31, { back: 2 }), r(75, null, null, { back: 3 })], 0)!;
     expect(f.basis).toMatchObject({ rounds: 4, girRounds: 2, puttsRounds: 2 });
     // Greens pool the holes of the two rounds that have them; putts average the two that do.
     expect(f.gir.pct).toBeCloseTo((22 / 36) * 100, 10);
     expect(f.putts.avg).toBe(30.5);
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
-    const figs = [...document.querySelectorAll('.ch-hm-form__figs > div')].map((d) => d.textContent);
+    const figs = [...document.querySelectorAll('.ch-ph-tm .ch-ph-figs > div')].map((d) => d.textContent);
     expect(figs[1]).toMatch(/2 of 4 rounds/);
     expect(figs[2]).toMatch(/2 of 4 rounds/);
   });
 
   it('A7 the team’s greens from one round are not a share: they say what they need', () => {
-    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, null, null, { back: 1 })], 0)!;
+    const f = teamFormOf([r(72, 12, 30, { back: 0 }), r(74, null, null, { back: 1 })], 0)!;
     expect(f.gir).toMatchObject({ pct: null, needs: 'Needs 2 rounds', delta: null });
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
-    const figs = [...document.querySelectorAll('.ch-hm-form__figs > div')].map((d) => d.textContent);
+    const figs = [...document.querySelectorAll('.ch-ph-tm .ch-ph-figs > div')].map((d) => d.textContent);
     expect(figs[1]).toMatch(/Needs 2 rounds/);
     expect(figs[1]).not.toMatch(/67%/);
   });
@@ -849,9 +887,11 @@ describe('Home · after this week, and trips (audit 2026-11-13)', () => {
     expect(screen.queryByRole('heading', { name: 'This week' })).toBeNull();
   });
 
-  it('CH-2316 F-0006 on the desk, the hero names it beside the greeting', () => {
+  it('CH-2316 F-0006 on the desk, Up next inside the week names it (Player Home’s Up next card, lay-01)', () => {
     wrap(<CoachHome data={emptyWeek({ after: AFTER })} now={PREVIEW_HOME_NOW} />);
     const hero = code('CH-2316') as HTMLElement;
+    expect(hero.className).toBe('ch-ph-next');
+    expect(hero.closest('.ch-h-sheet')).not.toBeNull();
     expect(hero.getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-11-17&event=confirm');
     expect(hero.textContent).toContain('Nothing else this week');
     expect(hero.textContent).toContain('Tue 17 Nov · 2:00 PM');
@@ -863,7 +903,7 @@ describe('Home · after this week, and trips (audit 2026-11-13)', () => {
     vi.setSystemTime(new Date(PREVIEW_HOME_NOW));
     try {
       wrap(<CoachHome data={emptyWeek({ next: TRIP, today: [TRIP] })} />);
-      const hero = document.querySelector('.ch-h-herocard__next') as HTMLElement;
+      const hero = document.querySelector('.ch-h-sheet .ch-ph-next') as HTMLElement;
       await waitFor(() => expect(hero.textContent).toContain('On the road · back tomorrow'));
       expect(hero.textContent).not.toMatch(/Leaves/);
       expect(hero.getAttribute('href')).toBe('/golf/dashboard/team-hub?tab=travel&trip=t1');
@@ -884,11 +924,13 @@ describe('Home · after this week, and trips (audit 2026-11-13)', () => {
     const days = emptyWeek().week.days.map((d) => ({ ...d, trip: d.date >= '2026-10-13' && d.date <= '2026-10-15' ? 'Fall Invitational' : null }));
     wrap(<CoachHome data={{ ...emptyWeek({ next: TRIP, today: [TRIP] }), week: { ...PREVIEW_HOME.week, agenda: [], days } }} now={PREVIEW_HOME_NOW} />);
     expect(code('CH-2309')).toBeNull();
-    const card = document.querySelector('.ch-hm-day') as HTMLElement;
-    expect(card.querySelector('.ch-hm-next__type')!.textContent).toBe('Travel');
+    // Up next in the hero, as Player Home's phone draws it (lay-01).
+    const card = document.querySelector('.ch-hm-hero .ch-hm-next') as HTMLElement;
+    expect(card.querySelector('.ch-hm-next__type')!.textContent).toBe('Up next · Travel');
     expect(card.querySelector('.ch-hm-next__when')!.textContent).toBe('On the road · back tomorrow');
     expect(card.textContent).toContain('Tue 13 – Thu 15 Oct · Pinehurst');
-    expect(within(card).getByRole('link', { name: 'Fall Invitational' }).getAttribute('href')).toBe('/golf/dashboard/team-hub?tab=travel&trip=t1');
+    expect(card.getAttribute('href')).toBe('/golf/dashboard/team-hub?tab=travel&trip=t1');
+    expect(within(card).getByRole('heading', { name: 'Fall Invitational' })).toBeTruthy();
     // The week strip marks the trip's days, in words too, as Team Hub's does.
     const strip = screen.getByRole('heading', { name: 'This week' }).closest('section')!;
     expect(strip.querySelectorAll('span.is-trip')).toHaveLength(3);
@@ -919,30 +961,31 @@ describe('Home · the phone, the page’s own contracts', () => {
     // A week day opens Calendar's day view.
     const day = document.querySelector('.ch-hm-week li.is-today a')!;
     expect(day.getAttribute('href')).toBe('/golf/dashboard/calendar?view=day&date=2026-10-14');
-    // A round opens its card, which links to Messages and to the player's stats (CH-2701).
-    await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
-    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
-    expect(within(sheet).getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=theo');
-    expect(within(sheet).getByRole('link', { name: 'Player stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
+    // The latest round's card links to the player's stats while its review isn't rebuilt (CH-2701, lay-01).
+    const latest = screen.getByRole('heading', { name: 'Latest rounds' }).closest('section') as HTMLElement;
+    expect(within(latest).getByRole('link', { name: 'Theo’s stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
+    await user.click(within(latest).getByRole('button', { name: 'Next round' }));
+    expect(within(latest).getByRole('link', { name: 'Sofia’s stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=sofia');
   });
 
   it("20103 on the phone the Latest rounds header opens Team stats (the board's All, Q-79), and only when there are rounds", () => {
+    // lay-01: Team stats sits under Team scoring, where Player Home's card keeps its way on; the rounds card has none.
     const { unmount } = wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    const header = document.getElementById('ch-hm-rounds')!.parentElement!;
-    expect(within(header).getByRole('link', { name: 'Team stats' }).getAttribute('href')).toBe('/golf/dashboard/stats');
+    const scoring = document.getElementById('ch-ph-tm-scoring')!.closest('section')!;
+    expect(within(scoring).getByRole('link', { name: 'Team stats' }).getAttribute('href')).toBe('/golf/dashboard/stats');
     unmount();
     wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: [] } }} now={PREVIEW_HOME_NOW} />);
-    expect(within(document.getElementById('ch-hm-rounds')!.parentElement!).queryByRole('link')).toBeNull();
+    const latest = document.getElementById('ch-ph-tm-latest')!.closest('section')!;
+    expect(code('CH-2302')).not.toBeNull();
+    expect(within(latest).queryByRole('link')).toBeNull();
   });
 
-  it('20103 on the phone a round with a real id opens its review from the card (Round recap)', async () => {
-    const user = userEvent.setup();
+  it('20103 on the phone a round with a real id opens its review from the card (Open recap)', () => {
     const [first, ...others] = PREVIEW_HOME.latestRounds.rounds;
     wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }} now={PREVIEW_HOME_NOW} />);
-    await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
-    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
-    expect(within(sheet).getByRole('link', { name: 'Round recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
-    expect(within(sheet).queryByRole('link', { name: 'Player stats' })).toBeNull();
+    const latest = screen.getByRole('heading', { name: 'Latest rounds' }).closest('section') as HTMLElement;
+    expect(within(latest).getByRole('link', { name: 'Open recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
+    expect(within(latest).queryByRole('link', { name: /stats/ })).toBeNull();
   });
 
   it('20103 an empty day offers Plan, which opens the editor', () => {
@@ -955,7 +998,7 @@ describe('Home · the phone, the page’s own contracts', () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     vi.setSystemTime(new Date(PREVIEW_HOME_NOW));
     wrap(<CoachHome data={PREVIEW_HOME} />);
-    const when = () => document.querySelector('.ch-hm-day .ch-hm-next__when')!.textContent;
+    const when = () => document.querySelector('.ch-hm-hero .ch-hm-next__when')!.textContent;
     expect(when()).toBe('In 50 min');
     act(() => {
       vi.advanceTimersByTime(60_000);
@@ -979,17 +1022,16 @@ describe('Home · the phone, the page’s own contracts', () => {
     none.unmount();
     hapticSpy.mockClear();
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    await user.click(screen.getByRole('button', { name: /Sofia Alvarez/ }));
+    // Paging the latest rounds is a selection (D-70).
+    await user.click(screen.getByRole('button', { name: 'Next round' }));
     expect(hapticSpy.mock.calls).toEqual([['select']]);
   });
 
-  it('22301 a phone section that crashes is reported under its own surface; opening Up next or a round leaves a breadcrumb', async () => {
+  it('22301 a phone section that crashes is reported under its own surface; opening Up next leaves a breadcrumb', async () => {
     const user = userEvent.setup();
     const view = wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    await user.click(document.querySelector('a.ch-hm-day__open')!);
+    await user.click(document.querySelector('.ch-hm-hero a.ch-hm-next')!);
     expect(chTrail).toHaveBeenCalledWith('home open next event');
-    await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
-    expect(chTrail).toHaveBeenCalledWith('home open round');
     view.unmount();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const p = PREVIEW_HOME.phone;
@@ -1104,11 +1146,14 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
     phoneMedia();
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     expect(document.querySelector('.ch-hm-queue')).not.toBeNull();
-    const list = screen.getByRole('list', { name: /Strokes gained per round/ });
-    expect(within(list).getAllByRole('listitem')).toHaveLength(4);
-    expect(within(list).getAllByRole('listitem')[0]!.textContent).toContain('Theo M. gains most · Eli B. loses most');
-    expect(within(list).getAllByRole('listitem')[2]!.textContent).toContain('Ava L. and Sofia A. gain most');
-    expect(within(list).getAllByRole('link', { name: 'Theo M.' })[0]!.getAttribute('href')).toBe('/golf/dashboard/stats?player=theo&tab=game');
+    // The four parts are Player Home's game cards (lay-01), each naming who gains and who loses most.
+    const sec = screen.getByRole('heading', { name: 'The team’s game' }).closest('section') as HTMLElement;
+    const cards = [...sec.querySelectorAll('article.ch-ph-leg')] as HTMLElement[];
+    expect(cards).toHaveLength(4);
+    expect(cards[0]!.textContent).toMatch(/Theo M\. gains most/);
+    expect(cards[0]!.textContent).toMatch(/Eli B\. loses most/);
+    expect(cards[2]!.textContent).toMatch(/Ava L\. and Sofia A\. gain most/);
+    expect(within(cards[0]!).getAllByRole('link', { name: 'Theo M.' })[0]!.getAttribute('href')).toBe('/golf/dashboard/stats?player=theo&tab=game');
     expect(screen.queryByRole('table', { name: 'The team’s game' })).toBeNull();
   });
 });
@@ -1195,8 +1240,9 @@ describe('Home · the page’s contracts on the redesign', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(PREVIEW_HOME.greeting);
     expect(document.body.textContent).toContain(PREVIEW_HOME.todayLabel);
     expect(document.querySelector('.ch-h-main--desk')).not.toBeNull();
-    expect(document.querySelector('.ch-hm-form')).not.toBeNull();
-    // The leaderboard and the week left Home: they live on Roster, Stats and Calendar.
+    expect(document.querySelector('.ch-ph-tm .ch-ph-chart')).not.toBeNull();
+    expect(document.querySelector('.ch-h-sheet .ch-ph-next')).not.toBeNull();
+    // The leaderboard left Home: it lives on Roster and Stats.
     expect(screen.queryByRole('table', { name: 'Leaderboard' })).toBeNull();
   });
 
@@ -1205,7 +1251,8 @@ describe('Home · the page’s contracts on the redesign', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     expect(document.querySelector('.ch-h-main--desk')).toBeNull();
     const heads = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(heads).toEqual(['Short-game block', 'Today', 'Team scoring', 'The team’s game', 'This week', 'Latest rounds']);
+    // Player Home's phone order (lay-01): Up next in the hero, what changed since you looked, the week with today in it, the latest round, scoring, the game.
+    expect(heads).toEqual(['Short-game block', 'Since you last looked', 'This week', 'Today', 'Latest rounds', 'Team scoring', 'The team’s game']);
   });
 
   it('22101 a failed read never throws: the page still loads, each section says it failed, and every read is logged', async () => {

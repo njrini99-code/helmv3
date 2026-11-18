@@ -28,6 +28,8 @@ export async function notifyWatchlistAdd(
     coachName,
     schoolName,
     profileUrl: `${baseUrl}/baseball/dashboard/profile`,
+    // "Manage preferences" opens BaseballHelm's settings, not golf's (GAP-R-02).
+    product: 'baseball',
   });
 }
 
@@ -55,6 +57,7 @@ export async function notifyNewMessage(
     senderName,
     preview,
     messageUrl,
+    product: sport,
   });
 }
 
@@ -73,6 +76,7 @@ export async function notifyPipelineStageChange(
     schoolName,
     newStage,
     journeyUrl: `${baseUrl}/baseball/dashboard/journey`,
+    product: 'baseball',
   });
 }
 
@@ -89,6 +93,7 @@ export async function notifyProfileView(
   return sendEmailNotification('profile_view', playerId, playerEmail, {
     viewerInfo,
     profileUrl: `${baseUrl}/baseball/dashboard/profile`,
+    product: 'baseball',
   });
 }
 
@@ -183,14 +188,15 @@ export async function notifyTaskAssigned(
   });
 }
 
-/** Fairway's address for a player's focus areas (a redirect onto the Player CoachHelm Development drill). */
-export const FAIRWAY_DEV_PLAN_PATH = '/golf/dashboard/my-development';
+/**
+ * Where a player's focus areas are: Stats, Development tab (GAP-R-14). The Fairway address it replaces
+ * (/golf/dashboard/my-development) only redirects, twice, before landing here.
+ */
+export const DEV_PLAN_PATH = '/golf/dashboard/stats?tab=dev';
 
 /**
  * Notify golf player when a development plan / focus area is assigned.
- * `planPath`: where the bell row and the email send them. Fairway's address redirects to the Player CoachHelm
- * Development drill, which Clubhouse does not draw (it says "not rebuilt yet"), so a caller with Clubhouse on
- * passes the screen that is rebuilt (Stats, Development tab); without one it is Fairway's, as it always was.
+ * `planPath`: where the bell row and the email send them; Stats' Development tab unless the caller names another.
  */
 export async function notifyDevPlanAssigned(
   recipientId: string,
@@ -198,7 +204,7 @@ export async function notifyDevPlanAssigned(
   planTitle: string,
   areaType: string,
   coachName: string,
-  planPath: string = FAIRWAY_DEV_PLAN_PATH
+  planPath: string = DEV_PLAN_PATH
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 

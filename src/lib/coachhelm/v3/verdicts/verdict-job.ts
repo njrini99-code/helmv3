@@ -317,7 +317,9 @@ async function noticeCoachGotWorse(supabase: Client, area: CandidateArea): Promi
       type: 'dev_plan_assigned',
       title: 'A focus area got worse',
       body: `${area.title?.trim() || 'A focus area'}: after its horizon the numbers sit below what the player was expected to reach without practice. Review it before the player sees it.`,
-      actionUrl: `/golf/dashboard/players/${area.player_id}`,
+      // Stats, the player's Development tab: where the verdict and its review are (GAP-R-01). The old address took two
+      // redirect hops to the Game tab; rows already stored are pointed here as they are read (unified-notifications-model.ts).
+      actionUrl: `/golf/dashboard/stats?player=${encodeURIComponent(area.player_id)}&tab=dev`,
       data: {
         coachhelm_category: 'focus_area_verdict',
         verdict: 'got_worse',

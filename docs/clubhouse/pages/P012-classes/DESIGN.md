@@ -118,7 +118,8 @@ follows the canvas, not the window: the deck (cards of at least 260px) beside a
 
 Approved spec `docs/clubhouse/phone/classes.md`: Classes opens from More (D-66);
 the class's sheet, the form, the import and both questions are bottom sheets
-that drag to close; the tab bar stays with More on.
+that drag to close; the tab bar stays with More on (since 2026-10-13 the section
+strip).
 
 **The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe
 coded"; the Coach Home board's round 3, "fewer containers, one feature card").**

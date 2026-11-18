@@ -188,6 +188,12 @@ export interface ChTourPlayerRound {
   trust: ChTourTrust;
   /** The linked `golf_rounds` id, or null for an entered score. */
   roundId: string | null;
+  /**
+   * The linked card is still open (its golf_rounds row is in progress: a card kept hole by hole here, or a round being
+   * played), so its holes can be corrected as hole scoring does. False once submitted (completed rounds are never
+   * changed, D-82); left out for an entered score.
+   */
+  cardOpen?: boolean;
   /** Hole-by-hole scores exist (a totals-only round counts in team scores, never in hole figures). */
   holesKnown: boolean;
   /** Strokes-gained data exists for this round (the design's shot dot). */
@@ -238,6 +244,11 @@ export interface ChTourField {
   /** Postseason line drawn on the field table: "Top 5 advance", "Cut". */
   line: { kind: 'advance' | 'cut' | 'match_play'; label: string; places: number } | null;
   asOf: string | null;
+  /**
+   * Said under the field when the event separates ties (NCAA or a playoff) but places are still shared: field rows carry
+   * totals only, so a tie stays shared until the results are imported or the host's places are entered (F-04).
+   */
+  tieNote?: string | null;
 }
 
 export interface ChTourLineupState {
@@ -502,6 +513,8 @@ export interface ChTourTrip {
 
 export interface ChTourDeskData {
   now: string;
+  /** Our team's name as the roster has it, for finding our rows in an imported results file (F-01). */
+  teamName?: string | null;
   event: ChTourEvent;
   players: ChTourPlayer[];
   courses: Record<string, ChTourCourse>;
@@ -628,7 +641,7 @@ export interface ChTourHistoryData {
   matchedPlayers: string[];
   headToHead: ChTourHeadToHead[];
   splits: ChTourHistorySplit[];
-  errors: Partial<Record<'trend' | 'headToHead' | 'splits', true>>;
+  errors: Partial<Record<'trend' | 'headToHead' | 'splits' | 'profiles', true>>;
 }
 
 export interface ChTourLinkCandidate {
@@ -764,6 +777,8 @@ export interface ChTourEventDraft {
   format: TourFormat;
   kind: ChTourEventKind;
   tiebreak: ChTourTiebreak;
+  /** F-05: minutes before round 1's first tee to lock the lineup by (10 unless the coach chose otherwise). Optional in fixtures. */
+  lockMinutes?: number;
   rounds: Array<{ date: string; courseId: string | null; startType: ChTourStartType; firstTee: string | null }>;
   fieldSize: number | null;
   fieldTeams: string[];
@@ -829,6 +844,17 @@ export interface ChTourLineupData {
   version: number | null;
   qualifier: { id: string; name: string } | null;
   errors: Partial<Record<'roster' | 'qualifier' | 'projection', true>>;
+  /**
+   * F-05: the team's roster limit, as the Roster header counts it (active players less those marked as not counting).
+   * `chip` is "Roster 9 of 9"; `over` how many past the limit. Absent with the limit off, or in fixtures.
+   */
+  rosterLimit?: { chip: string; over: number; text: string | null };
+  /**
+   * F-05: the B team. Present only once the event can hold one (held migration 20261116091000 adds the squad); absent,
+   * the builder offers no B team. `slots` are its players in order (stored as individuals of squad B, so they never count
+   * in the team's record, D-92), `alternate` its alternate.
+   */
+  bTeam?: { slots: Array<{ playerId: string; slot: number | null }>; alternate: string | null };
 }
 
 // ── Live round (5L) ────────────────────────────────────────────────────────────────────────────────────────────

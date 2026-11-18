@@ -4,10 +4,11 @@
  * component (clubhouse:check rejects them). Values live in `lib/motion.ts` (CH_SPRINGS, CH_MS, CH_KEYBOARD_EASE) and
  * `styles/tokens.css`; this file names them for Messages and holds the artifact's `anim()` as WAAPI.
  *
- * The spring numbers are the app's own `chSpringCurve`, not the artifact's solver (SETTLED ruling 29): smooth 462 ms,
- * settle 417, reveal 921, send 700, pop 496, lift 471, launch 812.
+ * The spring numbers are the app's own `chSpringCurve`, not the artifact's solver (SETTLED ruling 29): smooth and settle
+ * 462 ms, reveal 921. The send, launch and lift springs are gone and Messages no longer uses pop (MOTION-AND-VISUAL 3.12):
+ * a sent message is an insert (3.5), and every held or popped surface settles.
  */
-import { CH_DUR, CH_EASE, CH_FADE_MS, CH_KEYBOARD_EASE, CH_MS, CH_SPRINGS, chSpringCurve, type ChSpringKind } from '../../../lib/motion';
+import { CH_DUR, CH_EASE, CH_EASE_SHEET, CH_FADE_MS, CH_KEYBOARD_EASE, CH_MS, CH_SPRINGS, chSpringCurve, type ChSpringKind } from '../../../lib/motion';
 
 export { CH_SPRINGS, chSpringCurve };
 export type MsSpringKind = ChSpringKind;
@@ -24,6 +25,9 @@ export const PRESS_MS = CH_DUR.press * 1000;
 export const MS_BEATS = CH_MS;
 /** A sheet leaving: the house ease-out over the release beat, from where it is (MOT-X-5, MOT-X-6). */
 export const sheetCloseCurve = { ms: Math.round(CH_DUR.release * 1000), easing: `cubic-bezier(${CH_EASE.join(', ')})` } as const;
+/** A menu (and the hold's reaction bar) arriving: the quick beat on the sheet curve from .96, as ui/Menu.tsx opens (OVL-15,
+ * OVL-16; motion spec 15 Nov 3.4). */
+export const menuOpenCurve = { ms: Math.round(CH_DUR.quick * 1000), easing: `cubic-bezier(${CH_EASE_SHEET.join(', ')})` } as const;
 
 export interface MsAnimateOptions {
   /** Start from where the node is now (its current transform and opacity) instead of the first keyframe: an interrupt never jumps. */

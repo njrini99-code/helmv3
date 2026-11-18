@@ -22,11 +22,10 @@ Rows without a code are behaviours with no single element, recorded in
 namespace 1) apply here too and are named where they carry a category.
 `clubhouse:check` holds this file to the registry.
 
-Classes is the player's page. Coaches have no Classes page in Clubhouse and keep
-the current
-Fairway page at the same address (`LegacyClassesPage.tsx`, unchanged), so every
-contract below is
-a player's.
+Classes is the player's page. Coaches have no Classes page in Clubhouse and kept
+the Fairway page at the same address (`LegacyClassesPage.tsx`) until it was
+deleted with Fairway on 2026-11-14; a coach now gets nothing here. Every
+contract below is a player's.
 
 The hand contracts (the rows with no code) are all `reserved`: a hand contract
 is `implemented`
@@ -60,10 +59,11 @@ Status: DEFINED
 
 The route skeleton (CH-12401) is the Clubhouse one for a player inside the shell
 (the loading file reads the shell's role from context); a coach there, and
-anyone outside the shell, get the Fairway skeleton, because that is the page
-they get. Classes loads no section on its own after the server render, so there
-are no section skeletons; a schedule being read says so (CH-12402) and classes
-being put on the calendar say so in the header (CH-12403).
+anyone outside the shell, got the Fairway skeleton, because that was the page
+they got (until 2026-11-14; `classes/loading.tsx` now always draws CH-12401).
+Classes loads no section on its own after the server render, so there are no
+section skeletons; a schedule being read says so (CH-12402) and classes being
+put on the calendar say so in the header (CH-12403).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -201,7 +201,7 @@ it has no connection-lost state of its own.
 | 120703 | — | `WRITES_REFUSE_OFFLINE` | Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device. |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
@@ -209,11 +209,13 @@ Status: DEFINED
 
 Who may open the page: a player with `golf_clubhouse_ui` on for the player role
 (the shell's gate, and `page.tsx`); anyone else gets the Fairway page (120801).
-A player on no team gets the no-team page (CH-12305), because a class is saved
-with the team whose calendar it goes on. A player's reads and writes are their
-own (120802), and the calendar actions check the caller again (120803, reserved:
-read, not run). Nothing on the page is drawn for one role and hidden for
-another: the page has one role.
+Since 2026-11-14 the flag and the Fairway page are gone: `page.tsx` draws the
+page for a player profile with the dashboard role player, and nothing for anyone
+else. A player on no team gets the no-team page (CH-12305), because a class is
+saved with the team whose calendar it goes on. A player's reads and writes are
+their own (120802), and the calendar actions check the caller again (120803,
+reserved: read, not run). Nothing on the page is drawn for one role and hidden
+for another: the page has one role.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -340,9 +342,9 @@ Status: DEFINED
 
 Two motions of its own, both in `classes.css` on the v2 tokens (D-64): a
 hovering class takes the Ledger row tint on desktop and a deeper one on press,
-with no lift (CH-12601; owner Ledger, 2026-10-07), and a scan line sweeps the
-page while a schedule is read, still under reduced motion (CH-12602). Both are
-checked in the preview, not in a test. Every key press, sheet and skeleton fade
+with no lift (CH-12601; owner Ledger, 2026-10-07), and the page is drawn still
+while a schedule is read, with no sweep (CH-12602; MOTION-AND-VISUAL 3.12). Both
+are checked in the preview, not in a test. Every key press, sheet and skeleton fade
 is the shell's.
 
 | Bridge ID | Code | Name | Meaning |
@@ -413,8 +415,8 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
-11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
-11824 CH-1842, 11825 CH-1816, 11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11824 CH-1842, 11825 CH-1816,
+11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
 
 ## 19 — Responsive layout
 

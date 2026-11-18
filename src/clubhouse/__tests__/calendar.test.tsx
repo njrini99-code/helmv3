@@ -85,10 +85,11 @@ import { monthCells, type ChCalEvent, type ChCalType } from '../screens/calendar
 import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarSkeleton } from '../screens/calendar/CalendarSkeleton';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
-import { ToastProvider } from '../ui/Toast';
+import { CH_TOAST_ACTION_MS, ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR, PREVIEW_CALENDAR_PLAYER } from '../preview/fixtures-calendar';
 import { clashesAt, snapQuarter } from '../screens/calendar/views';
 import './dialog-polyfill';
+import { accessibleName } from './label-in-name';
 
 /** A numbered element that is actually on screen: a closed <dialog> doesn't count. */
 const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((el) => el.tagName !== 'DIALOG' || el.hasAttribute('open')) ?? null;
@@ -146,25 +147,25 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     a.updateGolfEvent.mockResolvedValue({ success: true });
     wrap(cal());
     const travel = block(/^Travel briefing/);
-    expect(travel.getAttribute('aria-label')).toMatch(/Alt and the arrow keys move it; add Shift to change its length/);
+    expect(accessibleName(travel)).toMatch(/Alt and the arrow keys move it; add Shift to change its length/);
     fireEvent.keyDown(travel, { key: 'ArrowDown', altKey: true });
     expect(screen.getByText('Moved to 1:45 PM')).toBeTruthy();
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:45 – 2:30 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:45 – 2:30 PM/);
     expect(a.updateGolfEvent).not.toHaveBeenCalled();
     await act(async () => {
-      vi.advanceTimersByTime(4000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
     });
     expect(a.updateGolfEvent).toHaveBeenCalledWith('e9', expect.objectContaining({ startDate: '2026-10-15', startTime: '13:45', endTime: '14:30', allDay: false }));
     // A failed write puts it back and says so.
     a.updateGolfEvent.mockResolvedValue({ success: false, error: 'nope' });
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowUp', altKey: true });
     await act(async () => {
-      vi.advanceTimersByTime(4000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
     });
     vi.useRealTimers();
     await expectCode('CH-6015', /Couldn’t move Travel briefing/);
     // Back on the server's copy (this test's refresh is a stub, so that is still the loaded 1:30).
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:30 – 2:15 PM/);
   });
 
   it('Undo inside the window puts it back and writes nothing', async () => {
@@ -172,7 +173,7 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     wrap(cal());
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:30 – 2:15 PM/);
     await act(async () => {
       vi.advanceTimersByTime(5000);
     });
@@ -188,14 +189,14 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
     fireEvent.pointerOver(moveToast(), { pointerType: 'mouse' });
     await act(async () => {
-      vi.advanceTimersByTime(10_000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS + 2000);
     });
     // Undo is still on screen, so nothing is written.
     expect(screen.getByRole('button', { name: 'Undo' })).toBeTruthy();
     expect(a.updateGolfEvent).not.toHaveBeenCalled();
     fireEvent.pointerOut(moveToast(), { pointerType: 'mouse', relatedTarget: document.body });
     await act(async () => {
-      vi.advanceTimersByTime(3000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS - 1000);
     });
     expect(a.updateGolfEvent).not.toHaveBeenCalled();
     await act(async () => {
@@ -210,16 +211,16 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
   });
 
-  it('Undo after the hover outlasts 4 seconds still puts it back, and nothing is ever written', async () => {
+  it('Undo after the hover outlasts the 10-second window still puts it back, and nothing is ever written', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const view = wrap(cal());
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
     fireEvent.pointerOver(moveToast(), { pointerType: 'mouse' });
     await act(async () => {
-      vi.advanceTimersByTime(6000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS + 2000);
     });
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:30 – 2:15 PM/);
     await act(async () => {
       vi.advanceTimersByTime(10_000);
     });
@@ -238,7 +239,7 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     fireEvent.click(undo);
     fireEvent.click(undo);
     expect(screen.queryByText('Already saved. Drag it back to undo.')).toBeNull();
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:30 – 2:15 PM/);
     // Still fading out, the card is inert: the second press reached a toast that takes no input.
     expect(undo.closest('.ch-toast')!.hasAttribute('inert')).toBe(true);
     await act(async () => {
@@ -259,14 +260,14 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
     expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(screen.getByText('Already saved. Drag it back to undo.')).toBeTruthy();
-    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:45 – 2:30 PM/);
+    expect(accessibleName(block(/^Travel briefing/))).toMatch(/1:45 – 2:30 PM/);
     // P-4 6.3: further moves of the same event inside the window coalesce into one held write, from the last place.
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
     fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
     expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Moved to 2:15 PM')).toBeTruthy();
     await act(async () => {
-      vi.advanceTimersByTime(4000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
     });
     expect(a.updateGolfEvent).toHaveBeenCalledTimes(2);
     expect(a.updateGolfEvent).toHaveBeenLastCalledWith('e9', expect.objectContaining({ startTime: '14:15' }));
@@ -301,7 +302,7 @@ describe('Calendar · a held move comes back (P-4)', () => {
   const series = () => block(/^Short-game block/);
   const expire = () =>
     act(async () => {
-      vi.advanceTimersByTime(4000);
+      vi.advanceTimersByTime(CH_TOAST_ACTION_MS);
     });
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
@@ -1140,7 +1141,7 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(hapticSpy).not.toHaveBeenCalled();
   });
 
-  it('row 81: the coach’s More on the phone opens desktop’s items without Print, and Add busy time opens its sheet; a player has none', async () => {
+  it('row 81: the coach’s More on the phone opens desktop’s items without Print, and Add busy time opens its sheet; a player’s holds only their practice hours (F-03)', async () => {
     const user = userEvent.setup();
     wrap(cal());
     await user.click(screen.getByRole('button', { name: 'More' }));
@@ -1149,11 +1150,14 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(items).toContain('Add to calendar app');
     expect(items).toContain('Add busy time');
     expect(items.some((t) => /^Print/.test(t ?? ''))).toBe(false);
+    expect(items[0]).toBe('Practice hours');
     await user.click(within(menu).getByRole('menuitem', { name: /Add busy time/ }));
     expect(await screen.findByRole('heading', { name: 'Add busy time' })).toBeTruthy();
     cleanup();
     wrap(cal({ role: 'player', viewerPlayerId: 'jonah' }));
-    expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    const mine = await screen.findByRole('menu', { name: 'More' });
+    expect(within(mine).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Your practice hours']);
   });
 
   it('B10.4 away from today, a Today key brings the phone back; on today it is not there', async () => {
@@ -1191,7 +1195,7 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
       // The row after the line; it sits in its peek wrapper (P006-C3), which draws no box.
       const after = mid.nextElementSibling!;
       const row = after.matches('.ch-peek-target') ? after.querySelector('button')! : after;
-      expect(row.getAttribute('aria-label')).toMatch(/^Short-game block/);
+      expect(accessibleName(row)).toMatch(/^Short-game block/);
     } finally {
       vi.useRealTimers();
     }
@@ -1824,7 +1828,7 @@ describe('Calendar · the loader', () => {
     expect(JSON.stringify(asked.golf_events![0])).toMatch(/requires_rsvp/);
   });
 
-  it('62101 the loader reads each table once for the whole screen (the events twice: the window, and the coach’s count for CH-6309), in two rounds: the team, then events with classes, busy time and the window’s replies (A-03)', async () => {
+  it('62101 the loader reads each table once for the whole screen (the events twice: the window, and the coach’s count for CH-6309), in three rounds: the team, then events with classes and busy time, then the shown events’ replies by id', async () => {
     const { asked, order } = serve({ ...healthy(), golf_events: { data: [eventRow('e1'), eventRow('e2'), eventRow('e3'), classEventRow('c1', 'k1')] } });
     await load();
     expect(Object.fromEntries(Object.entries(asked).map(([table, calls]) => [table, calls.length]))).toEqual({
@@ -1837,11 +1841,12 @@ describe('Calendar · the loader', () => {
       golf_event_attendance: 1,
     });
     expect(order.slice(0, 3).sort()).toEqual(['golf_team_members', 'golf_team_settings', 'golf_teams']);
-    expect(order.slice(3, 8).sort()).toEqual(['golf_coach_blocked_time', 'golf_event_attendance', 'golf_events', 'golf_events', 'golf_player_classes']);
-    // The window's replies are asked for in one read beside the events, through the event they belong to (the team and
-    // the same window), never one event at a time.
-    expect(asked.golf_event_attendance![0]).toContainEqual(['eq', ['golf_events.team_id', expect.any(String)]]);
-    expect(asked.golf_event_attendance![0]!.some(([m]) => m === 'in')).toBe(false);
+    expect(order.slice(3, 7).sort()).toEqual(['golf_coach_blocked_time', 'golf_events', 'golf_events', 'golf_player_classes']);
+    expect(order.at(-1)).toBe('golf_event_attendance');
+    // The replies are asked for once, by the ids of the events shown (an index read), never one event at a time and never
+    // through a join on the event (golf_events!inner), which walked every team's replies on production (836ms mean).
+    expect(asked.golf_event_attendance![0]).toContainEqual(['in', ['event_id', ['e1', 'e2', 'e3']]]);
+    expect(JSON.stringify(asked.golf_event_attendance![0])).not.toMatch(/golf_events/);
   });
 
   it('the coach’s people carry availability, a player’s never do (it is the coach’s to see, v1)', async () => {
@@ -2161,7 +2166,7 @@ describe('Calendar · what each role is given', () => {
     expect(dialogOpen()).toBe(false);
     await user.keyboard('n');
     expect(dialogOpen()).toBe(false);
-    expect(screen.queryByRole('button', { name: /^People:/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /, choose people$/ })).toBeNull();
     // Wave 7: a player sees their own clashes flagged (Jonah's 1:1 and the short-game block), but has no Overlap panel
     // to move or keep them: no Review here, and no Overlaps item under More (below).
     expect(screen.queryAllByRole('button', { name: /schedule overlap/ }).length).toBeGreaterThan(0);
@@ -2176,14 +2181,14 @@ describe('Calendar · what each role is given', () => {
     // The first menu leaves on a short exit; on a loaded runner it was still in the DOM when the next one opened (CI).
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
     await user.click(screen.getByRole('button', { name: 'More' }));
-    // Printing is not planning: a player prints their week too.
-    expect(menuItems()).toEqual(['Add to calendar app', 'Print week']);
+    // Printing is not planning: a player prints their week too, and reads their own practice hours (F-03).
+    expect(menuItems()).toEqual(['Your practice hours', 'Add to calendar app', 'Print week']);
     player.unmount();
     // The same address, for a coach.
     wrap(cal(), seeded);
     await screen.findByRole('button', { name: 'Publish event' });
     expect(dialogOpen()).toBe(true);
-    for (const name of [/New event/, /^People:/, 'Attendance', 'Edit event', 'Attach']) expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
+    for (const name of [/New event/, /, choose people$/, 'Attendance', 'Edit event', 'Attach']) expect(screen.getAllByRole('button', { name }).length).toBeGreaterThan(0);
     expect(screen.getByText('Responses')).toBeTruthy();
     expect(screen.getAllByRole('button', { name: /schedule overlap/ }).length).toBeGreaterThan(0);
   });
@@ -2317,7 +2322,7 @@ describe('Calendar · moving around', () => {
     expect(screen.queryByRole('heading', { level: 2, name: 'Travel briefing' })).toBeNull();
     // Typing in a field is typing: the people search takes a T and the week stays where it was.
     await user.keyboard('{ArrowRight}');
-    await user.click(screen.getByRole('button', { name: /^People:/ }));
+    await user.click(screen.getByRole('button', { name: /, choose people$/ }));
     await user.type(screen.getByRole('searchbox', { name: 'Find a player' }), 'nt');
     expect((screen.getByRole('searchbox', { name: 'Find a player' }) as HTMLInputElement).value).toBe('nt');
     expect(title()).toBe('Oct 18 – 24');
@@ -2531,10 +2536,17 @@ describe('Calendar · a cancelled event can be restored or deleted, as in produc
 });
 
 describe('Calendar · this file', () => {
-  it('62401 every catalog row of kinds 0 to 5 that is not marked preview is named by a test here, and so is every Bridge ID this page proves', () => {
+  it('62401 every catalog row of kinds 0 to 5 that is not marked preview is named by a test here (or in the practice hours tests), and so is every Bridge ID this page proves', () => {
     const root = process.cwd();
     const read = (file: string) => readFileSync(join(root, file), 'utf8');
-    const own = read('src/clubhouse/__tests__/calendar.test.tsx');
+    // Practice hours (F-03) is proved in its own files, under the page's own folder and its server action.
+    const own = [
+      'src/clubhouse/__tests__/calendar.test.tsx',
+      'src/clubhouse/__tests__/practice-hours.test.tsx',
+      'src/app/golf/actions/__tests__/hours.test.ts',
+    ]
+      .map(read)
+      .join('\n');
     const rows = [...read('docs/clubhouse/catalog/calendar.md').matchAll(/^\|\s*(CH-6[0-5]\d\d)\s*\|.*$/gm)]
       .filter((m) => !/\|\s*preview\s*\|\s*$/.test(m[0].trim()) && !/retired/i.test(m[0]))
       .map((m) => m[1]!);
@@ -2857,5 +2869,36 @@ describe('Calendar · Publish shows the event at once (F-0029)', () => {
     expect(screen.queryAllByRole('button', { name: /^Short game/ })).toHaveLength(0);
     expect(document.querySelector('dialog[open]')).not.toBeNull();
     expect((screen.getByRole('textbox', { name: 'Event title' }) as HTMLInputElement).value).toBe('Short game');
+  });
+});
+
+describe('Calendar · a practice whose plan didn’t load (GAP-S-28)', () => {
+  beforeEach(freezeClock);
+  afterEach(() => vi.useRealTimers());
+
+  it('CH-6290 the loader flags a failed plan read on each practice; a missing plan table only leaves the row out', async () => {
+    serve({ ...healthy(), golf_practice_plans: { error: { code: 'XX000', message: 'boom' } } });
+    let d = await load();
+    expect(d.plansError).toBe(true);
+    const practices = d.events.filter((e) => e.type === 'practice');
+    expect(practices.length).toBeGreaterThan(0);
+    expect(practices.every((e) => e.planFailed === true && e.plan === undefined)).toBe(true);
+    serve({ ...healthy(), golf_practice_plan_versions: { error: { code: 'XX000', message: 'boom' } } });
+    expect((await load(asPlayer('p2'))).plansError).toBe(true);
+    serve({ ...healthy(), golf_practice_plans: { error: { code: 'PGRST205', message: 'Could not find the table' } } });
+    d = await load();
+    expect(d.plansError).toBe(false);
+    expect(d.events.some((e) => e.planFailed || e.plan)).toBe(false);
+    serve(healthy());
+    d = await load();
+    expect(d.plansError).toBe(false);
+    expect(d.events.find((e) => e.type === 'practice')?.plan).toEqual({ state: 'none' });
+  });
+
+  it('CH-6290 the event sheet says the plan didn’t load where the plan shows, with Try again, never Build plan', async () => {
+    wrap(cal({ plansError: true, events: PREVIEW_CALENDAR.events.map((e) => (e.id === 'e3' ? { ...e, plan: undefined, planFailed: true as const } : e)) }), { initialEvent: 'e3' });
+    await expectCode('CH-6290', /The practice plan didn’t load/);
+    expect(within(code('CH-6290') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Build plan' })).toBeNull();
   });
 });

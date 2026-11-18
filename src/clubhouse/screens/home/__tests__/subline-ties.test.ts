@@ -17,4 +17,11 @@ describe('the subline when several players are quiet', () => {
     const rows = [quiet('Cole Avery', 30), quiet('Mason Diaz', 15), quiet('Owen Park', 15)];
     expect(homeSubline(rows, { roundsError: false, nextCompetition: null })).toBe('3 players haven’t posted a round in 15+ days, Cole the longest at 30.');
   });
+
+  // Prod audit 2026-11-15, HOME-P-01: "Mason the longest at 50" while Roster listed four players at 50. Several at the top are
+  // counted, and none of them is named.
+  it('HOME-P-01 several tied at the top: counted, never one of them named', () => {
+    const rows = [quiet('Mason Diaz', 50), quiet('Cole Avery', 50), quiet('Owen Park', 50), quiet('Ethan Shaw', 50), quiet('Jackson Lee', 30), quiet('Dylan Ross', 25), quiet('Tyler Ng', 25)];
+    expect(homeSubline(rows, { roundsError: false, nextCompetition: null })).toBe('7 players haven’t posted a round in 25+ days, 4 of them for 50.');
+  });
 });

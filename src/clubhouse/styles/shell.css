@@ -15,10 +15,12 @@
   min-width: 0;
   margin: 8px 8px 8px 0;
   overflow: auto;
+  /* The page never shifts sideways when a scrollbar comes or goes (SYS-09). */
+  scrollbar-gutter: stable;
   overscroll-behavior: contain;
   border-radius: var(--ch-radius-lg);
-  background: var(--ch-canvas-wash), var(--ch-bg-page);
-  background-attachment: local, local;
+  background: var(--ch-page-paint);
+  background-attachment: local;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12);
   container-type: inline-size;
 }
@@ -237,7 +239,7 @@
 }
 .ch-nav__section {
   padding: 16px 8px 6px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
 }
 .ch-navitem {
@@ -292,7 +294,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -468,7 +470,7 @@
 /* A crash replaces the shell, so nothing paints the page behind it: on a phone .ch-root is the frame green, and the words sat on it at 1.2:1. */
 .ch-root > .ch-notyet {
   min-height: 100dvh;
-  background: var(--ch-canvas-wash), var(--ch-bg-page);
+  background: var(--ch-page-paint);
 }
 .ch-notyet__dev {
   max-width: 100%;
@@ -604,14 +606,14 @@
 .ch-empty-page__seg i {
   width: 34px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: rgb(28 25 18 / 0.1);
 }
 .ch-empty-page__seg i.is-on {
   background: var(--ch-green-fill-600);
 }
 .ch-empty-page__prog-t {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -711,7 +713,7 @@
 .ch-empty__title {
   max-width: 60ch;
   margin: 0;
-  font: var(--ch-type-title);
+  font: var(--ch-type-headline);
   letter-spacing: -0.012em;
   color: var(--ch-text-primary);
   text-wrap: balance;
@@ -719,7 +721,7 @@
 .ch-empty__body {
   max-width: 56ch;
   margin: 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -784,7 +786,7 @@
 }
 .ch-notice .ch-notice__body {
   margin: 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-notice-body);
   text-wrap: pretty;
 }
@@ -843,44 +845,44 @@
   --ch-notice-body: var(--ch-notice-on-green-body);
 }
 
-/* Skeleton sheen (audit A-13, 2026-10-14): one layer per block, slid by transform, on every width. The desktop used a
-   viewport-fixed 200vw gradient whose background-position animated, which repainted every block on every frame while a
-   page loaded (the phone moved off it 2026-10-12 for the same reason; iOS ignored the fixed attachment anyway). A shade
-   deeper than the first pass (states audit, 2026-10-08): about 1.2:1 on the workspace, with a soft sheen. */
+/* Skeletons (MOTION-AND-VISUAL 3.9, 3.12): static blocks shaped like the content, with no shimmer and no pulse. A shade
+   deeper than the first pass (states audit, 2026-10-08): about 1.2:1 on the workspace.
+   Draw nothing new for the busy delay (3.9, lib/use-busy.ts): a block shows only once the wait has passed, so a load that
+   lands within 150 ms never draws one, while the page's frame (the bar, the title, the strip) is there from the first frame
+   (S4.4). A wait, not motion: it holds under Reduce Motion and Animations off, and it ends in an instant (no fade). A
+   skeleton that useBusy put up has waited already (data-ch-busy="skeleton"), and one chained after the route's own in the
+   same place (data-skel="chained") takes its place with no gap. Page skeletons with blocks of their own take the same
+   animation on them (stats-redesign.css, messages-inbox.css, coachhelm-team.css, coachhelm-file.css). */
+@keyframes ch-busy-wait {
+  from {
+    visibility: hidden;
+  }
+}
 .ch-skel {
   display: block;
   position: relative;
   overflow: hidden;
   background: var(--ch-skel-base);
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
-.ch-skel::before {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, var(--ch-skel-sheen) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: ch-shimmer-x var(--ch-dur-shimmer) linear infinite;
-  content: '';
+:is([data-skel='chained'], [data-ch-busy='skeleton']) .ch-skel {
+  animation: none;
 }
-/* A green feature card in waiting (a hero), on the loaded card's ground and lift, its sweep the pale ink Home's skeleton
-   bars use, so the page doesn't flash pale to green when it lands (F-0060). */
+/* A green feature card in waiting (a hero), on the loaded card's ground and lift, so the page doesn't flash pale to green
+   when it lands (F-0060). */
 .ch-skel.ch-skel--feature {
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-elevation-feature);
 }
-.ch-skel--feature::before {
-  background: linear-gradient(100deg, transparent 30%, rgb(244 241 232 / 0.12) 50%, transparent 70%);
-}
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* A block in waiting (a fluid Skeleton from 56px tall, or shape="block") is drawn in the Ledger as the Ledger draws
      what it stands for: a rule along its top and two lines of type under it, not a filled card. It keeps its box, so
-     nothing moves when the page lands; a real object that loads filled asks for shape="solid". Its two lines breathe
-     (opacity, on the compositor) rather than sweep: their pseudo-elements are the lines, so there is no layer to slide. */
+     nothing moves when the page lands; a real object that loads filled asks for shape="solid". The lines are still. */
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block {
     position: relative;
     overflow: visible;
     border-radius: 0 !important;
     background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 0 / 100% 1px no-repeat;
-    animation: none;
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
@@ -889,8 +891,6 @@
     left: 0;
     border-radius: var(--ch-radius-sm);
     background: var(--ch-skel-base);
-    transform: none;
-    animation: ch-skel-breathe var(--ch-dur-shimmer) ease-in-out infinite;
     content: '';
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before {
@@ -935,41 +935,6 @@
   gap: 8px;
   min-width: 0;
 }
-/* Animations off in Settings: skeletons hold still (a Ledger block's lines too), from the first frame (ThemeScript
-   marks <html> before hydration). */
-[data-motion='off'] .ch-root .ch-skel::before,
-.ch-root[data-motion='off'] .ch-skel::before {
-  animation: none;
-  display: none;
-}
-[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::before,
-[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::after,
-.ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::before,
-.ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::after {
-  display: block;
-  animation: none;
-}
-@keyframes ch-shimmer-x {
-  to {
-    transform: translateX(100%);
-  }
-}
-@keyframes ch-skel-breathe {
-  50% {
-    opacity: 0.55;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-skel,
-  .ch-skel::before,
-  .ch-skel--block::before,
-  .ch-skel--block::after {
-    animation: none !important;
-  }
-  .ch-skel:not(.ch-skel--block)::before {
-    display: none;
-  }
-}
 .ch-toast__txt {
   display: flex;
   flex-direction: column;
@@ -984,48 +949,11 @@
   color: #f0b7a8;
 }
 
-/* The phone account sheet (shell/AccountSheet.tsx, once the More sheet) */
-.ch-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: var(--ch-z-overlay);
-  background: rgb(20 18 12 / 0.34);
+/* The phone account sheet (shell/AccountSheet.tsx, once the More sheet): the shared Modal (OVL-12); its rows keep their
+   16px gutters. */
+.ch-acct .ch-modal__body {
+  padding: 4px 16px 16px;
 }
-.ch-more {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: var(--ch-z-overlay);
-  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
-  border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
-  background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-sheet);
-  touch-action: pan-y;
-  /* A coach with a team list under who they are has the tallest sheet: it scrolls rather than run off a short screen. */
-  max-height: calc(100dvh - env(safe-area-inset-top) - 12px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-/* The grab and the header drag the sheet shut (useSheetDrag); the rest of it scrolls. */
-.ch-more > .ch-grab,
-.ch-more__head {
-  touch-action: none;
-}
-.ch-more > .ch-grab {
-  margin-block: 8px 4px;
-}
-.ch-more__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 0 12px;
-  font: var(--ch-type-17-strong);
-  letter-spacing: var(--ch-track-17);
-  color: var(--ch-text-primary);
-}
-.ch-more__x,
 .ch-bellp__x {
   position: relative;
   display: grid;
@@ -1040,7 +968,6 @@
   cursor: pointer;
 }
 /* A 44px target around the 32px coin. */
-.ch-more__x::before,
 .ch-bellp__x::before {
   content: '';
   position: absolute;
@@ -1050,7 +977,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
 }
@@ -1072,13 +999,11 @@
 }
 /* As a ledger row (CH-1606): the tint waits a beat, so a drag or a scroll that starts on a row never flashes it. */
 .ch-more__row[data-ch-pressed] {
-  background: var(--ch-bg-hover);
-  transition-delay: var(--ch-dur-press-delay);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-more__row:active {
-    background: var(--ch-bg-hover);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
 }
 .ch-more__ic {
@@ -1149,7 +1074,7 @@ button.ch-more__row[disabled] {
   gap: 12px;
   margin-bottom: 12px;
   padding: 12px 16px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
   color: var(--ch-text-tertiary);
@@ -1178,7 +1103,7 @@ button.ch-more__row[disabled] {
 }
 .ch-more__cap {
   padding: 0 4px 6px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
 .ch-more__row[aria-current='true'] {
@@ -1200,7 +1125,6 @@ button.ch-more__row[disabled] {
     min-height: 100dvh;
     /* The phone's own chassis (top bar, strip, pushed screens) owns its safe areas; the desktop frame's padding is off. */
     padding: 0;
-    background: var(--ch-bg-page);
   }
   .ch-sidebar {
     display: none;
@@ -1230,9 +1154,9 @@ button.ch-more__row[disabled] {
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font: var(--ch-type-bar-title);
+    font: var(--ch-type-headline);
     line-height: var(--ch-lead-tight);
-    letter-spacing: var(--ch-track-bar-title);
+    letter-spacing: 0;
     color: var(--ch-text-primary);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1497,9 +1421,9 @@ button.ch-more__row[disabled] {
     /* The bar title, pushed or at a tab's root: 17/600, as iOS draws both (B1; it was 16 pushed). Its own tracking, not
        the app's global h1 rule: the shell's stand-in draws the title as plain text (CH-1402), and the two must match to
        the pixel. */
-    font: var(--ch-type-bar-title);
+    font: var(--ch-type-headline);
     line-height: var(--ch-lead-tight);
-    letter-spacing: var(--ch-track-bar-title);
+    letter-spacing: 0;
     color: var(--ch-text-primary);
     white-space: nowrap;
   }
@@ -1583,7 +1507,8 @@ button.ch-more__row[disabled] {
     z-index: var(--ch-z-dock);
     display: flex;
     flex-direction: column;
-    background: var(--ch-grouped-bg);
+    /* The same lit paper over the linen as the page it was pushed from (DESIGN_LANGUAGE law 2). */
+    background: var(--ch-page-paint);
     outline: none;
     overscroll-behavior: contain;
   }
@@ -1643,7 +1568,7 @@ button.ch-more__row[disabled] {
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-fill-600);
   box-shadow: 0 0 0 2px var(--ch-phone-bar-bg, var(--ch-bg-page));
   font: var(--ch-type-12-strong);
@@ -1734,7 +1659,7 @@ button.ch-more__row[disabled] {
 .ch-bellp__day {
   /* .ch-popover__label */
   padding: 8px 8px 6px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -1823,7 +1748,7 @@ button.ch-more__row[disabled] {
   max-width: 100%;
   overflow: hidden;
   padding: 1px 8px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-chip-flat-bg);
   color: var(--ch-text-secondary);
   font: var(--ch-type-12-strong);
@@ -1884,7 +1809,7 @@ button.ch-more__row[disabled] {
   padding: 8px 16px;
   border-bottom: 1px solid rgb(148 96 14 / 0.18);
   background: var(--ch-warning-100);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-warning-600);
   text-align: center;
 }
@@ -1909,12 +1834,13 @@ button.ch-more__row[disabled] {
 }
 
 /* -- Page crossfade (RouteFrame's <ViewTransition>, owner 2026-10-01) ------------------------------------------------
-   The view-transition pseudo-elements hang off :root, outside [data-ui='clubhouse'], so their timings are tokens set on <html>
-   (tokens.css, --ch-dur-vt-*). The old and new pages crossfade together, in opacity
-   only: no slide, no blur, nothing that costs a phone a frame. The shell (root) is anchored: its new snapshot shows at
-   once and the old one is hidden, so the sidebar, top bar and tab bar never fade. Taps pass through to the live page
-   while it runs. Reduced motion and Animations off never start one (RouteFrame renders without it); the media query
-   below is the backstop. Every rule is scoped to a document showing Clubhouse, so Fairway pages are untouched. */
+   Only a desktop page change and a phone page change under Reduce Motion crossfade (production audit 2026-11-15, S4.8):
+   with motion on, a section switch and every phone navigation start no view transition at all (RouteFrame), so nothing
+   full-page is snapshotted on a tap. The view-transition pseudo-elements hang off :root, outside [data-ui='clubhouse'],
+   so their timings are tokens set on <html> (tokens.css, --ch-dur-vt-*). The old and new pages crossfade together, in
+   opacity only. The shell (root) is anchored: its new snapshot shows at once and the old one is hidden, so the sidebar,
+   top bar and tab bar never fade. Taps pass through to the live page while it runs. Animations off never starts one
+   (RouteFrame renders without it). Every rule is scoped to a document showing Clubhouse, so Fairway pages are untouched. */
 @keyframes ch-vt-out {
   to {
     opacity: 0;
@@ -1941,7 +1867,7 @@ html:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
   animation: var(--ch-dur-vt-out) var(--ch-ease-vt-out) both ch-vt-out;
 }
 html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-  animation: var(--ch-dur-vt-in) var(--ch-ease-vt-in) var(--ch-dur-vt-gap) both ch-vt-in;
+  animation: var(--ch-dur-vt-in) var(--ch-ease-vt-in) both ch-vt-in;
 }
 /* The bars never fade or move during a page change (native-feel audit 2026-10-08, P0-3). As part of root they sat under
    the page's group, so the fading old page and the new page's skeleton drew over the tab bar. Named, each is its own
@@ -1969,92 +1895,53 @@ html:has([data-ui='clubhouse'])::view-transition-old(ch-strip) {
 html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
   animation-delay: var(--ch-dur-vt-hold);
 }
-/* A section switch (the tab bar, a sidebar item; lib/nav-motion.ts sets data-ch-tab; motion pass 2026-10-22, mot-03)
-   swaps at once, as a tab bar and a sidebar do on iOS and macOS: the new page is there in the first frame and the old
-   one is gone. The fade-through's dip, the old page out before the new one in, read as a blank beat on every section
-   change. Onto a route skeleton the old page still stays up through the hold and the skeleton's own delay, then goes in
-   one step as the skeleton fades in; a page that arrives sooner takes the hold off, and the old page goes with it. */
-html[data-ch-tab]:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-  animation: none;
-}
-html[data-ch-tab]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-  display: none;
-}
-html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-  display: block;
-  animation: calc(var(--ch-dur-vt-hold) + var(--ch-dur-vt-out)) step-end both ch-vt-out;
-}
-/* A drill-in pushes and Back pops (P1-1, P1-2; lib/nav-motion.ts sets data-ch-nav), as a pushed phone screen does
-   (PhoneScreen): the new page slides in from the right edge on the smooth spring while the one under it draws back by
-   a parallax share, and Back plays it in reverse with the leaving page on top. Transform on the snapshot, no layout and
-   no filter. Phone only: desktop keeps the crossfade. */
-@keyframes ch-vt-pop-in {
-  from {
-    transform: translateX(var(--ch-vt-parallax));
-  }
-}
-@keyframes ch-vt-pop-out {
-  to {
-    transform: translateX(100%);
-  }
-}
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  /* The pages are opaque while they slide, so neither shows through the other. */
-  html[data-ch-nav] [data-ui='clubhouse'] .ch-frame-route {
-    background: var(--ch-bg-page);
-  }
-  /* C1: a drill-in is drawn by the live page sliding over a copy of the one it left (lib/nav-motion.ts playPush), so a
-     finger can take it mid-flight; the view transition swaps at once, so the two never both slide. */
-  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-old(ch-page),
-  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-    animation: none;
-  }
-  html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-    z-index: 1;
-    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-pop-out;
-  }
-  html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-pop-in;
-  }
-  /* Back's pop (lib/nav-motion.ts playPop): the copy of the leaving page, over the page and under the bars. */
+  /* Back's pop from the browser's own toolbar (lib/nav-motion.ts playPop, the popstate fallback): the copy of the leaving
+     page, over the page and under the bars. A Back tap and the edge swipe slide the live page instead. */
   .ch-root.ch-frame-popping {
     z-index: calc(var(--ch-z-sticky) - 1);
     min-height: 0;
     overflow: hidden;
-    background: var(--ch-bg-page);
+    background: var(--ch-page-paint);
     pointer-events: none;
+    will-change: transform;
   }
-  /* C1: the copy of the page beneath a pushed one (lib/nav-motion.ts unders): below the page, which slides over it, and
-     under the bars. Inert; only drawn while a push plays or a finger drags the page back. */
+  /* The copy of the page beneath a pushed one (lib/nav-motion.ts unders, S4.1): below the page, which slides over it, and
+     under the bars. Inert, and in the document only while a push plays or a finger or Back takes the page off it, so it
+     is promoted for exactly that long. */
   .ch-root.ch-frame-under {
     z-index: calc(var(--ch-z-sticky) - 2);
     min-height: 0;
     overflow: hidden;
-    background: var(--ch-bg-page);
+    background: var(--ch-page-paint);
     pointer-events: none;
+    will-change: transform;
   }
-  /* The page moving over that copy, by the push or under a finger: opaque, and above it. */
+  /* The page moving over that copy, by the push, a Back or a finger: opaque, above it, promoted while it moves, and
+     edged by a hairline where it meets the page beneath (S4.1; Apple's edge shadow is unpublished, the hairline is the
+     quiet version). */
   [data-ui='clubhouse'] .ch-frame-route[data-ch-pushing] {
     position: relative;
     z-index: calc(var(--ch-z-sticky) - 1);
-    background: var(--ch-bg-page);
+    background: var(--ch-page-paint);
+    box-shadow: var(--ch-push-edge);
+    will-change: transform;
   }
 }
-/* Reduce Motion (owner decision 2, 2026-10-24, OQ-15): a page change crossfades, the old page out and the new one in
-   together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades. No push, pop, parallax,
-   dim or hold; the bars stay put and a section switch still swaps at once. Settings › Animations off never starts a
-   transition (RouteFrame renders without one). */
+/* Reduce Motion (owner decision 2, 2026-10-24, OQ-15; MOTION-AND-VISUAL 3.3, 3.11): a page change crossfades, the old
+   page out and the new one in together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades.
+   No push, pop, parallax or dim, and on a phone a section switch fades the same way (lib/nav-motion.ts chNavCrossfades);
+   the bars stay put. Settings › Animations off never starts a transition (RouteFrame renders without one). */
 @media (prefers-reduced-motion: reduce) {
   html:has([data-ui='clubhouse'])::view-transition-group(*),
   html:has([data-ui='clubhouse'])::view-transition-old(*),
   html:has([data-ui='clubhouse'])::view-transition-new(*) {
     animation: none !important;
   }
-  html:not([data-ch-tab], [data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-    z-index: auto;
+  html:not([data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-old(ch-page) {
     animation: var(--ch-dur-vt-fade) var(--ch-ease-vt-out) both ch-vt-out !important;
   }
-  html:not([data-ch-tab], [data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-new(ch-page) {
+  html:not([data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     animation: var(--ch-dur-vt-fade) var(--ch-ease-vt-in) both ch-vt-in !important;
   }
 }
@@ -2072,8 +1959,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 
 /* -- A nav tap before its page arrives (LinkPending) -----------------------------------------------------------------
    The tapped row or tab takes the selected look on the first frame; the hairline at the top of the page only fades in
-   if the wait passes --ch-dur-press, so a prefetched page never flickers it. Reduced motion keeps the bar (the signal matters)
-   without its sweep. */
+   if the wait passes --ch-dur-press, so a prefetched page never flickers it. It stands still: no sweep runs across it
+   (MOTION-AND-VISUAL 3.12: the only loop is the working indicator). */
 .ch-lp {
   display: contents;
 }
@@ -2086,19 +1973,6 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-nav:has(.ch-lp) .ch-navitem[aria-current='page']:not(:has(.ch-lp)) svg {
   color: inherit;
 }
-@keyframes ch-lp-show {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes ch-lp-sweep {
-  from {
-    transform: translateX(-60%) scaleX(0.4);
-  }
-  to {
-    transform: translateX(100%) scaleX(0.4);
-  }
-}
 .ch-lp__bar {
   position: fixed;
   /* Below the clock and island in the home-screen app (MOB-SHELL-13). */
@@ -2107,26 +1981,17 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   height: 2px;
   overflow: hidden;
   pointer-events: none;
-  animation: ch-lp-show var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-press) backwards;
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-out) var(--ch-dur-press) backwards;
 }
 .ch-lp__bar::after {
   content: '';
   position: absolute;
   inset: 0;
   background: var(--ch-green-600, currentColor);
-  transform-origin: left center;
-  animation: ch-lp-sweep var(--ch-dur-sweep) var(--ch-ease-io) var(--ch-dur-press) infinite;
+  opacity: 0.6;
 }
-[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar,
-[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar::after {
+[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar {
   animation: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-lp__bar::after {
-    animation: none !important;
-    transform: none;
-    opacity: 0.6;
-  }
 }
 
 /* The navigation glass, with an opaque fallback (owner 2026-10-01, audit F04): where backdrop-filter is missing, or the
@@ -2153,15 +2018,17 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   backdrop-filter: none;
 }
 @media (min-width: 821px) and (prefers-reduced-transparency: reduce) and ((min-height: 501px) or (pointer: fine)) {
-  /* :root, to beat the desktop glass rule below it in the file. */
-  :root .ch-topbar {
+  /* :root, to beat the desktop glass rule below it in the file, and its clear bar at rest. */
+  :root .ch-topbar,
+  :root .ch-topbar:not([data-scrolled]) {
     background: var(--ch-workspace);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  :root[data-reduce-transparency] .ch-topbar {
+  :root[data-reduce-transparency] .ch-topbar,
+  :root[data-reduce-transparency] .ch-topbar:not([data-scrolled]) {
     background: var(--ch-workspace);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -2254,8 +2121,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   /* P001-D5: not tracked (letterspaced mixed case read as a mistake); colour and the double rule carry the hierarchy. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] :is(.ch-h-head__date, .ch-hl-role, .ch-hero__eyebrow) {
-    font: var(--ch-type-eyebrow);
-    letter-spacing: var(--ch-track-eyebrow);
+    font: var(--ch-type-footnote);
+    letter-spacing: 0;
     color: var(--ch-ledger-eyebrow);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] p {
@@ -2290,19 +2157,14 @@ html[data-ch-ua-pop] .ch-pscreen::after {
    section headings take the head's heavy sans in ink. A real object (the scorecard, a well, a form field, a
    dialog) keeps its own material. Phone keeps its approved boards. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  [data-ui='clubhouse'] main[data-canopy] {
-    --ch-type-serif-l: 600 34px/1.1 var(--ch-font-sans);
-    --ch-type-serif-m: 600 22px/1.15 var(--ch-font-sans);
-    --ch-type-serif-s: 600 20px/1.2 var(--ch-font-sans);
-  }
   /* Only a default for a heading that sets no tracking of its own: at no weight, so a heading's role tracking (its
      --ch-track-<n> beside its --ch-type-<n>) wins. It was a (0,2,2) -0.022em that overrode every role (visual pass
      2026-10-28, rubric §4.5). */
   :where([data-ui='clubhouse'] main[data-canopy]) :where(h2) {
-    letter-spacing: var(--ch-track-section);
+    letter-spacing: var(--ch-track-title);
   }
   :where([data-ui='clubhouse'] main[data-canopy]) :where(h3) {
-    letter-spacing: var(--ch-track-card-title);
+    letter-spacing: 0;
   }
   /* A section's title is near-black, as the page's title is (owner, 11 Nov 2026): the page's primary ink, which the phone's
      section titles and Qualifiers' already were. It was the forest ink, so a page's sections were green on a desk and ink
@@ -2389,24 +2251,54 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   color: var(--ch-on-green-ink-muted);
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  /* The workspace inset in the frame: the one flat page colour and a fine edge. No light, no paper tint, no green
-     bleed from the sidebar and no mist (DESIGN_LANGUAGE law 2: the time-of-day light stays on the green frame). */
+  /* The ivory workspace inset in the frame (DESIGN_LANGUAGE law 2, Nick 15 Nov 2026: the gradient is back, over the
+     deeper linen): the global light across the canvas top, the paper's temperature, the sidebar's green bleeding a few
+     pixels into the left edge, a soft green mist at the top left, and a fine edge. The Oct 21 layers (d0f467a73). */
   .ch-canvas {
     isolation: isolate;
     border-radius: var(--ch-radius-lg);
-    background: var(--ch-grouped-bg);
+    background:
+      var(--ch-light-canvas) local,
+      linear-gradient(90deg, rgb(11 58 37 / 0.04), rgb(11 58 37 / 0.012) 90px, transparent 200px) local,
+      var(--ch-light-paper),
+      var(--ch-workspace);
     box-shadow: var(--ch-elevation-framed);
   }
-  /* Opaque. The bar was its paper at 88% over the page with the glass blur behind it, and the blur did not hide what
-     scrolled under: "Today", "Calendar" and a card's figures stayed legible behind the breadcrumb, the search and the
-     bell (design review, 10 Nov 2026, every 1440 still; WebKit). It is now that paper mixed with the page at the same
-     strength, so at rest it is the colour it was, and nothing under it shows; the scroll edge below it (data-scrolled)
-     still says content has gone under. */
+  .ch-canvas::before {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 560px;
+    opacity: 0.5;
+    background:
+      radial-gradient(55% 100% at 0% 0%, rgb(11 58 37 / 0.22), rgb(11 58 37 / 0.07) 50%, transparent 78%),
+      radial-gradient(45% 80% at 100% 100%, rgb(110 140 100 / 0.18), transparent 75%);
+    -webkit-mask-image: linear-gradient(180deg, black 60%, transparent);
+    mask-image: linear-gradient(180deg, black 60%, transparent);
+    content: '';
+    pointer-events: none;
+  }
+  /* Opaque once anything is under it. The bar was its paper at 88% over the page with the glass blur behind it, and the
+     blur did not hide what scrolled under: "Today", "Calendar" and a card's figures stayed legible behind the breadcrumb,
+     the search and the bell (design review, 10 Nov 2026, every 1440 still; WebKit). Once the canvas has scrolled under it
+     (data-scrolled) it is that paper mixed with the page at the same strength, so nothing under it shows, and the scroll
+     edge below it says content has gone under. At rest nothing is under it, so it is clear: the canvas's ivory light and
+     the green mist in its top left read through it, as on the desk before the Nov 11 release train (Nick, 15 Nov 2026:
+     "the green upper left corner and the ivory"). Reduce Transparency keeps the solid bar (below). */
   .ch-topbar {
     border-bottom-color: rgb(110 98 62 / 0.08);
     background: color-mix(in srgb, var(--ch-topbar-paper) 88%, var(--ch-grouped-bg));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
+  }
+  .ch-topbar:not([data-scrolled]) {
+    background: transparent;
+  }
+  [data-ui='clubhouse'][data-motion='off'] .ch-topbar {
+    transition: none;
   }
 }
 
@@ -2423,14 +2315,14 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   grid-column: 1;
 }
 .ch-hero__eyebrow {
-  font: var(--ch-type-eyebrow);
+  font: var(--ch-type-footnote);
   line-height: 1;
   color: var(--ch-text-tertiary);
 }
 .ch-hero__title {
   margin: 2px 0;
-  font: var(--ch-type-hero);
-  letter-spacing: var(--ch-track-hero);
+  font: var(--ch-type-large-title);
+  letter-spacing: var(--ch-track-large-title);
   color: var(--ch-text-primary);
 }
 .ch-hero__line {
@@ -2494,19 +2386,27 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-nav--plate .ch-navitem svg {
   transition: color var(--ch-dur-base) var(--ch-ease);
 }
+/* The hand-over itself is one frame: the row's plate goes and this one is there, with no crossfade between them, which
+   read as a dim current row on page load. NavPlate drops the attribute a frame later. */
+.ch-nav[data-ch-plate-first] .ch-nav__plate,
+.ch-nav[data-ch-plate-first] .ch-navitem,
+.ch-nav[data-ch-plate-first] .ch-navitem svg {
+  transition: none;
+}
 
 /* The phone chassis (owner, 2026-10-08: the Coach Home "Mobile clubhouse pass" board, carried to every phone screen):
    the bar under the status bar is the frame's green, its type ivory, and the page below is the parchment sheet, its
    top corners rounded into the green the way the board's sheet meets its chassis. Pushed screens' bars follow. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  [data-ui='clubhouse'] {
-    --ch-phone-bar-bg: var(--ch-frame);
-  }
-  /* The page is one flat colour (DESIGN_LANGUAGE law 2). The app behind the canvas is the same, so a short page (an
-     empty roster, a failed load) does not end in a band of another colour. */
+  /* The app behind the canvas is the same paper over the linen, so a short page (an empty roster, a failed load) does
+     not end in a band of another colour (DESIGN_LANGUAGE law 2, the Oct 21 layers of d0f467a73). */
   [data-ui='clubhouse'] .ch-app,
   [data-ui='clubhouse'] .ch-canvas {
-    background: var(--ch-grouped-bg);
+    background: var(--ch-light-paper), var(--ch-workspace);
+  }
+  /* The light falls across the top of the sheet, under the chassis (P001-A1). */
+  [data-ui='clubhouse'] .ch-canvas {
+    background: var(--ch-page-paint);
   }
   [data-ui='clubhouse'] .ch-topbar {
     border-bottom: 0;
@@ -2519,19 +2419,21 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     border-bottom: 0;
   }
   /* The sheet's lip: two green corner pieces under the bar, so the parchment below reads as a sheet with rounded top
-     corners set into the green; the middle is open, so content scrolls up under the bar as before. */
+     corners set into the green; the middle is open, so content scrolls up under the bar as before. 20px, the sheet radius
+     (MOTION-AND-VISUAL 4.1 and 4.5, which keep the lip the audit's CHROME-P-09 asked to drop). */
   [data-ui='clubhouse'] .ch-topbar::after,
   [data-ui='clubhouse'] .ch-pbar::after {
+    --ch-lip: var(--ch-radius-xl);
     position: absolute;
     right: 0;
-    bottom: -16px;
+    bottom: calc(-1 * var(--ch-lip));
     left: 0;
-    height: 16px;
+    height: var(--ch-lip);
     background: var(--ch-frame);
-    -webkit-mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
-    mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
+    -webkit-mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
+    mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
     content: '';
     pointer-events: none;
   }
@@ -2606,16 +2508,17 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     visibility: visible;
   }
   .ch-ptr::after {
+    --ch-lip: var(--ch-radius-xl);
     position: absolute;
     right: 0;
-    bottom: -16px;
+    bottom: calc(-1 * var(--ch-lip));
     left: 0;
-    height: 16px;
+    height: var(--ch-lip);
     background: inherit;
-    -webkit-mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
-    mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
+    -webkit-mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
+    mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
     content: '';
   }
   /* UIActivityIndicatorView's eight spokes, in the bar's ivory: they come in one by one as the sheet comes down (set
@@ -2634,7 +2537,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     left: 11.75px;
     width: 2.5px;
     height: 7px;
-    border-radius: var(--ch-radius-mark);
+    border-radius: var(--ch-radius-full);
     background: var(--ch-on-green-ink);
     opacity: 0;
     transform-origin: 1.25px 13px;
@@ -2661,7 +2564,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     rotate: 315deg;
   }
   .ch-ptr[data-state='spin'] .ch-ptr__spin {
-    animation: ch-ptr-turn calc(var(--ch-dur-base) * 4) steps(8) infinite;
+    /* The busy ring's turn (motion.css's kept ch-spinner-turn, 3.12), one turn per working beat, in eight steps. */
+    animation: ch-spinner-turn var(--ch-dur-typing) steps(8) infinite;
   }
   .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(1) {
     opacity: 1;
@@ -2686,11 +2590,6 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(2) {
     opacity: 0.23;
-  }
-}
-@keyframes ch-ptr-turn {
-  to {
-    rotate: 360deg;
   }
 }
 
@@ -2725,9 +2624,13 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   html[data-fw-theme='dark'] .ch-canvas {
     box-shadow: var(--ch-elevation-framed), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   }
-  /* Opaque at night too (see the light bar above): the workspace over the page, nothing let through. */
+  /* Opaque at night too once anything is under it (see the light bar above): the workspace over the page, nothing let
+     through; clear at rest, over the canvas. */
   html[data-fw-theme='dark'] .ch-topbar {
     background: color-mix(in srgb, var(--ch-workspace) 88%, var(--ch-grouped-bg));
+  }
+  html[data-fw-theme='dark'] .ch-topbar:not([data-scrolled]) {
+    background: transparent;
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
@@ -2756,13 +2659,10 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
       box-shadow: 0 0 0 1px var(--ch-border-strong);
     }
   }
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
-    background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
-  }
 }
 @media (min-width: 821px) and (prefers-reduced-transparency: reduce) and ((min-height: 501px) or (pointer: fine)) {
-  html[data-fw-theme='dark'] .ch-topbar {
+  html[data-fw-theme='dark'] .ch-topbar,
+  html[data-fw-theme='dark'] .ch-topbar:not([data-scrolled]) {
     background: var(--ch-workspace);
   }
 }
@@ -2776,13 +2676,9 @@ html[data-fw-theme='dark'] .ch-empty-page--danger {
 html[data-fw-theme='dark'] .ch-empty-page__seg i {
   background: rgb(237 231 216 / 0.12);
 }
-:where(html[data-fw-theme='dark']) .ch-skel {
-  background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
-}
 html[data-fw-theme='dark'] .ch-scrim {
   background: rgb(0 0 0 / 0.55);
 }
-html[data-fw-theme='dark'] .ch-more__x,
 html[data-fw-theme='dark'] .ch-bellp__x {
   background: rgb(237 231 216 / 0.08);
 }
@@ -2800,10 +2696,6 @@ html[data-fw-theme='dark'] .ch-offline {
   border-bottom-color: rgb(227 169 79 / 0.25);
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  /* The bar under the status bar is the frame's green at night too, so it meets the sheet's lip (drawn in the frame). */
-  html[data-fw-theme='dark'] body [data-ui='clubhouse'] {
-    --ch-phone-bar-bg: var(--ch-frame);
-  }
   html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-ptr {
     background: var(--ch-frame);
   }
@@ -2880,7 +2772,7 @@ html[data-fw-theme='dark'] .ch-offline {
     gap: 4px;
     min-height: 48px;
     padding: 6px 6px 6px 6px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-sheet-bg);
     color: var(--ch-text-primary);
     box-shadow: var(--ch-elevation-raised), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle), var(--ch-highlight);
@@ -2944,13 +2836,13 @@ html[data-fw-theme='dark'] .ch-offline {
     min-width: 0;
   }
   .ch-resume__t b {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-label);
     color: var(--ch-text-tertiary);
   }
   .ch-resume__m {
     overflow: hidden;
-    font: var(--ch-type-title);
+    font: var(--ch-type-headline);
     color: var(--ch-forest-800);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2974,163 +2866,14 @@ html[data-fw-theme='dark'] .ch-offline {
   color: var(--ch-hero-mint-strong);
 }
 
-/* Ask as a sheet (shell/AskSheet.tsx, CH-1840–CH-1842; owner, 2026-10-08): CoachHelm's Ask over any screen. Desktop: a
-   centred sheet. Phone: a bottom sheet with a half and a full detent; the page stays in view above the half one. */
-.ch-asks {
-  box-sizing: border-box;
-  width: min(calc(100% - 32px), 620px);
-  max-width: none;
-  height: auto;
-  max-height: none;
-  padding: 0;
-  overflow: visible;
-  border: 0;
-  background: transparent;
-  color: var(--ch-text-primary);
-}
-.ch-asks::backdrop {
-  background: var(--ch-scrim, rgb(20 20 18 / 0.36));
-  /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
-  opacity: var(--ch-scrim-a, 1);
-  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
-}
-.ch-asks__panel {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  max-height: min(calc(100dvh - 64px), 760px);
-  overflow: hidden;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-overlay), var(--ch-highlight);
-  animation: ch-pop var(--ch-dur-base) var(--ch-ease);
-}
-.ch-asks__head {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 4px;
-  padding: 16px 12px 4px 20px;
-}
-.ch-asks__title {
-  flex: 1;
-  margin: 0;
-  font: var(--ch-type-display-s);
-  color: var(--ch-text-primary);
-}
-.ch-root .ch-asks__title:focus {
-  outline: none;
-}
-.ch-asks .ch-asks__ctx {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  align-self: flex-start;
-  margin: 4px 20px 8px;
-  padding: 4px 8px 4px 8px;
-  border-radius: 999px;
-  background: var(--ch-bg-inset);
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-  font: var(--ch-type-13-medium);
-  line-height: var(--ch-lead-label);
-  color: var(--ch-text-secondary);
-}
-.ch-asks__ctx b {
-  font-weight: 600;
-  color: var(--ch-text-primary);
-}
-.ch-asks__scroll {
-  flex: 1;
-  min-height: 72px;
-  padding: 4px 20px 12px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.ch-asks__hint {
-  margin: 8px 0 0;
-  font: var(--ch-type-body);
-  color: var(--ch-text-secondary);
-}
-.ch-asks__dock {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
-  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
-}
-.ch-asks__open {
-  display: inline-flex;
-  align-items: center;
-  align-self: center;
-  gap: 4px;
-  min-height: 32px;
-  font: var(--ch-type-13-medium);
-  line-height: var(--ch-lead-label);
-  color: var(--ch-green-700);
-  text-decoration: none;
-}
-.ch-asks__drag {
-  display: none;
-}
-/* The sheet has no roster to mention from; the full Ask (Open in CoachHelm) has. */
-.ch-asks .ch-ask-cmp__round[aria-label='Mention a player or stat'] {
-  display: none;
-}
-@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-asks {
-    position: fixed;
-    inset: auto 0 0;
-    width: 100%;
-    height: auto;
-    margin: 0;
-  }
-  .ch-asks__panel {
-    height: 56dvh;
-    max-height: none;
-    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
-    box-shadow: var(--ch-elevation-sheet);
-    /* A bottom sheet on the phone: it rises on the smooth spring as every sheet does, not the desktop dialog's pop. */
-    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
-  }
-  .ch-asks__panel[data-detent='full'] {
-    height: calc(100dvh - env(safe-area-inset-top) - 12px);
-  }
-  .ch-asks__drag {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 100%;
-    height: 22px;
-    padding: 0;
-    border: 0;
-    background: none;
-    touch-action: none;
-  }
-  .ch-asks__head {
-    padding-top: 0;
-  }
-  /* In the app the keyboard does not resize the page (capacitor.config resize: ionic): the sheet sits on top of it, as
-     the shared Modal does, and the full detent shrinks to what is left. */
-  body.keyboard-open .ch-asks {
-    margin-bottom: var(--keyboard-height, 0px);
-  }
-  body.keyboard-open .ch-asks__panel,
-  body.keyboard-open .ch-asks__panel[data-detent='full'] {
-    height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 12px);
-  }
-  body.keyboard-open .ch-asks__dock {
-    padding-bottom: 8px;
-  }
-}
-
 /* Phone large titles (shell/large-title.tsx, owner 2026-10-08: "cardless, native-feeling phone Clubhouse"). The bar's
    section switcher always shows, over a page's large title too, whether the shell draws it (.ch-topbar__ptitle) or the
    page's own bar holds it (.ch-sw in a .ch-pbar__title: Roster, Settings, Qualifiers, Recruiting) (owner, 2026-10-16:
    on Stats the switcher seemed gone while "Team stats" was in view). A pushed page that opens with its own large title does not also
-   show its name in the bar: while the large title is in view the bar's pushed title is hidden, and as it scrolls up
-   under the bar (the bar is marked data-large-title="tucked") it fades in, on opacity and a 3px rise only. The :has()
+   show its name in the bar: the bar's pushed title is hidden at rest and fades in from 36 to 52px of the page's scroll,
+   in opacity only, as the large title goes under the bar (MOTION-AND-VISUAL 3.3; production audit S4.3). Scroll-driven
+   where Safari has a scroll timeline (26 and later), the same fade from shell/large-title.tsx before that; no curve and
+   no script per frame, and the same under Reduce Motion (the person's own scroll drives it). The :has()
    list is CH_LARGE_TITLES and must stay in step with it; it holds from the first paint. The bar's title keeps its
    place in the accessibility tree and stays the focus target for a pushed page. Pages with no large title, the green
    hero's bar and desktop are untouched. The scroll edge: a soft shade under the bar once content has scrolled under
@@ -3170,10 +2913,25 @@ html[data-fw-theme='dark'] .ch-offline {
           .ch-large-title
         ):not(.ch-sr-only, .ch-pscreen *, dialog *)
     )
-    .ch-topbar:not([data-large-title='tucked'])
+    .ch-topbar
     :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title):not(:has(.ch-sw)) {
     opacity: 0;
-    translate: 0 3px;
+    transition: none;
+  }
+  @supports (animation-timeline: scroll()) {
+    [data-ui='clubhouse']:not([data-phone-hero]):has(
+        #ch-canvas
+          :is(
+            .ch-large-title
+          ):not(.ch-sr-only, .ch-pscreen *, dialog *)
+      )
+      .ch-topbar
+      :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title):not(:has(.ch-sw)) {
+      --ch-lt-to: 1;
+      animation: ch-lt-under linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 36px 52px;
+    }
   }
   [data-ui='clubhouse'] .ch-topbar::before {
     position: absolute;
@@ -3283,11 +3041,11 @@ html[data-fw-theme='dark'] .ch-offline {
     pointer-events: none;
   }
   .ch-more__row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-more__row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-more__ic,
@@ -3416,16 +3174,17 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   /* Its own lip, as the bar's (the phone chassis): the parchment meets the green in rounded corners below the strip. */
   .ch-strip::after {
+    --ch-lip: var(--ch-radius-xl);
     position: absolute;
     right: 0;
-    bottom: -16px;
+    bottom: calc(-1 * var(--ch-lip));
     left: 0;
-    height: 16px;
+    height: var(--ch-lip);
     background: inherit;
-    -webkit-mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
-    mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
+    -webkit-mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
+    mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
     content: '';
     pointer-events: none;
   }
@@ -3491,7 +3250,8 @@ html[data-fw-theme='dark'] .ch-offline {
     outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
-  /* The green bar's selected pill: one ivory plate that glides between pills (layoutId, the settle spring). */
+  /* The green bar's selected pill: one ivory plate that glides between pills (lib/slide-plate.ts: 260ms on the iOS curve,
+     translate and width, MOTION-AND-VISUAL 3.3; under Reduce Motion it fades in at its new place). */
   .ch-strip__plate {
     position: absolute;
     inset: 0;
@@ -3610,7 +3370,7 @@ html[data-fw-theme='dark'] .ch-offline {
     touch-action: none;
   }
   .ch-bst__head b {
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     letter-spacing: -0.02em;
   }
@@ -3744,7 +3504,7 @@ html[data-fw-theme='dark'] .ch-offline {
     width: 100%;
     padding: 12px 16px 16px;
     border: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-sheet-bg);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), var(--ch-elevation-glass-card);
     color: var(--ch-text-primary);
@@ -3819,7 +3579,7 @@ html[data-fw-theme='dark'] .ch-offline {
     min-width: 0;
     overflow: hidden;
     padding: 1px 8px;
-    border-radius: var(--ch-radius-xs);
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-chip-flat-bg);
     color: var(--ch-text-secondary);
     font: var(--ch-type-12-strong);
@@ -3858,7 +3618,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-bst-card__more {
     margin-top: 4px;
     color: var(--ch-text-tertiary);
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
   }
   /* What a swipe uncovers behind the card. */
   .ch-bst-clear {
@@ -3868,7 +3628,7 @@ html[data-fw-theme='dark'] .ch-offline {
     align-items: center;
     justify-content: flex-end;
     padding-right: 24px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     color: var(--ch-champagne-300);
     font: var(--ch-type-14-strong);
     pointer-events: none;
@@ -3877,7 +3637,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-bst-shell {
     position: absolute;
     inset: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: color-mix(in oklab, var(--ch-sheet-bg) 74%, var(--ch-frame));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), var(--ch-elevation-glass-edge);
     transform-origin: 50% 100%;
@@ -3931,7 +3691,7 @@ html[data-fw-theme='dark'] .ch-offline {
     display: block;
     height: 11px;
     margin: 4px 0;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: color-mix(in oklab, var(--ch-text-primary) 9%, transparent);
   }
 }
@@ -4014,10 +3774,11 @@ html[data-fw-theme='dark'] .ch-offline {
   color: var(--ch-hero-mint);
 }
 /* The entrance after sign in (owner, 2026-10-16: "more premium. i do like the wheel turning"), about 3.5s in all:
-   the dashboard settles for about 0.55s; the word writes in left to right behind a wide feathered edge while it comes
-   into focus (blur and a 3px rise settling out), over about 1.5s; the wheel spins in three quarters of a turn from
-   small and slows to a stop with a slight settle, overlapping the last of the word; then one glint of light crosses
-   the frosted panel. */
+   the dashboard settles for about 0.55s; the word writes in left to right behind a wide feathered edge while it rises
+   the last 3px into place, over about 1.5s; the wheel spins in three quarters of a turn from small and slows to a stop
+   with a slight settle, overlapping the last of the word; then one glint of light crosses the frosted panel. The rise
+   and the glint are transforms (production audit 2026-11-15, MOT-15): no blur filter and no background-position is
+   animated, since either repaints on every frame. */
 .ch-brand__word.is-write {
   -webkit-mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
   mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
@@ -4027,7 +3788,7 @@ html[data-fw-theme='dark'] .ch-offline {
   mask-repeat: no-repeat;
   animation:
     ch-brand-write calc(var(--ch-dur-reveal) * 2.9) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both,
-    ch-brand-focus calc(var(--ch-dur-reveal) * 3.1) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both;
+    ch-brand-rise calc(var(--ch-dur-reveal) * 3.1) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both;
 }
 .ch-brand__mark.is-write {
   animation: ch-brand-wheel calc(var(--ch-dur-reveal) * 2.5) var(--ch-ease-spring-smooth) calc(var(--ch-dur-reveal) * 3) both;
@@ -4036,14 +3797,17 @@ html[data-fw-theme='dark'] .ch-offline {
   position: relative;
   overflow: hidden;
 }
+/* The glint is a band two and a half panels wide, slid across on a transform (the panel clips it): the same path the
+   band took as a background-position from 130% to -30%, as translateX from -78% to 18% of its own width. */
 .ch-brand:has(.ch-brand__line.is-write)::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgb(255 250 235 / 0.28) 50%, transparent 65%) no-repeat;
-  background-size: 250% 100%;
+  inset: 0 auto 0 0;
+  width: 250%;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 250 235 / 0.28) 50%, transparent 65%);
   mix-blend-mode: soft-light;
   pointer-events: none;
+  transform: translateX(-78%);
   animation: ch-brand-glint calc(var(--ch-dur-reveal) * 2.2) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 4.6) both;
 }
 /* Arriving from the welcome, the entrance holds on its first frame while the hand-off's curtain is up (lib/handoff.ts),
@@ -4063,13 +3827,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     mask-position: 0 0;
   }
 }
-@keyframes ch-brand-focus {
+@keyframes ch-brand-rise {
   from {
-    filter: blur(3px);
     transform: translateY(3px);
   }
   to {
-    filter: none;
     transform: none;
   }
 }
@@ -4091,10 +3853,10 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 }
 @keyframes ch-brand-glint {
   from {
-    background-position: 130% 0;
+    transform: translateX(-78%);
   }
   to {
-    background-position: -30% 0;
+    transform: translateX(18%);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4112,12 +3874,14 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 
 /* -- The folding sidebar (owner, 2026-10-17: "a little circle that collapses the sidebar and just shows the golfhelm
    logo and all the icons") --------------------------------------------------------------------------------------------
-   The rail is the sidebar at --ch-rail-w; the canvas is the rest of the row, so the page simply gains the width. One
-   motion carries it: the sidebar's edge, the circle riding it, the word's track and the brand panel all move on the
-   smooth spring, so the edge slides and the wheel glides to the rail's centre as one object. The icons never move: the
-   rail is exactly as wide as the icons' column. The words leave first and arrive last: folding, they fade out quickly
-   before the edge reaches them; opening, they fade in once the edge has passed, drifting the last 4px into place, so
-   no label is ever seen squeezed. Reduced motion and Animations off swap at once (the tokens go to 0). Desktop only. */
+   The rail is the sidebar at --ch-rail-w; the canvas is the rest of the row, so the page simply gains the width. The
+   fold moves on transform and opacity only (production audit 2026-11-15, S4.4, MOT-11): the sidebar's edge, the circle
+   on it, the word's track and the brand panel take their new place at once, so the canvas is laid out once, not on
+   every frame of the fold. The icons never move: the rail is exactly as wide as the icons' column. What moves is drawn
+   on the compositor: the circle's chevron turns over the base beat on the iOS curve, and the words fade and slide over
+   the quick beat. Opening, they arrive on the iOS curve, drifting the last 4px into place; folding, the rail clips them
+   at once and what is left fades on --ch-ease-out. Reduced motion and Animations off swap at once (the tokens go to 0).
+   Desktop only. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-app {
     position: relative;
@@ -4127,12 +3891,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
   .ch-sidebar {
     overflow-x: hidden;
-    transition: width var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
   /* While the fold moves (lib/rail-fold.ts sets data-ch-rail-moving; motion pass 2026-10-22, mot-01), the brand panel
-     drops its frost: a blur under a box that changes size is redrawn on every frame of the spring. Over the sidebar's
-     clear field, a smooth gradient, the panel reads nearly the same without it, and the frost is back as it settles.
-     The page's own size readers wait the fold out in the same way (afterRailMove). */
+     drops its frost. The width no longer moves (MOT-11), so this now spans a single task; it stays so that a sidebar
+     given a width transition again keeps its blur from being redrawn on every frame. The page's own size readers wait
+     the fold out in the same way (afterRailMove). */
   .ch-app[data-ch-rail-moving] .ch-brand {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -4158,8 +3921,8 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
       inset 0 1px 0 #fff,
       var(--ch-elevation-on-frame);
     cursor: pointer;
-    transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
-      transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+    /* No transition on its translate: the circle stays on the seam, which takes its place at once (MOT-11). */
+    transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
   /* 22px drawn, 24 x 24 to the pointer (F-0022): it sat under the desktop minimum on every page. */
   .ch-railtoggle::after {
@@ -4168,7 +3931,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     content: '';
   }
   .ch-railtoggle svg {
-    transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    transition: transform var(--ch-dur-base) var(--ch-ease-ios);
   }
   .ch-app[data-ch-rail='folded'] .ch-railtoggle svg {
     transform: rotate(180deg);
@@ -4181,12 +3944,12 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
   .ch-railtoggle[data-ch-pressed] {
     transform: scale(0.94);
-    transition-duration: var(--ch-dur-spring-smooth), var(--ch-dur-press), var(--ch-dur-press);
+    transition-duration: var(--ch-dur-press), var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-railtoggle:active {
       transform: scale(0.94);
-      transition-duration: var(--ch-dur-spring-smooth), var(--ch-dur-press), var(--ch-dur-press);
+      transition-duration: var(--ch-dur-press), var(--ch-dur-press);
     }
   }
   .ch-railtoggle:focus-visible {
@@ -4195,20 +3958,12 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
 
   /* The brand: the word's track closes to nothing (a grid column from 1fr to 0fr), the gap with it, and the panel
-     tightens to the wheel, so the wheel ends at the rail's centre. */
-  .ch-brand {
-    transition: margin var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
-      padding var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
-  }
-  .ch-brand__line {
-    transition: gap var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
-  }
+     tightens to the wheel, so the wheel sits at the rail's centre. All of it at once; only the word fades. */
   .ch-brand__fold {
     display: grid;
     grid-template-columns: 1fr;
     min-width: 0;
-    transition: grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
-      opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios);
   }
   .ch-brand__fold > .ch-brand__word {
     min-width: 0;
@@ -4226,11 +3981,10 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-app[data-ch-rail='folded'] .ch-brand__fold {
     grid-template-columns: 0fr;
     opacity: 0;
-    transition: grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
-      opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
   }
 
-  /* The words: out first, in last. The icon keeps its size while the row narrows; the label gives way. */
+  /* The words. The icon keeps its size on the rail; the label gives way. */
   .ch-navitem {
     white-space: nowrap;
   }
@@ -4245,16 +3999,16 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-nav__head > *,
   .ch-identity__txt,
   .ch-sidebar__card {
-    transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8),
-      transform var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8),
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios),
+      transform var(--ch-dur-quick) var(--ch-ease-ios),
       visibility 0s linear 0s;
   }
   .ch-app[data-ch-rail='folded'] :is(.ch-navitem__label, .ch-nav__head > *, .ch-identity__txt, .ch-sidebar__card) {
     opacity: 0;
     transform: translateX(-4px);
-    transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out),
-      transform calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out),
-      visibility 0s linear calc(var(--ch-dur-quick) * 0.7);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-out),
+      transform var(--ch-dur-quick) var(--ch-ease-out),
+      visibility 0s linear var(--ch-dur-quick);
   }
   /* The card is wide and fixed, so it never reflows while the edge passes over it; on the rail it is hidden. */
   .ch-sidebar__card {
@@ -4280,11 +4034,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     height: var(--ch-hairline-w);
     background: rgb(220 205 166 / 0.4);
     opacity: 0;
-    transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-app[data-ch-rail='folded'] .ch-nav__head::before {
     opacity: 1;
-    transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8);
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios);
   }
 
   /* A count rides the icon's corner on the rail. */
@@ -4297,7 +4051,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     min-width: 15px;
     height: 15px;
     padding: 0 4px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-hero-mint);
     color: var(--ch-green-800);
     font: 600 11px/1 var(--ch-font-sans);
@@ -4311,7 +4065,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 
   /* The avatar centres on the rail; the foot's rule goes with the card. */
   .ch-identity .ch-avatar {
-    transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+    transition: translate var(--ch-dur-base) var(--ch-ease-ios);
   }
   .ch-app[data-ch-rail='folded'] .ch-identity .ch-avatar {
     translate: -5px 0;
@@ -4347,7 +4101,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     opacity: 1;
     transform: translate(0, -50%);
     transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
-      translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+      translate var(--ch-dur-base) var(--ch-ease-ios);
   }
 }
 @keyframes ch-rail-count {
@@ -4367,11 +4121,8 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ch-sidebar,
   .ch-railtoggle,
   .ch-railtoggle svg,
-  .ch-brand,
-  .ch-brand__line,
   .ch-brand__fold,
   .ch-navitem__label,
   .ch-nav__head > *,
@@ -4427,36 +4178,50 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
 }
 
-/* B4: in dark, More and the CoachHelm asks sheet lift above the page's cards (tokens.css --ch-bg-elevated). */
-:where(html[data-fw-theme='dark']) .ch-more,
-:where(html[data-fw-theme='dark']) .ch-asks__panel {
-  background: var(--ch-bg-elevated);
-}
 
 
-/* Clubhouse refresh, PR 3: the large title's context line, the title's scroll scale origin
-   (shell/large-title.tsx sets scale and opacity from the scroll), and controls that stick under the green bar on the page colour.
+/* Clubhouse refresh, PR 3: the large title's context line, and controls that stick under the green bar on the page colour.
    The bar itself is not touched. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-app[data-ch-refresh='on'] .ch-large-title {
-    transform-origin: left bottom;
+  /* The large title fades as it goes under the bar, over the first 52px of the page's scroll (production audit
+     2026-11-15, S4.3): scroll-driven, so no script runs per frame, and it never scales. Older Safari has no scroll
+     timeline and gets the same fade from shell/large-title.tsx. A pushed screen and a dialog scroll their own box. */
+  @supports (animation-timeline: scroll()) {
+    [data-ui='clubhouse'] main .ch-large-title:not(.ch-large-title--skel, .ch-pscreen .ch-large-title, dialog .ch-large-title) {
+      animation: ch-lt-under linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0px 52px;
+    }
   }
   .ch-app[data-ch-refresh='on'] .ch-large-title__context {
     margin: 4px 0 0;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-secondary);
   }
+  /* S1.9: at rest the controls sit on the canvas itself, so the light reads through with no second ivory band. Once
+     content scrolls under the bar (data-scrolled, shell/large-title.tsx) they paint the scrolled canvas: the paper over
+     the linen, the colour the page is wherever the light has scrolled away. */
   .ch-app[data-ch-refresh='on'] :is([data-ch-sticky-controls], .ch-stickybar) {
     position: sticky;
     z-index: 2;
     top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
     padding-block: 8px;
-    background: var(--ch-grouped-bg);
+    background: transparent;
+  }
+  .ch-app[data-ch-refresh='on']:has(.ch-topbar[data-scrolled]) :is([data-ch-sticky-controls], .ch-stickybar) {
+    background: var(--ch-light-paper), var(--ch-workspace);
   }
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-large-title__context {
     display: none;
+  }
+}
+/* One keyframe for both ends of the collapse (MOTION-AND-VISUAL 3.3): the large title from its own 1 to 0.1, and the bar's
+   title from its resting 0 to --ch-lt-to: 1. */
+@keyframes ch-lt-under {
+  to {
+    opacity: var(--ch-lt-to, 0.1);
   }
 }
 
@@ -4495,7 +4260,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-elevated);
   box-shadow: var(--ch-shadow-float);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-primary);
 }
 .ch-stale__go,
@@ -4540,11 +4305,4 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   background: var(--ch-push-dim);
   opacity: 0;
   pointer-events: none;
-}
-
-/* One surface below the last card: the page's colour reaches the bottom on a short page (MOB-CRH-9). */
-@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-root[data-ch-crh='on'] .ch-canvas:has(.ch-hm[data-ch-crh='on'], .ch-cl[data-ch-crh='on'], .ch-rsm[data-ch-crh='on']) {
-    background: var(--ch-grouped-bg);
-  }
 }

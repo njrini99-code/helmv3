@@ -19,16 +19,17 @@ catalog code on the element and in the test (`docs/clubhouse/catalog/auth.md`).
 Every contract on this page has a catalog code. The category map routes the page's rows to their
 categories (`config/clubhouse/category-map.json`). `clubhouse:check` holds this file to the registry.
 
-Two screens on two routes, drawn for a visitor with no role behind the flag
-`golf_clubhouse_front_door` (off in production): sign in (`/golf/login`), then
-the welcome (`/golf/welcome`). The sign-in panel also holds the reset form and
-its check-your-email (`?view=forgot`; owner, 2026-10-07). They have no board, so
-every contract for them is up for owner review. They call today's
-`requestPasswordResetAction` with today's checks and words. The reset link in
-the email still lands on today's `/golf/reset-password`. Sign up and onboarding
-are built behind the same flag over today's server actions (2026-09-30): sign up
-at `/golf/signup` (the intro, the team code, the questions, the account, the
-staff path and Request access) and a new player's questions after the account at
+Two screens on two routes, drawn for a visitor with no role (until 2026-11-14
+behind the flag `golf_clubhouse_front_door`; since then always): sign in
+(`/golf/login`), then the welcome (`/golf/welcome`). The sign-in panel also
+holds the reset form and its check-your-email (`?view=forgot`; owner,
+2026-10-07). They have no board, so every contract for them is up for owner
+review. They call today's `requestPasswordResetAction` with today's checks and
+words. The reset link in the email still lands on `/golf/reset-password` (since
+2026-11-14 drawn by Clubhouse's `ResetPassword`). Sign up and onboarding are
+built behind the same flag over today's server actions (2026-09-30): sign up at
+`/golf/signup` (the intro, the team code, the questions, the account, the staff
+path and Request access) and a new player's questions after the account at
 `/golf/player` (your game, the photo, the member card). Their contracts are the
 rows below named for sign up, onboarding and Request access. The auth screens
 sit outside the dashboard frame, so the shell's contracts (P001) do not apply
@@ -144,6 +145,7 @@ that throws and is logged (CH-15021), says so and can be sent again.
 | 150619 | CH-15034 | `STAFF_INVITATION_THE_SERVER_REFUSES_THE_ACCOUNT` | Staff invitation: the server refuses the account or the accept for any reason but the wrong account (CH-15944) |
 | 150620 | CH-15035 | `NEW_COACH_THE_PROGRAM_COULD_NOT_BE` | New coach: the program could not be made (the action rolls the organization, team and coach back together) |
 | 150621 | CH-15036 | `DEMO_ENTRY_THE_SERVER_REFUSES_OR_THE` | Demo entry: the server refuses (a rate limit, anything `enterDemo` words) or the request fails |
+| 150690 | CH-15290 | `A_NEW_PLAYERS_QUESTIONS_THE_READ_OF` | A new player's questions (/golf/player): the read of who this account is fails (the coach or player profile, or the declared role when both profiles are unfinished; GAP-S-04) |
 
 ## 07 — Network / offline
 
@@ -185,7 +187,13 @@ A sign-in that cannot reach the server says so (CH-15004).
 
 Status: DEFINED
 
-Where a sign-in goes depends on who the person is and is decided once, for this form and the current one (CH-15902). A session the auth server has ruled invalid is sent back to sign in before the welcome draws anything, and a slow or unreachable auth server never does that (CH-15903). The flag `golf_clubhouse_front_door` chooses the page that is drawn and gates nothing else: both pages call the same `loginAction`.
+Where a sign-in goes depends on who the person is and is decided once, for this
+form and the current one (CH-15902). A session the auth server has ruled invalid
+is sent back to sign in before the welcome draws anything, and a slow or
+unreachable auth server never does that (CH-15903). The flag
+`golf_clubhouse_front_door` chose the page that was drawn and gated nothing
+else: both pages called the same `loginAction` (the flag and the old page were
+removed on 2026-11-14).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -226,8 +234,9 @@ place with the address already typed. The view is kept in the URL
 (`?view=forgot`), so the browser's Back returns to sign in and a reload holds
 the view (CH-15920). Going back brings the address with it and pops the reset
 form's history entry rather than stacking one (CH-15922). Both are up for owner
-review. With the flag on, a signed-out visit to `/golf/forgot-password` is sent
-to `/golf/login?view=forgot`; a signed-in one keeps today's page (CH-15920).
+review. With the flag on (since 2026-11-14, always), a signed-out visit to
+`/golf/forgot-password` is sent to `/golf/login?view=forgot`; a signed-in one
+keeps today's page (CH-15920).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

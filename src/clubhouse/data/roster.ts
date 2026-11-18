@@ -9,6 +9,7 @@ import { canEmailPlayerInvites } from '@/lib/golf/player-invite-email';
 import { relativeAgo } from '../screens/roster/format';
 import { NOTE_TABLE_MISSING_CODES, parseAvailability, type ChAvailability } from './availability';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { readRosterLimit, type RosterExemptReason, type RosterLimit } from '@/lib/golf/roster-limit';
 import {
   classYearLabel,
   displayHandicap,
@@ -31,8 +32,8 @@ import { isoDay } from '../lib/dates';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { playerStrokesGained, roundsForFigures } from './figure-window';
 import { sgWindowOf, type ChSgWindow } from './sg-window';
-import { tourForGender } from './stats-common';
-import { QUIET_DAYS, daysBetween as daysBetweenDates } from '../screens/home/model';
+import { teamTour, TEAM_TOUR_COLUMNS } from './stats-common';
+import { QUIET_DAYS, quietDaysSince, quietOf } from '../screens/home/model';
 
 /**
  * Coach Roster (Clubhouse). Server-read, final on first paint, every section
@@ -52,8 +53,13 @@ export interface ChRosterPlayer {
   handicap: number | null;
   status: 'active' | 'inactive';
   joined: string | null;
+  /** The eighteen-hole rounds this season's average reads (`roundsForFigures`, 18 holes): the early floor and the place count these. */
   rounds: number;
-  /** Every round this season, practice included (Recent rounds and "All N"); the same as `rounds` with the lane's flag off. Optional for fixtures. */
+  /**
+   * The rounds this season that count toward a score, of either length (a nine-hole round is a round): the count the page shows
+   * ("Rds", "Rounds this season", "All N") and what Stats lists on This season with both lengths (DF-C-05). Optional for fixtures,
+   * which then show `rounds`.
+   */
   roundsAll?: number;
   avg: number | null;
   sgPerRound: number | null;
@@ -65,6 +71,8 @@ export interface ChRosterPlayer {
    */
   sgWindow?: ChSgWindow | null;
   trend: number[];
+  /** Each trend score's date (YYYY-MM-DD), beside `trend` (CH-11); absent in older fixtures, when the line spaces rounds evenly. */
+  trendDates?: string[];
   form: ChForm;
   recent: Array<{ id: string; course: string; date: string; score: number; toPar: number | null }>;
   focusAreas: number | null;
@@ -88,6 +96,8 @@ export interface ChRosterPlayer {
   availabilityUpdated: string | null;
   /** The coach-only reason (at most 280 characters). Null when none, or when the notes table is not there yet. */
   availabilityCoachNote?: string | null;
+  /** F-05: why this player doesn't count toward the roster limit (a designated student-athlete, or medical). Null or absent: they count. */
+  rosterExempt?: RosterExemptReason | null;
 }
 
 export type { ChAvailability };
@@ -149,19 +159,37 @@ export interface ChRoster {
   sgVs?: string;
   /** The tour that baseline is, so the page can say once why a college team's strokes gained sits below zero (lib/sg.ts `whyNamed`). */
   sgTour?: ChSgTour;
+  /** F-05: the roster limit. Absent in fixtures (no line is drawn). */
+  rosterLimit?: ChRosterLimit;
+}
+
+/**
+ * F-05: the team's roster limit (NCAA DI Bylaw 17.2: 9 in golf) as the Roster header and the lineup builder state it. `from`
+ * says where it came from (saved by a coach, the team's division, or nothing known: off). `missing`: its tables are not
+ * there yet (held migration 20261115250000), so it can't be changed and nobody is marked. `error`: the read failed, so
+ * the division default is shown and who doesn't count is unknown.
+ */
+export interface ChRosterLimit {
+  limit: RosterLimit;
+  from: 'saved' | 'division' | 'default';
+  missing: boolean;
+  error: boolean;
 }
 
 export type ChRosterHelm = { status: 'on'; byPlayer: Record<string, ChReadCount> } | { status: 'off' } | { status: 'failed' };
 
-/** Whole team-local days from a round's date (YYYY-MM-DD or an ISO timestamp) to today in the team's zone, as Home counts them (never negative). */
-function quietDaysSince(roundDate: string, now: Date, tz: string) {
-  return Math.max(0, daysBetweenDates(roundDate.slice(0, 10), isoDay(now, tz)));
+/** Whole team-local days from a round's date (YYYY-MM-DD or an ISO timestamp) to today in the team's zone: Home's own count (`quietDaysSince`). */
+function quietDaysFrom(roundDate: string, now: Date, tz: string) {
+  return quietDaysSince(roundDate, isoDay(now, tz));
 }
 
 /**
  * "Needs a look": deterministic, from data the coach can verify.
  *   quiet     - an active player with no round in QUIET_DAYS+ team-local days (Home's rule and day count), whether or not the
- *               team is posting: Home flags him either way, and the two must agree (coach audit 13 Nov 2026, §8 #6)
+ *               team is posting: Home flags him either way, and the two must agree (coach audit 13 Nov 2026, §8 #6). `quiet` is
+ *               Home's own count (`quietOf`): from the newest counted round in the year's read, or, with none, from the season's
+ *               start or the player's joining, said "No rounds this season" (DF-C-04: a player with no round this season was
+ *               never flagged, so the quietest players were never named). Without it, the season's last round is read.
  *   slipping  - the SE-cleared form status Home's leaderboard uses (`summarizePlayer().status`): "Scoring 4.0 worse" (a rise
  *               in strokes read as worse, never "Scoring up", which read as good news; §8 #5)
  *   hot       - the last four rounds all under their season average
@@ -172,10 +200,13 @@ export function attentionFor(
   now: Date,
   availability: ChAvailability = 'available',
   tz: string = SEASON_DEFAULT_TZ,
+  quiet?: { days: number; none: boolean },
 ): ChRosterPlayer['attention'] {
   if (availability !== 'available') return null;
-  if (s.lastRoundDate) {
-    const days = quietDaysSince(s.lastRoundDate, now, tz);
+  if (quiet) {
+    if (quiet.days >= QUIET_DAYS) return { tone: 'warning', text: quiet.none ? 'No rounds this season' : `No rounds in ${quiet.days} days` };
+  } else if (s.lastRoundDate) {
+    const days = quietDaysFrom(s.lastRoundDate, now, tz);
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
   }
   if (s.status === 'slipping' && s.formChange != null && s.formChange > 0) {
@@ -193,7 +224,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
   const now = new Date();
 
   const [teamRes, membersRes, requestsRes, tz] = await Promise.all([
-    supabase.from('golf_teams').select('name, join_code, gender').eq('id', input.teamId).maybeSingle(),
+    supabase.from('golf_teams').select(`name, join_code, ${TEAM_TOUR_COLUMNS}`).eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
       .select('status, jersey_number, joined_at, availability, availability_updated_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
@@ -231,7 +262,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
   const ids = members.map((m) => m.player.id);
 
   // Rounds, focus areas, goals, this coach's notes and CoachHelm's counts, in parallel.
-  const [wide, focus, goals, notes, helm, availNotes] = await Promise.all([
+  const [wide, focus, goals, notes, helm, availNotes, limitRead] = await Promise.all([
     ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster', since: lastTenFloor(now) /* the legs' last ten can start before the season */ }) : Promise.resolve({ rounds: [], error: false }),
     // Open focus areas are `active` or `in_progress`, as Fairway's roster counts them (wiring audit, 2026-10-17).
     countBy('golf_player_focus_areas', ids, (chunk) =>
@@ -241,23 +272,36 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
     loadNotes(supabase, input.coachId, ids),
     loadHelm(supabase, input, ids),
     loadAvailabilityNotes(supabase, input.teamId),
+    readRosterLimit(supabase, input.teamId, { withExemptions: true }),
   ]);
+  if (limitRead.error) chLogServer('roster', 'rosterLimit', 'roster limit read failed', 'teams');
   // The season turns in the team's zone (owner decision 9); strokes gained reads the last ten across it (QA-1).
   const seasonFrom = seasonStartDate(now, tz);
   const season = { ...wide, rounds: wide.rounds.filter((r) => r.round_date.slice(0, 10) >= seasonFrom) };
   const wideByPlayer = groupByPlayer(wide.rounds);
   const counted = roundsForFigures(season.rounds);
   const byPlayer = groupByPlayer(counted);
-  // Averages, form and the floors read the cut rounds; Recent rounds and "All N" list every round the player posted (SHARED: Latest rounds lists every round).
+  // Averages, form and the floors read the cut rounds' eighteens; the round count reads the cut rounds of either length (DF-C-05); Recent
+  // rounds lists every round the player posted (SHARED: Latest rounds lists every round).
   const everyRound = groupByPlayer(season.rounds);
+  // Days since a round: Home's count, from the year's counted rounds (DF-C-04; `quietOf`).
+  const lastCounted = new Map<string, string>();
+  for (const r of roundsForFigures(wide.rounds)) {
+    const d = r.round_date.slice(0, 10);
+    if (!lastCounted.has(r.player_id) || d > lastCounted.get(r.player_id)!) lastCounted.set(r.player_id, d);
+  }
+  const today = isoDay(now, tz);
 
   const players: ChRosterPlayer[] = members.map((m) => {
     const p = m.player;
-    const s = summarizePlayer(byPlayer.get(p.id) ?? []);
-    const every = summarizePlayer(everyRound.get(p.id) ?? []);
+    const mine = byPlayer.get(p.id) ?? [];
+    const s = summarizePlayer(mine);
+    // Newest first, either length: a nine-hole round yesterday is the latest round (DF-C-05), and says it is a nine.
+    const latest = [...(everyRound.get(p.id) ?? [])].sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : a.id.localeCompare(b.id)));
     const sg = playerStrokesGained(wideByPlayer.get(p.id) ?? []);
     const status = m.status === 'inactive' ? 'inactive' : 'active';
     const availability: ChAvailability = parseAvailability(m.availability);
+    const quiet = quietOf(lastCounted.get(p.id) ?? null, { seasonStart: seasonFrom, joined: m.joined_at }, today);
     return {
       id: p.id,
       name: fullName(p),
@@ -273,28 +317,30 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
         ? `Joined ${new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(m.joined_at))}`
         : null,
       rounds: s.rounds,
-      roundsAll: every.rounds,
+      roundsAll: mine.length,
       avg: s.avg,
       sgPerRound: sg.total,
       sgLegs: sg.legs,
       sgWindow: sg.total == null ? null : sgWindowOf(wideByPlayer.get(p.id) ?? []),
       trend: s.trend,
+      trendDates: s.trendDates,
       form: s.status,
-      recent: every.recent.slice(0, 3).map((r) => ({
+      recent: latest.slice(0, 3).map((r) => ({
         id: r.id,
         course: r.course_name ?? 'Course not recorded',
-        date: shortDate(r.round_date),
+        date: (r.holes_played ?? 18) === 9 ? `${shortDate(r.round_date)} \u00b7 9 holes` : shortDate(r.round_date),
         score: r.total_score as number,
         toPar: r.score_to_par,
       })),
       focusAreas: focus.error ? null : (focus.counts.get(p.id) ?? 0),
       goals: goals.error ? null : (goals.counts.get(p.id) ?? 0),
       coachNote: notes.notes.get(p.id) ?? null,
-      attention: status === 'active' && !season.error ? attentionFor(s, now, availability, tz) : null,
-      attentionIfAvailable: status === 'active' && !season.error ? attentionFor(s, now, 'available', tz) : null,
+      attention: status === 'active' && !season.error ? attentionFor(s, now, availability, tz, quiet) : null,
+      attentionIfAvailable: status === 'active' && !season.error ? attentionFor(s, now, 'available', tz, quiet) : null,
       availability,
       availabilityUpdated: m.availability_updated_at,
       availabilityCoachNote: availNotes.notes.get(p.id) ?? null,
+      rosterExempt: limitRead.exemptions[p.id]?.reason ?? null,
     };
   });
 
@@ -344,8 +390,9 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
     requestsError: !requestsRes.success,
     helm,
     clock: { tz, day: isoDay(now, tz) },
-    sgVs: sgBaseline(tourForGender(teamRes.data?.gender)).vs,
-    sgTour: tourForGender(teamRes.data?.gender),
+    sgVs: sgBaseline(teamTour(teamRes.data)).vs,
+    sgTour: teamTour(teamRes.data),
+    rosterLimit: { limit: limitRead.limit, from: limitRead.from, missing: limitRead.missing, error: limitRead.error },
   };
 }
 

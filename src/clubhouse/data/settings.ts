@@ -27,6 +27,11 @@ import type { ChCoachHelmSettings, ChScoring, ChSettingsData } from '../screens/
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 const ok = <T,>(value: T) => ({ value, error: false as const });
+/** A read started early: its rejection is heard now (no unhandled rejection if an earlier await throws) and again where it is awaited. */
+const handled = <T,>(p: Promise<T>): Promise<T> => {
+  p.catch(() => {});
+  return p;
+};
 const failed = { value: null, error: true as const };
 
 function log(read: string, error: unknown, area = 'settings') {
@@ -63,6 +68,44 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
   // table is read once (the loader read golf_teams and golf_coach_philosophy twice each; readiness audit, 2026-10-17).
   // The player's own phone comes through golf_player_private_fields: e-mail and phone are not readable from golf_players by a
   // signed-in session (security review 2026-11-11, finding 1).
+  // The role's own reads need only the ids and the team, so they start with the first wave instead of after it (PMAC-12:
+  // Settings took 750 ms to its first byte in production; this was two database round trips, one after the other). Each is
+  // marked handled at once, so a first wave that throws never leaves one rejecting unheard; they are awaited below.
+  const playerReads =
+    role === 'player'
+      ? handled(
+          Promise.all([
+            supabase.from('golf_player_notification_state').select('prefs, quiet_mode').eq('player_id', playerId!).maybeSingle(),
+            getPlayerJoinRequests(playerId!).catch((e: unknown) => ({ success: false as const, error: String(e), data: undefined })),
+            teamId
+              ? supabase.from('golf_teams').select('id, name, organization:organizations(name)').eq('id', teamId).maybeSingle()
+              : Promise.resolve({ data: null, error: null }),
+          ]),
+        )
+      : null;
+  const coachReads =
+    role === 'player'
+      ? null
+      : handled(
+          Promise.all([
+            teamId
+              ? supabase
+                  .from('golf_team_settings')
+                  .select('scoring_format, handicap_system, default_tees, timezone, event_reminders_enabled, event_reminder_early_hours, event_reminder_late_minutes')
+                  .eq('team_id', teamId)
+                  .maybeSingle()
+              : Promise.resolve({ data: null, error: null }),
+            teamId
+              ? supabase
+                  .from('golf_teams')
+                  .select('id, name, season, join_code, organization_id, organization:organizations(id, name, location_city, location_state, division, conference)')
+                  .eq('id', teamId)
+                  .maybeSingle()
+              : Promise.resolve({ data: null, error: null }),
+            supabase.from('golf_coachhelm_settings').select('enabled, auto_insights, weekly_summary, trend_alerts').eq('coach_id', coachId!).maybeSingle(),
+            supabase.from('golf_coach_philosophy').select('*').eq('coach_id', coachId!).maybeSingle(),
+          ]),
+        );
   const [userRes, deliveryRes, savedPrefsRes, profileRes, contactRes] = await Promise.all([
     supabase.auth.getUser(),
     getNotificationPreferences().catch((e: unknown) => ({ data: null, error: String(e) })),
@@ -137,13 +180,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
             state: str(p.state),
             phone: str(contactRes?.data.get(playerId!)?.phone ?? null),
           });
-    const [routingRes, requestsRes, teamRes] = await Promise.all([
-      supabase.from('golf_player_notification_state').select('prefs, quiet_mode').eq('player_id', playerId!).maybeSingle(),
-      getPlayerJoinRequests(playerId!).catch((e: unknown) => ({ success: false as const, error: String(e), data: undefined })),
-      teamId
-        ? supabase.from('golf_teams').select('id, name, organization:organizations(name)').eq('id', teamId).maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
-    ]);
+    const [routingRes, requestsRes, teamRes] = await playerReads!;
     if (routingRes.error) log('playerRouting', routingRes.error, 'notifications');
     base.playerRouting = routingRes.error
       ? failed
@@ -165,24 +202,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
   }
 
   // ── Coach ──
-  const [settingsRes, teamRes, chCoachRes, philosophyRes] = await Promise.all([
-    teamId
-      ? supabase
-          .from('golf_team_settings')
-          .select('scoring_format, handicap_system, default_tees, timezone, event_reminders_enabled, event_reminder_early_hours, event_reminder_late_minutes')
-          .eq('team_id', teamId)
-          .maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-    teamId
-      ? supabase
-          .from('golf_teams')
-          .select('id, name, season, join_code, organization_id, organization:organizations(id, name, location_city, location_state, division, conference)')
-          .eq('id', teamId)
-          .maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-    supabase.from('golf_coachhelm_settings').select('enabled, auto_insights, weekly_summary, trend_alerts').eq('coach_id', coachId!).maybeSingle(),
-    supabase.from('golf_coach_philosophy').select('*').eq('coach_id', coachId!).maybeSingle(),
-  ]);
+  const [settingsRes, teamRes, chCoachRes, philosophyRes] = await coachReads!;
 
   // The digest is a column of the philosophy row. A missing row or null means the digest is on, as the current app reads it.
   if (philosophyRes.error) log('digest', philosophyRes.error, 'notifications');

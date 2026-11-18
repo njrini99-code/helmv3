@@ -26,7 +26,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
-import { InlineNotice } from '../../ui/Notices';
+import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
 import { PillGroup } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
@@ -273,7 +273,7 @@ export function Documents({ prospect, writes, initialUpload, level }: { prospect
           ))}
         </div>
       ) : state.kind === 'failed' ? (
-        <InlineNotice code="CH-14202" title="Documents didn’t load" body="Nothing is lost. Try again in a moment." onRetry={tryAgain} />
+        <InlineNotice code="CH-14202" title="Documents didn’t load" body={FAILURE_COPY.page} onRetry={tryAgain} />
       ) : docs.length === 0 ? (
         <EmptyRow code="CH-14305" icon={FileText} title="No documents yet" body={RECRUIT_FILM_ENABLED ? 'Schedules, transcripts and film, private to your staff.' : 'Schedules, transcripts and notes, private to your staff.'} actionLabel="Upload" onAction={choose} />
       ) : (

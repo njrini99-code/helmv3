@@ -234,9 +234,9 @@ phone (the Mobile clubhouse pass, 2026-10-08) the opener is the view's one green
 card and every section after it is flush on the parchment under the double
 rule, its rows between soft seams.
 Numbers are never plain ink where they say something: green for ahead or
-working, amber for behind or worth watching (red stays for under par and the
-flag, D-42), tertiary ink only for a number that is neutral. Hierarchy is one
-big figure per card, then its words, then the proof.
+working, amber for behind or worth watching (red is for errors only and under
+par is the gain, MOTION-AND-VISUAL 4.7), tertiary ink only for a number that is
+neutral. Hierarchy is one big figure per card, then its words, then the proof.
 
 **How you play (once the Game profile).** The Game profile folded into
 Standing as its last section (chs-37, 2026-10-22), so the player has Board,
@@ -367,9 +367,10 @@ motion. `?insight=<id>` opens on a read, checked against the player's own list.
 
 The player's two views, read by their coach, at
 `/golf/dashboard/coachhelm?view=deep-dive|standing&player=<golf_players.id>`
-(`view=profile&player=` opens Standing at How Jonah plays).
-Spec: `coach-parity/spec-A-coach-player-pages.md` (decided). It supersedes the
-non-goal below that a coach reads a player only through the Board and Ask.
+(`view=profile&player=` opens Standing at How Jonah plays). Spec:
+`coach-parity/spec-A-coach-player-pages.md` (decided; the file is not in the
+repository, so this section is the record of it). It supersedes the non-goal
+below that a coach reads a player only through the Board and Ask.
 
 - Address and entry. The Deep dive is the landing view. In: the Board's
   selected-player card ("All of Jonah’s reads", a ghost button with an arrow

@@ -57,7 +57,7 @@ describe('the sidebar identity is the account menu (B11)', () => {
     expect(key.querySelector('.ch-identity__txt')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('keeps the identity block when closed, and opens a menu of Settings, Help and Sign out', async () => {
+  it('keeps the identity block when closed, and opens a menu of Settings, What’s new, Help and Sign out', async () => {
     mount();
     const key = trigger();
     expect(key).toHaveClass('ch-identity');
@@ -66,11 +66,15 @@ describe('the sidebar identity is the account menu (B11)', () => {
     expect(key).toHaveAttribute('aria-expanded', 'false');
     open();
     expect(key).toHaveAttribute('aria-expanded', 'true');
-    expect(rows()).toEqual(['Settings', 'Help', 'Sign out']);
+    expect(rows()).toEqual(['Settings', 'What’s new', 'Help', 'Sign out']);
+    // GAP-R-06: a coach reaches What's new without the command palette.
+    expect(within(menu()).getByRole('menuitem', { name: 'What’s new' })).toHaveAttribute('href', '/golf/dashboard/whats-new');
     expect(within(menu()).getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/golf/dashboard/settings');
     expect(within(menu()).getByRole('menuitem', { name: 'Help' })).toHaveAttribute('href', '/golf/dashboard/settings#set-help');
-    // Focus goes into the list, as every Menu does.
-    await waitFor(() => expect(document.activeElement).toBe(within(menu()).getByRole('menuitem', { name: 'Settings' })));
+    // Focus lands on the menu itself, as every Menu's does (MENU-01, S3.5), and the down arrow reaches Settings.
+    await waitFor(() => expect(document.activeElement).toBe(menu()));
+    fireEvent.keyDown(menu(), { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(within(menu()).getByRole('menuitem', { name: 'Settings' }));
   });
 
   it('Sign out is the one sign-out path (lib/sign-out.ts)', async () => {
@@ -93,9 +97,26 @@ describe('the sidebar identity is the account menu (B11)', () => {
     setActiveTeam.mockResolvedValue({ success: true });
     mount({ activeId: 't1', choices: [{ id: 't1', label: 'Varsity' }, { id: 't2', label: 'JV' }] });
     open();
-    expect(rows()).toEqual(['Settings', 'Varsity', 'JV', 'Help', 'Sign out']);
+    expect(rows()).toEqual(['Settings', 'Varsity', 'JV', 'What’s new', 'Help', 'Sign out']);
     expect(within(menu()).getByRole('menuitemradio', { name: 'Varsity' })).toHaveAttribute('aria-checked', 'true');
     act(() => void fireEvent.click(within(menu()).getByRole('menuitemradio', { name: 'JV' })));
     await waitFor(() => expect(setActiveTeam).toHaveBeenCalledWith('t2'));
+  });
+});
+
+describe('What’s new in the account menu is a coach’s (GAP-R-06)', () => {
+  it('a player’s menu has no What’s new row: the screen is a coach’s', () => {
+    const player = { role: 'player', name: 'Jonah Kim', teamName: 'Varsity' } as unknown as GolfUserData;
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <Sidebar userData={player} shell={shell} pathname="/golf/dashboard" />
+          </div>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    act(() => void fireEvent.click(screen.getByRole('button', { name: 'Jonah Kim, Player · Varsity' })));
+    expect(rows()).toEqual(['Settings', 'Help', 'Sign out']);
   });
 });

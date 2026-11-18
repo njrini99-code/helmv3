@@ -244,6 +244,13 @@ alongside (not duplicated here).
   name, never as a generic "Could not find" pattern, and the entry is
   deleted in the change that applies the migration (the held-migration test
   enforces it against `supabase/migrations/HELD.md`).
+- `ui:clubhouse` is the tag the Bridge's Clubhouse-only views search Sentry by
+  (`src/lib/admin/bridge-scope.ts`). The browser session carries it
+  (`chTagSession`), a Clubhouse render carries it (`gate.ts`), every
+  `server-error-logger` capture carries it when the request was serving
+  Clubhouse (`ambientUiSurface`, `src/lib/observability/ui-surface.ts`), and
+  `onRequestError` adds it to an unhandled Clubhouse request error. A new
+  capture path that bypasses these loses the tag and drops out of the Bridge.
 - Never capture request/response bodies or auth headers in Replay —
   `networkDetailAllowUrls` stays unset.
 - Breadcrumb `data` is allow-listed; never an id, name, or email.

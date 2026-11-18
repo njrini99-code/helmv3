@@ -52,8 +52,12 @@ import { HowToReadIncidents } from './_components/HowToReadIncidents';
 import { ArchivePanel } from './_components/ArchivePanel';
 import { ReleaseWatchPanel } from './_components/ReleaseWatchPanel';
 import { loadErrorsPageData } from './_data';
+import { BRIDGE_SCOPE_NOTE, BRIDGE_UI_SCOPE, isScoped } from '@/lib/admin/bridge-scope';
 import { buildBoardAliasGroups, buildIncidentGenome } from '@/lib/admin/incidents/genome';
 import { fetchCurrentReleaseWatch, emptyReleaseWatch } from '@/lib/admin/incidents/release-watch';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Incidents' };
 export const dynamic = 'force-dynamic';
 
 /**
@@ -214,11 +218,16 @@ function buildFilterGroups(current: URLSearchParams, filters: ErrorsTabFilters):
   });
 
   return [
-    single('sport', 'Sport', 'Which product the error belongs to. Legacy rows with no sport tag only appear under All.', [
-      ['golf', SPORT_LABEL.golf!],
-      ['baseball', SPORT_LABEL.baseball!],
-      ['shared', SPORT_LABEL.shared!, 'Platform code both sports use'],
-    ]),
+    // Under the Clubhouse scope every row is golf, so the sport chips would only offer empty views.
+    ...(isScoped(filters.scope)
+      ? []
+      : [
+          single('sport', 'Sport', 'Which product the error belongs to. Legacy rows with no sport tag only appear under All.', [
+            ['golf', SPORT_LABEL.golf!],
+            ['baseball', SPORT_LABEL.baseball!],
+            ['shared', SPORT_LABEL.shared!, 'Platform code both sports use'],
+          ]),
+        ]),
     single('severity', 'Severity', 'The worst severity an incident has produced.', [
       ['critical', SEVERITY_LABEL.critical!],
       ['error', SEVERITY_LABEL.error!],
@@ -522,7 +531,9 @@ export default async function ErrorsPage({
 }) {
   await requireSuperAdmin();
   const params = await searchParams;
-  const filters = parseErrorsFilters(params);
+  // Clubhouse only (src/lib/admin/bridge-scope.ts): the queue, its counts, the trend and the Sentry list all read
+  // the scoped population. Never taken from the URL.
+  const filters = { ...parseErrorsFilters(params), scope: BRIDGE_UI_SCOPE };
   const lens: IncidentLens = parseIncidentLens(params.lens);
   const view = parseView('/admin/errors', params.view);
   const current = new URLSearchParams(
@@ -906,7 +917,25 @@ export default async function ErrorsPage({
             lede="This window against the one before it, the hourly shape with production deploys marked, and which sources and features are producing the rows."
           />
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
-            {tab.hourly.status === 'ok' && tab.hourly.data ? (
+            {isScoped(filters.scope) ? (
+              // Sentry's hourly series counts every app's events and cannot be narrowed to one UI, so the scoped
+              // trend is drawn from the app's own Clubhouse rows: the same rows the queue above lists.
+              appHourly.length > 0 ? (
+                <ErrorsOverTime
+                  points={appHourly}
+                  deployMarkers={tab.deployMarkers}
+                  source="app"
+                  note="Clubhouse app events only"
+                />
+              ) : (
+                <Surface padding="sm">
+                  <PanelNoData
+                    label="No Clubhouse errors in the last 24 hours"
+                    description="The hourly shape is drawn from the Clubhouse rows the queue lists; none fell in the last 24 hours."
+                  />
+                </Surface>
+              )
+            ) : tab.hourly.status === 'ok' && tab.hourly.data ? (
               <ErrorsOverTime points={tab.hourly.data} deployMarkers={tab.deployMarkers} />
             ) : appHourly.length > 0 ? (
               // Sentry's series is unavailable, but the app's own rows still
@@ -1103,11 +1132,12 @@ export default async function ErrorsPage({
         <Surface as="section" padding="sm" aria-labelledby="incidents-sentry-heading">
           <div className="border-b border-warm-200 pb-2">
             <h2 id="incidents-sentry-heading" className="text-base font-semibold text-warm-900">
-              Everything Sentry still holds open
+              {isScoped(filters.scope) ? 'Everything Sentry still holds open for Clubhouse' : 'Everything Sentry still holds open'}
             </h2>
             <p className="mt-0.5 text-caption leading-5 text-warm-500">
-              All unresolved Sentry issues, org-wide and not windowed. The queue above only counts Sentry issues with
-              activity in the selected window, so this list is usually longer.
+              {isScoped(filters.scope)
+                ? 'Every unresolved Sentry issue tagged ui:clubhouse, not windowed. The queue above only counts Sentry issues with activity in the selected window, so this list is usually longer.'
+                : 'All unresolved Sentry issues, org-wide and not windowed. The queue above only counts Sentry issues with activity in the selected window, so this list is usually longer.'}
             </p>
           </div>
           {tab.sentry.status === 'ok' && tab.sentry.truncated ? (
@@ -1163,7 +1193,7 @@ export default async function ErrorsPage({
           one row" lives in HowToReadIncidents ("What one row is"), one tap
           away — on a phone the two-sentence paragraph here pushed the queue a
           full screen down. */}
-      <TabHeader title="Incidents" />
+      <TabHeader title="Incidents" description={BRIDGE_SCOPE_NOTE} />
       <ViewRail
         host="/admin/errors"
         active={view}

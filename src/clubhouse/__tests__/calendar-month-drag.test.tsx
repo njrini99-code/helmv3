@@ -7,6 +7,7 @@ vi.mock('../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
 
 import type { ChCalEvent } from '../screens/calendar/model';
 import { DndMonth, monthAnnouncements } from '../screens/calendar/month-dnd';
+import { accessibleName } from './label-in-name';
 
 /** P-4 4.4: the desktop Month as gridcells, with ribbons, roving focus and drag to another day. */
 
@@ -78,7 +79,7 @@ describe('the month grid', () => {
     expect(ribbons.map((r) => r.style.getPropertyValue('--ch-mo-span'))).toEqual(['2', '1']);
     expect(ribbons[0]!.classList.contains('is-clip-end')).toBe(true);
     expect(ribbons[1]!.classList.contains('is-clip-start')).toBe(true);
-    expect(ribbons[0]!.getAttribute('aria-label')).toBe('Pinehurst trip, Fri 16 to Sun 18');
+    expect(accessibleName(ribbons[0]!)).toBe('Pinehurst trip, Fri 16 to Sun 18');
     // The run's days show no chip of their own.
     expect(container.querySelectorAll('[data-date="2026-10-17"] .ch-mo__ev')).toHaveLength(0);
   });

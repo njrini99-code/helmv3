@@ -22,6 +22,7 @@ import { redactEventPii } from '@/lib/observability/redact-pii';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { observedUserFromHeaders } from '@/lib/observability/observed-user-from-request';
+import { uiSurfaceForRequest } from '@/lib/observability/ui-surface';
 import { resolveServerEnvironment } from '@/lib/sentry-environment';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
@@ -598,8 +599,30 @@ export async function onRequestError(
   // deliberately not — is never captured a second/first time here. A
   // never-before-seen error (alreadyLogged === false) is captured exactly as
   // before.
+  // The product UI the failed request was serving, from its own path (a server action posts to its page) or, for an
+  // /api route, the page that called it. Tagged on both the Sentry capture and the Bridge write, so an unhandled
+  // Clubhouse failure reaches the Bridge's Clubhouse-only views (src/lib/admin/bridge-scope.ts). Telemetry only.
+  let ui: ReturnType<typeof uiSurfaceForRequest> = null;
+  try {
+    ui = uiSurfaceForRequest({ url: request.path, referer: request.headers?.referer ?? null });
+  } catch {
+    ui = null;
+  }
+
   if (!alreadyLogged) {
-    Sentry.captureRequestError(error, request, errorContext);
+    let captured = false;
+    if (ui) {
+      try {
+        Sentry.withScope((scope) => {
+          scope.setTag('ui', ui);
+          Sentry.captureRequestError(error, request, errorContext);
+          captured = true;
+        });
+      } catch {
+        // A tag must never cost the capture itself.
+      }
+    }
+    if (!captured) Sentry.captureRequestError(error, request, errorContext);
   }
 
   try {
@@ -646,6 +669,7 @@ export async function onRequestError(
           // Sentry issue for the same error. The Bridge DB write (error_logs
           // + admin_events) still happens; only its Sentry capture is skipped.
           skipSentry: true,
+          ...(ui ? { tags: { ui } } : {}),
           metadata: {
             routerKind: errorContext.routerKind,
             routeType: errorContext.routeType,

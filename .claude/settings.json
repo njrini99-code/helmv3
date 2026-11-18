@@ -61,7 +61,7 @@
           {
             "type": "command",
             "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
-            "timeout": 10
+            "timeout": 60
           }
         ]
       },
@@ -83,7 +83,7 @@
           {
             "type": "command",
             "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs",
-            "timeout": 60
+            "timeout": 90
           }
         ]
       }
@@ -126,6 +126,16 @@
     "PreToolUse": [
       {
         "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$HELM_AUDIT\" = \"1\" ] || exit 0; test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/no-prod-in-audit.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/no-prod-in-audit.mjs",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|WebFetch",
         "hooks": [
           {
             "type": "command",

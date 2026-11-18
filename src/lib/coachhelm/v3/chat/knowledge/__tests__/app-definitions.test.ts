@@ -120,7 +120,11 @@ describe('the app definitions the golf block states', () => {
 
   it('Stats and Roster figures leave practice out and read 18-hole rounds', () => {
     says(APP_DEFINITIONS.practiceOut);
-    expect(read('src/clubhouse/data/season.ts')).toMatch(/return r\.round_type == null \|\| roundTypeFromDb\(r\.round_type\) !== 'practice';/);
+    // DF-C-18: one rule for a round's kind, which season.ts and every other reader call.
+    const scope = read('src/clubhouse/data/round-scope.ts');
+    expect(scope).toMatch(/return r\.round_type == null \? null : roundTypeFromDb\(r\.round_type\);/);
+    expect(scope).toMatch(/return roundKindOf\(r\) !== 'practice';/);
+    expect(read('src/clubhouse/data/season.ts')).toMatch(/return countsInAverages\(r\);/);
     expect(read('src/clubhouse/data/stats-common.ts')).toMatch(/return f\.types\.length === 0 && f\.pick\?\.mode !== 'only' && f\.span !== 'all';/);
     expect(read('src/clubhouse/data/stats-filter.ts')).toMatch(/return \{ window, last, types: \[\], holes: '18',/);
     expect(read('src/clubhouse/data/figure-window.ts')).toMatch(/countsForScoring\(r\) && isScoreCountable\(/);
@@ -175,7 +179,8 @@ describe('the app definitions the golf block states', () => {
   it('the pressure gap is competitive rounds less practice rounds, to par, so positive is worse under pressure', () => {
     says(APP_DEFINITIONS.pressureGap);
     const figures = read('src/clubhouse/data/stats-figures.ts');
-    expect(figures).toMatch(/\(roundTypeFromDb\(r\.round_type\) === 'practice' \? prac : press\)\.push\(r\);/);
+    // A round with no type sits on neither side (DF-C-18).
+    expect(figures).toMatch(/if \(kind == null \|\| r\.score_to_par == null\) continue;\s+\(kind === 'practice' \? prac : press\)\.push\(r\);/);
     expect(figures).toMatch(/\(weightedMean\(press, toPar\) as number\) - \(weightedMean\(prac, toPar\) as number\)/);
   });
 
@@ -209,8 +214,8 @@ describe('the direction of every catalogued metric', () => {
     sg_around_green: /Positive is better\./,
     gir_pct: /Greens in regulation: on the green with two putts left for par\. Higher is better\./,
     driving_accuracy_pct: /Fairways hit: tee shots on par 4s and 5s that finish in the fairway\. Higher is better/,
-    scrambling_pct: /Scrambling: par or better after missing the green\. Higher is better\./,
-    sand_save_pct: /Sand saves: the same from a greenside bunker\./,
+    scrambling_pct: /Scrambling: par or better after missing the green, plus sand saves\. Higher is better\./,
+    sand_save_pct: /Sand saves: down in two from a greenside bunker, any score;/,
     putts_per_round: /Putts per round: lower is better/,
     three_putt_pct: /Three-putts: fewer is better\./,
     penalties_per_round: /Penalty strokes: fewer is better\./,

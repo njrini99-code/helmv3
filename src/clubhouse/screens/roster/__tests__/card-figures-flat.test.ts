@@ -30,7 +30,7 @@ describe('W25 the player card figures', () => {
 
   it('sets the unit in a type token, not raw font longhands', () => {
     const rule = css.match(/\.ch-rs-fig__u \{[^}]*\}/)?.[0] ?? '';
-    expect(rule).toContain('font: var(--ch-type-12-medium)');
+    expect(rule).toContain('font: var(--ch-type-caption)');
     expect(rule).not.toMatch(/font-(size|weight)/);
   });
 });

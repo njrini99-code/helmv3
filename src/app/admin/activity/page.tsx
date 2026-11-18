@@ -19,6 +19,9 @@ import { ACTIVITY_KIND_META, kindMeta } from './kind-meta';
 import { ActivityKindFilterChips, type ActivityKindChip } from './ActivityKindFilterChips';
 import { TeamFilterControl, type TeamFilterOption } from './TeamFilterControl';
 import { ActivityFeed } from './ActivityFeed';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Activity' };
 
 export const dynamic = 'force-dynamic';
 
@@ -68,7 +71,7 @@ export default async function ActivityPage({
           href="/admin/activity?type=signup"
         />
         <KpiTile
-          label="Errors today"
+          label="Clubhouse errors today"
           value={stats.errors.today}
           delta={stats.errors.delta}
           href="/admin/activity?type=error"

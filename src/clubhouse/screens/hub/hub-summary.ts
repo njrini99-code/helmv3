@@ -1,6 +1,6 @@
-import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChRsvp, ChTeamHub } from '../../data/hub';
+import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import type { ChHubTab } from '../../lib/hub-tabs';
-import { pluralWord } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * What Team Hub says under its title (what the team owes, as figures), and the rules behind Home's widgets (the player's queue,
@@ -16,7 +16,7 @@ export interface StripItem {
   after: string;
   /** The tab the figure opens. */
   tab: ChHubTab;
-  /** Something is late: the figure takes the warning ink (never red; red is under par). */
+  /** Something is late: the figure takes the warning ink (never red; red is for errors). */
   warn?: boolean;
 }
 
@@ -164,4 +164,25 @@ export function taskFigures(rows: ChHubTask[], isDone: (t: ChHubTask) => boolean
   const open = rows.filter((t) => !isDone(t));
   const late = open.filter((t) => t.status === 'overdue');
   return { open: open.length, overdue: late.length, complete: rows.length - open.length, done, left: Math.max(0, total - done), untouched: late.filter((t) => t.done![0] === 0).length };
+}
+
+/**
+ * Where a trip stays (prod audit 2026-11-15, N13P-40): the hotel when one is set, else what its dates say. A Friday to Sunday trip
+ * with no hotel read "Stay: Same day"; it is "2 nights, hotel not set". "Same day" only for a trip back the day it leaves (or with no
+ * return day saved, which the calendar and Home read as the same day).
+ */
+export function tripStay(t: Pick<ChHubTrip, 'hotel' | 'departDate' | 'returnDate'>): string {
+  if (t.hotel) return t.hotel;
+  if (!t.departDate) return 'Hotel not set';
+  const nights = t.returnDate && t.returnDate > t.departDate ? Math.round((Date.parse(`${t.returnDate}T12:00:00Z`) - Date.parse(`${t.departDate}T12:00:00Z`)) / 86_400_000) : 0;
+  return nights > 0 ? `${plural(nights, 'night')}, hotel not set` : 'Same day';
+}
+
+/**
+ * What a day of the week strip holds, for its name: "2 events", "on the road (Pinehurst)", both, or "nothing on". A trip day is never
+ * "nothing on" (N13P-40: Next 7 days said "On the road" right above "Nothing on Fri 13").
+ */
+export function dayHolds(d: Pick<ChHubDay, 'events' | 'trip'>): string {
+  const parts = [d.events.length ? plural(d.events.length, 'event') : null, d.trip ? `on the road (${d.trip})` : null].filter(Boolean);
+  return parts.length ? parts.join(', ') : 'nothing on';
 }

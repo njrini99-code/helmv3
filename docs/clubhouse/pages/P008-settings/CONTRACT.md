@@ -73,9 +73,10 @@ Status: DEFINED
 One route skeleton in Settings' own shape (80201): the title, the rail and two
 cards. It is `settings/loading.tsx`, and since 2026-09-30 also the loading file
 of the two old links, which used to show the Fairway skeleton inside the
-Clubhouse frame. Nothing on the page loads by itself after first paint
-(everything is read on the server, 82101), so there is no skeleton per section.
-v2 timing: nothing for 150ms, then a fade (the shell's 11609).
+Clubhouse frame (Fairway was retired on 2026-11-14). Nothing on the page loads
+by itself after first paint (everything is read on the server, 82101), so there
+is no skeleton per section. v2 timing: nothing for 150ms, then a fade (the
+shell's 11609).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -236,7 +237,7 @@ Report a problem check nothing first and fail with their own toast (80602,
 | 80780 | CH-8980 | `SETTINGS_PREFERENCES_TIME_FORMAT` | Settings › Preferences › Time format (a device preference, like the distance unit) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 
@@ -499,8 +500,8 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
-11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
-11824 CH-1842, 11825 CH-1816, 11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11824 CH-1842, 11825 CH-1816,
+11826 CH-1817, 11827 CH-1823, 11828 CH-1824.
 
 ## 19 — Responsive layout
 

@@ -54,10 +54,10 @@ export function Footer() {
           {/* Products */}
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-warm-500 mb-3">Products</h4>
-            <ul className="space-y-2.5">
+            <ul className="md:space-y-2.5">
               {footerLinks.products.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-sm text-warm-600 hover:text-warm-900 transition-colors">
+                  <Link href={link.href} className="inline-flex min-h-11 items-center text-sm text-warm-600 hover:text-warm-900 transition-colors md:min-h-0">
                     {link.name}
                   </Link>
                 </li>
@@ -68,10 +68,10 @@ export function Footer() {
           {/* Login */}
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-warm-500 mb-3">Login</h4>
-            <ul className="space-y-2.5">
+            <ul className="md:space-y-2.5">
               {footerLinks.login.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-sm text-warm-600 hover:text-warm-900 transition-colors">
+                  <Link href={link.href} className="inline-flex min-h-11 items-center text-sm text-warm-600 hover:text-warm-900 transition-colors md:min-h-0">
                     {link.name}
                   </Link>
                 </li>
@@ -83,7 +83,7 @@ export function Footer() {
           <div className="flex md:flex-col items-start gap-3">
             <a
               href="https://twitter.com/helmsportslabs"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:text-warm-900 hover:border-warm-400 hover:bg-warm-100 transition-colors"
+              className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:text-warm-900 hover:border-warm-400 hover:bg-warm-100 transition-colors after:absolute after:-inset-1 after:content-['']"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Helm Sports Labs on X"
@@ -94,7 +94,7 @@ export function Footer() {
             </a>
             <a
               href="https://linkedin.com/company/helmsportslabs"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:text-warm-900 hover:border-warm-400 hover:bg-warm-100 transition-colors"
+              className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:text-warm-900 hover:border-warm-400 hover:bg-warm-100 transition-colors after:absolute after:-inset-1 after:content-['']"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Helm Sports Labs on LinkedIn"
@@ -106,7 +106,8 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom bar */}
+        {/* Bottom bar. SWP-25/27 (prod audit, 15 Nov): every link here reaches 44 by 44 on the phone; the lists above
+            stand 44 a row there, and the round icons keep their 36 drawn with a 44 reach. */}
         <div className="pt-6 border-t border-warm-300 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-warm-400">
           <p>© {new Date().getFullYear()} Helm Sports Labs. All rights reserved.</p>
           <div className="flex items-center gap-5">
@@ -117,13 +118,13 @@ export function Footer() {
                 guarded by `src/test/static/legal-link-touch-targets.test.ts`. */}
             <Link
               href="/privacy"
-              className="inline-flex items-center rounded-lg py-3 -my-3 min-h-[44px] text-warm-500 hover:text-warm-900 transition-colors"
+              className="inline-flex min-w-11 items-center justify-center rounded-lg py-3 -my-3 min-h-[44px] text-warm-500 hover:text-warm-900 transition-colors"
             >
               Privacy
             </Link>
             <Link
               href="/terms"
-              className="inline-flex items-center rounded-lg py-3 -my-3 min-h-[44px] text-warm-500 hover:text-warm-900 transition-colors"
+              className="inline-flex min-w-11 items-center justify-center rounded-lg py-3 -my-3 min-h-[44px] text-warm-500 hover:text-warm-900 transition-colors"
             >
               Terms
             </Link>

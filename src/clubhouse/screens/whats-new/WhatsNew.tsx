@@ -16,12 +16,21 @@ import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
+import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/rounds.css';
 import '../../styles/whats-new.css';
 import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
 
 type Filter = 'all' | ChWhatsNewKind;
+
+const KIND_NAME: Record<ChWhatsNewKind, string> = { insights: 'Insights', patterns: 'Patterns', focus: 'Focus areas' };
+
+/** "Insights", "Insights and patterns", "Insights, patterns and focus areas". */
+const listOf = (names: string[]) => {
+  const words = names.map((n, i) => (i === 0 ? n : n.toLowerCase()));
+  return words.length < 2 ? (words[0] ?? '') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+};
 
 /** The feed landed: a week worth keeping while a later refresh of it fails (`useLastGood`). */
 const landed = (d: ChWhatsNew) => !d.error;
@@ -92,7 +101,11 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
     [data.days, filter],
   );
   const c = data.counts;
-  const nothing = !data.error && data.total === 0;
+  // An empty week is claimed only when every kind answered (GAP-S-02): with a kind that failed, the notice says so and
+  // the rest of the week draws below it.
+  const nothing = !data.error && !data.noTeam && data.total === 0 && data.failed.length === 0;
+  const missing = data.failed.map((k) => KIND_NAME[k]);
+  const countOf = (k: ChWhatsNewKind) => (data.failed.includes(k) ? '—' : String(c[k]));
 
   return (
     <main className={'ch-rd ch-wn' + (phone ? ' is-phone' : '')} aria-labelledby="ch-wn-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
@@ -110,14 +123,25 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
 
       {stale && <InlineNotice code="CH-13230" title="This week may be out of date" body="We couldn’t refresh it just now. This is what loaded last time." onRetry={refresh} retrying={refreshing} />}
 
-      {data.error ? (
+      {data.noTeam ? (
+        <NoTeam code="CH-13385" coach body="Your team’s new insights, validated patterns and focus areas show up here once your team is set up." />
+      ) : data.error ? (
         <InlineNotice code="CH-13231" title="What’s new didn’t load" body="Nothing is lost. The activity is still saved; try again in a moment." onRetry={refresh} retrying={refreshing} />
       ) : nothing ? (
         <EmptyState size="page" code="CH-13330" icon={Sparkles} title="Nothing new this week" body="New insights, validated patterns and focus areas for your team show up here as they happen." />
       ) : (
         <SectionBoundary surface="whatsnew.feed" label="What’s new" code="CH-13232">
+          {missing.length > 0 && (
+            <InlineNotice
+              code="CH-13285"
+              title="Some updates didn’t load"
+              body={`${listOf(missing)} couldn’t be read just now, so this week may be missing some. Try again.`}
+              onRetry={refresh}
+              retrying={refreshing}
+            />
+          )}
           <div className="ch-rd-tools">
-            <Segmented weight="filter"
+            <Segmented
               redraws
               label="Show"
               size="sm"
@@ -125,13 +149,16 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
               onChange={setFilter}
               options={[
                 { value: 'all', label: `All ${c.all}` },
-                { value: 'insights', label: `Insights ${c.insights}` },
-                { value: 'patterns', label: `Patterns ${c.patterns}` },
-                { value: 'focus', label: `Focus areas ${c.focus}` },
+                // A kind that didn't load has no count (— is no data), never a 0 that reads as "none this week".
+                { value: 'insights', label: `Insights ${countOf('insights')}` },
+                { value: 'patterns', label: `Patterns ${countOf('patterns')}` },
+                { value: 'focus', label: `Focus areas ${countOf('focus')}` },
               ]}
             />
           </div>
-          {days.length === 0 ? (
+          {days.length === 0 && filter !== 'all' && data.failed.includes(filter) ? null : days.length === 0 && filter === 'all' ? (
+            <EmptyState code="CH-13331" kind="filtered" compact title="Nothing else this week" body="The updates that loaded had nothing in the past seven days." />
+          ) : days.length === 0 ? (
             <EmptyState code="CH-13331" kind="filtered" compact title="Nothing of this kind this week" body="Pick All to see the rest of the week." />
           ) : (
             <Days days={days} phone={phone} />

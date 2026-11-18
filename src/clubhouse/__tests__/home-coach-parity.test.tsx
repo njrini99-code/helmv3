@@ -50,13 +50,14 @@ const wrap = (node: ReactNode) =>
   );
 
 describe('20105 the four parts’ changes are honest (spec B §1)', () => {
-  it('a change inside its standard error is plain "No clear change vs previous 10"', () => {
+  it('a change inside two standard errors is plain "No clear change vs previous 10" (stats and charts audit, CH-05)', () => {
     expect(legChange({ sg: 0.4, delta: 0.2, se: 0.3 })).toEqual({ tone: '', words: 'No clear change vs previous 10' });
+    expect(legChange({ sg: 0.4, delta: 0.5, se: 0.3 })).toEqual({ tone: '', words: 'No clear change vs previous 10' });
   });
 
-  it('a change that clears it is green when better and amber when worse', () => {
-    expect(legChange({ sg: 0.4, delta: 0.5, se: 0.3 })).toEqual({ tone: 'is-gain', words: 'Better than previous 10' });
-    expect(legChange({ sg: -0.4, delta: -0.5, se: 0.3 })).toEqual({ tone: 'is-loss', words: 'Worse than previous 10' });
+  it('a change that clears two errors is green when better and amber when worse', () => {
+    expect(legChange({ sg: 0.4, delta: 0.7, se: 0.3 })).toEqual({ tone: 'is-gain', words: 'Better than previous 10' });
+    expect(legChange({ sg: -0.4, delta: -0.7, se: 0.3 })).toEqual({ tone: 'is-loss', words: 'Worse than previous 10' });
   });
 
   it('no figure under 3 rounds with hole scores, and no change with no earlier ten', () => {
@@ -179,10 +180,10 @@ describe('20103 20806 the Week’s Next row says who hasn’t replied, with one 
     expect(desk).toMatch(/^\/golf\/dashboard\/messages\?/);
   });
 
-  it('no countdown on the coach’s desktop Home', () => {
+  it('the coach’s desktop Up next counts down, as the player’s does (lay-01, owner 15 Nov 2026)', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    expect(document.querySelector('.ch-cd')).toBeNull();
-    expect(screen.queryByRole('timer')).toBeNull();
+    expect(document.querySelectorAll('.ch-cd')).toHaveLength(1);
+    expect(document.querySelector('.ch-ph-next .ch-cd')).not.toBeNull();
   });
 });
 

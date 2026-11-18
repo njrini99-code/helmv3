@@ -1,7 +1,6 @@
 import { tidyCourseName } from '../lib/course-name';
-import { isScoreCountable, isTotalOnlyCountable, recordedPutts } from './round-scope';
+import { countsInAverages, isScoreCountable, isTotalOnlyCountable, recordedPutts } from './round-scope';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
-import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 
 /**
  * The Rounds library's data shapes and the pure steps that build them, kept
@@ -137,7 +136,7 @@ export const courseName = (name: string | null) => tidyCourseName(name) || 'Cour
  * know reads as practice.
  */
 export function inAverages(roundType: string | null): boolean {
-  return roundType == null || roundTypeFromDb(roundType) !== 'practice';
+  return countsInAverages({ round_type: roundType });
 }
 
 /** A listed round the season's figures read: anything but practice (owner, 11 Nov 2026: the Rounds average leaves practice out, as Stats does). */

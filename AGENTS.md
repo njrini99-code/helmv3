@@ -71,9 +71,12 @@ Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with
   asked to move again.
 - Worktrees share canonical env files, local credentials and the Vercel
   project. Never print credential values.
-- Disk is limited (a worktree with its own `node_modules` is about 4 GB). Prefer
-  sharing `node_modules`; run `node scripts/ensure-worktree-deps.mjs <dir>` when
-  dependencies differ or are missing.
+- Every checkout's `node_modules` is an APFS clone of the deps store entry for
+  its own lockfile (about 25 MB, 10-20 s), made by the `post-checkout` hook on
+  any `git worktree add`. Never symlink `node_modules` (Turbopack refuses it and
+  npm writes through it). If one is missing or stale: `node
+  scripts/ensure-worktree-deps.mjs <dir>` (`--refresh` for a stale tree). A new
+  lockfile costs one `npm ci`, which fills the store for every later checkout.
 - Stage explicit paths and push an explicit branch. Use `--force-with-lease`
   after rebasing your own branch. Fix red checks instead of bypassing them; if
   a check is broken by infrastructure, say so in the PR.
@@ -107,7 +110,10 @@ config-only edits need the affected tooling tests, not the suite. Do not weaken,
 skip or delete a test, or raise a baseline, to get green. No hook blocks you from finishing a turn. Reviewer agents are optional and risk-based.
 
 New tests go next to the code in a `__tests__/` folder; the other test
-locations in the repo are legacy.
+locations in the repo are legacy. Unit tests run offline
+(`src/test/network-isolation.ts`): every test gets an offline Supabase
+client and only loopback is reachable, so a test that needs a client mocks
+`@/lib/supabase/client` and one that needs the network stubs `fetch`.
 
 ## Session habits
 
@@ -179,6 +185,10 @@ GitHub branch protection requires the checks on `main` (`CI aggregate`,
 is installed. No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
 Vercel, except one owner-set `ask`: Vercel MCP deploy, promote, rollback and
 domain-purchase tools prompt first (the Vercel CLI is not gated). In an audit
-session only (`HELM_AUDIT=1`), `.claude/hooks/no-prod-in-audit.mjs` refuses MCP
-calls that name production or reach a Supabase server other than staging.
+session only (`HELM_AUDIT=1`), `.claude/hooks/no-prod-in-audit.mjs` refuses MCP,
+Bash and WebFetch calls that name production or reach a Supabase server other
+than staging. Outside hooks, browser suites and scripts that sign in refuse a
+production target unless `HELM_ALLOW_PRODUCTION=1`
+(`scripts/lib/production-site-guard.mjs`), and `debugger`, `helm-worker` and
+`helm-ui-worker` carry no production write tools.
 `docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is wired.

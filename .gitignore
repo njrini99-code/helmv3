@@ -149,6 +149,9 @@ docs/operations/generated/
 
 # ignore a root node_modules SYMLINK too (the "node_modules/" dir pattern misses symlinks)
 node_modules
+# a clone in progress and a tree set aside by ensure-worktree-deps --refresh
+node_modules.tmp-*
+node_modules.stale-*
 
 # GolfHelm UI screenshots
 # Auth storage states (contain Supabase session cookies — never commit)

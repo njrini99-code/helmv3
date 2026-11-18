@@ -34,7 +34,7 @@ import {
 } from '@/components/baseball/settings/SettingsChrome';
 
 export const metadata = {
-  title: 'Roles | Helm Baseball',
+  title: 'Roles',
   description: 'Role templates for your program mode and where to assign them.',
 };
 

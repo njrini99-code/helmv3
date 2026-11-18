@@ -8,8 +8,10 @@
  * with a pure shot-based approach that derives everything from individual shots.
  */
 
+import { SG_TOUR_BASELINE } from '@/lib/golf/sg-tour-baseline';
 import { calculatePuttsPerRound } from '@/lib/golf/putts-per-round';
 import { isPlausibleApproach } from '@/lib/golf/approach-plausibility';
+import { holeScramble } from '@/lib/golf/stat-formulas';
 import {
   isPuttMade,
   normalizePuttFeet,
@@ -666,84 +668,14 @@ export const AROUND_GREEN_THRESHOLD_YARDS = 50;
 // STROKES GAINED - PGA TOUR BENCHMARKS
 // ============================================================================
 
-// PGA Tour benchmark data - average strokes to hole out from each position
-// Source: PGA Tour Strokes Gained methodology
-
-// Broadie "Every Shot Counts" / ShotLink expected-strokes anchors. MUST stay
-// identical to the DB function public.sg_expected_strokes() and PGA_BASELINE_DATA
-// in src/lib/golf/strokes-gained.ts (recalibrated 2026-06-06, migration
-// 20260606140000) so the shot-derived player-page SG matches the DB/cache SG.
-// interpolateBenchmark() interpolates linearly between anchors and clamps outside
-// the range — so anchors-only is exact at the published points and continuous
-// between, with no nearest-neighbour seam (the DC-SG-1/DC-SG-3 fixes).
-const STROKES_GAINED_BENCHMARKS = {
-  // From tee (yards) — par-3/short tee shots (80yd) through long par-5s (600yd).
-  tee: {
-    600: 4.85, 540: 4.65, 400: 3.99, 300: 3.71, 240: 3.25,
-    200: 3.12, 150: 2.95, 120: 2.88, 100: 2.82, 80: 2.78,
-  },
-
-  // From fairway (yards)
-  fairway: {
-    540: 4.78, 400: 4.11, 300: 3.78, 240: 3.45, 200: 3.19,
-    180: 3.08, 140: 2.91, 100: 2.80, 80: 2.75, 20: 2.40,
-  },
-
-  // From rough (yards)
-  rough: {
-    540: 4.97, 400: 4.30, 300: 3.90, 240: 3.64, 200: 3.42,
-    100: 3.02, 20: 2.59,
-  },
-
-  // From sand (yards)
-  sand: {
-    540: 5.36, 400: 4.69, 300: 4.04, 240: 3.84, 200: 3.55,
-    100: 3.23, 20: 2.53,
-  },
-
-  // From 'other' (trees, pine straw, waste, hazard edges), yards. Same anchors
-  // as the 'other' branch of sg_expected_strokes() (migration 20261023170000,
-  // held). 'Other' is the logger's catch-all, so it is priced in three parts:
-  //   - 50 yd and in: the rough curve. Near the green an 'other' lie (collar,
-  //     pine straw, hardpan) plays like rough on production: 10-19 yd took
-  //     2.63 strokes from 'other' against 2.60 from rough.
-  //   - 100 yd and out: halfway between rough and Broadie's recovery curve.
-  //     Out there 'other' is often the trees, and priced as fairway those shots
-  //     ran 0.78 strokes over the curve against about 0.21 for fairway/rough.
-  //   - 50 to 100 yd: a straight blend from the first to the second.
-  // A shot the player marked as blocked uses the recovery curve below instead.
-  other: {
-    540: 5.19, 520: 5.10, 500: 5.00, 480: 4.91, 460: 4.81, 440: 4.72,
-    420: 4.62, 400: 4.53, 380: 4.44, 360: 4.35, 340: 4.25, 320: 4.14,
-    300: 4.05, 280: 3.96, 260: 3.88, 240: 3.81, 220: 3.73, 200: 3.65,
-    180: 3.58, 160: 3.54, 140: 3.49, 120: 3.44, 100: 3.41, 90: 3.31,
-    80: 3.19, 70: 3.06, 60: 2.91, 50: 2.751, 20: 2.59,
-  },
-
-  // From a blocked lie (yards): Broadie's RECOVERY curve, "the golfer's shot to
-  // the hole is impeded by trees or other obstacles" ("Assessing Golfer
-  // Performance on the PGA TOUR", Interfaces 42(2), Appendix A, Table 9, the
-  // table the fairway/rough/sand anchors above come from). Used only for the
-  // shot after one the player marked blocked (golf_shots.lie_after_recovery,
-  // see withRecoveryStart), never inferred from the lie alone.
-  recovery: {
-    600: 5.70, 580: 5.60, 560: 5.51, 540: 5.41, 520: 5.32, 500: 5.22,
-    480: 5.13, 460: 5.03, 440: 4.94, 420: 4.84, 400: 4.75, 380: 4.66,
-    360: 4.56, 340: 4.44, 320: 4.31, 300: 4.20, 280: 4.10, 260: 4.03,
-    240: 3.97, 220: 3.92, 200: 3.87, 180: 3.82, 160: 3.81, 140: 3.80,
-    120: 3.78, 100: 3.80, 90: 3.82, 80: 3.84, 70: 3.84, 60: 3.83,
-    50: 3.79, 40: 3.71, 30: 3.57, 20: 3.51,
-  },
-
-  // From green (putting, by distance in FEET) — Broadie Tour expected putts.
-  green: {
-    1: 1.00, 2: 1.00, 3: 1.04, 4: 1.13, 5: 1.23,
-    6: 1.34, 7: 1.42, 8: 1.50, 9: 1.56, 10: 1.61,
-    15: 1.78, 20: 1.87, 30: 1.98, 40: 2.06, 50: 2.14,
-    60: 2.21, 90: 2.40,
-  },
-
-};
+// The PGA Tour expected-strokes curve: Broadie's Table B.1 (Interfaces 42(2),
+// Appendix B) for tee, fairway, rough, sand and recovery, the owner's 'other'
+// rule on those rows, and the putting row in FEET. One copy for every TS engine
+// (src/lib/golf/sg-tour-baseline.ts), equal to public.sg_expected_strokes()
+// (migration 20261115215000, held) so the shot-derived player-page SG matches
+// the DB/cache SG. interpolateBenchmark() interpolates linearly between rows
+// and holds the first or last row outside them.
+const STROKES_GAINED_BENCHMARKS = SG_TOUR_BASELINE;
 
 /**
  * Look up an expected-strokes value from a {distance: strokes} benchmark table
@@ -785,8 +717,9 @@ export function getExpectedStrokes(lie: string | null, distanceYards: number, di
   if (!lie) return 0;
   if (lie === 'green' && distanceFeet !== undefined) {
     // Putting — distance is feet, never converted (see normalizePuttFeet), and
-    // interpolated across the green make-rate curve.
-    return interpolateBenchmark(STROKES_GAINED_BENCHMARKS.green, distanceFeet) * scale;
+    // interpolated across the green make-rate curve. Never scaled (SC-04): a
+    // holed 1-foot putt gains 0.00 on every baseline, as in the DB.
+    return interpolateBenchmark(STROKES_GAINED_BENCHMARKS.green, distanceFeet);
   }
 
   // DC-SG-3: tee shots use a single continuous tee curve (100-600yd). The old
@@ -807,11 +740,12 @@ export function getExpectedStrokes(lie: string | null, distanceYards: number, di
     benchmarkTable = STROKES_GAINED_BENCHMARKS.fairway;
   }
 
-  // Per-team SG baseline scale (women's 1.083, NCAA D1/D2/D3, etc.) multiplies the
-  // expected-strokes curve, mirroring the DB sg_expected_strokes(...,p_scale)
-  // (RETURN v_es * COALESCE(p_scale,1.0)). The -1 stroke charged per shot stays
-  // UNSCALED (applied by the caller), so SG = scale·E_before − 1 − scale·E_after.
-  return interpolateBenchmark(benchmarkTable, distanceYards) * scale;
+  // Per-team SG baseline scale (the women's estimate, 1.083) multiplies the
+  // off-green expected-strokes curve, mirroring the DB sg_expected_strokes(...,
+  // p_scale), which leaves the putting value unscaled (20261115220000, SC-04).
+  // The -1 stroke charged per shot stays UNSCALED (applied by the caller), so
+  // SG = scale·E_before − 1 − scale·E_after off the green.
+  return interpolateBenchmark(benchmarkTable, distanceYards) * (lie === 'green' ? 1 : scale);
 }
 
 // Calculate Strokes Gained for a shot
@@ -1119,6 +1053,16 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
   const putts = hole.putts ?? null;
   const greenInRegulation = hole.gir ?? false;
   const fairwayHit = hole.par < 4 ? null : (hole.fairway_hit ?? null);
+  // Canonical scramble definition (holeScramble, the DB cache trigger's rule):
+  // a chance is a missed green or a greenside-bunker visit; made is par or
+  // better after the miss, or a sand save. A hole with no recorded score is
+  // never a chance: we cannot know whether it converted.
+  const scramble = holeScramble({
+    missedGreen: !greenInRegulation,
+    score,
+    par: hole.par,
+    sandSave: hole.sand_save,
+  });
 
   return {
     holeNumber: hole.hole_number,
@@ -1144,11 +1088,8 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
     firstPuttLeave: null,
     firstPuttBreak: null,
     firstPuttSlope: null,
-    // Canonical scramble definition (DB cache trigger): attempt = gir=false
-    // AND score IS NOT NULL. A missed green with no recorded score is NOT a
-    // scramble attempt — we cannot know whether it converted.
-    scrambleAttempt: !greenInRegulation && score !== null,
-    scrambleMade: !greenInRegulation && score !== null && score <= hole.par,
+    scrambleAttempt: scramble.attempt,
+    scrambleMade: scramble.made,
     // One sand-save figure: the golf_holes.sand_save flag (attempt = flag is
     // non-null, made = flag true), the same source the DB cache and
     // shot-analytics read. A scorecard-only hole still carries it.
@@ -1343,10 +1284,6 @@ export function calculateHoleStatsFromShots(
   // the same one the leak map uses; a putt without a start distance is not banded.
   const puttMakeByBand = tallyPuttMakes(puttingShots) as Record<string, { made: number; total: number }>;
 
-  // Scrambling = missed GIR but made par or better
-  const scrambleAttempt = !greenInRegulation;
-  const scrambleMade = scrambleAttempt && (score <= holeInfo.par);
-
   // Find the around-green shot for scrambling stats
   // This is the shot that actually tries to get up-and-down (chip/pitch), not the approach
   // Detection: shot_type === 'around_green' OR (not on green, not putting, within threshold)
@@ -1387,20 +1324,33 @@ export function calculateHoleStatsFromShots(
   // Sand save = up-and-down from a greenside bunker. Prefer the canonical
   // golf_holes.sand_save flag (the SAME source the DB cache uses, per
   // stat-formulas) so the engine and cache agree: attempt = flag is non-null
-  // (a greenside-bunker visit was recorded), made = flag === true. The old
-  // `score <= par` rule wrongly credited GIR pars (green reached in regulation,
-  // never in a bunker) as saves. When the flag is absent (number-only path),
-  // fall back to shot-derived detection requiring an actual up-and-down: a
-  // greenside-bunker visit on a missed green, holed in <=2 from the sand shot.
+  // (a greenside-bunker visit was recorded), made = flag === true. When the
+  // flag is absent (number-only path), fall back to the shots, on the PGA
+  // Tour's definition (SC-02, the one shot-helpers' calculateHoleStats writes
+  // the flag with): the hole's first greenside-bunker shot, holed in two
+  // strokes or fewer counting that shot, whatever the score and whether or not
+  // the green was hit in regulation. Strokes are the non-penalty shots, as the
+  // tracker counts them.
   const sandFlag = holeInfo.sand_save;
-  const sandShotIdx = aroundGreenShot ? normalizedShots.indexOf(aroundGreenShot) : -1;
-  const strokesFromSand = sandShotIdx >= 0 ? normalizedShots.length - sandShotIdx : Infinity;
+  const nonPenalty = normalizedShots.filter((s) => !s.is_penalty);
+  const sandShot = nonPenalty.find((s) => s.lie_before === 'sand' && s.shot_type === 'around_green');
+  const strokesFromSand = sandShot ? nonPenalty.length - nonPenalty.indexOf(sandShot) : Infinity;
   const sandSaveAttempt = sandFlag !== undefined
     ? sandFlag !== null
-    : aroundGreenShot?.lie_before === 'sand';
+    : sandShot !== undefined;
   const sandSaveMade = sandFlag !== undefined
     ? sandFlag === true
-    : (aroundGreenShot?.lie_before === 'sand' && !greenInRegulation && strokesFromSand <= 2);
+    : (sandShot !== undefined && strokesFromSand <= 2);
+
+  // Scrambling (holeScramble): a missed green or a greenside-bunker visit is a
+  // chance; par or better after the miss, or a sand save, is made. The bunker
+  // reads the same flag (or shot fallback) as the sand-save figure above.
+  const { attempt: scrambleAttempt, made: scrambleMade } = holeScramble({
+    missedGreen: !greenInRegulation,
+    score,
+    par: holeInfo.par,
+    sandSave: sandSaveAttempt ? sandSaveMade : null,
+  });
 
   // Penalties. ONE count: golf_holes.penalty_strokes (null = 0, like the DB
   // cache's COALESCE(penalty_strokes, 0) and the Standing rate). The is_penalty

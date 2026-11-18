@@ -6,7 +6,6 @@ import { pluralWord } from '../../../../lib/plural';
 import { Avatar } from '../../../../ui/Avatar';
 import { Icon } from '../../../../ui/Icon';
 import { BallMark } from '../BallMark';
-import { waitLight } from '../reveal';
 import { elapsedWords, type IslandStep, type IslandStepState } from './model';
 import type { Island } from './useIsland';
 
@@ -216,12 +215,6 @@ export function ActivityIsland({ island, density = 'full', onOpenStep }: { islan
         <i className="pm" />
         <i className="pb" />
       </span>
-      {/* The passing light: one soft band crossing the line while work is live. A transform on its own layer, clipped to the line. */}
-      {m.live && waitLight() && (
-        <span className="gl" aria-hidden="true">
-          <i />
-        </span>
-      )}
       <button type="button" className="hd" aria-expanded={open} aria-controls={listId} onClick={island.toggle} data-ch-press="">
         <LeadMark live={m.live} settled={m.stopped ? 'stopped' : m.settled ? 'done' : 'waiting'} />
         {/* Keyed by its words: a change of activity is a new line fading in, not letters swapping in place. */}

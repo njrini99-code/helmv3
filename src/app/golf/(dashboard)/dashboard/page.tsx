@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
@@ -9,7 +10,9 @@ import { loadPlayerHome } from '@/clubhouse/data/player-home';
 import { PlayerHome, PlayerHomeNoTeam } from '@/clubhouse/screens/home/PlayerHome';
 import { resolveClubhouseTeam } from '@/clubhouse/routes/team';
 import { marksHint } from '@/clubhouse/lib/phone-hint';
-import { parseSpan } from '@/clubhouse/data/span';
+import { formWindowSpan, parseFormWindow } from '@/clubhouse/data/span';
+
+export const metadata: Metadata = { title: 'Home' };
 
 export const dynamic = 'force-dynamic';
 
@@ -19,8 +22,10 @@ export default async function GolfDashboardPage({
     searchParams: Promise<{ range?: string }>;
 }) {
     const params = await searchParams;
-    // Home's switch (This season, All time); its default is the season.
-    const span = parseSpan(params.range);
+    // Home's Team scoring switch (Last 10, Season, All time; prod audit 2026-11-15, HOME-P-10). The rest of Home reads the season,
+    // or all time on All time (span.ts `formWindowSpan`).
+    const formWindow = parseFormWindow(params.range);
+    const span = formWindowSpan(formWindow);
 
     // React.cache() dedupes getUser() + profile queries across the render tree.
     const session = await getGolfSessionProfile();
@@ -45,7 +50,7 @@ export default async function GolfDashboardPage({
         // Who is on the course rides beside Home's own reads and never fails them (loadLiveRounds catches its own).
         // The marks hint feeds Home's loader only: the live read starts beside it rather than after it (F-0032).
         const [home, live] = await Promise.all([
-            marksHint().then((marks) => loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId, coachId: coach.id, marks, span })),
+            marksHint().then((marks) => loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId, coachId: coach.id, marks, span, formWindow })),
             loadLiveRounds({ teamId, viewer: { role: 'coach', playerId: null } }),
         ]);
         return <CoachHome data={home} live={live} />;

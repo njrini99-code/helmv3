@@ -57,6 +57,9 @@ import type {
   HelmLiftingLiveAthleteRow,
 } from '@/lib/types/helm-lifting-data';
 import type { HelmLiftingAthleteRow } from '@/lib/types/helm-lifting';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Live Weight Room' };
 
 const LIVE_ROOM_ACTION = 'baseball.performance.live.buildLiveRoomData';
 

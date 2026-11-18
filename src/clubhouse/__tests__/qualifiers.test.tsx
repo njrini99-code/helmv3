@@ -70,6 +70,9 @@ import { isAliased, isRebuilt } from '../shell/nav';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
+
+/** Every Qualifiers screen: each page hands the route only its own (MAC-11); these tests drive every address through one route. */
+const ALL_SCREENS = { list: QualifiersList, detail: QualifierDetail, form: QualifierForm, selection: QualifierSelection };
 import { formatDate, localToday } from '../ui/date-time';
 
 /** A date as a DateField shows it: this year's dates without the year (ui/date-time formatDate). */
@@ -91,12 +94,14 @@ function wrap(node: ReactNode) {
     </LazyMotion>,
   );
 }
-type FakeWrites = { [K in keyof ChQWrites]: Mock<ChQWrites[K]> };
+type FakeWrites = { [K in keyof ChQWrites]-?: Mock<NonNullable<ChQWrites[K]>> };
 function fakeWrites(over: Partial<Record<keyof ChQWrites, Mock>> = {}): FakeWrites {
   return {
     create: vi.fn<ChQWrites['create']>(async () => ({ success: true, data: { qualifierId: 'q-new' } })),
     saveEdit: vi.fn<ChQWrites['saveEdit']>(async () => ({ success: true })),
+    saveRules: vi.fn<ChQWrites['saveRules']>(async () => ({ success: true })),
     setStatus: vi.fn<ChQWrites['setStatus']>(async () => ({ success: true })),
+    saveExemptions: vi.fn<NonNullable<ChQWrites['saveExemptions']>>(async () => ({ success: true })),
     courses: vi.fn<ChQWrites['courses']>(async () => PREVIEW_COURSES),
     tees: vi.fn<ChQWrites['tees']>(async () => PREVIEW_TEES),
     ...over,
@@ -731,8 +736,16 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
       expect(document.querySelector('.ch-qf-mine')).toBeNull();
       view.unmount();
     };
-    await standing('golf_qualifier_entries');
-    await standing('golf_rounds');
+    // The fixture is live (22 Sep to 1 Oct): read on a day inside it, so the qualifier is the player's hero. Past its last day it files
+    // under Concluded for a player (N13P-51) and there is no hero to check.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-25T15:00:00Z'));
+    try {
+      await standing('golf_qualifier_entries');
+      await standing('golf_rounds');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('CH-09221 the coach’s pick notes that do not load are named, never presented as "no notes"; the squad stays', async () => {
@@ -1109,7 +1122,7 @@ describe('Qualifiers · one qualifier', () => {
     expect(screen.queryByText(/Two top-10s last spring/)).toBeNull();
   });
 
-  it('CH-09212 CH-09213 CH-09214 CH-09215 CH-09223 a crash stays inside its section', () => {
+  it('CH-09212 CH-09213 CH-09214 CH-09215 CH-09223 CH-09283 a crash stays inside its section', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const d = detail();
     const broken = { ...d, roundCourses: d.roundCourses.map((c) => ({ ...c, course: {} as never })), board: { ...d.board!, rows: d.board!.rows.map((r, i) => (i === 0 ? { ...r, name: null as never, rounds: null as never } : r)) } };
@@ -1120,6 +1133,8 @@ describe('Qualifiers · one qualifier', () => {
     expect(code('CH-09215')!.textContent).toMatch(/Course per round couldn’t be shown/);
     // The coach's panel falls back to the first row, the one broken above.
     expect(code('CH-09223')!.textContent).toMatch(/A player’s rounds couldn’t be shown/);
+    // F-06: the next round's groups read every row's rounds, so the broken row stops them too, inside their section.
+    expect(code('CH-09283')!.textContent).toMatch(/Next round groups couldn’t be shown/);
     expect(screen.getByRole('heading', { name: 'Pinehurst qualifier' })).toBeTruthy();
     quiet.mockRestore();
   });
@@ -1375,7 +1390,7 @@ describe('Qualifiers · the courses and the cards stream behind the standings (o
       const { core, secondary } = split(detail());
       const later = deferred<ChQDetailSecondary>();
       await pending(page(core, later.promise));
-      await user.click(screen.getByRole('button', { name: /^Sofia Alvarez, 1/ }));
+      await user.click(screen.getByRole('button', { name: /^1, ?Sofia Alvarez,/ }));
       const dialog = await screen.findByRole('dialog', { name: 'Sofia Alvarez' });
       expect(within(dialog).getByText('Finley GC', { exact: false })).toBeTruthy();
       expect(within(dialog).queryByRole('table')).toBeNull();
@@ -1406,7 +1421,7 @@ describe('Qualifiers · the courses and the cards stream behind the standings (o
       golf_course_tees: { data: [{ id: 'tee1', tee_name: 'Blue', total_par: 72 }] },
       golf_holes: { data: [{ round_id: 'r1', hole_number: 1, par: 4, score: 4 }] },
     };
-    const el = (await ClubhouseQualifiersRoute({ view: 'detail', id: Q1 })) as ReactElement<{ data: Record<string, unknown>; secondary: Promise<unknown> }>;
+    const el = (await ClubhouseQualifiersRoute({ screens: ALL_SCREENS, view: 'detail', id: Q1 })) as ReactElement<{ data: Record<string, unknown>; secondary: Promise<unknown> }>;
     await new Promise((resolve) => setTimeout(resolve, 10));
     // The route came back with the cards' read still open.
     expect(reads).toEqual(expect.arrayContaining(['golf_course_tees', 'golf_holes']));
@@ -1693,8 +1708,8 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
     asCoachSession();
     tables.current = { golf_qualifiers: { data: null } };
     noteOpenedFromList(id);
-    const stepped = wrap(await ClubhouseQualifiersRoute({ view: 'detail', id }));
-    const back = within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' });
+    const stepped = wrap(await ClubhouseQualifiersRoute({ screens: ALL_SCREENS, view: 'detail', id }));
+    const back = within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' });
     expect(back.getAttribute('href')).toBe(LIST_URL);
     await user.click(back);
     expect(router.back).toHaveBeenCalledTimes(1);
@@ -1702,17 +1717,17 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
 
     // The edit address for the same id is not the page the list opened: Back is the list's address.
     noteOpenedFromList(id);
-    const edit = wrap(await ClubhouseQualifiersRoute({ view: 'edit', id }));
-    keepHere(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
-    await user.click(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
+    const edit = wrap(await ClubhouseQualifiersRoute({ screens: ALL_SCREENS, view: 'edit', id }));
+    keepHere(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' }));
+    await user.click(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' }));
     expect(router.back).toHaveBeenCalledTimes(1);
     edit.unmount();
 
     // And so is a detail address nobody opened from the list.
     window.sessionStorage.clear();
-    wrap(await ClubhouseQualifiersRoute({ view: 'detail', id }));
-    keepHere(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
-    await user.click(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }));
+    wrap(await ClubhouseQualifiersRoute({ screens: ALL_SCREENS, view: 'detail', id }));
+    keepHere(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' }));
+    await user.click(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' }));
     expect(router.back).toHaveBeenCalledTimes(1);
   });
 
@@ -2791,7 +2806,7 @@ describe('Qualifiers · Manage selections', () => {
   it('CH-09218 the page that cannot read the selections never says "nothing has changed": it also follows a pick or a confirm that was saved', async () => {
     asCoachSession();
     tables.current = { golf_qualifiers: { error: { message: 'boom' } } };
-    wrap((await ClubhouseQualifiersRoute({ view: 'selection', id: '10000000-0000-4000-8000-000000000001' })) as never);
+    wrap((await ClubhouseQualifiersRoute({ screens: ALL_SCREENS, view: 'selection', id: '10000000-0000-4000-8000-000000000001' })) as never);
     const notice = code('CH-09218') as HTMLElement;
     expect(notice.textContent).not.toMatch(/nothing has changed/i);
     expect(notice.textContent).toMatch(/already saved is still saved/);
@@ -2826,7 +2841,7 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
   it('board 03 CH-09701: a row opens that player’s rounds, the latest played round chosen, with Message and Stats', async () => {
     const user = userEvent.setup();
     wrap(<QualifierDetail data={detail('live')} writes={fakeWrites()} live={false} />);
-    await user.click(screen.getByRole('button', { name: /^Sofia Alvarez, 1/ }));
+    await user.click(screen.getByRole('button', { name: /^1, ?Sofia Alvarez,/ }));
     expect(hapticSpy).toHaveBeenCalledWith('select');
     const dialog = await screen.findByRole('dialog', { name: 'Sofia Alvarez' });
     const chips = within(dialog).getAllByRole('button', { name: /^R\d/ });
@@ -3076,7 +3091,7 @@ describe('Qualifiers · the route (who reaches which address)', () => {
     tables.current = new Proxy({}, { get: (_t, key: string) => (reads.push(key), answers[key]) }) as never;
     return reads;
   };
-  const route = async (view: Parameters<typeof ClubhouseQualifiersRoute>[0]['view'], id?: string) => (await ClubhouseQualifiersRoute({ view, id })) as ReactElement<{ data: never }>;
+  const route = async (view: Parameters<typeof ClubhouseQualifiersRoute>[0]['view'], id?: string) => (await ClubhouseQualifiersRoute({ screens: ALL_SCREENS, view, id })) as ReactElement<{ data: never }>;
 
   it('90105 every address renders in place as its own screen, never as a redirect (D-23)', async () => {
     asCoach();
@@ -3137,7 +3152,7 @@ describe('Qualifiers · the route (who reaches which address)', () => {
   it('90804 CH-09309 a signed-out visitor gets nothing, and someone with no team gets the no-team page on every address; neither reads a qualifier', async () => {
     const reads = seed();
     vi.mocked(getGolfSessionProfile).mockResolvedValue(null);
-    expect(await ClubhouseQualifiersRoute({ view: 'list' })).toBeNull();
+    expect(await ClubhouseQualifiersRoute({ screens: ALL_SCREENS, view: 'list' })).toBeNull();
     expect(resolveClubhouseTeam).not.toHaveBeenCalled();
     vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: { id: 'c1' }, player: null } as never);
     vi.mocked(resolveClubhouseTeam).mockResolvedValue(null);
@@ -3161,8 +3176,8 @@ describe('Qualifiers · the route (who reaches which address)', () => {
       const views = who === asCoach ? (['detail', 'edit', 'selection'] as const) : (['detail'] as const);
       for (const view of views) {
         const { unmount } = wrap((await route(view, QID)) as never);
-        expect([view, code('CH-09310')!.textContent]).toEqual([view, 'That qualifier isn’t on your teamIt may have been deleted, or the link is from another team.Back to qualifiers']);
-        expect(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to qualifiers' }).getAttribute('href')).toBe('/golf/dashboard/qualifiers');
+        expect([view, code('CH-09310')!.textContent]).toEqual([view, 'This qualifier isn’t hereIt may have been deleted, or the link is wrong. Everything else is where you left it.Back to Qualifiers']);
+        expect(within(code('CH-09310') as HTMLElement).getByRole('link', { name: 'Back to Qualifiers' }).getAttribute('href')).toBe('/golf/dashboard/qualifiers');
         unmount();
       }
     }
@@ -3196,8 +3211,10 @@ describe('Qualifiers · the route (who reaches which address)', () => {
     vi.mocked(getGolfSessionProfile).mockResolvedValue(null);
     await expect(page()).rejects.toThrow('redirect:/golf/login');
     vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: { id: 'c1' }, player: null } as never);
-    const el = (await page()) as ReactElement<{ view: string; id: string }>;
+    const el = (await page()) as ReactElement<{ view: string; id: string; screens: Record<string, unknown> }>;
     expect([el.type, el.props.view, el.props.id]).toEqual([ClubhouseQualifiersRoute, 'selection', QID]);
+    // MAC-11: the page hands the route its own screen and no other, so its first load carries only Manage selections.
+    expect(el.props.screens).toEqual({ selection: QualifierSelection });
   });
 });
 
@@ -3597,7 +3614,7 @@ describe('Qualifiers · when a write is slow or refused, and when a read did not
     // Manage selections: the route's own notice.
     asCoachSession();
     tables.current = { golf_qualifiers: { error: { message: 'boom' } } };
-    unmount = shown((await ClubhouseQualifiersRoute({ view: 'selection', id: '10000000-0000-4000-8000-000000000001' })) as never);
+    unmount = shown((await ClubhouseQualifiersRoute({ screens: ALL_SCREENS, view: 'selection', id: '10000000-0000-4000-8000-000000000001' })) as never);
     await tryAgain('CH-09218');
     unmount();
     // The picker retries only itself.
@@ -3697,7 +3714,11 @@ describe('Qualifiers · this file', () => {
   it('92401 every catalog row of kinds 0 to 5 that is not marked preview is named by a test here, and so is every Bridge ID this page proves', () => {
     const root = process.cwd();
     const read = (file: string) => readFileSync(join(root, file), 'utf8');
-    const own = read('src/clubhouse/__tests__/qualifiers.test.tsx');
+    // The exports (F-02), the tie rule (F-04) and configurable qualifying (F-06) are proved in their own files.
+    const own = ['src/clubhouse/__tests__/qualifiers.test.tsx', 'src/clubhouse/__tests__/exports.test.tsx', 'src/clubhouse/__tests__/qualifier-ties.test.tsx', 'src/clubhouse/__tests__/qualifier-f06.test.tsx']
+      .filter((f) => existsSync(join(root, f)))
+      .map(read)
+      .join('\n');
     const rows = [...read('docs/clubhouse/catalog/qualifiers.md').matchAll(/^\|\s*(CH-09[0-5]\d\d)\s*\|.*$/gm)]
       .filter((m) => !/\|\s*preview\s*\|\s*$/.test(m[0].trim()) && !/retired/i.test(m[0]))
       .map((m) => m[1]!);

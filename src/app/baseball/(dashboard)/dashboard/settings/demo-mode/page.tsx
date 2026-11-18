@@ -15,7 +15,7 @@ import { permanentRedirect } from 'next/navigation';
 import { BASEBALL_SETTINGS_HUB_PATH } from '@/lib/baseball/settings-route-aliases';
 
 export const metadata = {
-  title: 'Demo Mode Settings | Helm Baseball',
+  title: 'Demo Mode Settings',
 };
 
 export default function Page() {

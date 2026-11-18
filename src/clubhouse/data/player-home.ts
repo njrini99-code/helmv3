@@ -6,16 +6,15 @@ import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHome
 import type { MarkEntries } from '../lib/marks-cookie';
 import type { ChHomeChange } from '../screens/home/change-rows';
 import { loadHomeChanges, withChange, withWas } from './home-changes';
-import { playerScoringAverage, playerStrokesGained } from './figure-window';
+import { lastTenHoleRounds, playerScoringAverage, playerStrokesGained } from './figure-window';
 import { countsForScoring, isFull18, lastTenFloor, loadSeasonRounds, mean, roundsForSpan, type ChRound } from './season';
 import { spanSince, type ChSpan } from './span';
-import { holeRounds } from './round-scope';
 import { legRows, type ChPlayerLeg } from './leg-rows';
 import { replyClosedAt } from '../screens/calendar/model';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
-import { loadRoundCache, loadTourBenchmarks, tourForGender, type ChRoundCache } from './stats-common';
+import { loadRoundCache, loadTourBenchmarks, teamTour, TEAM_TOUR_COLUMNS, type ChRoundCache } from './stats-common';
 import { formatFixed } from '../lib/format';
 
 export { legRows } from './leg-rows';
@@ -37,7 +36,7 @@ export type { ChLegKey, ChPlayerLeg } from './leg-rows';
  * approximated.
  */
 
-/** Rounds in the leg figures (the newest with their holes scored) and the brief's form. */
+/** Rounds in the leg figures (those with their holes among the newest ten, `lastTenHoleRounds`) and the brief's form. */
 export const LEG_WINDOW = 10;
 /** Scores sent for the scoring chart: 20 shown at most, and 20 before them for "vs previous". */
 const SCORING_MAX = 40;
@@ -129,7 +128,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // The scoring card's Last 5 / 10 / 20, the leg figures and the brief are the player's newest rounds in any season, as Stats' Last 10 is (Q-122); the season's own figures are cut below.
   const roundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'home', since: spanSince(input.span, lastTenFloor()) });
   const playerRead = Promise.resolve(supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle());
-  const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender, created_by, organization_id').eq('id', input.teamId).maybeSingle());
+  const teamRead = Promise.resolve(supabase.from('golf_teams').select(`${TEAM_TOUR_COLUMNS}, created_by, organization_id`).eq('id', input.teamId).maybeSingle());
   // Behind the Stats flag practice rounds stay out of the scores, the legs, the brief and strokes gained, so Home's figures equal My stats' (DATA-CHECKS, SHARED-11).
   // All time (span.ts) is Fairway's basis for the scores: every round type, and no round posted as a total only.
   const fullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : roundsForSpan(res.rounds, input.span).filter(isFull18));
@@ -137,7 +136,9 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const yearOf = (res: Awaited<typeof roundsRead>) => (input.span === 'all' ? res.rounds.filter((r) => r.round_date.slice(0, 10) >= lastTenFloor(now)) : res.rounds);
   const legFullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : yearOf(res).filter(countsForScoring).filter(isFull18));
   // The leg figures are hole-level: the newest rounds with their holes (a round posted as a total only has none, Q-123). The brief and the scoring chart are scores and count every round.
-  const windowOf = (res: Awaited<typeof roundsRead>) => holeRounds(legFullOf(res)).slice(0, LEG_WINDOW);
+  // My stats' Last 10 reads the same rounds (`lastTenHoleRounds`, N13P-64): never the newest ten that happen to have holes, which reached
+  // back past the ten and printed different figures under the same "Last 10".
+  const windowOf = (res: Awaited<typeof roundsRead>) => lastTenHoleRounds(legFullOf(res));
   // Latest rounds lists every round, practice included.
   const latestRead = roundsRead.then((res) => latestWithHoles(supabase, res.error ? [] : res.rounds.filter(isFull18), () => input.firstName));
   const cacheRead = roundsRead.then((res) => {
@@ -145,7 +146,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     return window.length ? loadRoundCache(supabase, window.map((r) => r.id), 'home') : { byRound: new Map<string, ChRoundCache>(), error: false };
   });
   // Without the team's row its tour is unknown, so no benchmark is claimed (as on Stats, CH-4210).
-  const benchRead = teamRead.then((team) => (team.data ? loadTourBenchmarks(supabase, tourForGender(team.data.gender), 'home') : null));
+  const benchRead = teamRead.then((team) => (team.data ? loadTourBenchmarks(supabase, teamTour(team.data), 'home') : null));
   const coachRead = teamRead.then((team) => coachFor(supabase, team.data ?? null));
   // P-14: the coach's schedule changes, read once the team's zone and the player's week (which meetings are theirs) are known.
   const changesRead = loadHomeChanges(supabase, {
@@ -208,7 +209,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     ...(input.span === 'all'
       ? { span: input.span, scoringAll: roundsRes.error ? null : { avg: mean(full.map((r) => r.total_score as number)), n: full.length } }
       : {}),
-    tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
+    tour: teamRes.data ? teamTour(teamRes.data) : null,
     handicap: playerRes.data?.handicap_index ?? playerRes.data?.handicap ?? null,
     legs,
     asks,

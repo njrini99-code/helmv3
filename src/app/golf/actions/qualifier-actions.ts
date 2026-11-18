@@ -607,7 +607,7 @@ async function setQualifierRoundCoursesImpl(
 
     revalidatePath('/golf/dashboard/qualifiers');
     revalidatePath(`/golf/dashboard/qualifiers/${qualifierId}`);
-    revalidatePath('/golf/dashboard/my-qualifiers');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
 
     return { success: true, data: undefined };
   } catch (error) {
@@ -873,7 +873,7 @@ async function updateGolfQualifierDetailsImpl(
 
     revalidatePath('/golf/dashboard/qualifiers');
     revalidatePath(`/golf/dashboard/qualifiers/${qualifierId}`);
-    revalidatePath('/golf/dashboard/my-qualifiers');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
     updateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, data: undefined };

@@ -46,6 +46,19 @@ export function puttBandViews(bands: PuttBandInput[]): PuttBandView[] {
   });
 }
 
+/**
+ * A band below the Tour as the rings, the phone's bars and the note under them say it (stats and charts audit 2026-11-15, CH-18):
+ * on this chart's own floor (a steady read, 30 putts, never from 10) and as the two print, whole percents, so 69.6 against 70 is
+ * level (A2).
+ */
+export function puttBelowTour(b: Pick<PuttBandInput, 'made' | 'attempts' | 'bench'>): boolean {
+  if (b.bench == null || b.made == null || !b.attempts || sampleState('make', b.attempts) !== 'steady') return false;
+  return Math.round((b.made / b.attempts) * 100) < Math.round(b.bench);
+}
+
+/** Whether a band grades against the Tour at all: a steady read with a Tour rate. */
+export const puttGraded = (b: Pick<PuttBandInput, 'attempts' | 'bench'>): boolean => b.bench != null && sampleState('make', b.attempts) === 'steady';
+
 const pct = (v: number) => `${Math.round(v)}%`;
 
 /** The count under a band: "20/51" (made/tried), or "33 putts" where only the count was kept. */

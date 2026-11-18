@@ -1759,3 +1759,514 @@ BEGIN
 END $$;
 
 ALTER FUNCTION "helm_private"."golf_team_channel_backfill"() OWNER TO "postgres";
+
+-- SC-02, 20261115200000 (HELD): sand saves on the PGA Tour's definition.
+CREATE OR REPLACE FUNCTION helm_private.golf_hole_sand_save_tour(p_hole_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  -- Sand save on the PGA Tour's definition (SC-02): the hole's first
+  -- greenside-bunker shot, holed in two strokes or fewer counting it, whatever
+  -- the score. NULL: no greenside-bunker shot. Strokes are the non-penalty
+  -- shots (src/lib/utils/shot-helpers.ts calculateHoleStats). A shot belongs to
+  -- the hole by hole_id, or by round and hole number when an old row has none.
+  WITH hole AS (
+    SELECT h.id, h.round_id, h.hole_number
+    FROM public.golf_holes AS h
+    WHERE h.id = p_hole_id
+  ),
+  strokes AS (
+    SELECT s.shot_number, s.shot_type, s.lie_before
+    FROM public.golf_shots AS s
+    INNER JOIN hole ON (
+      s.hole_id = hole.id
+      OR (s.hole_id IS NULL AND s.round_id = hole.round_id AND s.hole_number = hole.hole_number)
+    )
+    WHERE s.is_penalty IS NOT TRUE
+  ),
+  first_sand AS (
+    SELECT min(strokes.shot_number) AS shot_number
+    FROM strokes
+    WHERE strokes.lie_before = 'sand' AND strokes.shot_type = 'around_green'
+  )
+  SELECT CASE
+    WHEN f.shot_number IS NULL THEN NULL
+    ELSE (SELECT count(*) FROM strokes WHERE strokes.shot_number >= f.shot_number) <= 2
+  END
+  FROM first_sand AS f;
+$$;
+
+ALTER FUNCTION "helm_private"."golf_hole_sand_save_tour"("p_hole_id" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION helm_private.golf_backfill_sand_save_tour()
+RETURNS integer
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+DECLARE
+  v_changed integer;
+  v_unfixed integer;
+  v_cache_off integer;
+BEGIN
+  -- Archive every hole whose stored flag differs from the Tour rule: holes of
+  -- completed rounds whose shots hole out. Scorecard-only holes and holes
+  -- whose shots stop short of the hole are never read.
+  INSERT INTO helm_private.golf_holes_sand_save_fix_20261115 (
+    hole_id, round_id, old_sand_save, new_sand_save, stats_cache_before
+  )
+  SELECT
+    h.id,
+    h.round_id,
+    h.sand_save,
+    t.tour,
+    (SELECT to_jsonb(c) FROM public.golf_round_stats_cache AS c WHERE c.round_id = h.round_id)
+  FROM public.golf_holes AS h
+  INNER JOIN public.golf_rounds AS r ON r.id = h.round_id
+  CROSS JOIN LATERAL (SELECT helm_private.golf_hole_sand_save_tour(h.id) AS tour) AS t
+  WHERE r.status = 'completed'
+    AND EXISTS (
+      SELECT 1
+      FROM public.golf_shots AS s
+      WHERE (s.hole_id = h.id OR (s.hole_id IS NULL AND s.round_id = h.round_id AND s.hole_number = h.hole_number))
+        AND s.result = 'hole'
+        AND s.is_penalty IS NOT TRUE
+    )
+    AND h.sand_save IS DISTINCT FROM t.tour
+  ON CONFLICT (hole_id) DO UPDATE SET
+    round_id = excluded.round_id,
+    old_sand_save = excluded.old_sand_save,
+    new_sand_save = excluded.new_sand_save,
+    stats_cache_before = excluded.stats_cache_before,
+    archived_at = excluded.archived_at;
+
+  -- The lifecycle guards let postgres change a completed round's holes under
+  -- the transaction-local 'atomic' mark; defer_round_totals keeps the hole
+  -- trigger from recomputing round totals (sand_save is not one).
+  PERFORM set_config('helm.golf_lifecycle_write', 'atomic', true);
+  PERFORM set_config('helm.defer_round_totals', 'on', true);
+
+  UPDATE public.golf_holes AS h
+  SET sand_save = a.new_sand_save
+  FROM helm_private.golf_holes_sand_save_fix_20261115 AS a
+  WHERE a.hole_id = h.id
+    AND a.archived_at = now()
+    AND h.sand_save IS NOT DISTINCT FROM a.old_sand_save;
+  GET DIAGNOSTICS v_changed = ROW_COUNT;
+
+  PERFORM set_config('helm.defer_round_totals', '', true);
+
+  -- Refresh each touched round's stats cache: trg_update_round_stats_cache
+  -- fires on UPDATE OF status (it recounts sand_saves and sand_attempts from
+  -- the holes), and the cache row's own trigger refreshes the player's.
+  UPDATE public.golf_rounds AS r
+  SET status = r.status
+  WHERE r.id IN (
+    SELECT a.round_id
+    FROM helm_private.golf_holes_sand_save_fix_20261115 AS a
+    WHERE a.archived_at = now()
+  );
+
+  PERFORM set_config('helm.golf_lifecycle_write', '', true);
+
+  SELECT count(*) INTO v_unfixed
+  FROM helm_private.golf_holes_sand_save_fix_20261115 AS a
+  INNER JOIN public.golf_holes AS h ON h.id = a.hole_id
+  WHERE a.archived_at = now()
+    AND h.sand_save IS DISTINCT FROM a.new_sand_save;
+  IF v_unfixed > 0 THEN
+    RAISE EXCEPTION 'sand_save backfill left % archived holes unchanged; rolling back', v_unfixed;
+  END IF;
+
+  SELECT count(*) INTO v_cache_off
+  FROM (
+    SELECT DISTINCT a.round_id
+    FROM helm_private.golf_holes_sand_save_fix_20261115 AS a
+    WHERE a.archived_at = now()
+  ) AS touched
+  INNER JOIN public.golf_round_stats_cache AS c ON c.round_id = touched.round_id
+  CROSS JOIN LATERAL (
+    SELECT
+      count(*) FILTER (WHERE h.sand_save) AS saves,
+      count(*) FILTER (WHERE h.sand_save IS NOT NULL) AS attempts
+    FROM public.golf_holes AS h
+    WHERE h.round_id = touched.round_id
+  ) AS k
+  WHERE c.sand_saves IS DISTINCT FROM k.saves
+    OR c.sand_attempts IS DISTINCT FROM k.attempts;
+  IF v_cache_off > 0 THEN
+    RAISE EXCEPTION 'sand_save backfill: % round stats caches disagree with their holes; rolling back', v_cache_off;
+  END IF;
+
+  RETURN v_changed;
+END
+$$;
+
+ALTER FUNCTION "helm_private"."golf_backfill_sand_save_tour"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION helm_private.golf_backfill_scrambling_sand_saves()
+RETURNS integer
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+DECLARE
+  v_changed integer;
+  v_off integer;
+BEGIN
+  -- Archive every completed round whose cached scramble counts differ from
+  -- the rule update_round_stats_cache now writes.
+  INSERT INTO helm_private.golf_round_cache_scrambling_fix_20261116 (
+    round_id, old_scrambles_converted, old_scramble_attempts,
+    new_scrambles_converted, new_scramble_attempts
+  )
+  SELECT c.round_id, c.scrambles_converted, c.scramble_attempts, k.made, k.chances
+  FROM public.golf_round_stats_cache AS c
+  INNER JOIN public.golf_rounds AS r ON r.id = c.round_id
+  CROSS JOIN LATERAL (
+    SELECT
+      count(*) FILTER (WHERE (h.gir = false AND (h.score - h.par) <= 0) OR h.sand_save = true)::integer AS made,
+      count(*) FILTER (WHERE h.gir = false OR h.sand_save IS NOT NULL)::integer AS chances
+    FROM public.golf_holes AS h
+    WHERE h.round_id = c.round_id AND h.score IS NOT NULL
+  ) AS k
+  WHERE r.status = 'completed'
+    AND (c.scrambles_converted IS DISTINCT FROM k.made
+      OR c.scramble_attempts IS DISTINCT FROM k.chances)
+  ON CONFLICT (round_id) DO UPDATE SET
+    old_scrambles_converted = excluded.old_scrambles_converted,
+    old_scramble_attempts = excluded.old_scramble_attempts,
+    new_scrambles_converted = excluded.new_scrambles_converted,
+    new_scramble_attempts = excluded.new_scramble_attempts,
+    archived_at = excluded.archived_at;
+
+  -- Refresh each archived round's cache: trg_update_round_stats_cache fires
+  -- on UPDATE OF status, and the cache row's own trigger refreshes the
+  -- player's. The lifecycle guard lets postgres touch a completed round under
+  -- the transaction-local 'atomic' mark.
+  PERFORM set_config('helm.golf_lifecycle_write', 'atomic', true);
+
+  UPDATE public.golf_rounds AS r
+  SET status = r.status
+  WHERE r.id IN (
+    SELECT a.round_id
+    FROM helm_private.golf_round_cache_scrambling_fix_20261116 AS a
+    WHERE a.archived_at = now()
+  );
+  GET DIAGNOSTICS v_changed = ROW_COUNT;
+
+  PERFORM set_config('helm.golf_lifecycle_write', '', true);
+
+  SELECT count(*) INTO v_off
+  FROM helm_private.golf_round_cache_scrambling_fix_20261116 AS a
+  INNER JOIN public.golf_round_stats_cache AS c ON c.round_id = a.round_id
+  WHERE a.archived_at = now()
+    AND (c.scrambles_converted IS DISTINCT FROM a.new_scrambles_converted
+      OR c.scramble_attempts IS DISTINCT FROM a.new_scramble_attempts);
+  IF v_off > 0 THEN
+    RAISE EXCEPTION 'scrambling backfill: % round stats caches disagree with the new rule; rolling back', v_off;
+  END IF;
+
+  RETURN v_changed;
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_backfill_scrambling_sand_saves"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION helm_private.golf_backfill_one_gir_rule()
+RETURNS integer
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+DECLARE
+  v_changed integer;
+  v_unfixed integer;
+BEGIN
+  -- Archive every scored hole whose flag the rule reads differently, or that
+  -- carries an up-and-down on a green hit in regulation.
+  INSERT INTO helm_private.golf_holes_gir_fix_20261115 (
+    hole_id, round_id, old_gir, new_gir, old_up_and_down, new_up_and_down, stats_cache_before
+  )
+  SELECT
+    h.id,
+    h.round_id,
+    h.gir,
+    g.gir,
+    h.up_and_down,
+    CASE WHEN g.gir IS TRUE THEN NULL ELSE h.up_and_down END,
+    (SELECT to_jsonb(c) FROM public.golf_round_stats_cache AS c WHERE c.round_id = h.round_id)
+  FROM public.golf_holes AS h
+  CROSS JOIN LATERAL (
+    SELECT public.golf_hole_gir(
+      h.par, h.score, h.putts,
+      public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score)
+    ) AS gir
+  ) AS g
+  WHERE h.score IS NOT NULL
+    AND (h.gir IS DISTINCT FROM g.gir OR (g.gir IS TRUE AND h.up_and_down IS NOT NULL))
+  -- A hole only matches while it is off the rule, so a re-run archives its
+  -- current state again.
+  ON CONFLICT (hole_id) DO UPDATE SET
+    round_id = excluded.round_id,
+    old_gir = excluded.old_gir,
+    new_gir = excluded.new_gir,
+    old_up_and_down = excluded.old_up_and_down,
+    new_up_and_down = excluded.new_up_and_down,
+    stats_cache_before = excluded.stats_cache_before,
+    archived_at = excluded.archived_at;
+  GET DIAGNOSTICS v_changed = ROW_COUNT;
+
+  -- Completed rounds' holes change only under the lifecycle guard's
+  -- transaction-local 'atomic' mark. The per-hole totals trigger is deferred
+  -- and each touched round is recomputed once; that UPDATE of golf_rounds
+  -- fires trg_update_round_stats_cache (greens, scrambling), whose cache row
+  -- refreshes the player's in turn.
+  PERFORM set_config('helm.golf_lifecycle_write', 'atomic', true);
+  PERFORM set_config('helm.defer_round_totals', 'on', true);
+
+  UPDATE public.golf_holes AS h
+  SET gir = a.new_gir,
+      up_and_down = a.new_up_and_down
+  FROM helm_private.golf_holes_gir_fix_20261115 AS a
+  WHERE a.hole_id = h.id
+    AND a.archived_at = now();
+
+  PERFORM set_config('helm.defer_round_totals', '', true);
+
+  PERFORM public.recompute_golf_round_totals(x.round_id)
+  FROM (
+    SELECT DISTINCT a.round_id
+    FROM helm_private.golf_holes_gir_fix_20261115 AS a
+    WHERE a.archived_at = now()
+  ) AS x;
+
+  PERFORM set_config('helm.golf_lifecycle_write', '', true);
+
+  SELECT count(*) INTO v_unfixed
+  FROM helm_private.golf_holes_gir_fix_20261115 AS a
+  INNER JOIN public.golf_holes AS h ON h.id = a.hole_id
+  WHERE a.archived_at = now()
+    AND (h.gir IS DISTINCT FROM a.new_gir OR h.up_and_down IS DISTINCT FROM a.new_up_and_down);
+  IF v_unfixed > 0 THEN
+    RAISE EXCEPTION 'one GIR rule backfill left % archived holes off the rule; rolling back', v_unfixed;
+  END IF;
+
+  RETURN v_changed;
+END
+$$;
+
+ALTER FUNCTION "helm_private"."golf_backfill_one_gir_rule"() OWNER TO "postgres";
+-- Demo team generator (HELD 20261115211000) and demo write guard (HELD 20261115211100): src/lib/golf/demo/writer.ts
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_check"("p_team" "uuid", "p_table" "text") RETURNS "void"
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF p_team IS DISTINCT FROM helm_private.golf_demo_team_id() THEN
+    RAISE EXCEPTION 'golf_demo: refusing team %, the generator writes the demo team only', p_team
+      USING ERRCODE = '42501';
+  END IF;
+  IF p_table IS NOT NULL AND NOT (p_table = ANY (helm_private.golf_demo_tables())) THEN
+    RAISE EXCEPTION 'golf_demo: % is not one of the generator''s tables', p_table
+      USING ERRCODE = '42501';
+  END IF;
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_check"("p_team" "uuid", "p_table" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_key_sql"("p_table" "text", "p_source" "text") RETURNS "text"
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO ''
+    AS $$
+  SELECT 'pg_catalog.concat_ws(''|'', '
+    || pg_catalog.string_agg(pg_catalog.format(p_source, pk.col), ', ' ORDER BY pk.ord)
+    || ')'
+  FROM helm_private.golf_demo_pk(p_table) AS pk
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_key_sql"("p_table" "text", "p_source" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_marks"("p_table" "text") RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  PERFORM pg_catalog.set_config('helm.golf_demo_writer', 'generator', true);
+  PERFORM pg_catalog.set_config('helm.golf_lifecycle_write', 'atomic', true);
+  PERFORM pg_catalog.set_config('helm.round_live_off', 'on', true);
+  PERFORM pg_catalog.set_config('helm.defer_round_totals', 'on', true);
+  PERFORM pg_catalog.set_config(
+    'helm.tournament_write',
+    CASE
+      WHEN p_table = 'golf_events' THEN 'rounds'
+      WHEN p_table IN ('golf_tournament_entries', 'golf_tournament_round_lineups') THEN 'substitute'
+      ELSE ''
+    END,
+    true);
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_marks"("p_table" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_parent"("p_table" "text", OUT "parent_table" "text", OUT "fk_column" "text") RETURNS "record"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+  SELECT m.parent_table, m.fk_column
+  FROM (VALUES
+    ('golf_event_attendance', 'golf_events', 'event_id'),
+    ('golf_qualifier_round_courses', 'golf_qualifiers', 'qualifier_id'),
+    ('golf_holes', 'golf_rounds', 'round_id'),
+    ('golf_shots', 'golf_rounds', 'round_id'),
+    ('golf_qualifier_entries', 'golf_qualifiers', 'qualifier_id'),
+    ('golf_qualifier_selections', 'golf_qualifiers', 'qualifier_id'),
+    ('golf_task_assignments', 'golf_tasks', 'task_id'),
+    ('golf_messages', 'golf_conversations', 'conversation_id')
+  ) AS m (child, parent_table, fk_column)
+  WHERE m.child = p_table
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_parent"("p_table" "text", OUT "parent_table" "text", OUT "fk_column" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_pk"("p_table" "text") RETURNS TABLE("col" "text", "typ" "text", "ord" integer)
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO ''
+    AS $$
+  SELECT a.attname::text, pg_catalog.format_type(a.atttypid, a.atttypmod), k.ord::integer
+  FROM pg_catalog.pg_index AS i
+  CROSS JOIN LATERAL pg_catalog.unnest(i.indkey::smallint[]) WITH ORDINALITY AS k (attnum, ord)
+  JOIN pg_catalog.pg_attribute AS a ON a.attrelid = i.indrelid AND a.attnum = k.attnum
+  WHERE i.indrelid = pg_catalog.to_regclass('public.' || pg_catalog.quote_ident(p_table))
+    AND i.indisprimary
+  ORDER BY k.ord
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_pk"("p_table" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_tables"() RETURNS "text"[]
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+  SELECT ARRAY[
+    'golf_players',
+    'golf_team_members',
+    'golf_team_seasons',
+    'golf_events',
+    'golf_event_attendance',
+    'golf_tournaments',
+    'golf_tournament_rounds',
+    'golf_tournament_entries',
+    'golf_tournament_round_lineups',
+    'golf_tournament_field_teams',
+    'golf_tournament_field_scores',
+    'golf_qualifiers',
+    'golf_qualifier_round_courses',
+    'golf_rounds',
+    'golf_holes',
+    'golf_shots',
+    'golf_qualifier_entries',
+    'golf_qualifier_selections',
+    'golf_tournament_player_rounds',
+    'golf_practice_plans',
+    'golf_practice_plan_versions',
+    'golf_tasks',
+    'golf_task_assignments',
+    'golf_announcements',
+    'golf_travel_itineraries',
+    'golf_messages'
+  ]::text[]
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_tables"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_team_id"() RETURNS "uuid"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+  SELECT '6ecdd1a6-63fe-4beb-b094-00118f334163'::uuid
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_team_id"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_write_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_rows jsonb[];
+  v_row jsonb;
+  v_ref uuid;
+  v_team uuid;
+BEGIN
+  IF pg_catalog.current_setting('helm.golf_demo_writer', true) = 'generator' OR auth.uid() IS NULL THEN
+    RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+  END IF;
+
+  -- The owner's own logins edit the demo team (owner, 16 Nov 2026: "Not read
+  -- only"). Test, QA and shared demo logins are not listed and stay refused.
+  IF EXISTS (SELECT 1 FROM helm_private.golf_demo_editors AS d WHERE d.user_id = auth.uid()) THEN
+    RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+  END IF;
+
+  v_rows := CASE TG_OP
+    WHEN 'INSERT' THEN ARRAY[pg_catalog.to_jsonb(NEW)]
+    WHEN 'DELETE' THEN ARRAY[pg_catalog.to_jsonb(OLD)]
+    ELSE ARRAY[pg_catalog.to_jsonb(OLD), pg_catalog.to_jsonb(NEW)]
+  END;
+
+  FOREACH v_row IN ARRAY v_rows LOOP
+    v_team := NULL;
+    IF TG_NARGS = 0 THEN
+      v_team := (v_row->>'team_id')::uuid;
+    ELSE
+      v_ref := (v_row->>TG_ARGV[0])::uuid;
+      IF v_ref IS NOT NULL THEN
+        CASE TG_ARGV[1]
+          WHEN 'golf_rounds' THEN
+            SELECT r.team_id INTO v_team FROM public.golf_rounds AS r WHERE r.id = v_ref;
+          WHEN 'golf_events' THEN
+            SELECT e.team_id INTO v_team FROM public.golf_events AS e WHERE e.id = v_ref;
+          WHEN 'golf_conversations' THEN
+            SELECT c.team_id INTO v_team FROM public.golf_conversations AS c WHERE c.id = v_ref;
+          WHEN 'golf_messages' THEN
+            SELECT c.team_id INTO v_team
+              FROM public.golf_messages AS m
+              JOIN public.golf_conversations AS c ON c.id = m.conversation_id
+             WHERE m.id = v_ref;
+          WHEN 'golf_tasks' THEN
+            SELECT t.team_id INTO v_team FROM public.golf_tasks AS t WHERE t.id = v_ref;
+          WHEN 'golf_qualifiers' THEN
+            SELECT q.team_id INTO v_team FROM public.golf_qualifiers AS q WHERE q.id = v_ref;
+          ELSE
+            RAISE EXCEPTION 'golf_demo_write_guard: no lookup for %', TG_ARGV[1];
+        END CASE;
+      END IF;
+    END IF;
+
+    IF v_team = helm_private.golf_demo_team_id() THEN
+      RAISE EXCEPTION USING
+        ERRCODE = '42501',
+        MESSAGE = 'This is a shared demo team: changes are not saved.',
+        DETAIL = 'golf_demo_read_only',
+        HINT = 'The demo team is rewritten each day by its generator (src/lib/golf/demo).';
+    END IF;
+  END LOOP;
+
+  RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_write_guard"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "helm_private"."golf_demo_team_id"() IS 'The one team the demo generator writes (src/lib/demo/config.ts DEMO_TEAM_ID).';
+COMMENT ON FUNCTION "helm_private"."golf_demo_write_guard"() IS 'DD-13: refuses a signed-in account''s writes to demo-team rows. The generator (helm.golf_demo_writer = generator), writes with no signed-in user and the owner''s logins (helm_private.golf_demo_editors) pass.';

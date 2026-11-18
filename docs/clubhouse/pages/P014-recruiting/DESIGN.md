@@ -137,13 +137,12 @@ columns; with a Next step column, Class and Hometown move under the name below
 ### Premium pass (2026-10-08)
 
 - **Committed is a moment, once (B1, CH-14806).** Only a landed move to
-  Committed: a 1px gilt rule (`--ch-champagne-500`) under the stage draws left
-  to right over `--ch-dur-reveal` with `clip-path`, and the success haptic lands
-  at its `animationend` (the save's own success haptic is withheld for this one
-  move). The coin takes a gilt rim. Phone: the rule sits on the Stage row's
-  bottom seam and waits for the stage sheet to close. Reduced motion and
-  Animations off: final state and haptic at once. The rule stays, at rest, on
-  every committed prospect.
+  Committed: a 1px gilt rule (`--ch-champagne-500`) under the stage, there at
+  once, and the success haptic lands with it (the save's own success haptic is
+  withheld for this one move). The left-to-right draw is gone (2026-11-15:
+  content never moves on its own, MOTION-AND-VISUAL 3.1, 3.12). The coin takes
+  a gilt rim. Phone: the rule sits on the Stage row's bottom seam and waits for
+  the stage sheet to close. The rule stays, at rest, on every committed prospect.
 - **Next step (C1, CH-14307).** A label and a day per prospect, behind the
   columns of `supabase/migrations/20261008120000_golf_recruits_next_step.sql`.
   Before that file is applied every next-step surface is hidden and never
@@ -164,7 +163,8 @@ columns; with a Next step column, Class and Hometown move under the name below
 Approved spec `docs/clubhouse/phone/recruiting.md`. The list sits under a "‹
 More" top bar with "+" as its one action; a prospect is a pushed screen (an iOS
 edge swipe pops it); the edit form, the stage picker and delete are bottom
-sheets that drag to dismiss; the sort is a menu. The tab bar stays.
+sheets that drag to dismiss; the sort is a menu. The tab bar stays (since
+2026-10-13 the section strip).
 
 Its look is the Coach Home "Mobile clubhouse pass" board (owner, 2026-10-08:
 round 3, "fewer containers, one feature card"): the page opens on the engraved
@@ -205,10 +205,11 @@ school, a last-contacted date, or a stage history. The monogram is the initials.
 (`src/app/golf/actions/recruiting.ts`) and `getRecruitDocuments`,
 `deleteRecruitDocument`, `getRecruitDocumentUrl` and, for an upload,
 `prepareRecruitDocumentUpload` then `completeRecruitDocumentUpload`
-(`recruit-documents.ts`; the Fairway page now uses the same two steps). Two
-additions on the server, both optional for the current page: `createRecruit`
-takes a request id, and the two upload steps send the file straight to Storage
-(a server action's body is capped far below a film). WIRING.md maps each.
+(`recruit-documents.ts`; the Fairway page used the same two steps until its
+retirement on 2026-11-14). Two additions on the server, both optional for the
+current page: `createRecruit` takes a request id, and the two upload steps send
+the file straight to Storage (a server action's body is capped far below a
+film). WIRING.md maps each.
 
 ## HELD requirements
 

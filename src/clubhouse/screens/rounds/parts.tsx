@@ -15,6 +15,7 @@ import { Tooltip } from '../../ui/Tooltip';
 
 import { dateOf, TYPE_LABEL } from './labels';
 import { zoneFormat } from '../../lib/zone-format';
+import { parColumns } from '../../lib/chart';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 
 export { dateOf, TYPE_LABEL };
@@ -277,7 +278,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
           const cx = cxOf(i);
           const h = Math.max(3, Math.abs(d) * u);
           const y0 = d > 0 ? base : base - h;
-          // D3: one scoring language, red under par as everywhere else; a qualifier is a gilt outline on any bar.
+          // D3: one scoring language, the gain under par as everywhere else; a qualifier is a gilt outline on any bar.
           const cls = (d < 0 ? 'is-under' : d === 0 ? 'is-even' : 'is-over') + (x.type === 'qualifier' ? ' is-q' : '');
           return (
             <g
@@ -340,6 +341,19 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
 /** Rounds on the phone's ribbon: the last ten, so each bar and label stays readable. */
 export const PHONE_RIBBON = 10;
 
+/** The putts bars' full length: a little past two-putting every green, per 18 holes. */
+export const PUTTS_SCALE = 40;
+
+/**
+ * A putts bar's share of its track: the putts themselves per 18 holes, on `PUTTS_SCALE` (stats and charts audit 2026-11-15, CH-14).
+ * The season bar and each round's meter read the same way, longer for more putts, an amount with no good or bad in its length;
+ * a round's meter once ran the other way, longer for fewer.
+ */
+export function puttsShare(putts: number, holes = 18): number {
+  const per18 = holes > 0 ? (putts * 18) / holes : putts;
+  return Math.max(0, Math.min(1, per18 / PUTTS_SCALE));
+}
+
 /**
  * The season's three figures, each drawn, not just stated (owner, 2026-10-06: "random numbers with not great labeling
  * mean little without visuals"). Each has a visual and a reference that needs no invented benchmark:
@@ -395,8 +409,8 @@ function SeasonFigures({ season, phone = false }: { season: ChRoundsSeason; phon
         {putts != null && (
           <dd className="ch-rd-fig__viz" aria-hidden="true">
             <span className="ch-rd-putts">
-              <i style={{ '--ch-rd-fill': Math.min(1, putts / 40) } as CSSProperties} />
-              <b style={{ left: `${(twoPutt / 40) * 100}%` }} />
+              <i style={{ '--ch-rd-fill': puttsShare(putts) } as CSSProperties} />
+              <b style={{ left: `${(twoPutt / PUTTS_SCALE) * 100}%` }} />
             </span>
           </dd>
         )}
@@ -510,10 +524,23 @@ function SeasonStage({ ribbon, avg, phone }: { ribbon: ChRoundsSeason['ribbon'];
   );
 }
 
+/** The least range the month spark is drawn on, in strokes to par: a stroke is a tenth of its height at most (CH-09). */
+export const MONTH_SPARK_MIN_SPAN = 10;
+
 /**
- * A month's rounds as a row of small bars, oldest to newest: taller is better (further under par, or less over it), red is under
- * par; better is up, as the season ribbon above reads (stats visuals Q1). It reads at a glance whether the month trended up; the
- * figures beside it say the rest. Skipped for fewer than two rounds with a par to read against.
+ * Each round's bar in the month spark, as shares of its height from the top, and where par sits (stats and charts audit
+ * 2026-11-15, CH-09): a bar runs from the par line, up for under par and down for over, on one range that holds par and every
+ * round and is at least `MONTH_SPARK_MIN_SPAN` strokes. The old bars ran from 24% to 100% across the month's own range, so a +1
+ * and a +2 month drew as 100% and 24%.
+ */
+export function monthSparkBars(toPars: readonly number[]): { zero: number; bars: Array<{ top: number; height: number; under: boolean }> } {
+  return parColumns(toPars, MONTH_SPARK_MIN_SPAN);
+}
+
+/**
+ * A month's rounds as a row of small bars from a par line, oldest to newest: under par rises above the line, over par hangs below
+ * it, on one range at least ten strokes wide (`monthSparkBars`, CH-09), in the under-par tone above the line; better is up, as the season ribbon
+ * above reads (stats visuals Q1). Skipped for fewer than two rounds with a par to read against.
  */
 export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {
   // Per 18 holes (A8.7): a nine-hole +2 is a +4 round, so a month of nines does not read as a month of great rounds.
@@ -522,12 +549,12 @@ export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {
     .map((r) => ({ id: r.id, toPar: r.holes > 0 ? (r.toPar * 18) / r.holes : r.toPar }))
     .reverse();
   if (pts.length < 2) return null;
-  const lo = Math.min(...pts.map((r) => r.toPar));
-  const hi = Math.max(...pts.map((r) => r.toPar));
+  const { zero, bars } = monthSparkBars(pts.map((r) => r.toPar));
   return (
     <span className="ch-rd-grp__spark" aria-hidden="true">
-      {pts.map((r) => (
-        <i key={r.id} className={r.toPar < 0 ? 'is-under' : undefined} style={{ height: `${hi === lo ? 55 : 24 + ((hi - r.toPar) / (hi - lo)) * 76}%` }} />
+      <b style={{ top: `${zero}%` }} />
+      {pts.map((r, k) => (
+        <i key={r.id} className={bars[k]!.under ? 'is-under' : undefined} style={{ top: `${bars[k]!.top}%`, height: `${bars[k]!.height}%` }} />
       ))}
     </span>
   );
@@ -536,7 +563,7 @@ export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {
 function Meter({ label, value, pct, muted }: { label: string; value: string; pct: number | null; muted?: boolean }) {
   return (
     <span className="ch-rd-meter">
-      <em>{label}</em>
+      <em>{label}</em>{' '}
       <span className={'ch-rd-meter__t' + (muted ? ' is-p' : '')}>{pct != null && <i style={{ '--ch-rd-fill': Math.max(0, Math.min(100, pct)) / 100 } as CSSProperties} />}</span>
       <b className="ch-num">{value}</b>
     </span>
@@ -555,60 +582,63 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
   const body = (
     <>
       <span className="ch-rd-sc__date">
-        <b className="ch-num">{dateOf(r.date).getUTCDate()}</b>
-        <em>{dow(r.date)}</em>
-      </span>
+        <b className="ch-num">{dateOf(r.date).getUTCDate()}</b>{' '}
+        <em>{dow(r.date)}</em>{' '}
+        {/* The month is the section's heading on screen; a screen reader hears it with the day. */}
+        <span className="ch-sr-only">{monthShort(r.date)}</span>
+      </span>{' '}
       <span className="ch-rd-sc__c">
-        <b>{r.course}</b>
+        <b>{r.course}</b>{' '}
         <span>
           <TeeSwatch color={r.teeColor} />
-          {r.tee ?? `${r.holes} holes`}
-          {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
-          <TypePill type={r.type} />
+          {r.tee ?? `${r.holes} holes`}{' '}
+          {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}{' '}
+          <TypePill type={r.type} />{' '}
           {!r.countable && <span className="ch-rd-pill is-nc">Not counted</span>}
         </span>
-      </span>
+      </span>{' '}
       <span role="group" className="ch-rd-sc__grid" aria-label={r.inn != null ? `Out ${r.out ?? NO_DATA}, in ${r.inn}, total ${r.score}` : `${r.holes} holes, total ${r.score}`}>
         {r.holes === 18 ? (
           <>
             <span>
-              <em>Out</em>
+              <em>Out</em>{' '}
               <b className="ch-num">{r.out ?? <NoData />}</b>
-            </span>
+            </span>{' '}
             <span>
-              <em>In</em>
+              <em>In</em>{' '}
               <b className="ch-num">{r.inn ?? <NoData />}</b>
             </span>
           </>
         ) : (
           <span>
-            <em>Holes</em>
+            <em>Holes</em>{' '}
             <b className="ch-num">{r.holes}</b>
           </span>
-        )}
+        )}{' '}
         <span className="is-tot">
-          <em>Tot</em>
+          <em>Tot</em>{' '}
           <b className="ch-num">{r.score}</b>
         </span>
-      </span>
+      </span>{' '}
       <span className="ch-rd-sc__m">
-        <Meter label="Fairways" value={r.fairways ? `${r.fairways.hit}/${r.fairways.of}` : NO_DATA} pct={r.fairways ? (r.fairways.hit / r.fairways.of) * 100 : null} />
-        <Meter label="Greens" value={r.greens ? `${r.greens.hit}/${r.greens.of}` : NO_DATA} pct={r.greens ? (r.greens.hit / r.greens.of) * 100 : null} />
+        <Meter label="Fairways" value={r.fairways ? `${r.fairways.hit}/${r.fairways.of}` : NO_DATA} pct={r.fairways ? (r.fairways.hit / r.fairways.of) * 100 : null} />{' '}
+        <Meter label="Greens" value={r.greens ? `${r.greens.hit}/${r.greens.of}` : NO_DATA} pct={r.greens ? (r.greens.hit / r.greens.of) * 100 : null} />{' '}
         {/* Fewer putts fills more: 36 per 18 is empty, 26 is full (the board's scale). */}
-        <Meter label="Putts" value={r.putts == null ? NO_DATA : String(r.putts)} pct={r.putts == null ? null : ((36 - r.putts * (18 / r.holes)) / 10) * 100} muted />
-      </span>
+        <Meter label="Putts" value={r.putts == null ? NO_DATA : String(r.putts)} pct={r.putts == null ? null : puttsShare(r.putts, r.holes) * 100} muted />
+      </span>{' '}
       <span className={'ch-rd-sc__s' + (under ? ' is-under' : '')}>
-        <b className="ch-num">{formatToPar(r.toPar)}</b>
+        <b className="ch-num">{formatToPar(r.toPar)}</b>{' '}
         <em className="ch-num">{r.score}</em>
       </span>
     </>
   );
   const label = `${shortDay(r.date)}, ${r.course}, ${r.score}${r.toPar != null ? ` (${formatToPar(r.toPar)})` : ''}`;
   return href ? (
+    // Named by what it shows, in the order it is drawn (MAC-09, PMAC-07: Voice Control); its score grid reads "Out 38, in 37,
+    // total 75". The static card keeps its summary label: a group is not a control.
     <Link
       href={href}
       className={'ch-rd-sc' + (under ? ' is-under' : '')}
-      aria-label={label}
       {...bind}
       {...press(href)}
       onClick={(e) => {

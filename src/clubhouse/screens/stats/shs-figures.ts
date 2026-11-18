@@ -155,25 +155,45 @@ export interface ShsCompareBar {
   measure: string;
   label: string;
   value: number;
-  /** Width, 0 to 100: 30% plus 70% of the scaled value (04 "What changed"). */
-  width: number;
+  /** A rate's bar: its width, 0 to 100, the rate itself from zero. Null for a figure that is not a rate, which is a dot (`at`). */
+  width: number | null;
+  /** A figure that is not a rate (a scoring average, putts a round): its dot across the track, 0 to 100, better to the right. */
+  at?: number | null;
   tone: ShsTone | 'was';
   /** '%' when the bars compare a rate (the sentence named fairways, greens...). */
   unit?: string;
 }
 
-/** The two bars under What changed, with a real pair only; none under four rounds (criterion CP-126). */
+/**
+ * The fixed span, in the measure's own units, that two figures that are not rates sit on as dots (stats and charts audit
+ * 2026-11-15, CH-04): eight strokes for a scoring average and six putts a round, the pair centred on it, so a change reads at the
+ * same size whatever the level. A change wider than the span widens it. A rate is a bar from zero instead.
+ */
+export const COMPARE_SPAN: Record<string, number> = { 'Scoring avg': 8, 'Putts per round': 6 };
+const round1 = (v: number) => Math.round(v * 10) / 10;
+
+/**
+ * The two marks under What changed, with a real pair only; none under four rounds (criterion CP-126). A rate is a bar from zero,
+ * its width the rate; anything else is a dot on its measure's fixed span (`COMPARE_SPAN`), better to the right (CH-04). There is no
+ * floor and no range taken from the two values: the old bars were 30% plus 70% of a range six strokes under the lower one.
+ */
 export function changeBars(data: ChPlayerProfile, subject?: string): ShsCompareBar[] {
   const list = scores(data);
   if (list.length < 4) return [];
-  const pair = (measure: string, nowLabel: string, now: number, wasLabel: string, was: number, tone: ShsTone, unit = ''): ShsCompareBar[] => {
-    // A rate's bars share a 0 floor; a score's start 6 strokes under the lower one, so a stroke still reads.
-    const lo = unit === '%' ? 0 : Math.min(now, was) - 6;
-    const hi = Math.max(now, was);
-    const width = (v: number) => 30 + (70 * (v - lo)) / (hi - lo || 1);
+  const pair = (measure: string, nowLabel: string, now: number, wasLabel: string, was: number, tone: ShsTone, unit = '', lowerIsBetter = true): ShsCompareBar[] => {
+    if (unit === '%') {
+      const width = (v: number) => round1(Math.max(0, Math.min(100, v)));
+      return [
+        { measure, label: nowLabel, value: now, width: width(now), at: null, tone, unit },
+        { measure, label: wasLabel, value: was, width: width(was), at: null, tone: 'was', unit },
+      ];
+    }
+    const span = Math.max(COMPARE_SPAN[measure] ?? 0, Math.abs(now - was) * 1.25) || 1;
+    const mid = (now + was) / 2;
+    const at = (v: number) => round1(50 + (((lowerIsBetter ? mid - v : v - mid) / span) * 100));
     return [
-      { measure, label: nowLabel, value: now, width: width(now), tone, unit },
-      { measure, label: wasLabel, value: was, width: width(was), tone: 'was', unit },
+      { measure, label: nowLabel, value: now, width: null, at: at(now), tone, unit },
+      { measure, label: wasLabel, value: was, width: null, at: at(was), tone: 'was', unit },
     ];
   };
   if (hasPrevious(data)) {
@@ -181,7 +201,7 @@ export function changeBars(data: ChPlayerProfile, subject?: string): ShsCompareB
     // The bars show what the sentence above them names (its largest change), and scoring when it names nothing.
     const named = subject ? c.rows.find((r) => r.label === subject) : undefined;
     const row = named ?? c.rows.find((r) => r.lowerIsBetter && /scor/i.test(r.label));
-    if (row?.last != null && row.previous != null) return pair(row.label, `Last ${c.lastRounds}`, row.last, `${c.previousRounds} before`, row.previous, changeTone(row.last - row.previous, row.se, row.lowerIsBetter), row.unit ?? '');
+    if (row?.last != null && row.previous != null) return pair(row.label, `Last ${c.lastRounds}`, row.last, `${c.previousRounds} before`, row.previous, changeTone(row.last - row.previous, row.se, row.lowerIsBetter), row.unit ?? '', row.lowerIsBetter);
   }
   const half = Math.floor(list.length / 2);
   const first = mean(list.slice(0, half));
@@ -209,57 +229,19 @@ export function divergeBar(value: number, scale: number): { left: number; width:
 /** Where a value sits on a rail centred on zero. */
 export const divergeAt = (value: number, scale: number): number => 50 + Math.max(-1, Math.min(1, value / scale)) * 50;
 
-/** The page's monotone curve, so a line never overshoots a round's own figure. */
-export function monoPath(pts: ReadonlyArray<readonly [number, number]>): string {
-  const n = pts.length;
-  if (n < 2) return '';
-  if (n === 2) return `M${pts[0]![0]},${pts[0]![1]}L${pts[1]![0]},${pts[1]![1]}`;
-  const dx: number[] = [];
-  const m: number[] = [];
-  const t: number[] = [];
-  for (let i = 0; i < n - 1; i++) {
-    dx[i] = pts[i + 1]![0] - pts[i]![0];
-    m[i] = dx[i]! === 0 ? 0 : (pts[i + 1]![1] - pts[i]![1]) / dx[i]!;
-  }
-  t[0] = m[0]!;
-  t[n - 1] = m[n - 2]!;
-  for (let i = 1; i < n - 1; i++) t[i] = m[i - 1]! * m[i]! <= 0 ? 0 : (m[i - 1]! + m[i]!) / 2;
-  for (let i = 0; i < n - 1; i++) {
-    if (m[i] === 0) {
-      t[i] = 0;
-      t[i + 1] = 0;
-      continue;
-    }
-    const a = t[i]! / m[i]!;
-    const b = t[i + 1]! / m[i]!;
-    const s = a * a + b * b;
-    if (s > 9) {
-      const k = 3 / Math.sqrt(s);
-      t[i] = k * a * m[i]!;
-      t[i + 1] = k * b * m[i]!;
-    }
-  }
-  let d = `M${formatFixed(pts[0]![0], 1)},${formatFixed(pts[0]![1], 1)}`;
-  for (let i = 0; i < n - 1; i++) {
-    const h = dx[i]! / 3;
-    d += `C${formatFixed((pts[i]![0] + h), 1)},${formatFixed((pts[i]![1] + t[i]! * h), 1)} ${formatFixed((pts[i + 1]![0] - h), 1)},${formatFixed((pts[i + 1]![1] - t[i + 1]! * h), 1)} ${formatFixed(pts[i + 1]![0], 1)},${formatFixed(pts[i + 1]![1], 1)}`;
-  }
-  return d;
-}
-
 /** Straight segments through the points: a chart of round days draws no value between two days that never happened (W26). */
 export function straightPath(pts: ReadonlyArray<readonly [number, number]>): string {
   return pts.length < 2 ? '' : pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]},${p[1]}`).join('');
 }
 
 /**
- * Which round days the team's line joins (W26, owner's preview, 11 Nov 2026: the line's low point was one player's single 87,
- * drawn as the team's worst day). A day resting on one round or less is a hollow dot off the line; the line joins the days two or more
- * posted on, unless fewer than two such days exist, when it joins them all. A day with no count is read as a team day.
+ * Which round days the team's line joins, and which it marks as one player's. The line joins every day in the window (prod audit
+ * 2026-11-15, STATS-P-05, spec S2.4: with one-round days left off it, only the last three points were joined and the rest floated);
+ * a day resting on one round or less is a hollow dot on the line (W26, owner's preview, 11 Nov 2026), so one player's single 87
+ * still reads as one round, and best and toughest days are chosen only from days two or more posted on (HOME-P-13).
  */
 export function teamLineDays(days: ReadonlyArray<{ n?: number }>): { line: number[]; one: Set<number> } {
   // `n` counts a 9-hole round as half, so a day resting on one round or less is a single player's day.
   const one = new Set(days.flatMap((d, i) => (d.n != null && d.n <= 1 ? [i] : [])));
-  const team = days.flatMap((_, i) => (one.has(i) ? [] : [i]));
-  return team.length >= 2 ? { line: team, one } : { line: days.map((_, i) => i), one: new Set() };
+  return { line: days.map((_, i) => i), one };
 }

@@ -1,9 +1,9 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 /** Shell: every numbered state in docs/clubhouse/catalog/shell.md, found by its number. */
 
@@ -271,6 +271,7 @@ describe('Shell · page states', () => {
     ['stale-action', 'CH-1203', /out of date/],
     ['transient', 'CH-1204', /slow to respond/],
     ['load', 'CH-1205', /didn.t finish loading/],
+    ['offline', 'CH-1290', /You’re offline.*It loads by itself when you’re back online/],
     ['unknown', 'CH-1206', /Something went wrong/],
   ] as const)('%s → %s', async (kind, c, text) => {
     wrap(<RouteErrorView kind={kind as RouteErrorKind} isRetrying={false} retryCount={0} onRetry={vi.fn()} homePath="/golf/dashboard" />);
@@ -619,21 +620,24 @@ describe('Shell · navigation and accessibility', () => {
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
   });
 
-  it('CH-1802 the account sheet takes focus, keeps Tab inside, and gives it back to the section title on Esc', async () => {
+  it('CH-1802 OVL-12 the account sheet is the shared Modal: a native dialog (the top layer keeps Tab inside), its heading takes focus, and Esc gives focus back to the section title once the strip that held its opener has shut', async () => {
     const user = userEvent.setup();
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
     wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
     const more = code('CH-1816') as HTMLElement;
-    await user.click(screen.getByRole('button', { name: 'Account' }));
+    const pill = screen.getByRole('button', { name: 'Account' });
+    await user.click(pill);
     await expectCode('CH-1802');
-    const sheet = code('CH-1802')!;
-    await waitFor(() => expect(sheet.contains(document.activeElement)).toBe(true));
-    const focusables = sheet.querySelectorAll<HTMLElement>('a, button');
-    focusables[focusables.length - 1]!.focus();
-    await user.tab();
-    expect(document.activeElement).toBe(focusables[0]);
-    await user.keyboard('{Escape}');
+    const sheet = code('CH-1802') as HTMLElement;
+    expect(sheet.tagName).toBe('DIALOG');
+    expect(sheet.hasAttribute('open')).toBe(true);
+    expect(pill.getAttribute('aria-controls')).toBe(sheet.id);
+    await waitFor(() => expect(document.activeElement).toBe(within(sheet).getByRole('heading', { name: 'Account' })));
+    // The strip shuts under the sheet (inert once its close has run).
+    document.getElementById('ch-strip')!.inert = true;
+    fireEvent(sheet, new Event('cancel', { cancelable: true }));
     await waitFor(() => expect(document.activeElement).toBe(more));
+    expect(sheet.hasAttribute('open')).toBe(false);
   });
 
   describe('CH-1611 a phone sheet follows the finger', () => {
@@ -652,6 +656,12 @@ describe('Shell · navigation and accessibility', () => {
     };
 
     it('the account sheet springs back short of 80px, and closes past it with the medium settle (commit, D-70)', async () => {
+      // The account sheet is phone-only; the Modal under it drags on the phone.
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
+      onTestFinished(() => {
+        window.matchMedia = real;
+      });
       const user = userEvent.setup();
       // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
       wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
@@ -659,7 +669,7 @@ describe('Shell · navigation and accessibility', () => {
       await user.click(more);
       await expectCode('CH-1802');
       const sheet = code('CH-1802') as HTMLElement;
-      const head = sheet.querySelector('.ch-more__head') as HTMLElement;
+      const head = sheet.querySelector('.ch-modal__head') as HTMLElement;
       hapticSpy.mockClear();
       await drag(head, sheet, 40);
       expect(sheet.style.translate).toBe('');
@@ -1288,12 +1298,21 @@ describe('Shell · behaviour contracts (P001)', () => {
     unmount();
     // A coach's old page that moves for coaches only: a player is told the same, not that it is unavailable.
     const old = render(
-      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/courses">
-        <p>Courses body</p>
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/intelligence">
+        <p>Intelligence body</p>
       </ClubhouseFrame>,
     );
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/^Only coaches use /);
     old.unmount();
+    // Courses has nothing of either role's, so a player is sent Home like a coach (GAP-R-12): the wait for that, never
+    // "Courses isn’t available here".
+    const courses = render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/courses">
+        <p>Courses body</p>
+      </ClubhouseFrame>,
+    );
+    expect(screen.queryByRole('heading', { level: 1, name: /isn.t available here$|^Only coaches use / })).toBeNull();
+    courses.unmount();
     // A coach on an address rebuilt for players only (Classes) still reads the plain notice.
     render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/classes">

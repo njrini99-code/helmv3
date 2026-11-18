@@ -20,7 +20,7 @@ import { redirectOnUnauthorized } from '@/lib/baseball/redirect-on-unauthorized'
 import { SeasonSettingsClient } from '@/components/baseball/settings/SeasonSettingsClient';
 
 export const metadata = {
-  title: 'Season Settings | Helm Baseball',
+  title: 'Season Settings',
   description: 'Season phases, the current season, and season-specific modules.',
 };
 

@@ -14,6 +14,9 @@ import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
 import { UserRoleFilterChips, type RoleChip } from './UserRoleFilterChips';
 import { SectionLabel } from '../_components/SectionLabel';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Users & Teams' };
 
 export const dynamic = 'force-dynamic';
 

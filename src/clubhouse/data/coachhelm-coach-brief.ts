@@ -97,6 +97,7 @@ export async function loadCoachBrief(input: { coachId: string; teamId: string; n
       teamPattern: inputs.patterns?.patterns[0] ?? null,
       withEnoughRounds: inputs.eligible.size,
       now,
+      tz: inputs.tz,
       maxItems: Number.POSITIVE_INFINITY,
     });
     return {

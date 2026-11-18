@@ -13,6 +13,7 @@ import { loadCoachBrief } from './coachhelm-coach-brief';
 import { loadCoachTrackRecord } from './coachhelm-track-record';
 import { readThemes } from './coachhelm-dive';
 import { themesByCategory } from './coachhelm-dive-shape';
+import { seasonSgByCategory } from './season-figures-shape';
 import { readCorrections } from './coachhelm-corrections';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { isNotEnoughYet, notEnoughOf, notEnoughRead, splitFirm, type ChNotEnoughPlayer } from './coachhelm-firm';
@@ -51,7 +52,7 @@ import {
 import { roundsForFigures } from './figure-window';
 import { toChTeamLegs } from './coachhelm-team-legs';
 import { teamLastTenRounds, teamLastTenStrokesGained } from './stats-team-sg';
-import { sgPolicyAtSource, sgSourceFor, tourForGender } from './stats-common';
+import { sgPolicyAtSource, sgSourceFor, teamTour, TEAM_TOUR_COLUMNS } from './stats-common';
 import { sgMixOf } from './stats-sg-mix';
 import { holeRounds } from './round-scope';
 import { classYearLabel, lastTenFloor, loadSeasonRounds, loadTeamZone, seasonStartDate } from './season';
@@ -112,22 +113,22 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
 
   const pulse = pulseLater();
   // One read of the team's row serves its name, its tour and the Tour's values (a second read of the same row is no longer made).
-  const teamRow = handled(Promise.resolve(supabase.from('golf_teams').select('name, gender').eq('id', input.teamId).maybeSingle()));
+  const teamRow = handled(Promise.resolve(supabase.from('golf_teams').select(`name, ${TEAM_TOUR_COLUMNS}`).eq('id', input.teamId).maybeSingle()));
   const tourRead = handled(
     teamRow.then(async (res): Promise<TourRead> => {
       if (res.error) {
         log('team', res.error);
         return { baseline: null, error: true };
       }
-      return tourBaselineOf(supabase, res.data as { gender: string | null } | null);
+      return tourBaselineOf(supabase, res.data as Parameters<typeof teamTour>[0] | null);
     }),
   );
   const zoneRead = handled(loadTeamZone(supabase, input.teamId, 'coachhelm.team'));
   // A team row that did not load names no tour (lib/sg.ts: an unknown tour claims neither). Awaited only where it is drawn, never in front of a read.
   const teamNamed = handled(
     teamRow.then((info) => {
-      const teamData = info.data as { name?: string | null; gender?: string | null } | null;
-      return { name: teamData?.name ?? '', tourKnown: false, baselineLabel: 'to Tour', sgTour: teamData ? tourForGender(teamData.gender) : null };
+      const teamData = info.data as ({ name?: string | null } & Parameters<typeof teamTour>[0]) | null;
+      return { name: teamData?.name ?? '', tourKnown: false, baselineLabel: 'to Tour', sgTour: teamData ? teamTour(teamData) : null };
     }),
   );
 
@@ -281,7 +282,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     for (let i = 0; i < candidates.length; i += 4) {
       await Promise.all(
         candidates.slice(i, i + 4).map(async (id) => {
-          const t = await readThemes(id, 'coach');
+          // This season's strokes gained by category from the rounds already here (SC-01), not a read per player.
+          const t = await readThemes(id, 'coach', seasonRounds.error ? null : seasonSgByCategory(seasonRounds.rounds.filter((r) => r.player_id === id), zone, now));
           if (!t) return;
           themes[id] = themesByCategory(t, 'coach');
           const drawn = list.find((p) => p.id === id);
@@ -317,15 +319,19 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     return out;
   });
 
-  // The streamed parts above are started first; the Tour comparison (whose read began with the rounds) is the last thing awaited.
-  const standings = await standingsRead;
-  const against: ChTourRow[] | null = standings
-    ? TOUR_ROWS.map((id) => {
-        const rows = ids.map((pid) => standings.get(pid)?.get(id as never)).filter((s): s is NonNullable<typeof s> => s != null && s.player_value != null);
-        const tourValue = rows.find((s) => s.pga_value != null && !s.pga_omitted)?.pga_value ?? null;
-        return { id, team: rows.length ? rows.reduce((a, s) => a + (s.player_value as number), 0) / rows.length : null, tour: tourValue, n: rows.length };
-      })
-    : null;
+  // The Tour comparison (whose read began with the rounds) is handed over unawaited, like the parts above: the board draws it in
+  // its own Suspense when it lands, so the standings read never holds the hole back (N13-13). A failed read is null (undrawn).
+  const against: Promise<ChTourRow[] | null> = handled(
+    standingsRead.then((standings) =>
+      standings
+        ? TOUR_ROWS.map((id) => {
+            const rows = ids.map((pid) => standings.get(pid)?.get(id as never)).filter((s): s is NonNullable<typeof s> => s != null && s.player_value != null);
+            const tourValue = rows.find((s) => s.pga_value != null && !s.pga_omitted)?.pga_value ?? null;
+            return { id, team: rows.length ? rows.reduce((a, s) => a + (s.player_value as number), 0) / rows.length : null, tour: tourValue, n: rows.length };
+          })
+        : null,
+    ),
+  );
 
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
   return {

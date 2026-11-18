@@ -18,18 +18,21 @@ const darkBlock = () => {
 const hexOf = (block: string, name: string) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6});`).exec(block)?.[1];
 
 describe('elevation tokens (B4)', () => {
-  it('in dark, the elevated steps are lighter than the surface and differ from each other', () => {
+  // Audit spec S1.3 and S1.6 (Nick, 15 Nov 2026): one raised step. #2c322d over the #212722 card at night, and by day
+  // #fcfaf5 over the #faf7ef card, the one step that floats, carried by --ch-elevation-raised. The unused second step
+  // (--ch-bg-elevated-2) is gone.
+  it('in dark, the raised step is lighter than the card', () => {
     const dark = darkBlock();
-    const [surface, e1, e2] = ['ch-bg-surface', 'ch-bg-elevated', 'ch-bg-elevated-2'].map((n) => hexOf(dark, n));
-    expect(surface).toBeTruthy();
-    expect(e1).not.toBe(surface);
-    expect(e2).not.toBe(e1);
+    const [surface, raised] = ['ch-bg-surface', 'ch-bg-elevated'].map((n) => hexOf(dark, n));
+    expect(surface).toBe('#212722');
+    expect(raised).toBe('#2c322d');
+    expect(css('tokens.css')).not.toContain('--ch-bg-elevated-2');
   });
 
-  it('in light, the elevated steps are the surface', () => {
+  it('in light, the raised step is a hair lighter than the ivory card, and not white', () => {
     const light = css('tokens.css');
-    expect(hexOf(light, 'ch-bg-elevated')).toBe(hexOf(light, 'ch-bg-surface'));
-    expect(hexOf(light, 'ch-bg-elevated-2')).toBe(hexOf(light, 'ch-bg-surface'));
+    expect(hexOf(light, 'ch-bg-surface')).toBe('#faf7ef');
+    expect(hexOf(light, 'ch-bg-elevated')).toBe('#fcfaf5');
   });
 
   it.each([
@@ -37,8 +40,6 @@ describe('elevation tokens (B4)', () => {
     ['ui.css', '.ch-popover'],
     ['ui.css', '.ch-peek__card'],
     ['ui.css', '.ch-peek__menu'],
-    ['shell.css', '.ch-more'],
-    ['shell.css', '.ch-asks__panel'],
   ])('%s %s: dark sits on the elevated surface', (file, selector) => {
     const rules = [...css(file).matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter(
       (m) => m[1]!.includes("[data-fw-theme='dark']") && m[1]!.split(',').some((s) => s.trim().endsWith(selector)) && /background:/.test(m[2]!),
@@ -89,13 +90,13 @@ describe('elevation tokens (B4)', () => {
     }
   });
 
-  it('three levels: reading, raised and overlay, in light and dark; floating folds into raised', () => {
+  it('three levels: reading, raised and overlay, in light and dark; floating is gone (MOTION-AND-VISUAL 4.6)', () => {
     const t = css('tokens.css');
     // The reading level is the one card (styles/__tests__/depth.test.ts): --ch-elevation-card holds its light and dark
     // values and --ch-elevation-reading is its older name.
     for (const level of ['card', 'raised', 'overlay']) expect(t.match(new RegExp(`--ch-elevation-${level}:`, 'g'))?.length, level).toBeGreaterThanOrEqual(2);
     expect(t).toMatch(/--ch-elevation-reading: var\(--ch-elevation-card\);/);
-    expect(t).toMatch(/--ch-elevation-floating: var\(--ch-elevation-raised\);/);
+    expect(t).not.toMatch(/--ch-elevation-floating:/);
     for (const file of walk(join(ROOT, 'styles'), /\.css$/)) expect(css(basename(file)), basename(file)).not.toMatch(/var\(--ch-elevation-floating\)/);
   });
 
@@ -123,40 +124,37 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/auth.css': 6,
   'styles/calendar.css': 28,
   'styles/classes.css': 13,
-  'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-profile.css': 5,
   'styles/coachhelm-standing.css': 1,
   'styles/coachhelm-thread.css': 1,
   'styles/coachhelm.css': 1,
-  'styles/controls.css': 12,
-  'styles/home.css': 15,
-  'styles/hub.css': 8,
+  'styles/controls.css': 8,
+  'styles/home.css': 13,
+  'styles/hub.css': 7,
   'styles/messages.css': 7,
   'styles/onboard.css': 17,
   'styles/qualifiers.css': 8,
   'styles/recruiting.css': 1,
   'styles/roster.css': 6,
   'styles/rounds-setup.css': 17,
-  'styles/rounds-track.css': 17,
-  'styles/rounds.css': 21,
+  'styles/rounds-track.css': 16,
+  'styles/rounds.css': 20,
   'styles/settings.css': 3,
   'styles/shell.css': 16,
   'styles/stats.css': 30,
-  'styles/ui.css': 19,
+  'styles/ui.css': 15,
 };
 
 /** Raw drop shadows per stylesheet on 2026-10-24 (row 40): tinted lifts under green and ink surfaces. Only falls. */
 const RAW_DROP: Record<string, number> = {
   'styles/auth.css': 2,
   'styles/classes.css': 1,
-  'styles/coachhelm-ask.css': 1,
   'styles/controls.css': 2,
-  'styles/home.css': 3,
+  'styles/home.css': 1,
   'styles/onboard.css': 6,
   'styles/rounds-setup.css': 1,
-  'styles/rounds-track.css': 1,
   'styles/rounds.css': 1,
   'styles/settings.css': 1,
   'styles/shell.css': 1,
-  'styles/ui.css': 2,
+  'styles/ui.css': 1,
 };

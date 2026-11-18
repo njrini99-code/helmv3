@@ -63,6 +63,7 @@ import type { ChAskData, ChAskLoad } from '../data/coachhelm-chat-shape';
 import { Ask, type ChAskChat } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from '../screens/coachhelm/chat/SubTabs';
+import { underSwitch } from '../screens/coachhelm/__tests__/under-switch';
 import { useViewSwitch } from '../screens/coachhelm/use-view-switch';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ClubhouseMarker } from '../shell/context';
@@ -120,6 +121,20 @@ const tree = (load: ChAskLoad, chat: Fake, initial?: Parameters<typeof Ask>[0]['
     </ToastProvider>
   </LazyMotion>
 );
+/** Ask as the route composes it: under the coach's one switch, mounted above the view (SwitchFrame; N13C-67, production audit 2026-11-15 P1-7). */
+const showUnderSwitch = (load: ChAskLoad = ready(), chat: Fake = fakeChat()) =>
+  render(
+    <LazyMotion features={domAnimation}>
+      <ToastProvider>
+        {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role */}
+        <ClubhouseMarker role="coach">
+          <div className="ch-root" data-ui="clubhouse">
+            {underSwitch('ask', <Ask load={load} chat={chat.hook} />, 'coach')}
+          </div>
+        </ClubhouseMarker>
+      </ToastProvider>
+    </LazyMotion>,
+  );
 function show(load: ChAskLoad = ready(), chat: Fake = fakeChat(), initial?: Parameters<typeof Ask>[0]['initial']) {
   const view = render(tree(load, chat, initial));
   return { ...view, chat, rerenderWith: (l: ChAskLoad, c: Fake = chat) => view.rerender(tree(l, c, initial)) };
@@ -217,13 +232,18 @@ describe('CH-13923 the sub-tab strip', () => {
     }
   });
 
-  it('is on the Ask view, above the chat, with the team beside it (desktop) and without a team label on the phone', () => {
+  it('is the route’s switch above the chat, with the team after it in the top bar (desktop) and without a team label on the phone (N13C-67)', () => {
+    // The chat no longer draws a switch of its own: the route's one switch stands above every view in the same place.
     show();
+    expect(code('CH-13923')).toBeNull();
+    cleanup();
+    showUnderSwitch();
     expect(code('CH-13923')).not.toBeNull();
+    expect(document.querySelector('.ch-topbar__dslot .ch-ask-team')).not.toBeNull();
     expect(screen.getByText('Finley University', { selector: '.ch-ask-team' })).toBeInTheDocument();
     cleanup();
     phoneState.on = true;
-    show();
+    showUnderSwitch();
     expect(code('CH-13923')).not.toBeNull();
     expect(document.querySelector('.ch-ask-team')).toBeNull();
   });
@@ -848,7 +868,8 @@ describe('CH-13225 a section that crashes leaves the rest of the page usable', (
 
 describe('the states that stand in for the thread', () => {
   it('CH-13321 an empty roster is the first-run page with Invite players, the sub-tab strip, and no composer', () => {
-    show({ status: 'noRoster', teamName: 'Finley University' });
+    // The strip is the route's, above the view (N13C-67).
+    showUnderSwitch({ status: 'noRoster', teamName: 'Finley University' });
     expect(code('CH-13321')?.textContent).toMatch(/Add players to ask CoachHelm.*CoachHelm answers from your players’ rounds, stats and schedule\. Once your roster is in, ask about anyone on it\./);
     expect(screen.getByRole('link', { name: 'Invite players' })).toHaveAttribute('href', '/golf/dashboard/roster?invite=1');
     expect(screen.getByRole('radiogroup', { name: 'CoachHelm view' })).toBeInTheDocument();

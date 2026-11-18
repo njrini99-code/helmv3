@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { updateRoundType } from '@/app/golf/actions/round-type';
 import { distribution, type ChReviewHole, type ChReviewTypeEdit, type ChRoundReview } from '../../data/round-review-shape';
-import type { ChReviewHistory } from '../../data/round-history-shape';
+import { HISTORY_FAILED, type ChReviewHistory } from '../../data/round-history-shape';
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/round-type';
@@ -470,10 +470,10 @@ export function RoundReview({
   useEffect(() => {
     if (!historyIn) return;
     let live = true;
-    // A stream cut off in the browser is the same as a failed read: no history, and nothing said about it (P-7 4.8).
+    // A stream cut off in the browser is the same as a failed read: no history, said once below (GAP-S-27).
     Promise.resolve(historyIn).then(
       (history) => live && setStreamed({ from: historyIn, history }),
-      () => live && setStreamed({ from: historyIn, history: null }),
+      () => live && setStreamed({ from: historyIn, history: HISTORY_FAILED }),
     );
     return () => {
       live = false;
@@ -663,6 +663,11 @@ export function RoundReview({
           onRetry={refresh}
           retrying={refreshing}
         />
+      )}
+
+      {/* The history read failed (GAP-S-27): the records, the usual and the earlier plays are left out, and the review says so. */}
+      {r.history?.failed && (
+        <InlineNotice code="CH-11290" title="History didn’t load" body="Records and past rounds are left out. This round’s own figures are unaffected. Try again." onRetry={refresh} retrying={refreshing} />
       )}
 
       <Zones>
@@ -912,8 +917,6 @@ export function RoundReview({
                 hole ? (
                   <>
                     <ZoneBig
-                      key={hole.n}
-                      settle
                       value={hole.score == null ? NO_DATA : String(hole.score)}
                       tone={hole.score == null || hole.par == null ? undefined : hole.score < hole.par ? 'good' : hole.score > hole.par ? 'bad' : undefined}
                     />

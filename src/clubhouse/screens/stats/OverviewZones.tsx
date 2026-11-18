@@ -52,7 +52,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
   const baseline = sgBaseline(data.tour);
   const ref = (label: string) => (coach ? cmp(label)?.team : cmp(label)?.bench) ?? null;
-  const refName = coach ? 'Team' : 'Tour';
+  const refName = coach ? 'Rest of team' : 'Tour';
   const first = data.firstName;
 
   // 1 · strokes gained
@@ -175,7 +175,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
           <EmptyState compact code="CH-5309" title="No strokes gained in this window." body="Strokes gained by leg appears after three rounds with shots." />
         ) : (
           <Vis title="Where the strokes go" note="The same number split by the shots it counts. Right of the line gains strokes, left loses them.">
-            <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} onOpen={onOpenLeg} />
+            <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Rest of team' : null} onOpen={onOpenLeg} />
           </Vis>
         )}
         {sg != null && (
@@ -410,7 +410,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         title="Short game"
         def={
           <>
-            <b>Scrambling</b> is par or better after missing the green. <b>Sand saves</b> is the same from a greenside bunker.
+            <b>Scrambling</b> is par or better after missing the green, plus every sand save. <b>Sand saves</b> is getting down in two from a greenside bunker, whatever the score.
           </>
         }
         read={
@@ -583,9 +583,11 @@ function ParDots({ rows }: { rows: Array<{ p: 3 | 4 | 5; you: number | null; tou
 
 /** A green seen from above, its four edges thickened by the share of missed approaches that finish there. */
 export function GreenDiagram({ short, long, left, right, gir }: { short: number; long: number; left: number; right: number; gir: number | null }) {
-  // Capped, so a thick arc never reaches the label beside it (STATS-2).
-  const stroke = (v: number) => Math.min(18, 5 + (v / 100) * 28);
   const worst = Math.max(short, long, left, right);
+  // Each arc's weight is its share, from nothing at 0% (stats and charts audit 2026-11-15, CH-22: 0% drew 5pt and 46% to 100% all
+  // drew the 18pt cap): 0.36pt a point, and a side past half of the misses scales the four down together, so the thickest arc stays
+  // at 18 and clear of the label beside it (STATS-2).
+  const stroke = (v: number) => (v * 18) / Math.max(50, worst);
   const tone = (v: number) => (v === worst ? 'var(--ch-warning-600)' : 'var(--ch-champagne-500)');
   // The side most misses finish on is the one in bold, by the same test as its colour, never "Short" by default (A8.6).
   const lab = (v: number) => (v === worst ? { fontSize: 15, fontWeight: 700, fill: tone(v) } : { fontSize: 13, fontWeight: 600, fill: 'var(--ch-text-secondary)' });

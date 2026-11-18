@@ -29,7 +29,7 @@
   font-variation-settings: normal;
 }
 .ch-rs-head p {
-  font: var(--ch-type-body-l);
+  font: var(--ch-type-body);
   color: var(--ch-text-secondary);
 }
 .ch-rs-head__act {
@@ -76,7 +76,7 @@
   color: var(--ch-forest-800);
 }
 .ch-rs-req__head > span:last-child {
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
 
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -124,7 +124,7 @@
 }
 .ch-rs-attn__l {
   margin-right: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -135,7 +135,7 @@
   height: 34px;
   padding: 0 12px 0 4px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-control);
   cursor: pointer;
@@ -152,7 +152,7 @@
   color: var(--ch-text-primary);
 }
 .ch-rs-attn__n {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
 }
 .ch-rs-attn__n.is-warning,
@@ -200,7 +200,7 @@
 /* The player's roster of one (CH-3309): one quiet line under their own row. */
 .ch-rs-solo {
   margin: 16px 2px 0;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-tertiary);
 }
 
@@ -213,6 +213,7 @@
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 .ch-rs-vt__b {
+  position: relative;
   display: grid;
   place-items: center;
   width: 30px;
@@ -225,6 +226,15 @@
   cursor: pointer;
   transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
+/* Drawn 30 by 28 for a mouse; under a finger each half of the toggle reaches 44 (PL-ROST-07). The pair sits 2px apart,
+   so each grows on its own side only as far as 44 needs. */
+@media (pointer: coarse) {
+  .ch-rs-vt__b::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+    content: '';
+  }
+}
 @media (hover: hover) {
   .ch-rs-vt__b:hover {
     color: var(--ch-text-primary);
@@ -236,8 +246,7 @@
 }
 
 /* Roster controls (owner, 2026-10-08: "ivory buttons ... need to be green"): the grid and list toggle is the green chip
-   every mode switch draws (controls.css, 2026-10-16), as the coach's is. The sorts and the status filter take the light
-   chip of a filter (ui/Segmented weight="filter"; owner, 11 Nov 2026). */
+   every toggle draws (controls.css; one toggle, Nick 15 Nov 2026), the sorts and the status filter included. */
 .ch-rs .ch-pill[aria-pressed='true'],
 .ch-rs .ch-rs-vt__b[aria-pressed='true'] {
   background: var(--ch-seg-on-bg);
@@ -265,7 +274,7 @@
   gap: 6px;
   padding: 16px 16px 16px;
   border: 0;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   color: inherit;
   text-align: center;
@@ -281,12 +290,12 @@
 }
 /* Pressing drops the hover lift. A card never scales: the shell's press is for keys (lib/press.ts, CH-1606). */
 .ch-rs-face:not(.ch-rs-face--static)[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
   transform: translateY(0);
 }
 @media (hover: hover) {
   .ch-rs-face:not(.ch-rs-face--static):active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transform: translateY(0);
   }
 }
@@ -310,7 +319,7 @@
   align-items: center;
   gap: 6px;
   margin-left: auto;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -330,7 +339,7 @@
 .ch-rs-face__av {
   margin: 2px 0 4px;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px var(--ch-card-bg), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 3px var(--ch-card-bg);
 }
 .ch-rs-face.is-sel .ch-rs-face__av {
   box-shadow: 0 0 0 3px var(--ch-card-bg), 0 0 0 5px var(--ch-green-600);
@@ -447,13 +456,13 @@
 /* W25: "a round" after the SG figure, in the caption's size and ink. */
 .ch-rs-fig__u {
   margin-left: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   letter-spacing: 0;
   color: var(--ch-text-tertiary);
 }
 .ch-rs-fig__m {
   grid-area: m;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -463,7 +472,7 @@
   position: relative;
   grid-area: viz;
   height: 10px;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: rgb(28 25 18 / 0.06);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
 }
@@ -497,7 +506,7 @@
   position: absolute;
   top: 2px;
   bottom: 2px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
 }
 .ch-rs-sgbar i.is-gain {
   background: var(--ch-chart-gain-fill);
@@ -511,7 +520,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -523,10 +532,10 @@
 }
 .ch-rs-face__note {
   margin-top: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
 }
 /* Injured or away (P003, availability): plain ink, one line, the whole of it in the title. No colour of its own: red is
-   under par, amber a slide, green a gain (D-42); the word carries the meaning (CH-3809). */
+   an error, amber a slide, green a gain (MOTION-AND-VISUAL 4.7); the word carries the meaning (CH-3809). */
 .ch-rs-face__note.is-availability {
   max-width: 100%;
   overflow: hidden;
@@ -566,7 +575,7 @@
 .ch-rs-row--head {
   margin-bottom: 2px;
   border-bottom: 0;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
@@ -580,7 +589,7 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   color: inherit;
   cursor: pointer;
@@ -675,8 +684,8 @@
   gap: 6px;
   height: 26px;
   padding: 0 8px;
-  border-radius: 999px;
-  font: var(--ch-type-13-medium);
+  border-radius: var(--ch-radius-full);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
 }
 .ch-rs-status i {
@@ -710,7 +719,7 @@
   gap: 16px;
   padding: 0 0 20px;
   overflow: hidden;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -740,19 +749,19 @@
 .ch-rs-peek__av {
   margin-bottom: 8px;
   border-radius: 50%;
-  box-shadow: 0 0 0 5px var(--ch-ivory-25), 0 0 0 6px rgb(176 149 96 / 0.55), 0 14px 30px -12px rgb(28 25 18 / 0.4);
+  box-shadow: 0 0 0 5px var(--ch-ivory-25), 0 0 0 6px rgb(176 149 96 / 0.55);
 }
 .ch-rs-peek__av .ch-avatar {
   font-size: 28px;
 }
 .ch-rs-peek__hero h2 {
-  font: var(--ch-type-22-strong);
+  font: var(--ch-type-title);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 96;
 }
 .ch-rs-peek__sub {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   color: var(--ch-forest-800);
 }
 .ch-rs-peek__quick {
@@ -776,7 +785,7 @@
   align-items: center;
   gap: 6px;
   margin-bottom: 4px;
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -809,7 +818,7 @@
   box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-border-hairline);
 }
 .ch-rs-peek__figs dt {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-rs-peek__figs dd {
@@ -821,7 +830,7 @@
 }
 /* F-0005: a figure's window under it ("Last 8 · Jun–Jul"), in its label's size and ink. */
 .ch-rs-peek__figs dd.ch-rs-peek__f {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   letter-spacing: 0;
   color: var(--ch-text-tertiary);
 }
@@ -871,7 +880,7 @@
   text-align: right;
 }
 .ch-rs-topar {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -883,7 +892,7 @@
 .ch-rs-peek__dev {
   display: flex;
   gap: 16px;
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 .ch-rs-peek__dev b {
@@ -1050,11 +1059,12 @@ a.ch-rs-peek__dev:focus-visible,
   gap: 4px;
   max-width: 100%;
   padding: 4px 4px 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-green-100);
   color: var(--ch-forest-800);
-  font: var(--ch-type-13-medium);
-  animation: ch-rs-em-in var(--ch-dur-quick) var(--ch-ease);
+  font: var(--ch-type-footnote);
+  /* A chip the coach just typed crossfades in over the quick beat, with no pop (motion.css ch-in; MOTION-AND-VISUAL 3.12). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-rs-em__chip > span:first-child {
   min-width: 0;
@@ -1077,7 +1087,7 @@ a.ch-rs-peek__dev:focus-visible,
   width: 22px;
   height: 22px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: none;
   color: inherit;
   cursor: pointer;
@@ -1141,16 +1151,6 @@ a.ch-rs-peek__dev:focus-visible,
 .ch-rs-em__off {
   margin: 0;
 }
-@keyframes ch-rs-em-in {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .ch-rs-em__chip {
     animation: none;
@@ -1176,7 +1176,7 @@ a.ch-rs-peek__dev:focus-visible,
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-  font: var(--ch-type-body-s);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 
@@ -1258,8 +1258,8 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* 12px, the phone text floor (F09), as the kit's PageIntro eyebrow. */
   .ch-rsm-kicker {
-    font: var(--ch-type-eyebrow);
-    letter-spacing: var(--ch-track-eyebrow);
+    font: var(--ch-type-footnote);
+    letter-spacing: 0;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-rsm-sort {
@@ -1269,7 +1269,7 @@ a.ch-rs-peek__dev:focus-visible,
     gap: 12px;
   }
   .ch-rsm-sort > span {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     color: var(--ch-text-tertiary);
   }
   /* Drawn at 26px; the hit area reaches 44. */
@@ -1302,8 +1302,8 @@ a.ch-rs-peek__dev:focus-visible,
     margin: 16px 0 -20px;
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
-    font: var(--ch-type-section);
-    letter-spacing: var(--ch-track-section);
+    font: var(--ch-type-title);
+    letter-spacing: var(--ch-track-title);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-text-primary);
   }
@@ -1329,11 +1329,11 @@ a.ch-rs-peek__dev:focus-visible,
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rsm-row:focus-visible {
@@ -1400,7 +1400,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rsm-row__v > span {
     min-width: 6ch;
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
@@ -1505,12 +1505,12 @@ a.ch-rs-peek__dev:focus-visible,
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsm-figs dt {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
   .ch-rsm-figs dd {
     margin: 0;
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
@@ -1553,7 +1553,7 @@ a.ch-rs-peek__dev:focus-visible,
     margin: -12px -8px -12px 0;
     padding: 0 8px;
     border-radius: var(--ch-radius-md);
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-green-700);
@@ -1561,11 +1561,11 @@ a.ch-rs-peek__dev:focus-visible,
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-panel__link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-panel__link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   /* CoachHelm on the phone profile: the counts on the panel's seam, under its heading. */
@@ -1601,7 +1601,7 @@ a.ch-rs-peek__dev:focus-visible,
     color: var(--ch-chart-loss);
   }
   .ch-rsm-trend__empty {
-    font: var(--ch-type-body-s);
+    font: var(--ch-type-callout);
     color: var(--ch-text-secondary);
   }
   .ch-rsm-rd {
@@ -1756,13 +1756,11 @@ a.ch-rs-peek__dev:focus-visible,
     background: var(--ch-ledger-rule-soft);
   }
   .ch-rsm-banner[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-banner:active {
-      background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
+      background: var(--ch-sel);
     }
   }
   .ch-rsm-banner[data-ch-pressed]::after {
@@ -1786,7 +1784,7 @@ a.ch-rs-peek__dev:focus-visible,
     height: 28px;
     margin-inline: 6px;
     padding: 0 8px;
-    border-radius: 999px;
+    border-radius: var(--ch-radius-full);
     background: var(--ch-green-fill-700);
     color: var(--ch-on-green-ink);
     font: 600 14px/1 var(--ch-font-sans);
@@ -1910,7 +1908,7 @@ a.ch-rs-peek__dev:focus-visible,
     gap: 4px;
   }
   .ch-rsm-code > span > span {
-    font: var(--ch-type-12-medium);
+    font: var(--ch-type-caption);
     line-height: var(--ch-lead-tight);
     color: var(--ch-text-tertiary);
   }
@@ -1966,11 +1964,11 @@ a.ch-rs-peek__dev:focus-visible,
     pointer-events: none;
   }
   .ch-rsm-act[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsm-act:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rsm-act b {
@@ -2133,7 +2131,8 @@ a.ch-rs-peek__dev:focus-visible,
 
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rs[data-canopy] .ch-rs-face.is-sel {
@@ -2146,12 +2145,12 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* CH-3602: a press deepens the tint over the press beat (the row press tint). */
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static)[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2169,7 +2168,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rs[data-canopy] .ch-rs-face,
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
     padding: 24px 20px 24px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
     transition:
@@ -2263,7 +2262,8 @@ a.ch-rs-peek__dev:focus-visible,
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-row:not(.ch-rs-row--head):hover {
-      background: var(--ch-ledger-row-hover);
+      background: var(--ch-sel);
+      transition-duration: 0s;
     }
   }
   .ch-rs[data-canopy] .ch-rs-row.is-sel {
@@ -2278,12 +2278,12 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* Pressing a player's name deepens the row's tint over the press beat; the row menu's key presses on its own. */
   .ch-rs[data-canopy] .ch-rs-row:has(.ch-rs-who[data-ch-pressed]) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-row:has(.ch-rs-who:active) {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2423,13 +2423,13 @@ a.ch-rs-peek__dev:focus-visible,
   opacity: 0.45;
 }
 
-/* CH-3701: a chosen sort slides each moved phone row to its new place on the smooth spring (D-64), its figure rolling
-   inside it. No crossfade: the row's new face travels from the old place. The pseudo-elements hang off <html>, so they
-   take the spring from its tokens there (tokens.css, --ch-*-vt-push). The shell's reduced-motion rule stops it, and the
+/* CH-3701: a chosen sort slides each moved phone row to its new place over base on the one curve (S3.10), its figure
+   rolling inside it. No crossfade: the row's new face travels from the old place. The pseudo-elements hang off <html>,
+   so they take the timing from its tokens there (tokens.css, --ch-*-vt-move). The shell's reduced-motion rule stops it, and the
    list never asks for it then, nor with Animations off (RosterPhoneList). */
 html:has([data-ui='clubhouse'])::view-transition-group(.ch-rsm-reorder) {
-  animation-duration: var(--ch-dur-vt-push);
-  animation-timing-function: var(--ch-ease-vt-push);
+  animation-duration: var(--ch-dur-vt-move);
+  animation-timing-function: var(--ch-ease-vt-move);
 }
 html:has([data-ui='clubhouse'])::view-transition-old(.ch-rsm-reorder) {
   display: none;
@@ -2445,7 +2445,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   margin: 8px 0 24px;
   padding: 24px 24px 8px;
   overflow-x: clip;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   /* Visual pass 2026-10-28: no accent rule across the card's top edge (the owner's Oct 2 no-rails revision); the
      champagne hairline ring alone frames the plate. */
@@ -2500,7 +2500,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
   transition: translate var(--ch-dur-base) var(--ch-ease);
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: var(--ch-champagne-500);
   /* Dark ink on the gold in both themes: the gold stays light at night, where --ch-ink-950 turns ivory (1.9:1). */
   color: #141412;
@@ -2563,7 +2563,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   letter-spacing: -0.02em;
 }
 .ch-rs-sp__coins em {
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -2791,7 +2791,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   align-items: center;
   gap: var(--ch-space-1);
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
 }
 .ch-rs-peek__class small {
   color: var(--ch-text-tertiary);
@@ -2805,7 +2805,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   display: grid;
   gap: 12px;
   padding: 16px 16px 12px;
-  border-radius: var(--ch-radius-card);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-feature-shadow);
   color: var(--ch-on-green-plate);
@@ -2845,7 +2845,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   letter-spacing: var(--ch-track-34);
 }
 [data-ch-crh='on'] .ch-rs-tcard__n span {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-on-green-3);
 }
@@ -2857,7 +2857,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ch-crh='on'] .ch-rs-mix i {
   display: block;
   flex-basis: 0;
-  border-radius: var(--ch-radius-xs);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-rs-y);
   box-shadow: var(--ch-roster-x1);
 }
@@ -2865,7 +2865,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 12px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
 
   color: var(--ch-on-green-2);
 }
@@ -2877,7 +2877,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ch-crh='on'] .ch-rs-mix__lg i {
   width: 9px;
   height: 9px;
-  border-radius: var(--ch-radius-mark);
+  border-radius: var(--ch-radius-full);
   background: var(--ch-rs-y);
 }
 [data-ch-crh='on'] .ch-rs-mix__lg b {
@@ -2890,7 +2890,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   gap: 8px;
   padding-top: 12px;
   border-top: var(--ch-hairline-w) solid var(--ch-on-green-rule);
-  font: var(--ch-type-meta);
+  font: var(--ch-type-footnote);
   color: var(--ch-on-green-2);
 }
 [data-ch-crh='on'] .ch-rs-tcard__coins {
@@ -2932,20 +2932,16 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ch-crh='on'] .ch-rs-ldr__v.is-loss {
   color: var(--ch-chart-loss);
 }
-/* Needs a look shows its reason as the figure (coach audit 13 Nov 2026, §8 #4): words at 20, and the strokes gained it was
-   ranked by on its own line under them. */
-[data-ch-crh='on'] .ch-rs-ldr__v.is-words {
-  font: var(--ch-type-20-strong);
-  letter-spacing: var(--ch-track-20);
-  white-space: normal;
-}
-[data-ch-crh='on'] .ch-rs-ldr__v.is-words small {
-  display: block;
-  margin: 2px 0 0;
+/* Needs a look keeps its strokes gained as the figure and says why under the name, in body ink (prod audit 2026-11-15,
+   ROSTER-08; the 13 Nov reason-as-figure read as a number and was cut at the edge). */
+[data-ch-crh='on'] .ch-rs-ldr__why {
+  grid-column: 1 / -1;
+  font: var(--ch-type-13-medium);
+  color: var(--ch-crh-ink2);
 }
 [data-ch-crh='on'] .ch-rs-ldr__v small {
   margin-left: 4px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
 
   letter-spacing: 0;
   color: var(--ch-crh-ink2);
@@ -3015,7 +3011,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     margin-top: 6px;
     padding: 12px 16px;
     border: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
     color: var(--ch-text-primary);
@@ -3075,7 +3071,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     text-align: left;
   }
   [data-ch-crh='on'] .ch-rsx-row[data-ch-pressed] {
-    background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+    background: var(--ch-sel);
     transform: none;
   }
   [data-ch-crh='on'] .ch-rsx-row:focus-visible {
@@ -3090,14 +3086,14 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-row__b > b {
     overflow: hidden;
-    font: var(--ch-type-row);
+    font: var(--ch-type-callout);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
   [data-ch-crh='on'] .ch-rsx-row__b > span {
     overflow: hidden;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -3165,13 +3161,13 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     margin-right: 6px;
   }
   [data-ch-crh='on'] .ch-rsx-meta {
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     white-space: nowrap;
   }
   [data-ch-crh='on'] .ch-rsx-link {
     position: relative;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-accent-ink);
     white-space: nowrap;
   }
@@ -3203,7 +3199,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     max-width: 100%;
     margin: 0;
     overflow: hidden;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3246,7 +3242,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-figs dd {
     margin: 0;
-    font: var(--ch-type-22-strong);
+    font: var(--ch-type-title);
 
     letter-spacing: var(--ch-track-22);
     color: var(--ch-text-primary);
@@ -3270,7 +3266,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-none {
     margin: 0;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
   }
   [data-ch-crh='on'] .ch-rsx-well {
@@ -3295,7 +3291,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     color: var(--ch-crh-ink2);
   }
   [data-ch-crh='on'] .ch-rsx-well span.is-under {
-    color: var(--ch-flag);
+    color: var(--ch-score-under);
   }
   [data-ch-crh='on'] .ch-rsx-facts {
     display: grid;
@@ -3324,14 +3320,14 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-facts dd {
     margin: 0;
-    font: var(--ch-type-row);
+    font: var(--ch-type-callout);
     color: var(--ch-text-primary);
   }
   /* Availability, Coach's note and CoachHelm keep today's panels, each on the card surface. */
   [data-ch-crh='on'] .ch-rsx-panel > * {
     padding: 12px 16px;
     border: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
   }
@@ -3344,7 +3340,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-reqs__none {
     margin: 0;
     padding: 20px 20px;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     text-align: center;
   }
@@ -3387,7 +3383,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   gap: 6px;
   margin-top: 6px;
   padding: 6px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-radius-full);
   background: color-mix(in srgb, var(--ch-rs-y, var(--ch-accent-ink)) 14%, transparent);
   color: color-mix(in srgb, var(--ch-rs-y, var(--ch-accent-ink)) 62%, var(--ch-ink-900));
   font: var(--ch-type-13-strong);
@@ -3438,7 +3434,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     margin-top: 6px;
     padding: 12px 16px;
     border: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
     color: var(--ch-text-primary);
@@ -3487,14 +3483,14 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-row__b > b {
     overflow: hidden;
-    font: var(--ch-type-row);
+    font: var(--ch-type-callout);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
   [data-ch-crh='on'] .ch-rsx-row__b > span {
     overflow: hidden;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -3514,7 +3510,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-reqs__none {
     margin: 0;
     padding: 20px 20px;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-footnote);
     color: var(--ch-crh-ink2);
     text-align: center;
   }
@@ -3593,7 +3589,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'].ch-rsd .ch-rs-list {
     overflow: auto;
     padding: 0;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
   }
@@ -3696,7 +3692,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-peek {
     gap: 12px;
-    border-radius: var(--ch-radius-card);
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-card-shadow);
   }
@@ -3752,7 +3748,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 :is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='fr'] {
   --ch-rs-y: var(--ch-yr-fr);
 }
-/* G4 (preview grade): red reads as a warning (D-42 keeps red for under par, the pin flag and destructive acts), so inside
+/* G4 (preview grade): red reads as a warning (red is kept for errors and destructive acts, MOTION-AND-VISUAL 4.7), so inside
    Roster the Freshmen tone is a muted violet; the bar, legend, avatars and year chips here move together. The shared
    --ch-yr-fr token, read by other screens, is left as it is. The tone is mixed from the year tokens (Juniors' blue with the
    shared Freshmen tone): no raw colour, and the dark theme follows on its own (about #625b66 light, #6b6675 dark; white on it
@@ -3851,7 +3847,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 /* A player's page sits on the same page colour as the Roster it came from. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ch-crh='on'] .ch-rsx-screen {
-    background: var(--ch-grouped-bg);
+    background: var(--ch-page-paint);
   }
 }
 
@@ -3861,16 +3857,18 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ch-crh='on'] .ch-rs-ldr {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: 'k k' 'v bars' 'p p';
+  grid-template-areas: 'k k' 'v v' 'p p';
   align-content: start;
   align-items: end;
   gap: 8px 12px;
   min-width: 0;
   padding: 12px 16px;
   border: 0;
-  border-radius: var(--ch-radius-card);
-  background: color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 4%, var(--ch-card-bg));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 34%, transparent), var(--ch-elevation-badge);
+  border-radius: var(--ch-radius-lg);
+  /* The ivory card (ROSTER-04): no class-year tint. The figure has no mini bars (ROSTER-07): the list rows draw the same
+     last five with their footnote. */
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-text-primary);
   text-align: left;
   cursor: pointer;
@@ -3889,11 +3887,6 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   grid-area: v;
   white-space: nowrap;
 }
-[data-ch-crh='on'] .ch-rs-ldr__bars {
-  grid-area: bars;
-  display: block;
-  padding-bottom: 4px;
-}
 [data-ch-crh='on'] .ch-rs-ldr__p {
   max-width: 100%;
   min-width: 0;
@@ -3903,8 +3896,33 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   gap: 8px;
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  /* The card grows with the Text Size, so the figure, its unit and the bars stay on one line. */
+  /* The card grows with the Text Size, so the figure and its unit stay on one line. */
   [data-ch-crh='on'] .ch-rs-ldr {
     flex: 0 0 min(72%, calc(208px * var(--ch-type-scale, 1)));
   }
+}
+
+/* F-05: the roster limit's line under the head's counts: the count, the over badge and the limit's sheet, on one wrapping row. */
+.ch-rs-limit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ch-rs .ch-rs-limit__over {
+  color: var(--ch-text-secondary);
+}
+.ch-rs-limitf {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ch-rs-limitp .ch-rs-limit,
+.ch-rs-limitp .ch-rs-limit__over {
+  margin: 0;
+  font: var(--ch-type-callout);
+  color: var(--ch-text-secondary);
+}
+.ch-rs-limitp .ch-rs-limit__over {
+  margin-top: 4px;
 }

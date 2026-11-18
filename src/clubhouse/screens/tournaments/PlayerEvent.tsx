@@ -252,7 +252,7 @@ function LaterRows({ rows, today, href }: { rows: ChTourPlayerData['list']; toda
   );
 }
 
-/** The player's total and what it is against par, the to-par red only under par (D-42); a dash where no round of theirs is scored. */
+/** The player's total and what it is against par, the to-par in the gain only under par (MOTION-AND-VISUAL 4.7); a dash where no round of theirs is scored. */
 function MyTotal({ mine }: { mine: ListRow['mine'] }) {
   if (!mine || mine.total == null) return <NoData label="No score" />;
   return (

@@ -156,7 +156,7 @@ export function ProductsIntro() {
           <Arrow />
         </a>
 
-        {/* Built-in CoachHelm AI */}
+        {/* Built-in CoachHelm */}
         <a data-reveal data-reveal-delay="200" href="#coachhelm" className={styles.pRow} style={rowBase}>
           <span className={styles.wash} aria-hidden style={washStyle} />
           <span style={glyphBase}>
@@ -169,7 +169,7 @@ export function ProductsIntro() {
             />
           </span>
           <span>
-            <h3 style={titleStyle}>Built-in CoachHelm AI</h3>
+            <h3 style={titleStyle}>Built-in CoachHelm</h3>
             <p style={descStyle}>
               Root-cause diagnosis and development plans, layered on top of every stat automatically.
             </p>

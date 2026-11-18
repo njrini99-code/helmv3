@@ -1,8 +1,11 @@
+import type { Metadata } from 'next';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import { FeatureUnavailable } from '@/components/fairway';
+import { PlayersOnlyRounds } from '@/clubhouse/shell/NotRebuilt';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseRoundRecoverRoute } from '@/clubhouse/routes/round-recover';
+
+export const metadata: Metadata = { title: 'Recover round' };
 
 export default async function RecoverRoundPage() {
   const session = await getGolfSessionProfile();
@@ -12,12 +15,8 @@ export default async function RecoverRoundPage() {
   // Renders in place rather than redirecting — see stats/page.tsx for why a
   // conditional `redirect()` out of an RSC page produced React #310 here.
   if (!player) {
-    return (
-      <FeatureUnavailable
-        title="Recover a Round"
-        message="Round recovery restores a player's own unfinished round. This session has no player profile."
-      />
-    );
+    // The Clubhouse players-only page (CH-11390, GAP-R-11, GAP-R-12), never the retired Fairway one.
+    return <PlayersOnlyRounds />;
   }
 
   // The device scan, Restore and Discard. The role is the dashboard layout's (getGolfDashboardRole): a player row

@@ -24,7 +24,7 @@ function phone(src: string): string {
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /** A phone rule whose selector list names `sel` and sets a k-scaled 12 (a size or a 12 role). */
 const twelve = (src: string, sel: string) =>
-  new RegExp(`(?:^|[,}\\s])${esc(sel)}\\s*(?:,[^{}]*)?\\{[^}]*(?:calc\\(12 \\* var\\(--ch-type-k\\)\\)|var\\(--ch-type-12-(?:medium|strong)\\))`).test(phone(src));
+  new RegExp(`(?:^|[,}\\s])${esc(sel)}\\s*(?:,[^{}]*)?\\{[^}]*(?:calc\\(12 \\* var\\(--ch-type-k\\)\\)|var\\(--ch-type-(?:12-(?:medium|strong)|caption)\\))`).test(phone(src));
 
 describe('phone type floor (F-0024)', () => {
   it.each(['.ch-hb-ann__file em', '.ch-hb-file__ic em'])('hub: %s is a k-scaled 12 on the phone', (sel) => {

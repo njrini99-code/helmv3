@@ -1,6 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import { logServerError } from '@/lib/server-error-logger';
+import { chLogServer } from '../lib/track-server';
 import { isFlagEnabled } from '@/lib/flags';
 import { buildFieldDayContext } from '@/lib/coachhelm/v3/field-day/field';
 import { loadTeamFieldRounds } from '@/lib/coachhelm/v3/field-day/loader';
@@ -16,8 +16,8 @@ import { firstName, partitionInsights, type ChHelmLifecycle } from './coachhelm-
 import type { ChDeepInsight } from './coachhelm-dive-shape';
 import { loadPlayerStanding, readStandingRows } from './coachhelm-standing';
 import { classYearLabel, lastTenFloor, loadSeasonRounds, loadTeamZone, seasonStartDate, type ChRound } from './season';
-import { lastTenRounds, playerStrokesGained, roundsForFigures } from './figure-window';
-import { sgPolicyAtSource, sgSourceFor } from './stats-common';
+import { figureWindowRounds, lastTenRounds, playerStrokesGained, roundCount, roundsForFigures } from './figure-window';
+import { loadRoundCache, sgPolicyAtSource, sgSourceFor } from './stats-common';
 import { sgMixOf, type ChSgMix } from './stats-sg-mix';
 import { holeRounds } from './round-scope';
 import { teamLastTenStrokesGained } from './stats-team-sg';
@@ -28,7 +28,8 @@ import type { ChStanding } from './coachhelm-standing-shape';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
-const log = (where: string, err: unknown) => void logServerError(err instanceof Error ? err.message : String(err), { action: `coachhelm.file.${where}`, featureArea: 'coachhelm' });
+// Through chLogServer, so the file's failures carry ui=clubhouse like every other Clubhouse read (they went out untagged).
+const log = (where: string, err: unknown) => chLogServer('coachhelm.file', where, err, 'coachhelm');
 
 /** The desktop rail: the team's active players, each with their top read, or the class year when there is none (CP-LNS-18). Only the reads the rail draws count as shown (CT0a). */
 export async function loadFileRoster(scope: ChCoachPlayerScope): Promise<ChFileRosterRow[] | null> {
@@ -61,6 +62,11 @@ export async function loadFileRoster(scope: ChCoachPlayerScope): Promise<ChFileR
   }
 }
 
+/** A focus made, started or changed on or after `day` (YYYY-MM-DD): this season's, for the "current focus" reads below. */
+function touchedSince(day: string): string {
+  return `created_at.gte.${day},updated_at.gte.${day},started_at.gte.${day}`;
+}
+
 /** The newest focus this coach made for this player, with the first time its read was drawn on the player's own CoachHelm. Never a false tick (W-LNS-5). */
 export async function loadFilePlan(scope: ChCoachPlayerScope, zone: string): Promise<ChFilePlan | null> {
   try {
@@ -71,6 +77,8 @@ export async function loadFilePlan(scope: ChCoachPlayerScope, zone: string): Pro
       .eq('player_id', scope.playerId)
       .eq('coach_id', scope.coachId)
       .in('status', ['proposed', 'active', 'in_progress', 'declined'])
+      // The same season rule as the player's own week, so the coach's file and "As {first} sees it" name one focus.
+      .or(touchedSince(seasonStartDate(new Date(), zone)))
       .order('created_at', { ascending: false })
       .limit(1);
     if (error) throw error;
@@ -105,6 +113,7 @@ async function filePractice(supabase: Supabase, row: { id: string; drill_ids: st
     let drill: string | null = null;
     if (drillId) {
       const d = await supabase.from('golf_drills').select('title').eq('id', drillId).maybeSingle();
+      if (d.error) log('practice.drill', d.error);
       drill = d.error ? null : (d.data?.title ?? null);
     }
     if (!drill) return null;
@@ -117,7 +126,10 @@ async function filePractice(supabase: Supabase, row: { id: string; drill_ids: st
 
 async function coachLabel(supabase: Supabase, coachId: string): Promise<string> {
   const { data, error } = await supabase.from('golf_coaches').select('full_name').eq('id', coachId).maybeSingle();
-  if (error) return 'Your coach';
+  if (error) {
+    log('coach label', error);
+    return 'Your coach';
+  }
   const last = data?.full_name?.trim().split(/\s+/).pop();
   return last ? `Coach ${last}` : 'Your coach';
 }
@@ -178,14 +190,35 @@ export async function loadFileTrack(scope: ChCoachPlayerScope, zone: string): Pr
   }
 }
 
-/** `golf_rounds.total_penalties` for the last 8 countable rounds, oldest first (04 8 N). */
+/** How many rounds the penalty strip draws. */
+const PENALTY_ROUNDS = 8;
+/** How many of the newest hole rounds have their stats rows read, so a round without one never shortens the strip. */
+const PENALTY_READ = 24;
+
+/**
+ * Penalty strokes for the player's last 8 rounds, oldest first (04 8 N), counted as every figure on the page counts them (DF-P-06): the
+ * one figures helper's rounds (`figureWindowRounds`: completed, never a test round, practice out, countable, eighteen holes), only those
+ * with their holes (a round posted as a total has no penalties to show), and each round's penalty strokes from its stats row, the
+ * source My stats and Ask read. Before, the strip read `golf_rounds.total_penalties` over the last 8 rounds of any length, so a nine
+ * sat beside eighteens and a total-only round showed a zero nobody recorded (prod audit PL-CH-03 had taken out test and practice).
+ */
 export async function loadFilePenalties(supabase: Supabase, playerId: string, zone: string): Promise<Array<{ label: string; value: number }> | null> {
-  const { data, error } = await supabase.from('golf_rounds').select('round_date, total_penalties').eq('player_id', playerId).eq('status', 'completed').not('total_penalties', 'is', null).order('round_date', { ascending: false }).limit(8);
-  if (error) {
-    log('penalties', error);
+  const read = await loadSeasonRounds(supabase, [playerId], { surface: 'coachhelm.file.penalties', since: lastTenFloor() });
+  if (read.error) return null;
+  const newest = holeRounds(figureWindowRounds(read.rounds, { window: 'all', tz: zone })).slice(0, PENALTY_READ);
+  if (!newest.length) return [];
+  const cache = await loadRoundCache(supabase, newest.map((r) => r.id), 'coachhelm.file.penalties');
+  if (cache.error) {
+    log('penalties', 'stats rows read failed');
     return null;
   }
-  return (data ?? []).reverse().map((r) => ({ label: fileDay(r.round_date, zone) ?? '', value: r.total_penalties as number }));
+  return newest
+    .flatMap((r) => {
+      const value = roundCount(r, cache.byRound, 'penalties');
+      return value == null ? [] : [{ label: fileDay(r.round_date, zone) ?? '', value }];
+    })
+    .slice(0, PENALTY_ROUNDS)
+    .reverse();
 }
 
 /**
@@ -320,10 +353,11 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
     const [rowsRead, standing, field, toGo, penalties, last, sgRounds] = await Promise.all([
       readStandingRows(playerId),
       loadPlayerStanding({ playerId, feed: () => Promise.resolve([]) }),
-      newestDay(supabase, playerId).then((d) => (teamId && d ? loadFileField({ teamId, playerId, lastRound: d }, { role: 'player' }, zone) : null)),
+      // A failed newest-day read is the field failing (undefined), never "no round to put in context" (PL-CH-04).
+      newestDay(supabase, playerId).then((d) => (d === undefined ? undefined : teamId && d ? loadFileField({ teamId, playerId, lastRound: d }, { role: 'player' }, zone) : null)),
       roundsToGo(supabase, playerId),
       loadFilePenalties(supabase, playerId, zone),
-      latestFocus(supabase, playerId),
+      latestFocus(supabase, playerId, seasonStartDate(new Date(), zone)),
       // Their own rounds only: no teammate's round is read for a player's page.
       loadFileSgRounds(supabase, { playerId, teamId: null }).catch((err: unknown) => (log('sg', err), null)),
     ]);
@@ -352,23 +386,47 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
     const st = standing.status === 'ready' ? standing.data : null;
     const sg = sgRounds ? { ...toChFileSgOver(playerStrokesGained(sgRounds.rounds.filter((r) => r.player_id === playerId)), null, { you: true, first: '' }), mix: sgRounds.mix } : null;
     const coach = proposals.list[0]?.coachName ?? 'Your coach';
-    const plan = toChFilePlan(last, null, null, null, coach, zone);
+    const plan = toChFilePlan(last ?? null, null, null, null, coach, zone);
     const cards: ChFileCards = { ...playerCards(list, rows), sg, plan, field: field ?? null };
     // The standing rows' own window, said under a Team cell that comes from them.
     cards.featTeamBasis = rowsRead.ok ? (rowsRead.window === 'season' ? 'this season' : 'all time') : null;
-    return { load: { status: 'ready', data: { cards, proposals, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: true, penalties, refreshed: st?.refreshed ?? null, failed: { ...(sgRounds ? {} : { sg: true as const }), ...(field === undefined ? { field: true as const } : {}) } } } };
+    return { load: { status: 'ready', data: { cards, proposals, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: true, penalties, refreshed: st?.refreshed ?? null, failed: { ...(sgRounds ? {} : { sg: true as const }), ...(field === undefined ? { field: true as const } : {}), ...(last === undefined ? { plan: true as const } : {}) } } } };
   } catch (err) {
     log('week', err);
     return { load: { status: 'failed' } };
   }
 }
 
-async function newestDay(supabase: Supabase, playerId: string): Promise<string | null> {
-  const { data, error } = await supabase.from('golf_rounds').select('round_date').eq('player_id', playerId).eq('status', 'completed').order('round_date', { ascending: false }).limit(1);
-  return error ? null : (data?.[0]?.round_date ?? null);
+/**
+ * The player's newest completed, non-test round day (PL-CH-03: a QA round must not date "Your week"), as `coachhelm-player.ts` reads it.
+ * `undefined`: the read failed (PL-CH-04), which the page says, instead of "no round".
+ */
+async function newestDay(supabase: Supabase, playerId: string): Promise<string | null | undefined> {
+  const { data, error } = await supabase.from('golf_rounds').select('round_date').eq('player_id', playerId).eq('status', 'completed').eq('is_test', false).order('round_date', { ascending: false }).limit(1);
+  if (error) {
+    log('newest-day', error);
+    return undefined;
+  }
+  return data?.[0]?.round_date ?? null;
 }
 
-async function latestFocus(supabase: Supabase, playerId: string): Promise<ChFocusRow | null> {
-  const { data, error } = await supabase.from('golf_player_focus_areas').select('id, title, status, created_at, started_at, updated_at, from_insight_id').eq('player_id', playerId).in('status', ['proposed', 'active', 'in_progress', 'declined']).order('created_at', { ascending: false }).limit(1);
-  return error ? null : ((data?.[0] ?? null) as ChFocusRow | null);
+/**
+ * The player's current focus: the newest one touched this season (from 1 August in the team's zone). A focus nobody has started or
+ * changed since last season is last season's, not "your focus" now (prod audit 2026-11-15, N13P-16: Ask and the Board showed focus
+ * areas with no age limit). The rows themselves stay as they are; closing them is a data change. `undefined`: the read failed (PL-CH-04).
+ */
+async function latestFocus(supabase: Supabase, playerId: string, seasonStart: string): Promise<ChFocusRow | null | undefined> {
+  const { data, error } = await supabase
+    .from('golf_player_focus_areas')
+    .select('id, title, status, created_at, started_at, updated_at, from_insight_id')
+    .eq('player_id', playerId)
+    .in('status', ['proposed', 'active', 'in_progress', 'declined'])
+    .or(touchedSince(seasonStart))
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error) {
+    log('focus', error);
+    return undefined;
+  }
+  return (data?.[0] ?? null) as ChFocusRow | null;
 }

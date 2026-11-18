@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { NewGameClient } from './NewGameClient';
 import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'New Game' };
 
 export default async function CreateGamePage() {
   const supabase = await createClient();

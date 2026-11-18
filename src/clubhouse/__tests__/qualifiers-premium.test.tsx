@@ -45,6 +45,7 @@ function wrap(node: ReactNode) {
 const fakeWrites = () => ({
   create: vi.fn(),
   saveEdit: vi.fn(),
+  saveRules: vi.fn(async () => ({ success: true })),
   setStatus: vi.fn(async () => ({ success: true })),
   courses: vi.fn(async () => []),
   tees: vi.fn(async () => []),
@@ -194,6 +195,10 @@ describe('P009-B2 an honest Live state', () => {
     // 11:00 UTC on Oct 2 is still Oct 1 at UTC−12; noon UTC is Oct 2 everywhere.
     expect(endDayFor(new Date('2026-10-02T11:00:00Z'))).toBe('2026-10-01');
     expect(endDayFor(new Date('2026-10-02T12:00:00Z'))).toBe('2026-10-02');
+    // DF-P-12: with the team's zone, the day is the team's day. 03:00 UTC on 2 Oct is still 1 Oct in New York, and
+    // 11:00 UTC is 2 Oct there, where UTC−12 would still say 1 Oct.
+    expect(endDayFor(new Date('2026-10-02T03:00:00Z'), 'America/New_York')).toBe('2026-10-01');
+    expect(endDayFor(new Date('2026-10-02T11:00:00Z'), 'America/New_York')).toBe('2026-10-02');
   });
 
   it('D3 on the list: a live qualifier past its end says what it waits on on its card; with no day it stays Live', () => {
@@ -289,11 +294,13 @@ describe('P009-A1 standings on hand-hung plates', () => {
       const rows = [...document.querySelectorAll('.ch-qfm-lb__row')];
       expect(rows.length).toBe(8);
       for (const r of rows) expect(r.textContent).not.toMatch(/Rounds|Avg|Total/);
-      const luca = screen.getByRole('button', { name: /^Luca Ferraro, 7, \+8, \d+ strokes, 1 of 3 rounds\. Show their rounds$/ });
+      const luca = screen.getByRole('button', { name: /^7, ?Luca Ferraro, ?1 of 3 rounds, ?\+8, ?\d+ ?strokes\. Show their rounds$/ });
+      // SWP-01: the name is the row's own words in drawn order, never an aria-label that reorders them.
+      expect(luca.hasAttribute('aria-label')).toBe(false);
       expect(luca.querySelector('.ch-qf-plate')!.textContent).toBe('+8');
       expect(luca.querySelector('.ch-qfm-lb__tot')!.textContent).toMatch(/^\d+$/);
       // The same ranking sentence as desktop's caption (row 75), with decision 10's order.
-      expect(document.querySelector('.ch-qf-cap')!.textContent).toMatch(/^Complete cards rank first, by total to par, then total strokes, then more rounds played; a card a round short sits below them\. Top \d+ qualify on score/);
+      expect(document.querySelector('.ch-qf-cap')!.textContent).toMatch(/^Complete cards rank first, by total to par, then total strokes, then more rounds played; a card a round short sits below them\. Ties: .+ Top \d+ qualify on score/);
       // During play a card a round short gives its pace, not "Missed a round": it may still play the round (decision 10).
       expect(luca.querySelector('.ch-qf-thin')!.textContent).toBe('1 of 3 rounds');
     } finally {

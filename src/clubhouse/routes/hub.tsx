@@ -20,18 +20,7 @@ export async function ClubhouseHubRoute({ tab, task, trip }: { tab?: string; tas
   const session = await getGolfSessionProfile();
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
-  if (!team) {
-    const coach = pickGolfDashboardRole(session) === 'coach';
-    return (
-      <main className="ch-hb">
-        <NoTeam code="CH-10309" coach={coach} body={
-            coach
-              ? 'Once your team is set up, Team Hub holds its announcements, trips, tasks and files.'
-              : "Ask your coach for your team’s code or an invite. Once you join, Team Hub shows your team’s posts, trips and tasks."
-          } />
-      </main>
-    );
-  }
+  if (!team) return <HubNoTeam coach={pickGolfDashboardRole(session) === 'coach'} />;
   const data = await loadTeamHub({ role: team.role, teamId: team.teamId, userId: session.userId, playerId: team.role === 'player' ? team.playerId : null });
   const viewerName =
     (team.role === 'coach' ? session.coach?.full_name : null) ??
@@ -39,4 +28,17 @@ export async function ClubhouseHubRoute({ tab, task, trip }: { tab?: string; tas
   const focusTask = task && /^[\w-]{1,64}$/.test(task) ? task : null;
   const focusTrip = trip && /^[\w-]{1,64}$/.test(trip) ? trip : null;
   return <TeamHub data={data} initialTab={parseHubTab(tab, team.role)} viewerName={viewerName} focusTask={focusTask} focusTrip={focusTrip} />;
+}
+
+/** CH-10309: no team yet. Exported for the preview (GAP-S-29). */
+export function HubNoTeam({ coach }: { coach: boolean }) {
+  return (
+    <main className="ch-hb">
+      <NoTeam code="CH-10309" coach={coach} body={
+          coach
+            ? 'Once your team is set up, Team Hub holds its announcements, trips, tasks and files.'
+            : "Ask your coach for your team’s code or an invite. Once you join, Team Hub shows your team’s posts, trips and tasks."
+        } />
+    </main>
+  );
 }

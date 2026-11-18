@@ -16,8 +16,8 @@ import { Segmented } from '../../ui/Segmented';
 import { FadeNum, useFadeOnChange } from './course-motion';
 
 /**
- * P-7 4.2.4: the course hole by hole. A map of 18 tiles, Out over In, tinted by the player's average to par there (D-42:
- * the red family under par, amber over, plain level, and level whenever the average is inside its noise), with a detail
+ * P-7 4.2.4: the course hole by hole. A map of 18 tiles, Out over In, tinted by the player's average to par there (MOTION-AND-VISUAL
+ * 4.7: the gain family under par, amber over, plain level, and level whenever the average is inside its noise), with a detail
  * panel for the picked hole; or the same as a list. With a keyboard the map is a radio group (arrows a hole, up and down
  * a nine, Home and End the ends). A tile takes colour only from five plays; from two to four it is an early read on the
  * level fill.
@@ -359,7 +359,7 @@ export function HoleMap({ holes: all, selected: asked, onSelect, coverage, sampl
             <div className="ch-hmap-d__plays">
               {plays.map((p) => (
                 <Link prefetch={false} key={p.roundId} className="ch-hmap-d__pill" href={reviewAt(p.roundId)} aria-label={`${shortDate(p.date)}: ${p.score} on par ${p.par}. Open the round at this hole`}>
-                  <ScoreMark score={p.score} par={p.par} size="sm" />
+                  <ScoreMark score={p.score} par={p.par} size="sm" hidden />
                   <span className="ch-num">{shortDate(p.date)}</span>
                 </Link>
               ))}

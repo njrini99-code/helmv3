@@ -208,7 +208,8 @@ async function rateInsightAsPlayerImpl(
   }
 
   revalidatePath('/golf/dashboard/coachhelm');
-  revalidatePath('/golf/dashboard/my-development');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/stats');
 
   return { success: true };
 }
