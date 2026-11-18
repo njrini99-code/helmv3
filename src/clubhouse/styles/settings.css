@@ -1174,8 +1174,10 @@
     font: var(--ch-type-13);
     color: var(--ch-text-tertiary);
   }
+  /* L-102: the two ends label the span, under the track and before the helper. */
   .ch-setm-row.is-slider .ch-slider__ends {
-    display: none;
+    order: 2;
+    margin-top: 2px;
   }
 
   /* Fields in a sheet */
