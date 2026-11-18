@@ -24,6 +24,21 @@ screens and aren't listed.
 Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 `phone` gates).
 
+Checked 2026-11-17: this list was drawn up against Fairway, which was retired on
+2026-11-14 (#2527); Clubhouse is now the only coach and player UI. An unticked
+line is a Fairway screen that has no rebuilt route of its own in
+`CH_REBUILT_ROUTES`: some now redirect into a Clubhouse page in
+`next.config.mjs` (`/tasks`, `/announcements`, `/documents` and `/travel` to
+Team Hub's tabs), some are reached as a feature route (Tournaments, behind
+`golf_tournaments_v1`), and some are old addresses whose layout sends each role
+to its Clubhouse screen (`/courses`, `/team`, `/intelligence`;
+`src/clubhouse/routes/alias.ts`). Practice (`/practice` and its pages) is drawn
+by Clubhouse but is not in `CH_REBUILT_ROUTES`; its pages decide for themselves
+(`CH_PRACTICE_PAGES` in `src/clubhouse/shell/nav.ts`).
+
+- **Practice** `/practice` — Practice plans, formats, drills, groups and
+  templates, for coaches and players (no page ID; `docs/clubhouse/practice-v2/`)
+
 ## Coaches
 
 - [x] **Home** `/` — Morning view of the program: the week ahead, who needs
@@ -47,7 +62,8 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
   opens the CoachHelm section
 - [x] **Team Hub** `/team-hub` — Posts with read receipts, trip planning, tasks
   with completion, shared documents, this week's RSVPs (`TeamHub` coach view,
-  2026-09-30; the Fairway page is player-only)
+  2026-09-30; the Fairway page was player-only until its retirement on
+  2026-11-14)
 - [ ] **Announcements** `/announcements` — Team news with read acknowledgements
   (Clubhouse has them inside Messages)
 - [x] **CoachHelm** `/coachhelm` — The program pulse, each player's top signal,
@@ -104,7 +120,8 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
   opens the CoachHelm section
 - [x] **Team Hub** `/team-hub` — Posts with read receipts, trip planning, tasks
   with completion, shared documents, this week's RSVPs (`TeamHub` coach view,
-  2026-09-30; the Fairway page is player-only)
+  2026-09-30; the Fairway page was player-only until its retirement on
+  2026-11-14)
 - [x] **Home** `/` — Their day: next event with a countdown, the latest round,
   scoring and the parts of the game (`PlayerHome`, 2026-09-30; spec
   `design/handoff/Player - Home.html`, phone `phone/home-player.md`)
@@ -153,11 +170,12 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 ## Front door (signed out)
 
 Not dashboard routes, so not in `CH_REBUILT_ROUTES` and not ticked here. They
-render Clubhouse only with `golf_clubhouse_front_door` on, which stays off at
-turn-on (STATUS.md, step 5). Built by 2026-10-19 (D-77); the checklist is
+rendered Clubhouse only with `golf_clubhouse_front_door` on, which stayed off at
+turn-on (STATUS.md, step 5); since 2026-11-14 (#2527) the flag is gone and every
+one of them draws Clubhouse. Built by 2026-10-19 (D-77); the checklist is
 `screens/auth.md` and the manifest is `config/clubhouse/pages/P015-auth.json`
-(join and staff invite live outside the `(auth)` group, so the manifest does
-not list them).
+(join and staff invite live outside the `(auth)` group, so the manifest does not
+list them).
 
 - **Sign in** `/golf/login` and **Welcome** `/golf/welcome`
 - **Sign up** `/golf/signup` and **Player sign-up** `/golf/player`

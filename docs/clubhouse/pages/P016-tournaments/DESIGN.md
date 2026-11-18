@@ -26,6 +26,16 @@ Rules every view keeps (plan 0.4 and sections 8 and 9):
 Each lane records here, for its views, every element on the boards it matches
 and every one it leaves out with the reason (plan Phase 2 acceptance).
 
+Checked against the code on 2026-11-17: the sections below cover the season
+home, the event desk, the review, history and compare. The views built since
+have no section here yet, and their record is in their change fragments: the
+new-event and edit forms (`changes/2026-10-25-new-event-form.md`), the link
+inbox, lineup builder, live round and the player's view
+(`changes/2026-11-07-first-release-screens.md`), results import and the hole
+grid (`changes/2026-11-15-results-import.md`), export
+(`changes/2026-11-15-export.md`) and the B team
+(`changes/2026-11-16-b-team-lock-by.md`).
+
 ## Season home
 
 Boards: `tour.jsx` (`Home`, `Upcoming`, `Ledger`) and `tour-m.jsx`

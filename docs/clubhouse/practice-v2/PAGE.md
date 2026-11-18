@@ -28,9 +28,9 @@ plan page belong to `screens/coachhelm/plan/**`.
 | `/golf/dashboard/practice/plan/<id>` | coach, player | plan sheet under `CoachPlanBar` and `PlanRun`; a player gets `PlayerPractice` |
 | `/golf/dashboard/practice/print/<id>` | coach | `PrintStudio` |
 
-A player who opens a coach address is sent to their own. A Fairway user is sent
-to the Calendar
-(`routes/practice-gate.ts`).
+A player who opens a coach address is sent to their own. A session with neither
+role is sent to the Calendar (`routes/practice-gate.ts`); until Fairway's
+retirement on 2026-11-14 that was a Fairway user.
 
 ## What each state says
 

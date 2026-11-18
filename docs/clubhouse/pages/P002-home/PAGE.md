@@ -53,6 +53,16 @@ spec; the second of each is `player-home.ts` and
 `docs/clubhouse/phone/home-player.md`. The week, the clock and the latest rounds
 are shared (`loadHomeWeek`, `homeClock`, `latestWithHoles`, in `home.ts`).
 
+Since 2026-11-15 the coach's Home is drawn as Player Home's page, phone and
+desktop, with the coach's own content (owner; change
+`changes/2026-11-15-coach-matches-player.md`): the framed head with Up next,
+Message team and New event, Waiting on you, the week with today inside it beside
+the latest round (`CoachLatest`), Team scoring on the player's chart
+(`TeamScoring`, with the Last 10, Season and All time switch, `?range=`) and the
+team's game as four cards (`TeamGame`). The coach-only green hero, its cards
+grid and the desktop leaderboard left Home. Player Home is the 28 Oct version,
+permanent (`src/clubhouse/AGENTS.md`).
+
 ## Purpose
 
 ### Primary user
@@ -70,23 +80,28 @@ strokes.
 
 ### Primary action
 
-Coach: New event (the page's one primary button; N from anywhere on the page).
-Player: Message coach, and Start a round once round entry is rebuilt for players
-(until then it is not drawn, Q-69).
+Coach: New event (the page's one primary button; N from anywhere on the page; on
+the phone, Add event and its quick types open Calendar's editor on Home,
+2026-11-16). Player: Message coach and New round (round entry is rebuilt for
+players, P011).
 
 ### Secondary actions
 
-Coach: Message team; open an event, a day or a round; page through the latest
-three rounds; open a player's stats from the leaderboard or the latest round;
-Full roster; on the phone, Plan or add the first event from an empty Up next.
-Player: open Up next or a day in Calendar; page through Your latest round;
-choose the Scoring window (last 5, 10 or 20); My stats.
+Coach: Message team; open an event, a day, a trip or a round; page through the
+latest rounds; open a player's stats from the latest round or the team's game;
+choose Team scoring's window (Last 10, Season, All time); follow Waiting on you
+(join requests, missing replies, overdue tasks, unacknowledged posts); open Live
+from Live now; Full roster; on the phone, Plan or add the first event from an
+empty Up next. Player: open Up next or a day in Calendar; page through Your
+latest round; choose the Scoring window (last 5, 10 or 20); My stats; Add
+classes.
 
 ### Information hierarchy
 
 1. Coach: the greeting and the one-sentence brief (who needs a look, then the
-   week's next competition); the week beside the latest round; the leaderboard.
-   Phone: Up next, Today, the team's scoring form, This week, Latest rounds.
+   week's next competition); Up next and Waiting on you; the week beside the
+   latest round; Team scoring; the team's game. Phone: the same order, as Player
+   Home's phone page.
 2. Player: the greeting and one sentence from their own rounds; the week with Up
    next and its countdown beside Your latest round; Scoring; the four parts of
    the game. Phone: Up next with the countdown and Message coach, This week,
@@ -123,7 +138,8 @@ Canonical IDs from `memory/registry.yml`:
 
 `npm run knowledge:map` maps none of the Clubhouse Home files to a feature (the
 `src/clubhouse` tree is not in the registry's code paths); the feature docs
-above describe the Fairway dashboard's data, which Home reads the same way.
+above describe the dashboard's data, which Home reads (the Fairway dashboard
+that first read it was retired on 2026-11-14).
 
 ## Design authority
 
@@ -143,26 +159,31 @@ Status:           approved
 
 ### Enters from
 
-The sidebar and the phone tab bar (Home is the first destination for both roles,
-D-66), and Back to Home on the route error view of any other page.
+The sidebar and the phone section strip (Home is the first destination for both
+roles, D-66), and Back to Home on the route error view of any other page.
 
 ### Exits to
 
 Calendar (an event: `?date=&event=`; a day: `?view=day&date=`; the editor:
 `?new=1`, with `&type=`), Messages (`?conversation=` the team chat, `?player=` a
 player, `?user=` the coach), Stats (`?player=` a player's, and the player's
-own), Roster (Full roster, Invite players). Start a round and Add classes are
-not drawn for a player until round entry and Classes are rebuilt.
+own), Roster (Full roster, Invite players), Team Hub (Waiting on you's tasks and
+posts, a trip's Travel), Live (Live now), Rounds (New round, a round), and
+Classes (Add classes).
 
 ## Ownership
 
 ```text
 Design:          the owner (Claude Design)
 Implementation:  src/clubhouse/screens/home, src/clubhouse/data/home.ts, src/clubhouse/data/player-home.ts,
-                 and the Clubhouse branches of src/app/golf/(dashboard)/dashboard/page.tsx (no route adapter)
+                 home-queue.ts, home-trips.ts, home-changes.ts, home-clock.ts, and
+                 src/app/golf/(dashboard)/dashboard/page.tsx (no route adapter)
 Data:            team_operations, calendar_events, stats_analytics: golf_team_settings, golf_team_members,
                  golf_players, golf_teams, golf_coaches, golf_conversations, golf_events, golf_event_attendance,
-                 golf_rounds, golf_holes, golf_round_stats_cache, golf_pga_standards
+                 golf_rounds, golf_holes, golf_round_stats_cache, golf_pga_standards, golf_travel_itineraries
+                 (trips), golf_team_join_requests, golf_tasks, golf_task_assignments, golf_announcements and
+                 their recipients and acknowledgements (Waiting on you), and the live-rounds read
+                 (data/live-rounds.ts)
 ```
 
 ## Current status

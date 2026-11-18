@@ -76,6 +76,14 @@ phone's pushed profile), `RosterSkeleton`, `RosterNoTeam` (a coach's or a player
 `useCopyText`. For a player: `TeamRoster` and `TeamRosterPhone` (the read-only
 screen) with `team.ts` (its sort and its "You" line).
 
+Since 2026-11-11 the phone pieces are the classes-roster-home redesign's
+(approved 31 Oct; `design-refresh/classes-roster-home`), its flag removed:
+`RosterPhoneCrh` (with `RequestsRow`, `RequestsSheetCrh`, `PlayerActionsCrh`),
+`RosterProfileCrh` and, for a player, `TeamRosterPhoneCrh`; the older phone
+files are gone. Desktop added `RosterTeamCard`, `RosterLeaders` (each card names
+its window, 2026-11-15), `RosterLimit` (the roster limit, F-05) and
+`InviteByEmail` (Or email them).
+
 ### Modified Clubhouse components
 
 `FormLine` gained a bare option (no mean line, no fill) for the phone row's
@@ -128,7 +136,7 @@ More and an Invite players action, a join requests banner that opens a sheet
 then Inactive, and a pushed profile with Message, Plan 1:1, figures, trend,
 recent rounds, About and the coach's note. Its ⋯ opens View stats and Remove
 from team. The phone is a different structure, never the desktop shrunk
-(RosterPhone below 820px).
+(RosterPhoneCrh below 820px).
 
 Its look is the Coach Home "Mobile clubhouse pass" board (owner, 2026-10-08:
 round 3, "fewer containers, one feature card"): the page opens on the engraved

@@ -17,35 +17,51 @@ counts include wrappers rather than unique popups.
 
 ```text
 Route:                   /golf/dashboard/calendar
-Page:                    src/app/golf/(dashboard)/dashboard/calendar/page.tsx (no session -> login; isClubhouseFor -> Clubhouse, else Fairway)
+Page:                    src/app/golf/(dashboard)/dashboard/calendar/page.tsx (no session -> login; always the Clubhouse route:
+                         the flag and the Fairway branch were removed on 2026-11-14, #2527)
 Clubhouse route adapter: src/clubhouse/routes/calendar.tsx#ClubhouseCalendarRoute (session, team; no team -> CalendarNoTeam, CH-6307;
-                         reads view, date, event, new, with and type from the address)
+                         reads view, date, event, new, with, type and setup from the address; a coach's route also loads the
+                         team's live lanes beside the calendar, loadLiveRounds, P-6)
 Server loader:           src/clubhouse/data/calendar.ts#loadCalendar (team, roster, events, classes, replies and, for a coach, their own
                          busy time; three rounds of reads; each failed read logs through chLogServer('calendar', …) and never throws)
 Screen:                  src/clubhouse/screens/calendar/Calendar.tsx (the live container) -> TimeGrid | MonthView | AgendaView and the
                          panel (Summary | EventDetail | Attendance | Overlap), or CalendarPhone with the panel in a Modal (useChPhone, 820px)
-Skeleton:                src/clubhouse/screens/calendar/CalendarSkeleton.tsx (CH-6401), through loading.tsx and ClubhouseSwitch
+Skeleton:                src/clubhouse/screens/calendar/CalendarSkeleton.tsx#CalendarRouteSkeleton (CH-6401, drawn by the
+                         address's view), through calendar/loading.tsx (ClubhouseSwitch was deleted)
 Route error view:        src/app/golf/(dashboard)/dashboard/calendar/error.tsx (the shell's RouteErrorBoundary, 106xx)
+
+Practice hours (since 2026-11-15, launch readiness F-03):
+Route:                   /golf/dashboard/calendar/hours (?date=, any day of the week shown)
+Page:                    src/app/golf/(dashboard)/dashboard/calendar/hours/page.tsx -> src/clubhouse/routes/calendar-hours.tsx
+                         #ClubhouseCalendarHoursRoute (no team -> CalendarNoTeam)
+Server loader:           src/clubhouse/data/hours.ts#loadHours (golf_events, golf_event_attendance, the roster, and
+                         golf_team_hours_settings and golf_hours_adjustments, migration 20261115232000, applied 2026-11-16)
+Screen:                  src/clubhouse/screens/calendar/hours/PracticeHours.tsx (sheets.tsx, model.ts, rules.ts);
+                         skeleton hours/HoursSkeleton.tsx (CH-6480)
 ```
 
 ## End-to-end graph
 
 ```text
-UI (Calendar, TimeGrid, MonthView, AgendaView, EventDetail, Attendance, Overlap, EventEditor, CancelEvent, SubscribeSheet,
-    BusySheet, BusyDetail, EventFiles, FilePicker, CalendarPhone)
+UI (Calendar, TimeGrid, MonthView (DndMonth), AgendaView, EventDetail, Attendance, Overlap, EventEditor (TournamentSection,
+    RoundEditor), CancelEvent, CancelRoundDialog, SubscribeSheet, BusySheet, BusyDetail, EventFiles, FilePicker, EventPeek,
+    ChangeNote, EventLiveRow, CalendarFirstRun, CalendarPhone; PracticeHours on /calendar/hours)
 ↓
 Action (the useAction objects in editor.tsx, extras.tsx and inspector.tsx: whatever follows a landed write lives inside the action, 61401)
 ↓
 Client controller: useAction (offline refusal CH-1903, slow notice CH-1902, chReport + error toast with Retry + haptic);
                    EventFiles.detach, which does the same by hand (60701)
 ↓
-Server actions: src/app/golf/actions/golf.ts, recurring-events.ts, attendance.ts, event-documents.ts, documents.ts, calendar-feeds.ts
+Server actions: src/app/golf/actions/calendar-events.ts, calendar-blocked-time.ts (both split out of golf.ts on 2026-10-08,
+                #2176), recurring-events.ts, attendance.ts, event-documents.ts, documents.ts, calendar-feeds.ts,
+                tournaments-calendar.ts, hours.ts
 ↓
 Data: golf_events, golf_event_attendance, golf_player_classes, golf_coach_blocked_time, golf_event_documents, golf_documents,
-      golf_calendar_feeds, golf_team_settings
+      golf_calendar_feeds, golf_team_settings, golf_travel_itineraries, golf_practice_plans, golf_practice_plan_versions,
+      the tournament tables (round refs), golf_team_hours_settings and golf_hours_adjustments (20261115232000, applied 2026-11-16)
 ↓
 Read-back: router.refresh() re-runs the loader, after a write of the viewer's own and on every change the realtime feed
-           reports (useCalendarLive in screens/calendar/live.ts: golf_events by team, as Fairway's range hook)
+           reports (useCalendarLive in screens/calendar/live.ts: golf_events by team)
 ↓
 Contract outcomes: CONTRACT.md (Bridge IDs 6ccii, catalog CH-6xxx)
 ↓
@@ -93,6 +109,18 @@ refuses it as well (60806).
 | ACT-P006-OPEN-EVENT | An event on the grid, in the agenda, in Summary, or by `?event=` | `open` | — | — | address 60102 · left the range 60405 |
 | ACT-P006-SEED-NEW-EVENT* | `?new=1` (`&with=`, `&type=`) from another page | `initialNew`, `initialWith`, `initialType` | — | — | seeds 60103 |
 | ACT-P006-REVIEW-OVERLAP* | Review (event panel, Summary), then Review new time or Keep as is | `Overlap`, `ctx.onEdit(event, proposal)` | — | — | overlap 61002 |
+| ACT-P006-HOURS-LIMITS* | Practice hours › the limits sheet › Save | `save` (`calendar.hours.saveLimits`) in `hours/sheets.tsx#LimitsSheet` | `saveHoursSettings` (`actions/hours.ts`) | golf_team_hours_settings | validation 60580 · lands 60980 · fails 60680 |
+| ACT-P006-HOURS-ADJUST* | Practice hours › an event › how it counts › Save | `save` (`calendar.hours.saveAdjustment`) in `hours/sheets.tsx#AdjustSheet` | `saveHoursAdjustment` (`actions/hours.ts`) | golf_hours_adjustments | validation 60581 · lands 60981 · fails 60681 |
+| ACT-P006-HOURS-EXPORT | Practice hours › Export | `ExportButton` in `PracticeHours` | `hoursCsv` (`hours/model.ts`) | a CSV file on the device | lands 60982 · fails 60682 |
+
+Not in the manifest's action list, recorded here: moving or resizing an event by
+drag (P-4, 2026-10-25: `use-time-drag.ts`, `use-bar-drag.ts`, `month-dnd.tsx`,
+`day-timeline.tsx`, written by `move-write.ts` through `updateGolfEvent` or
+`editRecurringEvent` after the Undo window), and a tournament set up, edited or
+cancelled from the editor (P-5, 2026-10-25: `createTournamentFromCalendar`,
+`updateTournamentRound`, `setTournamentCancelled` in
+`actions/tournaments-calendar.ts`; their contracts are P016's and CH-6040 to
+CH-6061).
 
 ## Components
 
@@ -107,6 +135,14 @@ refuses it as well (60806).
 | `screens/calendar/model.ts` | The pure model: dates, lanes, overlaps, open times, busy-time expansion | logic.test.ts |
 | `screens/calendar/CalendarSkeleton.tsx` | Route skeleton | 60201 |
 | `screens/calendar/CalendarNoTeam.tsx` | No team | 60407 |
+| `screens/calendar/CalendarFirstRun.tsx` | The page when the team has never scheduled anything (CH-6309) | — |
+| `screens/calendar/peek.tsx` | `EventPeek`, `EventPeekCard`: an event's peek on hold (phone agenda) or rest (week block), with Nudge and Directions | — |
+| `screens/calendar/change-note.tsx`, `change-view.ts` | Change marks (P-14): the row badge, the struck old value and the detail's panel (CH-6023) | — |
+| `screens/calendar/live-events.tsx` | "Live · n on the course" on an event (P-6, CH-16640, CH-16641) | — |
+| `screens/calendar/drag-model.ts`, `use-time-drag.ts`, `use-bar-drag.ts`, `month-dnd.tsx`, `day-timeline.tsx`, `drag-popovers.tsx`, `move-write.ts`, `who-hears.ts` | Drag and drop (P-4): the pure maths, the week, all-day and month engines, the phone Day's drag, the series question, the held write and who a move tells | — |
+| `screens/calendar/editor-tournament.tsx`, `editor-round.tsx`, `cancel-round.tsx`, `round-label.tsx`, `round-overlay.ts` | Tournaments from the calendar (P-5): the editor's Track section, a round's editor, cancelling a round or tournament, a round's label and the blocks drawn before the re-read | CH-6040 to CH-6061 |
+| `screens/calendar/class-group.tsx`, `type-icon.ts`, `type-k.ts` | A class's course name, the type icons, the Text Size factor for blocks that count their lines | — |
+| `screens/calendar/hours/PracticeHours.tsx`, `sheets.tsx`, `model.ts`, `rules.ts`, `HoursSkeleton.tsx` | Practice hours (`/calendar/hours`) | 60180 to 60184, 60980 to 60982 |
 
 ## Hooks
 
@@ -124,7 +160,11 @@ refuses it as well (60806).
 | --- | --- | --- | --- |
 | createGolfEvent, updateGolfEvent (also Restore: status confirmed), deleteGolfEvent (a soft cancel), deleteGolfEventPermanently, respondToEvent | actions/calendar-events.ts | Existing | events and replies |
 | getItineraryForEvent | actions/travel.ts | Existing | the trip linked to an event |
-| addCoachBlockedTime, deleteCoachBlockedTime | actions/golf.ts | Existing | the coach's busy time |
+| addCoachBlockedTime, deleteCoachBlockedTime | actions/calendar-blocked-time.ts (out of golf.ts since 2026-10-08) | Existing | the coach's busy time |
+| createTournamentFromCalendar, updateTournamentRound, setTournamentCancelled | actions/tournaments-calendar.ts | Existing | a tournament made and kept from the editor (P-5) |
+| saveHoursSettings, saveHoursAdjustment | actions/hours.ts | Existing (tables applied 2026-11-16) | practice hours |
+| loadLiveRounds | src/clubhouse/data/live-rounds.ts | Existing | a coach's live lanes (P-6) |
+| loadRoundRefs | src/clubhouse/data/calendar-rounds.ts | Existing | which events are tournament rounds |
 | createRecurringEvent, editRecurringEvent, deleteRecurringEvent (the last two act only on events the caller created, CONTRACT.md 08) | actions/recurring-events.ts | Existing | series |
 | getAttendanceReport, markAttendance | actions/attendance.ts | Existing | attendance |
 | getEventDocuments, attachDocumentToEvent, detachDocumentFromEvent | actions/event-documents.ts | Existing | an event's files |
@@ -178,8 +218,9 @@ None. Data is existing and no held plan is listed.
 
 ## Impact notes
 
-- The server actions are shared with Fairway's calendar and with Team Hub
-  (`respondToEvent`). A change to one changes both UIs.
+- The server actions were shared with Fairway's calendar until its retirement on
+  2026-11-14, and are still shared with Team Hub (`respondToEvent`) and
+  Tournaments (`tournaments-calendar.ts`). A change to one changes each.
 - The toast's Retry runs the action of the render that showed the failure, so
   anything that follows a landed write (closing a dialog, moving the panel,
   `router.refresh()`, re-reading a list) has to live inside the function passed

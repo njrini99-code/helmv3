@@ -22,11 +22,10 @@ Rows without a code are behaviours with no single element, recorded in
 namespace 1) apply here too and are named where they carry a category.
 `clubhouse:check` holds this file to the registry.
 
-Classes is the player's page. Coaches have no Classes page in Clubhouse and keep
-the current
-Fairway page at the same address (`LegacyClassesPage.tsx`, unchanged), so every
-contract below is
-a player's.
+Classes is the player's page. Coaches have no Classes page in Clubhouse and kept
+the Fairway page at the same address (`LegacyClassesPage.tsx`) until it was
+deleted with Fairway on 2026-11-14; a coach now gets nothing here. Every
+contract below is a player's.
 
 The hand contracts (the rows with no code) are all `reserved`: a hand contract
 is `implemented`
@@ -60,10 +59,11 @@ Status: DEFINED
 
 The route skeleton (CH-12401) is the Clubhouse one for a player inside the shell
 (the loading file reads the shell's role from context); a coach there, and
-anyone outside the shell, get the Fairway skeleton, because that is the page
-they get. Classes loads no section on its own after the server render, so there
-are no section skeletons; a schedule being read says so (CH-12402) and classes
-being put on the calendar say so in the header (CH-12403).
+anyone outside the shell, got the Fairway skeleton, because that was the page
+they got (until 2026-11-14; `classes/loading.tsx` now always draws CH-12401).
+Classes loads no section on its own after the server render, so there are no
+section skeletons; a schedule being read says so (CH-12402) and classes being
+put on the calendar say so in the header (CH-12403).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -209,11 +209,13 @@ Status: DEFINED
 
 Who may open the page: a player with `golf_clubhouse_ui` on for the player role
 (the shell's gate, and `page.tsx`); anyone else gets the Fairway page (120801).
-A player on no team gets the no-team page (CH-12305), because a class is saved
-with the team whose calendar it goes on. A player's reads and writes are their
-own (120802), and the calendar actions check the caller again (120803, reserved:
-read, not run). Nothing on the page is drawn for one role and hidden for
-another: the page has one role.
+Since 2026-11-14 the flag and the Fairway page are gone: `page.tsx` draws the
+page for a player profile with the dashboard role player, and nothing for anyone
+else. A player on no team gets the no-team page (CH-12305), because a class is
+saved with the team whose calendar it goes on. A player's reads and writes are
+their own (120802), and the calendar actions check the caller again (120803,
+reserved: read, not run). Nothing on the page is drawn for one role and hidden
+for another: the page has one role.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
