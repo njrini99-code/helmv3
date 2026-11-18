@@ -127,7 +127,7 @@
 }
 .ch-htb .tile .tvk {
   margin-top:-4px;
-  font: var(--ch-type-11-medium);
+  font: var(--ch-type-footnote);
   color:var(--ch-ink-600);
 }
 .ch-htb.is-desk .tile .tvk {
