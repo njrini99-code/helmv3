@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, Hourglass, House, Lock } from 'lucide-react';
+import { ChevronLeft, House, Lock, Signpost } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
@@ -26,7 +26,8 @@ export function NotRebuilt({ label, coachOnly = false }: { label: string; coachO
         <div className="ch-empty-page__in">
           <span className="ch-empty-page__art" aria-hidden="true">
             <span className="ch-empty-page__ic">
-              <Icon icon={coachOnly ? Lock : Hourglass} size={26} />
+              {/* L-071: an hourglass read as loading; this page is a place with nothing here, so a signpost back. */}
+              <Icon icon={coachOnly ? Lock : Signpost} size={26} />
             </span>
           </span>
           <h1 className="ch-empty-page__title">{coachOnly ? `Only coaches use ${label}` : `${label} isn’t available here`}</h1>
