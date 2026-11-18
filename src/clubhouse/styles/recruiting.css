@@ -103,11 +103,13 @@
 }
 .ch-rec-pipe__seg.is-2 {
   left: calc(37.5% + 32px);
-  background: var(--ch-green-200);
+  /* L-079: one quiet connector between every pair of stages. A line that darkened toward Committed drew its boldest
+     stroke into a stage that may hold no one; the stages' own coins carry the progression. */
+  background: var(--ch-ivory-300);
 }
 .ch-rec-pipe__seg.is-3 {
   left: calc(62.5% + 32px);
-  background: var(--ch-green-400);
+  background: var(--ch-ivory-300);
 }
 .ch-rec-pipe__stage {
   position: relative;
@@ -1842,6 +1844,12 @@
 .ch-rec-cal__t {
   min-width: 0;
 }
+/* L-079: the calendar rule's second half, under the period. */
+.ch-rec-cal__more {
+  display: block;
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-tertiary);
+}
 .ch-rec-cal__pick {
   display: inline-flex;
   align-items: center;
@@ -2057,11 +2065,9 @@
 :where(html[data-fw-theme='dark']) .ch-rec-pipe__seg.is-1 {
   background: var(--ch-ivory-300);
 }
-:where(html[data-fw-theme='dark']) .ch-rec-pipe__seg.is-2 {
-  background: #2f5a41;
-}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__seg.is-2,
 :where(html[data-fw-theme='dark']) .ch-rec-pipe__seg.is-3 {
-  background: #4f9a6e;
+  background: var(--ch-ivory-300);
 }
 :where(html[data-fw-theme='dark']) .ch-rec-pipe__dot {
   --ch-rec-ring: var(--ch-ivory-400);
