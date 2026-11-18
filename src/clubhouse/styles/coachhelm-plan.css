@@ -1189,6 +1189,8 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
   text-align: center;
+  /* L-080: a centred caption breaks into even lines, never "…or Excel" over a lone "file.". */
+  text-wrap: balance;
 }
 .ch-cpv .lrn .r {
   display: flex;

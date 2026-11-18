@@ -893,6 +893,13 @@
   cursor: pointer;
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
+/* L-086: the prompt of an unpicked select in the placeholder ink; the list itself keeps the text ink. */
+.ch-select.is-empty select {
+  color: var(--ch-text-placeholder);
+}
+.ch-select.is-empty select option {
+  color: var(--ch-text-primary);
+}
 @media (hover: hover) {
   .ch-select select:hover {
     box-shadow: 0 0 0 1px var(--ch-border-strong), inset 0 1px 2px rgb(28 25 18 / 0.06);

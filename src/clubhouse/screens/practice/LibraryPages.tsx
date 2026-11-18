@@ -60,7 +60,7 @@ function LibraryHead({ tab, title, actionLabel, onAction }: { tab: PracticeTab; 
 
 /** `tagged` shows the GolfHelm chip; the GolfHelm section's heading already says it, so only the team's own list asks (L-011). */
 function DrillRowLink({ d, tagged = true }: { d: ChDrillRow; tagged?: boolean }) {
-  const facts = [d.areaLabel, d.kind ? KIND_WORD[d.kind] : null, d.minutes != null ? `${d.minutes} min` : null, d.players].filter(Boolean).join(' · ');
+  const facts = [d.areaLabel, d.kind ? KIND_WORD[d.kind] : null, d.minutes != null ? hours(d.minutes) : null, d.players].filter(Boolean).join(' · ');
   return (
     <li>
       <Link href={`/golf/dashboard/practice/drills/${d.id}`} className="ch-prc-row">
@@ -206,7 +206,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
       <header className="ch-prc-h">
         <div>
           <LargeTitle id="ch-prc-title">{drill.name}</LargeTitle>
-          <p className="ch-prc-h__line ch-num">{[drill.areaLabel, drill.kind ? KIND_WORD[drill.kind] : null, drill.minutes != null ? `${drill.minutes} min` : null, drill.players].filter(Boolean).join(' · ')}</p>
+          <p className="ch-prc-h__line ch-num">{[drill.areaLabel, drill.kind ? KIND_WORD[drill.kind] : null, drill.minutes != null ? hours(drill.minutes) : null, drill.players].filter(Boolean).join(' · ')}</p>
         </div>
         <div className="ch-prc-h__a is-page">
           {team ? (
