@@ -2,6 +2,22 @@
    docs/clubhouse/pages/P013-coachhelm/CONTRACT.md and supercharge 02 §9, 03 §7.3. Words and counts; the bar is the same count drawn,
    with the target as a thin line. */
 
+/* CoachHelm reads: the coach's team page (?view=team-reads) and the board's way in. Sized for a full roster: one row per
+   player, the name, the figure and how sure on one line, the player's own line under it. */
+.ch-htrd-body { display: grid; gap: 16px; }
+.ch-htrd-shared { margin: 0; font: var(--ch-type-headline); color: var(--ch-text-primary); }
+.ch-htrd-note { margin: 0; font: var(--ch-type-footnote); color: var(--ch-text-tertiary); }
+.ch-htrd-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.ch-htrd-list > li + li { border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); }
+.ch-htrd-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 10px 0; color: var(--ch-text-primary); text-decoration: none; }
+.ch-htrd-row:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; border-radius: var(--ch-radius-sm); }
+.ch-htrd-row__t { display: grid; gap: 2px; min-width: 0; }
+.ch-htrd-row__h { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font: var(--ch-type-body); }
+.ch-htrd-row__t small { font: var(--ch-type-footnote); color: var(--ch-text-secondary); }
+.ch-htrd-row__x { color: var(--ch-text-tertiary); }
+.ch-htrd-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; color: var(--ch-text-primary); text-decoration: none; }
+.ch-htrd-in small { display: block; font: var(--ch-type-footnote); color: var(--ch-text-secondary); }
+
 .ch-htr-body,
 .ch-htr-col {
   display: grid;

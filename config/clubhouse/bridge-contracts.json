@@ -17222,6 +17222,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130439,
+    "page": "P013",
+    "category": 4,
+    "item": 39,
+    "name": "COACHHELM_READS_THE_COACHS_TEAM_READS_PAGE_2",
+    "chCode": "CH-13316",
+    "meaning": "CoachHelm reads: the coach's Team reads page with no read saved for anyone on the roster yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130490,
     "page": "P013",
     "category": 4,
@@ -17770,6 +17781,28 @@
     "name": "COACHHELM_READS_WRONG_ON_THE_ANALYSTS_CARD",
     "chCode": "CH-13017",
     "meaning": "CoachHelm reads: Wrong (with its reason) on the analyst's card fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130654,
+    "page": "P013",
+    "category": 6,
+    "item": 54,
+    "name": "COACHHELM_READS_THE_COACHS_TEAM_READS_PAGE",
+    "chCode": "CH-13215",
+    "meaning": "CoachHelm reads (`coachhelm_reads_v1`): the coach's Team reads page (`?view=team-reads`) did not load (the roster, the names or the saved reads)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130655,
+    "page": "P013",
+    "category": 6,
+    "item": 55,
+    "name": "COACHHELM_READS_THE_PLAYERS_OWN_READ_ON",
+    "chCode": "CH-13216",
+    "meaning": "CoachHelm reads: the player's own read on Your week did not load (their team membership or the saved read)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

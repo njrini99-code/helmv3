@@ -14,9 +14,53 @@ import type { ReadPayload } from '@/lib/coachhelm/v3/analyst/reads/types';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
+import { teamReadsPage } from '@/lib/coachhelm/v3/analyst/reads/team-page';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { toChAnalystRead, toPlayerRead, withCoachActions, type ChAnalystReadLoad } from './coachhelm-analyst-read-shape';
+import { toChTeamReads, type ChTeamReadsLoad } from './coachhelm-team-reads-shape';
 
 const log = (where: string, err: unknown) => chLogServer('coachhelm.reads', where, err, 'coachhelm');
+
+/**
+ * The coach's team page (`?view=team-reads`): the active roster's saved reads, read with the coach's session (RLS), and
+ * their names. A player who left the team is not on it. Before the held table is applied, or with the flag off, it is off.
+ */
+export async function loadCoachTeamReads(input: { teamId: string }, deps: { client?: SupabaseClient; enabled?: boolean } = {}): Promise<ChTeamReadsLoad> {
+  if (!(deps.enabled ?? readsOnForTeam(input.teamId))) return { status: 'off' };
+  try {
+    const sb = deps.client ?? ((await createClient()) as unknown as SupabaseClient);
+    const members = await sb.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active');
+    if (members.error) {
+      log('team.roster', members.error);
+      return { status: 'failed' };
+    }
+    const ids = [...new Set(((members.data ?? []) as Array<{ player_id: string }>).map((r) => r.player_id))];
+    const names = new Map<string, string>();
+    for (const chunk of chunkIds(ids)) {
+      if (!chunk.length) continue;
+      const who = await sb.from('golf_players').select('id, first_name, last_name').in('id', chunk);
+      if (who.error) {
+        log('team.names', who.error);
+        return { status: 'failed' };
+      }
+      for (const p of (who.data ?? []) as Array<{ id: string; first_name: string | null; last_name: string | null }>) {
+        const name = [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
+        if (name) names.set(p.id, name);
+      }
+    }
+    const res = ids.length ? await loadCurrentReads(sb, input.teamId, ids) : ({ status: 'ok', data: new Map() } as const);
+    if (res.status === 'held') return { status: 'off' };
+    if (res.status === 'failed') {
+      log('team.reads', new Error(res.error));
+      return { status: 'failed' };
+    }
+    const rows = [...res.data.values()].map((r) => ({ payload: r.payload, signature: r.signature }));
+    return { status: 'ready', data: toChTeamReads(teamReadsPage(rows), names, ids.length) };
+  } catch (err) {
+    log('team', err);
+    return { status: 'failed' };
+  }
+}
 
 /** Whether the reads replace today's cards for this team: the flag is on and the team is listed. */
 export function readsOnForTeam(teamId: string | null | undefined): boolean {
