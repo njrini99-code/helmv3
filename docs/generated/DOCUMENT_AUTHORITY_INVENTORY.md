@@ -2128,6 +2128,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-15-ivory-page-one-system.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-15-nav-stepper-haptic.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-15-onboard-failed-read.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-15-phone-pane-ivory.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
