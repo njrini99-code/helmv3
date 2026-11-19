@@ -22,11 +22,13 @@ import { ProposalRow } from '../Proposals';
 import { LIVE_PLAYER_WRITES, type ChPlayerWrites } from '../writes';
 import { EarlyFeature, FeatureCard, FieldCard, PlanCard, ReadsCard, SgCard, WorkingCard } from './cards';
 import { FileFailed, PartFailed } from './PlayerFile';
+import { PlayerReadCard } from './AnalystRead';
+import type { ChAnalystReadLoad } from '../../../data/coachhelm-analyst-read-shape';
 import { HelmOff } from '../views/Frame';
 import { plural } from '../../../lib/plural';
 
 /** The player's own CoachHelm with the flag on (S-BOARD): the lens's cards, for real. Accept and Decline are today's `ProposalRow`, live. */
-export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLoad<ChPlayerWeek>; writes?: ChPlayerWrites }) {
+export function YourWeek({ load, writes = LIVE_PLAYER_WRITES, own = null }: { load: ChViewLoad<ChPlayerWeek>; writes?: ChPlayerWrites; own?: ChAnalystReadLoad | null }) {
   const phone = useChPhone();
   const { refresh } = useRefresh();
   // The switch (Board, Standing, Deep dive, Ask) is the route's, mounted once above this page (SwitchFrame, N13P-18).
@@ -87,7 +89,9 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
   const planCard = data.failed.plan ? <PartFailed key="plan" title="Your plan" /> : <PlanCard key="plan" plan={cards.plan} lens="player" first="" />;
   const sgCard = data.failed.sg ? <PartFailed key="sg" title="Where the strokes go" /> : cards.sg ? <SgCard key="sg" sg={cards.sg} who="You" standingHref={null} /> : null;
   const fieldCard = data.failed.field ? <PartFailed key="f" title="Last round in context" /> : cards.field ? <FieldCard key="f" field={cards.field} /> : null;
-  const left = [feat, planCard, sgCard];
+  // CoachHelm reads (flag `coachhelm_reads_v1`, the player's team listed): their own read, first. Nothing when it is off.
+  const ownCard = own && own.status !== 'off' && own.status !== 'none' ? <PlayerReadCard key="an" load={own} /> : null;
+  const left = [ownCard, feat, planCard, sgCard];
   const right = [<WorkingCard key="w" list={cards.working} onOpen={setOpenRead} />, fieldCard, <ReadsCard key="r" cards={cards} lens="player" onOpen={setOpenRead} moreLine={moreReadsLine(cards.more) || undefined} />];
   const line = [data.rounds != null ? plural(data.rounds, 'round') : null, data.refreshed ? `refreshed ${data.refreshed}` : null].filter(Boolean).join(' · ');
   return (
@@ -126,6 +130,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
           ) : phone ? (
             // GAP-S-10: one boundary for the phone's stack for now; per card once the parts it draws are named (see boxWeek).
             <SectionBoundary surface="coachhelm.your-week.cards" label="Your week" code="CH-13204">
+              {ownCard}
               {feat}
               <WorkingCard list={cards.working} onOpen={setOpenRead} />
               {planCard}
@@ -150,7 +155,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
 }
 
 /** What each card of the week is called when it cannot be drawn ("… couldn’t be shown", CH-13204), by the key the page gives it. */
-const WEEK_PART: Record<string, string> = { feat: 'Your main read', plan: 'Your plan', sg: 'Where the strokes go', w: 'What’s working', f: 'Last round in context', r: 'Your other reads' };
+const WEEK_PART: Record<string, string> = { an: 'CoachHelm’s read of your game', feat: 'Your main read', plan: 'Your plan', sg: 'Where the strokes go', w: 'What’s working', f: 'Last round in context', r: 'Your other reads' };
 
 /** GAP-S-10: each card of the week draws on its own, so a crash in one says so in its place and the rest of the week stays. */
 function boxWeek(nodes: ReactNode[]): ReactNode[] {

@@ -47,6 +47,7 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { freshnessReadsEnabled } from '@/lib/coachhelm/v3/engine/read-floors';
 import { coachhelmTeamAllowlist, isCoachHelmFlagEnabled, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { refreshReadsNightly } from '@/lib/coachhelm/v3/analyst/reads/run';
 import { resolveEngineOwner } from '@/lib/coachhelm/engine-owner';
 import {
   orderStaleRefreshCandidates,
@@ -82,6 +83,12 @@ const CONCURRENCY = 3;
  * Unanalyzed-latest-round players are not limited (unchanged behaviour).
  */
 export const FRESHNESS_TIME_BUDGET_MS = 240_000;
+
+/**
+ * CoachHelm reads: no team's pass starts after this much of the run. Each team's pass is cut at its own 20 s limit
+ * (reads/run.ts READS_TIME_LIMIT_MS), so the last one ends inside maxDuration.
+ */
+export const READS_NIGHTLY_DEADLINE_MS = 270_000;
 
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
@@ -287,8 +294,18 @@ async function handleRosterSweep(): Promise<NextResponse> {
     );
   }
 
+  // CoachHelm reads (flag `coachhelm_reads_v1`, team scoped): a per-team pass for the listed teams, inside what is left
+  // of the run's budget. No listed team: nothing is read. Never throws; its own counts, apart from the engine's.
+  let reads: Awaited<ReturnType<typeof refreshReadsNightly>> | { error: string };
+  try {
+    reads = await refreshReadsNightly(supabase, { budgetMs: Math.max(0, READS_NIGHTLY_DEADLINE_MS - (Date.now() - startedAt)) });
+  } catch (err) {
+    reads = { error: describeError(err) };
+  }
+
   return NextResponse.json({
     success: true,
+    reads,
     playersTotal: uniquePlayerIds.length,
     playersProcessed: uniquePlayerIds.length - alreadyAnalyzedSkipped,
     alreadyAnalyzedSkipped,
