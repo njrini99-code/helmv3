@@ -1,4 +1,4 @@
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { chNavOnceReset, useNavOnce } from '../../lib/nav-once';
 
@@ -132,6 +132,33 @@ describe('nav-once (F-0026; audit 2026-11-18)', () => {
     getByText('Save').click();
     getByText('Save').click();
     expect(onButton).toHaveBeenCalledTimes(2);
+  });
+});
+
+/** One tap on `el` at a point on screen; whether it reached the link un-prevented. */
+function tapAt(el: HTMLElement, x: number, y: number): boolean {
+  let through = false;
+  const count = (e: Event) => {
+    through = !e.defaultPrevented;
+    e.preventDefault();
+  };
+  el.addEventListener('click', count);
+  fireEvent.click(el, { clientX: x, clientY: y });
+  el.removeEventListener('click', count);
+  return through;
+}
+
+// Audit 2026-11-19 re-check: holding every tap also dropped a person changing their mind (Stats, then Calendar 200 ms later,
+// measured in WebKit on the desk: it stayed on Stats). A double tap's twin lands where the first tap did; a tap well away
+// from it is a new choice and goes through, as a tab bar's does on iOS.
+describe('nav-once: a twin, or a new choice', () => {
+  it('a second tap where the first landed is held; one well away from it goes', () => {
+    const { getByText } = render(<Host path="/golf/dashboard" />);
+    expect(tapAt(getByText('Stats'), 100, 40)).toBe(true);
+    clock += 120;
+    expect(tapAt(getByText('Roster'), 110, 50)).toBe(false);
+    clock += 80;
+    expect(tapAt(getByText('Roster'), 100, 300)).toBe(true);
   });
 });
 
