@@ -56,6 +56,12 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qck .hkey.has-flag .hkey__flag { transform: scale(1); }
 .ch-qck.is-reduce .hkey__flag { transform: none; opacity: 0; }
 .ch-qck.is-reduce .hkey.has-flag .hkey__flag { opacity: 1; }
+/* F-28 (audit 2026-11-19): the flag arrives on its own (a read finishing), not in answer to a tap, so under Reduce Motion it is
+   simply there: base.css narrows every transition to a 180ms fade, which made it the one thing on the page fading by itself. */
+@media (prefers-reduced-motion: reduce) {
+  .ch-root .ch-qck .hkey__flag { transition-duration: 0s !important; }
+}
+.ch-root .ch-qck.is-reduce .hkey__flag { transition-duration: 0s !important; }
 /* Desktop's bar is parchment, not the phone's green: the spec's ivory idle mark vanishes on it. Beside the bell and Settings
    the key takes their ghost icon button (ui.css .ch-iconbtn.ch-btn--ghost, shell.css .ch-iconbtn.is-on). */
 .ch-qck.is-desk .hkey { width: 36px; height: 36px; border-radius: var(--ch-radius-md); color: var(--ch-text-secondary); }
