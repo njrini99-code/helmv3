@@ -12,6 +12,43 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/settings",
+      "audience": "shared",
+      "name": "Settings",
+      "coach": "src/clubhouse/screens/settings/Settings.tsx#Settings",
+      "player": "src/clubhouse/screens/settings/Settings.tsx#Settings"
+    },
+    {
+      "route": "/golf/dashboard/settings/notifications",
+      "audience": "shared",
+      "name": "Settings: notifications (old deep link)",
+      "coach": "src/clubhouse/screens/settings/Settings.tsx#Settings",
+      "player": "src/clubhouse/screens/settings/Settings.tsx#Settings"
+    },
+    {
+      "route": "/golf/dashboard/settings/coaching-intelligence",
+      "audience": "shared",
+      "name": "Settings: CoachHelm (old deep link; a player lands on Account)",
+      "coach": "src/clubhouse/screens/settings/Settings.tsx#Settings",
+      "player": "src/clubhouse/screens/settings/Settings.tsx#Settings"
+    },
+    {
+      "route": "/golf/dashboard/settings",
+      "view": "?section=team|coachhelm",
+      "audience": "coach",
+      "name": "Settings: Team and CoachHelm sections",
+      "coach": "src/clubhouse/screens/settings/Settings.tsx#Settings"
+    },
+    {
+      "route": "/golf/dashboard/settings",
+      "view": "?section=golf",
+      "audience": "player",
+      "name": "Settings: Golf section",
+      "player": "src/clubhouse/screens/settings/Settings.tsx#Settings"
+    }
+  ],
   "semanticFeatures": [
     "settings_preferences",
     "auth_onboarding_join",

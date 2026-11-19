@@ -15,7 +15,7 @@ vi.mock('next/navigation', () => ({
 }));
 vi.mock('@/lib/auth/get-golf-dashboard-role', () => ({ getGolfDashboardRole: async () => state.role }));
 
-import { PRACTICE_FAIRWAY_FALLBACK, redirectUnlessClubhousePractice } from '../practice-gate';
+import { PRACTICE_NO_ROLE_FALLBACK, redirectUnlessClubhousePractice } from '../practice-gate';
 
 beforeEach(() => {
   state.role = 'coach';
@@ -27,7 +27,7 @@ describe('Practice for a user with no dashboard role', () => {
     state.role = null;
     await expect(redirectUnlessClubhousePractice()).rejects.toThrow('NEXT_REDIRECT');
     expect(state.redirected).toEqual(['/golf/dashboard/calendar']);
-    expect(PRACTICE_FAIRWAY_FALLBACK).toBe('/golf/dashboard/calendar');
+    expect(PRACTICE_NO_ROLE_FALLBACK).toBe('/golf/dashboard/calendar');
   });
   it('a coach or player stays on the Practice page', async () => {
     await expect(redirectUnlessClubhousePractice()).resolves.toBeUndefined();

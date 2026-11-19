@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useEffect, useState, useCallback, useTransition } from 'react';
+import { startTransition, useEffect, useState, useCallback, useTransition, type ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +12,7 @@ import {
 } from '@/lib/error-logging';
 import { getRecovery, requestRecovery } from '@/lib/recovery/client';
 import { useInClubhouse } from '@/clubhouse/shell/context';
-import { RouteErrorView } from '@/clubhouse/ui/Notices';
+import { RouteErrorView, type RouteErrorViewProps } from '@/clubhouse/ui/Notices';
 import { useIsOffline } from '@/clubhouse/ui/Retry';
 
 interface RouteErrorBoundaryProps {
@@ -32,6 +32,11 @@ interface RouteErrorBoundaryProps {
   showHomeButton?: boolean;
   /** Optional: Enable auto-retry for transient errors (default: true) */
   autoRetry?: boolean;
+  /**
+   * Clubhouse's view for a GolfHelm route that renders outside the Clubhouse shell (the front door, and a crash in the
+   * shell itself): with it, the boundary never draws its generic fallback. Same classification, logging and recovery.
+   */
+  outsideShell?: ComponentType<RouteErrorViewProps>;
 }
 
 /**
@@ -127,11 +132,14 @@ export function RouteErrorBoundary({
   homePath,
   showHomeButton = true,
   autoRetry = true,
+  outsideShell: OutsideShell,
 }: RouteErrorBoundaryProps) {
   const [retryCount, setRetryCount] = useState(0);
   // Progress shows only while the retry's refresh is out (GAP-S-35): no artificial wait before it starts.
   const [isRetrying, startRetry] = useTransition();
-  const inClubhouse = useInClubhouse();
+  // Clubhouse draws this error: inside its shell, or a GolfHelm route outside it that hands in its own view.
+  const inShell = useInClubhouse();
+  const inClubhouse = inShell || !!OutsideShell;
   const offline = useIsOffline();
   // Set when the connection came back and the page is trying again for it: it keeps saying offline until that answers.
   const [reconnecting, setReconnecting] = useState(false);
@@ -300,8 +308,9 @@ export function RouteErrorBoundary({
   // Inside the Clubhouse shell: same classification, logging and recovery
   // above, Clubhouse's own view and voice below.
   if (inClubhouse) {
+    const View = inShell ? RouteErrorView : (OutsideShell ?? RouteErrorView);
     return (
-      <RouteErrorView
+      <View
         kind={isChunk ? 'chunk' : isStaleAction ? 'stale-action' : isOfflineFailure ? 'offline' : isTransient ? 'transient' : isGenericLoad ? 'load' : 'unknown'}
         isRetrying={isRetrying}
         retryCount={retryCount}

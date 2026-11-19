@@ -10,6 +10,15 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/messages",
+      "audience": "shared",
+      "name": "Messages",
+      "coach": "src/clubhouse/screens/messages/Messages.tsx#Messages",
+      "player": "src/clubhouse/screens/messages/Messages.tsx#Messages"
+    }
+  ],
   "semanticFeatures": [
     "team_communications"
   ],

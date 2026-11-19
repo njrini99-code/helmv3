@@ -161,3 +161,14 @@ Data:           existing
 Verification:   partial (VERIFY.md)
 Docs:           current
 ```
+
+## What's New (`/golf/dashboard/whats-new`)
+
+A named screen of the shell, not a page of its own (checked 2026-11-17): the
+route is in this page's manifest `routes`, its code is `screens/whats-new`,
+`routes/whats-new.tsx`, `data/whats-new{,-shape}.ts` and `styles/whats-new.css`
+(listed above), and its tests are in the manifest. It is the coach's last seven
+days of team activity, reached from the search palette; a player's address goes
+to Home (`shell/nav.ts`, `CH_ALIASED_ROUTES`). Its state rows are CH-13230 to CH-13232, CH-13285, CH-13330 to CH-13332,
+CH-13385, CH-13430 and CH-13431 in `catalog/coachhelm.md` (so their Bridge IDs
+are P013's); its SCREENS.md line is "What's New".

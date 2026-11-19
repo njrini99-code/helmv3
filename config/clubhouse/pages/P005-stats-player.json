@@ -10,6 +10,21 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/stats",
+      "audience": "player",
+      "name": "My stats",
+      "player": "src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer"
+    },
+    {
+      "route": "/golf/dashboard/stats",
+      "view": "?player=<id>",
+      "audience": "coach",
+      "name": "A player's stats (coach drill-down)",
+      "coach": "src/clubhouse/screens/stats/StatsPlayer.tsx#StatsPlayer"
+    }
+  ],
   "semanticFeatures": [
     "stats_analytics",
     "player_coachhelm_development"

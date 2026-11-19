@@ -60,8 +60,8 @@
     "kind": "inventory",
     "date": "2026-09-30",
     "scope": "Every clickable on the v2 boards against the built Clubhouse, with the GAP list ranked by how often a real user would hit it.",
-    "status": "in_progress",
-    "note": "the owner's build-it rule reopens decided rows",
+    "status": "superseded",
+    "note": "snapshot of 2026-09-30, superseded by generated/CLUBHOUSE_CLICKABLE_MAP.md (npm run clubhouse:clickables)",
     "allPages": true,
     "pages": []
   },

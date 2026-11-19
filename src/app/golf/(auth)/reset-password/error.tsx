@@ -1,6 +1,7 @@
 'use client';
 
 import { RouteErrorBoundary } from '@/components/errors';
+import { GateError } from '@/clubhouse/screens/auth/GateError';
 
 export default function Error({
   error,
@@ -13,6 +14,7 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
+      outsideShell={GateError}
       route="/golf/reset-password"
       component="GolfResetPasswordPage"
       title="Password reset error"
