@@ -1,5 +1,6 @@
 'use client';
 
+import { usePushOnce } from '../../lib/nav-once';
 import { ArrowDown, ArrowUp, Bandage, ChartColumn, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
@@ -99,6 +100,7 @@ export function Roster({ data }: { data: ChRoster; }) {
   const copy = useCopyText();
   const toast = useToast();
   const router = useRouter();
+  const pushOnce = usePushOnce(router);
   const [players, setPlayers] = useState(data.players);
   // A refresh (Try again, or the page a write revalidated) brings new data. It replaces what this screen kept from
   // the first render, so a retry after a failed read shows the players, never "No players yet" (30303).
@@ -276,9 +278,10 @@ export function Roster({ data }: { data: ChRoster; }) {
       const href = profileHref(id);
       if (!href) return select(id);
       chTrail('roster open profile');
-      router.push(href);
+      // Through the shared hold (lib/nav-once.ts): a double tap on a face opens the profile once.
+      pushOnce(href);
     },
-    [router, select],
+    [pushOnce, select],
   );
   /** A Needs-a-look chip only opens its player; closing stays on X or Esc (P003 #11). */
   const openSel = useCallback((id: string) => {

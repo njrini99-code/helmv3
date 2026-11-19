@@ -105,8 +105,12 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
   switch (tab bar, sidebar) and any other swap show the new page or its
   skeleton's frame in the first frame (its blocks after 150 ms), and a drill-in
   pushes and Back pops on the live page over 520 ms on the one curve
-  (`--ch-ease-ios`, a 30% parallax under a 0.075 black dim); the desktop
+  (`--ch-ease-ios`, a 30% parallax under a 0.075 black dim), the page pushed
+  in taking no taps until it lands, and a figure the row marks `data-ch-share`
+  travels into the same figure on that page over the push (a shared element on
+  the Web Animations API, never a view transition); the desktop
   crossfades with no gap (120 ms out and 180 ms in together, owner decision 3),
+  Back and Forward included,
   and only a crossfade holds the route skeleton back 150 ms, so a quick load
   never shows one; Reduce Motion crossfades over 180 ms; skeletons are static,
   with no shimmer or pulse, and the one loop is the working indicator, only

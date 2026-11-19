@@ -91,7 +91,11 @@ and its consumer before copying a pattern; comments may describe older values.
   (mot-03), and so does every phone navigation with motion on: a drill-in
   pushes and Back pops on the live page (`lib/nav-motion.ts`,
   `shell/use-route-swipe.ts`), with no view transition (audit 2026-11-15,
-  S4.1, S4.8). There is no routine first-paint stagger.
+  S4.1, S4.8). The page pushed in takes no taps until it lands, a figure a
+  row marks `data-ch-share` rides the push into the same figure on the page
+  (`lib/share-morph.ts`), and the desk's Back and Forward crossfade as a tap
+  does (audit 2026-11-19, E-2, E-6, E-8). There is no routine first-paint
+  stagger.
 
 The shell handoff is `design/handoff/m-shell.jsx`; depth references are
 `design/handoff/depth.css` and `design/handoff/design-system/guidelines/elevation.html`.

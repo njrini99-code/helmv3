@@ -633,7 +633,10 @@ export function RoundReview({
           <CourseLink review={r} coach={coach} />
         </div>
         <div className="ch-rv-hero__s">
-          <b className="ch-num">{r.score ?? NO_DATA}</b>
+          {/* Where a team round row's score lands over the push (E-6, lib/share-morph.ts). */}
+          <b className="ch-num" data-ch-share="round-score">
+            {r.score ?? NO_DATA}
+          </b>
           <em className={'ch-num' + (under ? ' is-under' : '')}>{formatToPar(r.toPar)}</em>
           <span>{r.score == null ? 'Score not recorded' : r.holesPlayed === 9 ? 'Strokes · 9 holes' : 'Strokes'}</span>
         </div>
@@ -678,9 +681,17 @@ export function RoundReview({
           n={1}
           title="The round"
           def={
-            <>
-              The score hole by hole against par. The line rises when {coach ? 'the player gains' : 'you gain'} on par and falls when strokes go back. <b>A lower score is better.</b>
-            </>
+            // F-07 (audit 2026-11-19): the line is explained only where it is drawn. A round posted as a total has no
+            // holes, so it says what the zone does show: the score against par.
+            points.length >= 2 ? (
+              <>
+                The score hole by hole against par. The line rises when {coach ? 'the player gains' : 'you gain'} on par and falls when strokes go back. <b>A lower score is better.</b>
+              </>
+            ) : (
+              <>
+                The round’s score against par. <b>A lower score is better.</b>
+              </>
+            )
           }
           read={
             <>

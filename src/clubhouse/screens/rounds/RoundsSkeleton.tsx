@@ -3,6 +3,7 @@ import '../../styles/rounds.css';
 import '../../styles/rounds-recover.css';
 import '../../styles/rounds-track.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
+import { CarriedRoundHero } from './CarriedRoundHero';
 
 /**
  * Route loading for Rounds: the header, the round card beside the season, then a month of rounds, in place. Both widths
@@ -150,7 +151,7 @@ export function RoundReviewSkeleton() {
       {/* The phone (the Mobile clubhouse pass): the hero's feature card, the scorecard card where the page has it with Share
           card under it, then the five figures between hairlines in two rows. rounds.css shows the shape for the width. */}
       <div className="ch-rv-sk-phone">
-        <Skeleton width="100%" height={207.4} radius={16} shape="feature" />
+        <CarriedRoundHero />
         <div className="ch-rv-sk-card">
           <Skeleton width="100%" height={580.2} radius={16} shape="solid" />
           <Skeleton width="100%" height={44} radius={12} />
