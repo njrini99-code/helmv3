@@ -484,7 +484,7 @@
 
 /* Desktop loading holds the loaded page's measured heights (WebKit, 1440 and 1000, 2026-10-07): the framed page head
    159px with its sans title and live line, and the pulse section: its 22.8px heading, 12px to its rule, and the rows'
-   reserved room (CH-13405; the Ledger, below). */
+   reserved room (CH-13405, retired with the old board; the Ledger, below). */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-hl[aria-busy='true'][data-canopy] > .ch-hl-h {
     min-height: 159px;

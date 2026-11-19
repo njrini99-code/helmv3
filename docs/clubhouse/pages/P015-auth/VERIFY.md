@@ -59,7 +59,7 @@ authentication test.
 | `auth-credentials.test.ts` (Q-98: the server's wrong-password text reads as the design's, attempts kept) | pass |
 | `auth-forgot.test.tsx` (2026-10-07: the reset form and check your email in the panel, CH-15020 to CH-15922, and a guard that today's reset page and the panel keep the same rules and words) | pass (8) |
 | `auth.test.tsx` › the sign-in micro-motion (2026-10-07: CH-15607 to CH-15611, including the glide's WebKit offsetParent case) | pass (6) |
-| `src/app/golf/(auth)/forgot-password/page.test.tsx` (today's reset page, unchanged) | pass |
+| `src/clubhouse/screens/auth/__tests__/signed-in-reset.test.tsx` (2026-11-18: the signed-in reset page; ported the retired Fairway page's guard that a malformed or empty address never reaches the action) | pass (4) |
 | `src/app/golf/(auth)/forgot-password/layout.test.tsx` (2026-10-08: flag on or off, signed in or out, and the auth server down with and without a cookie session; only flag on and signed out goes to `?view=forgot`, a degraded session counts as signed in) | pass (6) |
 | `onboard.test.tsx` (32 cases: codes, the staff path, the account, after the account, request access, arriving, and since 2026-10-07 the motion and feedback, CH-15620 to CH-15624) and `onboard-logic.test.ts` (17, with moving on, CH-15620) | pass |
 | `handoff.test.tsx` (the curtain over the route change) | pass |

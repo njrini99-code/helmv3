@@ -12,9 +12,68 @@
     "/golf/reset-password",
     "/golf/coach",
     "/golf/coach/pending",
-    "/golf/demo"
+    "/golf/demo",
+    "/golf/forgot-password"
   ],
   "roles": [],
+  "screens": [
+    {
+      "route": "/golf/login",
+      "audience": "signed-out",
+      "name": "Sign in",
+      "visitor": "src/clubhouse/screens/auth/SignIn.tsx#SignIn"
+    },
+    {
+      "route": "/golf/signup",
+      "audience": "signed-out",
+      "name": "Sign up (picks coach or player)",
+      "visitor": "src/clubhouse/screens/onboard/Onboard.tsx#Onboard"
+    },
+    {
+      "route": "/golf/demo",
+      "audience": "signed-out",
+      "name": "Demo",
+      "visitor": "src/clubhouse/screens/auth/DemoEntry.tsx#DemoEntry"
+    },
+    {
+      "route": "/golf/reset-password",
+      "audience": "signed-out",
+      "name": "Reset password",
+      "visitor": "src/clubhouse/screens/auth/ResetPassword.tsx#ResetPassword"
+    },
+    {
+      "route": "/golf/forgot-password",
+      "audience": "shared",
+      "name": "Forgot password, signed in (a signed-out visitor is sent to sign in's reset form)",
+      "coach": "src/clubhouse/screens/auth/SignedInReset.tsx#SignedInReset",
+      "player": "src/clubhouse/screens/auth/SignedInReset.tsx#SignedInReset"
+    },
+    {
+      "route": "/golf/welcome",
+      "audience": "shared",
+      "name": "Welcome (just signed up)",
+      "coach": "src/clubhouse/screens/auth/Welcome.tsx#Welcome",
+      "player": "src/clubhouse/screens/auth/Welcome.tsx#Welcome"
+    },
+    {
+      "route": "/golf/coach",
+      "audience": "coach",
+      "name": "New coach",
+      "coach": "src/clubhouse/screens/onboard/CoachOnboard.tsx#CoachOnboard"
+    },
+    {
+      "route": "/golf/coach/pending",
+      "audience": "coach",
+      "name": "Waiting for approval",
+      "coach": "src/clubhouse/screens/auth/CoachPending.tsx#CoachPending"
+    },
+    {
+      "route": "/golf/player",
+      "audience": "player",
+      "name": "Player sign-up",
+      "player": "src/clubhouse/screens/onboard/Onboard.tsx#Onboard"
+    }
+  ],
   "semanticFeatures": [
     "auth_onboarding_join"
   ],

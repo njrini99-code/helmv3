@@ -213,9 +213,9 @@ in jsdom, or in the preview, never against a live session (Q-4, the owner's live
 pass). A state never observed
 is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
 
-Not tested: the old address /golf/dashboard/stats/team sending a non-coach to
-/stats (it is in the Fairway
-page, which the test does not import); only the Clubhouse frame's side of it is.
+The old address /golf/dashboard/stats/team: alias-frame.test reads the
+next.config.mjs redirect to /stats, and logic.test, stats-team.test and
+alias-frame.test check it is no rebuilt route and no alias (2026-11-18).
 
 ## Accessibility
 

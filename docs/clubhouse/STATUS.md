@@ -422,6 +422,13 @@ VoiceOver, dark-mode scan or real-account write pass.
 | P014 Recruiting | Ready with caveats | Film uploads on (`20260930140000` applied 2026-10-21; `RECRUIT_FILM_ENABLED` is the off switch). Fixed 2026-10-20: after a lost reply, an Add with a corrected field (not the name) created the prospect twice; Retry and a repeated Save were already safe (CH-14915) |
 | P015 Auth (front door) | Not ready, stays off | Since #2210 (D-77) reset-password, demo, coach onboarding, `coach/pending`, `join`, `join/[code]` and `staff/join/[token]` have Clubhouse screens; crash containment, route error, not-found, error tracking and the device checks are still unticked in `screens/auth.md`. Off at turn-on (step 5) |
 
+Added 2026-11-17: this table is the 2026-10-17 audit's and stops at P015. P016
+Tournaments and P017 Practice were registered later and have no row here; their
+state is in `pages/P016-tournaments/VERIFY.md`, `pages/P017-practice/VERIFY.md`
+and the generated `generated/CLUBHOUSE_STATUS.md`. "All 15 pages" and "54
+dashboard pages" in this section are the audit's counts on its date, not
+today's (17 registered pages).
+
 ### Cross-cutting findings
 
 - **Routes (54 dashboard pages):** 24 Clubhouse screens, 18 alias redirects

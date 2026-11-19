@@ -61,10 +61,10 @@ describe('old addresses Clubhouse moved (Simulator, 2026-10-14)', () => {
     expect(isAliased('/golf/dashboard/rounds/new', 'player')).toBe(false);
   });
 
-  it('a player on the coach-only Team stats address moves on to their own Stats', () => {
-    expect(isRebuilt('/golf/dashboard/stats/team', 'coach')).toBe(true);
+  it('the old Team stats address is no screen and no alias: next.config.mjs sends both roles to /stats first', () => {
+    expect(isRebuilt('/golf/dashboard/stats/team', 'coach')).toBe(false);
     expect(isRebuilt('/golf/dashboard/stats/team', 'player')).toBe(false);
-    expect(isAliased('/golf/dashboard/stats/team')).toBe(true);
+    expect(isAliased('/golf/dashboard/stats/team')).toBe(false);
     expect(isAliased('/golf/dashboard/stats')).toBe(false);
   });
 

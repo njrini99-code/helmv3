@@ -59,7 +59,10 @@ function idOrNotFound(id: string): string {
   return id;
 }
 
-/** Practice, the tab: the coach's plans with New plan, or the player's published ones. The page checks the flag. */
+/**
+ * Practice, the tab: the coach's plans with New plan, or the player's published ones. There is no feature flag: the page
+ * draws "Practice isn't on yet" (OFF) only when the practice tables are missing (`isPracticeMissing`).
+ */
 export async function PracticeHomeRoute({ newPlan, template, event }: { newPlan?: boolean; template?: string; event?: string }) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/dashboard/calendar');
