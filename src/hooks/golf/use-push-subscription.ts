@@ -139,6 +139,15 @@ export function usePushSubscription(): UsePushSubscriptionResult {
       setStatus('denied');
       return;
     }
+    // A push subscription cannot exist without a granted permission (subscribe() needs it, and a browser drops the
+    // subscription when the permission is reset), so before the person has opted in the answer is known without asking
+    // the engine. Asking is not free: in WebKit (Playwright's build, with the service worker registered)
+    // pushManager.getSubscription() locks the page's main thread for good, and this hook runs on every open of Settings,
+    // not only on the Notifications section (2026-11-18, minimal page reproduces it with no Helm code).
+    if (Notification.permission !== 'granted') {
+      setStatus('unsubscribed');
+      return;
+    }
     let cancelled = false;
     void (async () => {
       try {

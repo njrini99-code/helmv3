@@ -1483,6 +1483,7 @@ features:
       services:
         - src/lib/coachhelm/v3/foundation/generator-toggles.ts
         - src/hooks/golf/use-appearance-preferences.ts
+        - src/hooks/golf/use-push-subscription.ts
       db:
         - supabase/migrations/*settings*.sql
         - supabase/migrations/*notification*.sql
@@ -1494,6 +1495,7 @@ features:
       tests:
         - src/test/coachhelm/v3/notifications.test.ts
         - src/hooks/golf/__tests__/use-appearance-preferences.test.tsx
+        - src/hooks/golf/__tests__/use-push-subscription.test.tsx
     integrations:
       - supabase
       - notifications

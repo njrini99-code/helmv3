@@ -223,7 +223,7 @@ is a second thing to keep true.
 **Settings And Preferences** · active · criticality medium · owner product
 
 - **Behaviour:** `memory/features/settings-preferences.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/clubhouse/screens/settings/**`, `src/clubhouse/styles/settings.css`, `src/app/golf/actions/v3/notification-prefs.ts`, `src/app/golf/actions/coaching-philosophy.ts`, `src/app/golf/actions/teams.ts` … and 9 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/clubhouse/screens/settings/**`, `src/clubhouse/styles/settings.css`, `src/app/golf/actions/v3/notification-prefs.ts`, `src/app/golf/actions/coaching-philosophy.ts`, `src/app/golf/actions/teams.ts` … and 11 more in the registry
 - **Telemetry:** `settings` (golfhelm, low), `whats_new` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

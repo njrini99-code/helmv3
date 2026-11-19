@@ -112,6 +112,7 @@ Behind the flag, `/golf/dashboard/settings` renders the Clubhouse Settings (`src
 - Loader: `src/clubhouse/data/settings.ts` reads everything server-side with a per-section error flag; a failed section never renders a blank, saveable form. It reads no-row defaults instead of creating rows on read; the CoachHelm philosophy row is created on the first save (`src/clubhouse/screens/settings/writes.ts`).
 - Writes keep the current tables and actions. Changes: deleting an account needs "delete" typed; a new invite code asks first; blank organization fields can be cleared.
 - `push_announcements` is now accepted and defaulted on by `updateNotificationPreferences` / `getNotificationPreferences` (it was stripped by the schema, so the switch saved nothing).
+- Web push status (`src/hooks/golf/use-push-subscription.ts`, called on every open of Settings, in production builds): the mount check does not call `pushManager.getSubscription()` until the notification permission is `granted`, because a subscription cannot exist before that and the call locks the page's main thread in WebKit (Playwright's build, service worker registered; 2026-11-18). Test: `src/hooks/golf/__tests__/use-push-subscription.test.tsx`.
 - The philosophy row mapping moved to `src/lib/coachhelm/philosophy-map.ts` (shared by the hook and the loader).
 - Shown preferences are only those Clubhouse honours: animations (every Clubhouse transition) and haptics. Checklist: `docs/clubhouse/screens/settings.md`; decisions D-18, D-19 in `docs/clubhouse/PROGRESS.md`.
 
