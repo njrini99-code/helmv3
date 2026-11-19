@@ -16,6 +16,53 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/rounds",
+      "audience": "shared",
+      "name": "Rounds (coach: team rounds; player: their library)",
+      "coach": "src/clubhouse/screens/rounds/TeamRounds.tsx#TeamRounds",
+      "player": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary"
+    },
+    {
+      "route": "/golf/dashboard/rounds/[id]",
+      "audience": "shared",
+      "name": "Round review",
+      "coach": "src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview",
+      "player": "src/clubhouse/screens/rounds/RoundReview.tsx#RoundReview"
+    },
+    {
+      "route": "/golf/dashboard/rounds/new",
+      "audience": "player",
+      "name": "Round entry",
+      "player": "src/clubhouse/screens/rounds/entry/NewRound.tsx#NewRound"
+    },
+    {
+      "route": "/golf/dashboard/rounds/continue/[id]",
+      "audience": "player",
+      "name": "Continue a round",
+      "player": "src/clubhouse/screens/rounds/entry/ContinueRound.tsx#ContinueRound"
+    },
+    {
+      "route": "/golf/dashboard/rounds/recover",
+      "audience": "player",
+      "name": "Round recovery",
+      "player": "src/clubhouse/screens/rounds/recover/RoundRecover.tsx#RoundRecover"
+    },
+    {
+      "route": "/golf/dashboard/rounds/course/[key]",
+      "audience": "shared",
+      "name": "Course history (a coach reads one player with ?player=)",
+      "coach": "src/clubhouse/screens/rounds/CoursePage.tsx#CoursePage",
+      "player": "src/clubhouse/screens/rounds/CoursePage.tsx#CoursePage"
+    },
+    {
+      "route": "/golf/dashboard/live",
+      "audience": "coach",
+      "name": "Live",
+      "coach": "src/clubhouse/screens/live/LiveView.tsx#LiveView"
+    }
+  ],
   "semanticFeatures": [
     "golf_round_lifecycle"
   ],

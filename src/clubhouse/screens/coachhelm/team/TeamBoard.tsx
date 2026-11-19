@@ -36,6 +36,7 @@ import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { StationControl } from './StationControl';
 import { TeamHole } from './TeamHole';
 import { sgIsEstimate, sgMixShort, sgMixWords } from '../../../data/stats-sg-mix';
+import { TeamReadsLink } from '../views/TeamReads';
 
 export type TeamStation = ChStation | 'course';
 export type TeamBoardOpen = { kind: 'read' | 'player' | 'course'; id: string } | { kind: 'story'; id: string; story: ChTeamStory; week: string };
@@ -53,6 +54,8 @@ export interface TeamBoardProps {
   initialAll?: boolean;
   /** The hole's Try again when the reads didn't load. */
   onRetry?: () => void;
+  /** CoachHelm reads' team page, for a team on reads (the route checks the flag): the board links to it. */
+  teamReadsHref?: string;
 }
 
 /** The figure says which way it points in words as well as colour (QA-7): "+0.5 a round better than Tour". */
@@ -192,7 +195,7 @@ function EmptySteps() {
 }
 
 /** The coach's Team view: the green bar untouched, the switch, the title, then one green feature card (the hole). */
-export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRITES, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
+export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRITES, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry, teamReadsHref }: TeamBoardProps) {
   const router = useRouter();
   // Every failed part offers Try again; the route has no function to pass, so the board refreshes itself (FID-TEAM-1).
   const { refresh } = useRefresh();
@@ -267,6 +270,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
     }
   };
   const list: ChTeamPlayer[] = data.players.list;
+  const teamReads = teamReadsHref ? <TeamReadsLink href={teamReadsHref} /> : null;
   const noRounds = data.teamTotal.rounds === 0;
   const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)} · ${plural(readsDrawn(list), 'open read')}`;
   const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)}` : undefined} />;
@@ -387,6 +391,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   } else if (phone) {
     body = (
       <>
+        {teamReads}
         {today}
         <Hero data={data} station={station} setStation={setStation} phone course={course} courseTab={courseTab} />
         {spot}
@@ -404,6 +409,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
           {spot}
         </div>
         <div className="dcol">
+          {teamReads}
           {today}
           {working}
           {huddle}

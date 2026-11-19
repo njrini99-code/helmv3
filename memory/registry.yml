@@ -305,6 +305,8 @@ features:
         - scripts/coachhelm/support-backtest.*
       db:
         - supabase/migrations/*coachhelm*.sql
+        # CoachHelm reads (held): golf_coach_reads, golf_coach_read_feedback, golf_coach_read_focus.
+        - supabase/migrations/*golf_coach_read*.sql
         - supabase/migrations/*insight*.sql
         - supabase/migrations/*attribution*.sql
         # golf_prediction_performance, written by lib/coachhelm/v2/analytics.

@@ -42,8 +42,11 @@ const FILE_PART: Record<string, string> = {
   working: 'What’s working',
   intent: 'Your plan for this player',
   track: 'The track record',
+  analyst: 'CoachHelm’s read',
 };
 import { IntentSheet, LIVE_SAVE_INTENT } from './IntentSheet';
+import { AnalystReadCard } from './AnalystRead';
+import type { ChAnalystReadLoad } from '../../../data/coachhelm-analyst-read-shape';
 
 /** Leaving rides the out curve (P3-305 / GAP-H-23: from lib/motion, not a hard-coded copy). */
 const LEAVE = `cubic-bezier(${CH_EASE_OUT.join(', ')})`;
@@ -113,6 +116,8 @@ export interface FileHostProps {
   saveIntent?: typeof LIVE_SAVE_INTENT;
   /** Preview only: open on the lens. */
   initialLens?: FileLens;
+  /** CoachHelm reads (flag `coachhelm_reads_v1`, the listed team only): the analyst's card, above today's cards in the coach's view. */
+  analyst?: ChAnalystReadLoad | null;
 }
 
 /** The failed file: one card, no lens control, Try again (06 §13). */
@@ -134,7 +139,7 @@ export function FileFailed({ who, onRetry }: { who: string; onRetry: () => void 
 }
 
 /** A coach's file on one player (S-FILE). */
-export function PlayerFile({ load, at, insight, roster, writes = LIVE_COACHHELM_WRITES, saveIntent = LIVE_SAVE_INTENT, initialLens = 'coach' }: FileHostProps) {
+export function PlayerFile({ load, at, insight, roster, writes = LIVE_COACHHELM_WRITES, saveIntent = LIVE_SAVE_INTENT, initialLens = 'coach', analyst = null }: FileHostProps) {
   const router = useRouter();
   const { refresh } = useRefresh();
   const phone = useChPhone();
@@ -152,10 +157,10 @@ export function PlayerFile({ load, at, insight, roster, writes = LIVE_COACHHELM_
     );
   }
   // Per player: the lens and the sheets reset with the id (S-FILE.lens 8).
-  return <Ready key={load.data.head.playerId} data={load.data} at={at} insight={insight} roster={roster} writes={writes} saveIntent={saveIntent} initialLens={initialLens} />;
+  return <Ready key={load.data.head.playerId} data={load.data} at={at} insight={insight} roster={roster} writes={writes} saveIntent={saveIntent} initialLens={initialLens} analyst={analyst} />;
 }
 
-function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: { data: ChPlayerFile; at?: PlayerFileCard; insight?: string; roster: ChFileRosterRow[] | null; writes: ChCoachHelmWrites; saveIntent: typeof LIVE_SAVE_INTENT; initialLens: FileLens }) {
+function Ready({ data, at, insight, roster, writes, saveIntent, initialLens, analyst }: { data: ChPlayerFile; at?: PlayerFileCard; insight?: string; roster: ChFileRosterRow[] | null; writes: ChCoachHelmWrites; saveIntent: typeof LIVE_SAVE_INTENT; initialLens: FileLens; analyst: ChAnalystReadLoad | null }) {
   const { head } = data;
   const first = head.first;
   const router = useRouter();
@@ -252,6 +257,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
   const isEarly = none && !isEmpty;
 
   const drawn: Record<string, ReactNode> = {
+    analyst: lens === 'coach' && analyst ? <AnalystReadCard load={analyst} first={first} /> : null,
     feat: isEmpty ? (
       <section className="card">
         <EmptyState
@@ -311,6 +317,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
   const columns = wide ? (
     <div className="grid2">
       <div className="col">
+        {card.analyst}
         {card.feat}
         {card.plan}
         {card.sg}
@@ -334,6 +341,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
     </>
   ) : (
     <>
+      {card.analyst}
       {card.feat}
       {card.plan}
       {card.field}

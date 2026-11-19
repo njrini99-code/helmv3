@@ -19,6 +19,9 @@ import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { DRY_RUN_USAGE, checkDryRunArgs, parseDryRunArgs, reportTable, runAnalystDryRun } from '@/lib/coachhelm/v3/analyst/dry-run';
 import { supabaseAnalystSources } from '@/lib/coachhelm/v3/analyst/supabase-sources';
+import { loadTeamRows } from '@/lib/coachhelm/v3/analyst/fact-sheet';
+import { buildTeamReads } from '@/lib/coachhelm/v3/analyst/reads/build';
+import { cardText } from '@/lib/coachhelm/v3/analyst/reads/card-text';
 import type { Database } from '@/lib/types/database';
 
 async function main(): Promise<number> {
@@ -50,6 +53,11 @@ async function main(): Promise<number> {
   console.log(JSON.stringify(report, null, 2));
   console.log('');
   console.log(reportTable(report));
+  // Each player's CoachHelm read as the coach would see it, for the owner's grading sheet. Built in memory; nothing is written.
+  const reads = buildTeamReads(await loadTeamRows(supabaseAnalystSources(sb), { teamId: checked.team, now: checked.now }));
+  console.log('');
+  console.log('THE CARDS (CoachHelm reads, as the coach would see them; nothing is saved)');
+  for (const p of reads.payloads) console.log(`\n${cardText(p)}`);
   return 0;
 }
 

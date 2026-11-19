@@ -10,6 +10,14 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/whats-new",
+      "audience": "coach",
+      "name": "What's New",
+      "coach": "src/clubhouse/screens/whats-new/WhatsNew.tsx#WhatsNew"
+    }
+  ],
   "semanticFeatures": [
     "ios_native_shell",
     "team_communications"

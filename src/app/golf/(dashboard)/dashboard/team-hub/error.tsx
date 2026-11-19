@@ -1,6 +1,7 @@
 'use client';
 
 import { RouteErrorBoundary } from '@/components/errors';
+import { GateError } from '@/clubhouse/screens/auth/GateError';
 
 /**
  * P361 / P432 — team-hub was the only dashboard route missing an error.tsx, so a
@@ -20,6 +21,7 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
+      outsideShell={GateError}
       route="/golf/dashboard/team-hub"
       component="TeamHubPage"
       homePath="/golf/dashboard"

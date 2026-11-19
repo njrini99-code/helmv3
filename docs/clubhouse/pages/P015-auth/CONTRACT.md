@@ -236,7 +236,9 @@ the view (CH-15920). Going back brings the address with it and pops the reset
 form's history entry rather than stacking one (CH-15922). Both are up for owner
 review. With the flag on (since 2026-11-14, always), a signed-out visit to
 `/golf/forgot-password` is sent to `/golf/login?view=forgot`; a signed-in one
-keeps today's page (CH-15920).
+gets Clubhouse's reset form in the same room, their address filled in and
+Settings as the way back (`SignedInReset`, 2026-11-18; CH-15920). The Fairway
+page it replaced is deleted.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

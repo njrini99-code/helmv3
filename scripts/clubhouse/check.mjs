@@ -25,7 +25,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runRegistryCheck } from './registry.mjs';
+import { runRegistryCheck, mergeRouteLabel } from './registry.mjs';
 import { checkClassOwners } from './css-owners.mjs';
 import { loadManifests, runChangelogGate } from './changelog-gate.mjs';
 import { checkScreenshotLog } from './shots.mjs';
@@ -400,6 +400,49 @@ export function checkScreens(md, rebuilt) {
 }
 
 /**
+ * GolfHelm's routes draw Clubhouse only (owner, 2026-11-18: "all for clubhouse only"). Every file under src/app/golf
+ * outside admin/ (admin and the CRM keep Fairway's primitives): no Fairway or other non-Clubhouse UI import, no Fairway
+ * class, every error.tsx hands RouteErrorBoundary the sign-in room's view (`outsideShell={GateError}`), and no page
+ * falls back to the platform 404. `files` maps a repo path to its source.
+ */
+const NOT_CLUBHOUSE_IMPORT = /from\s+['"](@\/components\/(?:fairway|golf|ui|auth)\/[^'"]*|[^'"]*golf-auth-canvas[^'"]*|(?:\.\.\/)+not-found(?:-view)?)['"]/g;
+const FAIRWAY_CLASS = /\b(?:font-fw-[a-z-]+|bg-canvas|fw-[a-z]+-[a-z-]+|rounded-fw-[a-z]+)\b/g;
+export function checkGolfRoutesClubhouseOnly(files) {
+  const v = [];
+  for (const [file, src] of Object.entries(files)) {
+    if (!file.startsWith('src/app/golf/') || file.startsWith('src/app/golf/admin/') || /\/__tests__\/|\.test\.tsx?$/.test(file)) continue;
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+    for (const m of code.matchAll(NOT_CLUBHOUSE_IMPORT)) v.push(`${file}: imports ${m[1]}; GolfHelm routes draw Clubhouse only (src/clubhouse)`);
+    for (const m of code.matchAll(FAIRWAY_CLASS)) v.push(`${file}: uses the Fairway class ${m[0]}; GolfHelm routes draw Clubhouse only`);
+    if (/\/error\.tsx$/.test(file) && !/outsideShell=\{GateError\}/.test(code)) v.push(`${file}: a GolfHelm error boundary must pass outsideShell={GateError} (src/clubhouse/screens/auth/GateError.tsx)`);
+  }
+  return v;
+}
+
+/**
+ * The routing labels (each manifest's `screens`) agree with the frame's lists: a coach screen is not rebuilt for the
+ * player, a player screen is not rebuilt for the coach, and a shared address that one role's list names is named by
+ * the other's too. Addresses the lists don't name exactly (children, patterns, Practice and Tournaments, which decide
+ * for themselves) are held by the registry's component checks instead.
+ */
+export function checkLabelsAgainstNav(manifests, rebuilt, otherRoutes = []) {
+  const other = new Set(otherRoutes.map((o) => o.route));
+  const v = [];
+  const byRoute = new Map();
+  for (const m of manifests) for (const s of m.screens ?? []) if (!s.view && s.route.startsWith('/golf/dashboard')) byRoute.set(s.route, [...(byRoute.get(s.route) ?? []), s]);
+  for (const [route, entries] of byRoute) {
+    const { audience } = mergeRouteLabel(entries);
+    const c = rebuilt.coach.has(route);
+    const p = rebuilt.player.has(route);
+    if (audience === 'coach' && p) v.push(`${route}: labelled coach, but CH_REBUILT_ROUTES.player lists it`);
+    if (audience === 'player' && c) v.push(`${route}: labelled player, but CH_REBUILT_ROUTES.coach lists it`);
+    if (audience === 'shared' && c !== p) v.push(`${route}: labelled shared, but only CH_REBUILT_ROUTES.${c ? 'coach' : 'player'} lists it`);
+  }
+  for (const r of ['coach', 'player']) for (const route of rebuilt[r]) if (!byRoute.has(route) && !other.has(route)) v.push(`${route}: CH_REBUILT_ROUTES.${r} lists it, but neither a page manifest's "screens" nor config/clubhouse/other-routes.json labels it`);
+  return v;
+}
+
+/**
  * A 'use client' file may import only types from a server-only module (`import 'server-only'`): a value
  * import makes `next build` fail, and typecheck can't see it (the Stats phone shipped one once).
  * `sources` maps repo-relative paths under src/clubhouse to their text.
@@ -454,8 +497,21 @@ function main() {
   }
 
   const screens = join(root, 'docs/clubhouse/SCREENS.md');
+  const rebuilt = readRebuiltRoutes(readFileSync(join(root, 'src/clubhouse/shell/nav.ts'), 'utf8'));
   if (!existsSync(screens)) violations.push('docs/clubhouse/SCREENS.md is missing');
-  else violations.push(...checkScreens(readFileSync(screens, 'utf8'), readRebuiltRoutes(readFileSync(join(root, 'src/clubhouse/shell/nav.ts'), 'utf8'))));
+  else violations.push(...checkScreens(readFileSync(screens, 'utf8'), rebuilt));
+  const golfRouteFiles = {};
+  const walkGolf = (rel) => {
+    for (const n of readdirSync(join(root, rel), { withFileTypes: true })) {
+      const p = `${rel}/${n.name}`;
+      if (n.isDirectory()) walkGolf(p);
+      else if (/\.(tsx?|css)$/.test(n.name)) golfRouteFiles[p] = readFileSync(join(root, p), 'utf8');
+    }
+  };
+  if (existsSync(join(root, 'src/app/golf'))) walkGolf('src/app/golf');
+  violations.push(...checkGolfRoutesClubhouseOnly(golfRouteFiles));
+  const otherRoutesFile = join(root, 'config/clubhouse/other-routes.json');
+  violations.push(...checkLabelsAgainstNav(loadManifests(root), rebuilt, existsSync(otherRoutesFile) ? JSON.parse(readFileSync(otherRoutesFile, 'utf8')) : []));
 
   // Foundation V2 registry: page manifests, Bridge IDs, contracts, held plans, generated docs.
   const registry = runRegistryCheck(root);

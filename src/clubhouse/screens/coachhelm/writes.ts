@@ -4,6 +4,7 @@ import { acceptFocusArea, createFocusAreaFromInsightV2, declineFocusArea } from 
 import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights-feed';
 import { recordCoachHelmCorrection } from '@/app/golf/actions/coachhelm-corrections';
 import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights-coachhelm';
+import { markCoachHelmRead, setFocusFromCoachHelmRead } from '@/app/golf/actions/coachhelm-reads';
 import type { CorrectionInput, CorrectionResult } from '@/lib/coachhelm/v3/corrections/input';
 import type { ChHelmLifecycle } from '../../data/coachhelm-shape';
 import type { ServerResult } from '../../lib/use-action';
@@ -79,4 +80,19 @@ export interface ChRecheckWrites {
 
 export const LIVE_RECHECK_WRITES: ChRecheckWrites = {
   recheck: () => refreshTeamAnalysisAsCoach(),
+};
+
+/**
+ * A coach's three actions on CoachHelm's read of one player (flag `coachhelm_reads_v1`): Set focus from this card, Not useful,
+ * Wrong with a reason. Each sends the player, the card the coach saw and an id the page made once per tap (a Retry sends the same
+ * id, so nothing is written twice); the server takes the team, the coach and every number from the session and the saved read.
+ */
+export interface ChAnalystReadWrites {
+  focus(a: { id: string; playerId: string; cardKey: string }): Promise<ServerResult<{ setOn: string; since: string; word: string }>>;
+  mark(a: { id: string; playerId: string; cardKey: string; verdict: 'not_useful' | 'wrong'; reason?: string | null }): Promise<ServerResult<{ verdict: 'not_useful' | 'wrong'; reason: string }>>;
+}
+
+export const LIVE_ANALYST_READ_WRITES: ChAnalystReadWrites = {
+  focus: (a) => setFocusFromCoachHelmRead(a),
+  mark: (a) => markCoachHelmRead(a),
 };

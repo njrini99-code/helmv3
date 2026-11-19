@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { AdminNativeGuard } from '@/components/native/AdminNativeGuard';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
+import { AvatarToneProvider } from '@/components/fairway/controls/avatar';
 import { AdminMotionProvider } from './_motion-provider';
 
 // Golf admin tabs read 'Demo sessions · Admin', not the GolfHelm suffix (GAP-R-17).
@@ -48,7 +49,9 @@ export default async function AdminLayout({
     <SessionActivityProvider>
       <AdminMotionProvider>
         <AdminNativeGuard />
-        {children}
+        {/* Photo-less avatars in the CRM get the roster card's pastel identity tint (--fw-tint-N, seeded by the person's
+            id via Avatar `identityKey`). It sat on the golf layout before; only admin draws Fairway avatars now. */}
+        <AvatarToneProvider tone="identity">{children}</AvatarToneProvider>
       </AdminMotionProvider>
     </SessionActivityProvider>
   );

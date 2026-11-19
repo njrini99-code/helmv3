@@ -200,6 +200,106 @@ export function authRouteToPages(route) {
   return AUTH_GROUPS.map((group) => join('src/app/golf', group, rest, 'page.tsx'));
 }
 
+// ── Who each screen is for (routing) ──
+
+/**
+ * Every screen is labelled for routing: `coach` (only a coach gets it), `player` (only a player), `shared` (both roles
+ * get a screen at that address, the same component or one each) or `signed-out` (drawn before anyone has a role; the
+ * auth pages and the join links only). A manifest's `screens` holds one entry per route (no `view`) and one per
+ * query view that is its own screen (`view`, such as CoachHelm's `?view=player`). The component a role gets is
+ * `file#Export`; a role with no screen there has no key.
+ */
+export const AUDIENCES = ['coach', 'player', 'shared', 'signed-out'];
+const ROLE_KEYS = { coach: ['coach'], player: ['player'], shared: ['coach', 'player'], 'signed-out': ['visitor'] };
+const OTHER_KINDS = ['screen', 'redirect', 'not-found'];
+
+/** The address a page.tsx serves: route groups `(x)` drop out. */
+export function pageToRoute(file) {
+  const parts = file.replace(/^src\/app/, '').replace(/\/page\.tsx$/, '').split('/').filter((p) => p && !/^\(.+\)$/.test(p));
+  return `/${parts.join('/')}`;
+}
+
+function componentProblem(ref, exists, read) {
+  const [file, name] = String(ref).split('#');
+  if (!name) return `${ref} is not file#Export`;
+  if (!exists(file)) return `${file} does not exist`;
+  const src = read(file);
+  const re = new RegExp(`export\\s+(?:default\\s+)?(?:async\\s+)?(?:function|const|class)\\s+${name}\\b|export\\s*\\{[^}]*\\b${name}\\b`);
+  return re.test(src) ? null : `${file} does not export ${name}`;
+}
+
+/**
+ * The routing labels. `golfPages` is every page.tsx under src/app/golf outside admin/; each must be a manifest route or a
+ * row of config/clubhouse/other-routes.json (old addresses, the join links, the 404), so no Clubhouse address goes
+ * unlabelled.
+ */
+export function checkScreenLabels({ manifests, otherRoutes = [], golfPages = [], exists, read }) {
+  const v = [];
+  const owned = new Map();
+  for (const m of manifests) {
+    const at = `config/clubhouse/pages/${m.id}-${m.slug}.json`;
+    const routes = [...(m.routes ?? []), ...(m.plannedRoutes ?? [])];
+    const screens = m.screens ?? [];
+    const keys = new Set();
+    const reached = new Set();
+    for (const s of screens) {
+      const where = `${at}: screen ${s.route}${s.view ?? ''}`;
+      if (!routes.includes(s.route)) v.push(`${where}: route is not one of this page's routes`);
+      if (!AUDIENCES.includes(s.audience)) v.push(`${where}: audience "${s.audience}" is not ${AUDIENCES.join(', ')}`);
+      if (!s.name) v.push(`${where}: no name`);
+      const key = `${s.route}${s.view ?? ''}`;
+      if (keys.has(key)) v.push(`${where}: listed twice`);
+      keys.add(key);
+      if (s.audience === 'signed-out' && m.area !== 'auth') v.push(`${where}: only an auth page has signed-out screens`);
+      const want = ROLE_KEYS[s.audience] ?? [];
+      for (const k of ['coach', 'player', 'visitor']) {
+        if (want.includes(k) && !s[k]) v.push(`${where}: ${s.audience} needs the ${k} screen (file#Export)`);
+        if (!want.includes(k) && s[k]) v.push(`${where}: a ${s.audience} screen has no ${k} screen; drop "${k}" or change the audience`);
+        if (want.includes(k) && s[k]) {
+          const p = componentProblem(s[k], exists, read);
+          if (p) v.push(`${where}: ${k} ${p}`);
+        }
+      }
+      if (m.area !== 'auth') {
+        for (const r of want) if (r !== 'visitor') {
+          reached.add(r);
+          if (!(m.roles ?? []).includes(r)) v.push(`${where}: a ${s.audience} screen, but the page's roles don't include ${r}`);
+        }
+      }
+    }
+    for (const r of routes) if (!screens.some((s) => s.route === r && !s.view)) v.push(`${at}: route ${r} has no screen; label it in "screens" (${AUDIENCES.join(', ')})`);
+    // The shell frames every page for both roles, so its own routes need not reach both.
+    if (m.id !== 'P001' && m.area !== 'auth') for (const r of m.roles ?? []) if (!reached.has(r)) v.push(`${at}: roles include ${r}, but no screen is for ${r}`);
+    for (const r of routes) owned.set(r, [...(owned.get(r) ?? []), m.id]);
+  }
+  const others = new Set();
+  for (const o of otherRoutes) {
+    const at = `config/clubhouse/other-routes.json ${o.route}`;
+    if (others.has(o.route)) v.push(`${at}: listed twice`);
+    others.add(o.route);
+    if (owned.has(o.route)) v.push(`${at}: also a route of ${owned.get(o.route).join(', ')}; keep it in one place`);
+    if (!OTHER_KINDS.includes(o.kind)) v.push(`${at}: kind "${o.kind}" is not ${OTHER_KINDS.join(', ')}`);
+    if (!AUDIENCES.includes(o.audience)) v.push(`${at}: audience "${o.audience}" is not ${AUDIENCES.join(', ')}`);
+    if (!o.source || !exists(o.source)) v.push(`${at}: source ${o.source ?? '(none)'} does not exist`);
+    if (o.kind !== 'redirect') {
+      for (const k of ['coach', 'player', 'visitor']) {
+        if (o[k] && o[k].startsWith('src/')) {
+          const p = componentProblem(o[k], exists, read);
+          if (p) v.push(`${at}: ${k} ${p}`);
+        }
+      }
+    }
+  }
+  const served = new Set();
+  for (const file of golfPages) {
+    const route = pageToRoute(file);
+    served.add(route);
+    if (!owned.has(route) && !others.has(route)) v.push(`${file}: ${route} has no page manifest route and no row in config/clubhouse/other-routes.json; label it coach, player, shared or signed-out`);
+  }
+  if (golfPages.length) for (const o of otherRoutes) if (!served.has(o.route)) v.push(`config/clubhouse/other-routes.json ${o.route}: no page.tsx serves it any more; remove the row`);
+  return v;
+}
+
 /**
  * Every rule the Foundation V2 plan asks the registry to hold. `ctx` carries
  * the parsed sources and two file accessors so tests can run it in memory.
@@ -207,6 +307,7 @@ export function authRouteToPages(route) {
 export function checkRegistry(ctx) {
   const { manifests, bridge, tombstones, rows, map, features, progressMd, heldMd, exists, read, migrations } = ctx;
   const v = [];
+  if (ctx.golfPages) v.push(...checkScreenLabels(ctx));
   if (ctx.audits) v.push(...checkAudits({ audits: ctx.audits, manifests, exists, docs: ctx.docs ?? [], readmeMd: ctx.readmeMd ?? '', progressMd }));
   const ids = new Set();
   const namespaces = new Map();
@@ -491,7 +592,61 @@ export function renderContract({ m, bridge, cats, existing }) {
 const GEN_HEAD = (title, what) => `# ${title}\n\n<!-- Generated by node scripts/clubhouse/registry.mjs sync. Do not edit; edit the sources under config/clubhouse/ and docs/clubhouse/catalog/. -->\n\n${what}\n`;
 const cell = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\n/g, ' ');
 
-export function generateDocs({ manifests, bridge, map, tombstones, read, exists, audits = [] }) {
+/** One route's label from every page that lists it (Stats is P004's team view for a coach and P005's for a player). */
+export function mergeRouteLabel(entries) {
+  const roles = new Set(entries.flatMap((s) => ROLE_KEYS[s.audience] ?? []));
+  const audience = roles.has('visitor') && roles.size === 1 ? 'signed-out' : roles.has('coach') && roles.has('player') ? 'shared' : roles.has('coach') ? 'coach' : roles.has('player') ? 'player' : '?';
+  const pick = (k) => entries.find((s) => s[k])?.[k];
+  return { audience, coach: pick('coach'), player: pick('player'), visitor: pick('visitor') };
+}
+
+/** Prose wrapped at 80 columns for markdownlint (MD013); an inline code span is never split. */
+function wrap80(text) {
+  const words = text.match(/`[^`]*`[^\s`]*|\S+/g) ?? [];
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    if (line && line.length + 1 + w.length > 80) {
+      lines.push(line);
+      line = w;
+    } else line = line ? `${line} ${w}` : w;
+  }
+  if (line) lines.push(line);
+  return lines.join('\n');
+}
+
+function renderRouteMap({ pages, otherRoutes = [] }) {
+  const code = (x) => (x ? `\`${cell(x)}\`` : '—');
+  const rows = new Map();
+  for (const m of pages) for (const s of m.screens ?? []) {
+    const key = `${s.route}${s.view ?? ''}`;
+    const row = rows.get(key) ?? { route: s.route, view: s.view, pages: [], entries: [], names: [] };
+    row.pages.push(m.id);
+    row.entries.push(s);
+    row.names.push(s.name);
+    rows.set(key, row);
+  }
+  const sorted = [...rows.values()].sort((a, b) => a.route.localeCompare(b.route) || (a.view ?? '').localeCompare(b.view ?? ''));
+  const count = { coach: 0, player: 0, shared: 0, 'signed-out': 0 };
+  let body = '\n| Route | View | Audience | Screen | Coach gets | Player gets | Signed out gets | Page |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n';
+  for (const r of sorted) {
+    const l = mergeRouteLabel(r.entries);
+    if (!r.view) count[l.audience] = (count[l.audience] ?? 0) + 1;
+    body += `| \`${r.route}\` | ${r.view ? `\`${cell(r.view)}\`` : '—'} | **${l.audience}** | ${cell([...new Set(r.names)].join('; '))} | ${code(l.coach)} | ${code(l.player)} | ${code(l.visitor)} | ${[...new Set(r.pages)].join(', ')} |\n`;
+  }
+  let md = GEN_HEAD('Clubhouse route map', 'Who each Clubhouse address is for, for routing.');
+  md += `\n${wrap80('**coach**: only a coach gets a screen there. **player**: only a player. **shared**: both roles get a screen there, the same component or one each, as the columns show. **signed-out**: drawn before sign-in. Sources: each page manifest\'s `screens` (`config/clubhouse/pages/*.json`) and `config/clubhouse/other-routes.json`. `clubhouse:check` fails if a `page.tsx` under `src/app/golf` (outside `admin/`) has no label, if a named component does not exist, or if a label disagrees with `CH_REBUILT_ROUTES`.')}\n`;
+  md += `\n${wrap80(`${sorted.filter((r) => !r.view).length} page addresses: ${count.coach} coach, ${count.player} player, ${count.shared} shared, ${count['signed-out']} signed out; ${sorted.filter((r) => r.view).length} query views that are screens of their own; ${otherRoutes.length} other addresses below.`)}\n`;
+  md += `\n${wrap80('A role that has no screen at an address gets the frame\'s state instead: Clubhouse\'s coach-only state (CH-1301, or the page\'s own, such as Qualifiers\' CH-09311 and Tournaments\' coach-only notice), a coach on a player\'s round flow gets CH-11390, or the page sends that role elsewhere. Practice\'s coach-only pages send a player to `/golf/dashboard/practice`.')}\n`;
+  md += `\n## Screens\n${body}`;
+  md += `\n## Other addresses\n\n${wrap80('Old addresses, the join links that sit outside the `(auth)` group, and the dashboard\'s not-found page. A redirect row says where each role lands.')}\n\n| Route | Kind | Audience | Coach | Player | Signed out | Source | Note |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n`;
+  for (const o of [...otherRoutes].sort((a, b) => a.route.localeCompare(b.route))) {
+    md += `| \`${o.route}\` | ${o.kind} | **${o.audience}** | ${code(o.coach)} | ${code(o.player)} | ${code(o.visitor)} | \`${o.source}\` | ${o.note ? cell(o.note) : '—'} |\n`;
+  }
+  return md;
+}
+
+export function generateDocs({ manifests, bridge, map, tombstones, read, exists, audits = [], otherRoutes = [] }) {
   const pages = [...manifests].sort((a, b) => a.id.localeCompare(b.id));
   const cats = map.categories;
   const out = {};
@@ -505,6 +660,7 @@ export function generateDocs({ manifests, bridge, map, tombstones, read, exists,
   }
   pm += '\nA page gets its ID when its build starts (D-60, D-67); a page not designed yet has none. Every v2 page (`design/handoff/VERSIONS.md`) is registered: Team Hub P010, Rounds P011, Classes P012, CoachHelm P013, with player Home under P002. Current state and what is left: `docs/clubhouse/STATUS.md`.\n';
   out['docs/clubhouse/generated/CLUBHOUSE_PAGE_MAP.md'] = pm;
+  out['docs/clubhouse/generated/CLUBHOUSE_ROUTE_MAP.md'] = renderRouteMap({ pages, otherRoutes });
 
   let bm = GEN_HEAD('Clubhouse Bridge map', 'Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catalog code and its meaning. IDs are permanent; retired ones move to `config/clubhouse/bridge-tombstones.json`.');
   bm += '\n## How catalog kinds become categories\n\n`config/clubhouse/category-map.json`. A row takes its kind\'s default unless it is listed as an exception.\n\n| Catalog kind | Default category |\n| --- | --- |\n';
@@ -607,8 +763,20 @@ export function load(root) {
     }
   };
   walk('src/clubhouse');
+  const golfPages = [];
+  const pagesUnder = (dir) => {
+    for (const n of readdirSync(join(root, dir), { withFileTypes: true })) {
+      const p = `${dir}/${n.name}`;
+      if (n.isDirectory()) {
+        if (p !== 'src/app/golf/admin') pagesUnder(p);
+      } else if (n.name === 'page.tsx') golfPages.push(p);
+    }
+  };
+  if (ex('src/app/golf')) pagesUnder('src/app/golf');
   return {
     manifests,
+    golfPages: golfPages.sort(),
+    otherRoutes: json('config/clubhouse/other-routes.json', []),
     rows: parseCatalogRows(catalogs),
     bridge: json('config/clubhouse/bridge-contracts.json', []),
     tombstones: json('config/clubhouse/bridge-tombstones.json', []),
