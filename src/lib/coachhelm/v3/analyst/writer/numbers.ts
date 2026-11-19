@@ -41,7 +41,7 @@ const ONE_TO_NINE: Record<string, number> = { one: 1, ...Object.fromEntries(Obje
 
 /** Golf terms that contain a number but are not a count. Removed before numbers are read. */
 export const NUMBER_TERMS: readonly RegExp[] = [
-  /(?<![-\w])(?:one|two|three|four|1|2|3|4)[- ]?putt(?:s|ed|ing)?\b/gi,
+  /(^|[^-\w])(?:one|two|three|four|1|2|3|4)[- ]?putt(?:s|ed|ing)?\b/gi,
   /\bpar[- ]?[345]s?\b/gi,
   /\b(?:9|18|nine|eighteen)[- ]holes?\b/gi,
   /\bholes? 2 to 18\b/gi,
@@ -72,7 +72,7 @@ export function extractDates(text: string): { rest: string; dates: FoundDate[] }
 /** Every number written in `text`, terms and dates excluded (dates are returned by {@link extractDates}). */
 export function extractNumbers(text: string): FoundNumber[] {
   let rest = extractDates(text).rest;
-  for (const term of NUMBER_TERMS) rest = rest.replace(term, ' ');
+  for (const term of NUMBER_TERMS) rest = rest.replace(term, (_m, lead: unknown) => `${typeof lead === 'string' ? lead : ''} `);
   const found: FoundNumber[] = [];
   rest = rest.replace(/\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?/g, (raw) => {
     const clean = raw.replace(/,/g, '');
