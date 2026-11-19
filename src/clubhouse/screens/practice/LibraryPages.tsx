@@ -186,7 +186,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
     });
     setBusy(false);
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t copy the drill.' });
-    toast({ title: 'Copied to your bank' });
+    toast({ title: 'Added to your drills' }); // L-080: the page's own word, not "bank"
     router.push(`/golf/dashboard/practice/drills/${r.id}`);
   };
   const archive = async () => {
@@ -218,7 +218,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
             </>
           ) : (
             <Button variant="primary" busy={busy} onClick={() => void copy()}>
-              Copy to your bank
+              Add to your drills
             </Button>
           )}
         </div>

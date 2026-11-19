@@ -108,8 +108,11 @@ function HoursTable({ week, title }: { week: ChHoursWeek; title: string }) {
             <div className="ch-hrs-tr" role="row">
               <span role="rowheader" className="ch-hrs-who">
                 <Avatar name={r.name} id={r.id} size="sm" />
-                <span className="ch-hrs-who__n">{r.name}</span>
-                {r.year && <span className="ch-hrs-who__y">{r.year}</span>}
+                {/* L-070: the class under the name, so the name has the column's width and the class never wraps beside it. */}
+                <span className="ch-hrs-who__t">
+                  <span className="ch-hrs-who__n">{r.name}</span>
+                  {r.year && <span className="ch-hrs-who__y">{r.year}</span>}
+                </span>
               </span>
               {r.days.map((d) => (
                 <DayCell key={d.date} day={d} flags={r.flags} none={noHoursLogged(r)} />
@@ -298,7 +301,8 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
           <p className="ch-hrs-lim ch-num">
             <span>{limitsLine(limits)}</span>
             <span className="ch-hrs-lim__src">
-              {limits.segmentAssumed ? `${sourceLine(data)} · no season dates set, so every week is read as in season` : sourceLine(data)}
+              {/* L-070: one plain sentence first, then where the limits come from. */}
+              {limits.segmentAssumed ? `No season dates set, so every week counts as in season. ${sourceLine(data).replace(/^From /, 'Limits from ')}.` : sourceLine(data)}
             </span>
           </p>
         </div>

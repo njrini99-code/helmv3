@@ -88,7 +88,7 @@ describe('Practice hours · the coach’s week', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Practice hours' })).toBeTruthy();
     expect(screen.getByText('Demo University Golf · NCAA Division I · Playing season')).toBeTruthy();
     expect(screen.getByText('4 a day · 20 a week · 1 day off')).toBeTruthy();
-    expect(screen.getByText(/From your division in Settings > Team · no season dates set/)).toBeTruthy();
+    expect(screen.getByText(/No season dates set, so every week counts as in season\. Limits from your division in Settings > Team\./) /* L-070 */).toBeTruthy();
     // Ava travels: practice Mon to Wed, the practice round the day before counts 3, the two tournament days 3 each.
     expect(cells('Ava Lindqvist')).toEqual(['4', '3.5', '4', '3', '3', '3', 'Off', '20.5 of 20', '1']);
     // Theo's evening session takes Monday to 6.

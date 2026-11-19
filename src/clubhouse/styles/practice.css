@@ -1953,6 +1953,8 @@ main.ch-prc-planpage > .ch-backlink {
 .ch-prc-dfacts {
   display: grid;
   margin: 0;
+  /* L-080: a drill's facts read as a column at the reading measure, not one line across a wide empty card. */
+  max-width: var(--ch-measure-reading);
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
