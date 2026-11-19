@@ -33,17 +33,21 @@
 .ch-root *::after {
   box-sizing: border-box;
 }
-/* No scrollbars inside the app (owner, 2026-10-16): with "always show scroll bars" (or a mouse) a long page took the
-   bar's width and a short one gave it back, so a switch between them moved the shell sideways. Everything still scrolls
-   by trackpad, wheel, touch and keyboard. The browser's chrome is outside this scope; forced colours bring them back. A
-   touch screen keeps iOS's thin overlay indicator, which takes no width and says a sheet scrolls (MOB-SHELL-18). */
+/* Scrollbars (D1, reopened by the owner 19 Nov 2026). The scroll regions (the page canvas, the sidebar, a dialog's or a
+   sheet's body, and anything marked data-ch-scroll) show the system's own thin overlay scrollbar for a fine pointer, as
+   macOS draws it: it appears while scrolling and takes no width. The 16 Oct reason for hiding them (a long page took the
+   bar's width with "always show scroll bars", so a switch moved the shell sideways) is answered by the canvas's
+   scrollbar-gutter: stable (shell.css, SYS-09). The system bar is left unstyled on purpose: a ::-webkit-scrollbar rule
+   turns WebKit's overlay bar into a permanent classic one. Everything else (chip rows, snap strips, a card's inner
+   scroller) keeps no bar, as before. A touch screen keeps iOS's thin overlay indicator (MOB-SHELL-18); forced colours
+   bring every bar back. */
 @media (pointer: fine) {
   [data-ui='clubhouse'],
-  [data-ui='clubhouse'] * {
+  [data-ui='clubhouse'] *:not(.ch-canvas, .ch-sidebar, .ch-modal__body, .ch-fsheet__body, [data-ch-scroll]) {
     scrollbar-width: none;
   }
   [data-ui='clubhouse']::-webkit-scrollbar,
-  [data-ui='clubhouse'] *::-webkit-scrollbar {
+  [data-ui='clubhouse'] *:not(.ch-canvas, .ch-sidebar, .ch-modal__body, .ch-fsheet__body, [data-ch-scroll])::-webkit-scrollbar {
     display: none;
   }
 }

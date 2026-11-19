@@ -165,11 +165,16 @@ describe('overnight polish 2026-10-15: dark mode keeps day-only surfaces whole',
     const rule = stats.slice(at, stats.indexOf('}', at));
     for (const t of ['--ch-green-700: #0f4a2f;', '--ch-green-900: #082b1c;', '--ch-ivory-100: #f4f2ea;', '--ch-ivory-400: #c9c2b1;', '--ch-control-bg:', '--ch-well-bg:']) expect(rule).toContain(t);
   });
-  it('the sidebar plate has its own night material and ink, not a half-flipped day gradient', () => {
+  it('the sidebar selection is one calm material in both themes, not a half-flipped day gradient', () => {
+    // D17a (owner, 19 Nov 2026): the frame's ivory at 11% under ivory ink and icon replaced the ivory card, which had
+    // needed its own night plate (#24432f). The frame is green at night too, so one value serves both themes.
     const tokens = css('tokens.css');
+    expect(tokens).toMatch(/--ch-nav-sel-bg: rgb\(244 238 221 \/ 0\.11\);\s*--ch-nav-sel-ink: var\(--ch-on-green-ink\);\s*--ch-nav-sel-icon: var\(--ch-on-green-ink\);/);
     const dark = tokens.slice(tokens.indexOf("html[data-fw-theme='dark'] [data-ui='clubhouse'] {"));
-    expect(dark.slice(0, dark.indexOf('\n}'))).toMatch(/--ch-nav-well-bg: #24432f;[\s\S]*--ch-nav-well-ink: #f3efe6;/);
-    expect(css('shell.css')).toMatch(/color: var\(--ch-nav-well-ink, var\(--ch-green-800\)\);/);
+    expect(dark.slice(0, dark.indexOf('\n}'))).not.toMatch(/--ch-nav-sel-/);
+    const shell = css('shell.css');
+    expect(shell).toMatch(/\.ch-navitem:has\(\.ch-lp\) \{\s*background: var\(--ch-nav-sel-bg\);\s*color: var\(--ch-nav-sel-ink\);\s*box-shadow: none;/);
+    expect(shell).toMatch(/\.ch-nav__plate \{[^}]*background: var\(--ch-nav-sel-bg\);/);
   });
 });
 

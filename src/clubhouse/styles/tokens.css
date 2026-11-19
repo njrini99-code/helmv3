@@ -510,6 +510,13 @@
   --ch-sidebar-w: 232px; /* MOTION-AND-VISUAL 4.8 */
   /* The sidebar folded to its icon rail (RailToggle): the rows' 16px icons, 20px in from the edge, stay where they are. */
   --ch-rail-w: 56px;
+  /* The sidebar's current row (D17a, owner 19 Nov 2026; premium plan S3): a calm selection, as Things and Finder draw
+     it. The frame's ivory at 11% on the green, the label at 600 and the icon in ivory, with no shadow. It was the ivory
+     card (--ch-nav-well-bg, which the rail's toggle and tip still use), a second loud plate beside the page's one
+     feature card (law 5). Night keeps the same values: the frame is green in both themes. */
+  --ch-nav-sel-bg: rgb(244 238 221 / 0.11);
+  --ch-nav-sel-ink: var(--ch-on-green-ink);
+  --ch-nav-sel-icon: var(--ch-on-green-ink);
   --ch-topbar-h: 56px;
   /* Phone chrome (owner design, design/handoff/mobile/m-shell.jsx, m.css; D-40, D-43) */
   --ch-phone-topbar-h: 50px; /* a 44px row and 6px below it, under the status bar */
