@@ -66,7 +66,7 @@ The drift screen (B11) will show these on day one. Each was checked by hand.
      block. `catalog/README` flags this as an open owner decision (D12 here).
 2. **6 `where` paths point at files that no longer exist** (28 rows name them;
    rechecked on `4d4cb8caf5`):
-   - `src/clubhouse/shell/TabBar.tsx`
+   - src/clubhouse/shell/TabBar.tsx (deleted)
    - `screens/roster/RosterPhone.tsx`
    - `screens/stats/StatsPlayerPhone.tsx`
    - `screens/coachhelm/PlayerBoard.tsx`
@@ -291,7 +291,7 @@ assigns each to its page and its nearest `CH-` code. It needs three additions.
 | R-11 Frustration | rage or dead clicks on one control from more than 3 users a day | medium |
 | R-12 Vital regression | a page's INP p75 rises past 200 ms, or its LCP p75 past 2.5 s, on iOS | medium |
 
-The rules are pure functions in `src/lib/admin/clubhouse/rules.ts`, each with
+The rules are pure functions in src/lib/admin/clubhouse/rules.ts (new), each with
 a fixture test. Each one names the code, the page and the release, so every
 alert opens a dossier.
 
@@ -303,7 +303,7 @@ The Bridge has 15 screens, numbered B01 to B15. Every control and state on them
 has a `BR-<screen><nn>` code:
 
 - the code sits on the element as `data-br`
-- it is listed in `config/bridge/contracts.json`, with a generated
+- it is listed in config/bridge/contracts.json (new), with a generated
   `BRIDGE_UI_MAP.md`
 - it is forced by a test
 
@@ -1068,7 +1068,7 @@ built in their own worktrees, in parallel with PR 1, against a seeded fixture.
 | **1. Spine + graph** | §3 graph in `registry.mjs`, including audit findings and number checks; §4.6 code index and checks; fixes for the six `where` paths and the deprecated outcome; P017 Bridge IDs as D12 decides; emitters E1–E9; `/api/ch/signal` with redaction, limiter and kill switch; §4.3 runtime checks; §4.5 migration; §5 rules with fixtures; manifests `bridge: wired`; D-68 noted in PROGRESS | Unit tests offline for envelope, resolver, rules and redaction. `clubhouse:check` green with the new checks. `test:rls`. `build`. W-tier: a forced CH-7004 lands one `admin_events` row with `bridge_id 70603`, and a forced empty state adds one counter. Migration on local Docker; db-migration and security reviews. Then the migration waits for you in the rollout thread. |
 | **2. Registry screens** | B02, B03 (plus §4.7 control numbering for all pages), B04, B05, B12, B14 palette, the scope bar, the category legend, chips. Each works with no live data ("No signal yet", BR-xx93). | Page tests for every BR code; `admin-gate-coverage` (`requireSuperAdmin` on every entry); Safari pass on desktop and phone |
 | **3. Live lenses** | B01 Pulse, B06 additions, B07, B08, B09, B10, the digest section | The same tests, plus seeded-fixture tests per rule and per screen |
-| **4. Drift, Duet, numbering** | B11, B13, the §9.2 read-only API (off by default), `config/bridge/contracts.json` + `BRIDGE_UI_MAP.md`, category 25 rows, the rail regrouping, docs (DECISIONS, a Bridge feature doc, registry docs) | Full gates once; `verifier` agent on the done claim |
+| **4. Drift, Duet, numbering** | B11, B13, the §9.2 read-only API (off by default), config/bridge/contracts.json (new) + BRIDGE_UI_MAP.md (new), category 25 rows, the rail regrouping, docs (DECISIONS, a Bridge feature doc, registry docs) | Full gates once; `verifier` agent on the done claim |
 
 ---
 
