@@ -633,7 +633,10 @@ export function RoundReview({
           <CourseLink review={r} coach={coach} />
         </div>
         <div className="ch-rv-hero__s">
-          <b className="ch-num">{r.score ?? NO_DATA}</b>
+          {/* Where a team round row's score lands over the push (E-6, lib/share-morph.ts). */}
+          <b className="ch-num" data-ch-share="round-score">
+            {r.score ?? NO_DATA}
+          </b>
           <em className={'ch-num' + (under ? ' is-under' : '')}>{formatToPar(r.toPar)}</em>
           <span>{r.score == null ? 'Score not recorded' : r.holesPlayed === 9 ? 'Strokes · 9 holes' : 'Strokes'}</span>
         </div>
