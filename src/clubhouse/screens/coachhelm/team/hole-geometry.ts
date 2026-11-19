@@ -64,11 +64,13 @@ export const HOLE: Record<'v' | 'h', HoleGeometry> = {
         [70, 300],
         [96, 310],
       ],
-      // Off the bunker at (110, 100), where a hollow coin read as a broken mark (TEAM-11).
+      // L-030: an arc against the Putting mark's left (170, 76), clear of its largest halo (28), the flag and the bunker at
+      // (110, 100), where a hollow coin read as a broken mark (TEAM-11). They stood 45 units below it, by Short game, and read
+      // as stickers with no mark of their own.
       putting: [
-        [128, 118],
-        [152, 124],
-        [104, 124],
+        [128, 76],
+        [134, 50],
+        [136, 100],
       ],
       tee: [[200, 384], [176, 390], [224, 390]],
       short_game: [[160, 152], [136, 160], [112, 168]],
