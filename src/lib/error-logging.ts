@@ -10,6 +10,7 @@ import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { requestRecovery } from '@/lib/recovery/client';
+import { stylesheetLoadFailureHref } from '@/lib/stylesheet-load-failure';
 
 const SEVERITY_TO_SENTRY_LEVEL: Record<'low' | 'medium' | 'high' | 'critical', Sentry.SeverityLevel> = {
   low: 'info',
@@ -635,9 +636,33 @@ function classifyGlobalErrorKind(message: string): 'chunk-load' | 'hydration' | 
  */
 export function setupGlobalErrorHandlers(): void {
   if (typeof window !== 'undefined') {
+    // The page going away cancels the stylesheets still loading: those are not failures (stylesheet-load-failure.ts).
+    let leaving = false;
+    window.addEventListener('pagehide', () => {
+      leaving = true;
+    });
+    window.addEventListener('pageshow', () => {
+      leaving = false;
+    });
+
     // Unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
       const reason = event.reason;
+
+      // React's promise for a stylesheet link it inserted, rejected with the link's error Event: said as what it is,
+      // the sheet that did not load, not an opaque "[object Event]" (audit 2026-11-19).
+      const sheet = stylesheetLoadFailureHref(reason);
+      if (sheet !== null) {
+        event.preventDefault();
+        if (!leaving) {
+          logError(
+            new Error(`Stylesheet failed to load: ${sheet}`),
+            { component: 'GlobalErrorHandler', action: 'unhandledrejection', errorKind: 'stylesheet-load', href: sheet },
+            'medium'
+          );
+        }
+        return;
+      }
       const reasonMessage =
         (reason && typeof reason === 'object' && 'message' in reason ? String(reason.message) : '') ||
         (typeof reason === 'string' ? reason : '');
