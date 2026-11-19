@@ -68,14 +68,14 @@ describe('joinLiveTopic: what reaches the Bridge (noise fix for c1ecfd3a, 06e78d
     await flush();
     for (let i = 0; i < REPORT_AFTER_FAILURES + 3; i += 1) {
       live().status('CHANNEL_ERROR');
-      await flush(BACKOFF_MS[BACKOFF_MS.length - 1] + 10);
+      await flush((BACKOFF_MS[BACKOFF_MS.length - 1] ?? 0) + 10);
     }
     expect(chReport).toHaveBeenCalledTimes(1);
     expect(vi.mocked(chReport).mock.calls[0]![1]).toMatchObject({ surface: 'qualifiers.push', severity: 'low', extra: { status: 'CHANNEL_ERROR', failures: REPORT_AFTER_FAILURES } });
     live().status('SUBSCRIBED');
     for (let i = 0; i < REPORT_AFTER_FAILURES; i += 1) {
       live().status('TIMED_OUT');
-      await flush(BACKOFF_MS[BACKOFF_MS.length - 1] + 10);
+      await flush((BACKOFF_MS[BACKOFF_MS.length - 1] ?? 0) + 10);
     }
     expect(chReport).toHaveBeenCalledTimes(2);
     stop();
