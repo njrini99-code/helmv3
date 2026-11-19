@@ -217,6 +217,8 @@ describe('SendCluster', () => {
       expect(item.textContent).toContain('skips the class hold');
       expect(item.textContent).not.toContain('Cmd Shift');
       fireEvent.click(item);
+      // On the phone the menu's own Back entry comes off before its action runs (lib/back-closes.ts, #2593 review).
+      await act(async () => { vi.advanceTimersByTime(400); });
       expect(onSend).toHaveBeenCalledWith(true);
     });
 

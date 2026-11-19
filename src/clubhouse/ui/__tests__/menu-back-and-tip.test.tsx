@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'motion/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -26,8 +26,10 @@ beforeEach(() => {
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width') ? phone : q.includes('focus') ? false : false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }));
   window.history.replaceState(null, '', '/golf/dashboard/recruiting');
 });
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // A menu left open at cleanup takes its entry back off a task later (useBackCloses): let that Back land here, not in the next case.
+  await new Promise((r) => setTimeout(r, 50));
   vi.unstubAllGlobals();
 });
 
@@ -52,6 +54,47 @@ function Host({ onPick = () => {} }: { onPick?: () => void }) {
       </div>
     </LazyMotion>
   );
+}
+
+/** A history stack the test can read: pushState, replaceState and an async back() with its popstate, as a browser does. */
+function fakeHistory(start: string) {
+  const real = { push: window.history.pushState.bind(window.history), replace: window.history.replaceState.bind(window.history) };
+  real.replace(null, '', start);
+  let stack: Array<{ url: string; state: unknown }> = [{ url: start, state: null }];
+  let idx = 0;
+  let pending = 0;
+  const pushSpy = vi.spyOn(window.history, 'pushState').mockImplementation((state: unknown, _t: string, url?: string | URL | null) => {
+    stack = stack.slice(0, idx + 1);
+    stack.push({ url: url ? String(url) : stack[idx]!.url, state });
+    idx += 1;
+    real.replace(state, '', stack[idx]!.url);
+  });
+  const backSpy = vi.spyOn(window.history, 'back').mockImplementation(() => {
+    pending += 1;
+    window.setTimeout(() => {
+      pending -= 1;
+      if (idx === 0) return;
+      idx -= 1;
+      real.replace(stack[idx]!.state, '', stack[idx]!.url);
+      act(() => void window.dispatchEvent(new PopStateEvent('popstate', { state: stack[idx]!.state })));
+    }, 5);
+  });
+  return {
+    /** What a router.push does: a new entry on top. */
+    push: (url: string) => window.history.pushState(null, '', url),
+    urls: () => stack.slice(0, idx + 1).map((e) => e.url),
+    at: () => idx,
+    settle: async () => {
+      await act(async () => {
+        for (let i = 0; i < 20 && pending > 0; i++) await new Promise((r) => setTimeout(r, 10));
+        await new Promise((r) => setTimeout(r, 20));
+      });
+    },
+    restore: () => {
+      pushSpy.mockRestore();
+      backSpy.mockRestore();
+    },
+  };
 }
 
 const menuOpen = () => screen.getByRole('button', { name: 'More' }).getAttribute('aria-expanded') === 'true';
@@ -81,15 +124,32 @@ describe('Menu on the phone and Back (audit 2026-11-18)', () => {
     expect(screen.getByRole('menuitem', { name: 'Open board' }).hasAttribute('data-replace')).toBe(true);
   });
 
-  it('an action picked runs at once, and the menu takes its entry back off', () => {
-    const onPick = vi.fn();
-    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+  it('an action picked runs once the menu’s entry is off: one that navigates ends on its page with no entry left behind', async () => {
+    const h = fakeHistory('/golf/dashboard/calendar');
+    const onPick = vi.fn(() => h.push('/golf/dashboard/calendar/hours'));
     render(<Host onPick={onPick} />);
     fireEvent.click(screen.getByRole('button', { name: 'More' }));
+    expect(h.urls()).toEqual(['/golf/dashboard/calendar', '/golf/dashboard/calendar']);
     fireEvent.click(screen.getByRole('menuitem', { name: 'Recently updated' }));
-    expect(onPick).toHaveBeenCalledTimes(1);
-    expect(back).toHaveBeenCalledTimes(1);
-    back.mockRestore();
+    // Not before the entry's own Back has landed (Codex review on #2593: Calendar's Practice hours pushes from its action).
+    expect(onPick).not.toHaveBeenCalled();
+    await waitFor(() => expect(onPick).toHaveBeenCalledTimes(1));
+    await h.settle();
+    expect(h.urls()).toEqual(['/golf/dashboard/calendar', '/golf/dashboard/calendar/hours']);
+    expect(location.pathname).toBe('/golf/dashboard/calendar/hours');
+    h.restore();
+  });
+
+  it('a menu removed while open (its row deleted) leaves no entry behind', async () => {
+    const h = fakeHistory('/golf/dashboard/practice/plan/p1/edit');
+    const view = render(<Host />);
+    fireEvent.click(screen.getByRole('button', { name: 'More' }));
+    expect(h.urls()).toHaveLength(2);
+    view.unmount();
+    await h.settle();
+    expect(h.at()).toBe(0);
+    expect((window.history.state as { chOverlay?: number } | null)?.chOverlay).toBeUndefined();
+    h.restore();
   });
 
   it('on the desktop the menu pushes nothing and a pick runs at once', () => {

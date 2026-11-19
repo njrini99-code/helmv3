@@ -16,16 +16,22 @@ Held items: none
 - `lib/back-closes.ts` (new) `useBackCloses(open, onBack)`: while an overlay is
   open it owns one same-address history entry, as quick chat's panel does
   (`use-panel-history.ts`). Back or the iOS edge swipe pops it and closes the
-  overlay on the page; closed any other way, the entry comes off quietly. A
-  link picked from the overlay replaces the entry (`replaces()`), so Back skips no
-  duplicate page. An action picked from a Menu runs at once, as before, and the
-  entry comes off as the menu closes; `release(run)` (run once the entry is off)
-  is there for an overlay whose action navigates in code.
-- `ui/Menu.tsx`: uses it on the phone only (the desktop pushes nothing); returns
-  focus to its trigger with `chFocusQuietly`. `MenuItems` takes `replace` and
-  `onFollow` (ContextMenu passes none and is unchanged).
+  overlay on the page; closed any other way, the entry comes off quietly. A link
+  picked from the overlay replaces the entry (`replaces()`), so Back skips no
+  duplicate page. An action picked waits for the entry's Back to land (or
+  400 ms) before it runs (`release(run)`), so an action that navigates in code
+  (Calendar's Practice hours) is never undone by that Back. Unmounted while
+  open (the practice builder's Delete removes the row and its menu), the hook
+  takes the entry it still owns back off.
+- `ui/Menu.tsx`: uses it on the phone only (the desktop pushes nothing, and a
+  pick runs at once); returns focus to its trigger with `chFocusQuietly`.
+  `MenuItems` takes `replace`, `onFollow` and `run` (ContextMenu passes none
+  and is unchanged).
+- `class-awareness-messages.test.tsx` (CH-7770): the phone's Notify anyway
+  pick is checked after the menu's entry comes off; the assertion is the same.
 - `ui/Tooltip.tsx`: a tip never opens for quiet focus (`data-ch-peek-quiet`): a
-  menu or dialog handing focus back to its trigger is not someone arriving on it.
+  menu or dialog handing focus back to its trigger is not someone arriving on
+  it.
 
 ### Why
 
