@@ -43,7 +43,7 @@ html[data-fw-theme='dark'] .ch-qcs {
 /* The key lives in the bar, outside the panel's scope wrapper. */
 .ch-qck { --ch-qc-a-frame: var(--ch-frame); --ch-qc-a-frame-ink: var(--ch-on-green-ink); --ch-qc-a-frame-icon: var(--ch-on-green-ink-soft); --ch-qc-a-champ: var(--ch-champagne-300); }
 .ch-qck .hkey { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; border-radius: var(--ch-radius-xl); background: none; cursor: pointer; color: var(--ch-qc-a-frame-icon); }
-.ch-qck .hkey__disc { position: absolute; inset: 4px; border-radius: var(--ch-radius-lg); background: rgb(244 238 221 / 0.16); opacity: 0; transform: scale(0.82); transition: opacity 0.2s, transform var(--ch-dur-base) var(--ch-ease); }
+.ch-qck .hkey__disc { position: absolute; inset: 4px; border-radius: var(--ch-radius-lg); background: rgb(244 238 221 / 0.16); opacity: 0; transform: scale(0.82); transition: opacity var(--ch-dur-quick) var(--ch-ease-ios), transform var(--ch-dur-base) var(--ch-ease-ios); }
 .ch-qck .hkey.is-on .hkey__disc { opacity: 1; transform: none; }
 .ch-qck.is-reduce .hkey__disc { transform: none; transition: opacity var(--ch-dur-crossfade-rm) linear; }
 .ch-qck .hkey__mark { position: relative; width: 24px; height: 24px; }
