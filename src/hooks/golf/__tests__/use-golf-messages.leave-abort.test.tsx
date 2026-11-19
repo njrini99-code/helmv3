@@ -70,13 +70,13 @@ describe('useGolfMessages — leaving a thread mid-request', () => {
     fail(new TypeError('Load failed'));
     await new Promise((r) => setTimeout(r, 0));
     expect(markReadLogs()).toHaveLength(0);
-    expect(consoleError.mock.calls.some((c) => String(c[0]).includes('Failed to mark messages as read'))).toBe(false);
+    expect(consoleError.mock.calls.some((c: unknown[]) => String(c[0]).includes('Failed to mark messages as read'))).toBe(false);
   });
 
   it('the same failure while the reader is still on the thread is still logged', async () => {
     mock.markRead.mockRejectedValue(new TypeError('Load failed'));
     renderHook(() => useGolfMessages('c1', 'viewer'));
     await waitFor(() => expect(markReadLogs()).toHaveLength(1));
-    expect(consoleError.mock.calls.some((c) => String(c[0]).includes('Failed to mark messages as read'))).toBe(true);
+    expect(consoleError.mock.calls.some((c: unknown[]) => String(c[0]).includes('Failed to mark messages as read'))).toBe(true);
   });
 });

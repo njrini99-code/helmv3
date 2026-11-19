@@ -91,7 +91,7 @@ export function CoachLatest({ data, covered, years }: { data: ChCoachHome['lates
           />
           {/* The round's own review; the player's stats where the review isn't rebuilt for coaches. */}
           {(recap || stats) && (
-            <Button variant="ghost" rightIcon={ArrowRight} href={(recap ?? stats)!} className="ch-ph-card__more ch-btn--flush-end">
+            <Button variant="ghost" rightIcon={ArrowRight} href={(recap ?? stats)!} ahead={!!recap} className="ch-ph-card__more ch-btn--flush-end">
               {recap ? 'Open recap' : `${firstName(r.playerName)}’s stats`}
             </Button>
           )}

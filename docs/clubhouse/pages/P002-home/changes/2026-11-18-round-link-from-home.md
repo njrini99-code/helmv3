@@ -28,3 +28,29 @@ Held items: none
 
 - `screens/rounds/__tests__/review-back-from-home.test.tsx`, `home.test.tsx`,
   `player-home.test.tsx`.
+
+## 2026-11-18 — Home's round links are fetched ahead
+
+```text
+Design package: none
+PR/commit: agent/clubhouse-motion-fixes
+Contract IDs: A13
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- `CoachLatest`, `HomePhone`, `PlayerHomePhone`, `LatestRound`: the round recap
+  link passes `ahead` (ui/Button), so the review is fetched as the press starts
+  and while Home is idle.
+
+### Why
+
+- Clubhouse audit 2026-11-18 (P2): Home's round link committed 580 ms after a tap
+  (pre-fix build, WebKit, coach phone), against 43 ms for a Rounds list row.
+
+### Verification
+
+- `ui/__tests__/button-ahead.test.tsx`; Home suites pass.
