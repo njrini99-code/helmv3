@@ -198,6 +198,11 @@ const ROUTE_ERROR_CODE: Record<RouteErrorKind, string> = {
   unknown: 'CH-1206',
 };
 
+/** A route error's words and catalog number, for a view drawn outside the shell (the sign-in room's `GateError`). */
+export function routeErrorWords(kind: RouteErrorKind, route: string | undefined): { title: string; body: string; code: string } {
+  return { title: routeErrorTitle(kind, route), body: COPY[kind].body, code: ROUTE_ERROR_CODE[kind] };
+}
+
 /**
  * Where a route error's way back goes, by name: the route's own error boundary picks the place (`homePath`, its section
  * for a sub-screen, such as Rounds for a round), and null is Home (the dashboard, and /golf, which leads there).
@@ -238,6 +243,18 @@ function routeErrorTitle(kind: RouteErrorKind, route: string | undefined): strin
  * again (Reload after an update) first and the way back beside it, and the error's reference as a quiet caption under
  * them (lead decision under the owner's full-auto brief; owner to confirm). No card.
  */
+export interface RouteErrorViewProps {
+  kind: RouteErrorKind;
+  isRetrying: boolean;
+  retryCount: number;
+  onRetry: () => void;
+  homePath?: string;
+  /** The route that failed (the boundary's `route`), so a load or unknown failure can name the page. */
+  route?: string;
+  digest?: string;
+  devDetail?: string;
+}
+
 export function RouteErrorView({
   kind,
   isRetrying,

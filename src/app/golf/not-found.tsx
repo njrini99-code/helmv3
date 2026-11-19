@@ -1,9 +1,13 @@
+import type { Metadata } from 'next';
+import { GateNotFound } from '@/clubhouse/screens/auth/GateError';
+
 /**
- * Golf 404 outside the dashboard shell (STATE-X1): `notFound()` from golf
- * admin, join or onboarding segments. These render outside the Clubhouse root,
- * where Clubhouse styles do not apply, so they show the platform's one 404
- * (src/app/not-found.tsx), which reads the /golf path and promotes GolfHelm.
- * Its second, Fairway-built design is gone (GAP-M-02). Dashboard routes keep
- * their own in-shell page (dashboard/not-found.tsx, ClubhouseNotFound).
+ * GolfHelm's 404 outside the dashboard shell (CH-1306): `notFound()` from a join link or onboarding, or a `/golf`
+ * address that is no page. Clubhouse's sign-in room with the shell's own words; the dashboard keeps its in-shell page
+ * (dashboard/not-found.tsx, ClubhouseNotFound). Admin keeps the platform's 404 (admin/not-found.tsx).
  */
-export { default, metadata } from '../not-found';
+export const metadata: Metadata = { title: 'Page not found' };
+
+export default function GolfNotFound() {
+  return <GateNotFound />;
+}

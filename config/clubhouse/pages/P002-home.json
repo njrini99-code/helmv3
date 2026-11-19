@@ -10,6 +10,15 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard",
+      "audience": "shared",
+      "name": "Home",
+      "coach": "src/clubhouse/screens/home/CoachHome.tsx#CoachHome",
+      "player": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome"
+    }
+  ],
   "semanticFeatures": [
     "team_operations",
     "calendar_events",

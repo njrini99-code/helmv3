@@ -73,9 +73,11 @@ const tabOrNull = (v: string | null | undefined): string | null => (v && /^[a-z]
 
 /**
  * The context an address carries. `search` is the query string with or without its `?`. An address outside the
- * dashboard answers null (the chat is not offered there); a dashboard address with no entry answers `other`.
+ * dashboard answers null (the chat is not offered there); a dashboard address with no entry answers `other`. `role`
+ * settles the one address two screens share: a coach on /stats with no `?player=` is on Team stats (`team_stats`), a
+ * player on their own stats (`stats`). Without it /stats reads as `stats`.
  */
-export function screenContextFromPath(pathname: string, search = ''): ScreenContextInput | null {
+export function screenContextFromPath(pathname: string, search = '', role?: 'coach' | 'player'): ScreenContextInput | null {
   const path = pathname.replace(/\/+$/, '');
   if (path !== '/golf/dashboard' && !path.startsWith('/golf/dashboard/')) return null;
   const q = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
@@ -111,7 +113,8 @@ export function screenContextFromPath(pathname: string, search = ''): ScreenCont
     case 'roster':
       return base('roster', { player_id: uuidOrNull(second) });
     case 'stats':
-      if (second === 'team') return base('team_stats', { window: windowOrNull(q.get('window')), tab: tabOrNull(q.get('area')) });
+      // /stats/team is only a redirect to /stats now (next.config.mjs); an old link still reads as Team stats.
+      if (second === 'team' || (role === 'coach' && !uuidOrNull(q.get('player')))) return base('team_stats', { window: windowOrNull(q.get('window')), tab: tabOrNull(q.get('area')) });
       return base('stats', { player_id: uuidOrNull(q.get('player')), window: windowOrNull(q.get('window')), tab: tabOrNull(q.get('area') ?? q.get('tab')) });
     case 'rounds':
       return base('rounds', { round_id: uuidOrNull(second === 'continue' ? third : second) });

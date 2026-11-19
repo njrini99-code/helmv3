@@ -10,6 +10,15 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/team-hub",
+      "audience": "shared",
+      "name": "Team Hub",
+      "coach": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub",
+      "player": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub"
+    }
+  ],
   "semanticFeatures": [
     "player_hub",
     "team_communications",

@@ -680,8 +680,8 @@ describe('Stats team · who may open what', () => {
       expect(loadPlayerProfile).toHaveBeenCalledWith(expect.objectContaining({ viewer: 'player', playerId: 'own' }));
     }
     expect(read).not.toHaveBeenCalled();
-    // The Clubhouse frame is a second lock on the old address: it is a coach's route, not a player's.
-    expect(isRebuilt('/golf/dashboard/stats/team', 'coach')).toBe(true);
+    // The old Team stats address is no screen for either role (next.config.mjs redirects it to /stats).
+    expect(isRebuilt('/golf/dashboard/stats/team', 'coach')).toBe(false);
     expect(isRebuilt('/golf/dashboard/stats/team', 'player')).toBe(false);
     expect(isRebuilt('/golf/dashboard/stats', 'player')).toBe(true);
   });

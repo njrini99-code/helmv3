@@ -113,8 +113,9 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] User errors: export failure gives a specific toast, an error haptic and a
   Sentry event. The export writes a name that starts with = + - or @ as text
   (40501), so a spreadsheet never reads a player's name as a formula
-- [x] The old address `/stats/team` renders this page in place for coaches, with
-  this page's skeleton, and sends players to their own stats (D-23)
+- [x] The old address `/stats/team` redirects to `/stats` for both roles
+  (`next.config.mjs`, GAP-R-10): a coach lands on this page, a player on their
+  own stats (D-23). Its page file was deleted on 2026-11-18
 - [x] N/A: no forms on this screen
 - [x] N/A: no destructive actions on this screen
 - [x] N/A: no optimistic updates on this screen
