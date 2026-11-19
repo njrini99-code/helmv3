@@ -7,7 +7,7 @@ KEPT FOR HISTORY -- do not delete this file.
 
 # Helm Entry Scenes — Baseball & Lift Lab
 ### Fable's design spec · 2026-07-02 · for the login/onboarding worlds
-*Sibling system to golf's `CoastalScene`/`CourseScene` (src/components/golf/scenes/) — same craft DNA, new sports, new moods. Painterly layered SVG, no photography, no people. This is the "svg type thing," grown up.*
+*Sibling system to golf's `CoastalScene`/`CourseScene` (once in src/components/golf/scenes/, deleted 2026-11-18 when GolfHelm's front door became Clubhouse-only) — same craft DNA, new sports, new moods. Painterly layered SVG, no photography, no people. This is the "svg type thing," grown up.*
 
 ---
 
