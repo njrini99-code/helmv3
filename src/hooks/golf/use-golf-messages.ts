@@ -480,6 +480,24 @@ const noopSubscribe = () => () => {};
  * matches the server markup. Hooks that seed empty because of this repaint
  * from the cache in a mount effect.
  */
+/**
+ * A read or write cut off because the reader left: the thread was closed or the page navigated away while it was in
+ * flight, and the browser cancelled the request (WebKit "Load failed" / "Fetch is aborted", an AbortError). Nothing is
+ * wrong and nobody is looking, so it is not logged as a failure (audit 2026-11-18, P2). The same failure while the
+ * reader is still here is a real one and stays visible.
+ */
+export function cutOffByLeaving(err: unknown, left: boolean): boolean {
+  if (!left) return false;
+  const name = typeof err === 'object' && err !== null ? (err as { name?: unknown }).name : undefined;
+  const text = describeError(err);
+  return name === 'AbortError' || /\baborterror\b|\baborted\b/i.test(text) || isClientDeadlineAbort(err) || isTransientNetworkErrorMessage(text);
+}
+
+/** The reader has left `id`: the hook unmounted, or the open thread is another one. */
+function threadLeft(left: { current: boolean }, live: { current: string | null | undefined }, id: string | null | undefined): boolean {
+  return left.current || live.current !== id;
+}
+
 function useCanReadClientCache(): boolean {
   return useSyncExternalStore(
     noopSubscribe,
@@ -667,6 +685,14 @@ export function useGolfMessages(
     for (const [conv, list] of clientOnlyRowsRef.current) clientOnlyRowsRef.current.set(conv, list.filter((m) => m.id !== messageId));
   };
   liveConversationIdRef.current = conversationId;
+  // The thread was left (the hook unmounted, the page navigated away): a request it cut off is not a failure.
+  const leftRef = useRef(false);
+  useEffect(() => {
+    leftRef.current = false;
+    return () => {
+      leftRef.current = true;
+    };
+  }, []);
 
   // Fetch other participant's last_read_at for read receipts
   const fetchOtherParticipantReadStatus = useCallback(async () => {
@@ -678,7 +704,7 @@ export function useGolfMessages(
       .select('user_id, last_read_at')
       .eq('conversation_id', conversationId);
 
-    if (participantsError) {
+    if (participantsError && !cutOffByLeaving(participantsError, threadLeft(leftRef, liveConversationIdRef, conversationId))) {
       logError(
         toPostgrestError(participantsError),
         {
@@ -799,6 +825,8 @@ export function useGolfMessages(
     // error so the thread can render a recoverable error state with Retry; leave
     // the existing message list untouched so a transient blip doesn't blank a
     // thread the user was already reading.
+    // Cut off because the reader left the thread: nothing to report, and nobody to show it to.
+    if (fetchError && cutOffByLeaving(fetchError, threadLeft(leftRef, liveConversationIdRef, conversationId))) return;
     if (fetchError) {
       console.error('[useGolfMessages] Failed to load messages:', describeError(fetchError));
       logError(
@@ -859,6 +887,8 @@ export function useGolfMessages(
     try {
       if (!deferMarkReadRef.current) await markGolfMessagesAsRead(conversationId);
     } catch (err) {
+      // Leaving the thread cancels the write in flight (WebKit "Load failed"); the next open marks the thread read.
+      if (cutOffByLeaving(err, threadLeft(leftRef, liveConversationIdRef, conversationId))) return;
       console.error('[useGolfMessages] Failed to mark messages as read:', describeError(err));
       logError(
         err instanceof Error ? err : new Error(String(err)),
@@ -1528,8 +1558,9 @@ export async function loadGolfConversationRail(
    * `allowIds`: the active-team allow-list, already read with the page (F-0014: the server action for it queued behind
    * the page's other actions before the first rows could paint). Left out, the rail reads it itself.
    */
-  opts: { allowIds?: string[] | null } = {},
+  opts: { allowIds?: string[] | null; /** False once the rail's owner is gone: a read it cut off is not logged. */ isLive?: () => boolean } = {},
 ): Promise<{ ok: true; rows: GolfConversationWithMeta[] } | { ok: false }> {
+  const left = () => (opts.isLive ? !opts.isLive() : false);
   // No session means every read below runs as `anon`, which has no EXECUTE on
   // get_golf_conversations_with_details or user_conversation_ids (the
   // conversation policies call it) and, since the anon grants were revoked, no
@@ -1564,7 +1595,7 @@ export async function loadGolfConversationRail(
     if (allowed.ids !== null) teamAllow = new Set(allowed.ids);
   } catch (teamAllowErr) {
     teamAllow = null;
-    logError(
+    if (!cutOffByLeaving(teamAllowErr, left())) logError(
       teamAllowErr instanceof Error ? teamAllowErr : new Error(String(teamAllowErr)),
       { component: 'useGolfMessages', action: 'fetch-active-team-scope', sport: 'golf', userId },
       'medium'
@@ -1598,7 +1629,7 @@ export async function loadGolfConversationRail(
   // af4c2c9d, reopened 4x): the rail continues with the RPC rows and reloads
   // on the next realtime change, so the deadline abort is not reported. Any
   // other failure of this read is still logged.
-  if (groupConvsError && !isClientDeadlineAbort(groupConvsError)) {
+  if (groupConvsError && !isClientDeadlineAbort(groupConvsError) && !cutOffByLeaving(groupConvsError, left())) {
     logError(
       toPostgrestError(groupConvsError),
       {
@@ -2150,6 +2181,14 @@ export function useGolfConversations(
   const conversationIdsRef = useRef<Set<string>>(new Set(warm?.data.map((c) => c.id) ?? []));
   const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const readSeqRef = useRef(0);
+  // The rail's owner is mounted: a read cut off by leaving the page is not logged (cutOffByLeaving).
+  const railLiveRef = useRef(true);
+  useEffect(() => {
+    railLiveRef.current = true;
+    return () => {
+      railLiveRef.current = false;
+    };
+  }, []);
 
   // A hydrating mount seeded the rail empty (the server cannot see the cache).
   // Paint the cached rail now, before the silent revalidate below, so a hard
@@ -2212,7 +2251,7 @@ export function useGolfConversations(
       setError(true);
       setLoading(false);
     }, CONVERSATIONS_READ_GIVE_UP_MS);
-    const result = await loadGolfConversationRail(supabase, userId, seed === undefined ? {} : { allowIds: seed }).finally(() => clearTimeout(giveUp));
+    const result = await loadGolfConversationRail(supabase, userId, { ...(seed === undefined ? {} : { allowIds: seed }), isLive: () => railLiveRef.current }).finally(() => clearTimeout(giveUp));
     if (!result.ok) {
       setError(true);
       // A failed background refresh must preserve the last readable inbox.
