@@ -198,6 +198,20 @@ describe('the deep dive as the page draws it', () => {
       expect(JSON.stringify(shaped)).toContain('pace-control');
     });
 
+    it('a driver’s own label is in the coach’s voice, as the cause beside it is', () => {
+      const voiced = (t: string) => speak(t, { role: 'coach', first: 'Jonah' });
+      const own: EvidenceInsight = {
+        ...DIVE_SLOPE,
+        evidence: {
+          ...DIVE_SLOPE.evidence,
+          diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, drivers: [{ ...DIVE_SLOPE.evidence.diagnosis!.drivers![0]!, label: 'Your downhill make rate, 4-6 ft' }] },
+        },
+      };
+      const base = toChInsight(own, { tour: PREVIEW_TOUR, viewer: { role: 'coach', first: 'Jonah' } });
+      const label = toChDeepInsight(own, base, FULL_INPUTS, voiced, 'coach').diagnosis?.drivers[0]?.label ?? '';
+      expect(label.replace(/\u00a0/g, ' ')).toMatch(/^Jonah’s downhill make rate/);
+    });
+
     it('a cause seen in the player’s shots stays whole for them', () => {
       const base = toChInsight(DIVE_PENALTIES, { tour: PREVIEW_TOUR, viewer: { role: 'player' } });
       const shaped = toChDeepInsight(DIVE_PENALTIES, base, FULL_INPUTS, say, 'player');

@@ -368,7 +368,7 @@ function diagnosisFor(ev: InsightEvidence, say: (t: string) => string, role: ChV
     drivers: (d.drivers ?? [])
       .filter((x) => num(x.value) != null)
       .map((x) => ({
-        label: x.label?.trim() || getMetricRenderConfig(x.metric)?.display_label || x.metric,
+        label: x.label?.trim() ? say(x.label.trim()) : getMetricRenderConfig(x.metric)?.display_label || x.metric,
         value: formatComparison(x.value, x.unit),
         n: num(x.sample_n) && (x.sample_n as number) > 0 ? (x.sample_n as number) : null,
       })),

@@ -50,6 +50,7 @@ import {
   type RoundTerminalState,
 } from '@/lib/coachhelm/v3/engine/analysis-outcome';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { refreshReadsAfterRound } from '@/lib/coachhelm/v3/analyst/reads/run';
 
 /** The CoachHelm run-log label for each trigger reason (Slice 1, flag
  *  `coachhelm_support_v1`). The safety net re-runs a round whose analysis did
@@ -209,6 +210,11 @@ export async function postRoundTrigger(
     // the exception — it is the diagnosis.
     outcome = classifyThrown(err);
   }
+
+  // CoachHelm reads (flag `coachhelm_reads_v1`, team scoped): the player's team is rebuilt and changed reads saved.
+  // Returns before any database call when no team is listed; never throws, has its own time limit, and cannot change
+  // the round's terminal state below.
+  await refreshReadsAfterRound(admin, { playerId: args.playerId, roundId: args.roundId }).catch(() => undefined);
 
   try {
     await writeTerminalState(
