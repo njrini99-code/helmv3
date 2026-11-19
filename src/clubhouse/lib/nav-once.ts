@@ -112,7 +112,8 @@ export function usePushOnce<R>(router: { push: (href: string, options?: { scroll
       if (last.current && last.current.key === key && now - last.current.at < HOLD_MS) return undefined;
       last.current = { key, at: now };
       chNavStarted(href, now);
-      return router.push(href, options);
+      // No options, no second argument: the router is called exactly as a plain push would call it.
+      return options ? router.push(href, options) : router.push(href);
     },
     [router],
   );

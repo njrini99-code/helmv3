@@ -1,5 +1,6 @@
 'use client';
 
+import { usePushOnce } from '../lib/nav-once';
 import { AnimatePresence, m } from 'motion/react';
 import { Bell as BellIcon, BellOff, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -114,6 +115,8 @@ export function Bell() {
   const live = useLiveBell();
   const api = preview ?? live;
   const router = useRouter();
+  // A row's push starts the shared navigation hold (lib/nav-once.ts): a double tap on a notification opens it once.
+  const pushOnce = usePushOnce(router);
   const id = useId();
   const reduced = useChReducedMotion();
   // Reduce Motion fades the drop and its veil over the quick beat (owner decision 2, OQ-15); Animations off is instant.
@@ -391,7 +394,7 @@ export function Bell() {
     }
     toast({ title: `Switched to ${team.name}` });
     armRelink(url);
-    router.push(url);
+    pushOnce(url);
   };
 
   const openItem = (item: UnifiedNotificationItem) => {
@@ -415,7 +418,7 @@ export function Bell() {
       if (plan.kind === 'switch') void openOnTeam(item.action_url, plan.team);
       else {
         armRelink(item.action_url);
-        router.push(item.action_url);
+        pushOnce(item.action_url);
       }
     }
   };

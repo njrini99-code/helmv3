@@ -74,8 +74,15 @@ describe('a roster card', () => {
     expect(String(push.mock.calls[0]![0])).toMatch(/\/golf\/dashboard\/stats\?player=/);
     // Opened from Roster, the profile keeps Roster in the sidebar and as its way back (§8 #7).
     expect(String(push.mock.calls[0]![0])).toMatch(/[?&]from=roster(&|$)/);
+    // A second tap within the navigation hold (lib/nav-once.ts, 1 s) is the same tap twice: it pushes nothing more.
+    fireEvent.click(second.querySelector('.ch-rs-face__av')!);
+    expect(push).toHaveBeenCalledTimes(1);
+    // Past the hold, the face opens the profile too.
+    const now = performance.now();
+    const later = vi.spyOn(performance, 'now').mockReturnValue(now + 1500);
     fireEvent.click(second.querySelector('.ch-rs-face__av')!);
     expect(push).toHaveBeenCalledTimes(2);
+    later.mockRestore();
   });
 
   it('Command-Enter on a focused card opens the profile', () => {

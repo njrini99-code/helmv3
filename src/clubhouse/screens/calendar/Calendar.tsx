@@ -1,5 +1,6 @@
 'use client';
 
+import { usePushOnce } from '../../lib/nav-once';
 import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, Timer, TriangleAlert, Users, X } from 'lucide-react';
 import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { useRouter } from 'next/navigation';
@@ -597,6 +598,8 @@ function CalendarBody({
 }) {
   const preview = frozen;
   const router = useRouter();
+  // A menu item's push starts the shared navigation hold, so a second tap in the menu's close never pushes twice.
+  const pushOnce = usePushOnce(router);
   useCalendarLive(data.teamId, live && !frozen);
   const [pending, start] = useTransition();
   const coach = data.role === 'coach';
@@ -1029,7 +1032,7 @@ function CalendarBody({
   );
 
   // F-03: the week's practice hours, the coach's team log and a player's own week.
-  const hoursItem = { label: coach ? 'Practice hours' : 'Your practice hours', icon: Timer, onSelect: () => router.push('/golf/dashboard/calendar/hours') };
+  const hoursItem = { label: coach ? 'Practice hours' : 'Your practice hours', icon: Timer, onSelect: () => void pushOnce('/golf/dashboard/calendar/hours') };
   const moreItems = [
     hoursItem,
     { label: 'Add to calendar app', icon: Rss, onSelect: () => setSubs(true) },
