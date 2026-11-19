@@ -29,7 +29,7 @@ export function useSlidePlate(
 ): void {
   const last = useRef<Box | null>(null);
   // The move in flight, so a choice mid-glide starts from where the plate is, at its speed (F-0017).
-  const running = useRef<{ anim: Animation; from: Box; to: Box; ms: number; ease: (p: number) => number } | null>(null);
+  const running = useRef<{ anim: Animation; from: Box; to: Box; ms: number; ease: (p: number) => number; done?: () => void } | null>(null);
   useLayoutEffect(() => {
     const el = container.current?.querySelector<HTMLElement>(plate);
     const host = el?.parentElement;
@@ -55,6 +55,8 @@ export function useSlidePlate(
     // A glide still running is read before it goes: where the plate is now, and how fast it is moving.
     const live = liveOf(running.current);
     running.current?.anim.cancel?.();
+    // A plate widened for a glide (below) goes back to its own width before anything is read from it.
+    running.current?.done?.();
     running.current = null;
     const start = live?.box ?? from;
     const inkAt = (leaving: number, arriving: number) => {
@@ -84,16 +86,43 @@ export function useSlidePlate(
         ? { ms: CH_THUMB.ms, linear: `cubic-bezier(${CH_THUMB.ease.join(', ')})`, ease: bezierEase(CH_THUMB.ease) }
         : { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})`, ease: tweenEase }
       : chSpringCurve(kind, { velocity });
-    // Translate and width only: a scale squashed the pill's rounded corners mid-glide (owner, 2026-11-07). The plate may be narrower than its option (an underline), so its width goes by the options' ratio.
+    // Transform and clip only (F-29, audit 2026-11-19): the glide changes no layout. A scale squashed the pill's rounded
+    // corners mid-glide (owner, 2026-11-07), and animating `width` laid the control out on every frame. So the plate keeps its
+    // own box and shows the width between the two options through a rounded clip on its trailing edge, while a translate
+    // carries it across. Going to a narrower option it is widened once, for the glide only, to the width it leaves from
+    // (it is absolutely placed: nothing else moves), and given back its own width when the glide ends or is retargeted.
+    // The plate may be narrower than its option (an underline), so its widths go by the options' ratio.
     const plateW = el.offsetWidth;
+    const fromW = (plateW * start.w) / to.w;
+    const translate = `translate(${start.x - to.x}px, ${start.y - to.y}px)`;
+    const resize = Math.abs(fromW - plateW) >= 0.5;
+    const widened = resize && fromW > plateW;
+    const boxW = widened ? fromW : plateW;
+    if (widened) el.style.width = `${fromW}px`;
+    const round = getComputedStyle(el).borderTopRightRadius || '0px';
+    const clip = (w: number) => `inset(0px ${Math.max(0, boxW - w)}px 0px 0px round ${round})`;
     const anim = el.animate?.(
-      [
-        { transform: `translate(${start.x - to.x}px, ${start.y - to.y}px)`, width: `${(plateW * start.w) / to.w}px` },
-        { transform: 'none', width: `${plateW}px` },
-      ],
-      { duration: curve.ms, easing: curve.linear },
+      resize
+        ? [
+            { transform: translate, clipPath: clip(fromW) },
+            { transform: 'none', clipPath: clip(plateW) },
+          ]
+        : [{ transform: translate }, { transform: 'none' }],
+      // Held at its last frame while widened, so the frame between the end and the width coming back still shows the clip.
+      { duration: curve.ms, easing: curve.linear, ...(widened ? { fill: 'forwards' as const } : {}) },
     );
-    if (anim) running.current = { anim, from: start, to, ms: curve.ms, ease: curve.ease };
+    let restored = !widened;
+    const done = () => {
+      if (restored) return;
+      restored = true;
+      el.style.width = '';
+      anim?.cancel?.();
+    };
+    if (widened) {
+      if (anim?.finished) anim.finished.then(done, done);
+      else done();
+    }
+    if (anim) running.current = { anim, from: start, to, ms: curve.ms, ease: curve.ease, done };
     // Each label takes its new ink as the plate crosses it, so it reads on the ground under it the whole way (at least 4.5:1).
     const cross = plateCrossing(curve.ease, curve.ms, Math.hypot(start.x + start.w / 2 - (to.x + to.w / 2), start.y + start.h / 2 - (to.y + to.h / 2)), start.w, to.w);
     inkAt(cross.leaving, cross.arriving);
