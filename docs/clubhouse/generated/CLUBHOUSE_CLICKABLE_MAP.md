@@ -12,7 +12,7 @@ label, what makes it a control, then the nearest `data-ch-code` or `code` prop
 says so. This supersedes the 2026-09-30 snapshot in
 [CLICKABLES.md](../CLICKABLES.md).
 
-1760 controls in 386 files.
+1762 controls in 387 files.
 
 ## P001 Shell
 
@@ -2371,7 +2371,7 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ## P015 Auth
 
-81 controls.
+83 controls.
 
 ### `src/clubhouse/screens/auth/CoachPending.tsx`
 
@@ -2389,6 +2389,11 @@ says so. This supersedes the 2026-09-30 snapshot in
 - 202 `button` "(label built at run time)" (button)
 - 209 `Link` "Sign in" (link, onClick, href) CH-15922
 - 235 `Link` "Back to sign in" (link, onClick, href) CH-15922
+
+### `src/clubhouse/screens/auth/GateError.tsx`
+
+- 34 `GateKey` "(no label)" (onClick)
+- 53 `Button` "Back to Home" (button, href) CH-1306
 
 ### `src/clubhouse/screens/auth/GateFrame.tsx`
 
@@ -2924,8 +2929,8 @@ says so. This supersedes the 2026-09-30 snapshot in
 ### `src/clubhouse/ui/Notices.tsx`
 
 - 94 `Button` "(label built at run time)" (button, onClick)
-- 287 `Button` "(label built at run time)" (button, onClick)
-- 291 `Button` "(label built at run time)" (button, href)
+- 304 `Button` "(label built at run time)" (button, onClick)
+- 308 `Button` "(label built at run time)" (button, href)
 
 ### `src/clubhouse/ui/Peek.tsx`
 
