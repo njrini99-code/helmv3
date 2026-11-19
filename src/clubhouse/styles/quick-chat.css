@@ -43,7 +43,7 @@ html[data-fw-theme='dark'] .ch-qcs {
 /* The key lives in the bar, outside the panel's scope wrapper. */
 .ch-qck { --ch-qc-a-frame: var(--ch-frame); --ch-qc-a-frame-ink: var(--ch-on-green-ink); --ch-qc-a-frame-icon: var(--ch-on-green-ink-soft); --ch-qc-a-champ: var(--ch-champagne-300); }
 .ch-qck .hkey { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; border-radius: var(--ch-radius-xl); background: none; cursor: pointer; color: var(--ch-qc-a-frame-icon); }
-.ch-qck .hkey__disc { position: absolute; inset: 4px; border-radius: var(--ch-radius-lg); background: rgb(244 238 221 / 0.16); opacity: 0; transform: scale(0.82); transition: opacity 0.2s, transform var(--ch-dur-base) var(--ch-ease); }
+.ch-qck .hkey__disc { position: absolute; inset: 4px; border-radius: var(--ch-radius-lg); background: rgb(244 238 221 / 0.16); opacity: 0; transform: scale(0.82); transition: opacity var(--ch-dur-quick) var(--ch-ease-ios), transform var(--ch-dur-base) var(--ch-ease-ios); }
 .ch-qck .hkey.is-on .hkey__disc { opacity: 1; transform: none; }
 .ch-qck.is-reduce .hkey__disc { transform: none; transition: opacity var(--ch-dur-crossfade-rm) linear; }
 .ch-qck .hkey__mark { position: relative; width: 24px; height: 24px; }
@@ -56,6 +56,12 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qck .hkey.has-flag .hkey__flag { transform: scale(1); }
 .ch-qck.is-reduce .hkey__flag { transform: none; opacity: 0; }
 .ch-qck.is-reduce .hkey.has-flag .hkey__flag { opacity: 1; }
+/* F-28 (audit 2026-11-19): the flag arrives on its own (a read finishing), not in answer to a tap, so under Reduce Motion it is
+   simply there: base.css narrows every transition to a 180ms fade, which made it the one thing on the page fading by itself. */
+@media (prefers-reduced-motion: reduce) {
+  .ch-root .ch-qck .hkey__flag { transition-duration: 0s !important; }
+}
+.ch-root .ch-qck.is-reduce .hkey__flag { transition-duration: 0s !important; }
 /* Desktop's bar is parchment, not the phone's green: the spec's ivory idle mark vanishes on it. Beside the bell and Settings
    the key takes their ghost icon button (ui.css .ch-iconbtn.ch-btn--ghost, shell.css .ch-iconbtn.is-on). */
 .ch-qck.is-desk .hkey { width: 36px; height: 36px; border-radius: var(--ch-radius-md); color: var(--ch-text-secondary); }

@@ -76,7 +76,7 @@ describe('Segmented (B17)', () => {
     expect(screen.getByRole('radio', { name: 'List' }).querySelector('.ch-seg__pill')).not.toBeNull();
   });
 
-  // MOTION-AND-VISUAL 3.3 and 4.2's motion line: the thumb over the base beat on the iOS curve (translate and width, MAC-17),
+  // MOTION-AND-VISUAL 3.3 and 4.2's motion line: the thumb over the base beat on the iOS curve (a translate, with the width between the options shown by a clip: F-29, no layout property),
   // the content swapping at once, and a selection haptic on each change, none on a tap of the current option.
   it('the thumb takes 260 ms on the iOS curve, and each change ticks the selection haptic', async () => {
     vi.mocked(haptic).mockClear();
@@ -90,7 +90,8 @@ describe('Segmented (B17)', () => {
     expect(animate).toHaveBeenCalledTimes(1);
     const [keyframes, options] = animate.mock.calls[0]!;
     expect(options).toMatchObject({ duration: 260, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' });
-    expect(Object.keys(keyframes[0])).toEqual(expect.arrayContaining(['transform', 'width']));
+    expect(Object.keys(keyframes[0])).toContain('transform');
+    expect(Object.keys(keyframes[0])).not.toContain('width');
     expect(vi.mocked(haptic).mock.calls).toEqual([['select']]);
   });
 });

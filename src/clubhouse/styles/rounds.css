@@ -108,7 +108,7 @@
 .ch-rd-unf .ch-lv-sharechip {
   margin-top: 8px;
   background: transparent;
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-on-green-ring);
+  box-shadow: var(--ch-ring-on-green);
   color: var(--ch-on-green-2);
 }
 /* The holes so far, set like the scoreboard: centred in the card's free height so the card never ends in a dead
@@ -2354,7 +2354,8 @@ a.ch-trd-open:focus-visible {
     gap: var(--ch-gap-section-phone);
     padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
-  .ch-rv.is-phone .ch-rv-hero {
+  .ch-rv.is-phone .ch-rv-hero,
+.ch-rv-sk-phone > .ch-rv-hero {
     gap: 16px;
     padding: 16px;
     border-radius: var(--ch-radius-lg);
@@ -2362,13 +2363,15 @@ a.ch-trd-open:focus-visible {
     box-shadow: var(--ch-elevation-feature);
   }
   .ch-rv.is-phone .ch-rv-hero h1,
-.ch-rv.is-phone .ch-rv-hero h2 {
+.ch-rv.is-phone .ch-rv-hero h2,
+.ch-rv-sk-phone > .ch-rv-hero h2 {
     font: var(--ch-type-28-strong);
     line-height: var(--ch-lead-tight);
     letter-spacing: -0.03em;
     font-variation-settings: 'wdth' 88;
   }
-  .ch-rv.is-phone .ch-rv-hero__s b {
+  .ch-rv.is-phone .ch-rv-hero__s b,
+.ch-rv-sk-phone > .ch-rv-hero .ch-rv-hero__s b {
     font-weight: 600;
   }
   .ch-rv.is-phone .ch-rv-figs {

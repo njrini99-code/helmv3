@@ -57,3 +57,21 @@ describe('PeekTarget hover card held to a cell', () => {
     expect(parseFloat((card as HTMLElement).style.left) + width).toBeLessThanOrEqual(240);
   });
 });
+
+describe('the phone layout peeks only by a hold (E-4)', () => {
+  it('a pointer resting on a name at phone width opens no hover card over the columns beside it', () => {
+    vi.mocked(window.matchMedia).mockImplementation(
+      (query: string) => ({ matches: query.includes('max-width: 820px'), media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }) as unknown as MediaQueryList,
+    );
+    render(
+      <PeekTarget label="Cole" card={() => <p>Cole card</p>} actions={[{ label: 'Message', onSelect: () => {} }]}>
+        <a href="#c">Cole</a>
+      </PeekTarget>,
+    );
+    fireEvent.pointerEnter(screen.getByText('Cole', { selector: 'a' }), { pointerType: 'mouse' });
+    act(() => {
+      vi.advanceTimersByTime(PEEK_HOVER_MS + 10);
+    });
+    expect(screen.queryByText('Cole card')).toBeNull();
+  });
+});

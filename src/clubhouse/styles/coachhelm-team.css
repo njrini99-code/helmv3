@@ -166,6 +166,21 @@
   font: var(--ch-type-13);
   color:var(--ch-ink-600);
 }
+/* F-14 / E-9: one line each. The week sits under the title; the byline's name ends in an ellipsis rather than wrapping. */
+.ch-htb .tile .tw {
+  margin-top:-4px;
+  font: var(--ch-type-footnote);
+  color:var(--ch-ink-600);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ch-htb .tile .tmn {
+  min-width:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 .ch-htb .feat {
   background:var(--ch-feature-bg);
   color:var(--ch-feature-ink);
@@ -2229,8 +2244,10 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
   stroke:none;
   pointer-events:all;
 }
+/* The Modal panel already pads the home-indicator inset on the phone (controls.css): adding it here again, under 40px,
+   left about 110px empty under a one-link peek on an iPhone (audit 2026-11-18). One gutter, as the head's. */
 .ch-htb-sheet .ins {
-  padding-bottom:calc(40px + env(safe-area-inset-bottom));
+  padding-bottom:20px;
 }
 .ch-htb .insp .ins {
   padding-top:24px;

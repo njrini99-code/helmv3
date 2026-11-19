@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => mocks.router,
+  // The review's skeleton reads the address for a hero carried from a row (E-1, CarriedRoundHero).
+  usePathname: () => '/golf/dashboard/rounds/round-1',
   redirect: (to: string) => {
     throw new Error(`NEXT_REDIRECT ${to}`);
   },

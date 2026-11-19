@@ -88,4 +88,20 @@ describe('judgeIdle', () => {
     ).toEqual(['idle: div.ch-x::after opacity still runs after load', 'idle: span.ch-cal-now ch-live still runs after load (a loop)']);
     expect(judgeIdle([])).toEqual([]);
   });
+  it('skips a scroll-driven animation: the large title fades with the person\'s scroll, never on its own (audit 2026-11-19)', () => {
+    const lt = { kind: 'CSSAnimation', name: 'ch-lt-under', target: 'h1.ch-large-title', pseudo: null, iterations: 1 } as const;
+    expect(judgeIdle([{ ...lt, timeline: 'ScrollTimeline' }, { ...lt, timeline: 'ViewTimeline' }])).toEqual([]);
+    // On the document's clock, or from a recorder that did not say, it is still caught.
+    expect(judgeIdle([{ ...lt, timeline: 'document' }])).toEqual(['idle: h1.ch-large-title ch-lt-under still runs after load']);
+    expect(judgeIdle([lt])).toHaveLength(1);
+  });
+});
+
+describe('judgeMotion and scroll timelines', () => {
+  it('does not judge a scroll-driven animation as first paint or as Reduce Motion travel', () => {
+    const lt = row({ kind: 'CSSAnimation', name: 'ch-lt-under', target: 'h1.ch-large-title', duration: 100, timeline: 'ScrollTimeline' });
+    expect(judgeMotion([lt], { reduced: false, tokens })).toEqual([]);
+    expect(judgeMotion([lt], { reduced: true, tokens })).toEqual([]);
+    expect(judgeMotion([{ ...lt, timeline: 'document' }], { reduced: true, tokens })).toHaveLength(2);
+  });
 });

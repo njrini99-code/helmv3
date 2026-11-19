@@ -74,8 +74,15 @@ describe('a roster card', () => {
     expect(String(push.mock.calls[0]![0])).toMatch(/\/golf\/dashboard\/stats\?player=/);
     // Opened from Roster, the profile keeps Roster in the sidebar and as its way back (§8 #7).
     expect(String(push.mock.calls[0]![0])).toMatch(/[?&]from=roster(&|$)/);
+    // A second tap within the navigation hold (lib/nav-once.ts, 1 s) is the same tap twice: it pushes nothing more.
+    fireEvent.click(second.querySelector('.ch-rs-face__av')!);
+    expect(push).toHaveBeenCalledTimes(1);
+    // Past the hold, the face opens the profile too.
+    const now = performance.now();
+    const later = vi.spyOn(performance, 'now').mockReturnValue(now + 1500);
     fireEvent.click(second.querySelector('.ch-rs-face__av')!);
     expect(push).toHaveBeenCalledTimes(2);
+    later.mockRestore();
   });
 
   it('Command-Enter on a focused card opens the profile', () => {
@@ -86,8 +93,12 @@ describe('a roster card', () => {
     expect(push).toHaveBeenCalledTimes(1);
   });
 
+  // F-21 (audit 2026-11-19, WCAG 2.5.3): the card is named by what it shows, not an aria-label that left that out; what a
+  // click does is its description.
   it('says what a click does', () => {
     show();
-    expect(cards()[0]!.getAttribute('aria-label')).toMatch(/Show in the panel/);
+    const card = cards()[0]!;
+    expect(card.hasAttribute('aria-label')).toBe(false);
+    expect(document.getElementById(card.getAttribute('aria-describedby') ?? '')?.textContent).toMatch(/Shows in the panel/);
   });
 });

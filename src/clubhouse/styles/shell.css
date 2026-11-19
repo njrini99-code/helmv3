@@ -1928,6 +1928,28 @@ html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
     box-shadow: var(--ch-push-edge);
     will-change: transform;
   }
+  /* The page a tapped push or a Back's pop is bringing in takes no taps until it lands (E-2; lib/nav-motion.ts
+     CH_ARRIVING), as UIKit ignores touches during a navigation transition. Back lives in the top bar, outside the page,
+     so it stays live and can reverse the push. */
+  [data-ui='clubhouse'] .ch-frame-route[data-ch-arriving],
+  [data-ui='clubhouse'] .ch-frame-route[data-ch-arriving] * {
+    /* Every descendant too: a control that sets pointer-events: auto (Qualifiers' "Play round" key) would take the tap. */
+    pointer-events: none !important;
+  }
+  /* The figure a push carries over from its row (E-6, lib/share-morph.ts) waits hidden on the incoming page while its
+     ghost flies to it, so the number is drawn once. */
+  [data-ui='clubhouse'] .ch-frame-route[data-ch-sharing] [data-ch-share] {
+    visibility: hidden;
+  }
+}
+/* Back and Forward on the desk (E-8; lib/nav-motion.ts playDeskHistory): the copy of the page left, fading out over the
+   page come back to, under the sidebar and the bar. It takes no taps and is gone when its fade ends. */
+.ch-root.ch-frame-fading {
+  z-index: calc(var(--ch-z-sticky) - 1);
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ch-page-paint);
+  pointer-events: none;
 }
 /* Reduce Motion (owner decision 2, 2026-10-24, OQ-15; MOTION-AND-VISUAL 3.3, 3.11): a page change crossfades, the old
    page out and the new one in together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades.
@@ -3252,7 +3274,8 @@ html[data-fw-theme='dark'] .ch-offline {
     outline-offset: 2px;
   }
   /* The green bar's selected pill: one ivory plate that glides between pills (lib/slide-plate.ts: 260ms on the iOS curve,
-     translate and width, MOTION-AND-VISUAL 3.3; under Reduce Motion it fades in at its new place). */
+     a translate, the width change drawn by a rounded clip (F-29), MOTION-AND-VISUAL 3.3; under Reduce Motion it fades in at its
+     new place). */
   .ch-strip__plate {
     position: absolute;
     inset: 0;

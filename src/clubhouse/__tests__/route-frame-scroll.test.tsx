@@ -30,6 +30,15 @@ beforeEach(() => {
 });
 
 describe('RouteFrame scroll', () => {
+  it('the frame alone restores the scroll: the browser’s own restoring is off while it is up, and back on after (audit 2026-11-18)', () => {
+    window.history.scrollRestoration = 'auto';
+    const view = render(frame('/home\u0000t1'), { container: canvas });
+    // WebKit applied its saved place after the frame's on a Back, then the frame corrected it: Home jumped 48 px.
+    expect(window.history.scrollRestoration).toBe('manual');
+    view.unmount();
+    expect(window.history.scrollRestoration).toBe('auto');
+  });
+
   it('a new page opens at the top; Back to a page puts it where it was left', () => {
     const view = render(frame('/roster\u0000t1'), { container: canvas });
     scrollCanvas(640);

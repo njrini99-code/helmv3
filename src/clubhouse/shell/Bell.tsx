@@ -1,5 +1,6 @@
 'use client';
 
+import { usePushOnce } from '../lib/nav-once';
 import { AnimatePresence, m } from 'motion/react';
 import { Bell as BellIcon, BellOff, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -45,6 +46,7 @@ import { useAction, type ServerResult } from '../lib/use-action';
 import { ListPresence, PresenceRow } from '../ui/ListPresence';
 import { useToast } from '../ui/Toast';
 import { useRovingRows } from '../lib/roving';
+import { useOverlayScrollLock } from '../lib/overlay-scroll';
 
 /**
  * The notifications bell: the same feed, badge and read state as the
@@ -114,6 +116,8 @@ export function Bell() {
   const live = useLiveBell();
   const api = preview ?? live;
   const router = useRouter();
+  // A row's push starts the shared navigation hold (lib/nav-once.ts): a double tap on a notification opens it once.
+  const pushOnce = usePushOnce(router);
   const id = useId();
   const reduced = useChReducedMotion();
   // Reduce Motion fades the drop and its veil over the quick beat (owner decision 2, OQ-15); Animations off is instant.
@@ -124,6 +128,8 @@ export function Bell() {
   const btn = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  // F-25 (audit 2026-11-19): the phone's drop is a sheet, so the page behind it holds still, as behind every other sheet.
+  useOverlayScrollLock(phone && open);
   // B11: ↑ and ↓ walk the notifications in the open popover; the list is one Tab stop.
   const listRef = useRef<HTMLDivElement | null>(null);
   useRovingRows(listRef, '.ch-bellp__row', open);
@@ -391,7 +397,7 @@ export function Bell() {
     }
     toast({ title: `Switched to ${team.name}` });
     armRelink(url);
-    router.push(url);
+    pushOnce(url);
   };
 
   const openItem = (item: UnifiedNotificationItem) => {
@@ -415,7 +421,7 @@ export function Bell() {
       if (plan.kind === 'switch') void openOnTeam(item.action_url, plan.team);
       else {
         armRelink(item.action_url);
-        router.push(item.action_url);
+        pushOnce(item.action_url);
       }
     }
   };

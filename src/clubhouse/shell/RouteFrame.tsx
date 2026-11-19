@@ -195,6 +195,16 @@ export function RouteFrame({ routeKey, scrollKey = routeKey, children }: { route
     markAppRunning();
     frameHydrated = true;
   }, []);
+  // The frame restores the scroll itself (below). Left to the browser too, WebKit applied its own saved place after the
+  // frame's on a Back, and the frame then corrected it a frame later: coach Home's heading jumped 48 px (audit
+  // 2026-11-18; scrollY 994 then 946). The browser's restoring is off while a Clubhouse frame is up.
+  useLayoutEffect(() => {
+    const was = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    return () => {
+      window.history.scrollRestoration = was;
+    };
+  }, []);
   // iOS WebKit paints :active on a touch only where a touch listener is registered. The press (useChPress) is off with
   // reduced motion, so a row's pressed tint (--ch-ledger-row-press, CH-1606) gets its own listener, whatever the motion.
   useEffect(() => {

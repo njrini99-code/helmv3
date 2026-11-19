@@ -26,9 +26,6 @@ export const MOTION_KNOWN: Record<string, string[]> = {
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
   ],
-  "documents|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
-  ],
   "file-long|motion": [
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: div.wrap-collapse animates as the screen opens",
@@ -55,24 +52,15 @@ export const MOTION_KNOWN: Record<string, string[]> = {
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
   ],
-  "home-coach-empty|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
-  ],
   "home-coach-stress|motion": [
     "first-paint: button.ch-btn.ch-btn--ghost animates as the screen opens",
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
   ],
-  "home-coach-stress|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
-  ],
   "home-coach|motion": [
     "first-paint: button.ch-btn.ch-btn--ghost animates as the screen opens",
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
-  ],
-  "home-coach|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
   ],
   "home-player-empty|motion": [
     "first-paint: div.ch-bst animates as the screen opens",
@@ -86,9 +74,6 @@ export const MOTION_KNOWN: Record<string, string[]> = {
   "messages-empty|motion": [
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
-  ],
-  "messages-empty|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
   ],
   "messages-stress|motion": [
     "first-paint: div.ch-bst animates as the screen opens",
@@ -112,9 +97,6 @@ export const MOTION_KNOWN: Record<string, string[]> = {
   "messages|motion": [
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
-  ],
-  "messages|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
   ],
   "popup-ActionSheet|reduce": [
     "reduced: dialog.ch-fsheet-act moves under Reduce Motion",
@@ -155,16 +137,10 @@ export const MOTION_KNOWN: Record<string, string[]> = {
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
   ],
-  "practice-format|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
-  ],
   "practice-plan|motion": [
     "first-paint: button.hkey animates as the screen opens",
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
-  ],
-  "practice-plan|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
   ],
   "practice-player|motion": [
     "first-paint: div.ch-bst animates as the screen opens",
@@ -210,9 +186,6 @@ export const MOTION_KNOWN: Record<string, string[]> = {
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
   ],
-  "roster-long|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
-  ],
   "roster-player|motion": [
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
@@ -226,9 +199,6 @@ export const MOTION_KNOWN: Record<string, string[]> = {
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
   ],
-  "stats-player-early|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
-  ],
   "stats-player|motion": [
     "first-paint: button.hkey animates as the screen opens",
     "first-paint: div.ch-bst animates as the screen opens",
@@ -238,54 +208,24 @@ export const MOTION_KNOWN: Record<string, string[]> = {
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
   ],
-  "stats-team-empty|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
-  ],
   "stats-team|motion": [
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
-  ],
-  "stats-team|reduce": [
-    "reduced: span.hkey__flag moves under Reduce Motion",
   ],
   "team-empty|motion": [
     "first-paint: div.ch-bst animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
   ],
   "team-long|motion": [
-    "first-paint: div.ch animates as the screen opens",
     "first-paint: div.ch-bst animates as the screen opens",
-    "first-paint: div.pat animates as the screen opens",
-    "first-paint: div.rds animates as the screen opens",
-    "first-paint: div.subh animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
   ],
   "team-stress|motion": [
-    "first-paint: div.ch animates as the screen opens",
     "first-paint: div.ch-bst animates as the screen opens",
-    "first-paint: div.rds animates as the screen opens",
-    "first-paint: div.subh animates as the screen opens",
-    "first-paint: p.nopat animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
-  ],
-  "team-stress|reduce": [
-    "reduced: div.ch moves under Reduce Motion",
-    "reduced: div.rds moves under Reduce Motion",
-    "reduced: div.subh moves under Reduce Motion",
-    "reduced: p.nopat moves under Reduce Motion",
   ],
   "team|motion": [
-    "first-paint: div.ch animates as the screen opens",
     "first-paint: div.ch-bst animates as the screen opens",
-    "first-paint: div.pat animates as the screen opens",
-    "first-paint: div.rds animates as the screen opens",
-    "first-paint: div.subh animates as the screen opens",
     "first-paint: span.ch-bst-shell animates as the screen opens",
-  ],
-  "team|reduce": [
-    "reduced: div.ch moves under Reduce Motion",
-    "reduced: div.pat moves under Reduce Motion",
-    "reduced: div.rds moves under Reduce Motion",
-    "reduced: div.subh moves under Reduce Motion",
   ],
 };

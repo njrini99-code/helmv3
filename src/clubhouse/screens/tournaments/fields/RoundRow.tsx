@@ -88,7 +88,7 @@ export function RoundRow({
           {round.tee || editingTee ? (
             <TimeField label={`Round ${n} first tee`} stepMinutes={1} value={round.tee ?? ''} onChange={(v) => v && onTee(v)} />
           ) : (
-            <Button variant="ghost" size="sm" aria={{ label: `Add a tee time for round ${n}` }} leftIcon={Clock} onClick={onEditTee}>
+            <Button variant="ghost" size="sm" aria={{ label: `Add time for round ${n}` }} leftIcon={Clock} onClick={onEditTee}>
               Add time
             </Button>
           )}

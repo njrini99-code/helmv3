@@ -377,9 +377,12 @@ export function StoriesCard({
           const text = (
             <>
               <b>{shortOf(s)}</b>
+              {/* F-14 / E-9 (audit 2026-11-19): the byline is one line, the player beside their coin, and the week under the
+                  title on its own line, so a 138px tile never stacks "Cole · / Week of / Nov 11" beside the coin. */}
+              <span className="tw">{whenOf(s, week)}</span>
               <span className="tm">
                 {p && <Coin player={p} small />}
-                {s.who.split(' ')[0]} · {whenOf(s, week)}
+                <span className="tmn">{s.who.split(' ')[0]}</span>
               </span>
             </>
           );

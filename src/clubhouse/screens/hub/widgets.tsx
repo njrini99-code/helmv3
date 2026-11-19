@@ -168,8 +168,9 @@ export function TripTile({ trips: teamTrips, role, days, error, covered, onEdit,
         <div className="ch-hw-count">
           {t.inDays != null && (
             <span className={'ch-hw-count__n' + (word ? ' is-word' : '')}>
-              <b className={word ? undefined : 'ch-num'}>{word ?? t.inDays}</b>
-              {!word && <small>days to go</small>}
+              {/* F-12: the number is Home's (whole days to the departure time); the words stay the calendar's. */}
+              <b className={word ? undefined : 'ch-num'}>{word ?? t.toGo ?? t.inDays}</b>
+              {!word && <small>{(t.toGo ?? t.inDays) === 1 ? 'day to go' : 'days to go'}</small>}
             </span>
           )}
           <div className="ch-hw-count__t">
@@ -556,7 +557,8 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
                     {parts.length ? parts.join(' · ') : 'All square'}
                     {late(r) > 0 && `, ${late(r)} late`}
                   </span>
-                  <em className="ch-num">{r.rounds ? plural(r.rounds.n, 'round') : '—'}</em>
+                  {/* F-11: the window is said on the row, so "0 rounds" never reads as "never". */}
+                  <em className="ch-num">{r.rounds ? (r.rounds.n ? `${plural(r.rounds.n, 'round')} in 30 days` : 'None in 30 days') : '—'}</em>
                   <Icon icon={ChevronDown} size={15} />
                 </button>
                 {open === r.id && (

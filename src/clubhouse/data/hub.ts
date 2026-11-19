@@ -18,6 +18,7 @@ import { homeClock } from './home-clock';
 import { currentSeasonLabel, fullName, loadSeasonRounds } from './season';
 import { roundsForFigures } from './figure-window';
 import { isoDay } from '../lib/dates';
+import { tripLeaves } from './home-trips';
 
 /**
  * Team Hub (Clubhouse; docs/clubhouse/phone/team-hub.md). One server read for
@@ -110,6 +111,8 @@ export interface ChHubTrip {
   upcoming: boolean;
   /** Whole days from today (the team's zone) to departure, 0 on the day; null once it has left or with no date. */
   inDays?: number | null;
+  /** Whole days until the departure time, as Home counts down (F-12); calendar days with no time saved. */
+  toGo?: number | null;
 }
 
 export interface ChHubTripEvent {
@@ -874,6 +877,18 @@ function announcement(a: GolfAnnouncementMeta, authors: Map<string, { name: stri
   };
 }
 
+/**
+ * The countdown's number (F-12, audit 2026-11-19): whole days until the departure time, as Home counts it ("1 d 08 h" is
+ * one day to go), so the two screens agree. A trip with no time saved counts calendar days. Null once it has left.
+ */
+export function tripToGo(t: Pick<TripRow, 'departure_date' | 'departure_time'>, f: Pick<ReturnType<typeof formatters>, 'tz' | 'nowMs' | 'daysBetween'>, today: string): number | null {
+  if (!t.departure_date || t.departure_date < today) return null;
+  const leaves = tripLeaves(t, f.tz);
+  if (!leaves) return f.daysBetween(today, t.departure_date);
+  const left = Date.parse(leaves) - f.nowMs;
+  return left < 0 ? null : Math.floor(left / 86400000);
+}
+
 export function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string, who: { travelers: string[] | null; ids?: string[] | null; count: number | null; mine: boolean | null }): ChHubTrip {
   const gear = Array.isArray(t.gear_list) ? t.gear_list.join(', ') : t.gear_list;
   return {
@@ -904,6 +919,7 @@ export function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string
     mine: who.mine,
     upcoming: !!t.departure_date && (t.return_date ?? t.departure_date) >= today,
     inDays: t.departure_date && t.departure_date >= today ? f.daysBetween(today, t.departure_date) : null,
+    toGo: tripToGo(t, f, today),
   };
 }
 
@@ -1007,6 +1023,9 @@ export function formatters(tz: string, now: Date) {
   const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' });
   const days = (a: string, b: string) => Math.round((utcDay(b).getTime() - utcDay(a).getTime()) / 86400000);
   return {
+    /** The team's zone and the clock these labels were read at. */
+    tz,
+    nowMs: now.getTime(),
     /** Whole days from one YYYY-MM-DD to another (negative when `b` is earlier). */
     daysBetween: days,
     wd: (date: string) => wdFmt.format(utcDay(date)),
@@ -1035,7 +1054,10 @@ export function formatters(tz: string, now: Date) {
       if (n === 0) return 'Today';
       if (n === 1) return 'Tomorrow';
       if (n === -1) return 'Yesterday';
-      return `${wdFmt.format(utcDay(date))} ${utcDay(date).getUTCDate()}`;
+      // Within a week either side the weekday names it ("Wed 22"); further out it takes the month, as `ago` and
+      // relativeTime (lib/dates.ts) do past a week: "Jul 22" (audit 2026-11-18: an overdue task read "Wed 22" for 22 July).
+      if (Math.abs(n) < 7) return `${wdFmt.format(utcDay(date))} ${utcDay(date).getUTCDate()}`;
+      return shortFmt.format(utcDay(date));
     },
     ago: (iso: string) => {
       const date = ymd(new Date(iso));

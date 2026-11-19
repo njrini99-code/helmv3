@@ -245,7 +245,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
             ]}
           />
           {/* The board's "Open recap": the round's own review; My stats when it isn't rebuilt. */}
-          <Button variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} className="ch-ph-card__more ch-btn--flush-end">
+          <Button variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} ahead={!!roundHref(r.id, 'player')} className="ch-ph-card__more ch-btn--flush-end">
             {roundHref(r.id, 'player') ? 'Open recap' : 'My stats'}
           </Button>
         </div>

@@ -278,6 +278,10 @@ const ROWS_AHEAD_LOOKS = 3;
  */
 export function useIdleRowsAhead(pathname: string): void {
   const router = useContext(AppRouterContext) as Router | null;
+  // E-1: a push link with no press handler of its own is fetched as the finger lands too, and the page's first row
+  // teaches Next its route as soon as the page has painted.
+  usePressAnyPush(router, pathname);
+  useLearnRowRoute(router, pathname);
   useEffect(() => {
     if (!router || typeof IntersectionObserver === 'undefined') return;
     let io: IntersectionObserver | null = null;
@@ -312,6 +316,88 @@ export function useIdleRowsAhead(pathname: string): void {
     };
   }, [pathname, router]);
 }
+
+/**
+ * Whether `href` is a Clubhouse page other than the one showing: what a press may fetch ahead. Same origin, under the
+ * dashboard, not this page, not a file or another tab.
+ */
+export function pushTarget(a: HTMLAnchorElement, pathname: string): string | null {
+  if ((a.target && a.target !== '_self') || a.hasAttribute('download')) return null;
+  const url = new URL(a.href, location.href);
+  if (url.origin !== location.origin || !url.pathname.startsWith('/golf/dashboard/')) return null;
+  const norm = (p: string) => (p.length > 1 ? p.replace(/\/+$/, '') : p);
+  if (norm(url.pathname) === norm(pathname)) return null;
+  return url.pathname + url.search;
+}
+
+/**
+ * Every link on the page that opens another page is fetched whole as a finger or the mouse goes down on it (E-1, audit
+ * 2026-11-19: a practice link committed 540 ms after a quick tap), not only the rows that ask (`usePressPrefetch`, which
+ * marks its rows `data-ch-ahead` and keeps its own handler). The press's guards hold: nothing on Data Saver or offline,
+ * nothing Next holds fresh, never CoachHelm (CH-R1). The strip and the sidebar are left to usePrefetchTabs.
+ */
+function usePressAnyPush(router: Router | null, pathname: string): void {
+  useEffect(() => {
+    if (!router) return;
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      const a = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('#ch-content a[href]') : null;
+      if (!a || a.hasAttribute('data-ch-ahead')) return;
+      const href = pushTarget(a, pathname);
+      if (href) prefetchOnPress(router, href, Date.now());
+    };
+    document.addEventListener('pointerdown', down, { capture: true, passive: true });
+    return () => document.removeEventListener('pointerdown', down, { capture: true });
+  }, [router, pathname]);
+}
+
+/**
+ * The page's first push row teaches Next its route as soon as the page has painted (E-1). Next commits a tap at once
+ * only onto a route whose shape it knows (16.4, optimistic routing): a row's own address, or any address of a route it
+ * has already learnt (`/rounds/[id]` from one round). Until then a tap waited for the server, 240–540 ms on staging,
+ * and a fetch ahead still in flight at the tap did not help (its route entry is pending, so the router asked again).
+ * A default prefetch, not a full one: the route and its loading boundary only, no page render. The idle look below
+ * then fetches the first rows whole. Never CoachHelm (CH-R1), nothing on Data Saver or offline.
+ */
+function useLearnRowRoute(router: Router | null, pathname: string): void {
+  useEffect(() => {
+    if (!router) return;
+    let frame = 0;
+    let later = 0;
+    let looks = 0;
+    const look = () => {
+      if (!prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
+      const rows = document.querySelectorAll<HTMLElement>('[data-ch-ahead]');
+      // A page that streams in after its skeleton has no rows yet: look again shortly, a few times.
+      if (!rows.length) {
+        if (++looks < CH_SHAPE_LOOKS) later = window.setTimeout(look, 400);
+        return;
+      }
+      const shapes = new Set<string>();
+      for (const row of rows) {
+        const href = row.getAttribute('data-ch-ahead');
+        if (!href || !fullPrefetchAllowed(href)) continue;
+        // One address per route shape: the path with its last part (the id) taken off.
+        const shape = (href.split('?')[0] ?? '').replace(/\/[^/]+$/, '/*');
+        if (shapes.has(shape) || shapes.size >= CH_SHAPES_LEARNT) continue;
+        shapes.add(shape);
+        router.prefetch?.(href);
+      }
+    };
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(look);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(later);
+    };
+  }, [router, pathname]);
+}
+
+/** How many times a page looks for its rows to teach a route shape from (every 400 ms after it paints). */
+const CH_SHAPE_LOOKS = 5;
+/** How many route shapes a page teaches Next as it paints (one per kind of row: rounds, qualifiers, players). */
+export const CH_SHAPES_LEARNT = 3;
 
 /**
  * Pages the reader is likely to open next (the Stats windows either side of the one shown, row 15), fetched whole once

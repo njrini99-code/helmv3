@@ -136,9 +136,16 @@ function manyFlagged(flagged: ChSublineRow[]): string {
     const none = ranked.filter((r) => r.none);
     if (none.length === ranked.length) return `${ranked.length} players haven’t posted a round this season.`;
     if (none.length) {
-      const tail = none.length === 1 ? `${firstName(none[0]!.name)} hasn’t posted one this season` : `${none.length} of them haven’t posted one this season`;
+      // F-13 (audit 2026-11-19): the days are counted over the players who have posted; those who never have are the
+      // second sentence, not inside the first ("8 players … 53+ days. Audit hasn't posted one" read as 8 + 1).
+      const quiet = ranked.filter((r) => !r.none);
+      const days = since(quiet);
+      const same = quiet.every((r) => r.quietDays === days);
+      const head =
+        quiet.length === 1 ? `${firstName(quiet[0]!.name)} hasn’t posted a round in ${days} days` : `${quiet.length} players haven’t posted a round in ${days}${same ? '' : '+'} days`;
+      const tail = none.length === 1 ? `${firstName(none[0]!.name)} hasn’t posted one this season` : `${none.length} more haven’t posted one this season`;
       // L-067: two sentences, so a narrow line breaks at the full stop, not mid-clause on a semicolon.
-      return `${ranked.length} players haven’t posted a round in ${floor}+ days. ${tail}.`;
+      return `${head}. ${tail}.`;
     }
     // F-0016: a longest is named only when one player is strictly longest; all tied, the team's line says the one figure.
     if (longest.quietDays === floor) return `${ranked.length} players haven’t posted a round in ${floor} days.`;

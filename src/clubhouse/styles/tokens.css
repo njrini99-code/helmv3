@@ -631,6 +631,14 @@
      red, so it is named where it is used, in the error state (tournaments-import.css). */
   --ch-ring-field: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
   --ch-ring-field-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
+  /* Rings named once, for the places that drew them raw (the CSS ratchet, 19 Nov 2026): an ink ring (Calendar's chosen day),
+     a gain ring (Tournaments' compare), a hairline ring on the green (Rounds), a raised key with its hairline (the shot
+     track), and the ledger's offset ring (Settings). */
+  --ch-ring-ink: inset 0 0 0 1.5px var(--ch-ink-500);
+  --ch-ring-gain: inset 0 0 0 1.5px var(--ch-chart-gain);
+  --ch-ring-on-green: inset 0 0 0 var(--ch-hairline-w) var(--ch-on-green-ring);
+  --ch-key-raised-ringed: var(--ch-key-raised-shadow), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
+  --ch-ring-ledger-offset: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule);
 
   /* Elevation */
   /* The older names, kept for their many uses, now read their role on the depth ladder below. */

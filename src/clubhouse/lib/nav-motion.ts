@@ -4,6 +4,7 @@ import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { CH_EASE_IOS, CH_EASE_IOS_CSS, CH_FADE_MS, CH_PUSH_MS, chBezier } from './motion';
 import { chMotionModeNow } from './reduced-motion';
 import { markHandPop, poppedByUA } from './ua-pop';
+import { captureShare, endShare, flyShare, forgetShare } from './share-morph';
 
 /**
  * Which way a phone navigation moves (native-feel audit 2026-10-08, P1-1 and P1-2; production audit 2026-11-15, S4.1 to
@@ -72,6 +73,7 @@ function clear() {
   navKind = 'fade';
   navTab = false;
   dropHeld();
+  forgetShare();
 }
 
 function mark(kind: ChNavKind, tab = false) {
@@ -149,6 +151,9 @@ function onClick(e: MouseEvent) {
   const tab = isSectionLink(a) && url.pathname.replace(/\/$/, '') !== from.replace(/\/$/, '');
   const kind = classifyNav({ from, to: url.pathname + url.search, tabRoots: tabRoots(), tabBar });
   mark(kind, tab);
+  // The row's shared figure (E-6), read before the copy of this page is taken, so the copy carries its mark.
+  if (navKind === 'push') captureShare(a);
+  else forgetShare();
   holdForPush(from);
 }
 
@@ -189,8 +194,10 @@ export function takeRunningPush(): number {
   if (run) {
     const share = pushShare(run);
     pushing = null;
+    endShare();
     for (const a of run.anims) a.cancel();
     run.page.removeAttribute('data-ch-pushing');
+    run.page.removeAttribute(CH_ARRIVING);
     if (!run.entry.pinned) run.entry.layer.remove();
     return share;
   }
@@ -288,6 +295,14 @@ export interface ChUnder {
   /** Called once when its page is showing again (a swipe that let go waits for it before it lets the copy go). */
   onArrive?: () => void;
 }
+/**
+ * The page a tapped push or a Back's pop is bringing in, for its 520 ms (E-2, audit 2026-11-19 F-02): it takes no taps
+ * until it has landed, as UIKit turns off interaction during a navigation transition, so a second tap meant for the
+ * row cannot open something on the page sliding in. Back, in the top bar outside the page, stays live and can still
+ * reverse it. Its own mark, not data-ch-pushing, which a swipe's lift also sets while a finger holds the page.
+ * pointer-events (shell.css), not `inert`: focus can still move to the page's title and VoiceOver still reads it.
+ */
+export const CH_ARRIVING = 'data-ch-arriving';
 const unders: ChUnder[] = [];
 const UNDERS_MAX = 4;
 let held: { layer: HTMLElement; from: string } | null = null;
@@ -348,7 +363,9 @@ function settleUnders(path: string) {
 function endPush(run: NonNullable<typeof pushing>) {
   if (pushing !== run) return;
   pushing = null;
+  endShare();
   run.page.removeAttribute('data-ch-pushing');
+  run.page.removeAttribute(CH_ARRIVING);
   if (!run.entry.pinned) run.entry.layer.remove();
 }
 
@@ -357,6 +374,7 @@ function playPush(from: string, to: string, layer: HTMLElement) {
   if (!page || typeof page.animate !== 'function' || !phoneNow() || chMotionModeNow() !== 'full') {
     // Held at the tap, in the document: no slide, so it goes.
     layer.remove();
+    forgetShare();
     return;
   }
   const entry: ChUnder = { over: to, under: from, layer };
@@ -370,6 +388,7 @@ function playPush(from: string, to: string, layer: HTMLElement) {
   const { curve, timing } = chTapTiming();
   const { parallax } = chUnderLook();
   page.setAttribute('data-ch-pushing', '');
+  page.setAttribute(CH_ARRIVING, '');
   // Both ends are in place from this frame (fill backwards), but the clock starts a frame later (S4.1): this commit's
   // frame lays out the whole new page, and a slide started inside it lost its first frames to that work.
   const anims = [
@@ -381,7 +400,11 @@ function playPush(from: string, to: string, layer: HTMLElement) {
   const run = { page, anims, entry, curve };
   pushing = run;
   requestAnimationFrame(() => {
-    if (pushing === run) for (const a of anims) a.play();
+    if (pushing !== run) return forgetShare();
+    // The shared figure (E-6) leaves with the slide, measured now that the page has laid out at the top, standing its
+    // own width to the right.
+    flyShare(page, layer, timing, page.getBoundingClientRect().width);
+    for (const a of anims) a.play();
   });
   anims[0]?.finished.then(
     () => endPush(run),
@@ -409,10 +432,13 @@ export function grabPush(): { entry: ChUnder; offset: number; share: number } | 
   const run = pushing;
   if (!run) return null;
   pushing = null;
+  endShare();
   const share = pushShare(run);
   const width = run.page.getBoundingClientRect().width || window.innerWidth;
   const { parallax } = chUnderLook();
   for (const a of run.anims) a.cancel();
+  // The finger has the page now: it is no longer arriving on its own.
+  run.page.removeAttribute(CH_ARRIVING);
   run.page.style.translate = `${cssNum((1 - share) * width)}px 0`;
   run.entry.layer.style.transform = `translateX(calc(${parallax} * ${cssNum(share, 4)}))`;
   underVeil(run.entry.layer).style.opacity = cssNum(share, 4);
@@ -468,15 +494,74 @@ function playPop(from = 1) {
     const under = document.getElementById('ch-content');
     // From where a push still sliding in had it (takeRunningPush): the page goes back the way it came, without a jump.
     const share = Math.min(1, Math.max(0, from));
-    under?.animate?.([{ transform: `translateX(calc(${parallax} * ${share}))` }, { transform: 'none' }], timing);
+    const back = under?.animate?.([{ transform: `translateX(calc(${parallax} * ${share}))` }, { transform: 'none' }], timing);
+    // The page coming back takes no taps until it has landed (E-2), as a pushed one doesn't.
+    if (under && back) {
+      under.setAttribute(CH_ARRIVING, '');
+      const landed = () => under.removeAttribute(CH_ARRIVING);
+      back.finished.then(landed, landed);
+    }
     const out = copy.animate?.([{ transform: `translateX(${((1 - share) * 100).toFixed(2)}%)` }, { transform: 'translateX(100%)' }], timing);
     if (!out) return copy.remove();
     out.finished.then(() => copy.remove(), () => copy.remove());
   });
 }
 
+/**
+ * A duration token in ms, from <html> where the page crossfade's tokens live (tokens.css), or `fallback`. The unit is read:
+ * a token in seconds (`0.12s`, as WebKit returned the desk's tokens) was taken as 0.12 ms, so Back and Forward on the desk
+ * swapped at once in Safari (E-8, 2026-11-19).
+ */
+export function msToken(css: Pick<CSSStyleDeclaration, 'getPropertyValue'>, name: string, fallback: number): number {
+  const m = /^\s*(-?[\d.]+)\s*(ms|s)?\s*$/i.exec(css.getPropertyValue(name));
+  if (!m) return fallback;
+  const v = Number(m[1]) * (m[2]?.toLowerCase() === 's' ? 1000 : 1);
+  return Number.isFinite(v) ? v : fallback;
+}
+
+/**
+ * Back and Forward on the desk crossfade as a tap does (E-8, audit 2026-11-19): the page left fades out over
+ * --ch-dur-vt-out while the page come back to fades in over --ch-dur-vt-in, together, on their own curves (owner
+ * decision 3, A10). A history move commits synchronously inside popstate, so React starts no view transition for it
+ * (it swapped at once before); the fade is drawn here instead, with a window-sized copy of the page leaving over the
+ * live page, under the sidebar and the bar, taking no taps. Under Reduce Motion both sides take --ch-dur-vt-fade (3.11);
+ * Animations off swaps. Should a view transition run after all, it alone plays: the copy goes at once.
+ */
+function playDeskHistory() {
+  const mode = chMotionModeNow();
+  const frame = document.getElementById('ch-content');
+  if (!frame || mode === 'off' || typeof frame.animate !== 'function') return;
+  const copy = pageLayer('ch-frame-fading');
+  if (!copy) return;
+  document.body.appendChild(copy);
+  const css = getComputedStyle(document.documentElement);
+  const fade = mode === 'fade';
+  const out = { duration: msToken(css, fade ? '--ch-dur-vt-fade' : '--ch-dur-vt-out', fade ? CH_FADE_MS : 120), easing: css.getPropertyValue('--ch-ease-vt-out').trim() || 'ease-in' };
+  const into = { duration: msToken(css, fade ? '--ch-dur-vt-fade' : '--ch-dur-vt-in', 180), easing: css.getPropertyValue('--ch-ease-vt-in').trim() || 'ease-out' };
+  // The next frame, once the router's synchronous commit has put the page come back to in place.
+  requestAnimationFrame(() => {
+    // Only the page's own crossfade counts: the root's snapshot also runs a theme keyframe on a Back (WebKit, 2026-11-19),
+    // and stepping aside for it left the Back with no fade at all.
+    const vt = typeof document.getAnimations === 'function' && document.getAnimations().some((a) => ((a.effect as KeyframeEffect | null)?.pseudoElement ?? '').includes('(ch-page)'));
+    if (vt) return copy.remove();
+    const page = document.getElementById('ch-content');
+    page?.animate([{ opacity: 0 }, { opacity: 1 }], into);
+    const gone = copy.animate([{ opacity: 1 }, { opacity: 0 }], { ...out, fill: 'forwards' });
+    gone.finished.then(
+      () => copy.remove(),
+      () => copy.remove(),
+    );
+  });
+}
+
 function onPopState() {
   if (!shownPath) return;
+  if (!phoneNow()) {
+    const kind = classifyNav({ from: shownPath, to: location.pathname + location.search, tabRoots: tabRoots(), back: true });
+    mark(kind);
+    if (strip(location.pathname + location.search) !== strip(shownPath)) playDeskHistory();
+    return;
+  }
   const kind = classifyNav({ from: shownPath, to: location.pathname + location.search, tabRoots: tabRoots(), back: true });
   // Drawn here rather than by a view transition (playPop), so the keyframes never run as well.
   if (kind === 'pop' && phoneNow()) {

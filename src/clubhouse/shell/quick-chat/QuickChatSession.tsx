@@ -10,6 +10,7 @@ import { haptic } from '../../lib/haptics';
 import { useChMotionMode } from '../../lib/reduced-motion';
 import { sheetSettleHaptic } from '../../lib/sheet-drag';
 import { useChPhone } from '../../lib/use-phone';
+import { useOverlayScrollLock } from '../../lib/overlay-scroll';
 import { BallMark } from '../../screens/coachhelm/chat/BallMark';
 import { conversationHref } from '../../screens/coachhelm/chat/History';
 import { Button, IconButton } from '../../ui/Button';
@@ -121,6 +122,8 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
 
   const releaseInert = useRef<(() => void) | null>(null);
   const history = usePanelHistory(open, onClose);
+  // F-25 (audit 2026-11-19): on the phone quick chat covers the page as a sheet does, so the page behind it holds still.
+  useOverlayScrollLock(phone && open);
   useLayoutEffect(() => {
     if (open) setShown(true);
   }, [open]);

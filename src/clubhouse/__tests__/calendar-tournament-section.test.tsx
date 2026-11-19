@@ -120,11 +120,11 @@ describe('P-5 the tournament section', () => {
   });
 
   async function pickCourse(dlg: HTMLElement) {
-    fireEvent.click(within(dlg).getByRole('button', { name: 'Course, not chosen' }));
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Search courses, course not chosen' }));
     const picker = await screen.findByRole('dialog', { name: 'Course' });
     fireEvent.click(await within(picker).findByRole('button', { name: /Pinehurst No\. 2/ }));
     fireEvent.click(await within(picker).findByRole('button', { name: /Pick tees later/ }));
-    await waitFor(() => expect(within(dlg).getByRole('button', { name: 'Course, Pinehurst No. 2, Tees later' })).toBeTruthy());
+    await waitFor(() => expect(within(dlg).getByRole('button', { name: 'Pinehurst No. 2, course, Tees later' })).toBeTruthy());
   }
 
   it('a save sends the model’s payload and toasts CH-6040 with Open, no Undo', async () => {
@@ -191,12 +191,12 @@ describe('P-5 the tournament section', () => {
   it('a typed course is offered when the library has no match (CH-6340), stored as a label', async () => {
     wrap(data(), { initialNew: true, initialType: 'tournament' });
     const dlg = await waitFor(editor);
-    fireEvent.click(within(dlg).getByRole('button', { name: 'Course, not chosen' }));
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Search courses, course not chosen' }));
     const picker = await screen.findByRole('dialog', { name: 'Course' });
     fireEvent.change(within(picker).getByRole('searchbox', { name: 'Search courses' }), { target: { value: 'Southern Pines' } });
     await waitFor(() => expect(code('CH-6340')).not.toBeNull(), { timeout: 2000 });
     fireEvent.click(within(picker).getByRole('button', { name: 'Use “Southern Pines” as the course name' }));
-    await waitFor(() => expect(within(dlg).getByRole('button', { name: 'Course, Southern Pines, Not in the course library' })).toBeTruthy());
+    await waitFor(() => expect(within(dlg).getByRole('button', { name: 'Southern Pines, course, Not in the course library' })).toBeTruthy());
   });
 
   it('Custom: add a round on the last day, 5:30 after its tee, and remove only the last one (warning)', async () => {

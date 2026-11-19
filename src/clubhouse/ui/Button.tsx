@@ -7,6 +7,7 @@ import { Icon } from './Icon';
 import { haptic, type ChHaptic } from '../lib/haptics';
 import { Spinner } from './Spinner';
 import { Tooltip } from './Tooltip';
+import { usePressPrefetch } from '../shell/use-prefetch-tabs';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'ink' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -33,7 +34,16 @@ interface CommonProps {
 }
 
 type ButtonProps = CommonProps &
-  ({ href: string; onClick?: never; type?: never; disabled?: never; busy?: never; menu?: never } | {
+  ({
+    href: string;
+    /**
+     * A push into a detail page (a round's review): fetched whole as a finger lands, and among the first rows on screen
+     * while the page is idle, as list rows are (A13, usePressPrefetch). Audit 2026-11-18: Home's round links were not.
+     */
+    ahead?: boolean;
+    onClick?: never; type?: never; disabled?: never; busy?: never; menu?: never;
+  } | {
+    ahead?: never;
     href?: undefined;
     onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
     type?: 'button' | 'submit';
@@ -51,6 +61,7 @@ export function Button(props: ButtonProps) {
   const feel = props.feel === undefined ? (variant === 'primary' ? 'press' : variant === 'danger' ? 'warning' : null) : props.feel;
   const cls = ['ch-btn', `ch-btn--${variant}`, size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ');
   const iconSize = size === 'sm' ? 14 : 15;
+  const press = usePressPrefetch();
   const inner = (
     <>
       {leftIcon && <Icon icon={leftIcon} size={iconSize} />}
@@ -66,7 +77,7 @@ export function Button(props: ButtonProps) {
   );
   if (props.href !== undefined) {
     return (
-      <Link href={props.href} className={cls} aria-keyshortcuts={kbd} aria-label={aria?.label} data-ch-code={code} {...data} onClick={() => feel && haptic(feel)}>
+      <Link href={props.href} className={cls} aria-keyshortcuts={kbd} aria-label={aria?.label} data-ch-code={code} {...data} {...(props.ahead ? press(props.href) : {})} onClick={() => feel && haptic(feel)}>
         {inner}
       </Link>
     );

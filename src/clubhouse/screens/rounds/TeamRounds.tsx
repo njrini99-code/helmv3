@@ -25,7 +25,9 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { EmptyState } from '../../ui/States';
-import { monthLabel, shortDay, TeeSwatch, TypePill } from './parts';
+import { monthLabel, shortDay, TeeSwatch, TYPE_LABEL, TypePill } from './parts';
+import { kickerDay } from './labels';
+import { carryTo, type ChCarriedRound } from '../../lib/carry';
 import { noteOpenedFromLibrary } from './return-state';
 import { ShowEarlier, useRoundWindow } from './round-window';
 import { plural, pluralWord } from '../../lib/plural';
@@ -67,6 +69,21 @@ export function groupTeamRounds(list: readonly ChTeamRound[], by: Group, q: stri
   return by === 'player' ? out.sort((a, b) => a.title.localeCompare(b.title) || a.key.localeCompare(b.key)) : out;
 }
 
+/** What a team round's row shows, as the review's hero writes it (E-1, lib/carry.ts): the player and day, the course, the tee, the score. */
+export function carriedTeamRound(r: ChTeamRound): ChCarriedRound {
+  return {
+    kind: 'round',
+    kicker: [r.player, kickerDay(r.date), r.type ? TYPE_LABEL[r.type] : null].filter(Boolean).join(' · '),
+    course: r.course,
+    score: String(r.score),
+    toPar: formatToPar(r.toPar),
+    under: r.toPar != null && r.toPar < 0,
+    tee: r.tee,
+    teeColor: r.teeColor,
+    nine: r.holes === 9,
+  };
+}
+
 /** What opening a round takes, for the phone row and the desktop table row alike. */
 function useOpenRound(r: ChTeamRound) {
   const href = teamRoundsLinks.review(r.id);
@@ -79,7 +96,11 @@ function useOpenRound(r: ChTeamRound) {
     onClick: href
       ? (e: MouseEvent<HTMLElement>) => {
           // Only a same-tab open leaves the note (a new-tab click would leave a stale one for a later deep link), as the player library does.
-          if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) noteOpenedFromLibrary(r.id);
+          if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+            noteOpenedFromLibrary(r.id);
+            // What the row shows goes ahead into the review's skeleton, so the push lands on the round (E-1).
+            carryTo(href, carriedTeamRound(r));
+          }
         }
       : undefined,
     label: `${r.player}, ${shortDay(r.date)}, ${r.course}, ${r.score}${r.toPar != null ? ` (${formatToPar(r.toPar)})` : ''}`,
@@ -118,7 +139,10 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
       trail={
         <span className={'ch-trd-score' + (under ? ' is-under' : '')}>
           <b className="ch-num">{r.toPar == null ? <NoData /> : formatToPar(r.toPar)}</b>
-          <em className="ch-num">{r.score}</em>
+          {/* The score travels into the review's hero over the push (E-6, lib/share-morph.ts). */}
+          <em className="ch-num" data-ch-share="round-score">
+            {r.score}
+          </em>
         </span>
       }
       href={open.href ?? undefined}

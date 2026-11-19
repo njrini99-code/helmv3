@@ -115,8 +115,7 @@
     "retired-token": 29
   },
   "src/clubhouse/styles/quick-chat.css": {
-    "off-token-duration": 1,
-    "retired-token": 7,
+    "retired-token": 6,
     "infinite": 2
   },
   "src/clubhouse/styles/recruiting.css": {

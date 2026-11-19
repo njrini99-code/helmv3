@@ -11,7 +11,7 @@ import { useChReducedMotion } from '../lib/reduced-motion';
 import { useSlidePlate } from '../lib/slide-plate';
 import { LinkPending } from './LinkPending';
 import { navLinkPrefetch } from './link-prefetch';
-import { CH_PHONE_TABS, isRebuilt, type ChRole } from './nav';
+import { CH_PHONE_TABS, type ChRole } from './nav';
 import { usePhoneChromeState } from './phone-chrome';
 import { useSectionSwitch } from './section-switch';
 import { useIdleRowsAhead, usePrefetchTabs } from './use-prefetch-tabs';
@@ -41,7 +41,10 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
   // visited, for the way back. At every width (the frame mounts the strip at every width): the desktop sidebar's first
   // links are the same sections, and a switch there waited on the server for the whole page (owner, desktop Safari,
   // 2026-10-16).
-  const rebuiltSections = (sw?.sections ?? []).filter((s) => isRebuilt(s.href, role));
+  // The switch's sections are already the rebuilt ones for this role and its features (phoneSectionsFor). Filtered again
+  // here without the features, Tournaments (golf_tournaments_v1) was never fetched ahead, so a revisit drew its skeleton
+  // for 600 ms (E-3, audit 2026-11-19).
+  const rebuiltSections = sw?.sections ?? [];
   usePrefetchTabs(
     rebuiltSections.filter((s) => CH_PHONE_TABS[role].includes(s.id)).map((s) => s.href),
     pathname,
@@ -74,7 +77,8 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
   }, [sw?.open, centre]);
 
   // The plate slides from the pill it left to the one chosen, on the compositor (lib/slide-plate.ts): 260 ms on the iOS
-  // curve, translate and width (MOTION-AND-VISUAL 3.3; MAC-17 keeps the width), each label taking its ink as the plate
+  // curve, a translate with the width change drawn by a rounded clip (MOTION-AND-VISUAL 3.3; MAC-17; F-29: no layout property
+  // animated), each label taking its ink as the plate
   // crosses it. The page under it swaps at once.
   useSlidePlate(row, '[aria-current="page"] > .ch-strip__plate', sw?.shown?.id ?? null, { reduced, still: () => shutRef.current, tween: 'thumb', ink: '.ch-strip__pill' });
 
