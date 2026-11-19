@@ -827,6 +827,9 @@ features:
         - supabase/migrations/*golf_one_gir_rule*.sql
         # Scrambling counts sand saves (2026-11-16, held).
         - supabase/migrations/*golf_scrambling_counts_sand_saves*.sql
+        # Season Standing's countable-round helpers, split out of OD-01
+        # (#2582, applied 2026-11-18).
+        - supabase/migrations/*golf_countable_round_helpers*.sql
       tests:
         - src/app/golf/actions/__tests__/stats-data.test.ts
         - src/clubhouse/data/__tests__/stats-reads.test.ts

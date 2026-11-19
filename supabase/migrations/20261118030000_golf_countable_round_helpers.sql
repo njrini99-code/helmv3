@@ -26,18 +26,44 @@
 -- run the season refresh as 20261024151000's AFTER APPLY says. The OD-01
 -- chain stays held and is independent of this file.
 --
--- ROLLBACK: Only while 20261024151000 is not applied (its function calls these; drop that first):
--- ROLLBACK: DROP FUNCTION IF EXISTS public.golf_round_is_score_countable(text, integer, integer, integer, integer, integer, numeric);
--- ROLLBACK: DROP FUNCTION IF EXISTS public.golf_round_is_countable(text, integer, integer, integer, integer, integer, numeric);
--- ROLLBACK: DROP FUNCTION IF EXISTS public.golf_round_canonical_total(integer, integer, integer);
+-- ROLLBACK: Only while 20261024151000 is not applied (its function calls
+-- ROLLBACK: these; drop that first):
+-- ROLLBACK: DROP FUNCTION IF EXISTS public.golf_round_is_score_countable(
+-- ROLLBACK:   text, integer, integer, integer, integer, integer, numeric);
+-- ROLLBACK: DROP FUNCTION IF EXISTS public.golf_round_is_countable(
+-- ROLLBACK:   text, integer, integer, integer, integer, integer, numeric);
+-- ROLLBACK: DROP FUNCTION IF EXISTS public.golf_round_canonical_total(
+-- ROLLBACK:   integer, integer, integer);
 --
--- VERIFY: select 1 where public.golf_round_canonical_total(70, 36, 35) = 71 and public.golf_round_canonical_total(70, null, 35) = 70
--- VERIFY: select 1 where public.golf_round_is_countable('completed', 18, 72, 36, 36, 30, 0) and not public.golf_round_is_countable('in_progress', 18, 72, 36, 36, 30, 0)
--- VERIFY: select 1 where public.golf_round_is_score_countable('completed', 18, 72, null, null, 30, 0) and not public.golf_round_is_countable('completed', 18, 72, null, null, 30, 0)
--- VERIFY: select 1 where has_function_privilege('authenticated', 'public.golf_round_is_countable(text, integer, integer, integer, integer, integer, numeric)', 'execute') and not has_function_privilege('anon', 'public.golf_round_is_countable(text, integer, integer, integer, integer, integer, numeric)', 'execute')
--- VERIFY: select 1 where not has_function_privilege('anon', 'public.golf_round_is_score_countable(text, integer, integer, integer, integer, integer, numeric)', 'execute') and not has_function_privilege('anon', 'public.golf_round_canonical_total(integer, integer, integer)', 'execute')
+-- VERIFY: select 1
+-- VERIFY:  where public.golf_round_canonical_total(70, 36, 35) = 71
+-- VERIFY:    and public.golf_round_canonical_total(70, null, 35) = 70;
+-- VERIFY: select 1
+-- VERIFY:  where public.golf_round_is_countable(
+-- VERIFY:          'completed', 18, 72, 36, 36, 30, 0)
+-- VERIFY:    and not public.golf_round_is_countable(
+-- VERIFY:          'in_progress', 18, 72, 36, 36, 30, 0);
+-- VERIFY: select 1
+-- VERIFY:  where public.golf_round_is_score_countable(
+-- VERIFY:          'completed', 18, 72, null, null, 30, 0)
+-- VERIFY:    and not public.golf_round_is_countable(
+-- VERIFY:          'completed', 18, 72, null, null, 30, 0);
+-- VERIFY: select 1
+-- VERIFY:  where has_function_privilege('authenticated',
+-- VERIFY:          'public.golf_round_is_countable(text, integer, integer, integer, integer, integer, numeric)', -- noqa: LT05
+-- VERIFY:          'execute')
+-- VERIFY:    and not has_function_privilege('anon',
+-- VERIFY:          'public.golf_round_is_countable(text, integer, integer, integer, integer, integer, numeric)', -- noqa: LT05
+-- VERIFY:          'execute');
+-- VERIFY: select 1
+-- VERIFY:  where not has_function_privilege('anon',
+-- VERIFY:          'public.golf_round_is_score_countable(text, integer, integer, integer, integer, integer, numeric)', -- noqa: LT05
+-- VERIFY:          'execute')
+-- VERIFY:    and not has_function_privilege('anon',
+-- VERIFY:          'public.golf_round_canonical_total(integer, integer, integer)', 'execute'); -- noqa: LT05
 
--- ---- copied from 20260924120000_golf_countable_round_stats_cache.sql (keep identical) ----
+-- ---- copied from 20260924120000_golf_countable_round_stats_cache.sql
+-- ---- (keep identical) ----
 
 CREATE OR REPLACE FUNCTION "public"."golf_round_canonical_total"("p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer) RETURNS integer
     LANGUAGE "sql" IMMUTABLE PARALLEL SAFE

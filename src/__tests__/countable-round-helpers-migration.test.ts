@@ -68,7 +68,7 @@ describe('20261118030000 countable-round helpers', () => {
 
   it('creates every function the season file’s guard requires', () => {
     const guard = SEASON.slice(SEASON.indexOf('DO $guard$'), SEASON.indexOf('$guard$;'));
-    const required = [...guard.matchAll(/to_regprocedure\('public\.(\w+)\(/g)].map((m) => m[1]);
+    const required = [...guard.matchAll(/to_regprocedure\('public\.(\w+)\(/g)].flatMap((m) => (m[1] ? [m[1]] : []));
     expect(required).toEqual(['golf_round_is_countable', 'golf_round_is_score_countable']);
     for (const name of required) expect(statementsFor(HELPERS, name)[0]).toMatch(/^CREATE OR REPLACE FUNCTION/);
   });

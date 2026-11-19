@@ -142,8 +142,9 @@ calls in the 2026-10-23 plan below.
   follows in its order. On a separate day after the flip, the ones that move
   numbers: `20261017110000` (null putts), `20260930150000` and
   `20261023170000` (strokes gained), the OD-01 chain
-  (`20261024151000`, Standing by season, was applied on its own on 2026-11-18). `20261025060000` (course page
-  index) only if that read measures slow; `20261025070400` (pg_cron
+  (`20261024151000`, Standing by season, was applied on its own on
+  2026-11-18). `20261025060000` (course page index) only if that read
+  measures slow; `20261025070400` (pg_cron
   variant) is not applied. HELD.md stays the authority for prerequisites.
 - **Scoring and data rules (owner, 2026-10-28).** A provisional DQ is
   dropped from the team score as well as the desk. The server decides
