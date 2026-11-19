@@ -169,7 +169,7 @@
 /* F-14 / E-9: one line each. The week sits under the title; the byline's name ends in an ellipsis rather than wrapping. */
 .ch-htb .tile .tw {
   margin-top:-4px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
   color:var(--ch-ink-600);
   white-space:nowrap;
   overflow:hidden;

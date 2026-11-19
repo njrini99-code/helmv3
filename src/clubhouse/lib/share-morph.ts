@@ -16,6 +16,10 @@
  */
 
 /** On the page being pushed in while its shared figure is in flight: the figure waits hidden (shell.css). */
+/** Geometry for a CSS transform, not a displayed figure (CONS-15 keeps display rounding in lib/format). */
+const px = (n: number): number => Math.round(n * 100) / 100;
+const ratio = (n: number): number => Math.round(n * 10000) / 10000;
+
 export const CH_SHARING = 'data-ch-sharing';
 /** On the row's own figure from the tap until the copy of the page beneath has been taken. */
 const FROM = 'data-ch-share-from';
@@ -97,9 +101,9 @@ export function flyShare(page: HTMLElement, layer: HTMLElement | null, timing: K
   page.setAttribute(CH_SHARING, '');
   const dx = left - from.rect.left;
   const dy = top - from.rect.top;
-  const go = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${s.toFixed(4)})`;
+  const go = `translate(${px(dx)}px, ${px(dy)}px) scale(${ratio(s)})`;
   // The arriving ghost starts where the leaving one does: a translate before a scale is not scaled, so it is −dx, −dy.
-  const back = `translate(${(-dx).toFixed(2)}px, ${(-dy).toFixed(2)}px) scale(${(1 / s).toFixed(4)})`;
+  const back = `translate(${px(-dx)}px, ${px(-dy)}px) scale(${ratio(1 / s)})`;
   const opts = { ...timing, fill: 'forwards' as const };
   const anims =
     typeof from.ghost.animate === 'function'
