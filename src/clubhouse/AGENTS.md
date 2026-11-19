@@ -17,6 +17,10 @@ any more. Where `design-refresh/<page>/` exists it replaces the handoff for that
 page. Runtime values come from `styles/tokens.css`, `styles/auth-tokens.css` and
 `lib/fonts.ts`; handoff files are references, not a reason to restore behavior
 superseded by owner revisions.
+Who each address is for (coach, player, shared or signed-out, and the component
+each role gets) is in `docs/clubhouse/generated/CLUBHOUSE_ROUTE_MAP.md`. A new
+route is labelled in its manifest's `screens`; `clubhouse:check` fails until
+it is.
 The design system (laws, surfaces, colour, type, the one toggle, charts, the
 banned list, and token tables generated from `styles/tokens.css`) is
 [`design-refresh/DESIGN_LANGUAGE.md`](../../design-refresh/DESIGN_LANGUAGE.md).

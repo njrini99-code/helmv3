@@ -19,9 +19,10 @@ import { computeTeamPatterns, TEAM_PATTERN_MIN_ROUNDS, type TeamPatternResult } 
 import { logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getValidTimezone } from '@/lib/calendar/timezone';
+import { withoutReadsHidden } from '@/lib/coachhelm/v3/analyst/reads/visibility';
 import { computeMondayBrief, dayOfIso, type MondayBrief, type MondayBriefRead, type MondayBriefRound } from './brief';
 
-const READ_COLUMNS = 'id, player_id, category, insight_type, title, evidence, metadata, created_at';
+const READ_COLUMNS = 'id, player_id, category, insight_type, title, evidence, metadata, created_at, signature, lifecycle_state, priority';
 
 interface RoundRow {
   id: string;
@@ -61,7 +62,8 @@ async function loadReads(supabase: SupabaseClient, teamId: string, ids: string[]
       await note('reads', res.error.message);
       return null;
     }
-    out.push(...(res.data ?? []));
+    // CoachHelm reads (flag `coachhelm_reads_v1`, team listed): notes and good news are not in the brief, as they are not on the board.
+    out.push(...withoutReadsHidden(res.data ?? [], teamId));
   }
   return out;
 }

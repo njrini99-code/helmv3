@@ -27,6 +27,8 @@ export const RETIRED = [
   'src/components/auth/golf-sign-in-form',
   'src/components/auth/golf-sign-up-form',
   'src/app/golf/(auth)/AuthHomeLink',
+  // The old forgot-password page's canvas: a signed-in visitor gets Clubhouse's reset form now (CH-15920).
+  'src/components/auth/golf-auth-canvas',
 ];
 
 /** Files under a retired folder that stay, and why. */
@@ -35,7 +37,6 @@ export const KEPT: Array<[prefix: string, reason: string]> = [
   ['src/components/golf/documents/ImagePreview', "BaseballHelm's document preview"],
   ['src/components/golf/documents/PDFViewer', "BaseballHelm's document preview"],
   ['src/components/golf/documents/TextPreview', "BaseballHelm's document preview"],
-  ['src/components/golf/scenes/', 'the auth canvas (components/auth/golf-auth-canvas) draws them on /golf/forgot-password, which a signed-in visitor keeps (CH-15920)'],
 ];
 
 const isRetired = (repoPath: string) =>

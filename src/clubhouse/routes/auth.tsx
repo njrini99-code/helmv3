@@ -8,6 +8,9 @@ import { JoinInvalid, JoinTeam, type JoinTeamData } from '../screens/auth/JoinTe
 import type { PreviewStaffInviteResult } from '@/app/golf/actions/teams';
 import { StaffInvite } from '../screens/auth/StaffInvite';
 import { ResetPassword } from '../screens/auth/ResetPassword';
+import { SignedInReset } from '../screens/auth/SignedInReset';
+import { createClient } from '@/lib/supabase/server';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { SignIn } from '../screens/auth/SignIn';
 import { Welcome } from '../screens/auth/Welcome';
 import { WelcomeStage } from '../screens/auth/WelcomeStage';
@@ -26,6 +29,19 @@ export function ClubhouseSignInRoute() {
   return (
     <ChPhoneHintProvider phone={false}>
       <SignIn />
+    </ChPhoneHintProvider>
+  );
+}
+
+/**
+ * /golf/forgot-password for a signed-in visitor (CH-15920; the layout sends a signed-out one to the sign-in panel's
+ * reset form). Their own address is filled in; a read that finds none leaves the field empty to type.
+ */
+export async function ClubhouseSignedInResetRoute() {
+  const { user } = await getUserResilient(await createClient());
+  return (
+    <ChPhoneHintProvider phone={false}>
+      <SignedInReset email={user?.email ?? ''} />
     </ChPhoneHintProvider>
   );
 }

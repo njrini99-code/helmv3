@@ -24,6 +24,8 @@ import { teamLastTenStrokesGained } from './stats-team-sg';
 import { readTextFor } from './coachhelm-voice';
 import { fileDay, teamFigureOf, toChFileField, toChFilePlan, toChFileSgOver, toChFileTrack, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileRosterRow, type ChFileTrack, type ChFocusRow, type ChPlayerFile, type ChPlayerWeek } from './coachhelm-file-shape';
 import type { ChViewLoad } from './coachhelm-views-shape';
+import { readsOnForTeam } from './coachhelm-analyst-read';
+import { hideForReadsTeam } from './coachhelm-analyst-read-shape';
 import type { ChStanding } from './coachhelm-standing-shape';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -312,7 +314,10 @@ export async function loadCoachPlayerFile(input: { scope: ChCoachPlayerScope }):
     // The standing rows' own window, for the two places the file still shows a standing figure: the featured read's Team cell
     // (when the read carries no team figure) and the link to the Standing page.
     const basis = rowsRead.ok ? (rowsRead.window === 'season' ? 'this season' : 'all time') : null;
-    const cards: ChFileCards = { ...coachCards(load.data.list, rows, load.data.cleared ?? []), featTeamBasis: basis, dismissed, sg: sg && st ? { ...sg, standing: st.window.label } : sg, plan, field: field ?? null, intent: intent ?? null, track: track ?? null };
+    // CoachHelm reads (flag `coachhelm_reads_v1`, listed team): no "nothing found" or good-news card and no one-sentence root cause
+    // here; the analyst's card above says where the strokes go. Nothing is deleted. The lens (the player's view) is unchanged.
+    const coachList = readsOnForTeam(scope.teamId) ? hideForReadsTeam(load.data.list) : load.data.list;
+    const cards: ChFileCards = { ...coachCards(coachList, rows, load.data.cleared ?? []), featTeamBasis: basis, dismissed, sg: sg && st ? { ...sg, standing: st.window.label } : sg, plan, field: field ?? null, intent: intent ?? null, track: track ?? null };
     const lensCards: ChFileCards | null = lens ? { ...playerCards(lens, rows), featTeamBasis: basis, sg: lensSg, plan, field: lensField ?? null } : null;
     const failed: ChPlayerFile['failed'] = {
       ...(sgRounds === null ? { sg: true as const } : {}),

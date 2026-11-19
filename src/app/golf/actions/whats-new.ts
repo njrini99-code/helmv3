@@ -26,6 +26,7 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { withoutReadsHidden } from '@/lib/coachhelm/v3/analyst/reads/visibility';
 
 // ============================================================================
 // TYPES
@@ -224,7 +225,7 @@ async function getWhatsNewForCoachImpl(): Promise<{
       applyInsightVisibility(
         supabase
           .from('golf_coach_insights')
-          .select('id, player_id, title, content, lifecycle_state, resolved_at, updated_at')
+          .select('id, player_id, title, content, lifecycle_state, resolved_at, updated_at, signature, evidence, priority, category')
           .eq('team_id', teamId)
           .in('lifecycle_state', ['matured', 'resolved'])
           .or(`resolved_at.gte.${sinceIso},updated_at.gte.${sinceIso}`),
@@ -239,7 +240,7 @@ async function getWhatsNewForCoachImpl(): Promise<{
       applyInsightVisibility(
         supabase
           .from('golf_coach_insights')
-          .select('id, player_id, title, content, created_at')
+          .select('id, player_id, title, content, created_at, signature, evidence, lifecycle_state, priority, category')
           .eq('team_id', teamId)
           .gte('created_at', sinceIso),
       )
@@ -352,8 +353,9 @@ async function getWhatsNewForCoachImpl(): Promise<{
       return { success: false, error: 'Every What’s new category failed to load', failed, timeZone };
     }
 
-    const lifecycleRows = lifecycleResult.data ?? [];
-    const detectedRows = detectedResult.data ?? [];
+    // CoachHelm reads (flag `coachhelm_reads_v1`, team listed): notes and good news leave the feed, as they leave the board.
+    const lifecycleRows = withoutReadsHidden(lifecycleResult.data ?? [], teamId);
+    const detectedRows = withoutReadsHidden(detectedResult.data ?? [], teamId);
     const patternRows = patternsResult.data ?? [];
     const focusCreatedRows = focusCreatedResult.data ?? [];
     const focusCompletedRows = focusCompletedResult.data ?? [];

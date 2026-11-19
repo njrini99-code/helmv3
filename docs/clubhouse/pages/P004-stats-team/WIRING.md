@@ -16,14 +16,14 @@ counts include wrappers rather than unique popups.
 ## Entry point
 
 ```text
-Route:                   /golf/dashboard/stats (coach) and the old address /golf/dashboard/stats/team
+Route:                   /golf/dashboard/stats (coach). The old address /golf/dashboard/stats/team is a redirect in
+                         next.config.mjs to /stats for both roles (GAP-R-10); its page file was deleted on 2026-11-18
+                         and it is no longer in CH_REBUILT_ROUTES
 Pages:                   src/app/golf/(dashboard)/dashboard/stats/page.tsx (always ClubhouseStatsRoute; the flag and the
                          Fairway branch were removed on 2026-11-14)
-                         src/app/golf/(dashboard)/dashboard/stats/team/page.tsx (whoever the dashboard draws as a player
-                         is sent to /stats by redirectToClubhouse; a coach gets the same route with only ?area=)
 Address:                 the round filter: window, type, holes, from, to, course (repeated), only, skip (see P005's WIRING);
                          ?area= (production's stats-board address: scoring, game, players for the team) opens that
-                         area's detail on the phone; the old address /stats/team carries only ?area=
+                         area's detail on the phone; the old address /stats/team passes ?area= through its redirect
 Clubhouse route adapter: src/clubhouse/routes/stats.tsx ClubhouseStatsRoute (session, resolveClubhouseTeam;
                          no team -> StatsNoTeam, CH-4309; a player -> their profile, P005; a coach with no
                          ?player= -> StatsTeam)

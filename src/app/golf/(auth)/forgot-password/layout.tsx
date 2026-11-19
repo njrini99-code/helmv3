@@ -14,9 +14,10 @@ export default async function ForgotPasswordLayout({
   children: React.ReactNode;
 }) {
   // CH-15920: a signed-out visitor resets inside the sign-in panel instead
-  // (`?view=forgot`). A signed-in one keeps this page: the proxy deliberately
-  // lets them reach it (BOUNCE_WHEN_AUTHED), and /golf/login would bounce them
-  // to their dashboard. Any session, even a degraded one, counts as signed in.
+  // (`?view=forgot`). A signed-in one keeps this page, Clubhouse's reset form
+  // in the same room (`SignedInReset`): the proxy deliberately lets them reach
+  // it (BOUNCE_WHEN_AUTHED), and /golf/login would bounce them to their
+  // dashboard. Any session, even a degraded one, counts as signed in.
   const supabase = await createClient();
   const { user } = await getUserResilient(supabase);
   if (!user) redirect('/golf/login?view=forgot');

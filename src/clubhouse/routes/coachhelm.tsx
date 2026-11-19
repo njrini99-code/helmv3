@@ -8,6 +8,10 @@ import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
 import { COURSE_TAB } from '@/lib/coachhelm/v3/team-board/flag';
 import { loadCoachPlayerFile, loadFileRoster, loadPlayerYourWeek } from '../data/coachhelm-file';
+import { loadCoachAnalystRead, loadCoachTeamReads, loadPlayerOwnAnalystRead, readsOnForTeam } from '../data/coachhelm-analyst-read';
+import { TEAM_READS_HREF, TEAM_READS_VIEW } from '../data/coachhelm-team-reads-shape';
+import { TeamReads } from '../screens/coachhelm/views/TeamReads';
+import { COACH_BOARD_HREF as COACHHELM_BOARD_PATH } from '../data/coachhelm-track-record-shape';
 import { FileSkeleton } from '../screens/coachhelm/file/FileSkeleton';
 import { PlayerFile } from '../screens/coachhelm/file/PlayerFile';
 import { YourWeek } from '../screens/coachhelm/file/YourWeek';
@@ -84,7 +88,7 @@ function CoachHelmOff({ off }: { off: NonNullable<ChCoachHelmData['off']> }) {
 
 async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer, initialInsight }: { initialInsight?: string; coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
   // The coach's CoachHelm Team page is the drawn golf hole (TeamBoard); its loader checks the CoachHelm gate itself.
-  if (!ask) return <TeamBoard data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} />;
+  if (!ask) return <TeamBoard data={await loadCoachTeamBoard({ coachId, teamId })} teamReadsHref={readsOnForTeam(teamId) ? TEAM_READS_HREF : undefined} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} />;
   // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the Team page is: the
   // address that led here is answered with the Team page's own "CoachHelm is off", and a lookup that failed with Ask's own
   // "did not load" notice, never with a chat that runs against a switch that is off.
@@ -125,13 +129,14 @@ async function CoachPlayerFilePage({ coachId, teamId, playerId, at, insight }: {
 }
 
 async function CoachPlayerFileRead({ scope, at, insight }: { scope: ChCoachPlayerScope; at?: PlayerFileCard; insight?: string }) {
-  const [load, roster] = await Promise.all([loadCoachPlayerFile({ scope }), loadFileRoster(scope)]);
-  return <PlayerFile load={load} at={at} insight={insight} roster={roster} />;
+  const [load, roster, analyst] = await Promise.all([loadCoachPlayerFile({ scope }), loadFileRoster(scope), loadCoachAnalystRead({ teamId: scope.teamId, playerId: scope.playerId })]);
+  return <PlayerFile load={load} at={at} insight={insight} roster={roster} analyst={analyst} />;
 }
 
 async function PlayerYourWeek({ playerId }: { playerId: string }) {
-  const { load } = await loadPlayerYourWeek({ playerId });
-  return <YourWeek load={load} />;
+  // The player's own CoachHelm read (flag `coachhelm_reads_v1`, their team listed) beside the week: off is nothing drawn.
+  const [{ load }, own] = await Promise.all([loadPlayerYourWeek({ playerId }), loadPlayerOwnAnalystRead({ playerId })]);
+  return <YourWeek load={load} own={own} />;
 }
 
 /** One read for a player: the session's id, never the address's; gated as `PlayerHelmView`. */
@@ -145,6 +150,11 @@ async function PlayerReadView({ playerId, insight }: { playerId: string; insight
 /** The coach's Track record (`?view=track-record`, flag `coachhelm_track_record_v1`; the route checks the flag). Its loader checks the CoachHelm gate. */
 async function CoachTrackRecordView({ coachId, teamId }: { coachId: string; teamId: string }) {
   return <TrackRecord load={await loadCoachTrackRecord({ coachId, teamId })} />;
+}
+
+/** CoachHelm reads' team page (`?view=team-reads`, flag `coachhelm_reads_v1` and the team listed; the route checks both). */
+async function CoachTeamReadsView({ teamId }: { teamId: string }) {
+  return <TeamReads load={await loadCoachTeamReads({ teamId })} />;
 }
 
 /** The coach's Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`; the route checks the flag). Its loader checks the CoachHelm gate. */
@@ -254,6 +264,15 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
       return (
         <Suspense fallback={<ReadSkeleton />}>
           <CoachReadPage coachId={team.coachId} teamId={team.teamId} playerId={player} insight={insight} />
+        </Suspense>
+      );
+    }
+    // CoachHelm reads' team page: the coach's alone, and only for a team on reads (flag and team list); otherwise the board.
+    if (view === TEAM_READS_VIEW) {
+      if (!readsOnForTeam(team.teamId)) redirect(COACHHELM_BOARD_PATH);
+      return (
+        <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
+          <CoachTeamReadsView teamId={team.teamId} />
         </Suspense>
       );
     }

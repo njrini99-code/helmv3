@@ -31,6 +31,8 @@ export interface RoundRow {
   /** YYYY-MM-DD (a calendar day, not an instant). */
   round_date: string;
   round_type: string | null;
+  /** `golf_rounds.course_name`: read only to name an evidence round on a card (reads/). Optional so older fixtures need not carry it. */
+  course_name?: string | null;
   total_score: number | null;
   score_to_par: number | null;
   front_nine: number | null;

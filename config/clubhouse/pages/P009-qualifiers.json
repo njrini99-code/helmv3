@@ -14,6 +14,40 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/qualifiers",
+      "audience": "shared",
+      "name": "Qualifiers",
+      "coach": "src/clubhouse/screens/qualifiers/QualifiersList.tsx#QualifiersList",
+      "player": "src/clubhouse/screens/qualifiers/QualifiersList.tsx#QualifiersList"
+    },
+    {
+      "route": "/golf/dashboard/qualifiers/new",
+      "audience": "coach",
+      "name": "New qualifier",
+      "coach": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#QualifierForm"
+    },
+    {
+      "route": "/golf/dashboard/qualifiers/[id]",
+      "audience": "shared",
+      "name": "Qualifier",
+      "coach": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
+      "player": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail"
+    },
+    {
+      "route": "/golf/dashboard/qualifiers/[id]/edit",
+      "audience": "coach",
+      "name": "Edit qualifier",
+      "coach": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#QualifierForm"
+    },
+    {
+      "route": "/golf/dashboard/qualifiers/[id]/selection",
+      "audience": "coach",
+      "name": "Qualifier selection",
+      "coach": "src/clubhouse/screens/qualifiers/QualifierSelection.tsx#QualifierSelection"
+    }
+  ],
   "semanticFeatures": [
     "qualifiers"
   ],

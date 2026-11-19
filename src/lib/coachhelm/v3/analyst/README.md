@@ -278,6 +278,42 @@ The target comes from the flags. No env file is loaded. It refuses when the URL 
 and when the key is a JWT issued for it. The key is read from the named variable and never printed. `--out` writes
 every sheet and its candidates to a local file. No names are read.
 
+## Reads: the card a coach sees (`reads/`)
+
+Stage 1 of the insights rebuild (`COACHHELM_2_TO_10.md` section 6). No model. Flag `coachhelm_reads_v1`, team scoped by
+`COACHHELM_READS_TEAM_IDS` (`reads/flag.ts`, the Miss Compass pattern), off everywhere.
+
+| File | What it is |
+| --- | --- |
+| `reads/types.ts` | `ReadPayload`: the saved card. Coach-only blocks are `{ audience: 'coach_only' }`. |
+| `reads/format.ts` | Every number is formatted once into `figures`; the words are built from those strings. |
+| `reads/words.ts` | Headline, "how we found this" (three sentences: the part with its range and how sure; one level down with the counted pattern; which rounds and how many shots), "what would change this", the missing and freshness lines. Plain words, no em dashes. |
+| `reads/evidence.ts` | The evidence rounds with course, score, date, and the holes and shots that carry the read: the same per-shot strokes gained (`shotSgForRound`) and band rule (`bandOf`) the breakdown counted. |
+| `reads/build.ts` | `buildTeamReads(rows)`: the team's fact sheets, `findNotable`, and one payload per player. Pure. |
+| `reads/hash.ts` | `contentHash`: sorted-key JSON of everything a coach sees, `as_of` left out. |
+| `reads/store.ts` | The held table `golf_coach_reads` and view `golf_coach_reads_current` through a narrow typed wrapper (not in `database.ts`). 42P01 / PGRST205 reads as `held`. Writes only rows whose hash changed. |
+| `reads/run.ts` | Server: per team, with a 20 s limit, never throws. `refreshReadsAfterRound` (from `postRoundTrigger`, before the terminal state is written) and `refreshReadsNightly` (the roster sweep). No listed team: no database call. |
+| `reads/player-card.ts` | `forPlayer`: removes every coach-only block and team figure, for the player's own card. |
+| `reads/card-text.ts` | A card as text, for the owner's grading sheet (the dry run prints one per player). |
+
+| `reads/parts.ts` | Stage 2: the four parts side by side (season, last 10 against the 10 before, the team middle coach-only, one level down). |
+| `reads/catalogue.ts` | Stage 2: the counted reads ranked 3 to 12 (doubles and their make-up, mistakes, tee penalties by kind and club, tee miss side, approach length, first-putt length, chip leave and the putt after, long three-putts, par 5 seconds described only), each with its floor. A signal is rule (b) one level down: robust z against the teammates, own range clear of the median, Benjamini-Hochberg at 0.10, worse direction only, at most three, one per family. |
+| `reads/team-page.ts` | Stage 2: the shared part said once, the exceptions, who improved, the same-card share. Coach only. |
+| `reads/engine-gates.ts` | Stage 2: for a team on reads the old Tier-1 checks stop writing cards (the philosophy gate); the hidden v2 writer stops only behind `coachhelm_v2_writer_stop_v1` (off everywhere). |
+| `reads/memory.ts` | Stage 4: `decideNext(previous, fresh)`. Words change only at a checkpoint (3 rounds or 20 shots); stronger or weaker said once; cleared after two weak checkpoints ("was X, now Y" first), retired with a reason when another part clearly takes over, "back" when it returns; a coach's "not useful" or "wrong" keeps it down unless the evidence moves materially; a new season starts again. |
+| `reads/focus.ts` | Stage 4: the "since the focus was set" line and the one-word verdict, the verdict words and `shrinkToward` drift from `v3/verdicts` and `v3/support`. |
+| `reads/team-brief.ts` | Stage 5: the weekly team brief as data (no screen, no send). |
+| `reads/written.ts` | Stage 3 wiring: behind `coachhelm_reads_written_v1` (team list `COACHHELM_READS_WRITTEN_TEAM_IDS`) as well as `coachhelm_reads_v1`; a paragraph only where the card's words changed; the player's paragraph is its own call (`written_player`). |
+
+Held tables: `20261117120000_golf_coach_reads.sql` (the reads) and `20261117121000_golf_coach_read_actions.sql` (coach
+feedback and focus links; no screen writes them yet).
+
+The Stage 3 seam: `ReadPayload.written?: { what, rules_in_out, this_week, watch, model, checked_at }`, written by
+`analyst/writer/` after code checks it. The card draws it when present; absent, the Stage 1 card stands.
+
+Storage is HELD (`supabase/migrations/20261117120000_golf_coach_reads.sql`, HELD.md): coach-only RLS
+(`is_team_coach(team_id)`), no player policy, service role writes, anon revoked.
+
 ## Tests
 
 `npm run test:file -- src/lib/coachhelm/v3/analyst/__tests__/`
@@ -291,4 +327,5 @@ every sheet and its candidates to a local file. No names are read.
 | `stats-parity.test.ts` | The fact sheet against the Clubhouse functions over the same rows. |
 | `priority.test.ts` | The priority and each certainty, the team shape, the season read, and the make-rate definition count. |
 | `breakdown.test.ts` | The bands of each area (lay-ups apart, bands adding up to the round), each counted pattern and when it is not traced, the teammates' median, naming a band or saying spread evenly, the evidence rounds, the lead pattern, and the distinctness count. |
+| `reads/__tests__/*.test.ts` | The words (every number in the text is a payload figure; no em dashes; the missing line; freshness), the evidence rounds, parity of the saved payload with Stats' `sgOver`, the hash and the changed-rows rule, the flag (off unless listed), and the hooks (no listed team, no database call). |
 | `dry-run.test.ts` | Flags, the production refusal, the team report, ten ordinary players, and the Supabase sources over a client that can only select (paging past 1,000 rows, id chunks). |
