@@ -260,7 +260,8 @@ export function PeekTarget({
         onFocus: (e: React.FocusEvent) => {
           const target = e.target as HTMLElement;
           if (!target.matches?.(':focus-visible')) return;
-          if (target.closest?.('[data-ch-peek-quiet]') || phoneLayout()) return;
+          if (target.closest?.('[data-ch-peek-quiet]')) return;
+          if (phoneLayout()) return;
           clear();
           timer.current = setTimeout(() => open('hover'), PEEK_FOCUS_MS);
         },
