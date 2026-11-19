@@ -11,7 +11,18 @@ export type MotionRow = {
   iterations: number | 'infinite';
   target: string;
   pseudo: string | null;
+  /**
+   * What drives it: `document` (time, the default when absent) or a scroll or view timeline (`ScrollTimeline`,
+   * `ViewTimeline`), or `none`. A scroll-driven animation (the large title's `ch-lt-under`, shell.css) moves only as the
+   * person scrolls: it is never motion on its own, so neither rule below judges it.
+   */
+  timeline?: string;
 };
+
+/** Whether an animation runs on time. A scroll or view timeline is driven by the person's own scroll, never by the clock. */
+export function runsOnTime(r: { timeline?: string }): boolean {
+  return r.timeline == null || r.timeline === 'document';
+}
 
 /** Properties whose animation recalculates layout on every frame (the same set the CSS ratchet and the probe use). */
 export const LAYOUT_PROPS = new Set([
@@ -59,6 +70,7 @@ export function judgeMotion(
   for (const r of rows) {
     // Next's development indicator is dev chrome, not the app (the gate hides it the same way).
     if (DEV_CHROME.test(r.target)) continue;
+    if (!runsOnTime(r)) continue;
     // React's generated ids (useId: `_R_1ue9b5…_`, `:r3:`) change between builds, so they never name a target.
     const target = r.target.replace(/#(?:_R_[\w]+_|:r[\w]+:)/g, '');
     const where = `${target}${r.pseudo ?? ''} ${r.name || r.kind}`.trim();
@@ -89,16 +101,19 @@ export function judgeMotion(
 }
 
 /** A running animation, read once after a screen has loaded and sat idle. */
-export type IdleRow = { kind: string; name: string; target: string; pseudo: string | null; iterations: number | 'infinite' };
+export type IdleRow = { kind: string; name: string; target: string; pseudo: string | null; iterations: number | 'infinite'; timeline?: string };
 
 /**
  * After load and a second of idle, nothing runs (3.1: content never moves on its own; the working dots are the one loop,
- * and only while work runs). One sentence per element still animating.
+ * and only while work runs). One sentence per element still animating. A scroll-driven animation counts as `running` for
+ * as long as its page can scroll, but it only moves while the person scrolls, so it is not idle motion (audit 2026-11-19:
+ * the large title's fade was 29 of the gate's 31 failures).
  */
 export function judgeIdle(rows: IdleRow[]): string[] {
   const out = new Set<string>();
   for (const r of rows) {
     if (DEV_CHROME.test(r.target)) continue;
+    if (!runsOnTime(r)) continue;
     const target = r.target.replace(/#(?:_R_[\w]+_|:r[\w]+:)/g, '');
     out.add(`idle: ${target}${r.pseudo ?? ''} ${r.name || r.kind} still runs after load${r.iterations === 'infinite' ? ' (a loop)' : ''}`.replace(/\s+/g, ' '));
   }
