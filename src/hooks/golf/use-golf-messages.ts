@@ -1144,6 +1144,12 @@ export function useGolfMessages(
       ? 'unknown'
       : 'refused';
 
+  // golf_messages.is_test is live in production (20261115211200, default false)
+  // but only reaches the generated types with the next db:types regen. A spread
+  // fills it on the optimistic row under either version of the types; the
+  // composer's own message is never a QA write, and the server row replaces it.
+  const OPTIMISTIC_ROW_FLAGS = { is_test: false } as const;
+
   const sendMessage = async (content: string, replyToId?: string | null, sendOptions?: { notifyAnyway?: boolean }) => {
     const notifyAnyway = sendOptions?.notifyAnyway === true;
     // Clear typing indicator when sending
@@ -1166,6 +1172,7 @@ export function useGolfMessages(
       created_at: new Date().toISOString(),
       edited_at: null,
       is_deleted: false,
+      ...OPTIMISTIC_ROW_FLAGS,
       // A plain text message from the composer — never one of the
       // structured kinds (poll/rsvp/event/etc), never pinned. Replies use the existing link.
       // These columns (and golf_message_reactions/_mentions/_responses)
