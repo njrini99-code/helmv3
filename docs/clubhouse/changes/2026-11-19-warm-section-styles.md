@@ -20,7 +20,7 @@ Held items: none
   one sheet per idle moment. A switch then finds the sheet already there.
 - `src/lib/error-logging.ts`: an unhandled rejection whose reason is a
   stylesheet link's `error` Event is handled and logged as "Stylesheet
-  failed to load: <address>" (medium). It is not logged while the page
+  failed to load: {address}" (medium). It is not logged while the page
   is going away. Every other rejection is unchanged
   (`src/lib/stylesheet-load-failure.ts`).
 
