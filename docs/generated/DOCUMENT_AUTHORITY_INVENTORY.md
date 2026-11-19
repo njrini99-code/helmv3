@@ -1169,6 +1169,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-19-motion-batch3.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-19-native-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-19-phone-edges-writer.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-19-warm-section-styles.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1326,6 +1327,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-19-motion-batch3.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-19-native-push-and-prefetch.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-19-phone-edges-once.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-19-warm-section-styles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
