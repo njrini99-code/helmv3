@@ -16,6 +16,7 @@
  */
 import { changeSupported, datePool, distanceAllowed, factLabels, numberPool, type WriterPayload } from './payload';
 import { evaluate, extractDates, extractNumbers, inPool, matchesAtPrecision, type FoundNumber } from './numbers';
+import { splitSentences } from '@/lib/utils/sentences';
 import { DRAFT_FIELDS, TEMPLATE_SIMILARITY_MAX, type AdviceArea, type Draft, type DraftField, type Rejection } from './types';
 
 // ── The lists ───────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -130,7 +131,7 @@ export const MAX_WORDS: Record<DraftField, number> = { what: 70, rules_in_out: 7
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-const sentences = (text: string): string[] => text.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
+const sentences = (text: string): string[] => splitSentences(text).filter((s) => s.trim().length > 0);
 const words = (text: string): string[] => text.toLowerCase().match(/[a-z0-9']+/g) ?? [];
 
 function trigrams(text: string): Set<string> {
