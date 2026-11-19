@@ -11,7 +11,7 @@ import { Skeleton, SkelRows } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { zoneFormat } from '../../lib/zone-format';
-import { chTrail } from '../../lib/track';
+import { chReport, chTrail } from '../../lib/track';
 import { clock, dayLabel, needsMyAck, railTime, type ChAnnouncement, type ChAnnouncementDetail } from './model';
 import type { ChMessagesApi } from './MessagesView';
 import { plural, pluralWord } from '../../lib/plural';
@@ -164,7 +164,10 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
     const win = window.open('', '_blank');
     setBusy(`doc:${d.id}`);
     const res = await sign(d.id)
-      .catch(() => ({ url: null, noContent: false }))
+      .catch((err: unknown) => {
+        chReport(err, { surface: 'messages.announcementDocument', severity: 'low', extra: { documentId: d.id } });
+        return { url: null, noContent: false };
+      })
       .finally(() => setBusy(null));
     const { url } = res;
     const noContent = !!res.noContent;
@@ -187,7 +190,11 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
     setFailed(false);
     load(a.id)
       .then((d) => live && (d ? setDetail(d) : setFailed(true)))
-      .catch(() => live && setFailed(true));
+      .catch((err: unknown) => {
+        // A null answer is reported where it is read; a throw is reported here.
+        chReport(err, { surface: 'messages.announcement', extra: { announcementId: a.id } });
+        if (live) setFailed(true);
+      });
     return () => {
       live = false;
     };

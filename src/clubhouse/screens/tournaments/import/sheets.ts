@@ -222,6 +222,7 @@ export function readXlsx(bytes: Uint8Array): ChSheetsRead {
       filter: (f) => f.originalSize <= MAX_PART_BYTES && (f.name === 'xl/workbook.xml' || f.name === 'xl/_rels/workbook.xml.rels' || f.name === 'xl/sharedStrings.xml' || f.name.startsWith('xl/worksheets/sheet')),
     });
   } catch {
+    // The coach's file is not a zip the reader can open: said as a broken file, not reported.
     return { ok: false, reason: 'broken' };
   }
   const workbook = files['xl/workbook.xml'];

@@ -4,6 +4,7 @@ import { Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { haptic } from '../../../lib/haptics';
+import { chReport } from '../../../lib/track';
 import { useAction, type ActionResult, type ServerResult } from '../../../lib/use-action';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
@@ -159,7 +160,8 @@ export function RoundRuntime({
       s.current.setError('');
       setFailed(null);
       setRunning(via === 'exit' ? 'exit-discard' : 'closed-discard');
-      const out = outcomeOf(await capture(() => (via === 'closed' ? s.current.submitDiscard() : s.current.deleteRound())));
+      const ran = await capture(() => (via === 'closed' ? s.current.submitDiscard() : s.current.deleteRound()));
+      const out = outcomeOf(ran);
       if (out.conflict) {
         discarding.current = false;
         setRunning(null);
@@ -168,7 +170,11 @@ export function RoundRuntime({
       if (out.failed) {
         discarding.current = false;
         setRunning(null);
-        if (via === 'exit') setFailed({ kind: 'exit-discard', error: reasonText(out.reason) ?? 'It is still saved. Try again, or keep playing.' });
+        if (via === 'exit') {
+          // The Exit sheet's line owns this failure, so the action is quiet and useAction reports nothing: reported here.
+          chReport(ran.thrown ?? new Error(out.reason || 'discard failed'), { surface: 'rounds.entry', action: 'rounds.discardRound', severity: 'high' });
+          setFailed({ kind: 'exit-discard', error: reasonText(out.reason) ?? 'It is still saved. Try again, or keep playing.' });
+        }
         return { success: false, error: out.reason, data: { via } };
       }
       // The engine leaves the screen when a discard works. A failure it reports only as `error` comes later.
@@ -191,8 +197,11 @@ export function RoundRuntime({
       s.current.setError('');
       setFailed(null);
       setRunning('practice');
-      const out = outcomeOf(await capture(() => s.current.saveAsPractice()));
+      const ran = await capture(() => s.current.saveAsPractice());
+      const out = outcomeOf(ran);
       if (out.failed && !out.conflict) {
+        // Always quiet (the sheet's line says it), so useAction reports nothing: reported here.
+        chReport(ran.thrown ?? new Error(out.reason || 'save as practice failed'), { surface: 'rounds.entry', action: 'rounds.saveAsPractice', severity: 'high' });
         practicing.current = false;
         setRunning(null);
         setFailed({ kind: 'practice', error: out.reason ?? 'Your round is still saved. Try again in a moment.' });
@@ -211,6 +220,8 @@ export function RoundRuntime({
     if (!running || !session.error) return;
     const reason = session.error;
     haptic('error');
+    // The engine raised this failure only as its `error`, after the action had returned, so nothing has reported it yet.
+    chReport(new Error(reason), { surface: 'rounds.entry', action: running === 'practice' ? 'rounds.saveAsPractice' : 'rounds.discardRound', severity: 'high', extra: { via: running } });
     if (running === 'exit-discard') {
       discarding.current = false;
       setFailed({ kind: 'exit-discard', error: reasonText(reason) ?? 'It is still saved. Try again, or keep playing.' });

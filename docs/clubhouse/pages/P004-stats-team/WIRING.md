@@ -16,21 +16,25 @@ counts include wrappers rather than unique popups.
 ## Entry point
 
 ```text
-Route:                   /golf/dashboard/stats (coach) and the old address /golf/dashboard/stats/team
-Pages:                   src/app/golf/(dashboard)/dashboard/stats/page.tsx (isClubhouseFor -> Clubhouse, else Fairway)
-                         src/app/golf/(dashboard)/dashboard/stats/team/page.tsx (a non-coach is sent to /stats;
-                         isClubhouseFor('coach') -> the same route with no parameters, else Fairway)
+Route:                   /golf/dashboard/stats (coach). The old address /golf/dashboard/stats/team is a redirect in
+                         next.config.mjs to /stats for both roles (GAP-R-10); its page file was deleted on 2026-11-18
+                         and it is no longer in CH_REBUILT_ROUTES
+Pages:                   src/app/golf/(dashboard)/dashboard/stats/page.tsx (always ClubhouseStatsRoute; the flag and the
+                         Fairway branch were removed on 2026-11-14)
 Address:                 the round filter: window, type, holes, from, to, course (repeated), only, skip (see P005's WIRING);
-                         the old address /stats/team carries none
+                         ?area= (production's stats-board address: scoring, game, players for the team) opens that
+                         area's detail on the phone; the old address /stats/team passes ?area= through its redirect
 Clubhouse route adapter: src/clubhouse/routes/stats.tsx ClubhouseStatsRoute (session, resolveClubhouseTeam;
                          no team -> StatsNoTeam, CH-4309; a player -> their profile, P005; a coach with no
                          ?player= -> StatsTeam)
 Server loader:           src/clubhouse/data/stats-team.ts loadTeamStats (with data/stats-common.ts and
                          data/season.ts; each failed read logs through chLogServer('stats', …) and never throws)
 Screen:                  src/clubhouse/screens/stats/StatsTeam.tsx (server) -> StatsTeamIslands.tsx (client
-                         islands) | StatsTeamPhone.tsx (useChPhone, 820px)
-Skeleton:                src/clubhouse/screens/stats/StatsSkeleton.tsx (CH-4401), shown by both loading.tsx files
-                         through ClubhouseSwitch
+                         islands) | StatsTeamPhoneShs.tsx (useChPhone, 820px; the Stats v2 phone, its flag removed on
+                         2026-11-11, which reuses StatsTeamPhone.tsx's parts); a phone area's detail is
+                         StatsDetailScreen.tsx (detail.tsx, use-stats-detail.ts)
+Skeleton:                src/clubhouse/screens/stats/StatsSkeleton.tsx (CH-4401) and StatsRouteSkeleton.tsx, shown by
+                         both loading.tsx files
 Route error:             both error.tsx files (RouteErrorBoundary, the shell's route error view)
 ```
 
@@ -79,7 +83,10 @@ and SG sort are local state and have no action record.
 | --- | --- | --- |
 | `screens/stats/StatsTeam.tsx` | The server-rendered page: header, notices, the empty card, figures, putting, season bests | 40101, 40401, 40402, 40407, 40602 to 40604, 40605, 40608, 40609 |
 | `screens/stats/StatsTeamIslands.tsx` | The client islands: `StatsTeamFrame` (window and filter changes: the offline refusal, the slow notice, the new address), `TeamHeadActions`, `ShowSeason`, `TeamFilter`, `TeamFilterEmpty`, `RetryNotice`, `TeamCharts` (trend, leg cards, grid) | 40301, 40403 to 40405, 40408, 40601, 40606, 40607, 40701, 40702, 41601, 41602 |
-| `screens/stats/StatsTeamPhone.tsx` | The phone view and `ScoreLine` (also used by the player's phone profile) | 41901, 41805 |
+| `screens/stats/StatsTeamPhoneShs.tsx` | The phone view (Stats v2, `clubhouse_stats_redesign_v1` removed 2026-11-11) | 41901 |
+| `screens/stats/StatsTeamPhone.tsx` | The phone parts `StatsTeamPhoneShs` reuses (`Players`, `Putting`, the figure and trend readings) and `ScoreLine` (also used by the player's phone profile) | 41901, 41805 |
+| `screens/stats/StatsDetailScreen.tsx`, `detail.tsx`, `use-stats-detail.ts`, `detail-route.ts` | A phone area's pushed detail (scoring, game, players; `?area=`) | — |
+| `screens/stats/TeamTape.tsx`, `TeamRank.tsx`, `TeamTrendChart.tsx`, `StatsTeamFirstRun.tsx` | The team's figure tape, the ranked grid, the trend chart, the first-run page | — |
 | `screens/stats/StatsSkeleton.tsx` | The route skeleton (shared with the profile) | 40201 |
 | `screens/stats/WindowSwitch.tsx` | The switch (with a Custom pill while a date range is on), the words for each window and `changeWords` | 40701, 40702 |
 | `screens/stats/StatsFilter.tsx` | The round filter: Filter button, chips, count line, the per-18 note, the sheet (with Holes), `FilterEmpty`, `EarlyRead`, `NineHint` (shared with the profile) | CH-4101, CH-4313 to CH-4319 |
@@ -92,7 +99,7 @@ and SG sort are local state and have no action record.
 | Path | Type | Used by |
 | --- | --- | --- |
 | `src/clubhouse/lib/use-phone.ts` (`useChPhone`) | Clubhouse | `StatsTeamFrame` |
-| `src/clubhouse/lib/haptics.ts`, `track.ts` (`chReport`, `chTrail`), `use-action.ts` (`isOffline`, `CH_SLOW_SAVE_AFTER` only) | Clubhouse | the islands |
+| `src/clubhouse/lib/haptics.ts`, `lib/track.ts` (`chReport`, `chTrail`), `lib/use-action.ts` (`isOffline`, `CH_SLOW_SAVE_AFTER` only) | Clubhouse | the islands |
 | `next/navigation` `useRouter`, React `useTransition` | framework | `StatsTeamFrame`, `RetryNotice` |
 
 There are no realtime hooks and no shared UI hooks: the page is read once per

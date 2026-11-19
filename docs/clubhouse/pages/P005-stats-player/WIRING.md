@@ -17,8 +17,10 @@ counts include wrappers rather than unique popups.
 
 ```text
 Route:                   /golf/dashboard/stats?player=<golf_players.id> (coach) and /golf/dashboard/stats (player)
-Page:                    src/app/golf/(dashboard)/dashboard/stats/page.tsx (isClubhouseFor -> Clubhouse, else Fairway)
-Address:                 ?player= ?tab= and the round filter: window, type, holes, from, to, course (repeated), only, skip.
+Page:                    src/app/golf/(dashboard)/dashboard/stats/page.tsx (always ClubhouseStatsRoute; the flag and the
+                         Fairway branch were removed on 2026-11-14)
+Address:                 ?player= ?tab= ?area= (production's stats-board areas, opened as the phone's detail) and the
+                         round filter: window, type, holes, from, to, course (repeated), only, skip.
                          `parseFilter` (data/stats-filter.ts) keeps only what is usable: a type that is a kind, a date that
                          is a calendar day, a round id shaped like one; the page passes the address through `query`
 Clubhouse route adapter: src/clubhouse/routes/stats.tsx ClubhouseStatsRoute (session, resolveClubhouseTeam;
@@ -34,7 +36,9 @@ Server loader:           src/clubhouse/data/stats-player.ts loadPlayerProfile (w
                          through chLogServer('stats', …) and never throws; a failed player or membership read
                          throws, so the route error view shows)
 Screen:                  src/clubhouse/screens/stats/StatsPlayer.tsx (client; rendered on the server as desktop)
-                         -> GameDetail.tsx | StatsPlayerPhone.tsx (useChPhone, 820px)
+                         -> OverviewZones, PlayerStage, StatsInsight, GameDetail.tsx, Goals | StatsPlayerPhoneShs.tsx
+                         (useChPhone, 820px; the Stats v2 phone, which replaced StatsPlayerPhone.tsx when its flag was
+                         removed on 2026-11-11, #2497); a phone area's detail is StatsDetailScreen.tsx
 Skeleton:                src/clubhouse/screens/stats/StatsSkeleton.tsx (CH-4401), Team stats' shape
 Route error:             stats/error.tsx (RouteErrorBoundary, the shell's route error view)
 ```
@@ -42,8 +46,8 @@ Route error:             stats/error.tsx (RouteErrorBoundary, the shell's route 
 ## End-to-end graph
 
 ```text
-UI (StatsPlayer: hero, tabs, window switch, Overview, Game detail, Rounds, Development, FocusAreaSheet;
-    StatsPlayerPhone)
+UI (StatsPlayer: hero, tabs, window switch, Overview, Game detail, Rounds, Development, Goals, FocusAreaSheet;
+    StatsPlayerPhoneShs)
 ↓
 Action (changeWindow, tab change, Previous / Next, Message, Add focus area, Share, Try again)
 ↓
@@ -81,8 +85,11 @@ record.
 | ACT-P005-MESSAGE-PLAYER | Message (coach; the phone header icon) | a link to `/golf/dashboard/messages?player=<id>` | none (Messages opens the thread) | none | 50104 |
 | ACT-P005-SCHEDULE-PLAYER | Schedule 1:1 (coach, desktop hero) | a link to `/golf/dashboard/calendar?new=1&with=<id>` (D-52) | none (Calendar opens its editor) | none | Calendar 60103 |
 | ACT-P005-ADD-FOCUS-AREA | Add focus area, Propose focus area (coach) | `submit` in `FocusAreaSheet` → `save.run` | `createFocusArea` (`actions/development.ts`) | golf_player_focus_areas | name 50501 · lands 50901 · fails 50601 · adding 50301 · text kept 51201 · page read again 51501 · coach only 50806 · offline 10703 |
-| ACT-P005-SHARE-PLAYER | Share (coach, phone) | `share` in `StatsPlayerPhone` | none (`navigator.share`, else the clipboard) | none | fails 50610 |
+| ACT-P005-SHARE-PLAYER | Share (coach, phone) | `share` in `StatsPlayerPhoneShs` | none (`navigator.share`, else the clipboard) | none | fails 50610 |
 | ACT-P005-RETRY-READ | Try again on a failed-read notice | `router.refresh` | `loadPlayerProfile` | the tables above | recovery 51401 · rounds 50602 · shot detail 50603 · development 50604 |
+| ACT-P005-SET-GOAL | Set a goal (player, Development) | `submit` in `GoalSheet` (useAction `stats.setGoal`) | `createGoal` (`actions/v3/goals.ts`) | golf_goals | validation 50503 · fails 50620 · loading 50204 · pending 50203 · empty 50423 |
+| ACT-P005-ANSWER-GOAL-SUGGESTION | Accept or dismiss a suggested goal (player) | `accept.run`, `dismiss.run` in `Goals.tsx` `SuggestionRow` | `acceptGoalSuggestion` (`actions/v3/goals.ts`) | golf_goal_suggestions, golf_goals | fails 50621 · dismiss fails 50622 · didn't load 50624 · pending 50203 |
+| ACT-P005-CHANGE-GOAL | Pause, resume or abandon a goal (coach) | `pause.run`, `resume.run`, `abandon.run` in `Goals.tsx` `GoalStatus` | `pauseGoal` and its siblings (`actions/v3/goals.ts`) | golf_goals | fails 50623 · confirm 51101 · pending 50203 |
 
 ## Components
 
@@ -93,7 +100,11 @@ record.
 | `screens/stats/GameMore.tsx` | The five sections' More detail panels (scoring, off the tee, approach, short game, putting) | CH-5209, CH-5210, CH-5212, CH-5311, CH-5312, CH-5314, CH-5315, CH-5317 |
 | `screens/stats/detail.tsx` | `Panel`, `Empty`, `Rule`, `More` (a native disclosure), `Tiles`, `DataTable`, `RoundLine`, `SectorGrid` | CH-5317 |
 | `screens/stats/RoundsExtra.tsx` | The Rounds tab's score by round, personal bests and this window against the one before (a card on the desktop, a panel on the phone) | CH-5313, CH-5314 |
-| `screens/stats/StatsPlayerPhone.tsx` | The phone profile: header, three figures, chips, scoring line, rounds, development, Share | 50610, 51901, 51807 |
+| `screens/stats/StatsPlayerPhoneShs.tsx` | The phone profile (Stats v2; was `StatsPlayerPhone.tsx` until 2026-11-11): header, figures, scoring, rounds, development, Share | 50610, 51901, 51807 |
+| `screens/stats/OverviewZones.tsx`, `PlayerStage.tsx`, `StatsInsight.tsx` | The Overview's seven zones, the scoring-form ribbon, and the insight-first card (the one or two changes that clear their standard error) | — |
+| `screens/stats/Goals.tsx`, `GoalSheet.tsx` | Goals on the Development tab: Set a goal (player), suggested goals, and a coach's Pause, Resume and Abandon | 50203, 50204, 50423, 50503, 50620 to 50624, 51101 |
+| `screens/stats/FocusLoop.tsx`, `ProposalAnswer.tsx` | A focus area's prescription and verdict loop; the player's Accept or Decline of a coach's proposed focus area (Q-77) | — |
+| `screens/stats/StatsDetailScreen.tsx`, `use-stats-detail.ts`, `detail-route.ts` | A phone area's pushed detail (`?area=`) | — |
 | `screens/stats/charts.tsx` | `YardagePage`, `FigureGauge`, `SgChangeChip`, the ladders and compares (shared with Team stats; `FigureCards`, `FieldTable`, `LegRoute` and `ScoreBoardTrend` were removed 2026-10-21) | 51803 |
 | `screens/stats/StatsFilter.tsx` | The round filter: Filter button, chips, count line, the sheet (`FilterSheet`), `FilterEmpty` and `EarlyRead` (shared with Team stats; each page gives it its own codes), the per-18 note and `NineHint` | CH-5102, CH-5320 to CH-5324 |
 | `screens/stats/StatsSkeleton.tsx` | The route skeleton (shared with Team stats) | CH-4401 |
@@ -104,8 +115,8 @@ record.
 | Path | Type | Used by |
 | --- | --- | --- |
 | `src/clubhouse/lib/use-action.ts` (`useAction`, `isOffline`, `CH_SLOW_SAVE_AFTER`) | Clubhouse | `FocusAreaSheet`, `changeWindow` |
-| `src/clubhouse/lib/use-phone.ts` (`useChPhone`), `reduced-motion.ts`, `haptics.ts`, `track.ts` | Clubhouse | throughout |
-| `src/clubhouse/shell/crumbs.tsx` (`usePageCrumbs`), `shell/phone-chrome.tsx` (`PhoneTop`, `useBackFromMore`) | Clubhouse | `StatsPlayer`, `StatsPlayerPhone` |
+| `src/clubhouse/lib/use-phone.ts` (`useChPhone`), `lib/reduced-motion.ts`, `lib/haptics.ts`, `lib/track.ts` | Clubhouse | throughout |
+| `src/clubhouse/shell/crumbs.tsx` (`usePageCrumbs`), `shell/phone-chrome.tsx` (`PhoneTop`, `useBackFromMore`) | Clubhouse | `StatsPlayer`, `StatsPlayerPhoneShs` |
 | `next/navigation` `useRouter`, React `useTransition` | framework | `StatsPlayer` |
 
 There are no realtime hooks: the page is read once per render, and again after a
@@ -200,8 +211,8 @@ None.
   `StatsFilter.tsx`, `WindowSwitch.tsx` (a Custom pill, `changeWords`) and
   `links.ts` are shared with Team stats (P004). The page file also passes the
   address through (`src/app/golf/(dashboard)/dashboard/stats/page.tsx`);
-  `stats/team/page.tsx` still renders the route with no parameters (the old
-  address has no filter).
+  the old address `/stats/team` is a redirect to `/stats` (`next.config.mjs`;
+  its page file was deleted on 2026-11-18).
 - Holes (2026-09-30): the filter carries `holes` (18, 9 or all).
   `data/stats-weight.ts` is pure and shared with Team stats: `weightedMean` (a
   round weighs holes over 18), `effectiveRounds` / `effectiveCount` (the floors
@@ -220,7 +231,8 @@ None.
 - `charts.tsx`, `WindowSwitch.tsx`, `ScoreLine` (in `StatsTeamPhone.tsx`) and
   `StatsSkeleton` are shared with Team stats (P004): a change there changes both
   pages.
-- `createFocusArea` is shared with the Fairway development screens. It writes
+- `createFocusArea` (`src/app/golf/actions/development.ts`) also served the
+  Fairway development screens until their retirement on 2026-11-14. It writes
   the signed-in coach's id (the `coach_id` the page sends is ignored) and always
   runs its roster check: no team, or a player not active on the coach's team,
   refuses. Fixed 2026-10-08.

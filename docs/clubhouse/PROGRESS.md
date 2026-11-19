@@ -678,7 +678,8 @@ Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
 | Recruiting | /golf/dashboard/recruiting (coach; boards in the Clubhouse Recruiting canvas, Q-87) | done | doing | done | doing | doing | done | doing | doing | doing | doing | todo |
 | Auth | /golf/login, /golf/welcome, /golf/signup, /golf/player (signed out; boards design/handoff/auth, Q-96; flag golf_clubhouse_front_door) | done | doing | done | doing | doing | done | doing | doing | doing | doing | todo |
 | Tournaments | /golf/dashboard/tournaments with /new, /compare, /history, /links, /[id], /[id]/edit, /[id]/lineup, /[id]/live (coach; player list and event view; boards `Coach - Tournaments.html`, phone; plan 4.33, D-80 to D-101; HELD-DATA, routes not wired, preview only) | done | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
-| Practice, Scouting (Lineups and Events now live inside Tournaments, D-80) | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Practice | /golf/dashboard/practice with /drills, /drills/[drillId], /groups, /templates, /format, /plan/[planId], /plan/[planId]/edit, /print/[planId] (coach and player; P017; design `design-refresh/practice-plan/redesign/coachhelm-practice.html`, no owner phone board; catalog rows are the "Practice:" rows of `catalog/coachhelm.md`, CH-13080 and up) | doing | doing | doing | doing | doing | doing | doing | doing | doing | todo | todo |
+| Scouting (Lineups and Events now live inside Tournaments, D-80) | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Player app (all screens) | /golf/dashboard (player role; built: Home, Stats, Calendar, Messages, Qualifiers, Team Hub, Settings; next: Rounds, CoachHelm, Classes) | doing | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 <!-- clubhouse:screens:end -->
 

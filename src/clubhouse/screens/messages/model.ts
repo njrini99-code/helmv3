@@ -178,6 +178,7 @@ export function linkParts(text: string): Array<string | { href: string; text: st
       const u = new URL(raw);
       if (u.protocol === 'http:' || u.protocol === 'https:') href = u.href;
     } catch {
+      // Message text that only looks like a link stays text.
       href = null;
     }
     if (!href) continue;

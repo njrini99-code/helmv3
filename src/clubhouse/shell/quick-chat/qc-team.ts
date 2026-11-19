@@ -19,6 +19,7 @@ function read(): Record<string, Entry> {
     const parsed: unknown = raw ? JSON.parse(raw) : {};
     return parsed && typeof parsed === 'object' ? (parsed as Record<string, Entry>) : {};
   } catch {
+    // Storage blocked or a value that no longer parses: no remembered teams.
     return {};
   }
 }

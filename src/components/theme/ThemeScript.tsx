@@ -37,10 +37,10 @@
 // test is `p.indexOf('/admin/')!==0` plus an exact `/admin`, so a future
 // `/administration`-style route is NOT swept in.
 // `/golf/login` and `/golf/forgot-password` (exact paths) joined in the 2026-09
-// sign-in redesign. Both now paint only on Fairway tokens (AuthCanvas), so they
-// follow the device's GolfHelm/OS theme instead of always painting light
-// before a dark dashboard. `/golf/reset-password` joined once it moved onto
-// the same AuthCanvas (AUTH-02 / OD-07).
+// sign-in redesign, so they follow the device's GolfHelm/OS theme instead of
+// always painting light before a dark dashboard; `/golf/reset-password`
+// joined later (AUTH-02 / OD-07). All three now draw Clubhouse's sign-in room
+// (src/clubhouse/screens/auth); the Fairway auth canvas is retired.
 // Before the theme guard, every `/golf` path gets `data-helm-sport="golf"` on
 // <html>. The golf-only touch rules (hover only on a real pointer, no tap
 // highlight, page rubber-band) key off it, so BaseballHelm and Lift Lab keep

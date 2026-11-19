@@ -7,6 +7,7 @@ import type { ActionProposal, TaskVisual } from '@/lib/coachhelm/v3/chat/action-
 import { clockIn, type QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-week';
 import { formatWith } from '../../../../lib/dates';
 import { pluralWord } from '../../../../lib/plural';
+import { chReport } from '../../../../lib/track';
 import { useQcSeam } from '../../../../shell/quick-chat/qc-seam';
 import { Avatar } from '../../../../ui/Avatar';
 import { Icon } from '../../../../ui/Icon';
@@ -55,7 +56,10 @@ export function WeekDraft({ visual, state }: { visual: Cal; state: 'draft' | 'la
       .then((w) => {
         if (live) setWeek(w);
       })
-      .catch(() => undefined);
+      .catch((err: unknown) => {
+        // The draft still draws, without the week's busy blocks.
+        chReport(err, { surface: 'coachhelm.ask.weekDraft', action: 'readQuickChatWeek', severity: 'medium' });
+      });
     return () => {
       live = false;
     };

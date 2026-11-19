@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { chReport } from './track';
 
 /**
  * P-10 class awareness: which team a conversation belongs to (`golf_conversations.team_id`, nullable, ON DELETE SET NULL).
@@ -22,11 +23,13 @@ export function useConversationTeam(conversationId: string | null, enabled: bool
     void (async () => {
       try {
         const { data, error } = await createClient().from('golf_conversations').select('team_id').eq('id', conversationId).maybeSingle();
+        if (error) chReport(error, { surface: 'messages.thread', action: 'conversationTeam', severity: 'low', extra: { conversationId } });
         if (!live || error || !data) return;
         known.set(conversationId, data.team_id ?? null);
         bump((n) => n + 1);
-      } catch {
-        /* unknown stays unknown: no line */
+      } catch (err) {
+        // Unknown stays unknown: no line.
+        chReport(err, { surface: 'messages.thread', action: 'conversationTeam', severity: 'low', extra: { conversationId } });
       }
     })();
     return () => {

@@ -9,6 +9,14 @@
   "roles": [
     "coach"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/recruiting",
+      "audience": "coach",
+      "name": "Recruiting HQ",
+      "coach": "src/clubhouse/screens/recruiting/Recruiting.tsx#Recruiting"
+    }
+  ],
   "semanticFeatures": [
     "recruiting"
   ],

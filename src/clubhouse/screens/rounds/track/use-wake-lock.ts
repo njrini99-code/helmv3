@@ -30,6 +30,7 @@ export function useWakeLock(): void {
     const letGo = (s: Sentinel) => {
       Promise.resolve()
         .then(() => s.release())
+        // Already released by the browser: nothing to let go.
         .catch(() => {});
     };
     const ask = () => {
@@ -39,6 +40,7 @@ export function useWakeLock(): void {
       try {
         pending = api.request('screen');
       } catch {
+        // The browser refused (no permission, low battery): the screen locks as it always has.
         asking = false;
         return;
       }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bridgeId, decodeBridgeId, syncBridge, checkRegistry, checkContract, checkHeldPlan, parseCatalogRows, nameFrom, renderContract, authRouteToPages, HOLD_HEADER, CATEGORY_COUNT } from '../registry.mjs';
+import { bridgeId, decodeBridgeId, syncBridge, checkRegistry, checkScreenLabels, pageToRoute, mergeRouteLabel, checkContract, checkHeldPlan, parseCatalogRows, nameFrom, renderContract, authRouteToPages, HOLD_HEADER, CATEGORY_COUNT } from '../registry.mjs';
 
 const map = {
   categories: {},
@@ -172,4 +172,66 @@ test('a page built in the preview before its routes are wired lists them as plan
   assert.ok(planned({ plannedRoutes: ['/golf/login'] }).some((x) => x.includes('planned route /golf/login is not under /golf/dashboard')));
   assert.ok(checkRegistry(ctx({ manifests: [page({ plannedRoutes: ['/golf/dashboard/messages'] })] })).some((x) => x.includes('in both routes and plannedRoutes')));
   assert.ok(planned({ status: { ...page().status, implementation: 'complete' } }).some((x) => x.includes('planned routes still unwired')));
+});
+
+// ── Routing labels (each manifest's `screens`, config/clubhouse/other-routes.json) ──
+
+const labelled = (screens, over = {}) => ({ ...page({ roles: ['coach', 'player'], ...over }), screens });
+const files = { 'src/clubhouse/screens/m/M.tsx': 'export function M() {}\nexport const Other = 1;' };
+const labelCtx = (over = {}) => ({ manifests: [], otherRoutes: [], golfPages: [], exists: (p) => p in files || p.startsWith('src/app/'), read: (p) => files[p] ?? '', ...over });
+const M = 'src/clubhouse/screens/m/M.tsx#M';
+
+test('a page address is the page.tsx path without its route groups', () => {
+  assert.equal(pageToRoute('src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx'), '/golf/dashboard/qualifiers/[id]');
+  assert.equal(pageToRoute('src/app/golf/(auth)/login/page.tsx'), '/golf/login');
+  assert.equal(pageToRoute('src/app/golf/page.tsx'), '/golf');
+});
+
+test('labelled routes pass: shared names both roles\' screens, coach only the coach\'s', () => {
+  const m = labelled([
+    { route: '/golf/dashboard/messages', audience: 'shared', name: 'Messages', coach: M, player: 'src/clubhouse/screens/m/M.tsx#Other' },
+  ]);
+  assert.deepEqual(checkScreenLabels(labelCtx({ manifests: [m], golfPages: ['src/app/golf/(dashboard)/dashboard/messages/page.tsx'] })), []);
+});
+
+test('every route needs a label, and the label must match the keys and the roles', () => {
+  const v = checkScreenLabels(labelCtx({
+    manifests: [labelled([{ route: '/golf/dashboard/messages', audience: 'coach', name: 'x', coach: M, player: M }], { roles: ['player'] })],
+  }));
+  assert.ok(v.some((x) => x.includes('a coach screen has no player screen')));
+  assert.ok(v.some((x) => x.includes("the page's roles don't include coach")));
+  assert.ok(v.some((x) => x.includes('roles include player, but no screen is for player')));
+  const none = checkScreenLabels(labelCtx({ manifests: [labelled([])] }));
+  assert.ok(none.some((x) => x.includes('route /golf/dashboard/messages has no screen')));
+  const odd = checkScreenLabels(labelCtx({ manifests: [labelled([{ route: '/golf/dashboard/messages', audience: 'everyone', name: 'x' }])] }));
+  assert.ok(odd.some((x) => x.includes('audience "everyone"')));
+});
+
+test('a named screen must exist and be exported', () => {
+  const v = checkScreenLabels(labelCtx({ manifests: [labelled([{ route: '/golf/dashboard/messages', audience: 'shared', name: 'x', coach: 'src/clubhouse/screens/m/M.tsx#Gone', player: 'src/clubhouse/screens/m/Missing.tsx#M' }])] }));
+  assert.ok(v.some((x) => x.includes('does not export Gone')));
+  assert.ok(v.some((x) => x.includes('Missing.tsx does not exist')));
+});
+
+test('signed-out is for auth pages only', () => {
+  const v = checkScreenLabels(labelCtx({ manifests: [labelled([{ route: '/golf/dashboard/messages', audience: 'signed-out', name: 'x', visitor: M }])] }));
+  assert.ok(v.some((x) => x.includes('only an auth page has signed-out screens')));
+});
+
+test('every golf page.tsx is a manifest route or an other-routes row, and each row is still served', () => {
+  const golfPages = ['src/app/golf/(dashboard)/dashboard/new-thing/page.tsx', 'src/app/golf/(dashboard)/dashboard/team/page.tsx'];
+  const otherRoutes = [
+    { route: '/golf/dashboard/team', kind: 'redirect', audience: 'shared', coach: '/a', player: '/b', source: 'src/app/golf/x/layout.tsx' },
+    { route: '/golf/dashboard/gone', kind: 'redirect', audience: 'shared', source: 'src/app/golf/y/layout.tsx' },
+  ];
+  const v = checkScreenLabels(labelCtx({ golfPages, otherRoutes }));
+  assert.ok(v.some((x) => x.includes('/golf/dashboard/new-thing has no page manifest route')));
+  assert.ok(v.some((x) => x.includes('/golf/dashboard/gone: no page.tsx serves it any more')));
+  assert.ok(!v.some((x) => x.includes('/golf/dashboard/team')));
+});
+
+test('one address listed by two pages merges into one label (Stats: P004 for a coach, P005 for a player)', () => {
+  assert.equal(mergeRouteLabel([{ audience: 'coach', coach: 'a#A' }, { audience: 'player', player: 'b#B' }]).audience, 'shared');
+  assert.equal(mergeRouteLabel([{ audience: 'coach', coach: 'a#A' }]).audience, 'coach');
+  assert.equal(mergeRouteLabel([{ audience: 'signed-out', visitor: 'a#A' }]).audience, 'signed-out');
 });

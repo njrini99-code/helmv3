@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react';
 import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
+import { BRIDGE_UI_SCOPE } from '@/lib/admin/bridge-scope';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { canClaimAllClear } from '@/lib/admin/incidents/sources';
 import { summarizeFlow, selectStalled, STALL_CYCLES } from '@/lib/admin/selfheal-flow';
@@ -213,7 +214,7 @@ function LocalRunnerBlock({ stages }: { stages: readonly SelfHealStageDetail[] }
  * ------------------------------------------------------------------------- */
 
 async function FlowBody() {
-  const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
+  const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS, BRIDGE_UI_SCOPE);
   const now = Date.now();
   const allClear = canClaimAllClear(board.coverage);
 
@@ -260,7 +261,7 @@ async function SelfHealBody() {
   // throughput/stall counts `FlowBody` below reads independently — one more
   // `cachedIncidentBoard` call, which is React-`cache()`-memoised per request,
   // so this does not add a second incident-board fetch.
-  const incidentBoard = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
+  const incidentBoard = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS, BRIDGE_UI_SCOPE);
   const circuit = buildSelfHealCircuit(board, summarizeFlow(incidentBoard.incidents, Date.now()));
 
   return (

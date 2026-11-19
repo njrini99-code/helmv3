@@ -3,6 +3,7 @@
 import { requestPasswordResetAction } from '@/app/golf/actions/auth';
 import { raceWithTimeout } from '@/lib/demo/gate-probe';
 import { createClient } from '@/lib/supabase/client';
+import { chReport } from '../../lib/track';
 import { FAILURE_COPY } from '../../ui/Notices';
 import { describeResetFailure, type ResetFailure } from './reset-state';
 
@@ -40,16 +41,19 @@ export const resetWrites: ResetWrites = {
       // The stored session, read without a network call, so it can never hold the link's own check up.
       const before = await raceWithTimeout(sb.auth.getSession(), 1500)
         .then((r) => r.data.session?.user ?? null)
+        // A slow or unreadable stored session only drops the "someone else was signed in" line; the link check goes on.
         .catch(() => null);
       // Every GolfHelm reset link carries a token_hash, minted on the server and sent through Resend; there is no PKCE
       // code to exchange. A link without one goes to verifyOtp with an empty hash, which Supabase refuses: a missing or
       // tampered parameter can only land on "expired".
       const { data, error } = await sb.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
+      // Not reported: a spent or expired link is the expected answer here, and the page says so.
       if (error) return { ok: false };
       const email = data?.user?.email ?? data?.session?.user?.email ?? '';
       const was = before?.email ?? null;
       return { ok: true, email, previous: was && was.trim().toLowerCase() !== email.trim().toLowerCase() ? was : null };
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'auth.reset', action: 'verifyLink', severity: 'medium' });
       return { ok: false };
     }
   },
@@ -58,15 +62,18 @@ export const resetWrites: ResetWrites = {
       const { error } = await supabase().auth.updateUser({ password });
       if (error) return { ok: false, failure: describeResetFailure(error) };
       return { ok: true };
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'auth.reset', action: 'savePassword', severity: 'high' });
       return { ok: false, failure: { kind: 'banner', message: FAILURE_COPY.save } };
     }
   },
   async revokeOthers() {
     try {
-      await supabase().auth.signOut({ scope: 'others' });
-    } catch {
-      // Other sessions still expire on refresh.
+      const r = await supabase().auth.signOut({ scope: 'others' });
+      // Other sessions still expire on refresh; reported because they stay signed in until then.
+      if (r?.error) chReport(r.error, { surface: 'auth.reset', action: 'revokeOthers', severity: 'medium' });
+    } catch (err) {
+      chReport(err, { surface: 'auth.reset', action: 'revokeOthers', severity: 'medium' });
     }
   },
   requestReset: requestPasswordResetAction,

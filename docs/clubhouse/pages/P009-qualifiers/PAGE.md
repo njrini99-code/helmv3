@@ -128,8 +128,9 @@ Status:           approved (Manage selections is not drawn: it is built from the
 ### Enters from
 
 The sidebar (Team › Qualifiers for a coach, My game › Qualifiers for a player,
-D-66), the More sheet on the phone, and older links to `/my-qualifiers`, which
-redirect here (retired 11 Nov 2026).
+D-66), the section strip on the phone (the More sheet was replaced on
+2026-10-13), and older links to `/my-qualifiers`, which redirect here (retired
+11 Nov 2026; a next.config.mjs redirect since 14 Nov 2026).
 
 ### Exits to
 

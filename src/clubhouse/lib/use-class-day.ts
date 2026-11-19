@@ -7,6 +7,7 @@ import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { readMyClassDay, readTeamClassDay, type ChClassRead } from '../data/class-day';
 import type { ChClassDay, ChMyClassDay } from '../data/class-day-shape';
 import { instantAt } from '../data/class-status';
+import { chReport } from './track';
 import { useNow } from './use-now';
 
 /**
@@ -74,9 +75,16 @@ function refetch<T>(store: Store<T>): Promise<void> {
     const result = await store.read();
     if (result.kind === 'ok') set(store, { value: result.value, status: 'ready' });
     else if (result.kind === 'unavailable') set(store, { value: null, status: 'ready' });
-    else set(store, { value: store.snap.value, status: 'error' });
+    else {
+      // Low: the class line is an extra, and the last good payload stays until it is stale.
+      chReport(result.error, { surface: 'classes.day', action: 'read', severity: 'low', extra: { store: store.key } });
+      set(store, { value: store.snap.value, status: 'error' });
+    }
   })()
-    .catch(() => set(store, { value: store.snap.value, status: 'error' }))
+    .catch((err: unknown) => {
+      chReport(err, { surface: 'classes.day', action: 'read', severity: 'low', extra: { store: store.key } });
+      set(store, { value: store.snap.value, status: 'error' });
+    })
     .finally(() => {
       store.inflight = null;
     });

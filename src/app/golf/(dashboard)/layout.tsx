@@ -14,6 +14,7 @@ import { ClubhouseShell } from '@/clubhouse/shell/ClubhouseShell';
 import { SplashHide } from '@/clubhouse/shell/SplashHide';
 import { loadClubhouseShell } from '@/clubhouse/data/shell';
 import { clockHint, phoneHint, railHint } from '@/clubhouse/lib/phone-hint';
+import { chLogServer } from '@/clubhouse/lib/track-server';
 
 /**
  * Golf Dashboard Layout — SERVER COMPONENT
@@ -122,6 +123,9 @@ export default async function GolfDashboardLayout({
       [retryCoachResult, retryPlayerResult] = await readProfiles();
     }
 
+    // A failed re-read looks like a missing profile and sends the person to onboarding: logged so it can be told apart.
+    if (retryCoachResult.error) chLogServer('shell', 'coachProfile', retryCoachResult.error, 'auth');
+    if (retryPlayerResult.error) chLogServer('shell', 'playerProfile', retryPlayerResult.error, 'auth');
     if (retryCoachResult.data) coach = { ...coach, ...retryCoachResult.data } as typeof coach;
     if (retryPlayerResult.data) player = { ...player, ...retryPlayerResult.data } as typeof player;
   }
@@ -207,11 +211,13 @@ export default async function GolfDashboardLayout({
         teamId = teamFromList.id;
         teamName = teamFromList.name;
       } else {
-        const { data: team } = await supabase
+        const { data: team, error: teamError } = await supabase
           .from('golf_teams')
           .select('id, name')
           .eq('id', resolvedTeamId)
           .maybeSingle();
+        // Logged, not thrown (this layout wraps every route): the shell draws without the team, as before.
+        if (teamError) chLogServer('shell', 'coachTeam', teamError, 'teams');
         teamId = team?.id;
         teamName = team?.name;
       }

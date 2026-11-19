@@ -1,0 +1,326 @@
+{
+  "id": "P017",
+  "name": "Practice",
+  "slug": "practice",
+  "bridgeNamespace": 17,
+  "routes": [
+    "/golf/dashboard/practice",
+    "/golf/dashboard/practice/drills",
+    "/golf/dashboard/practice/drills/[drillId]",
+    "/golf/dashboard/practice/groups",
+    "/golf/dashboard/practice/templates",
+    "/golf/dashboard/practice/format",
+    "/golf/dashboard/practice/plan/[planId]",
+    "/golf/dashboard/practice/plan/[planId]/edit",
+    "/golf/dashboard/practice/print/[planId]"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/practice",
+      "audience": "shared",
+      "name": "Practice (coach: plans; player: their practice)",
+      "coach": "src/clubhouse/screens/practice/PracticeHome.tsx#PracticeHome",
+      "player": "src/clubhouse/screens/practice/PlayerPracticeHome.tsx#PlayerPracticeHome"
+    },
+    {
+      "route": "/golf/dashboard/practice/drills",
+      "audience": "coach",
+      "name": "Drills",
+      "coach": "src/clubhouse/screens/practice/LibraryPages.tsx#DrillsPage"
+    },
+    {
+      "route": "/golf/dashboard/practice/drills/[drillId]",
+      "audience": "coach",
+      "name": "Drill",
+      "coach": "src/clubhouse/screens/practice/LibraryPages.tsx#DrillPage"
+    },
+    {
+      "route": "/golf/dashboard/practice/groups",
+      "audience": "coach",
+      "name": "Groups",
+      "coach": "src/clubhouse/screens/practice/LibraryPages.tsx#GroupsPage"
+    },
+    {
+      "route": "/golf/dashboard/practice/templates",
+      "audience": "coach",
+      "name": "Templates",
+      "coach": "src/clubhouse/screens/practice/LibraryPages.tsx#TemplatesPage"
+    },
+    {
+      "route": "/golf/dashboard/practice/format",
+      "audience": "coach",
+      "name": "Plan format",
+      "coach": "src/clubhouse/screens/coachhelm/plan/format/PlanFormat.tsx#PlanFormat"
+    },
+    {
+      "route": "/golf/dashboard/practice/plan/[planId]",
+      "audience": "shared",
+      "name": "Practice plan",
+      "coach": "src/clubhouse/routes/practice.tsx#PracticePlanRoute",
+      "player": "src/clubhouse/screens/coachhelm/plan/player/PlayerPractice.tsx#PlayerPractice"
+    },
+    {
+      "route": "/golf/dashboard/practice/plan/[planId]/edit",
+      "audience": "coach",
+      "name": "Plan builder",
+      "coach": "src/clubhouse/screens/practice/builder/Builder.tsx#Builder"
+    },
+    {
+      "route": "/golf/dashboard/practice/print/[planId]",
+      "audience": "coach",
+      "name": "Print studio",
+      "coach": "src/clubhouse/screens/practice/PrintStudio.tsx#PrintStudio"
+    }
+  ],
+  "semanticFeatures": [
+    "team_operations",
+    "coachhelm_ai"
+  ],
+  "progressRow": "Practice",
+  "status": {
+    "design": "review",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "partial",
+    "docs": "current"
+  },
+  "design": {
+    "version": "design-refresh/practice-plan (redesign scenes 4 and 5, 05-SCREENS S-PRC rows); no owner phone board (docs/clubhouse/phone/practice.md is a draft)",
+    "desktop": [
+      "design-refresh/practice-plan/redesign/coachhelm-practice.html"
+    ],
+    "phone": []
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/practice",
+    "styles": "src/clubhouse/styles/practice.css",
+    "also": [
+      "src/clubhouse/routes/practice-gate.ts",
+      "src/clubhouse/data/practice-plan.ts",
+      "src/clubhouse/data/practice-library.ts",
+      "src/clubhouse/data/practice-home-shape.ts",
+      "src/clubhouse/data/practice-library-shape.ts",
+      "src/clubhouse/preview/PreviewPracticeHome.tsx",
+      "src/clubhouse/preview/PreviewPracticeOther.tsx",
+      "src/clubhouse/preview/PreviewPracticePlan.tsx",
+      "src/clubhouse/preview/PreviewPracticeThread.tsx",
+      "src/clubhouse/preview/fixtures-practice-plan.ts",
+      "src/clubhouse/preview/fixtures-practice-thread.ts",
+      "src/app/golf/actions/practice-plans.ts",
+      "src/app/golf/actions/practice-publish.ts",
+      "src/app/golf/actions/practice-library.ts",
+      "src/lib/golf/practice-db.ts",
+      "src/lib/golf/practice-errors.ts",
+      "src/lib/golf/practice-fanout.ts",
+      "src/lib/coachhelm/v3/practice-plan/model.ts",
+      "src/lib/coachhelm/v3/practice-plan/library-kinds.ts"
+    ],
+    "tests": [
+      "src/clubhouse/__tests__/practice-screens.test.tsx",
+      "src/clubhouse/__tests__/practice-part-failed.test.tsx",
+      "src/clubhouse/data/__tests__/practice-home-dates.test.ts",
+      "src/clubhouse/data/__tests__/practice-home-waves.test.ts",
+      "src/clubhouse/data/__tests__/practice-plan-failed-reads.test.ts",
+      "src/clubhouse/data/__tests__/practice-plan.test.ts",
+      "src/clubhouse/preview/__tests__/practice-format-empty.test.tsx",
+      "src/clubhouse/routes/__tests__/practice-gate.test.ts",
+      "src/clubhouse/routes/__tests__/practice-titles.test.ts",
+      "src/clubhouse/routes/__tests__/practice-unavailable.test.tsx",
+      "src/clubhouse/shell/__tests__/practice-stand-ins.test.ts",
+      "src/clubhouse/screens/practice/__tests__/areas-fade-past-padding.test.ts",
+      "src/clubhouse/screens/practice/__tests__/builder-republish.test.ts",
+      "src/clubhouse/screens/practice/__tests__/coach-plan-bar.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/craft-pass.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/detail-pass.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/facts.test.ts",
+      "src/clubhouse/screens/practice/__tests__/group-tones-css.test.ts",
+      "src/clubhouse/screens/practice/__tests__/groups-list.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/library-pages.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/new-plan-ask.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/new-plan-new-practice.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/new-practice.test.ts",
+      "src/clubhouse/screens/practice/__tests__/plan-run.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/practice-sheet.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/practice-states.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/print-studio-beforeprint.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/print-studio.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/section-boundaries.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/skeleton-mirror.test.tsx",
+      "src/clubhouse/screens/practice/__tests__/starters.test.ts",
+      "src/clubhouse/screens/practice/__tests__/week-strip-no-data.test.tsx",
+      "src/clubhouse/screens/practice/builder/__tests__/autosave-failure.test.tsx",
+      "src/clubhouse/screens/practice/builder/__tests__/builder-model.test.ts",
+      "src/clubhouse/screens/practice/builder/__tests__/leave-guard.test.tsx",
+      "src/clubhouse/screens/practice/builder/__tests__/review-one-publish.test.tsx",
+      "src/app/golf/actions/__tests__/practice-plan-save-body.test.ts",
+      "src/app/golf/actions/__tests__/practice-publish.test.ts",
+      "src/lib/golf/__tests__/practice-errors.test.ts",
+      "src/lib/coachhelm/v3/practice-plan/__tests__/model.test.ts",
+      "src/lib/coachhelm/v3/practice-plan/__tests__/version-body.test.ts",
+      "src/lib/notifications/__tests__/practice-plan-push.test.ts"
+    ],
+    "loader": "src/clubhouse/data/practice-home.ts",
+    "route": "src/clubhouse/routes/practice.tsx"
+  },
+  "checklist": "docs/clubhouse/screens/practice.md",
+  "phoneSpec": "docs/clubhouse/phone/practice.md",
+  "actions": [
+    {
+      "id": "ACT-P017-SAVE-PLAN",
+      "label": "Save the plan (autosave, New plan, Run shifts)",
+      "component": "src/clubhouse/screens/practice/builder/useAutosave.ts",
+      "handler": "useAutosave in the builder; NewPlanSheet's Create plan; PlanRun's shift",
+      "service": "src/app/golf/actions/practice-plans.ts#savePracticePlan",
+      "data": [
+        "golf_practice_plans",
+        "golf_practice_plan_versions",
+        "golf_practice_plan_lines"
+      ],
+      "tests": [
+        "src/clubhouse/screens/practice/builder/__tests__/autosave-failure.test.tsx",
+        "src/app/golf/actions/__tests__/practice-plan-save-body.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P017-PUBLISH",
+      "label": "Publish or republish the plan",
+      "component": "src/clubhouse/screens/practice/builder/Builder.tsx",
+      "handler": "Builder's publish hold (8 s Undo); PlanRun's shift republish",
+      "service": "src/app/golf/actions/practice-publish.ts#publishPracticePlan",
+      "data": [
+        "golf_practice_plans",
+        "golf_practice_plan_versions",
+        "golf_documents"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/practice-publish.test.ts",
+        "src/clubhouse/screens/practice/builder/__tests__/review-one-publish.test.tsx",
+        "src/clubhouse/screens/practice/__tests__/builder-republish.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P017-TAKE-DOWN",
+      "label": "Take a published plan down",
+      "component": "src/clubhouse/screens/practice/CoachPlanBar.tsx",
+      "handler": "CoachPlanBar's Take down confirm",
+      "service": "src/app/golf/actions/practice-publish.ts#takeDownPracticePlan",
+      "data": [
+        "golf_practice_plans",
+        "golf_practice_plan_versions",
+        "golf_documents"
+      ],
+      "tests": [
+        "src/clubhouse/screens/practice/__tests__/coach-plan-bar.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P017-DELETE-PLAN",
+      "label": "Delete a draft plan",
+      "component": "src/clubhouse/screens/practice/builder/Builder.tsx",
+      "handler": "Builder's Delete draft",
+      "service": "src/app/golf/actions/practice-plans.ts#deletePracticePlan",
+      "data": [
+        "golf_practice_plans",
+        "golf_practice_plan_versions"
+      ],
+      "tests": [
+        "src/clubhouse/__tests__/practice-screens.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P017-COPY-PLAN",
+      "label": "Copy a past plan's body into a new plan",
+      "component": "src/clubhouse/screens/practice/NewPlanSheet.tsx",
+      "handler": "NewPlanSheet's Copy a past practice",
+      "service": "src/app/golf/actions/practice-plans.ts#copyPlanBody",
+      "data": [
+        "golf_practice_plans"
+      ],
+      "tests": [
+        "src/clubhouse/__tests__/practice-screens.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P017-OPEN-PLAN",
+      "label": "Record that a player opened the plan",
+      "component": "src/clubhouse/screens/coachhelm/plan/player/PlayerPractice.tsx",
+      "handler": "PlanPageActions and PlayerPractice on mount (screens/coachhelm/plan)",
+      "service": "src/app/golf/actions/practice-plans.ts#recordPracticePlanOpen",
+      "data": [
+        "golf_practice_plan_opens"
+      ]
+    },
+    {
+      "id": "ACT-P017-NEW-DRILL",
+      "label": "Save a new drill to the team's bank",
+      "component": "src/clubhouse/screens/practice/builder/Sheets.tsx",
+      "handler": "NewDrillSheet in the builder",
+      "service": "src/app/golf/actions/practice-library.ts#createTeamDrill",
+      "data": [
+        "golf_team_drills"
+      ],
+      "tests": [
+        "src/clubhouse/__tests__/practice-screens.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P017-EDIT-DRILL",
+      "label": "Edit, copy to the bank, or archive a drill",
+      "component": "src/clubhouse/screens/practice/LibraryPages.tsx",
+      "handler": "DrillPage in LibraryPages",
+      "service": "src/app/golf/actions/practice-library.ts#updateTeamDrill",
+      "data": [
+        "golf_team_drills"
+      ],
+      "tests": [
+        "src/clubhouse/screens/practice/__tests__/library-pages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P017-SAVE-GROUP",
+      "label": "Save or delete a saved group",
+      "component": "src/clubhouse/screens/practice/LibraryPages.tsx",
+      "handler": "GroupsPage's group sheet",
+      "service": "src/app/golf/actions/practice-library.ts#savePracticeGroup",
+      "data": [
+        "golf_practice_groups"
+      ],
+      "tests": [
+        "src/clubhouse/screens/practice/__tests__/groups-list.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P017-SAVE-TEMPLATE",
+      "label": "Save, rename or delete a template",
+      "component": "src/clubhouse/screens/practice/LibraryPages.tsx",
+      "handler": "TemplatesPage's template menu",
+      "service": "src/app/golf/actions/practice-library.ts#savePracticeTemplate",
+      "data": [
+        "golf_practice_templates"
+      ],
+      "tests": [
+        "src/clubhouse/screens/practice/__tests__/library-pages.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P017-NEW-PRACTICE",
+      "label": "Put a new practice on the calendar, then plan it",
+      "component": "src/clubhouse/screens/practice/NewPlanSheet.tsx",
+      "handler": "NewPlanSheet's A new practice (Create)",
+      "service": "src/app/golf/actions/calendar-events.ts#createGolfEvent",
+      "data": [
+        "golf_events"
+      ],
+      "tests": [
+        "src/clubhouse/screens/practice/__tests__/new-plan-new-practice.test.tsx",
+        "src/clubhouse/screens/practice/__tests__/new-practice.test.ts"
+      ]
+    }
+  ]
+}

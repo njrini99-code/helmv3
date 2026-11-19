@@ -16,6 +16,7 @@ export function readMarkedUnread(userId: string): Set<string> {
     const parsed: unknown = raw ? JSON.parse(raw) : null;
     return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string' && id.length > 0) : []);
   } catch {
+    // Blocked or malformed storage: no marks this visit.
     return new Set();
   }
 }

@@ -17,6 +17,7 @@ const useSearch: () => URLSearchParams | null = (() => {
     const hook = (nav as { useSearchParams?: () => URLSearchParams | null }).useSearchParams;
     return typeof hook === 'function' ? hook : () => null;
   } catch {
+    // A host whose next/navigation mock has no such export: never a moment, as above.
     return () => null;
   }
 })();

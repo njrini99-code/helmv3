@@ -14,6 +14,7 @@ export function useCopyText() {
         haptic('success');
         toast({ title: `${what} copied` });
       } catch {
+        // Clipboard refused (permission, insecure context): a browser limit, told with how to copy by hand, not reported.
         haptic('error');
         toast({ tone: 'error', title: `Couldn’t copy the ${what.toLowerCase()}`, body: 'Select it and copy it by hand.', code: 'CH-3006' });
       }

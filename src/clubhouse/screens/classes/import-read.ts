@@ -3,6 +3,7 @@
 import { extractClassesFromScheduleImage } from '@/app/golf/actions/schedule-image';
 import { parseScheduleText } from '@/lib/utils/schedule-parser';
 import { toImportRow, type ChImportRow } from '../../data/classes-shape';
+import { chReport } from '../../lib/track';
 
 /**
  * Reading a schedule: a screenshot or photo (read by the existing vision
@@ -257,6 +258,7 @@ export async function readScheduleLive(source: ChReadSource): Promise<ChReadResu
     }
     return { ok: true, rows: result.classes.map(toImportRow), warnings: result.warnings ?? [] };
   } catch (err) {
+    chReport(err, { surface: 'classes.import', action: 'read', severity: 'medium', extra: { source: source.kind } });
     return { ok: false, kind: 'fault', message: err instanceof Error && err.message ? err.message : "Reading the schedule didn’t finish. Paste the text instead." };
   }
 }

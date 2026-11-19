@@ -28,6 +28,7 @@ function read<T>(key: string): T | undefined {
     const raw = window.sessionStorage.getItem(key);
     return raw == null ? undefined : (JSON.parse(raw) as T);
   } catch {
+    // Storage blocked or a stored value that no longer parses: the screen starts from its initial state.
     return undefined;
   }
 }

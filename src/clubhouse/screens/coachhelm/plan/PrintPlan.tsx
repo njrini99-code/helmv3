@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { clubhouseFontVariables } from '../../../lib/fonts';
+import { chReport } from '../../../lib/track';
 import { pageCuts } from './page-cuts';
 import { PracticePlanSheet } from './sheet/PracticePlanSheet';
 import type { PlanSheetModel } from './sheet/plan-sheet-model';
@@ -112,7 +113,9 @@ export async function sharePlanPdf(plan: PlanSheetModel): Promise<boolean> {
     }
     pdf.save(name);
     return true;
-  } catch {
+  } catch (err) {
+    // The caller says so and offers Print; the cause (a chunk that didn't load, a canvas the browser refused) is reported.
+    chReport(err, { surface: 'coachhelm.plan', action: 'sharePlanPdf', severity: 'low' });
     return false;
   } finally {
     root.unmount();

@@ -112,6 +112,7 @@ export function useTestPush(push: ChDevice['push']) {
         haptic('success');
         toast({ title: 'Test sent', body: r.sent && r.sent > 1 ? `To your ${r.sent} devices with push on. It should arrive in a few seconds.` : 'It should arrive on this device in a few seconds.' });
       } else {
+        chReport(new Error(r.error || 'test push failed'), { surface: 'settings.notifications', action: 'testPush', severity: 'low' });
         haptic('error');
         toast({ tone: 'error', title: 'Couldn’t send a test', body: r.error && r.error.length < 90 ? r.error : 'Try again in a moment.', code: 'CH-8029' });
       }

@@ -6,6 +6,7 @@ import { isOffline } from '../../../lib/use-action';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
 import { haptic } from '../../../lib/haptics';
+import { chReport } from '../../../lib/track';
 
 /**
  * Package B: the open thread, sending, retry, typing and the composer's recovery state.
@@ -49,7 +50,8 @@ export function useThreadApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'drafts' 
             return 'partial';
           }
           return result.success;
-        } catch {
+        } catch (err) {
+          chReport(err, { surface: 'messages.send', action: 'retryPendingAttachmentSend', severity: 'high', extra: { conversationId: selectedId } });
           return 'unknown';
         }
       },

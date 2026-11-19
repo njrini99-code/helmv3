@@ -39,8 +39,9 @@ has no route of its own. Every page inherits its contracts.
 ```text
 Page ID:            P001
 Page Name:          Shell
-Route:              none (wraps every /golf/dashboard route for which
-                    isClubhouseFor is true)
+Route:              none (wraps every /golf/dashboard route; Clubhouse is
+                    the only coach and player UI since Fairway's retirement,
+                    2026-11-14)
 Bridge Namespace:   1 (Bridge IDs 1ccii, D-68; catalog codes CH-1xxx)
 Roles:              coach, player
 Implementation Root: src/clubhouse/shell
@@ -60,12 +61,17 @@ didn't, or couldn't be tried because the device is offline.
 
 ### Primary action
 
-Go to a page: the sidebar on a wide screen, and on a phone the tab bar and More.
+Go to a page: the sidebar on a wide screen, and on a phone the section strip
+(the top bar's title opens it; `phone/section-strip.md`, which replaced the tab
+bar and the More sheet's navigation on 2026-10-13).
 
 ### Secondary actions
 
 Open the bell, filter it, open a notification, mark all read, open Settings,
-skip to content, and Try again or Reload on a crashed page.
+search (the top bar's search pill and the command palette, `shell/command/`),
+open Quick chat (a coach with CoachHelm on), Resume or discard a round in
+progress (a player, the phone's dock), switch team (a head coach on two or more
+teams), skip to content, and Try again or Reload on a crashed page.
 
 ### Information hierarchy
 
@@ -73,8 +79,11 @@ skip to content, and Try again or Reload on a crashed page.
 2. Where you are: the current page is marked in the navigation, the breadcrumb
    in the top bar, and the title on the phone.
 3. What's new: the Messages unread count, the Roster join-request badge (coach),
-   and the bell.
-4. What's next: the sidebar's next-event card, with who has confirmed.
+   the Team Hub overdue-tasks badge (coach), and the bell.
+4. What's in progress: a player's round in progress (the sidebar's Resume card
+   on a wide screen, the dock's Resume accessory on a phone). The sidebar's
+   next-event card was removed on 2026-11-07 (dashboard cuts): the week's events
+   live on Home.
 
 ### User should notice first
 
@@ -129,11 +138,14 @@ inside GolfHelm), and Settings.
 Design:          the owner (Claude Design)
 Implementation:  src/clubhouse/shell, src/clubhouse/ui (toasts, notices),
                  src/clubhouse/lib (useAction, track, motion, haptics)
-Data:            golf_events and golf_event_attendance (next-event card),
-                 golf_team_join_requests (Roster badge), golf_team_settings
-                 (timezone), golf_team_members and golf_players (a coach's
-                 player names and ids for the palette, decision 16), the unified
-                 notifications feed
+Data:            golf_team_join_requests (Roster badge), golf_team_settings
+                 (timezone and course location), golf_rounds with golf_holes (a
+                 player's round in progress), golf_team_coach_staff (a coach's
+                 own role), golf_tasks (a coach's overdue-task badge),
+                 golf_team_members and golf_players (a coach's player names and
+                 ids for the palette, decision 16, read on demand through
+                 data/palette-people.ts), golf_tournaments and golf_qualifiers
+                 (the palette's events), the unified notifications feed
 ```
 
 ## Current status
@@ -149,3 +161,14 @@ Data:           existing
 Verification:   partial (VERIFY.md)
 Docs:           current
 ```
+
+## What's New (`/golf/dashboard/whats-new`)
+
+A named screen of the shell, not a page of its own (checked 2026-11-17): the
+route is in this page's manifest `routes`, its code is `screens/whats-new`,
+`routes/whats-new.tsx`, `data/whats-new{,-shape}.ts` and `styles/whats-new.css`
+(listed above), and its tests are in the manifest. It is the coach's last seven
+days of team activity, reached from the search palette; a player's address goes
+to Home (`shell/nav.ts`, `CH_ALIASED_ROUTES`). Its state rows are CH-13230 to CH-13232, CH-13285, CH-13330 to CH-13332,
+CH-13385, CH-13430 and CH-13431 in `catalog/coachhelm.md` (so their Bridge IDs
+are P013's); its SCREENS.md line is "What's New".

@@ -71,7 +71,7 @@ export default async function ActivityPage({
           href="/admin/activity?type=signup"
         />
         <KpiTile
-          label="Errors today"
+          label="Clubhouse errors today"
           value={stats.errors.today}
           delta={stats.errors.delta}
           href="/admin/activity?type=error"

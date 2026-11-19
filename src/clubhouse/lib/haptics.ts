@@ -49,6 +49,7 @@ export function haptic(kind: ChHaptic): void {
         await triggerHaptic(kind);
     }
   };
+  // A device or build without the haptics plugin: no tick, nothing to report.
   run().catch(() => {});
 }
 
@@ -62,5 +63,6 @@ export function hapticScrub(phase: 'start' | 'step' | 'end'): void {
   if (!isNativeApp() || !areHapticsEnabled()) return;
   if (phase === 'step' && !selectTickDue()) return;
   const run = phase === 'start' ? selectionStart : phase === 'step' ? selectionChanged : selectionEnd;
+  // As above: a missing plugin only means no tick.
   run().catch(() => {});
 }

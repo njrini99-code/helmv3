@@ -77,7 +77,7 @@ export function PlayersOnlyRounds() {
 export const CH_ALIAS_WAIT_MS = 2000;
 
 /** Which screen an old address lands on (each alias layout's `redirectToClubhouse` target, nav.CH_ALIASED_ROUTES), so its wait draws that screen's skeleton. */
-export type ChAliasSkeleton = 'settings-team' | 'settings-golf' | 'coachhelm' | 'ask' | 'home' | 'stats-profile' | 'stats-team' | 'stats-own' | 'roster' | 'qualifier' | 'qualifier-selection';
+export type ChAliasSkeleton = 'settings-team' | 'settings-golf' | 'coachhelm' | 'ask' | 'home' | 'stats-profile' | 'stats-team' | 'roster' | 'qualifier' | 'qualifier-selection';
 export function aliasSkeletonFor(pathname: string, role: string | null | undefined): ChAliasSkeleton | null {
   const path = pathname.replace(/\/$/, '').replace(/^\/golf\/dashboard/, '');
   const coach = role === 'coach';
@@ -86,7 +86,6 @@ export function aliasSkeletonFor(pathname: string, role: string | null | undefin
   if (path === '/intelligence') return coach ? 'coachhelm' : null;
   if (path === '/courses') return coach ? 'home' : null;
   if (path === '/whats-new' || path === '/live') return player ? 'home' : null;
-  if (path === '/stats/team') return player ? 'stats-own' : null;
   if (/^\/roster\/[^/]+$/.test(path)) return coach ? 'stats-profile' : player ? 'roster' : null;
   if (path === '/coachhelm/genome/compare') return coach ? 'stats-team' : null;
   if (/^\/players\/[^/]+(\/.*)?$/.test(path) || /^\/coachhelm\/genome\/[^/]+$/.test(path)) return coach ? 'stats-profile' : null;
@@ -111,8 +110,6 @@ function AliasSkeleton({ which, role }: { which: ChAliasSkeleton | null; role: '
       return <HomeSkeleton />;
     case 'stats-profile':
       return <StatsSkeletonFor profile coach />;
-    case 'stats-own':
-      return <StatsSkeletonFor profile coach={false} />;
     case 'stats-team':
       return <StatsSkeletonFor profile={false} />;
     case 'roster':

@@ -16,6 +16,7 @@ const unesc = (s: string) => {
   try {
     return decodeURIComponent(s);
   } catch {
+    // A hand-edited address with a stray %: the text as written.
     return s;
   }
 };

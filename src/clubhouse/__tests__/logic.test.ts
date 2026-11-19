@@ -93,10 +93,9 @@ describe('nav', () => {
     expect(isRebuilt('/golf/dashboard/messages', 'player')).toBe(true);
     expect(isRebuilt('/golf/dashboard/lineups', 'player')).toBe(false);
     expect(activeNavItem('/golf/dashboard/stats', 'player')?.label).toBe('My stats');
-    // The old Team stats address opens the rebuilt Team stats for coaches, under the Stats nav item; players are sent to their own stats.
-    expect(isRebuilt('/golf/dashboard/stats/team')).toBe(true);
+    // The old Team stats address is not a screen: next.config.mjs sends both roles to /stats before the frame sees it.
+    expect(isRebuilt('/golf/dashboard/stats/team')).toBe(false);
     expect(isRebuilt('/golf/dashboard/stats/team', 'player')).toBe(false);
-    expect(activeNavItem('/golf/dashboard/stats/team')?.id).toBe('stats');
   });
 });
 

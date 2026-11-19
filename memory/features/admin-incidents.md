@@ -74,6 +74,40 @@ always derived at read time.
 
 ## Business Rules
 
+- **The Bridge's error views are Clubhouse only (owner, 2026-11-17: "Bridge
+  should just be clubhouse only").** One switch, `BRIDGE_UI_SCOPE` in
+  `src/lib/admin/bridge-scope.ts`, narrows what a PAGE shows: the nav badge
+  (`fetchBridgeErrorBadge`), Overview's KPIs, banner and board (and the Command
+  Deck), the Incidents queue with every count, chip, trend and the Sentry list
+  on it, the Sources and Loop views' board, the Golf page's incident tiles and the
+  Activity tab's error tiles. `IncidentFeedFilters.scope` /
+  `ErrorsTabFilters.scope` carry it; it is never read from the URL. The
+  MACHINERY passes no scope and reads the whole feed exactly as before: the
+  admin-digest cron (`fetchTriageQueue`), the self-heal circuit and
+  trace-incident links (`cachedIncidentBoard(window)` with one argument),
+  auto-resolve, the RCA run and `fetchFingerprintDetail` / `fetchIncidentById`
+  (a detail link opens whatever it names). Under the scope: `admin_events` rows
+  match `metadata.ui`, `metadata.context.ui` or `metadata.tags.ui` =
+  `clubhouse` (`ADMIN_EVENTS_CLUBHOUSE_FILTER`, all three because older rows
+  carry the tag in the latter two), Sentry queries add `ui:clubhouse`, a
+  reliability-only incident (no app or Sentry contributor) is dropped
+  (`keepScopedDrafts`), the hourly chart is drawn from the Clubhouse app rows
+  because Sentry's org stats cannot be narrowed by tag, and the sport chips are
+  hidden. The Baseball and Lifting pages' incident panels, Health's feature
+  board, Deploys, Database, Jobs, Traces/Golf Tracer and the per-user/per-team
+  error histories were left whole; the reasons are in the owner's handoff note
+  "bridge-clubhouse-only" (Clubhouse handoff, silent errors, 2026-11-17).
+- **Where `ui: 'clubhouse'` comes from.** `src/lib/observability/ui-surface.ts`
+  owns the rule (every address under `/golf` except `/golf/admin/**`; an `/api`
+  request by its Referer). Browser rows: `chReport`, else `/api/log-error` from
+  the reported route. Server rows: `server-error-logger` defaults `tags.ui` from
+  the Sentry isolation scope (the `gate.ts` tag on a Clubhouse render, else the
+  request address Sentry recorded, which for a server action is its page) when
+  the caller passed none, and writes it at the top level of
+  `error_logs.context` / `admin_events.metadata` too. Unhandled request
+  errors: `onRequestError` (`src/instrumentation.ts`) from the request path.
+  Rows written before 2026-11-17 by server actions, CoachHelm chat turns and
+  round saves carry no tag and are not in the scoped views.
 - One incident-grouping algorithm for `admin_events`, not two. As of
   2026-08-26, the Golf Tracer (`admin-tracer-data.ts`'s `buildTracerIncidents`)
   groups error rows by the same write-time `admin_events.fingerprint` column
@@ -472,6 +506,10 @@ always derived at read time.
   `resolve-error.test.ts`, `sentry-resolve.test.ts`
 - `src/test/lib/admin/bridge-honest-failure.test.ts` — the Bridge never fails
   toward reassurance (feed throw, badge `null`).
+- `src/lib/admin/__tests__/bridge-scope.test.ts`,
+  `src/lib/observability/__tests__/ui-surface.test.ts`,
+  `src/lib/__tests__/server-error-logger-ui-surface.test.ts` — the Clubhouse
+  scope narrows views only, and every writer tags `ui`.
 - Typecheck/build for admin UI changes.
 
 ## Related Docs

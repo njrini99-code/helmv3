@@ -3,6 +3,7 @@
 import { deleteInProgressRound } from '@/app/golf/actions/round-partial';
 import { deleteOfflineRound } from '@/lib/offline/indexed-db';
 import { clearEmergencySave, markRoundDiscarded } from '@/lib/utils/emergency-save';
+import { chReport } from '../../lib/track';
 import type { ServerResult } from '../../lib/use-action';
 import { invalidatePrefetchTabs } from '../../shell/use-prefetch-tabs';
 
@@ -24,7 +25,10 @@ export const LIVE_ROUNDS_WRITES: ChRoundsWrites = {
       // A round screen open in another tab must not re-create it on its next save, and a failed-submit entry queued
       // for it must not sync it back (swap audit R-4, R-10).
       markRoundDiscarded(roundId, playerId);
-      void Promise.resolve().then(() => deleteOfflineRound(roundId)).catch(() => {});
+      // The discard mark above keeps the queue from syncing it back, so a copy left in the queue is reported, not fatal.
+      void Promise.resolve()
+        .then(() => deleteOfflineRound(roundId))
+        .catch((err: unknown) => chReport(err, { surface: 'rounds.library', action: 'rounds.discard.deleteOffline', severity: 'medium' }));
       // The sections held from before still list the round (A21).
       invalidatePrefetchTabs();
     }
