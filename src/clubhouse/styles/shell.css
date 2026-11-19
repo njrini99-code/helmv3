@@ -1934,6 +1934,20 @@ html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
   [data-ui='clubhouse'] .ch-frame-route[data-ch-arriving] {
     pointer-events: none;
   }
+  /* The figure a push carries over from its row (E-6, lib/share-morph.ts) waits hidden on the incoming page while its
+     ghost flies to it, so the number is drawn once. */
+  [data-ui='clubhouse'] .ch-frame-route[data-ch-sharing] [data-ch-share] {
+    visibility: hidden;
+  }
+}
+/* Back and Forward on the desk (E-8; lib/nav-motion.ts playDeskHistory): the copy of the page left, fading out over the
+   page come back to, under the sidebar and the bar. It takes no taps and is gone when its fade ends. */
+.ch-root.ch-frame-fading {
+  z-index: calc(var(--ch-z-sticky) - 1);
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ch-page-paint);
+  pointer-events: none;
 }
 /* Reduce Motion (owner decision 2, 2026-10-24, OQ-15; MOTION-AND-VISUAL 3.3, 3.11): a page change crossfades, the old
    page out and the new one in together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades.

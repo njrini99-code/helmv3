@@ -42,6 +42,18 @@ describe('Clubhouse motion durations (D-64 as built)', () => {
     expect(css).not.toMatch(/--ch-(dur|ease)-vt-push|--ch-vt-parallax/);
   });
 
+  it('the shared figure and the desk history fade ride the push and the crossfade, never their own timing', () => {
+    const share = readFileSync(join(process.cwd(), 'src/clubhouse/lib/share-morph.ts'), 'utf8');
+    const nav = readFileSync(join(process.cwd(), 'src/clubhouse/lib/nav-motion.ts'), 'utf8');
+    // The ghost takes the push's own timing (520 ms on the iOS curve), handed in by playPush.
+    expect(share).not.toMatch(/duration:\s*\d/);
+    expect(nav).toMatch(/flyShare\(page, layer, timing,/);
+    // The desk's history fade reads the view-transition tokens.
+    expect(nav).toMatch(/--ch-dur-vt-out/);
+    expect(nav).toMatch(/--ch-dur-vt-in/);
+    expect(nav).toMatch(/--ch-dur-vt-fade/);
+  });
+
   it('the Stats busy dim holds off 150ms (A11), named in the rules and the checklist', () => {
     expect(token('ch-dur-busy-delay')).toBe('150ms');
     for (const doc of ['.claude/rules/clubhouse.md', 'docs/clubhouse/CHECKLIST_TEMPLATE.md']) {
@@ -81,6 +93,11 @@ describe('Clubhouse motion durations (D-64 as built)', () => {
       expect(doc).toMatch(/180\s*ms in/);
       expect(doc).toMatch(/back 150\s*ms/);
       expect(doc).toMatch(/520\s*ms on the one curve/);
+      // E-2, E-6 and E-8 (audit 2026-11-19): the page pushed in takes no taps, a shared figure rides the push, and the
+      // desk's Back and Forward crossfade as a tap does.
+      expect(doc).toMatch(/taking no taps until it lands/);
+      expect(doc).toMatch(/data-ch-share/);
+      expect(doc).toMatch(/Back and Forward included/);
       expect(doc).toMatch(/462\s*ms/);
       expect(doc).not.toMatch(/fade(s)? through/i);
       expect(doc).not.toMatch(/wait 150\s*ms/i);

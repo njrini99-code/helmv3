@@ -4,6 +4,7 @@ import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { CH_EASE_IOS, CH_EASE_IOS_CSS, CH_FADE_MS, CH_PUSH_MS, chBezier } from './motion';
 import { chMotionModeNow } from './reduced-motion';
 import { markHandPop, poppedByUA } from './ua-pop';
+import { captureShare, endShare, flyShare, forgetShare } from './share-morph';
 
 /**
  * Which way a phone navigation moves (native-feel audit 2026-10-08, P1-1 and P1-2; production audit 2026-11-15, S4.1 to
@@ -72,6 +73,7 @@ function clear() {
   navKind = 'fade';
   navTab = false;
   dropHeld();
+  forgetShare();
 }
 
 function mark(kind: ChNavKind, tab = false) {
@@ -149,6 +151,9 @@ function onClick(e: MouseEvent) {
   const tab = isSectionLink(a) && url.pathname.replace(/\/$/, '') !== from.replace(/\/$/, '');
   const kind = classifyNav({ from, to: url.pathname + url.search, tabRoots: tabRoots(), tabBar });
   mark(kind, tab);
+  // The row's shared figure (E-6), read before the copy of this page is taken, so the copy carries its mark.
+  if (navKind === 'push') captureShare(a);
+  else forgetShare();
   holdForPush(from);
 }
 
@@ -189,6 +194,7 @@ export function takeRunningPush(): number {
   if (run) {
     const share = pushShare(run);
     pushing = null;
+    endShare();
     for (const a of run.anims) a.cancel();
     run.page.removeAttribute('data-ch-pushing');
     run.page.removeAttribute(CH_ARRIVING);
@@ -357,6 +363,7 @@ function settleUnders(path: string) {
 function endPush(run: NonNullable<typeof pushing>) {
   if (pushing !== run) return;
   pushing = null;
+  endShare();
   run.page.removeAttribute('data-ch-pushing');
   run.page.removeAttribute(CH_ARRIVING);
   if (!run.entry.pinned) run.entry.layer.remove();
@@ -367,6 +374,7 @@ function playPush(from: string, to: string, layer: HTMLElement) {
   if (!page || typeof page.animate !== 'function' || !phoneNow() || chMotionModeNow() !== 'full') {
     // Held at the tap, in the document: no slide, so it goes.
     layer.remove();
+    forgetShare();
     return;
   }
   const entry: ChUnder = { over: to, under: from, layer };
@@ -392,7 +400,11 @@ function playPush(from: string, to: string, layer: HTMLElement) {
   const run = { page, anims, entry, curve };
   pushing = run;
   requestAnimationFrame(() => {
-    if (pushing === run) for (const a of anims) a.play();
+    if (pushing !== run) return forgetShare();
+    // The shared figure (E-6) leaves with the slide, measured now that the page has laid out at the top, standing its
+    // own width to the right.
+    flyShare(page, layer, timing, page.getBoundingClientRect().width);
+    for (const a of anims) a.play();
   });
   anims[0]?.finished.then(
     () => endPush(run),
@@ -420,6 +432,7 @@ export function grabPush(): { entry: ChUnder; offset: number; share: number } | 
   const run = pushing;
   if (!run) return null;
   pushing = null;
+  endShare();
   const share = pushShare(run);
   const width = run.page.getBoundingClientRect().width || window.innerWidth;
   const { parallax } = chUnderLook();
@@ -494,8 +507,53 @@ function playPop(from = 1) {
   });
 }
 
+/** A duration token in ms, from <html> where the page crossfade's tokens live (tokens.css), or `fallback`. */
+function msToken(css: CSSStyleDeclaration, name: string, fallback: number): number {
+  const v = parseFloat(css.getPropertyValue(name));
+  return Number.isFinite(v) ? v : fallback;
+}
+
+/**
+ * Back and Forward on the desk crossfade as a tap does (E-8, audit 2026-11-19): the page left fades out over
+ * --ch-dur-vt-out while the page come back to fades in over --ch-dur-vt-in, together, on their own curves (owner
+ * decision 3, A10). A history move commits synchronously inside popstate, so React starts no view transition for it
+ * (it swapped at once before); the fade is drawn here instead, with a window-sized copy of the page leaving over the
+ * live page, under the sidebar and the bar, taking no taps. Under Reduce Motion both sides take --ch-dur-vt-fade (3.11);
+ * Animations off swaps. Should a view transition run after all, it alone plays: the copy goes at once.
+ */
+function playDeskHistory() {
+  const mode = chMotionModeNow();
+  const frame = document.getElementById('ch-content');
+  if (!frame || mode === 'off' || typeof frame.animate !== 'function') return;
+  const copy = pageLayer('ch-frame-fading');
+  if (!copy) return;
+  document.body.appendChild(copy);
+  const css = getComputedStyle(document.documentElement);
+  const fade = mode === 'fade';
+  const out = { duration: msToken(css, fade ? '--ch-dur-vt-fade' : '--ch-dur-vt-out', fade ? CH_FADE_MS : 120), easing: css.getPropertyValue('--ch-ease-vt-out').trim() || 'ease-in' };
+  const into = { duration: msToken(css, fade ? '--ch-dur-vt-fade' : '--ch-dur-vt-in', 180), easing: css.getPropertyValue('--ch-ease-vt-in').trim() || 'ease-out' };
+  // The next frame, once the router's synchronous commit has put the page come back to in place.
+  requestAnimationFrame(() => {
+    const vt = typeof document.getAnimations === 'function' && document.getAnimations().some((a) => ((a.effect as KeyframeEffect | null)?.pseudoElement ?? '').startsWith('::view-transition'));
+    if (vt) return copy.remove();
+    const page = document.getElementById('ch-content');
+    page?.animate([{ opacity: 0 }, { opacity: 1 }], into);
+    const gone = copy.animate([{ opacity: 1 }, { opacity: 0 }], { ...out, fill: 'forwards' });
+    gone.finished.then(
+      () => copy.remove(),
+      () => copy.remove(),
+    );
+  });
+}
+
 function onPopState() {
   if (!shownPath) return;
+  if (!phoneNow()) {
+    const kind = classifyNav({ from: shownPath, to: location.pathname + location.search, tabRoots: tabRoots(), back: true });
+    mark(kind);
+    if (strip(location.pathname + location.search) !== strip(shownPath)) playDeskHistory();
+    return;
+  }
   const kind = classifyNav({ from: shownPath, to: location.pathname + location.search, tabRoots: tabRoots(), back: true });
   // Drawn here rather than by a view transition (playPop), so the keyframes never run as well.
   if (kind === 'pop' && phoneNow()) {
