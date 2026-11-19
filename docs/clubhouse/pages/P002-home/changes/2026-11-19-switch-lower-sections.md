@@ -1,6 +1,6 @@
 # P002 Home — Changelog
 
-## 2026-11-19 — A switch to Home draws Team scoring and the team's game a frame later
+## 2026-11-19 — Home's lower sections draw a frame after a switch
 
 ```text
 Design package: none

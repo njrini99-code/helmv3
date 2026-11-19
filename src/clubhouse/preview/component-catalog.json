@@ -8927,6 +8927,7 @@
       "file": "src/clubhouse/screens/rounds/TeamRounds.tsx",
       "group": "screens",
       "exports": [
+        "FIRST_SCREEN_ROWS",
         "TeamRounds"
       ],
       "styles": [
@@ -27245,6 +27246,31 @@
         {
           "name": "--ch-ring-field-focus",
           "value": "0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-ink",
+          "value": "inset 0 0 0 1.5px var(--ch-ink-500)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-gain",
+          "value": "inset 0 0 0 1.5px var(--ch-chart-gain)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-on-green",
+          "value": "inset 0 0 0 var(--ch-hairline-w) var(--ch-on-green-ring)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-key-raised-ringed",
+          "value": "var(--ch-key-raised-shadow), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-ledger-offset",
+          "value": "0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule)",
           "scope": "[data-ui='clubhouse']"
         },
         {
