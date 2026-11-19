@@ -11,7 +11,7 @@ import { useChReducedMotion } from '../lib/reduced-motion';
 import { useSlidePlate } from '../lib/slide-plate';
 import { LinkPending } from './LinkPending';
 import { navLinkPrefetch } from './link-prefetch';
-import { CH_PHONE_TABS, isRebuilt, type ChRole } from './nav';
+import { CH_PHONE_TABS, type ChRole } from './nav';
 import { usePhoneChromeState } from './phone-chrome';
 import { useSectionSwitch } from './section-switch';
 import { useIdleRowsAhead, usePrefetchTabs } from './use-prefetch-tabs';
@@ -41,7 +41,10 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
   // visited, for the way back. At every width (the frame mounts the strip at every width): the desktop sidebar's first
   // links are the same sections, and a switch there waited on the server for the whole page (owner, desktop Safari,
   // 2026-10-16).
-  const rebuiltSections = (sw?.sections ?? []).filter((s) => isRebuilt(s.href, role));
+  // The switch's sections are already the rebuilt ones for this role and its features (phoneSectionsFor). Filtered again
+  // here without the features, Tournaments (golf_tournaments_v1) was never fetched ahead, so a revisit drew its skeleton
+  // for 600 ms (E-3, audit 2026-11-19).
+  const rebuiltSections = sw?.sections ?? [];
   usePrefetchTabs(
     rebuiltSections.filter((s) => CH_PHONE_TABS[role].includes(s.id)).map((s) => s.href),
     pathname,
