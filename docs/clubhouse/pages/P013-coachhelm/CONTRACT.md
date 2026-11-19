@@ -212,6 +212,7 @@ filter, so it has no filtered empty state.
 | 130436 | CH-13395 | `PRACTICE_NEW_PLAN_AND_SOMEONE_WITH_NO` | Practice: New plan, and someone with no team |
 | 130437 | CH-13396 | `PRACTICE_A_COACHS_FIRST_PLAN_OR_NO` | Practice: a coach's first plan, or no practice this week |
 | 130438 | CH-13397 | `PRACTICE_A_PLAYER_WITH_NOTHING_PUBLISHED` | Practice: a player with nothing published |
+| 130439 | CH-13316 | `COACHHELM_READS_THE_COACHS_TEAM_READS_PAGE_2` | CoachHelm reads: the coach's Team reads page with no read saved for anyone on the roster yet |
 | 130490 | CH-13385 | `WHATS_NEW_SOMEONE_WITH_NO_TEAM` | What’s new: someone with no team (no organization, or no team resolved; GAP-S-36) |
 | 130491 | CH-13386 | `A_PLAYER_FILE_OR_YOUR_WEEK_FOR` | A player file or Your week for a player with no rounds (GAP-S-23) |
 
@@ -284,6 +285,11 @@ the whole change again, follow-ups included (131401).
 | 130648 | CH-13083 | `PRACTICE_A_NEW_DRILL_SAVED` | Practice: a new drill saved |
 | 130649 | CH-13084 | `PRACTICE_OFFLINE_WHILE_EDITING` | Practice: offline while editing |
 | 130650 | CH-13008 | `REMOVE_FOCUS_ON_A_READ_FAILS` | Remove focus on a read fails (written when its Undo toast goes) |
+| 130651 | CH-13015 | `COACHHELM_READS_SET_AS_FOCUS_ON_THE` | CoachHelm reads (`coachhelm_reads_v1`): Set as focus on the analyst's card fails |
+| 130652 | CH-13016 | `COACHHELM_READS_NOT_USEFUL_ON_THE_ANALYSTS` | CoachHelm reads: Not useful on the analyst's card fails |
+| 130653 | CH-13017 | `COACHHELM_READS_WRONG_ON_THE_ANALYSTS_CARD` | CoachHelm reads: Wrong (with its reason) on the analyst's card fails |
+| 130654 | CH-13215 | `COACHHELM_READS_THE_COACHS_TEAM_READS_PAGE` | CoachHelm reads (`coachhelm_reads_v1`): the coach's Team reads page (`?view=team-reads`) did not load (the roster, the names or the saved reads) |
+| 130655 | CH-13216 | `COACHHELM_READS_THE_PLAYERS_OWN_READ_ON` | CoachHelm reads: the player's own read on Your week did not load (their team membership or the saved read) |
 | 130690 | CH-13285 | `WHATS_NEW_ONE_OR_TWO_KINDS_DONT` | What’s new: one or two kinds don’t load (insights, patterns or the roster behind them, focus areas) while the rest answered (GAP-S-02) |
 | 130691 | CH-13286 | `PRACTICE_ONE_PART_OF_A_PAGE_DOESNT` | Practice: one part of a page doesn’t load: the team's plan format (on a plan, or on Plan format), a saved template picked for New plan, or part of the drill bank (GAP-S-03, GAP-S-07, GAP-S-28, GAP-S-37) |
 

@@ -50,6 +50,7 @@ import {
   type UnifiedNotificationItem,
 } from './unified-notifications-model';
 import { describeError } from '@/lib/utils/describe-error';
+import { withoutReadsHidden } from '@/lib/coachhelm/v3/analyst/reads/visibility';
 
 export interface ActionResult<T = void> {
   success: boolean;
@@ -90,10 +91,11 @@ async function visibleInsightIds(supabase: ServerClient, ids: readonly string[])
   for (let i = 0; i < ids.length; i += INSIGHT_ID_CHUNK) {
     const chunk = ids.slice(i, i + INSIGHT_ID_CHUNK);
     const { data, error } = await applyInsightVisibility(
-      supabase.from('golf_coach_insights').select('id').in('id', chunk),
+      supabase.from('golf_coach_insights').select('id, team_id, signature, evidence, lifecycle_state, priority, category').in('id', chunk),
     );
     if (error) return null;
-    for (const row of data ?? []) visible.add(row.id);
+    // CoachHelm reads (flag `coachhelm_reads_v1`, team listed): a note or good-news read is gone for that team, so its receipt is too.
+    for (const row of data ?? []) if (withoutReadsHidden([row], row.team_id).length) visible.add(row.id);
   }
   return visible;
 }
