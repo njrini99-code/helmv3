@@ -2,7 +2,7 @@
 
 - Feature: `coachhelm_ai`
 - Surface: `GET /api/cron/coachhelm-calibration` (nightly 03:40 UTC)
-- Status: FIX IN PR #2360 (14f8a808a); not merged, not deployed
+- Status: RESOLVED. Fixed in PR #2360 (5616f781ee), live in production (prod 5fb7111bb, dpl_HqAb6qGA9KyNvdHqwUWA5jw9amfK); calibration completed 2026-11-15/16/17; 07cd1dea and 05dde3b3 resolved 2026-11-18 by the desktop health routine.
 - Risk: R1. Read path only. No schema, RLS, grant or data-shape change; bucket math unchanged.
 - Signal: Bridge `07cd1dea` ("cron.calibration.fetchPredictions failed: Bad Request", error, extra.predictionIdsCount 633) and `05dde3b3` ("Cron failed: coachhelm-calibration"), both first seen 2026-10-24 03:40:43Z, 1 each. background_job_logs coachhelm-calibration failed 2026-10-24 03:40Z after completed runs every night 10-19..10-23.
 

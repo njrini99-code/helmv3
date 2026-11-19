@@ -107,6 +107,38 @@ function replayText(row: TurnRow): string {
   return lines.join('\n');
 }
 
+const blocksOf = (message: ModelMessage | undefined): { type?: unknown; id?: unknown; tool_use_id?: unknown }[] =>
+  message && Array.isArray(message.content) ? (message.content as { type?: unknown }[]) : [];
+
+/**
+ * A stored turn's messages with every tool call that has no result in the very next message taken out. The API rejects
+ * the whole request (400, "`tool_use` ids were found without `tool_result` blocks immediately after") when one stands in
+ * the history, so a single turn stored that way broke every later message of its conversation (2026-11-16, 7286de9e).
+ * An assistant message left with nothing but thinking is dropped. Every other message is returned untouched.
+ */
+export function answeredCallsOnly(messages: readonly ModelMessage[]): ModelMessage[] {
+  const out: ModelMessage[] = [];
+  messages.forEach((message, index) => {
+    const blocks = blocksOf(message);
+    if (message.role !== 'assistant' || !blocks.some((b) => b.type === 'tool_use')) {
+      out.push(message);
+      return;
+    }
+    const next = messages[index + 1];
+    const answered = new Set(
+      next?.role === 'user' ? blocksOf(next).flatMap((b) => (b.type === 'tool_result' && typeof b.tool_use_id === 'string' ? [b.tool_use_id] : [])) : [],
+    );
+    const kept = blocks.filter((b) => b.type !== 'tool_use' || (typeof b.id === 'string' && answered.has(b.id)));
+    if (kept.length === blocks.length) {
+      out.push(message);
+      return;
+    }
+    if (kept.every((b) => b.type === 'thinking' || b.type === 'redacted_thinking')) return;
+    out.push({ ...message, content: kept } as unknown as ModelMessage);
+  });
+  return out;
+}
+
 /**
  * The messages the model is shown for the turns before this one. A turn the engine stored is replayed exactly; any
  * other turn is replayed as text. `withoutTurn` leaves out one turn's rows (the turn being retried or continued, whose
@@ -124,7 +156,8 @@ export function buildHistory(loaded: LoadedConversation, opts: { withoutTurn?: s
       if (row.client_turn_id && storedTurns.has(row.client_turn_id)) continue;
       if (row.content?.trim()) history.push({ role: 'user', content: row.content });
     } else if (row.role === 'assistant') {
-      if (row.model_messages) history.push(...row.model_messages);
+      // A turn still waiting on a card keeps its unanswered call: the coach's next message answers it.
+      if (row.model_messages) history.push(...(row.pending_decision ? row.model_messages : answeredCallsOnly(row.model_messages)));
       else if (row.status !== 'failed') {
         const text = replayText(row);
         if (text) history.push({ role: 'assistant', content: text });
