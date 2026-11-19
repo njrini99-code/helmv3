@@ -1,5 +1,8 @@
 'use client';
 
+import { useBackCloses } from '../lib/back-closes';
+import { chFocusQuietly } from '../lib/focus-quietly';
+import { useChPhone } from '../lib/use-phone';
 import { AnimatePresence, m } from 'motion/react';
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -76,10 +79,14 @@ export function Menu({
   const btn = useRef<HTMLButtonElement | null>(null);
   const list = useRef<HTMLDivElement | null>(null);
 
+  // Focus handed back to the trigger is code's, not the person arriving on it: no tooltip for it (audit 2026-11-18).
   const close = useCallback((focus = true) => {
     setOpen(false);
-    if (focus) btn.current?.focus();
+    if (focus && btn.current) chFocusQuietly(btn.current);
   }, [setOpen]);
+  // On the phone, Back (the browser's, the edge swipe) closes the menu before it leaves the page (audit 2026-11-18).
+  const phone = useChPhone();
+  const backEntry = useBackCloses(open && phone, () => close(false));
 
   useLayoutEffect(() => {
     if (!open || !btn.current) return;
@@ -188,7 +195,7 @@ export function Menu({
                 {...chMenuMotion(reduced)}
                 onKeyDown={onKey}
               >
-                <MenuItems items={items} onClose={close} />
+                <MenuItems items={items} onClose={close} replace={backEntry.replaces()} onFollow={backEntry.forget} run={backEntry.release} />
               </m.div>
             )}
           </AnimatePresence>,
@@ -222,7 +229,22 @@ export function menuKeyDown(e: React.KeyboardEvent, list: HTMLElement | null, on
  * The rows of a menu, shared by the button's Menu and the right-click ContextMenu so they cannot drift: a link closes the
  * list without taking focus (the page is changing), a button closes it, gives focus back and runs its action.
  */
-export function MenuItems({ items, onClose }: { items: MenuItem[]; onClose: (focus?: boolean) => void }) {
+export function MenuItems({
+  items,
+  onClose,
+  replace = false,
+  onFollow,
+  run = (fn) => fn(),
+}: {
+  items: MenuItem[];
+  onClose: (focus?: boolean) => void;
+  /** The menu owns the top history entry (useBackCloses): a link picked replaces it, so Back skips no duplicate page. */
+  replace?: boolean;
+  /** A link was followed: the menu's entry is the link's now. */
+  onFollow?: () => void;
+  /** Runs a picked action once the menu's own history entry is off the stack. */
+  run?: (fn: () => void) => void;
+}) {
   const first = items.findIndex((item) => item.kind !== 'separator');
   return (
     <>
@@ -246,9 +268,10 @@ export function MenuItems({ items, onClose }: { items: MenuItem[]; onClose: (foc
         const role = it.checked !== undefined ? 'menuitemradio' : 'menuitem';
         if (it.href) {
           return (
-            <Link key={it.label} href={it.href} role={role} aria-checked={it.checked} className={cls} tabIndex={i === first ? 0 : -1} onClick={() => {
+            <Link key={it.label} href={it.href} replace={replace || undefined} role={role} aria-checked={it.checked} className={cls} tabIndex={i === first ? 0 : -1} onClick={() => {
               // A link item can also note something as it opens (the rounds library notes the round, so the review's Back is a step back).
               it.onSelect?.();
+              onFollow?.();
               onClose(false);
             }}>
               {content}
@@ -266,8 +289,10 @@ export function MenuItems({ items, onClose }: { items: MenuItem[]; onClose: (foc
             tabIndex={i === first ? 0 : -1}
             onClick={() => {
               haptic(it.feel ?? 'select');
+              const select = it.onSelect;
               onClose();
-              it.onSelect?.();
+              // In the same handler, before the close's effect: the menu's Back entry goes first, then the action.
+              run(() => select?.());
             }}
           >
             {content}
