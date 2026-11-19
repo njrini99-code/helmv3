@@ -7,6 +7,7 @@ const phone = vi.hoisted(() => ({ on: false }));
 vi.mock('../../../../lib/use-phone', async (orig) => ({ ...(await orig<object>()), useChPhone: () => phone.on }));
 
 import { TEAM_BOARD_DESK_SLOTS, TEAM_BOARD_PHONE_SLOTS, TeamBoardSkeleton } from '../TeamBoardSkeleton';
+import { TeamReadsSkeleton } from '../../views/TeamReads';
 import { YOUR_WEEK_DESK_COLUMNS, YOUR_WEEK_PHONE_ORDER, YourWeekSkeleton } from '../../file/YourWeekSkeleton';
 
 const src = (p: string) => readFileSync(join(process.cwd(), 'src/clubhouse/screens/coachhelm', p), 'utf8');
@@ -72,5 +73,17 @@ describe('CoachHelm loads in one shape: each skeleton is the page it stands for,
     ]);
     const stack = week.slice(week.indexOf(') : phone ? ('), week.indexOf('<div className="grid2">'));
     expect(orderIn(stack, { feat: '{feat}', w: '<WorkingCard', plan: '{planCard}', f: '{fieldCard}', sg: '{sgCard}', r: '<ReadsCard' })).toEqual([...YOUR_WEEK_PHONE_ORDER]);
+  });
+
+  it('Team reads in waiting is the Team reads page: its frame and its whole head, then its sections', () => {
+    phone.on = false;
+    const { container } = render(<TeamReadsSkeleton chained />);
+    const main = container.querySelector('main.ch-hl.ch-htrd')!;
+    expect(main.getAttribute('aria-label')).toBe('Loading Team reads');
+    expect(main.getAttribute('data-skel')).toBe('chained');
+    expect(main.querySelector('header.ch-htr-h h1')!.textContent).toBe('Team reads');
+    expect(main.querySelector('.ch-htrd-body')).not.toBeNull();
+    // Never the retired board's shape (players beside a focus card).
+    expect(main.querySelector('.ch-hl-sk')).toBeNull();
   });
 });

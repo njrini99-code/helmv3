@@ -4806,7 +4806,8 @@
       "group": "screens",
       "exports": [
         "TeamReads",
-        "TeamReadsLink"
+        "TeamReadsLink",
+        "TeamReadsSkeleton"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",

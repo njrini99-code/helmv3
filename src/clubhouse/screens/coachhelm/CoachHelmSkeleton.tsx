@@ -12,6 +12,8 @@ import { AskSkeleton } from './chat/AskSkeleton';
 import { CoachHelmHeldSwitch } from './SwitchStrip';
 import { YourWeekSkeleton } from './file/YourWeekSkeleton';
 import { TeamBoardSkeleton } from './team/TeamBoardSkeleton';
+import { TeamReadsSkeleton } from './views/TeamReads';
+import { TEAM_READS_VIEW } from '../../data/coachhelm-team-reads-shape';
 import { DiveSkeleton, StandingSkeleton } from './views/Skeletons';
 
 /** One text line's box at its loaded height, with the bar centred in it (the phone intro's lines). */
@@ -264,6 +266,8 @@ export function CoachHelmRouteSkeleton() {
   // The coach's Team page is the drawn hole (TeamBoard): its one skeleton is the board's own, the one the route's Suspense and the
   // switch draw, so the page shows one shape from the tap until the board lands (it drew the retired board's shape here, then
   // swapped to this one after about 0.8 s). The coach's other views (the Track record, the briefs, Team reads) keep theirs.
+  // Team reads is a page of its own (TeamReads): its own frame and head, as the route's Suspense draws it.
+  if (which === 'coach' && view === TEAM_READS_VIEW) return <TeamReadsSkeleton />;
   if (which === 'coach') return view ? <CoachHelmSkeleton view="coach" /> : <CoachHelmHeldSwitch who="coach" active="board"><TeamBoardSkeleton /></CoachHelmHeldSwitch>;
   if (view === 'ask') return <CoachHelmHeldSwitch who="player" active="ask"><AskSkeleton player /></CoachHelmHeldSwitch>;
   // The player's Board is "Your week" (YourWeek): its own skeleton, the one the route's Suspense and the switch draw.

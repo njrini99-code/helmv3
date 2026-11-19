@@ -32,6 +32,11 @@ Held items: none
   `file/YourWeekSkeleton.tsx`: the week's `.ch-hf` frame, its tight head
   and its two columns of cards in the week's order. It drew the retired
   focus-and-list board.
+- Team reads (`?view=team-reads`) has its own skeleton,
+  `TeamReadsSkeleton`, on the page's own frame and whole head. It drew the
+  retired board's. The Track record and the briefs keep the old one.
+- On a phone the coach's route skeleton is the Team sheet's, not the
+  retired chips and focus card.
 - A chained skeleton's blocks do not wait the busy delay a second time
   (`.ch-htb[data-skel='chained'] .skl`, `.ch-hf[data-skel='chained'] .sk i`).
 - `.ch-hf .sk i` lines are `calc(12 * var(--ch-type-k, 1px))` tall.
@@ -63,5 +68,14 @@ Held items: none
   Staging's one demo player has no rounds, so the week lands as its empty
   state and the cards' heights could not be measured against data.
 - Tier C (Chromium) coach 1440: the same sequence.
+- Board paint against settle, WebKit 1440 first visit: the board painted
+  at about 3.3 s and moved again at 4.5 to 4.7 s (2 runs). After, it
+  paints at 2.7 to 3.9 s (4 runs) and does not move again. The brief now
+  reads beside the board's reads. This week and Working on wait at this
+  team's heights (311 and 592px), so a brief that is still out when the
+  board lands can still move the huddle on another roster.
+- Not measured: a hard load (the recorder caught no frames), the phone
+  in a browser (the shape test and the motion gate cover it), and Team
+  reads in a browser (only unit-tested).
 - `screens/coachhelm/team/__tests__/skeleton-shape.test.tsx`: each
   skeleton's cards follow its page's order on desk and phone.

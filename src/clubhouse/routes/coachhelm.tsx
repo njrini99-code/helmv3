@@ -10,7 +10,7 @@ import { COURSE_TAB } from '@/lib/coachhelm/v3/team-board/flag';
 import { loadCoachPlayerFile, loadFileRoster, loadPlayerYourWeek } from '../data/coachhelm-file';
 import { loadCoachAnalystRead, loadCoachTeamReads, loadPlayerOwnAnalystRead, readsOnForTeam } from '../data/coachhelm-analyst-read';
 import { TEAM_READS_HREF, TEAM_READS_VIEW } from '../data/coachhelm-team-reads-shape';
-import { TeamReads } from '../screens/coachhelm/views/TeamReads';
+import { TeamReads, TeamReadsSkeleton } from '../screens/coachhelm/views/TeamReads';
 import { COACH_BOARD_HREF as COACHHELM_BOARD_PATH } from '../data/coachhelm-track-record-shape';
 import { FileSkeleton } from '../screens/coachhelm/file/FileSkeleton';
 import { PlayerFile } from '../screens/coachhelm/file/PlayerFile';
@@ -272,7 +272,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
     if (view === TEAM_READS_VIEW) {
       if (!readsOnForTeam(team.teamId)) redirect(COACHHELM_BOARD_PATH);
       return (
-        <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
+        <Suspense fallback={<TeamReadsSkeleton chained />}>
           <CoachTeamReadsView teamId={team.teamId} />
         </Suspense>
       );
