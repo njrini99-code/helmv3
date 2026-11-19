@@ -6751,6 +6751,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-compare.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/ui.css"
@@ -7383,7 +7384,8 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats-redesign.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/whats-new.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -11152,7 +11154,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/controls.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -12820,6 +12821,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-compare.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -13755,7 +13757,8 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-review.css",
-        "src/clubhouse/styles/ui.css"
+        "src/clubhouse/styles/ui.css",
+        "src/clubhouse/styles/whats-new.css"
       ],
       "examples": [
         "PillGroup",
@@ -15186,6 +15189,7 @@
         "ch-calm-skel__dayk",
         "ch-calm-skel__step",
         "ch-calm-skel__week",
+        "ch-calm-title__yr",
         "ch-calm-today",
         "ch-calm-weekstep",
         "ch-cg",
@@ -17893,6 +17897,7 @@
         "ch-htb-desk",
         "ch-htb-deskhead",
         "ch-htb-ladnote",
+        "ch-htb-orphan-rck",
         "ch-htb-sheet",
         "ch-htb-storydesk",
         "ch-htb-workempty",
@@ -19158,6 +19163,7 @@
         "ch-hrs-tr--head",
         "ch-hrs-who",
         "ch-hrs-who__n",
+        "ch-hrs-who__t",
         "ch-hrs-who__y"
       ],
       "tokens": []
@@ -19169,6 +19175,8 @@
         "ch-btn",
         "ch-btn--primary",
         "ch-empty",
+        "ch-empty--compact",
+        "ch-es--line",
         "ch-hb",
         "ch-hb--skel",
         "ch-hb-2",
@@ -21059,6 +21067,7 @@
         "ch-prc-gcard",
         "ch-prc-ghosts",
         "ch-prc-glance",
+        "ch-prc-glance__more",
         "ch-prc-group",
         "ch-prc-groups",
         "ch-prc-groups__a",
@@ -21839,6 +21848,7 @@
         "ch-rec-bar",
         "ch-rec-body",
         "ch-rec-cal",
+        "ch-rec-cal__more",
         "ch-rec-cal__pick",
         "ch-rec-cal__t",
         "ch-rec-chip",
@@ -21915,6 +21925,7 @@
         "ch-recm-row",
         "ch-recm-row--static",
         "ch-recm-row__b",
+        "ch-recm-row__go",
         "ch-recm-scroll",
         "ch-recm-search",
         "ch-recm-skel",
@@ -22785,6 +22796,7 @@
         "ch-hmap__steps",
         "ch-hmap__sum",
         "ch-lgr__lead",
+        "ch-lv-sharechip",
         "ch-notice",
         "ch-notice--danger",
         "ch-pill",
@@ -22856,6 +22868,7 @@
         "ch-rd-sc",
         "ch-rd-sc__c",
         "ch-rd-sc__date",
+        "ch-rd-sc__go",
         "ch-rd-sc__grid",
         "ch-rd-sc__m",
         "ch-rd-sc__s",
@@ -23938,6 +23951,7 @@
         "ch-shs-dhead",
         "ch-shs-dhead__act",
         "ch-shs-dhead__id",
+        "ch-shs-dhead__k",
         "ch-shs-dhead__row",
         "ch-shs-dlink",
         "ch-shs-drow",
@@ -24487,6 +24501,7 @@
         "ch-gx-pars",
         "ch-gx-pm",
         "ch-gx-rank",
+        "ch-gx-rank__course",
         "ch-gx-rank__n",
         "ch-gx-rule",
         "ch-gx-scroll",
@@ -26322,7 +26337,7 @@
         },
         {
           "name": "--ch-font-sans",
-          "value": "var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif",
+          "value": "var(--ch-font-separator, var(--ch-font-instrument)), var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26936,6 +26951,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-page-bottom-phone-open",
+          "value": "calc(var(--ch-page-bottom-phone) + env(safe-area-inset-bottom))",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-gap-section-phone",
           "value": "var(--ch-space-8)",
           "scope": "[data-ui='clubhouse']"
@@ -27282,7 +27302,7 @@
         },
         {
           "name": "--ch-medallion-shadow",
-          "value": "0 16px 30px -14px rgb(11 58 37 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.1)",
+          "value": "0 1px 2px rgb(11 58 37 / 0.18), 0 4px 10px -4px rgb(11 58 37 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.1)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27871,6 +27891,16 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-on-green-ring",
+          "value": "rgb(244 241 232 / 0.28)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-mask-solid",
+          "value": "#000",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-on-green-mark",
           "value": "rgb(244 241 232 / 0.5)",
           "scope": "[data-ui='clubhouse']"
@@ -28017,7 +28047,7 @@
         },
         {
           "name": "--ch-primary-shadow",
-          "value": "0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(12 65 40 / 0.22)",
+          "value": "0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), var(--ch-elevation-cast)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -30380,6 +30410,7 @@
     {
       "file": "src/clubhouse/styles/tournaments-compare.css",
       "classes": [
+        "ch-avatar",
         "ch-tour-cmp",
         "ch-tour-cmp-block",
         "ch-tour-cmp-block__ab",
@@ -30407,6 +30438,7 @@
         "ch-tour-cmp-hd__ab",
         "ch-tour-cmp-link",
         "ch-tour-cmp-m",
+        "ch-tour-cmp-none",
         "ch-tour-cmp-pre",
         "ch-tour-cmp-pres",
         "ch-tour-cmp-presets",
@@ -30643,6 +30675,7 @@
       "classes": [
         "ch-avatar",
         "ch-btn",
+        "ch-btn--ghost",
         "ch-btn--primary",
         "ch-tfx",
         "ch-tfx-note",
@@ -30815,6 +30848,8 @@
         "ch-tour-links-muted",
         "ch-tour-links-row",
         "ch-tour-links-row__act",
+        "ch-tour-links-row__chg",
+        "ch-tour-links-row__more",
         "ch-tour-links-row__n",
         "ch-tour-links-row__pick",
         "ch-tour-links-row__sel",
@@ -31451,6 +31486,8 @@
         "ch-lgr__txt",
         "ch-rd",
         "ch-rd-h",
+        "ch-rd-tools",
+        "ch-seg",
         "ch-wn",
         "ch-wn-detail",
         "ch-wn-meta",

@@ -25,10 +25,11 @@ Held items: none
 
 ### Verification
 
-- WebKit, iPhone 17 Pro preset, pre-fix build: `.ins` padding-bottom 40px plus the
-  panel's inset, 40px empty under the link with Playwright's zero inset (about
-  108px on a device with the 34px home-indicator inset).
-- The scrim does cover the top bar: with the sheet open, `elementFromPoint(200, 30)`
-  is the dialog (native top layer, `::backdrop` 24% warm black). On the green bar
-  that dim barely shows, which is what read as "not covered". The bell's drop keeps
-  the bar above its veil by design (shell.css); neither is changed here.
+- WebKit, iPhone 17 Pro preset, pre-fix build: `.ins` padding-bottom 40px plus
+  the panel's inset, 40px empty under the link with Playwright's zero inset
+  (about 108px on a device with the 34px home-indicator inset).
+- The scrim does cover the top bar: with the sheet open, `elementFromPoint(200,
+  30)` is the dialog (native top layer, `::backdrop` 24% warm black). On the
+  green bar that dim barely shows, which is what read as "not covered". The
+  bell's drop keeps the bar above its veil by design (shell.css); neither is
+  changed here.
