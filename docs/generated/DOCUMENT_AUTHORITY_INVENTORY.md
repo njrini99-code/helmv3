@@ -1751,6 +1751,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-15-skeleton-by-section.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-16-dead-display-switches.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-17-silent-errors-screens-a.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-18-webkit-freeze.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | 1 |
