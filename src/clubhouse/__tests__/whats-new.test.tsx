@@ -95,13 +95,15 @@ describe('WhatsNew', () => {
     expect(whatsNewLink({ playerId: 'p1', kind: 'insights' })).toBe('/golf/dashboard/stats?player=p1');
   });
 
-  it('CH-13331 narrows to one kind, and says so when a kind has nothing', async () => {
+  // Owner-approved, 18 Nov 2026: a kind that loaded with nothing this week is not offered ("Patterns 0" filtered to an
+  // empty list); the filter offers the kinds that have something.
+  it('CH-13331 narrows to one kind, and offers no kind with nothing in it', async () => {
     const user = userEvent.setup();
     render(<WhatsNew data={toWhatsNew([item({ insightId: 'a' })], { nowMs: NOW })} />);
-    await user.click(screen.getByRole('radio', { name: /Patterns 0/ }));
-    expect(screen.getByText('Nothing of this kind this week')).toBeTruthy();
-    // A kind with nothing is a filtered empty (2026-10-23, filtered empties).
-    expect(document.querySelector('[data-ch-code="CH-13331"]')!.getAttribute('data-ch-state')).toBe('filtered');
+    expect(screen.queryByRole('radio', { name: /Patterns/ })).toBeNull();
+    expect(screen.queryByRole('radio', { name: /Focus areas/ })).toBeNull();
+    await user.click(screen.getByRole('radio', { name: /Insights 1/ }));
+    expect(screen.getByText('Putting')).toBeTruthy();
     await user.click(screen.getByRole('radio', { name: /All 1/ }));
     expect(screen.getByText('Putting')).toBeTruthy();
   });

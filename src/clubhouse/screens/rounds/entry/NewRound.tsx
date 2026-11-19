@@ -59,7 +59,7 @@ export function NewRound({
   const router = useRouter();
   const toast = useToast();
   const params = useSearchParams();
-  const { ports, capture } = useRoundPorts();
+  const { ports, capture, conflictBanner } = useRoundPorts();
   const engine = useNewRoundSession({ playerId, ports, routes: ENGINE_ROUTES, logSource: LOG_SOURCE });
   // A Done key over the number pad for the whole round, setup to submit, sheets included (use-done-key.ts).
   useRoundDoneKey();
@@ -177,6 +177,8 @@ export function NewRound({
 
   const completed = engine.completedHoleStats[engine.currentHoleIndex];
   const activeHoleShots = completed?.shots ?? engine.inProgressShotsByHole[engine.currentHoleIndex] ?? [];
+  // L-036: the Reload banner and the conflict toast said the same thing at once; the banner wins.
+  useEffect(() => conflictBanner(engine.roundConflictBlocked), [conflictBanner, engine.roundConflictBlocked]);
   const session: ChRoundSession = {
     round: trackingRound(engine.setupData),
     heading: roundHeading(engine.setupData),

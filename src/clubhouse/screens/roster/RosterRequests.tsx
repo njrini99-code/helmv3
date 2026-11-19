@@ -66,7 +66,7 @@ export function RosterRequests({
               <b>{r.name}</b>
               <span>
                 {r.meta}
-                {r.handicap != null && ` · HCP ${formatHcp(r.handicap)}`}
+                {r.handicap != null && ` · Handicap ${formatHcp(r.handicap)}`}
               </span>
             </span>
             <div className="ch-rs-req__act">

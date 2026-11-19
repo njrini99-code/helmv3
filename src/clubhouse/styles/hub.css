@@ -701,6 +701,10 @@
   position: relative;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
+.ch-hb-feed ol:not(.has-new) li > a,
+.ch-hb-feed ol:not(.has-new) li > .ch-hb-feed__row {
+  padding-left: 0;
+}
 .ch-hb-feed li > a,
 .ch-hb-feed li > .ch-hb-feed__row {
   display: grid;
@@ -735,11 +739,14 @@
   color: var(--ch-text-secondary);
 }
 .ch-hb-feed__b > span {
+  display: -webkit-box;
   overflow: hidden;
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
   text-overflow: ellipsis;
-  white-space: nowrap;
+  /* L-064: two lines, so a preview ends nearer a sentence than at "Demo University …". */
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .ch-hb-feed em {
   font: var(--ch-type-caption);
@@ -808,10 +815,18 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  box-shadow: inset 0 0 0 1.5px rgb(28 25 18 / 0.25);
+  /* The control border (3:1 on the page and the card, both themes), not a 25% wash: the box was 1.7:1 (L-008). */
+  box-shadow: inset 0 0 0 1.5px var(--ch-border-control);
   color: var(--ch-on-fill-0);
   cursor: pointer;
   touch-action: manipulation;
+  position: relative;
+}
+/* A 44px hit area at every width (L-008, L-050): the 24px box keeps its look. */
+.ch-hb-check::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
 }
 .ch-hb-check[aria-pressed='true'] {
   background: var(--ch-green-fill-700);
@@ -1649,6 +1664,13 @@
   .ch-hb-feed li.is-new::after {
     top: 26px;
   }
+  /* L-064: the unread gutter exists only while a row is unread; otherwise the words start at the card's edge. */
+  .ch-hb-feed ol:not(.has-new) li > .ch-hb-feed__row {
+    padding-left: 0;
+  }
+  .ch-hb-feed ol:not(.has-new) li > a {
+    padding-left: 12px;
+  }
   .ch-hb-feed__b b {
     font-size: calc(15 * var(--ch-type-k));
   }
@@ -2157,7 +2179,7 @@ html[data-fw-theme='dark'] .ch-hb-pass__stub {
 }
 html[data-fw-theme='dark'] .ch-hb-check,
 html[data-fw-theme='dark'] .ch-hb-dp__ck {
-  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.3);
+  box-shadow: inset 0 0 0 1.5px var(--ch-border-control);
 }
 html[data-fw-theme='dark'] .ch-hb-check[aria-pressed='true'],
 html[data-fw-theme='dark'] .ch-hb-dp__row[aria-pressed='true'] .ch-hb-dp__ck {
@@ -2963,6 +2985,11 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
+}
+/* L-003: a tile whose whole body is a compact empty keeps its own height; the neighbour's no longer stretches it into blank. */
+.ch-hw.is-bare,
+.ch-hw:has(> .ch-es--line, > .ch-empty--compact) {
+  align-self: start;
 }
 .ch-hw__h {
   display: flex;
@@ -3806,7 +3833,8 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-tlist button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 64px;
-  align-items: center;
+  /* L-064: the "0/7" count sits on the title's baseline, its bar under it, whatever the row's height. */
+  align-items: first baseline;
   gap: 12px;
   width: 100%;
   min-height: 48px;
@@ -3824,10 +3852,16 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   min-width: 0;
 }
 .ch-hw-tlist b {
+  display: -webkit-box;
   overflow: hidden;
   font: var(--ch-type-14-strong);
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  /* L-057/L-064: titles wrap to two lines on both roles, as the player's queue does, instead of cutting at one. */
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.ch-hw-tlist .ch-hw-mini b {
+  display: block;
 }
 @media (hover: hover) {
   .ch-hw-tlist button:hover b {

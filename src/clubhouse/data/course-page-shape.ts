@@ -2,7 +2,7 @@ import { courseKeyString, groupCourseRounds, parseCourseKey, resolveCourseKey } 
 import { formatDateOnly, formatDateOnlyShort } from '@/lib/golf/date-only';
 import { averageArc, holeStats, nineOf, ownHoleSd, playsCompared, stretches, type ChCardHole, type ChHolePlay, type ChHoleStats, type ChStretch } from './course-history-shape';
 import { holeCoverage, isScoreCountable, recordedPutts } from './round-scope';
-import { toLibraryRound, type ChLibraryRound } from './rounds-shape';
+import { teeLabel, toLibraryRound, type ChLibraryRound } from './rounds-shape';
 import { formatFixed, formatSigned, formatToPar } from '../lib/format';
 import { plural } from '../lib/plural';
 import type { ChPlayHole } from './stats-extra';
@@ -116,8 +116,9 @@ function teesLine(rows: readonly ChCourseListRow[]): string | null {
   }
   const sorted = [...counts].sort((a, b) => b[1] - a[1]);
   if (!sorted.length) return null;
-  if (sorted.length === 1) return `${sorted[0]![0]} tees`;
-  return sorted.map(([t, n], i) => (i === 0 ? `${t} tees (${n})` : `${t} (${n})`)).join(' · ');
+  if (sorted.length === 1) return teeLabel(sorted[0]![0]);
+  // A tee that already says "tees" is not given a second one (R-2).
+  return sorted.map(([t, n], i) => (i === 0 ? `${teeLabel(t)} (${n})` : `${t} (${n})`)).join(' · ');
 }
 
 const isFull = (h: readonly ChPlayHole[] | undefined): boolean => !!h && h.length === 18 && h.every((x) => x.score != null);
@@ -248,7 +249,7 @@ export function toCourseHistory(input: {
     lastRow && (lastRow.notes?.trim() || input.coachNote?.trim())
       ? {
           id: lastRow.id,
-          line: [shortDate(lastRow.round_date.slice(0, 10)), lastRow.total_score != null ? String(lastRow.total_score) : null, lastRow.tees_played?.trim() ? `${lastRow.tees_played.trim()} tees` : null, TYPE_WORD[toLibraryRound(lastRow)?.type ?? 'none'] ?? null]
+          line: [shortDate(lastRow.round_date.slice(0, 10)), lastRow.total_score != null ? String(lastRow.total_score) : null, teeLabel(lastRow.tees_played), TYPE_WORD[toLibraryRound(lastRow)?.type ?? 'none'] ?? null]
             .filter(Boolean)
             .join(' · '),
           note: lastRow.notes?.trim() || null,

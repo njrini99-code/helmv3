@@ -55,3 +55,8 @@
 .ch-wn.is-phone .ch-wn-who {
   white-space: normal;
 }
+
+/* L-065: the filter starts at the content column's left edge (the shared tools row pushes a segmented control to the right). */
+.ch-wn .ch-rd-tools .ch-seg {
+  margin-left: 0;
+}

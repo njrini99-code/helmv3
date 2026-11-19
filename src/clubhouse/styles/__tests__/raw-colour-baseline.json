@@ -12,17 +12,17 @@
   "coachhelm-standing.css": 4,
   "coachhelm-thread.css": 1,
   "coachhelm.css": 24,
-  "controls.css": 50,
+  "controls.css": 49,
   "hero-tones.css": 18,
   "home.css": 120,
-  "hub.css": 48,
+  "hub.css": 46,
   "messages-details.css": 3,
   "messages.css": 45,
   "onboard.css": 139,
   "practice.css": 10,
-  "qualifiers.css": 70,
+  "qualifiers.css": 69,
   "quick-chat.css": 26,
-  "recruiting.css": 9,
+  "recruiting.css": 7,
   "roster.css": 34,
   "rounds-setup.css": 93,
   "rounds-track.css": 95,
@@ -31,5 +31,5 @@
   "shell.css": 105,
   "stats-redesign.css": 3,
   "stats.css": 150,
-  "ui.css": 132
+  "ui.css": 129
 }

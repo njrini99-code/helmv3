@@ -40,11 +40,30 @@ export const whatsNewLink = (it: Pick<ChWhatsNewItem, 'playerId' | 'kind'>) =>
   rebuiltHref(`/golf/dashboard/stats?player=${it.playerId}${it.kind === 'focus' ? '&tab=dev' : ''}`, 'coach');
 
 /**
+ * L-065: a body ends at a sentence, never mid-word. The phone keeps the first sentence; the desk keeps whole sentences up to
+ * `max` characters (always at least the first), inside the desk's three-line clamp. A body with no sentence end is left whole
+ * for the line clamp.
+ */
+export function sentenceClamp(text: string, phone: boolean, max = 180): string {
+  // A sentence ends at . ! or ? (and any closing quote) followed by a space and a capital or a digit: "74.5" never splits.
+  // Forward-only (no lookbehind): WebKit before Safari 16.4 rejects lookbehind at parse time.
+  const parts = text.trim().replace(/([.!?]["”’)]*)\s+(?=[A-Z0-9"“])/g, '$1\u0000').split('\u0000');
+  if (parts.length < 2) return text;
+  if (phone) return parts[0]!;
+  let out = parts[0]!;
+  for (const p of parts.slice(1)) {
+    if (out.length + 1 + p.length > max) break;
+    out += ' ' + p;
+  }
+  return out;
+}
+
+/**
  * One update. On desktop the time leads the row, one width for every time, so the titles line up; on the phone that
  * column and the chevron left the text about 22 characters a line (design review, 10 Nov 2026), so the time opens the
  * line under the title instead and the title and body take the row's width.
  */
-function WhatsNewRow({ it, phone }: { it: ChWhatsNewItem; phone: boolean }) {
+function WhatsNewRow({ it, phone, repeat = false }: { it: ChWhatsNewItem; phone: boolean; repeat?: boolean }) {
   const href = whatsNewLink(it);
   const time = useChClockText()(it.time);
   return (
@@ -54,10 +73,15 @@ function WhatsNewRow({ it, phone }: { it: ChWhatsNewItem; phone: boolean }) {
       meta={
         <span className="ch-wn-meta">
           <span className="ch-wn-who">
-            {phone && <span className="ch-num">{time} · </span>}
-            {it.player} · <span className={it.good ? 'ch-wn-what is-gain' : 'ch-wn-what'}>{it.what}</span>
+            {phone && <span className="ch-num">{time}{repeat ? '' : ' · '}</span>}
+            {/* L-065: the same player and kind as the row above is said once, on the first of the run. */}
+            {!repeat && (
+              <>
+                {it.player} · <span className={it.good ? 'ch-wn-what is-gain' : 'ch-wn-what'}>{it.what}</span>
+              </>
+            )}
           </span>
-          {it.detail && <span className="ch-wn-detail">{it.detail}</span>}
+          {it.detail && <span className="ch-wn-detail">{sentenceClamp(it.detail, phone)}</span>}
         </span>
       }
       href={href ?? undefined}
@@ -73,8 +97,8 @@ function Days({ days, phone }: { days: ChWhatsNewDay[]; phone: boolean }) {
       {days.map((d) => (
         <Section key={d.key} id={`ch-wn-${d.key}`} title={d.label} meta={<span className="ch-num">{d.items.length} {pluralWord(d.items.length, 'update')}</span>}>
           <LedgerList label={`${d.label}, ${d.items.length} updates`}>
-            {d.items.map((it) => (
-              <WhatsNewRow key={it.key} it={it} phone={phone} />
+            {d.items.map((it, i) => (
+              <WhatsNewRow key={it.key} it={it} phone={phone} repeat={i > 0 && d.items[i - 1]!.playerId === it.playerId && d.items[i - 1]!.what === it.what} />
             ))}
           </LedgerList>
         </Section>
@@ -145,14 +169,17 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
               redraws
               label="Show"
               size="sm"
+              block={phone}
               value={filter}
               onChange={setFilter}
               options={[
                 { value: 'all', label: `All ${c.all}` },
                 // A kind that didn't load has no count (— is no data), never a 0 that reads as "none this week".
-                { value: 'insights', label: `Insights ${countOf('insights')}` },
-                { value: 'patterns', label: `Patterns ${countOf('patterns')}` },
-                { value: 'focus', label: `Focus areas ${countOf('focus')}` },
+                // A kind that loaded with nothing this week is not offered (owner-approved, 18 Nov 2026: "Patterns 0"
+                // filtered to an empty list), unless it is the one picked now.
+                ...(['insights', 'patterns', 'focus'] as const)
+                  .filter((k) => k === filter || data.failed.includes(k) || c[k] > 0)
+                  .map((k) => ({ value: k, label: `${KIND_NAME[k]} ${countOf(k)}` })),
               ]}
             />
           </div>

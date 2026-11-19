@@ -88,7 +88,7 @@
    longer stretches every tile to the one with a picture, and the byline follows the title instead of sinking to the foot. */
 .ch-htb .tiles {
   display:flex;
-  align-items:flex-start;
+  align-items:stretch;
   gap:8px;
   overflow-x:auto;
   scrollbar-width:none;
@@ -124,6 +124,14 @@
   height:44px;
   display:flex;
   align-items:center;
+}
+.ch-htb .tile .tvk {
+  margin-top:-4px;
+  font: var(--ch-type-footnote);
+  color:var(--ch-ink-600);
+}
+.ch-htb.is-desk .tile .tvk {
+  display:none;
 }
 .ch-htb .tv-holes {
   display:grid;
@@ -186,6 +194,11 @@
   font: var(--ch-type-14);
   color:var(--ch-feature-ink-2);
   padding-bottom:2px;
+}
+.ch-htb .feat .hn-note {
+  margin: 8px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-feature-ink-2);
 }
 /* The hero is an estimate (every round's strokes gained came from the scorecard, none from shots): marked beside the figure. */
 .ch-htb .feat .hn b small {
@@ -321,6 +334,11 @@
 .ch-htb .hudsvg [data-year='fr'] {
   --ch-coin:var(--ch-yr-fr);
 }
+/* A coin with no class year is the flat chart grey, light at night: white initials were 2.1:1 on it (L-010). */
+.ch-htb .scn:not([data-year], .early, .is-more) text,
+.ch-htb .hudsvg .hp:not([data-year], .early) text {
+  fill:var(--ch-chart-flat-ink);
+}
 .ch-htb .scn text {
   fill:var(--ch-yr-ink);
   text-anchor:middle;
@@ -444,7 +462,8 @@
 .ch-htb .hole.offh .stn {
   opacity:.6;
 }
-.ch-htb .hole.offh .scn {
+/* Only the disc steps back: its initials keep full ink (L-010: faded text read 2.7:1). */
+.ch-htb .hole.offh .scn circle {
   opacity:.65;
   transition:opacity var(--ch-dur-base) var(--ch-ease);
 }
@@ -944,8 +963,13 @@
   stroke-dasharray:4 4;
 }
 .ch-htb .hudsvg .q {
-  fill:var(--ch-ink-500);
-  font: var(--ch-type-11); letter-spacing: var(--ch-track-11); }
+  /* A card-coloured halo so the dashed average line never runs through the words (R-1). */
+  stroke:var(--ch-card-bg);
+  stroke-width:4px;
+  paint-order:stroke;
+  stroke-linejoin:round;
+  fill:var(--ch-text-secondary);
+  font: var(--ch-type-caption); }
 .ch-htb .hudsvg .axl {
   fill:var(--ch-ink-600);
   font: var(--ch-type-caption);
@@ -1154,6 +1178,9 @@
   padding:8px 16px 12px;
   font: var(--ch-type-14);
   color:var(--ch-ink-600);
+}
+.ch-htb .recfoot.ch-htb-orphan-rck {
+  padding-bottom: 16px;
 }
 .ch-htb .rs {
   position:absolute;
@@ -1665,7 +1692,7 @@
 .ch-htb.is-desk .huddle .hud {
   flex:1;
   display:grid;
-  align-items:center;
+  align-content:start;
 }
 .ch-htb.is-desk .recc {
   display:flex;
@@ -2140,6 +2167,9 @@
   .ch-htb .tiles {
     scroll-padding-inline:16px;
     overscroll-behavior-x:contain;
+    /* L-029: the cut-off tile fades out instead of ending mid-word. */
+    -webkit-mask-image:linear-gradient(90deg, var(--ch-mask-solid) calc(100% - 28px), transparent);
+    mask-image:linear-gradient(90deg, var(--ch-mask-solid) calc(100% - 28px), transparent);
   }
 }
 

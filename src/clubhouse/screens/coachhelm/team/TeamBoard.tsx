@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { boardRoundsWords, courseReads, stationOrder, readsDrawn, type ChReadWorth, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { boardRoundsWords, courseReads, stationOrder, readsDrawn, STATIONS, type ChReadWorth, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { formatSigned } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
@@ -11,7 +11,7 @@ import { useRefresh } from '../../../lib/use-refresh';
 import { CoachHelmHead } from '../CoachHelmHead';
 import { useChSessionState } from '../../../lib/session-state';
 import { plural } from '../../../lib/plural';
-import { sgBaseline } from '../../../lib/sg';
+import { sgBaseline, sgPartsRoundOff, SG_ROUNDING_NOTE } from '../../../lib/sg';
 import { Notice, ReadWorthContext } from './parts';
 import { rebuiltHref } from '../../../shell/nav';
 import { CoachHelmOffNotice } from '../CoachHelmOffNotice';
@@ -96,6 +96,9 @@ function Hero({
   const est = has && sgIsEstimate(data.teamTotal.sgMix);
   const mixLine = has ? (est ? 'Estimated from the scorecard' : sgMixShort(data.teamTotal.sgMix)) : null;
   const mixSaid = has ? sgMixWords(data.teamTotal.sgMix) : null;
+  // The four parts print at one decimal and the total on its own, so they can sit 0.1 off it (−5.7 against −5.8): said, never forced to add up (L-060).
+  const legTeam = STATIONS.map((st) => data.stations[st].team);
+  const partsRoundOff = legTeam.every((v) => v != null) && sgPartsRoundOff(legTeam, data.teamTotal.strokes);
   // The sign carries the direction for the eye; the words carry it for a screen reader (QA-7).
   const figure = (
     <div className="hn" role="group" aria-label={`${formatSigned(data.teamTotal.strokes)} a round ${betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}, ${windowLine.toLowerCase()}${mixSaid ? `. ${mixSaid}` : ''}`}>
@@ -116,6 +119,12 @@ function Hero({
       </span>
     </div>
   );
+  // A footnote under the hero row, full width: beside the figure it wrapped in a narrow column (R-2).
+  const roundNote = partsRoundOff ? (
+    <p className="hn-note" data-ch-sg-round="">
+      {SG_ROUNDING_NOTE}
+    </p>
+  ) : null;
   const chips = <StationControl value={station} onChange={pick} stations={data.stations} courseReads={course} courseTab={courseTab} />;
   return (
     <section className="feat hero ch-htb-feat" data-ch-team-card="hole" aria-label={`Where ${data.team.name} gives back strokes`}>
@@ -123,6 +132,7 @@ function Hero({
         <>
           <div className="hk">Where {data.team.name} gives back strokes</div>
           {figure}
+          {roundNote}
         </>
       ) : (
         <div className="top">
@@ -133,6 +143,7 @@ function Hero({
           {chips}
         </div>
       )}
+      {!phone && roundNote}
       <div className={'hole' + (station === 'course' ? ' offh' : '')}>
         <TeamHole stations={data.stations} players={list} station={station} onStation={pick} orientation={phone ? 'v' : 'h'} arrive picks={picks} />
       </div>
@@ -475,6 +486,8 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
           ? (data.course.history?.courses.find((c) => c.id === open.id)?.name ?? 'Course')
           : 'Story';
 
+  // Inside the page's own column, so it keeps the gutter the cards above it use (R-3: outside, it ran edge to edge).
+  const orphanRecheck = !data.record && recheck ? <section className="card recfoot ch-htb-orphan-rck">{recheck}</section> : null;
   return (
     <ReadWorthContext.Provider value={worth}>
     <main ref={top} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} data-ch-screen="coachhelm-team">
@@ -483,14 +496,15 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
         <div className="sheet">
           {head}
           {body}
+          {orphanRecheck}
         </div>
       ) : (
         <div className="ch-htb-desk">
           {head}
           {body}
+          {orphanRecheck}
         </div>
       )}
-      {!data.record && recheck && <section className="card recfoot">{recheck}</section>}
       {phone ? (
         <Modal open={!!openPanel} onClose={close} title={panelTitle} className="ch-htb-sheet" bare>
           <div className="ins">{openPanel}</div>

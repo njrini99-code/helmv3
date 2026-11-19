@@ -516,7 +516,7 @@
 .ch-empty-page {
   display: grid;
   place-items: center;
-  min-height: calc(100vh - 140px);
+  min-height: calc(100dvh - 140px);
   padding: 56px 24px;
 }
 /* A screen's own empty is the card that would have held its data, not a block floating on the page. A dead end (not
@@ -555,8 +555,8 @@
   inset: 0;
   border-radius: 50%;
   background: repeating-radial-gradient(circle at center, var(--ch-medallion-rings) 0 1px, transparent 1.5px 17px);
-  -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%);
-  mask: radial-gradient(circle, #000 30%, transparent 70%);
+  -webkit-mask: radial-gradient(circle, #000 20%, transparent 55%);
+  mask: radial-gradient(circle, #000 20%, transparent 55%);
 }
 .ch-empty-page__ic,
 .ch-es__tile {
@@ -1371,7 +1371,7 @@ button.ch-more__row[disabled] {
     right: 0;
     bottom: 100%;
     left: 0;
-    height: 100vh;
+    height: 100dvh;
     background: var(--ch-phone-bar-bg);
     pointer-events: none;
   }
@@ -1561,8 +1561,9 @@ button.ch-more__row[disabled] {
 }
 .ch-bell__count {
   position: absolute;
-  top: 3px;
-  right: 2px;
+  /* Outside the 16px glyph (R-4): 6/4 sat the badge on the bell's clapper and handle. */
+  top: -4px;
+  right: -4px;
   display: grid;
   place-items: center;
   min-width: 16px;

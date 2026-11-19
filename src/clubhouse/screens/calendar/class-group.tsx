@@ -36,6 +36,7 @@ export function ClassGroupBlock({
   g,
   lane,
   lanes,
+  packed = false,
   selId,
   people,
   onSelect,
@@ -46,6 +47,8 @@ export function ClassGroupBlock({
   g: ChClassGroup;
   lane: number;
   lanes: number;
+  /** R-5: side by side in a one-day column (laneBox). */
+  packed?: boolean;
   selId: string | null;
   people: Map<string, ChCalPerson>;
   onSelect: (id: string) => void;
@@ -66,7 +69,7 @@ export function ClassGroupBlock({
   const end = Math.min(g.end, to);
   const top = (start - from) * CAL_HH;
   const h = Math.max((end - start) * CAL_HH - 2, 20);
-  const box = laneBox(lane, lanes);
+  const box = laneBox(lane, lanes, packed);
   const nameOf = (e: ChCalEvent) => (e.owner ? people.get(e.owner)?.name : null) ?? e.title;
   const names = [...new Set(g.items.map((e) => nameOf(e).split(' ')[0]!))];
   const more = names.length - 1;

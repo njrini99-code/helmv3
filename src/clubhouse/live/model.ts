@@ -1,5 +1,5 @@
 import { playOrder } from '@/lib/golf/round-session/play-order';
-import { formatToPar } from '../lib/format';
+import { formatToPar, toParWords } from '../lib/format';
 import { formatClock } from '../lib/dates';
 import { restyleClock } from '../lib/clock-format';
 
@@ -286,12 +286,8 @@ export function thruText(lane: Pick<LiveLane, 'thru' | 'holesPlanned' | 'phase'>
 /** The figure a lane carries in its to-par column. */
 export const toParText = (toPar: number | null) => formatToPar(toPar);
 
-/** "under par" in words: "2 under par", "even par", "3 over par". Used by VoiceOver and the live region. */
-export function toParWords(toPar: number | null): string {
-  if (toPar == null) return 'no score yet';
-  if (toPar === 0) return 'even par';
-  return `${Math.abs(toPar)} ${toPar < 0 ? 'under' : 'over'} par`;
-}
+/** "under par" in words: "2 under par", "even par", "3 over par". Used by VoiceOver and the live region. The one phrasing is `lib/format`'s. */
+export { toParWords };
 
 /** The time of day in the viewer's clock (12 or 24 hours), for "No update since 11:40". */
 export function clockText(iso: string, hours: '12' | '24' = '12'): string {

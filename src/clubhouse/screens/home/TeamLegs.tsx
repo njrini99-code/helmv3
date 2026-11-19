@@ -7,7 +7,7 @@ import { ArrowRight, ChartColumn } from 'lucide-react';
 import type { ChLegPeople, ChTeamLeg, ChTeamLegs } from '../../data/home';
 import { filterFor, statsHref } from '../../data/stats-filter';
 import { changeTone, formatFixed, formatPct, formatSigned, NO_DATA } from '../../lib/format';
-import { sgBaseline } from '../../lib/sg';
+import { sgBaseline, sgExtremeWords } from '../../lib/sg';
 import { deltaTone, deltaWords, needsText } from '../../lib/stats-signal';
 import { rebuiltHref } from '../../shell/nav';
 import { RefreshNotice } from '../../ui/RefreshNotice';
@@ -184,19 +184,19 @@ function Cell({ p, none = NO_DATA }: { p: ChLegPeople | null; none?: string }) {
 
 /** The phone's people line: "Theo M. gains most · Eli R. loses most" (plural verbs for a tie). */
 function PeopleLine({ leg }: { leg: ChTeamLeg }) {
-  const verb = (p: ChLegPeople, one: string, many: string) => (p.names.length > 1 ? many : one);
+  const verb = (p: ChLegPeople, kind: 'gains' | 'loses') => sgExtremeWords(kind, p.value, p.names.length > 1).words;
   if (!leg.gains) return null;
   return (
     <span className="ch-hm-legs__who">
       {/* Each half is a line of its own in the card, so a wrap never starts a line with the dot; the dot stays in the words. */}
       <span className="ch-hm-legs__part">
-        <People p={leg.gains} className="ch-hm-legs__a" /> {verb(leg.gains, 'gains most', 'gain most')}
+        <People p={leg.gains} className="ch-hm-legs__a" /> {verb(leg.gains, 'gains')}
       </span>
       {leg.loses && (
         <>
           <span className="ch-hm-legs__sep"> &middot; </span>
           <span className="ch-hm-legs__part">
-            <People p={leg.loses} className="ch-hm-legs__a" /> {verb(leg.loses, 'loses most', 'lose most')}
+            <People p={leg.loses} className="ch-hm-legs__a" /> {verb(leg.loses, 'loses')}
           </span>
         </>
       )}

@@ -2,7 +2,7 @@ import 'server-only';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
-import { isClubhouseFor } from '../gate';
+import { isClubhouseFor, isTournamentsFor } from '../gate';
 import { isRebuilt } from '../shell/nav';
 
 /**
@@ -52,5 +52,8 @@ export async function redirectToClubhouse(target: Partial<Record<'coach' | 'play
   const to = target[role];
   if (!to) return;
   const href = typeof to === 'function' ? to(await incomingSearch()) : to;
-  if (href && isRebuilt(href.split('?')[0] ?? href, role)) redirect(href);
+  const path = href ? (href.split('?')[0] ?? href) : '';
+  // Tournaments is a flagged page (golf_tournaments_v1): it is rebuilt only where the flag is on (L-004's player moves).
+  const features = path.startsWith('/golf/dashboard/tournaments') ? { tournaments: await isTournamentsFor(role) } : undefined;
+  if (href && isRebuilt(path, role, features)) redirect(href);
 }

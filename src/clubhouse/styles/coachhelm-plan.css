@@ -1189,6 +1189,8 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
   text-align: center;
+  /* L-080: a centred caption breaks into even lines, never "…or Excel" over a lone "file.". */
+  text-wrap: balance;
 }
 .ch-cpv .lrn .r {
   display: flex;
@@ -1892,6 +1894,8 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   /* The way back and the title where every detail page's are (tokens.css, --ch-page-back-top; the page's 20px gap). */
   .ch-cpv-fmt > .ch-backlink { margin-block: calc(var(--ch-page-back-top) - var(--ch-page-top-no-eyebrow)) calc(var(--ch-back-to-title) - var(--ch-back-link-h) - 12px - 20px); }
   .ch-cpv-fmt__cols { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; }
+  /* L-046: the two cards share one height, not 386 against 403. */
+  .ch-cpv-fmt__cols { align-items: stretch; }
   /* The key hugs its label, beside what it does; the hint lines up under the words. */
   .ch-cpv-fmt .fintro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
   .ch-cpv-fmt .fintro .art-h { padding-block: 16px; }

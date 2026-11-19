@@ -476,8 +476,9 @@ section.ch-lv-card {
 .ch-lv {
   display: block;
 }
+/* L-073: the feed line sat about 23 px under the sheet's top edge; the sibling pages start their content lower. */
 .ch-lv--phone {
-  padding: var(--ch-space-2) var(--ch-page-x-phone) var(--ch-space-8);
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-x-phone) var(--ch-space-8);
 }
 /* The phone's feed line, the first thing under the bar (LiveViewPhone.tsx). */
 .ch-lv-feed {
@@ -601,7 +602,7 @@ section.ch-lv-card {
 .ch-lv-panel {
   position: sticky;
   top: var(--ch-space-4);
-  max-height: calc(100vh - var(--ch-space-8));
+  max-height: calc(100dvh - var(--ch-space-8));
   padding: var(--ch-space-4);
   overflow: auto;
   overscroll-behavior: contain;

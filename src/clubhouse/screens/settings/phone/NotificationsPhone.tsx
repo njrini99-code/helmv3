@@ -129,7 +129,7 @@ function DeliveryPhone({
               onChange={() => {}}
             />
           ) : (
-            <SwitchRow label="Weekly team email" checked={dg} disabled={emailPaused} busy={pending.has('digest')} onChange={flipDigest} />
+            <SwitchRow label="Weekly team email" help={emailPaused ? 'Email is paused for everyone right now.' : undefined} checked={dg} disabled={emailPaused} busy={pending.has('digest')} onChange={flipDigest} />
           )}
         </Group>
       )}
@@ -239,7 +239,9 @@ function RoutingPhone({ initial, writes, emailPaused }: { initial: { prefs: Pref
     if (silenced(cats)) return 'Paused';
     const on = CHANNELS.flatMap((c) => {
       const { state } = channelState(r.prefs, cats, c.key);
-      return state === 'all' ? [c.label] : state === 'some' ? [`${c.label} (some)`] : [];
+      // L-087: with email paused for everyone (the lead says so), a row never reads as if email were going out.
+      const label = emailPaused && c.key === 'email' ? `${c.label} (paused)` : c.label;
+      return state === 'all' ? [label] : state === 'some' ? [`${label} (some)`] : [];
     });
     return onList(on);
   };

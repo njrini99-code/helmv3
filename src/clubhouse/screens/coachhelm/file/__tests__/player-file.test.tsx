@@ -99,11 +99,11 @@ describe('every figure on the file names the window it reads (one number, one so
   it('the strokes card says the last ten, and its link to Standing says Standing’s own window', () => {
     render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('default') }} roster={null} />, { wrapper: Wrap });
     const card = document.querySelector('[data-ch-anchor="sg"]') as HTMLElement;
-    expect(card.textContent).toContain('Last 10 rounds');
+    expect(card.textContent).toContain('the last 10 rounds');
     expect(card.textContent).not.toContain('All time ·');
     expect(within(card).getByRole('link', { name: 'Full standing, rounds on file' })).toBeTruthy();
     // A separator never starts a line, and the link keeps the space before it (it sat two pixels over it).
-    expect(card.querySelector('.card__n')!.textContent).toContain('Last 10 rounds\u00a0· strokes per round. Full standing, rounds on file');
+    expect(card.querySelector('.card__n')!.textContent).toContain('the last 10 rounds. Full standing, rounds on file');
     const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-file.css'), 'utf8');
     expect(css).toMatch(/\.ch-hf p \.lnk \{ position: relative; margin: 0; \}/);
   });

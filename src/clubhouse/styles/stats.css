@@ -2983,6 +2983,11 @@
 .ch-gx-rank b {
   font: var(--ch-type-14-medium);
 }
+.ch-gx-rank__course {
+  display: block;
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-tertiary);
+}
 .ch-gx-rank em {
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);

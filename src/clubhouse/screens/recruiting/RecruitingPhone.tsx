@@ -109,6 +109,8 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
                               {c.nextStep && <NextStepPlate p={p} now={c.now} tz={c.tz} always={c.sort === 'next'} />}
                             </span>
                             <StageChip stage={p.stage} />
+                            {/* L-057: a tappable row says so. */}
+                            <Icon icon={ChevronRight} size={16} className="ch-recm-row__go" />
                           </button>
                         </li>
                       ))}

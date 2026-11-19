@@ -264,7 +264,7 @@ describe('Player roster · desktop', () => {
     // The list view is the same: a table whose rows hold plain text.
     await user.click(screen.getByRole('button', { name: 'List view' }));
     const table = screen.getByRole('table', { name: 'Roster' });
-    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Player', 'Class', 'HCP']);
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Player', 'Class', 'Handicap']);
     expect(within(table).getAllByRole('row')).toHaveLength(5);
     expect(table.querySelectorAll(CONTROLS)).toHaveLength(0);
     expect(document.querySelectorAll('a[href]')).toHaveLength(0);

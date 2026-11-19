@@ -3,7 +3,7 @@
 import { Fragment } from 'react';
 import type { ChLegPeople, ChTeamLeg, ChTeamLegs } from '../../data/home';
 import { changeTone, formatFixed, formatSigned } from '../../lib/format';
-import { sgBaseline, type ChSgTour } from '../../lib/sg';
+import { sgBaseline, sgExtremeWords, type ChSgTour } from '../../lib/sg';
 import { NoData } from '../../ui/NoData';
 import { legChange, NoHoleRounds, NOBODY_RANKED, Notices, People } from './TeamLegs';
 
@@ -68,6 +68,8 @@ function TeamLeg({ leg, tour }: { leg: ChTeamLeg; tour: ChSgTour }) {
   // Against the Tour as the two figures print; level is neither, and an early read is never toned (A2, A7).
   const against = stat.value != null && stat.tour != null && !stat.early ? changeTone(stat.value - stat.tour, lowerIsBetter, stat.unit === '%' ? 0 : stat.digits) : '';
   const change = legChange(leg);
+  // L-062: a bar that sits under "No clear change" stays neutral; amber/green only when the change itself is clear.
+  const barTone = change.tone === '' ? '' : against;
   const id = `ch-ph-tm-leg-${leg.key}`;
   return (
     <article className="ch-ph-leg" aria-labelledby={id}>
@@ -89,7 +91,7 @@ function TeamLeg({ leg, tour }: { leg: ChTeamLeg; tour: ChSgTour }) {
       {stat.value != null && stat.tour != null && (
         <div className="ch-ph-bench">
           <span className="ch-ph-bench__t" aria-hidden="true">
-            <i className={against} style={{ width: `${pos(stat.value)}%` }} />
+            <i className={barTone} style={{ width: `${pos(stat.value)}%` }} />
             <em style={{ left: `${pos(stat.tour)}%` }} />
           </span>
           <span className="ch-ph-bench__k ch-num">
@@ -102,11 +104,11 @@ function TeamLeg({ leg, tour }: { leg: ChTeamLeg; tour: ChSgTour }) {
       )}
       {leg.gains && (
         <p className="ch-ph-leg__n">
-          <Who p={leg.gains} one="gains most" many="gain most" />
+          <Who p={leg.gains} kind="gains" />
           {leg.loses && (
             <>
               <br />
-              <Who p={leg.loses} one="loses most" many="lose most" />
+              <Who p={leg.loses} kind="loses" />
             </>
           )}
         </p>
@@ -115,11 +117,18 @@ function TeamLeg({ leg, tour }: { leg: ChTeamLeg; tour: ChSgTour }) {
   );
 }
 
-/** "Theo M. gains most +0.8", the names linking to each player's game on Stats, the figure the first named player's. */
-function Who({ p, one, many }: { p: ChLegPeople; one: string; many: string }) {
+/** "Theo M. gains most +0.8", the names linking to each player's game on Stats, the figure the first named player's. A best player below zero is "least behind", and a zero says "breaks even" with no figure (L-013). */
+function Who({ p, kind }: { p: ChLegPeople; kind: 'gains' | 'loses' }) {
+  const said = sgExtremeWords(kind, p.value, p.names.length > 1);
   return (
     <Fragment>
-      <People p={p} className="ch-ph-leg__who" /> {p.names.length > 1 ? many : one} <span className="ch-num">{formatSigned(p.value, 1)}</span>
+      <People p={p} className="ch-ph-leg__who" /> {said.words}
+      {said.figure && (
+        <>
+          {' '}
+          <span className="ch-num">{formatSigned(p.value, 1)}</span>
+        </>
+      )}
     </Fragment>
   );
 }

@@ -52,7 +52,9 @@ export function WeekStrip({ week, onPlan }: { week: ChPracticeTile[]; onPlan?: (
     box.scrollLeft = Math.max(0, today.offsetLeft - box.offsetLeft - edge);
   }, []);
   return (
-    <div ref={strip} className="ch-prc-week" role="list" aria-label="This week">
+    // A scrolling region takes focus so a keyboard can scroll it (axe scrollable-region-focusable, L-028).
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- the strip scrolls; it is a region, not a control
+    <div ref={strip} className="ch-prc-week" role="list" aria-label="This week" tabIndex={0}>
       {week.map((t) => (
         <div key={t.key} role="listitem" className={'ch-prc-tile' + (t.today ? ' is-today' : '') + (t.items.length ? '' : ' is-off')} aria-current={t.today ? 'date' : undefined}>
           <span className="ch-prc-tile__d ch-num">

@@ -24,7 +24,8 @@ export function Select<V extends string>({
   describedBy?: string;
 }) {
   return (
-    <span className={'ch-select' + (disabled ? ' is-disabled' : '')}>
+    // L-086: an unpicked select ("Pick an event") reads in the placeholder ink, as an empty text field does.
+    <span className={'ch-select' + (disabled ? ' is-disabled' : '') + (value === '' ? ' is-empty' : '')}>
       <select id={id} value={value} disabled={disabled} aria-label={label} aria-describedby={describedBy} onChange={(e) => onChange(e.target.value as V)}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>

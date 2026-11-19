@@ -619,9 +619,9 @@ items:
       and it returned 400 Bad Request, failing the nightly run (Bridge 07cd1dea,
       05dde3b3).
     incident_id: memory/incidents/coachhelm_ai/INC-2026-10-24-calibration-in-filter-url-400.md
-    status: verified
+    status: verified_in_production
     risk: R1
-    sha: 14f8a808aea7e72d2e009a6eeb97f4a87d5676e0
+    sha: 5616f781ee774e96ba4e9cf52cb89e3f5cabdd58
     pr: 2360
     regression_tests:
       - src/test/api/cron/coachhelm-calibration.test.ts
@@ -642,3 +642,18 @@ items:
       - src/clubhouse/screens/messages/__tests__/thread-model.test.ts
     queued_for_release: false
     first_seen: '2026-11-04T06:57:02Z'
+  - id: chat-unanswered-tool-call-2026-11-16
+    feature_id: coachhelm_ai
+    root_cause: >-
+      The chat loop kept a tool call the API returned on the answer-only step
+      and stored the turn complete without its result; every later request of
+      the conversation was rejected 400 (Bridge 7286de9e, rel:d92ad386).
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-11-16-chat-unanswered-tool-call.md
+    status: verified
+    risk: R1
+    sha: 60fccb64f1d3cf016e4292c5eaf8def70acc4a0b
+    pr: null
+    regression_tests:
+      - src/lib/coachhelm/v3/chat/engine/__tests__/unanswered-calls.test.ts
+    queued_for_release: false
+    first_seen: '2026-11-16T14:41:10Z'

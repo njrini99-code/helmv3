@@ -1,4 +1,4 @@
-/* global window, document, location -- page.evaluate callbacks run in the page */
+/* global window, document, location, getComputedStyle -- page.evaluate callbacks run in the page */
 // Open every screen and look at it: each screen from `scripts/screens/list.mjs` in WebKit at phone size (W, iPhone 17 Pro)
 // and Chromium at desk size (C, 1440×900), light and dark, with the layout probe and axe on each, into one gallery you
 // can filter by product, access, viewport, theme and finding.
@@ -6,8 +6,15 @@
 //   node scripts/screens/sweep.mjs --start-dev [--products fixtures,public,golf] [--access public,fixture] [--out <dir>]
 //   node scripts/screens/sweep.mjs --base <url> --session golf:coach=.auth/coach.json --session golf:player=.auth/player.json
 //
-// Never production: the production site is refused (its logged-out pages have their own GET-only lane,
+// Not production by default: the production site is refused (its logged-out pages have their own GET-only lane,
 // scripts/clubhouse/audit/prod-public.mjs), so this is for a local server, a seeded local stack or a staging preview.
+// An owner-approved production run (signed in as test accounts) sets HELM_ALLOW_PRODUCTION=1, the same override every
+// other guarded script takes (scripts/lib/production-site-guard.mjs).
+//
+// Audit options: --desktop-engine webkit (desk in WebKit, tier W, instead of Chromium) · --contrast (painted text
+// contrast, WCAG and APCA, scripts/clubhouse/audit/contrast.mjs, on every shot) · --scroll 0,400,bottom (a shot and
+// its measurements at each position, in the page's own scroller). Each shot asserts the theme it asked for actually
+// applied (data-fw-theme on <html> after load); a mismatch is reported as a finding, not silently shot.
 // It only navigates: no click, no typing, no submit. Signed-in pages still write when opened
 // (docs/clubhouse/audit/WRITES-ON-OPEN.md), which is why a signed-in sweep belongs on seeded local data, as in the
 // journeys workflow. A route that makes a paid AI call on open is skipped unless --allow-paid.
@@ -21,7 +28,7 @@ import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { isProductionSite } from '../lib/production-site-guard.mjs';
+import { isProductionSite, productionAllowed } from '../lib/production-site-guard.mjs';
 import { listScreens, ROOT } from './list.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -109,11 +116,14 @@ export function gallery(report) {
   const rows = report.results;
   const cards = rows.map((r) => {
     const f = r.findings;
-    const n = (f.axe?.length ?? 0) + (f.smallTargets?.length ?? 0) + (f.clipped?.length ?? 0) + (f.sideways ? 1 : 0) + (f.consoleErrors?.length ?? 0);
+    const n = (f.axe?.length ?? 0) + (f.smallTargets?.length ?? 0) + (f.clipped?.length ?? 0) + (f.sideways ? 1 : 0) + (f.consoleErrors?.length ?? 0) + (f.contrast?.length ?? 0) + (f.themeMismatch ? 1 : 0);
     const chips = [
       r.status !== 200 ? `<b class="bad">${esc(r.status ?? 'no answer')}</b>` : '',
       r.signInWall ? '<b class="warn">sign-in wall</b>' : '',
       f.axe?.length ? `<b class="bad">axe ${f.axe.length}</b>` : '',
+      f.contrast?.some((c) => c.grade === 'wcag') ? `<b class="bad">WCAG ${f.contrast.filter((c) => c.grade === 'wcag').length}</b>` : '',
+      f.contrast?.some((c) => c.grade === 'apca') ? `<b>APCA ${f.contrast.filter((c) => c.grade === 'apca').length}</b>` : '',
+      f.themeMismatch ? `<b class="bad">theme</b>` : '',
       f.smallTargets?.length ? `<b class="warn">&lt;44pt ${f.smallTargets.length}</b>` : '',
       f.clipped?.length ? `<b class="warn">clipped ${f.clipped.length}</b>` : '',
       f.sideways ? '<b class="bad">sideways</b>' : '',
@@ -121,6 +131,8 @@ export function gallery(report) {
     ].join('');
     const detail = [
       ...(f.axe ?? []).map((v) => `axe ${v.id} (${v.impact}) × ${v.nodes}`),
+      ...(f.contrast ?? []).map((c) => `contrast ${c.grade === 'wcag' ? 'WCAG FAIL' : c.grade === 'review' ? 'review (covered by another layer)' : 'APCA only'}: ${c.wcagP5}:1 / Lc ${c.lcP5} (needs ${c.floorWcag} / Lc ${c.floorLc}) ${c.el} "${c.text}"`),
+      ...(f.themeMismatch ? [`theme: ${f.themeMismatch}`] : []),
       ...(f.smallTargets ?? []).map((t) => `target ${t}`),
       ...(f.clipped ?? []).map((t) => `clipped ${t}`),
       ...(f.consoleErrors ?? []).map((t) => `console ${t}`),
@@ -176,6 +188,9 @@ function args(argv) {
     out: resolve(get('--out', join(homedir(), 'helm-audit-runs', 'screens', new Date().toISOString().replace(/[:.]/g, '-')))),
     sessions,
     allowPaid: argv.includes('--allow-paid'),
+    desktopEngine: get('--desktop-engine', 'chromium'),
+    contrast: argv.includes('--contrast'),
+    scroll: get('--scroll', '0').split(',').filter(Boolean),
     help: argv.includes('--help') || argv.includes('-h'),
   };
 }
@@ -197,7 +212,10 @@ export async function main(argv = process.argv.slice(2)) {
   }
   if (!o.base && !o.startDev) throw new Error('Give --base <url> or --start-dev.');
   const base = o.startDev ? `http://127.0.0.1:${o.port}` : new URL(o.base).origin;
-  if (isProductionSite(base)) throw new Error('The sweep never opens the production site. Its public pages have a GET-only lane: node scripts/clubhouse/audit/prod-public.mjs');
+  if (isProductionSite(base) && !productionAllowed()) throw new Error('The sweep does not open the production site unless HELM_ALLOW_PRODUCTION=1 (owner-approved runs only). Its public pages have a GET-only lane: node scripts/clubhouse/audit/prod-public.mjs');
+  if (!['webkit', 'chromium'].includes(o.desktopEngine)) throw new Error('--desktop-engine is webkit or chromium.');
+  const VP = { ...VIEWPORTS, desktop: { ...VIEWPORTS.desktop, engine: o.desktopEngine, tier: o.desktopEngine === 'webkit' ? 'W' : 'C' } };
+  const { measureContrast } = o.contrast ? await import(pathToFileURL(join(AUDIT, 'contrast.mjs')).href) : {};
   mkdirSync(join(o.out, 'shots'), { recursive: true });
 
   let server;
@@ -218,7 +236,7 @@ export async function main(argv = process.argv.slice(2)) {
   const browsers = {};
   try {
     const shoot = async (visit, url, vp, theme, collect) => {
-      const spec = VIEWPORTS[vp];
+      const spec = VP[vp];
       browsers[spec.engine] ??= await pw[spec.engine].launch();
       const ctx = await browsers[spec.engine].newContext({
         ...(spec.device ? pw.devices[spec.device] : { viewport: spec.viewport }),
@@ -236,28 +254,61 @@ export async function main(argv = process.argv.slice(2)) {
         const resp = await page.goto(base + url, { waitUntil: 'load', timeout: 120_000 });
         status = resp?.status() ?? null;
         await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
-        await page.evaluate((t) => document.documentElement.setAttribute('data-fw-theme', t), theme);
+        // The app sets data-fw-theme from the colour scheme at load. Check it took; preview fixtures skip the theme
+        // script, so only there is the attribute set by hand. A signed-in page that ignores it is a finding.
+        const applied = await page.evaluate(() => document.documentElement.getAttribute('data-fw-theme'));
+        const themeMismatch = applied !== null && applied !== theme;
+        if (applied !== theme) await page.evaluate((t) => document.documentElement.setAttribute('data-fw-theme', t), theme);
         await page.evaluate(() => document.fonts?.ready);
         await page.waitForTimeout(300);
+        // Measure a settled page: an entrance still sliding moves text away from where its box was read (a calibration
+        // false positive, 2026-11-18). Endless animations (a twinkling sky) are left running.
+        // Then freeze what never ends (a twinkling sky): the painted and text-hidden shots the contrast probe compares must
+        // differ only in the text, or clipped text over a moving background reads as painted (calibration, 2026-11-18).
+        const settle = () => page.evaluate(async () => {
+          await Promise.race([
+            Promise.all(document.getAnimations().filter((a) => a.effect?.getComputedTiming?.().iterations !== Infinity).map((a) => a.finished.catch(() => {}))),
+            new Promise((r) => setTimeout(r, 2500)),
+          ]);
+          document.getAnimations().forEach((a) => { if (a.effect?.getComputedTiming?.().iterations === Infinity) a.pause(); });
+        });
+        await settle();
         const finalPath = await page.evaluate(() => location.pathname);
         const signInWall = visit.session !== 'signed-out' ? /\/(login|signin|sign-in)(\/|$)/.test(finalPath) : false;
-        const scan = await page.evaluate(() => window.__chAudit.scan());
         const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze().catch(() => ({ violations: [] }));
-        const slug = `${url.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'root'}__${visit.session.replace(/[^a-z0-9]+/gi, '-')}__${vp}__${theme}`;
-        const shot = `shots/${slug}.jpg`;
-        await page.screenshot({ path: join(o.out, shot), type: 'jpeg', quality: 70 });
         if (collect) collect(await page.evaluate(() => [...document.querySelectorAll('a[href]')].map((a) => a.getAttribute('href')).filter((h) => h && h.startsWith('/')).map((h) => h.split(/[?#]/)[0])));
-        results.push({
-          url, route: visit.screen.route, product: visit.screen.product, access: visit.screen.access, session: visit.session,
-          viewport: vp, tier: spec.tier, theme, status, finalPath, signInWall, shot,
-          findings: {
-            axe: axe.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length })),
-            smallTargets: vp === 'phone' ? scan.smallTargets.filter((t) => !/^1x1 /.test(t)) : [],
-            clipped: scan.clipped.filter((c) => !/\.sr-only\b/.test(c)),
-            sideways: scan.horizontalScroll,
-            consoleErrors,
-          },
-        });
+        for (const pos of o.scroll) {
+          // Clubhouse scrolls its own canvas on desktop (#ch-canvas); elsewhere the largest scroller, else the window.
+          const at = await page.evaluate((p) => {
+            const els = [document.querySelector('#ch-canvas'), ...document.querySelectorAll('main, [data-ch-scroll], div')]
+              .filter((e) => e && e.scrollHeight > e.clientHeight + 40 && /(auto|scroll)/.test(getComputedStyle(e).overflowY));
+            const el = els.sort((a, b) => b.clientHeight * b.clientWidth - a.clientHeight * a.clientWidth)[0] ?? document.scrollingElement;
+            const max = el.scrollHeight - el.clientHeight;
+            el.scrollTop = p === 'bottom' ? max : Math.min(max, Number(p) || 0);
+            return Math.round(el.scrollTop);
+          }, pos);
+          await page.waitForTimeout(pos === '0' ? 0 : 350);
+          await settle();
+          const scan = await page.evaluate(() => window.__chAudit.scan());
+          const contrast = measureContrast ? await measureContrast(page, { label: `${url} ${vp} ${theme} @${pos}` }).catch((e) => [{ error: String(e.message).slice(0, 120) }]) : null;
+          const slug = `${url.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'root'}__${visit.session.replace(/[^a-z0-9]+/gi, '-')}__${vp}__${theme}${pos === '0' ? '' : `__s${pos}`}`;
+          const shot = `shots/${slug}.jpg`;
+          await page.screenshot({ path: join(o.out, shot), type: 'jpeg', quality: 70 });
+          const fails = contrast?.filter((r) => r.failWcag || r.failApca) ?? [];
+          results.push({
+            url, route: visit.screen.route, product: visit.screen.product, access: visit.screen.access, session: visit.session,
+            viewport: vp, tier: spec.tier, theme, scroll: pos, scrolledTo: at, status, finalPath, signInWall, shot,
+            findings: {
+              axe: pos === o.scroll[0] ? axe.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length })) : [],
+              smallTargets: vp === 'phone' ? scan.smallTargets.filter((t) => !/^1x1 /.test(t)) : [],
+              clipped: scan.clipped.filter((c) => !/\.sr-only\b/.test(c)),
+              sideways: scan.horizontalScroll,
+              consoleErrors,
+              ...(themeMismatch ? { themeMismatch: `asked ${theme}, page set ${applied}` } : {}),
+              ...(contrast ? { contrast: fails.map((r) => ({ text: String(r.text ?? '').slice(0, 60), el: r.el, wcagP5: r.wcagP5, lcP5: r.lcP5, floorWcag: r.floorWcag, floorLc: r.floorLc, notPainted: !!r.notPainted, grade: r.notPainted ? 'review' : r.failWcag ? 'wcag' : 'apca' })), contrastChecked: contrast.length } : {}),
+            },
+          });
+        }
       } catch (e) {
         results.push({ url, route: visit.screen.route, product: visit.screen.product, access: visit.screen.access, session: visit.session, viewport: vp, tier: spec.tier, theme, status, error: String(e.message).slice(0, 200), shot: '', findings: { consoleErrors } });
       } finally {
@@ -291,7 +342,7 @@ export async function main(argv = process.argv.slice(2)) {
   const report = { base, at: new Date().toISOString(), screens: screens.length, results, skipped: skipped.map((s) => ({ route: s.screen.route, product: s.screen.product, why: s.why })) };
   writeFileSync(join(o.out, 'results.json'), `${JSON.stringify(report, null, 2)}\n`);
   writeFileSync(join(o.out, 'index.html'), gallery(report));
-  const withFindings = results.filter((r) => r.error || r.status !== 200 || r.findings.axe?.length || r.findings.smallTargets?.length || r.findings.clipped?.length || r.findings.sideways || r.findings.consoleErrors?.length);
+  const withFindings = results.filter((r) => r.error || r.status !== 200 || r.findings.axe?.length || r.findings.smallTargets?.length || r.findings.clipped?.length || r.findings.sideways || r.findings.consoleErrors?.length || r.findings.contrast?.length || r.findings.themeMismatch);
   console.log(`\nscreens: ${results.length} shots of ${new Set(results.map((r) => r.url)).size} screens, ${withFindings.length} with findings, ${skipped.length} not opened. Gallery: ${join(o.out, 'index.html')}`);
   return 0;
 }

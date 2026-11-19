@@ -30,12 +30,17 @@ function targets(): Array<{ at: string; path: string }> {
   );
 }
 
-/** Addresses whose layout only sends each role on (redirectToClubhouse): /intelligence, /team. */
+/**
+ * Addresses whose layout only sends each role on (redirectToClubhouse with both a coach and a player target): /intelligence,
+ * /team. A layout that moves one role only (Live, What's new, Recruiting and Classes since L-004) is still the other role's
+ * page, so revalidating it refreshes that page.
+ */
 function aliasLayouts(): string[] {
   return readdirSync(DASHBOARD)
     .filter((name) => {
       try {
-        return readFileSync(join(DASHBOARD, name, 'layout.tsx'), 'utf8').includes('redirectToClubhouse(');
+        const src = readFileSync(join(DASHBOARD, name, 'layout.tsx'), 'utf8');
+        return src.includes('redirectToClubhouse(') && /\bcoach:/.test(src) && /\bplayer:/.test(src);
       } catch {
         return false;
       }

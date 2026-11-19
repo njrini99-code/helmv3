@@ -77,20 +77,15 @@ const sharedIgnoreErrors = [
   /Could not find the function public\.helm_debug_record_agent_run/,
   /Could not find the function public\.helm_debug_list_agent_runs/,
   /Could not find the function public\.helm_debug_get_agent_run/,
-  // Same shape, two more HELD migrations (supabase/migrations/HELD.md), each
-  // object named exactly. The code already handles every one of them:
-  // standing-refresh-dirty returns `skipped: 'season-not-applied'` on PGRST202,
-  // loadPlayerSeasonStandingMap returns `missing` on PGRST205, and the
-  // prediction-performance writer retries without its extended columns on
-  // PGRST204. Sentry still saw them at the driver (auto.db.supabase.postgres):
-  // JAVASCRIPT-NEXTJS-1M6 at 119 events/24h, one per 5-minute cron tick, plus
-  // -1DM and -1ME (2026-11-15). Delete the season pair when
-  // 20261024151000_golf_player_standing_season.sql is applied, and the column
-  // line when 20261023150000_golf_prediction_perf_extended_columns.sql is;
-  // src/__tests__/instrumentation-held-migration-ignore.test.ts fails once
-  // either row leaves HOLD.
-  /Could not find the function public\.refresh_player_standing_season\(/,
-  /Could not find the table 'public\.golf_player_standing_season'/,
+  // Same shape, one more HELD migration (supabase/migrations/HELD.md), the
+  // object named exactly. The prediction-performance writer retries without
+  // its extended columns on PGRST204; Sentry still saw it at the driver
+  // (auto.db.supabase.postgres, -1DM, 2026-11-15). Delete the line when
+  // 20261023150000_golf_prediction_perf_extended_columns.sql is applied;
+  // src/__tests__/instrumentation-held-migration-ignore.test.ts fails once its
+  // row leaves HOLD. (The season-standing pair was removed when
+  // 20261024151000_golf_player_standing_season.sql was applied, 2026-11-18:
+  // those objects are live, so a missing one pages again.)
   /Could not find the '(?:naive_mean_absolute_error|naive_sample_count|interval_coverage)' column of 'golf_prediction_model_performance'/,
   /Refresh Token Not Found/,
   // Baseball expected control-flow throws. withBaseballAction already
