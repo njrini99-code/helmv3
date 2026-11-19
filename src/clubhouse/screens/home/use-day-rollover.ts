@@ -15,6 +15,7 @@ export function deviceZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   } catch {
+    // An engine without Intl zones: UTC.
     return 'UTC';
   }
 }

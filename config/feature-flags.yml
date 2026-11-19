@@ -1239,6 +1239,94 @@ flags:
       team list and the old drawing's fallback; if not, turn it off and
       remove MissCompass, the ui_only shot lists and the shots: selection.
 
+  # CoachHelm insights rebuild, stages 1, 2, 4 and the player's card (17 Nov 2026).
+  # Created OFF everywhere; turning it on is the owner's call, for one team, after
+  # the held golf_coach_reads migrations are applied.
+  - feature_id: coachhelm_reads_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Gates CoachHelm reads: one card per player built by the analyst
+      (src/lib/coachhelm/v3/analyst/reads) with no model, kept in the held
+      table golf_coach_reads after each posted round and nightly, and drawn
+      on the coach's file on one player above today's cards, with the rounds
+      behind it. Team scoped: on only for the teams listed in
+      COACHHELM_READS_TEAM_IDS (comma-separated golf_teams ids; unset or
+      empty is no team). For a listed team the coach's player page and the
+      CoachHelm board also hide today's "nothing found" rows, good-news rows
+      and the one-sentence root cause (nothing is deleted). Off: nothing is
+      computed, read or written, and every screen is exactly as before.
+    type: experiment
+    status: active
+    created_at: "2026-11-17"
+    expires_at: "2027-04-01"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      The owner applies the held migrations, lists one team and turns the
+      flag on. If coaches keep the reads, roll out team by team, then delete
+      the old engine's writers and remove this flag and the team list; if
+      not, turn it off, drop golf_coach_reads and delete the reads folder.
+
+  # CoachHelm insights rebuild, stage 3 wiring (18 Nov 2026): the model-written
+  # paragraph on a read. Created OFF everywhere; meaningful only with
+  # coachhelm_reads_v1 on for the same team.
+  - feature_id: coachhelm_reads_written_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the model-written paragraph on a CoachHelm read (what is going on,
+      what the evidence rules in and out, one thing this week, one thing to
+      watch), written by src/lib/coachhelm/v3/analyst/writer and kept only when
+      code has checked every number and cause. Team scoped: the registry flag
+      on AND the team listed in COACHHELM_READS_WRITTEN_TEAM_IDS AND
+      coachhelm_reads_v1 on for that team. A paragraph is written only when the
+      read changed; the player's card gets its own call without team figures.
+      Off: no model call, and the card is the counted read alone.
+    type: experiment
+    status: active
+    created_at: "2026-11-18"
+    expires_at: "2027-04-01"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      The owner approves the model writing coach-facing text, the cost cap and
+      the tone from samples, then lists one team. If kept, fold it into
+      coachhelm_reads_v1 and remove this flag; if not, turn it off and delete
+      the writer folder and the written field.
+
+  # CoachHelm insights rebuild, stage 2 (17 Nov 2026): stopping the hidden v2
+  # writer needs the owner's yes. Created OFF everywhere: off is today's behaviour.
+  - feature_id: coachhelm_v2_writer_stop_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Stops the hidden v2 writer in triggerPlayerInsightsAfterRound: the rows
+      stamped engine_version v2 that no screen shows (the visibility filter
+      drops them), with their after-round push. On: the engine still runs,
+      the v3 cards and every other step are unchanged, and no new v2 row is
+      written. Off: exactly as today. Applies to every team.
+    type: operations_kill_switch
+    status: active
+    created_at: "2026-11-17"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: >-
+      Turning it off restores the v2 writer on the next run; rows written
+      before stay as they were.
+    cleanup_plan: >-
+      Once the owner has run with it on for a release, delete the v2 writer
+      (the convertV2ToInsightRecord loop and its push) and remove this flag.
+
   # Launch readiness DD-01 (15 Nov 2026): the daily demo team refresh. Created
   # OFF everywhere; turning it on is the owner's call, after the generator's
   # migration is applied and its first run (scripts/golf-demo-refresh.ts) is

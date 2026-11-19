@@ -84,6 +84,8 @@ Added 2026-10-07 for the reset form in the panel: `ResetForm` and `ResetSent`
 messages, stale-bundle guard and destination rule from
 `src/lib/auth/golf-sign-in-logic.ts`, which this page shares. Its behaviour and
 its test are unchanged. `src/clubhouse/gate.ts` gains `isClubhouseFrontDoor()`.
+(Both the old form and `isClubhouseFrontDoor()` were removed in #2527 on
+2026-11-14; `SignInForm` is now the rulebook's only reader.)
 
 ## Actions affected
 
@@ -190,7 +192,9 @@ contrast by day and flips to ivory after dark (`data-dark`).
   `golf_clubhouse_auth`; the flag registry refuses any flag whose name or
   purpose contains "auth", "login", "session" and so on, because a flag must
   never be able to gate access. The flag gates the page that is drawn and never
-  whether someone can sign in.
+  whether someone can sign in. (Retired on 2026-11-14, #2527: the flag, the old
+  pages and `welcome/layout.tsx` are gone, and every entrance page draws
+  Clubhouse.)
 - **One rulebook.** The messages, the stale-bundle guard and the destination
   rule live in `golf-sign-in-logic.ts`, used by both forms, so the two cannot
   drift.
@@ -221,10 +225,16 @@ sign-in panel's own vocabulary and waits for owner review:
   Send key on even when the field is empty, a refusal cleared by editing. The
   URL keeps `?view=forgot`, so the browser's Back works. The links keep today's
   page as their href.
-- `/golf/forgot-password` itself (2026-10-08, owner's choice): with the flag
-  on, a signed-out visitor is sent to `/golf/login?view=forgot`. A signed-in
-  one keeps today's page, since sign in would send them to their dashboard.
-  Flag off, nothing changes.
+- `/golf/forgot-password` itself (2026-10-08, owner's choice): with the flag on,
+  a signed-out visitor is sent to `/golf/login?view=forgot`. A signed-in one
+  keeps today's page, since sign in would send them to their dashboard. Flag
+  off, nothing changes. (Since 2026-11-14 there is no flag:
+  `forgot-password/layout.tsx` always sends a signed-out visitor to the panel.)
+  Since 2026-11-18 the signed-in visitor gets Clubhouse's reset form, not the
+  Fairway page: `SignedInReset` (`screens/auth/SignedInReset.tsx`) draws
+  `ResetForm` and `ResetSent` in `GateFrame`, with their address filled in and
+  Settings as the way back. Every error page and the 404 outside the dashboard
+  are drawn in the same room too (`GateError`, `GateNotFound`).
 - Reset password itself (the email's link) is still today's
   `/golf/reset-password`: it builds the recovery session and was left alone on
   purpose.

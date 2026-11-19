@@ -99,11 +99,12 @@ rows. Add to it when a row lands.
 | Simulator or a real iPhone | `npm run dev -- -H 0.0.0.0`, then `npm run ios:dev` (needs Xcode; for a phone, the same network as the Mac) | safe areas, keyboard, swipe-back, real haptics (device only) |
 
 `npm run ios:dev` points one debug run of the app at this Mac's dev server,
-where `golf_clubhouse_ui` is on. When it finishes, the native files go back to
-production. Nothing that points anywhere but production can be committed:
+where Clubhouse draws (the `golf_clubhouse_ui` flag this once needed was removed
+on 2026-11-14). When it finishes, the native files go back to production.
+Nothing that points anywhere but production can be committed:
 `src/test/lib/capacitor-config.test.ts` fails CI if it is. The preview routes
-aren't reachable inside the app, so on a phone you use the real pages,
-signed in.
+aren't reachable inside the app, so on a phone you use the real pages, signed
+in.
 
 ## Done for a page's phone gate
 

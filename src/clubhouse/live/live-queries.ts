@@ -33,6 +33,7 @@ export function dayInZone(now: Date, zone: string, minusDays = 0): string {
   try {
     return isoDay(t, zone);
   } catch {
+    // A zone this engine does not know: UTC's day.
     return t.toISOString().slice(0, 10);
   }
 }

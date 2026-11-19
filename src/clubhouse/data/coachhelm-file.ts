@@ -1,6 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import { logServerError } from '@/lib/server-error-logger';
+import { chLogServer } from '../lib/track-server';
 import { isFlagEnabled } from '@/lib/flags';
 import { buildFieldDayContext } from '@/lib/coachhelm/v3/field-day/field';
 import { loadTeamFieldRounds } from '@/lib/coachhelm/v3/field-day/loader';
@@ -24,11 +24,14 @@ import { teamLastTenStrokesGained } from './stats-team-sg';
 import { readTextFor } from './coachhelm-voice';
 import { fileDay, teamFigureOf, toChFileField, toChFilePlan, toChFileSgOver, toChFileTrack, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileRosterRow, type ChFileTrack, type ChFocusRow, type ChPlayerFile, type ChPlayerWeek } from './coachhelm-file-shape';
 import type { ChViewLoad } from './coachhelm-views-shape';
+import { readsOnForTeam } from './coachhelm-analyst-read';
+import { hideForReadsTeam } from './coachhelm-analyst-read-shape';
 import type { ChStanding } from './coachhelm-standing-shape';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
-const log = (where: string, err: unknown) => void logServerError(err instanceof Error ? err.message : String(err), { action: `coachhelm.file.${where}`, featureArea: 'coachhelm' });
+// Through chLogServer, so the file's failures carry ui=clubhouse like every other Clubhouse read (they went out untagged).
+const log = (where: string, err: unknown) => chLogServer('coachhelm.file', where, err, 'coachhelm');
 
 /** The desktop rail: the team's active players, each with their top read, or the class year when there is none (CP-LNS-18). Only the reads the rail draws count as shown (CT0a). */
 export async function loadFileRoster(scope: ChCoachPlayerScope): Promise<ChFileRosterRow[] | null> {
@@ -112,6 +115,7 @@ async function filePractice(supabase: Supabase, row: { id: string; drill_ids: st
     let drill: string | null = null;
     if (drillId) {
       const d = await supabase.from('golf_drills').select('title').eq('id', drillId).maybeSingle();
+      if (d.error) log('practice.drill', d.error);
       drill = d.error ? null : (d.data?.title ?? null);
     }
     if (!drill) return null;
@@ -124,7 +128,10 @@ async function filePractice(supabase: Supabase, row: { id: string; drill_ids: st
 
 async function coachLabel(supabase: Supabase, coachId: string): Promise<string> {
   const { data, error } = await supabase.from('golf_coaches').select('full_name').eq('id', coachId).maybeSingle();
-  if (error) return 'Your coach';
+  if (error) {
+    log('coach label', error);
+    return 'Your coach';
+  }
   const last = data?.full_name?.trim().split(/\s+/).pop();
   return last ? `Coach ${last}` : 'Your coach';
 }
@@ -307,7 +314,10 @@ export async function loadCoachPlayerFile(input: { scope: ChCoachPlayerScope }):
     // The standing rows' own window, for the two places the file still shows a standing figure: the featured read's Team cell
     // (when the read carries no team figure) and the link to the Standing page.
     const basis = rowsRead.ok ? (rowsRead.window === 'season' ? 'this season' : 'all time') : null;
-    const cards: ChFileCards = { ...coachCards(load.data.list, rows, load.data.cleared ?? []), featTeamBasis: basis, dismissed, sg: sg && st ? { ...sg, standing: st.window.label } : sg, plan, field: field ?? null, intent: intent ?? null, track: track ?? null };
+    // CoachHelm reads (flag `coachhelm_reads_v1`, listed team): no "nothing found" or good-news card and no one-sentence root cause
+    // here; the analyst's card above says where the strokes go. Nothing is deleted. The lens (the player's view) is unchanged.
+    const coachList = readsOnForTeam(scope.teamId) ? hideForReadsTeam(load.data.list) : load.data.list;
+    const cards: ChFileCards = { ...coachCards(coachList, rows, load.data.cleared ?? []), featTeamBasis: basis, dismissed, sg: sg && st ? { ...sg, standing: st.window.label } : sg, plan, field: field ?? null, intent: intent ?? null, track: track ?? null };
     const lensCards: ChFileCards | null = lens ? { ...playerCards(lens, rows), featTeamBasis: basis, sg: lensSg, plan, field: lensField ?? null } : null;
     const failed: ChPlayerFile['failed'] = {
       ...(sgRounds === null ? { sg: true as const } : {}),

@@ -11,6 +11,22 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/calendar",
+      "audience": "shared",
+      "name": "Calendar",
+      "coach": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar",
+      "player": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar"
+    },
+    {
+      "route": "/golf/dashboard/calendar/hours",
+      "audience": "shared",
+      "name": "Practice hours (coach: team log; player: own week)",
+      "coach": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours",
+      "player": "src/clubhouse/screens/calendar/hours/PracticeHours.tsx#PracticeHours"
+    }
+  ],
   "semanticFeatures": [
     "calendar_events"
   ],

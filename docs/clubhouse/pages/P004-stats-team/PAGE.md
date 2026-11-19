@@ -38,7 +38,7 @@ Team performance for the coach: the trend first, then strokes gained by leg, and
 Page ID:            P004
 Page Name:          Stats (team)
 Route:              /golf/dashboard/stats (coach, with no ?player=); the old address
-                    /golf/dashboard/stats/team renders the same page in place for a coach
+                    /golf/dashboard/stats/team redirects to it (next.config.mjs, both roles)
 Bridge Namespace:   4 (Bridge IDs 4ccii, D-68; catalog codes CH-4xxx)
 Roles:              coach
 Implementation Root: src/clubhouse/screens/stats
@@ -114,7 +114,7 @@ Status:           approved
 
 ### Enters from
 
-The coach sidebar and phone tab bar (Stats), the old address /golf/dashboard/stats/team, the back
+The coach sidebar and phone tab bar (Stats), the old address /golf/dashboard/stats/team (a redirect), the back
 link and the "Team stats" button on a player's profile (P005), and the "Go to Stats" button of a
 round review's not-found state.
 
@@ -128,7 +128,7 @@ A player's profile (P005) from a grid row, a Season best or a phone row, keeping
 ```text
 Design:          the owner (Claude Design)
 Implementation:  src/clubhouse/screens/stats (StatsTeam on the server, StatsTeamIslands as client
-                 islands, StatsTeamPhone), loader src/clubhouse/data/stats-team.ts
+                 islands, StatsTeamPhoneShs on the phone), loader src/clubhouse/data/stats-team.ts
 Data:            stats_analytics: golf_teams, golf_team_members, golf_players, golf_rounds,
                  golf_round_stats_cache, golf_shots (putts), golf_pga_standards (the Tour values)
 ```

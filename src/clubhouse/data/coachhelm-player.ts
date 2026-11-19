@@ -254,7 +254,12 @@ async function coachDiveRead(
     const tourName: ChDeepDive['tour'] = tour.baseline?.tour === 'lpga' ? 'LPGA Tour' : 'Tour';
     if (feed.length === 0) {
       const visible = await loadVisible(supabase, [playerId]);
-      if (visible.error || visible.rows.length > 0) return { status: 'failed' };
+      if (visible.error) return { status: 'failed' };
+      // Visible reads the feed could draw: the feed failed without saying so (loadVisible reports its own error).
+      if (visible.rows.length > 0) {
+        log('player.dive.feed', new Error(`the feed came back empty with ${visible.rows.length} visible read(s)`));
+        return { status: 'failed' };
+      }
       return { status: 'ready', data: EMPTY_DIVE(await countCountableRounds(supabase, playerId), tourName) };
     }
     // The feed is the player's, whatever it returned: a row that is anyone else's is never drawn.

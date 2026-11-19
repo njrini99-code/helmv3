@@ -18,9 +18,12 @@ dashboard address Clubhouse has not rebuilt shows "not rebuilt yet"
 (`shell/NotRebuilt.tsx`).
 
 The entrance pages (sign in, welcome, sign up, onboarding, joining a team, a
-staff invitation, the reset link) are Clubhouse's too. A signed-in visitor on
-`/golf/forgot-password` keeps that page (CH-15920); a signed-out one resets
-inside the sign-in panel.
+staff invitation, the reset link, forgot password) are Clubhouse's too. A
+signed-in visitor on `/golf/forgot-password` gets Clubhouse's reset form in the
+sign-in room (`SignedInReset`, CH-15920); a signed-out one resets inside the
+sign-in panel. Every error page and the 404 outside the dashboard are drawn in
+the sign-in room (`GateError`, `GateNotFound`). Only `/golf/admin` (the CRM)
+keeps Fairway's primitives.
 
 Tournaments has its own release flag, `golf_tournaments_v1`
 (`isTournamentsFor`).

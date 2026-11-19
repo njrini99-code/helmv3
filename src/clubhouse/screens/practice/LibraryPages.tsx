@@ -28,6 +28,7 @@ import { Select } from '../../ui/Select';
 import { EmptyState } from '../../ui/States';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
+import { chReport } from '../../lib/track';
 import { NewDrillSheet } from './builder/Sheets';
 import { PracticeTabs, type PracticeTab } from './PracticeTabs';
 import { AREA_WORDS, PLAN_STARTERS } from './starters';
@@ -166,7 +167,10 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
   const save = async () => {
     if (preview) return setEditing(false);
     setBusy(true);
-    const r = await updateTeamDrill({ teamId, drillId: drill.id, name, area, kind, minutes, setup, goal }).catch(() => ({ success: false as const, error: 'Couldn’t save the drill.' }));
+    const r = await updateTeamDrill({ teamId, drillId: drill.id, name, area, kind, minutes, setup, goal }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.drill', action: 'practice.updateDrill', severity: 'high' });
+      return { success: false as const, error: 'Couldn’t save the drill.' };
+    });
     setBusy(false);
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t save the drill.' });
     setEditing(false);
@@ -175,7 +179,10 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
   const copy = async () => {
     if (preview) return;
     setBusy(true);
-    const r = await copyLibraryDrill({ teamId, drillId: drill.id }).catch(() => ({ success: false as const, error: 'Couldn’t copy the drill.' }));
+    const r = await copyLibraryDrill({ teamId, drillId: drill.id }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.drill', action: 'practice.copyDrill', severity: 'high' });
+      return { success: false as const, error: 'Couldn’t copy the drill.' };
+    });
     setBusy(false);
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t copy the drill.' });
     toast({ title: 'Copied to your bank' });
@@ -184,7 +191,10 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
   const archive = async () => {
     if (preview) return setArchiving(false);
     setBusy(true);
-    const r = await archiveTeamDrill({ drillId: drill.id, archived: true }).catch(() => ({ success: false as const, error: 'Couldn’t archive the drill.' }));
+    const r = await archiveTeamDrill({ drillId: drill.id, archived: true }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.drill', action: 'practice.archiveDrill', severity: 'high' });
+      return { success: false as const, error: 'Couldn’t archive the drill.' };
+    });
     setBusy(false);
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t archive the drill.' });
     router.push('/golf/dashboard/practice/drills');
@@ -345,7 +355,10 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
     if (preview) return setEditing(null);
     setBusy(true);
     setProblem(null);
-    const r = await savePracticeGroup({ teamId, groupId: editing && editing !== 'new' ? editing.id : null, name, playerIds: picked }).catch(() => ({ success: false as const, error: 'Couldn’t save the group.' }));
+    const r = await savePracticeGroup({ teamId, groupId: editing && editing !== 'new' ? editing.id : null, name, playerIds: picked }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.groups', action: 'practice.saveGroup', severity: 'high' });
+      return { success: false as const, error: 'Couldn’t save the group.' };
+    });
     setBusy(false);
     if (!r.success) return setProblem(r.error ?? 'Couldn’t save the group.');
     setGroups((list) => withGroup(list, { id: r.id, name: name.trim(), playerIds: picked, usedIn: editing && editing !== 'new' ? editing.usedIn : null }));
@@ -355,7 +368,10 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
   const remove = async () => {
     if (preview || !editing || editing === 'new') return setDeleting(false);
     setBusy(true);
-    const r = await deletePracticeGroup({ teamId, groupId: editing.id }).catch(() => ({ success: false as const, error: 'Couldn’t delete the group.' }));
+    const r = await deletePracticeGroup({ teamId, groupId: editing.id }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.groups', action: 'practice.deleteGroup', severity: 'high' });
+      return { success: false as const, error: 'Couldn’t delete the group.' };
+    });
     setBusy(false);
     setDeleting(false);
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t delete the group.' });
@@ -481,7 +497,10 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
   const startFrom = (ref: string) => router.push(`/golf/dashboard/practice?new=1&template=${encodeURIComponent(ref)}`);
   const duplicate = async (t: { name: string; minutes: number; body: PlanBodyV2; kind: 'session' | 'block' }) => {
     if (preview) return;
-    const r = await savePracticeTemplate({ teamId, name: t.name, kind: t.kind, minutes: t.minutes, body: t.body }).catch(() => ({ success: false as const, error: 'Couldn’t save the template.' }));
+    const r = await savePracticeTemplate({ teamId, name: t.name, kind: t.kind, minutes: t.minutes, body: t.body }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.templates', action: 'practice.saveTemplate', severity: 'high' });
+      return { success: false as const, error: 'Couldn’t save the template.' };
+    });
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t save the template.' });
     toast({ title: 'Added to your templates' });
     refresh();
@@ -490,7 +509,10 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
     if (!renaming) return;
     if (preview) return setRenaming(null);
     setBusy(true);
-    const r = await renamePracticeTemplate({ teamId, templateId: renaming.id, name }).catch(() => ({ success: false as const, error: 'Couldn’t rename the template.' }));
+    const r = await renamePracticeTemplate({ teamId, templateId: renaming.id, name }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.templates', action: 'practice.renameTemplate', severity: 'high' });
+      return { success: false as const, error: 'Couldn’t rename the template.' };
+    });
     setBusy(false);
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t rename the template.' });
     setRenaming(null);
@@ -500,7 +522,10 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
     if (!deleting) return;
     if (preview) return setDeleting(null);
     setBusy(true);
-    const r = await deletePracticeTemplate({ teamId, templateId: deleting.id }).catch(() => ({ success: false as const, error: 'Couldn’t delete the template.' }));
+    const r = await deletePracticeTemplate({ teamId, templateId: deleting.id }).catch((err: unknown) => {
+      chReport(err, { surface: 'practice.templates', action: 'practice.deleteTemplate', severity: 'high' });
+      return { success: false as const, error: 'Couldn’t delete the template.' };
+    });
     setBusy(false);
     setDeleting(null);
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t delete the template.' });

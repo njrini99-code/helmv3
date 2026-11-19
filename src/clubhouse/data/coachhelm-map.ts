@@ -429,7 +429,7 @@ function engineFor(ins: EvidenceInsight, evidence: ChHelmEvidence, inputs: ChEng
   }
   if (flags.support) {
     // A drawn gauge already says what the read is compared with: the audit keeps only the source, not the figure again (F-0070).
-    const comparison = evidence.gauge ? null : ev.comparison_label?.trim() || null;
+    const comparison = evidence.gauge ? null : ev.comparison_label?.trim() ? speak(ev.comparison_label.trim(), viewer) : null;
     const audit = auditOf(ev, viewer, { sample: evidence.sample || null, comparison, cause });
     if (audit.length > 0) out.audit = audit;
   }

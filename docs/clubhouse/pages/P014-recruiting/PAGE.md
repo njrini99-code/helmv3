@@ -115,8 +115,10 @@ Status:           approved (what the boards do not draw is built from Clubhouse 
 
 ### Enters from
 
-The sidebar (Team › Recruiting for a coach, after Roster, D-66), the More sheet on the phone, and the existing links
-to `/golf/dashboard/recruiting` (the Players hub in the existing app).
+The sidebar (Team › Recruiting for a coach, after Roster, D-66), the section
+strip on the phone (it replaced the More sheet on 2026-10-13), and the existing
+links to `/golf/dashboard/recruiting` (the Players hub in the existing app,
+retired with Fairway on 2026-11-14).
 
 ### Exits to
 

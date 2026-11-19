@@ -10,6 +10,66 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/coachhelm",
+      "audience": "shared",
+      "name": "CoachHelm (coach: team board; player: your week)",
+      "coach": "src/clubhouse/screens/coachhelm/team/TeamBoard.tsx#TeamBoard",
+      "player": "src/clubhouse/screens/coachhelm/file/YourWeek.tsx#YourWeek"
+    },
+    {
+      "route": "/golf/dashboard/coachhelm",
+      "view": "?view=ask",
+      "audience": "shared",
+      "name": "Ask CoachHelm",
+      "coach": "src/clubhouse/screens/coachhelm/chat/Ask.tsx#Ask",
+      "player": "src/clubhouse/screens/coachhelm/chat/Ask.tsx#Ask"
+    },
+    {
+      "route": "/golf/dashboard/coachhelm",
+      "view": "?view=read&insight=<id>",
+      "audience": "shared",
+      "name": "A CoachHelm read",
+      "coach": "src/clubhouse/screens/coachhelm/read/ReadPage.tsx#ReadPage",
+      "player": "src/clubhouse/screens/coachhelm/read/ReadPage.tsx#ReadPage"
+    },
+    {
+      "route": "/golf/dashboard/coachhelm",
+      "view": "?view=player&player=<id>",
+      "audience": "coach",
+      "name": "A player's file",
+      "coach": "src/clubhouse/screens/coachhelm/file/PlayerFile.tsx#PlayerFile"
+    },
+    {
+      "route": "/golf/dashboard/coachhelm",
+      "view": "?view=track-record",
+      "audience": "coach",
+      "name": "Track record (flag coachhelm_track_record_v1)",
+      "coach": "src/clubhouse/screens/coachhelm/views/TrackRecord.tsx#TrackRecord"
+    },
+    {
+      "route": "/golf/dashboard/coachhelm",
+      "view": "?view=monday-brief",
+      "audience": "coach",
+      "name": "Monday brief (flag coachhelm_monday_brief_v1)",
+      "coach": "src/clubhouse/screens/coachhelm/views/MondayBrief.tsx#MondayBrief"
+    },
+    {
+      "route": "/golf/dashboard/coachhelm",
+      "view": "?view=standing",
+      "audience": "player",
+      "name": "Standing",
+      "player": "src/clubhouse/screens/coachhelm/views/Standing.tsx#Standing"
+    },
+    {
+      "route": "/golf/dashboard/coachhelm",
+      "view": "?view=deep-dive",
+      "audience": "player",
+      "name": "Deep dive",
+      "player": "src/clubhouse/screens/coachhelm/views/DeepDive.tsx#DeepDive"
+    }
+  ],
   "semanticFeatures": [
     "coachhelm_ai",
     "player_coachhelm_development",

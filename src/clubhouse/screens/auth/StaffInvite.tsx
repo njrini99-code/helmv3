@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import type { PreviewStaffInviteResult } from '@/app/golf/actions/teams';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { chReport } from '../../lib/track';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { accountErrorFor } from '../onboard/logic';
@@ -208,7 +209,8 @@ function Accept({ preview, program, email, token, writes, returnTo, focusOnMount
         return;
       }
       onJoined();
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'auth.staff', action: 'accept', severity: 'high' });
       haptic('error');
       setFailure('Couldn’t join the team. Try again.');
       inFlight.current = false;
@@ -312,7 +314,8 @@ function Create({ preview, program, token, writes, returnTo, focusOnMount, probl
         return;
       }
       onJoined();
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'auth.staff', action: 'signUp', severity: 'high' });
       inFlight.current = false;
       setBusy(false);
       refuse({ field: null, message: 'Couldn’t join the team. Try again.', code: 'CH-15034' }, 'error');

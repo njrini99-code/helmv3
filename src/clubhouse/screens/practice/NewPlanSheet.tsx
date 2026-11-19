@@ -12,6 +12,7 @@ import { wholeFacts } from './facts';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { useToast } from '../../ui/Toast';
+import { chReport } from '../../lib/track';
 import { TERMS } from '../../lib/glossary';
 import { Segmented } from '../../ui/Segmented';
 import { copyBody, emptyBody, fmtMinutes, leaveAskPicks, lengthChoices } from './builder/builder-model';
@@ -133,7 +134,8 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, zone, now,
       }
       if (start === 'ask') leaveAskPicks(res.planId, { minutes: length, areas });
       router.push(`/golf/dashboard/practice/plan/${res.planId}/edit${start === 'ask' ? '?fill=1' : ''}`);
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'practice.new', action: 'practice.createPlan', severity: 'high' });
       setError('That didn’t go through. Try again.');
     } finally {
       setBusy(false);

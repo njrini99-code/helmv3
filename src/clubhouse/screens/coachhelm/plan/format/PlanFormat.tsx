@@ -14,6 +14,7 @@ import { PhoneTop } from '../../../../shell/phone-chrome';
 import { LargeTitle } from '../../../../ui/LargeTitle';
 import { BackLink } from '../../../../ui/Section';
 import { plural } from '../../../../lib/plural';
+import { chReport } from '../../../../lib/track';
 import { useUndoWindow } from '../useUndoWindow';
 import { RefreshNotice } from '../../../../ui/RefreshNotice';
 
@@ -98,7 +99,14 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
     const documentId = doc.data?.id;
     if (!documentId) return setView({ k: 'failed', message: 'That file didn’t upload. Try again.' });
     // Try another: the last sample goes, so a coach's Documents doesn't fill with retries.
-    if (lastSample.current) void deleteGolfDocument(lastSample.current).catch(() => {});
+    if (lastSample.current) {
+      const sampleId = lastSample.current;
+      void deleteGolfDocument(sampleId)
+        .then((r) => {
+          if (!r.success) chReport(new Error(r.error || 'plan format sample delete failed'), { surface: 'coachhelm.planFormat', action: 'deleteSample', severity: 'low', extra: { documentId: sampleId } });
+        })
+        .catch((err: unknown) => chReport(err, { surface: 'coachhelm.planFormat', action: 'deleteSample', severity: 'low', extra: { documentId: sampleId } }));
+    }
     lastSample.current = documentId;
     const res = await readPlanFormat(documentId);
     if (!res.success) return setView({ k: 'failed', message: res.error });
@@ -249,7 +257,10 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
                       setName(before.current);
                       setView({ k: 'empty' });
                     })
-                    .catch(() => setView({ k: 'failed', message: 'That didn’t undo. Your format is still set.' }));
+                    .catch((err: unknown) => {
+                      chReport(err, { surface: 'coachhelm.planFormat', action: 'undoPlanFormat', severity: 'high', extra: { formatId: view.id } });
+                      setView({ k: 'failed', message: 'That didn’t undo. Your format is still set.' });
+                    });
                 }}
               >
                 <Icon icon={Undo2} size={18} />

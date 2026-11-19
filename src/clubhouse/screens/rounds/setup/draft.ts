@@ -31,6 +31,7 @@ export function readSetupDraft(key: string | null): ChSetupForm | null {
     if (!f || typeof f.date !== 'string' || (f.count !== 9 && f.count !== 18) || !Array.isArray(f.holes)) return null;
     return f as ChSetupForm;
   } catch {
+    // No storage, or a draft that doesn't parse: setup starts fresh.
     return null;
   }
 }

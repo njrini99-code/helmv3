@@ -321,7 +321,10 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     input.role === 'coach'
       ? Promise.all([clockRead, rosterRead])
           .then(([c, r]) => (r.error ? null : rosterPulse(supabase, rosterNames(r.data), isoDay(now, c.tz))))
-          .catch(() => null)
+          .catch((err: unknown) => {
+            log('pulse', err);
+            return null;
+          })
       : null;
   const [clock, teamRes, rosterRes, docsRes, updatesRes, hidden] = await Promise.all([
     clockRead,

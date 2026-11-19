@@ -19,6 +19,7 @@ function flown(): boolean {
   try {
     return window.sessionStorage.getItem(FLOWN) === '1';
   } catch {
+    // Storage blocked: the hole flies, as on a first visit.
     return false;
   }
 }

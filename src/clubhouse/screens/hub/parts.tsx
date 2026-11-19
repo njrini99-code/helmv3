@@ -13,6 +13,7 @@ import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
+import { chReport } from '../../lib/track';
 import { normalise, useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { SerifText } from '../../ui/SerifText';
 import { Tooltip } from '../../ui/Tooltip';
@@ -249,8 +250,12 @@ function Attachments({ a, files }: { a: ChHubAnnouncement; files: ChHubAttachmen
       const res = normalise(await files.load(a.id));
       if (res.success && res.data) {
         setState({ status: 'ready', rows: res.data.files.map((f) => ({ id: f.id, title: f.title, type: kindLabel(f.type), size: null, date: null, isPublic: true })) });
-      } else setState({ status: 'failed' });
-    } catch {
+      } else {
+        chReport(new Error((!res.success && res.error) || 'announcement files read failed'), { surface: 'hub.announcements', action: 'announcementFiles', severity: 'low', extra: { announcementId: a.id } });
+        setState({ status: 'failed' });
+      }
+    } catch (err) {
+      chReport(err, { surface: 'hub.announcements', action: 'announcementFiles', severity: 'medium', extra: { announcementId: a.id } });
       setState({ status: 'failed' });
     }
   };

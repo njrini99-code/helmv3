@@ -72,8 +72,11 @@ because a phone has no tabs for them.
 
 `StatsPlayer` (the container: hero, tabs, Overview, the rounds table,
 Development), `FocusAreaSheet`, `GameDetail` (the five sections),
-`StatsPlayerPhone` (with `ScoreLine`, shared with Team stats' phone view), and
-the charts in `charts.tsx` (`FigureCards`, `FieldTable`, `LegRoute`,
+`StatsPlayerPhone` (with `ScoreLine`, shared with Team stats' phone view; both
+replaced on 2026-11-11 by `StatsPlayerPhoneShs` and its `SummaryCard` areas),
+the Stats v2 parts added since (`OverviewZones`, `PlayerStage`, `StatsInsight`,
+`Goals` and `GoalSheet`, `FocusLoop`, `ProposalAnswer`, `StatsDetailScreen`),
+and the charts in `charts.tsx` (`FigureCards`, `FieldTable`, `LegRoute`,
 `ScoreBoardTrend`, `YardagePage`, and the ladders and compares Game detail
 draws), which Team stats shares.
 
@@ -81,9 +84,9 @@ draws), which Team stats shares.
 
 `charts.tsx` gains `SgBars` (the phone's legs and total), `SgChangeChip` (the
 change against the previous 10), the `FieldTable`'s strokes gained rows and
-`FigureCards`' note and tone; `StatsPlayerPhone` a Strokes gained panel;
-`GameDetail` takes the window's putt bands. Otherwise the foundation's v2
-changes only (motion, haptics, page empty state).
+`FigureCards`' note and tone; `StatsPlayerPhone` (now `StatsPlayerPhoneShs`) a
+Strokes gained panel; `GameDetail` takes the window's putt bands. Otherwise the
+foundation's v2 changes only (motion, haptics, page empty state).
 
 Parity pass (2026-09-30): `GameMore` (the five sections' More detail),
 `detail.tsx` (`Panel`, `Empty`, `Rule`, `More`, `Tiles`, `DataTable`,
@@ -131,7 +134,9 @@ scrolls to each section and follows the reader.
 ## Phone
 
 Approved spec `docs/clubhouse/phone/stats-player.md`, built as
-`StatsPlayerPhone` below 820px: a coach's top bar is Player stats with Team and
+`StatsPlayerPhone` below 820px (since 2026-11-11 `StatsPlayerPhoneShs`, the
+Stats v2 phone in `docs/clubhouse/stats-v2/`, with its flag removed and
+`StatsPlayerPhone.tsx` deleted): a coach's top bar is Player stats with Team and
 Share, a player's is My stats with More; the header, three figures (scoring
 average, strokes gained, form), Game detail's chips with the desktop's panels
 stacked for the chosen section, the scoring line, five rounds then All N, and
@@ -188,9 +193,10 @@ Only data the app has (the fidelity notes in PROGRESS.md, Q-68):
 ### Parity with the production page (2026-09-30)
 
 The owner asked that the page show everything the production (Fairway) player
-stats page shows: "scrambling, GIR, putting, all of it." PARITY.md is the
-row-by-row record (every production figure with its file and line, and where
-Clubhouse shows it, or why it does not). The shape:
+stats page showed (that page was retired with Fairway on 2026-11-14):
+"scrambling, GIR, putting, all of it." PARITY.md is the row-by-row record (every
+production figure with its file and line, and where Clubhouse shows it, or why
+it does not). The shape:
 
 - **Every Game detail section keeps its lead sentence and four figures, and gains a line under them saying which
   rounds it counts** ("Last 10 rounds · 10 rounds, 18 holes only (9-hole rounds are left out)"; with Holes on 9 or Both it names the lengths and says the figures are per 18 holes), the matched

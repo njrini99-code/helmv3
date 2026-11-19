@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useId, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { importTournamentResults, type TourImportKept, type TourImportResult } from '@/app/golf/actions/tournaments-import';
 import { haptic } from '../../lib/haptics';
+import { chReport } from '../../lib/track';
 import { plural, pluralWord } from '../../lib/plural';
 import { useAction } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
@@ -216,7 +217,9 @@ export function ImportResults({ open, onClose, data }: { open: boolean; onClose:
       // A beat for the step to paint before a large workbook is unzipped on this thread.
       await new Promise((r) => window.setTimeout(r, 0));
       result = await get();
-    } catch {
+    } catch (err) {
+      // The readers return a reason for a file they can't read; a throw is our parser or the browser's file read failing.
+      chReport(err, { surface: 'tournaments.import', action: 'tournaments.import.read', severity: 'low' });
       result = { ok: false, reason: 'broken' };
     }
     window.clearTimeout(appear);

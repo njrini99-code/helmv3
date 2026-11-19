@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { haptic } from '../../lib/haptics';
 import { chSignOut } from '../../lib/sign-out';
+import { chReport } from '../../lib/track';
 import { Avatar } from '../../ui/Avatar';
 import { AuthNotice } from './AuthNotice';
 import { GateFrame, useGateView } from './GateFrame';
@@ -62,7 +63,8 @@ export function CoachPending({ programName, signOut = chSignOut, refresh, initia
     haptic('press');
     try {
       await signOut();
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'auth.pending', action: 'signOut', severity: 'medium' });
       haptic('error');
       setSignOutFailed(true);
       setSigningOut(false);

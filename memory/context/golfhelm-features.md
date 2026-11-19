@@ -233,7 +233,7 @@ Player profile:
 | Type | Path |
 |------|------|
 | Route (player) | `src/app/golf/(dashboard)/dashboard/stats/page.tsx` |
-| Route (team) | `src/app/golf/(dashboard)/dashboard/stats/team/page.tsx` |
+| Route (team) | the same page for a coach (`/stats/team` redirects to `/stats`, `next.config.mjs`) |
 | Actions | `src/app/golf/actions/stats.ts`, `stats-data.ts`, `stats-leak-maps.ts` (leak maps, coach+player), `stats-intelligence.ts` (CoachHelm engine reads) |
 | Player stats | `src/app/golf/actions/player-profile-stats.ts` |
 | Components | `src/clubhouse/screens/stats/` (Clubhouse; Fairway's src/components/golf/stats/ was removed 2026-11-14) |

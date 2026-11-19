@@ -19,7 +19,7 @@ type Client = SupabaseClient<Database>;
 type Page<T> = PromiseLike<{ data: T[] | null; error: { message: string; code?: string | null } | null }>;
 
 const ROUND_COLUMNS =
-  'id, player_id, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
+  'id, player_id, round_date, round_type, course_name, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
 const CACHE_COLUMNS =
   'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, sand_attempts, sand_saves, three_putts, penalty_strokes, birdies, eagles, pars, bogeys, double_bogeys, triple_plus';
 const HOLE_COLUMNS = 'id, round_id, hole_number, par, score';

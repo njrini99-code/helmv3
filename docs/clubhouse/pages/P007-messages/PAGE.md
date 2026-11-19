@@ -67,7 +67,9 @@ Send a message in the open conversation.
 Start a direct thread or a group, post an announcement (coach), acknowledge an
 announcement or mark its task done (player), react, edit or delete your own
 message, search, mute, add members to a group you created, leave a group, open
-shared files.
+shared files. Built since: send and close a poll, pin a conversation, mark it
+unread, hide it from the rail, see who has seen a message, and see who is typing
+(Messages v2, 2026-10-24 to 2026-11-07).
 
 ### Information hierarchy
 
@@ -115,9 +117,9 @@ Status:           approved
 
 ### Enters from
 
-The sidebar and the More sheet (D-66), the bell (a message notification), Home's
-Message team (D-4), Roster's and Stats' Message buttons (`?player=`), and push
-notifications.
+The sidebar and, on the phone, the section strip (the More sheet of D-66 was
+replaced on 2026-10-13), the bell (a message notification), Home's Message team
+(D-4), Roster's and Stats' Message buttons (`?player=`), and push notifications.
 
 ### Exits to
 
@@ -131,7 +133,8 @@ from a direct thread's Details (coach), and back to the rail.
 Design:          the owner (Claude Design)
 Implementation:  src/clubhouse/screens/messages, on the live realtime hooks and server actions
 Data:            team_communications: golf_conversations, golf_conversation_participants,
-                 golf_messages, golf_message_reactions, golf_message_attachments,
+                 golf_messages (polls in their payload), golf_message_reactions,
+                 golf_message_attachments, golf_conversation_pins,
                  golf_announcements and their acknowledgements and tasks
 ```
 

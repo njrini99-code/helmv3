@@ -12,11 +12,12 @@ appearance-store repair and remaining motion/profiling findings. Older
 measurements below retain their original source and device scope. Production
 state and release acceptance are tracked in [STATUS.md](STATUS.md).
 
-How a page goes from a design in `design/handoff/` to a verified page behind
-the `golf_clubhouse_ui` flag. This is the Foundation V2 process (D-60 to
-D-69; the owner's plan is in `foundation-v2/`). The rules that hold
-throughout are in `.claude/rules/clubhouse.md`, and `npm run clubhouse:check`
-enforces every step marked (checked).
+How a page goes from a design in `design/handoff/` to a verified Clubhouse page
+(the `golf_clubhouse_ui` flag it was once built behind was removed with Fairway
+on 2026-11-14, #2527). This is the Foundation V2 process (D-60 to D-69; the
+owner's plan is in `foundation-v2/`). The rules that hold throughout are in
+`.claude/rules/clubhouse.md`, and `npm run clubhouse:check` enforces every step
+marked (checked).
 
 Where things live:
 
@@ -25,9 +26,10 @@ Where things live:
 | Current state, how to turn on, rollback, remaining work, open owner decisions | [`STATUS.md`](STATUS.md) |
 | The design system: laws, surfaces, colour, type, the one toggle, charts, banned list, generated token tables | [`DESIGN_LANGUAGE.md`](../../design-refresh/DESIGN_LANGUAGE.md) |
 | Which screens exist, and which are rebuilt | `SCREENS.md` |
+| Who each address is for (routing): **coach**, **player**, **shared** or **signed-out**, and the component each role gets | [`generated/CLUBHOUSE_ROUTE_MAP.md`](generated/CLUBHOUSE_ROUTE_MAP.md), from each manifest's `screens` and `config/clubhouse/other-routes.json` (checked) |
 | Gates, decisions (latest: D-72 to D-79, 2026-10-19), questions, data gaps, verification log | `PROGRESS.md` (the overview) |
 | Which handoff files are current | `design/handoff/VERSIONS.md` |
-| One manifest per page: identity, routes, features, paths, status, actions, held plans | `config/clubhouse/pages/P###-<slug>.json` |
+| One manifest per page: identity, routes, who each route is for (`screens`), features, paths, status, actions, held plans | `config/clubhouse/pages/P###-<slug>.json` |
 | Every state and outcome, numbered | `catalog/<slug>.md` (CH- codes) and `config/clubhouse/bridge-contracts.json` (Bridge IDs) |
 | The six page docs | `pages/P###-<slug>/` (PAGE, DESIGN, CONTRACT, WIRING, VERIFY, CHANGELOG) |
 | The per-gate checklist | `screens/<slug>.md` |
@@ -41,9 +43,15 @@ Where things live:
 
 - **Page IDs** are permanent (D-60): P001 Shell, P002 Home, P003 Roster,
   P004 Stats team, P005 Stats player, P006 Calendar, P007 Messages, P008
-  Settings, P009 Qualifiers. A new page takes the next free ID when its
+  Settings, P009 Qualifiers, P010 Team Hub, P011 Rounds (with Live rounds),
+  P012 Classes, P013 CoachHelm (with What's New's catalog rows), P014
+  Recruiting, P015 Auth (with onboarding), P016 Tournaments, P017 Practice
+  (the list is `config/clubhouse/pages/`; `generated/CLUBHOUSE_PAGE_MAP.md`
+  is its read-only view). A new page takes the next free ID when its
   build starts, and its Bridge namespace is its number (P010 is 10). A page
-  that isn't being built yet has no ID.
+  that isn't being built yet has no ID. A page may have no catalog file of its
+  own (P017 Practice: its rows are the "Practice:" rows of `catalog/coachhelm.md`,
+  so its Bridge IDs are P013's).
 - **CH- codes** (`catalog/README.md`) sit on elements (`data-ch-code`, or a
   component's `code` prop) and name the tests. They never change.
 - **Bridge IDs** (D-68) are the namespace, a two-digit category and a
@@ -119,6 +127,7 @@ the manifest's `status.docs` to `current`. From then on:
 | Server loader (one pass, reports each failed read, never throws for a partial read) | `src/clubhouse/data/<slug>.ts` |
 | Route entry, flag check, not-on-team and no-team states | `src/clubhouse/routes/<slug>.tsx`, called from the page under `src/app/golf/(dashboard)/dashboard/…` through `isClubhouseFor` |
 | Nav: the page shows in Clubhouse only once listed | `CH_REBUILT_ROUTES` in `src/clubhouse/shell/nav.ts`, and tick it in `SCREENS.md` (checked) |
+| Label every new route: coach, player, shared or signed-out | the page manifest's `screens` (one entry per route, plus one per query view that is a screen of its own), or `config/clubhouse/other-routes.json` for an old address; `clubhouse:check` fails on any unlabelled `page.tsx` under `src/app/golf` |
 | Styles, `.ch-*` classes and `--ch-*` tokens only | `src/clubhouse/styles/<slug>.css` |
 | Preview with sample data and every state (`?state=empty\|failed\|partial\|loading`) | `src/app/clubhouse-preview/[screen]/page.tsx`, fixtures in `src/clubhouse/preview/` |
 | Mutations go through `useAction` (offline, slow, error toast, haptic, Sentry) | `src/clubhouse/lib/` |
@@ -240,7 +249,12 @@ for smoke checks and `npm run clubhouse:quality:full` for the larger matrix.
 
 ## Redesign flags
 
-All of these are off in every environment (`config/feature-flags.yml`).
+Retired. The redesign is the only version of each page (owner decision,
+2026-11-07), and these flags were removed from `config/feature-flags.yml` with
+the release train of 2026-11-11 (#2497).
+`src/clubhouse/__tests__/redesign-shared-guards.test.ts` holds that none comes
+back. `data-ch-refresh="on"` is now always set by `shell/ClubhouseFrame.tsx`.
+The list below is the record of what they were.
 
 - `clubhouse_refresh_v1` is the foundation. It sets `data-ch-refresh="on"` on
   the
@@ -251,8 +265,8 @@ All of these are off in every environment (`config/feature-flags.yml`).
 - `clubhouse_stats_redesign_v1`: see `memory/features/stats-analytics.md`.
 - The Messages redesign flag: see `memory/features/team-communications.md`.
 - The CoachHelm flags: see `memory/features/coachhelm-ai.md`.
-- The practice plan flag: see `memory/features/team-operations.md`.
+- The practice plan flag (`golf_practice_plans`) is retired: the plan page and its
+  writes are always on (`memory/features/team-operations.md`, "Practice plans").
 
-The redesign's migrations are written and not applied.
-`supabase/migrations/HELD.md`
-is authoritative.
+The redesign's migrations were written held; many have since been applied.
+`supabase/migrations/HELD.md` is authoritative for each one's state.

@@ -67,9 +67,12 @@ function markOf(row: { attendance_status: string | null; checked_in: boolean | n
 
 async function readDivision(sb: SupabaseClient<Database>, teamId: string): Promise<ChHoursDivision | null> {
   const team = await sb.from('golf_teams').select('organization_id').eq('id', teamId).maybeSingle();
+  // A failed read drafts the week on the default division (Division I), so it is reported: the limits may be the wrong ones.
+  if (team.error) chLogServer('hours', 'division', team.error, 'calendar');
   const orgId = team.data?.organization_id;
   if (team.error || !orgId) return null;
   const org = await sb.from('organizations').select('division').eq('id', orgId).maybeSingle();
+  if (org.error) chLogServer('hours', 'division', org.error, 'calendar');
   if (org.error || !org.data) return null;
   return divisionFromText((org.data as { division: string | null }).division);
 }
@@ -94,7 +97,10 @@ export async function loadHours(input: {
       date: input.date,
     }),
     db.from('golf_team_hours_settings').select('*').eq('team_id', input.teamId).maybeSingle(),
-    readDivision(sb, input.teamId).catch(() => null),
+    readDivision(sb, input.teamId).catch((err: unknown) => {
+      chLogServer('hours', 'division', err, 'calendar');
+      return null;
+    }),
   ]);
 
   let storeMissing = false;

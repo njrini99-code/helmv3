@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { generateRoundRecap } from '@/app/golf/actions/round-recap';
+import { chReport } from '../../lib/track';
 
 /**
  * The round's recap, written after the review opens when none is stored yet: the same lifecycle step as the Fairway
@@ -28,7 +29,8 @@ export function useRoundRecap(roundId: string, stored: string | null, pending: b
         const text = result.recap?.trim();
         if (text) setWritten({ id: roundId, text });
       })
-      .catch(() => {});
+      // Still quiet for the player; reported, since a throw (a dropped request) never reaches the action's own log.
+      .catch((err: unknown) => chReport(err, { surface: 'rounds.review', action: 'rounds.recap', severity: 'low' }));
     return undefined;
   }, [roundId, stored, pending]);
 

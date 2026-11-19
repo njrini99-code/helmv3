@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { chReport } from '../../lib/track';
 import { Avatar } from '../../ui/Avatar';
 import { AuthNotice } from './AuthNotice';
 import { OPENING_PUSH_MS } from './auth-motion';
@@ -67,7 +68,8 @@ export function JoinTeam({ data, playerId, writes = gateWrites, initial, navigat
       go(result.alreadyMember ? 'already' : 'joined');
       // As today's page: the success is seen for a moment, then the dashboard.
       window.setTimeout(leave, reduced ? 600 : 1400);
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: 'auth.join', action: 'join', severity: 'high' });
       haptic('error');
       setFailure(joinFailure(null, true));
       inFlight.current = false;

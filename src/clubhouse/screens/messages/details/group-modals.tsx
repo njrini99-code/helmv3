@@ -10,6 +10,7 @@ import { InlineNotice } from '../../../ui/Notices';
 import { Skeleton } from '../../../ui/States';
 import { Avatar } from '../../../ui/Avatar';
 import { personOf } from '../person-of';
+import { chReport } from '../../../lib/track';
 
 /** Leave a group you didn't create, after a confirm (CH-7502). */
 export function LeaveGroupModal({ api, conv, open, onClose, onLeft }: { api: ChMessagesApi; conv: ChConv; open: boolean; onClose: () => void; onLeft: () => void }) {
@@ -152,7 +153,11 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
     setAdded([]);
     load()
       .then((r) => live && (r ? setPeople(r) : setFailed(true)))
-      .catch(() => live && setFailed(true));
+      .catch((err: unknown) => {
+        // A null answer is reported where it is read; a throw is reported here.
+        chReport(err, { surface: 'messages.addCandidates' });
+        if (live) setFailed(true);
+      });
     return () => {
       live = false;
     };
