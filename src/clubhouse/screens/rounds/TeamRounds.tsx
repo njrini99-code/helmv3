@@ -29,7 +29,8 @@ import { monthLabel, shortDay, TeeSwatch, TYPE_LABEL, TypePill } from './parts';
 import { kickerDay } from './labels';
 import { carryTo, type ChCarriedRound } from '../../lib/carry';
 import { noteOpenedFromLibrary } from './return-state';
-import { ShowEarlier, useRoundWindow } from './round-window';
+import { ShowEarlier, useRoundWindow, windowGroups } from './round-window';
+import { useArrivalPainted } from '../../lib/use-painted';
 import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { LiveNowCard } from '../home/LiveNowCard';
@@ -39,6 +40,17 @@ import { ExportRounds, LIVE_READ_ROUND_HOLES, type ChReadRoundHoles } from './Ex
 type Group = 'month' | 'player';
 
 const ALL_PLAYERS = 'all';
+
+/** How many rows the phone's first frame of Rounds draws: a screen's worth under the title, figures and tools, with room to spare. */
+export const FIRST_SCREEN_ROWS = 10;
+
+/** The shown groups cut to their first `FIRST_SCREEN_ROWS` rows, in order: what the first frame of a switch to Rounds draws. */
+export function firstScreenRows<G extends { rounds: readonly ChTeamRound[] }>(shown: ReadonlyArray<{ group: G; rows: readonly ChTeamRound[] }>, rows: number = FIRST_SCREEN_ROWS): Array<{ group: G; rows: readonly ChTeamRound[] }> {
+  return windowGroups<ChTeamRound, { group: G; rounds: readonly ChTeamRound[] }>(
+    shown.map((s) => ({ group: s.group, rounds: s.rows })),
+    rows,
+  ).shown.map(({ group, rows: cut }) => ({ group: group.group, rows: cut }));
+}
 
 /** Both reads landed: a list worth keeping while a later refresh of it fails (`useLastGood`). */
 const landed = (d: ChTeamRounds) => !d.rounds.error && !d.rosterError;
@@ -333,6 +345,11 @@ export function TeamRounds({
     group,
     data.seasonStart,
   );
+  // The phone's switch to Rounds draws the rows of its first screen, and the rest a frame after that frame is on screen
+  // (F-23, verify after merge 2026-11-19: 40 rows, 665 of the page's 848 nodes below the first screen and a half, made
+  // the switch's worst frame 54–79 ms in WebKit). Hydration and a return by Back draw them all at once (useArrivalPainted).
+  const below = useArrivalPainted();
+  const drawn = below ? win.shown : firstScreenRows(win.shown);
   const s = data.season;
   const unscored = data.rounds.error ? 0 : (data.rounds.unscored ?? 0);
   const noRoster = !data.rosterError && data.players.length === 0;
@@ -453,7 +470,7 @@ export function TeamRounds({
             {groups.length === 0 ? (
               <EmptyState code="CH-11321" compact title={q.trim() ? `No rounds for “${q.trim()}”` : 'No rounds for this player'} body={q.trim() ? 'Check the spelling, or search part of a name or course.' : 'They haven’t posted a round yet.'} />
             ) : phone ? (
-              win.shown.map(({ group: g, rows }, i) => (
+              drawn.map(({ group: g, rows }, i) => (
                 <Fragment key={g.key}>
                   {i === earlierAt && <p className="ch-trd-earlier">{EARLIER}</p>}
                   <Section id={groupId(g)} title={g.title} meta={groupMeta(g)}>
@@ -468,7 +485,7 @@ export function TeamRounds({
             ) : (
               <TeamRoundsTable groups={win.shown} by={group} earlierAt={earlierAt} />
             )}
-            {groups.length > 0 && <ShowEarlier className="ch-trd-more" hidden={win.hidden} onMore={win.more} />}
+            {groups.length > 0 && (below || !phone) && <ShowEarlier className="ch-trd-more" hidden={win.hidden} onMore={win.more} />}
           </SectionBoundary>
 
           {unscored > 0 && (

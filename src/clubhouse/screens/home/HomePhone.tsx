@@ -21,6 +21,7 @@ import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
 import { usePhoneHero } from '../../shell/phone-chrome';
+import { useArrivalPainted } from '../../lib/use-painted';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { coachFailedParts } from './model';
@@ -70,6 +71,9 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
   const until = phone.next ? countdownTo(phone.next) : null;
   // A malformed read is CoachLatest's to contain (CH-2206); what changed since you looked reads no rounds from it.
   const rounds = (data.latestRounds.error ? null : data.latestRounds.rounds) ?? [];
+  // Team scoring and the team's game end the page, well below its first screen: a switch to Home draws them a frame after
+  // that frame is on screen (F-23, verify after merge 2026-11-19). Hydration and a return by Back draw them at once.
+  const below = useArrivalPainted();
 
   return (
     <main className="ch-hm ch-hm--coach" aria-label="Home">
@@ -125,14 +129,14 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
         <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
           <CoachLatest data={data.latestRounds} covered={covered} years={data.yearById} />
         </SectionBoundary>
-        {phone.form ? (
+        {!below ? null : phone.form ? (
           <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
             <TeamScoring form={phone.form} phone />
           </SectionBoundary>
         ) : data.latestRounds.error ? (
           <TeamScoringFailed phone covered={covered} />
         ) : null}
-        {phone.form && data.legs && (
+        {below && phone.form && data.legs && (
           <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
             <TeamGame legs={data.legs} phone covered={covered} />
           </SectionBoundary>

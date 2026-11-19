@@ -5,6 +5,7 @@ import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { LazyMotion } from 'motion/react';
 import { createContext, memo, useContext, useEffect, useRef, useState, type ReactNode, Suspense } from 'react';
 import { useChPhone } from '../lib/use-phone';
+import { writePhoneEdges, type PhoneEdges } from '../lib/phone-edges';
 import { useChDynamicType } from '../lib/dynamic-type';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { clubhouseFontVariables } from '../lib/fonts';
@@ -317,15 +318,24 @@ function edgeTokens(root: Element): { page: string; green: string } {
 function usePhoneEdges(hero: boolean) {
   // A route can sit on another canvas colour, so the edges read again on each one.
   const pathname = usePathname();
+  const edges = useRef<PhoneEdges | null>(null);
+  // Put back once, when the frame goes: not between pages, where the same colours were taken off and written again.
+  useEffect(
+    () => () => {
+      edges.current?.restore();
+      edges.current = null;
+    },
+    [],
+  );
   useEffect(() => {
     const html = document.documentElement;
-    const body = document.body;
     const phone = window.matchMedia(CH_PHONE_QUERY);
-    let restore: (() => void) | undefined;
     const sync = () => {
-      restore?.();
-      restore = undefined;
-      if (!phone.matches) return;
+      if (!phone.matches) {
+        edges.current?.restore();
+        edges.current = null;
+        return;
+      }
       const root = document.querySelector('.ch-root[data-ui="clubhouse"]');
       if (!root) return;
       const { page: fallback, green } = edgeTokens(root);
@@ -333,37 +343,15 @@ function usePhoneEdges(hero: boolean) {
       const canvas = document.querySelector('.ch-canvas');
       const seen = canvas ? getComputedStyle(canvas).backgroundColor : '';
       const page = !seen || seen === 'transparent' || /\/\s*0\)$|,\s*0\)$/.test(seen) ? fallback : seen;
-      let meta = document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-      const created = !meta;
-      if (!meta) {
-        meta = document.createElement('meta');
-        meta.name = 'theme-color';
-        document.head.appendChild(meta);
-      }
-      const before = meta.content;
-      const was = { html: html.style.backgroundColor, body: body.style.backgroundColor };
-      html.style.backgroundColor = page;
-      body.style.backgroundColor = page;
-      // The status area is always the frame's green; the bar's own ::before carries it up through a pull (owner call, sweep).
-      meta.content = green;
-      // So the app's status bar draws light glyphs on it in both themes (CHROME-P-01; CapacitorProvider watches this).
-      const glyphsWere = html.dataset.statusBar;
-      html.dataset.statusBar = 'light';
-      const tag = meta;
-      restore = () => {
-        html.style.backgroundColor = was.html;
-        body.style.backgroundColor = was.body;
-        if (glyphsWere === undefined) delete html.dataset.statusBar;
-        else html.dataset.statusBar = glyphsWere;
-        if (created) tag.remove();
-        else tag.content = before;
-      };
+      edges.current = writePhoneEdges(edges.current, page, green);
     };
-    sync();
+    // A frame after the page shows, not in the commit that swaps it: the canvas colour is read once that frame has styled
+    // the page, rather than forcing its style inside the swap (F-23). The edges are a frame late on a page that changes
+    // canvas, under the bars and in the bounce, where a frame does not show.
+    let frame = requestAnimationFrame(sync);
     phone.addEventListener('change', sync);
     // A theme change (Settings > Appearance, or the system flipping) changes the tokens read above. useGolfTheme rewrites
     // the theme-color tag in the same task, so this runs a frame later and has the last word on the phone.
-    let frame = 0;
     const themed = new MutationObserver(() => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(sync);
@@ -373,7 +361,6 @@ function usePhoneEdges(hero: boolean) {
       phone.removeEventListener('change', sync);
       themed.disconnect();
       cancelAnimationFrame(frame);
-      restore?.();
     };
   }, [hero, pathname]);
 }
