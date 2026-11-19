@@ -7,6 +7,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type 
 import { createPortal } from 'react-dom';
 import { useDialogLifetime } from '../lib/dialog-lifetime';
 import { chSafeAreaInsets } from '../lib/safe-area';
+import { CH_PHONE_QUERY } from '../lib/phone-query';
 import { haptic } from '../lib/haptics';
 import { chSpring } from '../lib/motion';
 import { chMenuMotion } from '../lib/menu-motion';
@@ -39,6 +40,15 @@ export interface PeekAction {
 export const PEEK_HOLD_MS = 450;
 export const PEEK_HOVER_MS = 400;
 export const PEEK_FOCUS_MS = 600;
+
+/**
+ * The phone layout peeks only by a hold, as iOS's context menu does (E-4, audit 2026-11-19): the desk's hover card,
+ * anchored beside its row, covered a qualifier leaderboard's To par and Thru columns when a pointer rested on a name at
+ * phone width. A real iPhone never sends a mouse; this keeps a narrow window and a pointer emulated on a phone the same.
+ */
+function phoneLayout(): boolean {
+  return typeof window !== 'undefined' && !!window.matchMedia?.(CH_PHONE_QUERY).matches;
+}
 
 /** GES-1: a touch that moves this far is a scroll (before a hold) or a drag (after a lift). */
 const SLOP_PX = 10;
@@ -238,7 +248,7 @@ export function PeekTarget({
           giveUp();
         },
         onPointerEnter: (e: React.PointerEvent) => {
-          if (e.pointerType !== 'mouse') return;
+          if (e.pointerType !== 'mouse' || phoneLayout()) return;
           holdHover();
           if (mode) return;
           clear();
@@ -250,7 +260,7 @@ export function PeekTarget({
         onFocus: (e: React.FocusEvent) => {
           const target = e.target as HTMLElement;
           if (!target.matches?.(':focus-visible')) return;
-          if (target.closest?.('[data-ch-peek-quiet]')) return;
+          if (target.closest?.('[data-ch-peek-quiet]') || phoneLayout()) return;
           clear();
           timer.current = setTimeout(() => open('hover'), PEEK_FOCUS_MS);
         },
