@@ -70,6 +70,21 @@ describe('desk Back and Forward crossfade (E-8)', () => {
     expect(calls.every((c) => c.options.duration === 180)).toBe(true);
   });
 
+  it('a view transition of the root (a theme keyframe) does not stop it; only the page\'s own crossfade does', async () => {
+    const running = (pseudo: string) => [{ effect: { pseudoElement: pseudo } }] as unknown as Animation[];
+    (document as Document & { getAnimations: () => Animation[] }).getAnimations = () => running('::view-transition-old(root)');
+    await back();
+    expect(calls.some((c) => c.el.classList.contains('ch-frame-fading'))).toBe(true);
+    calls = [];
+    // The first fade's copy waits on a finish the fake never gives: take it away by hand.
+    document.querySelectorAll('.ch-frame-fading').forEach((e) => e.remove());
+    (document as Document & { getAnimations: () => Animation[] }).getAnimations = () => running('::view-transition-old(ch-page)');
+    await back();
+    expect(calls).toHaveLength(0);
+    expect(document.querySelector('.ch-frame-fading')).toBeNull();
+    delete (document as Partial<Document> & { getAnimations?: unknown }).getAnimations;
+  });
+
   it('Animations off swaps', async () => {
     document.documentElement.setAttribute('data-motion', 'off');
     await back();

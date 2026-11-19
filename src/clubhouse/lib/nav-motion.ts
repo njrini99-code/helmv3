@@ -534,7 +534,9 @@ function playDeskHistory() {
   const into = { duration: msToken(css, fade ? '--ch-dur-vt-fade' : '--ch-dur-vt-in', 180), easing: css.getPropertyValue('--ch-ease-vt-in').trim() || 'ease-out' };
   // The next frame, once the router's synchronous commit has put the page come back to in place.
   requestAnimationFrame(() => {
-    const vt = typeof document.getAnimations === 'function' && document.getAnimations().some((a) => ((a.effect as KeyframeEffect | null)?.pseudoElement ?? '').startsWith('::view-transition'));
+    // Only the page's own crossfade counts: the root's snapshot also runs a theme keyframe on a Back (WebKit, 2026-11-19),
+    // and stepping aside for it left the Back with no fade at all.
+    const vt = typeof document.getAnimations === 'function' && document.getAnimations().some((a) => ((a.effect as KeyframeEffect | null)?.pseudoElement ?? '').includes('(ch-page)'));
     if (vt) return copy.remove();
     const page = document.getElementById('ch-content');
     page?.animate([{ opacity: 0 }, { opacity: 1 }], into);
