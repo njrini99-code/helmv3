@@ -93,8 +93,12 @@ describe('a roster card', () => {
     expect(push).toHaveBeenCalledTimes(1);
   });
 
+  // F-21 (audit 2026-11-19, WCAG 2.5.3): the card is named by what it shows, not an aria-label that left that out; what a
+  // click does is its description.
   it('says what a click does', () => {
     show();
-    expect(cards()[0]!.getAttribute('aria-label')).toMatch(/Show in the panel/);
+    const card = cards()[0]!;
+    expect(card.hasAttribute('aria-label')).toBe(false);
+    expect(document.getElementById(card.getAttribute('aria-describedby') ?? '')?.textContent).toMatch(/Shows in the panel/);
   });
 });

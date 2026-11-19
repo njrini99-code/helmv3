@@ -2,7 +2,7 @@
 
 import { usePushOnce } from '../../lib/nav-once';
 import { ArrowDown, ArrowUp, Bandage, ChartColumn, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
@@ -770,6 +770,7 @@ function RosterList({
   classLines: RosterClassLines;
   hold: { onPointerDownCapture: () => void };
 }) {
+  const faceHowId = useId();
   // The profile is fetched whole as the pointer goes down on a face or a name (A13).
   const press = usePressPrefetch();
   return (
@@ -790,7 +791,9 @@ function RosterList({
                 key={p.id}
                 type="button"
                 className={'ch-rs-face' + ((onSelect ? selected : sel) === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-                aria-label={`${faceLabel(p, standings.byId.get(p.id))}${classNoteFor(p, classLines.get(p.id)) ? `, ${classNoteFor(p, classLines.get(p.id))!.text}` : ''}. ${onSelect ? 'Show in the panel; Command-Enter opens the profile' : 'Open profile'}`}
+                // Named by what the card shows (F-21, WCAG 2.5.3: a label that left out the visible text), with what a press does
+                // read last (ch-rs-face__how).
+                aria-describedby={`${faceHowId}-${p.id}`}
                 // The card's body shows the player in the panel; the face and the name open their profile (coach audit
                 // 13 Nov 2026, §8 #1: the whole card went to the profile, so the panel never left the first player).
                 onClick={(e) => {
@@ -822,14 +825,14 @@ function RosterList({
                       <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
                       {p.status === 'active' ? 'Active' : 'Inactive'}
                     </span>
-                  ) : (
-                    <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
-                  )}
+                  ) : null}
                 </span>
                 <span className="ch-rs-face__av">
                   <Avatar name={p.name} id={p.id} size={76} year={yearKeyOf(p.gradYear, clock)} dim={p.status === 'inactive'} />
                 </span>
                 <span className="ch-rs-face__name">{p.name}</span>
+                {/* After the name, so the card's name (its own text, F-21) starts with who it is. */}
+                {show !== 'all' && <span className="ch-sr-only">{p.status === 'active' ? ', active' : ', inactive'}</span>}
                 <span className="ch-rs-face__meta">{[p.rosterExempt ? 'Not counted' : null, p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
                 <span className="ch-rs-face__form">
                   <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
@@ -848,6 +851,9 @@ function RosterList({
                 ) : (
                   p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>
                 )}
+                <span id={`${faceHowId}-${p.id}`} hidden>
+                  {onSelect ? 'Shows in the panel; Command-Enter opens the profile' : 'Opens the profile'}
+                </span>
               </button>
             ))}
           </div>
@@ -1134,14 +1140,6 @@ function FaceFigures({
       </span>
     </span>
   );
-}
-
-/** A card's name for VoiceOver: the player and one figure, not every number on it (P003 #13), then injured or away. */
-function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): string {
-  const out = p.availability && p.availability !== 'available' ? `, ${p.availability}` : '';
-  if (p.avg == null) return `${p.name}${out}`;
-  const place = standing && standing.of > 1 ? `, ${standing.tied ? 'tied ' : ''}${standing.place} of ${standing.of}` : '';
-  return `${p.name}, scoring average ${formatAvg(p.avg)}${place}${out}`;
 }
 
 /**
