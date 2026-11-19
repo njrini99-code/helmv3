@@ -2248,6 +2248,12 @@ a.ch-rs-peek__dev:focus-visible,
     margin-inline: -12px;
     padding: 16px 0 0;
   }
+  /* L-078: the player's tables have no hover tint to clear, so no bleed past the gutter, and they keep to the reading
+     measure so Role and Class sit beside the name, not 900px away. */
+  .ch-rs[data-canopy] .ch-rs-list.ch-rs-list--team {
+    max-width: var(--ch-measure-reading);
+    margin-inline: 0;
+  }
   .ch-rs[data-canopy] .ch-rs-row {
     border-bottom-color: var(--ch-ledger-rule-soft);
     border-radius: 0;

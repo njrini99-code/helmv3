@@ -15,7 +15,7 @@ const dayYear = (iso: string) => tourDay(iso, { month: 'short', day: 'numeric', 
 /** The person (or people) a side is about, as faces: a stack for a pooled side, one portrait for a player. */
 export function Face({ scope, side, names }: { scope: ChTourScope; side: 'a' | 'b'; names: ScopeNames }) {
   const s = scope.subject;
-  const who = s.kind === 'player' ? [subjectName(s, names)] : names.players.filter((p) => !p.alumni).slice(0, 3).map((p) => p.name);
+  const who = s.kind === 'player' ? [subjectName(s, names)] : names.players.filter((p) => !p.alumni).slice(0, 2).map((p) => p.name);
   const stack = who.length > 1;
   return (
     <span className={'ch-tour-cmp-face' + (stack ? ' is-stack' : '')} style={{ ['--ch-tour-cmp-face' as string]: `${AVATAR_SIZES.lg}px` }} aria-hidden="true">

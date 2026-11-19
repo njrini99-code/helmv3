@@ -204,13 +204,15 @@ describe('Continue round: Save for later and Discard (CH-11010, CH-11006, CH-119
     expect(mocks.savePartialRound).toHaveBeenLastCalledWith(expect.anything(), 'round-9');
   });
 
-  it('CH-11902 a save refused for a round changed elsewhere is the Reload toast, and the banner, with no Retry', async () => {
+  // L-036 (owner-approved, 18 Nov 2026): the banner and the toast said the same thing at once; once the banner is up it is the one.
+  it('CH-11902 a save refused for a round changed elsewhere is the Reload banner, once, with no Retry', async () => {
     const user = renderContinue();
     await openExit(user);
     mocks.savePartialRound.mockResolvedValue({ success: false, error: 'conflict' });
     mocks.checkRoundStaleness.mockResolvedValue({ success: true, data: { status: 'in_progress', isStale: true, currentUpdatedAt: '2026-10-14T13:00:00.000Z' } });
     await user.click(within(code('CH-11506')!).getByRole('button', { name: /Save for later/ }));
-    await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-11902"]').length).toBeGreaterThanOrEqual(2));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument());
+    await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-11902"]')).toHaveLength(1));
     expect(code('CH-11010')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });

@@ -87,6 +87,8 @@ export function InfoRow({ label, value, help }: { label: string; value: ReactNod
   return (
     <div className={'ch-setm-row is-info' + (help ? ' has-help' : '')}>
       <span className="ch-setm-row__l">{label}</span> <span className="ch-setm-row__v">{value}</span>
+      {/* The chevron's slot, empty: a read-only value lines up with its tappable siblings (L-039). */}
+      <span className="ch-setm-chev" aria-hidden="true" style={{ width: 16, height: 16 }} />
       {help && <span className="ch-setm-help">{help}</span>}
     </div>
   );

@@ -60,9 +60,10 @@ export function LiveRoundsGroup({ ports }: { ports?: LiveSharePorts }) {
   const { practiceShare, pending, set } = useLivePrefs(ports);
   if (practiceShare === null) return null;
   return (
-    <Group title="Live rounds" note={SHARE_COPY.helper}>
+    // L-039: one group footer says both things; the Qualifier rounds row is a plain row like its sibling.
+    <Group title="Live rounds" note={`${SHARE_COPY.helper} ${SHARE_COPY.qualifierCaption}`}>
       <PickerRow<LiveShare> label="Practice rounds" value={practiceShare} options={OPTIONS} disabled={pending} onPick={(v) => void set(v)} />
-      <InfoRow label="Qualifier rounds" value={SHARE_LABEL.coaches} help={SHARE_COPY.qualifierCaption} />
+      <InfoRow label="Qualifier rounds" value={SHARE_LABEL.coaches} />
     </Group>
   );
 }

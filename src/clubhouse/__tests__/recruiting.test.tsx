@@ -1534,7 +1534,7 @@ describe('Recruiting · Committed is a moment, once (B1)', () => {
 describe('Recruiting · the recruiting calendar (C2)', () => {
   it('CH-14808 the team’s division and gender give the quiet line; nothing to pick', () => {
     wrap(PREVIEW_RECRUITING_NEXT);
-    expect(code('CH-14808')?.textContent).toBe('Division I · Contact period through Nov 8 · in-person contact for prospects from Aug 1 before their junior year');
+    expect(code('CH-14808')?.textContent).toBe('Division I · Contact period through Nov 8 · In-person contact for prospects from Aug 1 before their junior year'); // L-079: the rule is its own line, capitalised
     expect(screen.queryByRole('button', { name: /Choose your division/ })).toBeNull();
   });
 

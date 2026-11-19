@@ -34,8 +34,8 @@ const ALLOW_WORDS: Record<string, number> = {
 };
 
 describe('golf glossary (CONS-18)', () => {
-  it('a long and a short form for each word; the handicap is HCP in capitals', () => {
-    expect(TERMS.handicap).toEqual({ long: 'Handicap', short: 'HCP' });
+  it('a long and a short form for each word; the handicap is spelled Handicap everywhere (L-044)', () => {
+    expect(TERMS.handicap).toEqual({ long: 'Handicap', short: 'Handicap' });
     expect(TERMS.scoringAvg.short).toBe('Scoring avg');
     for (const t of Object.values(TERMS)) expect(t.long.length).toBeGreaterThanOrEqual(t.short.length);
   });

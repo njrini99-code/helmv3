@@ -32,6 +32,15 @@ const base = { library: null, coachNote: null, window: 'all' as const, seasonSta
 describe('toCourseHistory (P-7 4.2)', () => {
   const list = [row(76, { round_date: '2026-10-03', notes: 'Commit on the 7 tee' }), row(70, { round_date: '2026-03-14', tees_played: 'White' }), row(74, { round_date: '2025-09-20' }), row(80, { course_name: 'Marsh' })];
 
+  it('does not double the word tees (R-2)', () => {
+    const only = [row(76, { tees_played: 'Jeff Roope Invite Tees', notes: 'n' })];
+    const res = toCourseHistory({ ...base, rawKey: 'n-finley%20gc', list: only, holes: new Map() });
+    const h = res.kind === 'ok' ? res.data : null!;
+    expect(h.hero.place).toBe('Chapel Hill, NC · Jeff Roope Invite Tees');
+    expect(h.lastTime?.line).toContain('Jeff Roope Invite Tees · ');
+    expect(h.lastTime?.line).not.toMatch(/tees tees/i);
+  });
+
   it('says the course in the hero and the figures', () => {
     const res = toCourseHistory({ ...base, rawKey: 'n-finley%20gc', list, holes: new Map() });
     expect(res.kind).toBe('ok');

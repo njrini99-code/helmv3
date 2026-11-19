@@ -391,7 +391,8 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     );
     expect(code('CH-2309')!.textContent).toMatch(/No events scheduled/);
     expect(screen.getByRole('link', { name: 'Qualifier' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1&type=qualifier');
-    expect(screen.getByRole('link', { name: 'Add event' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
+    // L-005 (one primary per screen): the card has no Add event of its own; the page's New event is the one.
+    expect(screen.queryByRole('link', { name: 'Add event' })).toBeNull();
     // With nothing ahead, the week strip steps aside.
     expect(screen.queryByRole('heading', { name: 'This week' })).toBeNull();
   });
@@ -1011,14 +1012,11 @@ describe('Home · the phone, the page’s own contracts', () => {
     expect(when()).toBe('Happening now');
   });
 
-  it('21703 on the phone a quick event type is silent (a link, A14), Add event gives the light tap, and a round opens with a tick', async () => {
+  it('21703 on the phone a quick event type is silent (a link, A14), and a round opens with a tick', async () => {
     const user = userEvent.setup();
     const none = wrap(<CoachHome data={PREVIEW_HOME_NO_EVENTS} now={PREVIEW_HOME_NOW} />);
     await user.click(screen.getByRole('link', { name: 'Qualifier' }));
     expect(hapticSpy.mock.calls).toEqual([]);
-    hapticSpy.mockClear();
-    await user.click(screen.getByRole('link', { name: 'Add event' }));
-    expect(hapticSpy.mock.calls).toEqual([['press']]);
     none.unmount();
     hapticSpy.mockClear();
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);

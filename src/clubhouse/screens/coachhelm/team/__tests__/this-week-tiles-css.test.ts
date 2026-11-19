@@ -17,8 +17,8 @@ const rule = (selector: string): string => {
 };
 
 describe('This week’s tiles (F-0019)', () => {
-  it('the row lets each tile keep its own height', () => {
-    expect(rule('.ch-htb .tiles')).toMatch(/align-items:\s*flex-start;/);
+  it('the row gives every tile the one height (L-029); the byline still follows the words', () => {
+    expect(rule('.ch-htb .tiles')).toMatch(/align-items:\s*stretch;/);
   });
 
   it('a tile is a well inside the card, with no ring, no outline and no minimum height', () => {

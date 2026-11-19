@@ -78,7 +78,10 @@
   display: flex;
 }
 .ch-seg--block .ch-seg__b {
-  flex: 1;
+  flex: 1 1 auto;
+  /* The options share the row but size from their labels, with less side padding, so the longest ("Coaches and team") never
+     runs past the well on a phone (L-021). */
+  padding-inline: 8px;
 }
 .ch-seg__pill {
   position: absolute;
@@ -214,7 +217,7 @@
 .ch-field__opt {
   margin-left: auto;
   font: var(--ch-type-footnote);
-  color: var(--ch-green-700);
+  color: var(--ch-text-secondary);
 }
 .ch-field__help {
   font: var(--ch-type-13);
@@ -429,7 +432,7 @@
   color: var(--ch-text-primary);
 }
 .ch-modal::backdrop {
-  background: var(--ch-scrim, rgb(20 20 18 / 0.36));
+  background: var(--ch-scrim, rgb(28 25 18 / 0.24));
   /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
   opacity: var(--ch-scrim-a, 1);
   transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
@@ -856,7 +859,13 @@
 }
 .ch-switch.is-disabled {
   cursor: not-allowed;
+}
+/* The control steps back, its label does not: a faded label was 2.6:1 (RC-1). The label takes the secondary ink. */
+.ch-switch.is-disabled .ch-switch__track {
   opacity: 0.5;
+}
+.ch-switch.is-disabled .ch-switch__l {
+  color: var(--ch-text-secondary);
 }
 .ch-switch.is-busy {
   cursor: progress;
@@ -883,6 +892,13 @@
   box-shadow: 0 0 0 1px var(--ch-border-control), inset 0 1px 2px rgb(28 25 18 / 0.06);
   cursor: pointer;
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+/* L-086: the prompt of an unpicked select in the placeholder ink; the list itself keeps the text ink. */
+.ch-select.is-empty select {
+  color: var(--ch-text-placeholder);
+}
+.ch-select.is-empty select option {
+  color: var(--ch-text-primary);
 }
 @media (hover: hover) {
   .ch-select select:hover {
@@ -1462,7 +1478,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
    tint, so the panel still lifts off the page. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-modal::backdrop {
-    background: rgb(12 12 10 / 0.42);
+    background: var(--ch-scrim-deep, rgb(28 25 18 / 0.38));
   }
   .ch-modal__panel {
     border-radius: var(--ch-radius-xl);
@@ -1486,9 +1502,6 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
     background: transparent;
     box-shadow: none;
-  }
-  html[data-fw-theme='dark'] .ch-modal::backdrop {
-    background: rgb(0 0 0 / 0.5);
   }
   html[data-fw-theme='dark'] .ch-modal__panel {
     background: var(--ch-bg-elevated);
@@ -1569,7 +1582,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
 }
 .ch-fsheet-dlg::backdrop,
 .ch-fsheet-act::backdrop {
-  background: var(--ch-scrim, rgb(20 20 18 / 0.36));
+  background: var(--ch-scrim, rgb(28 25 18 / 0.24));
   /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
   opacity: var(--ch-scrim-a, 1);
   transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));

@@ -729,6 +729,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `scripts/phone/README.md` | current | - | - | - | - |
 | `src/app/golf/README.md` | current | - | - | - | - |
 | `src/clubhouse/README.md` | current | - | - | - | - |
+| `src/clubhouse/lib/fonts/README.md` | current | - | - | - | - |
 | `src/clubhouse/screens/tournaments/README.md` | current | - | - | - | - |
 | `src/components/baseball/living-annual/README.md` | current | - | - | - | - |
 | `src/contracts/baseball/README.md` | current | - | - | yes | - |
@@ -1309,6 +1310,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-17-ask-key-comment.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-17-silent-errors-data.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-18-polish-w3.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-18-role-redirects.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-18-separator-face.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
@@ -1379,6 +1383,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-16-team-tour.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-17-silent-errors-data.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-18-polish-w1-w2.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-18-polish-w3.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
@@ -1439,6 +1446,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-16-roster-limit.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-16-team-tour.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-17-silent-errors-screens-b.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
@@ -1514,6 +1522,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-17-silent-errors-data.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-17-silent-errors-screens-b.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-18-head-eyebrow.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-18-polish-w3.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1587,6 +1598,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-17-silent-errors-data.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-17-silent-errors-screens-b.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-18-polish-w3.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
@@ -1648,6 +1661,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-16-replies-read-by-event-id.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-17-silent-errors-data.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-17-silent-errors-screens-b.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-18-packing-and-flat-week.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-18-polish-w1-w2.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1751,6 +1767,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-15-skeleton-by-section.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-16-dead-display-switches.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-17-silent-errors-screens-a.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-18-polish-w1-w2.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | 1 |
@@ -1806,6 +1824,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-16-ended-on-team-clock.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-16-names-start-with-drawn-words.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-17-silent-errors-screens-b.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-18-polish-w1-w2.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
@@ -1856,6 +1876,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-16-departed-players-not-counted.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-17-silent-errors-data.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-17-silent-errors-screens-a.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-18-polish-w1-w2.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-18-polish-w3.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |
@@ -1938,6 +1961,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-17-silent-errors-data.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-17-silent-errors-screens-b.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-18-polish-w1-w2.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-18-polish-w3.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
@@ -1967,6 +1993,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-17-silent-errors-data.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
@@ -2085,6 +2112,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-17-silent-errors-screens-a.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-18-coachhelm-reads-actions-team.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-18-coachhelm-reads-parts-memory.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-18-polish-w1-w2.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-18-polish-w3.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
@@ -2112,6 +2142,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-17-silent-errors-data.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P014-recruiting/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P015-auth/DESIGN.md` | current | - | - | - | 1 |
@@ -2142,6 +2173,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-15-press-linen-wash.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-18-clubhouse-only-front-door.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-18-paper-token.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/DESIGN.md` | current | - | - | - | - |
@@ -2192,12 +2224,15 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-16-roster-count.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-16-scrambling-sand-saves.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-17-silent-errors-screens-b.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-18-polish-w1-w2.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/GAP.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P017-practice/changes/2026-11-18-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/classes.md` | current | - | - | - | - |

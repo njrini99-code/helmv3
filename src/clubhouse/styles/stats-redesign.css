@@ -2051,6 +2051,21 @@ p.ch-shs-mini-cap {
 .ch-shs-ctl.is-stuck::before {
   opacity: 1;
 }
+/* Stuck, the switch is a real surface: the canvas under it, opaque, so no figure shows through before the top bar has
+   taken its own paper (L-006). A soft edge below it says content has gone under. */
+.ch-shs .ch-shs-ctl.is-stuck {
+  background: var(--ch-light-paper), var(--ch-workspace);
+}
+.ch-shs-ctl.is-stuck::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 10px;
+  background: linear-gradient(var(--ch-workspace), transparent);
+  pointer-events: none;
+}
 
 /* Reduce Motion and Animations off: nothing travels. */
 @media (prefers-reduced-motion: reduce) {
@@ -2439,6 +2454,13 @@ p.ch-shs-mini-cap {
 .ch-shs-dhead__id h1 {
   margin: 0;
 }
+/* L-052: the eyebrow over the title, in the tertiary ink Roster's team line uses. */
+.ch-shs-dhead__k {
+  display: block;
+  margin-bottom: 4px;
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-tertiary);
+}
 .ch-shs-dhead__id p {
   margin: 4px 0 0;
   font: var(--ch-type-15);
@@ -2589,7 +2611,9 @@ p.ch-shs-mini-cap {
 }
 .ch-shs-desk__dett {
   margin: 0;
-  padding: var(--ch-space-4) 0 0;
+  /* L-046: no top padding, so the pane's title sits on the summary's "Overview" line (it was 16px lower); the pane's resting
+     top (--ch-shs-pane-rest) already clears the bar. The 8px under it matches the summary's gap to its first card. */
+  padding: 0 0 var(--ch-space-2);
   font: var(--ch-type-title);
   font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;

@@ -594,7 +594,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                 onChange={(next) => set('exempt', next)}
                 problem={problemOf('exempt') ?? null}
               />
-              <div className="ch-qf-readout ch-well-soft ch-num" aria-live="polite">
+              <div className="ch-qf-readout ch-num" aria-live="polite">
                 {/* The segments wrap whole, and a dot only ever sits between two on one line (qualifiers.css). */}
                 <span className="ch-qf-readout__in">
                   <span className="ch-qf-seg">
@@ -745,7 +745,8 @@ function ExemptField({
         Exempt players <span className="ch-field__opt">Optional</span>
       </legend>
       <span id="qf-exempt-h" className={'ch-field__help' + (problem ? ' is-error' : '')} role={problem ? 'alert' : undefined} data-ch-code={problem?.code}>
-        {problem?.text ?? `An exempt player needn’t play: they take one of the ${plural(picks, 'coach’s pick')} when selection closes. Only you see the reason.`}
+        {/* L-086: each exempt player takes one pick; the count is the Coach's picks field just above ("1 coach's pick" read wrong). */}
+        {problem?.text ?? 'An exempt player needn’t play: they take a coach’s pick when selection closes. Only you see the reason.'}
       </span>
       {players.map((p) => (
         <div key={p.id} className="ch-field">

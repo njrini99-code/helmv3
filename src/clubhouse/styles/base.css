@@ -106,6 +106,12 @@
 :where(.ch-root blockquote) {
   text-wrap: pretty;
 }
+/* Chrome and controls are not text to select: a long-press or drag on a button, tab or summary never highlights its label (L-054). */
+:where(.ch-root button, .ch-root [role='button'], .ch-root [role='tab'], .ch-root [role='switch'], .ch-root summary) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 .ch-root ::selection {
   background: var(--ch-green-100);
   color: var(--ch-ink-900);
@@ -360,4 +366,11 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
 html[data-ch-motion-failed] .ch-root [style*='opacity'] {
   opacity: 1 !important;
   transform: none !important;
+}
+
+/* One floor for every Clubhouse field: an input that sets no ::placeholder of its own reads in the placeholder ink, not the
+   browser's grey (RC-2: Search courses was 1.8:1). :where() keeps it below every field's own rule. */
+:where([data-ui='clubhouse']) :is(input, textarea)::placeholder {
+  color: var(--ch-text-placeholder);
+  opacity: 1;
 }

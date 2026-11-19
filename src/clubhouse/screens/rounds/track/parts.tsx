@@ -5,7 +5,7 @@ import { Check, ChevronDown, Flag, Pencil } from 'lucide-react';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import { frontierIndex, playedBefore } from '@/lib/golf/round-session/play-order';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
-import { formatToPar } from '../../../lib/format';
+import { formatToPar, toParWords } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
@@ -90,12 +90,6 @@ export function Sec({
   );
 }
 
-/** A played hole against its par, in words: "2 over", "even", "1 under". */
-function toParWords(score: number, par: number): string {
-  const d = score - par;
-  return d === 0 ? 'even' : d > 0 ? `${d} over` : `${-d} under`;
-}
-
 /**
  * The hole strip under the top bar: each hole's score against par, the current
  * hole lit, the round's score to par at the end. A hole you can go to is a
@@ -134,7 +128,7 @@ export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: R
       {holes.map((h, i) => {
         const score = h.score;
         const cls = 'ch-rt-strip__h' + (i === current ? ' is-cur' : '') + (score != null ? ' is-done' : '') + (score != null && score < h.par ? ' is-under' : '');
-        const name = [`Hole ${h.number}`, score != null && `${score}`, score != null && toParWords(score, h.par), i === current && 'current'].filter(Boolean).join(', ');
+        const name = [`Hole ${h.number}`, score != null && `${score}`, score != null && toParWords(score - h.par, { short: true }), i === current && 'current'].filter(Boolean).join(', ');
         const inner = (
           <>
             <em>{h.number}</em>

@@ -8,7 +8,7 @@ import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { seasonLabelOf } from '../lib/season-start';
 import { isoDay } from '../lib/dates';
-import { deltaTone, halvesChange } from '../lib/stats-signal';
+import { deltaTone, halvesChange, mean } from '../lib/stats-signal';
 import { countsInAverages, hasHoleScores, isTotalOnlyCountable } from './round-scope';
 import { spanKeepsPractice, spanKeepsTotalOnly, type ChSpan } from './span';
 
@@ -207,9 +207,8 @@ export function formStatus(trend: number[]): ChForm {
   return tone === 'is-gain' ? 'improving' : tone === 'is-loss' ? 'slipping' : 'steady';
 }
 
-export function mean(xs: number[]): number | null {
-  return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
-}
+/** The one mean is `lib/stats-signal`'s (L-045); season keeps its name for the callers that import it from here. */
+export { mean };
 
 export interface ChPlayerSeason {
   /** 18-hole countable rounds this season (rounds posted as a total only included: they are scores). */

@@ -535,8 +535,9 @@ describe('Game detail · More detail', () => {
     expect([...streaks.querySelectorAll('dl.ch-gx-tiles > div')].map((d) => d.querySelector('dd')!.textContent)).toEqual(['4', '2', '6', '34', '42 yds']);
     const holes = [...panel('Toughest holes').querySelectorAll('.ch-gx-rank li')];
     expect(holes).toHaveLength(5);
-    expect(holes[0]!.textContent).toContain('Hole 7 · The Cardinal · Par 4');
-    expect(holes[0]!.textContent).toContain('+0.90');
+    expect(holes[0]!.textContent).toContain('Hole 7 · Par 4');
+    expect(holes[0]!.textContent).toContain('The Cardinal');
+    expect(holes[0]!.textContent).toContain('+0.9');
     expect(holes[0]!.querySelector('.ch-loss')).not.toBeNull();
   });
 

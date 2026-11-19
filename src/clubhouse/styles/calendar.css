@@ -191,12 +191,27 @@
   justify-content: flex-end;
   margin: 0 0 var(--ch-space-2);
 }
+/* L-034: the legend wraps inside the head instead of clipping at the grid's right edge. */
+.ch-wk__top > .ch-cal-legend {
+  min-width: 0;
+  max-width: 100%;
+  row-gap: 4px;
+}
 .ch-cal-legend i {
   display: inline-block;
   width: 8px;
   height: 8px;
   margin-right: 8px;
   border-radius: 50%;
+}
+/* The legend's markers are non-text marks and hold 3:1 in both themes (L-008): the tournament dot is the chart's deep green
+   by day and mint at night (green-800 is the page's own ground then), and travel a ring, as the month's marker is. */
+.ch-cal-legend i.ch-dot-tournament {
+  background: var(--ch-chart-gain);
+}
+.ch-cal-legend i.ch-dot-travel {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500);
 }
 .ch-dot-practice,
 .ch-dot-workout {
@@ -1874,7 +1889,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   top: calc(var(--ch-topbar-h) + var(--ch-space-2));
   /* A size container (the column is a fixed 340), so the change note reads the panel's width (F-0028). */
   container-type: inline-size;
-  max-height: calc(100vh - 110px);
+  max-height: calc(100dvh - 110px);
   overflow: auto;
   /* The panel scrolls itself (usePanelSmoothScroll): its ends don't hand the wheel on to the canvas behind it, and
      Lenis eases it with no native smooth scrolling underneath. */
@@ -2792,7 +2807,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   /* The toolbar's button takes the page to its end, where a row of the list opens this panel: it must fit between the
      top bar and the page's foot there (72px above, 64px and the frame's 8px below), or its Back link slides under the
      bar (at the 790px it has beside the other views, by 34px). */
-  max-height: calc(100vh - 144px);
+  max-height: calc(100dvh - 144px);
 }
 /* Closed, the panel is empty and has no place in the grid; it stays on the page as the live region that says what
    opens (CH-6802). */
@@ -3064,6 +3079,10 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   .ch-calm-head .ch-intro__row {
     align-items: center;
   }
+  /* L-069: the year follows the month on its line, quieter, as the desk title reads ("November 2026"). */
+  .ch-calm-title__yr {
+    margin-right: auto;
+  }
   /* B10.4: Today, when the page is away from it, at the right of the year's line; out of flow, so nothing moves. */
   /* The head opens the sheet with no rule above it, 8px in: the kit's intro does that itself now (ui.css .ch-intro). */
   .ch-calm-head {
@@ -3075,6 +3094,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     right: 0;
   }
   /* Row 81: the coach's More sits after the view switch, on its line. */
+  /* L-069: the chosen day's pill fits its weekday, date and dot, not the strip's 64px floor. */
+  .ch-calm .ch-wks__d {
+    min-height: calc(56 * var(--ch-type-k));
+    padding-block: 6px;
+    gap: 4px;
+  }
   .ch-calm-head .ch-intro__action {
     display: flex;
     align-items: center;
@@ -3656,9 +3681,11 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   }
   /* Owner, 2026-10-08: the week sits in the day's light. The sun's wash falls across the grid from its side, and the
      pinned days carry the same light so they don't read as a white card laid over it. */
+  /* L-069 (owner, 18 Nov 2026): one flat reading surface. The day's light wash read as a muddy band over the head and a
+     diagonal across the grid; the week now sits on the canvas, its seams the ledger's. */
   .ch-cal[data-canopy] .ch-wk.ch-cal-surface {
     border-radius: var(--ch-radius-lg);
-    background: var(--ch-light-surface);
+    background: none;
   }
   /* The head keeps to the week's own width. The card's 8px of side padding is gone here (.ch-wk below), and the head
      still reached 8px past the grid on each side to cover it: its own light lay over bare canvas there, and at night
@@ -3666,8 +3693,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   .ch-cal[data-canopy] .ch-wk__top {
     margin-inline: 0;
     padding-inline: 0;
-    background: var(--ch-light-surface), var(--ch-workspace);
-    background-size: 100% calc(var(--ch-hours, 15) * var(--ch-hh, 52px)), auto;
+    background: var(--ch-workspace);
   }
   .ch-cal[data-canopy] .ch-cal-body {
     position: relative;

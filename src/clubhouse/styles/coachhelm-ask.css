@@ -138,7 +138,8 @@
 .ch-ask-foot.is-home {
   max-width: 680px;
   margin-inline: auto;
-  padding: 0 16px;
+  /* L-031: its own breathing room under the board line and above the frame's edge. */
+  padding: var(--ch-space-3) 16px var(--ch-space-4);
 }
 /* Q2 A: on a desk the new chat's home fills the pane (coachhelm-ask-v2.css, .ch-ak-home), with this line under it. */
 .ch-ask:not(.is-phone) .ch-ask-scroll.is-home {
@@ -626,7 +627,7 @@
   height: 38px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-accent);
   color: var(--ch-text-on-accent);
   cursor: pointer;
@@ -640,8 +641,9 @@
   }
 }
 .ch-ask-cmp__send:disabled {
-  background: var(--ch-ivory-300);
-  color: var(--ch-bg-surface);
+  /* One disabled key everywhere, desk, phone and dock, light and dark: a muted fill and the tertiary ink (L-058). */
+  background: var(--ch-skel-base);
+  color: var(--ch-text-tertiary);
   cursor: default;
 }
 .ch-ask-cmp__send.is-stop {
@@ -743,8 +745,8 @@
   display: none;
 }
 /* Direction A (owner, 11 Nov): in a thread the composer is one ivory bar with a plain +, the field and the green
-   rounded-square send key. The + and the @ carry no ring; a hover or a press washes them. The send key keeps its green
-   when there is nothing to send yet, and its arrow steps back instead. */
+   rounded-square send key. The + and the @ carry no ring; a hover or a press washes them. The send key goes muted
+   when there is nothing to send yet (L-058: the green key with a dim arrow read as disabled at 2:1). */
 .ch-ask-cmp.is-dock .ch-ask-cmp__round,
 .ch-ask-cmp.is-phone .ch-ask-cmp__round {
   border-radius: var(--ch-radius-md);
@@ -775,10 +777,6 @@
 .ch-ask-cmp.is-dock .ch-ask-cmp__send:disabled,
 .ch-ask-cmp.is-phone .ch-ask-cmp__send:disabled {
   opacity: 1;
-}
-.ch-ask-cmp.is-dock .ch-ask-cmp__send:disabled .g-send,
-.ch-ask-cmp.is-phone .ch-ask-cmp__send:disabled .g-send {
-  opacity: 0.55;
 }
 /* The mention picker (cmdk, CH-13821): the roster and the stats, a list docked on the box. Above the box in a thread and
    on the phone, so it rises out of the composer the thumb is on. Under the desktop's new-chat box, which sits mid-page
@@ -919,7 +917,7 @@
   color: var(--ch-text-primary);
 }
 .ch-ask-drawer::backdrop {
-  background: var(--ch-scrim, rgb(20 20 18 / 0.36));
+  background: var(--ch-scrim, rgb(28 25 18 / 0.24));
   /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
   opacity: var(--ch-scrim-a, 1);
   transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
@@ -1326,11 +1324,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
     background: var(--ch-accent-press);
   }
 }
-.ch-ask-cmp__send:disabled {
-  background: var(--ch-accent);
-  color: var(--ch-text-on-accent);
-  opacity: 0.38;
-}
+
 @media (hover: hover) {
   .ch-ask-cmp__chip:not(.is-set):hover,
   .ch-ask-cmp__round:hover {

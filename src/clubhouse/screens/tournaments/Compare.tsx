@@ -211,6 +211,14 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
           <Timeline A={A} B={B} target={target} onTarget={setTarget} onChange={setSide} env={env} finished={finished} from={axis.from} to={axis.to} />
         </>
       )}
+      {/* L-002: with a side holding no rounds every metric is two empty wells; one line says which side, and the metrics
+          come back once both sides have rounds. */}
+      {!sumA.n || !sumB.n ? (
+        <p className="ch-tour-cmp-none" role="note">
+          {!sumA.n && !sumB.n ? 'Neither sample has rounds in it.' : `${!sumA.n ? 'A' : 'B'} has no rounds in it.`} {phone ? 'Edit the comparison' : 'Pick another sample above'} and the figures show side by side.
+        </p>
+      ) : (
+      <>
       {/* The well holds still; the row inside it scrolls and fades at the edge that hides a group, so a word is never cut
           with no sign of more, and the chosen group is always whole (ui/use-hscroll.ts). */}
       <div className="ch-tour-cmp-groups">
@@ -229,6 +237,8 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
           <CompareGrid keys={keys} a={figA} b={figB} labA={labA} labB={labB} onOpen={open} split={split} onSplit={(s) => commit({ split: s })} />
         )}
       </div>
+      </>
+      )}
     </>
   );
 

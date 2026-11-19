@@ -356,7 +356,20 @@ export function StoriesCard({
       <div className="ch">
         <h4>This week</h4>
         {/* Four zeros in a row say nothing (QA-8). */}
-        {brief?.counts && /[1-9]/.test(brief.counts) && <span className="meta">{brief.counts}</span>}
+        {brief?.counts && /[1-9]/.test(brief.counts) && (
+          <span className="meta">
+            {/* L-029: the non-zero counts only, each one whole, so the line never strands a "0". */}
+            {brief.counts
+              .split(' · ')
+              .filter((c) => !/^0\s/.test(c))
+              .map((c, i) => (
+                <span key={c} style={{ whiteSpace: 'nowrap' }}>
+                  {i > 0 && ' · '}
+                  {c}
+                </span>
+              ))}
+          </span>
+        )}
       </div>
       <div className="tiles">
         {all.map((s, i) => {
@@ -374,9 +387,13 @@ export function StoriesCard({
           // desk it closes the row, so every row's words start on one line whether it has a picture or not (W10, staging 11 Nov: of
           // three rows, the one picture pushed the middle row's words in, beside a target tick that read as a divider).
           const figure = (s.kind === 'read' ? roundOf(s) : s.kind === 'working' ? s.progress : null) ? (
-            <span className="tv">
-              <TileVisual story={s} round={roundOf(s)} />
-            </span>
+            <>
+              <span className="tv">
+                <TileVisual story={s} round={roundOf(s)} />
+              </span>
+              {/* L-029: the gauge says what its marks are. */}
+              {phone && s.kind === 'working' && <span className="tvk">Start · now · goal</span>}
+            </>
           ) : null;
           return (
             <button

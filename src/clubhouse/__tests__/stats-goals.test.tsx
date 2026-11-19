@@ -159,7 +159,7 @@ describe('Suggested goals', () => {
     goals.acceptGoalSuggestion.mockImplementation(() => new Promise((r) => (release = r)));
     const user = userEvent.setup();
     wrap(<GoalSuggestions items={items} error={false} />);
-    expect(screen.getByText('Aim for +0.10 over 30 days')).toBeTruthy();
+    expect(screen.getByText('Aim for +0.1 over 30 days')).toBeTruthy();
     const group = screen.getByRole('group', { name: 'Answer Strokes gained: approach' });
     await user.click(within(group).getByRole('button', { name: 'Accept' }));
     await expectCode('CH-5405', /Starting…/);

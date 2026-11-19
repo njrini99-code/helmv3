@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, Hourglass, House, Lock } from 'lucide-react';
+import { ChevronLeft, House, Lock, Signpost } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
@@ -26,7 +26,8 @@ export function NotRebuilt({ label, coachOnly = false }: { label: string; coachO
         <div className="ch-empty-page__in">
           <span className="ch-empty-page__art" aria-hidden="true">
             <span className="ch-empty-page__ic">
-              <Icon icon={coachOnly ? Lock : Hourglass} size={26} />
+              {/* L-071: an hourglass read as loading; this page is a place with nothing here, so a signpost back. */}
+              <Icon icon={coachOnly ? Lock : Signpost} size={26} />
             </span>
           </span>
           <h1 className="ch-empty-page__title">{coachOnly ? `Only coaches use ${label}` : `${label} isn’t available here`}</h1>
@@ -83,10 +84,14 @@ export function aliasSkeletonFor(pathname: string, role: string | null | undefin
   const coach = role === 'coach';
   const player = role === 'player';
   if (path === '/team') return coach ? 'settings-team' : player ? 'settings-golf' : null;
-  if (path === '/intelligence') return coach ? 'coachhelm' : null;
+  if (path === '/intelligence') return coach || player ? 'coachhelm' : null;
+  // L-004: a role's dead ends wait on the page they open.
+  if (path === '/recruiting') return player ? 'home' : null;
+  if (path === '/classes') return coach ? 'home' : null;
   if (path === '/courses') return coach ? 'home' : null;
   if (path === '/whats-new' || path === '/live') return player ? 'home' : null;
   if (/^\/roster\/[^/]+$/.test(path)) return coach ? 'stats-profile' : player ? 'roster' : null;
+  // A player's compare address (L-004) waits on the shell's plain skeleton: their own Stats' skeleton is not a table entry.
   if (path === '/coachhelm/genome/compare') return coach ? 'stats-team' : null;
   if (/^\/players\/[^/]+(\/.*)?$/.test(path) || /^\/coachhelm\/genome\/[^/]+$/.test(path)) return coach ? 'stats-profile' : null;
   if (path === '/coachhelm/chat') return coach ? 'ask' : player ? 'coachhelm' : null;

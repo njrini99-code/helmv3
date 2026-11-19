@@ -481,7 +481,7 @@ export function Updates({ data, covered = false, read, onOpen }: {
       ) : !data.rows.length ? (
         <EmptyState compact code="CH-10302" title="Nothing new" body="Posts, trips, tasks and qualifier moves show here as they happen." />
       ) : (
-        <ol>
+        <ol className={unread > 0 ? 'has-new' : undefined}>
           {data.rows.map((n: ChHubUpdate) => (
             <li key={n.id} className={isNew(n) ? 'is-new' : undefined}>
               {n.href ? (
@@ -510,7 +510,8 @@ function UpdateBody({ n }: { n: ChHubUpdate }) {
           {n.unread && <span className="ch-sr-only">New: </span>}
           {n.title}
         </b>
-        {n.body && <span>{n.body}</span>}
+        {/* L-011: a body that only repeats its title is not shown twice. */}
+        {n.body && !n.body.trim().toLowerCase().startsWith(n.title.trim().toLowerCase()) && <span>{n.body}</span>}
       </span>
       <em className="ch-num">{clk(n.when)}</em>
     </>

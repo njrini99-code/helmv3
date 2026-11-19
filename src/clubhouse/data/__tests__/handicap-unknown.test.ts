@@ -31,7 +31,7 @@ describe('the phone roster’s handicap words', () => {
   });
 
   it('read the handicap with its short name otherwise', () => {
-    expect(hcpWords(2.4)).toBe('2.4 HCP');
-    expect(hcpWords(-1.2)).toBe('+1.2 HCP');
+    expect(hcpWords(2.4)).toBe('2.4 Handicap');
+    expect(hcpWords(-1.2)).toBe('+1.2 Handicap');
   });
 });

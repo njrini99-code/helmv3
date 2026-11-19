@@ -1969,17 +1969,20 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   color: inherit;
   text-align: left;
 }
+/* L-071: the time and its AM/PM on one baseline, the suffix smaller (it stacked under the figure, so 9:00 and 10:30 never
+   lined up); the column is wide enough for "10:30 AM", and a 24-hour clock simply has no suffix. */
 [data-ch-crh='on'] .ch-cl-tr__t {
-  display: grid;
+  display: flex;
   flex: none;
-  gap: 2px;
-  width: calc(58 * var(--ch-type-k));
+  align-items: baseline;
+  gap: 4px;
+  width: calc(74 * var(--ch-type-k));
   white-space: nowrap;
 }
 [data-ch-crh='on'] .ch-cl-tr__t b {
   font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
 [data-ch-crh='on'] .ch-cl-tr__t em {
-  font: var(--ch-type-13);
+  font: var(--ch-type-12);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }

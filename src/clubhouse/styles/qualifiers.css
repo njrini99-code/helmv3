@@ -1090,8 +1090,9 @@
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
+/* L-048: the squad's sum is the section's plain text, not a well that reads as a button. */
 .ch-qf-readout {
-  padding: 12px 16px;
+  padding: 0;
   font: var(--ch-type-14);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
@@ -1108,15 +1109,16 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
+  /* With no well padding (L-048), the dot's whole 16px strip sits left of the text's edge. */
   margin-left: -16px;
-  clip-path: inset(0 0 0 18px);
+  clip-path: inset(0 0 0 16px);
 }
 .ch-qf-seg {
   white-space: nowrap;
 }
 .ch-qf-readout__in > .ch-qf-seg::before {
   display: inline-block;
-  width: 18px;
+  width: 16px;
   color: var(--ch-text-tertiary);
   text-align: center;
   content: '·';
@@ -1522,7 +1524,7 @@
     color: var(--ch-text-secondary);
   }
   .ch-qf--list .ch-qf-head__act .ch-btn {
-    width: 100%;
+    width: auto;
     height: 44px;
   }
   .ch-qf--list .ch-qf-eyebrow__k {
@@ -3383,6 +3385,11 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   font-weight: 600;
   letter-spacing: -0.02em;
 }
+.ch-qf-board .ch-qf-plate.is-under {
+  /* The board's plate has no ivory under it, so the on-ivory green of .ch-scoreboard (dark on dark at night, 1.95:1) is the
+     page's own under-par ink (L-022). */
+  color: var(--ch-score-under);
+}
 .ch-qf-board .ch-qf-plate.is-none {
   box-shadow: none;
   font-size: calc(17 * var(--ch-type-k));
@@ -3705,7 +3712,8 @@ html:not([data-fw-theme='dark']) .ch-qf :is(.ch-input, .ch-textarea)::placeholde
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
+  /* The unplayed ring is a non-text mark: the control border, 3:1 in both themes (L-008). */
+  box-shadow: inset 0 0 0 1.5px var(--ch-border-control);
 }
 .ch-qf-dots i.is-on {
   background: var(--ch-green-500);
@@ -3719,7 +3727,7 @@ html:not([data-fw-theme='dark']) .ch-qf :is(.ch-input, .ch-textarea)::placeholde
   text-align: center;
 }
 html[data-fw-theme='dark'] .ch-qf-dots i {
-  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.35);
+  box-shadow: inset 0 0 0 1.5px var(--ch-border-control);
 }
 
 /* A player's rounds beside the leaderboard: the side column runs the body's height so the panel can hold in view while

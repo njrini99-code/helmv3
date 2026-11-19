@@ -54,7 +54,7 @@ export interface RoundNotices {
  * callback that lists it, and re-run its effects), and `capture`, which runs an engine action and hands back what it
  * told the player while it ran instead of drawing the errors, so the action reports its own failure once, with its
  * own code and Retry. Outside a capture an error is drawn as it comes: nothing the engine says is dropped.
- * The conflict message is always CH-11902's toast, with Reload.
+ * The conflict message is CH-11902's toast, with Reload, until the screen's Reload banner is up (`conflictBanner`).
  */
 export function useRoundPorts() {
   const toast = useToast();
@@ -62,14 +62,21 @@ export function useRoundPorts() {
   toastRef.current = toast;
   // The actions running now: what the engine says is theirs to report, all of them if two overlap.
   const capturing = useRef<Set<RoundNotices>>(new Set());
+  // L-036 (owner-approved, 18 Nov 2026): once the amber Reload banner (CH-11902, ReloadBanner) is up it says this, so the
+  // toast is the signal only until then; the screen calls `conflictBanner(true)` and the toast leaves and stays away.
+  const bannerUp = useRef(false);
+  const conflictToast = useRef<AbortController | null>(null);
 
   return useMemo(() => {
     const showToast = (message: string, type: EngineToast) => {
       const running = capturing.current;
       if (isRoundConflictMessage(message)) {
         for (const n of running) n.conflict = true;
+        if (bannerUp.current) return;
         haptic('error');
-        toastRef.current(entryFailureToast('round-updated', { run: () => window.location.reload() }));
+        conflictToast.current?.abort();
+        conflictToast.current = new AbortController();
+        toastRef.current({ ...entryFailureToast('round-updated', { run: () => window.location.reload() }), signal: conflictToast.current.signal });
         return;
       }
       if (type === 'error' && running.size) {
@@ -98,6 +105,11 @@ export function useRoundPorts() {
         capturing.current.delete(notices);
       }
     }
-    return { ports, capture };
+    /** The Reload banner is up (or gone): while it is, the conflict toast is closed and not raised again. */
+    const conflictBanner = (on: boolean) => {
+      bannerUp.current = on;
+      if (on) conflictToast.current?.abort();
+    };
+    return { ports, capture, conflictBanner };
   }, []);
 }

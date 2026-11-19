@@ -13,7 +13,7 @@ import { asDesktop, asPhone, painted, resetAddress, showPlayer } from './_shs-ha
 
 /**
  * A coach's phone head for a player: class year, rounds this season, handicap. On a 390pt phone "Sophomore · 21 rounds this
- * season · 3.9 HCP" is wider than the 254pt beside the avatar; it broke inside a fact and began the second line with the dot.
+ * season · 3.9 Handicap" is wider than the 254pt beside the avatar; it broke inside a fact and began the second line with the dot.
  */
 beforeEach(() => {
   asPhone();
@@ -28,14 +28,14 @@ describe('a player’s head on a coach’s phone', () => {
   it('reads as one line of facts, each named with its window', async () => {
     showPlayer(PREVIEW_PLAYER_SHS);
     await painted('sg');
-    expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 21 rounds this season · 3.9 HCP');
+    expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 21 rounds this season · 3.9 Handicap');
   });
 
   it('each fact is one item that opens with its own separator, so a wrap falls between facts', async () => {
     showPlayer(PREVIEW_PLAYER_SHS);
     await painted('sg');
     const facts = [...document.querySelectorAll('.ch-spm-head p.ch-spm-facts > span')];
-    expect(facts.map((f) => f.textContent)).toEqual(['Sophomore', '· 21 rounds this season', '· 3.9 HCP']);
+    expect(facts.map((f) => f.textContent)).toEqual(['Sophomore', '· 21 rounds this season', '· 3.9 Handicap']);
     // The separator is its own slot inside the fact; the first fact has none.
     expect(facts.map((f) => f.querySelector('i')?.textContent ?? null)).toEqual([null, '· ', '· ']);
   });

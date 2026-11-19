@@ -121,7 +121,7 @@ describe('100101 Team Hub · Home’s widgets', () => {
 
   it('with no trip ahead, the dark tile is the week’s next event, and a coach can plan a trip', () => {
     show({ ...PREVIEW_HUB_COACH, trips: { rows: [], error: false } });
-    const next = screen.getByRole('region', { name: 'Next up' });
+    const next = screen.getByRole('region', { name: 'Up next' });
     expect(within(next).getByText('Short-game block')).toBeTruthy();
     expect(within(next).getByText('Today')).toBeTruthy();
     expect(within(next).getByRole('button', { name: 'Plan a trip' })).toBeTruthy();

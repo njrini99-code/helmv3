@@ -179,7 +179,8 @@ function PowerGroup({ initial, writes }: { initial: ChCoachHelmSettings; writes:
   const [asking, setAsking] = useState(false);
   return (
     <>
-      <Group title="CoachHelm" note="The AI coaching assistant on your dashboards.">
+      {/* L-087: the page is CoachHelm already; its first group says what it holds, not the page's name again. */}
+      <Group title="On and off" note="The AI coaching assistant on your dashboards.">
         {team && (
           <SwitchRow
             label="CoachHelm for the whole team"

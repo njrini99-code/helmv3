@@ -59,7 +59,8 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  /* The AA link ink, not the fill green: --ch-accent is 2.5:1 on the dark card (L-012). */
+  color: var(--ch-accent-ink);
   font: var(--ch-type-footnote);
   cursor: pointer;
 }

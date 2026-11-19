@@ -137,7 +137,8 @@ function manyFlagged(flagged: ChSublineRow[]): string {
     if (none.length === ranked.length) return `${ranked.length} players haven’t posted a round this season.`;
     if (none.length) {
       const tail = none.length === 1 ? `${firstName(none[0]!.name)} hasn’t posted one this season` : `${none.length} of them haven’t posted one this season`;
-      return `${ranked.length} players haven’t posted a round in ${floor}+ days; ${tail}.`;
+      // L-067: two sentences, so a narrow line breaks at the full stop, not mid-clause on a semicolon.
+      return `${ranked.length} players haven’t posted a round in ${floor}+ days. ${tail}.`;
     }
     // F-0016: a longest is named only when one player is strictly longest; all tied, the team's line says the one figure.
     if (longest.quietDays === floor) return `${ranked.length} players haven’t posted a round in ${floor} days.`;

@@ -121,7 +121,7 @@ function LiveViewDesk({ v }: { v: LiveViewState }) {
             <span data-ch-code="CH-16610">{LIVE_COPY.viewTitle}</span>
           </LargeTitle>
         </div>
-        <FreshnessChip feed={v.live.feed} failed={failed} updatedAt={v.live.updatedAt} onRefresh={v.live.refresh} />
+        <FreshnessChip feed={v.live.feed} failed={failed} idle={total === 0} updatedAt={v.live.updatedAt} onRefresh={v.live.refresh} />
       </header>
       <div className="ch-lv-tools">
         <LiveFilter v={v} />

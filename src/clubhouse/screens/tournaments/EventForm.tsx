@@ -244,14 +244,14 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
         <div className="ch-tour-lu-form__side">
           <Section id="ch-tour-form-summary" title={editing ? 'Changes' : 'Summary'}>
             <div className="ch-tour-lu-form__fields">
-              <p className="ch-tour-lu-form__receipt ch-well-soft">{editing ? 'Scores and the lineup stay as they are.' : receiptSentence({ state, convert: false, rsvp: false, qualifierName: qualifier?.name })}</p>
+              <p className="ch-tour-lu-form__receipt">{editing ? 'Scores and the lineup stay as they are.' : receiptSentence({ state, convert: false, rsvp: false, qualifierName: qualifier?.name })}</p>
             </div>
           </Section>
           <p className="ch-sr-only" role="status" aria-live="polite">
             {said}
           </p>
           <div className="ch-tour-lu-form__actions">
-            <Button variant={phone ? 'secondary' : 'ghost'} href={back}>
+            <Button variant="ghost" href={back}>
               Cancel
             </Button>
             <Button variant="primary" type="submit" busy={save.pending}>

@@ -429,7 +429,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
         sgHalves: roundHalves(weekKeys.map((wk) => inWeek(mineHoles, wk)), sgOf, 'sg'),
         scoreHalves: roundHalves(weekKeys.map((wk) => inWeek(mine, wk)), toParOf, 'score'),
         // The window's own mean (what the list is sorted by), not the last week's: strokes gained needs three rounds, as in the grid.
-        sgMean: effectiveCount(mineHoles, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(mineHoles, (r) => r.strokes_gained_total) : null,
+        sgMean: figureOver(mineHoles, (r) => r.strokes_gained_total).value,
         scoreMean: weightedMean(mine, (r) => r.total_score),
         toParMean: weightedMean(mine, toParOf),
       };

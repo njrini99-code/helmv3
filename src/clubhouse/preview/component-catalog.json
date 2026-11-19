@@ -18472,6 +18472,7 @@
         "ch-swipe__acts",
         "ch-swipe__c",
         "ch-switch",
+        "ch-switch__l",
         "ch-switch__thumb",
         "ch-switch__track",
         "ch-textarea",
@@ -23026,6 +23027,11 @@
           "scope": ".ch-rd .ch-rd-stage"
         },
         {
+          "name": "--ch-rd-halo",
+          "value": "var(--ch-stage-bg)",
+          "scope": ".ch-rd .ch-rd-stage"
+        },
+        {
           "name": "--ch-rd-under-a",
           "value": "var(--ch-score-birdie-fill)",
           "scope": ".ch-rd.is-phone .ch-rd-stage"
@@ -23088,6 +23094,11 @@
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(21 90 57 / 0.25)",
+          "scope": ".ch-rd.is-phone .ch-rd-stage"
+        },
+        {
+          "name": "--ch-rd-halo",
+          "value": "var(--ch-sheet-bg)",
           "scope": ".ch-rd.is-phone .ch-rd-stage"
         },
         {
@@ -25570,7 +25581,7 @@
         },
         {
           "name": "--ch-warning-600",
-          "value": "#8a5a0c",
+          "value": "#7a4e09",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27334,6 +27345,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-chart-flat-ink",
+          "value": "#ffffff",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-chart-track",
           "value": "#e3ddcf",
           "scope": "[data-ui='clubhouse']"
@@ -28134,6 +28150,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-scrim-deep",
+          "value": "rgb(28 25 18 / 0.38)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-on-dark-raised-bg",
           "value": "linear-gradient(180deg, #245740 0%, #1b4a33 100%)",
           "scope": "[data-ui='clubhouse']"
@@ -28516,6 +28537,11 @@
         {
           "name": "--ch-chart-flat",
           "value": "#a39d90",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-chart-flat-ink",
+          "value": "#151a16",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -29586,6 +29612,11 @@
         {
           "name": "--ch-scrim",
           "value": "rgb(2 6 4 / 0.58)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-scrim-deep",
+          "value": "rgb(2 6 4 / 0.66)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {

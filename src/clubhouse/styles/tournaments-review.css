@@ -434,8 +434,35 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
 }
+/* L-033: event and round side by side, so a round is one short block, not four stacked controls. */
 .ch-tour-links-row.is-phone .ch-tour-links-row__sel {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+/* L-033: the suggested match as one line; Change opens the pickers under it. A 44px target, no marker triangle. */
+.ch-tour-links-row__more > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--ch-target-min);
+  cursor: pointer;
+  list-style: none;
+}
+.ch-tour-links-row__more > summary::-webkit-details-marker {
+  display: none;
+}
+.ch-tour-links-row__more[open] > summary {
+  margin-bottom: 8px;
+}
+.ch-tour-links-row__more > .ch-tour-links-row__act {
+  margin-top: 8px;
+}
+.ch-tour-links-row__n.ch-tour-links-row__chg {
+  flex: none;
+  color: var(--ch-green-700);
+}
+.ch-tour-links-row__more[open] > summary .ch-tour-links-row__n.ch-tour-links-row__chg {
+  color: var(--ch-text-secondary);
 }
 .ch-tour-links-row__act {
   display: flex;
@@ -445,6 +472,13 @@
 }
 .ch-tour-links-row.is-phone .ch-tour-links-row__act {
   justify-content: stretch;
+}
+/* L-033: while a row's pickers are closed, its one line and "Not a tournament round" share a line under the name. */
+.ch-tour-links-row.is-phone:has(.ch-tour-links-row__more:not([open])) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.ch-tour-links-row.is-phone:has(.ch-tour-links-row__more:not([open])) > .ch-tour-links-row__who {
+  grid-column: 1 / -1;
 }
 .ch-tour-links-row.is-phone .ch-tour-links-row__act .ch-btn {
   flex: 1 1 0;

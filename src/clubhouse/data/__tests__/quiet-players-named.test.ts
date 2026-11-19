@@ -81,6 +81,6 @@ describe('the quietest players are named (DF-C-04)', () => {
 
   it('Home: the brief names them as Roster does', async () => {
     const home = await loadCoachHome({ teamId: 't1', coachName: 'Dana Whitfield' });
-    expect(home.subline).toBe('3 players haven’t posted a round in 30+ days; Ava hasn’t posted one this season. The others with enough rounds are on track.');
+    expect(home.subline).toBe('3 players haven’t posted a round in 30+ days. Ava hasn’t posted one this season. The others with enough rounds are on track.');
   });
 });
