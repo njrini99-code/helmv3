@@ -2379,7 +2379,7 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 .ch-htb .ch-htb-skt > div {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-htb .ch-htb-skf {
   flex-direction: column;

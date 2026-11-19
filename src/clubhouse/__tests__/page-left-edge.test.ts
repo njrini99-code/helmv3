@@ -8,7 +8,7 @@ const shell = readFileSync(join(process.cwd(), 'src/clubhouse/styles/shell.css')
 
 describe('one left edge for desk pages (W40)', () => {
   it('the shared edge rule takes Practice’s pages', () => {
-    const rule = shell.match(/\[data-ui='clubhouse'\] main:is\(([^)]*)\):not\(\[data-ch='your-week'\]\) \{\s*margin-inline: max\(0px, calc\(\(100vw - var\(--ch-sidebar-w\) - var\(--ch-measure-wide\)\) \/ 2\)\) auto;/);
+    const rule = shell.match(/\[data-ui='clubhouse'\] main:is\(([^)]*)\):not\(\[data-ch='your-week'\](?:, \[data-ch-wait='your-week'\])?\) \{\s*margin-inline: max\(0px, calc\(\(100vw - var\(--ch-sidebar-w\) - var\(--ch-measure-wide\)\) \/ 2\)\) auto;/);
     expect(rule).not.toBeNull();
     expect(rule![1]).toContain('.ch-prc');
   });
