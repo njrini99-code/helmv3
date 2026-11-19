@@ -46,8 +46,8 @@ describe('a round opened from Team rounds names its Back on the first paint (por
 
   it('the dashboard route reads ?from=rounds and hands it to the review', () => {
     const page = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx'), 'utf8');
-    expect(page).toContain("fromRounds={query?.from === 'rounds'} />");
+    expect(page).toContain("fromRounds={query?.from === 'rounds'}");
     const route = readFileSync(join(process.cwd(), 'src/clubhouse/routes/round-review.tsx'), 'utf8');
-    expect(route).toContain('fromRounds={fromRounds} />');
+    expect(route).toContain('fromRounds={fromRounds}');
   });
 });

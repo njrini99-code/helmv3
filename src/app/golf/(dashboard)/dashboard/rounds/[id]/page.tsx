@@ -61,6 +61,6 @@ export default async function RoundDetailPage({
   const query = await searchParams;
   const raw = query?.hole;
   const hole = Number(Array.isArray(raw) ? raw[0] : raw);
-  // Team rounds' link says where it came from, so Back is named on the server render too.
-  return <ClubhouseRoundReviewRoute id={id} hole={Number.isInteger(hole) && hole >= 1 && hole <= 18 ? hole : null} fromRounds={query?.from === 'rounds'} />;
+  // Team rounds' and Home's links say where they came from, so Back is named on the server render too.
+  return <ClubhouseRoundReviewRoute id={id} hole={Number.isInteger(hole) && hole >= 1 && hole <= 18 ? hole : null} fromRounds={query?.from === 'rounds'} fromHome={query?.from === 'home'} />;
 }
