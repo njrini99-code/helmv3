@@ -233,7 +233,8 @@ function CalendarWords({ prefix, text }: { prefix: string; text: string }) {
       {prefix + text.slice(0, at)}
       <span className="ch-rec-cal__more">
         <span className="ch-sr-only"> · </span>
-        {text.slice(at + 3)}
+        {/* Its own line, so it starts as a sentence does ("In-person contact for …"). */}
+        {text.charAt(at + 3).toUpperCase() + text.slice(at + 4)}
       </span>
     </>
   );
