@@ -10,6 +10,8 @@ import '../../styles/coachhelm.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { AskSkeleton } from './chat/AskSkeleton';
 import { CoachHelmHeldSwitch } from './SwitchStrip';
+import { YourWeekSkeleton } from './file/YourWeekSkeleton';
+import { TeamBoardSkeleton } from './team/TeamBoardSkeleton';
 import { DiveSkeleton, StandingSkeleton } from './views/Skeletons';
 
 /** One text line's box at its loaded height, with the bar centred in it (the phone intro's lines). */
@@ -259,7 +261,11 @@ export function CoachHelmRouteSkeleton() {
   }
   if (which === 'standing') return <CoachHelmHeldSwitch who="player" active="standing"><StandingSkeleton /></CoachHelmHeldSwitch>;
   if (which === 'deep-dive') return <CoachHelmHeldSwitch who="player" active="deep-dive"><DiveSkeleton /></CoachHelmHeldSwitch>;
-  if (which === 'coach') return view ? <CoachHelmSkeleton view="coach" /> : <CoachHelmHeldSwitch who="coach" active="board"><CoachHelmSkeleton view="coach" /></CoachHelmHeldSwitch>;
+  // The coach's Team page is the drawn hole (TeamBoard): its one skeleton is the board's own, the one the route's Suspense and the
+  // switch draw, so the page shows one shape from the tap until the board lands (it drew the retired board's shape here, then
+  // swapped to this one after about 0.8 s). The coach's other views (the Track record, the briefs, Team reads) keep theirs.
+  if (which === 'coach') return view ? <CoachHelmSkeleton view="coach" /> : <CoachHelmHeldSwitch who="coach" active="board"><TeamBoardSkeleton /></CoachHelmHeldSwitch>;
   if (view === 'ask') return <CoachHelmHeldSwitch who="player" active="ask"><AskSkeleton player /></CoachHelmHeldSwitch>;
-  return view && view !== 'board' ? <CoachHelmSkeleton view="player" /> : <CoachHelmHeldSwitch who="player" active="board"><CoachHelmSkeleton view="player" /></CoachHelmHeldSwitch>;
+  // The player's Board is "Your week" (YourWeek): its own skeleton, the one the route's Suspense and the switch draw.
+  return view && view !== 'board' ? <CoachHelmSkeleton view="player" /> : <CoachHelmHeldSwitch who="player" active="board"><YourWeekSkeleton /></CoachHelmHeldSwitch>;
 }

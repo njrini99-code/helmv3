@@ -6,7 +6,7 @@ import { useBusy } from '../../lib/use-busy';
 import { useHelmViews } from '../../shell/context';
 import { AskSkeleton } from './chat/AskSkeleton';
 import { COACHHELM_HREF, type CoachHelmView } from './chat/SubTabs';
-import { CoachHelmSkeleton } from './CoachHelmSkeleton';
+import { YourWeekSkeleton } from './file/YourWeekSkeleton';
 import { CoachHelmSwitchOff, CoachHelmSwitchStrip } from './SwitchStrip';
 import { TeamBoardSkeleton } from './team/TeamBoardSkeleton';
 import { useViewSwitch } from './use-view-switch';
@@ -21,7 +21,7 @@ export function switchSkeleton(who: 'coach' | 'player', view: CoachHelmView | Pl
   if (view === 'ask') return <AskSkeleton player />;
   if (view === 'standing') return <StandingSkeleton />;
   if (view === 'deep-dive') return <DiveSkeleton />;
-  return <CoachHelmSkeleton view="player" />;
+  return <YourWeekSkeleton />;
 }
 
 export type CoachHelmSwitchFrameProps = { who: 'coach'; active: CoachHelmView; children: ReactNode } | { who: 'player'; active: PlayerHelmTab; children: ReactNode };

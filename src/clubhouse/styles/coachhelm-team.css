@@ -2356,3 +2356,45 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 .ch-htb .card > .notice:first-child {
   padding-top: 16px;
 }
+
+/* The Team page in waiting (TeamBoardSkeleton): the loaded cards' own classes hold their places; these only draw the waiting
+   parts. A card head in waiting is the loaded head's box: 16px over and 8px under the title's 22pt line. */
+.ch-htb .ch-htb-skh {
+  align-items: center;
+  min-height: calc(24px + 22 * var(--ch-type-k, 1px));
+}
+.ch-htb.is-desk .ch-htb-skt {
+  min-height: 102px;
+}
+@media (min-width: 1680px) {
+  .ch-htb.is-desk .ch-htb-skt {
+    min-height: 79px;
+  }
+}
+.ch-htb .ch-htb-skn {
+  display: flex;
+  align-items: center;
+  min-height: 17px;
+}
+.ch-htb .ch-htb-skt > div {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ch-htb .ch-htb-skf {
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 36px;
+}
+.ch-htb .ch-htb-skplot {
+  /* The huddle's plot follows the rail's width as the drawing does (WebKit: the card 389px at a 346px rail, 428px at 394px). */
+  aspect-ratio: 100 / 92;
+  margin: 4px 16px 16px;
+  border-radius: var(--ch-radius-sm);
+}
+/* A skeleton that continues one already on screen does not wait the busy delay again: the route's Suspense fallback after
+   loading.tsx (data-skel="chained"), and a card whose read is still on the way inside a board that has landed. */
+.ch-htb[data-skel='chained'] .skl,
+.ch-htb:not([aria-busy='true']) [data-ch-team-wait] .skl {
+  animation: none;
+}

@@ -21,6 +21,7 @@ import { ReadPage, ReadSkeleton } from '../screens/coachhelm/read/ReadPage';
 import { emptyTeamBoard, loadCoachTeamBoard } from '../data/coachhelm-team';
 import { TeamBoard } from '../screens/coachhelm/team/TeamBoard';
 import { TeamBoardSkeleton } from '../screens/coachhelm/team/TeamBoardSkeleton';
+import { YourWeekSkeleton } from '../screens/coachhelm/file/YourWeekSkeleton';
 import { loadCoachHelmGate, loadPlayerHelmGate } from '../data/coachhelm';
 import type { ChCoachHelmData } from '../data/coachhelm-shape';
 import { loadAskPlayer, loadAskCoachHelm } from '../data/coachhelm-chat';
@@ -233,7 +234,7 @@ function coachPlayerSkeleton(view: CoachPlayerViewName, first: string | null, ch
 function viewSkeleton(view: PlayerHelmView): ReactNode {
   if (view === 'standing') return <StandingSkeleton chained />;
   if (view === 'deep-dive') return <DiveSkeleton chained />;
-  return <CoachHelmSkeleton view="player" chained />;
+  return <YourWeekSkeleton chained />;
 }
 
 /**
@@ -314,7 +315,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
     const ask = view === 'ask';
     return (
       <CoachHelmSwitchFrame who="coach" active={ask ? 'ask' : 'board'}>
-        <Suspense fallback={ask ? <AskSkeleton chained thread={typeof c === 'string' && c.length > 0} /> : <TeamBoardSkeleton />}>
+        <Suspense fallback={ask ? <AskSkeleton chained thread={typeof c === 'string' && c.length > 0} /> : <TeamBoardSkeleton chained />}>
           <CoachHelmView coachId={team.coachId} teamId={team.teamId} ask={ask} conversationId={c} initialPlayer={player} initialInsight={open === 'read' && typeof insight === 'string' ? insight : undefined} />
         </Suspense>
       </CoachHelmSwitchFrame>
