@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkSource, checkProgress, checkCatalog, checkScreens, readRebuiltRoutes, checkServerOnlyImports, offToneDeclarations } from '../check.mjs';
+import { checkSource, checkProgress, checkCatalog, checkScreens, readRebuiltRoutes, checkServerOnlyImports, offToneDeclarations, checkLabelsAgainstNav, checkGolfRoutesClubhouseOnly } from '../check.mjs';
 
 test('flags Fairway imports and tokens', () => {
   const v = checkSource('src/clubhouse/x.tsx', "import { Button } from '@/components/fairway/controls';\nconst s = { color: 'var(--fw-ink)' };");
@@ -210,4 +210,37 @@ test('a gain or loss tone paints only with the chart pair; its shape is not pain
   assert.deepEqual(offToneDeclarations('.ch-x.is-loss', 'border-top-color: var(--ch-chart-loss); border: 1px solid var(--ch-chart-loss)'), []);
   assert.deepEqual(offToneDeclarations('.ch-x.is-gain', 'color: var(--ch-green-600); border-inline-start: 2px solid #fff'), ['color: var(--ch-green-600)', 'border-inline-start: 2px solid #fff']);
   assert.deepEqual(offToneDeclarations('.ch-x:not(.is-gain)', 'color: var(--ch-ink-400)'), []);
+});
+
+test('routing labels agree with CH_REBUILT_ROUTES', () => {
+  const rebuilt = { coach: new Set(['/golf/dashboard/live', '/golf/dashboard/messages', '/golf/dashboard/old']), player: new Set(['/golf/dashboard/live', '/golf/dashboard/classes']) };
+  const manifests = [
+    { screens: [{ route: '/golf/dashboard/live', audience: 'coach' }] },
+    { screens: [{ route: '/golf/dashboard/messages', audience: 'shared' }, { route: '/golf/dashboard/messages', view: '?x=1', audience: 'coach' }] },
+    { screens: [{ route: '/golf/dashboard/classes', audience: 'player' }] },
+  ];
+  const v = checkLabelsAgainstNav(manifests, rebuilt, [{ route: '/golf/dashboard/old' }]);
+  assert.deepEqual(v, [
+    '/golf/dashboard/live: labelled coach, but CH_REBUILT_ROUTES.player lists it',
+    '/golf/dashboard/messages: labelled shared, but only CH_REBUILT_ROUTES.coach lists it',
+  ]);
+});
+
+test('GolfHelm routes outside admin draw Clubhouse only', () => {
+  const good = "'use client';\nimport { RouteErrorBoundary } from '@/components/errors';\nimport { GateError } from '@/clubhouse/screens/auth/GateError';\nexport default function E(p) { return <RouteErrorBoundary {...p} route=\"/golf/join\" outsideShell={GateError} />; }";
+  const v = checkGolfRoutesClubhouseOnly({
+    'src/app/golf/join/error.tsx': good,
+    'src/app/golf/(auth)/demo/error.tsx': good.replace(' outsideShell={GateError}', ''),
+    'src/app/golf/layout.tsx': "import { AvatarToneProvider } from '@/components/fairway/controls/avatar';",
+    'src/app/golf/not-found.tsx': "export { default } from '../not-found';",
+    'src/app/golf/(auth)/x/page.tsx': '<div className="bg-canvas font-fw-sans" />\n// a comment naming bg-canvas is fine',
+    'src/app/golf/admin/crm/page.tsx': "import { Card } from '@/components/fairway/controls';",
+  });
+  assert.deepEqual(v, [
+    'src/app/golf/(auth)/demo/error.tsx: a GolfHelm error boundary must pass outsideShell={GateError} (src/clubhouse/screens/auth/GateError.tsx)',
+    'src/app/golf/layout.tsx: imports @/components/fairway/controls/avatar; GolfHelm routes draw Clubhouse only (src/clubhouse)',
+    'src/app/golf/not-found.tsx: imports ../not-found; GolfHelm routes draw Clubhouse only (src/clubhouse)',
+    'src/app/golf/(auth)/x/page.tsx: uses the Fairway class bg-canvas; GolfHelm routes draw Clubhouse only',
+    'src/app/golf/(auth)/x/page.tsx: uses the Fairway class font-fw-sans; GolfHelm routes draw Clubhouse only',
+  ]);
 });

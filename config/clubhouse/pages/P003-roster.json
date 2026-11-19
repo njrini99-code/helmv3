@@ -10,6 +10,15 @@
     "coach",
     "player"
   ],
+  "screens": [
+    {
+      "route": "/golf/dashboard/roster",
+      "audience": "shared",
+      "name": "Roster",
+      "coach": "src/clubhouse/screens/roster/Roster.tsx#Roster",
+      "player": "src/clubhouse/screens/roster/TeamRoster.tsx#TeamRoster"
+    }
+  ],
   "semanticFeatures": [
     "roster_team"
   ],

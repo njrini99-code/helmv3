@@ -33,7 +33,7 @@ free number when its catalog is started, added here and in `CATALOG_PAGE`
 | 14 | Recruiting (coach) |
 | 15 | Auth: sign in, welcome, sign up and onboarding (signed out, then new to the team) |
 | 16 | Tournaments (P016: season home, event desk, review, history, link inbox, compare, event form, lineup, live round; coach and player), and the Live rounds rows (P-6: CH-16600 to CH-16677 and CH-16680 to CH-16685, which follow the plan's copy deck, not the kinds below) |
-| 17, 18, … | Pages after these, in the order their catalogs are started |
+| 17, 18, … | Pages after these, in the order their catalogs are started. **17 is already spoken for in code**: the practice design's own error and log codes, `CH-17001` to `CH-17505` (25 distinct codes in `src/app/golf/actions/practice-*.ts`, `src/lib/golf/practice-{errors,fanout}.ts` and `src/lib/coachhelm/v3/practice-plan/model.ts`), have the shape of a page 17 catalog but are not catalog rows. P017 Practice has no catalog file (its rows are CH-13080 and up in `coachhelm.md`); `pages/P017-practice/PAGE.md` maps one numbering to the other. Whether page 17's block is released to the next catalog, or Practice's design codes are renumbered, is an owner decision, left open |
 
 | Second digit | Kind | What it means |
 | --- | --- | --- |
@@ -47,6 +47,10 @@ free number when its catalog is started, added here and in `CATALOG_PAGE`
 | 7 | Haptic | A tap felt in the iOS app |
 | 8 | Accessibility | Keyboard, screen reader and contrast behaviour |
 | 9 | Network and UX | Offline, slow, and signals of a confusing experience |
+
+A code in a comment may be a range, not a row: `CH-166xx`, `CH-60xx`, `CH-614x`
+and `CH-153xx` name a block of a catalog, and a two-digit `CH-01` to `CH-24` in
+a chart note is a tag, not a catalog code (a search for `CH-\d+` finds both).
 
 So `CH-8001` is Settings, error toast, number one, and `CH-09001` is the
 ninth page's first error toast. A new page's catalog starts from

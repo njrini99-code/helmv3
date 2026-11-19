@@ -231,7 +231,8 @@ const COACH_ROUNDS_STATS_TABS: readonly GolfSubTab[] = [
   {
     id: 'team-stats',
     label: surfaceName('stats-team'),
-    href: '/golf/dashboard/stats/team',
+    // Team stats is /stats for a coach (GAP-R-10); /stats/team is only a redirect there now.
+    href: '/golf/dashboard/stats',
     icon: IconChartBar,
     matchPrefixes: ['/golf/dashboard/stats'],
   },

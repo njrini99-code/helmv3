@@ -211,8 +211,8 @@ None.
   `StatsFilter.tsx`, `WindowSwitch.tsx` (a Custom pill, `changeWords`) and
   `links.ts` are shared with Team stats (P004). The page file also passes the
   address through (`src/app/golf/(dashboard)/dashboard/stats/page.tsx`);
-  `stats/team/page.tsx` still renders the route with no parameters (the old
-  address has no filter).
+  the old address `/stats/team` is a redirect to `/stats` (`next.config.mjs`;
+  its page file was deleted on 2026-11-18).
 - Holes (2026-09-30): the filter carries `holes` (18, 9 or all).
   `data/stats-weight.ts` is pure and shared with Team stats: `weightedMean` (a
   round weighs holes over 18), `effectiveRounds` / `effectiveCount` (the floors
