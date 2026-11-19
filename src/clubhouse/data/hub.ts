@@ -1035,7 +1035,10 @@ export function formatters(tz: string, now: Date) {
       if (n === 0) return 'Today';
       if (n === 1) return 'Tomorrow';
       if (n === -1) return 'Yesterday';
-      return `${wdFmt.format(utcDay(date))} ${utcDay(date).getUTCDate()}`;
+      // Within a week either side the weekday names it ("Wed 22"); further out it takes the month, as `ago` and
+      // relativeTime (lib/dates.ts) do past a week: "Jul 22" (audit 2026-11-18: an overdue task read "Wed 22" for 22 July).
+      if (Math.abs(n) < 7) return `${wdFmt.format(utcDay(date))} ${utcDay(date).getUTCDate()}`;
+      return shortFmt.format(utcDay(date));
     },
     ago: (iso: string) => {
       const date = ymd(new Date(iso));

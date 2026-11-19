@@ -2229,8 +2229,10 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
   stroke:none;
   pointer-events:all;
 }
+/* The Modal panel already pads the home-indicator inset on the phone (controls.css): adding it here again, under 40px,
+   left about 110px empty under a one-link peek on an iPhone (audit 2026-11-18). One gutter, as the head's. */
 .ch-htb-sheet .ins {
-  padding-bottom:calc(40px + env(safe-area-inset-bottom));
+  padding-bottom:20px;
 }
 .ch-htb .insp .ins {
   padding-top:24px;

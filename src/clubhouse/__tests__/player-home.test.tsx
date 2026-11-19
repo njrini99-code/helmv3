@@ -111,7 +111,7 @@ describe('Player Home · desktop (Player - Home.html)', () => {
   it('20103 Your latest round opens its review (Open recap) once the round has a real id', () => {
     const [first, ...others] = PREVIEW_PLAYER_HOME.latest.rounds;
     show(home({ latest: { ...PREVIEW_PLAYER_HOME.latest, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }));
-    expect(screen.getByRole('link', { name: 'Open recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
+    expect(screen.getByRole('link', { name: 'Open recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c?from=home');
     expect(screen.queryByRole('link', { name: 'My stats' })).toBeNull();
   });
 
@@ -172,7 +172,7 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
   it('20103 on the phone Your latest round opens its review once the round has a real id', () => {
     const [first, ...others] = PREVIEW_PLAYER_HOME.latest.rounds;
     show(home({ latest: { ...PREVIEW_PLAYER_HOME.latest, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }));
-    expect(screen.getByRole('link', { name: /Open recap/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
+    expect(screen.getByRole('link', { name: /Open recap/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c?from=home');
   });
 
   it('CH-2309 nothing ahead: the empty card, with no Add event (a player can’t add team events)', () => {

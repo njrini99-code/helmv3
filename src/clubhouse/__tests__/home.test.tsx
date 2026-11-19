@@ -985,7 +985,7 @@ describe('Home · the phone, the page’s own contracts', () => {
     const [first, ...others] = PREVIEW_HOME.latestRounds.rounds;
     wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }} now={PREVIEW_HOME_NOW} />);
     const latest = screen.getByRole('heading', { name: 'Latest rounds' }).closest('section') as HTMLElement;
-    expect(within(latest).getByRole('link', { name: 'Open recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
+    expect(within(latest).getByRole('link', { name: 'Open recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c?from=home');
     expect(within(latest).queryByRole('link', { name: /stats/ })).toBeNull();
   });
 

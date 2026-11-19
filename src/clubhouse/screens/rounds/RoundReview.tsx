@@ -457,6 +457,7 @@ export function RoundReview({
   typeEdit = null,
   initialHole = null,
   fromRounds = false,
+  fromHome = false,
 }: {
   review: ChRoundReview;
   /** P-7 stage 3, streamed by the server after the review (it never rejects); a fixture puts it in `review.history` instead. */
@@ -465,6 +466,8 @@ export function RoundReview({
   /** P-7: `?hole=`, a hole to open on. */ initialHole?: number | null;
   /** `?from=rounds`, Team rounds' own link: the server knows where Back goes, so it is right on the first paint and after a reload. */
   fromRounds?: boolean;
+  /** `?from=home`, Home's round links: Back is named Home and steps back there (audit 2026-11-18: it said Stats). */
+  fromHome?: boolean;
 }) {
   const [streamed, setStreamed] = useState<{ from: PromiseLike<ChReviewHistory | null>; history: ChReviewHistory | null } | null>(null);
   useEffect(() => {
@@ -516,7 +519,7 @@ export function RoundReview({
     () => fromRounds || openedFromLibrary(r.id),
     () => fromRounds,
   );
-  const back = coach && fromList ? { label: 'Rounds', href: '/golf/dashboard/rounds' } : reviewBack(r);
+  const back = fromHome ? { label: 'Home', href: '/golf/dashboard' } : coach && fromList ? { label: 'Rounds', href: '/golf/dashboard/rounds' } : reviewBack(r);
   const insight = useMemo(() => headline(r), [r]);
   const points = useMemo(() => flow(r.holes), [r.holes]);
   // P-7: the stretch that turned the round, drawn on the arc and said in its note.
@@ -569,7 +572,7 @@ export function RoundReview({
   // (screens/rounds/return-state.ts), and so does a coach's from Team rounds; anywhere else (a deep link, a reload in a fresh tab, a coach's Stats) it goes to the address as before.
   // A tab with no history behind it (a copied note in a new tab) has nothing to step back to: it goes to the address.
   const stepBack = () => {
-    if (window.history.length <= 1 || !openedFromLibrary(r.id)) return false;
+    if (window.history.length <= 1 || !(fromHome || openedFromLibrary(r.id))) return false;
     router.back();
     return true;
   };
@@ -599,7 +602,7 @@ export function RoundReview({
 
   return (
     <main className={'ch-rv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rv-title" data-canopy={phone ? undefined : ''}>
-      {phone && <PhoneTop heading={false} title="Round" back={{ label: coach && !fromList ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
+      {phone && <PhoneTop heading={false} title="Round" back={{ label: fromHome ? 'Home' : coach && !fromList ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
       {!phone && (
         <Link
           href={back.href}

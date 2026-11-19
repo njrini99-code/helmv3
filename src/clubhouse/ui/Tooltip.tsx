@@ -122,6 +122,9 @@ export function Tooltip({
     onFocus: (e) => {
       own.onFocus?.(e);
       if (!focusIsKeyboard(e.currentTarget)) return;
+      // Focus code handed back (a menu or dialog closing onto its trigger, lib/focus-quietly.ts) is not someone arriving on
+      // the control: on a phone it showed the tip after Escape closed a menu (audit 2026-11-18).
+      if (e.currentTarget.dataset.chPeekQuiet !== undefined) return;
       trigger.current = e.currentTarget;
       tipClock.request(show, false);
     },

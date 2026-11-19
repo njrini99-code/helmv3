@@ -20,7 +20,7 @@ import '../styles/rounds.css';
  * doesn't exist, get the same "not here" page, so the page never confirms
  * that someone else's round exists.
  */
-export async function ClubhouseRoundReviewRoute({ id, hole = null, fromRounds = false }: { id: string; hole?: number | null; fromRounds?: boolean }) {
+export async function ClubhouseRoundReviewRoute({ id, hole = null, fromRounds = false, fromHome = false }: { id: string; hole?: number | null; fromRounds?: boolean; fromHome?: boolean }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
   // The round is read while the team resolves (the team only says who is looking, not which round), so the review pays one read, not two in a row.
@@ -43,7 +43,7 @@ export async function ClubhouseRoundReviewRoute({ id, hole = null, fromRounds = 
   if (result.kind === 'error') return <ReviewLoadFailed />;
   if (result.kind === 'notFound') return <RoundNotFound coach={viewer?.role === 'coach'} />;
   // P-7 stage 3 streams in after the review (the promise never rejects), so the review is not held for its two reads.
-  return <RoundReview review={result.review} history={loadReviewHistory(result.historyFrom)} typeEdit={result.typeEdit} initialHole={hole} fromRounds={fromRounds} />;
+  return <RoundReview review={result.review} history={loadReviewHistory(result.historyFrom)} typeEdit={result.typeEdit} initialHole={hole} fromRounds={fromRounds} fromHome={fromHome} />;
 }
 
 /** CH-11307: a round that answered with nothing (deleted, or a wrong link). Exported for the preview (GAP-S-29). */

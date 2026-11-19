@@ -172,7 +172,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                 </div>
                 {roundHref(r.id, mine ? 'player' : 'coach') ? (
                   // The board's "Open recap": the round's own review.
-                  <Button href={roundHref(r.id, mine ? 'player' : 'coach')!} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
+                  <Button href={roundHref(r.id, mine ? 'player' : 'coach')!} ahead variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
                     Open recap
                   </Button>
                 ) : mine ? (

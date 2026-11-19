@@ -9,5 +9,8 @@ export const postRoundHref = () => rebuiltHref('/golf/dashboard/rounds/new', 'pl
 /** A player's own stats (rebuilt for players): where the latest round's link goes when its review isn't rebuilt for the viewer. */
 export const MY_STATS = '/golf/dashboard/stats';
 
-/** A round's review (the board's "Open recap"), once it is rebuilt for this role; null keeps the Stats link. */
-export const roundHref = (roundId: string, role: 'coach' | 'player') => rebuiltHref(`/golf/dashboard/rounds/${roundId}`, role);
+/**
+ * A round's review (the board's "Open recap"), once it is rebuilt for this role; null keeps the Stats link. `?from=home`
+ * names the review's Back "Home" and steps back here (audit 2026-11-18: a coach's said "Stats").
+ */
+export const roundHref = (roundId: string, role: 'coach' | 'player') => rebuiltHref(`/golf/dashboard/rounds/${roundId}?from=home`, role);

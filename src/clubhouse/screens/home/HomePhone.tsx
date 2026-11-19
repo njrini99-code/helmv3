@@ -449,7 +449,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
             )}
             {/* The board's "Round recap": the round's own review; the player's stats when it isn't rebuilt. */}
             {recap ? (
-              <Button variant="primary" rightIcon={ArrowRight} href={recap}>
+              <Button variant="primary" rightIcon={ArrowRight} href={recap} ahead>
                 Round recap
               </Button>
             ) : (
