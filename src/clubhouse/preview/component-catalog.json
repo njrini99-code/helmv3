@@ -15079,6 +15079,7 @@
         "ch-sheet",
         "ch-sr-only",
         "ch-sr-only--focusable",
+        "ch-surface--feature",
         "ch-textarea",
         "ch-th-act",
         "ch-well",
@@ -15105,6 +15106,11 @@
           "name": "--ch-scrollbar-track",
           "value": "Canvas",
           "scope": "@media (forced-colors: active) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-border-focus",
+          "value": "var(--ch-border-focus-on-dark)",
+          "scope": ".ch-root :where(.ch-surface--feature, .ch-scoreboard, [data-on-green])"
         },
         {
           "name": "--ch-text-secondary",
@@ -18918,7 +18924,6 @@
         "ch-hm-nextrow__k",
         "ch-hm-nextrow__when",
         "ch-hm-none",
-        "ch-hm-none__add",
         "ch-hm-none__chip",
         "ch-hm-none__ic",
         "ch-hm-none__q",
@@ -25644,6 +25649,26 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-tip-bg",
+          "value": "#1f2420",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tip-ink",
+          "value": "#f4eedd",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tip-ink-soft",
+          "value": "rgb(244 238 221 / 0.78)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-on-champagne-ink",
+          "value": "#141412",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-stage-ink-soft",
           "value": "rgb(244 238 221 / 0.62)",
           "scope": "[data-ui='clubhouse']"
@@ -26135,7 +26160,7 @@
         },
         {
           "name": "--ch-board-bg",
-          "value": "radial-gradient(120% 140% at 85% -20%, rgb(123 199 154 / 0.14), transparent 55%),\n    linear-gradient(180deg, #0e3d28 0%, var(--ch-field-green) 100%)",
+          "value": "linear-gradient(180deg, #0e3d28 0%, var(--ch-field-green) 100%)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -28280,7 +28305,7 @@
         },
         {
           "name": "--ch-well-bg",
-          "value": "linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%)",
+          "value": "#ddd8ca",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -28290,7 +28315,7 @@
         },
         {
           "name": "--ch-well-soft-bg",
-          "value": "linear-gradient(180deg, #e2ddd0 0%, #e9e5da 60%, #edeae0 100%)",
+          "value": "#e9e5da",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -28914,6 +28939,26 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
+          "name": "--ch-tip-bg",
+          "value": "#ede7d8",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-key-disabled-ink",
+          "value": "#a39e92",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tip-ink",
+          "value": "#141915",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tip-ink-soft",
+          "value": "rgb(20 25 21 / 0.74)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-nav-well-ink",
           "value": "#f3efe6",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -29080,7 +29125,7 @@
         },
         {
           "name": "--ch-green-fill-500",
-          "value": "#2a7d53",
+          "value": "#25734d",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -29360,7 +29405,7 @@
         },
         {
           "name": "--ch-accent-hover",
-          "value": "#2a7d53",
+          "value": "#25734d",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -29755,7 +29800,7 @@
         },
         {
           "name": "--ch-well-bg",
-          "value": "linear-gradient(180deg, #0a0d0b 0%, #0d110e 55%, #101411 100%)",
+          "value": "#0d110e",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -29765,7 +29810,7 @@
         },
         {
           "name": "--ch-well-soft-bg",
-          "value": "linear-gradient(180deg, #121613 0%, #141915 60%, #161b17 100%)",
+          "value": "#141915",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {

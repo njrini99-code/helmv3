@@ -58,7 +58,7 @@
   box-shadow: inset 0 1px 0 rgb(210 244 221 / 0.12), var(--ch-elevation-cast);
 }
 .ch-rd-unf.is-idle {
-  background: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.12), transparent 60%), var(--ch-green-800);
+  background: var(--ch-green-800);
 }
 .ch-rd-unf .ch-notice {
   margin: auto 0;
@@ -205,13 +205,12 @@
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14-strong);
   line-height: var(--ch-lead-tight);
-  color: var(--ch-green-800);
+  /* The raised secondary key on tokens (premium plan G3b): no literal ivory gradient, and it has a night face. */
+  color: var(--ch-green-700);
   text-decoration: none;
   white-space: nowrap;
-  background: linear-gradient(180deg, #fbf9f3, #ece8dd);
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.3),
-    inset 0 1px 0 #fff;
+  background: var(--ch-raised-bg);
+  box-shadow: var(--ch-btn-secondary-shadow);
   transition: transform var(--ch-dur-press) var(--ch-ease);
 }
 .ch-rd-unf__cta[data-ch-pressed] {
@@ -1123,7 +1122,7 @@ a.ch-rd-sc:focus-visible {
   border-radius: var(--ch-radius-lg);
   box-sizing: border-box;
   color: var(--ch-on-fill-100);
-  background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
+  background: var(--ch-green-800);
   box-shadow: var(--ch-elevation-card);
 }
 .ch-rv-hero__l {
@@ -2691,12 +2690,6 @@ html[data-fw-theme='dark'] .ch-rv-recap {
     color: var(--ch-on-green-ink);
   }
 }
-html[data-fw-theme='dark'] .ch-rd-unf__cta {
-  background: linear-gradient(180deg, #e9e3d3, #d6cfbd);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.4),
-    var(--ch-elevation-control);
-}
 html[data-fw-theme='dark'] .ch-rd-rib__chip {
   stroke: rgb(107 187 140 / 0.3);
 }
@@ -3907,8 +3900,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   position: relative;
   border-radius: var(--ch-radius-lg);
   background:
-    radial-gradient(90% 120% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
-    radial-gradient(70% 100% at 100% 100%, rgb(231 184 102 / 0.12), transparent 60%),
     var(--ch-stage-bg);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.1),
@@ -3969,11 +3960,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   min-width: 150px;
   padding: 8px 16px;
   border-radius: var(--ch-radius-lg);
-  background: rgb(244 238 221 / 0.96);
-  box-shadow:
-    0 0 0 1px rgb(8 43 28 / 0.12),
-    var(--ch-elevation-overlay);
-  color: var(--ch-ink-900);
+  background: var(--ch-tip-bg);
+  box-shadow: var(--ch-elevation-overlay);
+  color: var(--ch-tip-ink);
   transform: translateX(-50%);
 }
 .ch-rv .ch-rzstage__tip b {
@@ -3993,7 +3982,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rv .ch-rzstage__tip em {
   font: var(--ch-type-caption);
   font-style: normal;
-  color: #55503f;
+  color: var(--ch-tip-ink-soft);
 }
 
 /* the bands */
@@ -4084,19 +4073,15 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rv-hero {
   position: relative;
   background:
-    radial-gradient(90% 140% at 100% 0%, rgb(159 224 182 / 0.2), transparent 58%),
-    radial-gradient(60% 100% at 0% 100%, rgb(231 184 102 / 0.1), transparent 62%),
     linear-gradient(160deg, #0f4430, #082b1c);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.12),
     inset 0 -3px 0 var(--ch-champagne-500),
     var(--ch-elevation-feature);
 }
+/* Solid ivory (premium plan M4, Round review): gradient-clipped type ran to banned near-white and lost legibility at night. */
 .ch-rv-hero__s b {
-  background: linear-gradient(180deg, #ffffff, #cfc6a8);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--ch-on-green-ink);
 }
 .ch-rv-figs {
   background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-50));
@@ -4379,8 +4364,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   padding: 16px 24px 8px;
   border-radius: var(--ch-radius-lg);
   background:
-    radial-gradient(90% 120% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
-    radial-gradient(70% 100% at 100% 100%, rgb(231 184 102 / 0.12), transparent 60%),
     var(--ch-stage-bg);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.1),
@@ -4756,12 +4739,13 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   .ch-rd[data-canopy] .ch-rd-sc__grid > span + span {
     border-left: 0;
   }
+  /* Flat champagne on tokens (premium plan G3c): the gradient added nothing and the inks were literal. */
   .ch-rd[data-canopy] .ch-rd-sc__grid .is-tot {
-    background: linear-gradient(180deg, #efe6d2, #dccda6);
-    color: #1c1b18;
+    background: var(--ch-champagne-100);
+    color: var(--ch-text-primary);
   }
   .ch-rd[data-canopy] .ch-rd-sc__grid .is-tot em {
-    color: #55503f;
+    color: var(--ch-text-secondary);
   }
   .ch-rd[data-canopy] .ch-rd-sc__grid b {
     font-size: 17px;
@@ -5453,7 +5437,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   padding: 20px 20px 16px;
   border-radius: var(--ch-radius-lg);
   color: var(--ch-stage-ink);
-  background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
+  background: var(--ch-green-800);
   box-shadow: 0 0 0 1px var(--ch-green-900);
 }
 .ch-ch-hero__k {
@@ -6143,7 +6127,7 @@ button.ch-hip__row:focus-visible,
 .ch-carc {
   padding: 8px 8px 12px;
   border-radius: var(--ch-radius-lg);
-  background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
+  background: var(--ch-green-800);
 }
 .ch-carc__svg {
   display: block;

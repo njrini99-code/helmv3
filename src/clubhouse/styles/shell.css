@@ -4108,8 +4108,8 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     z-index: var(--ch-z-overlay);
     padding: 6px 8px;
     border-radius: var(--ch-radius-md);
-    background: var(--ch-nav-well-bg);
-    color: var(--ch-green-800);
+    background: var(--ch-tip-bg);
+    color: var(--ch-tip-ink);
     font: var(--ch-type-13-strong);
     line-height: var(--ch-lead-tight);
     white-space: nowrap;
