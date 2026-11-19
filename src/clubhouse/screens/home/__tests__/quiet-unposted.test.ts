@@ -54,10 +54,10 @@ describe('Home’s brief names the quietest players (DF-C-04)', () => {
       '3 players haven’t posted a round this season. The others with enough rounds are on track.',
     );
     expect(homeSubline([quietRow('Eli Ross', 9), quietRow('Finn Hale', 12), on('Theo Marchetti')], { ...opts, unposted: [none('Ava Lin')] })).toBe(
-      '3 players haven’t posted a round in 9+ days. Ava hasn’t posted one this season. The others with enough rounds are on track.',
+      '2 players haven’t posted a round in 9+ days. Ava hasn’t posted one this season. The others with enough rounds are on track.',
     );
     expect(homeSubline([quietRow('Eli Ross', 9)], { ...opts, unposted: [none('Ava Lin'), none('Ben Ruiz')] })).toBe(
-      '3 players haven’t posted a round in 9+ days. 2 of them haven’t posted one this season.',
+      'Eli hasn’t posted a round in 9 days. 2 more haven’t posted one this season.',
     );
   });
 });
