@@ -46,6 +46,7 @@ import { useAction, type ServerResult } from '../lib/use-action';
 import { ListPresence, PresenceRow } from '../ui/ListPresence';
 import { useToast } from '../ui/Toast';
 import { useRovingRows } from '../lib/roving';
+import { useOverlayScrollLock } from '../lib/overlay-scroll';
 
 /**
  * The notifications bell: the same feed, badge and read state as the
@@ -127,6 +128,8 @@ export function Bell() {
   const btn = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  // F-25 (audit 2026-11-19): the phone's drop is a sheet, so the page behind it holds still, as behind every other sheet.
+  useOverlayScrollLock(phone && open);
   // B11: ↑ and ↓ walk the notifications in the open popover; the list is one Tab stop.
   const listRef = useRef<HTMLDivElement | null>(null);
   useRovingRows(listRef, '.ch-bellp__row', open);
