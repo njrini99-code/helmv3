@@ -8,7 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CH_PUSH_MS, CH_EASE_IOS, chBezier } from '../motion';
 
-type Fake = { currentTime: number; cancel: ReturnType<typeof vi.fn>; pause: ReturnType<typeof vi.fn>; play: ReturnType<typeof vi.fn>; finished: Promise<void> };
+type Fake = { currentTime: number; cancel: ReturnType<typeof vi.fn>; pause: ReturnType<typeof vi.fn>; play: ReturnType<typeof vi.fn>; finished: Promise<void>; land?: () => void };
 let anims: Fake[] = [];
 const curve = { ms: CH_PUSH_MS, ease: chBezier(CH_EASE_IOS) };
 
@@ -27,7 +27,9 @@ beforeEach(() => {
     </div>`;
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)', addEventListener() {}, removeEventListener() {} }));
   HTMLElement.prototype.animate = vi.fn(function () {
-    const a: Fake = { currentTime: 0, cancel: vi.fn(), pause: vi.fn(), play: vi.fn(), finished: new Promise<void>(() => {}) };
+    let land = () => {};
+    const finished = new Promise<void>((r) => (land = r));
+    const a: Fake = { currentTime: 0, cancel: vi.fn(), pause: vi.fn(), play: vi.fn(), finished, land };
     anims.push(a);
     return a as unknown as Animation;
   }) as unknown as HTMLElement['animate'];
@@ -93,6 +95,28 @@ describe('the grabbable push (C1)', () => {
     expect(share).toBeLessThan(1);
     expect(layer.isConnected).toBe(false);
     expect(document.getElementById('ch-content')!.hasAttribute('data-ch-pushing')).toBe(false);
+  });
+
+  describe('the page sliding in takes no taps until it lands (E-2, F-02)', () => {
+    const page = () => document.getElementById('ch-content')!;
+    it('is marked for the push and unmarked when the push ends', async () => {
+      await pushed();
+      expect(page().hasAttribute('data-ch-arriving')).toBe(true);
+      anims[0]!.land!();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(page().hasAttribute('data-ch-arriving')).toBe(false);
+    });
+    it('is unmarked when a Back takes the push', async () => {
+      const nav = await pushed();
+      nav.takeRunningPush();
+      expect(page().hasAttribute('data-ch-arriving')).toBe(false);
+    });
+    it('is unmarked when a finger takes the push', async () => {
+      const nav = await pushed();
+      nav.grabPush();
+      expect(page().hasAttribute('data-ch-arriving')).toBe(false);
+    });
   });
 
   it('not with Animations off: the page just swaps', async () => {

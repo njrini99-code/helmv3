@@ -191,6 +191,7 @@ export function takeRunningPush(): number {
     pushing = null;
     for (const a of run.anims) a.cancel();
     run.page.removeAttribute('data-ch-pushing');
+    run.page.removeAttribute(CH_ARRIVING);
     if (!run.entry.pinned) run.entry.layer.remove();
     return share;
   }
@@ -288,6 +289,14 @@ export interface ChUnder {
   /** Called once when its page is showing again (a swipe that let go waits for it before it lets the copy go). */
   onArrive?: () => void;
 }
+/**
+ * The page a tapped push or a Back's pop is bringing in, for its 520 ms (E-2, audit 2026-11-19 F-02): it takes no taps
+ * until it has landed, as UIKit turns off interaction during a navigation transition, so a second tap meant for the
+ * row cannot open something on the page sliding in. Back, in the top bar outside the page, stays live and can still
+ * reverse it. Its own mark, not data-ch-pushing, which a swipe's lift also sets while a finger holds the page.
+ * pointer-events (shell.css), not `inert`: focus can still move to the page's title and VoiceOver still reads it.
+ */
+export const CH_ARRIVING = 'data-ch-arriving';
 const unders: ChUnder[] = [];
 const UNDERS_MAX = 4;
 let held: { layer: HTMLElement; from: string } | null = null;
@@ -349,6 +358,7 @@ function endPush(run: NonNullable<typeof pushing>) {
   if (pushing !== run) return;
   pushing = null;
   run.page.removeAttribute('data-ch-pushing');
+  run.page.removeAttribute(CH_ARRIVING);
   if (!run.entry.pinned) run.entry.layer.remove();
 }
 
@@ -370,6 +380,7 @@ function playPush(from: string, to: string, layer: HTMLElement) {
   const { curve, timing } = chTapTiming();
   const { parallax } = chUnderLook();
   page.setAttribute('data-ch-pushing', '');
+  page.setAttribute(CH_ARRIVING, '');
   // Both ends are in place from this frame (fill backwards), but the clock starts a frame later (S4.1): this commit's
   // frame lays out the whole new page, and a slide started inside it lost its first frames to that work.
   const anims = [
@@ -413,6 +424,8 @@ export function grabPush(): { entry: ChUnder; offset: number; share: number } | 
   const width = run.page.getBoundingClientRect().width || window.innerWidth;
   const { parallax } = chUnderLook();
   for (const a of run.anims) a.cancel();
+  // The finger has the page now: it is no longer arriving on its own.
+  run.page.removeAttribute(CH_ARRIVING);
   run.page.style.translate = `${cssNum((1 - share) * width)}px 0`;
   run.entry.layer.style.transform = `translateX(calc(${parallax} * ${cssNum(share, 4)}))`;
   underVeil(run.entry.layer).style.opacity = cssNum(share, 4);
@@ -468,7 +481,13 @@ function playPop(from = 1) {
     const under = document.getElementById('ch-content');
     // From where a push still sliding in had it (takeRunningPush): the page goes back the way it came, without a jump.
     const share = Math.min(1, Math.max(0, from));
-    under?.animate?.([{ transform: `translateX(calc(${parallax} * ${share}))` }, { transform: 'none' }], timing);
+    const back = under?.animate?.([{ transform: `translateX(calc(${parallax} * ${share}))` }, { transform: 'none' }], timing);
+    // The page coming back takes no taps until it has landed (E-2), as a pushed one doesn't.
+    if (under && back) {
+      under.setAttribute(CH_ARRIVING, '');
+      const landed = () => under.removeAttribute(CH_ARRIVING);
+      back.finished.then(landed, landed);
+    }
     const out = copy.animate?.([{ transform: `translateX(${((1 - share) * 100).toFixed(2)}%)` }, { transform: 'translateX(100%)' }], timing);
     if (!out) return copy.remove();
     out.finished.then(() => copy.remove(), () => copy.remove());

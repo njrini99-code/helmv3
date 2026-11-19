@@ -1928,6 +1928,12 @@ html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
     box-shadow: var(--ch-push-edge);
     will-change: transform;
   }
+  /* The page a tapped push or a Back's pop is bringing in takes no taps until it lands (E-2; lib/nav-motion.ts
+     CH_ARRIVING), as UIKit ignores touches during a navigation transition. Back lives in the top bar, outside the page,
+     so it stays live and can reverse the push. */
+  [data-ui='clubhouse'] .ch-frame-route[data-ch-arriving] {
+    pointer-events: none;
+  }
 }
 /* Reduce Motion (owner decision 2, 2026-10-24, OQ-15; MOTION-AND-VISUAL 3.3, 3.11): a page change crossfades, the old
    page out and the new one in together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades.
