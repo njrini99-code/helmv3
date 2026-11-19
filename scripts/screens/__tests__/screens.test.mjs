@@ -71,9 +71,20 @@ describe('dynamic routes', () => {
 });
 
 describe('safety', () => {
-  it('refuses the production site before it starts anything', async () => {
-    await expect(main(['--base', 'https://helmsportslabs.com'])).rejects.toThrow(/never opens the production site/);
-    await expect(main(['--base', 'https://www.helmsportslabs.com/golf'])).rejects.toThrow(/production/);
+  it('refuses the production site before it starts anything, unless HELM_ALLOW_PRODUCTION=1', async () => {
+    const saved = process.env.HELM_ALLOW_PRODUCTION;
+    delete process.env.HELM_ALLOW_PRODUCTION;
+    try {
+      await expect(main(['--base', 'https://helmsportslabs.com'])).rejects.toThrow(/does not open the production site unless HELM_ALLOW_PRODUCTION=1/);
+      await expect(main(['--base', 'https://www.helmsportslabs.com/golf'])).rejects.toThrow(/production/);
+      process.env.HELM_ALLOW_PRODUCTION = 'yes';
+      await expect(main(['--base', 'https://helmsportslabs.com'])).rejects.toThrow(/production/);
+    } finally {
+      if (saved === undefined) delete process.env.HELM_ALLOW_PRODUCTION; else process.env.HELM_ALLOW_PRODUCTION = saved;
+    }
+  });
+  it('checks the desktop engine before it starts anything', async () => {
+    await expect(main(['--base', 'http://127.0.0.1:1', '--desktop-engine', 'firefox'])).rejects.toThrow(/--desktop-engine is webkit or chromium/);
   });
   it('blanks every env-file key for its own server, except the allowlist, and fakes Supabase', () => {
     const dir = mkdtempSync(join(tmpdir(), 'screens-env-'));

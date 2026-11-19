@@ -522,8 +522,25 @@
       seen.add(el);
       const range = document.createRange();
       range.selectNodeContents(node);
-      const r = range.getBoundingClientRect();
-      if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.top > innerHeight) continue;
+      // Screen-reader-only text is hidden on screen by design (a 13 Nov false positive): skip it by class or by the clip
+      // that hides it.
+      if (el.closest('.sr-only, .ch-sr-only, .visually-hidden, [data-sr-only]')) continue;
+      const hid = getComputedStyle(el);
+      if ((hid.clip && hid.clip !== 'auto') || /inset\(50%\)/.test(hid.clipPath) || (parseFloat(hid.width) <= 1 && parseFloat(hid.height) <= 1)) continue;
+      const full = range.getBoundingClientRect();
+      if (full.width < 2 || full.height < 2 || full.bottom < 0 || full.top > innerHeight) continue;
+      // Measure only what can be seen: clip to the viewport and to every ancestor that clips its overflow. Text scrolled
+      // out of a sheet's own scroller sits over whatever is behind the sheet and read as a failure (calibration,
+      // 2026-11-18); text cut by the viewport edge was a known false positive (13 Nov audit). Mostly hidden text is left out.
+      let L = Math.max(full.left, 0), T = Math.max(full.top, 0), R = Math.min(full.right, innerWidth), B = Math.min(full.bottom, innerHeight);
+      for (let p = el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
+        const ps = getComputedStyle(p);
+        if (ps.overflowX === 'visible' && ps.overflowY === 'visible' && ps.clipPath === 'none') continue;
+        const pr = p.getBoundingClientRect();
+        L = Math.max(L, pr.left); T = Math.max(T, pr.top); R = Math.min(R, pr.right); B = Math.min(B, pr.bottom);
+      }
+      if (R - L < 2 || B - T < 2 || (R - L) * (B - T) < 0.5 * full.width * full.height) continue;
+      const r = { left: L, top: T, width: R - L, height: B - T };
       const cs = getComputedStyle(el);
       let opacity = 1;
       for (let p = el; p; p = p.parentElement) opacity *= +getComputedStyle(p).opacity;
