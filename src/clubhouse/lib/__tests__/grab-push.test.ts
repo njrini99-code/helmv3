@@ -6,6 +6,8 @@
  * (`takeRunningPush`). The copy stays beneath the pushed page (`underFor`) for a swipe back to uncover.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { CH_PUSH_MS, CH_EASE_IOS, chBezier } from '../motion';
 
 type Fake = { currentTime: number; cancel: ReturnType<typeof vi.fn>; pause: ReturnType<typeof vi.fn>; play: ReturnType<typeof vi.fn>; finished: Promise<void>; land?: () => void };
@@ -106,6 +108,12 @@ describe('the grabbable push (C1)', () => {
       await Promise.resolve();
       await Promise.resolve();
       expect(page().hasAttribute('data-ch-arriving')).toBe(false);
+    });
+    it('no descendant takes a tap either, whatever its own pointer-events; only the page is marked, so the bar\'s Back stays live', () => {
+      const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/shell.css'), 'utf8');
+      // A control that sets pointer-events: auto (Qualifiers' "Play round" key, qualifiers.css) would otherwise take it.
+      expect(css).toMatch(/\.ch-frame-route\[data-ch-arriving\],\s*\[data-ui='clubhouse'\] \.ch-frame-route\[data-ch-arriving\] \* \{[^}]*pointer-events: none !important;/);
+      expect(css).not.toMatch(/\.ch-topbar[^{]*\[data-ch-arriving\]/);
     });
     it('is unmarked when a Back takes the push', async () => {
       const nav = await pushed();

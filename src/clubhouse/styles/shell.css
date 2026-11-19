@@ -1931,8 +1931,10 @@ html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
   /* The page a tapped push or a Back's pop is bringing in takes no taps until it lands (E-2; lib/nav-motion.ts
      CH_ARRIVING), as UIKit ignores touches during a navigation transition. Back lives in the top bar, outside the page,
      so it stays live and can reverse the push. */
-  [data-ui='clubhouse'] .ch-frame-route[data-ch-arriving] {
-    pointer-events: none;
+  [data-ui='clubhouse'] .ch-frame-route[data-ch-arriving],
+  [data-ui='clubhouse'] .ch-frame-route[data-ch-arriving] * {
+    /* Every descendant too: a control that sets pointer-events: auto (Qualifiers' "Play round" key) would take the tap. */
+    pointer-events: none !important;
   }
   /* The figure a push carries over from its row (E-6, lib/share-morph.ts) waits hidden on the incoming page while its
      ghost flies to it, so the number is drawn once. */

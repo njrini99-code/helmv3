@@ -46,6 +46,13 @@ describe('the shared score (E-6)', () => {
     for (const a of anims) expect(a.options).toMatchObject({ duration: 520, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' });
     // The row's ghost moves to the target's resting place (this frame's place less the push's 402px) and grows to its height.
     expect(anims[0]!.keyframes.at(-1)!.transform).toBe('translate(-30.00px, -280.00px) scale(2.4444)');
+    // Both ghosts travel one path: the arriving one starts on the row's figure (its own box shifted back by the same
+    // dx, dy, unscaled by the translate), and ends at rest where the leaving one ends.
+    expect(anims[1]!.keyframes[0]!.transform).toBe('translate(30.00px, 280.00px) scale(0.4091)');
+    expect(anims[1]!.keyframes.at(-1)!.transform).toBe('none');
+    const arrive = document.querySelectorAll<HTMLElement>('.ch-share-host span')[1]!;
+    expect(parseFloat(arrive.style.left) + 30).toBe(330);
+    expect(parseFloat(arrive.style.top) + 280).toBe(400);
     // Transform and opacity only.
     const props = new Set(anims.flatMap((a) => a.keyframes.flatMap((k) => Object.keys(k))));
     expect(props).toEqual(new Set(['transform', 'opacity']));

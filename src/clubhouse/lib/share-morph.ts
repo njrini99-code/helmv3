@@ -98,7 +98,8 @@ export function flyShare(page: HTMLElement, layer: HTMLElement | null, timing: K
   const dx = left - from.rect.left;
   const dy = top - from.rect.top;
   const go = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${s.toFixed(4)})`;
-  const back = `translate(${(-dx / s).toFixed(2)}px, ${(-dy / s).toFixed(2)}px) scale(${(1 / s).toFixed(4)})`;
+  // The arriving ghost starts where the leaving one does: a translate before a scale is not scaled, so it is −dx, −dy.
+  const back = `translate(${(-dx).toFixed(2)}px, ${(-dy).toFixed(2)}px) scale(${(1 / s).toFixed(4)})`;
   const opts = { ...timing, fill: 'forwards' as const };
   const anims =
     typeof from.ghost.animate === 'function'
