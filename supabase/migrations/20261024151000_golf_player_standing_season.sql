@@ -3,10 +3,12 @@
 -- 2026-10-24). AWAITING OWNER APPLY. Do not apply without the owner's
 -- go-ahead.
 --
--- DEPENDS ON the OD-01 chain (HELD.md apply queue, Step 7):
--- 20260924120000 creates golf_round_is_countable and
--- golf_round_is_score_countable, which this file calls. The DO block below
--- refuses to run without both. Apply this file after Step 7, then
+-- DEPENDS ON golf_round_is_countable and golf_round_is_score_countable,
+-- which this file calls. 20261118030000_golf_countable_round_helpers.sql
+-- creates exactly those (and golf_round_canonical_total), copied from the
+-- OD-01 chain's 20260924120000, so this file no longer waits on the rest of
+-- OD-01. The DO block below refuses to run without both. Apply this file
+-- after 20261118030000 (or after the OD-01 chain, HELD.md Step 7), then
 -- 20261024150000 if it is not applied yet (either order works between those
 -- two), then run the refresh under AFTER APPLY.
 --
@@ -113,7 +115,7 @@ DO $guard$
 BEGIN
   IF to_regprocedure('public.golf_round_is_countable(text, integer, integer, integer, integer, integer, numeric)') IS NULL
      OR to_regprocedure('public.golf_round_is_score_countable(text, integer, integer, integer, integer, integer, numeric)') IS NULL THEN
-    RAISE EXCEPTION 'season standing: golf_round_is_countable / golf_round_is_score_countable are missing. Apply the OD-01 chain (HELD.md Step 7) first.';
+    RAISE EXCEPTION 'season standing: golf_round_is_countable / golf_round_is_score_countable are missing. Apply 20261118030000_golf_countable_round_helpers.sql (or the OD-01 chain, HELD.md Step 7) first.';
   END IF;
 END
 $guard$;
