@@ -128,33 +128,32 @@ Join code
   `GenericPageSkeleton`/`FormPageSkeleton` family, which carries no
   `role="status"`/`aria-busy` of its own — the call site supplies them.
 
-- `/golf/reset-password` (2026-10-18 redesign) matches the reset email, not
-  `AuthCanvas`: `reset-shell.tsx` draws the ivory canvas, lockup and ruled card,
-  with Poppins loaded for this route only (`layout.tsx`). States: checking,
-  form, expired (asks for a new link in place via `requestPasswordResetAction`),
-  sent, saved. The link is still the only authorization: every load runs
-  `verifyOtp({ type: 'recovery', token_hash })` with no branch that skips it
-  (golf links are always server-minted token_hash links, never PKCE `?code=`),
-  no `updateUser` runs before it succeeds, and the token is stripped from the
-  URL once verified. Supabase errors map to plain sentences
-  (`reset-errors.ts`). A successful save calls `signOut({ scope: 'others' })`
-  (owner decision: a reset signs out every other device) and keeps this device
-  signed in; Continue goes to `/golf/dashboard`, not back to sign-in.
+- `/golf/reset-password` is Clubhouse's `ResetPassword`
+  (`src/clubhouse/screens/auth/ResetPassword.tsx`) in the sign-in room
+  (`GateFrame`). States: checking, form, expired (asks for a new link in place
+  via `requestPasswordResetAction`), sent, saved. The link is still the only
+  authorization: every load verifies the recovery `token_hash` first
+  (`reset-writes.ts`), nothing is updated before it succeeds, and the token is
+  stripped from the URL once verified. A successful save signs out every other
+  device (owner decision) and keeps this one signed in; Continue goes to
+  `/golf/dashboard`.
 - GolfHelm reset emails go through Resend (`src/lib/auth/send-password-reset.ts`),
   never Supabase's mailer, so `supabase/templates/recovery.html` does not reach
   golf users. `src/lib/auth/golfhelm-reset-email.ts` renders the same design for
   the Resend path; a test fails if the two drift. The Supabase template still
   serves Baseball and Lift Lab client-side resets.
-- `/golf/forgot-password`'s sent state plays a one-time CSS sequence (envelope,
-  ripple, check; off under reduced motion) via the `hero` slot on `AuthCanvas`,
-  and offers a resend after a 30-second cooldown.
-- `/golf/join` (the invite-code entry page) renders on `AuthCanvas` too
-  (2026-09-27). Its "Home" back link goes to `/golf`, not `/`: the in-app links
-  to it (NoTeamBanner, player onboarding, travel, classes) come from signed-in
-  players, and `/golf` routes by session (dashboard, or sign-in when signed
-  out). It is also an app route, so it works in the native shell, where the
-  proxy bounces `/` to login. `/golf/join/[code]` still uses the older
-  orb/glass styling.
+- `/golf/forgot-password`: a signed-out visitor is sent to the sign-in panel's
+  reset form (`/golf/login?view=forgot`); a signed-in one gets the same form in
+  the sign-in room with their address filled in (`SignedInReset`, CH-15920,
+  2026-11-18). The Fairway page and its `AuthCanvas` are deleted.
+- `/golf/join` and `/golf/join/[code]` are Clubhouse's `JoinCode` and
+  `JoinTeam` in the sign-in room. `/golf/join` reads no session: anyone can
+  enter a code. The in-app links to it come from signed-in players.
+- Every error page and the 404 outside the dashboard are drawn in the sign-in
+  room (`GateError`, `GateNotFound`); only `/golf/admin` keeps Fairway.
+  `clubhouse:check` fails on Fairway UI under non-admin `src/app/golf`. Who
+  each address is for (coach, player, shared, signed-out):
+  `docs/clubhouse/generated/CLUBHOUSE_ROUTE_MAP.md`.
 - Onboarding (player and coach): the submit-failure banner is `role="alert"`
   and is referenced by the "Complete Setup" button's `aria-describedby`. A user
   step change moves focus to the new step's `<h1>` (`tabIndex={-1}`). The

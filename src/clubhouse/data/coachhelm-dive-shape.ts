@@ -18,6 +18,7 @@ import type { ChViewer } from './coachhelm-voice';
 import { stanceOf, type ChBoardMissing, type ChInsight, type ChStance } from './coachhelm-shape';
 import { figure } from './coachhelm-standing-shape';
 import { plural } from '../lib/plural';
+import { SG_LEG_LABEL } from '../lib/sg';
 
 /**
  * The player's Deep dive (Clubhouse P013, `?view=deep-dive`): every insight the Board draws, in full. Each one shows what was
@@ -112,10 +113,10 @@ export interface ChDiveTheme {
  */
 export type ChDiveArea = 'tee' | 'approach' | 'around' | 'putting' | 'scoring';
 export const DIVE_AREAS: ReadonlyArray<{ id: ChDiveArea; label: string }> = [
-  { id: 'tee', label: 'Off the tee' },
-  { id: 'approach', label: 'Approach' },
-  { id: 'around', label: 'Around the green' },
-  { id: 'putting', label: 'Putting' },
+  { id: 'tee', label: SG_LEG_LABEL.tee },
+  { id: 'approach', label: SG_LEG_LABEL.approach },
+  { id: 'around', label: SG_LEG_LABEL.around },
+  { id: 'putting', label: SG_LEG_LABEL.putting },
   { id: 'scoring', label: 'Course and scoring' },
 ];
 const AREA_OF: Record<string, ChDiveArea> = { tee: 'tee', approach: 'approach', short_game: 'around', putting: 'putting' };
@@ -416,7 +417,10 @@ export function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null):
   const cause = themes?.themes.flatMap((t) => t.causes).find((c) => c.insight_id === raw.id);
   if (!cause || cause.counterfactualSuppressed || !(cause.strokesSavedPerRound > 0)) return null;
   const team = cause.standingTeamAvgValue != null && cause.standingPlayerValue != null && cause.standingPgaValue != null;
-  return { strokes: formatFixed(cause.strokesSavedPerRound, 1), anchor: team ? 'team' : 'tour' };
+  // Worth under 0.05 prints "0.0", and "worth 0.0 strokes a round" is no claim at all: leave the sentence out (L-013).
+  const strokes = formatFixed(cause.strokesSavedPerRound, 1);
+  if (!(Number(strokes) > 0)) return null;
+  return { strokes, anchor: team ? 'team' : 'tour' };
 }
 
 /** Each strokes-gained theme's leg spread (`POOLED_LEG_SD`); a theme with no leg of its own falls back to the total's. */

@@ -1092,7 +1092,7 @@ describe('Stats player · a failed read is never drawn as zero', () => {
           <StatsPlayer layout="tabs" data={profile!} coachId="c1" />
         </PhoneChromeProvider>,
       );
-      expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 3.9 HCP');
+      expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 3.9 Handicap');
       expect(code('CH-5201')).not.toBeNull();
       expect(code('CH-5305')).toBeNull();
       expect(code('CH-5308')).toBeNull();

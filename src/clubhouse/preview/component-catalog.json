@@ -3761,6 +3761,40 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/file/AnalystRead.tsx",
+      "group": "screens",
+      "exports": [
+        "AnalystReadCard",
+        "EvidenceRounds",
+        "PlayerReadCard",
+        "WRONG_REASON_MAX"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-file.css",
+        "src/clubhouse/styles/coachhelm-team.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/file/FileSkeleton.tsx",
       "group": "screens",
       "exports": [
@@ -4710,6 +4744,38 @@
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/views/TeamReads.tsx",
+      "group": "screens",
+      "exports": [
+        "TeamReads",
+        "TeamReadsLink"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-file.css",
+        "src/clubhouse/styles/coachhelm-read.css",
+        "src/clubhouse/styles/coachhelm-track.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -16931,6 +16997,22 @@
         "ch-btn--ghost",
         "ch-hf",
         "ch-hf-44",
+        "ch-hf-an__acts",
+        "ch-hf-an__body",
+        "ch-hf-an__fail",
+        "ch-hf-an__focus",
+        "ch-hf-an__foot",
+        "ch-hf-an__head",
+        "ch-hf-an__how",
+        "ch-hf-an__p",
+        "ch-hf-an__round",
+        "ch-hf-an__rounds",
+        "ch-hf-an__rt",
+        "ch-hf-an__shots",
+        "ch-hf-an__stale",
+        "ch-hf-an__team",
+        "ch-hf-an__wrong",
+        "ch-hf-an__wrong-foot",
         "ch-hf-coachline",
         "ch-hf-cx",
         "ch-hf-flow",
@@ -18077,7 +18159,16 @@
         "ch-htr-rung__l",
         "ch-htr-rung__s",
         "ch-htr-rung__w",
-        "ch-htr-rungs"
+        "ch-htr-rungs",
+        "ch-htrd-body",
+        "ch-htrd-in",
+        "ch-htrd-list",
+        "ch-htrd-note",
+        "ch-htrd-row",
+        "ch-htrd-row__h",
+        "ch-htrd-row__t",
+        "ch-htrd-row__x",
+        "ch-htrd-shared"
       ],
       "tokens": []
     },
@@ -18472,6 +18563,7 @@
         "ch-swipe__acts",
         "ch-swipe__c",
         "ch-switch",
+        "ch-switch__l",
         "ch-switch__thumb",
         "ch-switch__track",
         "ch-textarea",
@@ -23026,6 +23118,11 @@
           "scope": ".ch-rd .ch-rd-stage"
         },
         {
+          "name": "--ch-rd-halo",
+          "value": "var(--ch-stage-bg)",
+          "scope": ".ch-rd .ch-rd-stage"
+        },
+        {
           "name": "--ch-rd-under-a",
           "value": "var(--ch-score-birdie-fill)",
           "scope": ".ch-rd.is-phone .ch-rd-stage"
@@ -23088,6 +23185,11 @@
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(21 90 57 / 0.25)",
+          "scope": ".ch-rd.is-phone .ch-rd-stage"
+        },
+        {
+          "name": "--ch-rd-halo",
+          "value": "var(--ch-sheet-bg)",
           "scope": ".ch-rd.is-phone .ch-rd-stage"
         },
         {
@@ -25570,7 +25672,7 @@
         },
         {
           "name": "--ch-warning-600",
-          "value": "#8a5a0c",
+          "value": "#7a4e09",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27334,6 +27436,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-chart-flat-ink",
+          "value": "#ffffff",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-chart-track",
           "value": "#e3ddcf",
           "scope": "[data-ui='clubhouse']"
@@ -28134,6 +28241,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-scrim-deep",
+          "value": "rgb(28 25 18 / 0.38)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-on-dark-raised-bg",
           "value": "linear-gradient(180deg, #245740 0%, #1b4a33 100%)",
           "scope": "[data-ui='clubhouse']"
@@ -28516,6 +28628,11 @@
         {
           "name": "--ch-chart-flat",
           "value": "#a39d90",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-chart-flat-ink",
+          "value": "#151a16",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -29586,6 +29703,11 @@
         {
           "name": "--ch-scrim",
           "value": "rgb(2 6 4 / 0.58)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-scrim-deep",
+          "value": "rgb(2 6 4 / 0.66)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {

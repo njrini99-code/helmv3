@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { formatAvg, formatDistance, formatFixed, formatHcp, formatPct, formatSG, formatSigned, formatToPar, MINUS, NO_DATA } from '../format';
+import { formatAvg, formatDistance, formatFixed, formatHcp, formatPct, formatSG, formatSigned, formatToPar, MINUS, NO_DATA, toParWords, trueMinus } from '../format';
+import { plural } from '../plural';
 
 describe('one number voice', () => {
   it('a signed delta carries an explicit plus, a true minus, and no sign on zero', () => {
@@ -49,5 +50,28 @@ describe('one number voice', () => {
     expect(formatDistance(152.4)).toBe('152 yds');
     expect(formatDistance(8.46, 'ft', 1)).toBe('8.5 ft');
     expect(formatDistance(null)).toBe(NO_DATA);
+  });
+
+  it('a plain figure uses the true minus too, never a hyphen or a negative zero (L-043)', () => {
+    expect(formatFixed(-4.8)).toBe(`${MINUS}4.8`);
+    expect(formatFixed(-0.04)).toBe('0.0');
+    expect(formatFixed(-1.7, 2)).toBe(`${MINUS}1.70`);
+    expect(formatPct(-3.2, 1)).toBe(`${MINUS}3.2%`);
+    expect(formatDistance(-4, 'ft')).toBe(`${MINUS}4 ft`);
+    expect(trueMinus('-12.5')).toBe(`${MINUS}12.5`);
+    expect(trueMinus('-0')).toBe('0');
+    expect(trueMinus('3.0')).toBe('3.0');
+  });
+
+  it('a count over a thousand is grouped: 1,801 putts (L-043)', () => {
+    expect(plural(1801, 'putt')).toBe('1,801 putts');
+    expect(plural(999, 'putt')).toBe('999 putts');
+    expect(plural(1, 'putt')).toBe('1 putt');
+  });
+
+  it('a score against par in words is one phrasing (L-045)', () => {
+    expect([-2, 0, 3].map((v) => toParWords(v))).toEqual(['2 under par', 'even par', '3 over par']);
+    expect(toParWords(null)).toBe('no score yet');
+    expect([-2, 0, 3].map((v) => toParWords(v, { short: true }))).toEqual(['2 under', 'even', '3 over']);
   });
 });

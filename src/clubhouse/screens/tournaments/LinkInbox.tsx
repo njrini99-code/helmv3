@@ -116,6 +116,7 @@ function LinkRow({
   const event = events.find((e) => e.id === eventId);
   const name = player?.first ?? 'the player';
   const conf = c.suggestion ? CONFIDENCE_WORDS[c.suggestion.confidence] : null;
+  const pickedRound = event?.rounds.find((r) => r.roundEventId === roundEventId);
 
   const link = useAction<[], null>(
     'tournaments.link',
@@ -144,6 +145,35 @@ function LinkRow({
     (result, copy) => (result.success ? copy : { ...copy, hint: result.error ?? copy.hint }),
   );
   const busy = link.pending || dismiss.pending;
+  // L-033: a row that starts on a suggestion says it in one line, and the pickers wait behind Change, so 79 rounds are not 79
+  // stacks of four controls. A row with no suggestion keeps the pickers and Link round behind one "Link to an event…". Closed, they stay in the page.
+  const pickers = (
+    <div className="ch-tour-links-row__sel">
+      <Select
+        label={`Event for ${name}’s round`}
+        value={eventId}
+        disabled={busy}
+        onChange={(v) => {
+          setEventId(v);
+          setRoundEventId(NONE);
+        }}
+        options={[{ value: NONE, label: 'Pick an event' }, ...events.map((e) => ({ value: e.id, label: e.name }))]}
+      />
+      <Select
+        label={`Round for ${name}’s round`}
+        value={roundEventId}
+        disabled={busy || !event}
+        onChange={setRoundEventId}
+        options={[{ value: NONE, label: event ? 'Pick a round' : 'Pick an event first' }, ...(event?.rounds ?? []).map((r) => ({ value: r.roundEventId, label: roundOption(r, (d) => tourDay(d)) }))]}
+      />
+    </div>
+  );
+
+  const linkButton = (
+    <Button variant="secondary" size="sm" busy={link.pending} disabled={!roundEventId || dismiss.pending} onClick={() => void link.run()}>
+      Link round
+    </Button>
+  );
 
   return (
     <li className={'ch-tour-links-row' + (phone ? ' is-phone' : '')} data-ch-link-round={c.roundId}>
@@ -164,30 +194,29 @@ function LinkRow({
             <span className="ch-tour-links-muted">{conf.why}</span>
           </div>
         )}
-        <div className="ch-tour-links-row__sel">
-          <Select
-            label={`Event for ${name}’s round`}
-            value={eventId}
-            disabled={busy}
-            onChange={(v) => {
-              setEventId(v);
-              setRoundEventId(NONE);
-            }}
-            options={[{ value: NONE, label: 'Pick an event' }, ...events.map((e) => ({ value: e.id, label: e.name }))]}
-          />
-          <Select
-            label={`Round for ${name}’s round`}
-            value={roundEventId}
-            disabled={busy || !event}
-            onChange={setRoundEventId}
-            options={[{ value: NONE, label: event ? 'Pick a round' : 'Pick an event first' }, ...(event?.rounds ?? []).map((r) => ({ value: r.roundEventId, label: roundOption(r, (d) => tourDay(d)) }))]}
-          />
-        </div>
+        {start ? (
+          <details className="ch-tour-links-row__more">
+            <summary className="ch-tour-links-row__to">
+              <span className="ch-tour-links-muted">
+                Links to <b>{eventName(eventId)}</b>
+                {pickedRound ? <span className="ch-tour-links-muted"> · {roundOption(pickedRound, (d) => tourDay(d))}</span> : null}
+              </span>
+              <span className="ch-tour-links-row__n ch-tour-links-row__chg">Change</span>
+            </summary>
+            {pickers}
+          </details>
+        ) : (
+          <details className="ch-tour-links-row__more">
+            <summary className="ch-tour-links-row__to">
+              <span className="ch-tour-links-row__n ch-tour-links-row__chg">Link to an event…</span>
+            </summary>
+            {pickers}
+            <div className="ch-tour-links-row__act">{linkButton}</div>
+          </details>
+        )}
       </div>
       <div className="ch-tour-links-row__act">
-        <Button variant="secondary" size="sm" busy={link.pending} disabled={!roundEventId || dismiss.pending} onClick={() => void link.run()}>
-          Link round
-        </Button>
+        {start && linkButton}
         <Button variant="ghost" size="sm" busy={dismiss.pending} disabled={link.pending} onClick={() => void dismiss.run()}>
           Not a tournament round
         </Button>

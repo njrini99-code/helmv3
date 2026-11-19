@@ -18,7 +18,7 @@ import type { LiveFeed } from './use-live-rounds';
  * what the page says, in the page's words, and leaves Try again to the page's notice (one retry on the screen); it said
  * "Connecting" over a page that said it could not refresh. The notice is the announcement, so the chip is not a second one.
  */
-export function FreshnessChip({ feed, failed = false, updatedAt, onRefresh }: { feed: LiveFeed; failed?: boolean; updatedAt: number | null; onRefresh: () => void | Promise<void> }) {
+export function FreshnessChip({ feed, failed = false, idle = false, updatedAt, onRefresh }: { feed: LiveFeed; failed?: boolean; idle?: boolean; updatedAt: number | null; onRefresh: () => void | Promise<void> }) {
   const hours = useChClock();
   const [refreshing, start] = useTransition();
   const [stamped, setStamped] = useState<number | null>(null);
@@ -47,6 +47,15 @@ export function FreshnessChip({ feed, failed = false, updatedAt, onRefresh }: { 
     return (
       <span className="ch-lv-chip" data-feed="offline" role="status">
         {at ? `Paused · ${at}` : 'Paused'}
+      </span>
+    );
+  }
+  // L-073: with nobody on the course the feed is still live, but a green "Live" dot over an empty page promised rounds that
+  // are not there. The chip keeps its time and drops the dot and the word.
+  if (idle && feed === 'live') {
+    return (
+      <span className="ch-lv-chip" data-feed={feed} data-idle="">
+        {at ? `Updated ${at}` : 'Up to date'}
       </span>
     );
   }

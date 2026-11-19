@@ -72,7 +72,7 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
     <section className={'card' + (phone ? '' : ' rost')} data-ch-team-card="roster" aria-label="Roster">
       <div className="ch">
         <h4>Roster</h4>
-        <span className="meta">{phone ? 'T · A · S · P' : 'Finger-print: tee, approach, short game, putting'}</span>
+        <span className="meta">{phone ? 'T · A · S · P' : 'Fingerprint: off the tee, approach, around the green, putting'}</span>
       </div>
       {sorted.map((p) => {
         const open = p.reads.needs.length + p.reads.working.length;
@@ -88,7 +88,8 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
                 {p.heldBack ? ` · ${p.heldBack} held back` : ''}
               </span>
             </span>
-            {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">{STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">No rounds yet</span>)}
+            {/* L-075: a player with no rounds says so once, in the line under the name; a chip in the stat column repeated it off-centre. */}
+            {!phone && (p.rounds && p.worst ? <span className="lm"><Badge tone="warning">{STATION_SHORT[p.worst]}</Badge></span> : <span />)}
             {p.rounds ? (
               <>
                 <FingerPrint player={p} labels={!phone} scale={ruler} />
@@ -246,7 +247,13 @@ export function RecordCard({ part, desk = false, recheck = null }: { part: ChTea
           )}
           <span>{checked > 0 ? 'reads held up when re-checked' : r.program}</span>
         </div>
-        {r.rungs.map((g) => (
+        {/* L-002: with no level drawn there is nothing to list; say it once, not five times. */}
+        {r.rungs.every((g) => !g.bar) && (
+          <p className="n" data-ch-record-none="">
+            {checked > 0 ? 'Not enough re-checked reads at any level yet.' : 'No reads re-checked yet.'}
+          </p>
+        )}
+        {r.rungs.some((g) => g.bar) && r.rungs.map((g) => (
           <div className="lv" key={g.id}>
             <span>{g.word}</span>
             {g.bar ? (
@@ -266,7 +273,7 @@ export function RecordCard({ part, desk = false, recheck = null }: { part: ChTea
         ))}
       </div>
       <div className="recfoot">
-        <span>Line: the target for that level</span>
+        {r.rungs.some((g) => g.bar) && <span>Line: the target for that level</span>}
         {recheck}
       </div>
     </section>

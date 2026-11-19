@@ -71,3 +71,40 @@ export function sgTint(value: number | null, scale: number, digits = 1): string 
   const pct = Number(((0.06 + sgShare(value, scale) * 0.3) * 100).toFixed(1));
   return `color-mix(in srgb, var(${value >= 0 ? '--ch-chart-gain' : '--ch-chart-loss'}) ${pct}%, transparent)`;
 }
+
+/**
+ * What "gains most" and "loses most" say once the figure is known (L-013). The best player in a part can still be below
+ * zero ("gain most −0.8" reads as a contradiction), so a negative best is "least behind", a positive worst is "gains
+ * least", and a figure that prints as zero says "breaks even" with no number beside it (never "gain most 0.0").
+ * `figure` is whether the signed number belongs after the words.
+ */
+export function sgExtremeWords(kind: 'gains' | 'loses', value: number, many: boolean, digits = 1): { words: string; figure: boolean } {
+  const step = 10 ** digits;
+  const printed = Math.round(value * step) / step;
+  if (printed === 0) return { words: many ? 'break even' : 'breaks even', figure: false };
+  if (kind === 'gains') return printed > 0 ? { words: many ? 'gain most' : 'gains most', figure: true } : { words: many ? 'are least behind' : 'is least behind', figure: true };
+  return printed < 0 ? { words: many ? 'lose most' : 'loses most', figure: true } : { words: many ? 'gain least' : 'gains least', figure: true };
+}
+
+/**
+ * The four strokes-gained parts, named once (L-060). Every CoachHelm surface that names a part reads this map, so the worm, the
+ * file and the ladder never say "Tee", "Off the tee" and "Short game" for the same leg. Stats' own `ChLeg` keys still spell
+ * "Around green" (they are object keys there).
+ */
+export const SG_LEG_LABEL = { tee: 'Off the tee', approach: 'Approach', around: 'Around the green', putting: 'Putting' } as const;
+
+/**
+ * The parts add to the total only up to rounding: each prints at one decimal, so −0.3, −1.7, −0.7 and −3.0 read −5.7 against a
+ * total that prints −5.8 (L-060). True when the printed parts' sum differs from the printed total, so the card can say "Parts may not
+ * add to the total because of rounding." beside them.
+ */
+export function sgPartsRoundOff(parts: ReadonlyArray<number | null | undefined>, total: number | null | undefined, digits = 1): boolean {
+  if (total == null || Number.isNaN(total)) return false;
+  const known = parts.filter((p): p is number => p != null && !Number.isNaN(p));
+  if (known.length === 0) return false;
+  const q = 10 ** digits;
+  const sum = known.reduce((a, p) => a + Math.round(p * q), 0);
+  return sum !== Math.round(total * q);
+}
+
+export const SG_ROUNDING_NOTE = 'Parts may not add to the total because of rounding.';

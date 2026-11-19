@@ -54,7 +54,7 @@ describe('Practice library', () => {
     unmount();
     render(<ToastProvider><DrillPage preview teamId="t" drill={detail(lib)} /></ToastProvider>);
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Copy to your bank' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add to your drills' })).toBeTruthy();
   });
   it('Use on a starter opens New plan with it', async () => {
     render(<ToastProvider><TemplatesPage preview teamId="t" templates={[]} /></ToastProvider>);

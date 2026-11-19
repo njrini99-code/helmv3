@@ -47,7 +47,7 @@ const NO_OPTIONS: ChRoundTypeOptions = { qualifiers: [], readFailed: false };
  */
 export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRoundNumberUnavailableReason, roundTypeOptions = NO_OPTIONS, dataGapAsks, dataPromptsV2 = false, ...props }: ContinueRoundProps) {
   const router = useRouter();
-  const { ports, capture } = useRoundPorts();
+  const { ports, capture, conflictBanner } = useRoundPorts();
   const connection = useConnectionStatus();
   const engine = useContinueRoundSession({ ...props, ports, routes: ENGINE_ROUTES });
   // A Done key over the number pad for the whole round, setup to submit, sheets included (use-done-key.ts).
@@ -124,6 +124,8 @@ export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRound
   );
   const courseNudge = useChCourseNudge({ enabled: dataPromptsV2, hasCourse: !!props.setupData.courseId, courseName: props.setupData.courseName, onLink: linkRoundCourse });
 
+  // L-036: the Reload banner and the conflict toast said the same thing at once; the banner wins.
+  useEffect(() => conflictBanner(engine.roundConflictBlocked), [conflictBanner, engine.roundConflictBlocked]);
   const session: ChRoundSession = {
     round: trackingRound(props.setupData),
     heading: roundHeading(props.setupData),

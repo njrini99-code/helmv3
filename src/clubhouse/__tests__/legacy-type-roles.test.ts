@@ -54,7 +54,7 @@ const STEP_READS: Record<string, number> = {
   'styles/coachhelm-profile.css': 18,
   'styles/coachhelm-read.css': 25,
   'styles/coachhelm-standing.css': 18,
-  'styles/coachhelm-team.css': 80,
+  'styles/coachhelm-team.css': 79,
   'styles/coachhelm-thread.css': 53,
   'styles/coachhelm-track.css': 14,
   'styles/coachhelm-views.css': 7,

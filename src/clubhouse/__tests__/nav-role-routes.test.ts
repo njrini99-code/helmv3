@@ -22,7 +22,8 @@ describe('role-aware aliases (F-0055, F-0056)', () => {
   it('courses aliases for both roles (GAP-R-12); live and whats-new for a player only', () => {
     expect(nav.isAliased('/golf/dashboard/courses', 'coach')).toBe(true);
     expect(nav.isAliased('/golf/dashboard/courses', 'player')).toBe(true);
-    expect(nav.isAliased('/golf/dashboard/intelligence', 'player')).toBe(false);
+    // L-004 (owner, 18 Nov 2026): a player's Intelligence address opens their own CoachHelm, not a lock.
+    expect(nav.isAliased('/golf/dashboard/intelligence', 'player')).toBe(true);
     expect(nav.isAliased('/golf/dashboard/live', 'coach')).toBe(false);
     expect(nav.isAliased('/golf/dashboard/live', 'player')).toBe(true);
     expect(nav.isAliased('/golf/dashboard/whats-new', 'coach')).toBe(false);
@@ -49,7 +50,9 @@ describe('role-aware aliases (F-0055, F-0056)', () => {
           .slice(0, -1)
           .map((s) => (/^\[.*\]$/.test(s) ? 'x' : s))
           .join('/');
-      for (const role of ['coach', 'player'] as const) expect(nav.isAliased(address, role), `${address} ${role}`).toBe(new RegExp(`\\b${role}:`).test(body));
+      // L-004: a role whose segment the frame already renders (a rebuilt screen or its dynamic child) needs no row for its redirect to run.
+      const renders = (role: 'coach' | 'player') => nav.isRebuilt(address, role, { tournaments: true }) || nav.isRebuiltDynamicChild(address, role, { tournaments: true });
+      for (const role of ['coach', 'player'] as const) expect(nav.isAliased(address, role), `${address} ${role}`).toBe(new RegExp(`\\b${role}:`).test(body) && !renders(role));
     }
   });
 

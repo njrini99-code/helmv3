@@ -110,6 +110,8 @@ const mockFont = () => ({
   style: { fontFamily: 'mock' },
   variable: '--mock-font',
 });
+// next/font/local's default export (src/clubhouse/lib/fonts.ts, the separator face).
+vi.mock('next/font/local', () => ({ default: mockFont }));
 vi.mock('next/font/google', () => ({
   Fraunces: mockFont,
   DM_Sans: mockFont,

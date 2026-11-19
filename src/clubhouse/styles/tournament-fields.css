@@ -302,11 +302,14 @@
   color: var(--ch-text-secondary);
   cursor: pointer;
 }
+/* L-086: closed, the chevron points along the row (a collapsed row, as Settings draws one); open, it turns down. Pointing
+   down while closed read as already open, with "Qualifier" under it as if it were the details. */
 .ch-tfx__disclose svg {
+  transform: rotate(-90deg);
   transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-tfx__disclose[aria-expanded='true'] svg {
-  transform: rotate(180deg);
+  transform: none;
 }
 
 /* The receipt sentence, in place of the editor's receipt list. */

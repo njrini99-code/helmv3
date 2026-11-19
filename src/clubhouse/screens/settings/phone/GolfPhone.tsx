@@ -105,11 +105,15 @@ function MembershipPhone({ m, writes }: { m: ChMembership; writes: ChSettingsWri
   if (m.team) {
     return (
       <>
+        {/* L-087: the school once (not when it is the team's own name), the note under the team, and Leave team in a group
+            of its own so the note never reads as its helper. */}
         <Group title="Team" note="The team you play for on GolfHelm.">
           <div className="ch-setm-row is-info">
             <span className="ch-setm-row__l">{m.team.name}</span>
-            {m.team.orgName && <span className="ch-setm-row__v">{m.team.orgName}</span>}
+            {m.team.orgName && m.team.orgName.trim() !== m.team.name.trim() && <span className="ch-setm-row__v">{m.team.orgName}</span>}
           </div>
+        </Group>
+        <Group>
           <NavRow label="Leave team" danger disabled={leave.pending} onClick={() => setLeaving(true)} />
         </Group>
         <ActionSheet

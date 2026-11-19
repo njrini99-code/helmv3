@@ -5,6 +5,7 @@
  */
 import { andList, formatFixed, plural } from './format';
 import type { ChTourEvent, ChTourHistoryData, ChTourHistorySearch, ChTourPlayer } from './types';
+import { mean } from '../../lib/stats-signal';
 
 export interface TrendPoint {
   event: ChTourEvent;
@@ -86,7 +87,6 @@ export const trendY = (v: number, lo: number, hi: number) => (v - lo) / (hi - lo
 /** Where point `i` of `n` sits across the chart, 0 to 1: the centre of its own column, so a label can sit under it. */
 export const trendX = (i: number, n: number) => (i + 0.5) / n;
 
-const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
 /**
  * The sentence under the trend: how this season's average compares with last season's, in strokes a round, and, for the

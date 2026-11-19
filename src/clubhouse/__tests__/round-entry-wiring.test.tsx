@@ -535,7 +535,8 @@ describe('Round entry: Save for later and Discard from the Exit sheet (CH-11010,
     expect(mocks.deleteInProgressRound).toHaveBeenLastCalledWith('round-1');
   });
 
-  it('CH-11902 a save refused because the round changed on another device is the Reload toast and banner, never a Retry', async () => {
+  // L-036 (owner-approved, 18 Nov 2026): once the Reload banner is up it is the one message, not banner + toast.
+  it('CH-11902 a save refused because the round changed on another device is the Reload banner, once, never a Retry', async () => {
     const user = await playing();
     await openExit(user);
     mocks.savePartialRound.mockResolvedValue({ success: false, error: 'conflict' });
@@ -543,7 +544,8 @@ describe('Round entry: Save for later and Discard from the Exit sheet (CH-11010,
     const reload = vi.fn();
     Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, reload } });
     await user.click(within(code('CH-11506')!).getByRole('button', { name: /Save for later/ }));
-    await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-11902"]').length).toBeGreaterThanOrEqual(2));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument());
+    await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-11902"]')).toHaveLength(1));
     expect(code('CH-11010')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
     await user.click(screen.getAllByRole('button', { name: 'Reload' })[0]!);

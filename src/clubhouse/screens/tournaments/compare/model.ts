@@ -71,10 +71,11 @@ export function sideFigures(keys: readonly TourMetricKey[], rounds: readonly Tou
 
 const SIGNED: ReadonlySet<TourMetricKey> = new Set(['to_par_avg', 'vs_field']);
 
-/** A figure the way the row writes it: true minus where it is signed, whole percents, one decimal on strokes, two on strokes gained. */
+/** A figure the way the row writes it: true minus where it is signed, whole percents, one decimal on strokes and on strokes gained,
+ * as every other Clubhouse page writes strokes gained (owner-approved recommendation, 18 Nov 2026; it was two here alone). */
 export function figureText(def: MetricDef, v: number | null): string {
   if (def.unit === '%') return formatPercent(v);
-  if (def.unit === 'sg') return formatSigned(v, 2);
+  if (def.unit === 'sg') return formatSigned(v, 1);
   return SIGNED.has(def.key) ? formatSigned(v, 1) : formatFixed(v, 1);
 }
 
@@ -125,7 +126,7 @@ export function figureEvidence(args: {
   const { def, figure, rounds, events } = args;
   const used = new Map(figure.result.perRound.map((p) => [p.roundId, p.value]));
   const out = new Map(figure.result.excluded.map((x) => [x.roundId, x]));
-  const per = (v: number) => (def.unit === '%' ? `${Math.round(v)}%` : def.unit === 'sg' ? formatSigned(v, 2) : formatFixed(v, 1));
+  const per = (v: number) => (def.unit === '%' ? `${Math.round(v)}%` : def.unit === 'sg' ? formatSigned(v, 1) : formatFixed(v, 1));
   const n = def.floor === 'holes' ? (figure.result.of ?? 0) : figure.result.n;
   return {
     title: `${def.label} · ${args.side.toUpperCase()}`,

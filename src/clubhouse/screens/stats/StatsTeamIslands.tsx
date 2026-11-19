@@ -29,7 +29,7 @@ import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { useBusy } from '../../lib/use-busy';
 import { firstValue, gappedArea, gappedPath, lastValue, lonePoints, weekShares } from '../../lib/chart';
-import { changeInk, changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { changeInk, changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { deltaTone, deltaWords, halvesTone, MIN_TREND_POINTS } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch, withPick, type ChScope } from './WindowSwitch';
@@ -358,15 +358,15 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const y = (v: number) => padT + ((hi - v) / (hi - lo)) * (h - padT - padB);
   // About five round ticks on a step of 0.5, 1, 2, 5 or 10 (CH-21: a step capped at 2 drew a tick every two strokes of a wide range).
   const ticks = lineTicks(Math.min(lo, hi), Math.max(lo, hi), 6);
-  const tickText = (t: number) => (isSg ? formatSigned(t, Number.isInteger(t) ? 0 : 1) : toParLens ? toParWords(t, Number.isInteger(t) ? 0 : 1) : String(t));
+  const tickText = (t: number) => (isSg ? formatSigned(t, Number.isInteger(t) ? 0 : 1) : toParLens ? formatToPar(t, Number.isInteger(t) ? 0 : 1) : String(t));
   // Week names thinned so no two touch (CH-21): weeks spaced by date can sit closer than a label is wide. The newest always prints.
   const shownWeeks = new Set(thinLabels(weeks.map((_, i) => x(i)), weeks));
   // A player's end figure is toned on its gap to the reference at the precision it prints (strokes gained at one decimal, a
   // player's score in whole strokes), so a gap that prints as none is neither a gain nor a loss (A2).
   const endTone = (v: number) => (ref == null ? '' : changeTone(v - ref, !isSg, isSg ? 1 : 0));
-  const fmt = (v: number) => (isSg ? formatSigned(v) : toParLens ? toParWords(v, 1) : formatFixed(v));
+  const fmt = (v: number) => (isSg ? formatSigned(v) : toParLens ? formatToPar(v, 1) : formatFixed(v));
   // Players' raw scores read in whole strokes, as in the handoff; against par they keep a decimal, as the team's does.
-  const fmtEnd = (v: number) => (isSg ? formatSigned(v) : toParLens ? toParWords(v, 1) : formatFixed(v, 0));
+  const fmtEnd = (v: number) => (isSg ? formatSigned(v) : toParLens ? formatToPar(v, 1) : formatFixed(v, 0));
   const sel = lines.find((l) => l.p.id === focus);
   // CH-4601: the player the pointer or the keyboard rests on comes forward without being chosen; a press chooses them
   // (focus, which the note, the legend and the grid follow). Their line turns green and is drawn again over the others,
@@ -762,11 +762,6 @@ function focusVisible(el: Element): boolean {
 
 /** The weeks a change needs, in words, for the trend's note ("a change needs four"). */
 const TREND_POINTS_WORD = ['zero', 'one', 'two', 'three', 'four', 'five', 'six'][MIN_TREND_POINTS] ?? String(MIN_TREND_POINTS);
-
-/** A figure against par at `digits`: "E" where it prints as none, else signed with a true minus. */
-export function toParWords(v: number, digits = 1): string {
-  return Math.abs(v) < 0.5 * 10 ** -digits ? 'E' : formatSigned(v, digits);
-}
 
 /** The least room between two week names, and a name's width per character, in the drawing's units: the shared line chart's (`ui/charts/Line` `spreadLabels`). */
 const WEEK_LABEL_GAP = 8;

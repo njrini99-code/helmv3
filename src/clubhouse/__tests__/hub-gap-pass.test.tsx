@@ -149,7 +149,7 @@ describe('GAP-H-02 · the player’s hero is their own trip', () => {
   it('with no trip of their own, the team’s trip is one plain line under the week’s next event, with no countdown', () => {
     show({ ...PREVIEW_HUB_PLAYER, trips: { rows: [SEA], error: false } });
     expect(screen.queryByRole('region', { name: 'Next trip' })).toBeNull();
-    const next = screen.getByRole('region', { name: 'Next up' });
+    const next = screen.getByRole('region', { name: 'Up next' });
     expect(within(next).getByText('Short-game block')).toBeTruthy();
     expect(within(next).queryByText('31')).toBeNull();
     expect(next.querySelector('.ch-hw-you')!.textContent).toBe('Team away · Seahawk Intercollegiate · Fri 14 – Sun 16 Nov');
@@ -157,10 +157,10 @@ describe('GAP-H-02 · the player’s hero is their own trip', () => {
 
   it('GAP-H-25 with no trips at all a player is told about team travel, and a coach still about planning', () => {
     show({ ...PREVIEW_HUB_PLAYER, trips: { rows: [], error: false } });
-    expect(screen.getByRole('region', { name: 'Next up' }).querySelector('.ch-hw-you')!.textContent).toBe('No team travel coming up');
+    expect(screen.getByRole('region', { name: 'Up next' }).querySelector('.ch-hw-you')!.textContent).toBe('No team travel coming up');
     cleanup();
     show({ ...PREVIEW_HUB_COACH, trips: { rows: [], error: false } });
-    expect(screen.getByRole('region', { name: 'Next up' }).querySelector('.ch-hw-you')!.textContent).toBe('No trips planned');
+    expect(screen.getByRole('region', { name: 'Up next' }).querySelector('.ch-hw-you')!.textContent).toBe('No trips planned');
   });
 });
 

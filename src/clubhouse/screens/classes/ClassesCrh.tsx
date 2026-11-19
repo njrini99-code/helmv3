@@ -241,9 +241,12 @@ export function TodayCard({ classes, term, todayIso, week, onOpen }: { classes: 
           from 7 to 5. Nothing here reads a clock, so the server and the phone draw the same line. */}
       {first && (
         <div className="ch-cl-today2">
+          {/* L-071: the card's title already says Today; this is its caption, not a second header. */}
           <div className="ch-cl-today2__h">
-            <b className="ch-num">{plural(today.length, 'class', 'classes')} today</b>
-            {first.start && <span className="ch-num">First at {timeLabel(first.start, hours)}</span>}
+            <span className="ch-num">
+              {plural(today.length, 'class', 'classes')}
+              {first.start ? `, first at ${timeLabel(first.start, hours)}` : ''}
+            </span>
           </div>
           <DayRibbon iso={todayIso} classes={today} events={events} />
         </div>
@@ -270,8 +273,16 @@ export function TodayCard({ classes, term, todayIso, week, onOpen }: { classes: 
 }
 
 /** Overlaps (06 §4.4): only when this week has one, or the read failed. A plain card, no tint, no edge. */
-export function OverlapsCardCrh({ groups, clashes = [], error, onRetry }: { groups: readonly ChConflictGroup[]; /** Two of the player's own classes at once. */ clashes?: readonly ChClassClash[]; error: boolean; onRetry: () => void }) {
+export function OverlapsCardCrh({ groups, clashes: allClashes = [], error, onRetry }: { groups: readonly ChConflictGroup[]; /** Two of the player's own classes at once. */ clashes?: readonly ChClassClash[]; error: boolean; onRetry: () => void }) {
   const hours = useChClock();
+  // L-071: two sections that meet at the same time read as the same line twice; say it once.
+  const seen = new Set<string>();
+  const clashes = allClashes.filter((x) => {
+    const key = [[x.a.code || x.a.name, x.b.code || x.b.name].sort().join('+'), x.days.join(','), x.start, x.end].join('|');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   if (error) {
     return <InlineNotice code="CH-12202" title="The team’s events didn’t load" body="Overlaps with practice and travel can’t be checked right now. Nothing has changed. Try again in a moment." onRetry={onRetry} />;
   }

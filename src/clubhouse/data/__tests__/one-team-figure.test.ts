@@ -231,10 +231,10 @@ describe('a player’s strokes gained is one figure on Team stats, on CoachHelm 
   it('the file names the window its figures read, and prints them as the hole and Stats do', () => {
     const mine = playerStrokesGained(loaded.filter((r) => r.player_id === 'ada'));
     const card = toChFileSgOver(mine, null, { you: false, first: 'Ada' });
-    expect(card.source).toBe('Last 10 rounds · strokes per round');
+    expect(card.source).toBe('Based on the last 10 rounds');
     expect(card.rows[1]!.figure).toMatch(/^[+−]?\d\.\d$/);
-    expect(fileSgSource({ rounds: 4, holeRounds: 3 })).toBe('Last 4 rounds · 3 with hole scores · strokes per round');
-    expect(fileSgSource({ rounds: 0, holeRounds: 0 })).toBe('No counted rounds yet · strokes per round');
+    expect(fileSgSource({ rounds: 4, holeRounds: 3 })).toBe('Based on the last 4 rounds (3 with hole scores)');
+    expect(fileSgSource({ rounds: 0, holeRounds: 0 })).toBe('No counted rounds yet');
   });
 
   it('the file’s loaders read the rounds’ figures, not the standing tables', () => {

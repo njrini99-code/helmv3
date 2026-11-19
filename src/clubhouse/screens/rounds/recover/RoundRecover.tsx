@@ -237,7 +237,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
           code="CH-11314"
           icon={Flag}
           title="Nothing to recover"
-          body="A round saved only on this device after an interruption or a failed submit shows up here. This page finds the rounds the browser and device you are on tracked."
+          body="Rounds saved only on this device after an interruption or failed save will show here."
           action={
             <Button variant="primary" href={ROUNDS_LIBRARY}>
               Back to Rounds

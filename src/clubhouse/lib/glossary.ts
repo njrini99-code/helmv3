@@ -10,7 +10,8 @@ export const TERMS = {
   /** The redesigned Roster's sort chip, drawn as Avg (classes-roster-home 06). */
   avg: { long: 'Scoring average', short: 'Avg' },
   scoringAvg: { long: 'Scoring average', short: 'Scoring avg' },
-  handicap: { long: 'Handicap', short: 'HCP' },
+  /** One label for the handicap everywhere (L-044, L-103): "Handicap" in full, never "HCP" beside it. */
+  handicap: { long: 'Handicap', short: 'Handicap' },
   gir: { long: 'Greens in regulation', short: 'GIR' },
   fir: { long: 'Fairways hit', short: 'FIR' },
 } as const;

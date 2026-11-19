@@ -40,13 +40,19 @@ const divisionLabel = (d: ChHoursLimits['division']) => HOURS_DIVISIONS.find((x)
 
 function sourceLine(data: ChHoursData): string {
   if (data.settingsFrom === 'saved') return 'Your saved limits';
-  if (data.settingsFrom === 'division') return 'From your division on Settings, Team';
+  if (data.settingsFrom === 'division') return 'From your division in Settings > Team';
   return 'Division I until you set your limits';
 }
 
-function DayCell({ day, flags }: { day: ChHoursRow['days'][number]; flags: ChHoursFlag[] }) {
+/**
+ * A week with nothing logged at all is no data, not seven days off: its cells are "—" (L-018). "Off" is for a day with nothing
+ * counted in a week where the player did log hours, so it still means a real day off.
+ */
+const noHoursLogged = (r: ChHoursRow) => r.total === 0 && r.days.every((d) => d.off && !d.unknown);
+
+function DayCell({ day, flags, none }: { day: ChHoursRow['days'][number]; flags: ChHoursFlag[]; none: boolean }) {
   const warn = flags.some((f) => f.date === day.date && DAY_FLAGS.has(f.kind));
-  const text = day.off ? 'Off' : hoursCell(day.hours, day.unknown);
+  const text = day.off && !none ? 'Off' : hoursCell(day.hours, day.unknown);
   return (
     <span role="cell" className={'r ch-num ch-hrs-td' + (warn ? ' is-warn' : '') + (day.off ? ' is-off' : '') + (day.competition ? ' is-comp' : '')}>
       {text}
@@ -102,17 +108,20 @@ function HoursTable({ week, title }: { week: ChHoursWeek; title: string }) {
             <div className="ch-hrs-tr" role="row">
               <span role="rowheader" className="ch-hrs-who">
                 <Avatar name={r.name} id={r.id} size="sm" />
-                <span className="ch-hrs-who__n">{r.name}</span>
-                {r.year && <span className="ch-hrs-who__y">{r.year}</span>}
+                {/* L-070: the class under the name, so the name has the column's width and the class never wraps beside it. */}
+                <span className="ch-hrs-who__t">
+                  <span className="ch-hrs-who__n">{r.name}</span>
+                  {r.year && <span className="ch-hrs-who__y">{r.year}</span>}
+                </span>
               </span>
               {r.days.map((d) => (
-                <DayCell key={d.date} day={d} flags={r.flags} />
+                <DayCell key={d.date} day={d} flags={r.flags} none={noHoursLogged(r)} />
               ))}
               <span role="cell" className={'r ch-num ch-hrs-td ch-hrs-td--wk' + (weekWarn ? ' is-warn' : '')}>
                 {weekCellText(r, week.limits)}
               </span>
               <span role="cell" className={'r ch-num ch-hrs-td' + (offWarn ? ' is-warn' : '')}>
-                {r.off}
+                {noHoursLogged(r) ? hoursCell(0) : r.off}
               </span>
             </div>
             {r.flags.length > 0 && (
@@ -150,7 +159,7 @@ function HoursList({ week, self }: { week: ChHoursWeek; self: boolean }) {
                   </span>
                   <span className="ch-num">
                     <span className="ch-sr-only">{shortDay(d.date)}: </span>
-                    {d.off ? 'Off' : hoursCell(d.hours, d.unknown)}
+                    {d.off && !noHoursLogged(r) ? 'Off' : hoursCell(d.hours, d.unknown)}
                   </span>
                 </li>
               );
@@ -292,7 +301,8 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
           <p className="ch-hrs-lim ch-num">
             <span>{limitsLine(limits)}</span>
             <span className="ch-hrs-lim__src">
-              {limits.segmentAssumed ? `${sourceLine(data)} · no season dates set, so every week is read as in season` : sourceLine(data)}
+              {/* L-070: one plain sentence first, then where the limits come from. */}
+              {limits.segmentAssumed ? `No season dates set, so every week counts as in season. ${sourceLine(data).replace(/^From /, 'Limits from ')}.` : sourceLine(data)}
             </span>
           </p>
         </div>
@@ -321,8 +331,8 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
           <span>
             This week is read against{' '}
             {sourceLine(data)
-              .toLowerCase()
-              .replace(/^from /, '')}
+              .replace(/^From /, '')
+              .replace(/^Your /, 'your ')}
             . Saving your limits and changing how an event counts arrive with the next update.
           </span>
         </div>
@@ -403,7 +413,7 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
                 body={
                   coach
                     ? 'Practices, qualifiers, tournaments and meetings you add show here with their hours.'
-                    : 'Events your coach invites you to show here with their hours.'
+                    : 'Events your coach invites you to will show up here with their hours.'
                 }
               />
             ) : (

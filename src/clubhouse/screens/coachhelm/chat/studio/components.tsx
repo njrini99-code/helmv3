@@ -2,7 +2,7 @@
 
 import { ChevronRight } from 'lucide-react';
 import { useId, type CSSProperties, type ReactNode } from 'react';
-import { changeTone } from '../../../../lib/format';
+import { changeTone, toParWords } from '../../../../lib/format';
 import { NoData } from '../../../../ui/NoData';
 import { Nine, type ChNineHole } from '../../../../ui/Nine';
 import { ScrollRegion } from '../../../../ui/ScrollRegion';
@@ -226,7 +226,6 @@ export function TrendFigure(p: StudioProps<'trend'>) {
 
 /* ---------------------------------------------------------------- round */
 
-const toParWords = (n: number): string => (n === 0 ? 'par' : n > 0 ? `${n} over` : `${Math.abs(n)} under`);
 const holeDiff = (h: StudioHole): number | null => (h.score != null && h.par != null ? h.score - h.par : (h.toPar ?? null));
 
 /**
@@ -257,9 +256,9 @@ export function Round(p: StudioProps<'round'>) {
         <ul>
           {list.map(({ h, d }) => (
             <li key={h.n}>
-              <AskKey target={t} id={`hole:${h.n}`} className="ch-aks-round__hole" words={`Ask about this: hole ${h.n}, ${toParWords(d)}`}>
+              <AskKey target={t} id={`hole:${h.n}`} className="ch-aks-round__hole" words={`Ask about this: hole ${h.n}, ${toParWords(d, { short: true })}`}>
                 <b className="ch-num">{h.n}</b>
-                <span>{toParWords(d)}</span>
+                <span>{toParWords(d, { short: true })}</span>
               </AskKey>
             </li>
           ))}

@@ -56,7 +56,7 @@ import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
 import { ROSTER_SORT_DIRECTION, sortRoster, type RosterSort } from './sort';
 import { TERMS } from '../../lib/glossary';
-import { plural, pluralWord } from '../../lib/plural';
+import { plural } from '../../lib/plural';
 
 /**
  * B10.5: a sortable column's header is a button that sorts by it (the same orders as Sort players, from ./sort), and the
@@ -246,7 +246,6 @@ export function Roster({ data }: { data: ChRoster; }) {
   const active = useMemo(() => players.filter((p) => p.status === 'active'), [players]);
   const inactiveCount = players.length - active.length;
   // Injured and away are counted among the active players: availability never changes who is on the active roster.
-  const injuredCount = active.filter((p) => p.availability === 'injured').length;
   const awayCount = active.filter((p) => p.availability === 'away').length;
   // Pooled per round on the server (A3), never a mean of the players' means.
   const teamAvg = data.teamAvg;
@@ -523,31 +522,23 @@ export function Roster({ data }: { data: ChRoster; }) {
           </span>
           <h1 className="ch-display">Roster</h1>
           {/* With nobody on the roster every count is 0: the team and season above say enough (wave 10). */}
-          {!data.playersError && players.length > 0 && (
+          {/* L-078: the team card under the header carries the player, active and injured counts, so the header says only
+              what the card doesn't: who is away, the team average and why strokes gained sit below zero. */}
+          {!data.playersError && players.length > 0 && (awayCount > 0 || teamAvg != null || players.some((p) => p.sgPerRound != null)) && (
             <p>
-              <span className="ch-num">{players.length}</span> {pluralWord(players.length, 'player')} &middot;{' '}
-              <span className="ch-num">{active.length}</span> active
-              {injuredCount > 0 && (
-                <>
-                  {' '}
-                  &middot; <span className="ch-num">{injuredCount}</span> injured
-                </>
-              )}
               {awayCount > 0 && (
                 <>
-                  {' '}
-                  &middot; <span className="ch-num">{awayCount}</span> away
+                  <span className="ch-num">{awayCount}</span> away.
                 </>
               )}
-              .
               {teamAvg != null && (
                 <>
-                  {' '}
+                  {awayCount > 0 && ' '}
                   Team average <span className="ch-num">{formatAvg(teamAvg)}</span> over the season.
                 </>
               )}
               {/* Once for the page, not on every card: why the cards' strokes gained sit below zero (Q1, owner 12 Nov 2026). */}
-              {players.some((p) => p.sgPerRound != null) && <> {sgBaseline(data.sgTour ?? null).whyNamed}</>}
+              {players.some((p) => p.sgPerRound != null) && <>{(awayCount > 0 || teamAvg != null) && ' '}{sgBaseline(data.sgTour ?? null).whyNamed}</>}
             </p>
           )}
           {!data.playersError && players.length > 0 && <RosterLimitLine ctl={limit} />}
@@ -880,7 +871,7 @@ function RosterList({
                 </SortHeader>
               )}
               <SortHeader k="hcp" sort={sortBy} onSort={onSort} end>
-                HCP
+                Handicap
               </SortHeader>
               <span role="columnheader" className="r">{'SG/rd'}</span>
               <SortHeader k="rounds" sort={sortBy} onSort={onSort} end>

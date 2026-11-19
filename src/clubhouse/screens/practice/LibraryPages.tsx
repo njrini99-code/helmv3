@@ -11,7 +11,7 @@ import { useRefresh } from '../../lib/use-refresh';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useHScroll, useKeepInView } from '../../ui/use-hscroll';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { PhoneIconAction } from '../../ui/PhoneBar';
 import { Avatar } from '../../ui/Avatar';
@@ -58,15 +58,16 @@ function LibraryHead({ tab, title, actionLabel, onAction }: { tab: PracticeTab; 
   );
 }
 
-function DrillRowLink({ d }: { d: ChDrillRow }) {
-  const facts = [d.areaLabel, d.kind ? KIND_WORD[d.kind] : null, d.minutes != null ? `${d.minutes} min` : null, d.players].filter(Boolean).join(' · ');
+/** `tagged` shows the GolfHelm chip; the GolfHelm section's heading already says it, so only the team's own list asks (L-011). */
+function DrillRowLink({ d, tagged = true }: { d: ChDrillRow; tagged?: boolean }) {
+  const facts = [d.areaLabel, d.kind ? KIND_WORD[d.kind] : null, d.minutes != null ? hours(d.minutes) : null, d.players].filter(Boolean).join(' · ');
   return (
     <li>
       <Link href={`/golf/dashboard/practice/drills/${d.id}`} className="ch-prc-row">
         <span className="ch-prc-row__m">
           <span className="ch-prc-row__top">
             <b>{d.name}</b>
-            {d.source === 'lib' && <Badge>GolfHelm</Badge>}
+            {tagged && d.source === 'lib' && <Badge>GolfHelm</Badge>}
           </span>
           <span className="ch-prc-row__w ch-num">{facts}</span>
           {d.levels && <span className="ch-prc-row__l ch-num">{d.levels}</span>}
@@ -129,7 +130,7 @@ export function DrillsPage({ teamId, team, library, preview = false }: { teamId:
           <section className="ch-prc-sec" aria-label="GolfHelm drills">
             <h2>GolfHelm drills</h2>
             <SectionBoundary surface="practice.drills.library" label="GolfHelm drills" code="CH-13204">
-              {theirs.length ? <ul className="ch-prc-list is-drills">{theirs.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{area === 'bunker' || area === 'fitness' ? `No GolfHelm drills for ${AREA_WORDS[area]} yet.` : 'None in this area.'}</p>}
+              {theirs.length ? <ul className="ch-prc-list is-drills">{theirs.map((d) => <DrillRowLink key={d.id} d={d} tagged={false} />)}</ul> : <p className="ch-prc-none">{area === 'bunker' || area === 'fitness' ? `No GolfHelm drills for ${AREA_WORDS[area]} yet.` : 'None in this area.'}</p>}
             </SectionBoundary>
           </section>
         </>
@@ -185,7 +186,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
     });
     setBusy(false);
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t copy the drill.' });
-    toast({ title: 'Copied to your bank' });
+    toast({ title: 'Added to your drills' }); // L-080: the page's own word, not "bank"
     router.push(`/golf/dashboard/practice/drills/${r.id}`);
   };
   const archive = async () => {
@@ -205,7 +206,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
       <header className="ch-prc-h">
         <div>
           <LargeTitle id="ch-prc-title">{drill.name}</LargeTitle>
-          <p className="ch-prc-h__line ch-num">{[drill.areaLabel, drill.kind ? KIND_WORD[drill.kind] : null, drill.minutes != null ? `${drill.minutes} min` : null, drill.players].filter(Boolean).join(' · ')}</p>
+          <p className="ch-prc-h__line ch-num">{[drill.areaLabel, drill.kind ? KIND_WORD[drill.kind] : null, drill.minutes != null ? hours(drill.minutes) : null, drill.players].filter(Boolean).join(' · ')}</p>
         </div>
         <div className="ch-prc-h__a is-page">
           {team ? (
@@ -217,7 +218,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
             </>
           ) : (
             <Button variant="primary" busy={busy} onClick={() => void copy()}>
-              Copy to your bank
+              Add to your drills
             </Button>
           )}
         </div>
@@ -382,7 +383,7 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
   };
   return (
     <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
-      <LibraryHead tab="groups" title="Groups" actionLabel="New group" onAction={() => open('new')} />
+      <LibraryHead tab="groups" title="Groups" actionLabel={groups.length > 0 ? 'New group' : undefined} onAction={() => open('new')} />
       {groups.length === 0 ? (
         <EmptyState
           kind="first-run"
@@ -469,16 +470,28 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
   );
 }
 
+/** The blocks a template card lists before "+N more blocks". */
+const GLANCE_BLOCKS = 3;
+
 /** A template's first few rows, from its own body: the same glance Documents draws. */
 function BodyGlance({ body }: { body: PlanBodyV2 }) {
+  const blocks = body.variants.main.blocks;
+  const more = blocks.length - GLANCE_BLOCKS;
   return (
     <ul className="ch-prc-glance" aria-hidden="true">
-      {body.variants.main.blocks.slice(0, 3).map((b) => (
+      {blocks.slice(0, GLANCE_BLOCKS).map((b) => (
         <li key={b.id}>
-          <span className="ch-num">{b.len} min</span>
+          <span className="ch-num">{hours(b.len)}</span>
           <span>{b.title}</span>
         </li>
       ))}
+      {/* The three rows are not the whole session: say how many more there are, so the glance adds up to the card's total (L-019). */}
+      {more > 0 && (
+        <li className="ch-prc-glance__more">
+          <span aria-hidden="true" />
+          <span>{`+${more} more ${pluralWord(more, 'block')}`}</span>
+        </li>
+      )}
     </ul>
   );
 }
@@ -558,11 +571,12 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
       <section className="ch-prc-sec" aria-label="Your templates">
         <div className="ch-prc-sec__h">
           <h2>Your templates</h2>
-          <Segmented size="sm" label="Kind" value={kind} onChange={setKind} options={[{ value: 'session', label: 'Session' }, { value: 'block', label: 'Block' }, { value: 'week', label: 'Week' }]} />
+          {/* L-002: nothing to filter until there is a template of some kind. */}
+          {templates.length > 0 && <Segmented size="sm" label="Kind" value={kind} onChange={setKind} options={[{ value: 'session', label: 'Session' }, { value: 'block', label: 'Block' }, { value: 'week', label: 'Week' }]} />}
         </div>
         <SectionBoundary surface="practice.templates.team" label="Your templates" code="CH-13204">
         {mine.length === 0 ? (
-          <p className="ch-prc-none">Save a plan as a template from the builder’s menu, and it shows up here.</p>
+          <p className="ch-prc-none">{templates.length > 0 ? `No ${kind} templates yet. Save a plan as one from the builder’s menu.` : 'Save a plan as a template from the builder’s menu, and it shows up here.'}</p>
         ) : (
           <ul className="ch-prc-cards">
             {mine.map((t) => (

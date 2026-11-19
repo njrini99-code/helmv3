@@ -9,6 +9,17 @@ export const NO_DATA = '—';
 /** Score relative to par: E, +3, −2, −0.4. */
 export { formatToPar } from '@/lib/golf/format-to-par';
 
+/**
+ * A score against par in words, the one phrasing for a screen reader and a hole chip (L-045): "2 under par", "even par",
+ * "3 over par"; `short` drops the trailing "par" where the row already says it ("2 under", "even"). No score is "no score yet".
+ */
+export function toParWords(toPar: number | null | undefined, opts: { short?: boolean } = {}): string {
+  if (toPar == null || Number.isNaN(toPar)) return 'no score yet';
+  const par = opts.short ? '' : ' par';
+  if (toPar === 0) return opts.short ? 'even' : 'even par';
+  return `${Math.abs(toPar)} ${toPar < 0 ? 'under' : 'over'}${par}`;
+}
+
 /** Signed delta, for example strokes gained: +1.8, −0.9, 0.0. */
 export function formatSigned(value: number | null | undefined, digits = 1): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;
@@ -60,7 +71,7 @@ export function versusTeam(mine: number, team: number, lowerIsBetter: boolean, d
 /** A percentage at a whole number by default: 61%, 0%, and an em dash for no data. */
 export function formatPct(value: number | null | undefined, digits = 0): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;
-  return `${value.toFixed(digits)}%`;
+  return `${trueMinus(value.toFixed(digits))}%`;
 }
 
 /** A scoring or stat average at one decimal (CONS-15): 72.4, and an em dash for no data. */
@@ -83,7 +94,7 @@ export function formatHcp(value: number | null | undefined): string {
 /** A distance in whole yards by default (CONS-15): 152 yds, 8.5 ft with `unit` and `digits`. */
 export function formatDistance(value: number | null | undefined, unit = 'yds', digits = 0): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;
-  return `${value.toFixed(digits)} ${unit}`;
+  return `${trueMinus(value.toFixed(digits))} ${unit}`;
 }
 
 /** A finishing place: "1", "T3", or the no-data dash when there is no place. */
@@ -92,9 +103,19 @@ export function formatPlace(place: number | null | undefined, tied = false): str
   return `${tied ? 'T' : ''}${place}`;
 }
 
+/**
+ * A plain figure at `digits`: the true minus for a negative (never a hyphen-minus, L-043), no "-0.0" for a value that rounds to
+ * zero, and an em dash for no data. No plus sign: `formatSigned` is the signed one.
+ */
 export function formatFixed(value: number | null | undefined, digits = 1): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;
-  return value.toFixed(digits);
+  return trueMinus(value.toFixed(digits));
+}
+
+/** A printed number with its hyphen-minus written as the true minus; "-0.0" (a negative that rounds to zero) loses its sign. */
+export function trueMinus(printed: string): string {
+  if (!printed.startsWith('-')) return printed;
+  return /^-0(\.0*)?$/.test(printed) ? printed.slice(1) : MINUS + printed.slice(1);
 }
 
 /** Letters only: a display name with punctuation in it ("Coach (Demo)") reads "CD", not "C(". */

@@ -222,6 +222,25 @@ export function MetaLine({ p, now, tz }: { p: ChProspect; now: Date; tz?: string
 }
 
 /**
+ * L-079: the period on the line, the rule after its first " · " on a quieter line under it, so "Division I · Contact period
+ * through Nov 25 · in-person contact for prospects from …" no longer runs on. The separator stays in the text for VoiceOver.
+ */
+function CalendarWords({ prefix, text }: { prefix: string; text: string }) {
+  const at = text.indexOf(' · ');
+  if (at < 0) return <>{prefix + text}</>;
+  return (
+    <>
+      {prefix + text.slice(0, at)}
+      <span className="ch-rec-cal__more">
+        <span className="ch-sr-only"> · </span>
+        {/* Its own line, so it starts as a sentence does ("In-person contact for …"). */}
+        {text.charAt(at + 3).toUpperCase() + text.slice(at + 4)}
+      </span>
+    </>
+  );
+}
+
+/**
  * C2: the recruiting calendar's quiet line ("Contact period through Nov 8 · in-person contact for prospects from Aug 1 before their junior year"), from the governing
  * bodies' own 2026-27 rule books (data/recruiting-calendar.ts). The division comes from the team's organization; when it
  * doesn't say, the coach picks one here and it is kept on this device. Nothing sourced to say: no line.
@@ -233,7 +252,7 @@ export function CalendarLine({ c, phone = false }: { c: RecCtx; phone?: boolean 
   return (
     <div className={'ch-rec-cal' + (phone ? ' is-phone' : '') + (line ? ` is-${line.kind}` : '')} data-ch-code="CH-14808">
       <span className="ch-rec-cal__t">
-        {line ? `${short && fromTeam ? `${short} · ` : ''}${line.text}` : division ? 'No recruiting period to show today' : 'Recruiting calendar'}
+        {line ? <CalendarWords prefix={short && fromTeam ? `${short} · ` : ''} text={line.text} /> : division ? 'No recruiting period to show today' : 'Recruiting calendar'}
       </span>
       {!fromTeam && (
         <Menu

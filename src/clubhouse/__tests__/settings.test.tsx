@@ -1679,7 +1679,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
   it('81901 the player root has Golf profile in place of Team and CoachHelm, and the handicap on the identity row', () => {
     phone({ data: playerData(true) });
     // The index (2.1) wins over the handicap (2.4), as on the roster (displayHandicap).
-    expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · HCP 2.1' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · Handicap 2.1' })).toBeTruthy();
     const rows = within(list()).getAllByRole('button');
     expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Golf profile', 'Notifications', 'Preferences']);
     expect(rows.map((b) => b.querySelector('.ch-setm-row__v')?.textContent)).toEqual(['Profile, email', 'Handicap, team', 'Push, CoachHelm', 'Motion, units']);
@@ -2417,7 +2417,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     it('81901 CH-8505 Turn off CoachHelm asks first; Cancel leaves the switch on', async () => {
       const { user, writes } = phone();
       await openRow(user, /^CoachHelm/);
-      const power = await screen.findByRole('region', { name: 'CoachHelm' });
+      const power = await screen.findByRole('region', { name: 'On and off' });
       const dash = within(power).getByRole('switch', { name: 'CoachHelm on your dashboards' });
       hapticSpy.mockClear();
       await user.click(dash);
@@ -2724,7 +2724,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       // An assistant coach is "Coach", not "Head coach".
       expect(screen.getByRole('button', { name: 'Maya Reyes Coach · Varsity' })).toBeTruthy();
       await openRow(first.user, /^CoachHelm/);
-      const power = await screen.findByRole('region', { name: 'CoachHelm' });
+      const power = await screen.findByRole('region', { name: 'On and off' });
       expect(within(power).getByRole('switch', { name: 'CoachHelm for the whole team' })).toBeDisabled();
       expect(within(power).getByText('Only the head coach can change this.')).toBeTruthy();
       first.unmount();
@@ -2896,7 +2896,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
   it('81901 Golf profile on the phone shows one handicap, "Handicap index", with Home\'s number, and the sheet edits only that one', async () => {
     // No index stored: Home shows the handicap (data/player-home.ts), so Settings does too.
     const { user, writes } = phone({ data: withGolf({ handicap: '-0.8', handicapIndex: '' }) });
-    expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · HCP +0.8' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · Handicap +0.8' })).toBeTruthy();
     await openRow(user, /^Golf profile/);
     const group = await screen.findByRole('region', { name: 'Golf details' });
     const hcpRows = within(group).getAllByRole('button').filter((b) => /^Handicap/.test(b.getAttribute('aria-label') ?? b.textContent ?? ''));

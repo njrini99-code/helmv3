@@ -690,15 +690,18 @@ export async function loadPlayerProfile(input: {
       status: f.status,
       ...(loops.has(f.id) ? { loop: loops.get(f.id) } : {}),
     })),
-    goals: (goalsRes.data ?? []).map((g) => ({
-      id: g.id,
-      title: g.title,
-      metric: g.metric_id,
-      state: g.state,
-      current: g.current_value,
-      target: g.target_value,
-      baseline: g.baseline_value,
-    })),
+    // Two goals on the same stat, target, state and baseline are one goal said twice (L-016): the first stands.
+    goals: (goalsRes.data ?? [])
+      .map((g) => ({
+        id: g.id,
+        title: g.title,
+        metric: g.metric_id,
+        state: g.state,
+        current: g.current_value,
+        target: g.target_value,
+        baseline: g.baseline_value,
+      }))
+      .filter((g, i, all) => all.findIndex((o) => o.metric === g.metric && o.title === g.title && o.target === g.target && o.baseline === g.baseline && o.state === g.state) === i),
     ...(suggestionsRes
       ? {
           goalSuggestions: suggestionsRes.error

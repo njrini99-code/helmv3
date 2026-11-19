@@ -246,7 +246,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 }
 .ch-ak-home .pulse {
   display: grid;
-  gap: 12px;
+  gap: 2px;
   padding: 16px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-feature-bg);
@@ -256,6 +256,10 @@ html[data-fw-theme='dark'] .ch-ak-th {
 }
 .ch-ak-home .pulse b {
   font-weight:var(--ch-fw-600);
+}
+/* L-074: rows are 44px targets with no extra gap; the title keeps a little air above the first. */
+.ch-ak-home .pulse > b:first-child {
+  margin-bottom: 6px;
 }
 .ch-ak-home .pulse .rw {
   display: flex;
@@ -431,7 +435,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   background: var(--ch-ink-300);
 }
 .ch-ak-home:not(.is-phone) .pulse small {
-  margin-top: var(--ch-space-1);
+  margin-top: var(--ch-space-2);
   color: var(--ch-text-tertiary);
 }
 .ch-ak-th .work .sum.is-live {

@@ -162,7 +162,7 @@ export function NoRoundsYet() {
       title="Welcome to the team"
       body={
         post
-          ? 'Post your first round with New round, and your latest round, scoring line and game fill in here.'
+          ? 'Post your first round with New round at the top of the page, and your latest round, scoring line and game fill in here.'
           : 'Your stats start with the first round you post. Your latest round, scoring line and game fill in here.'
       }
       secondaryAction={

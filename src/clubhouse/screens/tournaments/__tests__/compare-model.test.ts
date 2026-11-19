@@ -21,9 +21,10 @@ describe('compare model', () => {
 
   it('writes figures by unit: whole percents, signed strokes gained and to par, one decimal on a score', () => {
     expect(figureText(METRICS.fir, 61.6)).toBe('62%');
-    expect(figureText(METRICS.sg_total, 0.456)).toMatch(/^\+0\.46$/);
-    expect(figureText(METRICS.sg_total, -0.456)).toMatch(/0\.46$/);
-    expect(figureText(METRICS.sg_total, -0.456)).not.toBe('0.46');
+    // One decimal on strokes gained, as every other page writes it (owner-approved, 18 Nov 2026; it was two here).
+    expect(figureText(METRICS.sg_total, 0.456)).toMatch(/^\+0\.5$/);
+    expect(figureText(METRICS.sg_total, -0.456)).toMatch(/0\.5$/);
+    expect(figureText(METRICS.sg_total, -0.456)).not.toBe('0.5');
     expect(figureText(METRICS.to_par_avg, 1.24)).toMatch(/^\+1\.2$/);
     expect(figureText(METRICS.score_avg, 72.04)).toBe('72.0');
     expect(figureText(METRICS.score_avg, null)).toBe('—');

@@ -286,8 +286,10 @@ function FirstRun({ untracked, newEvent }: { untracked: ChTourSetupGroup[]; newE
   const first = untracked[0];
   if (first) {
     return (
+      // L-003: with candidates the list under it is the content, so this leads as a compact line, not a page-size card.
       <EmptyState
-        size="page"
+        compact
+        kind="first-run"
         code="CH-16352"
         icon={Trophy}
         title={`${plural(untracked.length, 'tournament')} on your calendar to set up`}

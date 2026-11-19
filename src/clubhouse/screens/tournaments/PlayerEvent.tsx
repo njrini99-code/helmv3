@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -133,7 +133,7 @@ function ListPage({ data, phone }: { data: ChTourPlayerData; phone: boolean }) {
       {data.errors.events ? (
         <InlineNotice code="CH-16290" title="The events didn’t load" body="Nothing has changed. Try again." onRetry={refresh} retrying={refreshing} />
       ) : data.list.length === 0 ? (
-        <EmptyState size="page" kind="first-run" code="CH-16390" title="No tournaments yet" body="When your coach sets up an event, it shows here with the days and your scores." />
+        <EmptyState compact kind="first-run" icon={Trophy} code="CH-16390" title="No tournaments yet" body="When your coach sets up an event, it shows here with the days and your scores." />
       ) : (
         <div className={'ch-tour-pl-body ch-tour-pl-body--list' + (upcoming.length > 0 && played.length > 0 ? ' is-two' : '')}>
           {phone ? (

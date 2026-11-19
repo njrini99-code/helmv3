@@ -208,7 +208,7 @@ export function Timeline({
       </div>
       <div className="ch-tour-cmp-tl__bot">
         <span>
-          {preview ? 'Previewing · release to apply' : label} · {ss.n ? `${tsc.context.kind === 'events' || tsc.context.kind === 'event' ? `${plural(ss.events, 'event')} · ` : ''}${plural(ss.full, 'round')}` : 'no rounds in this range'}
+          {preview ? 'Previewing · release to apply' : label} · {ss.n ? `${tsc.context.kind === 'events' || tsc.context.kind === 'event' ? `${plural(ss.events, 'event')} · ` : ''}${plural(ss.full, 'round')}` : 'no rounds inside the selected range'}
         </span>
         <span>Arrow keys move an end by a week · Shift for a month</span>
       </div>

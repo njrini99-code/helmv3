@@ -1,6 +1,7 @@
 import { tidyCourseName } from '../lib/course-name';
 import { countsInAverages, isScoreCountable, isTotalOnlyCountable, recordedPutts } from './round-scope';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { mean } from '../lib/stats-signal';
 
 /**
  * The Rounds library's data shapes and the pure steps that build them, kept
@@ -8,7 +9,6 @@ import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
  * the same code the page does.
  */
 
-const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
 export type ChRoundType = 'practice' | 'tournament' | 'qualifier';
 

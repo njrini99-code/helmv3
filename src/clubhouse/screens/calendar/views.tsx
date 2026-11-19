@@ -138,10 +138,13 @@ export function EventBlock({
   onSlot,
   clear,
   cover,
+  packed = false,
 }: {
   e: ChCalEvent;
   lane: number;
   lanes: number;
+  /** R-5: overlapping lanes side by side (a one-day column), not cascaded. */
+  packed?: boolean;
   sel: boolean;
   flagged: boolean;
   people: Map<string, ChCalPerson>;
@@ -190,11 +193,11 @@ export function EventBlock({
   /** Overlapping events cascade, as Apple Calendar does (owner, 2026-10-06: the split lanes crushed titles into
    *  fragments): each later lane steps right and lies over the earlier ones, reaching the column's right edge, so every
    *  block keeps a readable width and an earlier one shows in full above where the next begins. */
-  const box = clear != null ? laneBox(0, 1) : laneBox(lane, lanes);
+  const box = clear != null ? laneBox(0, 1) : laneBox(lane, lanes, packed);
   const shared = lanes > 1;
   // A busy block (someone's time, not a team event) lies under the events it overlaps, whatever its lane (A26): stepped in
   // over a team round it hid the round's title.
-  const under = shared && (e.type === 'busy' || e.busyOnly);
+  const under = shared && !packed && (e.type === 'busy' || e.busyOnly);
   const title = eventTitle(e, people, viewerId);
   // P-5 4.9: a round shows its tournament's name and a pill; a block too short for the pill keeps "Name · R1".
   const rl = roundLabel(e, title);
@@ -353,7 +356,10 @@ export function TimeGrid({
   coach = false,
   viewerId,
   legend,
+  pack = false,
 }: {
+  /** R-5 (owner, 18 Nov 2026): set overlapping events side by side; the Day view's one wide column passes it. */
+  pack?: boolean;
   dates: string[];
   events: ChCalEvent[];
   people: Map<string, ChCalPerson>;
@@ -499,6 +505,8 @@ export function TimeGrid({
         </div>
         {dates.map((d) => {
           const laid = layoutLanes(groupClasses(events.filter((e) => !isBar(e) && e.date === d && e.start != null && e.end != null)));
+          // R-5: one day's column is wide enough to set overlaps side by side; nothing then lies over anything.
+          const packed = pack && dates.length === 1;
           return (
             <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : d < now.date ? ' is-past' : '') + (drag?.kind === 'move' && drag.to.date === d ? ' is-target' : '')}>
               {daylight && <Daylight dl={daylight(d)} from={from} to={to} label={d === dates[dates.length - 1]} />}
@@ -506,7 +514,7 @@ export function TimeGrid({
               {d === now.date && nowVisible && <span className="ch-wk__gone" aria-hidden="true" style={{ height: (now.hour - from) * CAL_HH }} />}
               {laid.map((l) => {
                 const g = l.e;
-                if (isClassGroup(g)) return <ClassGroupBlock key={g.id} g={g} lane={l.lane} lanes={l.lanes} selId={selId} people={people} onSelect={onSelect} from={from} to={to} cover={coveredFrom(l, laid)} />;
+                if (isClassGroup(g)) return <ClassGroupBlock key={g.id} g={g} lane={l.lane} lanes={l.lanes} packed={packed} selId={selId} people={people} onSelect={onSelect} from={from} to={to} cover={packed ? undefined : coveredFrom(l, laid)} />;
                 return (
                 <EventPeek key={g.id} e={g} coach={coach} people={people} onOpen={() => onSelect(g.id)} disabled={!!drag}>
                   <EventBlock
@@ -524,8 +532,9 @@ export function TimeGrid({
                     state={drag?.e.id === g.id ? 'held' : clashes?.has(g.id) ? 'clash' : undefined}
                     past={isPastEvent(g, now)}
                     onSlot={(on) => setRested((cur) => (on ? g.id : cur === g.id ? null : cur))}
-                    clear={l.lanes > 1 && isUnder(g) ? clearFrom(g, laid) : undefined}
-                    cover={coveredFrom(l, laid)}
+                    clear={!packed && l.lanes > 1 && isUnder(g) ? clearFrom(g, laid) : undefined}
+                    cover={packed ? undefined : coveredFrom(l, laid)}
+                    packed={packed}
                   />
                 </EventPeek>
                 );

@@ -1,4 +1,5 @@
 import { Instrument_Sans, JetBrains_Mono, Norican } from 'next/font/google';
+import localFont from 'next/font/local';
 
 /**
  * Clubhouse type: Instrument Sans (variable weight and width) for everything,
@@ -34,4 +35,19 @@ export const norican = Norican({
   variable: '--ch-font-script',
 });
 
-export const clubhouseFontVariables = `${instrumentSans.variable} ${jetbrainsMono.variable} ${norican.variable}`;
+/** L-091: the middle dot alone, from Instrument Sans with room on both sides (its own dot has no side bearings, so
+ *  "4 rounds · avg 74.7" set the dot against the words). First in `--ch-font-sans`, limited to U+00B7, so every other
+ *  character still comes from Instrument Sans. Two faces of about 1.4 KB, so a bold line keeps a bold dot (lib/fonts/README.md). */
+export const separator = localFont({
+  src: [
+    { path: './fonts/ch-separator-400.otf', weight: '100 549', style: 'normal' },
+    { path: './fonts/ch-separator-700.otf', weight: '550 900', style: 'normal' },
+  ],
+  display: 'swap',
+  declarations: [{ prop: 'unicode-range', value: 'U+00B7' }],
+  adjustFontFallback: false,
+  fallback: [],
+  variable: '--ch-font-separator',
+});
+
+export const clubhouseFontVariables = `${separator.variable} ${instrumentSans.variable} ${jetbrainsMono.variable} ${norican.variable}`;

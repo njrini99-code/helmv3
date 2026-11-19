@@ -1,5 +1,6 @@
 import { clampRadius } from '../../../lib/chart-geometry';
 import { TERMS } from '../../../lib/glossary';
+import { SG_LEG_LABEL } from '../../../lib/sg';
 import type { ChStation } from '../../../data/coachhelm-team-shape';
 
 /** The page's `HOLE.v` and `HOLE.h` tables, as typed constants; the key names move to the app's stations (AC-HOLE-03). */
@@ -57,16 +58,19 @@ export const HOLE: Record<'v' | 'h', HoleGeometry> = {
       putting: { x: 170, y: 76, lx: 252, ly: 58, a: 'start' },
     },
     coins: {
+      // L-030: tucked against the Approach mark (110, 250), not 80 units away at the drawing's edge.
       approach: [
-        [40, 292],
-        [64, 292],
-        [88, 292],
+        [72, 274],
+        [70, 300],
+        [96, 310],
       ],
-      // Off the bunker at (110, 100), where a hollow coin read as a broken mark (TEAM-11).
+      // L-030: an arc against the Putting mark's left (170, 76), clear of its largest halo (28), the flag and the bunker at
+      // (110, 100), where a hollow coin read as a broken mark (TEAM-11). They stood 45 units below it, by Short game, and read
+      // as stickers with no mark of their own.
       putting: [
-        [128, 118],
-        [152, 124],
-        [104, 124],
+        [128, 76],
+        [134, 50],
+        [136, 100],
       ],
       tee: [[200, 384], [176, 390], [224, 390]],
       short_game: [[160, 152], [136, 160], [112, 168]],
@@ -119,12 +123,13 @@ const COIN_GAP = 3;
  * 11 Nov). The slots fan out from the first one, by just enough that every two rings keep a gap, and the coins drawn are moved
  * together, never apart, so the whole group sits inside the drawing.
  */
+// Only + - * / and sqrt below (exactly rounded in Node and Safari), so the server's coins match the client's: hypot differs in the last digit.
 export function coinSlots(H: HoleGeometry, s: ChStation, r: number, drawn: number): Array<[number, number]> {
   const all = H.coins[s];
   const [ox, oy] = all[0] ?? [0, 0];
   let closest = Infinity;
   for (let i = 0; i < all.length; i++) {
-    for (let j = i + 1; j < all.length; j++) closest = Math.min(closest, Math.hypot(all[i]![0] - all[j]![0], all[i]![1] - all[j]![1]));
+    for (let j = i + 1; j < all.length; j++) closest = Math.min(closest, Math.sqrt((all[i]![0] - all[j]![0]) * (all[i]![0] - all[j]![0]) + (all[i]![1] - all[j]![1]) * (all[i]![1] - all[j]![1])));
   }
   const fan = Number.isFinite(closest) && closest > 0 ? Math.max(1, (2 * r + COIN_RING + COIN_GAP) / closest) : 1;
   const slots = all.slice(0, Math.max(0, drawn)).map(([x, y]): [number, number] => [ox + (x - ox) * fan, oy + (y - oy) * fan]);
@@ -138,5 +143,6 @@ export function coinSlots(H: HoleGeometry, s: ChStation, r: number, drawn: numbe
   return slots.map(([x, y]) => [x + dx, y + dy]);
 }
 
-export const STATION_NAME: Record<ChStation, string> ={ tee: 'Off the tee', approach: 'Approach', short_game: 'Around the green', putting: 'Putting' };
+export const STATION_NAME: Record<ChStation, string> = { tee: SG_LEG_LABEL.tee, approach: SG_LEG_LABEL.approach, short_game: SG_LEG_LABEL.around, putting: SG_LEG_LABEL.putting };
+// The worm's compact names (its drawing sizes to them, and the leg picker reads their first letters): `STATION_NAME` is the one full name.
 export const STATION_SHORT: Record<ChStation, string> = { tee: 'Tee', approach: 'Approach', short_game: TERMS.shortGame.short, putting: 'Putting' };
