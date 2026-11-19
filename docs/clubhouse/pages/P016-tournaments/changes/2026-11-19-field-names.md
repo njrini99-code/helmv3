@@ -14,7 +14,8 @@ Held items: none
 ### Changed
 
 - `screens/tournaments/fields/TournamentFields.tsx`: the course key reads
-  "Search courses, course not chosen", or "<course>, course, <tees>".
+  "Search courses, course not chosen", or the course name, then "course",
+  then the tees.
 - `screens/tournaments/fields/RoundRow.tsx`: "Add time for round N".
 
 ### Why

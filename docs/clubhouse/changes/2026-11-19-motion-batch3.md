@@ -1,6 +1,6 @@
 # Clubhouse shared — Changelog
 
-## 2026-11-19 — Motion gate truth, plate on a clip, desk history fade in WebKit, a twin tap only
+## 2026-11-19 — Motion gate truth, plate clip, WebKit desk fade, twin taps
 
 ```text
 Design package: none
@@ -31,6 +31,11 @@ Held items: none
   (F-28).
 - The motion gate (`e2e/clubhouse-gate/motion.ts`) skips scroll-driven
   animations in its idle and first-paint rules (the large title's fade).
+
+- `styles/tokens.css`: five rings named once (`--ch-ring-ink`,
+  `--ch-ring-gain`, `--ch-ring-on-green`, `--ch-key-raised-ringed`,
+  `--ch-ring-ledger-offset`) for the raw shadows #2586 added; the CSS
+  ratchet's records are back at or under where they were.
 
 ### Why
 

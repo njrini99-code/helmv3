@@ -31,7 +31,7 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 91,
+    "raw-shadow": 89,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -320,11 +320,11 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 10,
-    "raw-motion": 1,
+    "raw-motion": 0,
     "keyframes": 0
   },
   "src/clubhouse/styles/recruiting.css": {
-    "hex": 3,
+    "hex": 1,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
@@ -409,7 +409,7 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 20,
+    "raw-shadow": 19,
     "raw-motion": 0,
     "keyframes": 0
   },

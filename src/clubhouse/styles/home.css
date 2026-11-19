@@ -2162,7 +2162,6 @@
   font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
-  text-wrap: pretty;
 }
 /* A leg's trend across the card (PlayerGame Spark): the plot stretches to the card's width; the dot is HTML so it stays
    round. Ink when steady, green when it moved the good way, amber when not. */
