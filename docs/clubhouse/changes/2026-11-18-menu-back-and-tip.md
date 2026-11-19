@@ -18,11 +18,12 @@ Held items: none
   (`use-panel-history.ts`). Back or the iOS edge swipe pops it and closes the
   overlay on the page; closed any other way, the entry comes off quietly. A
   link picked from the overlay replaces the entry (`replaces()`), so Back skips no
-  duplicate page; an action picked runs once the entry is off (`release`), so a
-  navigation it starts is never undone by that Back.
+  duplicate page. An action picked from a Menu runs at once, as before, and the
+  entry comes off as the menu closes; `release(run)` (run once the entry is off)
+  is there for an overlay whose action navigates in code.
 - `ui/Menu.tsx`: uses it on the phone only (the desktop pushes nothing); returns
-  focus to its trigger with `chFocusQuietly`. `MenuItems` takes `replace`,
-  `onFollow` and `run` (ContextMenu passes none and is unchanged).
+  focus to its trigger with `chFocusQuietly`. `MenuItems` takes `replace` and
+  `onFollow` (ContextMenu passes none and is unchanged).
 - `ui/Tooltip.tsx`: a tip never opens for quiet focus (`data-ch-peek-quiet`): a
   menu or dialog handing focus back to its trigger is not someone arriving on it.
 

@@ -195,7 +195,7 @@ export function Menu({
                 {...chMenuMotion(reduced)}
                 onKeyDown={onKey}
               >
-                <MenuItems items={items} onClose={close} replace={backEntry.replaces()} onFollow={backEntry.forget} run={backEntry.release} />
+                <MenuItems items={items} onClose={close} replace={backEntry.replaces()} onFollow={backEntry.forget} />
               </m.div>
             )}
           </AnimatePresence>,
@@ -234,7 +234,6 @@ export function MenuItems({
   onClose,
   replace = false,
   onFollow,
-  run = (fn) => fn(),
 }: {
   items: MenuItem[];
   onClose: (focus?: boolean) => void;
@@ -242,8 +241,6 @@ export function MenuItems({
   replace?: boolean;
   /** A link was followed: the menu's entry is the link's now. */
   onFollow?: () => void;
-  /** Runs a picked action once the menu's own history entry is off the stack. */
-  run?: (fn: () => void) => void;
 }) {
   const first = items.findIndex((item) => item.kind !== 'separator');
   return (
@@ -289,10 +286,8 @@ export function MenuItems({
             tabIndex={i === first ? 0 : -1}
             onClick={() => {
               haptic(it.feel ?? 'select');
-              const select = it.onSelect;
               onClose();
-              // In the same handler, before the close's effect: the menu's Back entry goes first, then the action.
-              run(() => select?.());
+              it.onSelect?.();
             }}
           >
             {content}

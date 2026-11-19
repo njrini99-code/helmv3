@@ -81,16 +81,14 @@ describe('Menu on the phone and Back (audit 2026-11-18)', () => {
     expect(screen.getByRole('menuitem', { name: 'Open board' }).hasAttribute('data-replace')).toBe(true);
   });
 
-  it('an action picked waits for the menu’s entry to come off before it runs', async () => {
+  it('an action picked runs at once, and the menu takes its entry back off', () => {
     const onPick = vi.fn();
     const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
     render(<Host onPick={onPick} />);
     fireEvent.click(screen.getByRole('button', { name: 'More' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Recently updated' }));
-    expect(back).toHaveBeenCalledTimes(1);
-    expect(onPick).not.toHaveBeenCalled();
-    await popTo(null);
     expect(onPick).toHaveBeenCalledTimes(1);
+    expect(back).toHaveBeenCalledTimes(1);
     back.mockRestore();
   });
 
