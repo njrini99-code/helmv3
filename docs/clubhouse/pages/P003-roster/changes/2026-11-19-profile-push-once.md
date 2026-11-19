@@ -13,7 +13,8 @@ Held items: none
 
 ### Changed
 
-- `screens/roster/Roster.tsx`: a face or name opens the profile through `usePushOnce` (the shared navigation hold).
+- `screens/roster/Roster.tsx`: a face or name opens the profile through
+  `usePushOnce` (the shared navigation hold).
 
 ### Why
 
@@ -21,5 +22,6 @@ Held items: none
 
 ### Verification
 
-- `screens/roster/__tests__/card-picks-player.test.tsx`: a second tap inside the hold pushes nothing more.
+- `screens/roster/__tests__/card-picks-player.test.tsx`: a second tap inside
+  the hold pushes nothing more.
 - `npm run clubhouse:check`. WebKit before and after numbers are in the PR body.

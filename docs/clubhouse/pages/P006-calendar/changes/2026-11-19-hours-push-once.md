@@ -13,11 +13,13 @@ Held items: none
 
 ### Changed
 
-- `screens/calendar/Calendar.tsx`: the Practice hours item pushes through `usePushOnce`, so it starts the shared navigation hold.
+- `screens/calendar/Calendar.tsx`: the Practice hours item pushes through
+  `usePushOnce`, so it starts the shared navigation hold.
 
 ### Why
 
-- Audit 2026-11-19: menu items that called `router.push` directly did not hold a double tap.
+- Audit 2026-11-19: menu items that called `router.push` directly did not hold
+  a double tap.
 
 ### Verification
 
