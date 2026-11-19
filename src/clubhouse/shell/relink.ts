@@ -35,6 +35,7 @@ export function relinkFor(href: string, pathname: string, search: string): { whe
   try {
     url = new URL(href, 'https://clubhouse.invalid');
   } catch {
+    // Not an address: nothing to open.
     return null;
   }
   const target = addressKey(url.pathname, url.search);

@@ -38,12 +38,13 @@ Team Hub opens on Home, or on the tab in `?tab=`, for a coach and for a player. 
 Status: DEFINED
 
 The route skeleton (CH-10405) is the Clubhouse one inside the shell and the
-Fairway one outside it; on the phone it takes the signed-in role's shape from
-the shell (a coach's New announcement, a coach's five tabs or a player's four),
-so the page lands without moving; nothing shows for the first 150ms, then a fade
-(the shell's 11609). Team Hub loads no section on its own after the server
-render, so there are no section skeletons; a save in flight says what it is
-doing on its button (Uploading, Posting, Saving, Assigning).
+Fairway one outside it (since Fairway's retirement on 2026-11-14 there is no
+outside); on the phone it takes the signed-in role's shape from the shell (a
+coach's New announcement, a coach's five tabs or a player's four), so the page
+lands without moving; nothing shows for the first 150ms, then a fade (the
+shell's 11609). Team Hub loads no section on its own after the server render, so
+there are no section skeletons; a save in flight says what it is doing on its
+button (Uploading, Posting, Saving, Assigning).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -178,7 +179,21 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-Who may open the page: a coach or a player with `golf_clubhouse_ui` on for that role (the shell's gate); anyone else gets the Fairway Team Hub. The role decides the view: a player is never drawn a coach's controls and a coach never a player's (100801). A player's data carries only what is theirs (100802) and only the events they are invited to that still take a reply (100803). Off any team, a coach or a player gets the no-team page (CH-10309, category 04); a player whose team membership can't be read gets the route's error view and is never told they have no team (shared with every page, `routes/team.ts`; not tested here). The server actions are the gate that counts (100804, reserved: read, not run), and two of them are weaker than the screen: `deleteGolfDocument` lets any active member of the team through and `uploadGolfDocument` any signed-in user, so for those the screen and row-level security are the gate; reported, not changed here.
+Who may open the page: a coach or a player with `golf_clubhouse_ui` on for that
+role (the shell's gate); anyone else gets the Fairway Team Hub. (Since
+2026-11-14 the flag and Fairway are gone: every coach and player gets this page,
+and the dashboard layout sends a session with neither role to onboarding.) The
+role decides the view: a player is never drawn a coach's controls and a coach
+never a player's (100801). A player's data carries only what is theirs (100802)
+and only the events they are invited to that still take a reply (100803). Off
+any team, a coach or a player gets the no-team page (CH-10309, category 04); a
+player whose team membership can't be read gets the route's error view and is
+never told they have no team (shared with every page, `routes/team.ts`; not
+tested here). The server actions are the gate that counts (100804, reserved:
+read, not run), and two of them are weaker than the screen: `deleteGolfDocument`
+lets any active member of the team through and `uploadGolfDocument` any
+signed-in user, so for those the screen and row-level security are the gate;
+reported, not changed here.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

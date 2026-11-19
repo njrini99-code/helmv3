@@ -37,6 +37,7 @@ import {
 } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { classifyThrown } from '@/lib/coachhelm/v3/engine/analysis-outcome';
 import { describeError } from '@/lib/utils/describe-error';
+import { readsReplaceCards, v2WriterStopped } from '@/lib/coachhelm/v3/analyst/reads/engine-gates';
 import { buildFocusAreasFromAnalysis, convertV2ToInsightRecord, getCoachPhilosophy, shouldIncludeInsight, verifyPlayerAccessForInsights, weightInsightsByPhilosophy } from './insights-shared';
 import type { InsightRecord, PlayerCoachHelmDashboardData } from './insights-shared';
 
@@ -568,10 +569,13 @@ async function triggerPlayerInsightsAfterRoundImpl(
     // would have archived anyway. `isInsightTypeEnabled` closes over
     // `philosophy` so the orchestrator and upsertInsight stay decoupled
     // from server-action code.
+    // CoachHelm reads (flag `coachhelm_reads_v1`, listed teams only): the analyst's read replaces today's
+    // Tier-1 cards, so for such a team every insight type is held back here. Rows already written stay.
+    const replacedByReads = readsReplaceCards(teamId);
     const philosophyGate: PhilosophyGate = {
       confidenceThreshold,
       isInsightTypeEnabled: (insightType) =>
-        shouldIncludeInsight(insightType as InsightType, philosophy),
+        !replacedByReads && shouldIncludeInsight(insightType as InsightType, philosophy),
     };
 
     // Run analysis for this single player. The orchestrator uses the
@@ -744,7 +748,9 @@ async function triggerPlayerInsightsAfterRoundImpl(
 
     // Convert V2 insights to records
     const newInsights: InsightRecord[] = [];
-    for (let i = 0; i < analysis.insights.length; i++) {
+    // The hidden v2 writer stops only behind `coachhelm_v2_writer_stop_v1` (off everywhere: unchanged), the owner's call.
+    const v2Count = v2WriterStopped() ? 0 : analysis.insights.length;
+    for (let i = 0; i < v2Count; i++) {
       const insight = analysis.insights[i];
       if (!insight || insight.confidence < confidenceThreshold) continue;
 

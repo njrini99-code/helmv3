@@ -381,7 +381,10 @@ export function Bell() {
    * nothing (CH-1003, the switcher's own failure).
    */
   const openOnTeam = async (url: string, team: { id: string; name: string }) => {
-    const res = await setActiveTeam(team.id).catch(() => null);
+    const res = await setActiveTeam(team.id).catch((err: unknown) => {
+      chReport(err, { surface: 'shell.bell', action: 'switchTeam', severity: 'medium', extra: { teamId: team.id } });
+      return null;
+    });
     if (!res?.success) {
       switchFailed(team.name, (res && TEAM_SWITCH_REFUSED[res.reason]) || `You’re still on ${activeTeamName}. Try again.`);
       return;

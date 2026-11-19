@@ -5,6 +5,7 @@ import type { ChMessagesApi } from './types';
 import type { MessagesApiCtx } from './ctx';
 import type { ChReaction, ChReactionKey } from '../model';
 import { haptic } from '../../../lib/haptics';
+import { chReport } from '../../../lib/track';
 import { CH_DUR } from '../../../lib/motion';
 import { MESSAGE_REACTIONS } from '@/hooks/golf/use-message-reactions';
 import { msAnimate } from '../motion/messages-motion';
@@ -86,7 +87,7 @@ export function useOverlayApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'edit' |
           haptic('success');
           toast({ title: 'Message edited' });
           // The rail's preview may be this message.
-          void refetch().catch(() => undefined);
+          void refetch().catch((err: unknown) => chReport(err, { surface: 'messages.conversations', action: 'refetchAfterEdit', severity: 'low' }));
         }),
       remove: async (id) => {
         // MOT-X-10: the row fades while the delete is on its way; a refusal brings it back.
@@ -95,7 +96,7 @@ export function useOverlayApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'edit' |
           await msgs.removeMessage(id);
           haptic('success');
           toast({ title: 'Deleted for everyone' });
-          void refetch().catch(() => undefined);
+          void refetch().catch((err: unknown) => chReport(err, { surface: 'messages.conversations', action: 'refetchAfterDelete', severity: 'low' }));
         });
         if (!ok) {
           fading?.cancel();

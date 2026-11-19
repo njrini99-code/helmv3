@@ -74,8 +74,9 @@ rules), `writes.ts` (every write and lookup behind one interface) and `live.ts` 
 
 ### Modified Clubhouse components
 
-Two shared pieces were added for this page (PROGRESS.md, 2026-09-30): `usePhoneTabsHidden` in the phone chrome,
-so a full-page form hides the tab bar, and `RefreshNotice` moved into `ui/`.
+Two shared pieces were added for this page (PROGRESS.md, 2026-09-30):
+`usePhoneTabsHidden` in the phone chrome, so a full-page form hides the tab bar
+(the section strip since 2026-10-13), and `RefreshNotice` moved into `ui/`.
 
 ## Actions affected
 
@@ -133,9 +134,9 @@ the confirmed squad above the leaderboard, the leaderboard as rows on seams, and
 a rounds sheet for a player (round chips, Out and In, Message and Stats); Edit,
 Close and Reopen sit in the bar's actions sheet (Q-20), Close is also a key on
 the page once the qualifier is past its last day, and round-by-round stays on
-desktop. The form
-puts Cancel and Create in the top bar and hides the tab bar. Manage selections
-has its own top bar and a foot for the primary action.
+desktop. The form puts Cancel and Create in the top bar and hides the tab bar
+(now the section strip). Manage selections has its own top bar and a foot for
+the primary action.
 
 Its look is the Coach Home "Mobile clubhouse pass" board (owner, 2026-10-08:
 round 3, "fewer containers, one feature card"): every page opens on the engraved
@@ -162,18 +163,23 @@ total strokes both match.
 
 ## Existing backend capabilities used
 
-`createGolfQualifier`, `updateGolfQualifierDetails`, `setQualifierRoundCourses`, `updateQualifierStatus`
-(`src/app/golf/actions/golf.ts`), `setQualifierSquadSize`, `setQualifierEntrants`
-(`qualifier-setup.ts`), `advanceSelectionState`, `setQualifierCoachPick`, `removeQualifierCoachPick`,
-`confirmQualifierSelection` (`v3/qualifying.ts`), `listCoursesStrict`, `getTeamSavedCourses`,
-`getCourseDetail` (`course-library.ts`) and the realtime channel on `golf_rounds`. WIRING.md maps each.
+`createGolfQualifier`, `updateGolfQualifierDetails`, `setQualifierRoundCourses`,
+`updateQualifierStatus` (`src/app/golf/actions/golf.ts`, since 2026-10-08
+`qualifier-actions.ts`), `setQualifierSquadSize`, `setQualifierEntrants`
+(`qualifier-setup.ts`), `advanceSelectionState`, `setQualifierCoachPick`,
+`removeQualifierCoachPick`, `confirmQualifierSelection` (`v3/qualifying.ts`),
+`listCoursesStrict`, `getTeamSavedCourses`, `getCourseDetail`
+(`course-library.ts`) and the realtime channel on `golf_rounds`. WIRING.md maps
+each.
 
 ## HELD requirements
 
 ### New features
 
-`setQualifierSquadSize` and `setQualifierEntrants` (Edit's squad and players): built, and HELD behind
-`isClubhouseFor` (`docs/clubhouse/held/features/qualifier-squad-and-entrants.md`, D-61).
+`setQualifierSquadSize` and `setQualifierEntrants` (Edit's squad and players):
+built, and HELD behind `isClubhouseFor`
+(`docs/clubhouse/held/features/qualifier-squad-and-entrants.md`, D-61). Since
+2026-11-14 that gate is a role check only, so every coach gets them.
 
 ### New data/schema
 

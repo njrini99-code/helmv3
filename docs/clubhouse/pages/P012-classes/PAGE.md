@@ -39,7 +39,8 @@ and the sheets to add, edit, import and remove a class.
 ```text
 Page ID:            P012
 Page Name:          Classes
-Route:              /golf/dashboard/classes (player only; a coach keeps the Fairway page at this address)
+Route:              /golf/dashboard/classes (player only; a coach kept the Fairway page at this address until
+                    2026-11-14, and since then gets nothing here)
 Bridge Namespace:   12 (Bridge IDs 12ccii, D-68; catalog codes CH-12xxx)
 Roles:              player
 Implementation Root: src/clubhouse/screens/classes
@@ -112,7 +113,8 @@ Status:           approved
 
 ### Enters from
 
-The sidebar (School, for a player) and the More sheet on the phone (D-66).
+The sidebar (School, for a player) and, on the phone, the section strip (the
+More sheet of D-66 was replaced on 2026-10-13).
 
 ### Exits to
 
@@ -128,8 +130,8 @@ Implementation:  src/clubhouse/screens/classes, on the table and the server acti
                  syncClassToCalendar and removeClassFromCalendar
 Data:            calendar_events: golf_player_classes (the player's own rows), golf_events (the team's events,
                  and the class events the sync writes, tagged [class:<id>]), golf_team_settings (timezone)
-Legacy:          src/app/golf/(dashboard)/dashboard/classes/LegacyClassesPage.tsx is the current page, moved
-                 unchanged, for coaches and everyone outside the Clubhouse
+Legacy:          src/app/golf/(dashboard)/dashboard/classes/LegacyClassesPage.tsx was the page for coaches and
+                 everyone outside the Clubhouse; deleted with Fairway on 2026-11-14 (#2527)
 ```
 
 ## Current status

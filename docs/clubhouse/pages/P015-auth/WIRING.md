@@ -17,10 +17,11 @@ counts include wrappers rather than unique popups.
 
 ```text
 Routes:                  /golf/login, /golf/welcome
-Pages:                   src/app/golf/(auth)/login/page.tsx and welcome/page.tsx (today's pages, untouched)
-Flag choice:             src/app/golf/(auth)/login/layout.tsx and welcome/layout.tsx:
-                         isClubhouseFrontDoor() (golf_clubhouse_front_door) ? Clubhouse route : children.
-                         The layout chooses which page is drawn and gates nothing else.
+Pages:                   src/app/golf/(auth)/login/page.tsx -> ClubhouseSignInRoute and welcome/page.tsx ->
+                         ClubhouseWelcomeRoute. Since 2026-11-14 (#2527) the pages draw Clubhouse directly: the
+                         golf_clubhouse_front_door flag, its isClubhouseFrontDoor() choice in login/layout.tsx and
+                         welcome/layout.tsx, and the old pages were removed (login/layout.tsx now only sets the
+                         metadata; welcome/layout.tsx was deleted).
 Clubhouse route adapter: src/clubhouse/routes/auth.tsx
                          ClubhouseSignInRoute() -> <SignIn/> (the form is in the server HTML; the URL is read in the
                          browser, so nothing waits on Suspense)
@@ -73,7 +74,9 @@ Contract outcomes: CONTRACT.md (Bridge IDs 15ccii, catalog CH-15xxx)
 Bridge: recorded, not wired (D-68)
 ↓
 Tests: src/clubhouse/__tests__/auth.test.tsx, auth-logic.test.ts, auth-server.test.tsx, auth-scene.test.tsx;
-       src/components/auth/golf-sign-in-form.test.tsx (the current form, unchanged, 7 cases)
+       front-door-routes.test.tsx (every entrance page draws Clubhouse; 2026-11-14). The old form's test,
+       src/components/auth/golf-sign-in-form.test.tsx, was deleted with the form on 2026-11-14 (tag
+       archive/fairway-2026-11-15)
 ```
 
 ## Actions
@@ -90,6 +93,12 @@ Sign-in telemetry is the server's (`recordLoginOutcome`), so this page records n
 
 ## Flag
 
+Removed on 2026-11-14 (#2527): the flag, `isClubhouseFrontDoor()` and the old
+pages are gone, and every entrance page draws Clubhouse
+(`src/clubhouse/__tests__/front-door-routes.test.tsx`; `auth-logic.test.ts` and
+`src/__tests__/fairway-retirement-imports.test.ts` hold that the flag stays
+gone). The block below is the record of it as it was.
+
 ```text
 Flag:        golf_clubhouse_front_door (config/feature-flags.yml, generated to src/lib/flags/registry.generated.ts)
 Kind:        release
@@ -100,9 +109,11 @@ Rollback:    turn the flag off: today's pages render again, with no data to undo
 
 ## Shared code with the current pages
 
-`src/lib/auth/golf-sign-in-logic.ts` (messages, notices, stale-bundle guard, `extractJoinCode`, `needsOnboardingFor`,
-`resolveSignInHref`) is imported by both `src/components/auth/golf-sign-in-form.tsx` and `SignInForm`. A change to a
-message or the destination rule reaches both, and `auth-logic.test.ts` holds the rule.
+`src/lib/auth/golf-sign-in-logic.ts` (messages, notices, stale-bundle guard,
+`extractJoinCode`, `needsOnboardingFor`, `resolveSignInHref`) was imported by
+both `src/components/auth/golf-sign-in-form.tsx` and `SignInForm`. Since
+2026-11-14 the old form is deleted and `SignInForm` (with `sign-in-state.ts`) is
+its only reader; `auth-logic.test.ts` holds the rule.
 
 
 ## Sign up and onboarding (phase 2)
@@ -110,8 +121,9 @@ message or the destination rule reaches both, and `auth-logic.test.ts` holds the
 ```text
 Routes:                  /golf/signup (intro, code, name, class year, account; request access)
                          /golf/player (after the account: your game, photo, done)
-Flag choice:             src/app/golf/(auth)/signup/layout.tsx and (onboarding)/player/layout.tsx:
-                         isClubhouseFrontDoor() ? Clubhouse route : children (today's pages untouched)
+Pages:                   src/app/golf/(auth)/signup/page.tsx and (onboarding)/player/page.tsx draw the Clubhouse
+                         routes directly (the flag choice in their layouts was removed on 2026-11-14, #2527;
+                         signup/layout.tsx now only sets the metadata and player/layout.tsx was deleted)
 Clubhouse route adapter: src/clubhouse/routes/onboard.tsx
                          ClubhouseSignupRoute() -> <Onboard start="intro"/>
                          ClubhousePlayerOnboardRoute() -> loadPlayerOnboard(): signed out -> /golf/login; a coach or an
@@ -140,7 +152,10 @@ Routes:     /golf/reset-password, /golf/join, /golf/join/[code], /golf/staff/joi
 Manifest:   config/clubhouse/pages/P015-auth.json lists /golf/reset-password, /golf/coach, /golf/coach/pending and /golf/demo; /golf/join,
             /golf/join/[code] and /golf/staff/join/[token] are not listed because the manifest check only resolves routes under
             the (auth) and (onboarding) groups, and these three sit directly under src/app/golf.
-Flag:       isClubhouseFrontDoor() (golf_clubhouse_front_door), off in production. It chooses what is drawn and nothing else.
+Flag:       none since 2026-11-14 (#2527). Each page below now draws its Clubhouse screen directly: reset-password,
+            demo, join, join/[code], staff/join/[token], coach and coach/pending; their loading.tsx files draw
+            GateLoading in the sign-in room. routes/front-door.tsx and FrontDoorProvider were deleted. The switches
+            as they were built:
 Switches:   a route with nothing under it replaces `children` in its layout:
               (auth)/reset-password/layout.tsx -> ClubhouseResetPasswordRoute
               (auth)/demo/layout.tsx           -> ClubhouseDemoRoute
@@ -153,7 +168,8 @@ Switches:   a route with nothing under it replaces `children` in its layout:
               staff/join/[token]/page.tsx -> ClubhouseStaffInviteRoute
               (onboarding)/coach/pending/page.tsx -> ClubhouseCoachPendingRoute
             their loading.tsx files draw GateLoading in the sign-in room when the flag is on.
-Routes:     src/clubhouse/routes/auth.tsx (the adapters), routes/front-door.tsx (the flag for client pages)
+Routes:     src/clubhouse/routes/auth.tsx (the adapters); routes/front-door.tsx (the flag for client pages) was deleted
+            on 2026-11-14
 Screens:    screens/auth/ GateFrame (the sign-in room for these screens), ResetPassword, JoinCode (CodeField), JoinTeam
             (JoinInvalid), StaffInvite, CoachPending, DemoEntry, GateLoading; screens/onboard/ CoachSteps (CProgram,
             CProfile, CDone), CoachOnboard, coach-guard, steps-map

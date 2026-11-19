@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { haptic } from "../../lib/haptics";
+import { chReport } from "../../lib/track";
 import { useToast } from "../../ui/Toast";
 import { dayLabel, type ChConv, type ChFile } from "./model";
 import type { ChMessagesApi } from "./MessagesView";
@@ -34,7 +35,11 @@ export function useConversationFiles(api: ChMessagesApi, conv: ChConv) {
     setFiles(null);
     load(conv.id)
       .then((r) => live && (r ? setFiles(r) : setFailed(true)))
-      .catch(() => live && setFailed(true));
+      .catch((err: unknown) => {
+        // A null answer is reported where it is read; a throw is reported here.
+        chReport(err, { surface: "messages.files", extra: { conversationId: conv.id } });
+        if (live) setFailed(true);
+      });
     return () => {
       live = false;
     };
@@ -42,7 +47,10 @@ export function useConversationFiles(api: ChMessagesApi, conv: ChConv) {
   const open = async (f: ChFile) => {
     // The tab opens inside the tap, or iPhone Safari blocks it as a pop-up; the signed address fills it in.
     const tab = window.open("about:blank", "_blank");
-    const list = await api.attachments(f.messageId).catch(() => null);
+    const list = await api.attachments(f.messageId).catch((err: unknown) => {
+      chReport(err, { surface: "messages.attachments", action: "openFile", severity: "low", extra: { messageId: f.messageId } });
+      return null;
+    });
     const hit = list?.find((x) => x.id === f.id) ?? null;
     if (!hit?.url) {
       tab?.close();

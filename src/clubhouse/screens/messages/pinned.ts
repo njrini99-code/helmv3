@@ -18,6 +18,7 @@ export function readPinned(viewer: string, team: string): string[] {
     const parsed: unknown = raw ? JSON.parse(raw) : null;
     return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string' && id.length > 0).slice(0, PIN_LIMIT) : [];
   } catch {
+    // Blocked or malformed storage: no device pins.
     return [];
   }
 }

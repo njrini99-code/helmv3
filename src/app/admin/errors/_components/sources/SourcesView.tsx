@@ -30,6 +30,7 @@ import { buildFeatureConstellation } from '@/lib/admin/triage/feature-constellat
 import { buildEvidenceBraid } from '@/lib/admin/triage/evidence-braid';
 import { fetchFlightRecorderLinkedIncidentIds } from '@/lib/admin/triage/trace-incident-link';
 import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
+import { BRIDGE_UI_SCOPE } from '@/lib/admin/bridge-scope';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { FeatureConstellationGrid } from '@/components/admin/triage/FeatureConstellationGrid';
 import { EvidenceBraidTimeline } from '@/components/admin/triage/EvidenceBraidTimeline';
@@ -690,7 +691,7 @@ async function FeatureConstellationSection({
 
   const [incidentBoard, flightRecorderLinkedIds] = resolvedKey
     ? await (async () => {
-        const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
+        const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS, BRIDGE_UI_SCOPE);
         const linked = await fetchFlightRecorderLinkedIncidentIds(board.incidents);
         return [board, linked] as const;
       })()

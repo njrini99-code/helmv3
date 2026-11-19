@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { toChInsight } from '../data/coachhelm-map';
 import { notEnoughRead } from '../data/coachhelm-firm';
 import { numbersIn, readTextFor, sameNumbers, speak } from '../data/coachhelm-voice';
-import { HELM_PLAYERS, PREVIEW_TOUR, slope } from '../preview/fixtures-coachhelm';
+import { HELM_PLAYERS, PREVIEW_TOUR, breakBias, slope } from '../preview/fixtures-coachhelm';
 import { PREVIEW_HELM_COACH_COACH_COPY, SLOPE_COACH_COPY, withCoachCopy } from '../preview/fixtures-coachhelm-voice';
 
 const COACH = { role: 'coach', first: 'Jonah' } as const;
@@ -86,5 +86,25 @@ describe('the coach card from the stored coach copy', () => {
     expect(plain(notEnoughRead(row(), COACH).title)).toBe('Downhill putts from 4–6 ft');
     const jonah = PREVIEW_HELM_COACH_COACH_COPY.players.list.find((p) => p.id === HELM_PLAYERS.jonah.id)!;
     expect(plain(jonah.top.title)).toBe('Downhill putts from 4–6 ft');
+  });
+});
+
+describe('the comparison is in the viewer’s voice', () => {
+  it('with no gauge drawn, the audit’s comparison names the player for a coach and says “your” to the player', () => {
+    const engine = (viewer: { role: 'coach'; first: string } | { role: 'player' }) => ({
+      flags: { support: true, cause: false, recheck: false, verdicts: false },
+      now: '2026-10-21T00:00:00Z',
+      viewer,
+    });
+    // A division average has no Tour value to draw against, so no gauge is drawn, so the audit carries the comparison's label.
+    const ins = breakBias(HELM_PLAYERS.jonah.id);
+    const noGauge = { ...ins, evidence: { ...ins.evidence, comparison_source: 'd1_avg' } } as typeof ins;
+    const coach = toChInsight(noGauge, { tour: null, engine: engine({ role: 'coach', first: 'Jonah' }) });
+    const player = toChInsight(noGauge, { tour: null, engine: engine({ role: 'player' }) });
+    expect(coach.evidence.gauge).toBeNull();
+    const text = (c: typeof coach) => plain(JSON.stringify(c.engine?.audit ?? []));
+    expect(text(player)).toMatch(/Your right-to-left/);
+    expect(text(coach)).not.toMatch(/\bYour right-to-left/);
+    expect(text(coach)).toMatch(/Jonah’s right-to-left/);
   });
 });

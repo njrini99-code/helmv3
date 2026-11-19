@@ -17,6 +17,10 @@ any more. Where `design-refresh/<page>/` exists it replaces the handoff for that
 page. Runtime values come from `styles/tokens.css`, `styles/auth-tokens.css` and
 `lib/fonts.ts`; handoff files are references, not a reason to restore behavior
 superseded by owner revisions.
+Who each address is for (coach, player, shared or signed-out, and the component
+each role gets) is in `docs/clubhouse/generated/CLUBHOUSE_ROUTE_MAP.md`. A new
+route is labelled in its manifest's `screens`; `clubhouse:check` fails until
+it is.
 The design system (laws, surfaces, colour, type, the one toggle, charts, the
 banned list, and token tables generated from `styles/tokens.css`) is
 [`design-refresh/DESIGN_LANGUAGE.md`](../../design-refresh/DESIGN_LANGUAGE.md).
@@ -76,9 +80,9 @@ and its consumer before copying a pattern; comments may describe older values.
 - Card/well: `ui/Surface.tsx`, `styles/ui.css` and `styles/tokens.css`. Preserve
   shared heading/body/footer and Inset. Current styles own depth; do not
   restore decorative rings from old comments.
-- Pushed phone detail: `shell/PhoneScreen.tsx` and `shell/PhoneBar.tsx`.
-  Preserve immersive shell, title focus, covered-screen inertness,
-  keyboard-aware scroll lock, base transition or immediate reduced-motion swap.
+- Pushed phone detail: `shell/PhoneScreen.tsx` and `ui/PhoneBar.tsx`. Preserve
+  immersive shell, title focus, covered-screen inertness, keyboard-aware scroll
+  lock, base transition or immediate reduced-motion swap.
 - Routine route change: `shell/RouteFrame.tsx`, `styles/shell.css`,
   `lib/reduced-motion.ts` and `lib/motion.ts`. Content is visible immediately.
   Preserve the desktop crossfade with anchored chrome and Back/Forward

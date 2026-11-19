@@ -41,7 +41,7 @@ export const PATTERN_MIN_SHOTS = 10;
  */
 export const MISS_SIDE_MIN_COVERAGE = 0.8;
 
-const BANDS: Record<AreaId, ReadonlyArray<{ id: string; label: string }>> = {
+export const BANDS: Record<AreaId, ReadonlyArray<{ id: string; label: string }>> = {
   strokes_gained_off_the_tee: [
     { id: 'fairway', label: 'tee shots that found the fairway' },
     { id: 'left', label: 'tee shots missed left' },
@@ -79,7 +79,7 @@ const HEADLINE: Record<AreaId, string> = {
   strokes_gained_putting: 'made',
 };
 
-const AREA_OF: Record<'off_tee' | 'approach' | 'around_green' | 'putting', AreaId> = {
+export const AREA_OF: Record<'off_tee' | 'approach' | 'around_green' | 'putting', AreaId> = {
   off_tee: 'strokes_gained_off_the_tee',
   approach: 'strokes_gained_approach',
   around_green: 'strokes_gained_around_the_green',
@@ -88,15 +88,15 @@ const AREA_OF: Record<'off_tee' | 'approach' | 'around_green' | 'putting', AreaI
 
 const r4 = (n: number): number => Math.round(n * 1e4) / 1e4;
 const lower = (s: string | null): string => (s ?? '').toLowerCase();
-const yardsOf = (s: ShotRow): number | null => (s.distance_to_hole_before == null ? null : lower(s.distance_unit_before) === 'feet' ? s.distance_to_hole_before / 3 : s.distance_to_hole_before);
+export const yardsOf = (s: ShotRow): number | null => (s.distance_to_hole_before == null ? null : lower(s.distance_unit_before) === 'feet' ? s.distance_to_hole_before / 3 : s.distance_to_hole_before);
 /** The finish in feet, with the leak map's unit rule: feet unless the row says yards. */
-const leaveFeet = (s: ShotRow): number | null => (s.distance_to_hole_after == null ? null : lower(s.distance_unit_after) === 'yards' ? s.distance_to_hole_after * 3 : s.distance_to_hole_after);
+export const leaveFeet = (s: ShotRow): number | null => (s.distance_to_hole_after == null ? null : lower(s.distance_unit_after) === 'yards' ? s.distance_to_hole_after * 3 : s.distance_to_hole_after);
 /** The leak map's "found the green" (src/lib/golf/leak-map-buckets.ts `isOnGreen`). */
-const onGreen = (s: ShotRow): boolean => ['green', 'hole', 'gir'].includes(lower(s.result)) || lower(s.lie_after) === 'green';
-const isPenalty = (s: ShotRow): boolean => s.is_penalty === true || s.shot_type === 'penalty';
+export const onGreen = (s: ShotRow): boolean => ['green', 'hole', 'gir'].includes(lower(s.result)) || lower(s.lie_after) === 'green';
+export const isPenalty = (s: ShotRow): boolean => s.is_penalty === true || s.shot_type === 'penalty';
 
-/** The band a shot belongs to inside its area; null when it has none. */
-function bandOf(area: AreaId, s: ShotRow, par: number | null): string | null {
+/** The band a shot belongs to inside its area; null when it has none. Exported for the reads' evidence shots (reads/evidence.ts). */
+export function bandOf(area: AreaId, s: ShotRow, par: number | null): string | null {
   switch (area) {
     case 'strokes_gained_approach': {
       const yards = yardsOf(s);
@@ -123,7 +123,7 @@ function bandOf(area: AreaId, s: ShotRow, par: number | null): string | null {
   }
 }
 
-const rawShot = (s: ShotRow): RawShotRow => ({ ...s, shot_number: s.shot_number ?? 0, created_at: null });
+export const rawShot = (s: ShotRow): RawShotRow => ({ ...s, shot_number: s.shot_number ?? 0, created_at: null });
 
 // ── Patterns ────────────────────────────────────────────────────────────────────────────────────────────────────────
 

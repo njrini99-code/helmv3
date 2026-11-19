@@ -14,6 +14,8 @@
   --ch-au-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ch-au-cam-ease: cubic-bezier(0.22, 0.7, 0.12, 1);
   --ch-au-ivory: #f4f1e8;
+  /* The onboarding pane's opaque ivory paper (P015 D1), desktop and phone: light in both themes, as the pane is. */
+  --ch-au-paper: linear-gradient(170deg, rgb(250 248 241), rgb(245 241 231) 55%, rgb(241 236 223));
   --ch-au-brass: rgb(176 149 96 / 0.4);
 
   /* The frame: the form leaving and the course filling it. */

@@ -71,13 +71,14 @@ Floors live in `lib/stats-signal.ts`.
 Parity with production (2026-10-17, `stats-production-parity.test.ts`): on the
 same rounds, the comparison table's fairways, greens, putts, 3-putts,
 scrambling, sand saves, penalties and par 3/4/5 scoring, and Game detail's
-figures, are `getDetailedStats`' (the Fairway player page's calculator), and
-strokes gained is the stored per-round value production's Team stats page
-averages. Putts and 3-putts a round leave out a round with no putt recorded,
-as the calculator does. Per-round counts with nine-hole rounds in are per 18
-holes (production divides by rounds of either length). Production's Standing
-strip is its own basis (every completed round, test rounds in, a 90-day pressure
-gap and opening hole, a wider lay-up rule at 175+ yd), not this window.
+figures, are `getDetailedStats`' (the calculator the Fairway player page used
+until its retirement on 2026-11-14), and strokes gained is the stored per-round
+value production's Team stats page averages. Putts and 3-putts a round leave out
+a round with no putt recorded, as the calculator does. Per-round counts with
+nine-hole rounds in are per 18 holes (production divides by rounds of either
+length). Production's Standing strip is its own basis (every completed round,
+test rounds in, a 90-day pressure gap and opening hole, a wider lay-up rule at
+175+ yd), not this window.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

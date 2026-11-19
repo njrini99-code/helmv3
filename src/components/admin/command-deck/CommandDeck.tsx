@@ -1,6 +1,7 @@
 import { Eyebrow, Surface } from '@/components/fairway';
 import { fetchOverviewSnapshot } from '@/lib/admin/data/overview';
 import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
+import { BRIDGE_UI_SCOPE } from '@/lib/admin/bridge-scope';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { cachedSelfHealBoard } from '@/lib/admin/data/selfheal';
 import { cachedBriefing } from '@/lib/admin/data/briefing';
@@ -72,7 +73,7 @@ const ATTENTION_STACK_LIMIT = 8;
 export async function CommandDeck() {
   const now = Date.now();
   const [board, selfHeal, briefing, deploy, productionDeploy, heldMigrations, overview] = await Promise.all([
-    cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS),
+    cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS, BRIDGE_UI_SCOPE),
     cachedSelfHealBoard(),
     cachedBriefing(),
     cachedDeployFreshness(),

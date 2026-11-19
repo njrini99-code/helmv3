@@ -14,6 +14,7 @@ import { useFocusMessage } from '../use-focus-message';
 import { useThreadDragTimes } from '../use-thread-drag-times';
 import { useThreadMakeRoom, useSpringToEnd, useFaceFlight, useSendStamps, ThreadDatePill, ThreadJumpKey } from '../thread-v2';
 import { haptic } from '../../../lib/haptics';
+import { chReport } from '../../../lib/track';
 import { PhoneScreen } from '../../../shell/PhoneScreen';
 import { PhoneBar, PhoneIconAction } from '../../../ui/PhoneBar';
 import { GroupMark, convAvatarId, convAvatarName, convYear } from '../shared/conv-ui';
@@ -124,7 +125,8 @@ export function PhoneThread({
       await navigator.clipboard.writeText(m.text);
       haptic("success");
       toast({ title: "Copied" });
-    } catch {
+    } catch (err) {
+      chReport(err, { surface: "messages.thread", action: "copyMessage", severity: "low", extra: { messageId: m.id } });
       haptic("error");
       toast({ tone: "error", title: "Couldn’t copy the message", body: "Try again in a moment.", code: "CH-7020" });
     }

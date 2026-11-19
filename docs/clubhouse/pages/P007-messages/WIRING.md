@@ -17,32 +17,38 @@ counts include wrappers rather than unique popups.
 
 ```text
 Route:                   /golf/dashboard/messages
-Page:                    src/app/golf/(dashboard)/dashboard/messages/page.tsx (isClubhouseFor -> Clubhouse, else Fairway)
+Page:                    src/app/golf/(dashboard)/dashboard/messages/page.tsx (always ClubhouseMessagesRoute; the flag and the
+                         Fairway branch were removed on 2026-11-14, #2527)
 Clubhouse route adapter: src/clubhouse/routes/messages.tsx (session, team; no team -> MessagesNoTeam, CH-7308)
 Server loader:           src/clubhouse/data/messages.ts loadMessagesDirectory (team, settings, members, coaches in one pass;
                          each failed read logs through chLogServer('messages', …) and never throws)
-Screen:                  src/clubhouse/screens/messages/Messages.tsx (live container) -> MessagesView.tsx
-                         -> MessagesDesktop | MessagesPhone (useChPhone, 820px)
+Screen:                  src/clubhouse/screens/messages/Messages.tsx (live container) -> MessagesScreen.tsx#MessagesView
+                         -> MessagesView.tsx#MessagesDesktop | MessagesPhone.tsx (useChPhone, 820px); since Messages v2
+                         (2026-11-03 to 2026-11-07) the parts live in inbox/, thread/, details/, overlays/, api/, motion/
 Skeleton:                src/clubhouse/screens/messages/MessagesSkeleton.tsx (CH-7401)
 ```
 
 ## End-to-end graph
 
 ```text
-UI (MessagesDesktop / MessagesPhone, Composer, Bubble, Details, NewMessage, announcements)
+UI (MessagesDesktop / MessagesPhone, Rail / PhoneInboxV2, Thread / PhoneThread, Composer, Bubble, Details, NewMessage,
+    announcements, polls, the hold menus and sheets)
 ↓
 Action (the ChMessagesApi object built in Messages.tsx: send, sendFiles, edit, remove, react, …)
 ↓
 Client controller: attempt() (offline refusal CH-1903, slow notice CH-1902, chReport + error toast + haptic)
                    and the realtime hooks (useGolfConversations, useGolfMessages, useMessageReactions, useMessageAttachments)
 ↓
-Server actions: src/app/golf/actions/messages.ts, message-mute.ts, message-attachments.ts, announcements.ts, communication.ts
+Server actions: src/app/golf/actions/messages.ts, message-mute.ts, message-attachments.ts, message-polls.ts,
+                conversation-hide.ts, announcements.ts, communication.ts, documents.ts; src/app/actions/messages.ts
+                (getGolfActiveTeamConversationIds)
 ↓
 Data: golf_conversations, golf_conversation_participants, golf_messages, golf_message_reactions,
-      golf_message_attachments (+ storage golf-attachments), golf_announcements, golf_announcement_acknowledgements,
-      golf_task_assignments
+      golf_message_attachments (+ storage golf-attachments), golf_conversation_pins, golf_announcements,
+      golf_announcement_acknowledgements, golf_task_assignments (a poll is a golf_messages row with its payload)
 ↓
-Realtime: golf-conversation:<id> (messages INSERT/UPDATE), golf-conversations:<userId> (the rail), golf-reactions:<id>
+Realtime: golf-conversation:<id> (messages INSERT/UPDATE), golf-conversations:<userId> (the rail), golf-reactions:<id>,
+          golf-pins:<userId> and the private typing channel
 ↓
 Contract outcomes: CONTRACT.md (Bridge IDs 7ccii, catalog CH-7xxx)
 ↓
@@ -82,17 +88,28 @@ refused before anything is sent (the shell's 10703, CH-1903).
 | ACT-P007-COMPLETE-TASK | Mark done on an announcement task (player) | `api.completeTask` | `completeAnnouncementTask` | golf_task_assignments | 70902 · 70611 |
 | ACT-P007-POST-ANNOUNCEMENT | New message → Announcement (coach) | `api.createAnnouncement` | `createEnrichedAnnouncement` | golf_announcements | fields 70505 · 70902 · 70612 |
 
+Not in the manifest's action list, built since this map was written (the
+changes/ fragments carry each): polls, sent and closed through `sendGolfPoll`
+and `closeGolfPoll` (`actions/message-polls.ts`, 2026-10-24 on; `polls.tsx`);
+hiding a conversation (`hideGolfConversation`, `actions/conversation-hide.ts`,
+`golf_conversation_participants.hidden_at`); pins (`use-conversation-pins.ts`,
+`golf_conversation_pins`, applied, with `pinned.ts` as the device copy); Mark as
+unread (`marked-unread.ts`); seen-by (`seen-by.tsx`); typing
+(`typing-channel.ts`); and the class-awareness lines (P-10, `GroupClassLine`,
+`ThreadClassSection`).
+
 ## Production parity (2026-10-17)
 
 Each control against Fairway's call for the same write
-(`src/components/fairway/pages/messages/**`, `FairwayPlayerAnnouncementCard`)
-and the server action's guard. Fixed: a coach's group needs a player (a
-broadcast with none adds the whole team; `groupLacksPlayer`); an announcement's
-file opens through `getPreviewUrl` (`api.openAnnouncementDocument`), never the
-stored `file_url`; a deep link that arrives while the page is open is taken
-(keyed on the address, `linkKey` in `Messages.tsx`), and a `?conversation=`
-thread missing from the list is refetched once before it opens; message fields
-cap at 5,000 (`MESSAGE_MAX`).
+(`src/components/fairway/pages/messages/**`, `FairwayPlayerAnnouncementCard`;
+deleted with Fairway on 2026-11-14, #2527, and kept in the tag
+`archive/fairway-2026-11-15`) and the server action's guard. Fixed: a coach's
+group needs a player (a broadcast with none adds the whole team;
+`groupLacksPlayer`); an announcement's file opens through `getPreviewUrl`
+(`api.openAnnouncementDocument`), never the stored `file_url`; a deep link that
+arrives while the page is open is taken (keyed on the address, `linkKey` in
+`Messages.tsx`), and a `?conversation=` thread missing from the list is
+refetched once before it opens; message fields cap at 5,000 (`MESSAGE_MAX`).
 
 Differences kept:
 
@@ -114,8 +131,15 @@ Schedule tile invites the direct thread's player.
 | Path | Purpose | States |
 | --- | --- | --- |
 | `screens/messages/Messages.tsx` | The live container: hooks, `attempt`, the api object, deep links, auto-open | 70101, 70102, every toast |
-| `screens/messages/MessagesView.tsx` | `MessagesDesktop`, `Rail`, `ConvRow`, `Thread` (header Schedule), `Bubble`, `Composer` (with `AttachButton`, `AttachChips`), `Details` (`FilesSection`), `MuteControl`, `NewMessage`, the modals | 702xx, 704xx, 705xx, 706xx, 71xxx, 70209, 70406, 70616, 70630 |
-| `screens/messages/MessagesPhone.tsx` | The phone stack: Inbox, `PhoneThread`, Details, `FilesPanel`, New message (its attach hands files to the thread's composer) | 71901, 70209, 70406, 70615, 70616, 70630 |
+| `screens/messages/MessagesScreen.tsx`, `MessagesView.tsx` | The layout switch, and `MessagesDesktop` (since Messages v2 it composes the parts below rather than holding them) | 702xx, 704xx, 705xx, 706xx, 71xxx |
+| `screens/messages/inbox/` | `Rail`, `PhoneInboxV2`, `ConvRow`, `PinnedAndRecent`, `PinTile`, `row-menu.tsx`, `InboxSkeleton` | 702xx, 704xx |
+| `screens/messages/thread/` | `Thread`, `PhoneThread` (header Schedule), `Bubble` and its parts, `Composer` (attach and chips), `Attachments`, `ThreadScroller`, `TypingRows` | 70616, 71301 |
+| `screens/messages/details/` | `Details` (Files), `PhoneDetails`, `NewMessage`, `PhoneNewMessage`, `PhoneAnnouncementForm`, `group-modals.tsx` | 70209, 70406, 70630 |
+| `screens/messages/overlays/` | The hold menu and sheets: `GlassMenu`, `MsSheet`, `bubble-actions.tsx`, `message-modals.tsx`, reactions | 70615, 71101 |
+| `screens/messages/api/` | The `ChMessagesApi` object, split by inbox, thread, details and overlays | every toast |
+| `screens/messages/MessagesPhone.tsx` | The phone stack: Inbox, `PhoneThread`, Details, Files, New message (its attach hands files to the thread's composer) | 71901, 70209, 70406, 70615, 70616, 70630 |
+| `screens/messages/polls.tsx` | Polls: the card, the create sheet, votes and Close poll | — |
+| `screens/messages/MessagesFirstRun.tsx`, `RailEmpty.tsx`, `HelloCard.tsx` | First run and empty rail | — |
 | `screens/messages/files.ts` | `useConversationFiles` (the files read, Try again, open) and `fileMeta`, shared by `FilesPanel` and `FilesSection` | 70209, 70406, 70616, 70630 |
 | `screens/messages/announcements.tsx` | The announcement pane and composer | 70206, 70505, 70610 to 70612, 70622, 70623 |
 | `screens/messages/MessagesSkeleton.tsx` | Route skeleton | 70201 |
@@ -142,7 +166,10 @@ Schedule tile invites the direct thread's player.
 | getGolfConversationParticipantIdentities | actions/messages.ts | Existing | Details › members |
 | getGolfConversationMute, setGolfConversationMute | actions/message-mute.ts | Existing | mute |
 | sendGolfMessageWithAttachments, getGolfMessageAttachments | actions/message-attachments.ts | Existing | files |
-| getGolfConversationFiles | actions/message-attachments.ts | **Held** (D-61) | Details' Files (phone and desktop) |
+| getGolfConversationFiles | actions/message-attachments.ts | Held (D-61) behind `isClubhouseFor`, which since 2026-11-14 is a role check only, so every coach and player gets it | Details' Files (phone and desktop) |
+| sendGolfPoll, closeGolfPoll | actions/message-polls.ts | Existing | polls |
+| canHideGolfConversations, hideGolfConversation | actions/conversation-hide.ts | Existing | hide a conversation from the rail |
+| getGolfActiveTeamConversationIds | src/app/actions/messages.ts | Existing | which conversations are the active team's |
 | getAnnouncementsWithMeta, getAnnouncementDetail, createEnrichedAnnouncement, completeAnnouncementTask | actions/announcements.ts | Existing (D-16, D-44) | announcements |
 | acknowledgeAnnouncement | actions/communication.ts | Existing | Got it |
 
@@ -179,8 +206,9 @@ Write path: createEnrichedAnnouncement (coach), acknowledgeAnnouncement and comp
 
 ## Impact notes
 
-- The realtime hooks and message actions are shared with Fairway's Messages. A
-  change there changes both UIs; D-13 keeps them untouched from Clubhouse.
+- The realtime hooks and message actions were shared with Fairway's Messages
+  until its retirement on 2026-11-14; D-13 kept them untouched from Clubhouse,
+  and they are still shared code outside `src/clubhouse`.
 - `sendGolfMessage` takes the client's optimistic id, so the retry path depends
   on it never changing.
 - The directory loader feeds names and roles for every bubble; a failed members

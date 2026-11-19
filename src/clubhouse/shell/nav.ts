@@ -224,7 +224,6 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
     '/golf/dashboard/roster',
     '/golf/dashboard/recruiting',
     '/golf/dashboard/stats',
-    '/golf/dashboard/stats/team',
     '/golf/dashboard/rounds',
     '/golf/dashboard/whats-new',
     '/golf/dashboard/live',
@@ -255,7 +254,9 @@ const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice(\/(format|drills(\/[^/]+
  */
 const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
   // P-7: a player's history at one course, reached from a round or the library (a coach's from a player's round).
-  // Practice's pages decide for themselves: flag off goes to Calendar (N-00 §0.2) and a plan that won't load shows its empty state, so the segment must render.
+  // Practice's pages decide for themselves (no feature flag): someone with no golf role goes to Calendar (practice-gate.ts),
+  // a team whose practice tables are missing gets "Practice isn't on yet", and a plan that won't load shows its empty
+  // state, so the segment must render.
   coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, CH_PRACTICE_PAGES],
   player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, CH_PRACTICE_PAGES],
 };
@@ -281,9 +282,9 @@ export const CH_ALIASED_ROUTES: Readonly<Record<ChRole, readonly RegExp[]>> = ((
     [/^\/golf\/dashboard\/players\/[^/]+(\/.*)?$/, ['coach']],
     [/^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+)$/, both],
     [/^\/golf\/dashboard\/coachhelm\/genome\/[^/]+$/, ['coach']],
-    // Rebuilt for one role and moved for the other (a player's Team stats to their Stats, What's new and Live to Home):
-    // the segment must render for its redirect to run.
-    [/^\/golf\/dashboard\/(stats\/team|whats-new|live)$/, ['player']],
+    // Rebuilt for one role and moved for the other (What's new and Live, a player to Home): the segment must render for
+    // its redirect to run. Team stats (/stats/team) is not here: next.config.mjs sends both roles to /stats first.
+    [/^\/golf\/dashboard\/(whats-new|live)$/, ['player']],
   ];
   return { coach: rows.filter(([, r]) => r.includes('coach')).map(([re]) => re), player: rows.filter(([, r]) => r.includes('player')).map(([re]) => re) };
 })();

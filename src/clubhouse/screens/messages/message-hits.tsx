@@ -7,7 +7,7 @@ import { Search } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { Skeleton } from '../../ui/States';
-import { chTrail } from '../../lib/track';
+import { chReport, chTrail } from '../../lib/track';
 import { railTime, searchSnippet, ChSearchHit } from './model';
 
 export function MessageHits({ api, q, nameMatches, conversationId, onPicked, layout = 'flat' }: { api: ChMessagesApi; q: string; /** One conversation's hits only (Details, Search). */ conversationId?: string; onPicked?: () => void; /** Redesign: how many names matched, so an empty search says it once (S-MSG.search). */ nameMatches: number; /** The inbox's empty "Nothing here": the phone's card or the rail's flat label. */ layout?: 'card' | 'flat' }) {
@@ -28,7 +28,11 @@ export function MessageHits({ api, q, nameMatches, conversationId, onPicked, lay
     const t = window.setTimeout(() => {
       search(term)
         .then((r) => live && (r ? setHits(conversationId ? r.filter((h) => h.conversationId === conversationId) : r) : setFailed(true)))
-        .catch(() => live && setFailed(true));
+        .catch((err: unknown) => {
+          // A null answer is reported where it is read; a throw is reported here. No search words in the report.
+          chReport(err, { surface: 'messages.search', extra: conversationId ? { conversationId } : undefined });
+          if (live) setFailed(true);
+        });
     }, 250);
     return () => {
       live = false;

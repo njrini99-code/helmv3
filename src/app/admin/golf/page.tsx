@@ -4,6 +4,7 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchGolfTab } from '@/lib/admin/data/golf';
 import { fetchUsersTab } from '@/lib/admin/data/users';
 import { fetchErrorsTab } from '@/lib/admin/data/errors';
+import { BRIDGE_UI_SCOPE } from '@/lib/admin/bridge-scope';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
 import type { RollupAFeatureAdoptionPayload, FeatureCountPair } from '@/app/golf/actions/admin/rollup-a';
 import { Surface, StatStrip, StatTile, TrendChart, InlineNotice, type StatTileProps } from '@/components/fairway';
@@ -74,7 +75,8 @@ async function GolfBody() {
     fetchGolfTab(),
     fetchFeatureHealth(),
     fetchUsersTab({ sport: 'golf' }),
-    fetchErrorsTab({ sport: 'golf', windowHours: 168 }),
+    // Same scope as the Incidents page these tiles link to (src/lib/admin/bridge-scope.ts).
+    fetchErrorsTab({ sport: 'golf', windowHours: 168, scope: BRIDGE_UI_SCOPE }),
   ]);
   const r = tab.rollup.rounds;
   const ch = tab.rollup.coachhelm;
@@ -345,8 +347,8 @@ async function GolfBody() {
           <Surface padding="sm">
             <SectionLabel>Error trace hooks</SectionLabel>
             <div className="mt-3 grid grid-cols-2 gap-3">
-              <StatTile label="Incidents 7d" value={errorsTab.counts.actionableGroups} tone="neutral" mono goodDirection="down" />
-              <StatTile label="RLS denials 24h" value={errorsTab.rlsDenials24h} tone="neutral" mono goodDirection="down" />
+              <StatTile label="Clubhouse incidents 7d" value={errorsTab.counts.actionableGroups} tone="neutral" mono goodDirection="down" />
+              <StatTile label="Clubhouse RLS denials 24h" value={errorsTab.rlsDenials24h} tone="neutral" mono goodDirection="down" />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link

@@ -34,10 +34,13 @@ async function programOf(supabase: Supabase): Promise<NonNullable<ChRecruiting['
   } = await supabase.auth.getUser();
   if (!user) return null;
   const { data: coach, error: coachError } = await supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle();
+  // "Program unknown" hides the calendar's program line, so a failed read is reported, not just read as no program.
+  if (coachError) chLogServer('recruiting', 'program', coachError, 'recruiting');
   if (coachError || !coach?.organization_id) return null;
   const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   if (!teamId) return null;
   const { data: team, error } = await supabase.from('golf_teams').select('gender, organization:organizations(division)').eq('id', teamId).maybeSingle();
+  if (error) chLogServer('recruiting', 'program', error, 'recruiting');
   if (error || !team) return null;
   const t = team as { gender: string | null; organization: { division: string | null } | null };
   return { division: parseDivision(t.organization?.division), gender: isProgramGender(t.gender) ? t.gender : null };
@@ -48,10 +51,20 @@ async function extras(): Promise<Pick<ChRecruiting, 'nextStep' | 'program'>> {
   let supabase: Supabase;
   try {
     supabase = await createClient();
-  } catch {
+  } catch (err) {
+    chLogServer('recruiting', 'extras', err, 'recruiting');
     return {};
   }
-  const [nextStep, program] = await Promise.all([hasNextStepColumns(supabase).catch(() => false), programOf(supabase).catch(() => null)]);
+  const [nextStep, program] = await Promise.all([
+    hasNextStepColumns(supabase).catch((err: unknown) => {
+      chLogServer('recruiting', 'nextStepColumns', err, 'recruiting');
+      return false;
+    }),
+    programOf(supabase).catch((err: unknown) => {
+      chLogServer('recruiting', 'program', err, 'recruiting');
+      return null;
+    }),
+  ]);
   return { ...(nextStep ? { nextStep: true } : {}), ...(program ? { program } : {}) };
 }
 

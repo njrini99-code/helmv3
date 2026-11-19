@@ -209,7 +209,10 @@ async function playerFocus(sb: Awaited<ReturnType<typeof createClient>>, playerI
 /** Tone and facts, only with Ask v2 on; a missing column or table (HM2 held) is null and the controls stay hidden. */
 async function askKnows(sb: Awaited<ReturnType<typeof createClient>>, ctx: { coach_id: string; team_id: string }, conversationId: string | null): Promise<ChAskData['knows']> {
 
-  const k = await readAskKnows(sb, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId }).catch(() => null);
+  const k = await readAskKnows(sb, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId }).catch((err: unknown) => {
+    log('knows', err);
+    return null;
+  });
   return k ? { ...k, teamId: ctx.team_id } : null;
 }
 
@@ -224,7 +227,10 @@ export async function loadAskPlayer(): Promise<ChAskLoad> {
     return { status: 'failed' };
   }
   const bucket = await readBucket(ctx.player_id, ctx.timezone);
-  if (!bucket) return { status: 'failed' };
+  if (!bucket) {
+    log('player bucket', new Error('the weekly Ask allowance did not read'));
+    return { status: 'failed' };
+  }
   return {
     status: 'ready',
     data: {
