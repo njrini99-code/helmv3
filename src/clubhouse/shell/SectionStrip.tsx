@@ -77,7 +77,8 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
   }, [sw?.open, centre]);
 
   // The plate slides from the pill it left to the one chosen, on the compositor (lib/slide-plate.ts): 260 ms on the iOS
-  // curve, translate and width (MOTION-AND-VISUAL 3.3; MAC-17 keeps the width), each label taking its ink as the plate
+  // curve, a translate with the width change drawn by a rounded clip (MOTION-AND-VISUAL 3.3; MAC-17; F-29: no layout property
+  // animated), each label taking its ink as the plate
   // crosses it. The page under it swaps at once.
   useSlidePlate(row, '[aria-current="page"] > .ch-strip__plate', sw?.shown?.id ?? null, { reduced, still: () => shutRef.current, tween: 'thumb', ink: '.ch-strip__pill' });
 

@@ -266,7 +266,8 @@ export function PickerField(p: PickerFieldProps) {
           disabled={p.disabled}
           aria-haspopup="dialog"
           aria-expanded={open}
-          aria-label={shown ? `${p.label}, ${shown}` : p.label}
+          // It says what it shows, the placeholder included (F-21, WCAG 2.5.3: "Start date" against a visible "Pick a date").
+          aria-label={`${p.label}, ${shown || p.placeholder || '—'}`}
           aria-invalid={p.ariaInvalid}
           aria-describedby={p.ariaDescribedBy}
           data-ch-code={p.dataChCode}

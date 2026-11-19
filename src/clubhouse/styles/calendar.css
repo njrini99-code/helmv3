@@ -211,7 +211,7 @@
 }
 .ch-cal-legend i.ch-dot-travel {
   background: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500);
+  box-shadow: var(--ch-ring-ink);
 }
 .ch-dot-practice,
 .ch-dot-workout {
@@ -1723,7 +1723,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 }
 .ch-mo__ev i.ch-dot-travel {
   background: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500);
+  box-shadow: var(--ch-ring-ink);
 }
 .ch-mo__more {
   margin-top: 1px;
@@ -4579,7 +4579,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
 }
 .ch-ag__dot.is-away {
   background: var(--ch-bg-surface);
-  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500);
+  box-shadow: var(--ch-ring-ink);
 }
 .ch-away-go {
   color: var(--ch-ink-500);

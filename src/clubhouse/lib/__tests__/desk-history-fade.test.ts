@@ -91,4 +91,23 @@ describe('desk Back and Forward crossfade (E-8)', () => {
     expect(calls).toHaveLength(0);
     expect(document.querySelector('.ch-frame-fading')).toBeNull();
   });
+  it('reads a token written in seconds, as WebKit serves it: 0.12s is 120 ms, not 0.12 ms (it swapped at once in Safari)', async () => {
+    document.documentElement.style.setProperty('--ch-dur-vt-out', '.12s');
+    document.documentElement.style.setProperty('--ch-dur-vt-in', '0.18s');
+    await back();
+    expect(calls.find((c) => c.el.classList.contains('ch-frame-fading'))!.options.duration).toBe(120);
+    expect(calls.find((c) => c.el.id === 'ch-content')!.options.duration).toBe(180);
+  });
+});
+
+describe('msToken', () => {
+  it('takes ms and s, and falls back on anything else', async () => {
+    const { msToken } = await load();
+    const css = (v: string) => ({ getPropertyValue: () => v });
+    expect(msToken(css('120ms'), 'x', 1)).toBe(120);
+    expect(msToken(css(' 0.18s '), 'x', 1)).toBe(180);
+    expect(msToken(css('150'), 'x', 1)).toBe(150);
+    expect(msToken(css(''), 'x', 7)).toBe(7);
+    expect(msToken(css('var(--x)'), 'x', 7)).toBe(7);
+  });
 });

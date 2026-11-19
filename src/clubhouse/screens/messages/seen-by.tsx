@@ -151,8 +151,10 @@ export function SeenByPill({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg; o
   const name = seenByAccessibleName(seen.s, !!open);
   const faces = seen.canOpen ? <SeenFaces api={api} ids={seen.s.seen} size={16} max={5} /> : null;
   return open ? (
-    <button type="button" className="ch-msv-seen" aria-label={name} data-ch-code="CH-7608" onClick={(e) => open(e.currentTarget)}>
+    // Named by its own text, not an aria-label (F-21, WCAG 2.5.3): the faces' initials made the visible text and the label differ.
+    <button type="button" className="ch-msv-seen" data-ch-code="CH-7608" onClick={(e) => open(e.currentTarget)}>
       {faces}
+      <span className="ch-sr-only">{name}</span>
       <span aria-hidden="true">{words}</span>
     </button>
   ) : (

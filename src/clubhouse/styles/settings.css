@@ -921,7 +921,7 @@
   .ch-setm-id > .ch-setm-coin {
     margin-inline-start: 4px;
     /* L-047: a quiet hairline ring, no cast shadow. */
-    box-shadow: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule);
+    box-shadow: var(--ch-ring-ledger-offset);
   }
   .ch-setm-coin.is-player {
     background: var(--ch-green-100);

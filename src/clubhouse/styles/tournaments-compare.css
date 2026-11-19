@@ -79,7 +79,7 @@
   /* B is the page's own surface with a ringed mark, so it follows the theme (A is the filled one): in the dark it was a
      cream tile left behind (L-060). */
   background: var(--ch-bg-surface);
-  box-shadow: inset 0 0 0 1.5px var(--ch-chart-gain);
+  box-shadow: var(--ch-ring-gain);
   color: var(--ch-chart-gain);
 }
 
@@ -455,7 +455,7 @@ html[data-fw-theme='dark'] .ch-tour-cmp-tl__dot.is-event {
 .ch-tour-cmp-tl__sel.is-b {
   /* B is drawn as its tag is: the page's surface with a ring in the gain colour, so the two sides differ by more than a shade (L-032). */
   background: var(--ch-bg-surface);
-  box-shadow: inset 0 0 0 1.5px var(--ch-chart-gain);
+  box-shadow: var(--ch-ring-gain);
 }
 .ch-tour-cmp-tl__sel.is-other {
   border: 1.5px dashed var(--ch-ink-400);

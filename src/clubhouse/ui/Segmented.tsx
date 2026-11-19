@@ -65,7 +65,8 @@ export function Segmented<V extends string>({
   const [changing, startChange] = useTransition();
   const [chosen, setChosen] = useState<V | null>(null);
   const shown = changing && chosen !== null ? chosen : value;
-  // The thumb: 260 ms on the iOS curve, translate and width (MOTION-AND-VISUAL 3.3, 4.2; MAC-17 keeps the width). The
+  // The thumb: 260 ms on the iOS curve, a translate with the width between the options shown by a rounded clip (MOTION-AND-VISUAL
+  // 3.3, 4.2; MAC-17's width change, with no layout property animated: F-29, lib/slide-plate.ts). The
   // content under it swaps at once.
   useSlidePlate(well, '.is-on > .ch-seg__pill', shown, { reduced, ink: '.ch-seg__b', tween: 'thumb' });
   const pick = (v: V) => {

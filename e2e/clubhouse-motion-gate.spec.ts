@@ -63,6 +63,8 @@ function recorder() {
         iterations: timing.iterations === Infinity ? 'infinite' : timing.iterations ?? 1,
         target: describe(effect?.target as Element | null),
         pseudo: effect?.pseudoElement ?? null,
+        // A scroll-driven animation (animation-timeline: scroll()) moves with the person's scroll, not on its own.
+        timeline: !a.timeline ? 'none' : a.timeline === document.timeline ? 'document' : a.timeline.constructor.name,
       });
     }
     // Runs until record() stops it, so a slow hydration on a CI runner cannot push an entrance out of the window.
@@ -95,6 +97,7 @@ async function watch(page: Page, ms: number, act: () => Promise<void>): Promise<
           duration: typeof timing.duration === 'number' ? Math.round(timing.duration) : null, delay: Math.round(Number(timing.delay ?? 0)),
           iterations: timing.iterations === Infinity ? 'infinite' : timing.iterations ?? 1,
           target: el ? `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ''}${cls}` : String(el), pseudo: effect?.pseudoElement ?? null,
+          timeline: !a.timeline ? 'none' : a.timeline === document.timeline ? 'document' : a.timeline.constructor.name,
         });
       }
       if (w.__chWatch.on) requestAnimationFrame(tick);
@@ -148,6 +151,7 @@ async function idleRows(page: Page): Promise<IdleRow[]> {
           target: describe(effect?.target as Element | null),
           pseudo: effect?.pseudoElement ?? null,
           iterations: iterations === Infinity ? ('infinite' as const) : (iterations ?? 1),
+          timeline: !a.timeline ? 'none' : a.timeline === document.timeline ? 'document' : a.timeline.constructor.name,
         };
       });
   });

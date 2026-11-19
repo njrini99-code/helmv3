@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * MOTION-AND-VISUAL 3.3, the section strip: the page swaps at once; the pill slides over the base beat (260 ms) on the
- * iOS curve, translate and width (MAC-17); the strip scrolls a clipped tab into view; a change ticks the selection
+ * iOS curve, a translate with the width change drawn by a clip (MAC-17, F-29: no layout property); the strip scrolls a clipped tab into view; a change ticks the selection
  * haptic; a tap on the current tab scrolls the page to the top, smoothly unless Reduce Motion is on (3.11), where the pill
  * fades in at its new place instead of travelling.
  */
@@ -83,7 +83,7 @@ const pills = () => [...document.querySelectorAll<HTMLAnchorElement>('a.ch-strip
 const plateMoves = () => calls.filter((c) => c.el.classList.contains('ch-strip__plate'));
 
 describe('the section strip (MOTION-AND-VISUAL 3.3)', () => {
-  it('slides the pill over 260 ms on the iOS curve, translate and width, and ticks the selection haptic once', async () => {
+  it('slides the pill over 260 ms on the iOS curve, transform only (no layout property), and ticks the selection haptic once', async () => {
     await show();
     const [, second] = pills();
     fireEvent.click(second!);
@@ -91,8 +91,9 @@ describe('the section strip (MOTION-AND-VISUAL 3.3)', () => {
     expect(moves).toHaveLength(1);
     expect(moves[0]!.options).toMatchObject({ duration: 260, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' });
     expect(moves[0]!.keyframes[0]).toMatchObject({ transform: 'translate(-100px, 0px)' });
-    // MAC-17: the width animation stays.
-    expect(Object.keys(moves[0]!.keyframes[0]!)).toEqual(expect.arrayContaining(['transform', 'width']));
+    // MAC-17's width change stays, drawn by a clip (F-29): no layout property is animated.
+    expect(Object.keys(moves[0]!.keyframes[0]!)).toContain('transform');
+    expect(Object.keys(moves[0]!.keyframes[0]!)).not.toContain('width');
     expect(haptics.haptic.mock.calls).toEqual([['select']]);
     // The push goes out a frame later; wait for it here so it cannot land in the next test.
     await vi.waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));

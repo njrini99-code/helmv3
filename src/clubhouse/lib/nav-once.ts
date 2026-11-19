@@ -22,7 +22,16 @@ let pending: { key: string; at: number } | null = null;
 /** After the page commits, taps stay held until then (the rest of the double-tap window, or the push still sliding). */
 let quietUntil = 0;
 /** A link click seen at capture that will start a navigation unless something below swallows it. */
-let candidate: { event: MouseEvent; key: string; at: number } | null = null;
+let candidate: { event: MouseEvent; key: string; at: number; x: number; y: number } | null = null;
+/**
+ * Where the tap that started the hold landed, or null when the hold came from code (a push) and covers every tap. A double
+ * tap's second tap lands where its first did; a tap somewhere else is a person changing their mind (Stats, then Calendar a
+ * moment later), which iOS's tab bar always answers. Measured 2026-11-19 (WebKit desk): with every tap held, Calendar
+ * 200 ms after Stats was dropped and the desk stayed on Stats.
+ */
+let heldAt: { x: number; y: number } | null = null;
+/** How far a second tap may land from the first and still be its twin, in CSS px (a fingertip's slop). */
+const TWIN_PX = 24;
 
 const here = () => location.pathname + location.search;
 const keyOf = (href: string) => {
@@ -42,6 +51,7 @@ export function chNavStarted(href: string, now: number = performance.now()): voi
   if (key === here()) return;
   pending = { key, at: now };
   quietUntil = Math.max(quietUntil, now + DOUBLE_TAP_MS);
+  heldAt = null;
 }
 
 /**
@@ -60,6 +70,7 @@ export function chNavOnceReset(): void {
   pending = null;
   quietUntil = 0;
   candidate = null;
+  heldAt = null;
 }
 
 function onClickCapture(e: MouseEvent) {
@@ -69,8 +80,10 @@ function onClickCapture(e: MouseEvent) {
   if (!el?.closest("[data-ui='clubhouse']")) return;
   const control = el.closest(ACTIVATES);
   if (!control) return;
-  // A pushed page's Back is left alone: a Back during a push reverses it from where it stands (takeRunningPush).
-  if (chNavHeld() && !control.closest('.ch-pbar__back')) {
+  // A pushed page's Back is left alone: a Back during a push reverses it from where it stands (takeRunningPush). A tap well
+  // away from the one that started the hold is a new choice, not its twin, and goes through.
+  const twin = !heldAt || Math.hypot(e.clientX - heldAt.x, e.clientY - heldAt.y) <= TWIN_PX;
+  if (chNavHeld() && twin && !control.closest('.ch-pbar__back')) {
     // A second activation while a navigation is on its way: dropped, before Next's Link, the navigation classifier and
     // any React onClick (stopPropagation at window capture reaches none of them).
     e.preventDefault();
@@ -83,7 +96,7 @@ function onClickCapture(e: MouseEvent) {
   const { url, key } = keyOf(a.href);
   // A hash on this page, or this page again (a retapped tab), is not a navigation: nothing to hold.
   if (url.origin !== location.origin || key === here()) return;
-  candidate = { event: e, key, at: performance.now() };
+  candidate = { event: e, key, at: performance.now(), x: e.clientX, y: e.clientY };
 }
 
 /**
@@ -96,6 +109,7 @@ function onClickBubble(e: MouseEvent) {
   if (!c || c.event !== e) return;
   pending = { key: c.key, at: c.at };
   quietUntil = Math.max(quietUntil, c.at + DOUBLE_TAP_MS);
+  heldAt = { x: c.x, y: c.y };
 }
 
 /**

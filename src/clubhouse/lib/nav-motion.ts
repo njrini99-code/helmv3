@@ -507,9 +507,15 @@ function playPop(from = 1) {
   });
 }
 
-/** A duration token in ms, from <html> where the page crossfade's tokens live (tokens.css), or `fallback`. */
-function msToken(css: CSSStyleDeclaration, name: string, fallback: number): number {
-  const v = parseFloat(css.getPropertyValue(name));
+/**
+ * A duration token in ms, from <html> where the page crossfade's tokens live (tokens.css), or `fallback`. The unit is read:
+ * a token in seconds (`0.12s`, as WebKit returned the desk's tokens) was taken as 0.12 ms, so Back and Forward on the desk
+ * swapped at once in Safari (E-8, 2026-11-19).
+ */
+export function msToken(css: Pick<CSSStyleDeclaration, 'getPropertyValue'>, name: string, fallback: number): number {
+  const m = /^\s*(-?[\d.]+)\s*(ms|s)?\s*$/i.exec(css.getPropertyValue(name));
+  if (!m) return fallback;
+  const v = Number(m[1]) * (m[2]?.toLowerCase() === 's' ? 1000 : 1);
   return Number.isFinite(v) ? v : fallback;
 }
 

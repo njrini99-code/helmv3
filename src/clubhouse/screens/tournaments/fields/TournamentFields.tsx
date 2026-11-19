@@ -175,7 +175,8 @@ export function TournamentFields({
             id={`${idPrefix}-course`}
             className={'ch-tfx__course' + (s.course ? '' : ' is-empty')}
             aria-haspopup="dialog"
-            aria-label={s.course ? `Course, ${s.course.label}${s.course.teeLine ? `, ${s.course.teeLine}` : ''}` : 'Course, not chosen'}
+            // The name starts with what the button shows (F-21, WCAG 2.5.3), then says which field it is.
+            aria-label={s.course ? `${s.course.label}, course${s.course.teeLine ? `, ${s.course.teeLine}` : ''}` : 'Search courses, course not chosen'}
             data-invalid={courseErr ? 'true' : undefined}
             aria-describedby={courseErr ? `${idPrefix}-course-err` : undefined}
             onClick={() => setPicking({ kind: 'main' })}

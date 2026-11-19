@@ -950,7 +950,7 @@ path.ch-rt-map__shot {
 .ch-rt-ask :where(.ch-rt-tags) button {
   background: var(--ch-raised-bg);
   color: var(--ch-ink-900);
-  box-shadow: var(--ch-key-raised-shadow), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
+  box-shadow: var(--ch-key-raised-ringed);
 }
 
 /* The result's place (owner, 2026-11-11: nothing moves under the thumb). It holds two faces: the results to pick from,
