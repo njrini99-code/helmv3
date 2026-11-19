@@ -1,6 +1,6 @@
 # 2026-11-17 — coachhelm
 
-## 2026-11-17 — CoachHelm's read on the coach's file, behind a team flag (insights rebuild, stage 1)
+## 2026-11-17 — CoachHelm's read on the coach's file (stage 1)
 
 ```text
 Design package: COACHHELM_2_TO_10.md sections 4 and 6 (stage 1); STAGE1_RECON.md

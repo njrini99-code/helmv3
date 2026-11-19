@@ -1,6 +1,6 @@
 # 2026-11-18 — coachhelm
 
-## 2026-11-18 — CoachHelm's read: the four parts, what else is unusual, and memory (insights rebuild, stages 2 to 4)
+## 2026-11-18 — CoachHelm's read: the four parts, more, and memory (stages 2-4)
 
 ```text
 Design package: COACHHELM_2_TO_10.md sections 3, 5 and 6

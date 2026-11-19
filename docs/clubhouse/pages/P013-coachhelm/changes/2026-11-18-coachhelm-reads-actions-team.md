@@ -1,6 +1,6 @@
 # 2026-11-18 — coachhelm
 
-## 2026-11-18 — CoachHelm's read: the coach acts on it, the focus verdict, Team reads, and the player's own card
+## 2026-11-18 — CoachHelm's read: actions, focus, Team reads, player card
 
 ```text
 Design package: COACHHELM_2_TO_10.md section 6 ("the five things that would make it a 10")
@@ -28,8 +28,8 @@ Held items:     flag coachhelm_reads_v1 off everywhere; migrations 2026111712000
   no read yet. Built for a full roster (12 to 21 players). CH-13215 (didn't load),
   CH-13316 (no read saved yet).
 - The player's own read on Your week ("CoachHelm's read of your game"), spoken to
-  them, with no team figure, no coach's verdict, no focus and no actions; a read the
-  coach marked down is not shown. CH-13216 (didn't load).
+  them, with no team figure, no coach's verdict, no focus and no actions; a
+  read the coach marked down is not shown. CH-13216 (didn't load).
 
 ### Changed
 
