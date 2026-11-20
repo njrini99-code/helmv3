@@ -90,10 +90,20 @@ export function Composer({
   const queued = useRef({ text: recovery?.queuedText ?? "", files: recovery?.queuedFiles ?? [] as File[] });
   const [draft, setDraftState] = useState(recovery?.text ?? initialDraft ?? api.drafts.get(conv.id) ?? "");
   const setDraft = (text: string) => {
+    typed.current = true;
     setDraftState(text);
     if (text) api.drafts.set(conv.id, text);
     else api.drafts.delete(conv.id);
   };
+  // A draft that lands after the composer has mounted (a prefilled message landing as the new thread opens, while the
+  // pushed screen's content renders a moment after the screen, POP-02) still fills the box, as long as nothing has been
+  // typed in it yet.
+  const typed = useRef(false);
+  useEffect(() => {
+    if (typed.current || draft) return;
+    const landed = api.drafts.get(conv.id);
+    if (landed) setDraftState(landed);
+  });
   const [files, setFiles] = useState<File[]>(recovery?.files ?? initialFiles ?? []);
   const filesRef = useRef(files);
   filesRef.current = files;
@@ -234,6 +244,8 @@ export function Composer({
     // MOT-SEND-6: the arrow leaves the key upward; the field simply clears (3.5: the sent message is an insert, not a flight).
     const arrow = footer.current?.querySelector<HTMLElement>(".ch-msv-sendkey .ch-ms-send svg");
     if (arrow) playArrowLeave(arrow, composerReduced);
+    // A send ends the late-draft pickup above: the box is the person's from here.
+    typed.current = true;
     // Recovery retries clear the visible original, while the later ordinary draft stays durable.
     if (unconfirmed || recoveredRequest) setDraftState("");
     else setDraft("");
