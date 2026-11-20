@@ -1,5 +1,5 @@
 import { roundShares } from '../../lib/shares';
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChPuttBand } from '../../data/stats-common';
 import type { ChProfileExtra } from '../../data/stats-player';
@@ -7,7 +7,8 @@ import { changeInk, formatAvg, formatDistance, formatFixed, formatPct, formatSig
 import { InlineNotice } from '../../ui/Notices';
 import { Compare } from './charts';
 import { ScoreMixBar } from './ScoreMixBar';
-import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type Tone } from './detail';
+import { DataTable, Empty, MoreOpen, Panel, RoundLine, SectorGrid, Tiles, type Cell, type Tone } from './detail';
+import { HBars } from './MiniCharts';
 import { plural } from '../../lib/plural';
 import { NoData } from '../../ui/NoData';
 
@@ -256,6 +257,8 @@ export function ApproachMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtr
 }
 
 export function ShortMore({ s }: { s: GolfStats }) {
+  /** Inside a pushed detail (the Stats redesign's cards) the comparisons read as the page's rows; a closed "More detail" keeps its tables. */
+  const asRows = useContext(MoreOpen);
   const lie = s.atgEffByDistanceLie ?? {};
   const eff: Array<[string, number | null, { fairway: number | null; rough: number | null; sand: number | null } | undefined]> = [
     ['0–10 yds', s.atgEfficiency0_10, lie['0_10']],
@@ -289,9 +292,10 @@ export function ShortMore({ s }: { s: GolfStats }) {
           <DataTable
             label="Strokes to hole out from around the green by distance and lie"
             cols={['Distance', 'All lies', 'Fairway', 'Rough', 'Sand']}
+            keyCol={0}
             rows={[
               ...eff.map(([label, all, l]) => ({ key: label, head: label, cells: [num(all, 2), num(l?.fairway, 2), num(l?.rough, 2), num(l?.sand, 2)] })),
-              { key: 'all', head: 'All distances', cells: [num(s.atgEfficiencyAvg, 2), num(s.atgEffFairway, 2), num(s.atgEffRough, 2), num(s.atgEffSand, 2)] },
+              { key: 'all', head: 'All distances', total: true, cells: [num(s.atgEfficiencyAvg, 2), num(s.atgEffFairway, 2), num(s.atgEffRough, 2), num(s.atgEffSand, 2)] },
             ]}
           />
         ) : (
@@ -299,7 +303,21 @@ export function ShortMore({ s }: { s: GolfStats }) {
         )}
       </Panel>
       <Panel title="Up and down by where the green was missed" note="A miss that was short and left counts on both axes, so shares can add to more than 100%.">
-        {dir.length ? (
+        {dir.length && asRows ? (
+          // Each miss against the player's own up-and-down rate over every chance: the tick, and green at or above it.
+          <HBars
+            wide
+            tourKey={s.scramblingPercentage != null}
+            tickKey={s.scramblingPercentage != null ? `All chances, ${pct(s.scramblingPercentage)}` : undefined}
+            rows={dir.map(([k, v]) => ({
+              label: cap(k),
+              sub: v!.shareOfMisses == null ? null : `${pct(v!.shareOfMisses)} of misses`,
+              value: v!.pct,
+              tour: s.scramblingPercentage,
+              valueSub: `${v!.made} of ${v!.attempts}`,
+            }))}
+          />
+        ) : dir.length ? (
           <DataTable
             label="Up and down by the direction of the missed green"
             cols={['Missed', 'Up and down', 'Chances', 'Share of misses']}
@@ -310,7 +328,13 @@ export function ShortMore({ s }: { s: GolfStats }) {
         )}
       </Panel>
       <Panel title="Finish after the chip" note="Average distance left by chips and pitches that reached the green; a holed chip counts 0.">
-        {prox.some((r) => r.value != null) ? <Compare unit=" ft" rows={prox} /> : <Empty code={NOTHING}>No chips finished on the green in this window.</Empty>}
+        {prox.some((r) => r.value != null) && asRows ? (
+          <HBars wide scale={Math.max(1, ...prox.map((r) => r.value ?? 0))} format={(v) => ft(v)} rows={prox} />
+        ) : prox.some((r) => r.value != null) ? (
+          <Compare unit=" ft" rows={prox} />
+        ) : (
+          <Empty code={NOTHING}>No chips finished on the green in this window.</Empty>
+        )}
       </Panel>
     </>
   );

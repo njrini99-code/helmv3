@@ -1598,6 +1598,83 @@ li + li > .ch-shs-rrow::before {
   letter-spacing: var(--ch-track-17);
   text-align: right;
 }
+/* A row whose label takes two lines or whose figure carries a unit ("9.7 ft", "6 of 10" under "60%"). */
+.ch-shs-hb.is-wide {
+  grid-template-columns: minmax(0, calc(112 * var(--ch-type-k))) minmax(0, 1fr) calc(56 * var(--ch-type-k));
+  min-height: 52px;
+}
+.ch-shs-hb .v small {
+  display: block;
+  font: var(--ch-type-footnote);
+  color: var(--ch-shs-s-ink-2);
+}
+
+/*
+ * A detail's figure table (look-09, Nick 20 Nov): the page's grouped rows in table form. A quiet header, row hairlines inset
+ * from nothing (the card's padding is the inset), 44pt rows, the summary column as one well down the table and the total
+ * row under a firmer rule. Same figures as before; only the drawing changed.
+ */
+.ch-shs-screen .ch-gx-tbl {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.ch-shs-screen .ch-gx-tbl th,
+.ch-shs-screen .ch-gx-tbl td {
+  height: 44px;
+  padding: 0 0 0 8px;
+  border-top: var(--ch-hairline-w) solid var(--ch-shs-s-sep);
+  font: var(--ch-type-body);
+  color: var(--ch-shs-s-ink);
+  vertical-align: middle;
+}
+.ch-shs-screen .ch-gx-tbl th:first-child {
+  width: 34%;
+  padding-left: 0;
+}
+.ch-shs-screen .ch-gx-tbl thead th {
+  height: auto;
+  padding-top: 0;
+  padding-bottom: 8px;
+  border-top: 0;
+  font: var(--ch-type-footnote);
+  letter-spacing: 0;
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-screen .ch-gx-tbl .r {
+  padding-right: 0;
+  text-align: right;
+}
+/* The summary column: one well, rounded at its ends, its figures a step firmer. */
+.ch-shs-screen .ch-gx-tbl .is-key {
+  padding-right: 12px;
+  background: var(--ch-shs-s-well);
+}
+.ch-shs-screen .ch-gx-tbl td.is-key {
+  font: var(--ch-type-figure);
+}
+.ch-shs-screen .ch-gx-tbl thead th.is-key {
+  padding-top: 8px;
+  border-radius: var(--ch-radius-md) var(--ch-radius-md) 0 0;
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-screen .ch-gx-tbl tbody tr:last-child td.is-key {
+  border-radius: 0 0 var(--ch-radius-md) var(--ch-radius-md);
+}
+.ch-shs-screen .ch-gx-tbl thead th:not(.is-key) {
+  vertical-align: bottom;
+}
+/* The total row: the sum of the rows above it, under the firmer rule. */
+.ch-shs-screen .ch-gx-tbl tr.is-total > * {
+  border-top-color: var(--ch-shs-s-sep-strong);
+  font: var(--ch-type-figure);
+}
+/* A panel's note is the card's footnote: after the figures, quieter than them. */
+.ch-shs-screen .ch-gm.is-detail .ch-gm-p__n {
+  margin: 4px 0 0;
+  font: var(--ch-type-footnote);
+  color: var(--ch-shs-s-ink-2);
+}
 .ch-shs-tour-key {
   display: flex;
   align-items: center;

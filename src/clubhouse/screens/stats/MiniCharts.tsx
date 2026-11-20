@@ -87,32 +87,56 @@ export interface HBarRow {
   /** An early read: hollow, never graded. */
   early?: boolean;
   needs?: string | null;
+  /** A second line under the figure ("6 of 10"): what the figure is made of. */
+  valueSub?: string | null;
 }
 
-/** A detail's rows: label, rail and figure on a shared grid, with the Tour's tick where the Tour publishes one (the page's `.hb`). */
-export function HBars({ rows, tourKey = false }: { rows: readonly HBarRow[]; tourKey?: boolean }) {
+/**
+ * A detail's rows: label, rail and figure on a shared grid, with the Tour's tick where the Tour publishes one (the page's `.hb`).
+ * A percentage is drawn on 0 to 100; a figure in another unit passes the `scale` its rail runs to and the `format` its value reads in.
+ */
+export function HBars({
+  rows,
+  tourKey = false,
+  scale = 100,
+  format = (v: number) => `${Math.round(v)}%`,
+  wide = false,
+  tickKey = 'Tour average',
+}: {
+  rows: readonly HBarRow[];
+  tourKey?: boolean;
+  scale?: number;
+  format?: (v: number) => string;
+  /** Wider label and figure columns, for a two-line label or a figure with a unit ("9.7 ft"). */
+  wide?: boolean;
+  /** What the tick marks, under the rows when `tourKey` is on (the Tour by default; a detail can mark the player's own figure). */
+  tickKey?: string;
+}) {
+  const at = (v: number) => Math.max(0, Math.min(100, (v / (scale || 1)) * 100));
   return (
     <>
       {rows.map((r) => {
         const sub = r.value == null ? (r.needs ?? r.sub) : r.sub;
         return (
-          <div className="ch-shs-hb" key={r.label}>
+          <div className={'ch-shs-hb' + (wide ? ' is-wide' : '')} key={r.label}>
             <span className="l">
               {r.label}
               {sub && <small>{sub}</small>}
             </span>
             <span className="ch-shs-hrail" aria-hidden="true">
-              {r.value != null && <i className={`ch-shs-fill-${r.early ? 'flat is-early' : railTone(r.value, r.tour)}`} style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }} />}
-              {r.tour != null && <span className="ch-shs-tour" style={{ left: `${Math.max(0, Math.min(100, r.tour))}%` }} />}
+              {r.value != null && <i className={`ch-shs-fill-${r.early ? 'flat is-early' : railTone(r.value, r.tour)}`} style={{ width: `${at(r.value)}%` }} />}
+              {r.tour != null && <span className="ch-shs-tour" style={{ left: `${at(r.tour)}%` }} />}
             </span>
-            <span className={'v ch-num' + (r.value == null ? ' ch-shs-none' : '')}>{r.value == null ? <NoData /> : `${Math.round(r.value)}%`}</span>
+            <span className={'v ch-num' + (r.value == null ? ' ch-shs-none' : '')}>{r.value == null ? <NoData /> : format(r.value)}
+              {r.value != null && r.valueSub && <small>{r.valueSub}</small>}
+            </span>
           </div>
         );
       })}
       {tourKey && rows.some((r) => r.tour != null) && (
         <div className="ch-shs-tour-key">
           <i aria-hidden="true" />
-          Tour average
+          {tickKey}
         </div>
       )}
       {/* An outlined bar is a band with too few tries to grade: say so, or the outline reads as a style. */}
