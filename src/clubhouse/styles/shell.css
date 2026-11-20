@@ -2164,10 +2164,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:not(:focus-visible) {
     box-shadow: 0 0 0 1px rgb(110 98 62 / 0.2);
   }
+  /* Hover's fill is the key's own layer (ui/Button .ch-btn__layer); the head only deepens the edge. */
   @media (hover: hover) {
-    [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
-      background: rgb(255 254 250 / 0.8);
-    }
     [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled):not(:focus-visible) {
       box-shadow: 0 0 0 1px rgb(110 98 62 / 0.32);
     }
@@ -2784,9 +2782,6 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
     box-shadow: 0 0 0 1px var(--ch-border-control);
   }
   @media (hover: hover) {
-    html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
-      background: rgb(237 231 216 / 0.09);
-    }
     html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled):not(:focus-visible) {
       box-shadow: 0 0 0 1px var(--ch-border-strong);
     }
