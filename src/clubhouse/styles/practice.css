@@ -2390,3 +2390,12 @@ main.ch-prc-planpage > .ch-backlink {
     display: none;
   }
 }
+
+/* Law 2 on the phone (Nick, 20 Nov 2026: "no contrast"): a well is a step deeper inside a card, never a tile on the page,
+   where its linen read as faded. A day with no practice is card paper like the rest; its dash says it is empty. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-prc-tile.is-off:not(.is-today) {
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-card-shadow);
+  }
+}

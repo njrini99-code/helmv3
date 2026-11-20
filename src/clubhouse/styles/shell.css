@@ -2966,8 +2966,11 @@ html[data-fw-theme='dark'] .ch-offline {
     pointer-events: none;
     transition: opacity var(--ch-dur-quick) var(--ch-ease);
   }
+  /* No shade under the phone bar (Nick, 20 Nov 2026, "no contrast"): the green bar already ends on a hard edge, and the
+     green-tinted fade over the ivory cards read as a muddy band, the "green fading into a beige wash" DESIGN_LANGUAGE §5
+     bans. Content scrolls under the bar's clean edge, as under an iOS bar. */
   [data-ui='clubhouse']:not([data-phone-hero]) .ch-topbar[data-scrolled]::before {
-    opacity: 1;
+    opacity: 0;
   }
   [data-ui='clubhouse'][data-motion='off'] .ch-topbar::before,
   [data-ui='clubhouse'][data-motion='off'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
