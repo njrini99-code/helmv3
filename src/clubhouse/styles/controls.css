@@ -2046,7 +2046,6 @@ main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
 }
 .ch-field__opt {
   color: var(--ch-text-tertiary);
-  font-weight: 400;
 }
 .ch-field__foot {
   display: flex;

@@ -49,8 +49,8 @@
   padding: 0 var(--ch-btn-pad-x);
   gap: 8px;
   border-radius: var(--ch-radius-md);
-  font-size: calc(15 * var(--ch-type-k));
-  letter-spacing: var(--ch-track-15);
+  /* Decision 14 (OQ-59, applied as recommended): the large key keeps radius 12 and reads at 600, on the headline role. */
+  font: var(--ch-type-headline);
 }
 /* One green (owner, 2026-10-06: "it's not even the same green"): the primary action is the field green the sidebar
    selection, the canopy and the scoreboard use, its words in the warm on-green ink, engraved. A solid face (audit

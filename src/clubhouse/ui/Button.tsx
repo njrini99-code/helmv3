@@ -82,7 +82,8 @@ export function Button(props: ButtonProps) {
   // A primary press confirms; a destructive one warns as it is pressed (CONS-1).
   const feel = props.feel === undefined ? (variant === 'primary' ? 'press' : variant === 'danger' ? 'warning' : null) : props.feel;
   const cls = ['ch-btn', `ch-btn--${variant}`, size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ');
-  const iconSize = size === 'sm' ? 14 : 15;
+  // Decision 14 (OQ-59, applied as recommended): a key's glyph is 16 (14 on the small key).
+  const iconSize = size === 'sm' ? 14 : 16;
   const press = usePressPrefetch();
   const isDone = props.href === undefined && !!props.done && !props.busy;
   const doneLabel = (props.href === undefined && props.doneLabel) || 'Saved';
