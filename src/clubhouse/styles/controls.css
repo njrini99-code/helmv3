@@ -2014,3 +2014,10 @@ main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
   display: inline-flex;
   flex: 0 0 auto;
 }
+
+/* GES-17: a key's done state (ui/Button done): a check and "Saved" in the label's place. */
+.ch-btn__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
