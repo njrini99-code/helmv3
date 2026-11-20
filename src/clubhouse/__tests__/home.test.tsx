@@ -920,6 +920,20 @@ describe('Home · after this week, and trips (audit 2026-11-13)', () => {
     expect(code('CH-2309')!.textContent).toMatch(/No events scheduled/);
   });
 
+  it('CH-2309 nothing ahead at all says so once: no "Nothing scheduled" Today under it (Nick, 20 Nov 2026)', () => {
+    phone();
+    wrap(<CoachHome data={emptyWeek({ after: null })} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2309')!.textContent).toMatch(/No events scheduled/);
+    expect(code('CH-2301')).toBeNull();
+    expect(screen.queryByText('Nothing scheduled')).toBeNull();
+  });
+
+  it('CH-2316 with something after this week, Today still says today is clear', () => {
+    phone();
+    wrap(<CoachHome data={emptyWeek({ after: AFTER })} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2301')).toBeTruthy();
+  });
+
   it('F-0001 a trip with no event is the day card while the team is away: "On the road", its dates, and it opens on Team Hub', () => {
     phone();
     const days = emptyWeek().week.days.map((d) => ({ ...d, trip: d.date >= '2026-10-13' && d.date <= '2026-10-15' ? 'Fall Invitational' : null }));

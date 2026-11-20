@@ -124,7 +124,9 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
               </SectionBoundary>
             </WeekStrip>
           </SectionBoundary>
-        ) : (
+        ) : nothingAhead && !data.after ? null : (
+          // Nothing ahead at all: Up next already says "No events scheduled", so Today's "Nothing scheduled" would
+          // say it twice (Nick, 20 Nov 2026). With something after this week, Today still says today is clear.
           <SectionBoundary surface="home.today" label="Today" code="CH-2214">
             <Today list={data.today} now={now} failed={data.week.error} quiet={nothingAhead} canPlan={false} />
           </SectionBoundary>
