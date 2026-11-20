@@ -165,7 +165,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 
 /* Moment 1. The frame: a sheet hung from the bar on the phone, a panel anchored to the key on a desk. Its size never
    changes while it is open; it opens from 96% at the key's centre, transform and opacity only (useQcMotion, S3.5). */
-.ch-qcs .qc { position: fixed; z-index: calc(var(--ch-z-popover) + 1); top: var(--ch-qc-top, 62px); display: flex; flex-direction: column; overflow: hidden; outline: 0; background: var(--ch-qc-a-pglass); -webkit-backdrop-filter: blur(var(--ch-glass-blur)); backdrop-filter: blur(var(--ch-glass-blur)); box-shadow: var(--ch-qc-shadow-14); }
+.ch-qcs .qc { position: fixed; z-index: calc(var(--ch-z-popover) + 1); top: var(--ch-qc-top, 62px); display: flex; flex-direction: column; overflow: hidden; outline: 0; background: var(--ch-qc-a-pglass); -webkit-backdrop-filter: var(--ch-glass-filter); backdrop-filter: var(--ch-glass-filter); box-shadow: var(--ch-qc-shadow-14); }
 /* On the phone the sheet is nearly the whole screen: its ground is solid. Glass there let words of the page read through its
    foot, and a backdrop blur is re-sampled on every frame the sheet scales; the open is cheaper without it. A desk keeps the glass. */
 .ch-qcs.is-phone .qc { background: var(--ch-bg-page); -webkit-backdrop-filter: none; backdrop-filter: none; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: calc(8px + env(safe-area-inset-bottom)); border-radius: var(--ch-radius-xl); }

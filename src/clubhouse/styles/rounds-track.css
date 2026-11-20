@@ -1305,8 +1305,8 @@ path.ch-rt-map__shot {
   padding: 12px 16px;
   border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
   background: rgb(253 252 248 / 0.92);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur));
-  backdrop-filter: blur(var(--ch-glass-blur));
+  -webkit-backdrop-filter: var(--ch-glass-filter);
+  backdrop-filter: var(--ch-glass-filter);
   box-shadow: none;
 }
 /* Row 41: content scrolling under the bar fades into it, one shade instead of a hairline. */

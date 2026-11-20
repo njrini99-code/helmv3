@@ -671,6 +671,8 @@
   /* Glass is for the floating navigation only (top bar, tab bar); 20px reads as frosted without the muddy edge. */
   --ch-glass-blur: 20px;
   --ch-glass-saturate: 140%;
+  /* The one bar material's filter (Mat1, CC-1): every glass in Clubhouse is this recipe; glass-recipe.test.ts guards it. */
+  --ch-glass-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
   /* Messages v2 (docs/clubhouse/messages-v2/SPEC.md tokens): bars, composer and pills blur 24 and saturate 170%; the overlay
      behind a lifted bubble blurs 14 and saturates 120%. A Messages rule writes blur(var(--ch-glass-blur)),
      so the elevation test still finds var(--ch-glass-blur) and a browser without the token falls back to the shared glass.

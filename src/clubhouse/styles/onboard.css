@@ -84,8 +84,8 @@
   padding: 6px 16px 6px 8px;
   border-radius: var(--ch-radius-full);
   background: rgb(251 250 246 / 0.88);
-  backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(140%);
-  -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(140%);
+  backdrop-filter: var(--ch-glass-filter);
+  -webkit-backdrop-filter: var(--ch-glass-filter);
   box-shadow: 0 0 0 1px rgb(176 149 96 / 0.2), 0 8px 18px -12px rgb(11 38 22 / 0.4);
   font: var(--ch-type-17-strong);
   line-height: var(--ch-lead-tight);
