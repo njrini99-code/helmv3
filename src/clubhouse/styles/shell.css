@@ -1345,8 +1345,7 @@ button.ch-more__row[disabled] {
     bottom: calc(var(--ch-ms-comp-h, calc(60px + env(safe-area-inset-bottom))) + 12px + var(--keyboard-height, 0px));
   }
   .ch-toast {
-    min-width: 0;
-    max-width: none;
+    width: auto;
   }
 
   /* The parts of a phone top bar (ui/PhoneBar.tsx): in the shell's bar for a page's own top, and on pushed screens. */

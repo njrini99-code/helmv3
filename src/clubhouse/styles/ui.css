@@ -457,8 +457,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 300px;
-  max-width: 420px;
+  /* One width for every toast (POP-08): a stack of a short and a long one no longer jumps between widths; long words
+     wrap. The stack itself reflows by transform (Motion layout, Toast.tsx). */
+  width: 360px;
   padding: 8px 8px 8px 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ink-900);
