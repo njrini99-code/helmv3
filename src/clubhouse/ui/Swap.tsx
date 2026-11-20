@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, m, useIsPresent } from 'motion/react';
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { CH_DUR, CH_EASE, chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 
@@ -13,7 +13,8 @@ import { useChReducedMotion } from '../lib/reduced-motion';
  * over the quick one, so the new content is always the one being read. First paint never animates
  * (`initial={false}`), reduced motion and Animations off swap instantly, and the leaving copy is hidden from assistive
  * tech and focus while it fades. The frame takes the new content's height at once: no height animates, so a swap never lays the
- * page out per frame.
+ * page out per frame. What sits below the frame glides to its new place by a transform (B7, FLIP on the base beat, as
+ * Calendar's change note does), so a taller or shorter swap moves the page smoothly instead of jumping.
  */
 export function Swap({
   swapKey,
@@ -33,10 +34,29 @@ export function Swap({
   children: ReactNode;
 }) {
   const reduced = useChReducedMotion();
+  const frame = useRef<HTMLElement | null>(null);
+  const lastH = useRef<number | null>(null);
+  const lastKey = useRef(swapKey);
+  useLayoutEffect(() => {
+    const el = frame.current;
+    if (!el || inline) return;
+    const h = el.getBoundingClientRect().height;
+    const was = lastH.current;
+    const changed = lastKey.current !== swapKey;
+    lastH.current = h;
+    lastKey.current = swapKey;
+    if (!changed || was == null || reduced) return;
+    const dy = was - h;
+    if (Math.abs(dy) < 1) return;
+    for (let n = el.nextElementSibling; n; n = n.nextElementSibling) {
+      if (!(n instanceof HTMLElement) || typeof n.animate !== 'function') continue;
+      n.animate([{ transform: `translateY(${dy}px)` }, { transform: 'translateY(0)' }], { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})` });
+    }
+  }, [swapKey, inline, reduced]);
   const Frame = inline ? 'span' : 'div';
   const Item = inline ? m.span : m.div;
   return (
-    <Frame className={'ch-swap' + (inline ? ' ch-swap--inline' : '') + (className ? ` ${className}` : '')}>
+    <Frame ref={frame as never} className={'ch-swap' + (inline ? ' ch-swap--inline' : '') + (className ? ` ${className}` : '')}>
       <AnimatePresence mode="popLayout" initial={false} custom={dir}>
         <Item
           key={swapKey}
