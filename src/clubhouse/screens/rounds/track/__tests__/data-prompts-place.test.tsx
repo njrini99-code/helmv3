@@ -92,7 +92,7 @@ describe('a data prompt stands in the card’s foot band, with the distance row'
 
   it('picking a result gives the band to the distance row; Change gives it back', async () => {
     const { user } = setup(putt);
-    await user.click(screen.getByRole('radio', { name: 'Green' }));
+    await user.click(screen.getByRole('radio', { name: 'Missed' }));
     expect(band().dataset.face).toBe('distance');
     expect(document.getElementById('ch-rt-dist')!.closest('.is-reserved')).toBeNull();
     // Still mounted (it is hidden by the band's face on the phone), so the band is as tall as the taller of the two.
@@ -127,7 +127,7 @@ describe('a data prompt stands in the card’s foot band, with the distance row'
     expect(screen.queryByRole('button', { name: 'Short' })).toBeNull();
     // The next shot starts clean.
     await user.click(screen.getByRole('radio', { name: 'Holed' }));
-    await user.click(screen.getByRole('button', { name: /Complete hole/ }));
+    await user.click(screen.getByRole('button', { name: /Hole out, score/ }));
   });
 
   it('an answered prompt keeps its place as the receipt, and its heading keeps the line Skip stood in', async () => {
@@ -147,7 +147,7 @@ describe('a data prompt stands in the card’s foot band, with the distance row'
     expect(band().querySelector('.ch-rt-held')).not.toBeNull();
     await user.click(screen.getByRole('radio', { name: /^Green/ }));
     await user.click(within(screen.getByRole('group', { name: 'Quick distances' })).getByRole('button', { name: '10' }));
-    await user.click(screen.getByRole('button', { name: 'Record next shot' }));
+    await user.click(screen.getByRole('button', { name: 'Next shot' }));
     expect(band().querySelector('.ch-rt-held')).toBeNull();
     expect(band().querySelector('.ch-rt-band__ask')).toBeNull();
   });

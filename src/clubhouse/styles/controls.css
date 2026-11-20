@@ -1029,6 +1029,25 @@
   color: var(--ch-text-on-accent);
   transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
+/* GES-17: the drawn check (ui/Checkbox.tsx). The window slides in from the left while the mark counter-slides, so the
+   mark stays put and is uncovered left to right over the base beat. Reduce Motion shows it at once. */
+.ch-check__draw {
+  display: inline-flex;
+  overflow: hidden;
+}
+.ch-check__draw[data-draw] {
+  animation: ch-check-window var(--ch-dur-base) var(--ch-ease) both;
+}
+.ch-check__draw[data-draw] .ch-check__ink {
+  display: inline-flex;
+  animation: ch-check-ink var(--ch-dur-base) var(--ch-ease) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-check__draw[data-draw],
+  .ch-check__draw[data-draw] .ch-check__ink {
+    animation: none;
+  }
+}
 .ch-check__box.is-on {
   background: var(--ch-green-fill-600);
   box-shadow: none;

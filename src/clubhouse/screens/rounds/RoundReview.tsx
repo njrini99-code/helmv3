@@ -51,6 +51,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { invalidatePrefetchTabs } from '../../shell/use-prefetch-tabs';
 import type { ChDebrief } from '../../data/round-debrief-shape';
 import { plural, pluralWord } from '../../lib/plural';
+import { Abbr } from '../../ui/Abbr';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const pct = (hit: number, of: number) => `${Math.round((hit / of) * 100)}%`;
@@ -207,7 +208,7 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
           <td>{sum('putts') ?? <NoData />}</td>
         </tr>
         <tr className="is-marks">
-          <th scope="row">FIR</th>
+          <th scope="row"><Abbr k="FIR" /></th>
           {holes.map((h) => (
             <td key={h.n}>
               <Mark v={h.fairway} />
@@ -216,7 +217,7 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
           <td />
         </tr>
         <tr className="is-marks">
-          <th scope="row">GIR</th>
+          <th scope="row"><Abbr k="GIR" /></th>
           {holes.map((h) => (
             <td key={h.n}>
               <Mark v={h.gir} />

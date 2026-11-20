@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from 'react';
+import { useRef, useState, useTransition, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { haptic } from '../lib/haptics';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useSlidePlate } from '../lib/slide-plate';
@@ -76,6 +76,29 @@ export function Segmented<V extends string>({
     setChosen(v);
     startChange(() => onChange(v));
   };
+  // GES-12: the chosen plate can be dragged. A finger that lands on it and slides picks each option it passes, with the
+  // selection haptic per stop (pick), as iOS's segmented control does; the plate glides on the same thumb tween.
+  const dragging = useRef<number | null>(null);
+  const optionAt = (x: number): number => refs.current.findIndex((b) => {
+    if (!b || b.disabled) return false;
+    const r = b.getBoundingClientRect();
+    return x >= r.left && x < r.right;
+  });
+  const onDragStart = (e: PointerEvent) => {
+    const b = (e.target as Element).closest?.('.ch-seg__b');
+    if (!b || !b.classList.contains('is-on') || e.button !== 0) return;
+    dragging.current = e.pointerId;
+    well.current?.setPointerCapture?.(e.pointerId);
+  };
+  const onDragMove = (e: PointerEvent) => {
+    if (dragging.current !== e.pointerId) return;
+    const n = optionAt(e.clientX);
+    const o = n >= 0 ? options[n] : undefined;
+    if (o && !o.disabled) pick(o.value);
+  };
+  const onDragEnd = (e: PointerEvent) => {
+    if (dragging.current === e.pointerId) dragging.current = null;
+  };
   const onKey = (e: KeyboardEvent, i: number) => {
     const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
     if (!d) return;
@@ -92,7 +115,7 @@ export function Segmented<V extends string>({
     refs.current[n]?.focus();
   };
   return (
-    <div ref={well} className={`ch-seg ch-well ch-seg--${size}${block ? ' ch-seg--block' : ''}`} role="radiogroup" aria-label={label}>
+    <div ref={well} className={`ch-seg ch-well ch-seg--${size}${block ? ' ch-seg--block' : ''}`} role="radiogroup" aria-label={label} onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
       {options.map((o, i) => {
         const on = o.value === shown;
         return (

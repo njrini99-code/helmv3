@@ -17,6 +17,7 @@ import { dateOf, TYPE_LABEL } from './labels';
 import { zoneFormat } from '../../lib/zone-format';
 import { parColumns } from '../../lib/chart';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
+import { Abbr } from '../../ui/Abbr';
 
 export { dateOf, TYPE_LABEL };
 // A calendar day is read in UTC (the noon-UTC convention). Each kind is built once (lib/zone-format.ts): a book of rounds labels
@@ -430,7 +431,7 @@ function SeasonFigures({ season, phone = false }: { season: ChRoundsSeason; phon
         </dd>
       </div>
       <div className="ch-rd-fig">
-        <dt>GIR</dt>
+        <dt><Abbr k="GIR" /></dt>
         <dd className="ch-num ch-rd-fig__v">{season.girPct == null ? <NoData /> : `${Math.round(season.girPct)}%`}</dd>
         {season.girPer18 != null && (
           <dd className="ch-rd-fig__viz" aria-hidden="true">

@@ -60,6 +60,7 @@ import { PlayerInsight } from './StatsInsight';
 import { NoData } from '../../ui/NoData';
 import { usePushOnce } from '../../lib/nav-once';
 import { areaDetail, desktopTabOfHash, tabOfDetail } from './detail-route';
+import { Abbr } from '../../ui/Abbr';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -575,7 +576,7 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
               <span role="columnheader">Date</span>
               <span role="columnheader" className="r">Score</span>
               <span role="columnheader" className="r">To par</span>
-              <span role="columnheader" className="r ch-tr__x">GIR</span>
+              <span role="columnheader" className="r ch-tr__x"><Abbr k="GIR" /></span>
               <span role="columnheader" className="r ch-tr__x">Putts</span>
               <span role="columnheader" className="r">SG total</span>
               {LEGS_LIST.map((l) => (

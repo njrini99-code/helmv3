@@ -1,7 +1,7 @@
 'use client';
 
 import { Check } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { haptic } from '../lib/haptics';
 
@@ -29,6 +29,8 @@ export function Checkbox({
   describedBy?: string;
   invalid?: boolean;
 }) {
+  // GES-17: the check draws in only when the person ticks it, never on first paint.
+  const [drew, setDrew] = useState(false);
   return (
     <label className={['ch-check', disabled && 'is-disabled', className].filter(Boolean).join(' ')}>
       <input
@@ -41,11 +43,20 @@ export function Checkbox({
         aria-invalid={invalid || undefined}
         onChange={(e) => {
           haptic('select');
+          setDrew(e.target.checked);
           onChange(e.target.checked);
         }}
       />
       <span className={'ch-check__box' + (checked ? ' is-on' : '')} aria-hidden="true">
-        {checked && <Icon icon={Check} size={13} />}
+        {checked && (
+          // A left-to-right reveal by two opposite transforms (the window moves in, the mark holds still): only transform
+          // animates, so it stays on the compositor (motion rule), and it reads as the check being drawn.
+          <span className="ch-check__draw" data-draw={drew || undefined}>
+            <span className="ch-check__ink">
+              <Icon icon={Check} size={13} />
+            </span>
+          </span>
+        )}
       </span>
       {children}
     </label>

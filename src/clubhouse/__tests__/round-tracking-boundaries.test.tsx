@@ -59,7 +59,7 @@ describe('the tracking screen’s sections', () => {
     const notice = container.querySelector('[data-ch-code="CH-11291"]')!;
     expect(notice.textContent).toContain('The hole map couldn’t be shown');
     expect(container.querySelector('.ch-rt-panel')).not.toBeNull();
-    expect(screen.getByRole('button', { name: /Record next shot|Complete hole/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Next shot$|^Hole out, score/ })).toBeTruthy();
   });
 
   it('a shot log that throws is named in place too', () => {

@@ -17,6 +17,25 @@ import { releaseSpeed } from '../lib/sheet-drag';
  */
 /** A finger must travel this far before the gesture decides whether it is a swipe or a scroll. */
 export const CH_EDGE_SLOP_PX = 8;
+/** …and further when it landed away from the edge (M2), where most touches are scrolls and taps. */
+export const CH_CONTENT_SLOP_PX = 12;
+
+/**
+ * M2: whether a finger that lands at `target`, away from the edge, must be left to what it landed on rather than start a
+ * swipe back. Anything that reads a sideways finger itself: a field, a slider, a switch, a segmented control, a swipe
+ * row, an element that takes horizontal touches (`touch-action: pan-y`, as the Month grid and the Bell cards do), an
+ * opt-out (`data-ch-no-back`), or a sideways scroller that can still scroll back (a finger moving right scrolls it).
+ */
+export function backSwipeBlockedAt(target: EventTarget | null, root: Element): boolean {
+  for (let n = target instanceof Element ? target : null; n && n !== root.parentElement; n = n.parentElement) {
+    if (n.matches('input, textarea, select, [contenteditable], [role="slider"], [role="switch"], [data-ch-no-back], .ch-seg, [data-ch-swipe-row]')) return true;
+    const st = getComputedStyle(n);
+    if (st.touchAction.includes('pan-y') && !st.touchAction.includes('pan-x')) return true;
+    if ((st.overflowX === 'auto' || st.overflowX === 'scroll') && n.scrollWidth > n.clientWidth && n.scrollLeft > 0) return true;
+    if (n === root) break;
+  }
+  return false;
+}
 /** …and a flick counts only after the screen has moved this much. */
 const FLICK_MIN_PX = 10;
 /**
@@ -79,8 +98,12 @@ const NONE: EdgeMove = { claim: false, frame: null };
  * `from` is where the screen already is when the finger lands, in pixels: a push still sliding in is grabbed where it
  * stands (C1, rows 2 and 89), so the finger's travel adds to that rather than starting the screen from rest.
  */
-export function createEdgeSwipe(width: number, from = 0) {
+export function createEdgeSwipe(width: number, from = 0, { anywhere = false }: { anywhere?: boolean } = {}) {
   let phase: EdgePhase = 'idle';
+  // M2: a finger that lands away from the edge may also swipe back, but it must travel further and more plainly
+  // sideways first (twice as far across as down), so a scroll that wanders right stays a scroll.
+  const slop = anywhere ? CH_CONTENT_SLOP_PX : CH_EDGE_SLOP_PX;
+  const across = anywhere ? 2 : 1;
   let x0 = 0;
   let y0 = 0;
   let offset = 0;
@@ -104,7 +127,7 @@ export function createEdgeSwipe(width: number, from = 0) {
     start(x: number, y: number, t: number): boolean {
       if (phase === 'pending' || phase === 'dragging') return false;
       reset();
-      if (x > CH_SWIPE.edge || x < 0 || !(width > 0)) {
+      if ((!anywhere && x > CH_SWIPE.edge) || x < 0 || !(width > 0)) {
         phase = 'refused';
         return false;
       }
@@ -121,9 +144,9 @@ export function createEdgeSwipe(width: number, from = 0) {
       const dx = x - x0;
       const dy = y - y0;
       if (phase === 'pending') {
-        if (Math.hypot(dx, dy) < CH_EDGE_SLOP_PX) return NONE;
+        if (Math.hypot(dx, dy) < slop) return NONE;
         // Vertical (or leftward) first travel is a scroll's: it wins for the rest of this touch.
-        if (!(dx > 0 && dx > Math.abs(dy))) {
+        if (!(dx > 0 && dx > across * Math.abs(dy))) {
           phase = 'refused';
           return NONE;
         }

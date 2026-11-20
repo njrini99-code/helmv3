@@ -4330,3 +4330,13 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   opacity: 0;
   pointer-events: none;
 }
+
+/* ST-10: the line a stalled route skeleton shows after 8 seconds (shell/RouteFrame.tsx StallLine). */
+.ch-stall {
+  margin: 16px auto 0;
+  max-width: var(--ch-measure-reading);
+  padding: 0 var(--ch-page-x-phone);
+  text-align: center;
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-secondary);
+}

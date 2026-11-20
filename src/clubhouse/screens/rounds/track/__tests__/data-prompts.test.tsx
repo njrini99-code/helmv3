@@ -88,7 +88,7 @@ describe('CH-11960 the putt-miss ask (chs-22, coachhelm_data_gap_prompt_v1)', ()
     expect(screen.getByText('Which side did it miss?')).toBeTruthy();
     expect(row.textContent).toContain('First putt, 8 ft · 3 of 6 for your 5–10 ft putt read');
     expect(screen.getByRole('group', { name: /Which side the first putt missed, for your read “Putts from 5–10 ft”/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Record next shot/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Next shot$/ })).toBeTruthy();
   });
 
   it('puts the tag on the recorded putt through the hole save, keeps the row as the receipt and moves the counter', async () => {
