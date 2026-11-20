@@ -52,6 +52,58 @@
   /* Decision 14 (OQ-59, applied as recommended): the large key keeps radius 12 and reads at 600, on the headline role. */
   font: var(--ch-type-headline);
 }
+/* The face's state layer (4.32.1; Material's state layer, Radix's hover overlay): the key's own ink over its fill, at 7%
+   under the pointer and 12% while pressed. Only its opacity moves, on the quick beat. A key that carries the layer (every
+   ui/Button) keeps its fill on hover and press (below each variant); a hand-written .ch-btn without it keeps the
+   variant's hover and press fills. */
+.ch-btn__layer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
+}
+@media (hover: hover) {
+  .ch-btn:hover:not(:disabled) > .ch-btn__layer {
+    opacity: 0.07;
+  }
+}
+.ch-btn[data-ch-pressed]:not(:disabled) > .ch-btn__layer {
+  opacity: 0.12;
+}
+@media (hover: hover) {
+  .ch-btn:active:not(:disabled) > .ch-btn__layer {
+    opacity: 0.12;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-btn__layer {
+    transition: none;
+  }
+}
+/* A layered key's fill holds still: its hover and press fills point back at the resting fill, so the layer above is the
+   only change. A hand-written .ch-btn (no layer) keeps the variant's own hover and press fills. */
+.ch-btn:has(> .ch-btn__layer) {
+  --ch-primary-bg-hover: var(--ch-primary-bg);
+  --ch-primary-bg-press: var(--ch-primary-bg);
+  --ch-btn-secondary-bg-hover: var(--ch-btn-secondary-bg);
+  --ch-btn-secondary-bg-press: var(--ch-btn-secondary-bg);
+}
+@media (hover: hover) {
+  .ch-btn--ghost:has(> .ch-btn__layer):hover:not(:disabled) {
+    background: transparent;
+  }
+}
+.ch-btn--ghost:has(> .ch-btn__layer)[data-ch-pressed]:not(:disabled) {
+  background: transparent;
+}
+@media (hover: hover) {
+  .ch-btn--ghost:has(> .ch-btn__layer):active:not(:disabled) {
+    background: transparent;
+  }
+}
 /* One green (owner, 2026-10-06: "it's not even the same green"): the primary action is the field green the sidebar
    selection, the canopy and the scoreboard use, its words in the warm on-green ink, engraved. A solid face (audit
    Batch 5 item 6: the 4-stop gradient read as a sticker); hover and press change its colour, which glides. */
