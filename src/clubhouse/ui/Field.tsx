@@ -63,8 +63,13 @@ export function Field({
             )
           )}
           {max != null && (
-            <span id={countId} className={'ch-field__count ch-num' + (over ? ' is-over' : '')} aria-label={`${count ?? 0} of ${max} characters`}>
-              {count ?? 0} / {max}
+            <span id={countId} className={'ch-field__count ch-num' + (over ? ' is-over' : '')}>
+              <span aria-hidden="true">
+                {count ?? 0} / {max}
+              </span>
+              <span className="ch-sr-only">
+                {count ?? 0} of {max} characters
+              </span>
             </span>
           )}
         </div>

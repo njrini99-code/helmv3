@@ -45,7 +45,8 @@
 }
 .ch-popover.ch-tip .ch-tip__kbd {
   background: transparent;
-  box-shadow: inset 0 0 0 1px var(--ch-tip-ink-soft);
+  box-shadow: none;
+  border: 1px solid var(--ch-tip-ink-soft);
   color: var(--ch-tip-ink-soft);
 }
 .ch-root[data-motion='off'] .ch-popover.ch-tip {
