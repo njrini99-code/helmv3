@@ -2202,10 +2202,64 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     font-size: inherit;
     font-weight: inherit;
   }
-  [data-ui='clubhouse'] main[data-canopy] .ch-sheet {
+  /* Text lives on a surface on a desk too (G1b, owner 19 Nov 2026; DESIGN_LANGUAGE law 1), everywhere but the page head.
+     A reading sheet keeps its ivory card here, so its section titles, notes and figures sit on paper, not on the canvas
+     (it lost its fill, ring and shadow under the Ledger). Player Home is held as built (owner, 7 Nov 2026) and keeps
+     its flush sheet until the owner moves it. */
+  [data-ui='clubhouse'][data-ch-role='player'] main.ch-h-main[data-canopy] .ch-sheet {
     background: none;
     box-shadow: none;
     border-radius: 0;
+  }
+  /* The shared Section (ui/Section.tsx) is a card on a desk, in the card anatomy (DESIGN_LANGUAGE §4): its title and
+     caption are the card's header, its hairline inset 16, the body under it, 20px in. Where its body is one card, the
+     Section takes that card's place and the card goes flat inside it, so there is never a card in a card. A Section that
+     holds several cards keeps its head on the canvas until its page is rebuilt (premium batch 3). CoachHelm's screens are
+     left as they are (their own pass). */
+  [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(
+      :has(> :not(.ch-surface, .ch-sheet) :is(.ch-surface, .ch-sheet, .ch-es--page)),
+      :has(> :is(.ch-surface, .ch-sheet) ~ :is(.ch-surface, .ch-sheet, .ch-es--page)),
+      :has(> .ch-es--page ~ :is(.ch-surface, .ch-sheet))
+    ) {
+    gap: 0;
+    padding: 0 20px 20px;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-card-shadow);
+  }
+  [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(
+      :has(> :not(.ch-surface, .ch-sheet) :is(.ch-surface, .ch-sheet, .ch-es--page)),
+      :has(> :is(.ch-surface, .ch-sheet) ~ :is(.ch-surface, .ch-sheet, .ch-es--page)),
+      :has(> .ch-es--page ~ :is(.ch-surface, .ch-sheet))
+    )
+    > :is(.ch-surface, .ch-sheet, .ch-es--page) {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(
+      :has(> :not(.ch-surface, .ch-sheet) :is(.ch-surface, .ch-sheet, .ch-es--page)),
+      :has(> :is(.ch-surface, .ch-sheet) ~ :is(.ch-surface, .ch-sheet, .ch-es--page)),
+      :has(> .ch-es--page ~ :is(.ch-surface, .ch-sheet))
+    ) > .ch-sec__head {
+    margin-inline: -20px;
+    padding: 16px 20px 12px;
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-separator);
+  }
+  [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(
+      :has(> :not(.ch-surface, .ch-sheet) :is(.ch-surface, .ch-sheet, .ch-es--page)),
+      :has(> :is(.ch-surface, .ch-sheet) ~ :is(.ch-surface, .ch-sheet, .ch-es--page)),
+      :has(> .ch-es--page ~ :is(.ch-surface, .ch-sheet))
+    ) > .ch-sec__head + * {
+    margin-top: 16px;
+  }
+  [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(
+      :has(> :not(.ch-surface, .ch-sheet) :is(.ch-surface, .ch-sheet, .ch-es--page)),
+      :has(> :is(.ch-surface, .ch-sheet) ~ :is(.ch-surface, .ch-sheet, .ch-es--page)),
+      :has(> .ch-es--page ~ :is(.ch-surface, .ch-sheet))
+    ) .ch-sec__title {
+    font: var(--ch-type-headline);
+    letter-spacing: 0;
   }
 }
 
