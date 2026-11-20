@@ -1171,6 +1171,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-19-phone-edges-writer.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-19-warm-section-styles.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-components.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-20-desk-shell.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-key-face.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
@@ -1335,6 +1336,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-19-warm-section-styles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-19-week-skeleton-edge.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-components.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-20-desk-shell.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
@@ -1705,6 +1707,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-19-hours-push-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-19-shadow-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-20-components.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-20-desk-shell.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
