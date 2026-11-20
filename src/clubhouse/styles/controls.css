@@ -1042,16 +1042,6 @@
   display: inline-flex;
   animation: ch-check-ink var(--ch-dur-base) var(--ch-ease) both;
 }
-@keyframes ch-check-window {
-  from {
-    transform: translateX(-100%);
-  }
-}
-@keyframes ch-check-ink {
-  from {
-    transform: translateX(100%);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .ch-check__draw[data-draw],
   .ch-check__draw[data-draw] .ch-check__ink {

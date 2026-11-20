@@ -128,3 +128,15 @@
     rotate: 360deg;
   }
 }
+
+/* GES-17: the drawn check's reveal (controls.css .ch-check__draw): the window slides in, the mark counter-slides. */
+@keyframes ch-check-window {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes ch-check-ink {
+  from {
+    transform: translateX(100%);
+  }
+}
