@@ -151,10 +151,11 @@ describe('the edge swipe on a pushed screen', () => {
   it('blocks no scroll: its touchmove is on only while an edge touch is read, and the screen is promoted as it lands (MOT-02, MOT-03)', () => {
     const add = vi.spyOn(EventTarget.prototype, 'addEventListener');
     const { el } = mount();
-    const moves = () => add.mock.calls.filter(([type], i) => type === 'touchmove' && add.mock.contexts[i] === el).length;
+    // Only a listener that can cancel a move (not passive) can hold up a scroll.
+    const moves = () => add.mock.calls.filter(([type, , opts], i) => type === 'touchmove' && add.mock.contexts[i] === el && !(opts as AddEventListenerOptions | undefined)?.passive).length;
     expect(moves()).toBe(0);
     now += 600;
-    // A touch away from the edge: no touchmove, no layer.
+    // A touch away from the edge (M2 reads it passively): no blocking touchmove, no layer.
     touch(el, 'touchstart', 200, 300, now);
     expect(moves()).toBe(0);
     expect(el.style.willChange).toBe('');
@@ -170,11 +171,12 @@ describe('the edge swipe on a pushed screen', () => {
     expect(remove.mock.calls.some(([type], i) => type === 'touchmove' && remove.mock.contexts[i] === el)).toBe(true);
   });
 
-  it('starts only within the left 20px', () => {
+  // M2 (premium plan batch 6): a pushed screen swipes back from anywhere on it, never cancelling the content's moves.
+  it('swipes back from anywhere on the screen, without holding up a scroll (M2)', () => {
     const { el } = mount();
     const move = swipeTo(el, 200, { from: 24 });
     expect(move.prevented()).toBe(false);
-    expect(el.style.translate).toBe('');
+    expect(el.style.translate).not.toBe('');
   });
 
   // MOTION-AND-VISUAL 3.3: the finish runs 520 ms times the share of the way left, 35% floor, on the iOS curve.
