@@ -169,7 +169,7 @@
   z-index: var(--ch-z-overlay);
   /* Over the green sidebar the glass would turn the ivory to grey-green: opaque, the popover's own ivory, as every
      overlay but the desktop bar is (H16; it was 0.97, a faint green cast at the edges). */
-  background: #faf8f2;
+  background: var(--ch-overlay-bg);
   /* It hangs off the team button's left edge, so it grows from there. */
   transform-origin: top left;
 }

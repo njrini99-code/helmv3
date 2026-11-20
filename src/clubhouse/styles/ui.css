@@ -629,7 +629,7 @@
 .ch-popover {
   padding: 4px;
   border-radius: var(--ch-radius-lg);
-  background: #faf8f2;
+  background: var(--ch-overlay-bg);
   box-shadow: var(--ch-elevation-overlay);
 }
 .ch-popover__label {

@@ -454,7 +454,7 @@
   max-height: var(--ch-modal-max-h);
   overflow: hidden;
   border-radius: var(--ch-radius-xl);
-  background: #faf8f2;
+  background: var(--ch-overlay-bg);
   box-shadow: var(--ch-elevation-overlay);
   /* A centred dialog: 260ms from 8px down and .98, on the sheet curve (S3.2); it leaves by fading over 180ms. */
   animation: ch-pop var(--ch-dur-base) var(--ch-ease-ios);
