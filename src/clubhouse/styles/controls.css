@@ -353,6 +353,10 @@
 }
 .ch-menu__item svg {
   flex: none;
+  /* Ink glyphs (decision 12, D4, applied as recommended; macOS): green marks only the checked row's tick. */
+  color: var(--ch-text-secondary);
+}
+.ch-menu__item:is([aria-checked='true'], [aria-selected='true']) svg {
   color: var(--ch-green-600);
 }
 /* A row reached by the keys shows the wash and a ring, so a row focused from the list reads as the active one (MENU-04). */
