@@ -370,12 +370,14 @@ export function TeamRounds({
           // A quarter of a phone holds one short caption a figure (the four share 358px on one line), so there the average alone says it.
           { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? note(`${plural(s.players, 'player')}${s.practice && !phone ? ` · ${s.practice} practice` : ''}`) : undefined },
           { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : note(!s.practice ? '18 holes' : phone ? 'no practice' : '18 holes, no practice') },
-          { label: 'Under par', value: s.scored ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.scored ? note(`of ${s.scored}`) : undefined },
+          { label: 'Under par', value: s.scored ? s.underPar : <NoData />, tone: s.underPar ? ('under' as const) : undefined, note: s.scored ? note(`of ${s.scored}`) : undefined },
           // W30: the low round leaves practice out, as the average does, and says so where there is practice to leave out
           // ("Low round 70, Cole −2" sat over a 68 practice round). The phone's quarter holds the name and score only; its
           // average caption already reads "no practice".
           { label: 'Low round', value: best ? best.score : <NoData />, note: best ? note(`${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}${s.practice && !phone ? ' · no practice' : ''}`) : undefined },
-        ]}
+          // Nick, 20 Nov 2026, on the phone's four figures: "Get rid of these words, the page is way too busy". The phone shows
+          // the label and the figure alone; desktop keeps its captions.
+        ].map((f) => (phone ? { ...f, note: undefined } : f))}
       />
     </SectionBoundary>
   );
