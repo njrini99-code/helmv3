@@ -6435,3 +6435,15 @@ button.ch-hip__row:focus-visible,
     overflow-wrap: anywhere;
   }
 }
+
+/* Law 1 on the phone (Nick, 20 Nov 2026: "disorganized and no contrast"): the season's four figures are a card on the
+   page, not a band between two rules on it. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-rd.ch-trd.is-phone .ch-fgr {
+    padding: 16px;
+    border: 0;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-card-shadow);
+  }
+}
