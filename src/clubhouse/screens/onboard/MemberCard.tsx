@@ -7,6 +7,7 @@ import { Icon } from '../../ui/Icon';
 import { formatHcp } from '../../lib/format';
 import type { Draft } from './flow';
 import { REQUEST_TITLE, classOf, type OnboardPath, type OnboardStep } from './logic';
+import { HelmMark } from '../../ui/HelmMark';
 
 const MARK = '/clubhouse/auth/helm-golf-mark.png';
 
@@ -145,7 +146,7 @@ export function MemberCard({ face, issued, season }: { face: CardFace; issued: b
         <img className="ch-ox-mc__wm" src={MARK} alt="" aria-hidden="true" />
         <div className="ch-ox-mc__top">
           <span className="ch-ox-mc__brand">
-            <img src={MARK} alt="" width={26} height={26} />
+            <HelmMark size={26} />
             GolfHelm
           </span>
           <span className="ch-ox-mc__tag" key={face.tag}>

@@ -13,6 +13,7 @@ import { HelmKey } from './quick-chat/QuickChatProvider';
 import { usePhoneLargeTitle } from './large-title';
 import { SectionTrigger, useSectionGestures, useSectionSwitch } from './section-switch';
 import { SearchPill } from './command/SearchPill';
+import { HelmMark } from '../ui/HelmMark';
 
 /** The board's page gears: on CoachHelm and Team Hub a coach's gear opens that page's Settings section (?section=). */
 const PAGE_SETTINGS: ReadonlyArray<{ path: string; section: string; label: string }> = [
@@ -93,7 +94,7 @@ export function TopBar({
       </b>
       {/* The green hero's bar (usePhoneHero, the phone Home): the team's mark beside the title. */}
       <span className="ch-topbar__team" aria-hidden="true" title={teamName ?? 'GolfHelm'}>
-        <span className="ch-topbar__mark"><img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={20} height={20} /></span>
+        <span className="ch-topbar__mark"><HelmMark size={20} /></span>
       </span>
       <div className="ch-topbar__pslot" ref={setSlot} />
       {standIn && (

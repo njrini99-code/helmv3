@@ -20,6 +20,7 @@ import { useLastHereLabel, useLocalDateLabel, useLocalHour, useSkyHour } from '.
 import { useQueryParam } from './use-query-param';
 import { fullPrefetchAllowed } from '../../lib/prefetch-guard';
 import { useWelcomeStage } from './WelcomeStage';
+import { HelmMark } from '../../ui/HelmMark';
 
 const CATEGORY_ICON: Record<NotificationCategoryId, LucideIcon> = {
   messages: MessageSquare,
@@ -170,7 +171,7 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
         </div>
         <m.div className="ch-au-wl-scrim" variants={welcomeScrim} custom={custom} />
         <m.div className="ch-au-wl-mark" variants={welcomeMark} custom={custom}>
-          <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={32} height={32} />
+          <HelmMark size={32} />
           <span>
             Golf<b>Helm</b>
           </span>

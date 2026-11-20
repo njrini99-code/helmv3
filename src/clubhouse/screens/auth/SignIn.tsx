@@ -18,6 +18,7 @@ import { useGlide, type Glider } from './use-glide';
 import { useKeyboardLift } from './use-keyboard-lift';
 import { useSkyHour } from './use-hour';
 import { useQueryParam } from './use-query-param';
+import { HelmMark } from '../../ui/HelmMark';
 
 /**
  * /golf/login in Clubhouse: the painted course on the left and the form on the
@@ -76,7 +77,7 @@ export function SignIn({
         <SceneMount camera="rest" />
         <div className="ch-au-veil" />
         <div className="ch-au-mark">
-          <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={28} height={28} />
+          <HelmMark size={28} />
           <span>
             Golf<b>Helm</b>
           </span>
@@ -104,7 +105,7 @@ export function SignIn({
         </div>
         <div className="ch-au-stage" id="ch-au-form" ref={stageRef}>
           <div className="ch-au-lock">
-            <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={46} height={46} />
+            <HelmMark size={46} />
             <span>
               Golf<b>Helm</b>
             </span>
