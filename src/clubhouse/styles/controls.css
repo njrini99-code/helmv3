@@ -2067,7 +2067,7 @@ main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
   font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
 }
-.ch-field__count.is-over {
+.ch-field__count.is-error {
   color: var(--ch-danger-600);
 }
 

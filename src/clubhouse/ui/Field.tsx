@@ -63,7 +63,7 @@ export function Field({
             )
           )}
           {max != null && (
-            <span id={countId} className={'ch-field__count ch-num' + (over ? ' is-over' : '')}>
+            <span id={countId} className={'ch-field__count ch-num' + (over ? ' is-error' : '')}>
               <span aria-hidden="true">
                 {count ?? 0} / {max}
               </span>
