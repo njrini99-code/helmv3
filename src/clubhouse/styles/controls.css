@@ -988,7 +988,7 @@
   border-radius: 50%;
   appearance: none;
   background: linear-gradient(180deg, #fff 0%, #f4f1ea 70%, #e9e5db 100%);
-  box-shadow: 0 1px 1px rgb(28 25 18 / 0.25), 0 2px 5px -1px rgb(28 25 18 / 0.35), inset 0 1px 0 #fff;
+  box-shadow: 0 1px 1px rgb(28 25 18 / 0.25), 0 2px 5px -1px rgb(28 25 18 / 0.35);
 }
 .ch-slider input::-moz-range-thumb {
   width: 20px;

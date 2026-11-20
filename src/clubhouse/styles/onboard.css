@@ -86,7 +86,7 @@
   background: rgb(251 250 246 / 0.88);
   backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(140%);
   -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(140%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 0 0 1px rgb(176 149 96 / 0.2), 0 8px 18px -12px rgb(11 38 22 / 0.4);
+  box-shadow: 0 0 0 1px rgb(176 149 96 / 0.2), 0 8px 18px -12px rgb(11 38 22 / 0.4);
   font: var(--ch-type-17-strong);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
@@ -192,7 +192,7 @@
   border-radius: var(--ch-radius-full);
   white-space: nowrap;
   background: rgb(253 252 248 / 0.96);
-  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(176 149 96 / 0.35), 0 10px 24px -12px rgb(11 38 22 / 0.55);
+  box-shadow: 0 0 0 1px rgb(176 149 96 / 0.35), 0 10px 24px -12px rgb(11 38 22 / 0.55);
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
   color: #3a3833;
@@ -255,7 +255,7 @@
   border-radius: 50%;
   /* The GolfHelm mark in its own colours on ivory card stock, ringed in the felt green (owner, 2026-09-30). */
   background: radial-gradient(circle at 35% 30%, #fffdf6, #f1ead6 75%);
-  box-shadow: 0 0 0 2px var(--ch-ox-felt), 0 0 0 4px #f4f0e4, 0 0 0 5px rgb(120 96 52 / 0.45), 0 10px 18px -8px rgb(0 0 0 / 0.45), inset 0 1px 0 #fff;
+  box-shadow: 0 0 0 2px var(--ch-ox-felt), 0 0 0 4px #f4f0e4, 0 0 0 5px rgb(120 96 52 / 0.45), 0 10px 18px -8px rgb(0 0 0 / 0.45);
   animation: chOxCard var(--ch-ox-t-card) var(--ch-ox-ease) var(--ch-ox-seal-delay) both;
 }
 .ch-ox-seal img {
@@ -724,7 +724,7 @@
 }
 .ch-ox-code[data-st='ok'] .ch-ox-slot {
   background: linear-gradient(180deg, #f1f7f2, #e1eee4);
-  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.3), inset 0 1px 0 #fff;
+  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.3);
   color: var(--ch-green-800);
   animation: chOxPop var(--ch-ox-t-pop) var(--ch-ox-ease) both;
   animation-delay: calc(var(--ch-ox-i) * var(--ch-ox-slot-step));
@@ -2207,7 +2207,7 @@ html[data-fw-theme='dark'] .ch-ox {
 }
 html[data-fw-theme='dark'] .ch-ox-lock {
   background: rgb(27 32 28 / 0.88);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-raised);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-raised);
 }
 html[data-fw-theme='dark'] .ch-ox-rail {
   background: rgb(27 32 28 / 0.92);
@@ -2235,7 +2235,7 @@ html[data-fw-theme='dark'] .ch-ox-rail__m::after {
 }
 html[data-fw-theme='dark'] .ch-ox-signin {
   background: rgb(27 32 28 / 0.96);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-raised);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-raised);
   color: var(--ch-ink-700);
 }
 html[data-fw-theme='dark'] .ch-ox .ch-ox-signin a {
@@ -2301,7 +2301,7 @@ html[data-fw-theme='dark'] .ch-ox-code[data-focus] .ch-ox-slot[data-cur] {
 }
 html[data-fw-theme='dark'] .ch-ox-code[data-st='ok'] .ch-ox-slot {
   background: linear-gradient(180deg, var(--ch-green-100), var(--ch-green-50));
-  box-shadow: 0 0 0 1px rgb(107 187 140 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  box-shadow: 0 0 0 1px rgb(107 187 140 / 0.35);
   color: var(--ch-green-700);
 }
 html[data-fw-theme='dark'] .ch-ox-code[data-st='error'] .ch-ox-slot[data-filled] {
