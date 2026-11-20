@@ -1169,21 +1169,6 @@
   .ch-hm-none__chip svg {
     color: var(--ch-hero-mint);
   }
-  .ch-hm-none__add {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 44px;
-    border-radius: var(--ch-radius-lg);
-    background: linear-gradient(180deg, #fbf9f3, #ece8dd);
-    box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), inset 0 1px 0 #fff;
-    font: var(--ch-type-15-strong);
-    letter-spacing: var(--ch-track-15);
-    line-height: var(--ch-lead-tight);
-    color: var(--ch-green-800);
-    text-decoration: none;
-  }
   .ch-hm-body {
     display: flex;
     flex-direction: column;
@@ -2793,12 +2778,6 @@
   .ch-hm-none__chip svg {
     color:var(--ch-green-600);
   }
-  .ch-hm-none__add {
-    border-radius: var(--ch-radius-md);
-    color:#fff;
-    background:linear-gradient(180deg,#1A6542,#145838);
-    box-shadow:0 0 0 1px #0E462C,inset 0 1px 0 rgb(255 255 255/.1);
-  }
   .ch-hm-body {
     gap:28px;
     padding:22px var(--ch-page-x-phone) 28px;
@@ -3028,11 +3007,6 @@
   }
   .ch-hm-none__chip svg {
     color:#C9B27A;
-  }
-  .ch-hm-none__add {
-    color:var(--ch-green-800);
-    background:#F4F1E8;
-    box-shadow:none;
   }
   .ch-hm-body {
     gap: 32px;
@@ -3305,8 +3279,7 @@
       opacity: 0.55;
     }
   }
-  .ch-hm-none__chip,
-  .ch-hm-none__add {
+  .ch-hm-none__chip {
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hm-none__chip[data-ch-pressed] {
@@ -3315,14 +3288,6 @@
   @media (hover: hover) {
     .ch-hm-none__chip:active {
       background: rgb(255 255 255 / 0.16);
-    }
-  }
-  .ch-hm-none__add[data-ch-pressed] {
-    background: var(--ch-ivory-200);
-  }
-  @media (hover: hover) {
-    .ch-hm-none__add:active {
-      background: var(--ch-ivory-200);
     }
   }
   /* The first-run pages (CH-2308, CH-2312): the head is the Ledger's page intro (ui/Ledger.tsx PageIntro), the date as

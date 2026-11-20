@@ -1170,6 +1170,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-19-native-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-19-phone-edges-writer.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-19-warm-section-styles.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1329,6 +1330,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-19-phone-edges-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-19-warm-section-styles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-19-week-skeleton-edge.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
@@ -1406,6 +1408,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-19-quiet-players-count.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-19-shadow-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-19-switch-lower-sections.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
@@ -1797,6 +1800,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-18-webkit-freeze.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-19-shadow-tokens.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | 1 |
@@ -1854,6 +1858,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-17-silent-errors-screens-b.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-18-polish-w1-w2.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
@@ -1998,6 +2003,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-19-carried-hero-shared-score.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-19-shadow-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-19-switch-first-screen.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
@@ -2212,6 +2218,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-18-clubhouse-only-front-door.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-18-paper-token.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/DESIGN.md` | current | - | - | - | - |

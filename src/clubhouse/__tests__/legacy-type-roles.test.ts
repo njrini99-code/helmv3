@@ -64,7 +64,7 @@ const STEP_READS: Record<string, number> = {
   'styles/controls.css': 28,
   'styles/goals.css': 3,
   'styles/hero-tones.css': 3,
-  'styles/home.css': 151,
+  'styles/home.css': 150,
   'styles/hub.css': 92,
   'styles/live.css': 39,
   'styles/messages-details.css': 31,

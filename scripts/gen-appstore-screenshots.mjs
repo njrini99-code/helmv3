@@ -16,8 +16,13 @@ helpOnly({
 });
 
 const BASE = process.env.SHOT_BASE_URL || 'https://www.helmsportslabs.com';
-const EMAIL = process.env.SHOT_EMAIL || 'demo@golfhelmdemo.com';
-const PASSWORD = process.env.SHOT_PASSWORD || 'Demo2026';
+const EMAIL = process.env.SHOT_EMAIL;
+const PASSWORD = process.env.SHOT_PASSWORD;
+// The demo account's sign-in comes from the environment only (premium plan, security note): never a default in source.
+if (!EMAIL || !PASSWORD) {
+  console.error('Set SHOT_EMAIL and SHOT_PASSWORD (the demo account) before running this script.');
+  process.exit(1);
+}
 const OUT = 'ios/appstore/screenshots';
 mkdirSync(OUT, { recursive: true });
 
