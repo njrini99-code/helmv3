@@ -273,9 +273,11 @@ describe('the CSS that hides and fades the bar title', () => {
     expect(block).toMatch(/\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-topbar :is\([^)]*\) \{\s*transition: none;/);
     expect(block).toMatch(/@media \(max-width: 820px\) and \(prefers-reduced-motion: reduce\)[^{]*\{[\s\S]*?transition: none;/);
   });
-  it("draws the scroll edge on ::before (::after is the sheet's lip), only once scrolled", () => {
+  // Nick, 20 Nov 2026 ("no contrast"): the phone bar ends on its own hard edge; the green fade under it read as a muddy
+  // band over the cards, so it no longer shows when scrolled. ::after stays the sheet's lip.
+  it('draws no scroll shade under the phone bar, scrolled or not', () => {
     expect(block).toMatch(/\.ch-topbar::before \{[^}]*opacity: 0;/);
-    expect(block).toMatch(/\[data-ui='clubhouse'\]:not\(\[data-phone-hero\]\) \.ch-topbar\[data-scrolled\]::before \{\s*opacity: 1;/);
+    expect(block).toMatch(/\[data-ui='clubhouse'\]:not\(\[data-phone-hero\]\) \.ch-topbar\[data-scrolled\]::before \{\s*opacity: 0;/);
   });
 });
 
