@@ -81,8 +81,8 @@
   top: var(--ch-ms-pill-top);
   padding: 4px var(--ch-ms-px-10);
   background: var(--ch-glass-strong);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  -webkit-backdrop-filter: var(--ch-glass-filter);
+  backdrop-filter: var(--ch-glass-filter);
   font: var(--ch-type-footnote);
   color: var(--ch-text-tertiary);
   transition: opacity var(--ch-dur-msg-pill-out) linear;
@@ -105,8 +105,8 @@
 [data-ch-ms-v2] .ch-msv-jump {
   bottom: calc(var(--ch-ms-comp-h, 54px) + 12px);
   animation: none;
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  -webkit-backdrop-filter: var(--ch-glass-filter);
+  backdrop-filter: var(--ch-glass-filter);
 }
 [data-ch-ms-v2] .ch-msv-jump b {
   padding: 0 var(--ch-ms-px-5);
@@ -335,8 +335,8 @@ body [data-ch-ms-v2] .ch-pscreen.ch-msp-thread[data-fw-keyboard-aware][data-ch-v
   padding: 10px 14px;
   border-bottom: 0;
   background: var(--ch-glass);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  -webkit-backdrop-filter: var(--ch-glass-filter);
+  backdrop-filter: var(--ch-glass-filter);
 }
 [data-ch-ms-v2] .ch-ms-thread.is-layered > .ch-ms-th::after {
   content: '';

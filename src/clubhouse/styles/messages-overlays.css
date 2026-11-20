@@ -21,8 +21,8 @@
   border-radius: var(--ch-radius-xl);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  -webkit-backdrop-filter: var(--ch-glass-filter);
+  backdrop-filter: var(--ch-glass-filter);
 }
 .ch-mso-menu > button {
   display: flex;
@@ -203,8 +203,8 @@
   border-radius: var(--ch-radius-full);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  -webkit-backdrop-filter: var(--ch-glass-filter);
+  backdrop-filter: var(--ch-glass-filter);
 }
 .ch-mso-rbar > button {
   position: relative;
@@ -265,8 +265,8 @@
   border-radius: var(--ch-radius-full);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur));
-  backdrop-filter: blur(var(--ch-glass-blur));
+  -webkit-backdrop-filter: var(--ch-glass-filter);
+  backdrop-filter: var(--ch-glass-filter);
   opacity: 0;
   pointer-events: none;
   transform: translateY(4px) scale(0.96);
@@ -417,8 +417,8 @@
   border-radius: var(--ch-radius-xl);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  -webkit-backdrop-filter: var(--ch-glass-filter);
+  backdrop-filter: var(--ch-glass-filter);
   transform-origin: 18px 100%;
 }
 .ch-msv-attach.is-closing {

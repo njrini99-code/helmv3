@@ -93,10 +93,9 @@
   border-radius: var(--ch-radius-lg);
   background: rgb(250 248 241 / 0.14);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.12),
     inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule);
-  -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.2);
-  backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.2);
+  -webkit-backdrop-filter: var(--ch-glass-filter);
+  backdrop-filter: var(--ch-glass-filter);
 }
 .ch-brand img {
   flex: none;
@@ -169,7 +168,7 @@
   z-index: var(--ch-z-overlay);
   /* Over the green sidebar the glass would turn the ivory to grey-green: opaque, the popover's own ivory, as every
      overlay but the desktop bar is (H16; it was 0.97, a faint green cast at the edges). */
-  background: #faf8f2;
+  background: var(--ch-overlay-bg);
   /* It hangs off the team button's left edge, so it grows from there. */
   transform-origin: top left;
 }
@@ -379,8 +378,8 @@
   padding: 0 24px;
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
   background: var(--ch-glass-bg);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
-  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  -webkit-backdrop-filter: var(--ch-glass-filter);
+  backdrop-filter: var(--ch-glass-filter);
 }
 .ch-topbar__crumbs {
   display: flex;
@@ -647,7 +646,7 @@
   --ch-medallion-rings: rgb(126 59 48 / 0.12);
 }
 .ch-empty-page--danger .ch-empty-page__ic {
-  box-shadow: var(--ch-elevation-cast), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  box-shadow: var(--ch-elevation-cast);
 }
 /* The error page centres the view itself, so the anatomy adds no air of its own there. */
 .ch-notyet > .ch-empty-page {
@@ -1286,7 +1285,7 @@ button.ch-more__row[disabled] {
     height: 32px;
     border-radius: 50%;
     background: var(--ch-ivory-100);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 0 0 1px rgb(220 205 166 / 0.5);
+    box-shadow: 0 0 0 1px rgb(220 205 166 / 0.5);
   }
   .ch-root[data-phone-hero] .ch-topbar__team img {
     width: 20px;
@@ -1346,8 +1345,7 @@ button.ch-more__row[disabled] {
     bottom: calc(var(--ch-ms-comp-h, calc(60px + env(safe-area-inset-bottom))) + 12px + var(--keyboard-height, 0px));
   }
   .ch-toast {
-    min-width: 0;
-    max-width: none;
+    width: auto;
   }
 
   /* The parts of a phone top bar (ui/PhoneBar.tsx): in the shell's bar for a page's own top, and on pushed screens. */
@@ -1711,7 +1709,7 @@ button.ch-more__row[disabled] {
   border-radius: var(--ch-radius-md);
   background: #e3ede5;
   color: var(--ch-green-700);
-  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.6);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14);
 }
 .ch-bellp__main {
   display: grid;
@@ -2710,7 +2708,7 @@ html[data-fw-theme='dark'] .ch-bellp__body > section + section {
 }
 html[data-fw-theme='dark'] .ch-bellp__ic {
   background: var(--ch-green-100);
-  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.2);
 }
 html[data-fw-theme='dark'] .ch-topbar__actions .ch-iconbtn.is-on {
   background: rgb(107 187 140 / 0.12);
@@ -3283,7 +3281,7 @@ html[data-fw-theme='dark'] .ch-offline {
     border-radius: inherit;
     transform-origin: left center;
     background: var(--ch-on-green-ink);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), var(--ch-elevation-strip-plate);
+    box-shadow: var(--ch-elevation-strip-plate);
   }
   .ch-strip__count {
     min-width: 18px;
@@ -3530,7 +3528,7 @@ html[data-fw-theme='dark'] .ch-offline {
     border: 0;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-sheet-bg);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), var(--ch-elevation-glass-card);
+    box-shadow: var(--ch-elevation-glass-card);
     color: var(--ch-text-primary);
     text-align: left;
     cursor: pointer;
@@ -3663,7 +3661,7 @@ html[data-fw-theme='dark'] .ch-offline {
     inset: 0;
     border-radius: var(--ch-radius-lg);
     background: color-mix(in oklab, var(--ch-sheet-bg) 74%, var(--ch-frame));
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), var(--ch-elevation-glass-edge);
+    box-shadow: var(--ch-elevation-glass-edge);
     transform-origin: 50% 100%;
     pointer-events: none;
   }
@@ -3942,7 +3940,6 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     background: var(--ch-nav-well-bg);
     color: var(--ch-green-700);
     box-shadow:
-      inset 0 1px 0 #fff,
       var(--ch-elevation-on-frame);
     cursor: pointer;
     /* No transition on its translate: the circle stays on the seam, which takes its place at once (MOT-11). */

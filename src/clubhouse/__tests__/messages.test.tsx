@@ -1316,7 +1316,14 @@ describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => 
     expect(newMsg.textContent).toContain('Can you make the 3:30 block?');
     live.convs.conversations = [team, dmEli];
     await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
-    const box = await screen.findByRole('textbox', { name: /Message Eli/ });
+    // The thread's own composer: New message, sliding out as the thread slides in, still holds its own box (also
+    // "Message Eli" once Eli is picked) until its exit ends, and a slow runner catches both on screen.
+    const thread = await waitFor(() => {
+      const el = document.querySelector<HTMLElement>('.ch-msp-thread');
+      expect(el).toBeTruthy();
+      return el!;
+    });
+    const box = await within(thread).findByRole('textbox', { name: /Message Eli/ });
     await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('Can you make the 3:30 block?'));
     expect(live.msgs.sendMessage).not.toHaveBeenCalled();
   });

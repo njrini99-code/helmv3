@@ -133,8 +133,8 @@ export function Modal({
             </div>
             {action && <div className="ch-modal__action">{action}</div>}
             <Tooltip label="Close" shortcut={['Esc']}>
-              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Close" onClick={onClose}>
-                <Icon icon={X} size={15} />
+              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm ch-modal__close" aria-label="Close" onClick={onClose}>
+                <Icon icon={X} size={17} />
               </button>
             </Tooltip>
           </header>
