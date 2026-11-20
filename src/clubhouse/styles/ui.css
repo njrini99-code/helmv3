@@ -25,8 +25,10 @@
     box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-root .ch-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--ch-bg-page), 0 0 0 4px var(--ch-border-focus);
+  /* A real outline, not a box-shadow ring (premium plan batch 5, CC-6): it survives forced colours, where shadows are
+     dropped, and it follows the key's own radius. */
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
 }
 .ch-btn:disabled {
   cursor: not-allowed;
@@ -47,8 +49,8 @@
   padding: 0 var(--ch-btn-pad-x);
   gap: 8px;
   border-radius: var(--ch-radius-md);
-  font-size: calc(15 * var(--ch-type-k));
-  letter-spacing: var(--ch-track-15);
+  /* Decision 14 (OQ-59, applied as recommended): the large key keeps radius 12 and reads at 600, on the headline role. */
+  font: var(--ch-type-headline);
 }
 /* One green (owner, 2026-10-06: "it's not even the same green"): the primary action is the field green the sidebar
    selection, the canopy and the scoreboard use, its words in the warm on-green ink, engraved. A solid face (audit
@@ -453,8 +455,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 300px;
-  max-width: 420px;
+  /* One width for every toast (POP-08): a stack of a short and a long one no longer jumps between widths; long words
+     wrap. The stack itself reflows by transform (Motion layout, Toast.tsx). */
+  width: 360px;
   padding: 8px 8px 8px 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ink-900);
@@ -629,7 +632,7 @@
 .ch-popover {
   padding: 4px;
   border-radius: var(--ch-radius-lg);
-  background: #faf8f2;
+  background: var(--ch-overlay-bg);
   box-shadow: var(--ch-elevation-overlay);
 }
 .ch-popover__label {
@@ -1133,7 +1136,7 @@ html[data-fw-theme='dark'] .ch-btn--primary:disabled:not([aria-busy='true']) {
 :where(html[data-fw-theme='dark']) .ch-btn--ink {
   color: var(--ch-ink-950);
   background: linear-gradient(180deg, #3a423b 0%, #2c332d 100%);
-  box-shadow: 0 0 0 1px rgb(237 231 216 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.08);
+  box-shadow: 0 0 0 1px rgb(237 231 216 / 0.14);
 }
 :where(html[data-fw-theme='dark']) .ch-btn__kbd {
   background: rgb(237 231 216 / 0.06);
@@ -1151,7 +1154,7 @@ html[data-fw-theme='dark'] .ch-btn--primary:disabled:not([aria-busy='true']) {
 }
 /* Under the contextual rings (the identity, a stack on the green), as the light rule is. */
 :where(html[data-fw-theme='dark']) .ch-avatar {
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px var(--ch-av-ring);
+  box-shadow: 0 0 0 1px var(--ch-av-ring);
 }
 html[data-fw-theme='dark'] .ch-avatar[data-tone='stone'] {
   --ch-av-bg: #2f2e29;

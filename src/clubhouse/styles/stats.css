@@ -720,7 +720,7 @@
 .ch-sgm[aria-pressed='true'] {
   background: var(--ch-green-25);
   color: var(--ch-forest-800);
-  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.9);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16);
 }
 .ch-sgm__top {
   display: flex;
@@ -4279,7 +4279,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
 }
 :where(html[data-fw-theme='dark']) .ch-sgm[aria-pressed='true'] {
-  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.22), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.22);
 }
 :where(html[data-fw-theme='dark']) .ch-lg__cell.is-col {
   background: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
@@ -4309,13 +4309,13 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   /* Primary ink on the night well (F-0015: secondary was Lc 72). */
   color: var(--ch-text-primary);
   background: linear-gradient(180deg, var(--ch-ivory-200), var(--ch-ivory-150));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 :where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'] .ch-tab-t__n {
   /* The forest ink, pale mint at night (Lc 84); green-700 was Lc 61 (F-0015). */
   color: var(--ch-forest-800);
   background: linear-gradient(180deg, var(--ch-green-100), var(--ch-green-50));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 0 0 1px rgb(107 187 140 / 0.22);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.22);
 }
 :where(html[data-fw-theme='dark']) .ch-pf-bar,
 :where(html[data-fw-theme='dark']) .ch-cmp__bar {
@@ -5112,7 +5112,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   overflow: hidden;
   border-radius: var(--ch-radius-xl);
   background: radial-gradient(120% 90% at 85% -10%, rgb(79 138 100 / 0.38), transparent 60%), linear-gradient(165deg, var(--ch-green-700), var(--ch-green-900) 70%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-feature);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-feature);
   color: var(--ch-on-fill-100);
 }
 /* The stage is deep green and its ink ivory in both themes (overnight polish, 2026-10-15): drawn from the palette, it
@@ -5339,7 +5339,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   border-bottom: 0;
   border-radius: var(--ch-radius-xl);
   background: linear-gradient(180deg, var(--ch-green-50), rgb(238 245 240 / 0.2));
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong), inset 0 1px 0 rgb(255 255 255 / 0.9);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong);
 }
 .ch-st[data-canopy] .ch-tp__c {
   position: relative;

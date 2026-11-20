@@ -7,6 +7,7 @@ import { personOf } from '../person-of';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
 import { ListChecks } from 'lucide-react';
+import { FORMER_MEMBER } from '../../../lib/person-fallback';
 
 /**
  * A message's text with its web links as links (wave 5 #13): React nodes, never HTML, and only http(s) (linkParts). In
@@ -48,7 +49,7 @@ export function replyName(api: ChMessagesApi, id: string): string {
 export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: string }) {
   const reduced = useChReducedMotion();
   const parent = api.msgs.find((m) => m.id === replyToId);
-  const name = parent ? (parent.mine ? "You" : personOf(api, parent.senderId)?.name ?? "Member") : "Reply";
+  const name = parent ? (parent.mine ? "You" : personOf(api, parent.senderId)?.name ?? FORMER_MEMBER) : "Reply";
   return (
     <button type="button" className="ch-ms-quote" aria-label={`Reply to ${name}`} disabled={!parent}
       onClick={() => document.getElementById(`ch-ms-message-${replyToId}`)?.scrollIntoView({

@@ -21,8 +21,8 @@ import { Rail } from './Rail';
 import { STEPS } from './steps-map';
 import '../../styles/onboard-tokens.css';
 import '../../styles/onboard.css';
+import { HelmMark } from '../../ui/HelmMark';
 
-const MARK = '/clubhouse/auth/helm-golf-mark.png';
 
 /** The hand-off's beats (design: lift 0 to 800ms, fold from 700ms; the route changes as the fold lands). */
 const LIFT_MS = 700;
@@ -207,11 +207,11 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
           </div>
           <div className="ch-ox-paper" aria-hidden="true" />
           <div className="ch-ox-seal" aria-hidden="true">
-            <img src={MARK} alt="" width={28} height={28} />
+            <HelmMark size={28} />
           </div>
           <header className="ch-ox-top">
             <span className="ch-ox-lock">
-              <img src={MARK} alt="" width={28} height={28} />
+              <HelmMark size={28} />
               GolfHelm
             </span>
             <Rail sections={rail.sections} current={rail.current} full={full} />
@@ -256,7 +256,7 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
         </div>
         <div className="ch-ox-mhome" aria-hidden="true">
           <span>
-            <img src={MARK} alt="" width={28} height={28} />
+            <HelmMark size={28} />
             Opening your dashboard
           </span>
         </div>

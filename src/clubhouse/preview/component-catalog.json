@@ -7421,6 +7421,7 @@
         "PracticeTabs"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask.css",
@@ -9802,6 +9803,7 @@
         "SettingsSkeleton"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/ui.css"
@@ -12593,6 +12595,7 @@
         "CommandLayer"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
@@ -13001,6 +13004,7 @@
         "Checkbox"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -13008,6 +13012,21 @@
         "Checkbox"
       ],
       "fixture": "Shared gallery example"
+    },
+    {
+      "file": "src/clubhouse/ui/ChoiceGroup.tsx",
+      "group": "ui",
+      "exports": [
+        "ChoiceGroup"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
     },
     {
       "file": "src/clubhouse/ui/ClassStatusLine.tsx",
@@ -13045,6 +13064,16 @@
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/ConfirmAction.tsx",
+      "group": "ui",
+      "exports": [
+        "ConfirmAction"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -13224,6 +13253,36 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/ui/Field.tsx",
+      "group": "ui",
+      "exports": [
+        "Field"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/FormLine.tsx",
       "group": "ui",
       "exports": [
@@ -13269,6 +13328,19 @@
       ],
       "styles": [
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/HelmMark.tsx",
+      "group": "ui",
+      "exports": [
+        "HelmMark"
+      ],
+      "styles": [
+        "src/clubhouse/styles/auth.css",
+        "src/clubhouse/styles/onboard.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -14039,6 +14111,32 @@
       "fixture": "Shared gallery example"
     },
     {
+      "file": "src/clubhouse/ui/Stepper.tsx",
+      "group": "ui",
+      "exports": [
+        "Stepper"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/Surface.tsx",
       "group": "ui",
       "exports": [
@@ -14046,6 +14144,7 @@
         "Surface"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/settings.css",
@@ -14204,6 +14303,18 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/Truncate.tsx",
+      "group": "ui",
+      "exports": [
+        "Truncate"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -14979,7 +15090,8 @@
         "ch-au-wl-news__h",
         "ch-au-wl-scrim",
         "ch-au-wl-t",
-        "ch-btn"
+        "ch-btn",
+        "ch-helm-mark"
       ],
       "tokens": [
         {
@@ -15114,6 +15226,7 @@
       "classes": [
         "ch-abbr",
         "ch-au-input",
+        "ch-check__box",
         "ch-cl-card",
         "ch-cl-today__row",
         "ch-display",
@@ -15125,11 +15238,14 @@
         "ch-hv-next",
         "ch-input",
         "ch-large-title",
+        "ch-menu__item",
+        "ch-modal__panel",
         "ch-ms-comp__field",
         "ch-nowrap",
         "ch-num",
         "ch-ox-mc",
         "ch-ox-stage",
+        "ch-popover",
         "ch-qf-card",
         "ch-qf-hero",
         "ch-raised",
@@ -15140,15 +15256,19 @@
         "ch-rsu-in",
         "ch-scoreboard",
         "ch-search",
+        "ch-seg",
         "ch-select",
         "ch-serif-num",
         "ch-sgm",
         "ch-sheet",
         "ch-sr-only",
         "ch-sr-only--focusable",
+        "ch-surface",
         "ch-surface--feature",
+        "ch-switch__track",
         "ch-textarea",
         "ch-th-act",
+        "ch-trunc",
         "ch-well",
         "ch-well-soft",
         "ch-yb"
@@ -15208,6 +15328,16 @@
           "name": "--ch-text-tertiary",
           "value": "var(--ch-on-green-ink-muted)",
           "scope": ".ch-scoreboard"
+        },
+        {
+          "name": "--ch-border-focus",
+          "value": "Highlight",
+          "scope": "@media (forced-colors: active) → .ch-root"
+        },
+        {
+          "name": "--ch-border-focus-on-dark",
+          "value": "Highlight",
+          "scope": "@media (forced-colors: active) → .ch-root"
         }
       ]
     },
@@ -18576,12 +18706,20 @@
         "ch-btn--danger",
         "ch-btn--flush-end",
         "ch-btn--flush-start",
+        "ch-btn__done",
         "ch-btn__spin",
         "ch-check",
         "ch-check__box",
         "ch-check__draw",
         "ch-check__ink",
         "ch-check__input",
+        "ch-choice",
+        "ch-choice__hint",
+        "ch-choice__input",
+        "ch-choice__mark",
+        "ch-choice__t",
+        "ch-choices",
+        "ch-choices__legend",
         "ch-df",
         "ch-df--row",
         "ch-df-cal",
@@ -18602,6 +18740,9 @@
         "ch-df__open",
         "ch-df__v",
         "ch-field",
+        "ch-field__count",
+        "ch-field__error",
+        "ch-field__foot",
         "ch-field__help",
         "ch-field__label",
         "ch-field__opt",
@@ -18636,6 +18777,7 @@
         "ch-modal--over",
         "ch-modal__action",
         "ch-modal__body",
+        "ch-modal__close",
         "ch-modal__foot",
         "ch-modal__head",
         "ch-modal__icon",
@@ -18671,6 +18813,9 @@
         "ch-slider__v",
         "ch-span",
         "ch-spm-head__msg",
+        "ch-stepper",
+        "ch-stepper__u",
+        "ch-stepper__v",
         "ch-swipe",
         "ch-swipe__act",
         "ch-swipe__acts",
@@ -20886,6 +21031,7 @@
         "ch-btn--ghost",
         "ch-btn--lg",
         "ch-btn--primary",
+        "ch-helm-mark",
         "ch-ox",
         "ch-ox--full",
         "ch-ox-2",
@@ -26045,6 +26191,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-overlay-bg",
+          "value": "#faf8f2",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-bg-subtle",
           "value": "#f1ede2",
           "scope": "[data-ui='clubhouse']"
@@ -27412,6 +27563,11 @@
         {
           "name": "--ch-glass-saturate",
           "value": "140%",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-glass-filter",
+          "value": "blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate))",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -29402,6 +29558,11 @@
         {
           "name": "--ch-bg-elevated",
           "value": "#2c322d",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-overlay-bg",
+          "value": "var(--ch-bg-elevated)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {

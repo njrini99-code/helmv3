@@ -45,7 +45,7 @@
   padding: 24px 24px 24px 32px;
   border-radius: var(--ch-radius-xl);
   background: #f2efe4;
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-strong), inset 0 1px 0 rgb(255 255 255 / 0.8);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-strong);
 }
 .ch-hero[data-tone='plaque'] .ch-hero__title {
   /* No green side bar (owner, 2026-10-16: "never that card style with the green side"). */
@@ -149,7 +149,7 @@ html[data-fw-theme='dark'] .ch-hero[data-tone='archival'] {
 }
 html[data-fw-theme='dark'] .ch-hero[data-tone='plaque'] {
   background: var(--ch-ivory-100);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
 }
 html[data-fw-theme='dark'] .ch-hero[data-tone='scorecard'] {
   border-bottom-color: rgb(205 187 142 / 0.3);

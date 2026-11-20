@@ -53,7 +53,8 @@ describe('elevation tokens (B4)', () => {
     for (const file of walk(join(ROOT, 'styles'), /\.css$/)) {
       // Declarations only: an @supports condition names the property too.
       for (const m of css(basename(file)).matchAll(/^\s*(?:-webkit-)?backdrop-filter:\s*([^;]+);/gm)) {
-        if (m[1]!.trim() !== 'none' && !m[1]!.includes('var(--ch-glass-blur)')) raw.push(`${basename(file)}: ${m[1]}`);
+        // The bar material's recipe (--ch-glass-filter, Mat1) is built from --ch-glass-blur in tokens.css.
+        if (m[1]!.trim() !== 'none' && !m[1]!.includes('var(--ch-glass-blur)') && m[1]!.trim() !== 'var(--ch-glass-filter)') raw.push(`${basename(file)}: ${m[1]}`);
       }
     }
     expect(raw).toEqual([]);
@@ -122,13 +123,13 @@ describe('elevation tokens (B4)', () => {
 /** Raw box-shadows per stylesheet on 2026-10-24 (row 40): rings, wells, halos and drops. Only falls. */
 const RAW_SHADOW: Record<string, number> = {
   'styles/auth.css': 6,
-  'styles/calendar.css': 28,
+  'styles/calendar.css': 26,
   'styles/classes.css': 13,
   'styles/coachhelm-profile.css': 5,
   'styles/coachhelm-standing.css': 1,
   'styles/coachhelm-thread.css': 1,
   'styles/coachhelm.css': 1,
-  'styles/controls.css': 8,
+  'styles/controls.css': 6,
   'styles/home.css': 11,
   'styles/hub.css': 5,
   'styles/messages.css': 7,
@@ -137,7 +138,7 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/recruiting.css': 1,
   'styles/roster.css': 6,
   'styles/rounds-setup.css': 17,
-  'styles/rounds-track.css': 16,
+  'styles/rounds-track.css': 15,
   'styles/rounds.css': 19,
   'styles/settings.css': 3,
   'styles/shell.css': 16,

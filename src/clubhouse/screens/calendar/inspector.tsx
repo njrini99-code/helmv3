@@ -74,6 +74,7 @@ import { BackLink } from '../../ui/Section';
 import { plural, pluralWord } from '../../lib/plural';
 import { roundLabel } from './round-label';
 import { EventLiveRow } from './live-events';
+import { FORMER_MEMBER } from '../../lib/person-fallback';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -639,7 +640,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
                   .map((pid) => {
                     const [l, t] = RSVP_LABEL[e.rsvp[pid] ?? 'pending'];
                     const person = ctx.people.get(pid);
-                    const name = person?.name ?? 'Former player';
+                    const name = person?.name ?? FORMER_MEMBER;
                     const row = (
                       <div key={pid} className="ch-in__person">
                         <Avatar name={name} size={26} />
@@ -924,7 +925,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
           </div>
           <div>
             {e.people.map((pid) => {
-              const name = ctx.people.get(pid)?.name ?? 'Former player';
+              const name = ctx.people.get(pid)?.name ?? FORMER_MEMBER;
               const v = marks[pid] ?? saved[pid] ?? null;
               const dirty = marks[pid] != null && marks[pid] !== saved[pid];
               return (

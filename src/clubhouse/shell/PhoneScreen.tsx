@@ -1,7 +1,7 @@
 'use client';
 
 import { m, usePresence } from 'motion/react';
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useDeferredValue, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { chFade } from '../lib/motion';
 import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
 import { usePaintedAfter } from '../lib/use-painted';
@@ -79,11 +79,19 @@ export function PhoneScreen({
   useEffect(() => {
     if (!present && !exit.current.holding) safeToRemove?.();
   }, [present, safeToRemove]);
-  useEdgeSwipeBack(ref, { enabled: !covered, reduced, exit });
+  // POP-02: the screen's first commit is its frame alone, so the push starts on the tap's next frames; the content renders
+  // in a deferred render straight after that commit, while the slide runs on the compositor, and lands under it. What
+  // is deferred is a constant (true), not the children: a parent render cannot restart it, so the content cannot be
+  // starved by a busy parent, and once in, it renders with every update as usual.
+  const ready = useDeferredValue(true, false);
+  const body = ready ? children : null;
+  useEdgeSwipeBack(ref, { enabled: !covered, reduced, exit, ready });
   useKeepDockClear(ref, !immersive);
   // Read while rendering: a field with autoFocus takes focus at commit, before any effect here runs.
   const openedFrom = useRef(typeof document === 'undefined' ? null : document.activeElement);
   useEffect(() => {
+    // Focus waits for the content: the title it lands on is part of it.
+    if (!ready) return;
     const opener = openedFrom.current;
     const title = document.getElementById(labelledBy);
     const inside = title && ref.current?.contains(title) ? title : null;
@@ -103,7 +111,7 @@ export function PhoneScreen({
         if (lost && opener.isConnected && !opener.closest('[inert]')) opener.focus({ preventScroll: true });
       });
     };
-  }, [labelledBy]);
+  }, [labelledBy, ready]);
   const painted = usePaintedAfter(true);
   return (
     <m.section
@@ -144,7 +152,7 @@ export function PhoneScreen({
               : { transform: 'translateX(100%)', transition: CH_PUSH_TWEEN },
       }}
     >
-      {children}
+      {body}
     </m.section>
   );
 }

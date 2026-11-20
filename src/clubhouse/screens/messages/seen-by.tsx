@@ -16,6 +16,7 @@ import { InlineNotice } from "../../ui/Notices";
 import { Skeleton } from "../../ui/States";
 import { railTime, type ChMsg } from "./model";
 import type { ChMessagesApi } from "./MessagesView";
+import { FORMER_MEMBER } from '../../lib/person-fallback';
 
 /** The directory lookup MessagesView exports as personOf, kept here so this file only takes types from it (no import cycle). */
 
@@ -110,7 +111,7 @@ export function SeenFaces({ api, ids, size, max }: { api: ChMessagesApi; ids: re
       <AnimatePresence initial={false}>
         {ids.slice(0, max).map((id) => (
           <M.span key={id} className="ch-msv-faces__f" initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={chSpring("settle", reduced)}>
-            <Avatar name={personOf(api, id)?.name ?? "Member"} id={personOf(api, id)?.playerId ?? id} size={size} />
+            <Avatar name={personOf(api, id)?.name ?? FORMER_MEMBER} id={personOf(api, id)?.playerId ?? id} size={size} />
           </M.span>
         ))}
       </AnimatePresence>
@@ -235,7 +236,7 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
       const ids = pendingNew.current;
       pendingNew.current = [];
       timer.current = null;
-      setStatus(ids.length === 1 ? `${personOf(api, ids[0]!)?.name ?? "Member"} has seen it.` : `${ids.length} more people have seen it.`);
+      setStatus(ids.length === 1 ? `${personOf(api, ids[0]!)?.name ?? FORMER_MEMBER} has seen it.` : `${ids.length} more people have seen it.`);
     }, 2000);
   }, [seenKey]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => void (timer.current && window.clearTimeout(timer.current)), []);
@@ -283,7 +284,7 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
   const nowMs = Date.parse(api.now);
   const row = (userId: string, section: "notYet" | "seen"): Row => {
     const p = personOf(api, userId);
-    const name = p?.name ?? "Member";
+    const name = p?.name ?? FORMER_MEMBER;
     const role: Row["role"] = p?.role === "coach" ? "coach" : p?.role === "player" ? "player" : "member";
     const raw = r!.marks.get(userId) ?? null;
     // A forged future last_read_at is shown as now (changelog P-01): never "Last opened tomorrow".

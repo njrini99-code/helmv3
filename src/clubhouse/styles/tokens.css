@@ -194,6 +194,9 @@
   --ch-bg-surface: #faf7ef;
   /* B4: what floats above the page (menus, popovers, the palette, toasts): a step lighter than the card (S1.6). */
   --ch-bg-elevated: #fcfaf5;
+  /* The opaque paper of every overlay over content: a popover, a centred dialog, the team switcher (premium plan C2,
+     LOOK). One token in place of three literal #faf8f2; at night it is the raised surface. */
+  --ch-overlay-bg: #faf8f2;
   /* Tiles and wells inside a card (S1.2): one recessed ivory, with a hairline edge where it needs one. */
   --ch-bg-subtle: #f1ede2;
   --ch-bg-inset: var(--ch-ivory-150);
@@ -675,6 +678,8 @@
   /* Glass is for the floating navigation only (top bar, tab bar); 20px reads as frosted without the muddy edge. */
   --ch-glass-blur: 20px;
   --ch-glass-saturate: 140%;
+  /* The one bar material's filter (Mat1, CC-1): every glass in Clubhouse is this recipe; glass-recipe.test.ts guards it. */
+  --ch-glass-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
   /* Messages v2 (docs/clubhouse/messages-v2/SPEC.md tokens): bars, composer and pills blur 24 and saturate 170%; the overlay
      behind a lifted bubble blurs 14 and saturates 120%. A Messages rule writes blur(var(--ch-glass-blur)),
      so the elevation test still finds var(--ch-glass-blur) and a browser without the token falls back to the shared glass.
@@ -1256,6 +1261,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
      (the placeholder ink falls under 4.5:1 there). */
   /* S1.6: 1.16:1 over the night card (it was #232925, 1.11:1). */
   --ch-bg-elevated: #2c322d;
+  --ch-overlay-bg: var(--ch-bg-elevated);
   --ch-grab-bg: rgb(237 231 216 / 0.22);
   --ch-bg-subtle: #181d19;
   --ch-bg-inset: #0e120f;

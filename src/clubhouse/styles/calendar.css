@@ -2137,7 +2137,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   padding: 4px 8px;
   border-radius: var(--ch-radius-sm);
   background: rgb(255 255 255 / 0.14);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
+  box-shadow: none;
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -2165,7 +2165,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-light-sky), var(--ch-green-fill-700);
   color: var(--ch-stage-ink);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-in__today .ch-in__kick {
   color: var(--ch-on-green-ink-meta);
@@ -2230,7 +2230,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-light-sky), var(--ch-plate);
   color: var(--ch-stage-ink);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-in__plate[data-tone='green'] {
   --ch-plate: var(--ch-green-fill-600);
@@ -3994,7 +3994,7 @@ html[data-fw-theme='dark'] .ch-in__need .ch-in__ic.is-ok {
 }
 html[data-fw-theme='dark'] .ch-in__at {
   background: rgb(255 255 255 / 0.1);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  box-shadow: none;
 }
 html[data-fw-theme='dark'] .ch-lane__b.is-ev {
   box-shadow: 0 0 0 1px rgb(107 187 140 / 0.26);

@@ -13,6 +13,7 @@ import { isDarkSky, paperTint } from './scene-sky';
 import { useGlide, type Glider } from './use-glide';
 import { useSkyHour } from './use-hour';
 import { useKeyboardLift } from './use-keyboard-lift';
+import { HelmMark } from '../../ui/HelmMark';
 
 export interface GateBack {
   href: string;
@@ -72,7 +73,7 @@ export function GateFrame({
         <SceneMount camera="rest" />
         <div className="ch-au-veil" />
         <div className="ch-au-mark">
-          <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={28} height={28} />
+          <HelmMark size={28} />
           <span>
             Golf<b>Helm</b>
           </span>
@@ -105,7 +106,7 @@ export function GateFrame({
         </div>
         <div className="ch-au-stage" id="ch-au-form" ref={stageRef}>
           <div className="ch-au-lock">
-            <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={46} height={46} />
+            <HelmMark size={46} />
             <span>
               Golf<b>Helm</b>
             </span>

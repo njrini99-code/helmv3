@@ -168,6 +168,28 @@ svg .ch-num {
   letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 96;
 }
+/* ST-1: the one truncate policy (ui/Truncate.tsx): one line ends in an ellipsis, more lines clamp at a word. */
+.ch-trunc {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-trunc[data-lines] {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  overflow-wrap: normal;
+}
+.ch-trunc[data-lines='2'] {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.ch-trunc[data-lines='3'] {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
 /* AX-10: an abbreviation looks like the text around it; the words are for VoiceOver (ui/Abbr.tsx). */
 .ch-abbr {
   text-decoration: none;
@@ -387,4 +409,20 @@ html[data-ch-motion-failed] .ch-root [style*='opacity'] {
 :where([data-ui='clubhouse']) :is(input, textarea)::placeholder {
   color: var(--ch-text-placeholder);
   opacity: 1;
+}
+
+/* Forced colours (Windows High Contrast, CC-6): shadows and tinted fills are dropped there, so every focus shows the
+   system's own ring, and the controls and surfaces that are drawn only by shadow get a real edge in the system ink. */
+@media (forced-colors: active) {
+  .ch-root {
+    --ch-border-focus: Highlight;
+    --ch-border-focus-on-dark: Highlight;
+  }
+  .ch-root :focus-visible {
+    outline: 2px solid var(--ch-border-focus) !important;
+    outline-offset: 2px;
+  }
+  .ch-root :is(.ch-input, .ch-textarea, .ch-select select, .ch-seg, .ch-popover, .ch-modal__panel, .ch-menu__item:focus-visible, .ch-surface, .ch-switch__track, .ch-check__box) {
+    border: 1px solid CanvasText;
+  }
 }
