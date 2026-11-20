@@ -462,7 +462,7 @@ function Card({
       {/* AX-4: every gesture has a button. Swiping a card marks it read; this key does the same for VoiceOver, Switch
           Control and the keyboard. Out of sight until it has keyboard focus. */}
       {swipe && unread && (
-        <button type="button" className="ch-bst-markread" onClick={onClear}>
+        <button type="button" className="ch-sr-only ch-sr-only--focusable" onClick={onClear}>
           Mark read
         </button>
       )}

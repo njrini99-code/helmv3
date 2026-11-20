@@ -167,7 +167,6 @@ svg .ch-num {
 /* AX-10: an abbreviation looks like the text around it; the words are for VoiceOver (ui/Abbr.tsx). */
 .ch-abbr {
   text-decoration: none;
-  font: inherit;
 }
 .ch-sr-only {
   position: absolute;

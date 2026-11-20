@@ -280,7 +280,7 @@ function StallLine({ frame, routeKey }: { frame: RefObject<HTMLDivElement | null
   if (!stalled) return null;
   return (
     <p className="ch-stall" role="status">
-      Still loading. This is taking longer than usual; check your connection.
+      Still loading. This is taking longer than usual.
     </p>
   );
 }

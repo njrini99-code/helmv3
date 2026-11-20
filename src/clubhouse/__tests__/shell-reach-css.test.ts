@@ -127,7 +127,7 @@ describe('the phone canvas runs to the bottom edge (section-strip.md: no tab bar
     expect(rules(controls, ".ch-input[type='datetime-local']::-webkit-date-and-time-value")[0]).toMatch(/color: inherit;/);
     // Deepened by the 2026-10-29 audit (F-0035) for Lc 60 on every sun tint; contrast-tokens.test.ts measures it.
     expect(tokens).toMatch(/--ch-ledger-eyebrow: #5f5230;/);
-    expect(tokens).toMatch(/--ch-on-green-ink-muted: rgb\(222 214 190 \/ 0\.8\);/);
+    expect(tokens).toMatch(/--ch-on-green-ink-muted: #ded6be;/);
     // The hero bar's title stays on the on-green ink in both themes (ivory-100 turns dark in the dark theme).
     expect(rules(shell, '  .ch-root[data-phone-hero] .ch-topbar__ptitle')[0]).toMatch(/color: var\(--ch-on-green-ink\);/);
     // The bell's drop stays a scroller when its list is short, so a pan on it never scrolls the page under it.
