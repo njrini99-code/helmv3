@@ -406,3 +406,19 @@ html[data-ch-motion-failed] .ch-root [style*='opacity'] {
   color: var(--ch-text-placeholder);
   opacity: 1;
 }
+
+/* Forced colours (Windows High Contrast, CC-6): shadows and tinted fills are dropped there, so every focus shows the
+   system's own ring, and the controls and surfaces that are drawn only by shadow get a real edge in the system ink. */
+@media (forced-colors: active) {
+  .ch-root {
+    --ch-border-focus: Highlight;
+    --ch-border-focus-on-dark: Highlight;
+  }
+  .ch-root :focus-visible {
+    outline: 2px solid var(--ch-border-focus) !important;
+    outline-offset: 2px;
+  }
+  .ch-root :is(.ch-input, .ch-textarea, .ch-select select, .ch-seg, .ch-popover, .ch-modal__panel, .ch-menu__item:focus-visible, .ch-surface, .ch-switch__track, .ch-check__box) {
+    border: 1px solid CanvasText;
+  }
+}

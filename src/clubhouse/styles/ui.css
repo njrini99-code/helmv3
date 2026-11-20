@@ -25,8 +25,10 @@
     box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-root .ch-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--ch-bg-page), 0 0 0 4px var(--ch-border-focus);
+  /* A real outline, not a box-shadow ring (premium plan batch 5, CC-6): it survives forced colours, where shadows are
+     dropped, and it follows the key's own radius. */
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
 }
 .ch-btn:disabled {
   cursor: not-allowed;
