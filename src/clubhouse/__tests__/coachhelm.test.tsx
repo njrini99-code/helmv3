@@ -562,17 +562,22 @@ describe('CoachHelm route skeleton', () => {
     expect(main.querySelectorAll('.ch-hl-sk--coach .ch-hl-sk__p').length).toBeGreaterThanOrEqual(4);
   });
 
-  it('130204 the route’s skeleton takes the signed-in role’s shape, and the player’s until it is known', () => {
+  it('130204 the route’s skeleton takes the signed-in role’s shape, and the player’s until it is known: each the shape of the page that lands', () => {
     const user = (role: 'coach' | 'player') => ({ role, userId: 'u', name: 'X' });
     const { unmount } = render(
       <GolfUserProvider userData={user('coach')}>
         <CoachHelmRouteSkeleton />
       </GolfUserProvider>,
     );
-    expect(code('CH-13402')).not.toBeNull();
+    // The coach's Team page: the board's own skeleton (the one the route's Suspense and the switch draw), never the retired board's.
+    expect(screen.getByRole('main', { name: 'Loading Team view' }).classList.contains('ch-htb')).toBe(true);
+    expect(code('CH-13402')).toBeNull();
     unmount();
     render(<CoachHelmRouteSkeleton />);
-    expect(code('CH-13401')).not.toBeNull();
+    // The player's Board is Your week: its own skeleton, on its own frame.
+    const main = screen.getByRole('main', { name: 'Loading CoachHelm' });
+    expect(main.getAttribute('data-ch-wait')).toBe('your-week');
+    expect(main.classList.contains('ch-hf')).toBe(true);
   });
 
   it('the route’s skeleton is the view the address names, as the route decides it, so a hard load draws one shape, not the board’s and then the view’s', () => {
@@ -1259,7 +1264,7 @@ describe('CoachHelm route', () => {
         <Loading />
       </ClubhouseMarker>,
     );
-    expect(code('CH-13401')).not.toBeNull();
+    expect(screen.getByRole('main', { name: 'Loading CoachHelm' }).getAttribute('data-ch-wait')).toBe('your-week');
   });
 });
 
