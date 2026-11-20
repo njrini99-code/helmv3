@@ -80,9 +80,11 @@ export function PhoneScreen({
     if (!present && !exit.current.holding) safeToRemove?.();
   }, [present, safeToRemove]);
   // POP-02: the screen's first commit is its frame alone, so the push starts on the tap's next frames; the content renders
-  // in the background (a deferred render, which yields) while the slide runs on the compositor, and lands under it.
-  const body = useDeferredValue<ReactNode>(children, null);
-  const ready = body !== null;
+  // in a deferred render straight after that commit, while the slide runs on the compositor, and lands under it. What
+  // is deferred is a constant (true), not the children: a parent render cannot restart it, so the content cannot be
+  // starved by a busy parent, and once in, it renders with every update as usual.
+  const ready = useDeferredValue(true, false);
+  const body = ready ? children : null;
   useEdgeSwipeBack(ref, { enabled: !covered, reduced, exit, ready });
   useKeepDockClear(ref, !immersive);
   // Read while rendering: a field with autoFocus takes focus at commit, before any effect here runs.
