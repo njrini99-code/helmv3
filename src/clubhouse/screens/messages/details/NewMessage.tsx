@@ -14,6 +14,7 @@ import { Avatar } from '../../../ui/Avatar';
 import { Tooltip } from '../../../ui/Tooltip';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
+import { FORMER_MEMBER } from '../../../lib/person-fallback';
 
 /* New message */
 
@@ -250,8 +251,8 @@ export function NewMessage({
                   const p = personOf(api, id);
                   return (
                     <span key={id} className="ch-ms-to__c">
-                      <Avatar name={p?.name ?? "Member"} id={p?.playerId ?? id} size={20} />
-                      {firstName(p?.name ?? "Member")}
+                      <Avatar name={p?.name ?? FORMER_MEMBER} id={p?.playerId ?? id} size={20} />
+                      {(p?.name ? firstName(p?.name) : FORMER_MEMBER)}
                       <Tooltip>
                         <button
                           type="button"

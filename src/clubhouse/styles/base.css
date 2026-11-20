@@ -164,6 +164,28 @@ svg .ch-num {
   letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 96;
 }
+/* ST-1: the one truncate policy (ui/Truncate.tsx): one line ends in an ellipsis, more lines clamp at a word. */
+.ch-trunc {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-trunc[data-lines] {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  overflow-wrap: normal;
+}
+.ch-trunc[data-lines='2'] {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.ch-trunc[data-lines='3'] {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
 /* AX-10: an abbreviation looks like the text around it; the words are for VoiceOver (ui/Abbr.tsx). */
 .ch-abbr {
   text-decoration: none;

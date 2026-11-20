@@ -12,6 +12,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { MS_BEATS, msAnimate, sheetCloseCurve } from './motion/messages-motion';
 import type { ChMessagesApi } from './MessagesView';
 import { personOf } from './person-of';
+import { FORMER_MEMBER } from '../../lib/person-fallback';
 
 /**
  * Desktop New message, in the thread column (MSG-NEW-02): a glass bar, the To card, Suggested. A name makes a green token, then the
@@ -69,8 +70,8 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
           <span aria-hidden="true">To:</span>
           {picked && (
             <button type="button" className="ch-msp-tok ch-msd-tok" ref={(el) => void pop(el, 0.8, { once: true, fade: true })} aria-label={`Remove ${personOf(api, picked)?.name ?? 'person'}`} onClick={() => setPicked(null)}>
-              <Avatar name={personOf(api, picked)?.name ?? 'Member'} id={personOf(api, picked)?.playerId ?? picked} size={22} />
-              {personOf(api, picked)?.name ?? 'Member'}
+              <Avatar name={personOf(api, picked)?.name ?? FORMER_MEMBER} id={personOf(api, picked)?.playerId ?? picked} size={22} />
+              {personOf(api, picked)?.name ?? FORMER_MEMBER}
               <Icon icon={X} size={12} />
             </button>
           )}

@@ -40,6 +40,7 @@ import { Switch } from "../../ui/Switch";
 import { TimeField } from "../../ui/TimeField";
 import { clock, untilLabel, type ChConv } from "./model";
 import type { ChMessagesApi } from "./MessagesView";
+import { FORMER_MEMBER } from '../../lib/person-fallback';
 
 /**
  * Polls in a thread (premium features P-2, handoff §4.34.2): the card a poll message draws, the sheet that writes one,
@@ -201,7 +202,7 @@ export function PollCard({
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const busy = polls?.pending.has(messageId) ?? false;
   const mineIds = tally?.mine ?? [];
-  const nameOf = (id: string) => personOf(api, id)?.name ?? "Member";
+  const nameOf = (id: string) => personOf(api, id)?.name ?? FORMER_MEMBER;
   // Remind: a coach, an open poll, the votes in, and someone left. `memberIds` are the others, so the viewer is out of
   // both the condition and the count, and a coach is never named in their own reminder; never "Remind 0".
   const waiting = tally && conv ? pollWaiting(tally, conv.memberIds) : [];
@@ -393,7 +394,7 @@ function PollVotesModal({
   onClose: () => void;
 }) {
   const me = api.viewer.userId;
-  const nameOf = (id: string) => (id === me ? "You" : (personOf(api, id)?.name ?? "Member"));
+  const nameOf = (id: string) => (id === me ? "You" : (personOf(api, id)?.name ?? FORMER_MEMBER));
   const members = new Set([me, ...(conv?.memberIds ?? [])]);
   // MSG-VOTES-01: rows carry the person's line under the name.
   const lineOf = (id: string) => (id === me ? "" : (personOf(api, id)?.subtitle ?? ""));

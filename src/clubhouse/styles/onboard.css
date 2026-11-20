@@ -1525,7 +1525,7 @@
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-15);
 }
-.ch-ox-mc__brand img {
+.ch-ox-mc__brand .ch-helm-mark {
   width: 26px;
   height: 26px;
 }

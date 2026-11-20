@@ -20,6 +20,7 @@ import { PhoneScreen } from '../../../shell/PhoneScreen';
 import { PhoneBar, PhoneTextAction } from '../../../ui/PhoneBar';
 import { InlineNotice } from '../../../ui/Notices';
 import { Avatar } from '../../../ui/Avatar';
+import { FORMER_MEMBER } from '../../../lib/person-fallback';
 
 /* New message */
 
@@ -207,8 +208,8 @@ export function PhoneNewMessage({
         <div className="ch-msp-to__f">
           {to.map((id) => (
             <button key={id} type="button" className="ch-msp-tok ch-msd-tok" ref={(el) => void pop(el, 0.8, { once: true, fade: true })} aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
-              <Avatar name={personOf(api, id)?.name ?? "Member"} id={personOf(api, id)?.playerId ?? id} size={22} />
-              {firstName(personOf(api, id)?.name ?? "Member")}
+              <Avatar name={personOf(api, id)?.name ?? FORMER_MEMBER} id={personOf(api, id)?.playerId ?? id} size={22} />
+              {(personOf(api, id)?.name ? firstName(personOf(api, id)!.name) : FORMER_MEMBER)}
               <Icon icon={X} size={12} />
             </button>
           ))}

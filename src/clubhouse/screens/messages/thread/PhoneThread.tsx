@@ -35,6 +35,7 @@ import { Icon } from '../../../ui/Icon';
 import { PollSheetRows, SheetRow, SeenSheetRow, ActingSeenMeta } from '../overlays/sheet-rows';
 import { Modal } from '../../../ui/Modal';
 import { EditMessageModal, DeleteMessageModal } from '../overlays/message-modals';
+import { FORMER_MEMBER } from '../../../lib/person-fallback';
 
 export function PhoneThread({
   api,
@@ -107,6 +108,9 @@ export function PhoneThread({
   const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing, paused: focusing });
   const reducedMotion = useChReducedMotion();
   useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
+  // The first message as it was handed over: the parent clears its copy below, and the composer, which renders with the
+  // screen's content a moment after the screen itself (POP-02), still takes it.
+  const [first] = useState(firstMessage);
   useEffect(() => {
     if (firstMessage) onFirstSent();
     // The composer has taken the first message; nothing else to hand over.
@@ -196,9 +200,9 @@ export function PhoneThread({
         onEditDone={() => setEditing(null)}
         phone
         unavailable={api.msgsError}
-        initialDraft={firstMessage?.text}
-        initialFiles={firstMessage?.files}
-        autoSend={!!firstMessage}
+        initialDraft={first?.text}
+        initialFiles={first?.files}
+        autoSend={!!first}
         replyToId={replyToId}
         onClearReply={() => setReplyToId(null)}
         onSendingChange={(sending) => { replySendingRef.current = sending; setReplySending(sending); }}
@@ -239,7 +243,7 @@ export function PhoneThread({
             <div role="group" className="ch-msp-acts__preview" aria-label="Selected message">
               {/* Whose it is, then when (wave 5 #20): in a group the time alone doesn't say. */}
               <span className="ch-ms-msg__t ch-num">
-                {acting.mine ? "You" : firstName(personOf(api, acting.senderId)?.name ?? "Member")} · {clock(acting.at, api.timeZone, api.clock)}
+                {acting.mine ? "You" : (personOf(api, acting.senderId)?.name ? firstName(personOf(api, acting.senderId)!.name) : FORMER_MEMBER)} · {clock(acting.at, api.timeZone, api.clock)}
                 {conv.group && <ActingSeenMeta api={api} m={acting} />}
               </span>
               <p>{acting.text || (acting.hasAttachments ? "Attachment" : "Message")}</p>

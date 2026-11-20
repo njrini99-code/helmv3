@@ -13,6 +13,7 @@ import { BubbleBody } from './BubbleBody';
 import { ReplyQuote } from './MessageText';
 import { BubbleHoverBar } from './BubbleHoverBar';
 import { BubbleReceipt } from './BubbleReceipt';
+import { FORMER_MEMBER } from '../../../lib/person-fallback';
 
 export function Bubble({
   api,
@@ -91,7 +92,7 @@ export function Bubble({
           {last && (
             <SenderPeek api={api} who={who}>
               <Avatar
-                name={who?.name ?? "Member"}
+                name={who?.name ?? FORMER_MEMBER}
                 id={who ? (who.playerId ?? who.userId) : null}
                 size={30}
                 year={who?.gradYear ? classYearKey(who.gradYear, new Date(api.now), api.timeZone) : null}

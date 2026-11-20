@@ -11,6 +11,7 @@ import { TypingMini, typingLabel } from './TypingMini';
 import { titleHints } from './model';
 import { personOf } from '../person-of';
 import { PresenceRow } from '../../../ui/ListPresence';
+import { FORMER_MEMBER } from '../../../lib/person-fallback';
 
 export function ConvRowButton({ api, c, onOpen, bind, plain = false }: { api: ChMessagesApi; c: ChConv; onOpen: () => void; bind: ContextMenuBind; plain?: boolean }) {
   const row = {
@@ -62,7 +63,7 @@ export function ConvRowButton({ api, c, onOpen, bind, plain = false }: { api: Ch
                           ? "You"
                           : firstName(
                               personOf(api, c.lastSenderId)
-                                ?.name ?? "Member",
+                                ?.name ?? FORMER_MEMBER,
                             )}
                         :{" "}
                       </em>

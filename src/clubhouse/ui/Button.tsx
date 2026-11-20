@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import type { LucideIcon } from 'lucide-react';
+import { Check, type LucideIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode, MouseEvent } from 'react';
 import { Icon } from './Icon';
 import { haptic, type ChHaptic } from '../lib/haptics';
@@ -53,7 +54,28 @@ type ButtonProps = CommonProps &
     menu?: ChMenuTrigger;
     /** The action this button starts is in flight: aria-busy, no second press, and it stays lit (working, not unavailable). */
     busy?: boolean;
+    /**
+     * GES-17 done state: the action just finished. The key shows a check and `doneLabel` (default "Saved") in the label's
+     * place, keeping its width, and says it once to VoiceOver. Hold it for about 900ms (useDoneFlash).
+     */
+    done?: boolean;
+    doneLabel?: string;
   });
+
+/** GES-17: a done state held for `ms` (900 by default): call `flash()` when the save resolves. */
+export function useDoneFlash(ms = 900): [boolean, () => void] {
+  const [done, setDone] = useState(false);
+  const t = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(t.current), []);
+  return [
+    done,
+    () => {
+      setDone(true);
+      window.clearTimeout(t.current);
+      t.current = window.setTimeout(() => setDone(false), ms);
+    },
+  ];
+}
 
 export function Button(props: ButtonProps) {
   const { variant = 'secondary', size = 'md', leftIcon, rightIcon, kbd, className, aria, code, data, children } = props;
@@ -62,10 +84,19 @@ export function Button(props: ButtonProps) {
   const cls = ['ch-btn', `ch-btn--${variant}`, size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ');
   const iconSize = size === 'sm' ? 14 : 15;
   const press = usePressPrefetch();
+  const isDone = props.href === undefined && !!props.done && !props.busy;
+  const doneLabel = (props.href === undefined && props.doneLabel) || 'Saved';
   const inner = (
     <>
-      {leftIcon && <Icon icon={leftIcon} size={iconSize} />}
-      <span>{children}</span>
+      {leftIcon && !isDone && <Icon icon={leftIcon} size={iconSize} />}
+      {isDone ? (
+        <span className="ch-btn__done" role="status">
+          <Icon icon={Check} size={iconSize} />
+          {doneLabel}
+        </span>
+      ) : (
+        <span>{children}</span>
+      )}
       {rightIcon && <Icon icon={rightIcon} size={iconSize} />}
       {/* The hint is visual: VoiceOver read "New event, N" as the name (audit A-10); the shortcut is announced through
           aria-keyshortcuts on the control instead. */}

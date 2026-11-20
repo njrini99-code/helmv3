@@ -23,6 +23,7 @@ import { Tooltip } from '../../../ui/Tooltip';
 import { HoldLift } from '../hold-lift';
 import { HoldReactKeys } from './HoldKeys';
 import '../../../styles/messages-overlays.css';
+import { FORMER_MEMBER } from '../../../lib/person-fallback';
 
 /* Thread */
 
@@ -44,7 +45,7 @@ export function ReactionChip({ api, messageId, r, arriving = false }: { api: ChM
   const btn = useRef<HTMLButtonElement | null>(null);
   const card = useRef<HTMLDivElement | null>(null);
   const label = REACTIONS.find((x) => x.key === r.key)?.key ?? r.key;
-  const people = (r.userIds ?? []).map((id) => ({ id, name: id === api.viewer.userId ? "You" : personOf(api, id)?.name ?? "Member" }));
+  const people = (r.userIds ?? []).map((id) => ({ id, name: id === api.viewer.userId ? "You" : personOf(api, id)?.name ?? FORMER_MEMBER }));
   people.sort((a, b) => (a.id === api.viewer.userId ? -1 : b.id === api.viewer.userId ? 1 : a.name.localeCompare(b.name)));
 
   useLayoutEffect(() => {

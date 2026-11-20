@@ -36,16 +36,16 @@ const COVERED_SHIFT = CH_UNDERLAY_SHIFT;
  * Back asks the shell for the swipe while it is the top screen (`claimWebSwipe`): the shell's own WKWebView swipe, which
  * drags the whole app with the page, is off until it lets go.
  */
-export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enabled, reduced, exit }: { enabled: boolean; reduced: boolean; exit: MutableRefObject<EdgeExitHold> }): void {
+export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enabled, reduced, exit, ready = true }: { enabled: boolean; reduced: boolean; exit: MutableRefObject<EdgeExitHold>; /** POP-02: the screen's content (and its Back) has rendered. */ ready?: boolean }): void {
   const mountedAt = useRef(0);
   useEffect(() => {
     mountedAt.current = performance.now();
   }, []);
   useEffect(() => {
     const el = screen.current;
-    if (!enabled || !el || !hasChevronBack(el)) return;
+    if (!enabled || !ready || !el || !hasChevronBack(el)) return;
     return claimWebSwipe();
-  }, [screen, enabled]);
+  }, [screen, enabled, ready]);
   useEffect(() => {
     const el = screen.current;
     if (!enabled || reduced || !el) return;
