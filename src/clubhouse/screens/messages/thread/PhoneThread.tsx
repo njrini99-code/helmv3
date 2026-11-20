@@ -35,6 +35,7 @@ import { Icon } from '../../../ui/Icon';
 import { PollSheetRows, SheetRow, SeenSheetRow, ActingSeenMeta } from '../overlays/sheet-rows';
 import { Modal } from '../../../ui/Modal';
 import { EditMessageModal, DeleteMessageModal } from '../overlays/message-modals';
+import { FORMER_MEMBER } from '../../../lib/person-fallback';
 
 export function PhoneThread({
   api,
@@ -239,7 +240,7 @@ export function PhoneThread({
             <div role="group" className="ch-msp-acts__preview" aria-label="Selected message">
               {/* Whose it is, then when (wave 5 #20): in a group the time alone doesn't say. */}
               <span className="ch-ms-msg__t ch-num">
-                {acting.mine ? "You" : firstName(personOf(api, acting.senderId)?.name ?? "Member")} · {clock(acting.at, api.timeZone, api.clock)}
+                {acting.mine ? "You" : (personOf(api, acting.senderId)?.name ? firstName(personOf(api, acting.senderId)!.name) : FORMER_MEMBER)} · {clock(acting.at, api.timeZone, api.clock)}
                 {conv.group && <ActingSeenMeta api={api} m={acting} />}
               </span>
               <p>{acting.text || (acting.hasAttachments ? "Attachment" : "Message")}</p>
