@@ -6056,7 +6056,11 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
    scoring's window picker has two choices, not the player's three; a team part's change line is its verdict, toned only
    when the change clears its standard error; the names under a part open that player's game. */
 .ch-ph-game.is-phone.ch-ph-tm .ch-seg {
-  grid-template-columns: repeat(2, 1fr);
+  /* One column a choice, however many the window picker has (Last 10, Season, All time): a fixed two left the third on a
+     second row. */
+  grid-template-columns: none;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
 }
 .ch-ph-tm .ch-ph-leg > .ch-ph-leg__chg {
   margin: 0;
