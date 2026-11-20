@@ -155,7 +155,7 @@ export function DataTable({
                   const cell = typeof c === 'string' ? { v: c } : c;
                   return (
                     <td key={i} className={`r ch-num${cell.tone ? ` ch-${cell.tone}` : ''}${cell.dim ? ' is-dim' : ''}${i === keyCol ? ' is-key' : ''}`}>
-                      {cell.v}
+                      {cell.tone ? <span className="ch-gx-tone">{cell.v}</span> : cell.v}
                     </td>
                   );
                 })}

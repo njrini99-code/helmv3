@@ -26,4 +26,12 @@ Held items: none
   column as one rounded well with firmer figures, and the "All distances"
   total row in the figure weight under a firmer rule. Any detail table that
   passes `keyCol` or a `total` row gets the same drawing.
+- Second pass (Nick: "more color and contrast while keeping the premium
+  look"): the "All lies" well is the feature green band with ivory figures;
+  each lie figure in the strokes table sits in a soft gain or loss chip
+  (green fewer strokes than All lies at that distance, amber more, untoned
+  within 0.05); the "Sand saves" and "Up and downs" tiles lead with the rate
+  and keep the makes ("4 of 12") underneath; each "Finish after the chip" lie
+  row is toned against the Overall finish (closer green, farther amber), and
+  Overall stays grey as the yardstick.
 - A closed "More detail" (the older desktop Game detail) keeps its tables.

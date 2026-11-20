@@ -102,6 +102,7 @@ export function HBars({
   format = (v: number) => `${Math.round(v)}%`,
   wide = false,
   tickKey = 'Tour average',
+  lowerIsBetter = false,
 }: {
   rows: readonly HBarRow[];
   tourKey?: boolean;
@@ -111,6 +112,8 @@ export function HBars({
   wide?: boolean;
   /** What the tick marks, under the rows when `tourKey` is on (the Tour by default; a detail can mark the player's own figure). */
   tickKey?: string;
+  /** A distance left, where under the tick is the gain. */
+  lowerIsBetter?: boolean;
 }) {
   const at = (v: number) => Math.max(0, Math.min(100, (v / (scale || 1)) * 100));
   return (
@@ -124,7 +127,7 @@ export function HBars({
               {sub && <small>{sub}</small>}
             </span>
             <span className="ch-shs-hrail" aria-hidden="true">
-              {r.value != null && <i className={`ch-shs-fill-${r.early ? 'flat is-early' : railTone(r.value, r.tour)}`} style={{ width: `${at(r.value)}%` }} />}
+              {r.value != null && <i className={`ch-shs-fill-${r.early ? 'flat is-early' : (lowerIsBetter && r.tour != null ? (r.value <= r.tour ? 'gain' : 'loss') : railTone(r.value, r.tour))}`} style={{ width: `${at(r.value)}%` }} />}
               {r.tour != null && <span className="ch-shs-tour" style={{ left: `${at(r.tour)}%` }} />}
             </span>
             <span className={'v ch-num' + (r.value == null ? ' ch-shs-none' : '')}>{r.value == null ? <NoData /> : format(r.value)}

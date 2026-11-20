@@ -15,5 +15,7 @@ Held items: none
 
 - Every figure table inside a pushed Stats detail (team details included)
   takes the new table drawing: quiet footnote header, 44pt rows on row
-  hairlines, no stat changed. The short-game rows and the summary well are
+  hairlines, no stat changed. A table that passes `keyCol` draws that
+  column as the feature green band, and toned cells draw as soft gain or loss
+  chips. The short-game rows and the summary well are
   described in `../../P005-stats-player/changes/2026-11-20-short-game-cards.md`.

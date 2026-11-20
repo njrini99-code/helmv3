@@ -274,6 +274,15 @@ export function ShortMore({ s }: { s: GolfStats }) {
     { label: 'Sand', value: s.atgProximityByLie?.sand ?? null },
   ];
   const cap = (k: string) => k[0]!.toUpperCase() + k.slice(1);
+  /**
+   * In a detail, a lie's strokes against the same distance over every lie: fewer is the gain, more the loss, and within
+   * 0.05 of it untoned. Colour only; the figure is the calculator's.
+   */
+  const lieCell = (v: number | null | undefined, all: number | null | undefined): Cell | string =>
+    !asRows || v == null || all == null || Math.abs(v - all) < 0.05 ? num(v, 2) : { v: num(v, 2), tone: v < all ? 'gain' : 'loss' };
+  const made = (m: number, n: number, p: number | null) => (asRows && p != null ? { value: pct(p), sub: `${m} of ${n}` } : { value: `${m} of ${n}`, sub: undefined });
+  const sand = made(s.sandSavesMade, s.sandSaveAttempts, s.sandSavePercentage);
+  const ud = made(s.scramblesMade, s.scrambleAttempts, s.scramblingPercentage);
   return (
     <>
       <Panel title="Short-game numbers" wide>
@@ -282,20 +291,29 @@ export function ShortMore({ s }: { s: GolfStats }) {
           items={[
             { label: 'Strokes to hole out', value: num(s.atgEfficiencyAvg, 2), sub: 'From a chip or pitch' },
             { label: 'Finish after the chip', value: ft(s.atgProximityAvg), sub: 'Chips that reached the green' },
-            { label: 'Sand saves', value: s.sandSaveAttempts ? `${s.sandSavesMade} of ${s.sandSaveAttempts}` : NO_DATA, empty: !s.sandSaveAttempts, code: NOTHING },
-            { label: 'Up and downs', value: s.scrambleAttempts ? `${s.scramblesMade} of ${s.scrambleAttempts}` : NO_DATA, empty: !s.scrambleAttempts, code: NOTHING },
+            { label: 'Sand saves', value: s.sandSaveAttempts ? sand.value : NO_DATA, sub: s.sandSaveAttempts ? sand.sub : undefined, empty: !s.sandSaveAttempts, code: NOTHING },
+            { label: 'Up and downs', value: s.scrambleAttempts ? ud.value : NO_DATA, sub: s.scrambleAttempts ? ud.sub : undefined, empty: !s.scrambleAttempts, code: NOTHING },
           ]}
         />
       </Panel>
-      <Panel title="Strokes to hole out from around the green" wide note="Average strokes to hole out from a chip or pitch within 50 yards, by distance and lie. Averages only.">
+      <Panel
+        title="Strokes to hole out from around the green"
+        wide
+        note={`Average strokes to hole out from a chip or pitch within 50 yards, by distance and lie. Averages only.${asRows ? ' Green is fewer strokes than the All lies figure for that distance, amber more.' : ''}`}
+      >
         {hasEff ? (
           <DataTable
             label="Strokes to hole out from around the green by distance and lie"
             cols={['Distance', 'All lies', 'Fairway', 'Rough', 'Sand']}
             keyCol={0}
             rows={[
-              ...eff.map(([label, all, l]) => ({ key: label, head: label, cells: [num(all, 2), num(l?.fairway, 2), num(l?.rough, 2), num(l?.sand, 2)] })),
-              { key: 'all', head: 'All distances', total: true, cells: [num(s.atgEfficiencyAvg, 2), num(s.atgEffFairway, 2), num(s.atgEffRough, 2), num(s.atgEffSand, 2)] },
+              ...eff.map(([label, all, l]) => ({ key: label, head: label, cells: [num(all, 2), lieCell(l?.fairway, all), lieCell(l?.rough, all), lieCell(l?.sand, all)] })),
+              {
+                key: 'all',
+                head: 'All distances',
+                total: true,
+                cells: [num(s.atgEfficiencyAvg, 2), lieCell(s.atgEffFairway, s.atgEfficiencyAvg), lieCell(s.atgEffRough, s.atgEfficiencyAvg), lieCell(s.atgEffSand, s.atgEfficiencyAvg)],
+              },
             ]}
           />
         ) : (
@@ -329,7 +347,16 @@ export function ShortMore({ s }: { s: GolfStats }) {
       </Panel>
       <Panel title="Finish after the chip" note="Average distance left by chips and pitches that reached the green; a holed chip counts 0.">
         {prox.some((r) => r.value != null) && asRows ? (
-          <HBars wide scale={Math.max(1, ...prox.map((r) => r.value ?? 0))} format={(v) => ft(v)} rows={prox} />
+          // Each lie against the overall finish: shorter is the gain.
+          <HBars
+            wide
+            lowerIsBetter
+            tourKey={s.atgProximityAvg != null}
+            tickKey={`Overall, ${ft(s.atgProximityAvg)}`}
+            scale={Math.max(1, ...prox.map((r) => r.value ?? 0))}
+            format={(v) => ft(v)}
+            rows={prox.map((r, i) => ({ ...r, tour: i ? s.atgProximityAvg : null }))}
+          />
         ) : prox.some((r) => r.value != null) ? (
           <Compare unit=" ft" rows={prox} />
         ) : (

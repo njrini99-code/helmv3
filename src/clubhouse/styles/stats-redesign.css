@@ -1622,15 +1622,16 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-screen .ch-gx-tbl th,
 .ch-shs-screen .ch-gx-tbl td {
   height: 44px;
-  padding: 0 0 0 8px;
+  padding: 0 0 0 4px;
   border-top: var(--ch-hairline-w) solid var(--ch-shs-s-sep);
   font: var(--ch-type-body);
   color: var(--ch-shs-s-ink);
   vertical-align: middle;
 }
 .ch-shs-screen .ch-gx-tbl th:first-child {
-  width: 34%;
+  width: 33%;
   padding-left: 0;
+  padding-right: 8px;
 }
 .ch-shs-screen .ch-gx-tbl thead th {
   height: auto;
@@ -1645,10 +1646,12 @@ li + li > .ch-shs-rrow::before {
   padding-right: 0;
   text-align: right;
 }
-/* The summary column: one well, rounded at its ends, its figures a step firmer. */
+/* The summary column: one deep green band, rounded at its ends, its figures in the plate's ink (the header's green, carried down). */
 .ch-shs-screen .ch-gx-tbl .is-key {
   padding-right: 12px;
-  background: var(--ch-shs-s-well);
+  border-top-color: transparent;
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
 }
 .ch-shs-screen .ch-gx-tbl td.is-key {
   font: var(--ch-type-figure);
@@ -1656,7 +1659,22 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-screen .ch-gx-tbl thead th.is-key {
   padding-top: 8px;
   border-radius: var(--ch-radius-md) var(--ch-radius-md) 0 0;
-  color: var(--ch-shs-s-ink);
+  color: var(--ch-feature-ink-2);
+}
+/* A cell set against its row's summary: a gain or loss chip, as the Stats pills draw them. */
+.ch-shs-screen .ch-gx-tone {
+  display: inline-block;
+  padding: 2px 4px;
+  margin-right: 0;
+  border-radius: var(--ch-radius-sm);
+}
+.ch-shs-screen .ch-gx-tbl td.ch-gain .ch-gx-tone {
+  background: color-mix(in oklab, var(--ch-chart-gain) 14%, transparent);
+  color: var(--ch-chart-gain);
+}
+.ch-shs-screen .ch-gx-tbl td.ch-loss .ch-gx-tone {
+  background: color-mix(in oklab, var(--ch-chart-loss) 14%, transparent);
+  color: var(--ch-chart-loss);
 }
 .ch-shs-screen .ch-gx-tbl tbody tr:last-child td.is-key {
   border-radius: 0 0 var(--ch-radius-md) var(--ch-radius-md);
@@ -1668,6 +1686,9 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-screen .ch-gx-tbl tr.is-total > * {
   border-top-color: var(--ch-shs-s-sep-strong);
   font: var(--ch-type-figure);
+}
+.ch-shs-screen .ch-gx-tbl tr.is-total > .is-key {
+  border-top-color: color-mix(in oklab, var(--ch-feature-ink) 30%, transparent);
 }
 /* A panel's note is the card's footnote: after the figures, quieter than them. */
 .ch-shs-screen .ch-gm.is-detail .ch-gm-p__n {
