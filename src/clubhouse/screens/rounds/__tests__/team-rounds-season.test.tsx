@@ -59,9 +59,10 @@ describe('Team rounds · the season figures leave practice out', () => {
     expect(screen.getByText('Varsity · Since August 1 · 6 counted rounds')).toBeTruthy();
   });
 
-  it('on a phone each figure keeps one short caption, and the average still says practice is out', () => {
+  // Nick, 20 Nov 2026, on these captions: "Get rid of these words, the page is way too busy".
+  it('on a phone the figures carry their label and value only, no caption', () => {
     show(PREVIEW_TEAM_ROUNDS, true);
-    expect(figures().map((f) => f[2])).toEqual(['5 players', 'no practice', 'of 6', 'Priya · E']);
+    expect(figures().map((f) => f[2])).toEqual([undefined, undefined, undefined, undefined]);
   });
 
   it('a month’s caption averages the same rounds: October’s 72, 75 and 71', () => {
