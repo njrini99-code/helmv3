@@ -519,6 +519,19 @@
   overflow: auto;
   overscroll-behavior: contain;
 }
+/* LOOK-06: the dialog's close is one pattern everywhere, a 32px round key with a 17px glyph that a finger or pointer
+   reaches at 44 x 44 (Apple's sheet close), not a 15px ghost. */
+.ch-modal__close {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ch-radius-full);
+}
+.ch-modal__close::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
 .ch-modal__foot {
   flex: none;
   display: flex;
