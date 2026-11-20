@@ -209,6 +209,22 @@ before, after, baseline or evidence.
 | `P006__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 | `P006__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
 | `P006__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+| `P006__week__coach__1440x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | week (coach), 1440x1000px, dark |
+| `P006__week__coach__1440x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | week (coach), 1440x1000px, dark |
+| `P006__week__coach__1440x1000__light__after__81ba4f8.png` | after | 81ba4f8 | week (coach), 1440x1000px, light |
+| `P006__week__coach__1440x1000__light__before__81ba4f8.png` | before | 81ba4f8 | week (coach), 1440x1000px, light |
+| `P006__week__coach__1920x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | week (coach), 1920x1000px, dark |
+| `P006__week__coach__1920x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | week (coach), 1920x1000px, dark |
+| `P006__week__coach__1920x1000__light__after__81ba4f8.png` | after | 81ba4f8 | week (coach), 1920x1000px, light |
+| `P006__week__coach__1920x1000__light__before__81ba4f8.png` | before | 81ba4f8 | week (coach), 1920x1000px, light |
+| `P006__week__player__1440x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | week (player), 1440x1000px, dark |
+| `P006__week__player__1440x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | week (player), 1440x1000px, dark |
+| `P006__week__player__1440x1000__light__after__81ba4f8.png` | after | 81ba4f8 | week (player), 1440x1000px, light |
+| `P006__week__player__1440x1000__light__before__81ba4f8.png` | before | 81ba4f8 | week (player), 1440x1000px, light |
+| `P006__week__player__1920x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | week (player), 1920x1000px, dark |
+| `P006__week__player__1920x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | week (player), 1920x1000px, dark |
+| `P006__week__player__1920x1000__light__after__81ba4f8.png` | after | 81ba4f8 | week (player), 1920x1000px, light |
+| `P006__week__player__1920x1000__light__before__81ba4f8.png` | before | 81ba4f8 | week (player), 1920x1000px, light |
 
 ## Historical verification gaps
 
