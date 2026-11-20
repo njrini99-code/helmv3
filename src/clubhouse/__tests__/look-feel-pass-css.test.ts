@@ -210,7 +210,7 @@ const RAW_FONT: Record<string, number> = {
   'styles/rounds-track.css': 20,
   'styles/rounds.css': 23,
   'styles/settings.css': 3,
-  'styles/shell.css': 10,
+  'styles/shell.css': 9,
   'styles/stats.css': 24,
   'styles/ui.css': 5,
 };
@@ -293,7 +293,7 @@ const OFF_TRACK: Record<string, number> = {
   'styles/rounds.css': 7,
   'styles/settings.css': 1,
   // 4: the Ledger's h2/h3 -0.022em override is now a zero-weight default on the role tracking (visual pass 2026-10-28).
-  'styles/shell.css': 4,
+  'styles/shell.css': 3,
   'styles/stats.css': 8,
   'styles/ui.css': 3,
 };
