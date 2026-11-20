@@ -216,11 +216,11 @@
     "keyframes": 0
   },
   "src/clubhouse/styles/home.css": {
-    "hex": 26,
+    "hex": 18,
     "svg-overflow-visible": 3,
     "crh-negative-margin": 3,
     "raw-radius": 1,
-    "raw-shadow": 65,
+    "raw-shadow": 63,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -360,11 +360,11 @@
     "keyframes": 0
   },
   "src/clubhouse/styles/rounds.css": {
-    "hex": 45,
+    "hex": 33,
     "svg-overflow-visible": 1,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 81,
+    "raw-shadow": 78,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -477,7 +477,7 @@
     "keyframes": 0
   },
   "src/clubhouse/styles/ui.css": {
-    "hex": 61,
+    "hex": 59,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
