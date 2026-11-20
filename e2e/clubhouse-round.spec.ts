@@ -39,12 +39,12 @@ async function birdie(page: Page, hole: number) {
   await page.getByRole('radiogroup', { name: 'Club off tee' }).getByRole('radio', { name: 'Driver', exact: true }).click();
   await page.getByRole('radiogroup', { name: 'Shot result' }).getByRole('radio', { name: 'Fairway', exact: true }).click();
   await page.getByRole('group', { name: 'Quick distances' }).getByRole('button', { name: '140', exact: true }).click();
-  await page.getByRole('button', { name: 'Record next shot' }).click();
+  await page.getByRole('button', { name: 'Next shot' }).click();
   await page.getByRole('radiogroup', { name: 'Shot result' }).getByRole('radio', { name: /^Green/ }).click();
   await page.getByRole('group', { name: 'Quick distances' }).getByRole('button', { name: '10', exact: true }).click();
-  await page.getByRole('button', { name: 'Record next shot' }).click();
+  await page.getByRole('button', { name: 'Next shot' }).click();
   await page.getByRole('radiogroup', { name: 'Putt result' }).getByRole('radio', { name: 'Holed', exact: true }).click();
-  await page.getByRole('button', { name: 'Complete hole with score 3' }).click();
+  await page.getByRole('button', { name: 'Hole out, score 3' }).click();
 }
 
 test('a player sets up a round, saves it for later, continues it and submits all 18 holes', async ({ page }) => {

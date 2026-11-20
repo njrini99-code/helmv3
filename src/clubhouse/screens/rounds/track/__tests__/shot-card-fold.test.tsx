@@ -50,7 +50,7 @@ const held = (el: HTMLElement) => el.hasAttribute('inert') && el.getAttribute('a
 const slot = () => document.querySelector<HTMLElement>('.ch-rt-slot')!;
 const change = () => screen.getByRole('button', { name: /Change$/ });
 const quick = (n: number) => within(screen.getByRole('group', { name: 'Quick distances' })).getByRole('button', { name: String(n) });
-const next = () => screen.getByRole('button', { name: /Record next shot|Complete hole/ });
+const next = () => screen.getByRole('button', { name: /^Next shot$|^Hole out, score/ });
 
 describe('the result and what it asks next share one place', () => {
   it('both faces are in the card from the first frame; the follow-up is held hidden and inert', () => {
@@ -118,8 +118,8 @@ describe('the result and what it asks next share one place', () => {
     const putt = setup({ initialShots: [TEE, APPROACH], initialShotNumber: 3 });
     await putt.user.click(screen.getByRole('radio', { name: 'Holed' }));
     expect(slot().dataset.face).toBe('pick');
-    await putt.user.click(screen.getByRole('radio', { name: 'Green' }));
-    expect(change().getAttribute('aria-label')).toBe('Putt result: Green. Change');
+    await putt.user.click(screen.getByRole('radio', { name: 'Missed' }));
+    expect(change().getAttribute('aria-label')).toBe('Putt result: Missed. Change');
     const tags = screen.getByRole('group', { name: 'How the putt missed' });
     expect(within(tags).getAllByRole('button').map((b) => b.textContent)).toEqual(['Short', 'Long', 'Low side', 'High side']);
     expect(within(screen.getByRole('region', { name: 'What happened' })).getByText('Optional')).toBeTruthy();
@@ -148,7 +148,7 @@ describe('nothing else in the card changes its height', () => {
     await user.click(screen.getByRole('radio', { name: 'Holed' }));
     expect(row().classList.contains('is-reserved')).toBe(true);
     expect(row().hasAttribute('inert')).toBe(true);
-    expect(screen.getByRole('button', { name: 'Complete hole with score 2' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Hole out, score 2' })).toBeTruthy();
   });
 
   it('the shot’s length takes Required’s place in the heading instead of adding a line', async () => {
@@ -241,7 +241,7 @@ describe('the same shot data is saved through the new arrangement', () => {
     await user.click(screen.getByRole('button', { name: /^Break and slope/ }));
     await user.click(within(screen.getByRole('radiogroup', { name: 'Putt break' })).getByRole('radio', { name: 'L → R' }));
     await user.click(within(screen.getByRole('radiogroup', { name: 'Putt slope' })).getByRole('radio', { name: 'Uphill' }));
-    await user.click(screen.getByRole('radio', { name: 'Green' }));
+    await user.click(screen.getByRole('radio', { name: 'Missed' }));
     await user.click(within(screen.getByRole('group', { name: 'How the putt missed' })).getByRole('button', { name: 'Short' }));
     await user.click(within(screen.getByRole('group', { name: 'How the putt missed' })).getByRole('button', { name: 'Low side' }));
     await user.click(quick(2));

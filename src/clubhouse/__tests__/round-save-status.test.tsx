@@ -187,7 +187,7 @@ describe('CH-11901 "Round saved" holds only while it is true', () => {
 
     await user.click(screen.getByRole('radio', { name: /^Green/ }));
     await user.type(screen.getByLabelText(/Proximity to hole/), '20');
-    await user.click(screen.getByRole('button', { name: /Record next shot/ }));
+    await user.click(screen.getByRole('button', { name: /^Next shot$/ }));
 
     expect(await screen.findByText('Saving round')).toBeInTheDocument();
     expect(screen.queryByText('Round saved')).toBeNull();
@@ -214,7 +214,7 @@ describe('CH-11901 before the server answers (owner rule 3, 2026-10-01)', () => 
     await user.click(screen.getByRole('radio', { name: 'Fairway' }));
     await user.click(screen.getByRole('radio', { name: 'Driver' }));
     await user.type(screen.getByLabelText('Distance remaining (yds)'), '150');
-    await user.click(screen.getByRole('button', { name: /Record next shot/ }));
+    await user.click(screen.getByRole('button', { name: /^Next shot$/ }));
   }
 
   it('says "Saved on this phone · syncing" for a shot whose device copy landed, and never "Round saved"', async () => {

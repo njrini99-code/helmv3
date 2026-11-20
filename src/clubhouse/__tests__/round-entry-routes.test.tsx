@@ -579,13 +579,13 @@ describe('Round entry: a round that posts, is slow, or fails (CH-11603, CH-11005
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const view = runtime(fakeSession({ submitting: true, completedRoundId: 'r-77' }));
     expect(mocks.haptic.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
-    expect(mocks.router.push).not.toHaveBeenCalled();
+    expect(mocks.router.replace).not.toHaveBeenCalled();
     // The router the page hands out is a new object (as Next's can be) when the screen redraws.
     mocks.router = { ...mocks.router };
     view.again(fakeSession({ submitting: true, completedRoundId: 'r-77' }));
     act(() => void vi.advanceTimersByTime(POSTED_OPEN_MS + 10));
-    expect(mocks.router.push).toHaveBeenCalledTimes(1);
-    expect(mocks.router.push).toHaveBeenCalledWith('/golf/dashboard/rounds/r-77?just=submitted');
+    expect(mocks.router.replace).toHaveBeenCalledTimes(1);
+    expect(mocks.router.replace).toHaveBeenCalledWith('/golf/dashboard/rounds/r-77?just=submitted');
     expect(mocks.haptic.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
     expect(screen.getByRole('link', { name: /View round review/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/r-77?just=submitted');
   });

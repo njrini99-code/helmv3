@@ -262,7 +262,8 @@ export function RoundRuntime({
       // Rounds, Stats and Roster held from before the submit would miss the new round (A21).
       invalidatePrefetchTabs();
     }
-    const t = window.setTimeout(() => routerRef.current.push(`${routesRef.current.review(id)}${JUST_SUBMITTED}`), POSTED_OPEN_MS);
+    // J-4: replace, not push, so Back from the review does not land on a blank New round.
+    const t = window.setTimeout(() => routerRef.current.replace(`${routesRef.current.review(id)}${JUST_SUBMITTED}`), POSTED_OPEN_MS);
     return () => window.clearTimeout(t);
   }, [session.completedRoundId]);
 

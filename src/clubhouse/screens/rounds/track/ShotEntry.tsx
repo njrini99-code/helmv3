@@ -24,7 +24,7 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Swap } from '../../../ui/Swap';
-import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, isDistanceText, PUTT_TAGS, quickPicks, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
+import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, isDistanceText, PUTT_TAGS, quickPicks, RESULT_LABEL, resultWord, SLOPE_OPTIONS, shotTitle } from './labels';
 import { Sec, Seg } from './parts';
 
 export interface ShotEntryProps {
@@ -261,7 +261,7 @@ export function ShotEntry(p: ShotEntryProps) {
                       }}
                       options={shotResultOptions({ isPutting: p.isPutting, isTeeShot: p.isTeeShot, par: p.currentHole.par, currentShot: p.currentShot }).map((o) => ({
                         value: o.value,
-                        label: RESULT_LABEL[o.value],
+                        label: resultWord(o.value, !!p.isPutting),
                         note: o.note,
                         rare: o.rare,
                       }))}
@@ -276,8 +276,8 @@ export function ShotEntry(p: ShotEntryProps) {
                     <div className="ch-rt-sec__h">
                       <span>{followLabel}</span>
                       {p.isPutting && <em className="ch-rt-hint">Optional</em>}
-                      <button type="button" className="ch-rt-pick" aria-label={`${resultLabel}: ${result ? RESULT_LABEL[result] : 'none'}. Change`} onClick={() => setChangingAt(shotKey)}>
-                        <b>{result ? RESULT_LABEL[result] : RESULT_LABEL.fairway}</b>
+                      <button type="button" className="ch-rt-pick" aria-label={`${resultLabel}: ${result ? resultWord(result, !!p.isPutting) : 'none'}. Change`} onClick={() => setChangingAt(shotKey)}>
+                        <b>{result ? resultWord(result, !!p.isPutting) : RESULT_LABEL.fairway}</b>
                         <span>Change</span>
                       </button>
                     </div>
@@ -492,7 +492,7 @@ export function ShotEntry(p: ShotEntryProps) {
             className={'ch-btn ch-btn--primary ch-btn--lg ch-rt-bar__go' + (goBlocked ? ' is-blocked' : '')}
             disabled={review ? !review.action || review.action.disabled : !canRecord}
             aria-describedby={goBlocked ? BLOCKER_ID : undefined}
-            aria-label={review ? (review.action ? undefined : `Complete hole with score ${review.score}`) : holed ? `Complete hole with score ${p.currentShot}` : 'Record next shot'}
+            aria-label={review ? (review.action ? undefined : `Hole out, score ${review.score}`) : holed ? `Hole out, score ${p.currentShot}` : 'Next shot'}
             onClick={() => {
               if (review) {
                 review.action?.onClick();
@@ -561,7 +561,7 @@ export function UndoConfirm({ shots, saving, error, dispatch, onUndo }: { shots:
     <div ref={ref} className="ch-rt-confirm" role="group" aria-label={`Undo shot ${shots.length}`} data-ch-code="CH-11502">
       <div>
         <b>Undo shot {shots.length}?</b>
-        <span>{last.isPenalty ? shotTitle(last) : `${shotTitle(last)} → ${RESULT_LABEL[last.result].toLowerCase()}`}</span>
+        <span>{last.isPenalty ? shotTitle(last) : `${shotTitle(last)} → ${resultWord(last.result, last.shotType === 'putting').toLowerCase()}`}</span>
         {error && (
           <span className="ch-rt-error" role="alert" data-ch-code="CH-11002">
             Couldn&rsquo;t undo the shot. It&rsquo;s still on your card; try again.
