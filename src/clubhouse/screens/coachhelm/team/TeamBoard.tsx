@@ -9,6 +9,7 @@ import { Button } from '../../../ui/Button';
 import { useRouter } from 'next/navigation';
 import { useRefresh } from '../../../lib/use-refresh';
 import { CoachHelmHead } from '../CoachHelmHead';
+import { RecordWait, TodayWait, WorkWait } from './TeamBoardSkeleton';
 import { useChSessionState } from '../../../lib/session-state';
 import { plural } from '../../../lib/plural';
 import { sgBaseline, sgPartsRoundOff, SG_ROUNDING_NOTE } from '../../../lib/sg';
@@ -286,11 +287,10 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)} · ${plural(readsDrawn(list), 'open read')}`;
   const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)}` : undefined} />;
   const course = courseReads(list).length;
-  const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
   // GAP-S-10: each card is its own read and its own drawing, so a crash in one says so in its place (CH-13204); the board stays.
   const today = (
     <SectionBoundary surface="coachhelm.team.week" label="This week" code="CH-13204">
-    <Part value={data.brief} fallback={skeletonCard}>
+    <Part value={data.brief} fallback={<TodayWait />}>
       {(b) => {
         const card = (themes: Record<string, Record<string, ChDiveTheme>> | null) => (
           <StoriesCard
@@ -322,7 +322,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   const proposed = list.flatMap((player) => player.reads.needs.filter((read) => fa.assigned[read.id] || read.assigned === 'proposed').map((read) => ({ player, read })));
   const working = (
     <SectionBoundary surface="coachhelm.team.working" label="Working on" code="CH-13204">
-      <Part value={data.brief} fallback={skeletonCard}>
+      <Part value={data.brief} fallback={<WorkWait />}>
         {(b) => <WorkingCard working={b.status === 'ok' ? b.value.working : []} proposed={proposed} failed={b.status === 'failed'} onRetry={retry} />}
       </Part>
     </SectionBoundary>
@@ -341,7 +341,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   const recheck = !data.off && data.roster.count > 0 ? <RecheckReads players={data.roster.count} /> : null;
   const record = (
     <SectionBoundary surface="coachhelm.team.record" label="How often CoachHelm is right" code="CH-13204">
-      <Part value={data.record} fallback={skeletonCard}>
+      <Part value={data.record} fallback={<RecordWait />}>
         {(r) => <RecordCard part={r} desk={!phone} recheck={recheck} />}
       </Part>
     </SectionBoundary>

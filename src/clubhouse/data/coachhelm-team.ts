@@ -147,6 +147,13 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   const ids = roster.map((p) => p.id);
   if (!ids.length) return { ...none, team: await teamNamed, roster: { count: 0, error: false }, pulse };
 
+  // The brief (This week, Working on) and the Track record need only the coach and the team, so they start with the reads that need
+  // only the ids, behind the gate as those are. Started after the board's reads, they landed about 1.4 s after the board on staging,
+  // and their cards swapped in late and pushed the huddle down 660px; started here they are, as a rule, in by the time the board is.
+  // Both are read only: neither records anything as shown.
+  const brief = isMondayBriefEnabled() ? part('brief', () => ready('brief', loadCoachBrief({ coachId: input.coachId, teamId: input.teamId, now }))) : null;
+  const record = isTrackRecordEnabled() ? part('record', () => ready('record', loadCoachTrackRecord({ coachId: input.coachId, teamId: input.teamId, now }))) : null;
+
   // What the board draws is known only after the shaping below; the exposures wait for it, and a failed load records nothing.
   let settleDrawn: (ids: readonly string[]) => void = () => {};
   let failDrawn: (err: unknown) => void = () => {};
@@ -348,8 +355,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     notEnough: notEnoughOf(heldBack),
     ...(missing ? { missing } : {}),
     pulse,
-    ...(isMondayBriefEnabled() ? { brief: part('brief', () => ready('brief', loadCoachBrief({ coachId: input.coachId, teamId: input.teamId, now }))) } : {}),
-    ...(isTrackRecordEnabled() ? { record: part('record', () => ready('record', loadCoachTrackRecord({ coachId: input.coachId, teamId: input.teamId, now }))) } : {}),
+    ...(brief ? { brief } : {}),
+    ...(record ? { record } : {}),
     storyRounds,
     themes: themed.then((p): ChTeamPart<Record<string, ReturnType<typeof themesByCategory>>> => (p.status === 'ok' ? { status: 'ok', value: p.value.themes } : p)),
     // One read, one worth: the cascade's figure (`closesFor`), which the Read page and the Player file print, from the themes just read.

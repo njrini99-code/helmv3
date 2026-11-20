@@ -64,10 +64,10 @@
 /* Your week on a desk (fix wave 2026-11-11): the page's own measure and gutters, and the player's CoachHelm head over the
    cards (parts.tsx Head: the page title, the line, the views inside the gutter). It was a 15px title 24px in, with the views
    run to the page's edge. The page is the head's container, so the views drop under the line on a narrow desk as the board's. */
-.ch-hf.is-desk[data-ch='your-week'] { container: chhl / inline-size; padding-bottom: 0; }
-.ch-hf.is-desk[data-ch='your-week'] .dfile { max-width: var(--ch-measure-page); margin: 0 auto; padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom); }
+.ch-hf.is-desk:is([data-ch='your-week'], [data-ch-wait='your-week']) { container: chhl / inline-size; padding-bottom: 0; }
+.ch-hf.is-desk:is([data-ch='your-week'], [data-ch-wait='your-week']) .dfile { max-width: var(--ch-measure-page); margin: 0 auto; padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom); }
 /* The board's own head rows (coachhelm.css, .ch-hl[data-canopy] > .ch-hl-h), so the line sits as close under the title here. */
-.ch-hf.is-desk[data-ch='your-week'] .ch-hl-h { row-gap: 4px; margin-bottom: var(--ch-gap-section); }
+.ch-hf.is-desk:is([data-ch='your-week'], [data-ch-wait='your-week']) .ch-hl-h { row-gap: 4px; margin-bottom: var(--ch-gap-section); }
 .ch-hf.is-phone .dhead.is-week { margin-top: 20px; display: block; }
 .ch-hf.is-phone .dhead.is-week p { margin-top: 4px; }
 .ch-hf .feat { color: var(--ch-hf-a-feat-1); }
@@ -259,10 +259,12 @@
 .ch-hf .cx__chg { display: inline-flex; align-items: center; min-height: 36px; padding: 0 4px; border: 0; background: none; font: var(--ch-type-13-strong);  color: var(--ch-hf-a-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ch-hf-a-accent); cursor: pointer; flex-shrink: 0; }
 .ch-hf .sk { display: flex; flex-direction: column; gap: 8px; padding: 4px 20px 20px; }
 /* Static blocks that wait the busy delay, as .ch-skel does (MOTION-AND-VISUAL 3.9; shell.css ch-busy-wait). */
-.ch-hf .sk i { position: relative; overflow: hidden; display: block; height: calc(12px * var(--ch-type-k, 1)); border-radius: var(--ch-radius-tail); background: var(--ch-hf-a-skel); animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards; }
-.ch-hf .sk i.t { height: calc(22px * var(--ch-type-k, 1)); width: 70%; }
+.ch-hf .sk i { position: relative; overflow: hidden; display: block; height: calc(12 * var(--ch-type-k, 1px)); border-radius: var(--ch-radius-tail); background: var(--ch-hf-a-skel); animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards; }
+.ch-hf .sk i.t { height: calc(22 * var(--ch-type-k, 1px)); width: 70%; }
 .ch-hf .feat .sk { padding: 0; }
 .ch-hf .feat .sk i { background: color-mix(in srgb, var(--ch-feature-ink) 10%, transparent); }
+/* The week's skeleton after the route's own in the same place (YourWeekSkeleton chained): its lines are up already. */
+.ch-hf[data-skel='chained'] .sk i { animation: none; }
 .ch-hf .empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 24px 24px; text-align: center; }
 .ch-hf .card__h + .empty { padding-top: 6px; }
 .ch-hf .empty__ic { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 4px; border-radius: 50%; background: color-mix(in srgb, var(--ch-hf-a-accent) 11%, transparent); color: var(--ch-hf-a-accent); }

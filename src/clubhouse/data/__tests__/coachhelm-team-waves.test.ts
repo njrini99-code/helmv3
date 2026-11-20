@@ -18,6 +18,10 @@ vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: 
 const standing = vi.hoisted(() => ({ load: vi.fn() }));
 vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayersStandingMap: standing.load }));
 // The themes are a part the board draws later, never one it waits for: nothing in these tests is about them.
+// The brief (flag `coachhelm_monday_brief_v1`) is off unless a test turns it on; its loader is a read of its own here.
+const brief = vi.hoisted(() => ({ on: false, load: vi.fn() }));
+vi.mock('@/lib/coachhelm/v3/monday-brief/flag', () => ({ MONDAY_BRIEF_FLAG: 'coachhelm_monday_brief_v1', isMondayBriefEnabled: () => brief.on }));
+vi.mock('../coachhelm-coach-brief', () => ({ loadCoachBrief: brief.load }));
 vi.mock('../coachhelm-dive', async (original) => ({ ...(await original<typeof import('../coachhelm-dive')>()), readThemes: vi.fn(async () => null) }));
 
 import { getTopInsightsForPlayers } from '@/app/golf/actions/insight-delivery';
@@ -184,5 +188,37 @@ describe('F-0013 the coach board loader reads in few, wide rounds', () => {
     const { result } = await waves.run(loadCoachTeamBoard({ coachId: 'c1', teamId: 't1', now: NOW }));
     expect(await result.course.against).toHaveLength(6);
     expect(result.team.name).toBe('Test Copy');
+  });
+
+  it('with the brief on, the brief starts with the reads that need only the ids, behind the gate, and an off gate never starts it', async () => {
+    brief.on = true;
+    try {
+      const waves = readWaves();
+      arrange(waves);
+      brief.load.mockImplementation(async () => {
+        await waves.gate('brief');
+        return { status: 'failed' };
+      });
+      const { result, waves: depth } = await waves.run(loadCoachTeamBoard({ coachId: 'c1', teamId: 't1', now: NOW }));
+      expect(depth[0]).toEqual(['gate']);
+      // It was read after the board's reads; it now lands with the board instead of about 1.4 s after it (CoachHelm one calm load).
+      expect(at(depth, 'brief')).toBe(at(depth, 'golf_team_members') + 1);
+      expect(brief.load).toHaveBeenCalledTimes(1);
+      expect(await result.brief).toEqual({ status: 'failed' });
+
+      brief.load.mockClear();
+      const off = readWaves();
+      arrange(off);
+      vi.mocked(isCoachHelmEnabledForCoach).mockImplementation(async () => {
+        await off.gate('gate');
+        return { ...on, effectivelyEnabled: false, disabledBy: 'user', disabledReason: 'Off for this coach' };
+      });
+      const { waves: offDepth } = await off.run(loadCoachTeamBoard({ coachId: 'c1', teamId: 't1', now: NOW }));
+      expect(offDepth).toEqual([['gate']]);
+      expect(brief.load).not.toHaveBeenCalled();
+    } finally {
+      brief.on = false;
+      brief.load.mockReset();
+    }
   });
 });
