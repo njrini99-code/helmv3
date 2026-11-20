@@ -108,6 +108,9 @@ export function PhoneThread({
   const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing, paused: focusing });
   const reducedMotion = useChReducedMotion();
   useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
+  // The first message as it was handed over: the parent clears its copy below, and the composer, which renders with the
+  // screen's content a moment after the screen itself (POP-02), still takes it.
+  const [first] = useState(firstMessage);
   useEffect(() => {
     if (firstMessage) onFirstSent();
     // The composer has taken the first message; nothing else to hand over.
@@ -197,9 +200,9 @@ export function PhoneThread({
         onEditDone={() => setEditing(null)}
         phone
         unavailable={api.msgsError}
-        initialDraft={firstMessage?.text}
-        initialFiles={firstMessage?.files}
-        autoSend={!!firstMessage}
+        initialDraft={first?.text}
+        initialFiles={first?.files}
+        autoSend={!!first}
         replyToId={replyToId}
         onClearReply={() => setReplyToId(null)}
         onSendingChange={(sending) => { replySendingRef.current = sending; setReplySending(sending); }}
