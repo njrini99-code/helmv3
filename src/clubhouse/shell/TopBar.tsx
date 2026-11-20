@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRef } from 'react';
 import { ChevronRight, Settings } from 'lucide-react';
 import { Icon } from '../ui/Icon';
-import { phoneRootName, routeLabel, type ChNavItem, type ChPhonePushedTop } from './nav';
+import { crumbHref, phoneRootName, routeLabel, type ChNavItem, type ChPhonePushedTop } from './nav';
 import { Bell } from './Bell';
 import { useCrumbTrail } from './crumbs';
 import { PushedTopStandIn, usePhoneChromeState, DeskSlot } from './phone-chrome';
@@ -78,12 +78,24 @@ export function TopBar({
       inert={immersive || undefined}
     >
       <nav className="ch-topbar__crumbs" aria-label="Breadcrumb">
-        {crumbs.map((c, i) => (
-          <span key={c} className="ch-topbar__crumb">
-            {i > 0 && <Icon icon={ChevronRight} size={13} />}
-            {i === crumbs.length - 1 ? <b aria-current="page">{c}</b> : c}
-          </span>
-        ))}
+        {crumbs.map((c, i) => {
+          // S4: a crumb that names one of the role's pages links to it (nav.ts crumbHref); the open page is the current one.
+          const href = i === crumbs.length - 1 ? null : crumbHref(c, role, pathname);
+          return (
+            <span key={c} className="ch-topbar__crumb">
+              {i > 0 && <Icon icon={ChevronRight} size={13} />}
+              {i === crumbs.length - 1 ? (
+                <b aria-current="page">{c}</b>
+              ) : href ? (
+                <Link href={href} className="ch-topbar__crumblink">
+                  {c}
+                </Link>
+              ) : (
+                c
+              )}
+            </span>
+          );
+        })}
       </nav>
       <DeskSlot />
       {/* The phone's tab-root title. Only one of it and the breadcrumbs is displayed at a width. A root with a name of

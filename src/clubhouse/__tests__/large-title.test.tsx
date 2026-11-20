@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { renderHook } from '@testing-library/react';
 import { useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CH_BAR_TITLE_RANGE, CH_LARGE_TITLES, barTitleOnScroll, findLargeTitle, titleOnScroll, usePhoneLargeTitle, watchCanvasScroll, watchLargeTitle } from '../shell/large-title';
+import { CH_BAR_TITLE_RANGE, CH_LARGE_TITLES, barTitleOnScroll, findDeskTitle, findLargeTitle, titleOnScroll, usePhoneLargeTitle, watchCanvasScroll, watchLargeTitle } from '../shell/large-title';
 
 /**
  * Phone large titles (owner 2026-10-08, the cardless phone pass): the bar's title is hidden at rest while the page has
@@ -176,6 +176,51 @@ describe('watchCanvasScroll (row 41, desktop)', () => {
     expect(bar.hasAttribute('data-scrolled')).toBe(false);
     canvas.dispatchEvent(new Event('scroll'));
     expect(bar.hasAttribute('data-scrolled')).toBe(false);
+  });
+});
+
+describe('the desk large-title collapse (D16, owner 19 Nov 2026)', () => {
+  const rect = (top: number, bottom: number) => ({ top, bottom, left: 0, right: 0, width: 0, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
+  const desk = (head: string) =>
+    mount(`<main data-canopy=""><header data-canopy-head="tight">${head}</header></main>`, '<nav class="ch-topbar__crumbs"><span class="ch-topbar__crumb"><b>Roster</b></span></nav>');
+
+  it("finds the page's desk title, or a loading skeleton's head in its place, never a hidden or dialog heading", () => {
+    expect(findDeskTitle(desk('<h1>Roster</h1>').canvas)?.textContent).toBe('Roster');
+    document.body.innerHTML = '';
+    const { canvas } = mount('<main aria-busy="true" data-canopy=""><header data-canopy-head="tight"><span></span></header></main>');
+    expect(findDeskTitle(canvas)?.tagName).toBe('HEADER');
+    document.body.innerHTML = '';
+    expect(findDeskTitle(mount('<h1 class="ch-sr-only" data-ch-page-title="">Hidden</h1><dialog open><h1 data-ch-page-title="">Sheet</h1></dialog>').canvas)).toBeNull();
+  });
+
+  it('marks the title shown at rest and under once it passes the bar', () => {
+    const { bar, canvas } = desk('<h1>Roster</h1>');
+    const h1 = canvas.querySelector('h1')!;
+    vi.spyOn(bar, 'getBoundingClientRect').mockReturnValue(rect(0, 56));
+    const at = vi.spyOn(h1, 'getBoundingClientRect').mockReturnValue(rect(80, 116));
+    const stop = watchCanvasScroll(bar, canvas);
+    expect(bar.getAttribute('data-desk-title')).toBe('shown');
+    at.mockReturnValue(rect(10, 46));
+    Object.defineProperty(canvas, 'scrollTop', { value: 70, configurable: true });
+    canvas.dispatchEvent(new Event('scroll'));
+    expect(bar.getAttribute('data-desk-title')).toBe('under');
+    expect(bar.hasAttribute('data-desk-title-first')).toBe(false);
+    stop();
+    expect(bar.hasAttribute('data-desk-title')).toBe(false);
+  });
+
+  it('leaves the breadcrumb whole on a page with no desk title', () => {
+    const { bar, canvas } = mount('<main><h2>Messages</h2></main>');
+    const stop = watchCanvasScroll(bar, canvas);
+    expect(bar.hasAttribute('data-desk-title')).toBe(false);
+    stop();
+  });
+
+  it('hides the last crumb and its chevron while the title is in view, on tokens, with no move under Reduce Motion', () => {
+    const shell = readFileSync(join(process.cwd(), 'src/clubhouse/styles/shell.css'), 'utf8');
+    expect(shell).toMatch(/\.ch-topbar\[data-desk-title='shown'\] \.ch-topbar__crumb:last-child \{[^}]*opacity: 0;/);
+    expect(shell).toMatch(/\.ch-topbar__crumb:last-child \{[^}]*transition: opacity var\(--ch-dur-quick\) var\(--ch-ease-ios\), transform var\(--ch-dur-quick\) var\(--ch-ease-ios\);/);
+    expect(shell).toMatch(/\.ch-topbar\[data-desk-title-first\] \.ch-topbar__crumb:last-child \{\s*transition: none;/);
   });
 });
 

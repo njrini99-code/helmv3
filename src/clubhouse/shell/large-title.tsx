@@ -138,25 +138,95 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
 }
 
 /**
+ * The desk page title (D16, owner 19 Nov 2026): the same elements the one desk title rule styles (styles/shell.css, "The
+ * page head"), and a loading skeleton's head in their place, so the crumb is already hidden while a page loads and
+ * nothing changes in the bar as it lands. A visually hidden heading or a dialog's title is not the page's.
+ */
+export const CH_DESK_TITLES = [
+  'main[data-canopy] [data-canopy-head] h1',
+  "main[data-ch-crh='on'].ch-rsd .ch-rs-head h1",
+  'main h1[data-ch-large-title]',
+  'main [data-ch-page-title]',
+  "main[aria-busy='true'] [data-canopy-head]",
+] as const;
+const DESK_SELECTOR = CH_DESK_TITLES.join(', ');
+const DESK_EXCLUDED = '.ch-sr-only, dialog, .ch-topbar';
+
+/** The page's desk title inside `root`, or null when the page has none (its bar keeps its whole breadcrumb). */
+export function findDeskTitle(root: ParentNode): HTMLElement | null {
+  for (const el of Array.from(root.querySelectorAll<HTMLElement>(DESK_SELECTOR))) {
+    if (el.closest(DESK_EXCLUDED)) continue;
+    return el;
+  }
+  return null;
+}
+
+/** Whether the desk title has gone under the bar: its last line has passed the bar's bottom edge. */
+export function deskTitleUnder(title: DOMRect, bar: DOMRect): boolean {
+  return title.bottom <= bar.bottom;
+}
+
+/**
  * Row 41: the desktop bar's scroll edge. The canvas is the desktop scroller (Lenis eases its own scrollTop, so its
  * scroll events still fire), so the canvas's scroll, not the window's, marks the bar `data-scrolled` once content has
- * gone under it. One passive listener, read once a frame. Returns the teardown, which leaves the bar as it found it.
+ * gone under it. One passive listener, read once a frame.
+ *
+ * The large-title collapse (D16, owner 19 Nov 2026; Apple's large title, Linear's toolbar title): on a page with a desk
+ * title the bar's last crumb (the page's own name) is hidden while the title is in view (`data-desk-title="shown"`) and
+ * comes in once the title has gone under the bar (`"under"`), so the page names itself once. A page with no desk title
+ * leaves the attribute off and keeps its whole breadcrumb. A MutationObserver finds the title again as pages and their
+ * skeletons swap; the first state on each page is set with no transition (`data-desk-title-first`, dropped a frame later,
+ * as NavPlate's plate), so Back with a restored scroll never fades the crumb in. Returns the teardown, which leaves the
+ * bar as it found it.
  */
 export function watchCanvasScroll(bar: HTMLElement, canvas: HTMLElement): () => void {
   let frame = 0;
+  let settle = 0;
+  let title: HTMLElement | null = null;
+  const titleNow = (first: boolean) => {
+    const state = title ? (deskTitleUnder(title.getBoundingClientRect(), bar.getBoundingClientRect()) ? 'under' : 'shown') : null;
+    if (bar.getAttribute('data-desk-title') === state) return;
+    if (first) {
+      bar.setAttribute('data-desk-title-first', '');
+      if (settle) cancelAnimationFrame(settle);
+      settle = requestAnimationFrame(() => {
+        settle = requestAnimationFrame(() => {
+          settle = 0;
+          bar.removeAttribute('data-desk-title-first');
+        });
+      });
+    }
+    if (state) bar.setAttribute('data-desk-title', state);
+    else bar.removeAttribute('data-desk-title');
+  };
   const edgeNow = () => {
     frame = 0;
     bar.toggleAttribute('data-scrolled', canvas.scrollTop > 0);
+    titleNow(false);
   };
   const onScroll = () => {
     if (!frame) frame = requestAnimationFrame(edgeNow);
   };
+  const watch = () => {
+    const next = findDeskTitle(canvas);
+    if (next === title) return;
+    title = next;
+    titleNow(true);
+  };
+  // In the mutation's own microtask, before the frame paints, so a page's title and the bar change together.
+  const mo = new MutationObserver(watch);
+  mo.observe(canvas, { childList: true, subtree: true });
   canvas.addEventListener('scroll', onScroll, { passive: true });
+  watch();
   edgeNow();
   return () => {
+    mo.disconnect();
     canvas.removeEventListener('scroll', onScroll);
     if (frame) cancelAnimationFrame(frame);
+    if (settle) cancelAnimationFrame(settle);
     bar.removeAttribute('data-scrolled');
+    bar.removeAttribute('data-desk-title');
+    bar.removeAttribute('data-desk-title-first');
   };
 }
 

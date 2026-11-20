@@ -411,6 +411,20 @@
   font-weight: 500;
   color: var(--ch-green-700);
 }
+/* A crumb that names a page is a link to it (S4, owner 19 Nov 2026), in the crumbs' own ink: the primary ink and an
+   underline on a pointer's hover, the shared focus ring from the keyboard. */
+.ch-topbar__crumblink {
+  border-radius: var(--ch-radius-sm);
+  color: inherit;
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .ch-topbar__crumblink:hover {
+    color: var(--ch-text-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
 .ch-topbar__team {
   display: none;
 }
@@ -2321,6 +2335,21 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   .ch-topbar {
     padding-inline: calc(max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) + var(--ch-page-gutter))
       max(var(--ch-page-gutter), calc(100% - max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) - var(--ch-measure-wide) + var(--ch-page-gutter)));
+  }  /* The large-title collapse (D16, owner 19 Nov 2026; Apple's large title, Linear's toolbar title). While the page's
+     own title is in view the bar's last crumb, the page's name, is hidden with its chevron, so the page names itself
+     once; as the title goes under the bar the crumb comes in, a quick fade and a 4px rise on the iOS curve (Reduce
+     Motion narrows it to the 180ms fade, base.css; Animations off swaps at once). Set by shell/large-title.tsx
+     watchCanvasScroll; a page with no desk title keeps its whole breadcrumb. The first state on a page is set with no
+     transition, so a page that opens scrolled (Back) shows its crumb at once. */
+  .ch-topbar__crumb:last-child {
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios), transform var(--ch-dur-quick) var(--ch-ease-ios);
+  }
+  .ch-topbar[data-desk-title='shown'] .ch-topbar__crumb:last-child {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  .ch-topbar[data-desk-title-first] .ch-topbar__crumb:last-child {
+    transition: none;
   }
 }
 
