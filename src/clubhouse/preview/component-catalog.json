@@ -12382,7 +12382,8 @@
       "group": "shell",
       "exports": [
         "CH_VT_HOLD_MS",
-        "RouteFrame"
+        "RouteFrame",
+        "STALL_MS"
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-ask.css",
@@ -12871,6 +12872,20 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/Abbr.tsx",
+      "group": "ui",
+      "exports": [
+        "Abbr"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -15096,6 +15111,7 @@
     {
       "file": "src/clubhouse/styles/base.css",
       "classes": [
+        "ch-abbr",
         "ch-au-input",
         "ch-cl-card",
         "ch-cl-today__row",
@@ -15254,6 +15270,7 @@
         "ch-calm-head",
         "ch-calm-hint",
         "ch-calm-hint__x",
+        "ch-calm-mnav",
         "ch-calm-month",
         "ch-calm-month__c",
         "ch-calm-month__d",
@@ -18561,6 +18578,8 @@
         "ch-btn__spin",
         "ch-check",
         "ch-check__box",
+        "ch-check__draw",
+        "ch-check__ink",
         "ch-check__input",
         "ch-df",
         "ch-df--row",
@@ -23583,6 +23602,7 @@
         "ch-bst-fan__cards",
         "ch-bst-fan__item",
         "ch-bst-feed",
+        "ch-bst-markread",
         "ch-bst-pile",
         "ch-bst-pile--skel",
         "ch-bst-pill",
@@ -23741,6 +23761,7 @@
         "ch-stale",
         "ch-stale__go",
         "ch-stale__x",
+        "ch-stall",
         "ch-stickybar",
         "ch-strip",
         "ch-strip-catch",
@@ -26280,7 +26301,7 @@
         },
         {
           "name": "--ch-on-green-ink-soft",
-          "value": "rgb(240 233 214 / 0.86)",
+          "value": "#f0e9d6",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26310,7 +26331,12 @@
         },
         {
           "name": "--ch-on-green-ink-muted",
-          "value": "rgb(222 214 190 / 0.8)",
+          "value": "#ded6be",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-on-green-ink-soft-ic",
+          "value": "#f0e9d6",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -30351,6 +30377,16 @@
         {
           "name": "--ch-hm-ring-over",
           "value": "var(--ch-border-strong)",
+          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-on-green-ink-soft",
+          "value": "var(--ch-on-green-ink)",
+          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-on-green-ink-muted",
+          "value": "var(--ch-on-green-ink-soft-ic)",
           "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
         },
         {
