@@ -6118,3 +6118,32 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     width: 100%;
   }
 }
+
+/* Law 1 on the phone (Nick, 20 Nov 2026, on the phone's Home: "continuously disorganized and no contrast screens"): every
+   section of Home is a card on the page, 24 apart (law 6), its title inside it. This replaces the flush "no white cards"
+   sections of lay-01 (15 Nov) on the phone only; the green Up next and the hero's greeting stay on the page. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body {
+    gap: 24px;
+  }
+  :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec {
+    padding: 16px;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-card-shadow);
+  }
+  /* Inside a card a section's head needs no rule of its own: the card is the group. */
+  :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec > .ch-hm-sec__h {
+    border-bottom: 0;
+    box-shadow: none;
+  }
+  /* A section's context line sits under its title, left-aligned, never squeezed beside it ("Team / scoring"). */
+  :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec > .ch-hm-sec__h:has(> .ch-hm-meta) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec > .ch-hm-sec__h > .ch-hm-meta {
+    text-align: left;
+  }
+}
