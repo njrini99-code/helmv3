@@ -14,18 +14,22 @@ import { Icon } from '../../../ui/Icon';
 import { LargeTitle } from '../../../ui/LargeTitle';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { BackLink } from '../../../ui/Section';
-import { EmptyState } from '../../../ui/States';
+import { EmptyState, SkelLine, SkelRows, Skeleton } from '../../../ui/States';
 import { Surface } from '../../../ui/Surface';
 
 const LINE = 'What the team shares, said once, and each player’s own read under it.';
 
-/** The page the team reads are drawn in: a pushed screen on the phone (back to CoachHelm), a back link on the desk. */
-function Frame({ children }: { children: ReactNode }) {
+/**
+ * The page the team reads are drawn in: a pushed screen on the phone (back to CoachHelm), a back link on the desk. `wait`: the same
+ * frame in waiting (TeamReadsSkeleton), its head whole (the title and the line are known before the read is).
+ */
+function Frame({ children, wait }: { children: ReactNode; wait?: { chained: boolean } }) {
   const phone = useChPhone();
   const router = useRouter();
+  const mark = wait ? ({ 'aria-busy': true, 'aria-label': 'Loading Team reads', 'data-skel': wait.chained ? 'chained' : undefined, 'data-ch-arrive': 'crossfade' } as const) : ({ 'aria-labelledby': 'ch-htrd-title' } as const);
   return (
-    <main className={'ch-hl ch-htr ch-htrd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-htrd-title" data-canopy={phone ? undefined : ''} data-ch="team-reads">
-      {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(COACH_BOARD_HREF) }} title="Team reads" titleId="ch-htrd-title" />}
+    <main className={'ch-hl ch-htr ch-htrd' + (phone ? ' is-phone' : '')} {...mark} data-canopy={phone ? undefined : ''} data-ch={wait ? undefined : 'team-reads'}>
+      {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(COACH_BOARD_HREF) }} title="Team reads" titleId={wait ? undefined : 'ch-htrd-title'} />}
       <header className="ch-hl-h ch-htr-h" data-canopy-head={phone ? 'tight' : ''}>
         {!phone && <BackLink href={COACH_BOARD_HREF}>CoachHelm</BackLink>}
         {phone ? (
@@ -33,7 +37,7 @@ function Frame({ children }: { children: ReactNode }) {
             Team reads
           </LargeTitle>
         ) : (
-          <h1 id="ch-htrd-title" className="ch-hl-h__t">
+          <h1 id={wait ? undefined : 'ch-htrd-title'} className="ch-hl-h__t">
             Team reads
           </h1>
         )}
@@ -41,6 +45,29 @@ function Frame({ children }: { children: ReactNode }) {
       </header>
       {children}
     </main>
+  );
+}
+
+/**
+ * Team reads in waiting (`?view=team-reads`): the page's own frame and head, then "The team" and two groups of rows on the page's
+ * own Surfaces, so the page keeps its shape when the reads land. It stood in for the retired board's skeleton (players beside a
+ * focus card), a different page. `chained`: the route's Suspense draws it after `loading.tsx` in the same place.
+ */
+export function TeamReadsSkeleton({ chained = false }: { chained?: boolean }) {
+  return (
+    <Frame wait={{ chained }}>
+      <div className="ch-htrd-body" aria-hidden="true">
+        <Surface title="The team" subtitle={<Skeleton width={150} height={12} />}>
+          <SkelLine line={22} bar={13} width="86%" />
+          <SkelLine line={22} bar={13} width="58%" />
+        </Surface>
+        {[4, 3].map((rows, i) => (
+          <Surface key={i} title={<Skeleton width={110} height={14} />} subtitle={<Skeleton width={170} height={12} />}>
+            <SkelRows rows={rows} />
+          </Surface>
+        ))}
+      </div>
+    </Frame>
   );
 }
 

@@ -10,7 +10,7 @@ import { COURSE_TAB } from '@/lib/coachhelm/v3/team-board/flag';
 import { loadCoachPlayerFile, loadFileRoster, loadPlayerYourWeek } from '../data/coachhelm-file';
 import { loadCoachAnalystRead, loadCoachTeamReads, loadPlayerOwnAnalystRead, readsOnForTeam } from '../data/coachhelm-analyst-read';
 import { TEAM_READS_HREF, TEAM_READS_VIEW } from '../data/coachhelm-team-reads-shape';
-import { TeamReads } from '../screens/coachhelm/views/TeamReads';
+import { TeamReads, TeamReadsSkeleton } from '../screens/coachhelm/views/TeamReads';
 import { COACH_BOARD_HREF as COACHHELM_BOARD_PATH } from '../data/coachhelm-track-record-shape';
 import { FileSkeleton } from '../screens/coachhelm/file/FileSkeleton';
 import { PlayerFile } from '../screens/coachhelm/file/PlayerFile';
@@ -21,6 +21,7 @@ import { ReadPage, ReadSkeleton } from '../screens/coachhelm/read/ReadPage';
 import { emptyTeamBoard, loadCoachTeamBoard } from '../data/coachhelm-team';
 import { TeamBoard } from '../screens/coachhelm/team/TeamBoard';
 import { TeamBoardSkeleton } from '../screens/coachhelm/team/TeamBoardSkeleton';
+import { YourWeekSkeleton } from '../screens/coachhelm/file/YourWeekSkeleton';
 import { loadCoachHelmGate, loadPlayerHelmGate } from '../data/coachhelm';
 import type { ChCoachHelmData } from '../data/coachhelm-shape';
 import { loadAskPlayer, loadAskCoachHelm } from '../data/coachhelm-chat';
@@ -233,7 +234,7 @@ function coachPlayerSkeleton(view: CoachPlayerViewName, first: string | null, ch
 function viewSkeleton(view: PlayerHelmView): ReactNode {
   if (view === 'standing') return <StandingSkeleton chained />;
   if (view === 'deep-dive') return <DiveSkeleton chained />;
-  return <CoachHelmSkeleton view="player" chained />;
+  return <YourWeekSkeleton chained />;
 }
 
 /**
@@ -271,7 +272,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
     if (view === TEAM_READS_VIEW) {
       if (!readsOnForTeam(team.teamId)) redirect(COACHHELM_BOARD_PATH);
       return (
-        <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
+        <Suspense fallback={<TeamReadsSkeleton chained />}>
           <CoachTeamReadsView teamId={team.teamId} />
         </Suspense>
       );
@@ -314,7 +315,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
     const ask = view === 'ask';
     return (
       <CoachHelmSwitchFrame who="coach" active={ask ? 'ask' : 'board'}>
-        <Suspense fallback={ask ? <AskSkeleton chained thread={typeof c === 'string' && c.length > 0} /> : <TeamBoardSkeleton />}>
+        <Suspense fallback={ask ? <AskSkeleton chained thread={typeof c === 'string' && c.length > 0} /> : <TeamBoardSkeleton chained />}>
           <CoachHelmView coachId={team.coachId} teamId={team.teamId} ask={ask} conversationId={c} initialPlayer={player} initialInsight={open === 'read' && typeof insight === 'string' ? insight : undefined} />
         </Suspense>
       </CoachHelmSwitchFrame>
