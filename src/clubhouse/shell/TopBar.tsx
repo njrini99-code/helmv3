@@ -81,7 +81,7 @@ export function TopBar({
       <nav className="ch-topbar__crumbs" aria-label="Breadcrumb">
         {crumbs.map((c, i) => {
           // S4: a crumb that names one of the role's pages links to it (nav.ts crumbHref); the open page is the current one.
-          const href = i === crumbs.length - 1 ? null : crumbHref(c, role, pathname);
+          const href = i === crumbs.length - 1 ? null : crumbHref(c, role ?? 'coach', pathname);
           return (
             <span key={c} className="ch-topbar__crumb">
               {i > 0 && <Icon icon={ChevronRight} size={13} />}
