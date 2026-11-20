@@ -151,7 +151,7 @@ function showTracking(over: Partial<RoundTrackingProps> = {}, host: (node: React
   render(wrap(host(<RoundTracking {...props} />)));
   return { props, user: userEvent.setup() };
 }
-const next = () => screen.getByRole('button', { name: /Record next shot|Complete hole/ });
+const next = () => screen.getByRole('button', { name: /^Next shot$|^Hole out, score/ });
 const pickResult = (name: string | RegExp) => screen.getByRole('radio', { name });
 
 /** A hole holed out on its second shot, whose save fails: the shot review shows with Try again. */

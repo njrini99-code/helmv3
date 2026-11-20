@@ -50,7 +50,7 @@ function setup(over: Partial<RoundTrackingProps> = {}) {
 }
 const row = () => screen.getByRole('button', { name: /^Break and slope/ });
 const quick = (n: number) => within(screen.getByRole('group', { name: 'Quick distances' })).getByRole('button', { name: String(n) });
-const next = () => screen.getByRole('button', { name: /Record next shot|Complete hole/ });
+const next = () => screen.getByRole('button', { name: /^Next shot$|^Hole out, score/ });
 
 describe('a putt asks its result first, then the leave, then the optional read', () => {
   it('the card’s order: Putt result, Leave distance, Break and slope', () => {
@@ -67,7 +67,7 @@ describe('a putt asks its result first, then the leave, then the optional read',
   it('the four results stand in one row', () => {
     setup();
     const group = screen.getByRole('radiogroup', { name: 'Putt result' });
-    expect(within(group).getAllByRole('radio').map((r) => r.childNodes[0]!.textContent)).toEqual(['Holed', 'Green', 'Rough', 'Sand']);
+    expect(within(group).getAllByRole('radio').map((r) => r.childNodes[0]!.textContent)).toEqual(['Holed', 'Missed', 'Rough', 'Sand']);
     expect(group.style.gridTemplateColumns).toBe('repeat(4, minmax(0, 1fr))');
   });
 
@@ -123,7 +123,7 @@ describe('a putt asks its result first, then the leave, then the optional read',
     );
     const user = userEvent.setup();
     await user.click(row());
-    await user.click(screen.getByRole('radio', { name: 'Green' }));
+    await user.click(screen.getByRole('radio', { name: 'Missed' }));
     await user.click(quick(2));
     await user.click(next());
     // The second putt: still open, and empty (the read belongs to each putt).
@@ -142,7 +142,7 @@ describe('a putt asks its result first, then the leave, then the optional read',
     await user.click(row());
     await user.click(screen.getByRole('radio', { name: 'Mult.' }));
     await user.click(screen.getByRole('radio', { name: 'Severe' }));
-    await user.click(screen.getByRole('radio', { name: 'Green' }));
+    await user.click(screen.getByRole('radio', { name: 'Missed' }));
     await user.click(quick(3));
     await user.click(next());
     await user.click(screen.getByRole('radio', { name: 'Straight' }));

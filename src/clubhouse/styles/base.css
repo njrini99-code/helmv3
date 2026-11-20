@@ -127,6 +127,12 @@
   --tw-ring-offset-shadow: 0 0 #0000;
   --tw-ring-shadow: 0 0 #0000;
 }
+/* Focus on green (premium plan G8): the green-500 ring measured 1.7 to 2.5 on the feature card and the board. Inside a
+   green surface the ring is the champagne one (8.1), set once here instead of per component; [data-on-green] marks
+   any other green plate. */
+.ch-root :where(.ch-surface--feature, .ch-scoreboard, [data-on-green]) {
+  --ch-border-focus: var(--ch-border-focus-on-dark);
+}
 /* Programmatic reading destinations announce their title without drawing a control box. */
 .ch-root h1[tabindex='-1']:focus,
 .ch-root h2[tabindex='-1']:focus,
@@ -161,6 +167,10 @@ svg .ch-num {
   font-weight: 600;
   letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 96;
+}
+/* AX-10: an abbreviation looks like the text around it; the words are for VoiceOver (ui/Abbr.tsx). */
+.ch-abbr {
+  text-decoration: none;
 }
 .ch-sr-only {
   position: absolute;

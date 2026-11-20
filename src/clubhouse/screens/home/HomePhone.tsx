@@ -47,6 +47,7 @@ import { plural } from '../../lib/plural';
 import { ClassHomeLine } from './ClassHomeLine';
 import { NextBeyond } from './NextBeyond';
 import { NewEventLink } from './NewEventLink';
+import { Abbr } from '../../ui/Abbr';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -477,7 +478,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
               </dd>
             </div>
             <div>
-              <dt>GIR</dt>
+              <dt><Abbr k="GIR" /></dt>
               <dd className="ch-num">{round.gir ?? <NoData />}</dd>
             </div>
             <div>
@@ -485,7 +486,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
               <dd className="ch-num">{round.putts ?? <NoData />}</dd>
             </div>
             <div>
-              <dt>SG</dt>
+              <dt><Abbr k="SG" /></dt>
               <dd className={'ch-num' + (round.sg != null ? ` ${changeInk(round.sg)}` : '')}>{round.sg != null ? formatSigned(round.sg) : <NoData />}</dd>
             </div>
           </dl>

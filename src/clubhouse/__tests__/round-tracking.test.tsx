@@ -57,7 +57,7 @@ function setup(over: Partial<RoundTrackingProps> = {}) {
   return { props, user: userEvent.setup() };
 }
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
-const next = () => screen.getByRole('button', { name: /Record next shot|Complete hole/ });
+const next = () => screen.getByRole('button', { name: /^Next shot$|^Hole out, score/ });
 const pick = (name: string | RegExp) => screen.getByRole('radio', { name });
 
 afterEach(() => {
@@ -292,7 +292,7 @@ describe('Round tracking: holing out', () => {
     const onHoleComplete = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
     const { user } = setup({ currentHoleIndex: 2, onHoleComplete });
     await user.click(pick(/^Holed/));
-    expect(next()).toHaveAccessibleName('Complete hole with score 1');
+    expect(next()).toHaveAccessibleName('Hole out, score 1');
     await user.click(next());
     await waitFor(() => expect(code('CH-11402')).toHaveTextContent('Saving hole 3'));
     expect(onHoleComplete).toHaveBeenCalledWith(2, expect.objectContaining({ holeNumber: 3, score: 1 }));
@@ -412,7 +412,7 @@ describe('Round tracking: tap in (CH-11913)', () => {
     cleanup();
     const { user } = setup({ initialShots: onGreen(25), initialShotNumber: 3 });
     expect(tapIn()).not.toBeNull();
-    await user.click(pick('Green'));
+    await user.click(pick('Missed'));
     expect(tapIn()).toBeNull();
   });
 

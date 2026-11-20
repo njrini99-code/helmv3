@@ -74,8 +74,9 @@ describe("the Track's disabled button is readable (A27)", () => {
     expect(track).toMatch(/\.ch-rt-bar__go:disabled \{\s*background: rgb\(244 238 221 \/ 0\.16\);\s*color: var\(--ch-on-green-ink-muted\);/);
     const green = hex(token('ch-green-900', 'light'));
     const fill = over([244, 238, 221], 0.16, green);
-    const ink = /--ch-on-green-ink-muted:\s*rgb\((\d+) (\d+) (\d+) \/ ([\d.]+)\)/.exec(tokens)!;
-    const text = over([Number(ink[1]), Number(ink[2]), Number(ink[3])], Number(ink[4]), fill);
+    // Opaque since OC-3 (premium plan batch 6).
+    const ink = /--ch-on-green-ink-muted:\s*(#[0-9a-f]{6});/.exec(tokens)!;
+    const text = hex(ink[1]!);
     expect(contrast(text, fill)).toBeGreaterThanOrEqual(4.5);
   });
 

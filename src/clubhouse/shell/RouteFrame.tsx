@@ -242,6 +242,7 @@ export function RouteFrame({ routeKey, scrollKey = routeKey, children }: { route
   const page = (
     <div key={routeKey} ref={frame} id="ch-content" tabIndex={-1} className="ch-frame-route">
       <RouteScope value={routeKey}>{children}</RouteScope>
+      <StallLine frame={frame} routeKey={routeKey} />
     </div>
   );
   if (mode === 'off') return page;
@@ -249,5 +250,37 @@ export function RouteFrame({ routeKey, scrollKey = routeKey, children }: { route
     <ViewTransition key={motion.boundary} name="ch-page" enter="ch-page" exit="ch-page" share="ch-page" update="none" default="none">
       {page}
     </ViewTransition>
+  );
+}
+
+/** ST-10: how long a route skeleton may stand before the page says so. */
+export const STALL_MS = 8000;
+
+/**
+ * A stalled load says so (ST-10). When a route's skeleton has stood for 8 seconds, one quiet line under it says the page
+ * is still coming and why it might not be; it goes the moment the page arrives. A status, so VoiceOver reads it once.
+ */
+function StallLine({ frame, routeKey }: { frame: RefObject<HTMLDivElement | null>; routeKey: string }) {
+  const [stalled, setStalled] = useState(false);
+  useEffect(() => {
+    setStalled(false);
+    let since: number | null = null;
+    const tick = window.setInterval(() => {
+      const busy = !!frame.current?.querySelector(ROUTE_SKELETON);
+      if (!busy) {
+        since = null;
+        setStalled(false);
+        return;
+      }
+      since ??= performance.now();
+      if (performance.now() - since >= STALL_MS) setStalled(true);
+    }, 1000);
+    return () => window.clearInterval(tick);
+  }, [frame, routeKey]);
+  if (!stalled) return null;
+  return (
+    <p className="ch-stall" role="status">
+      Still loading. This is taking longer than usual.
+    </p>
   );
 }

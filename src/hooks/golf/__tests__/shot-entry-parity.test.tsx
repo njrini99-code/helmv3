@@ -112,7 +112,7 @@ function mount(holes: RoundHole[], index: number, initialShots: ShotRecord[] = [
 /** A sheet that closes animates out; the entry under it is reachable again once it is gone. */
 const sheetGone = () => waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 const resultGroup = () => screen.getByRole('radiogroup', { name: /^(Shot|Putt) result$/ });
-const nextButton = () => screen.getByRole('button', { name: /^(Record next shot|Complete hole with score \d+)$/ });
+const nextButton = () => screen.getByRole('button', { name: /^(Next shot|Hole out, score \d+)$/ });
 
 async function openEdit(user: UserEvent, shot: number) {
   const log = document.querySelector<HTMLButtonElement>('.ch-rt-log__h')!;
@@ -131,7 +131,12 @@ async function play(user: UserEvent, cap: Captured, steps: Step[]) {
   for (const step of steps) {
     switch (step.do) {
       case 'result':
-        await user.click(within(resultGroup()).getByRole('radio', { name: starts(RESULT_WORD[step.v]) }));
+        {
+          // J-5: a putt that stays on the green reads "Missed".
+          const putting = resultGroup().getAttribute('aria-label') === 'Putt result';
+          const word = putting && step.v === 'green' ? 'Missed' : RESULT_WORD[step.v];
+          await user.click(within(resultGroup()).getByRole('radio', { name: starts(word) }));
+        }
         break;
       case 'club':
         await user.click(

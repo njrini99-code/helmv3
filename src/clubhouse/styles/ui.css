@@ -377,7 +377,8 @@
 .ch-score--bogey {
   color: var(--ch-ink-900);
   border-radius: var(--ch-radius-sm);
-  background: linear-gradient(180deg, #fffefb 0%, #f1eee6 100%);
+  /* Flat card face (premium plan G3d): #fffefb was a banned near-white surface. */
+  background: var(--ch-card-bg);
   box-shadow: var(--ch-score-bogey-shadow);
 }
 .ch-score--double {
@@ -1123,8 +1124,10 @@ button.ch-feat {
    double's solid tile turning ivory. White lit tops drop to a whisper; the focus ring's token turns light green itself. */
 /* B21 (X-6, 4.32.1): at night the primary key is a lighter Augusta face than the cards' green (tokens.css
    --ch-primary-bg), so it stands off them; ivory words read 4.5:1 at rest and on hover. */
+/* Premium plan G9: ink-400 measured 4.26 on the night well (Team settings Save); this mid ivory is 6.7:1 and still
+   reads as resting beside a lit key. */
 html[data-fw-theme='dark'] .ch-btn--primary:disabled:not([aria-busy='true']) {
-  color: var(--ch-ink-400);
+  color: var(--ch-key-disabled-ink);
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.4);
 }
 :where(html[data-fw-theme='dark']) .ch-btn--ink {

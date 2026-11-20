@@ -85,6 +85,13 @@
   --ch-stage-gain: #8fd3aa;
   --ch-stage-red: #ff8a7a;
   --ch-stage-ink: #f4eedd;
+  /* The tooltip ink plate (premium plan G7, 4.32.3): an inverted plate, dark by day and light at night, so a tip never
+     puts ink that flips on a surface that does not (four night tips measured 1.0 to 1.9). */
+  --ch-tip-bg: #1f2420;
+  --ch-tip-ink: #f4eedd;
+  --ch-tip-ink-soft: rgb(244 238 221 / 0.78);
+  /* Ink on a champagne fill, pinned: champagne-500 is light in both themes. */
+  --ch-on-champagne-ink: #141412;
   --ch-stage-ink-soft: rgb(244 238 221 / 0.62);
   --ch-stage-rule: rgb(244 238 221 / 0.14);
   --ch-stage-rule-soft: rgb(244 238 221 / 0.1); /* row 36: a faint light line on the dark green */
@@ -243,8 +250,7 @@
   --ch-seam-y: inset 1px 0 0 var(--ch-seam-ink), inset 2px 0 0 var(--ch-seam-light);
   /* The scoreboard (owner, 2026-10-06): a scorecard set as a tournament board, deep green with ivory numerals, so
      scores never sit ivory on ivory. A recessed green panel with a lit lower lip. */
-  --ch-board-bg: radial-gradient(120% 140% at 85% -20%, rgb(123 199 154 / 0.14), transparent 55%),
-    linear-gradient(180deg, #0e3d28 0%, var(--ch-field-green) 100%);
+  --ch-board-bg: linear-gradient(180deg, #0e3d28 0%, var(--ch-field-green) 100%);
   --ch-board-shadow: inset 0 2px 4px rgb(0 0 0 / 0.35), inset 0 0 0 1px rgb(0 0 0 / 0.25), 0 1px 0 rgb(255 255 255 / 0.8);
   /* Type on green (hero band, scoreboard): a warm ivory, never white, set with a soft engraved shadow so it sits in
      the surface with depth (owner, 2026-10-06: "more ivory and text depth in the green"). */
@@ -260,7 +266,9 @@
   --ch-plan-group-d-night: #9db0bf;
   --ch-plan-group-e-night: #b8b3a8;
   --ch-plan-group-f-night: #d39a83;
-  --ch-on-green-ink-soft: rgb(240 233 214 / 0.86);
+  /* Opaque (OC-3, premium plan G10): the 0.86 alpha fell to 4.46 on the raised green's top stop (#1e6a45); opaque is
+     5.4 there and 9 to 10.5 on the plates. Not lighter: the same ivory, without the green showing through. */
+  --ch-on-green-ink-soft: #f0e9d6;
   /* Meta on a green plate (the Calendar inspector's Next row, F-0039). The plate is green in both themes: no night value. */
   --ch-on-green-ink-meta: #d3e3d7;
   /* P-4: a clash line on the dark ink pill (the drag time pill): champagne on ink by day, a deep amber on ivory at night. */
@@ -271,7 +279,10 @@
   --ch-ev-sheen: inset 0 1px 0 rgb(255 255 255 / 0.08);
   --ch-ev-class-ring-hover: inset 0 0 0 1px rgb(45 92 119 / 0.28);
   /* 0.8, not 0.72: holds 4.5:1 at the light end of the green gradients too (rendered 4.1:1 before, 2026-10-14). */
-  --ch-on-green-ink-muted: rgb(222 214 190 / 0.8);
+  /* Opaque (OC-3, G10): 3.47 on the top stop at 0.8 alpha; opaque holds 4.5 there and 7.7 to 8.8 on the plates. */
+  --ch-on-green-ink-muted: #ded6be;
+  /* Increase Contrast's muted on green: the opaque soft ivory. */
+  --ch-on-green-ink-soft-ic: #f0e9d6;
   --ch-on-green-text-shadow: 0 1px 0 rgb(2 18 10 / 0.45), 0 2px 10px rgb(2 18 10 / 0.25);
   --ch-on-green-text-shadow-s: 0 1px 0 rgb(2 18 10 / 0.4);
   /* The selected sidebar row: a green key with a lit top and a green-cast lift. */
@@ -955,12 +966,15 @@
   --ch-avatar-neutral-ring: rgb(35 64 47 / 0.18);
 
   /* Depth vocabulary, restored for the October 1 Safari review: lit sheets, shallow content wells and raised controls. */
-  --ch-well-bg: linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%);
+  /* Flat (premium plan G2, G2b; owner decision 3, 19 Nov 2026): DESIGN_LANGUAGE §4 says a well is a flat recess and §10
+     bans a gradient behind text inside a card. The colour is the old gradient's middle stop, so the depth and the
+     stepped-up inks keep their ratios; the inset shadow still makes it a recess. */
+  --ch-well-bg: #ddd8ca;
   --ch-well-shadow: inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16),
     inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.13), 0 1px 0 #fff,
     0 0 0 1px rgb(255 255 255 / 0.35);
   /* The handoff's soft well: a shallow recess under figures and controls. */
-  --ch-well-soft-bg: linear-gradient(180deg, #e2ddd0 0%, #e9e5da 60%, #edeae0 100%);
+  --ch-well-soft-bg: #e9e5da;
   --ch-well-soft-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12), inset 0 3px 8px -3px rgb(28 25 18 / 0.1),
     inset 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 0 rgb(255 255 255 / 0.9);
   /* Solid: nothing raised is a near-white gradient (S1.3). */
@@ -1148,6 +1162,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   /* The sidebar's selected plate at night (overnight polish, 2026-10-15): the day plate's gradient ran from the night
      ivory to the day's, a white bar with dark ink on the dark frame. A raised green plate under ivory ink instead. */
   --ch-nav-well-bg: #24432f;
+  --ch-tip-bg: #ede7d8;
+  --ch-key-disabled-ink: #a39e92;
+  --ch-tip-ink: #141915;
+  --ch-tip-ink-soft: rgb(20 25 21 / 0.74);
   --ch-nav-well-ink: #f3efe6;
   --ch-nav-well-icon: #9fe0b6;
   --ch-on-fill-0: #f7f2e6;
@@ -1184,7 +1202,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-green-700: #84c9a0;
   --ch-green-800: #123d29;
   --ch-green-900: #0a2a1b;
-  --ch-green-fill-500: #2a7d53;
+  /* CON-2 (premium plan G4): #2a7d53 put ivory at 4.10 to 4.40 on every dark selected chip and hover; this is 4.98. */
+  --ch-green-fill-500: #25734d;
   --ch-green-fill-600: #23704a;
   --ch-green-fill-700: #1d613f;
   /* Darker than the page, or the frame reads as raised above the workspace; a hairline marks the join. */
@@ -1253,7 +1272,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ask-card: #191e1a;
   --ch-ask-mine-a: #1f4d35;
   --ch-ask-mine-b: #173d2a;
-  --ch-accent-hover: #2a7d53;
+  --ch-accent-hover: #25734d;
   --ch-accent-press: #1d613f;
   --ch-border-hairline: rgb(237 231 216 / 0.12); /* decision 6, from 0.08 */
   --ch-border-subtle: rgb(237 231 216 / 0.15); /* row 36 (T4): above the 0.12 hairline */
@@ -1364,10 +1383,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-avatar-neutral-bg: #243a2c;
   --ch-avatar-neutral-fg: #cfe3d4;
   --ch-avatar-neutral-ring: rgb(207 227 212 / 0.16);
-  --ch-well-bg: linear-gradient(180deg, #0a0d0b 0%, #0d110e 55%, #101411 100%);
+  --ch-well-bg: #0d110e;
   --ch-well-shadow: inset 0 2px 3px rgb(0 0 0 / 0.5), inset 0 4px 10px -2px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.4),
     0 1px 0 rgb(255 255 255 / 0.05);
-  --ch-well-soft-bg: linear-gradient(180deg, #121613 0%, #141915 60%, #161b17 100%);
+  --ch-well-soft-bg: #141915;
   --ch-well-soft-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4), inset 0 3px 8px -3px rgb(0 0 0 / 0.35), inset 0 0 0 1px rgb(0 0 0 / 0.3),
     0 1px 0 rgb(255 255 255 / 0.04);
   --ch-raised-bg: var(--ch-bg-elevated);
@@ -1579,6 +1598,10 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-hm-ring-under: var(--ch-border-strong);
     --ch-hm-ring-level: var(--ch-border-strong);
     --ch-hm-ring-over: var(--ch-border-strong);
+    /* OC-3: on green, Increase Contrast lifts the soft and muted inks to the full ivory (the plate is green in both
+       themes, so this one remap serves day and night). */
+    --ch-on-green-ink-soft: var(--ch-on-green-ink);
+    --ch-on-green-ink-muted: var(--ch-on-green-ink-soft-ic);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-glass-bg: var(--ch-bg-page);

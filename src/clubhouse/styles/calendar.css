@@ -3083,6 +3083,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   .ch-calm-title__yr {
     margin-right: auto;
   }
+  /* AX-4: the month's step keys, beside the view switch in Month. */
+  .ch-calm-mnav {
+    display: inline-flex;
+    gap: 4px;
+    margin-right: 8px;
+  }
   /* B10.4: Today, when the page is away from it, at the right of the year's line; out of flow, so nothing moves. */
   /* The head opens the sheet with no rule above it, 8px in: the kit's intro does that itself now (ui.css .ch-intro). */
   .ch-calm-head {

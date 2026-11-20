@@ -21,6 +21,12 @@ export const RESULT_LABEL: Record<ShotRecord['result'], string> = {
   penalty: 'Penalty',
 };
 
+/** A result in a putt's own words (J-5): a putt that stays on the green "Missed", not "Green". */
+export function resultWord(result: ShotRecord['result'], isPutt: boolean): string {
+  if (isPutt && result === 'green') return 'Missed';
+  return RESULT_LABEL[result];
+}
+
 export const BREAK_OPTIONS: Array<[NonNullable<ShotRecord['puttBreak']>, string]> = [
   ['left_to_right', 'L → R'],
   ['straight', 'Straight'],
@@ -110,7 +116,7 @@ export function shotTitle(shot: ShotRecord): string {
 
 /** Where a shot finished, in the one form every shot line uses: "fairway · 150 yds left", "holed". */
 export function shotFinish(shot: ShotRecord, pref: DistancePreference): string {
-  return shot.result === 'hole' ? 'holed' : `${RESULT_LABEL[shot.result].toLowerCase()} · ${distanceText(shot.distanceToHoleAfter, shot.distanceUnitAfter, pref)} left`;
+  return shot.result === 'hole' ? 'holed' : `${resultWord(shot.result, shot.shotType === 'putting').toLowerCase()} · ${distanceText(shot.distanceToHoleAfter, shot.distanceUnitAfter, pref)} left`;
 }
 
 /** A recorded shot's line: "395 yds → fairway · 150 yds left", "12 ft → holed · L → R, uphill", "+1 stroke". */

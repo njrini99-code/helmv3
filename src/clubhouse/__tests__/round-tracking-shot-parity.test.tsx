@@ -78,7 +78,7 @@ describe('P011 distance boxes hand the engine a number', () => {
     await user.type(screen.getByLabelText('Proximity to hole (ft)'), '12ft');
     expect(document.querySelector('[data-ch-code="CH-11104"]')).toBeInTheDocument();
     expect(document.querySelector('[data-ch-code="CH-11101"]')).toHaveTextContent('Enter a valid distance');
-    expect(screen.getByRole('button', { name: 'Record next shot' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Next shot' })).toBeDisabled();
   });
 
   it('CH-11105 the change sheet refuses a distance that is not a number', async () => {

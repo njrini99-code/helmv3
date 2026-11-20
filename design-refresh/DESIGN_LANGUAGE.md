@@ -125,7 +125,7 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
-| `--ch-well-bg` | `linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%)` | `linear-gradient(180deg, #0a0d0b 0%, #0d110e 55%, #101411 100%)` | The toggle well (recessed linen) |
+| `--ch-well-bg` | `#ddd8ca` | `#0d110e` | The toggle well (recessed linen) |
 | `--ch-well-shadow` | `inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16), inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.13), 0 1px 0 #fff, 0 0 0 1px rgb(255 255 255 / 0.35)` | `inset 0 2px 3px rgb(0 0 0 / 0.5), inset 0 4px 10px -2px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.4), 0 1px 0 rgb(255 255 255 / 0.05)` | Its inset |
 | `--ch-seg-on-bg` | `linear-gradient(180deg, var(--ch-green-fill-500) 0%, var(--ch-green-fill-700) 100%)` | `linear-gradient(180deg, var(--ch-green-fill-600) 0%, var(--ch-green-fill-700) 100%)` | The raised green pill |
 | `--ch-seg-on-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -1px 0 rgb(0 0 0 / 0.12), 0 1px 2px rgb(11 58 37 / 0.35), 0 3px 8px -2px rgb(11 58 37 / 0.3)` | `inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.5), 0 3px 8px -2px rgb(0 0 0 / 0.45)` | Its soft drop shadow |

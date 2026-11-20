@@ -3,7 +3,7 @@
 import { useEffect, useRef, type MutableRefObject, type RefObject } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { CH_SWIPE } from '../lib/motion';
-import { CH_EDGE_ENTRY_SETTLE_MS, claimWebSwipe, createEdgeSwipe, edgeSwipeAllowed, findScreenBack, hasChevronBack, swipeFinish, type EdgeFrame, type EdgeRelease } from './edge-swipe';
+import { backSwipeBlockedAt, CH_EDGE_ENTRY_SETTLE_MS, claimWebSwipe, createEdgeSwipe, edgeSwipeAllowed, findScreenBack, hasChevronBack, swipeFinish, type EdgeFrame, type EdgeRelease } from './edge-swipe';
 import { CH_UNDERLAY_SHIFT, handUnderlayTiming, placeUnderlay, slideUnderlay, underlayParts } from './phone-chrome';
 
 /**
@@ -80,6 +80,8 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
     // not cancellable and a claimed swipe cannot hold the screen's scroll still. Owed: a real-iPhone check of how far a
     // swipe with vertical drift scrolls the screen (#2544).
     const MOVE = { passive: false } as const;
+    /** M2: the touch being read landed in the content, so its moves are read passively and never cancelled. */
+    let fromContent = false;
     const disarm = () => el.removeEventListener('touchmove', onMove);
     /** The screens a touch at the edge may move are composited from the moment it lands, not on its first move (MOT-03). */
     const lift = () => {
@@ -190,16 +192,24 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
 
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
-      if (machine || settling || !t || e.touches.length !== 1 || t.clientX > CH_SWIPE.edge) return;
+      if (machine || settling || !t || e.touches.length !== 1) return;
+      // M2: a pushed screen swipes back from anywhere on it, not only from the edge, unless the finger landed on something
+      // that reads a sideways drag itself.
+      const anywhere = t.clientX > CH_SWIPE.edge;
+      fromContent = anywhere;
+      if (anywhere && backSwipeBlockedAt(e.target, el)) return;
       if (exit.current.holding || !exit.current.present || performance.now() - mountedAt.current < CH_EDGE_ENTRY_SETTLE_MS) return;
       if (!edgeSwipeAllowed({ inApp }) || !findScreenBack(el)) return;
       width = el.getBoundingClientRect().width || window.innerWidth;
-      const m = createEdgeSwipe(width);
+      const m = createEdgeSwipe(width, 0, { anywhere });
       if (!m.start(t.clientX, t.clientY, e.timeStamp)) return;
       machine = m;
       covered = Array.from(document.querySelectorAll<HTMLElement>('.ch-pscreen[data-ch-covered]')).filter((c) => c !== el);
-      lift();
-      el.addEventListener('touchmove', onMove, MOVE);
+      // A touch in the content is mostly a scroll or a tap: the screen is promoted only once the swipe claims it.
+      if (!anywhere) lift();
+      // A content touch (M2) reads its moves passively, so it can never hold up a scroll (MOT-02): a touch at the edge is
+      // the one that may cancel its moves.
+      el.addEventListener('touchmove', onMove, anywhere ? { passive: true } : MOVE);
     };
     const onMove = (e: TouchEvent) => {
       if (!machine) return;
@@ -218,9 +228,10 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
         return;
       }
       // Ours: where the browser lets a move be cancelled, the page does not scroll with it (not on iOS: see MOVE above).
-      if (e.cancelable) e.preventDefault();
+      if (e.cancelable && !fromContent) e.preventDefault();
       if (!live) {
         live = true;
+        lift();
         // With a screen beneath this one the page is behind it both: only the one beneath moves.
         page = covered.length ? [] : underlayParts();
         for (const n of [el, ...covered]) n.style.transition = 'none';

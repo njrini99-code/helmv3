@@ -26,7 +26,7 @@
   padding: 24px 32px;
   border-radius: var(--ch-radius-lg);
   color: var(--ch-on-fill-100);
-  background: radial-gradient(70% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
+  background: var(--ch-green-800);
   box-shadow: var(--ch-elevation-card);
 }
 .ch-rsu-band__back {
@@ -1976,7 +1976,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 /* P011-A1: the setup band is the round's green feature: the shell's sky falls across it from the sun's side, a hairline
    rim on its sun-facing top edge, and the cast shadow leaning away from the light (tokens.css). */
 .ch-rsu-band {
-  background: var(--ch-light-sky), radial-gradient(70% 120% at 100% 0%, rgb(123 199 154 / 0.12), transparent 60%), var(--ch-green-800);
+  background: var(--ch-light-sky), var(--ch-green-800);
   box-shadow:
     inset var(--ch-light-rim-x) 1px 0 color-mix(in oklab, var(--ch-light-rim) 30%, transparent),
     0 0 0 1px var(--ch-green-900),
@@ -2347,7 +2347,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 }
 @media (hover: hover) {
   .ch-rsu-crs:hover .ch-rsu-crs__ic {
-    background: linear-gradient(160deg, var(--ch-green-600), var(--ch-green-800));
+    /* The fill ramp is pinned dark in both themes (premium plan G6): green-600 turns light at night (1.87). */
+    background: var(--ch-green-fill-600);
     color: var(--ch-on-fill-100);
   }
   .ch-rsu-crs:hover .ch-rsu-chev {

@@ -156,7 +156,7 @@ describe('112401 Round review, on screen', () => {
     // The review's own scorecard (Scorecard and shots); the round card above it has tables of its own (screens/rounds/card).
     const [out] = within(document.getElementById('ch-rz-card')!).getAllByRole('table');
     expect(out!.querySelector('caption')!.textContent).toMatch(/^Front nine/);
-    const firRow = within(out!).getByRole('row', { name: /^FIR/ });
+    const firRow = within(out!).getByRole('row', { name: /^Fairways hit/ });
     // Hole 3 is a par 3.
     expect(
       within(firRow)
