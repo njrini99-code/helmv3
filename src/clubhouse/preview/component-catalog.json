@@ -13274,6 +13274,19 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/ui/HelmMark.tsx",
+      "group": "ui",
+      "exports": [
+        "HelmMark"
+      ],
+      "styles": [
+        "src/clubhouse/styles/auth.css",
+        "src/clubhouse/styles/onboard.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/Icon.tsx",
       "group": "ui",
       "exports": [
@@ -14209,6 +14222,18 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/ui/Truncate.tsx",
+      "group": "ui",
+      "exports": [
+        "Truncate"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/TrustChip.tsx",
       "group": "ui",
       "exports": [
@@ -14979,7 +15004,8 @@
         "ch-au-wl-news__h",
         "ch-au-wl-scrim",
         "ch-au-wl-t",
-        "ch-btn"
+        "ch-btn",
+        "ch-helm-mark"
       ],
       "tokens": [
         {
@@ -15149,6 +15175,7 @@
         "ch-surface--feature",
         "ch-textarea",
         "ch-th-act",
+        "ch-trunc",
         "ch-well",
         "ch-well-soft",
         "ch-yb"
@@ -18576,6 +18603,7 @@
         "ch-btn--danger",
         "ch-btn--flush-end",
         "ch-btn--flush-start",
+        "ch-btn__done",
         "ch-btn__spin",
         "ch-check",
         "ch-check__box",
@@ -20886,6 +20914,7 @@
         "ch-btn--ghost",
         "ch-btn--lg",
         "ch-btn--primary",
+        "ch-helm-mark",
         "ch-ox",
         "ch-ox--full",
         "ch-ox-2",
