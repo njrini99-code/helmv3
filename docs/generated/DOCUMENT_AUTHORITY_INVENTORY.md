@@ -1419,6 +1419,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-19-switch-lower-sections.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-components.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-20-no-double-empty.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
