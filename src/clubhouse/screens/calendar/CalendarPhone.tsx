@@ -126,6 +126,13 @@ export function CalendarPhone({
         <span className="ch-intro__row">
           <h2 className="ch-intro__title ch-calm-title">{monthName(anchor)}</h2>
           <span className="ch-cal-title__yr ch-calm-title__yr">{yearOf(anchor)}</span>
+          {/* AX-4: Month turns by swipe, so it also has a button path (VoiceOver, Switch Control, a mouse). */}
+          {pv === 'month' && (
+            <span className="ch-calm-mnav">
+              <IconButton icon={ChevronLeft} label="Previous month" size="sm" onClick={() => onStep(-1)} />
+              <IconButton icon={ChevronRight} label="Next month" size="sm" onClick={() => onStep(1)} />
+            </span>
+          )}
           <span className="ch-intro__action">
             <Segmented<ChCalPhoneView> redraws
               size="sm"

@@ -19,6 +19,7 @@ import { changeTone, formatSigned, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
+import { Abbr } from '../../ui/Abbr';
 
 function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
   const par = holes.every((h) => h.par != null) ? holes.reduce((a, h) => a + (h.par ?? 0), 0) : null;
@@ -155,7 +156,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
               <div className="ch-h-round__foot">
                 <div className="ch-h-round__stats">
                   <span>
-                    <em>GIR</em>
+                    <em><Abbr k="GIR" /></em>
                     {r.gir ?? <NoData />}
                     <GirViz gir={r.gir} />
                   </span>
@@ -165,7 +166,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                     <PuttsViz putts={r.putts} />
                   </span>
                   <span>
-                    <em>SG</em>
+                    <em><Abbr k="SG" /></em>
                     <b className={changeTone(r.sg, false) || undefined}>{formatSigned(r.sg)}</b>
                     <SgViz sg={r.sg} />
                   </span>

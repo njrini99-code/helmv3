@@ -459,6 +459,13 @@ function Card({
         {item.body && <span className="ch-bst-card__b">{item.body}</span>}
         {more && <span className="ch-bst-card__more">{more}</span>}
       </button>
+      {/* AX-4: every gesture has a button. Swiping a card marks it read; this key does the same for VoiceOver, Switch
+          Control and the keyboard. Out of sight until it has keyboard focus. */}
+      {swipe && unread && (
+        <button type="button" className="ch-bst-markread" onClick={onClear}>
+          Mark read
+        </button>
+      )}
     </div>
   );
 }

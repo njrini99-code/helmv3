@@ -14,6 +14,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SideScroll } from '../../ui/SideScroll';
 import { EmptyState } from '../../ui/States';
 import { Button } from '../../ui/Button';
+import { Abbr } from '../../ui/Abbr';
 
 /** A player's Game tab on Stats, on the same Last 10 the figures read; null when Stats isn't rebuilt for coaches. */
 export function legPlayerHref(id: string): string | null {
@@ -253,7 +254,7 @@ export function TeamLegsPhone({ legs, covered = false }: { legs: ChTeamLegs; cov
                   <b className="ch-hm-legs__l">{leg.label}</b>
                   <span className={'ch-hm-legs__sg ch-num ' + tone}>
                     {formatSigned(leg.sg)}
-                    <small>SG</small>
+                    <small><Abbr k="SG" /></small>
                   </span>
                   <i className="ch-hm-legs__bar" aria-hidden="true">
                     <i className={tone + ((leg.sg ?? 0) < 0 ? ' is-neg' : '')} style={{ width: `${legBarWidth(leg.sg)}%` }} />

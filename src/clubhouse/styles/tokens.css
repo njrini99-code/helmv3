@@ -266,7 +266,9 @@
   --ch-plan-group-d-night: #9db0bf;
   --ch-plan-group-e-night: #b8b3a8;
   --ch-plan-group-f-night: #d39a83;
-  --ch-on-green-ink-soft: rgb(240 233 214 / 0.86);
+  /* Opaque (OC-3, premium plan G10): the 0.86 alpha fell to 4.46 on the raised green's top stop (#1e6a45); opaque is
+     5.4 there and 9 to 10.5 on the plates. Not lighter: the same ivory, without the green showing through. */
+  --ch-on-green-ink-soft: #f0e9d6;
   /* Meta on a green plate (the Calendar inspector's Next row, F-0039). The plate is green in both themes: no night value. */
   --ch-on-green-ink-meta: #d3e3d7;
   /* P-4: a clash line on the dark ink pill (the drag time pill): champagne on ink by day, a deep amber on ivory at night. */
@@ -277,7 +279,10 @@
   --ch-ev-sheen: inset 0 1px 0 rgb(255 255 255 / 0.08);
   --ch-ev-class-ring-hover: inset 0 0 0 1px rgb(45 92 119 / 0.28);
   /* 0.8, not 0.72: holds 4.5:1 at the light end of the green gradients too (rendered 4.1:1 before, 2026-10-14). */
-  --ch-on-green-ink-muted: rgb(222 214 190 / 0.8);
+  /* Opaque (OC-3, G10): 3.47 on the top stop at 0.8 alpha; opaque holds 4.5 there and 7.7 to 8.8 on the plates. */
+  --ch-on-green-ink-muted: #ded6be;
+  /* Increase Contrast's muted on green: the opaque soft ivory. */
+  --ch-on-green-ink-soft-ic: #f0e9d6;
   --ch-on-green-text-shadow: 0 1px 0 rgb(2 18 10 / 0.45), 0 2px 10px rgb(2 18 10 / 0.25);
   --ch-on-green-text-shadow-s: 0 1px 0 rgb(2 18 10 / 0.4);
   /* The selected sidebar row: a green key with a lit top and a green-cast lift. */
@@ -1586,6 +1591,10 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-hm-ring-under: var(--ch-border-strong);
     --ch-hm-ring-level: var(--ch-border-strong);
     --ch-hm-ring-over: var(--ch-border-strong);
+    /* OC-3: on green, Increase Contrast lifts the soft and muted inks to the full ivory (the plate is green in both
+       themes, so this one remap serves day and night). */
+    --ch-on-green-ink-soft: var(--ch-on-green-ink);
+    --ch-on-green-ink-muted: var(--ch-on-green-ink-soft-ic);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-glass-bg: var(--ch-bg-page);

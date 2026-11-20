@@ -313,7 +313,7 @@ describe('112401 Rounds library, on screen', () => {
     // P011-D16: the whole course name, not its first word.
     expect(within(season).getByText('Carolina GC').parentElement!.textContent).toBe('Carolina GC\u00a0· Aug 18');
     expect(within(season).getByText('Putts').nextSibling!.textContent).toBe('30.3');
-    expect(within(season).getByText('GIR').nextSibling!.textContent).toBe('65%');
+    expect(within(season).getByText('GIR').closest('dt')!.nextSibling!.textContent).toBe('65%');
   });
 });
 

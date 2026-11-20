@@ -164,6 +164,11 @@ svg .ch-num {
   letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 96;
 }
+/* AX-10: an abbreviation looks like the text around it; the words are for VoiceOver (ui/Abbr.tsx). */
+.ch-abbr {
+  text-decoration: none;
+  font: inherit;
+}
 .ch-sr-only {
   position: absolute;
   width: 1px;
