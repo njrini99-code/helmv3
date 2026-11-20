@@ -31297,6 +31297,7 @@
         "ch-btn--secondary",
         "ch-btn--sm",
         "ch-btn__kbd",
+        "ch-btn__layer",
         "ch-cp-row",
         "ch-cp-sheet",
         "ch-crh-line",
@@ -31533,6 +31534,26 @@
           "name": "--ch-btn-pad-x",
           "value": "20px",
           "scope": ".ch-btn--lg"
+        },
+        {
+          "name": "--ch-primary-bg-hover",
+          "value": "var(--ch-primary-bg)",
+          "scope": ".ch-btn:has(> .ch-btn__layer)"
+        },
+        {
+          "name": "--ch-primary-bg-press",
+          "value": "var(--ch-primary-bg)",
+          "scope": ".ch-btn:has(> .ch-btn__layer)"
+        },
+        {
+          "name": "--ch-btn-secondary-bg-hover",
+          "value": "var(--ch-btn-secondary-bg)",
+          "scope": ".ch-btn:has(> .ch-btn__layer)"
+        },
+        {
+          "name": "--ch-btn-secondary-bg-press",
+          "value": "var(--ch-btn-secondary-bg)",
+          "scope": ".ch-btn:has(> .ch-btn__layer)"
         },
         {
           "name": "--ch-btn-pad-x",

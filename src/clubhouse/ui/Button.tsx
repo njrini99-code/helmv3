@@ -89,6 +89,9 @@ export function Button(props: ButtonProps) {
   const doneLabel = (props.href === undefined && props.doneLabel) || 'Saved';
   const inner = (
     <>
+      {/* The face's state layer (4.32.1, premium plan batch 5): hover and press show as this layer's opacity over the
+          key's own fill, so the fill never changes colour and only opacity moves (styles/ui.css .ch-btn__layer). */}
+      <span className="ch-btn__layer" aria-hidden="true" />
       {leftIcon && !isDone && <Icon icon={leftIcon} size={iconSize} />}
       {isDone ? (
         <span className="ch-btn__done" role="status">
