@@ -41,10 +41,10 @@ export function How({ children }: { children: ReactNode }) {
 }
 
 /** A panel of Game detail (a titled block in the two-column body). `how`: the method, behind "How this is measured" (the phone's, where `note` is the one short line). */
-/** `feature` draws the panel as a detail's one deep green card (its headline numbers); every other panel takes the green title bar. */
-export function Panel({ title, note, how, wide, feature, children }: { title: string; note?: string; how?: string; wide?: boolean; feature?: boolean; children: ReactNode }) {
+/** Every panel opens on the green title bar (look-09 option F); the detail's one green card is its "The figures" card. */
+export function Panel({ title, note, how, wide, children }: { title: string; note?: string; how?: string; wide?: boolean; children: ReactNode }) {
   return (
-    <div className={'ch-gm-p' + (wide ? ' is-wide' : '') + (feature ? ' is-feature' : '')}>
+    <div className={'ch-gm-p' + (wide ? ' is-wide' : '')}>
       <div className="ch-gm-p__t">{title}</div>
       {children}
       {note && <p className="ch-gm-p__n">{note}</p>}

@@ -22,3 +22,6 @@ Held items: none
 - Option F (21 Nov): every pushed detail card, team details included, opens on
   the deep green title bar; a `feature` panel (a detail's headline numbers) is
   the one fully green card. Plain rails and compare bars are near-black.
+- Option F, slice 2 (21 Nov): the team's shared Stats cards open on the deep
+  green title bar, and a detail's "The figures" card is its one green card,
+  first under the headline.

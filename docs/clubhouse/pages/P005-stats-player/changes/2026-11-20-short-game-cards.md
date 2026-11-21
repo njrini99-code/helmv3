@@ -47,3 +47,11 @@ Held items: none
 - On the desk at 1280 the detail is the 420pt pane beside the overview, so it
   takes the same one-column cards as the phone.
 - A closed "More detail" (the older desktop Game detail) keeps its tables.
+- Option F, slice 2 (Nick approved the rollout, 21 Nov): every shared Stats
+  card (the overview cards on phone and desk, and the plain cards in a
+  detail) opens on the deep green title bar, with its count and chevron in
+  the feature inks and darker secondary text in the body. The overview keeps
+  Scoring average as its one green card. In a detail, the green card moves to
+  the top: "The figures" (or "Per round" in Scoring) is now the deep green
+  card, right under the headline, and the four "numbers" panels take the
+  title bar like the rest.

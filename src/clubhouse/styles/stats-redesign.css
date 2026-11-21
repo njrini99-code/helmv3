@@ -2850,27 +2850,14 @@ p.ch-shs-mini-cap {
 }
 
 /*
- * look-09, option F (Nick 21 Nov 2026): a detail's cards in more contrast. Its headline numbers are the detail's one deep
- * green card; every other card has the green title bar (above). Plain figures (nothing to judge them against) are heavy
+ * look-09, option F (Nick 21 Nov 2026): a detail's cards in more contrast. Its headline numbers ("The figures") are the
+ * detail's one deep green card; every other card has the green title bar (above, and the shared card's below). Plain figures (nothing to judge them against) are heavy
  * near-black with near-black bars; only a card with a benchmark draws green and amber. Secondary text is darker than
  * the page's, so nothing on a detail reads pale.
  */
 .ch-shs-screen .ch-gm.is-detail {
   --ch-shs-s-ink-2: color-mix(in oklab, var(--ch-shs-s-ink) 82%, var(--ch-shs-s-card));
   --ch-shs-s-track: color-mix(in oklab, var(--ch-shs-s-ink) 10%, var(--ch-chart-track));
-}
-.ch-shs-screen .ch-gd .ch-gm.is-detail .ch-gm-p.is-feature {
-  --ch-shs-s-ink: var(--ch-feature-ink);
-  --ch-shs-s-ink-2: var(--ch-feature-ink-2);
-  --ch-shs-s-ink-3: var(--ch-feature-ink-3);
-  --ch-shs-s-sep: var(--ch-feature-sep);
-  --ch-separator: var(--ch-feature-sep);
-  background: var(--ch-feature-bg);
-  color: var(--ch-feature-ink);
-}
-.ch-shs-screen .ch-gd .ch-gm.is-detail .ch-gm-p.is-feature .ch-gm-p__t {
-  margin-bottom: 0;
-  padding-bottom: 4px;
 }
 /* The numbers: a heavy label, the figure at the large-title size and weight, its count or context under it in full ink. */
 .ch-shs-screen .ch-gm.is-detail .ch-gx-tiles dt {
@@ -2933,4 +2920,28 @@ p.ch-shs-mini-cap {
 }
 .ch-shs-screen .ch-gm.is-detail .ch-gx-tbl td {
   font: var(--ch-type-figure);
+}
+
+/*
+ * look-09, option F on the shared Stats card (slice 2): every card that is not the screen's one green feature card opens on the
+ * deep green title bar, on the phone and the desk alike, for the player and the team. Its title, count and chevron read in the
+ * feature inks. The body keeps the ivory card, with its secondary ink darkened so no label reads pale.
+ */
+.ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) {
+  --ch-shs-s-ink-2: color-mix(in oklab, var(--ch-shs-s-ink) 82%, var(--ch-shs-s-card));
+}
+.ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) > .ch-shs-ah {
+  --ch-shs-s-ink: var(--ch-feature-ink);
+  --ch-shs-s-ink-2: var(--ch-feature-ink-2);
+  --ch-shs-s-ink-3: var(--ch-feature-ink-2);
+  margin: -12px -16px 12px;
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+}
+.ch-shs-card.is-flushb:not(.ch-shs-feature) > .ch-shs-ah {
+  margin: -12px 0 12px;
+}
+.ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) > .ch-shs-ah .ch-shs-pi {
+  background: var(--ch-feature-icon-bg);
+  color: var(--ch-on-green-plate);
 }
