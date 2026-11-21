@@ -19,3 +19,6 @@ Held items: none
   column as the feature green band, and toned cells draw as soft gain or loss
   chips. The short-game rows and the summary well are
   described in `../../P005-stats-player/changes/2026-11-20-short-game-cards.md`.
+- Option F (21 Nov): every pushed detail card, team details included, opens on
+  the deep green title bar; a `feature` panel (a detail's headline numbers) is
+  the one fully green card. Plain rails and compare bars are near-black.

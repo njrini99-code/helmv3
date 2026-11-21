@@ -34,4 +34,16 @@ Held items: none
   and keep the makes ("4 of 12") underneath; each "Finish after the chip" lie
   row is toned against the Overall finish (closer green, farther amber), and
   Overall stays grey as the yardstick.
+- Option F (Nick, 21 Nov: "more contrast", then chose F on the card): in a
+  pushed Game detail, the headline numbers ("Scoring numbers", "Approach
+  numbers", "Short-game numbers", "Putting numbers") are the detail's one deep
+  green feature card, ivory figures at the large-title size. Every other card
+  opens on a deep green title bar over its ivory body. Labels, row names and
+  table figures move to the heavier roles (figure, headline), secondary text
+  is darker, rails are 14pt on a darker track, and a plain rail or compare bar
+  (nothing to judge it against, such as "Up and down by distance" or the
+  Overall finish) is near-black instead of grey or green. Only a card with a
+  benchmark draws green and amber.
+- On the desk at 1280 the detail is the 420pt pane beside the overview, so it
+  takes the same one-column cards as the phone.
 - A closed "More detail" (the older desktop Game detail) keeps its tables.

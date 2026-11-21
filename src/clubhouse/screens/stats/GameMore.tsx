@@ -58,7 +58,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
   const parMix = ([3, 4, 5] as const).map((p) => ({ p, d: s.scoringByPar[`par${p}` as const] }));
   return (
     <>
-      <Panel title="Scoring numbers" wide>
+      <Panel title="Scoring numbers" wide feature>
         <Tiles
           label="Scoring numbers"
           items={[
@@ -206,7 +206,7 @@ export function ApproachMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtr
   const missRows = APPROACH_ROWS.filter(([, k]) => miss[k]);
   return (
     <>
-      <Panel title="Approach numbers" wide>
+      <Panel title="Approach numbers" wide feature>
         <Tiles
           label="Approach numbers"
           items={[
@@ -285,7 +285,7 @@ export function ShortMore({ s }: { s: GolfStats }) {
   const ud = made(s.scramblesMade, s.scrambleAttempts, s.scramblingPercentage);
   return (
     <>
-      <Panel title="Short-game numbers" wide>
+      <Panel title="Short-game numbers" wide feature>
         <Tiles
           label="Short-game numbers"
           items={[
@@ -437,7 +437,7 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
   const tour = (sixBands ?? []).filter((b) => b.bench != null);
   return (
     <>
-      <Panel title="Putting numbers" wide>
+      <Panel title="Putting numbers" wide feature>
         <Tiles
           label="Putting numbers"
           items={[

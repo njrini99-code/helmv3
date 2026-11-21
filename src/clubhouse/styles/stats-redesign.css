@@ -1529,18 +1529,22 @@ li + li > .ch-shs-rrow::before {
 /* Today's panels re-homed in a detail: the page's card head and box. */
 .ch-shs-screen .ch-gm-p {
   margin: 0;
-  padding: 12px 16px 16px;
+  padding: 0 16px 16px;
+  overflow: hidden;
   border: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-shs-s-card);
   box-shadow: var(--ch-stats-redesign-shadow-1);
 }
+/* Every detail card opens on the deep green title bar (look-09, option F, Nick 21 Nov). */
 .ch-shs-screen .ch-gm-p__t {
-  margin: 0 0 8px;
-  font: var(--ch-type-17-strong);
+  margin: 0 -16px 12px;
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+  font: var(--ch-type-headline);
   letter-spacing: 0;
   text-transform: none;
-  color: var(--ch-shs-s-ink);
+  color: var(--ch-feature-ink);
 }
 .ch-shs-screen .ch-gd,
 .ch-shs-screen .ch-gm.is-detail,
@@ -1561,18 +1565,20 @@ li + li > .ch-shs-rrow::before {
   overflow: visible;
 }
 .ch-shs-screen .ch-gd.is-phone .ch-gm.is-detail .ch-gm-p {
-  padding: 12px 16px 16px;
+  padding: 0 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-shs-s-card);
   box-shadow: var(--ch-stats-redesign-shadow-1);
 }
-/* The panel heads read as the cards' heads, whichever phone rule set them. */
+/* The panel heads read as the cards' green title bars, whichever phone rule set them. */
 .ch-shs-screen .ch-gd.is-phone .ch-gm.is-detail .ch-gm-p__t {
-  margin: 0 0 8px;
-  font: var(--ch-type-17-strong);
+  margin: 0 -16px 12px;
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+  font: var(--ch-type-headline);
   letter-spacing: 0;
   text-transform: none;
-  color: var(--ch-shs-s-ink);
+  color: var(--ch-feature-ink);
 }
 /* The page's `.hb` rows. */
 .ch-shs-hb {
@@ -2841,4 +2847,90 @@ p.ch-shs-mini-cap {
   .ch-shs-duo__col:last-child > * {
     grid-column: 1;
   }
+}
+
+/*
+ * look-09, option F (Nick 21 Nov 2026): a detail's cards in more contrast. Its headline numbers are the detail's one deep
+ * green card; every other card has the green title bar (above). Plain figures (nothing to judge them against) are heavy
+ * near-black with near-black bars; only a card with a benchmark draws green and amber. Secondary text is darker than
+ * the page's, so nothing on a detail reads pale.
+ */
+.ch-shs-screen .ch-gm.is-detail {
+  --ch-shs-s-ink-2: color-mix(in oklab, var(--ch-shs-s-ink) 82%, var(--ch-shs-s-card));
+  --ch-shs-s-track: color-mix(in oklab, var(--ch-shs-s-ink) 10%, var(--ch-chart-track));
+}
+.ch-shs-screen .ch-gd .ch-gm.is-detail .ch-gm-p.is-feature {
+  --ch-shs-s-ink: var(--ch-feature-ink);
+  --ch-shs-s-ink-2: var(--ch-feature-ink-2);
+  --ch-shs-s-ink-3: var(--ch-feature-ink-3);
+  --ch-shs-s-sep: var(--ch-feature-sep);
+  --ch-separator: var(--ch-feature-sep);
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
+}
+.ch-shs-screen .ch-gd .ch-gm.is-detail .ch-gm-p.is-feature .ch-gm-p__t {
+  margin-bottom: 0;
+  padding-bottom: 4px;
+}
+/* The numbers: a heavy label, the figure at the large-title size and weight, its count or context under it in full ink. */
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tiles dt {
+  font: var(--ch-type-figure);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tiles dd {
+  font: var(--ch-type-large-title);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tiles dd.ch-gx-sub {
+  font: var(--ch-type-callout);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tiles > div.is-empty dd:not(.ch-gx-sub) {
+  color: var(--ch-shs-s-ink-3);
+}
+/* The rows: heavier names and figures, thicker rails, and a plain fill in ink rather than grey. */
+.ch-shs-screen .ch-gm.is-detail .ch-shs-hb .l,
+.ch-shs-screen .ch-gm.is-detail .ch-shs-hb .v {
+  font: var(--ch-type-headline);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-shs-hb :is(.l, .v) small {
+  font: var(--ch-type-callout);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-shs-hrail {
+  height: calc(14 * var(--ch-type-k));
+}
+.ch-shs-screen .ch-gm.is-detail .ch-shs-hrail > i.ch-shs-fill-flat:not(.is-early) {
+  background: var(--ch-shs-s-ink);
+}
+/* The tables: row names and the header in heavier, darker type. */
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tbl tbody th {
+  font: var(--ch-type-figure);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tbl thead th:not(.is-key) {
+  color: var(--ch-shs-s-ink-2);
+}
+/* Compare bars have nothing to judge against: a plain card, in ink, on the detail's rail and type. */
+.ch-shs-screen .ch-gm.is-detail .ch-cmp__l {
+  font: var(--ch-type-headline);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-cmp__l em {
+  font: var(--ch-type-callout);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-cmp__bar {
+  height: calc(14 * var(--ch-type-k));
+  background: var(--ch-shs-s-track);
+  box-shadow: var(--ch-shs-s-track-ring);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-cmp__bar span {
+  border-radius: var(--ch-radius-full);
+  background: var(--ch-shs-s-ink);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-cmp__r b {
+  font: var(--ch-type-headline);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tbl td {
+  font: var(--ch-type-figure);
 }
