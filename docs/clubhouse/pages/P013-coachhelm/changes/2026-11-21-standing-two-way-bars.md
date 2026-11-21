@@ -9,3 +9,9 @@
   short bar from where it started to the target, filled to now, with the
   target as a firm tick at its end, instead of a ring. A shared focus and a
   proposal still draw none.
+- Option F on CoachHelm's cards: every card on the team board and the
+  player file opens on the deep green title bar that the Stats cards have,
+  with its title and count in the feature inks and darker quiet text in the
+  body. The board's hero and the file's top read stay the one green card.
+  This week's counts on the desk rail now wrap between counts instead of
+  running 5pt past the card's edge.

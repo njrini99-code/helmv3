@@ -176,6 +176,8 @@ describe('Team Stats, The round’s note', () => {
   it('labels the chips in one sentence and does not repeat the page head (W29)', async () => {
     asDesktop();
     showTeam(TEAM);
+    // A desk opens Team scoring from its card, across the page.
+    fireEvent.click(await painted('tscore'));
     await waitFor(() => expect([...document.querySelectorAll('.ch-shs-anote')].some((p) => p.textContent!.startsWith('Chips:'))).toBe(true));
     const note = [...document.querySelectorAll('.ch-shs-anote')].find((p) => p.textContent!.startsWith('Chips:'))!;
     expect(note.textContent).toMatch(/^Chips: the change vs each player’s previous \d+ rounds, grey when it is inside its likely error\./);
@@ -186,6 +188,8 @@ describe('Team Stats, The round’s note', () => {
   it('Team putting names the window its putts come from', async () => {
     asDesktop();
     showTeam(TEAM);
+    // A desk opens Team scoring from its card, across the page.
+    fireEvent.click(await painted('tscore'));
     await waitFor(() => expect(document.getElementById('ch-stm-putt')).not.toBeNull());
     const meta = document.getElementById('ch-stm-putt')!.parentElement!.querySelector('.ch-num')!;
     expect(meta.textContent).toMatch(/^Make rate by distance · \d+ putts · each player’s last 10$/);

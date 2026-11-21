@@ -20,6 +20,6 @@ describe('two page widths (W40)', () => {
   it('Calendar, the Team board and Stats with a detail open all stop at the wide measure', () => {
     expect(read('calendar.css')).toMatch(/\.ch-cal \{[^}]*max-width: var\(--ch-measure-wide\)/);
     expect(read('coachhelm-team.css')).toMatch(/\.ch-htb\.is-desk \{[^}]*max-width: var\(--ch-measure-wide\);/);
-    expect(read('stats-redesign.css')).toMatch(/\.ch-st--shs:has\(\.ch-shs-desk:not\(\.is-alone\)\) \{\s*max-width: var\(--ch-measure-wide\);/);
+    expect(read('stats-redesign.css')).toMatch(/\.ch-st--shs:has\(\.ch-shs-dfull\) \{\s*max-width: var\(--ch-measure-wide\);/);
   });
 });
