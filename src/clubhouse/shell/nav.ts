@@ -154,6 +154,19 @@ export function navFor(role: ChRole, features?: ChNavFeatures | null): readonly 
   return withFeatures(role === 'player' ? CH_NAV_PLAYER : CH_NAV_COACH, features);
 }
 
+/**
+ * Where a breadcrumb leads (S4, owner 19 Nov 2026: crumbs are links). A crumb that names one of the role's pages ("Stats"
+ * over a player's stats, "CoachHelm" over a player's file) links to it; a section's name ("Team", "My game") is a group,
+ * not a page, and stays text, as does a crumb for the page that is open. Practice, Tournaments and Settings are pages
+ * whichever list carries them.
+ */
+export function crumbHref(label: string, role: ChRole, pathname: string): string | null {
+  const items = [...(role === 'player' ? CH_NAV_PLAYER : CH_NAV_COACH), CH_NAV_PRACTICE, CH_NAV_TOURNAMENTS, CH_SETTINGS_ITEM];
+  const item = items.find((i) => i.label === label);
+  if (!item) return null;
+  return pathname.replace(/\/$/, '') === item.href ? null : item.href;
+}
+
 /** @deprecated use navFor(role); kept for coach-only callers. */
 export const CH_NAV = CH_NAV_COACH;
 
