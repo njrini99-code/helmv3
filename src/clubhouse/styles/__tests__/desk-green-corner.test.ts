@@ -43,7 +43,11 @@ describe('the desk keeps the green corner and the ivory light', () => {
     expect(bg).toContain('var(--ch-workspace)');
     const mist = rulesFor('.ch-canvas::before').find((r) => r.media === DESK);
     expect(mist).toBeDefined();
-    expect(value(mist!.rule, 'background')).toContain('radial-gradient(55% 100% at 0% 0%, rgb(11 58 37 / 0.22)');
+    expect(value(mist!.rule, 'background')).toContain('radial-gradient(100% 100% at 0% 0%, rgb(11 58 37 / 0.22)');
+    // G1 option A (owner, 19 Nov 2026): the mist ends before the page head. It fills only the margin left of the content,
+    // at most 240px, by the same left edge the page mains and the top bar use; its old bottom-right glow is gone.
+    expect(value(mist!.rule, 'width')).toBe('min(240px, calc(max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) + var(--ch-page-gutter)))');
+    expect(value(mist!.rule, 'background')).not.toContain('at 100% 100%');
   });
 
   it('leaves the top bar clear at rest and solid once the canvas scrolls under it', () => {

@@ -410,6 +410,20 @@
   font-weight: 500;
   color: var(--ch-green-700);
 }
+/* A crumb that names a page is a link to it (S4, owner 19 Nov 2026), in the crumbs' own ink: the primary ink and an
+   underline on a pointer's hover, the shared focus ring from the keyboard. */
+.ch-topbar__crumblink {
+  border-radius: var(--ch-radius-sm);
+  color: inherit;
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .ch-topbar__crumblink:hover {
+    color: var(--ch-text-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
 .ch-topbar__team {
   display: none;
 }
@@ -2086,38 +2100,22 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 
 /* The page head (owner, 2026-10-07: "match the bundle", the Coach Home design handoff). A page opts in with
    main[data-canopy] and marks its title block data-canopy-head; on desktop the block is the opening of the ivory
-   workspace, not a band: a double hairline above, one below, a small engraved date or section line, a heavy sans
-   title in the title ink (--ch-title-ink, near-black on every page: owner, 11 Nov 2026) with a letterpress edge, one
-   sentence, and the page's actions on the right. */
+   workspace, not a band: one hairline below, a small date or section line, the 30px desk large title in the primary
+   ink, set flat, one meta line, and the page's actions inline on the right (D16, owner 19 Nov 2026: the compact head;
+   it was 44px with a letterpress edge under a double hairline, 170 to 200px of opening before any data). */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* The head sits on the page gutter, level with the content below it: it had a 4px inset of its own, so every title stood
      4px in from its page (one frame, owner 11 Nov 2026). */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
     position: relative;
-    padding: 32px 0;
+    padding: 20px 0;
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
-  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head]::before {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    height: 3px;
-    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
-    border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
-    content: '';
-    pointer-events: none;
-  }
   /* The tight head (P003-A3, owner yes; P014 #5): a page whose content is the point (a roster, a table) opts in with
-     data-canopy-head="tight". No double rule above, and the eyebrow and title sit just under the top bar; the hairline
-     below stays. Home and the pages that keep the full head are unchanged. */
+     data-canopy-head="tight". The eyebrow and title sit just under the top bar; the hairline below stays. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-tight-always],
   .ch-root[data-ui] main[data-canopy] [data-canopy-head='tight'] {
     padding-top: 12px;
-  }
-  [data-ui='clubhouse'] main[data-canopy] [data-canopy-tight-always]::before,
-  .ch-root[data-ui] main[data-canopy] [data-canopy-head='tight']::before {
-    content: none;
   }
   /* Roster's desktop head keeps its own layout (no rules, no band) but its title is the same title: one page name, one
      style, on every page (design review, 10 Nov 2026). */
@@ -2134,11 +2132,14 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   [data-ui='clubhouse'] main h1[data-ch-large-title],
   [data-ui='clubhouse'] main [data-ch-page-title] {
     margin: 0;
-    font: 600 calc(44 * var(--ch-type-k))/1.08 var(--ch-font-sans);
-    letter-spacing: -0.036em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-title-ink);
-    text-shadow: 0 1px 0 rgb(255 255 255 / 0.9), 0 -1px 0 rgb(28 25 18 / 0.18);
+    /* The desk large title (D16, owner 19 Nov 2026): 30px on the type scale, set flat in the primary ink. It was a 44px
+       green-900 face with a letterpress edge, which read as dark type printed on the canvas wash (premium plan G1, T1).
+       The phone's large title keeps --ch-title-ink (.ch-large-title). */
+    font: var(--ch-type-large-title);
+    letter-spacing: var(--ch-track-large-title);
+    font-variation-settings: var(--ch-wdth-dense);
+    color: var(--ch-text-primary);
+    text-shadow: none;
   }
   /* P001-D5: not tracked (letterspaced mixed case read as a mistake); colour and the double rule carry the hierarchy. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] :is(.ch-h-head__date, .ch-hl-role, .ch-hero__eyebrow) {
@@ -2163,10 +2164,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:not(:focus-visible) {
     box-shadow: 0 0 0 1px rgb(110 98 62 / 0.2);
   }
+  /* Hover's fill is the key's own layer (ui/Button .ch-btn__layer); the head only deepens the edge. */
   @media (hover: hover) {
-    [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
-      background: rgb(255 254 250 / 0.8);
-    }
     [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled):not(:focus-visible) {
       box-shadow: 0 0 0 1px rgb(110 98 62 / 0.32);
     }
@@ -2199,16 +2198,64 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     font-size: inherit;
     font-weight: inherit;
   }
-  [data-ui='clubhouse'] main[data-canopy] .ch-sheet {
+  /* Text lives on a surface on a desk too (G1b, owner 19 Nov 2026; DESIGN_LANGUAGE law 1), everywhere but the page head.
+     A reading sheet keeps its ivory card here, so its section titles, notes and figures sit on paper, not on the canvas
+     (it lost its fill, ring and shadow under the Ledger). Player Home is held as built (owner, 7 Nov 2026) and keeps
+     its flush sheet until the owner moves it. */
+  [data-ui='clubhouse'][data-ch-role='player'] main.ch-h-main[data-canopy] .ch-sheet {
     background: none;
     box-shadow: none;
     border-radius: 0;
   }
+  /* The shared Section (ui/Section.tsx) is a card on a desk, in the card anatomy (DESIGN_LANGUAGE §4): its title and
+     caption are the card's header, its hairline inset 16, the body under it, 20px in. Where its body is one reading sheet,
+     the Section takes its place and the sheet goes flat inside, so there is never a card in a card. A Section that holds
+     a shared Surface, an empty state's card or several sheets keeps its head on the canvas until its page is rebuilt
+     (premium batch 3). CoachHelm's screens are
+     left as they are (their own pass). */
+  [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(
+      :has(.ch-surface, .ch-es--page),
+      :has(> :not(.ch-sheet) .ch-sheet),
+      :has(> .ch-sheet ~ .ch-sheet)
+    ) {
+    /* Its one sheet goes flat inside it, through the sheet's own tokens (base.css .ch-sheet). */
+    --ch-sheet-bg: transparent;
+    --ch-sheet-shadow: none;
+    gap: 0;
+    padding: 0 20px 20px;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-card-shadow);
+  }
+  [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(
+      :has(.ch-surface, .ch-es--page),
+      :has(> :not(.ch-sheet) .ch-sheet),
+      :has(> .ch-sheet ~ .ch-sheet)
+    ) > .ch-sec__head {
+    margin-inline: -20px;
+    padding: 16px 20px 12px;
+  }
+  [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(
+      :has(.ch-surface, .ch-es--page),
+      :has(> :not(.ch-sheet) .ch-sheet),
+      :has(> .ch-sheet ~ .ch-sheet)
+    ) > .ch-sec__head + * {
+    margin-top: 16px;
+  }
+  [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(
+      :has(.ch-surface, .ch-es--page),
+      :has(> :not(.ch-sheet) .ch-sheet),
+      :has(> .ch-sheet ~ .ch-sheet)
+    ) .ch-sec__title {
+    font: var(--ch-type-headline);
+    letter-spacing: 0;
+  }
 }
 
 /* The Frame (owner, 2026-10-07, matching the Coach Home handoff): the sidebar is the frame's green with the brand in
-   its own panel (the base .ch-brand), ivory type on the green, and an ivory plate for the selected row; the
-   next-event card stays a light sheet. */
+   its own panel (the base .ch-brand), ivory type on the green, and a calm selection for the current row (D17a, owner
+   19 Nov 2026: the frame's ivory at 11%, the label at 600, the icon ivory; it was an ivory card); the next-event card
+   stays a light sheet. */
 .ch-navitem:focus-visible,
 .ch-root .ch-next:focus-visible {
   outline-color: var(--ch-border-focus-on-dark);
@@ -2236,16 +2283,16 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 }
 .ch-navitem[aria-current='page'],
 .ch-navitem:has(.ch-lp) {
-  background: var(--ch-nav-well-bg);
-  color: var(--ch-nav-well-ink, var(--ch-green-800));
-  box-shadow: var(--ch-nav-well-shadow);
+  background: var(--ch-nav-sel-bg);
+  color: var(--ch-nav-sel-ink);
+  box-shadow: none;
   text-shadow: none;
 }
 .ch-navitem[aria-current='page'] svg,
 .ch-navitem[aria-current='page'] .ch-navitem__count,
 .ch-navitem:has(.ch-lp) svg,
 .ch-navitem:has(.ch-lp) .ch-navitem__count {
-  color: var(--ch-nav-well-icon, var(--ch-green-700));
+  color: var(--ch-nav-sel-icon);
 }
 .ch-navitem__count {
   color: var(--ch-champagne-300);
@@ -2285,17 +2332,20 @@ html[data-ch-ua-pop] .ch-pscreen::after {
       var(--ch-workspace);
     box-shadow: var(--ch-elevation-framed);
   }
+  /* The green mist ends before the page head (G1 option A, owner 19 Nov 2026): it fills only the margin left of the
+     content, at most 240px, so no title, line or card text sits on it. At 1280 and 1440 that margin is the gutter and the
+     mist is no more than the sidebar's bleed; on a wide screen it is the green corner beside the content. The width is
+     the content's left edge, the same formula as the one desk frame below (page mains and the top bar). The second,
+     bottom-right glow sat behind the content and is gone. */
   .ch-canvas::before {
     position: absolute;
     z-index: -1;
     top: 0;
     left: 0;
-    width: 100%;
+    width: min(240px, calc(max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) + var(--ch-page-gutter)));
     height: 560px;
     opacity: 0.5;
-    background:
-      radial-gradient(55% 100% at 0% 0%, rgb(11 58 37 / 0.22), rgb(11 58 37 / 0.07) 50%, transparent 78%),
-      radial-gradient(45% 80% at 100% 100%, rgb(110 140 100 / 0.18), transparent 75%);
+    background: radial-gradient(100% 100% at 0% 0%, rgb(11 58 37 / 0.22), rgb(11 58 37 / 0.07) 50%, transparent 78%);
     -webkit-mask-image: linear-gradient(180deg, black 60%, transparent);
     mask-image: linear-gradient(180deg, black 60%, transparent);
     content: '';
@@ -2319,6 +2369,29 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     background: transparent;
   }
   [data-ui='clubhouse'][data-motion='off'] .ch-topbar {
+    transition: none;
+  }
+  /* One desk frame for the bar and the page (S1, owner 19 Nov 2026). The bar spanned the whole canvas, so at 1920 the
+     breadcrumb sat 160px left of the title and the search and bell 270px right of the content. Its contents now start on
+     the content's left edge (the page mains' margin, above, plus the gutter) and end on the wide measure's right edge;
+     a page narrower than the wide measure sits left-aligned inside that frame. The bar's paint still spans the canvas. */
+  .ch-topbar {
+    padding-inline: calc(max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) + var(--ch-page-gutter))
+      max(var(--ch-page-gutter), calc(100% - max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) - var(--ch-measure-wide) + var(--ch-page-gutter)));
+  }  /* The large-title collapse (D16, owner 19 Nov 2026; Apple's large title, Linear's toolbar title). While the page's
+     own title is in view the bar's last crumb, the page's name, is hidden with its chevron, so the page names itself
+     once; as the title goes under the bar the crumb comes in, a quick fade and a 4px rise on the iOS curve (Reduce
+     Motion narrows it to the 180ms fade, base.css; Animations off swaps at once). Set by shell/large-title.tsx
+     watchCanvasScroll; a page with no desk title keeps its whole breadcrumb. The first state on a page is set with no
+     transition, so a page that opens scrolled (Back) shows its crumb at once. */
+  .ch-topbar__crumb:last-child {
+    transition: opacity var(--ch-dur-quick) var(--ch-ease-ios), transform var(--ch-dur-quick) var(--ch-ease-ios);
+  }
+  .ch-topbar[data-desk-title='shown'] .ch-topbar__crumb:last-child {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  .ch-topbar[data-desk-title-first] .ch-topbar__crumb:last-child {
     transition: none;
   }
 }
@@ -2375,6 +2448,46 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
 }
 
+/* The compact desk head (D16, owner 19 Nov 2026): on the canopy the shared hero is the 30px title with its actions inline
+   and one meta line under it, the section line and the sentence side by side (a middle dot between), instead of three
+   stacked lines. Nothing is cut: a long sentence wraps inside its own column. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ui='clubhouse'] main[data-canopy] .ch-hero[data-tone='canopy'] {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    row-gap: 4px;
+    column-gap: 0;
+    align-items: baseline;
+  }
+  [data-ui='clubhouse'] main[data-canopy] .ch-hero[data-tone='canopy'] > .ch-hero__title {
+    grid-column: 1 / 3;
+    grid-row: 1;
+  }
+  [data-ui='clubhouse'] main[data-canopy] .ch-hero[data-tone='canopy'] > .ch-hero__eyebrow {
+    grid-column: 1;
+    grid-row: 2;
+    line-height: inherit;
+  }
+  [data-ui='clubhouse'] main[data-canopy] .ch-hero[data-tone='canopy'] > .ch-hero__eyebrow:has(~ .ch-hero__line)::after {
+    padding-inline: 6px;
+    content: '·';
+  }
+  [data-ui='clubhouse'] main[data-canopy] .ch-hero[data-tone='canopy'] > .ch-hero__line {
+    grid-column: 2;
+    grid-row: 2;
+    font: var(--ch-type-footnote);
+  }
+  [data-ui='clubhouse'] main[data-canopy] .ch-hero[data-tone='canopy'] > .ch-hero__eyebrow:not(:has(~ .ch-hero__line)),
+  [data-ui='clubhouse'] main[data-canopy] .ch-hero[data-tone='canopy'] > .ch-hero__line:not(.ch-hero__eyebrow ~ *) {
+    grid-column: 1 / 3;
+  }
+  [data-ui='clubhouse'] main[data-canopy] .ch-hero[data-tone='canopy'] > .ch-hero__actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    align-self: center;
+    padding-left: 24px;
+  }
+}
+
 /* The selected plate as one gliding object (CH-1613, shell/NavPlate.tsx). Once the plate has measured, the nav carries
    .ch-nav--plate and the rows stop drawing their own plate: the plate sits behind them and travels on the transform,
    on the smooth spring that NavPlate runs itself (a CSS transition on the transform would override it); a row's ink
@@ -2388,8 +2501,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   left: 0;
   z-index: 0;
   border-radius: var(--ch-radius-md);
-  background: var(--ch-nav-well-bg);
-  box-shadow: var(--ch-nav-well-shadow);
+  background: var(--ch-nav-sel-bg);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
@@ -2656,16 +2768,6 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head]::before {
-    border-bottom-color: var(--ch-ledger-rule-soft);
-  }
-  /* The letterpress edge at night: the lit lip under the letters becomes a shadow, never a white halo. */
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1,
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1,
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main h1[data-ch-large-title],
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main [data-ch-page-title] {
-    text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
-  }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
     background: rgb(237 231 216 / 0.05);
   }
@@ -2673,9 +2775,6 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
     box-shadow: 0 0 0 1px var(--ch-border-control);
   }
   @media (hover: hover) {
-    html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
-      background: rgb(237 231 216 / 0.09);
-    }
     html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled):not(:focus-visible) {
       box-shadow: 0 0 0 1px var(--ch-border-strong);
     }

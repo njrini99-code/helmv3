@@ -758,7 +758,8 @@
         "src/clubhouse/styles/coachhelm-team.css",
         "src/clubhouse/styles/coachhelm-track.css",
         "src/clubhouse/styles/coachhelm-views.css",
-        "src/clubhouse/styles/coachhelm.css"
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3786,6 +3787,7 @@
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -3831,6 +3833,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-file.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3857,6 +3860,7 @@
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -3884,6 +3888,7 @@
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -4433,6 +4438,7 @@
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -4459,6 +4465,7 @@
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -4639,6 +4646,7 @@
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -9805,6 +9813,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -9870,6 +9879,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -9937,6 +9947,7 @@
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
@@ -12375,6 +12386,7 @@
         "RailToggle"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -12389,6 +12401,7 @@
         "STALL_MS"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -12684,6 +12697,7 @@
       "group": "shell",
       "exports": [
         "CH_BAR_TITLE_RANGE",
+        "CH_DESK_TITLES",
         "CH_LARGE_TITLES",
         "CH_LARGE_TITLE_RANGE"
       ],
@@ -13310,6 +13324,7 @@
         "ListSheet"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -13866,6 +13881,7 @@
       "styles": [
         "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-player.css",
         "src/clubhouse/styles/tournaments-review.css",
@@ -14148,6 +14164,7 @@
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -15226,11 +15243,13 @@
       "classes": [
         "ch-abbr",
         "ch-au-input",
+        "ch-canvas",
         "ch-check__box",
         "ch-cl-card",
         "ch-cl-today__row",
         "ch-display",
         "ch-ed__title",
+        "ch-fsheet__body",
         "ch-hd-dos",
         "ch-hd-rail",
         "ch-hg-m",
@@ -15239,6 +15258,7 @@
         "ch-input",
         "ch-large-title",
         "ch-menu__item",
+        "ch-modal__body",
         "ch-modal__panel",
         "ch-ms-comp__field",
         "ch-nowrap",
@@ -15261,6 +15281,7 @@
         "ch-serif-num",
         "ch-sgm",
         "ch-sheet",
+        "ch-sidebar",
         "ch-sr-only",
         "ch-sr-only--focusable",
         "ch-surface",
@@ -23698,6 +23719,7 @@
       "classes": [
         "ch-acct",
         "ch-app",
+        "ch-ask",
         "ch-avatar",
         "ch-bell",
         "ch-bell__count",
@@ -23805,14 +23827,18 @@
         "ch-frame-under",
         "ch-grab",
         "ch-h-head__date",
+        "ch-h-main",
         "ch-hero",
         "ch-hero__actions",
         "ch-hero__eyebrow",
         "ch-hero__line",
         "ch-hero__title",
+        "ch-hf",
+        "ch-hl",
         "ch-hl-h",
         "ch-hl-role",
         "ch-hm",
+        "ch-htb",
         "ch-iconbtn",
         "ch-identity",
         "ch-identity__meta",
@@ -23889,6 +23915,9 @@
         "ch-rs-head",
         "ch-rsd",
         "ch-scrim",
+        "ch-sec",
+        "ch-sec__head",
+        "ch-sec__title",
         "ch-serif-num",
         "ch-sheet",
         "ch-sidebar",
@@ -23917,6 +23946,7 @@
         "ch-strip__plate",
         "ch-strip__row",
         "ch-strip__sep",
+        "ch-surface",
         "ch-sw",
         "ch-sw__chev",
         "ch-sw__dot",
@@ -23935,6 +23965,7 @@
         "ch-topbar__actions",
         "ch-topbar__ask",
         "ch-topbar__crumb",
+        "ch-topbar__crumblink",
         "ch-topbar__crumbs",
         "ch-topbar__dslot",
         "ch-topbar__mark",
@@ -24047,6 +24078,16 @@
           "name": "--ch-pbar-title-max",
           "value": "calc(100% - 216px)",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → .ch-topbar:has(.ch-qck) .ch-pbar__title"
+        },
+        {
+          "name": "--ch-sheet-bg",
+          "value": "transparent",
+          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(\n      :has(.ch-surface, .ch-es--page),\n      :has(> :not(.ch-sheet) .ch-sheet),\n      :has(> .ch-sheet ~ .ch-sheet)\n    )"
+        },
+        {
+          "name": "--ch-sheet-shadow",
+          "value": "none",
+          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → [data-ui='clubhouse'] main .ch-sec:not(:is(.ch-hl, .ch-hf, .ch-ask, .ch-htb) *):not(\n      :has(.ch-surface, .ch-es--page),\n      :has(> :not(.ch-sheet) .ch-sheet),\n      :has(> .ch-sheet ~ .ch-sheet)\n    )"
         },
         {
           "name": "--ch-lip",
@@ -27268,6 +27309,21 @@
         {
           "name": "--ch-rail-w",
           "value": "56px",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-nav-sel-bg",
+          "value": "rgb(244 238 221 / 0.11)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-nav-sel-ink",
+          "value": "var(--ch-on-green-ink)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-nav-sel-icon",
+          "value": "var(--ch-on-green-ink)",
           "scope": "[data-ui='clubhouse']"
         },
         {

@@ -246,6 +246,46 @@ before, after, baseline or evidence.
 | `P001__qualifier-bar__coach__390x844__stand-in-server-first-paint-dark__evidence__a438a92.png` | evidence | a438a92 | qualifier-bar (coach), 390x844px, stand-in-server-first-paint-dark |
 | `P001__thread-details__coach__390x844__edge-swipe-nested-mid-drag__after__a438a92.png` | after | a438a92 | thread-details (coach), 390x844px, edge-swipe-nested-mid-drag |
 | `P001__push-ask__player__390__home-settled__before__22e5426.png` | before | 22e5426 | Player home at 390 (WebKit, preview), 4s after load: Clubhouse has no push ask (the current app's is not mounted here) |
+| `P001__desk-shell-home__coach__1440x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-home (coach), 1440x1000px, dark |
+| `P001__desk-shell-home__coach__1440x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-home (coach), 1440x1000px, dark |
+| `P001__desk-shell-home__coach__1440x1000__light__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-home (coach), 1440x1000px, light |
+| `P001__desk-shell-home__coach__1440x1000__light__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-home (coach), 1440x1000px, light |
+| `P001__desk-shell-home__coach__1920x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-home (coach), 1920x1000px, dark |
+| `P001__desk-shell-home__coach__1920x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-home (coach), 1920x1000px, dark |
+| `P001__desk-shell-home__coach__1920x1000__light__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-home (coach), 1920x1000px, light |
+| `P001__desk-shell-home__coach__1920x1000__light__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-home (coach), 1920x1000px, light |
+| `P001__desk-shell-home__player__1440x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-home (player), 1440x1000px, dark |
+| `P001__desk-shell-home__player__1440x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-home (player), 1440x1000px, dark |
+| `P001__desk-shell-home__player__1440x1000__light__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-home (player), 1440x1000px, light |
+| `P001__desk-shell-home__player__1440x1000__light__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-home (player), 1440x1000px, light |
+| `P001__desk-shell-home__player__1920x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-home (player), 1920x1000px, dark |
+| `P001__desk-shell-home__player__1920x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-home (player), 1920x1000px, dark |
+| `P001__desk-shell-home__player__1920x1000__light__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-home (player), 1920x1000px, light |
+| `P001__desk-shell-home__player__1920x1000__light__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-home (player), 1920x1000px, light |
+| `P001__desk-shell-roster__coach__1440x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-roster (coach), 1440x1000px, dark |
+| `P001__desk-shell-roster__coach__1440x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-roster (coach), 1440x1000px, dark |
+| `P001__desk-shell-roster__coach__1440x1000__light__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-roster (coach), 1440x1000px, light |
+| `P001__desk-shell-roster__coach__1440x1000__light__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-roster (coach), 1440x1000px, light |
+| `P001__desk-shell-roster__coach__1920x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-roster (coach), 1920x1000px, dark |
+| `P001__desk-shell-roster__coach__1920x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-roster (coach), 1920x1000px, dark |
+| `P001__desk-shell-roster__coach__1920x1000__light__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-roster (coach), 1920x1000px, light |
+| `P001__desk-shell-roster__coach__1920x1000__light__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-roster (coach), 1920x1000px, light |
+| `P001__desk-shell-stats__coach__1440x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-stats (coach), 1440x1000px, dark |
+| `P001__desk-shell-stats__coach__1440x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-stats (coach), 1440x1000px, dark |
+| `P001__desk-shell-stats__coach__1440x1000__light__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-stats (coach), 1440x1000px, light |
+| `P001__desk-shell-stats__coach__1440x1000__light__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-stats (coach), 1440x1000px, light |
+| `P001__desk-shell-stats__coach__1920x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-stats (coach), 1920x1000px, dark |
+| `P001__desk-shell-stats__coach__1920x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-stats (coach), 1920x1000px, dark |
+| `P001__desk-shell-stats__coach__1920x1000__light__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-stats (coach), 1920x1000px, light |
+| `P001__desk-shell-stats__coach__1920x1000__light__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-stats (coach), 1920x1000px, light |
+| `P001__desk-shell-stats__player__1440x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-stats (player), 1440x1000px, dark |
+| `P001__desk-shell-stats__player__1440x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-stats (player), 1440x1000px, dark |
+| `P001__desk-shell-stats__player__1440x1000__light__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-stats (player), 1440x1000px, light |
+| `P001__desk-shell-stats__player__1440x1000__light__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-stats (player), 1440x1000px, light |
+| `P001__desk-shell-stats__player__1920x1000__dark__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-stats (player), 1920x1000px, dark |
+| `P001__desk-shell-stats__player__1920x1000__dark__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-stats (player), 1920x1000px, dark |
+| `P001__desk-shell-stats__player__1920x1000__light__after__81ba4f8.png` | after | 81ba4f8 | desk-shell-stats (player), 1920x1000px, light |
+| `P001__desk-shell-stats__player__1920x1000__light__before__81ba4f8.png` | before | 81ba4f8 | desk-shell-stats (player), 1920x1000px, light |
 
 ## Historical verification gaps
 
