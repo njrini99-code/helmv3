@@ -1,3 +1,5 @@
+# Changelog
+
 ## 2026-11-21
 
 - look-09, option F on Home's stat cards (Nick approved the card rollout for

@@ -2784,12 +2784,12 @@ p.ch-shs-mini-cap {
 .ch-shs--desk-team .ch-shs-desk__sum > .ch-shs-sech ~ .ch-shs-sech {
   display: none;
 }
-@media (max-width: 1180px) {
-  .ch-shs-desk {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
-  }
+/* With no pane beside them the cards keep two columns down to a narrow desk; under 900px they, and a drill's cards, run in one. */
+@media (max-width: 900px) {
   .ch-shs-desk__sum,
-  .ch-shs-duo {
+  .ch-shs-duo,
+  .ch-shs-dfull .ch-shs-d-sheet.ch-shs-dfull__body,
+  .ch-shs-dfull .ch-gm.is-detail {
     grid-template-columns: minmax(0, 1fr);
   }
   /* One column: the cards run in their written order. */

@@ -232,13 +232,15 @@ export function RoundStrip({ rounds }: { rounds: readonly TickerRound[] }) {
 /**
  * A goal's or focus area's bar (look-09, "make it specific to what it is displaying"): a target is a benchmark of its own, so the
  * bar runs from where it started to the target, filled to how far along it is, with the target as the tick at its end. It reads
- * `progressOf` only, so a goal with no baseline draws no bar (the caller writes it as text).
+ * `progressOf` only, so a goal with no baseline draws no bar (the caller writes it as text). Its start and target labels stay
+ * readable; only the rail is hidden from a screen reader.
  */
 export function GoalBar({ progress, start, target }: { progress: number; start: string; target: string }) {
   const p = Math.max(0, Math.min(100, progress));
   return (
-    <span className="ch-shs-gbar" aria-hidden="true">
-      <span className="ch-shs-gbar__t">
+    <span className="ch-shs-gbar">
+      {/* Only the rail is drawing: the start and target under it are read, as the goal's line was (a screen reader hears its target). */}
+      <span className="ch-shs-gbar__t" aria-hidden="true">
         <i style={{ width: `${p}%` }} />
       </span>
       <span className="ch-shs-gbar__k ch-num">
