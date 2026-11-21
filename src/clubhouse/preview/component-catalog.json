@@ -19408,6 +19408,11 @@
           "name": "--ch-text-tertiary",
           "value": "color-mix(in oklab, var(--ch-text-primary) 72%, var(--ch-card-bg))",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec--stat"
+        },
+        {
+          "name": "--ch-ledger-rule",
+          "value": "var(--ch-feature-ink-3)",
+          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → :is(.ch-hm--player, .ch-hm--coach) .ch-hm-sec--stat > .ch-hm-sec__h .ch-ph-pg button"
         }
       ]
     },
