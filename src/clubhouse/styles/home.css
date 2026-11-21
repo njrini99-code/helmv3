@@ -6178,9 +6178,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   /* The latest round's pager keys sit on the bar: feature ink, a feature hairline ring. */
   :is(.ch-hm--player, .ch-hm--coach) .ch-hm-sec--stat > .ch-hm-sec__h .ch-ph-pg button {
+    --ch-ledger-rule: var(--ch-feature-ink-3);
     color: var(--ch-feature-ink);
-  }
-  :is(.ch-hm--player, .ch-hm--coach) .ch-hm-sec--stat > .ch-hm-sec__h .ch-ph-pg button::before {
-    box-shadow: inset 0 0 0 1px var(--ch-feature-ink-3);
   }
 }
