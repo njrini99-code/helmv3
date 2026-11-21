@@ -191,7 +191,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
   };
   const [course, ...rest] = (r?.meta ?? '').split(' · ');
   return (
-    <section className="ch-hm-sec" aria-labelledby="ch-ph-latest">
+    <section className="ch-hm-sec ch-hm-sec--stat" aria-labelledby="ch-ph-latest">
       <div className="ch-hm-sec__h ch-ph-sec__h">
         <h2 id="ch-ph-latest">Your latest round</h2>
         {data.rounds.length > 1 && (
