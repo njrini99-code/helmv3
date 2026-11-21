@@ -37,7 +37,7 @@ import { FocusLoop } from './FocusLoop';
 import { GameDetail, type ChReadsSource } from './GameDetail';
 import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { legReadout, sgLegRows } from './leg-rows';
-import { GoalRing, MiniDiverging, MiniRails, RoundTicker, type MiniRailRow } from './MiniCharts';
+import { GoalBar, MiniDiverging, MiniRails, RoundStrip, RoundTicker, type MiniRailRow } from './MiniCharts';
 import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { sgIsEstimate, sgMixWords } from '../../data/stats-sg-mix';
 import { ProposalAnswer } from './ProposalAnswer';
@@ -795,23 +795,19 @@ function RoundsCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => voi
   const n = data.win.rounds;
   return (
     <SummaryCard go="rounds" onOpen={onOpen} title="Round by round" meta={label} ariaLabel={`Round by round: ${plural(n, 'round')}${best ? `, best ${best.value}` : ''}. Open details`}>
-      <div className="ch-shs-sb">
-        <div>
-          <span className="ch-shs-bigv">
-            {n}
-            <small>{pluralWord(n, 'round', 'rounds')}</small>
-          </span>
-          {best && n > 1 && (
-            <div className="ch-shs-cap ch-num">
-              Best {best.value} · {best.date}
-            </div>
-          )}
-        </div>
-        <div>
-          <RoundTicker rounds={tickerRounds(data)} />
-          {n > 1 && <div className="ch-shs-mini-cap">Higher on the chart is a lower score; best round in green</div>}
-        </div>
+      <div className="ch-shs-rcount">
+        <span className="ch-shs-bigv">
+          {n}
+          <small>{pluralWord(n, 'round', 'rounds')}</small>
+        </span>
+        {best && n > 1 && (
+          <div className="ch-shs-cap ch-num">
+            Best {best.value} · {best.date}
+          </div>
+        )}
       </div>
+      <RoundStrip rounds={tickerRounds(data)} />
+      {n > 1 && <div className="ch-shs-mini-cap">Each round’s score, oldest first; best in green</div>}
     </SummaryCard>
   );
 }
@@ -822,21 +818,23 @@ interface RingItem {
   progress: number | null;
   centre: string;
   line: string;
+  start: string;
+  target: string;
 }
 
-/** Rings only from `progressOf`, never invented (criterion 46): goals first, then the coach's focus areas. */
+/** Bars only from `progressOf`, never invented (criterion 46): goals first, then the coach's focus areas. */
 function ringItems(data: ChPlayerProfile): RingItem[] {
   const goals = data.goals
     .filter((g) => g.state !== 'achieved' && g.state !== 'completed' && g.state !== 'paused')
     .map((g) => {
       const metric = devMetric(g.title, g.metric);
-      return { id: g.id, title: devTitle(g.title), progress: progressOf(g.baseline, g.current, g.target), centre: devValue(g.current, metric), line: goalLine(g) };
+      return { id: g.id, title: devTitle(g.title), progress: progressOf(g.baseline, g.current, g.target), centre: devValue(g.current, metric), line: goalLine(g), start: devValue(g.baseline, metric), target: devValue(g.target, metric) };
     });
   const areas = data.focusAreas
     .filter((f) => f.status === 'active')
     .map((f) => {
       const metric = devMetric(f.title, f.metric);
-      return { id: f.id, title: devTitle(f.title), progress: progressOf(f.baseline, f.current, f.target), centre: devValue(f.current, metric), line: devProgress(f) };
+      return { id: f.id, title: devTitle(f.title), progress: progressOf(f.baseline, f.current, f.target), centre: devValue(f.current, metric), line: devProgress(f), start: devValue(f.baseline, metric), target: devValue(f.target, metric) };
     });
   return [...goals, ...areas];
 }
@@ -851,12 +849,14 @@ function GoalsCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void
       ) : !three.length ? (
         <p className="ch-shs-goaltext">{data.viewer === 'coach' ? `${data.firstName} has no goals or focus areas yet.` : 'Goals you and your coach set show here.'}</p>
       ) : (
-        <div className="ch-shs-rings">
+        <div className="ch-shs-goalrows">
           {three.map((g) => (
             <div key={g.id} role="img" aria-label={`${g.title}: ${g.line}`}>
-              {g.progress != null ? <GoalRing progress={g.progress} label={g.centre} /> : <span className="ch-shs-rg-none ch-num">{g.centre}</span>}
-              <b>{g.title}</b>
-              <small className="ch-num">{g.line}</small>
+              <div className="ch-shs-goalrows__h">
+                <b>{g.title}</b>
+                <span className="ch-num">{g.centre}</span>
+              </div>
+              {g.progress != null ? <GoalBar progress={g.progress} start={g.start} target={g.target} /> : <small className="ch-num">{g.line}</small>}
             </div>
           ))}
         </div>
@@ -1271,12 +1271,12 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
               const progress = progressOf(g.baseline, g.current, g.target);
               return (
                 <div className="ch-shs-goal1" key={g.id}>
-                  {progress != null && <GoalRing progress={progress} label={devValue(g.current, metric)} />}
-                  <div>
+                  <div className="ch-shs-goalrows__h">
                     <b>{devTitle(g.title)}</b>
-                    <span className="ch-num">{goalLine(g)}</span>
-                    <GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />
+                    <span className="ch-num">{devValue(g.current, metric)}</span>
                   </div>
+                  {progress != null ? <GoalBar progress={progress} start={devValue(g.baseline, metric)} target={devValue(g.target, metric)} /> : <span className="ch-num">{goalLine(g)}</span>}
+                  <GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />
                 </div>
               );
             })}
@@ -1290,15 +1290,12 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
           <div className="ch-shs-dev">
             {data.focusAreas.map((f) => {
               const progress = progressOf(f.baseline, f.current, f.target);
+              const metric = devMetric(f.title, f.metric);
               return (
                 <div key={f.id}>
                   <b>{devTitle(f.title)}</b>
                   <span className="ch-num">{f.status === 'proposed' ? 'Proposed, waiting to be accepted' : devProgress(f)}</span>
-                  {progress != null && (
-                    <div className="ch-shs-prog" aria-hidden="true">
-                      <i style={{ width: `${progress}%` }} />
-                    </div>
-                  )}
+                  {progress != null && <GoalBar progress={progress} start={devValue(f.baseline, metric)} target={devValue(f.target, metric)} />}
                   {!coach && f.status === 'proposed' && <ProposalAnswer id={f.id} title={f.title} />}
                   <FocusLoop loop={f.loop} />
                 </div>

@@ -828,56 +828,71 @@
   fill: var(--ch-shs-s-flat);
 }
 
-/* Goal rings. */
-.ch-shs-rings {
+/* Goals and focus areas (look-09): each a row, its name and where it stands now, over a bar from its start to its target. */
+.ch-shs-goalrows {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.ch-shs-goalrows__h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 8px;
-  text-align: center;
 }
-.ch-shs-rg {
-  position: relative;
+.ch-shs-goalrows__h b {
+  min-width: 0;
+  font: var(--ch-type-headline);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-goalrows__h span {
+  flex: none;
+  font: var(--ch-type-headline);
+  color: var(--ch-shs-s-ink);
+}
+/* A goal with nothing to measure from: its words share their two lines, so none ends on a lone "69" or "ft". */
+.ch-shs-goalrows small {
   display: block;
-  width: calc(68 * var(--ch-type-k));
-  height: calc(68 * var(--ch-type-k));
-  margin: 2px auto 8px;
-}
-.ch-shs-rg svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.ch-shs-rg .rt {
-  fill: none;
-  stroke: var(--ch-shs-s-track);
-  stroke-width: 7;
-}
-.ch-shs-rg .rf {
-  fill: none;
-  stroke: var(--ch-shs-s-gain-fill);
-  stroke-width: 7;
-  stroke-linecap: round;
-}
-.ch-shs-rg > span {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
-.ch-shs-rings b {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
-/* A third of a phone's card is narrower than "Now 72 · target 69": the two lines share the words, so none ends on a
-   lone "69" or "ft". */
-.ch-shs-rings small {
-  display: block;
-  margin-top: 2px;
-  font: var(--ch-type-13);
+  margin-top: 4px;
+  font: var(--ch-type-callout);
   color: var(--ch-shs-s-ink-2);
   text-wrap: balance;
+}
+.ch-shs-gbar {
+  display: block;
+  margin-top: 8px;
+}
+.ch-shs-gbar__t {
+  position: relative;
+  display: block;
+  height: calc(12 * var(--ch-type-k));
+  border-radius: var(--ch-radius-full);
+  background: var(--ch-shs-s-track);
+  box-shadow: var(--ch-shs-s-track-ring);
+}
+.ch-shs-gbar__t i {
+  display: block;
+  height: 100%;
+  border-radius: var(--ch-radius-full);
+  background: var(--ch-shs-s-gain-fill);
+}
+/* The target: a firm tick at the bar's end, standing above and below it. */
+.ch-shs-gbar__t::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  right: 0;
+  width: 3px;
+  border-radius: var(--ch-radius-full);
+  background: var(--ch-shs-s-ink);
+}
+.ch-shs-gbar__k {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font: var(--ch-type-callout);
+  color: var(--ch-shs-s-ink-2);
 }
 .ch-shs-goaltext {
   margin: 0;
@@ -1915,37 +1930,18 @@ li + li > .ch-shs-rrow::before {
 }
 
 /* Goals. */
-.ch-shs-rg-none {
-  display: grid;
-  place-items: center;
-  width: calc(68 * var(--ch-type-k));
-  height: calc(68 * var(--ch-type-k));
-  margin: 2px auto 8px;
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-shs-goals {
   display: grid;
   gap: 16px;
 }
 .ch-shs-goal1 {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  display: grid;
+  gap: 6px;
 }
-.ch-shs-goal1 .ch-shs-rg {
-  flex: none;
-  margin: 0;
+.ch-shs-goal1 > span.ch-num {
+  font: var(--ch-type-callout);
+  color: var(--ch-shs-s-ink-2);
 }
-.ch-shs-goal1 > div {
-  min-width: 0;
-}
-.ch-shs-goal1 b {
-  display: block;
-  font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }
-.ch-shs-goal1 > div span.ch-num {
-  display: block;
-  margin-top: 2px;
-  font: var(--ch-type-15);
-  color: var(--ch-shs-s-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-shs-dev > div {
   position: relative;
   padding: 12px 16px 12px;
@@ -1967,21 +1963,6 @@ li + li > .ch-shs-rrow::before {
   margin-top: 2px;
   font: var(--ch-type-15);
   color: var(--ch-shs-s-ink-2); letter-spacing: var(--ch-track-15); }
-.ch-shs-prog {
-  height: calc(8 * var(--ch-type-k));
-  margin-top: 8px;
-  border-radius: var(--ch-radius-full);
-  background: var(--ch-shs-s-track);
-  box-shadow: var(--ch-shs-s-track-ring);
-  overflow: hidden;
-}
-.ch-shs-prog i {
-  display: block;
-  height: 100%;
-  border-radius: var(--ch-radius-full);
-  background: var(--ch-shs-s-gain-fill);
-  transform-origin: 0 50%;
-}
 .ch-shs-empty__t {
   margin: 6px 0 0;
   font: var(--ch-type-20-strong);
@@ -2943,5 +2924,35 @@ p.ch-shs-mini-cap {
 }
 .ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) > .ch-shs-ah .ch-shs-pi {
   background: var(--ch-feature-icon-bg);
+  color: var(--ch-on-green-plate);
+}
+
+/* Round by round on the overview (look-09): the count, then one cell per round holding its score, the best lit. */
+.ch-shs-rcount {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.ch-shs-rstrip {
+  display: grid;
+  grid-template-columns: repeat(var(--ch-shs-rs-n, 10), minmax(0, 1fr));
+  gap: 4px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-shs-rstrip li {
+  display: grid;
+  place-items: center;
+  height: calc(34 * var(--ch-type-k));
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-shs-s-track);
+  font: var(--ch-type-figure);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-rstrip li.is-best {
+  background: var(--ch-shs-s-gain-fill);
   color: var(--ch-on-green-plate);
 }

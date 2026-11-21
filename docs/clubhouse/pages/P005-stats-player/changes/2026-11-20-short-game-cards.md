@@ -55,3 +55,12 @@ Held items: none
   the top: "The figures" (or "Per round" in Scoring) is now the deep green
   card, right under the headline, and the four "numbers" panels take the
   title bar like the rest.
+- Chart forms fitted to the data (Nick, 21 Nov: "make it specific to what it
+  is displaying"): Goals and focus areas, on the overview and in the detail,
+  are each a row with the name and where it stands now over a bar from its
+  start to its target, filled to how far along it is, with the target as a
+  firm tick at the end (they were rings, and the focus areas a thin bar). The
+  overview's "Round by round" shows the rounds themselves, one cell per round
+  holding its score, oldest first, with the rounds at the best score in
+  green, instead of a second chart of the scores the Scoring average card
+  already draws. The Rounds detail keeps its chart.

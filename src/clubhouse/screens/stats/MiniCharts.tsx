@@ -203,17 +203,48 @@ export function RoundTicker({ rounds }: { rounds: readonly TickerRound[] }) {
   );
 }
 
-/** A goal's ring, from `progressOf`; it never invents progress, so a goal with no baseline draws no ring (the caller writes it as text). */
-export function GoalRing({ progress, label }: { progress: number; label: string }) {
-  const r = 27;
-  const c = 2 * Math.PI * r;
+/**
+ * The overview's rounds, as what the card counts (look-09, "make it specific to what it is displaying"): one cell per round,
+ * oldest first, each holding its score, ten to a row. The rounds at the window's best score are lit in green, unless every round
+ * shares it (a run of equal rounds has no best). The Scoring average card above already draws the scores as a line, so this card
+ * shows the rounds themselves, not a second chart of them.
+ */
+export function roundStripBest(scores: readonly number[]): boolean[] {
+  if (scores.length < 2) return scores.map(() => false);
+  const best = Math.min(...scores);
+  const all = scores.every((s) => s === best);
+  return scores.map((s) => !all && s === best);
+}
+
+export function RoundStrip({ rounds }: { rounds: readonly TickerRound[] }) {
+  const lit = roundStripBest(rounds.map((r) => r.score));
   return (
-    <span className="ch-shs-rg">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle className="rt" cx="32" cy="32" r={r} />
-        <circle className="rf" cx="32" cy="32" r={r} transform="rotate(-90 32 32)" style={{ strokeDasharray: c, strokeDashoffset: c * (1 - Math.max(0, Math.min(100, progress)) / 100), '--ch-ring-c': c } as CSSProperties} />
-      </svg>
-      <span className="ch-num">{label}</span>
+    <ol className="ch-shs-rstrip ch-num" aria-hidden="true" style={{ '--ch-shs-rs-n': Math.min(10, Math.max(1, rounds.length)) } as CSSProperties}>
+      {rounds.map((r, i) => (
+        <li key={r.id} className={lit[i] ? 'is-best' : undefined}>
+          {r.score}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * A goal's or focus area's bar (look-09, "make it specific to what it is displaying"): a target is a benchmark of its own, so the
+ * bar runs from where it started to the target, filled to how far along it is, with the target as the tick at its end. It reads
+ * `progressOf` only, so a goal with no baseline draws no bar (the caller writes it as text).
+ */
+export function GoalBar({ progress, start, target }: { progress: number; start: string; target: string }) {
+  const p = Math.max(0, Math.min(100, progress));
+  return (
+    <span className="ch-shs-gbar" aria-hidden="true">
+      <span className="ch-shs-gbar__t">
+        <i style={{ width: `${p}%` }} />
+      </span>
+      <span className="ch-shs-gbar__k ch-num">
+        <span>Start {start}</span>
+        <span>Target {target}</span>
+      </span>
     </span>
   );
 }
