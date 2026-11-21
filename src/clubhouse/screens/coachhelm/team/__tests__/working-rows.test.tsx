@@ -52,12 +52,12 @@ describe('Working on (W11)', () => {
     expect(document.body.textContent!.split(CASCADE).length - 1).toBe(1);
   });
 
-  it('a ring only where the focus has a target, closing its row; none for a shared focus or a proposal', () => {
+  it('a bar to the target only where the focus has one, closing its row; none for a shared focus or a proposal', () => {
     const drawn = card();
-    const ringed = drawn.filter((r) => r.querySelector('.ringc'));
+    const ringed = drawn.filter((r) => r.querySelector('.tgtbar'));
     expect(ringed).toHaveLength(1);
     expect(ringed[0]!.textContent).toContain('Owen · Wedges from 50 to 100 yd');
-    expect(ringed[0]!.lastElementChild!.classList.contains('ringc')).toBe(true);
+    expect(ringed[0]!.lastElementChild!.classList.contains('tgtbar')).toBe(true);
     for (const r of drawn) expect(r.firstElementChild!.tagName).toBe('DIV');
   });
 

@@ -1424,6 +1424,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-no-double-empty.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-21-stat-card-title-bars.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
@@ -1566,7 +1567,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-18-polish-w3.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-20-components.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-20-detail-tables.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-21-desk-detail-full-width.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1644,6 +1647,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-20-components.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-20-short-game-cards.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-21-desk-detail-full-width.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
@@ -2034,6 +2039,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-21-stat-card-title-bars.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
@@ -2191,6 +2197,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-19-warm-board-one-line-bylines.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-20-components.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-20-desk-shell-owner.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-21-standing-two-way-bars.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |

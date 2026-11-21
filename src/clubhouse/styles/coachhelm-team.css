@@ -1091,7 +1091,7 @@
   fill:var(--ch-ink-500);
   font: var(--ch-type-11-medium);
   text-anchor:middle; letter-spacing: var(--ch-track-11); }
-/* The words lead; a ring, when the focus has a target, closes the row (W11, Cards.tsx). */
+/* The words lead; a bar to the target, when the focus has one, closes the row (W11, look-09, Cards.tsx). */
 .ch-htb .wk {
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
@@ -1114,15 +1114,33 @@
 .ch-htb .wk .st {
   color:var(--ch-ink-600);
 }
-.ch-htb .ringc .trk {
-  stroke:var(--ch-chart-track);
+/* A focus's bar to its target (look-09): filled to now, the target the firm tick at its end. */
+.ch-htb .tgtbar {
+  position:relative;
+  display:block;
+  width:72px;
+  height:10px;
+  border-radius:var(--ch-radius-full);
+  background:var(--ch-chart-track);
 }
-.ch-htb .ringc .fil {
-  stroke:var(--ch-chart-gain-fill);
-  transition:stroke-dashoffset var(--ch-dur-marks) var(--ch-ease-ios);
+.ch-htb .tgtbar::after {
+  content:'';
+  position:absolute;
+  top:-3px;
+  bottom:-3px;
+  right:0;
+  width:2px;
+  border-radius:var(--ch-radius-full);
+  background:var(--ch-text-primary);
 }
-.ch-htb .ringc .fil.mid {
-  stroke:var(--ch-chart-flat);
+.ch-htb .tgtbar i {
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:var(--ch-chart-gain-fill);
+}
+.ch-htb .tgtbar i.mid {
+  background:var(--ch-chart-flat);
 }
 .ch-htb .rec {
   padding:0 16px 16px;
@@ -2397,4 +2415,26 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 .ch-htb[data-skel='chained'] .skl,
 .ch-htb:not([aria-busy='true']) [data-ch-team-wait] .skl {
   animation: none;
+}
+
+/*
+ * look-09, option F on the team board (Nick approved the card rollout for phone and desktop, 21 Nov 2026): every card's head is
+ * the deep green title bar the Stats cards carry, its title and count in the feature inks. The board's hero stays its one green
+ * card. Quiet text inside a card is darker, so no label reads pale.
+ */
+.ch-htb .card {
+  --ch-ink-600: color-mix(in oklab, var(--ch-text-primary) 80%, var(--ch-card-bg));
+}
+.ch-htb .card > .ch {
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
+}
+.ch-htb .card > .ch h4 {
+  color: var(--ch-feature-ink);
+}
+.ch-htb .card > .ch .meta {
+  color: var(--ch-feature-ink-2);
 }

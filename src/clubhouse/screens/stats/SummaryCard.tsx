@@ -125,10 +125,28 @@ export function SummaryCard({
   );
 }
 
-/** A plain card: the same box, with no chevron and no tap (`acard`, the style today's re-homed blocks take too). */
-export function ShsCard({ title, meta, flush = false, anchor, children }: { title: string; meta?: ReactNode; flush?: boolean; /** A place a push can land on. */ anchor?: string; children: ReactNode }) {
+/**
+ * A plain card: the same box, with no chevron and no tap (`acard`, the style today's re-homed blocks take too). Its title sits in the
+ * green title bar (look-09 option F); `feature` makes it the screen's one deep green card, which holds the headline figures.
+ */
+export function ShsCard({
+  title,
+  meta,
+  flush = false,
+  feature = false,
+  anchor,
+  children,
+}: {
+  title: string;
+  meta?: ReactNode;
+  flush?: boolean;
+  feature?: boolean;
+  /** A place a push can land on. */
+  anchor?: string;
+  children: ReactNode;
+}) {
   return (
-    <section className={'ch-shs-card' + (flush ? ' is-flushb' : '')} suppressHydrationWarning aria-label={title} data-ch-anchor={anchor}>
+    <section className={'ch-shs-card' + (flush ? ' is-flushb' : '') + (feature ? ' ch-shs-feature' : '')} suppressHydrationWarning aria-label={title} data-ch-anchor={anchor}>
       <div className="ch-shs-ah">
         <h3>{title}</h3>
         {meta != null && <span className="ch-shs-ah__meta ch-num">{meta}</span>}

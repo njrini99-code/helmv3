@@ -14,8 +14,8 @@ import { asDesktop, asPhone, browserBack, detailShown, painted, resetAddress, tr
  * F-0004 (audit, 13 Nov 2026): "clicking the middle of the Scoring average card does nothing; the chart takes the pointer". The
  * team cards' charts are drawings, not controls, and a press on them reaches the card, which opens its detail. The audit's timeouts
  * were Playwright clicking the card's keyboard key (`.ch-shs-sum__key`, `pointer-events: none` on purpose, STATS-8), which a pointer
- * never hits; its mouse retest ran on a desk, where the Scoring drill is already the open pane, and looked for an address change or
- * a dialog, which a desk never makes. These pin what a press in the middle of each card does.
+ * never hits; its mouse retest ran on a desk, which then had the Scoring drill open beside the cards, and looked for an address
+ * change or a dialog, which a desk never makes. These pin what a press in the middle of each card does.
  */
 
 afterEach(cleanup);
@@ -50,20 +50,21 @@ describe('a press in the middle of a team card opens its detail (F-0004)', () =>
   });
 });
 
-describe('a press in the middle of a team card changes the desk’s pane (F-0004)', () => {
+describe('a press in the middle of a team card opens its drill across the desk (F-0004)', () => {
   beforeEach(() => {
     asDesktop();
     resetAddress();
   });
 
-  it('the game and players cards open their drills, and the scoring card brings its own back', async () => {
+  it('each card opens its drill, and Back returns to the cards', async () => {
     render(tree(<StatsTeam data={TEAM} />));
     const open = () => document.querySelector<HTMLElement>('.ch-shs--desk')?.dataset.chShsOpen;
-    await waitFor(() => expect(open()).toBe('tscore'));
     for (const go of ['tgame', 'tplayers', 'tscore']) {
       const card = await painted(go);
       fireEvent.click(card.querySelector(middle[go]!)!);
       await waitFor(() => expect(open()).toBe(go));
+      fireEvent.click(document.querySelector<HTMLElement>('.ch-shs-dfull__back')!);
+      await waitFor(() => expect(open()).toBeUndefined());
     }
   });
 });

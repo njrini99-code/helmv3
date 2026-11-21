@@ -17,9 +17,10 @@ import { StatsPlayer } from '../StatsPlayer';
 import { StatsTeam } from '../StatsTeam';
 
 /**
- * Desktop My stats (stats-home, "Desktop"): the phone's rebuilt cards as a bento, and the chosen card's drill beside them. The cards
- * and the drills are the phone's own components (their figures and states are tested there); these tests pin what the desk adds:
- * which page a desktop browser gets, that a card changes the pane without a push, and that nothing is drawn twice or for the wrong viewer.
+ * Desktop My stats (stats-home, "Desktop"): the phone's rebuilt cards as a bento, and a card's drill opened across the page with Back
+ * to the overview (look-09, Nick 21 Nov 2026: "Full width, back to overview"). The cards and the drills are the phone's own components
+ * (their figures and states are tested there); these tests pin what the desk adds: which page a desktop browser gets, that a card
+ * opens its drill without a push and Back returns, and that nothing is drawn for the wrong viewer.
  */
 const shell = (node: ReactNode) => (
   <LazyMotion features={domAnimation}>
@@ -32,17 +33,23 @@ const shell = (node: ReactNode) => (
 );
 const self = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER_SUGGESTED, viewer: 'player', ...over });
 const coachView = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER_SUGGESTED, viewer: 'coach', ...over });
-const pane = () => document.querySelector<HTMLElement>('.ch-shs-desk__det');
+const pane = () => document.querySelector<HTMLElement>('.ch-shs-dfull');
 const cards = () => [...document.querySelectorAll<HTMLElement>('[data-ch="stats-card"]')];
-const title = () => pane()?.querySelector('.ch-shs-desk__dett')?.textContent ?? null;
+const title = () => pane()?.querySelector('.ch-shs-dfull__t')?.textContent ?? null;
+const card = async (go: string) =>
+  waitFor(() => {
+    const c = cards().find((x) => x.dataset.go === go);
+    if (!c) throw new Error(`the ${go} card is not drawn yet`);
+    return c;
+  });
 
 beforeEach(() => {
   window.location.hash = '';
 });
 afterEach(cleanup);
 
-describe('desktop My stats is the bento with its drill beside it', () => {
-  it('a desktop browser gets the cards and one drill pane, not the tabbed tables', async () => {
+describe('desktop My stats is the bento, and a card opens its drill across the page', () => {
+  it('a desktop browser gets the cards and no drill until one is chosen, not the tabbed tables', async () => {
     render(shell(<StatsPlayer data={self()} coachId={null} />));
     await waitFor(() => expect(cards().length).toBeGreaterThan(3));
     expect(screen.queryByRole('tablist', { name: 'Profile sections' })).toBeNull();
@@ -51,25 +58,27 @@ describe('desktop My stats is the bento with its drill beside it', () => {
     // No phone bar and no pushed screen on a desk.
     expect(document.querySelector('.ch-pscreen')).toBeNull();
     expect(screen.getByRole('heading', { level: 1, name: 'My stats' })).toBeTruthy();
+    expect(pane()).toBeNull();
   });
 
-  it('the pane rests on Scoring; choosing a card changes the pane in place, with no push and no hash', async () => {
+  it('choosing a card opens its drill across the page, with no push and no hash, and Back returns to the overview', async () => {
     const pushes = vi.spyOn(window.history, 'pushState');
     render(shell(<StatsPlayer data={self()} coachId={null} />));
-    await waitFor(() => expect(pane()).not.toBeNull());
-    expect(title()).toBe('Scoring');
-    const rounds = await waitFor(() => {
-      const c = cards().find((x) => x.dataset.go === 'rounds');
-      if (!c) throw new Error('the rounds card is not drawn yet');
-      return c;
-    });
-    fireEvent.click(within(rounds).getAllByRole('button')[0]!);
+    fireEvent.click(within(await card('rounds')).getAllByRole('button')[0]!);
     await waitFor(() => expect(title()).toBe('Rounds'));
     expect(document.querySelector<HTMLElement>('.ch-shs--desk')?.dataset.chShsOpen).toBe('rounds');
+    // The drill takes the overview's place: no card stands beside it.
+    expect(cards()).toHaveLength(0);
     expect(pushes).not.toHaveBeenCalled();
     expect(window.location.hash).toBe('');
-    // The summary stays in reach while a drill shows: nothing is made inert on a desk.
-    expect(document.querySelector('.ch-shs-desk__sum')?.closest('[inert]')).toBeNull();
+    fireEvent.click(within(pane()!).getByRole('button', { name: 'Overview' }));
+    await waitFor(() => expect(pane()).toBeNull());
+    expect(cards().length).toBeGreaterThan(3);
+    // Escape is Back too.
+    fireEvent.click(within(await card('putting')).getAllByRole('button')[0]!);
+    await waitFor(() => expect(title()).toBe('Putting'));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    await waitFor(() => expect(pane()).toBeNull());
     pushes.mockRestore();
   });
 
@@ -105,33 +114,24 @@ describe('desktop My stats is the bento with its drill beside it', () => {
     expect(screen.queryByRole('heading', { name: 'Your game' })).toBeNull();
   });
 
-  it('a failed read keeps the page honest: the failure across the cards’ place, and the pane on the one card left', async () => {
+  it('a failed read keeps the page honest: the failure across the cards’ place, and only the card that reads no rounds', async () => {
     render(shell(<StatsPlayer data={self({ roundsError: true })} coachId={null} />));
-    await waitFor(() => expect(pane()).not.toBeNull());
-    // No figure card is drawn from rounds that did not load; Development's card does not read them, and the pane is its drill.
-    expect(cards().map((c) => c.dataset.go)).toEqual(['goals']);
-    expect(title()).not.toBe('Scoring');
-    expect(document.querySelector<HTMLElement>('.ch-shs--desk')?.dataset.chShsOpen).toBe('goals');
+    // No figure card is drawn from rounds that did not load; Development's card does not read them, and it still opens its drill.
+    await waitFor(() => expect(cards().map((c) => c.dataset.go)).toEqual(['goals']));
+    expect(pane()).toBeNull();
+    fireEvent.click(within(await card('goals')).getAllByRole('button')[0]!);
+    await waitFor(() => expect(document.querySelector<HTMLElement>('.ch-shs--desk')?.dataset.chShsOpen).toBe('goals'));
   });
 
-  it('the resting Scoring drill carries only what its card lacks: no second figure, change or curve beside the card', async () => {
+  it('a drill opened across the page carries its own head: the figure, its change and the curve', async () => {
     render(shell(<StatsPlayer data={coachView()} coachId="coach-1" />));
-    await waitFor(() => expect(pane()).not.toBeNull());
-    expect(title()).toBe('Scoring');
-    // The Scoring average card stands beside the pane with the figure, its change and the score-by-round curve.
-    expect(pane()!.querySelector('.ch-shs-d-hero__fig')).toBeNull();
-    expect(pane()!.textContent).not.toContain('Score by round');
-    // What the card lacks stays: a coach's rest-of-team average over the same rounds (DF-C-17).
-    if (coachView().teamAvg != null) expect(pane()!.textContent).toContain('Rest of team');
-    // A drill whose card shows less than its hero keeps the hero.
-    const rounds = await waitFor(() => {
-      const c = cards().find((x) => x.dataset.go === 'rounds');
-      if (!c) throw new Error('the rounds card is not drawn yet');
-      return c;
-    });
-    fireEvent.click(within(rounds).getAllByRole('button')[0]!);
-    await waitFor(() => expect(title()).toBe('Rounds'));
+    fireEvent.click(within(await card('scoring')).getAllByRole('button')[0]!);
+    await waitFor(() => expect(title()).toBe('Scoring'));
+    // No card stands beside it any more, so the drill draws what the Scoring average card showed.
     expect(pane()!.querySelector('.ch-shs-d-hero__fig')).not.toBeNull();
+    expect(pane()!.textContent).toContain('Score by round');
+    // A coach's rest-of-team average over the same rounds stays (DF-C-17).
+    if (coachView().teamAvg != null) expect(pane()!.textContent).toContain('Team');
   });
 
   it('the cards leave no empty cell: the parts stand as the long game beside the short game, and Rounds beside Development', async () => {
@@ -156,7 +156,7 @@ describe('desktop My stats is the bento with its drill beside it', () => {
 
   it('with no figures the one card left stands alone, unpaired', async () => {
     render(shell(<StatsPlayer data={self({ roundsError: true })} coachId={null} />));
-    await waitFor(() => expect(pane()).not.toBeNull());
+    await waitFor(() => expect(cards().length).toBe(1));
     expect(document.querySelector('.ch-shs-duo')).toBeNull();
     expect(screen.getByRole('heading', { name: 'Development' })).toBeTruthy();
   });
@@ -168,13 +168,13 @@ describe('desktop My stats is the bento with its drill beside it', () => {
   });
 });
 
-describe('desktop Team stats is the bento with its drill beside it', () => {
-  it('a desktop browser gets the three cards, Season bests and one drill pane, not the long board', async () => {
+describe('desktop Team stats is the bento, and a card opens its drill across the page', () => {
+  it('a desktop browser gets the three cards and Season bests, not the long board', async () => {
     render(shell(<StatsTeam data={PREVIEW_TEAM_STATS} />));
     await waitFor(() => expect(cards().map((c) => c.dataset.go)).toEqual(['tscore', 'tgame', 'tplayers']));
     expect(screen.getByRole('heading', { level: 1, name: 'Team stats' })).toBeTruthy();
     expect(document.querySelector('.ch-pscreen')).toBeNull();
-    expect(title()).toBe('Team scoring');
+    expect(pane()).toBeNull();
     // What no phone card carries stays on the desk: Season bests and Export.
     expect(screen.getByRole('heading', { name: 'Season bests' })).toBeTruthy();
     expect(screen.getByText('Export')).toBeTruthy();
@@ -185,28 +185,29 @@ describe('desktop Team stats is the bento with its drill beside it', () => {
     expect(document.querySelector('.ch-shs-dhead')?.textContent).not.toMatch(/[+−]\d\.\d/);
   });
 
-  it('the resting Team scoring drill carries only what its card lacks: The round, Round days and putting, no second figure or curve', async () => {
+  it('the Team scoring drill opens on The round as its green feature card, with its own head, the round days and putting', async () => {
     render(shell(<StatsTeam data={PREVIEW_TEAM_STATS} />));
-    await waitFor(() => expect(pane()).not.toBeNull());
-    expect(title()).toBe('Team scoring');
-    expect(pane()!.querySelector('.ch-shs-d-hero__fig')).toBeNull();
-    expect(pane()!.textContent).not.toContain('By round day');
-    expect(pane()!.textContent).toContain('The round');
+    fireEvent.click(within(await card('tscore')).getAllByRole('button')[0]!);
+    await waitFor(() => expect(title()).toBe('Team scoring'));
+    expect(pane()!.querySelector('.ch-shs-d-hero__fig')).not.toBeNull();
+    const feature = pane()!.querySelectorAll('.ch-shs-feature');
+    expect(feature).toHaveLength(1);
+    expect(feature[0]!.textContent).toContain('The round');
     expect(pane()!.textContent).toContain('Round days');
     expect(pane()!.textContent).toContain('Team putting');
     // Each figure's change chip sits in the cell's last line, so the three share one baseline whatever the reference lines above them.
     expect(pane()!.querySelectorAll('.ch-shs-m3 dd.d .ch-shs-pill').length).toBeGreaterThan(1);
   });
 
-  it('the pane is as tall as what it holds: no height cap and no scroller of its own, so it ends on a whole card', () => {
+  it('the drill stands its cards two across, as tall as they are, with no scroller of its own', () => {
     const css = readFileSync(join(__dirname, '../../../styles/stats-redesign.css'), 'utf8');
-    const rule = /\n\.ch-shs-desk__det \{[^}]*\}/.exec(css)?.[0] ?? '';
-    expect(rule).toMatch(/position: sticky/);
-    expect(rule).not.toMatch(/max-height|overflow/);
+    const body = /\n\.ch-shs-dfull \.ch-shs-d-sheet\.ch-shs-dfull__body \{[^}]*\}/.exec(css)?.[0] ?? '';
+    expect(body).toMatch(/grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+    expect(body).not.toMatch(/max-height|overflow/);
     expect(/\n\.ch-shs-m3 \.d \{[^}]*margin-top: auto/.test(css)).toBe(true);
   });
 
-  it('choosing a card changes the pane in place, with no push and no hash', async () => {
+  it('choosing a card opens its drill across the page, with no push and no hash', async () => {
     const pushes = vi.spyOn(window.history, 'pushState');
     render(shell(<StatsTeam data={PREVIEW_TEAM_STATS} />));
     const players = await waitFor(() => {
@@ -222,22 +223,20 @@ describe('desktop Team stats is the bento with its drill beside it', () => {
     pushes.mockRestore();
   });
 
-  it('a figures list that is not one crashes its own sections, never the page: each card and the drill say so in place', async () => {
+  it('a figures list that is not one crashes its own sections, never the page: each card says so in place', async () => {
     // /clubhouse-preview/stats?state=crash answered 500: the Scoring average card looked its figure up while the page built the
     // card's props, and the drill read it with no boundary at all.
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     render(shell(<StatsTeam data={{ ...PREVIEW_TEAM_STATS, figures: null as never, bests: null as never }} />));
-    await waitFor(() => expect(pane()).not.toBeNull());
-    expect(screen.getAllByText('Team figures couldn’t be shown').length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getAllByText('Team figures couldn’t be shown').length).toBeGreaterThan(0));
     expect(screen.getAllByText('Strokes gained by leg couldn’t be shown').length).toBeGreaterThan(0);
-    expect(within(pane()!).getByText('Team scoring couldn’t be shown')).toBeTruthy();
     // What does not read the figures still draws.
     expect(cards().map((c) => c.dataset.go)).toEqual(['tplayers']);
     expect(screen.getByRole('heading', { level: 1, name: 'Team stats' })).toBeTruthy();
     quiet.mockRestore();
   });
 
-  it('rounds that did not load are said across the page, with no cards and no pane', async () => {
+  it('rounds that did not load are said across the page, with no cards and no drill', async () => {
     render(shell(<StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundsError: true }} />));
     await waitFor(() => expect(document.querySelector('.ch-shs-desk.is-alone')).not.toBeNull());
     expect(cards()).toHaveLength(0);
