@@ -2989,17 +2989,16 @@ p.ch-shs-mini-cap {
   color: var(--ch-feature-ink-2);
 }
 /* A change chip and a link on the green feature card, in the feature's own tints and ink (the plain chip was a pale box on green). */
-.ch-shs-feature .ch-shs-pill.ch-shs-pill {
+.ch-shs-feature .ch-shs-pill.ch-shs-pill:not(.is-gain):not(.is-loss) {
   background: var(--ch-feature-flat-tint);
   color: var(--ch-feature-ink);
 }
-.ch-shs-feature .ch-shs-pill.ch-shs-pill.is-gain {
-  background: var(--ch-feature-gain-tint);
-  color: var(--ch-feature-gain);
-}
-.ch-shs-feature .ch-shs-pill.ch-shs-pill.is-loss {
-  background: var(--ch-feature-loss-tint);
-  color: var(--ch-feature-loss);
+/* On the green stage the chart's gain and loss pair is redefined to the feature's mint and gold (CONS-20), so a toned chip reads. */
+.ch-shs-feature {
+  --ch-chart-gain: var(--ch-feature-gain);
+  --ch-chart-loss: var(--ch-feature-loss);
+  --ch-chart-gain-tint: var(--ch-feature-gain-tint);
+  --ch-chart-loss-tint: var(--ch-feature-loss-tint);
 }
 .ch-shs-feature a:not(.ch-btn),
 .ch-shs-feature .ch-howc-link.ch-howc-link {

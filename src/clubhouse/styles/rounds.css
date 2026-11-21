@@ -6460,6 +6460,9 @@ button.ch-hip__row:focus-visible,
   overflow: hidden;
 }
 .ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h {
+  /* The green stage redefines the chart's gain and loss pair to the feature's mint and gold (CONS-20). */
+  --ch-chart-gain: var(--ch-feature-gain);
+  --ch-chart-loss: var(--ch-feature-loss);
   margin-bottom: 8px;
   padding-block: 12px;
   background: var(--ch-feature-bg);
@@ -6476,10 +6479,10 @@ button.ch-hip__row:focus-visible,
   color: var(--ch-feature-ink);
 }
 .ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h b.is-gain {
-  color: var(--ch-feature-gain);
+  color: var(--ch-chart-gain);
 }
 .ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h b.is-loss {
-  color: var(--ch-feature-loss);
+  color: var(--ch-chart-loss);
 }
 /* The phone review is a flush ledger, no card surface: its title bar runs the page's width, its words on the page's margin. */
 .ch-rv.is-phone .ch-rv-card.ch-rv-card {

@@ -10195,10 +10195,14 @@
       "file": "src/clubhouse/screens/stats/DeskPane.tsx",
       "group": "screens",
       "exports": [
-        "DeskPane"
+        "DeskDetail",
+        "DeskOverview"
       ],
       "styles": [
-        "src/clubhouse/styles/stats-redesign.css"
+        "src/clubhouse/styles/coachhelm-plan.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -17453,6 +17457,11 @@
           "name": "--ch-file-shadow-7",
           "value": "none",
           "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-ink-2",
+          "value": "color-mix(in oklab, var(--ch-hf-a-ink, var(--ch-text-primary)) 80%, var(--ch-hf-a-card))",
+          "scope": ".ch-hf .card"
         }
       ]
     },
@@ -18219,6 +18228,11 @@
           "name": "--ch-chart-gain",
           "value": "var(--ch-feature-gain)",
           "scope": ".ch-htb .stn,\n.ch-htb .stchips"
+        },
+        {
+          "name": "--ch-ink-600",
+          "value": "color-mix(in oklab, var(--ch-text-primary) 80%, var(--ch-card-bg))",
+          "scope": ".ch-htb .card"
         }
       ]
     },
@@ -23574,6 +23588,26 @@
           "name": "--ch-rcard-mk",
           "value": "18px",
           "scope": "@media screen and (min-width: 821px) and (max-width: 1180px) and ((min-height: 501px) or (pointer: fine)) → @container (max-width: 760px) → .ch-rcard:not(.is-phone)"
+        },
+        {
+          "name": "--ch-text-secondary",
+          "value": "color-mix(in oklab, var(--ch-text-primary) 82%, var(--ch-bg-surface))",
+          "scope": ".ch-rv-card"
+        },
+        {
+          "name": "--ch-text-tertiary",
+          "value": "color-mix(in oklab, var(--ch-text-primary) 72%, var(--ch-bg-surface))",
+          "scope": ".ch-rv-card"
+        },
+        {
+          "name": "--ch-chart-gain",
+          "value": "var(--ch-feature-gain)",
+          "scope": ".ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h"
+        },
+        {
+          "name": "--ch-chart-loss",
+          "value": "var(--ch-feature-loss)",
+          "scope": ".ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h"
         }
       ]
     },
@@ -24167,6 +24201,7 @@
         "ch-gx-tbl",
         "ch-gx-tiles",
         "ch-gx-tone",
+        "ch-howc-link",
         "ch-loss",
         "ch-num",
         "ch-pbar__back",
@@ -24217,12 +24252,12 @@
         "ch-shs-dctl",
         "ch-shs-delta",
         "ch-shs-desk",
-        "ch-shs-desk__det",
-        "ch-shs-desk__dett",
-        "ch-shs-desk__lead",
-        "ch-shs-desk__rail",
         "ch-shs-desk__sum",
         "ch-shs-dev",
+        "ch-shs-dfull",
+        "ch-shs-dfull__back",
+        "ch-shs-dfull__body",
+        "ch-shs-dfull__t",
         "ch-shs-dhead",
         "ch-shs-dhead__act",
         "ch-shs-dhead__id",
@@ -24372,8 +24407,10 @@
         "ch-stm-putt",
         "ch-stm-putt__bar",
         "ch-stm-putt__r",
+        "ch-surface",
         "ch-surface__body",
         "ch-surface__head",
+        "ch-surface__sub",
         "ch-surface__title",
         "ch-sv-mix",
         "ch-sw-last",
@@ -24668,7 +24705,7 @@
         {
           "name": "--ch-shs-pane-rest",
           "value": "calc(var(--ch-topbar-h) + var(--ch-space-4))",
-          "scope": ".ch-shs-desk"
+          "scope": ".ch-shs--desk"
         },
         {
           "name": "--ch-shs-s-ink-2",
@@ -24699,6 +24736,26 @@
           "name": "--ch-shs-s-ink-3",
           "value": "var(--ch-feature-ink-2)",
           "scope": ".ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) > .ch-shs-ah"
+        },
+        {
+          "name": "--ch-chart-gain",
+          "value": "var(--ch-feature-gain)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-chart-loss",
+          "value": "var(--ch-feature-loss)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-chart-gain-tint",
+          "value": "var(--ch-feature-gain-tint)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-chart-loss-tint",
+          "value": "var(--ch-feature-loss-tint)",
+          "scope": ".ch-shs-feature"
         }
       ]
     },
