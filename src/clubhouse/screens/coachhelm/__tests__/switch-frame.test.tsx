@@ -17,6 +17,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => router, usePathname: () => 
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../../lib/use-phone', () => ({ useChPhone: () => true, CH_PHONE_QUERY: '(max-width: 820px)' }));
 
+import { CH_BUSY } from '../../../lib/motion';
 import { ClubhouseMarker } from '../../../shell/context';
 import { COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
 import { CoachHelmSwitchFrame } from '../SwitchFrame';
@@ -135,27 +136,37 @@ describe('N13C-67 · N13P-18 the CoachHelm switch is mounted once, above the vie
 
   it('a tap draws the next view’s skeleton in the same commit, never the old view held while the server answers', async () => {
     vi.useRealTimers();
-    const answer = deferred();
-    renderPage(() => answer.promise);
-    expect(screen.getByTestId('view').textContent).toBe('Team view');
-    const row = document.querySelector('.ch-hsw');
-    await act(async () => {
-      fireEvent.click(screen.getByRole('radio', { name: 'Ask' }));
-    });
-    expect(router.push).toHaveBeenCalledWith(COACHHELM_HREF.ask);
-    // The old view is gone in the tap's own commit; Ask's skeleton holds its place under the switch, which has moved and stayed put.
-    expect(screen.queryByTestId('view')).toBeNull();
-    expect(screen.getByRole('main', { name: 'Loading Ask CoachHelm' })).toBeTruthy();
-    expect(document.querySelector('.ch-hsw')).toBe(row);
-    expect(screen.getByRole('radio', { name: 'Ask' })).toHaveAttribute('aria-checked', 'true');
-    // Seconds later the server answers: the view lands under the same switch.
-    await wait(20);
-    expect(screen.queryByTestId('view')).toBeNull();
-    // The server answers before the busy delay: no skeleton block has shown, so the view takes the place at once.
-    await act(async () => answer.resolve());
-    await wait(20);
-    expect(screen.getByTestId('view').textContent).toBe('Ask view');
-    expect(document.querySelector('.ch-hsw')).toBe(row);
+    // This case is the server answering inside the busy delay, so the delay's timer is held, not left to the wall clock: on a
+    // busy CI runner the steps below can pass 150 ms, and the skeleton's hold would be measured instead (it has its own case).
+    const setTimeoutReal = window.setTimeout;
+    const held = vi
+      .spyOn(window, 'setTimeout')
+      .mockImplementation(((fn: TimerHandler, ms?: number, ...args: unknown[]) => (ms === CH_BUSY.delay ? 0 : setTimeoutReal(fn, ms, ...args))) as typeof window.setTimeout);
+    try {
+      const answer = deferred();
+      renderPage(() => answer.promise);
+      expect(screen.getByTestId('view').textContent).toBe('Team view');
+      const row = document.querySelector('.ch-hsw');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('radio', { name: 'Ask' }));
+      });
+      expect(router.push).toHaveBeenCalledWith(COACHHELM_HREF.ask);
+      // The old view is gone in the tap's own commit; Ask's skeleton holds its place under the switch, which has moved and stayed put.
+      expect(screen.queryByTestId('view')).toBeNull();
+      expect(screen.getByRole('main', { name: 'Loading Ask CoachHelm' })).toBeTruthy();
+      expect(document.querySelector('.ch-hsw')).toBe(row);
+      expect(screen.getByRole('radio', { name: 'Ask' })).toHaveAttribute('aria-checked', 'true');
+      // Seconds later the server answers: the view lands under the same switch.
+      await wait(20);
+      expect(screen.queryByTestId('view')).toBeNull();
+      // The server answers before the busy delay: no skeleton block has shown, so the view takes the place at once.
+      await act(async () => answer.resolve());
+      await wait(20);
+      expect(screen.getByTestId('view').textContent).toBe('Ask view');
+      expect(document.querySelector('.ch-hsw')).toBe(row);
+    } finally {
+      held.mockRestore();
+    }
   });
 
   it('a skeleton that has shown holds the busy hold (300 ms) before the view takes its place', async () => {
