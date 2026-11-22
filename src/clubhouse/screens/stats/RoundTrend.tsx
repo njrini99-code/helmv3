@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import { EmptyState } from '../../ui/States';
 import { gappedPath } from '../../lib/chart';
 import { formatSigned } from '../../lib/format';
@@ -38,7 +39,11 @@ export function RoundTrend({
   /** Where "Open round" goes for a round, or null for none (the review is not rebuilt for this viewer). */
   openHref?: (id: string) => string | null;
 }) {
-  const W = size === 'phone' ? 340 : 680;
+  // C9 (premium plan §3.9): on a desk the drawing is as wide as the chart is drawn, one unit a pixel, so its tick and
+  // label text keep their size at every window width instead of scaling with a fixed 680 box. The phone keeps its 340.
+  const svg = useRef<SVGSVGElement | null>(null);
+  const deskW = useDrawnWidth(svg, size !== 'phone');
+  const W = size === 'phone' ? 340 : (deskW ?? 680);
   const H = size === 'phone' ? 168 : 184;
   const plotW = W - PAD.l - PAD.r;
   const plotH = H - PAD.t - PAD.b;
@@ -111,7 +116,7 @@ export function RoundTrend({
       <p className="ch-sr-only" aria-live="polite">
         {spoken}
       </p>
-      <svg viewBox={`0 0 ${W} ${H}`} className="ch-sv-rt__svg" aria-hidden="true" focusable="false" {...pin.area}>
+      <svg ref={svg} viewBox={`0 0 ${W} ${H}`} className="ch-sv-rt__svg" aria-hidden="true" focusable="false" {...pin.area}>
         {ticks.map((t) => (
           <g key={t}>
             <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} className="ch-sv-rt__grid" />
@@ -161,4 +166,20 @@ export function RoundTrend({
       />
     </div>
   );
+}
+
+/** The width an element is drawn at, in whole pixels, followed as it changes; null until measured or when `on` is false. */
+function useDrawnWidth(ref: { current: Element | null }, on: boolean): number | null {
+  const [width, setWidth] = useState<number | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!on || !el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver((entries) => {
+      const w = Math.round(entries[0]?.contentRect.width ?? 0);
+      if (w > 0) setWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref, on]);
+  return on ? width : null;
 }
