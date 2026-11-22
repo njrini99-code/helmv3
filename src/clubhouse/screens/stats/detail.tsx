@@ -41,6 +41,7 @@ export function How({ children }: { children: ReactNode }) {
 }
 
 /** A panel of Game detail (a titled block in the two-column body). `how`: the method, behind "How this is measured" (the phone's, where `note` is the one short line). */
+/** Every panel opens on the green title bar (look-09 option F); the detail's one green card is its "The figures" card. */
 export function Panel({ title, note, how, wide, children }: { title: string; note?: string; how?: string; wide?: boolean; children: ReactNode }) {
   return (
     <div className={'ch-gm-p' + (wide ? ' is-wide' : '')}>
@@ -123,11 +124,15 @@ export function DataTable({
   cols,
   rows,
   note,
+  keyCol,
 }: {
   label: string;
   cols: string[];
-  rows: Array<{ key: string; head: string; cells: Array<Cell | string> }>;
+  /** `total`: the row that sums the others ("All distances"), set apart under a firmer rule. */
+  rows: Array<{ key: string; head: string; cells: Array<Cell | string>; total?: boolean }>;
   note?: string;
+  /** The summary column ("All lies"), by its index in `cells`: drawn as one quiet well down the table. */
+  keyCol?: number;
 }) {
   return (
     <>
@@ -137,7 +142,7 @@ export function DataTable({
           <thead>
             <tr>
               {cols.map((c, i) => (
-                <th key={c} scope="col" className={i ? 'r' : undefined}>
+                <th key={c} scope="col" className={i ? `r${keyCol != null && i - 1 === keyCol ? ' is-key' : ''}` : undefined}>
                   {c}
                 </th>
               ))}
@@ -145,13 +150,13 @@ export function DataTable({
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.key}>
+              <tr key={r.key} className={r.total ? 'is-total' : undefined}>
                 <th scope="row">{r.head}</th>
                 {r.cells.map((c, i) => {
                   const cell = typeof c === 'string' ? { v: c } : c;
                   return (
-                    <td key={i} className={`r ch-num${cell.tone ? ` ch-${cell.tone}` : ''}${cell.dim ? ' is-dim' : ''}`}>
-                      {cell.v}
+                    <td key={i} className={`r ch-num${cell.tone ? ` ch-${cell.tone}` : ''}${cell.dim ? ' is-dim' : ''}${i === keyCol ? ' is-key' : ''}`}>
+                      {cell.tone ? <span className="ch-gx-tone">{cell.v}</span> : cell.v}
                     </td>
                   );
                 })}

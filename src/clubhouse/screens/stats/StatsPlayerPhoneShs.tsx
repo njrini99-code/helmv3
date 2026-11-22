@@ -37,7 +37,7 @@ import { FocusLoop } from './FocusLoop';
 import { GameDetail, type ChReadsSource } from './GameDetail';
 import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { legReadout, sgLegRows } from './leg-rows';
-import { GoalRing, MiniDiverging, MiniRails, RoundTicker, type MiniRailRow } from './MiniCharts';
+import { GoalBar, MiniDiverging, MiniRails, RoundStrip, RoundTicker, type MiniRailRow } from './MiniCharts';
 import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { sgIsEstimate, sgMixWords } from '../../data/stats-sg-mix';
 import { ProposalAnswer } from './ProposalAnswer';
@@ -63,7 +63,7 @@ import {
   windowShort,
 } from './shs-figures';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
-import { DeskPane } from './DeskPane';
+import { DeskDetail, DeskOverview, useDeskReturn } from './DeskPane';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
 import { ShsArrow, ShsCard, ShsChevron, ShsIcon, ShsPill, SummaryCard, type ShsIconName } from './SummaryCard';
 import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
@@ -189,14 +189,25 @@ export function StatsPlayerPhoneShs({
     }
   };
 
-  // On a desk the drill stands beside the cards: choosing a card changes the pane, and nothing is pushed or written to the address.
+  // On a desk a card opens its drill across the page (look-09, Nick 21 Nov 2026: "Full width, back to overview"); Back returns to
+  // the overview where it was. Nothing is pushed or written to the address.
   const [deskPick, setDeskPick] = useState<StatsPlayerDetailId | null>(null);
-  // With no figures to drill into (a failed read, no rounds yet) the only card left is Development's, so the pane shows that.
-  const deskDetail: StatsPlayerDetailId = failed || noRounds ? 'goals' : (deskPick ?? (detail as StatsPlayerDetailId | null) ?? 'scoring');
+  const deskReturn = useDeskReturn();
+  // An address that named a drill opens it once; after Back the overview stays.
+  const [seedGone, setSeedGone] = useState(false);
+  const deskDetail: StatsPlayerDetailId | null = deskPick ?? (seedGone ? null : ((detail as StatsPlayerDetailId | null) ?? null));
   const go = (id: StatsDetailId, landOn?: string) => {
     setAnchor(landOn ?? null);
-    if (desk) setDeskPick(id as StatsPlayerDetailId);
-    else open(id);
+    if (desk) {
+      if (!deskDetail) deskReturn.remember(root.current, id);
+      setDeskPick(id as StatsPlayerDetailId);
+    } else open(id);
+  };
+  const deskBack = () => {
+    deskReturn.returning();
+    setAnchor(null);
+    setDeskPick(null);
+    setSeedGone(true);
   };
   // The pane opens each drill at its top, or on the block the card named (What changed lands on "Against the N before").
   const [anchor, setAnchor] = useState<string | null>(null);
@@ -322,20 +333,22 @@ export function StatsPlayerPhoneShs({
           {below && !paired && developmentBlock}
     </>
   );
-  const ready = !failed && !noRounds;
 
   if (desk)
     return (
-      <div ref={root} className="ch-shs ch-shs--desk" data-ch-shs-open={deskDetail}>
-        {controls}
-        <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className={'ch-shs-desk' + (below ? '' : ' is-alone')}>
-          <div className="ch-shs-desk__sum">{sheet}</div>
-          {(ready || below) && (
-            <DeskPane detail={deskDetail} hash={hashOf(deskDetail)} title={DETAIL_TITLE[deskDetail]} anchor={anchor}>
-              <DetailBody id={deskDetail} data={data} reads={reads} onRetry={onRetry} coach={coach} onAddFocus={onAddFocus} onPart={(id) => go(id)} beside />
-            </DeskPane>
-          )}
-        </WindowCrossfade>
+      <div ref={root} className="ch-shs ch-shs--desk" data-ch-shs-open={deskDetail ?? undefined}>
+        {deskDetail ? (
+          <DeskDetail detail={deskDetail} hash={hashOf(deskDetail)} title={DETAIL_TITLE[deskDetail]} back="Overview" anchor={anchor} onBack={deskBack} controls={controls}>
+            <DetailBody id={deskDetail} data={data} reads={reads} onRetry={onRetry} coach={coach} onAddFocus={onAddFocus} onPart={(id) => go(id)} />
+          </DeskDetail>
+        ) : (
+          <>
+            {controls}
+            <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-desk is-alone">
+              <DeskOverview onDrawn={deskReturn.restore}>{sheet}</DeskOverview>
+            </WindowCrossfade>
+          </>
+        )}
       </div>
     );
 
@@ -795,23 +808,19 @@ function RoundsCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => voi
   const n = data.win.rounds;
   return (
     <SummaryCard go="rounds" onOpen={onOpen} title="Round by round" meta={label} ariaLabel={`Round by round: ${plural(n, 'round')}${best ? `, best ${best.value}` : ''}. Open details`}>
-      <div className="ch-shs-sb">
-        <div>
-          <span className="ch-shs-bigv">
-            {n}
-            <small>{pluralWord(n, 'round', 'rounds')}</small>
-          </span>
-          {best && n > 1 && (
-            <div className="ch-shs-cap ch-num">
-              Best {best.value} · {best.date}
-            </div>
-          )}
-        </div>
-        <div>
-          <RoundTicker rounds={tickerRounds(data)} />
-          {n > 1 && <div className="ch-shs-mini-cap">Higher on the chart is a lower score; best round in green</div>}
-        </div>
+      <div className="ch-shs-rcount">
+        <span className="ch-shs-bigv">
+          {n}
+          <small>{pluralWord(n, 'round', 'rounds')}</small>
+        </span>
+        {best && n > 1 && (
+          <div className="ch-shs-cap ch-num">
+            Best {best.value} · {best.date}
+          </div>
+        )}
       </div>
+      <RoundStrip rounds={tickerRounds(data)} />
+      {n > 1 && <div className="ch-shs-mini-cap">Each round’s score, oldest first; best in green</div>}
     </SummaryCard>
   );
 }
@@ -822,21 +831,23 @@ interface RingItem {
   progress: number | null;
   centre: string;
   line: string;
+  start: string;
+  target: string;
 }
 
-/** Rings only from `progressOf`, never invented (criterion 46): goals first, then the coach's focus areas. */
+/** Bars only from `progressOf`, never invented (criterion 46): goals first, then the coach's focus areas. */
 function ringItems(data: ChPlayerProfile): RingItem[] {
   const goals = data.goals
     .filter((g) => g.state !== 'achieved' && g.state !== 'completed' && g.state !== 'paused')
     .map((g) => {
       const metric = devMetric(g.title, g.metric);
-      return { id: g.id, title: devTitle(g.title), progress: progressOf(g.baseline, g.current, g.target), centre: devValue(g.current, metric), line: goalLine(g) };
+      return { id: g.id, title: devTitle(g.title), progress: progressOf(g.baseline, g.current, g.target), centre: devValue(g.current, metric), line: goalLine(g), start: devValue(g.baseline, metric), target: devValue(g.target, metric) };
     });
   const areas = data.focusAreas
     .filter((f) => f.status === 'active')
     .map((f) => {
       const metric = devMetric(f.title, f.metric);
-      return { id: f.id, title: devTitle(f.title), progress: progressOf(f.baseline, f.current, f.target), centre: devValue(f.current, metric), line: devProgress(f) };
+      return { id: f.id, title: devTitle(f.title), progress: progressOf(f.baseline, f.current, f.target), centre: devValue(f.current, metric), line: devProgress(f), start: devValue(f.baseline, metric), target: devValue(f.target, metric) };
     });
   return [...goals, ...areas];
 }
@@ -851,12 +862,14 @@ function GoalsCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void
       ) : !three.length ? (
         <p className="ch-shs-goaltext">{data.viewer === 'coach' ? `${data.firstName} has no goals or focus areas yet.` : 'Goals you and your coach set show here.'}</p>
       ) : (
-        <div className="ch-shs-rings">
+        <div className="ch-shs-goalrows">
           {three.map((g) => (
             <div key={g.id} role="img" aria-label={`${g.title}: ${g.line}`}>
-              {g.progress != null ? <GoalRing progress={g.progress} label={g.centre} /> : <span className="ch-shs-rg-none ch-num">{g.centre}</span>}
-              <b>{g.title}</b>
-              <small className="ch-num">{g.line}</small>
+              <div className="ch-shs-goalrows__h">
+                <b>{g.title}</b>
+                <span className="ch-num">{g.centre}</span>
+              </div>
+              {g.progress != null ? <GoalBar progress={g.progress} start={g.start} target={g.target} /> : <small className="ch-num">{g.line}</small>}
             </div>
           ))}
         </div>
@@ -890,7 +903,6 @@ function DetailBody({
   coach,
   onAddFocus,
   onPart,
-  beside = false,
 }: {
   id: StatsPlayerDetailId;
   data: ChPlayerProfile;
@@ -899,17 +911,15 @@ function DetailBody({
   coach: boolean;
   onAddFocus: (() => void) | null;
   onPart: (id: StatsDetailId) => void;
-  /** On a desk the drill stands beside its card: Scoring leaves out what the Scoring average card already shows. */
-  beside?: boolean;
 }) {
   if (id === 'sg') return <SgDetail data={data} onPart={onPart} />;
   if (id === 'rounds') return <RoundsDetail data={data} />;
   if (id === 'goals') return <GoalsDetail data={data} coach={coach} onAddFocus={onAddFocus} onRetry={onRetry} />;
-  return <GameAreaDetail id={id} data={data} reads={reads} onRetry={onRetry} beside={beside} />;
+  return <GameAreaDetail id={id} data={data} reads={reads} onRetry={onRetry} />;
 }
 
 /** Scoring and the four parts: the page's blocks around today's panels, every one of them kept (`GameDetail only`). */
-function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'scoring' | 'tee' | 'approach' | 'short' | 'putting'; data: ChPlayerProfile; reads?: ChReadsSource; onRetry: () => void; beside?: boolean }) {
+function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 'approach' | 'short' | 'putting'; data: ChPlayerProfile; reads?: ChReadsSource; onRetry: () => void }) {
   const label = windowLabel(data.filter);
   const previous = hasPrevious(data);
   if (data.statsError) return <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again." onRetry={onRetry} />;
@@ -922,17 +932,7 @@ function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'sco
   let after: ReactNode;
   if (id === 'scoring') {
     const change = scoringChange(data);
-    // Beside its card (a desk), the figure, its change and the curve are already on the page: the drill keeps the one thing the card
-    // lacks, a coach's team average, and starts at its cards.
-    hero = beside ? (
-      coach && data.teamAvg != null ? (
-        <div className="ch-shs-d-hero">
-          <p className="ch-shs-d-hero__cap">
-            Rest of team <b className="ch-num">{formatAvg(data.teamAvg)}</b> · {label}
-          </p>
-        </div>
-      ) : null
-    ) : (
+    hero = (
       <DetailHero
         figure={formatFixed(data.win.avg)}
         caption={`Scoring average${data.win.toPar == null ? '' : ` · ${formatToPar(data.win.toPar)} to par`} · ${label}${coach && data.teamAvg != null ? ` · Team ${formatAvg(data.teamAvg)}` : ''}`}
@@ -953,7 +953,7 @@ function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'sco
     const parValues = new Set(data.rounds.map((r) => (r.toPar == null || r.holes !== 18 ? null : r.score - r.toPar)));
     const par = parValues.size === 1 ? [...parValues][0]! : null;
     const reading = scoreTrendReading(data);
-    before = !beside && x.series.score.length > 0 && (
+    before = x.series.score.length > 0 && (
       <ShsCard title="Score by round" meta={par == null ? undefined : 'Par dashed'}>
         <Ribbon points={x.series.score} lowerIsBetter reference={par == null ? null : { value: par, label: 'Par' }} />
         {reading && <p className="ch-shs-mini-cap">{reading}</p>}
@@ -961,12 +961,9 @@ function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'sco
     );
     after = (
       <>
-        {/* L-011: on the desk the pane sits beside the summary, which already shows What changed; the phone's pushed screen keeps it. */}
-        {!beside && (
-          <ShsCard title="What changed">
-            <WhatChanged data={data} />
-          </ShsCard>
-        )}
+        <ShsCard title="What changed">
+          <WhatChanged data={data} />
+        </ShsCard>
         <AgainstBefore compare={x.compare} rows={COMPARE_ROWS.all} previous={previous} how={SHS_HOW.scoring} />
       </>
     );
@@ -1271,12 +1268,12 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
               const progress = progressOf(g.baseline, g.current, g.target);
               return (
                 <div className="ch-shs-goal1" key={g.id}>
-                  {progress != null && <GoalRing progress={progress} label={devValue(g.current, metric)} />}
-                  <div>
+                  <div className="ch-shs-goalrows__h">
                     <b>{devTitle(g.title)}</b>
-                    <span className="ch-num">{goalLine(g)}</span>
-                    <GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />
+                    <span className="ch-num">{devValue(g.current, metric)}</span>
                   </div>
+                  {progress != null ? <GoalBar progress={progress} start={devValue(g.baseline, metric)} target={devValue(g.target, metric)} /> : <span className="ch-num">{goalLine(g)}</span>}
+                  <GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />
                 </div>
               );
             })}
@@ -1290,15 +1287,12 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
           <div className="ch-shs-dev">
             {data.focusAreas.map((f) => {
               const progress = progressOf(f.baseline, f.current, f.target);
+              const metric = devMetric(f.title, f.metric);
               return (
                 <div key={f.id}>
                   <b>{devTitle(f.title)}</b>
                   <span className="ch-num">{f.status === 'proposed' ? 'Proposed, waiting to be accepted' : devProgress(f)}</span>
-                  {progress != null && (
-                    <div className="ch-shs-prog" aria-hidden="true">
-                      <i style={{ width: `${progress}%` }} />
-                    </div>
-                  )}
+                  {progress != null && <GoalBar progress={progress} start={devValue(f.baseline, metric)} target={devValue(f.target, metric)} />}
                   {!coach && f.status === 'proposed' && <ProposalAnswer id={f.id} title={f.title} />}
                   <FocusLoop loop={f.loop} />
                 </div>

@@ -224,8 +224,9 @@ function Sec({
         })}
       </dl>
     );
+    // The detail's one deep green card (look-09 option F): its headline figures, first under the hero.
     const figures = (
-      <ShsCard title={detail.figuresFirst ? 'The figures' : 'Per round'} meta={detail.figuresMeta}>
+      <ShsCard title={detail.figuresFirst ? 'The figures' : 'Per round'} meta={detail.figuresMeta} feature>
         {tiles(detailFigs ?? figs)}
       </ShsCard>
     );
@@ -233,6 +234,7 @@ function Sec({
     return (
       <section className="ch-gm is-detail" id={`gm-${id}`} aria-label={title}>
         {detail.hero}
+        {figures}
         {detail.figuresFirst && (
           <ShsCard title={detail.bench ? 'You and the Tour' : 'In short'}>
             <p className="ch-shs-plead">{lead}</p>
@@ -241,7 +243,6 @@ function Sec({
         )}
         {detail.figuresFirst ? (
           <>
-            {figures}
             {panels}
             {detail.before}
           </>
@@ -249,7 +250,6 @@ function Sec({
           <>
             {detail.before}
             {panels}
-            {figures}
           </>
         )}
         {detail.after}

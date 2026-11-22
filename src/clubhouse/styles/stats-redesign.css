@@ -828,56 +828,71 @@
   fill: var(--ch-shs-s-flat);
 }
 
-/* Goal rings. */
-.ch-shs-rings {
+/* Goals and focus areas (look-09): each a row, its name and where it stands now, over a bar from its start to its target. */
+.ch-shs-goalrows {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.ch-shs-goalrows__h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 8px;
-  text-align: center;
 }
-.ch-shs-rg {
-  position: relative;
+.ch-shs-goalrows__h b {
+  min-width: 0;
+  font: var(--ch-type-headline);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-goalrows__h span {
+  flex: none;
+  font: var(--ch-type-headline);
+  color: var(--ch-shs-s-ink);
+}
+/* A goal with nothing to measure from: its words share their two lines, so none ends on a lone "69" or "ft". */
+.ch-shs-goalrows small {
   display: block;
-  width: calc(68 * var(--ch-type-k));
-  height: calc(68 * var(--ch-type-k));
-  margin: 2px auto 8px;
-}
-.ch-shs-rg svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.ch-shs-rg .rt {
-  fill: none;
-  stroke: var(--ch-shs-s-track);
-  stroke-width: 7;
-}
-.ch-shs-rg .rf {
-  fill: none;
-  stroke: var(--ch-shs-s-gain-fill);
-  stroke-width: 7;
-  stroke-linecap: round;
-}
-.ch-shs-rg > span {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
-.ch-shs-rings b {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
-/* A third of a phone's card is narrower than "Now 72 · target 69": the two lines share the words, so none ends on a
-   lone "69" or "ft". */
-.ch-shs-rings small {
-  display: block;
-  margin-top: 2px;
-  font: var(--ch-type-13);
+  margin-top: 4px;
+  font: var(--ch-type-callout);
   color: var(--ch-shs-s-ink-2);
   text-wrap: balance;
+}
+.ch-shs-gbar {
+  display: block;
+  margin-top: 8px;
+}
+.ch-shs-gbar__t {
+  position: relative;
+  display: block;
+  height: calc(12 * var(--ch-type-k));
+  border-radius: var(--ch-radius-full);
+  background: var(--ch-shs-s-track);
+  box-shadow: var(--ch-shs-s-track-ring);
+}
+.ch-shs-gbar__t i {
+  display: block;
+  height: 100%;
+  border-radius: var(--ch-radius-full);
+  background: var(--ch-shs-s-gain-fill);
+}
+/* The target: a firm tick at the bar's end, standing above and below it. */
+.ch-shs-gbar__t::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  right: 0;
+  width: 3px;
+  border-radius: var(--ch-radius-full);
+  background: var(--ch-shs-s-ink);
+}
+.ch-shs-gbar__k {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font: var(--ch-type-callout);
+  color: var(--ch-shs-s-ink-2);
 }
 .ch-shs-goaltext {
   margin: 0;
@@ -1529,18 +1544,22 @@ li + li > .ch-shs-rrow::before {
 /* Today's panels re-homed in a detail: the page's card head and box. */
 .ch-shs-screen .ch-gm-p {
   margin: 0;
-  padding: 12px 16px 16px;
+  padding: 0 16px 16px;
+  overflow: hidden;
   border: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-shs-s-card);
   box-shadow: var(--ch-stats-redesign-shadow-1);
 }
+/* Every detail card opens on the deep green title bar (look-09, option F, Nick 21 Nov). */
 .ch-shs-screen .ch-gm-p__t {
-  margin: 0 0 8px;
-  font: var(--ch-type-17-strong);
+  margin: 0 -16px 12px;
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+  font: var(--ch-type-headline);
   letter-spacing: 0;
   text-transform: none;
-  color: var(--ch-shs-s-ink);
+  color: var(--ch-feature-ink);
 }
 .ch-shs-screen .ch-gd,
 .ch-shs-screen .ch-gm.is-detail,
@@ -1561,18 +1580,20 @@ li + li > .ch-shs-rrow::before {
   overflow: visible;
 }
 .ch-shs-screen .ch-gd.is-phone .ch-gm.is-detail .ch-gm-p {
-  padding: 12px 16px 16px;
+  padding: 0 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-shs-s-card);
   box-shadow: var(--ch-stats-redesign-shadow-1);
 }
-/* The panel heads read as the cards' heads, whichever phone rule set them. */
+/* The panel heads read as the cards' green title bars, whichever phone rule set them. */
 .ch-shs-screen .ch-gd.is-phone .ch-gm.is-detail .ch-gm-p__t {
-  margin: 0 0 8px;
-  font: var(--ch-type-17-strong);
+  margin: 0 -16px 12px;
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+  font: var(--ch-type-headline);
   letter-spacing: 0;
   text-transform: none;
-  color: var(--ch-shs-s-ink);
+  color: var(--ch-feature-ink);
 }
 /* The page's `.hb` rows. */
 .ch-shs-hb {
@@ -1597,6 +1618,104 @@ li + li > .ch-shs-rrow::before {
   font: var(--ch-type-17-strong);
   letter-spacing: var(--ch-track-17);
   text-align: right;
+}
+/* A row whose label takes two lines or whose figure carries a unit ("9.7 ft", "6 of 10" under "60%"). */
+.ch-shs-hb.is-wide {
+  grid-template-columns: minmax(0, calc(112 * var(--ch-type-k))) minmax(0, 1fr) calc(56 * var(--ch-type-k));
+  min-height: 52px;
+}
+.ch-shs-hb .v small {
+  display: block;
+  font: var(--ch-type-footnote);
+  color: var(--ch-shs-s-ink-2);
+}
+
+/*
+ * A detail's figure table (look-09, Nick 20 Nov): the page's grouped rows in table form. A quiet header, row hairlines inset
+ * from nothing (the card's padding is the inset), 44pt rows, the summary column as one well down the table and the total
+ * row under a firmer rule. Same figures as before; only the drawing changed.
+ */
+.ch-shs-screen .ch-gx-tbl {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.ch-shs-screen .ch-gx-tbl th,
+.ch-shs-screen .ch-gx-tbl td {
+  height: 44px;
+  padding: 0 0 0 4px;
+  border-top: var(--ch-hairline-w) solid var(--ch-shs-s-sep);
+  font: var(--ch-type-body);
+  color: var(--ch-shs-s-ink);
+  vertical-align: middle;
+}
+.ch-shs-screen .ch-gx-tbl th:first-child {
+  width: 33%;
+  padding-left: 0;
+  padding-right: 8px;
+}
+.ch-shs-screen .ch-gx-tbl thead th {
+  height: auto;
+  padding-top: 0;
+  padding-bottom: 8px;
+  border-top: 0;
+  font: var(--ch-type-footnote);
+  letter-spacing: 0;
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-screen .ch-gx-tbl .r {
+  padding-right: 0;
+  text-align: right;
+}
+/* The summary column: one deep green band, rounded at its ends, its figures in the plate's ink (the header's green, carried down). */
+.ch-shs-screen .ch-gx-tbl .is-key {
+  padding-right: 12px;
+  border-top-color: transparent;
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
+}
+.ch-shs-screen .ch-gx-tbl td.is-key {
+  font: var(--ch-type-figure);
+}
+.ch-shs-screen .ch-gx-tbl thead th.is-key {
+  padding-top: 8px;
+  border-radius: var(--ch-radius-md) var(--ch-radius-md) 0 0;
+  color: var(--ch-feature-ink-2);
+}
+/* A cell set against its row's summary: a gain or loss chip, as the Stats pills draw them. */
+.ch-shs-screen .ch-gx-tone {
+  display: inline-block;
+  padding: 2px 4px;
+  margin-right: 0;
+  border-radius: var(--ch-radius-sm);
+}
+.ch-shs-screen .ch-gx-tbl td.ch-gain .ch-gx-tone {
+  background: color-mix(in oklab, var(--ch-chart-gain) 14%, transparent);
+  color: var(--ch-chart-gain);
+}
+.ch-shs-screen .ch-gx-tbl td.ch-loss .ch-gx-tone {
+  background: color-mix(in oklab, var(--ch-chart-loss) 14%, transparent);
+  color: var(--ch-chart-loss);
+}
+.ch-shs-screen .ch-gx-tbl tbody tr:last-child td.is-key {
+  border-radius: 0 0 var(--ch-radius-md) var(--ch-radius-md);
+}
+.ch-shs-screen .ch-gx-tbl thead th:not(.is-key) {
+  vertical-align: bottom;
+}
+/* The total row: the sum of the rows above it, under the firmer rule. */
+.ch-shs-screen .ch-gx-tbl tr.is-total > * {
+  border-top-color: var(--ch-shs-s-sep-strong);
+  font: var(--ch-type-figure);
+}
+.ch-shs-screen .ch-gx-tbl tr.is-total > .is-key {
+  border-top-color: color-mix(in oklab, var(--ch-feature-ink) 30%, transparent);
+}
+/* A panel's note is the card's footnote: after the figures, quieter than them. */
+.ch-shs-screen .ch-gm.is-detail .ch-gm-p__n {
+  margin: 4px 0 0;
+  font: var(--ch-type-footnote);
+  color: var(--ch-shs-s-ink-2);
 }
 .ch-shs-tour-key {
   display: flex;
@@ -1811,37 +1930,18 @@ li + li > .ch-shs-rrow::before {
 }
 
 /* Goals. */
-.ch-shs-rg-none {
-  display: grid;
-  place-items: center;
-  width: calc(68 * var(--ch-type-k));
-  height: calc(68 * var(--ch-type-k));
-  margin: 2px auto 8px;
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-shs-goals {
   display: grid;
   gap: 16px;
 }
 .ch-shs-goal1 {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  display: grid;
+  gap: 6px;
 }
-.ch-shs-goal1 .ch-shs-rg {
-  flex: none;
-  margin: 0;
+.ch-shs-goal1 > span.ch-num {
+  font: var(--ch-type-callout);
+  color: var(--ch-shs-s-ink-2);
 }
-.ch-shs-goal1 > div {
-  min-width: 0;
-}
-.ch-shs-goal1 b {
-  display: block;
-  font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }
-.ch-shs-goal1 > div span.ch-num {
-  display: block;
-  margin-top: 2px;
-  font: var(--ch-type-15);
-  color: var(--ch-shs-s-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-shs-dev > div {
   position: relative;
   padding: 12px 16px 12px;
@@ -1863,21 +1963,6 @@ li + li > .ch-shs-rrow::before {
   margin-top: 2px;
   font: var(--ch-type-15);
   color: var(--ch-shs-s-ink-2); letter-spacing: var(--ch-track-15); }
-.ch-shs-prog {
-  height: calc(8 * var(--ch-type-k));
-  margin-top: 8px;
-  border-radius: var(--ch-radius-full);
-  background: var(--ch-shs-s-track);
-  box-shadow: var(--ch-shs-s-track-ring);
-  overflow: hidden;
-}
-.ch-shs-prog i {
-  display: block;
-  height: 100%;
-  border-radius: var(--ch-radius-full);
-  background: var(--ch-shs-s-gain-fill);
-  transform-origin: 0 50%;
-}
 .ch-shs-empty__t {
   margin: 6px 0 0;
   font: var(--ch-type-20-strong);
@@ -2479,32 +2564,22 @@ p.ch-shs-mini-cap {
 .ch-shs-dctl {
   padding: 0 0 var(--ch-space-4);
 }
-.ch-shs-desk {
-  /* Where a column rests under the glass top bar. */
+.ch-shs--desk {
+  /* Where a block the drill opens on rests, under the glass top bar. */
   --ch-shs-pane-rest: calc(var(--ch-topbar-h) + var(--ch-space-4));
+}
+.ch-shs-desk {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
-  gap: var(--ch-space-6);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
-.ch-shs-desk.is-alone {
-  grid-template-columns: minmax(0, 1fr);
-}
 /*
- * On a wide desk the chosen card's detail opens out to the window's right edge (owner's preview, 11 Nov 2026: "clicking on stat
- * should open up the screen fully to the right, its too narrow"). The page keeps the one left edge every page shares (shell.css),
- * the cards keep about the width they have on a 1440 screen, and the detail takes the rest, out to the wide measure (W40). A page
- * with no detail (`is-alone`) keeps the normal measure.
+ * A drill opened from a card takes the page across its whole width (look-09, Nick 21 Nov 2026: "Full width, back to overview"), so
+ * on a wide desk the page runs to the wide measure (W40), as a board does, and its cards stand two across.
  */
 @media (min-width: 1181px) {
-  /* W40 (owner, 12 Nov 2026: two page widths, normal and wide; the boards, Stats among them, take the wide one): with a detail
-     open the page runs to the wide measure, not the window's edge. At 1920 the detail is about 580px (it was 360 to 420 before
-     the 11 Nov fix); at 1440 nothing changes. */
-  .ch-st--shs:has(.ch-shs-desk:not(.is-alone)) {
+  .ch-st--shs:has(.ch-shs-dfull) {
     max-width: var(--ch-measure-wide);
-  }
-  .ch-shs-desk:not(.is-alone) {
-    grid-template-columns: minmax(0, 680px) minmax(420px, 1fr);
   }
 }
 .ch-shs-desk__sum {
@@ -2513,10 +2588,6 @@ p.ch-shs-mini-cap {
   gap: var(--ch-space-4);
   align-items: start;
   min-width: 0;
-  /* When the drill beside them is the longer column, the cards go down with the page until their last one is in view and hold
-     there, so the pane never ends beside blank canvas. Their height is measured by DeskPane.tsx; before it runs nothing holds. */
-  position: sticky;
-  top: min(var(--ch-shs-pane-rest), calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-sum-h, 100000px) - var(--ch-space-4)));
 }
 /* Section names, notes, the feature card and anything that is not a card keep the full width; cards pair up under them. */
 .ch-shs-desk__sum > :not(.ch-shs-card),
@@ -2583,75 +2654,72 @@ p.ch-shs-mini-cap {
 .ch-shs-desk__sum > .ch-shs-sech:first-child {
   margin-top: 0;
 }
-/* The pane's column runs the whole row, so the pane has the row to travel in; the lead is its place in it (DeskPane.tsx). */
-.ch-shs-desk__rail {
-  display: flex;
-  flex-direction: column;
-  align-self: stretch;
-  min-width: 0;
-}
-.ch-shs-desk__lead {
-  flex: none;
-  height: 0;
-}
 /*
- * The pane is as tall as what it holds and never scrolls inside itself, so it always ends on a whole card. The page scrolls under
- * the glass top bar, so a pane shorter than the window rests below it. A taller one goes down with the page until its last card
- * is in view and holds there; on the way back up it holds once its title is under the bar again (`data-dir`, set when the scroll
- * turns round). The two heights are measured by DeskPane.tsx; before it runs the pane rests under the bar.
+ * The full-width drill (DeskPane.tsx): Back to the overview, the drill's title, the window switch, then its cards two across. A
+ * plain page, not a card (STATS-D-05): it also wears .ch-shs-screen for the drill's card looks, whose pushed-screen paint and edge
+ * shadow it drops on a desk.
  */
-.ch-shs-desk__det {
-  position: sticky;
-  top: min(var(--ch-shs-pane-rest), calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-pane-h, 0px) - var(--ch-space-4)));
-  scroll-margin-top: var(--ch-shs-pane-rest);
-  /* A plain column, not a card (STATS-D-05): its cards are the only cards, so nothing is a card in a card. It also wears
-     .ch-shs-screen (the pushed screen's page paint and edge shadow), which on the desk would start a second page under it. */
+.ch-shs-dfull {
+  display: grid;
+  gap: 0;
+  min-width: 0;
   background: none;
   box-shadow: none;
 }
-.ch-shs-desk__dett {
+.ch-shs-dfull__back {
+  justify-self: start;
+  margin-bottom: var(--ch-space-2);
+}
+.ch-shs-dfull__t {
   margin: 0;
-  /* L-046: no top padding, so the pane's title sits on the summary's "Overview" line (it was 16px lower); the pane's resting
-     top (--ch-shs-pane-rest) already clears the bar. The 8px under it matches the summary's gap to its first card. */
-  padding: 0 0 var(--ch-space-2);
-  font: var(--ch-type-title);
+  padding: 0 0 var(--ch-space-4);
+  font: var(--ch-type-large-title);
   font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
   color: var(--ch-shs-s-ink);
 }
-.ch-shs-desk__rail[data-dir='up'] > .ch-shs-desk__det {
-  top: auto;
-  bottom: calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-pane-h, 0px) - var(--ch-shs-pane-rest));
+.ch-shs-dfull .ch-shs-d-sheet.ch-shs-dfull__body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ch-space-4);
+  align-items: start;
+  padding: 0 0 var(--ch-space-6);
 }
-.ch-shs-desk__det [data-ch-anchor] {
+/* The drill's head, its first card (the figures, the green feature) and anything that is not a card take the full width. */
+.ch-shs-dfull__body > :not(.ch-shs-card):not(.ch-stm-panel),
+.ch-shs-dfull__body > .ch-shs-feature,
+.ch-shs-dfull__body > [data-ch-wide] {
+  grid-column: 1 / -1;
+}
+.ch-shs-dfull [data-ch-anchor] {
   scroll-margin-top: var(--ch-shs-pane-rest);
 }
-.ch-shs-desk__det .ch-shs-d-sheet {
+.ch-shs-dfull .ch-shs-d-sheet {
   padding: var(--ch-space-2) 0 var(--ch-space-5);
 }
-/* Team putting in the pane: the phone's panel (a bar per band, the Tour rate as a mark), whose own rules live in the phone's
+/* Team putting in the desk drill: the phone's panel (a bar per band, the Tour rate as a mark), whose own rules live in the phone's
    stylesheet block and so never reached a desk. Drawn here in the redesign's inks, like the leg bars beside it. */
-.ch-shs-desk__det .ch-stm-panel__h {
+.ch-shs-dfull .ch-stm-panel__h {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.ch-shs-desk__det .ch-stm-panel .ch-stm-panel__h h2 {
+.ch-shs-dfull .ch-stm-panel .ch-stm-panel__h h2 {
   margin: 0;
   color: var(--ch-shs-s-ink);
 }
-.ch-shs-desk__det .ch-stm-panel__h > span {
+.ch-shs-dfull .ch-stm-panel__h > span {
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-shs-s-ink-2);
 }
-.ch-shs-desk__det .ch-stm-putt {
+.ch-shs-dfull .ch-stm-putt {
   display: flex;
   flex-direction: column;
   gap: var(--ch-space-3);
   margin-top: var(--ch-space-3);
 }
-.ch-shs-desk__det .ch-stm-putt__r {
+.ch-shs-dfull .ch-stm-putt__r {
   display: grid;
   grid-template-columns: calc(64 * var(--ch-type-k)) minmax(0, 1fr) calc(40 * var(--ch-type-k));
   align-items: center;
@@ -2660,32 +2728,32 @@ p.ch-shs-mini-cap {
   letter-spacing: var(--ch-track-15);
   color: var(--ch-shs-s-ink-2);
 }
-.ch-shs-desk__det .ch-stm-putt__r b {
+.ch-shs-dfull .ch-stm-putt__r b {
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
   text-align: right;
   color: var(--ch-shs-s-ink);
 }
-.ch-shs-desk__det .ch-stm-putt__r b.ch-loss {
+.ch-shs-dfull .ch-stm-putt__r b.ch-loss {
   color: var(--ch-shs-s-loss);
 }
-.ch-shs-desk__det .ch-stm-putt__bar {
+.ch-shs-dfull .ch-stm-putt__bar {
   position: relative;
   height: calc(10 * var(--ch-type-k));
   border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-track);
   box-shadow: var(--ch-shs-s-track-ring);
 }
-.ch-shs-desk__det .ch-stm-putt__bar i {
+.ch-shs-dfull .ch-stm-putt__bar i {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-gain-fill);
 }
-.ch-shs-desk__det .ch-stm-putt__bar i.is-low {
+.ch-shs-dfull .ch-stm-putt__bar i.is-low {
   background: var(--ch-shs-s-loss-fill);
 }
-.ch-shs-desk__det .ch-stm-putt__bar em {
+.ch-shs-dfull .ch-stm-putt__bar em {
   position: absolute;
   top: -4px;
   bottom: -4px;
@@ -2694,53 +2762,245 @@ p.ch-shs-mini-cap {
   border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-ink);
 }
-/* What changed, the pane's last card, on its neighbours' edges and title ink. */
-.ch-shs-desk__det .ch-surface__head {
+/* What changed, the drill's last card, on its neighbours' edges. */
+.ch-shs-dfull .ch-surface__head {
   padding: 12px 16px 0;
 }
-.ch-shs-desk__det .ch-surface__title {
+.ch-shs-dfull .ch-surface__title {
   color: var(--ch-shs-s-ink);
 }
-.ch-shs-desk__det .ch-surface__body {
+.ch-shs-dfull .ch-surface__body {
   padding: 8px 16px 16px;
 }
-.ch-shs-desk__det .ch-stm-note {
+.ch-shs-dfull .ch-stm-note {
   margin: var(--ch-space-3) 0 0;
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-shs-s-ink-2);
   text-wrap: pretty;
 }
-/* The card whose drill is open says so: the house's selected ring, drawn inside the card so the bento's gaps stay even. Scoring is
-   the pane's resting drill and two cards open it (the feature card and What changed), so it draws no ring: the pane's title says it. */
-.ch-shs--desk[data-ch-shs-open='sg'] .ch-shs-sum[data-go='sg'],
-.ch-shs--desk[data-ch-shs-open='tee'] .ch-shs-sum[data-go='tee'],
-.ch-shs--desk[data-ch-shs-open='approach'] .ch-shs-sum[data-go='approach'],
-.ch-shs--desk[data-ch-shs-open='short'] .ch-shs-sum[data-go='short'],
-.ch-shs--desk[data-ch-shs-open='putting'] .ch-shs-sum[data-go='putting'],
-.ch-shs--desk[data-ch-shs-open='rounds'] .ch-shs-sum[data-go='rounds'],
-.ch-shs--desk[data-ch-shs-open='goals'] .ch-shs-sum[data-go='goals'] {
-  box-shadow: var(--ch-stats-redesign-shadow-1), inset 0 0 0 2px var(--ch-shs-s-accent);
-}
 /* The team has three cards: the feature across the top, then the game and the players side by side. Each card carries its own
    title, so the section names after the first would only leave each card alone on its row. */
 .ch-shs--desk-team .ch-shs-desk__sum > .ch-shs-sech ~ .ch-shs-sech {
   display: none;
 }
-.ch-shs--desk[data-ch-shs-open='tgame'] .ch-shs-sum[data-go='tgame'],
-.ch-shs--desk[data-ch-shs-open='tplayers'] .ch-shs-sum[data-go='tplayers'] {
-  box-shadow: var(--ch-stats-redesign-shadow-1), inset 0 0 0 2px var(--ch-shs-s-accent);
-}
-@media (max-width: 1180px) {
-  .ch-shs-desk {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
-  }
+/* With no pane beside them the cards keep two columns down to a narrow desk; under 900px they, and a drill's cards, run in one. */
+@media (max-width: 900px) {
   .ch-shs-desk__sum,
-  .ch-shs-duo {
+  .ch-shs-duo,
+  .ch-shs-dfull .ch-shs-d-sheet.ch-shs-dfull__body,
+  .ch-shs-dfull .ch-gm.is-detail {
     grid-template-columns: minmax(0, 1fr);
   }
   /* One column: the cards run in their written order. */
   .ch-shs-duo__col:last-child > * {
     grid-column: 1;
   }
+}
+
+/*
+ * look-09, option F (Nick 21 Nov 2026): a detail's cards in more contrast. Its headline numbers ("The figures") are the
+ * detail's one deep green card; every other card has the green title bar (above, and the shared card's below). Plain figures (nothing to judge them against) are heavy
+ * near-black with near-black bars; only a card with a benchmark draws green and amber. Secondary text is darker than
+ * the page's, so nothing on a detail reads pale.
+ */
+.ch-shs-screen .ch-gm.is-detail {
+  --ch-shs-s-ink-2: color-mix(in oklab, var(--ch-shs-s-ink) 82%, var(--ch-shs-s-card));
+  --ch-shs-s-track: color-mix(in oklab, var(--ch-shs-s-ink) 10%, var(--ch-chart-track));
+}
+/* The numbers: a heavy label, the figure at the large-title size and weight, its count or context under it in full ink. */
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tiles dt {
+  font: var(--ch-type-figure);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tiles dd {
+  font: var(--ch-type-large-title);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tiles dd.ch-gx-sub {
+  font: var(--ch-type-callout);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tiles > div.is-empty dd:not(.ch-gx-sub) {
+  color: var(--ch-shs-s-ink-3);
+}
+/* The rows: heavier names and figures, thicker rails, and a plain fill in ink rather than grey. */
+.ch-shs-screen .ch-gm.is-detail .ch-shs-hb .l,
+.ch-shs-screen .ch-gm.is-detail .ch-shs-hb .v {
+  font: var(--ch-type-headline);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-shs-hb :is(.l, .v) small {
+  font: var(--ch-type-callout);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-shs-hrail {
+  height: calc(14 * var(--ch-type-k));
+}
+.ch-shs-screen .ch-gm.is-detail .ch-shs-hrail > i.ch-shs-fill-flat:not(.is-early) {
+  background: var(--ch-shs-s-ink);
+}
+/* The tables: row names and the header in heavier, darker type. */
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tbl tbody th {
+  font: var(--ch-type-figure);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tbl thead th:not(.is-key) {
+  color: var(--ch-shs-s-ink-2);
+}
+/* Compare bars have nothing to judge against: a plain card, in ink, on the detail's rail and type. */
+.ch-shs-screen .ch-gm.is-detail .ch-cmp__l {
+  font: var(--ch-type-headline);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-cmp__l em {
+  font: var(--ch-type-callout);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-cmp__bar {
+  height: calc(14 * var(--ch-type-k));
+  background: var(--ch-shs-s-track);
+  box-shadow: var(--ch-shs-s-track-ring);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-cmp__bar span {
+  border-radius: var(--ch-radius-full);
+  background: var(--ch-shs-s-ink);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-cmp__r b {
+  font: var(--ch-type-headline);
+}
+.ch-shs-screen .ch-gm.is-detail .ch-gx-tbl td {
+  font: var(--ch-type-figure);
+}
+
+/*
+ * look-09, option F on the shared Stats card (slice 2): every card that is not the screen's one green feature card opens on the
+ * deep green title bar, on the phone and the desk alike, for the player and the team. Its title, count and chevron read in the
+ * feature inks. The body keeps the ivory card, with its secondary ink darkened so no label reads pale.
+ */
+.ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) {
+  --ch-shs-s-ink-2: color-mix(in oklab, var(--ch-shs-s-ink) 82%, var(--ch-shs-s-card));
+}
+.ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) > .ch-shs-ah {
+  --ch-shs-s-ink: var(--ch-feature-ink);
+  --ch-shs-s-ink-2: var(--ch-feature-ink-2);
+  --ch-shs-s-ink-3: var(--ch-feature-ink-2);
+  margin: -12px -16px 12px;
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+}
+.ch-shs-card.is-flushb:not(.ch-shs-feature) > .ch-shs-ah {
+  margin: -12px 0 12px;
+}
+.ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) > .ch-shs-ah .ch-shs-pi {
+  background: var(--ch-feature-icon-bg);
+  color: var(--ch-on-green-plate);
+}
+
+/* Round by round on the overview (look-09): the count, then one cell per round holding its score, the best lit. */
+.ch-shs-rcount {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.ch-shs-rstrip {
+  display: grid;
+  grid-template-columns: repeat(var(--ch-shs-rs-n, 10), minmax(0, 1fr));
+  gap: 4px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-shs-rstrip li {
+  display: grid;
+  place-items: center;
+  height: calc(34 * var(--ch-type-k));
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-shs-s-track);
+  font: var(--ch-type-figure);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-rstrip li.is-best {
+  background: var(--ch-shs-s-gain-fill);
+  color: var(--ch-on-green-plate);
+}
+/*
+ * A game area's drill on the full-width desk page: its panels stand two across on shared rows. The drill's head, the figures card
+ * and a panel drawn wide (`is-wide`) keep the full width; the body groups are only named in the markup (`display: contents`).
+ */
+.ch-shs-dfull .ch-gm.is-detail {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  gap: var(--ch-space-4);
+  align-items: start;
+}
+.ch-shs-dfull .ch-gm.is-detail > .ch-gm__body {
+  display: contents;
+}
+.ch-shs-dfull .ch-gm.is-detail > *,
+.ch-shs-dfull .ch-gm.is-detail > .ch-gm__body > * {
+  min-width: 0;
+  margin-block: 0;
+}
+.ch-shs-dfull .ch-gm.is-detail > :is(.ch-shs-d-hero, .ch-shs-feature),
+.ch-shs-dfull .ch-gm.is-detail .ch-gm-p.is-wide {
+  grid-column: 1 / -1;
+}
+/* A table's column names wrap onto two lines rather than running into the next ("First putts from here", "Finish after a miss"),
+   resting on the rule above the first row. On the full-width desk drill the row names take less of the width. */
+.ch-shs-screen .ch-gx-tbl thead th {
+  white-space: normal;
+  text-wrap: balance;
+  vertical-align: bottom;
+}
+.ch-shs-dfull .ch-gx-tbl th:first-child {
+  width: 22%;
+}
+/*
+ * look-09, option F on the drill's other boxes: a re-homed panel (Team putting, Best rounds) and What changed open on the same deep
+ * green title bar as every Stats card, their title and line in the feature inks.
+ */
+.ch-shs-screen .ch-stm-panel {
+  overflow: hidden;
+}
+.ch-shs-screen .ch-stm-panel > .ch-stm-panel__h {
+  margin: -12px -16px 12px;
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+}
+.ch-shs-screen .ch-stm-panel > .ch-stm-panel__h.ch-stm-panel__h h2 {
+  color: var(--ch-feature-ink);
+}
+.ch-shs-screen .ch-stm-panel > .ch-stm-panel__h > :not(h2) {
+  color: var(--ch-feature-ink-2);
+}
+.ch-shs-screen .ch-surface {
+  overflow: hidden;
+}
+.ch-shs-screen .ch-surface > .ch-surface__head.ch-surface__head {
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+}
+.ch-shs-screen .ch-surface > .ch-surface__head .ch-surface__title.ch-surface__title {
+  color: var(--ch-feature-ink);
+}
+.ch-shs-screen .ch-surface > .ch-surface__head .ch-surface__sub {
+  color: var(--ch-feature-ink-2);
+}
+/* A change chip and a link on the green feature card, in the feature's own tints and ink (the plain chip was a pale box on green). */
+.ch-shs-feature .ch-shs-pill.ch-shs-pill:not(.is-gain):not(.is-loss) {
+  background: var(--ch-feature-flat-tint);
+  color: var(--ch-feature-ink);
+}
+/* On the green stage the chart's gain and loss pair is redefined to the feature's mint and gold (CONS-20), so a toned chip reads. */
+.ch-shs-feature {
+  --ch-chart-gain: var(--ch-feature-gain);
+  --ch-chart-loss: var(--ch-feature-loss);
+  --ch-chart-gain-tint: var(--ch-feature-gain-tint);
+  --ch-chart-loss-tint: var(--ch-feature-loss-tint);
+}
+.ch-shs-feature a:not(.ch-btn),
+.ch-shs-feature .ch-howc-link.ch-howc-link {
+  color: var(--ch-feature-ink);
 }

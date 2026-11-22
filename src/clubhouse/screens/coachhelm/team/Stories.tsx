@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { storiesOf, type ChStoryRound, type ChTeamPlayer, type ChTeamStory } from '../../../data/coachhelm-team-shape';
@@ -363,10 +363,14 @@ export function StoriesCard({
               .split(' · ')
               .filter((c) => !/^0\s/.test(c))
               .map((c, i) => (
-                <span key={c} style={{ whiteSpace: 'nowrap' }}>
-                  {i > 0 && ' · '}
-                  {c}
-                </span>
+                // The space before each count is outside it, so the line can break there on the narrow rail.
+                <Fragment key={c}>
+                  {i > 0 && ' '}
+                  <span style={{ whiteSpace: 'nowrap' }}>
+                    {i > 0 && '· '}
+                    {c}
+                  </span>
+                </Fragment>
               ))}
           </span>
         )}

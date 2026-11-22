@@ -38,7 +38,7 @@ export function CoachLatest({ data, covered, years }: { data: ChCoachHome['lates
   const recap = r ? roundHref(r.id, 'coach') : null;
   const stats = r ? rebuiltHref(`/golf/dashboard/stats?player=${r.playerId}`) : null;
   return (
-    <section className="ch-hm-sec" aria-labelledby="ch-ph-tm-latest">
+    <section className="ch-hm-sec ch-hm-sec--stat" aria-labelledby="ch-ph-tm-latest">
       <div className="ch-hm-sec__h ch-ph-sec__h">
         <h2 id="ch-ph-tm-latest">Latest rounds</h2>
         {rounds.length > 1 && (
