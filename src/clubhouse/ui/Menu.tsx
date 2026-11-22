@@ -222,7 +222,40 @@ export function menuKeyDown(e: React.KeyboardEvent, list: HTMLElement | null, on
     els[e.key === 'Home' ? 0 : els.length - 1]?.focus();
   } else if (e.key === 'Tab') {
     on.onTab();
+  } else if (e.key.length === 1 && e.key !== ' ' && !e.metaKey && !e.ctrlKey && !e.altKey && list) {
+    // S7 type-ahead (WAI-ARIA APG menu; macOS): typed letters move to the next row whose label starts with them. Letters
+    // typed within half a second build one prefix; one letter again steps through the rows that start with it.
+    const to = typeAhead(list, els, i, e.key);
+    if (to) {
+      e.preventDefault();
+      to.focus();
+    }
   }
+}
+
+const TYPE_AHEAD_MS = 500;
+const typed = new WeakMap<HTMLElement, { text: string; at: number }>();
+
+/** A row’s own label: its first line, not a caption or a shortcut. */
+function rowLabel(el: HTMLElement): string {
+  const text = el.querySelector('.ch-menu__text > span')?.textContent ?? el.querySelector(':scope > span:not(.ch-menu__shortcut)')?.textContent ?? el.textContent ?? '';
+  return text.trim().toLowerCase();
+}
+
+/** The row type-ahead lands on, or null. Disabled rows are skipped. Exported for its test. */
+export function typeAhead(list: HTMLElement, els: HTMLElement[], at: number, key: string, now = Date.now()): HTMLElement | null {
+  const last = typed.get(list);
+  const fresh = last && now - last.at <= TYPE_AHEAD_MS;
+  const k = key.toLowerCase();
+  const text = fresh && last.text !== k ? last.text + k : k;
+  typed.set(list, { text, at: now });
+  const live = els.filter((el) => !(el as HTMLButtonElement).disabled && el.getAttribute('aria-disabled') !== 'true');
+  // From the menu itself (nothing lit yet) the search starts at the top.
+  const cur = at >= 0 ? live.indexOf(els[at] as HTMLElement) : -1;
+  const from = Math.max(0, cur);
+  // A longer prefix may stay on the current row; a single letter starts from the next one.
+  const order = text.length > 1 ? [...live.slice(from), ...live.slice(0, from)] : [...live.slice(cur + 1), ...live.slice(0, cur + 1)];
+  return order.find((el) => rowLabel(el).startsWith(text)) ?? null;
 }
 
 /**
