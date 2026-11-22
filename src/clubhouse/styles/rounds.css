@@ -6447,3 +6447,23 @@ button.ch-hip__row:focus-visible,
     box-shadow: var(--ch-card-shadow);
   }
 }
+
+/* Round review on a desk (premium plan §3.13): no gradient-clipped type. The putting pair's figure was a green gradient
+   clipped to the text (color: transparent), and at night its lower half sank into the zone (L-025). It is one solid ink,
+   the zone's own green. The phone keeps its look until its own pass. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-rv .ch-rzpair b,
+  :where(html[data-fw-theme='dark']) .ch-rv .ch-rzpair b {
+    background: none;
+    color: var(--ch-green-700);
+  }
+}
+
+/* Team rounds on a desk (premium plan §3.10, Linear's density): a row is 44 tall, not 56, so a coach sees a season's
+   page of rounds above the fold. Its inline padding stays; the head row keeps its own. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-trd-tr:not(.ch-trd-tr--head) {
+    min-height: 44px;
+    padding-block: var(--ch-space-1);
+  }
+}
