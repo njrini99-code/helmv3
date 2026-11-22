@@ -73,43 +73,64 @@ function PlayerHomeBody({ data, now, live, playerId }: { data: ChPlayerHome; now
   if (noRoundsYet(data)) {
     // Events but no round yet: the week (Up next inside it) stays, and the welcome stands in for three empty blocks.
     return (
-      <main className="ch-h-main ch-h-main--desk" data-canopy="">
+      <main className="ch-h-main ch-h-main--desk ch-h-main--dash" data-canopy="">
         <DeskHead data={data} post={post} />
         <CoachAsks asks={data.asks} />
         <PageRefreshNotice parts={failed} />
         {own}
-        <div className="ch-h-sheet ch-sheet is-solo">
-          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <Week week={data.week} between={data.next ? <DeskNext e={data.next} frozen={now} /> : null} covered={covered} />
-          </SectionBoundary>
+        {/* Two columns on a desk (owner, 19 Nov 2026; premium plan §3.2), the coach's grid (lay-01): the week and today on
+            the left, Up next and the welcome on the right. The phone is PlayerHomePhone, unchanged. */}
+        <div className="ch-h-dash">
+          <div className="ch-h-dash__col">
+            <div className="ch-h-dash__card">
+              <SectionBoundary surface="home.week" label="This week" code="CH-2205">
+                <Week week={data.week} covered={covered} />
+              </SectionBoundary>
+            </div>
+          </div>
+          <div className="ch-h-dash__col">
+            {data.next && <DeskNext e={data.next} frozen={now} />}
+            <NoRoundsYet />
+          </div>
         </div>
-        <NoRoundsYet />
       </main>
     );
   }
   return (
-    <main className="ch-h-main ch-h-main--desk" data-canopy="">
+    <main className="ch-h-main ch-h-main--desk ch-h-main--dash" data-canopy="">
       <DeskHead data={data} post={post} />
       <CoachAsks asks={data.asks} />
       <PageRefreshNotice parts={failed} />
       {own}
-      {/* One continuous surface (owner, 2026-10-06): the week and the latest round, then Scoring under a hairline. */}
-      <div className="ch-h-flow ch-sheet">
-        <div className="ch-h-sheet">
-          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <Week week={data.week} covered={covered} />
-          </SectionBoundary>
-          <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-            <LatestRound data={data.latest} mine lead={data.next ? <DeskNext e={data.next} frozen={now} /> : null} covered={covered} />
+      {/* Two columns on a desk (owner, 19 Nov 2026; premium plan §3.2), the coach's grid (lay-01): the week and today on
+          the left, Up next and the latest round on the right, then Scoring and the game across both, each a card. */}
+      <div className="ch-h-dash">
+        <div className="ch-h-dash__col">
+          <div className="ch-h-dash__card">
+            <SectionBoundary surface="home.week" label="This week" code="CH-2205">
+              <Week week={data.week} covered={covered} />
+            </SectionBoundary>
+          </div>
+        </div>
+        <div className="ch-h-dash__col">
+          {data.next && <DeskNext e={data.next} frozen={now} />}
+          <div className="ch-h-dash__card">
+            <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
+              <LatestRound data={data.latest} mine covered={covered} />
+            </SectionBoundary>
+          </div>
+        </div>
+        <div className="ch-h-dash__card ch-h-dash__wide">
+          <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
+            <PlayerGame data={data} part="scoring" covered={covered} />
           </SectionBoundary>
         </div>
-        <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
-          <PlayerGame data={data} part="scoring" covered={covered} />
-        </SectionBoundary>
+        <div className="ch-h-dash__card ch-h-dash__wide">
+          <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
+            <PlayerGame data={data} part="legs" covered={covered} />
+          </SectionBoundary>
+        </div>
       </div>
-      <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
-        <PlayerGame data={data} part="legs" covered={covered} />
-      </SectionBoundary>
     </main>
   );
 }
