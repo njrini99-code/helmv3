@@ -13160,6 +13160,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/ui/DataTable.tsx",
+      "group": "ui",
+      "exports": [
+        "DataTable"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/DateField.tsx",
       "group": "ui",
       "exports": [

@@ -3715,6 +3715,20 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     scroll-snap-type: x mandatory;
   }
 }
+/* Plan section 3.8 (the table is the desk default): where the table and its panel fit side by side, the table is
+   clipped rather than scrolled, so its header stays under the top bar as the canvas scrolls (ui/DataTable.tsx), and a
+   row the keys reach stops clear of the bar and the header. A narrower desk keeps the sideways scroll. */
+@media (min-width: 1193px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-crh='on'].ch-rsd .ch-rs-list {
+    overflow: clip;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-row--head {
+    top: var(--ch-topbar-h);
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-row {
+    scroll-margin-top: calc(var(--ch-topbar-h) + 48px);
+  }
+}
 @media print {
   [data-ch-crh='on'] .ch-rs-ldrs,
   [data-ch-crh='on'] .ch-rsx-sort,
