@@ -358,7 +358,8 @@ export function TimeGrid({
   legend,
   pack = false,
 }: {
-  /** R-5 (owner, 18 Nov 2026): set overlapping events side by side; the Day view's one wide column passes it. */
+  /** R-5 (owner, 18 Nov 2026) and A26 (owner, 19 Nov 2026): set overlapping events side by side, in lanes; the Day view and
+   *  the desk week pass it. */
   pack?: boolean;
   dates: string[];
   events: ChCalEvent[];
@@ -505,8 +506,9 @@ export function TimeGrid({
         </div>
         {dates.map((d) => {
           const laid = layoutLanes(groupClasses(events.filter((e) => !isBar(e) && e.date === d && e.start != null && e.end != null)));
-          // R-5: one day's column is wide enough to set overlaps side by side; nothing then lies over anything.
-          const packed = pack && dates.length === 1;
+          // R-5 and A26 (owner, 19 Nov 2026): overlaps sit side by side in lanes, in the Day view and the desk week alike;
+          // nothing then lies over anything.
+          const packed = pack;
           return (
             <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : d < now.date ? ' is-past' : '') + (drag?.kind === 'move' && drag.to.date === d ? ' is-target' : '')}>
               {daylight && <Daylight dl={daylight(d)} from={from} to={to} label={d === dates[dates.length - 1]} />}
