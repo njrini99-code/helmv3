@@ -793,15 +793,22 @@ html[data-fw-theme='dark'] .ch-tour-cmp-tl__dot.is-event {
   transform: translate(-50%, -50%);
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-tour-cmp-div:hover .ch-tour-cmp-div__grip,
 .ch-tour-cmp-div:focus-visible .ch-tour-cmp-div__grip,
 .ch-tour-cmp-div.is-drag .ch-tour-cmp-div__grip {
   opacity: 1;
 }
-.ch-tour-cmp-div:hover::before,
 .ch-tour-cmp-div.is-drag::before {
   width: 2px;
   background: var(--ch-green-600);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ch-tour-cmp-div:hover .ch-tour-cmp-div__grip {
+    opacity: 1;
+  }
+  .ch-tour-cmp-div:hover::before {
+    width: 2px;
+    background: var(--ch-green-600);
+  }
 }
 .ch-tour-cmp-div:focus-visible {
   outline: none;
