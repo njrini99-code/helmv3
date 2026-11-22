@@ -280,14 +280,8 @@
   text-align: center;
   cursor: pointer;
   box-shadow: var(--ch-elevation-reading);
-  transition: box-shadow var(--ch-dur-base) var(--ch-ease), transform var(--ch-dur-base) var(--ch-ease);
 }
-@media (hover: hover) {
-  .ch-rs-face:not(.ch-rs-face--static):hover {
-    transform: translateY(-2px);
-    box-shadow: var(--ch-elevation-reading-hover);
-  }
-}
+/* S8: a card the pointer rests on lifts by the shared layer (ui.css .ch-lift), not by an animated box-shadow. */
 /* Pressing drops the hover lift. A card never scales: the shell's press is for keys (lib/press.ts, CH-1606). */
 .ch-rs-face:not(.ch-rs-face--static)[data-ch-pressed] {
   background: var(--ch-sel);

@@ -867,7 +867,7 @@ function RosterList({
               <button
                 key={p.id}
                 type="button"
-                className={'ch-rs-face' + ((onSelect ? selected : sel) === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+                className={'ch-rs-face ch-lift' + ((onSelect ? selected : sel) === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
                 // Named by what the card shows (F-21, WCAG 2.5.3: a label that left out the visible text), with what a press does
                 // read last (ch-rs-face__how).
                 aria-describedby={`${faceHowId}-${p.id}`}
