@@ -81,7 +81,15 @@ export function DataTable<T, K extends string = string>({
     },
     [rootRef],
   );
-  useRovingRows(root, primary, true, { letters: true });
+  // The selection follows a move the keys made (Up, Down, J, K, Home, End), read from the move itself rather than from a
+  // focus event and :focus-visible, which a browser decides by its own heuristics for a script's focus.
+  const select = useRef(onSelect);
+  select.current = onSelect;
+  const onMove = useCallback((el: HTMLElement) => {
+    const key = el.closest<HTMLElement>('[data-ch-dt-key]')?.dataset.chDtKey;
+    if (key) select.current?.(key);
+  }, []);
+  useRovingRows(root, primary, true, { letters: true, onMove });
   return (
     <div ref={setRoot} role="table" aria-label={label} className={join('ch-dt', classNames.table)}>
       <div role="row" className={join('ch-dt__head', classNames.head)}>
@@ -120,13 +128,8 @@ export function DataTable<T, K extends string = string>({
             role="row"
             aria-current={isSel ? 'true' : undefined}
             {...own}
+            data-ch-dt-key={key}
             className={join('ch-dt__row', classNames.row?.(row), own.className)}
-            onFocus={(e) => {
-              own.onFocus?.(e);
-              // Only a move the keyboard made: a click selects through the control’s own handler.
-              const t = e.target as HTMLElement;
-              if (onSelect && !isSel && t.matches(primary) && t.matches(':focus-visible')) onSelect(key);
-            }}
           >
             {columns.map((c) => (
               <span key={c.id} role="cell" className={join(c.align === 'end' && 'r', typeof c.className === 'function' ? c.className(row) : c.className)}>

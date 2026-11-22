@@ -74,12 +74,17 @@ describe('DataTable', () => {
     expect(onSelect).toHaveBeenLastCalledWith('c');
     await user.keyboard('k');
     expect(document.activeElement?.textContent).toBe('Ben');
+    expect(onSelect).toHaveBeenLastCalledWith('b');
     await user.keyboard('kk');
     expect(document.activeElement?.textContent).toBe('Ava');
     await user.keyboard('j{End}');
     expect(document.activeElement?.textContent).toBe('Cal');
+    expect(onSelect).toHaveBeenLastCalledWith('c');
     await user.keyboard('{Home}');
     expect(document.activeElement?.textContent).toBe('Ava');
+    expect(onSelect).toHaveBeenLastCalledWith('a');
+    // Every move the keys made selected the row it landed on, in order.
+    expect(onSelect.mock.calls.map((c) => c[0])).toEqual(['c', 'b', 'a', 'b', 'c', 'a']);
   });
 
   it('never selects on a pointer focus: a click selects through the row’s own control', () => {
