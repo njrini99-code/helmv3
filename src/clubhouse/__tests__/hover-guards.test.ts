@@ -36,7 +36,7 @@ function unguarded(file: string): number {
       const hovers = sel.replace(NOT, '');
       if (!hovers.includes(':hover') || hovers.includes('autofill')) continue;
       let guarded = false;
-      for (let p = rule.parent; p; p = p.parent) {
+      for (let p: postcss.Node | undefined = rule.parent as postcss.Node | undefined; p; p = p.parent as postcss.Node | undefined) {
         if (p.type === 'atrule' && (p as postcss.AtRule).name === 'media' && /hover:\s*hover/.test((p as postcss.AtRule).params)) guarded = true;
       }
       if (!guarded) n += 1;
