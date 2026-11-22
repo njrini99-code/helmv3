@@ -2324,6 +2324,13 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
       0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong),
       var(--ch-elevation-raised);
   }
+  /* The one bar material on a desk (premium plan §3.11, CC-1; DESIGN_LANGUAGE §4): it was a bespoke near-white glass
+     (253 252 248 at 0.97 by day, 27 32 28 by night). The material turns solid under Reduce Transparency and Increase
+     Contrast through its own token. */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-dock,
+  html[data-fw-theme='dark'] .ch-rsu[data-ui='clubhouse'] .ch-rsu-dock {
+    background: var(--ch-glass-bg);
+  }
 }
 .ch-rsu-dock__s b {
   font-weight: 600;
