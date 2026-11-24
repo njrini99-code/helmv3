@@ -140,6 +140,14 @@ test('parseNumberChecks stops at the end of a table', () => {
   assert.equal(parseNumberChecks('| Shown | E | V | Q |\n| --- |\n| a | b | c | d |\ntext\n| x | y | z | w |', 'a').length, 1);
 });
 
+test('the file is one record per line and reads back as the same graph', () => {
+  const g = graph();
+  const text = renderGraph(g);
+  assert.deepEqual(JSON.parse(text), JSON.parse(JSON.stringify(g)));
+  assert.ok(text.split('\n').some((l) => l.startsWith('  "70603": {"page":"P007"')));
+  assert.match(text, /"controls": \{\}/);
+});
+
 test('the graph is deterministic and its hash follows its content', () => {
   const a = renderGraph(graph());
   assert.equal(renderGraph(graph()), a);

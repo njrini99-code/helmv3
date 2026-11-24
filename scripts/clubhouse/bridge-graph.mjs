@@ -264,4 +264,18 @@ export function buildBridgeGraph({ manifests, bridge, tombstones = [], catalogs,
   return graph;
 }
 
-export const renderGraph = (graph) => JSON.stringify(graph, null, 1) + '\n';
+/**
+ * One record per line: each top-level map is written entry by entry, so a changed ID or action is a one-line diff
+ * and the file stays a few thousand lines instead of tens of thousands.
+ */
+export function renderGraph(graph) {
+  const top = Object.entries(graph).map(([key, value]) => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const entries = Object.entries(value);
+      if (!entries.length) return ` ${JSON.stringify(key)}: {}`;
+      return ` ${JSON.stringify(key)}: {\n${entries.map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(',\n')}\n }`;
+    }
+    return ` ${JSON.stringify(key)}: ${JSON.stringify(value)}`;
+  });
+  return `{\n${top.join(',\n')}\n}\n`;
+}
