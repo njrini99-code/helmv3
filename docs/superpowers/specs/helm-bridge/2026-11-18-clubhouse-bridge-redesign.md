@@ -213,7 +213,7 @@ Each becomes a `drift` row, not an error. B11 lists them.
 | --- | --- | --- | --- |
 | `admin_events` + new columns `ch_code`, `bridge_id`, `page_id`, `action_id`, `control_id`, `release`, `platform`, `session_id`, `server_code` (indexed) | failure: a failed action, an error toast, a crash, a failed load, a permission refusal | as now | Keeps one error store (DECISIONS 5). Incidents, the digest and auto-resolve keep working, and gain the code. |
 | `clubhouse_signal_hourly` | hour × code × role × platform × release (count, users, p50, p95, p99) | 180 days | Success, empty, waits, views and taps without a row per skeleton. "Never seen" needs every count. |
-| `clubhouse_sessions` | session (user, role, team, platform, release, start, end, pages, failures, replay id) | 30 days | The Sessions index |
+| `clubhouse_sessions` | session (user id, role, team, platform, release, start, end, pages, failures, replay id) | 30 days | The Sessions index. No name or email is stored: the Bridge reads them live from `profiles` when a session is opened (D7). |
 | `clubhouse_session_events` | envelope in a session **that has a failure**, plus the 50 before it | 14 days | The timeline, kept only where something went wrong. Volume stays bounded. |
 | `clubhouse_drift` | drift kind × code × release (count, first seen, last seen) | 180 days | B11 |
 | `bridge_notes` | an owner note: a code marked expected, a watch, a pack sent | forever | Bridge's own small state |
@@ -1091,7 +1091,7 @@ built in their own worktrees, in parallel with PR 1, against a seeded fixture.
 | --- | --- |
 | Logging slows a tap | No await on the hot path, batched sendBeacon, try/catch, the kill switch; an E2 test asserts `run` resolves before the flush |
 | Load on the production database | Counters instead of rows; failure rows capped by the limiter; 14- and 30-day retention on session data; indexes on the new columns only |
-| Personal data, including minors' | Super-admin only; the same redaction as `/api/log-error`; packs pseudonymous by default; session events kept 14 days; security review |
+| Personal data, including minors' | Super-admin only; the same redaction as `/api/log-error`; sessions store user ids only, with names read live (D7); packs pseudonymous by default; session events kept 14 days; security review |
 | The graph and the running release disagree | One graph per SHA; events read against their own release's graph |
 | A false "all clear" | R-08 and R-09, plus the `xx93` state on every screen |
 | 92 `data-ctl` today, 666+ controls | PR 2 numbers them page by page, seeded from CLICKABLES; the check only blocks new unlabelled controls until the count is done |
@@ -1100,12 +1100,10 @@ built in their own worktrees, in parallel with PR 1, against a seeded fixture.
 
 ## 15. Your decisions
 
-D8 is done. The other eleven are open: approve them all with their defaults, or
-name the ones to change.
+**Locked on 2026-11-24, on your yes:** every default stands except D7, where
+sessions keep user ids only and names are read live. D8 and D12 are done.
 
-Each has a default, and I go with the default unless you say otherwise.
-
-| # | Question | Default |
+| # | Question | Decided |
 | --- | --- | --- |
 | D1 | Storage as in §4.5: new columns on `admin_events` plus five small tables | **Yes** |
 | D2 | Count every success, empty state and tap (not sampled) | **Yes.** "Never seen" needs it. |
@@ -1113,11 +1111,11 @@ Each has a default, and I go with the default unless you say otherwise.
 | D4 | `BR-` codes on the Bridge's own controls; category 25 rows per page | **Yes** |
 | D5 | The self-heal views go under More views, and their jobs keep running | **Yes**, nothing deleted |
 | D6 | "Force this state" opens the preview app from the Bridge | **Yes, if `/clubhouse-preview` is served in production** (PR 2 checks); otherwise the button is labelled "local" |
-| D7 | Names and emails in sessions, inside the Bridge | **Yes**, you only, kept 30 days. Packs are pseudonymous unless you tick "include names". |
+| D7 | Names and emails in sessions, inside the Bridge | **Changed: user ids only.** `clubhouse_sessions` and `clubhouse_session_events` store no name or email; the Bridge reads names live from `profiles` when you open a session or person (you only, super-admin). Packs stay pseudonymous unless you tick "include names". |
 | D8 | Land #2578 (Practice as P017, the clickable map) before this work starts | **Done.** It landed with #2588 on 2026-11-18. |
 | D9 | The read-only API for Duet | **Built, off until you add its token** |
 | D10 | Push alerts for R-09 and R-02 | **Off.** The digest only, until you ask. |
-| D12 | Practice's codes: give P017 its own catalog block (registering the 25 `CH-17xxx` codes the code already writes), or keep them under P013 as `CH-1308x` and rename the code's codes | **A P017 block.** The code already writes `CH-17xxx`, and moving them is the riskier change. Yours to decide, as `catalog/README` on #2578 says. |
+| D12 | Practice's codes: give P017 its own catalog block (registering the 25 `CH-17xxx` codes the code already writes), or keep them under P013 as `CH-1308x` and rename the code's codes | **A P017 block. Done** on `bridge/pr1-spine`: `catalog/practice.md` and Bridge IDs 170501–172301. |
 | D11 | Number the controls (`CTL-`), and block new unlabelled buttons in `clubhouse:check` | **Yes** |
 
 ---
