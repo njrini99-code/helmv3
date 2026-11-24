@@ -53,6 +53,15 @@ export function decodeBridgeId(id) {
 /** The kind digit follows the page prefix: one digit for 4-digit codes, two for 5-digit. */
 export const kindOf = (num) => num[num.length - 3];
 
+/**
+ * The file paths a contract's free-text `where` names (`a.tsx#Sym; b.ts (x)`), in order. Each must be a full path
+ * from the repo root, so the Bridge can open it and the check can prove it still exists.
+ */
+const WHERE_PATH = /(?<![\w./(-])((?:(?:\([\w-]+\)|[\w.[\]-]+)\/)*[\w.[\]-]+\.(?:tsx|ts|mjs|cjs|js|json|css|md|sql))(?![\w])/g;
+const WHERE_ROOT = /^(?:(?:src|scripts|config|docs|supabase|e2e|tests|design|design-refresh)\/|[\w.-]+\.config\.m?[jt]s$)/;
+export const wherePaths = (where) => [...String(where ?? '').matchAll(WHERE_PATH)].map((m) => m[1]);
+export const isFullWherePath = (path) => WHERE_ROOT.test(path);
+
 export function parseCatalogRows(catalogs) {
   const rows = [];
   for (const [file, md] of Object.entries(catalogs)) {
@@ -393,6 +402,7 @@ export function checkRegistry(ctx) {
         const rec = bridge.find((r) => r.id === id);
         if (!rec) v.push(`${at}: ${a.id} bridge.${k} ${id} is not in bridge-contracts.json`);
         else if (rec.page !== m.id && rec.page !== 'P001') v.push(`${at}: ${a.id} bridge.${k} ${id} belongs to ${rec.page}`);
+        else if (rec.status === 'deprecated') v.push(`${at}: ${a.id} bridge.${k} ${id} is retired; point it at the outcome that replaced it`);
       }
       for (const p of [a.component, a.service].filter(Boolean)) if (!exists(p.split('#')[0])) v.push(`${at}: ${a.id} path ${p} does not exist`);
     }
@@ -426,6 +436,10 @@ export function checkRegistry(ctx) {
     if (!/^[A-Z0-9_]+$/.test(r.name ?? '')) v.push(`${at}: name "${r.name}" is not a CONSTANT_NAME`);
     if (!['reserved', 'implemented', 'deprecated'].includes(r.status)) v.push(`${at}: status "${r.status}" is not reserved, implemented or deprecated`);
     if (!r.meaning) v.push(`${at}: no meaning`);
+    for (const p of wherePaths(r.where)) {
+      if (!isFullWherePath(p)) v.push(`${at}: where names ${p}; write the full path from the repo root`);
+      else if (!exists(p)) v.push(`${at}: where names ${p}, which does not exist`);
+    }
     // A contract with no catalog code proves itself through a named test: implemented means a test file
     // that exists and names the Bridge ID. Without one it stays reserved.
     if (!r.chCode && r.status === 'implemented') {

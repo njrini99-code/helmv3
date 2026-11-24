@@ -397,7 +397,7 @@ sheet (11901, D-66; the strip replaced the tab bar and the More sheet's rows on
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 11901 | — | `PHONE_CHROME` | On a phone the sidebar gives way to the role's tab bar (coach Home, CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub) and a More sheet with the rest. |
+| 11901 | — | `PHONE_CHROME` | On a phone the sidebar gives way to the section strip: the role's first sections (coach Home, CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub), then the rest in sidebar order, then Settings, each only once its screen is rebuilt for the role. There is no bottom tab bar. |
 
 ## 20 — Keyboard / input
 

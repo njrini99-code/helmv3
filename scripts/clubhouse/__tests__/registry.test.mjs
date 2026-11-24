@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bridgeId, decodeBridgeId, syncBridge, checkRegistry, checkScreenLabels, pageToRoute, mergeRouteLabel, checkContract, checkHeldPlan, parseCatalogRows, nameFrom, renderContract, authRouteToPages, HOLD_HEADER, CATEGORY_COUNT } from '../registry.mjs';
+import { bridgeId, decodeBridgeId, syncBridge, checkRegistry, checkScreenLabels, pageToRoute, mergeRouteLabel, checkContract, checkHeldPlan, parseCatalogRows, nameFrom, renderContract, authRouteToPages, wherePaths, HOLD_HEADER, CATEGORY_COUNT } from '../registry.mjs';
 
 const map = {
   categories: {},
@@ -59,6 +59,25 @@ test('a catalog row without a Bridge ID, and a category map that disagrees with 
   assert.ok(missing.some((x) => x.includes('CH-7301 has no Bridge ID')));
   const moved = checkRegistry({ ...c, map: { ...map, overrides: { ...map.overrides, 'CH-7001': { category: 7, why: 'x' } } } });
   assert.ok(moved.some((x) => x.includes('IDs are permanent')));
+});
+
+test('an action that points at a retired outcome fails', () => {
+  const c = ctx();
+  const bridge = c.bridge.map((r) => (r.chCode === 'CH-7002' ? { ...r, status: 'deprecated' } : r));
+  const id = bridge.find((r) => r.chCode === 'CH-7002').id;
+  const manifests = [page({ actions: [{ id: 'ACT-P007-SEND', label: 'Send', component: 'src/x.tsx#X', bridge: { loadFailed: id } }] })];
+  const v = checkRegistry({ ...c, manifests, bridge });
+  assert.ok(v.some((x) => x.includes(`bridge.loadFailed ${id} is retired`)), v.join('\n'));
+});
+
+test('a contract\'s where names full repo paths that exist', () => {
+  assert.deepEqual(wherePaths('src/a/B.tsx#B (x); c.ts, the loaders in (dashboard)/d.tsx; next.config.mjs#redirects'), ['src/a/B.tsx', 'c.ts', '(dashboard)/d.tsx', 'next.config.mjs']);
+  const c = ctx();
+  const bridge = c.bridge.map((r) => (r.chCode === 'CH-7001' ? { ...r, where: 'src/a/B.tsx#B; c.ts; src/gone/D.tsx; next.config.mjs#redirects' } : r));
+  const v = checkRegistry({ ...c, bridge, exists: (p) => p !== 'src/gone/D.tsx' });
+  assert.ok(v.some((x) => x.includes('where names c.ts; write the full path')));
+  assert.ok(v.some((x) => x.includes('where names src/gone/D.tsx, which does not exist')));
+  assert.equal(v.filter((x) => x.includes('where names')).length, 2);
 });
 
 test('a tombstoned ID in use fails', () => {
