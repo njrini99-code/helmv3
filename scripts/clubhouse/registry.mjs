@@ -24,6 +24,7 @@ import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkAudits, renderAudits, renderRelated } from './docs-index.mjs';
+import { buildBridgeGraph, renderGraph, GRAPH_PATH } from './bridge-graph.mjs';
 
 export const CATEGORY_COUNT = 25;
 /** Categories a page may never mark N/A (D-69): loading, empty, server error, offline, permission, accessibility. */
@@ -664,7 +665,7 @@ function renderRouteMap({ pages, otherRoutes = [] }) {
   return md;
 }
 
-export function generateDocs({ manifests, bridge, map, tombstones, read, exists, audits = [], otherRoutes = [] }) {
+export function generateDocs({ manifests, bridge, map, tombstones, read, exists, audits = [], otherRoutes = [], catalogs = {}, codeIndex = new Map(), surfaceIndex = new Map(), auditFiles = {} }) {
   const pages = [...manifests].sort((a, b) => a.id.localeCompare(b.id));
   const cats = map.categories;
   const out = {};
@@ -732,6 +733,9 @@ export function generateDocs({ manifests, bridge, map, tombstones, read, exists,
 
   out['docs/clubhouse/AUDITS.md'] = renderAudits({ audits, manifests: pages, head: GEN_HEAD });
 
+  // The Bridge graph (plan §3): the one file the Bridge screens and the signal route read.
+  out[GRAPH_PATH] = renderGraph(buildBridgeGraph({ manifests: pages, bridge, tombstones, catalogs, codeIndex, surfaceIndex, auditFiles, read, exists }));
+
   // Each page's PAGE.md carries a generated Related block (links to its docs, code, audits and tracker row).
   for (const m of pages) {
     const path = `docs/clubhouse/pages/${m.id}-${m.slug}/PAGE.md`;
@@ -774,16 +778,23 @@ export function load(root) {
   // The code index (plan §4.6): every CH- code written anywhere in src, and the files that write it. Tests and
   // generated files (the flag registry quotes codes in prose) don't count as writing one.
   const codeIndex = new Map();
+  // The surfaces the code reports under (chReport, SectionBoundary, chLogServer): `surface: 'home.leaderboard'`.
+  const surfaceIndex = new Map();
   const walk = (dir) => {
     for (const n of readdirSync(join(root, dir), { withFileTypes: true })) {
       const p = `${dir}/${n.name}`;
       if (n.isDirectory()) {
         if (n.name !== '__tests__' && n.name !== 'node_modules') walk(p);
       } else if (/\.tsx?$/.test(n.name) && !/\.(generated|test|spec)\.tsx?$/.test(n.name)) {
-        for (const m of r(p).matchAll(/CH-(\d{4,5})(?!\d)/g)) {
+        const text = r(p);
+        for (const m of text.matchAll(/CH-(\d{4,5})(?!\d)/g)) {
           const code = `CH-${m[1]}`;
           if (!codeIndex.has(code)) codeIndex.set(code, new Set());
           codeIndex.get(code).add(p);
+        }
+        for (const m of text.matchAll(/surface[=:]\s*\{?['"`]([a-z][\w-]*\.[\w.-]+)['"`]/g)) {
+          if (!surfaceIndex.has(m[1])) surfaceIndex.set(m[1], new Set());
+          surfaceIndex.get(m[1]).add(p);
         }
       }
     }
@@ -800,6 +811,19 @@ export function load(root) {
     }
   };
   if (ex('src/app/golf')) pagesUnder('src/app/golf');
+  // Each audit's findings and number checks feed the graph (plan §3: findings, numberChecks).
+  const auditDir = 'docs/clubhouse/audit';
+  const auditFiles = {};
+  if (ex(auditDir)) {
+    for (const d of readdirSync(join(root, auditDir), { withFileTypes: true })) {
+      if (!d.isDirectory()) continue;
+      const base = `${auditDir}/${d.name}`;
+      if (ex(`${base}/findings.jsonl`)) auditFiles[`${base}/findings.jsonl`] = r(`${base}/findings.jsonl`);
+      if (ex(`${base}/numbers`)) {
+        for (const n of readdirSync(join(root, `${base}/numbers`))) if (/^P\d{3}-.+\.md$/.test(n)) auditFiles[`${base}/numbers/${n}`] = r(`${base}/numbers/${n}`);
+      }
+    }
+  }
   return {
     manifests,
     golfPages: golfPages.sort(),
@@ -817,6 +841,9 @@ export function load(root) {
     migrations,
     used,
     codeIndex,
+    surfaceIndex,
+    catalogs,
+    auditFiles,
     exists: ex,
     read: r,
   };
