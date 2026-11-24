@@ -148,6 +148,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-16683 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
 | CH-16684 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
 | CH-16685 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-17105 | 10 Warning | A warning on the plan (a player in no group); publishing still goes. |
+| CH-17106 | 10 Warning | A warning on the plan (past the end of practice); publishing still goes. |
+| CH-17205 | 23 Logging / observability | Logged on the server only (the fan-out after a publish); nothing on screen. |
+| CH-17505 | 15 Data freshness / sync | Another coach saved first: Load latest is data freshness, not a destructive confirm. |
 
 ## Count by page and category
 
@@ -169,7 +173,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 | — | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 | — | — | — | — | — | 69 |
 | P015 | — | 7 | 2 | 3 | 12 | 22 | 27 | 2 | 2 | — | — | 3 | — | 1 | — | 17 | 7 | 6 | 2 | 1 | 1 | — | 1 | — | — | 116 |
 | P016 | 33 | 2 | 1 | 29 | 4 | 40 | 3 | 1 | 2 | 2 | 6 | 1 | — | — | 5 | 2 | — | 4 | — | — | — | — | — | — | — | 135 |
-| P017 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 0 |
+| P017 | — | — | — | — | 12 | 9 | — | — | — | 2 | — | — | — | — | 1 | — | — | — | — | — | — | — | 1 | — | — | 25 |
 
 ## P001 Shell
 
@@ -2244,6 +2248,36 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 161802 | CH-16641 | 18 Accessibility | `CALENDAR_GRID_BLOCK` | implemented | Calendar grid block (slice 4) |
 | 161803 | CH-16850 | 18 Accessibility | `HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE_2` | implemented | Home: a tournament arrives while the page is open |
 | 161880 | CH-16880 | 18 Accessibility | `ENTER_HOLES_THE_GRID_BY_KEYBOARD_AND` | implemented | Enter holes: the grid by keyboard and screen reader |
+
+## P017 Practice
+
+| Bridge ID | Code | Category | Name | Status | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| 170501 | CH-17101 | 05 Validation | `A_GROUP_IS_AT_TWO_STATIONS_IN` | implemented | A group is at two stations in one turn |
+| 170502 | CH-17102 | 05 Validation | `A_COACH_IS_IN_TWO_PLACES_AT` | implemented | A coach is in two places at once |
+| 170503 | CH-17103 | 05 Validation | `A_BLOCK_HAS_MORE_GROUPS_THAN_STATIONS` | implemented | A block has more groups than stations |
+| 170504 | CH-17104 | 05 Validation | `A_BLOCK_USES_A_GROUP_WITH_NO` | implemented | A block uses a group with no players |
+| 170505 | CH-17109 | 05 Validation | `A_PLAN_IS_OVER_ITS_LIMITS` | implemented | A plan is over its limits |
+| 170506 | CH-17110 | 05 Validation | `AN_ALL_DAY_PRACTICE_GETS_A_PLAN` | implemented | An all-day practice gets a plan |
+| 170507 | CH-17112 | 05 Validation | `A_DRILLS_FIELDS_ARE_NOT_VALID` | implemented | A drill's fields are not valid |
+| 170508 | CH-17113 | 05 Validation | `A_SAVED_GROUPS_NAME_OR_SIZE_IS` | implemented | A saved group's name or size is not valid |
+| 170509 | CH-17114 | 05 Validation | `A_COURSE_BLOCK_HAS_NO_HOLES` | implemented | A Course block has no holes |
+| 170510 | CH-17115 | 05 Validation | `PUBLISHING_IS_HELD_BY_PROBLEMS_IN_THE` | implemented | Publishing is held by problems in the plan |
+| 170511 | CH-17116 | 05 Validation | `AN_EMPTY_PLAN_IS_PUBLISHED` | implemented | An empty plan is published |
+| 170512 | CH-17117 | 05 Validation | `A_CANCELLED_PRACTICES_PLAN_IS_PUBLISHED` | implemented | A cancelled practice's plan is published |
+| 170601 | CH-17001 | 06 Server / system error | `A_PLAN_SAVE_FAILS` | implemented | A plan save fails |
+| 170602 | CH-17002 | 06 Server / system error | `PUBLISHING_A_PLAN_FAILS` | implemented | Publishing a plan fails |
+| 170603 | CH-17003 | 06 Server / system error | `REPUBLISHING_A_PLAN_FAILS` | implemented | Republishing a plan fails |
+| 170604 | CH-17004 | 06 Server / system error | `TAKING_A_PLAN_DOWN_FAILS` | implemented | Taking a plan down fails |
+| 170605 | CH-17006 | 06 Server / system error | `SAVING_OR_COPYING_A_DRILL_FAILS` | implemented | Saving or copying a drill fails |
+| 170606 | CH-17008 | 06 Server / system error | `DELETING_A_PLAN_FAILS` | implemented | Deleting a plan fails |
+| 170607 | CH-17009 | 06 Server / system error | `CREATING_A_MAKE_UP_FAILS` | implemented | Creating a make-up fails |
+| 170608 | CH-17014 | 06 Server / system error | `THE_PLAN_CARD_DOES_NOT_POST_TO` | implemented | The plan card does not post to team chat after a publish |
+| 170609 | CH-17201 | 06 Server / system error | `A_PLAN_CANNOT_BE_READ` | implemented | A plan cannot be read |
+| 171001 | CH-17105 | 10 Warning | `A_PLAYER_IS_IN_NO_GROUP` | implemented | A player is in no group |
+| 171002 | CH-17106 | 10 Warning | `THE_PLAN_RUNS_PAST_THE_END_OF` | implemented | The plan runs past the end of practice |
+| 171501 | CH-17505 | 15 Data freshness / sync | `ANOTHER_COACH_SAVED_THE_PLAN_FIRST` | implemented | Another coach saved the plan first |
+| 172301 | CH-17205 | 23 Logging / observability | `HOMES_PLAN_LINE_OR_THE_PLAYERS_NOTIFICATION` | implemented | Home's plan line or the players' notification fan-out fails |
 
 ## Tombstones
 

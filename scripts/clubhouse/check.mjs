@@ -309,6 +309,7 @@ const CATALOG_PAGE = {
   recruiting: '14',
   auth: '15',
   tournaments: '16',
+  practice: '17',
 };
 /** Kinds whose rows must exist in code and in a test: toasts, validation, didn't load, empty, loading, confirm. */
 const ENFORCED_KINDS = new Set(['0', '1', '2', '3', '4', '5']);

@@ -80,6 +80,12 @@ test('a contract\'s where names full repo paths that exist', () => {
   assert.equal(v.filter((x) => x.includes('where names')).length, 2);
 });
 
+test('a code the source writes must be a catalog row (plan 4.6 code index)', () => {
+  const codeIndex = new Map([['CH-7001', new Set(['src/a.ts'])], ['CH-17001', new Set(['src/app/golf/actions/practice-plans.ts'])]]);
+  const v = checkRegistry(ctx({ codeIndex }));
+  assert.deepEqual(v, ['src/app/golf/actions/practice-plans.ts: writes CH-17001, which is in no catalog (add the row, or use a code that is)']);
+});
+
 test('a tombstoned ID in use fails', () => {
   const c = ctx();
   const v = checkRegistry({ ...c, tombstones: [{ id: 70601, removedAt: '2026-09-29', reason: 'x' }] });

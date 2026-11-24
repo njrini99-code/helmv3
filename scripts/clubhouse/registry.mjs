@@ -486,6 +486,10 @@ export function checkRegistry(ctx) {
   }
   for (const r of bridge) if (r.chCode && !rowCodes.has(r.chCode) && r.status !== 'deprecated') v.push(`config/clubhouse/bridge-contracts.json ${r.id}: ${r.chCode} is no longer in the catalog; mark it retired there, or tombstone the ID`);
   for (const code of Object.keys(map.overrides ?? {})) if (!rowCodes.has(code)) v.push(`config/clubhouse/category-map.json: override ${code} is not a catalog row`);
+  // Plan §4.6: a code the source writes must be a catalog row, or the Bridge can't resolve it.
+  for (const [code, files] of ctx.codeIndex ?? []) {
+    if (!rowCodes.has(code)) v.push(`${[...files][0]}: writes ${code}, which is in no catalog (add the row, or use a code that is)`);
+  }
   return v;
 }
 
@@ -767,16 +771,25 @@ export function load(root) {
       .filter((n) => n.endsWith('.sql'))
       .map((n) => [`${migrationsDir}/${n}`, r(`${migrationsDir}/${n}`)]),
   );
-  const used = new Set();
+  // The code index (plan §4.6): every CH- code written anywhere in src, and the files that write it. Tests and
+  // generated files (the flag registry quotes codes in prose) don't count as writing one.
+  const codeIndex = new Map();
   const walk = (dir) => {
     for (const n of readdirSync(join(root, dir), { withFileTypes: true })) {
       const p = `${dir}/${n.name}`;
       if (n.isDirectory()) {
-        if (n.name !== '__tests__') walk(p);
-      } else if (/\.tsx?$/.test(n.name)) for (const m of r(p).matchAll(/CH-(\d{4,5})(?!\d)/g)) used.add(`CH-${m[1]}`);
+        if (n.name !== '__tests__' && n.name !== 'node_modules') walk(p);
+      } else if (/\.tsx?$/.test(n.name) && !/\.(generated|test|spec)\.tsx?$/.test(n.name)) {
+        for (const m of r(p).matchAll(/CH-(\d{4,5})(?!\d)/g)) {
+          const code = `CH-${m[1]}`;
+          if (!codeIndex.has(code)) codeIndex.set(code, new Set());
+          codeIndex.get(code).add(p);
+        }
+      }
     }
   };
-  walk('src/clubhouse');
+  walk('src');
+  const used = new Set(codeIndex.keys());
   const golfPages = [];
   const pagesUnder = (dir) => {
     for (const n of readdirSync(join(root, dir), { withFileTypes: true })) {
@@ -803,6 +816,7 @@ export function load(root) {
     heldMd: r('supabase/migrations/HELD.md'),
     migrations,
     used,
+    codeIndex,
     exists: ex,
     read: r,
   };
