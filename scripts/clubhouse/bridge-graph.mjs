@@ -163,6 +163,19 @@ export function buildBridgeGraph({ manifests, bridge, tombstones = [], catalogs,
   const pages = [...manifests].sort((a, b) => a.id.localeCompare(b.id));
   const rowCells = catalogRowsByCode(catalogs);
 
+  // A page's CONTRACT.md names the other pages' IDs it shows (the shell's offline line, Practice's rows kept under
+  // CoachHelm). The signal route reads these as "may fire here", so only a code no contract names is a wrong page.
+  const idPage = new Map(bridge.map((r) => [r.id, r.page]));
+  const borrowsOf = (m, contractPath) => {
+    if (!exists(contractPath)) return [];
+    const named = new Set();
+    for (const hit of read(contractPath).matchAll(/(?<![\w-])(\d{5,6})(?![\w-])/g)) {
+      const id = Number(hit[1]);
+      if (idPage.has(id) && idPage.get(id) !== m.id) named.add(id);
+    }
+    return [...named].sort((a, b) => a - b);
+  };
+
   const graphPages = {};
   for (const m of pages) {
     const base = `docs/clubhouse/pages/${m.id}-${m.slug}`;
@@ -181,6 +194,7 @@ export function buildBridgeGraph({ manifests, bridge, tombstones = [], catalogs,
         return { plan, status: /^Status:\s*(\S+)/m.exec(md)?.[1] ?? null, migration: /^Migration:\s*(.+)$/m.exec(md)?.[1]?.trim() ?? null };
       }),
       screens: m.screens ?? [],
+      borrows: borrowsOf(m, `${base}/CONTRACT.md`),
     };
   }
 

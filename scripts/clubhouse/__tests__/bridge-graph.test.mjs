@@ -22,6 +22,7 @@ const shell = { id: 'P001', name: 'Shell', slug: 'shell', bridgeNamespace: 1, st
 const bridge = [
   { id: 70603, page: 'P007', category: 6, item: 3, name: 'SENDING_A_MESSAGE_THROWS', chCode: 'CH-7004', meaning: 'Sending a message throws', status: 'implemented', catalog: 'docs/clubhouse/catalog/messages.md' },
   { id: 70901, page: 'P007', category: 9, item: 1, name: 'SENT', chCode: 'CH-7101', meaning: 'Sent', status: 'reserved', catalog: 'docs/clubhouse/catalog/messages.md' },
+  { id: 10703, page: 'P001', category: 7, item: 3, name: 'OFFLINE', chCode: 'CH-1903', meaning: 'Offline', status: 'implemented', catalog: 'docs/clubhouse/catalog/shell.md' },
   { id: 70101, page: 'P007', category: 1, item: 1, name: 'THREAD_READY', meaning: 'The thread opens', status: 'implemented', where: 'src/clubhouse/screens/messages/Messages.tsx#Messages; `src/clubhouse/data/messages.ts`', tests: ['src/clubhouse/__tests__/messages.test.tsx'] },
 ];
 const catalogs = {
@@ -32,7 +33,10 @@ const catalogs = {
     '| CH-7101 | Sent, in a short form | The bubble | `api.send` | existing |',
   ].join('\n'),
 };
-const files = { 'docs/clubhouse/held/features/files.md': 'Status: HOLD\nMigration: 20261026090000_files.sql\n' };
+const files = {
+  'docs/clubhouse/held/features/files.md': 'Status: HOLD\nMigration: 20261026090000_files.sql\n',
+  'docs/clubhouse/pages/P007-messages/CONTRACT.md': 'From the shell (P001): 10703 CH-1903. Its own: 70603. Not an ID: 99999, CH-10703.\n',
+};
 const io = { read: (p) => files[p], exists: (p) => p in files || p === 'docs/clubhouse/pages/P007-messages/PAGE.md' };
 
 const graph = (over = {}) =>
@@ -78,6 +82,12 @@ test('the graph carries pages with their gates, docs, held plans and screens', (
   assert.equal(g.pages.P007.docs.WIRING, null);
   assert.deepEqual(g.pages.P007.held, [{ plan: 'docs/clubhouse/held/features/files.md', status: 'HOLD', migration: '20261026090000_files.sql' }]);
   assert.equal(g.pages.P007.screens[0].audience, 'shared');
+});
+
+test("a page borrows the other pages' IDs its contract names, and only those", () => {
+  const g = graph();
+  assert.deepEqual(g.pages.P007.borrows, [10703]);
+  assert.deepEqual(g.pages.P001.borrows, []);
 });
 
 test('actions keep only the outcomes they name, and their tables', () => {
