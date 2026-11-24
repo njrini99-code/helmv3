@@ -2,6 +2,7 @@
 
 import { Component, Suspense, createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
 import { chReport } from '../lib/track';
+import { chSignal, reportingSignal } from '../lib/signal';
 import { FAILURE_COPY, InlineNotice, partsSentence } from './Notices';
 
 type Props = { surface: string; label: string; children: ReactNode; /** Catalog number of the crash notice. */ code?: string };
@@ -52,7 +53,9 @@ class Boundary extends Component<Props & { group: Group | null }, { failed: bool
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo) {
-    chReport(error, { surface: this.props.surface, severity: 'high', extra: { componentStack: info.componentStack ?? undefined } });
+    // E3 (Bridge plan §4.2): counted under the notice's code (CH-1206 when it has none), and the report carries its place.
+    const signal = chSignal({ kind: 'crash', code: this.props.code ?? 'CH-1206', surface: this.props.surface, message: error.message, reported: true });
+    reportingSignal(signal, () => chReport(error, { surface: this.props.surface, severity: 'high', extra: { componentStack: info.componentStack ?? undefined } }));
     this.props.group?.add(this.id, { label: this.props.label, reset: this.reset });
   }
 

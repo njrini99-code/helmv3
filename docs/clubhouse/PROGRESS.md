@@ -1050,6 +1050,11 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
   `config/clubhouse/bridge-contracts.json`, readable in
   `docs/clubhouse/generated/CLUBHOUSE_BRIDGE_MAP.md`), nothing is sent to the
   Bridge, and every page manifest says `bridge: reserved` until then.
+  2026-11-24 (Bridge plan PR 1, #2611): the sending side is built. Shared
+  components and the shell queue signals to `POST /api/ch/signal`, which
+  resolves each one to its Bridge ID. It stays off until the owner applies
+  migration 20261124090000 and turns `clubhouse_signals` on; the manifests
+  stay `bridge: reserved` until both are done.
 - D-69 (2026-09-29, owner): Every page's contract is complete, with nothing left
   out. All 25 categories are answered, and each answer is either defined or N/A
   with a reason. Every page has its empty states (first-run and filtered), error

@@ -120,6 +120,14 @@ docs/generated/*
 !docs/generated/WORLD_MODEL.json
 !docs/generated/contracts/
 !docs/generated/janitor-findings.json
+# The Clubhouse Bridge graph: POST /api/ch/signal reads it at request time to
+# resolve each signal to its Bridge ID (src/lib/admin/clubhouse/graph-server.ts),
+# with its next.config.mjs outputFileTracingIncludes counterpart. One file.
+!docs/clubhouse/
+docs/clubhouse/*
+!docs/clubhouse/generated/
+docs/clubhouse/generated/*
+!docs/clubhouse/generated/bridge-graph.json
 
 # Secrets. This is the .gitignore-is-ignored trap at its worst address.
 #

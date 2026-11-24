@@ -9,6 +9,7 @@ import { Tooltip } from './Tooltip';
 import { CH_DUR, CH_MS, chSpringCurve, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { chSupportsLinear, chThrownExit } from '../lib/sheet-drag';
+import { chSignal } from '../lib/signal';
 
 interface ToastItem {
   id: number;
@@ -30,6 +31,12 @@ export interface ToastInput {
   body?: string;
   action?: ToastItem['action'];
   code?: string;
+  /**
+   * The failure this error toast tells of is already recorded (useAction's own signal, and chReport where it reports),
+   * so the toast is counted but not written as a second incident. An error toast with a code and without this is the
+   * incident's only record.
+   */
+  reported?: boolean;
   /** Ends only this notice's lifetime; aborting never cancels the work it describes. */
   signal?: AbortSignal;
   /** A live notice with the same key leaves as this one arrives, so "Muted" and "Notifications back on" never stack. */
@@ -219,9 +226,14 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
     dismiss(id);
   }, [expiries, dismiss]);
   const show = useCallback<ShowToast>(
-    ({ title, tone = 'done', body, action, code, signal, replace, onExpire, holdMs }) => {
+    ({ title, tone = 'done', body, action, code, reported, signal, replace, onExpire, holdMs }) => {
       // Async feedback from a prior team never repopulates the new team's stack.
       if (scoped !== currentScope.current || signal?.aborted) return;
+      // E1 (Bridge plan §4.2): every numbered toast is counted where it showed.
+      if (code) {
+        const failure = tone === 'error' && !reported;
+        chSignal({ kind: 'toast', code, outcome: failure ? 'failure' : undefined, message: failure ? (body ? `${title}: ${body}` : title) : undefined });
+      }
       const replaced = replace == null ? undefined : keys.get(replace);
       if (replaced != null) dismiss(replaced);
       // The stack holds at most three notices; an evicted notice owns no future timer/listener.
@@ -456,6 +468,8 @@ function ToastCard({
           type="button"
           className="ch-toast__action"
           onClick={() => {
+            // E1: a Try again pressed on a numbered toast is a retry of what it reported.
+            if (t.code && /try again/i.test(t.action?.label ?? '')) chSignal({ kind: 'toast', code: t.code, outcome: 'retry' });
             t.action?.run();
             onAct(t.id);
           }}

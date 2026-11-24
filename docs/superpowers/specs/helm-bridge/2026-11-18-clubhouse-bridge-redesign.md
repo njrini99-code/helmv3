@@ -164,6 +164,14 @@ interface ChSignal {
 }
 ```
 
+**As built (PR 1, 2026-11-24):** `src/lib/admin/clubhouse/signal.ts`. Three
+changes from the sketch above. `kind` adds `tap` (E7). `code` may be left out
+of a view, a tap and an action's start, where the server names it from the
+page, the control or the action map. A failure carries `reported: true` when
+`chReport` or `logError` already wrote its `admin_events` row; the route then
+stamps the Bridge columns on that row (found by session and seq) instead of
+writing a second one.
+
 ### 4.2 Where it is sent from: shared components, not the 467 call sites
 
 | # | Shared component | Sends | Covers |
@@ -177,6 +185,27 @@ interface ChSignal {
 | E7 | `lib/press.ts` (`useChPress`) | `control` tap for elements with `data-ctl` (counted only) | Control Atlas taps |
 | E8 | `instrumentation-client.ts` | `vital` (INP, LCP, CLS) and `frustration` (CH-1951 to 1953), with the page | Experience screen |
 | E9 | Server actions through `observed-action.ts` | the server half of an action: duration, Postgres code, table | Shows whether a failure was the network, RLS or a constraint |
+
+**As built (PR 1, 2026-11-24):** the client queue is `src/clubhouse/lib/signal.ts`.
+
+- E1: `Toast`. An error toast nobody reported counts as a failure; Try again counts as a retry.
+- E2: `useAction`. A throw is now reported once at medium, a handled failure
+  once at low, and a quiet one not at all (the route writes its row). Each
+  report runs inside `reportingSignal()`, so `chReport` adds the signal's
+  place to its row without its callers' arguments changing.
+- E3: `SectionBoundary` and `RouteErrorBoundary`. An offline route error counts
+  under its transient or load code.
+- E4: `EmptyState`, `InlineNotice` and `PageNotice`, through `ui/StateSignal.tsx`.
+  `RefreshNotice`, `Retry` and `EmptyShape` draw through these. `NoData` takes
+  no code, so it isn't counted.
+- E6 to E8: these live in `src/clubhouse/shell/use-signals.ts`, called by
+  `ClubhouseFrame`, not in `press.ts` or `instrumentation-client.ts`. Signals
+  carry the page and the team, which only the shell knows. Taps count
+  `[data-ctl]`, and no element carries one until §4.7 numbers the controls
+  (PR 2). A rage click is 3 clicks on one element within 600 ms. It never
+  counts an enabled button, a link or a field, or a click that selects text.
+- E5 and E9 move to PR 3. They need server-side signals, which this route does
+  not take yet.
 
 ### 4.3 Runtime contract checks (the creative part of the spine)
 
@@ -207,6 +236,13 @@ Each becomes a `drift` row, not an error. B11 lists them.
 - Sending never fails a tap: no await on the hot path, and every call is wrapped
   in try/catch.
 
+**As built (PR 1, 2026-11-24):** the per-session limit counts batches: 12 a
+minute, which at 20 envelopes a flush is the 240 above. A batch carries at most
+50 envelopes, plus up to 50 earlier ones as context when it has a failure.
+Before anything is stored, each envelope is resolved against the graph this
+deploy shipped with (`graph-server.ts`). The route also stores nothing from a
+Preview or Development runtime, since those hold production credentials.
+
 ### 4.5 Storage (shared production database)
 
 | Table | One row per | Kept | Why |
@@ -217,6 +253,15 @@ Each becomes a `drift` row, not an error. B11 lists them.
 | `clubhouse_session_events` | envelope in a session **that has a failure**, plus the 50 before it | 14 days | The timeline, kept only where something went wrong. Volume stays bounded. |
 | `clubhouse_drift` | drift kind × code × release (count, first seen, last seen) | 180 days | B11 |
 | `bridge_notes` | an owner note: a code marked expected, a watch, a pack sent | forever | Bridge's own small state |
+
+**As built (PR 1, 2026-11-24):** `supabase/migrations/20261124090000_clubhouse_bridge_signals.sql`,
+**held** (`HELD.md`). The hourly key also carries kind, outcome, action and
+page, so success and failure, and each page, count apart; p50, p95 and p99 are
+read from a duration histogram. All writes go through one service-role function,
+`clubhouse_ingest_signals(jsonb)`, called once per session per batch. While the
+migration is held, the route writes failures to `admin_events` without the new
+columns (they travel in `metadata.bridge`), stores no counts, and says
+`persisted: false`. pgTAP: `supabase/tests/rls/clubhouse_bridge_signals.sql`.
 
 **Volume bound:** hourly rows are at most the distinct codes that fired, × 3
 roles, × 4 platforms, × the 1–2 live releases. In practice that is a few hundred
@@ -1069,6 +1114,17 @@ built in their own worktrees, in parallel with PR 1, against a seeded fixture.
 | **2. Registry screens** | B02, B03 (plus §4.7 control numbering for all pages), B04, B05, B12, B14 palette, the scope bar, the category legend, chips. Each works with no live data ("No signal yet", BR-xx93). | Page tests for every BR code; `admin-gate-coverage` (`requireSuperAdmin` on every entry); Safari pass on desktop and phone |
 | **3. Live lenses** | B01 Pulse, B06 additions, B07, B08, B09, B10, the digest section | The same tests, plus seeded-fixture tests per rule and per screen |
 | **4. Drift, Duet, numbering** | B11, B13, the §9.2 read-only API (off by default), config/bridge/contracts.json (new) + BRIDGE_UI_MAP.md (new), category 25 rows, the rail regrouping, docs (DECISIONS, a Bridge feature doc, registry docs) | Full gates once; `verifier` agent on the done claim |
+
+**PR 1 as built (draft #2611, 2026-11-24):**
+
+- Done: the graph, the code index and its checks, the six `where` paths, P017,
+  the envelope, the resolver and the 12 rules, the route, the held migration,
+  and emitters E1 to E4 and E6 to E8.
+- Moved: E5 and E9 to PR 3. The manifests stay `bridge: reserved`: the
+  registry has no `wired` value, and D-68 says they move when signals reach
+  the Bridge, which is once the migration is applied and the flag is on.
+- Waiting on the owner: applying the migration, and the W-tier check (a forced
+  CH-7004 landing one row with `bridge_id 70603`), which needs it.
 
 ---
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chSignalSchema, isFailureSignal, MAX_BATCH, parseSignalBatch, redactSignal, TRAIL_MAX } from '../signal';
+import { chSignalSchema, isFailureSignal, MAX_BATCH, MAX_CONTEXT, parseSignalBatch, redactSignal, TRAIL_MAX } from '../signal';
 import { signal } from './fixtures';
 
 describe('chSignalSchema', () => {
@@ -23,6 +23,14 @@ describe('chSignalSchema', () => {
     expect(chSignalSchema.safeParse({ ...signal(), ...over }).success).toBe(false);
   });
 
+  it('lets a view, a tap and an action start leave their code to the server, and nothing else', () => {
+    expect(chSignalSchema.safeParse(signal({ code: undefined, kind: 'view', outcome: undefined })).success).toBe(true);
+    expect(chSignalSchema.safeParse(signal({ code: undefined, kind: 'tap', outcome: undefined, control: 'CTL-P007-001' })).success).toBe(true);
+    expect(chSignalSchema.safeParse(signal({ code: undefined, kind: 'action', outcome: 'start', act: 'messages.send' })).success).toBe(true);
+    expect(chSignalSchema.safeParse(signal({ code: undefined, kind: 'action', outcome: 'failure' })).success).toBe(false);
+    expect(chSignalSchema.safeParse(signal({ code: undefined, kind: 'crash', outcome: undefined })).success).toBe(false);
+  });
+
   it('strips fields the envelope does not list, so they are never stored', () => {
     const parsed = chSignalSchema.parse({ ...signal(), email: 'nick@example.com', name: 'Nick' });
     expect(parsed).not.toHaveProperty('email');
@@ -44,6 +52,20 @@ describe('parseSignalBatch', () => {
     if (r.ok) {
       expect(r.signals.map((s) => s.seq)).toEqual([1, 2]);
       expect(r.dropped).toBe(2);
+      expect(r.context).toEqual([]);
+      expect(r.ended).toBe(false);
+    }
+  });
+
+  it('carries the newest context envelopes and the page-hidden mark', () => {
+    const context = Array.from({ length: MAX_CONTEXT + 5 }, (_, i) => signal({ seq: i + 1, kind: 'state', code: '70101', outcome: undefined }));
+    const r = parseSignalBatch({ signals: [signal({ seq: 99 })], context: [...context, { nope: true }], ended: true });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.context).toHaveLength(MAX_CONTEXT - 1);
+      expect(r.context[0]!.seq).toBe(7);
+      expect(r.dropped).toBe(1);
+      expect(r.ended).toBe(true);
     }
   });
 });

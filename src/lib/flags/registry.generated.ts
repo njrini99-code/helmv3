@@ -30,6 +30,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "After one team has run it for a week with no overdue or fail-open signals and every team is on, delete the flag and its checks in their own reviewed change.",
   },
   {
+    feature_id: "clubhouse_signals",
+    owner: "golf/clubhouse",
+    purpose: "Gates the Clubhouse signal pipe: whether Clubhouse pages queue and send their signal envelopes (views, toasts, action outcomes, crashes, failed loads, vitals) and whether POST /api/ch/signal stores them. Reason: the Bridge reads every Clubhouse error by its code from what this pipe stores, and the pipe writes to the shared production database.",
+    type: "operations_kill_switch",
+    status: "active",
+    created_at: "2026-11-24",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: "Off (the default everywhere): the shell hands the client signals off, so chSignal queues and sends nothing, and the route answers 204 and stores nothing even if an old page still posts. Clubhouse itself is unchanged either way: Sentry reports, toasts and /api/log-error keep running. The Bridge's pipe panel shows \"switched off\", never \"all clear\". The owner turns it on or off by editing this file's environment block and running npm run flags:generate; auditable via git history on config/feature-flags.yml.",
+    cleanup_plan: "No planned removal: it is the off switch for a pipe that writes to the shared production database.",
+  },
+  {
     feature_id: "coachhelm_a4_sequence_attribution_surface",
     owner: "golf/coachhelm",
     purpose: "Gates whether the Round Review page renders the new per-hole sequence-attribution rollup (loadSequenceAttribution + computeSequenceAttribution + SequenceAttributionSection) below the existing stat breakdown; default off pending a design/product review of the section's placement, copy, and the observed-strokes-gained wording against a busy round.",

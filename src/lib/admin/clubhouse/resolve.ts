@@ -41,23 +41,79 @@ function mayFireOn(graph: BridgeGraph, page: string, id: BridgeId, idPage: PageI
   return byPage.get(page)?.has(id) ?? false;
 }
 
+const readyCache = new WeakMap<BridgeGraph, Map<string, BridgeId | null>>();
+
+/**
+ * The Bridge ID a view of this page counts under: the page's own "ready" row (category 1, named …_READY, as P003's
+ * ROSTER_READY), the role's own where the page has one each (P002's COACH_HOME_READY and PLAYER_HOME_READY), else
+ * its first category-1 row. Null for a page with no such row yet (P015, P017). A view carries no code of its own, so
+ * the browser never needs the graph. A page with one ready row per screen (P009, P011) counts every view under its
+ * first one until the views send their screen.
+ */
+export function viewIdFor(graph: BridgeGraph, page: string, role?: string): BridgeId | null {
+  let byPage = readyCache.get(graph);
+  if (!byPage) {
+    byPage = new Map();
+    readyCache.set(graph, byPage);
+  }
+  const key = `${page}|${role ?? ''}`;
+  if (byPage.has(key)) return byPage.get(key) ?? null;
+  const rows = Object.entries(graph.ids)
+    .filter(([, r]) => r.page === page && r.category === 1 && r.status !== 'deprecated')
+    .map(([id, r]) => ({ id: Number(id), name: r.name }))
+    .sort((a, b) => a.id - b.id);
+  const ready = rows.filter((r) => /_READY$/.test(r.name));
+  const own = role ? ready.find((r) => r.name.startsWith(`${role.toUpperCase()}_`)) : undefined;
+  const id = (own ?? ready[0] ?? rows[0])?.id ?? null;
+  byPage.set(key, id);
+  return id;
+}
+
+/** The shell's generic outcome codes, which name the action's own outcome row once the action is known. */
+const GENERIC_OUTCOME: Record<string, { outcome: 'success' | 'failure' }> = {
+  'CH-1702': { outcome: 'success' },
+  'CH-1703': { outcome: 'failure' },
+};
+
 export function resolveSignal(s: ChSignal, graph: BridgeGraph, actions: Map<string, string> = actionIndex(graph)): ResolvedSignal {
   const drift: DriftKind[] = [];
   let bridgeId: BridgeId | null = null;
+  const actionId = s.act ? (actions.get(s.act) ?? null) : null;
+
+  // An envelope that leaves its code to the server: a view counts under its page's ready row; an action's start and a
+  // tap have no Bridge ID of their own (the start pairs with its outcome; a tap is its control).
+  if (s.code === undefined) {
+    if (s.kind === 'view') {
+      if (!graph.pages[s.page as PageId]) return { bridgeId: null, idPage: null, category: null, actionId, drift: ['wrong-page'] };
+      const id = viewIdFor(graph, s.page, s.role);
+      const rec = id === null ? undefined : graph.ids[id];
+      if (id === null || !rec) return { bridgeId: null, idPage: null, category: null, actionId, drift };
+      return { bridgeId: id, idPage: rec.page, category: rec.category, actionId, drift };
+    }
+    return { bridgeId: null, idPage: null, category: null, actionId, drift };
+  }
 
   if (/^\d+$/.test(s.code)) {
     const id = Number(s.code);
     if (graph.ids[id]) bridgeId = id;
     else if (graph.tombstones[id]) {
       drift.push('deprecated-fired');
-      return { bridgeId: id, idPage: null, category: null, actionId: actions.get(s.act ?? '') ?? null, drift };
+      return { bridgeId: id, idPage: null, category: null, actionId, drift };
     }
   } else {
     bridgeId = graph.chIndex[s.code] ?? null;
   }
 
-  const actionId = s.act ? (actions.get(s.act) ?? null) : null;
   if (bridgeId === null) return { bridgeId: null, idPage: null, category: null, actionId, drift: ['unknown-code'] };
+
+  // A save's generic outcome (CH-1702 landed, CH-1703 failed) names the action's own row when its map lists one, so
+  // the Bridge counts "Remove from roster failed", not "a save failed".
+  const action = actionId ? graph.actions[actionId] : undefined;
+  const generic = GENERIC_OUTCOME[s.code];
+  if (s.kind === 'action' && action && generic && s.outcome === generic.outcome) {
+    const own = action.outcomes[generic.outcome];
+    if (own !== undefined && graph.ids[own]) bridgeId = own;
+  }
 
   const rec = graph.ids[bridgeId];
   // A chIndex entry with no ID behind it is a broken graph; read it as an unknown code rather than throw on ingest.
@@ -68,7 +124,6 @@ export function resolveSignal(s: ChSignal, graph: BridgeGraph, actions: Map<stri
 
   // An action that ended (any outcome but its start) must end on one of the outcomes its action-map row lists. The
   // shell's own outcomes (offline, slow save, stopped waiting) come from useAction itself, so every action has them.
-  const action = actionId ? graph.actions[actionId] : undefined;
   if (s.kind === 'action' && s.outcome && s.outcome !== 'start' && action) {
     if (!Object.values(action.outcomes).includes(bridgeId) && rec.page !== SHELL_PAGE) drift.push('wrong-outcome');
   }
@@ -84,7 +139,7 @@ export const SILENT_AFTER_MS = 30_000;
  * Starts and outcomes pair up per action (its `act`, else its control, else its code), oldest first.
  */
 export function silentActions(session: ChSignal[], opts: { now: number; pagehideAt?: number }): ChSignal[] {
-  const key = (s: ChSignal) => s.act ?? s.control ?? s.code;
+  const key = (s: ChSignal) => s.act ?? s.control ?? s.code ?? '';
   const open = new Map<string, ChSignal[]>();
   const silent: ChSignal[] = [];
   const closeLate = (start: ChSignal, at: number) => {
@@ -123,13 +178,14 @@ export function countDrift(items: { signal: ChSignal; drift: DriftKind[] }[]): D
   const rows = new Map<string, DriftCount>();
   for (const { signal, drift } of items) {
     for (const kind of drift) {
-      const k = `${kind}|${signal.code}|${signal.release}`;
+      const code = signal.code ?? '';
+      const k = `${kind}|${code}|${signal.release}`;
       const row = rows.get(k);
       if (row) {
         row.count += 1;
         row.firstSeen = Math.min(row.firstSeen, signal.at);
         row.lastSeen = Math.max(row.lastSeen, signal.at);
-      } else rows.set(k, { kind, code: signal.code, release: signal.release, count: 1, firstSeen: signal.at, lastSeen: signal.at });
+      } else rows.set(k, { kind, code, release: signal.release, count: 1, firstSeen: signal.at, lastSeen: signal.at });
     }
   }
   return [...rows.values()].sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind) || a.code.localeCompare(b.code));

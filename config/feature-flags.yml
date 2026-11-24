@@ -1359,3 +1359,37 @@ flags:
     cleanup_plan: >-
       No planned removal: it is the off switch for a job that writes the demo
       team every day.
+
+  # Clubhouse Bridge signals (plan docs/superpowers/specs/helm-bridge/
+  # 2026-11-18-clubhouse-bridge-redesign.md §4.4). Off everywhere until the
+  # held migration 20261124090000_clubhouse_bridge_signals.sql is applied and
+  # the owner turns the pipe on.
+  - feature_id: clubhouse_signals
+    owner: golf/clubhouse
+    purpose: >-
+      Gates the Clubhouse signal pipe: whether Clubhouse pages queue and send
+      their signal envelopes (views, toasts, action outcomes, crashes, failed
+      loads, vitals) and whether POST /api/ch/signal stores them. Reason: the
+      Bridge reads every Clubhouse error by its code from what this pipe
+      stores, and the pipe writes to the shared production database.
+    type: operations_kill_switch
+    status: active
+    created_at: "2026-11-24"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: >-
+      Off (the default everywhere): the shell hands the client signals off,
+      so chSignal queues and sends nothing, and the route answers 204 and
+      stores nothing even if an old page still posts. Clubhouse itself is
+      unchanged either way: Sentry reports, toasts and /api/log-error keep
+      running. The Bridge's pipe panel shows "switched off", never "all
+      clear". The owner turns it on or off by editing this file's
+      environment block and running npm run flags:generate; auditable via
+      git history on config/feature-flags.yml.
+    cleanup_plan: >-
+      No planned removal: it is the off switch for a pipe that writes to the
+      shared production database.

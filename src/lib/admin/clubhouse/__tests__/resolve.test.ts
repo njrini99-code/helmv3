@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { BridgeGraph } from '../graph';
-import { countDrift, resolveSignal, SILENT_AFTER_MS, silentActions } from '../resolve';
+import { countDrift, resolveSignal, SILENT_AFTER_MS, silentActions, viewIdFor } from '../resolve';
 import { fixtureGraph, signal } from './fixtures';
 
 const g = fixtureGraph();
@@ -41,12 +41,45 @@ describe('resolveSignal', () => {
     expect(resolveSignal(signal({ code: '70101', act: 'ACT-P007-SEND-MESSAGE', outcome: 'success' }), g).actionId).toBe('ACT-P007-SEND-MESSAGE');
   });
 
+  it("counts a view under its page's ready row, and an action start or a tap under no ID", () => {
+    expect(viewIdFor(g, 'P007')).toBe(70101);
+    expect(viewIdFor(g, 'P013')).toBeNull();
+    expect(resolveSignal(signal({ code: undefined, kind: 'view', outcome: undefined }), g)).toMatchObject({ bridgeId: 70101, idPage: 'P007', drift: [] });
+    expect(resolveSignal(signal({ code: undefined, kind: 'view', outcome: undefined, page: 'P013' }), g)).toMatchObject({ bridgeId: null, drift: [] });
+    expect(resolveSignal(signal({ code: undefined, kind: 'view', outcome: undefined, page: 'P099' }), g).drift).toEqual(['wrong-page']);
+    expect(resolveSignal(signal({ code: undefined, kind: 'action', outcome: 'start', act: 'messages.send' }), g)).toEqual({
+      bridgeId: null,
+      idPage: null,
+      category: null,
+      actionId: 'ACT-P007-SEND-MESSAGE',
+      drift: [],
+    });
+    expect(resolveSignal(signal({ code: undefined, kind: 'tap', outcome: undefined }), g).drift).toEqual([]);
+  });
+
+  it("names the action's own outcome row for the shell's generic saved and failed codes", () => {
+    const graph = fixtureGraph();
+    graph.ids[11702] = { ch: 'CH-1702', page: 'P001', category: 9, name: 'SAVED', meaning: 'Saved', status: 'implemented' };
+    graph.ids[11703] = { ch: 'CH-1703', page: 'P001', category: 6, name: 'SAVE_FAILED', meaning: 'Save failed', status: 'implemented' };
+    graph.chIndex['CH-1702'] = 11702;
+    graph.chIndex['CH-1703'] = 11703;
+    expect(resolveSignal(signal({ code: 'CH-1703', act: 'messages.send', outcome: 'failure' }), graph)).toMatchObject({ bridgeId: 70603, drift: [] });
+    expect(resolveSignal(signal({ code: 'CH-1702', act: 'messages.send', outcome: 'success' }), graph)).toMatchObject({ bridgeId: 70901, drift: [] });
+    // With no action named, the generic row stands.
+    expect(resolveSignal(signal({ code: 'CH-1703', outcome: 'failure' }), graph).bridgeId).toBe(11703);
+  });
+
   it('resolves against the real graph: CH-7004 lands on 70603 (plan PR 1 W-tier check)', () => {
     const real = JSON.parse(readFileSync(join(process.cwd(), 'docs/clubhouse/generated/bridge-graph.json'), 'utf8')) as BridgeGraph;
     const r = resolveSignal(signal({ act: 'ACT-P007-SEND-MESSAGE' }), real);
     expect(r.bridgeId).toBe(70603);
     expect(r.actionId).toBe('ACT-P007-SEND-MESSAGE');
     expect(r.drift).toEqual([]);
+    // Every built page's view resolves to one of its own rows.
+    for (const page of ['P001', 'P003', 'P007', 'P013']) expect(real.ids[viewIdFor(real, page) ?? -1]?.page).toBe(page);
+    expect(viewIdFor(real, 'P002', 'coach')).toBe(20101);
+    expect(viewIdFor(real, 'P002', 'player')).toBe(20102);
+    expect(viewIdFor(real, 'P003')).toBe(30101);
   });
 });
 
