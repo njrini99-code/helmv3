@@ -92,7 +92,7 @@ async function readCohort(playerId: string): Promise<{ failed: boolean }> {
  * The player's open reads for the ladder's "Because" (`coachhelm-ladder-shape.ts`): the reads the Deep dive delivers, kept to current
  * findings by the Board's own `isOpenFinding`, each mapped by the Board's mapper in their own voice. Every link goes to
  * `?view=deep-dive&insight=<id>`, so the ids come from the Deep dive's own feed read (`getInsightsForPlayer`, or the coach's feed for the
- * player when a coach's page hands one over (`feed`), with its limit and
+ * player on a coach's page (`feed`), with its limit and
  * `includeMore`), which applies the ranking, the player's feedback, the reads-v1 folding and the limit: a raw visible-row list can hold
  * an id that folding or the limit removes, and the ladder would link to a read the destination does not draw. `drawnLater` answers
  * no ids, so the feed records nothing as shown (this page shows only titles). A feed that comes back empty is told from a first run
@@ -180,8 +180,11 @@ export async function readStandingRows(playerId: string): Promise<{ ok: true; ro
  *
  * The standing read is the page: when it throws the page says it did not load, never "no standing yet". The scoring-average read
  * is only the projections' base, so its failure is its own flag on the page (`baselineFailed`) and the rows still draw.
+ *
+ * `ladder: false`: the caller draws no ladder (Your week and the coach's file take only the window and the refresh day), so its reads
+ * are not read. Never hand an empty `feed` in their place: an empty feed beside visible reads is a failed read and is logged as one.
  */
-export async function loadPlayerStanding(input: { playerId: string; viewer?: ChViewer; feed?: () => Promise<EvidenceInsight[]> }): Promise<ChViewLoad<ChStanding>> {
+export async function loadPlayerStanding(input: { playerId: string; viewer?: ChViewer; feed?: () => Promise<EvidenceInsight[]>; ladder?: false }): Promise<ChViewLoad<ChStanding>> {
   try {
     const supabase = await createClient();
     // The team's clock dates "Refreshed" (A20) and starts the season the scoring average covers.
@@ -190,7 +193,7 @@ export async function loadPlayerStanding(input: { playerId: string; viewer?: ChV
       readStandingRows(input.playerId),
       readBaseline(supabase, input.playerId, zoneRead),
       readCohort(input.playerId),
-      readLadderReads(supabase, input.playerId, input.viewer ?? { role: 'player' }, input.feed),
+      input.ladder === false ? null : readLadderReads(supabase, input.playerId, input.viewer ?? { role: 'player' }, input.feed),
       zoneRead,
     ]);
     if (!map.ok) return { status: 'failed' };

@@ -169,14 +169,15 @@ async function openReads(supabase: Supabase, scope: ChCoachPlayerScope): Promise
 /**
  * The coach's Standing of this player: the player's own loader (`loadPlayerStanding`, which reads the standing map through the
  * service client and keeps only this player's rows) given the scope's id and the coach's voice, and the open read behind each metric.
+ * `ladder: false`: the caller draws no ladder, so its reads are not read (as `loadPlayerStanding`).
  */
-export async function loadCoachPlayerStanding(input: { scope: ChCoachPlayerScope; feed?: EvidenceInsight[] }): Promise<ChViewLoad<ChStanding>> {
+export async function loadCoachPlayerStanding(input: { scope: ChCoachPlayerScope; ladder?: false }): Promise<ChViewLoad<ChStanding>> {
   const { scope } = input;
   const supabase = await createClient();
   // Standing draws no read: the feed only says which metric has one open. So it records nothing as shown, as the player's own
   // Standing doesn't (launch readiness 2026-11-15, DF-P-03: the whole feed was recorded on every coach open).
-  const feed = input.feed ? () => Promise.resolve(input.feed!) : () => getInsightsForCoach(scope.coachId, { player_id: scope.playerId, limit: PLAYER_FEED_LIMIT, includeMore: true, drawnLater: NOTHING_DRAWN });
-  const [standing, reads] = await Promise.all([loadPlayerStanding({ playerId: scope.playerId, viewer: coachViewer(scope), feed }), openReads(supabase, scope)]);
+  const feed = () => getInsightsForCoach(scope.coachId, { player_id: scope.playerId, limit: PLAYER_FEED_LIMIT, includeMore: true, drawnLater: NOTHING_DRAWN });
+  const [standing, reads] = await Promise.all([loadPlayerStanding({ playerId: scope.playerId, viewer: coachViewer(scope), ...(input.ladder === false ? { ladder: false as const } : { feed }) }), openReads(supabase, scope)]);
   if (standing.status !== 'ready') return standing;
   return { status: 'ready', data: { ...standing.data, ...(reads ? { reads } : {}) } };
 }
