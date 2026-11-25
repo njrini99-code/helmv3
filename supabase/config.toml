@@ -380,8 +380,8 @@ otp_expiry = 3600
 # ENTIRE file — including the dev `site_url = "http://127.0.0.1:3000"` above —
 # and would overwrite production's site URL, breaking every auth email link and
 # redirect. Apply ONLY the templates, surgically, via the Management API:
-#     scripts/apply-auth-email-templates.sh
-# which patches just the mailer_* fields and touches nothing else.
+#     scripts/apply-auth-email-templates.sh   (deleted 2026-11-25; in git history)
+# which patched just the mailer_* fields and touched nothing else.
 [auth.email.template.recovery]
 subject = "Reset your GolfHelm password"
 content_path = "./supabase/templates/recovery.html"

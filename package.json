@@ -66,8 +66,6 @@
     "diagnostics:health": "node scripts/diagnostics-health.mjs",
     "enforcement:check": "node scripts/gen-enforcement-inventory.mjs --check",
     "enforcement:regen": "node scripts/gen-enforcement-inventory.mjs",
-    "evals": "npx --yes promptfoo@0.124.0 eval -c evals/round-review.yaml",
-    "evals:view": "npx --yes promptfoo@0.124.0 view",
     "golf:coach-welcome": "node scripts/golf/send-coach-welcome.mjs",
     "flags:check": "node scripts/flags/generate-flags.mjs --check && node --test scripts/flags/__tests__/*.test.mjs scripts/__tests__/check-feature-flags.test.mjs && node scripts/check-feature-flags.mjs",
     "flags:generate": "node scripts/flags/generate-flags.mjs",

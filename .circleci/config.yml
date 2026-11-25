@@ -369,33 +369,6 @@ jobs:
           destination: debug-apk
 
 
-  # ---------- Weekly: Promptfoo LLM evals ----------
-  # Scored evaluation of CoachHelm composer prompts. Catches silent
-  # prompt drift between deploys. Requires ANTHROPIC_API_KEY or
-  # OPENAI_API_KEY (or both) in CircleCI project env. If neither is
-  # set the job no-ops with a clear message.
-  promptfoo-evals:
-    executor: node
-    steps:
-      - checkout
-      - install-node-deps
-      - run:
-          name: Run Promptfoo evals
-          command: |
-            if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
-              echo "Skipping evals: no LLM API key in env."
-              exit 0
-            fi
-            mkdir -p evals/results
-            npx --yes promptfoo@0.124.0 eval \
-              --config evals/round-review.yaml \
-              --output evals/results/round-review.json || true
-            # Print the human-readable summary to the job log
-            npx --yes promptfoo@0.124.0 view --no-open evals/results/round-review.json || true
-      - store_artifacts:
-          path: evals/results/
-          destination: promptfoo
-
   # ---------- Weekly: Janitor entropy report (Phase K.4.5) ----------
   # Advisory only — never fails the job on findings, and never modifies
   # source files (scripts/janitor/run.mjs is read-only by construction; see
@@ -439,7 +412,6 @@ workflows:
       - squawk-migrations
       - npm-audit
       - stryker-coachhelm
-      - promptfoo-evals
       - janitor
 
   # iOS compile verification. Gated by BRANCH NAME, not by which files

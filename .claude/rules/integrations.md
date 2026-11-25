@@ -29,9 +29,6 @@ paths:
 - **@axe-core/playwright** (a11y in E2E) — `e2e/accessibility.spec.ts`
   audits the public routes (landing, login, signup) against WCAG 2.1
   AA + WCAG 2.2 AA. Extend per-route as we add seeded auth fixtures.
-- **Promptfoo** (LLM evals) — config at `evals/round-review.yaml`.
-  Run via `npm run evals` locally; runs weekly in CircleCI's
-  `promptfoo-evals` job. Catches silent prompt drift between deploys.
 - **Lighthouse CI** — config at `lighthouserc.cjs`, run manually via
   `npm run lighthouse` (`lhci autorun`). No CI job runs it: `.circleci/config.yml`
   has never defined a `lighthouse-preview` job (`.circleci/README.md` already
