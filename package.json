@@ -90,7 +90,6 @@
     "knowledge:ledger-check": "node scripts/knowledge/check-ledger-integrity.mjs",
     "coachhelm:golf-reference": "tsx scripts/coachhelm/gen-golf-reference.ts",
     "coachhelm:data-map": "node --import tsx/esm --import ./scripts/coachhelm/server-only-hook.mjs scripts/coachhelm/gen-data-map.ts",
-    "coachhelm:ask-replay": "vitest run --project unit --silent=false src/lib/coachhelm/v3/chat/__tests__/ask-replay.test.ts",
     "knowledge:feature-map": "tsx scripts/knowledge/gen-feature-map.ts",
     "knowledge:feature-map:check": "tsx scripts/knowledge/gen-feature-map.ts --check",
     "knowledge:registry-check": "tsx scripts/knowledge/check-feature-registry.ts",

@@ -45,8 +45,8 @@ Collect (admin_reliability_collector, Vercel cron, 3h)
 **Repair runs as the Claude desktop health routine as of 2026-09-23**
 (`SELFHEAL_STAGES.repair.runner` is `'local-agent'`, cadence 6h; heartbeats
 carry `metadata.runner = 'desktop-routine'`). From 2026-09-05 to 2026-09-23 it
-ran as the GitHub Actions workflow `.github/workflows/selfheal-repair.yml`,
-now disabled. Before 2026-09-05 it
+ran as a GitHub Actions workflow, disabled on 2026-09-23 and deleted on
+2026-11-25 (.github/workflows/selfheal-repair.yml no longer exists). Before 2026-09-05 it
 also ran as a launchd agent on the owner's Mac
 (`com.helm.bridge-rca-repair`) in parallel with the GHA workflow — a live
 duplicate-effort risk (two separately-billed agent sessions per day, each
@@ -91,8 +91,9 @@ owner's machine, for anyone who needs to see exactly what ran before.
   shared with the `npm run triage` CLI (`scripts/run-triage.ts`, now a thin
   wrapper over both).
 - `src/lib/admin/auto-resolve.ts` — the Close stage's nightly auto-resolution.
-- `.github/workflows/selfheal-repair.yml` — the Repair stage's runner from
-  2026-09-05 to 2026-09-23 (now disabled; the desktop routine replaced it). Invokes the Claude Code CLI directly (not
+- The Repair stage's GitHub Actions runner from 2026-09-05 to 2026-09-23 was
+  deleted on 2026-11-25 (.github/workflows/selfheal-repair.yml no longer exists;
+  the desktop routine replaced it). It invoked the Claude Code CLI directly (not
   `anthropics/claude-code-action`, which is trigger-driven and skips
   everything on a `schedule`/`workflow_dispatch` event) following
   `docs/ai-system/selfheal/repair-contract.md`. The launchd agent and its
