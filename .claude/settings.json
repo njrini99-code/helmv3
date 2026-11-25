@@ -125,17 +125,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "mcp__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ \"$HELM_AUDIT\" = \"1\" ] || exit 0; test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/no-prod-in-audit.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/no-prod-in-audit.mjs",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "Bash|WebFetch",
+        "matcher": "mcp__.*|Bash|WebFetch",
         "hooks": [
           {
             "type": "command",
@@ -146,16 +136,6 @@
       }
     ],
     "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.mjs",
-            "timeout": 20
-          }
-        ]
-      },
       {
         "matcher": "Bash",
         "hooks": [
@@ -168,5 +148,12 @@
       }
     ]
   },
-  "autoMemoryEnabled": false
+  "autoMemoryEnabled": false,
+  "enabledPlugins": {
+    "superpowers@synced": false,
+    "ui-consistency@synced": false,
+    "ambition-lenses@anthropic-plugin-directory": false,
+    "arxitect@synced": false,
+    "design-drift@synced": false
+  }
 }

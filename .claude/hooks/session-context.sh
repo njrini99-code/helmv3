@@ -165,10 +165,23 @@ else
   fi
 fi
 
-WT=$(git worktree list 2>/dev/null | wc -l | tr -d ' ')
-if [ "${WT:-1}" -gt 1 ]; then
+# ONE worktree line. The count is advisory (nothing refuses at it; the 12 GiB
+# disk reserve is the only hard refusal at creation), so it never says "budget".
+# lib/worktree-line.mjs uses the same classifier as repo:doctor; if node cannot
+# run it, fall back to the raw count of linked checkouts.
+WT_LINE=""
+if WT_LINE=$(node "$(dirname "${BASH_SOURCE[0]}")/lib/worktree-line.mjs" "$CANON_ROOT" 2>/dev/null); then
+  :
+else
+  WT=$(git worktree list 2>/dev/null | wc -l | tr -d ' ')
+  WT_LINE=""
+  if [ "${WT:-1}" -gt 1 ]; then
+    WT_LINE="worktrees: $((WT - 1)) linked (advisory)"
+  fi
+fi
+if [ -n "$WT_LINE" ]; then
   CTX="${CTX}
-- worktrees: ${WT} (advisory count: other checkouts exist, not proof anyone is writing in them)"
+- ${WT_LINE}"
 fi
 
 # Informational only, and only for the canonical checkout: a worktree on a task

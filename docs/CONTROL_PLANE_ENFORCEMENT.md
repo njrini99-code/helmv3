@@ -45,12 +45,10 @@ asserted here — see `.claude/rules/database.md`.
 | WorktreeRemove | `(all tools)` | `.claude/hooks/worktree-remove.mjs` | yes | no — records/reports only |
 | UserPromptSubmit | `(all tools)` | `.claude/hooks/route-prompt.mjs` | yes | no — records/reports only |
 | PreCompact | `(all tools)` | `.claude/hooks/save-session-state.mjs` | yes | no — records/reports only |
-| PreToolUse | `mcp__.*` | `.claude/hooks/no-prod-in-audit.mjs` | yes | yes |
-| PreToolUse | `Bash\|WebFetch` | `.claude/hooks/no-prod-in-audit.mjs` | yes | yes |
-| PostToolUse | `Write\|Edit` | `.claude/hooks/format-on-edit.mjs` | yes | no — records/reports only |
+| PreToolUse | `mcp__.*\|Bash\|WebFetch` | `.claude/hooks/no-prod-in-audit.mjs` | yes | yes |
 | PostToolUse | `Bash` | `.claude/hooks/deps-hygiene.mjs` | yes | no — records/reports only |
 
-2 hooks can refuse a tool call.
+Exactly one hook can refuse a tool call: `no-prod-in-audit.mjs` under matcher `mcp__.*|Bash|WebFetch`. Every other wired hook observes.
 
 ## Permission rules
 

@@ -1,4 +1,4 @@
-// Fixture tests for .claude/hooks/no-prod-in-audit.mjs (PreToolUse, matchers mcp__.* and Bash|WebFetch): during an audit only the
+// Fixture tests for .claude/hooks/no-prod-in-audit.mjs (PreToolUse, matcher mcp__.*|Bash|WebFetch): during an audit only the
 // read-only staging server answers database questions and no MCP call names production. Each case feeds the hook the
 // PreToolUse JSON Claude Code sends, the way the session runs it.
 import { describe, it, expect } from 'vitest';
@@ -109,6 +109,14 @@ describe('serverOf and decide', () => {
   it('never refuses a tool that is not an MCP, Bash or WebFetch call', () => {
     for (const toolName of ['Read', 'Edit', 'Write', 'Grep'])
       expect(decide({ toolName, toolInput: { file_path: PROD_REF, pattern: 'https://helmsportslabs.com' }, audit: true, supabaseIds: [] })).toEqual({ deny: false });
+  });
+
+  // The three matchers are one entry (`mcp__.*|Bash|WebFetch`). Claude Code reads a matcher containing `.*` as a regex,
+  // which may also match tool names that merely contain "Bash" or "WebFetch". Those must still pass: only MCP servers
+  // and the exact network tools are ever refused.
+  it('lets a tool that merely matches the merged matcher through', () => {
+    for (const toolName of ['BashOutput', 'KillBash', 'WebFetchX'])
+      expect(decide({ toolName, toolInput: { command: PROD_REF }, audit: true, supabaseIds: [] })).toEqual({ deny: false });
   });
 
   it('refuses Bash naming the production ref during an audit, and never outside one', () => {
