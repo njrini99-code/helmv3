@@ -6,7 +6,7 @@ Every file in `design-refresh/`, with its size and SHA-256, so a checkout can pr
 python3 design-refresh/tools/verify_manifest.py
 ```
 
-Files: 528 (plus this one). Pictures: 349. Total size: 89.9 MB.
+Files: 490 (plus this one). Pictures: 311. Total size: 82.5 MB.
 
 ## Counts per folder
 
@@ -17,7 +17,7 @@ Files: 528 (plus this one). Pictures: 349. Total size: 89.9 MB.
 | `classes-roster-home` | 18 | 4 |
 | `coachhelm` | 15 | 0 |
 | `coachhelm-lenses` | 15 | 0 |
-| `coachhelm-read` | 121 | 108 |
+| `coachhelm-read` | 83 | 70 |
 | `coachhelm-team` | 13 | 0 |
 | `completeness` | 19 | 0 |
 | `hub` | 18 | 17 |
@@ -174,7 +174,7 @@ Each local copy matches the published page as of 4 Nov 2026 (only the document w
 | `coachhelm-read/06-SCREEN-SPECS.md` | 51805 | `534107f1472298dbef9009203d7ea15be14dfac429f7d84b91ca65806e902a62` |
 | `coachhelm-read/07-MOTION.md` | 17262 | `c777b85528527ffe67bb8f098ef59330f12d837583d725f08f4f1f54e327b197` |
 | `coachhelm-read/08-ACCEPTANCE.md` | 50525 | `5e61e4c538129282a8c43209d85663784a77bc844cb782d2968c862e0825e72d` |
-| `coachhelm-read/README.md` | 9122 | `dbe97c3494f4a7623d1168b4ef2dc7ecc4eff36794f6bbb3ffd370af2272739f` |
+| `coachhelm-read/README.md` | 9227 | `3847d76f3ce780d26c030e88dc4c4b1802ef738e876bc0a24c8c4ba2df98546c` |
 | `coachhelm-read/capture/capture.mjs` | 32552 | `8ac8652d8c6d053a2cb293016406e7ec2133bd3f3f8ea3bb80c7a6b8456efc51` |
 | `coachhelm-read/capture/contrast-table.txt` | 5117 | `dfc7906f732ffc1292331cf8e98d85389ea7fbe7b2a0ee5bc9001b7c0e7800a9` |
 | `coachhelm-read/capture/contrast.py` | 2961 | `335243674f582864511436b8c5a55a900546c67684d0b78ca36424c8d619147c` |
@@ -249,44 +249,6 @@ Each local copy matches the published page as of 4 Nov 2026 (only the document w
 | `coachhelm-read/screenshots/after-extra/read-putts-player-phone-dark-shot.png` | 218007 | `6c40cf229d3f0fdc13c5568a47ed84c8342f8a75f8513ce3d98e7d0ba5744624` |
 | `coachhelm-read/screenshots/after-extra/rounds-penalties-coach-phone-dark-shot.png` | 158764 | `7bc3213907b2419b5c5b3217ea1d0e77c5a5e5d603ee41966cf28f3c54f7cb9a` |
 | `coachhelm-read/screenshots/after-extra/sure-approach-player-phone-dark-shot.png` | 148459 | `783639a5ca1a64b4a62753f7cb680981524c4aaf46f13c1167edebf41ebf26d8` |
-| `coachhelm-read/screenshots/before/ask-answer-desktop-dark.png` | 196660 | `39ab11e29c26b2d7a613217bcf8b9ecc404d3be1aa32c377459299083f837718` |
-| `coachhelm-read/screenshots/before/ask-answer-desktop-light.png` | 221936 | `0f0885bf2f22c26381c6db567ff381b65dba6e3f8dc48287bbfc4199e1e19a22` |
-| `coachhelm-read/screenshots/before/ask-answer-phone-dark.png` | 178410 | `f4bedf5e09a523876bd88c5de742a1c9847bc27a014385b85a4e76f345929d8b` |
-| `coachhelm-read/screenshots/before/ask-answer-phone-light.png` | 180953 | `d9b2207a1ce20c21fdede7ca947b8b8ba065c36699a6b3860c1c60569dc47b99` |
-| `coachhelm-read/screenshots/before/ask-answer-top-desktop-dark.png` | 212316 | `41231cc34b8c2e5ce223982f682792aeacc302aada3aac07a37150428131696a` |
-| `coachhelm-read/screenshots/before/ask-answer-top-desktop-light.png` | 238265 | `1d75eedd49a008168fe96772bbfffceeac6300b361ce00d54cc52fa827624d62` |
-| `coachhelm-read/screenshots/before/ask-answer-top-phone-dark.png` | 192905 | `e2c35cd6f42f5d1bd894ffd13b4d04b28d3542826b240efe088843af33ae9b67` |
-| `coachhelm-read/screenshots/before/ask-answer-top-phone-light.png` | 195604 | `09215e1c8453785b12947582664a819e89f418dda481925f8970e2dbb2b1965e` |
-| `coachhelm-read/screenshots/before/ask-empty-desktop-dark.png` | 205316 | `e3a2c115089ed60b064382d090040c44618bfcc08b67cb37b87bdb5da7bc4303` |
-| `coachhelm-read/screenshots/before/ask-empty-desktop-light.png` | 232382 | `bbf9acea7d8b3cd02f50e57a29215b95a0f3ce274efb55be2e438f3d3055f5a9` |
-| `coachhelm-read/screenshots/before/ask-empty-phone-dark.png` | 125515 | `2cde83de3259b7a58f5aba68cf9285c1bb7042e0406de413b3b4d2d61843e985` |
-| `coachhelm-read/screenshots/before/ask-empty-phone-light.png` | 129535 | `322a926564eb993977709b3a9b2bdea79847d6bc04ce3a831eb2f429796bf06e` |
-| `coachhelm-read/screenshots/before/ask-evidence-panel-desktop-dark.png` | 243768 | `b639326d391768d1f64746fca78717caa021a6f9fdffc1f4588cb600d13ce72d` |
-| `coachhelm-read/screenshots/before/ask-evidence-panel-desktop-light.png` | 269685 | `56bb131fcb0c4a2d7b0859b5189f42d64fcacfabee8603d1f2d9e851277ca8da` |
-| `coachhelm-read/screenshots/before/ask-evidence-panel-phone-dark.png` | 142714 | `ed06bccf7e0c8266bed3fbf3b3d720ac983203d8317af0a654c61500b3367c6b` |
-| `coachhelm-read/screenshots/before/ask-evidence-panel-phone-light.png` | 144238 | `9609c99bceb2214c14615a88ba9ffc1fc98a6fa9a2cce8a3e61523002302af03` |
-| `coachhelm-read/screenshots/before/ask-history-phone-dark.png` | 103753 | `0e8b9a12340d1ea0ff0f0488c9680234cc8cb1939b3ca7f1765138390e2ebb2f` |
-| `coachhelm-read/screenshots/before/ask-history-phone-light.png` | 128619 | `fb38410ef5620466864646599c598dce6fd916eb8749b5348939b1fe1478131c` |
-| `coachhelm-read/screenshots/before/ask-reads-desktop-dark.png` | 192899 | `e01f3cc3ec702fe2115293bf031ac73b78ca0368a12bc907c520e3afe807c705` |
-| `coachhelm-read/screenshots/before/ask-reads-desktop-light.png` | 219848 | `23c553996a361150f2ac209676d25871ed449405aa5e4a0bdf67c097e49aafe3` |
-| `coachhelm-read/screenshots/before/ask-reads-phone-dark.png` | 166508 | `cdf8388a4680beab89aa40da9eec74b43a27d760f5d96c027c594fcd5827b865` |
-| `coachhelm-read/screenshots/before/ask-reads-phone-light.png` | 168934 | `f8d0fa13c2cfac2f3bb36431dd7661bd40b06d963230bd0a4c2070c6d612684e` |
-| `coachhelm-read/screenshots/before/ask-visual-desktop-dark.png` | 203336 | `a8033cdcdde0b8431a61513cac08b74a987b5e0cce5a350299a00fd6a57f516e` |
-| `coachhelm-read/screenshots/before/ask-visual-desktop-light.png` | 229269 | `4b21ae71a16087a543080d5b21c81fb567a74dd2d82755f0f7951678c7ea88a6` |
-| `coachhelm-read/screenshots/before/ask-visual-phone-dark.png` | 177527 | `34fa7dd50f8d1b729fe54a05fc209aa556cdaaa72b95f6dba19ec61a0bd9aea0` |
-| `coachhelm-read/screenshots/before/ask-visual-phone-light.png` | 180612 | `f41a99a4f6e6f4de8b80bbe9eccab4f3e4adf727ce8c11f49914a824ce1237f7` |
-| `coachhelm-read/screenshots/before/ask-visual-top-desktop-dark.png` | 204568 | `3a1859b5b57ef1e8e02c899f21da18a0766e601380a142aa8c70abe1a6625933` |
-| `coachhelm-read/screenshots/before/ask-visual-top-desktop-light.png` | 231228 | `08e71297be210ff87f35b04eea657af3ac7b0862965ba6c277394662479e7ad6` |
-| `coachhelm-read/screenshots/before/ask-visual-top-phone-dark.png` | 188403 | `75c073616f57efd2cde4842563ab82a2f6ecc2b2698f15a07cb31658ba737ac0` |
-| `coachhelm-read/screenshots/before/ask-visual-top-phone-light.png` | 191055 | `36d96793ed201fe4dcb1f67abe6edcf29727c72faed4ecce6a93cf4a6a12844a` |
-| `coachhelm-read/screenshots/before/ask-working-desktop-dark.png` | 164250 | `a355177dcf0f0628987935bdcad1c2e5abd47c38d6aac6df0b93af3ccbb3a387` |
-| `coachhelm-read/screenshots/before/ask-working-desktop-light.png` | 191040 | `753b3fe83b8ccc62731f3aa490df336d8564efbec3b4164371a01f4fe6b0d75e` |
-| `coachhelm-read/screenshots/before/ask-working-phone-dark.png` | 107622 | `175c8000eab9805edeb5de189cfd12d986eec8dd0adc78fe3997459707d3c233` |
-| `coachhelm-read/screenshots/before/ask-working-phone-light.png` | 111758 | `14aaaf9b31b1fd67a601ad329aa7d4c554cb38025adb1574cb56f6c0eb717727` |
-| `coachhelm-read/screenshots/before/coachhelm-home-desktop-dark.png` | 332671 | `b60a29b71cbc0ef7e3665fb95ad876283142641bb16973997ec6426c556f5834` |
-| `coachhelm-read/screenshots/before/coachhelm-home-desktop-light.png` | 232633 | `bead5c9e9528fe40eb465d47c8c5ef965a1aabf98d483219010c0954da3cf75b` |
-| `coachhelm-read/screenshots/before/coachhelm-home-phone-dark.png` | 258663 | `c18379fa825357ea04c35def50bba2d802abd3decc7d2866e001cda1f926fe6c` |
-| `coachhelm-read/screenshots/before/coachhelm-home-phone-light.png` | 297432 | `bb74c12bf204c1213b0e628fc776f8675050b49b34bd92a9c9c970c6f7ea0bd7` |
 | `coachhelm-team/01-BRIEF.md` | 4643 | `eeaa95ccaa353e2e96d431a21bed04c0ea91324fddfc1dffd4c81694ed948596` |
 | `coachhelm-team/02-PLAN.md` | 57282 | `3b5208f344d646ca3bc9f7d973e2cc58fcb3fddf727d053550d3061b65832685` |
 | `coachhelm-team/03-DATA-CHECKS.md` | 45840 | `ebd517f8413ab309614126a20ff1360272345eab545bdd9461e3068b5d14ff25` |
