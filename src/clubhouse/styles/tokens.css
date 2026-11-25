@@ -415,10 +415,11 @@
   --ch-wdth-display: 'wdth' 96;
   --ch-wdth-dense: 'wdth' 88;
   /* Type: nine roles (MOTION-AND-VISUAL 4.3), scaled by --ch-type-k so text follows iPhone Text Size. Desktop values
-     here; the phone block below sets the phone ones. Large title 30/36 700, title 22/28 600, headline 16/22 600, body
+     here; the phone block below sets the phone ones. Large title 40/46 700 (owner, 24 Nov 2026: the 30px desk title read
+     small and basic), title 22/28 600, headline 16/22 600, body
      15/22 400, callout 14/20 500, footnote 13/18 500, caption 12/16 500, hero figure 56 600, row figure 15/20 600.
      Figures are tabular wherever they are drawn. */
-  --ch-type-large-title: 700 calc(30 * var(--ch-type-k))/calc(36 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-large-title: 700 calc(40 * var(--ch-type-k))/calc(46 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-large-title: -0.02em;
   --ch-type-title: 600 calc(22 * var(--ch-type-k))/calc(28 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-title: -0.01em;

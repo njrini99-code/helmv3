@@ -1177,6 +1177,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |

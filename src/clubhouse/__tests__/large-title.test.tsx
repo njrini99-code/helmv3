@@ -299,7 +299,7 @@ describe('the CSS that hides and fades the bar title', () => {
     expect(tokens).toMatch(/--ch-title-ink: var\(--ch-ledger-ink\);/);
     // MOTION-AND-VISUAL 4.3: 34/41 700 on the phone, 30/36 700 on the desktop.
     expect(tokens).toMatch(/--ch-type-large-title: 700 calc\(34 \* var\(--ch-type-k\)\)\/calc\(41 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);/);
-    expect(tokens).toMatch(/--ch-type-large-title: 700 calc\(30 \* var\(--ch-type-k\)\)\/calc\(36 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);/);
+    expect(tokens).toMatch(/--ch-type-large-title: 700 calc\(40 \* var\(--ch-type-k\)\)\/calc\(46 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);/);
     // The screens' old title rules are gone: no stylesheet styles a large title by its own class any more.
     const dir = join(process.cwd(), 'src/clubhouse/styles');
     const old = /\.ch-(rsm|recm|setm)-title\s*\{[^}]*font:|\.ch-hl-h__t\s*\{[^}]*font: var\(--ch-type-34-strong\)|\.ch-stm-head h1\s*\{[^}]*font:|\.ch-ms-rail__title h1\s*\{[^}]*font: var\(--ch-type-34-strong\)/;
