@@ -186,8 +186,9 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
         // reaches the fix by re-running signup with the code.
         return {
           success: false,
-          error: `${orgName} is already set up on Helm — so there's nothing to create. Ask your head coach for the team code and enter it at sign-up; that joins you to the existing program as an assistant coach, with full access.`,
-          redirectTo: '/golf/signup',
+          // A roster code no longer makes a coach (players only, 2026-09-30); the way in for staff is the head coach's
+          // staff invite, which attaches this signed-in account to the existing program.
+          error: `${orgName} is already set up on Helm, so there's nothing to create. Ask your head coach for a staff invite link and open it while signed in. It adds you to the program as an assistant coach.`,
         };
       }
       await logServerError(`[Onboarding] Organization creation failed: ${describeError(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });
@@ -525,6 +526,14 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
     if (existingCoach?.onboarding_completed) {
       await logServerError('[Onboarding] Refused: a coach account submitted player onboarding', { action: 'onboarding.completePlayerOnboarding' }, 'warning');
       return { success: false, error: 'This account is set up as a coach, so it can’t become a player here.' };
+    }
+    // A coach account part way through its own setup (a coach row not finished yet, or a coach login with no row at
+    // all, such as one made from a staff code) must not turn into a player by opening a player's invite link. Only a
+    // first player profile is refused: an account that already has one keeps working as it did.
+    const declaredCoach = (user.user_metadata as { role?: unknown } | null)?.role === 'coach';
+    if (!existingPlayer && (existingCoach || declaredCoach)) {
+      await logServerError('[Onboarding] Refused: a coach account started player onboarding', { action: 'onboarding.completePlayerOnboarding' }, 'warning');
+      return { success: false, error: 'This account was made for a coach, so it can’t join a team as a player. Ask your head coach for a staff invite link instead.' };
     }
 
     // Ensure users table record exists with correct role

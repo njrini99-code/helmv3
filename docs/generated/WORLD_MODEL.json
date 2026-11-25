@@ -4289,7 +4289,7 @@
       },
       {
         "id": "golf_join_team_with_code",
-        "definedIn": "supabase/migrations/20260807030600_golf_join_one_team_rule_ignores_status.sql"
+        "definedIn": "supabase/migrations/20261125130000_golf_auth_integrity.sql"
       },
       {
         "id": "golf_live_topic_allowed",
@@ -4646,6 +4646,10 @@
       {
         "id": "guard_lifting_coach_self_update",
         "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
+      },
+      {
+        "id": "guard_users_email_self_change",
+        "definedIn": "supabase/migrations/20261125130000_golf_auth_integrity.sql"
       },
       {
         "id": "guard_users_role_self_change",
@@ -5030,6 +5034,10 @@
       {
         "id": "submit_round_atomic",
         "definedIn": "supabase/migrations/20260821043500_single_flight_round_submit.sql"
+      },
+      {
+        "id": "sync_user_email_from_auth",
+        "definedIn": "supabase/migrations/20261125130000_golf_auth_integrity.sql"
       },
       {
         "id": "try_redeem_baseball_team_invitation",

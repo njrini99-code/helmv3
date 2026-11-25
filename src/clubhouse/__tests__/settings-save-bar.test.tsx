@@ -153,10 +153,10 @@ describe('the inline save bar', () => {
     const pw = card('Password');
     expect(within(pw).queryByRole('button', { name: 'Update password' })).toBeNull();
     await user.type(screen.getByLabelText('Current password'), 'old-password');
-    await user.type(screen.getByLabelText('New password'), 'new-password-1');
-    await user.type(screen.getByLabelText('Confirm new password'), 'new-password-1');
+    await user.type(screen.getByLabelText('New password'), 'New-password-1');
+    await user.type(screen.getByLabelText('Confirm new password'), 'New-password-1');
     await user.click(within(pw).getByRole('button', { name: 'Update password' }));
-    await waitFor(() => expect(writes.changePassword).toHaveBeenCalledWith('old-password', 'new-password-1'));
+    await waitFor(() => expect(writes.changePassword).toHaveBeenCalledWith('old-password', 'New-password-1'));
     await waitFor(() => expect(screen.getByLabelText('Current password')).toHaveValue(''));
     expect(await within(pw).findByText('Saved')).toBeTruthy();
   });

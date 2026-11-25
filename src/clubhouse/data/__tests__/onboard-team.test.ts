@@ -15,12 +15,14 @@ function from() {
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/auth/supabase-rate-limit', () => ({ checkRateLimit: limiter, RATE_LIMITS: { TEAM_LOOKUP: { maxAttempts: 30, windowMs: 3_600_000 } } }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ from, rpc }) }));
-vi.mock('@/lib/auth/resilient-get-user', () => ({ getUserResilient: async () => ({ user: { id: 'u1', email: 'p@example.test', user_metadata: {} } }) }));
+const meta = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
+vi.mock('@/lib/auth/resilient-get-user', () => ({ getUserResilient: async () => ({ user: { id: 'u1', email: 'p@example.test', user_metadata: meta.value } }) }));
 vi.mock('../../lib/track-server', () => ({ chLogServer: logged }));
 
 import { loadPlayerOnboard } from '../onboard';
 
 beforeEach(() => {
+  meta.value = {};
   rpc.mockReset();
   limiter.mockReset();
   limiter.mockResolvedValue({ allowed: true, remaining: 29, resetAt: Date.now() + 1000 });
@@ -79,5 +81,18 @@ describe('loadPlayerOnboard · the team lookup is throttled per account', () => 
     limiter.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 1000 });
     expect(await seed('K7PQX4MN')).toMatchObject({ code: 'K7PQX4MN', teamName: null });
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('with no link, the code the account signed up with names the team, so a player who confirms on another phone still joins', async () => {
+    meta.value = { join_code: 'k7pq-x4mn' };
+    rpc.mockResolvedValue({ data: [{ id: 't1', name: 'Men’s Golf' }], error: null });
+    expect(await seed()).toMatchObject({ code: 'K7PQX4MN', teamName: 'Men’s Golf' });
+  });
+
+  it('a code on the link wins over the one the account signed up with', async () => {
+    meta.value = { join_code: 'AAAA2222' };
+    rpc.mockResolvedValue({ data: [{ id: 't2', name: 'Women’s Golf' }], error: null });
+    expect(await seed('BBBB3333')).toMatchObject({ code: 'BBBB3333' });
+    expect(rpc).toHaveBeenCalledWith('golf_team_by_join_code', { p_code: 'BBBB3333' });
   });
 });

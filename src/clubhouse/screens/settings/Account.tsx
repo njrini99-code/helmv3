@@ -161,7 +161,7 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
         <span className="ch-set-value">{email ?? 'No email on file'}</span>
       </Row>
       {sentTo && (
-        <InlineNotice title={`Check ${sentTo}`} body="Open the link in that inbox to finish the change. Your current email works until then." />
+        <InlineNotice title={`Check ${sentTo}`} body="Open the link in that inbox to finish the change. If a link also arrives at your current address, open that one too. Your current email works until then." />
       )}
       <div className="ch-set-grid">
         <Field
@@ -227,7 +227,7 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
       <div className="ch-set-grid">
         {/* The field a refused save's problem names says it too, as the save bar does (as Team's fields do). */}
         <Field id="set-pw-cur" label="Current password" type="password" autoComplete="current-password" span={2} error={pwErrorAt('set-pw-cur')} value={cur} onChange={(e) => setCur(e.target.value)} />
-        <Field id="set-pw-new" label="New password" type="password" autoComplete="new-password" help="At least 8 characters." error={pwErrorAt('set-pw-new')} value={next} onChange={(e) => setNext(e.target.value)} />
+        <Field id="set-pw-new" label="New password" type="password" autoComplete="new-password" help="8 or more characters, with upper and lower case, a number and a symbol." error={pwErrorAt('set-pw-new')} value={next} onChange={(e) => setNext(e.target.value)} />
         <Field id="set-pw-confirm" label="Confirm new password" type="password" autoComplete="new-password" error={pwErrorAt('set-pw-confirm')} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
       </div>
     </Card>

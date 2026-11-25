@@ -1843,6 +1843,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-24-dual-team-codes.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-25-auth-scrub.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | 1 |
@@ -2276,6 +2277,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-24-join-hardening.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-25-auth-scrub.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/DESIGN.md` | current | - | - | - | - |
