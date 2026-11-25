@@ -284,14 +284,14 @@ export function playerCards(list: ChDeepInsight[], rows: readonly PlayerStanding
 /** One coach's file on one player: one `coach_feed` set per view (W-LNS-3); the lens records nothing (W-LNS-4). */
 export async function loadCoachPlayerFile(input: { scope: ChCoachPlayerScope }): Promise<ChViewLoad<ChPlayerFile>> {
   const { scope } = input;
-  const { load, raw, lens } = await coachDiveCore({ scope }, { exampleRounds: true, lens: true });
+  const { load, lens } = await coachDiveCore({ scope }, { exampleRounds: true, lens: true });
   if (load.status !== 'ready') return load;
   try {
     const supabase = await createClient();
     const zone = await loadTeamZone(supabase, scope.teamId, 'coachhelm');
     const first = scope.head.first;
     const [standing, rowsRead, plan, field, intent, track, dismissed, toGo, penalties, sgRounds] = await Promise.all([
-      loadCoachPlayerStanding({ scope, feed: [...raw.values()] }),
+      loadCoachPlayerStanding({ scope, ladder: false }),
       readStandingRows(scope.playerId),
       loadFilePlan(scope, zone),
       loadFileField(scope, { role: 'coach', first }, zone),
@@ -357,7 +357,7 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
   const rest = base.then(async ({ supabase, teamId, zone }) => {
     const [rowsRead, standing, field, toGo, penalties, last, sgRounds] = await Promise.all([
       readStandingRows(playerId),
-      loadPlayerStanding({ playerId, feed: () => Promise.resolve([]) }),
+      loadPlayerStanding({ playerId, ladder: false }),
       // A failed newest-day read is the field failing (undefined), never "no round to put in context" (PL-CH-04).
       newestDay(supabase, playerId).then((d) => (d === undefined ? undefined : teamId && d ? loadFileField({ teamId, playerId, lastRound: d }, { role: 'player' }, zone) : null)),
       roundsToGo(supabase, playerId),

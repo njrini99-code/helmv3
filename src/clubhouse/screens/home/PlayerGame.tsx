@@ -145,7 +145,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
   // The phone (m-player-home.jsx `Scoring`): the title and its one-line meta sit above the card, which opens on the full-width window picker.
   if (phone) {
     return (
-      <section className="ch-hm-sec" aria-labelledby="ch-ph-scoring">
+      <section className="ch-hm-sec ch-hm-sec--stat" aria-labelledby="ch-ph-scoring">
         <div className="ch-hm-sec__h">
           <h2 id="ch-ph-scoring">Scoring</h2>
           <span className="ch-hm-meta">{par != null ? `Gross · par ${par} · countable rounds` : 'Gross · countable rounds'}</span>
@@ -373,7 +373,7 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
   if (!legs) return null;
   const any = legs.rows.some((l) => l.value != null || l.needs);
   return (
-    <section className={phone ? 'ch-hm-sec ch-ph-legs-sec is-phone' : 'ch-ph-legs-sec'} aria-labelledby="ch-ph-legs">
+    <section className={phone ? 'ch-hm-sec ch-hm-sec--stat ch-ph-legs-sec is-phone' : 'ch-ph-legs-sec'} aria-labelledby="ch-ph-legs">
       {phone ? (
         // The board's one-line meta beside the title. The stats and each part's strokes gained are the last 10 rounds (figure-window.ts, QA-1): the meta names the window (PL-HOME-03), each pill says so to a screen reader.
         <div className="ch-hm-sec__h">

@@ -231,7 +231,7 @@ function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice 
   );
 }
 
-/** One part of the round: its strokes against the Tour on a thin bar, and "Because" opening the reads behind it in place. */
+/** One part of the round: its strokes against the Tour on a bar either side of zero, and "Because" opening the reads behind it in place. */
 function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; open: boolean; onToggle: () => void; readsFailed: boolean; voice: ChViewVoice }) {
   const id = `ch-hs-ld-${r.id}`;
   const canOpen = !readsFailed && r.causes.length > 0;
@@ -242,8 +242,10 @@ function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; 
         <span className="ch-hs-ld__v ch-num">{r.strokes ?? '—'}</span>
       </div>
       {r.strokes != null ? (
+        // Strokes gained is signed, so the bar runs from a zero line at its centre: a gain to the right, a loss to the left
+        // (look-09: each card's chart fits what it shows). Its length is against the largest of the four.
         <div className="ch-hs-ld__bar" aria-hidden="true">
-          <i style={{ width: `${r.pct}%` }} />
+          <i style={r.sense === 'loss' ? { right: '50%', width: `${r.pct / 2}%` } : { left: '50%', width: `${r.pct / 2}%` }} />
         </div>
       ) : (
         <p className="ch-hs-ld__miss" data-ch-code="CH-13374">
@@ -282,7 +284,7 @@ function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; 
 
 /**
  * Where strokes go (design call, Standing; review 7.4): four flush rows, Off the tee, Approach, Around the green and Putting, each
- * the strokes a round it gains or loses against the Tour, with a true minus, a thin bar (losses amber, gains green) and "Because"
+ * the strokes a round it gains or loses against the Tour, with a true minus, a bar either side of zero (losses amber to the left, gains green to the right) and "Because"
  * opening the open reads behind it. One row opens at a time. It replaces "Most to gain".
  */
 function Ladder({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice }) {

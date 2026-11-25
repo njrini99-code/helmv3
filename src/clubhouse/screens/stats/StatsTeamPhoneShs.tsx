@@ -9,7 +9,7 @@ import { useBigText } from './StatsPlayerPhoneShs';
 import { useRefresh } from '../../lib/use-refresh';
 import { useSegFade } from './seg-fade';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { DeskPane } from './DeskPane';
+import { DeskDetail, DeskOverview, useDeskReturn } from './DeskPane';
 import type { ChTeamStats } from '../../data/stats-team';
 import { hasRange, isFiltered, nineRoundsInWindow } from '../../data/stats-filter';
 import { holeCoverage } from '../../data/round-scope';
@@ -147,10 +147,21 @@ export function StatsTeamPhoneShs({
   if (data.roundsError) hadFailed.current = true;
   const big = useBigText();
   const keyboard = useRef(false);
-  // On a desk the drill stands beside the cards: choosing a card changes the pane, with no push.
+  // On a desk a card opens its drill across the page (look-09, Nick 21 Nov 2026: "Full width, back to overview"), with no push.
   const [deskPick, setDeskPick] = useState<StatsTeamDetailId | null>(null);
-  const deskDetail: StatsTeamDetailId = deskPick ?? (detail as StatsTeamDetailId | null) ?? 'tscore';
-  const go = (id: StatsDetailId) => (desk ? setDeskPick(id as StatsTeamDetailId) : open(id));
+  const [seedGone, setSeedGone] = useState(false);
+  const deskReturn = useDeskReturn();
+  const deskDetail: StatsTeamDetailId | null = deskPick ?? (seedGone ? null : ((detail as StatsTeamDetailId | null) ?? null));
+  const go = (id: StatsDetailId) => {
+    if (!desk) return open(id);
+    if (!deskDetail) deskReturn.remember(root.current, id);
+    setDeskPick(id as StatsTeamDetailId);
+  };
+  const deskBack = () => {
+    deskReturn.returning();
+    setDeskPick(null);
+    setSeedGone(true);
+  };
   const days = (data.days ?? []).filter((d): d is TeamDay & { score: number } => d.score != null);
   const mean = days.length ? teamDaysMean(days) : null;
   const few = !data.roundsError && !noRounds && days.length > 0 && days.length < 3;
@@ -225,7 +236,7 @@ export function StatsTeamPhoneShs({
   // place and the page stands (CH-4204, CH-4206), as the cards beside it do.
   const drill = (id: StatsTeamDetailId) => (
     <SectionBoundary key={id} surface={`stats.team.detail.${id}`} label={TITLE[id]} code={id === 'tscore' ? 'CH-4204' : 'CH-4206'}>
-      {id === 'tscore' && <TeamScoringDetail data={data} covered={covered} days={days} mean={mean} beside={desk} />}
+      {id === 'tscore' && <TeamScoringDetail data={data} covered={covered} days={days} mean={mean} />}
       {id === 'tgame' && <TeamGameDetail data={data} />}
       {id === 'tplayers' && <TeamPlayersDetail data={data} />}
     </SectionBoundary>
@@ -234,19 +245,22 @@ export function StatsTeamPhoneShs({
   if (desk)
     return (
       <SectionGroup>
-        <div ref={root} className="ch-shs ch-shs--desk ch-shs--desk-team" data-ch-shs-open={ready ? deskDetail : undefined}>
-          {controls}
-          <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className={'ch-shs-desk' + (ready ? '' : ' is-alone')}>
-            <div className="ch-shs-desk__sum">
-              {sheet}
-              {ready && below && extra}
-            </div>
-            {ready && (
-              <DeskPane detail={deskDetail} hash={hashOf(deskDetail)} title={TITLE[deskDetail]}>
-                {drill(deskDetail)}
-              </DeskPane>
-            )}
-          </WindowCrossfade>
+        <div ref={root} className="ch-shs ch-shs--desk ch-shs--desk-team" data-ch-shs-open={ready && deskDetail ? deskDetail : undefined}>
+          {ready && deskDetail ? (
+            <DeskDetail detail={deskDetail} hash={hashOf(deskDetail)} title={TITLE[deskDetail]} back="Overview" onBack={deskBack} controls={controls}>
+              {drill(deskDetail)}
+            </DeskDetail>
+          ) : (
+            <>
+              {controls}
+              <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-desk is-alone">
+                <DeskOverview onDrawn={deskReturn.restore}>
+                  {sheet}
+                  {ready && below && extra}
+                </DeskOverview>
+              </WindowCrossfade>
+            </>
+          )}
         </div>
       </SectionGroup>
     );
@@ -464,11 +478,11 @@ export function roundNote(data: Pick<ChTeamStats, 'window' | 'filter' | 'last'>,
   return [chips ? `Chips: the change vs ${before}, grey when it is inside its likely error.` : null, coverage ? `${coverage}.` : null, note].filter(Boolean).join(' ');
 }
 
-function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
+function TheRound({ data, note, feature = false }: { data: ChTeamStats; note?: string | null; feature?: boolean }) {
   const rows = roundRows(data);
   const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
   return (
-    <ShsCard title="The round" meta={windowDays(data)}>
+    <ShsCard title="The round" meta={windowDays(data)} feature={feature}>
       <dl className="ch-shs-m3">
         {rows.map((f) => {
           const t = deltaTone(f.delta, f.se, f.lowerIsBetter);
@@ -500,14 +514,11 @@ function TeamScoringDetail({
   covered,
   days,
   mean,
-  beside = false,
 }: {
   data: ChTeamStats;
   covered: boolean;
   days: ReadonlyArray<TeamDay & { score: number }>;
   mean: number | null;
-  /** On a desk the Scoring average card stands beside this drill with the same figure, change and curve, so the drill starts at what the card lacks. */
-  beside?: boolean;
 }) {
   const f = scoringFigure(data);
   // The separators keep to the words before them, as the page head's do: a wrapped line never starts with the dot.
@@ -516,8 +527,10 @@ function TeamScoringDetail({
   const vsPar = teamDaysVsPar(days);
   return (
     <>
-      {!beside && <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data), windowDays(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />}
-      {!beside && days.length > 0 && (
+      <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data), windowDays(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />
+      {/* The round's figures are the drill's one green feature card, first under the head, as a player's drill opens on The figures (look-09). */}
+      <TheRound data={data} feature />
+      {days.length > 0 && (
         <ShsCard title="By round day" meta={mean == null ? undefined : 'Average dashed'}>
           {/* Against par per 18 when every day has it, par the dashed line (CH-01); strokes against the days' average otherwise. */}
           <Ribbon
@@ -530,8 +543,6 @@ function TeamScoringDetail({
           <p className="ch-shs-mini-cap">{trend ? `${vsPar ? 'Against par, per 18 holes. Under par is up.' : 'Lower is better.'} ${trend.reading}` : 'The trend draws once the team has rounds on a second day.'}</p>
         </ShsCard>
       )}
-      {/* The page head says the team, its active players and that only countable rounds count; the note doesn't repeat it (W29). */}
-      <TheRound data={data} />
       <ShsCard title="Round days" meta={`${days.length} ${pluralWord(days.length, 'day')}`}>
         <table className="ch-shs-tbl">
           <thead>

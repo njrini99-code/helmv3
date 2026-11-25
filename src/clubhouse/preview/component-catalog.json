@@ -10206,10 +10206,14 @@
       "file": "src/clubhouse/screens/stats/DeskPane.tsx",
       "group": "screens",
       "exports": [
-        "DeskPane"
+        "DeskDetail",
+        "DeskOverview"
       ],
       "styles": [
-        "src/clubhouse/styles/stats-redesign.css"
+        "src/clubhouse/styles/coachhelm-plan.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -10387,10 +10391,11 @@
       "file": "src/clubhouse/screens/stats/MiniCharts.tsx",
       "group": "screens",
       "exports": [
-        "GoalRing",
+        "GoalBar",
         "HBars",
         "MiniDiverging",
         "MiniRails",
+        "RoundStrip",
         "RoundTicker",
         "TICKER_MIN_SPAN"
       ],
@@ -17483,6 +17488,11 @@
           "name": "--ch-file-shadow-7",
           "value": "none",
           "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-ink-2",
+          "value": "color-mix(in oklab, var(--ch-hf-a-ink, var(--ch-text-primary)) 80%, var(--ch-hf-a-card))",
+          "scope": ".ch-hf .card"
         }
       ]
     },
@@ -18249,6 +18259,11 @@
           "name": "--ch-chart-gain",
           "value": "var(--ch-feature-gain)",
           "scope": ".ch-htb .stn,\n.ch-htb .stchips"
+        },
+        {
+          "name": "--ch-ink-600",
+          "value": "color-mix(in oklab, var(--ch-text-primary) 80%, var(--ch-card-bg))",
+          "scope": ".ch-htb .card"
         }
       ]
     },
@@ -19193,6 +19208,7 @@
         "ch-hm-rd__when",
         "ch-hm-score",
         "ch-hm-sec",
+        "ch-hm-sec--stat",
         "ch-hm-sec__h",
         "ch-hm-setup",
         "ch-hm-setup__ic",
@@ -19392,6 +19408,21 @@
           "name": "--ch-home-x4",
           "value": "inset -0.66px 0 0 var(--ch-separator)",
           "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-text-secondary",
+          "value": "color-mix(in oklab, var(--ch-text-primary) 82%, var(--ch-card-bg))",
+          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec--stat"
+        },
+        {
+          "name": "--ch-text-tertiary",
+          "value": "color-mix(in oklab, var(--ch-text-primary) 72%, var(--ch-card-bg))",
+          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec--stat"
+        },
+        {
+          "name": "--ch-ledger-rule",
+          "value": "var(--ch-feature-ink-3)",
+          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → :is(.ch-hm--player, .ch-hm--coach) .ch-hm-sec--stat > .ch-hm-sec__h .ch-ph-pg button"
         }
       ]
     },
@@ -23593,6 +23624,26 @@
           "name": "--ch-rcard-mk",
           "value": "18px",
           "scope": "@media screen and (min-width: 821px) and (max-width: 1180px) and ((min-height: 501px) or (pointer: fine)) → @container (max-width: 760px) → .ch-rcard:not(.is-phone)"
+        },
+        {
+          "name": "--ch-text-secondary",
+          "value": "color-mix(in oklab, var(--ch-text-primary) 82%, var(--ch-bg-surface))",
+          "scope": ".ch-rv-card"
+        },
+        {
+          "name": "--ch-text-tertiary",
+          "value": "color-mix(in oklab, var(--ch-text-primary) 72%, var(--ch-bg-surface))",
+          "scope": ".ch-rv-card"
+        },
+        {
+          "name": "--ch-chart-gain",
+          "value": "var(--ch-feature-gain)",
+          "scope": ".ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h"
+        },
+        {
+          "name": "--ch-chart-loss",
+          "value": "var(--ch-feature-loss)",
+          "scope": ".ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h"
         }
       ]
     },
@@ -24189,15 +24240,24 @@
         "ch-avatar",
         "ch-badge",
         "ch-btn",
+        "ch-cmp__bar",
+        "ch-cmp__l",
+        "ch-cmp__r",
         "ch-es",
         "ch-es--page",
         "ch-es__copy",
+        "ch-gain",
         "ch-gd",
         "ch-gm",
         "ch-gm-p",
+        "ch-gm-p__n",
         "ch-gm-p__t",
         "ch-gm__body",
+        "ch-gx-sub",
+        "ch-gx-tbl",
         "ch-gx-tiles",
+        "ch-gx-tone",
+        "ch-howc-link",
         "ch-loss",
         "ch-num",
         "ch-pbar__back",
@@ -24248,12 +24308,12 @@
         "ch-shs-dctl",
         "ch-shs-delta",
         "ch-shs-desk",
-        "ch-shs-desk__det",
-        "ch-shs-desk__dett",
-        "ch-shs-desk__lead",
-        "ch-shs-desk__rail",
         "ch-shs-desk__sum",
         "ch-shs-dev",
+        "ch-shs-dfull",
+        "ch-shs-dfull__back",
+        "ch-shs-dfull__body",
+        "ch-shs-dfull__t",
         "ch-shs-dhead",
         "ch-shs-dhead__act",
         "ch-shs-dhead__id",
@@ -24282,9 +24342,14 @@
         "ch-shs-fill-was",
         "ch-shs-flushrows",
         "ch-shs-gain",
+        "ch-shs-gbar",
+        "ch-shs-gbar__k",
+        "ch-shs-gbar__t",
         "ch-shs-gc",
         "ch-shs-glance",
         "ch-shs-goal1",
+        "ch-shs-goalrows",
+        "ch-shs-goalrows__h",
         "ch-shs-goals",
         "ch-shs-goaltext",
         "ch-shs-grid",
@@ -24327,18 +24392,16 @@
         "ch-shs-pi",
         "ch-shs-pill",
         "ch-shs-plead",
-        "ch-shs-prog",
         "ch-shs-prow",
         "ch-shs-rail",
+        "ch-shs-rcount",
         "ch-shs-rdot",
         "ch-shs-readout",
-        "ch-shs-rg",
-        "ch-shs-rg-none",
         "ch-shs-rib",
         "ch-shs-rib__in",
-        "ch-shs-rings",
         "ch-shs-rlist",
         "ch-shs-rrow",
+        "ch-shs-rstrip",
         "ch-shs-sb",
         "ch-shs-scale",
         "ch-shs-score",
@@ -24400,8 +24463,10 @@
         "ch-stm-putt",
         "ch-stm-putt__bar",
         "ch-stm-putt__r",
+        "ch-surface",
         "ch-surface__body",
         "ch-surface__head",
+        "ch-surface__sub",
         "ch-surface__title",
         "ch-sv-mix",
         "ch-sw-last",
@@ -24696,7 +24761,57 @@
         {
           "name": "--ch-shs-pane-rest",
           "value": "calc(var(--ch-topbar-h) + var(--ch-space-4))",
-          "scope": ".ch-shs-desk"
+          "scope": ".ch-shs--desk"
+        },
+        {
+          "name": "--ch-shs-s-ink-2",
+          "value": "color-mix(in oklab, var(--ch-shs-s-ink) 82%, var(--ch-shs-s-card))",
+          "scope": ".ch-shs-screen .ch-gm.is-detail"
+        },
+        {
+          "name": "--ch-shs-s-track",
+          "value": "color-mix(in oklab, var(--ch-shs-s-ink) 10%, var(--ch-chart-track))",
+          "scope": ".ch-shs-screen .ch-gm.is-detail"
+        },
+        {
+          "name": "--ch-shs-s-ink-2",
+          "value": "color-mix(in oklab, var(--ch-shs-s-ink) 82%, var(--ch-shs-s-card))",
+          "scope": ".ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty)"
+        },
+        {
+          "name": "--ch-shs-s-ink",
+          "value": "var(--ch-feature-ink)",
+          "scope": ".ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) > .ch-shs-ah"
+        },
+        {
+          "name": "--ch-shs-s-ink-2",
+          "value": "var(--ch-feature-ink-2)",
+          "scope": ".ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) > .ch-shs-ah"
+        },
+        {
+          "name": "--ch-shs-s-ink-3",
+          "value": "var(--ch-feature-ink-2)",
+          "scope": ".ch-shs-card:not(.ch-shs-feature):not(.ch-shs-empty) > .ch-shs-ah"
+        },
+        {
+          "name": "--ch-chart-gain",
+          "value": "var(--ch-feature-gain)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-chart-loss",
+          "value": "var(--ch-feature-loss)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-chart-gain-tint",
+          "value": "var(--ch-feature-gain-tint)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-chart-loss-tint",
+          "value": "var(--ch-feature-loss-tint)",
+          "scope": ".ch-shs-feature"
         }
       ]
     },

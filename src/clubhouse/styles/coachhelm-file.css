@@ -380,3 +380,26 @@
 .ch-hf .ch-hf-an__rt b { font: var(--ch-type-figure); }
 .ch-hf .ch-hf-an__rt small { font: var(--ch-type-footnote); color: var(--ch-hf-a-ink-2); }
 .ch-hf .ch-hf-an__shots { margin: 4px 0 0; padding-left: 16px; display: grid; gap: 2px; font: var(--ch-type-footnote); color: var(--ch-hf-a-ink-3); }
+
+/*
+ * look-09, option F on the player file (Nick approved the card rollout for phone and desktop, 21 Nov 2026): every card's head
+ * is the deep green title bar the Stats cards carry, its title, icon and count in the feature inks, with a little room under it.
+ * The file's green feature card stays its one green card. Quiet text inside a card is darker, so no label reads pale.
+ */
+.ch-hf .card {
+  --ch-hf-a-ink-2: color-mix(in oklab, var(--ch-hf-a-ink, var(--ch-text-primary)) 80%, var(--ch-hf-a-card));
+}
+.ch-hf .card > .card__h {
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
+}
+.ch-hf .card > .card__h h4 {
+  color: var(--ch-feature-ink);
+}
+.ch-hf .card > .card__h :is(h4 svg, small),
+.ch-hf .card > .card__h > :not(h4) {
+  color: var(--ch-feature-ink-2);
+}
