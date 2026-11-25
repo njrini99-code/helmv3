@@ -11,7 +11,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { LatestRound } from './LatestRound';
 import { HomePhone, WeekStrip } from './HomePhone';
 import { coachFailedParts } from './model';
-import { CoachQueue } from './CoachQueue';
+import { CoachQueue, CoachQueueCards } from './CoachQueue';
 import { ClassHomeLine } from './ClassHomeLine';
 import { LiveNowCard } from './LiveNowCard';
 import type { LiveSnapshot } from '../../live/model';
@@ -54,9 +54,8 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
   // Up next leads the latest round, as on Player Home; with nothing left this week, what comes after it (CH-2316, F-0006).
   const lead = next ? <DeskNext e={next} frozen={now} /> : data.phone.after ? <DeskNextBeyond e={data.phone.after} /> : null;
   return (
-    <main className="ch-h-main ch-h-main--desk" data-canopy="">
+    <main className="ch-h-main ch-h-main--desk ch-h-main--dash" data-canopy="">
       <DeskHead data={data} />
-      <CoachQueue queue={data.queue} covered={covered} />
       <PageRefreshNotice parts={failed} />
       {data.teamId && data.clock && <ClassHomeLine teamId={data.teamId} today={data.clock.day} teamTimeZone={data.clock.tz} variant="desktop" />}
       {live && (
@@ -66,30 +65,46 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
           </div>
         </SectionBoundary>
       )}
-      {/* One continuous surface, as Player Home's: the week and the latest round, then Team scoring under a hairline. */}
-      <div className="ch-h-flow ch-sheet">
-        <div className="ch-h-sheet">
-          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            {/* The team's events today carry their replies, for the Next row's reply line and Nudge. */}
-            <Week week={data.week} events={data.phone.today} covered={covered} />
-          </SectionBoundary>
-          <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-            <LatestRound data={data.latestRounds} lead={lead} covered={covered} />
-          </SectionBoundary>
+      {/* One dashboard grid (premium plan §3.1, Stripe's): what waits on the coach as count cards beside Up next, the one
+          feature card; the week and today beside the latest round; then Team scoring and the team's game, each a card with
+          its title inside it (law 1 on a desk, G1b). */}
+      <div className="ch-h-dash">
+        <div className="ch-h-dash__col">
+          <CoachQueueCards queue={data.queue} covered={covered} />
+          <div className="ch-h-dash__card">
+            <SectionBoundary surface="home.week" label="This week" code="CH-2205">
+              {/* The team's events today carry their replies, for the Next row's reply line and Nudge. */}
+              <Week week={data.week} events={data.phone.today} covered={covered} />
+            </SectionBoundary>
+          </div>
+        </div>
+        <div className="ch-h-dash__col">
+          {lead}
+          <div className="ch-h-dash__card">
+            <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
+              <LatestRound data={data.latestRounds} covered={covered} />
+            </SectionBoundary>
+          </div>
         </div>
         {data.phone.form ? (
-          <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
-            <TeamScoring form={data.phone.form} phone={false} />
-          </SectionBoundary>
+          <div className="ch-h-dash__card ch-h-dash__wide">
+            <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
+              <TeamScoring form={data.phone.form} phone={false} />
+            </SectionBoundary>
+          </div>
         ) : data.latestRounds.error ? (
-          <TeamScoringFailed phone={false} covered={covered} />
+          <div className="ch-h-dash__card ch-h-dash__wide">
+            <TeamScoringFailed phone={false} covered={covered} />
+          </div>
         ) : null}
+        {data.phone.form && data.legs && (
+          <div className="ch-h-dash__card ch-h-dash__wide">
+            <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
+              <TeamGame legs={data.legs} phone={false} covered={covered} />
+            </SectionBoundary>
+          </div>
+        )}
       </div>
-      {data.phone.form && data.legs && (
-        <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-          <TeamGame legs={data.legs} phone={false} covered={covered} />
-        </SectionBoundary>
-      )}
     </main>
   );
 }

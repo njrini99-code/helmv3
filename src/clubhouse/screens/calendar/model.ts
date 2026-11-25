@@ -463,8 +463,9 @@ export function layoutLanes<E extends { start: number | null; end: number | null
  * under 120px and the rest of the step from there up. `packed`: the lanes sit side by side instead.
  */
 export function laneBox(lane: number, lanes: number, packed = false): { left: string; width: string } {
-  // R-5 (owner, 18 Nov 2026): a one-day column (the Day view) is wide enough to give each overlapping event its own lane
-  // side by side, so neither title is hidden under the other ("Confirn"). The multi-day week keeps the cascade.
+  // R-5 (owner, 18 Nov 2026): a one-day column (the Day view) gives each overlapping event its own lane side by side, so
+  // neither title is hidden under the other ("Confirn"). A26 (owner, 19 Nov 2026): the desk week packs too. The cascade
+  // below is for a grid drawn without `pack`.
   if (packed && lanes > 1) return { left: `calc(${(lane * 100) / lanes}% + 3px)`, width: `calc(${100 / lanes}% - 4px)` };
   // R-5: two overlapping events in a week column 140px or wider (the desk week at 1440 is about 150) sit side by side too (the clamp is the switch, as below);
   // narrower, or three or more, keep the cascade.

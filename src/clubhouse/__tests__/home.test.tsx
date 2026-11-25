@@ -892,7 +892,9 @@ describe('Home · after this week, and trips (audit 2026-11-13)', () => {
     wrap(<CoachHome data={emptyWeek({ after: AFTER })} now={PREVIEW_HOME_NOW} />);
     const hero = code('CH-2316') as HTMLElement;
     expect(hero.className).toBe('ch-ph-next');
-    expect(hero.closest('.ch-h-sheet')).not.toBeNull();
+    // Premium plan §3.1: Up next leads the dashboard's right column, above the latest round.
+    expect(hero.parentElement!.className).toBe('ch-h-dash__col');
+    expect(hero.parentElement!.firstElementChild).toBe(hero);
     expect(hero.getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-11-17&event=confirm');
     expect(hero.textContent).toContain('Nothing else this week');
     expect(hero.textContent).toContain('Tue 17 Nov · 2:00 PM');
@@ -904,7 +906,7 @@ describe('Home · after this week, and trips (audit 2026-11-13)', () => {
     vi.setSystemTime(new Date(PREVIEW_HOME_NOW));
     try {
       wrap(<CoachHome data={emptyWeek({ next: TRIP, today: [TRIP] })} />);
-      const hero = document.querySelector('.ch-h-sheet .ch-ph-next') as HTMLElement;
+      const hero = document.querySelector('.ch-h-dash__col > .ch-ph-next') as HTMLElement;
       await waitFor(() => expect(hero.textContent).toContain('On the road · back tomorrow'));
       expect(hero.textContent).not.toMatch(/Leaves/);
       expect(hero.getAttribute('href')).toBe('/golf/dashboard/team-hub?tab=travel&trip=t1');
@@ -1112,9 +1114,19 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
   it('20104 Waiting on you sits under the head: each part counted as its screen counts it, and opening that screen', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     const nav = screen.getByRole('navigation', { name: 'Waiting on you' });
-    expect(nav.previousElementSibling?.className).toMatch(/ch-h-head/);
+    // Premium plan §3.1: the count cards open the dashboard, first in its left column, right under the head.
+    expect(nav.parentElement!.className).toBe('ch-h-dash__col');
+    expect(nav.parentElement!.firstElementChild).toBe(nav);
+    expect(nav.closest('.ch-h-dash')!.previousElementSibling?.className).toMatch(/ch-h-head/);
     const links = within(nav).getAllByRole('link');
-    expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
+    // Each card's count is its figure; the link is named with the count and its words.
+    expect(links.map((a) => [a.querySelector('.ch-h-qc__n')!.textContent, a.getAttribute('href')])).toEqual([
+      ['1', '/golf/dashboard/roster?tab=requests'],
+      ['3', '/golf/dashboard/calendar'],
+      ['2', '/golf/dashboard/team-hub?tab=tasks'],
+      ['1', '/golf/dashboard/team-hub?tab=ann'],
+    ]);
+    expect(links.map((a) => [a.getAttribute('aria-label'), a.getAttribute('href')])).toEqual([
       ['1 join request', '/golf/dashboard/roster?tab=requests'],
       ['3 replies missing', '/golf/dashboard/calendar'],
       ['2 tasks overdue', '/golf/dashboard/team-hub?tab=tasks'],
@@ -1132,7 +1144,7 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
 
   it('CH-2220 a part of Waiting on you that didn’t load is left out, and the row says some items didn’t load', async () => {
     wrap(<CoachHome data={PREVIEW_HOME_QUEUE_FAILED} now={PREVIEW_HOME_NOW} />);
-    await expectCode('CH-2220', /some items didn’t load/);
+    await expectCode('CH-2220', /some items didn’t load/i);
     const nav = screen.getByRole('navigation', { name: 'Waiting on you' });
     expect(within(nav).queryByText(/post/)).toBeNull();
     expect(within(nav).getAllByRole('link')).toHaveLength(3);
@@ -1253,7 +1265,7 @@ describe('Home · the page’s contracts on the redesign', () => {
     expect(document.body.textContent).toContain(PREVIEW_HOME.todayLabel);
     expect(document.querySelector('.ch-h-main--desk')).not.toBeNull();
     expect(document.querySelector('.ch-ph-tm .ch-ph-chart')).not.toBeNull();
-    expect(document.querySelector('.ch-h-sheet .ch-ph-next')).not.toBeNull();
+    expect(document.querySelector('.ch-h-dash__col > .ch-ph-next')).not.toBeNull();
     // The leaderboard left Home: it lives on Roster and Stats.
     expect(screen.queryByRole('table', { name: 'Leaderboard' })).toBeNull();
   });

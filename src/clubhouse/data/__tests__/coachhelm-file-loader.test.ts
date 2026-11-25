@@ -74,7 +74,8 @@ vi.mock('../coachhelm-standing', () => ({ loadPlayerStanding: vi.fn(async () => 
 vi.mock('../season', async (orig) => ({ ...(await orig<typeof import('../season')>()), loadTeamZone: vi.fn(async () => 'America/New_York') }));
 
 import { roundsToGo } from '../coachhelm';
-import { readStandingRows } from '../coachhelm-standing';
+import { loadCoachPlayerStanding } from '../coachhelm-player';
+import { loadPlayerStanding, readStandingRows } from '../coachhelm-standing';
 import { loadCoachPlayerFile, loadFileField, loadFileIntent, loadFilePlan, loadPlayerYourWeek } from '../coachhelm-file';
 import type { ChCoachPlayerScope } from '../coachhelm-player';
 import { sgPolicy } from '../stats-sg-mix';
@@ -277,6 +278,21 @@ describe('the player Your week (S-BOARD 6 to 8, W-LNS-15)', () => {
     dive.player.mockResolvedValue({ load: { status: 'failed' }, raw: new Map() });
     const { load } = await loadPlayerYourWeek({ playerId: 'p1' });
     expect(load).toEqual({ status: 'failed' });
+  });
+
+  it('asks Standing for no ladder, never an empty feed in its place: an empty feed beside visible reads is logged as a failed read (e1c5ca86)', async () => {
+    db.tables.golf_rounds = { data: [], error: null };
+    vi.mocked(loadPlayerStanding).mockClear();
+    await loadPlayerYourWeek({ playerId: 'p1' });
+    expect(vi.mocked(loadPlayerStanding).mock.calls).toEqual([[{ playerId: 'p1', ladder: false }]]);
+  });
+
+  it('nor does the coach’s file, whose reads may all be notes (an empty list that did not fail)', async () => {
+    db.tables.golf_rounds = { data: [], error: null };
+    db.tables.golf_coach_insights = { data: [], error: null };
+    vi.mocked(loadCoachPlayerStanding).mockClear();
+    await loadCoachPlayerFile({ scope });
+    expect(vi.mocked(loadCoachPlayerStanding).mock.calls).toEqual([[{ scope, ladder: false }]]);
   });
 
   it('with no coach name to hand the plan says Your coach', async () => {

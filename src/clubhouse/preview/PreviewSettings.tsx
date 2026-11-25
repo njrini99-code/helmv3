@@ -7,7 +7,7 @@ import { coachData, failedRead as failed, playerData, PREVIEW_PENDING_COACHES, P
 
 /**
  * Settings with the handoff's people and fake writes, for the dev preview.
- *   ?state= player | noteam | failed | partial | assistant | failwrites | nativeprompt | nativeon | nativeoff
+ *   ?state= player | noteam | failed | partial | assistant | twoteams | failwrites | nativeprompt | nativeon | nativeoff
  *   (assistant: the viewer is not the head coach, so Team has no requests or invites; failed: Team's staff reads fail)
  *   &section= account | notifications | team | golf | coachhelm | preferences
  */
@@ -21,6 +21,9 @@ export function PreviewSettings({ state, section }: { state?: string; section?: 
     const d = coachData();
     if (state === 'failed') return { ...d, profile: failed, delivery: failed, digest: failed, scoring: failed, reminders: failed, team: failed, joinCode: failed, coachhelm: failed };
     if (state === 'partial') return { ...d, delivery: failed, reminders: failed, digest: failed };
+    // A men's and women's head coach: both codes on Team, each named.
+    if (state === 'twoteams')
+      return { ...d, programCodes: [{ teamId: d.teamId!, name: 'Varsity', gender: 'mens', code: 'K7M2Q9XA' }, { teamId: 'preview-team-w', name: 'Varsity Women', gender: 'womens', code: 'W4NP8RTE' }] };
     if (state === 'assistant') {
       const ch = d.coachhelm && !d.coachhelm.error ? d.coachhelm.value : null;
       return { ...d, coachhelm: ch ? ok({ ...ch, team: { enabled: true, disabledAt: null, isHeadCoach: false } }) : d.coachhelm };

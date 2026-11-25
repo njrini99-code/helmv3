@@ -12,17 +12,21 @@ import {
   HANDICAP_OPTIONS,
   hoursLabel,
   minutesLabel,
+  programCodeLabel,
+  programCodePhrase,
   REMINDER_RANGES,
   remindersProblem,
+  splitProgramCodes,
   teamProblem,
   TIMEZONE_OPTIONS,
+  type ChProgramCode,
   type ChReminders,
   type ChScoring,
   type ChSettingsData,
   type ChSettingsWrites,
   type ChTeamInfo,
 } from './model';
-import { SAVE_COPY, useInvite } from './hooks';
+import { SAVE_COPY, useInvite, useTeamCodeActions } from './hooks';
 import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SettingSwitch, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 import { StaffCards } from './Staff';
 import { NoTeam } from '../../ui/NoTeam';
@@ -50,7 +54,7 @@ export function TeamSection({ data, writes }: { data: ChSettingsData; writes: Ch
     <>
       <ReadsFailed parts={failed} onRetry={writes.refresh} />
       {/* The team code first: it is what a coach comes here for most, and Team details ran it under the fold (wave-6 #20). */}
-      {data.joinCode?.error ? <ReadFailed what="Your team code" code="CH-8206" onRetry={writes.refresh} title="Invite players" description="Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster." covered={covered} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} />}
+      {data.joinCode?.error ? <ReadFailed what="Your team code" code="CH-8206" onRetry={writes.refresh} title="Invite players" description="Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster." covered={covered} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} program={splitProgramCodes(data.programCodes, data.teamId)} />}
       {data.team?.error ? <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} title="Team details" description="Shown to your players, and on invites and exports." covered={covered} /> : data.team && <TeamCard team={data.team.value} writes={writes} />}
       <StaffCards coachId={data.coachId} writes={writes} />
       {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} title="Scoring and format" description="Defaults for new rounds and events. The timezone sets when every event and reminder happens." covered={covered} /> : data.scoring && <ScoringCard scoring={data.scoring.value} writes={writes} />}
@@ -100,35 +104,34 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
   );
 }
 
-function InviteCard({ code: initial, writes }: { code: string; writes: ChSettingsWrites }) {
+function InviteCard({ code: initial, writes, program = null }: { code: string; writes: ChSettingsWrites; program?: ReturnType<typeof splitProgramCodes> }) {
   const { code, canShare, regen, copy, copied, share } = useInvite(initial, writes);
   const [confirm, setConfirm] = useState(false);
   useWarnOnOpen(confirm);
+  // A men's and women's coach: each team's code, named, so the wrong one is never handed out.
+  const activeLabel = program?.active ? programCodeLabel(program.active) : null;
   return (
-    <Card id="set-invite" title="Invite players" description="Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster.">
-      {/* One code style for the app: large, tabular, Instrument Sans (.ch-set-code), with its Copy beside it. */}
-      <div className="ch-inset ch-set-codebox">
-        <div className="ch-set-codebox__c">
-          <span>Team code</span>
-          <b className="ch-set-code ch-num" aria-live="polite">
-            {code}
-          </b>
-        </div>
-        <div className="ch-set-codebox__acts">
-          <Button size="sm" variant="primary" leftIcon={copied === 'code' ? Check : Copy} onClick={() => void copy('code')}>
-            {copied === 'code' ? 'Copied' : 'Copy code'}
-          </Button>
-          <Button size="sm" leftIcon={copied === 'link' ? Check : Link2} onClick={() => void copy('link')}>
-            {copied === 'link' ? 'Copied' : 'Copy link'}
-          </Button>
-          {canShare && (
-            <Button size="sm" leftIcon={Share} onClick={() => void share()}>
-              Share
-            </Button>
-          )}
-        </div>
-      </div>
-      <Row label="New code" help="Stops the current code from working right away. Anyone mid-join will need the new one.">
+    <Card
+      id="set-invite"
+      title="Invite players"
+      description={
+        program
+          ? 'Each team has its own code. Players who sign up with a code join that team right away. You can remove anyone from Roster.'
+          : 'Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster.'
+      }
+    >
+      {/* One code style for the app: large, tabular, Instrument Sans (.ch-set-code), with its actions beside it. Every
+          team's code is drawn by the same box with the same actions, so no team's code reads as the lesser one. */}
+      <CodeBox label={activeLabel ? `${activeLabel} code` : 'Team code'} code={code} live gender={program?.active?.gender} named={!!program} actions={{ canShare, copy, copied, share }} />
+      {program?.others.map((t) => <OtherTeamCode key={t.teamId} team={t} />)}
+      <Row
+        label="New code"
+        help={
+          activeLabel
+            ? `Replaces the code for ${programCodePhrase(program!.active!)}, the team you’re viewing, and stops the old one working right away. To replace another team’s code, switch to that team.`
+            : 'Stops the current code from working right away. Anyone mid-join will need the new one.'
+        }
+      >
         <Button size="sm" variant="secondary" leftIcon={RotateCw} busy={regen.pending} onClick={() => setConfirm(true)}>
           {regen.pending ? 'Making…' : 'Make a new code'}
         </Button>
@@ -159,6 +162,46 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
       />
     </Card>
   );
+}
+
+type CodeActions = { canShare: boolean; copy: (what: 'code' | 'link') => Promise<void>; copied: 'code' | 'link' | null; share: () => Promise<void> };
+
+/** A team's code with Copy code, Copy link and Share: the same box for every team. */
+function CodeBox({ label, code, live = false, gender, named = false, actions }: { label: string; code: string; live?: boolean; gender?: string | null; named?: boolean; actions: CodeActions }) {
+  const { canShare, copy, copied, share } = actions;
+  // With two teams on screen each action says whose code it is; one team keeps the plain names.
+  const name = label.toLowerCase();
+  const aria = (l: string) => (named ? { label: l } : undefined);
+  return (
+    <div className="ch-inset ch-set-codebox" data-team-code={gender ?? undefined}>
+      <div className="ch-set-codebox__c">
+        <span>{label}</span>
+        <b className="ch-set-code ch-num" aria-live={live ? 'polite' : undefined}>
+          {code}
+        </b>
+      </div>
+      <div className="ch-set-codebox__acts">
+        <Button size="sm" variant="primary" leftIcon={copied === 'code' ? Check : Copy} onClick={() => void copy('code')} aria={aria(`Copy ${name}`)}>
+          {copied === 'code' ? 'Copied' : 'Copy code'}
+        </Button>
+        <Button size="sm" leftIcon={copied === 'link' ? Check : Link2} onClick={() => void copy('link')} aria={aria(`Copy ${name} link`)}>
+          {copied === 'link' ? 'Copied' : 'Copy link'}
+        </Button>
+        {canShare && (
+          <Button size="sm" leftIcon={Share} onClick={() => void share()} aria={aria(`Share ${name}`)}>
+            Share
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Another team's code: the same box and actions as the team being viewed. */
+function OtherTeamCode({ team }: { team: ChProgramCode }) {
+  const label = programCodeLabel(team);
+  const actions = useTeamCodeActions(team.code, label);
+  return <CodeBox label={`${label} code`} code={team.code} gender={team.gender} named actions={actions} />;
 }
 
 export const TEES = [
