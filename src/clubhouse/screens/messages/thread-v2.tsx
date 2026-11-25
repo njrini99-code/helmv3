@@ -111,7 +111,9 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
     let frame = 0;
     // While a thread opens its messages land and it pins itself to its end (useThreadAnchor's settle), so being far from the end then means
     // nothing, and the key flashed in on every open. It reads once the settle is over, or as soon as the reader touches the thread.
-    let settling = el.scrollTop === 0 && el.scrollHeight <= el.clientHeight;
+    // Every open holds, not only one whose messages have yet to land: a thread already laid out still sits at its top until the
+    // anchor pins it, and that read flashed the key in and out as the screen opened (motion gate, messages-stress, 2026-11-25).
+    let settling = true;
     const read = () => {
       frame = 0;
       if (!settling) setFar(el.scrollHeight - el.clientHeight - el.scrollTop > el.clientHeight * JUMP_FAR);
@@ -123,7 +125,7 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
       settling = false;
       read();
     };
-    const timer = settling ? window.setTimeout(settled, THREAD_SETTLE_MS) : 0;
+    const timer = window.setTimeout(settled, THREAD_SETTLE_MS);
     const input = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
     for (const t of input) el.addEventListener(t, settled, { passive: true, once: true });
     el.addEventListener('scroll', onScroll, { passive: true });

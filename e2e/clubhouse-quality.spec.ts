@@ -125,7 +125,8 @@ for (const size of sizes) {
       await actions.click();
       const menu = page.getByRole('menu', { name: 'Nested actions' });
       await bounded(menu, page);
-      await expect(menu.getByRole('menuitem').first()).toBeFocused();
+      // MENU-01 (Menu.tsx): focus lands on the menu itself, never on a row; End and Home step into the rows.
+      await expect(menu).toBeFocused();
       await page.keyboard.press('End');
       await expect(menu.getByRole('menuitem').last()).toBeFocused();
       await bounded(menu.getByRole('menuitem').last(), page);

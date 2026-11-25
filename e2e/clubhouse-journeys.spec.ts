@@ -94,7 +94,9 @@ test('Calendar: a coach publishes an event for the team, then edits it', async (
   expect(invited[0]!.n, 'every player is invited').toBe(team.players.length);
 
   await test.step('edit', async () => {
-    await page.getByRole('button', { name: new RegExp(`^${escape(title)}, 10:00`) }).first().click();
+    // The block is named by its drawn title, then hidden words (SWP-03, calendar/views.tsx). Both are flex items of
+    // .ch-ev, so the accessible name puts a space between them: "<title> , 10:00 – 11:00 AM".
+    await page.getByRole('button', { name: new RegExp(`^${escape(title)}\\s*, 10:00`) }).first().click();
     await page.getByRole('button', { name: 'Edit event', exact: true }).click();
     const editor = page.getByRole('dialog', { name: 'Edit event' });
     await editor.getByRole('textbox', { name: 'Event title' }).fill(edited);
