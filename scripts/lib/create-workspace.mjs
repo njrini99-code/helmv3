@@ -380,7 +380,7 @@ export async function createWorkspace(opts = {}) {
 
 /**
  * Classified workspace rows for `repo`, shared by the mutation-budget check,
- * the SessionStart stamp hook, and anything else that needs "what workspaces
+ * the SessionStart worktree-count line, and anything else that needs "what workspaces
  * exist and what kind are they" without re-walking git itself.
  */
 export function listWorkspaces(repo) {
