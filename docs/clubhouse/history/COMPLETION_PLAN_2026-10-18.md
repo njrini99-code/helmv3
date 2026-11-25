@@ -2,7 +2,7 @@
 
 > **Historical.** Clubhouse went live for every team on 2026-11-15 and the flag
 > and its switches are removed. This page records the plan as it was. Current
-> state, rollback and what is left: [STATUS.md](STATUS.md).
+> state, rollback and what is left: [STATUS.md](../STATUS.md).
 
 The owner's brief for this pass: be creative, go beyond the guidelines, take command and complete every
 aspect of Clubhouse, on the phone and on desktop. Production limits still hold: no deploy, no production
