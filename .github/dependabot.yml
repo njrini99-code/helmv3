@@ -93,56 +93,6 @@ updates:
     # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
     # so every rebase push triggered a billed (and failing) preview build.
     rebase-strategy: "disabled"
-    directory: "/tools/ultra-agent-audit"
-    schedule:
-      interval: "monthly"
-    cooldown:
-      default-days: 7
-    open-pull-requests-limit: 2
-    labels:
-      - "dependencies"
-    groups:
-      ultra-agent-audit:
-        patterns:
-          - "*"
-        # Minor and patch only. A major rides alone as its own PR, so a
-        # typescript 5→7 or jsdom 28→30 cannot make a 12-package group
-        # unmergeable and unreviewable at once (2026-09-02: #1744 carried
-        # four majors and failed lint on "typescript-eslint does not
-        # support TS 7.0"; #1745 carried 30 updates).
-        update-types:
-          - "minor"
-          - "patch"
-
-  - package-ecosystem: "npm"
-    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
-    # so every rebase push triggered a billed (and failing) preview build.
-    rebase-strategy: "disabled"
-    directory: "/tools/ux-flow-auditor"
-    schedule:
-      interval: "monthly"
-    cooldown:
-      default-days: 7
-    open-pull-requests-limit: 2
-    labels:
-      - "dependencies"
-    groups:
-      ux-flow-auditor:
-        patterns:
-          - "*"
-        # Minor and patch only. A major rides alone as its own PR, so a
-        # typescript 5→7 or jsdom 28→30 cannot make a 12-package group
-        # unmergeable and unreviewable at once (2026-09-02: #1744 carried
-        # four majors and failed lint on "typescript-eslint does not
-        # support TS 7.0"; #1745 carried 30 updates).
-        update-types:
-          - "minor"
-          - "patch"
-
-  - package-ecosystem: "npm"
-    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
-    # so every rebase push triggered a billed (and failing) preview build.
-    rebase-strategy: "disabled"
     directory: "/.claude/skills/golfhelm-creative-engine/tools"
     schedule:
       interval: "monthly"

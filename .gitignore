@@ -199,7 +199,6 @@ scripts/wf_*.js
 scripts/baseballhelm-verification.workflow.js
 scripts/ui-intelligence/*.js
 supabase/functions/**/*.js
-landing/**/*.js
 helm-intelligence/typescript/*.js
 playwright/*.js
 
