@@ -11,9 +11,13 @@
   cursor: help;
   -webkit-tap-highlight-color: transparent;
 }
-.ch-root .ch-term:hover,
 .ch-root .ch-term.is-open {
   text-decoration-color: currentColor;
+}
+@media (hover: hover) and (pointer: fine) {
+  .ch-root .ch-term:hover {
+    text-decoration-color: currentColor;
+  }
 }
 .ch-root .ch-term:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -67,10 +71,12 @@
 .ch-root .ch-howc-link {
   margin: 0;
 }
-.ch-root .ch-term-card__rule:hover,
-.ch-root .ch-howc-link:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+@media (hover: hover) and (pointer: fine) {
+  .ch-root .ch-term-card__rule:hover,
+  .ch-root .ch-howc-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 .ch-root .ch-term-card__rule:focus-visible,
 .ch-root .ch-howc-link:focus-visible {

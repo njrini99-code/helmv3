@@ -22,6 +22,12 @@
   letter-spacing: -0.01em;
   color: var(--ch-text-primary);
 }
+/* The line above the title: the team and season, set as Roster's (owner, 24 Nov 2026: the head read bare). */
+.ch-set-head__k {
+  font: var(--ch-type-body);
+  color: var(--ch-text-primary);
+  overflow-wrap: anywhere;
+}
 .ch-set-head p {
   font: var(--ch-type-14);
   color: var(--ch-text-tertiary);
