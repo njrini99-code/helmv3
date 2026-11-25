@@ -13,15 +13,18 @@ Held items: none
 
 ### Changed
 
-- `ScoringFeatureChart`: a touch held for 120 ms reads the nearest round. `pick` takes the chart and the finger's x instead of a
-  pointer event, and the `as never` cast that hid the missing `currentTarget` from the compiler is gone.
+- `ScoringFeatureChart`: a touch held for 120 ms reads the nearest round. `pick`
+  takes the chart and the finger's x instead of a pointer event, and the `as
+  never` cast that hid the missing `currentTarget` from the compiler is gone.
 
 ### Why
 
-- Production error 0822e4af (2026-11-20, the iOS app): the hold's timer passed `{ clientX }` where the code read
-  `e.currentTarget`, so every still hold threw before it read a round. Only a sideways drag worked.
+- Production error 0822e4af (2026-11-20, the iOS app): the hold's timer passed
+  `{ clientX }` where the code read `e.currentTarget`, so every still hold threw
+  before it read a round. Only a sideways drag worked.
 
 ### Verification
 
-- `scoring-feature-chart.test.tsx` "a finger held still reads the round under it": both cases threw the production TypeError
-  before the fix and pass after it. Nothing drawn at rest changes, so there are no before and after stills.
+- `scoring-feature-chart.test.tsx` "a finger held still reads the round under
+  it": both cases threw the production TypeError before the fix and pass after
+  it. Nothing drawn at rest changes, so there are no before and after stills.

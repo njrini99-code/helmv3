@@ -13,8 +13,9 @@ Held items: none
 
 ### Changed
 
-- Nothing on Team stats. `ScoringFeatureChart.tsx` also holds `TeamFeatureChart`, which is unchanged; the fix is the player's
-  chart ([P005](../../P005-stats-player/changes/2026-11-24-scoring-chart-hold.md)).
+- Nothing on Team stats. `ScoringFeatureChart.tsx` also holds
+  `TeamFeatureChart`, which is unchanged; the fix is the player's chart
+  ([P005](../../P005-stats-player/changes/2026-11-24-scoring-chart-hold.md)).
 
 ### Why
 
