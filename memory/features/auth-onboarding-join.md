@@ -165,7 +165,8 @@ Join code
   head-coach staff row each), checks the temporary password signs in, then
   sends the Locker welcome email (login, temporary password, team codes)
   through Resend. An existing coach's password is replaced only with
-  `--reset-password`. `--preview-to` sends a preview and changes nothing.
+  `--reset-password`; `--current-password` emails the one they already have
+  (from `COACH_PASSWORD`, checked by signing in, account unchanged). `--preview-to` sends a preview and changes nothing.
 
 ## UI Contract
 

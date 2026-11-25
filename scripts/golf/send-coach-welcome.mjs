@@ -24,6 +24,9 @@
  *   --teams mens,womens        which teams to create (new account)
  *   --division <text>          optional, stored on the organization (new account)
  *   --reset-password           existing account: replace their password with the temporary one
+ *   --current-password         existing account: email the password they already have, read from the
+ *                              COACH_PASSWORD environment variable (never an argument). It is checked by
+ *                              signing in, and the account is not changed.
  *   --preview-to <email>       send a preview there instead (no account changes, placeholder password)
  *   --html-out <path>          also write the rendered HTML to this file
  *   --send                     do it: write, then email the coach
@@ -66,6 +69,7 @@ export function parseArgs(argv) {
     else if (k === '--preview-to') a.previewTo = v().trim();
     else if (k === '--html-out') a.htmlOut = v();
     else if (k === '--reset-password') a.resetPassword = true;
+    else if (k === '--current-password') a.currentPassword = true;
     else if (k === '--send') a.send = true;
     else if (k === '--help' || k === '-h') a.help = true;
     else throw new Error(`unknown option ${k}`);
@@ -218,7 +222,7 @@ async function provision(db, a, password) {
 async function main() {
   const a = parseArgs(process.argv.slice(2));
   if (a.help || !a.env || !a.email) {
-    console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(2, 32).map((l) => l.replace(/^ \* ?/, '')).join('\n'));
+    console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split("\n").slice(2, 35).map((l) => l.replace(/^ \* ?/, '')).join('\n'));
     process.exit(a.help ? 0 : 1);
   }
   const ref = PROJECTS[a.env];
@@ -227,6 +231,8 @@ async function main() {
   for (const t of a.teams) if (!['mens', 'womens'].includes(t)) throw new Error(`--teams takes mens and/or womens, not "${t}"`);
   if (new Set(a.teams).size !== a.teams.length) throw new Error('--teams lists a team twice');
   if (a.send && a.previewTo) throw new Error('--send and --preview-to are separate runs: preview first, then send');
+  if (a.currentPassword && a.resetPassword) throw new Error('--current-password and --reset-password are opposites: pick one');
+  if (a.currentPassword && !process.env.COACH_PASSWORD) throw new Error('--current-password reads COACH_PASSWORD from the environment, and it is not set');
 
   const db = createClient(`https://${ref}.supabase.co`, serviceKey(ref), { auth: { persistSession: false } });
   console.log(`Supabase: ${a.env} (${ref})`);
@@ -241,13 +247,14 @@ async function main() {
         : `${a.email} already has a login but no coach profile (role ${found.user.role ?? 'none'}). Not changing it.`,
     );
   } else mode = 'new';
+  if (mode === 'new' && a.currentPassword) throw new Error('--current-password needs an existing login; this email has none');
 
   let lastName = a.lastName;
   if (mode === 'existing') {
     lastName ||= (found.coach.full_name ?? '').trim().split(/\s+/).pop();
     if (!lastName) throw new Error('the coach profile has no name: pass --last-name');
     console.log(`Existing program: ${found.school ?? '(no organization name)'}, ${found.teams.length} team(s): ${found.teams.map((t) => `${t.name} ${t.join_code}`).join(', ')}`);
-    if (a.send && !a.resetPassword) throw new Error('this coach already has a password. Add --reset-password to replace it with the temporary one in the email.');
+    if (a.send && !a.resetPassword && !a.currentPassword) throw new Error('this coach already has a password. Add --current-password (COACH_PASSWORD) to email the one they have, or --reset-password to replace it.');
   } else {
     for (const [flag, val] of [['--first-name', a.firstName], ['--last-name', a.lastName], ['--school', a.school]]) if (!val) throw new Error(`new account: ${flag} is required`);
     if (!a.teams.length) throw new Error('new account: --teams mens,womens (or one of them) is required');
@@ -279,9 +286,12 @@ async function main() {
     return;
   }
 
-  const password = temporaryPassword();
+  const password = a.currentPassword ? process.env.COACH_PASSWORD : temporaryPassword();
   let program;
-  if (mode === 'new') {
+  if (a.currentPassword) {
+    step(true, 'using the password the coach already has (account not changed)');
+    program = { school: found.school ?? a.school, teams: found.teams };
+  } else if (mode === 'new') {
     program = await provision(db, a, password);
     step(true, `created ${program.school}: ${program.teams.map((t) => `${t.name} ${t.join_code}`).join(', ')}`);
   } else {
@@ -296,7 +306,7 @@ async function main() {
   const probe = createClient(`https://${ref}.supabase.co`, anonKey, { auth: { persistSession: false } });
   const signIn = await probe.auth.signInWithPassword({ email: a.email, password });
   step(!signIn.error, `the temporary password signs in${signIn.error ? `: ${signIn.error.message}` : ''}`);
-  if (signIn.error) throw new Error('not emailing a password that does not work. Re-run with --reset-password.');
+  if (signIn.error) throw new Error(a.currentPassword ? 'that password does not sign in, so nothing was emailed. Check COACH_PASSWORD.' : 'not emailing a password that does not work. Re-run with --reset-password.');
   await probe.auth.signOut();
 
   const email = buildCoachWelcomeEmail({ coachLastName: lastName, schoolName: program.school, email: a.email, password, teams: program.teams });
