@@ -44,7 +44,7 @@
     "pages": []
   },
   {
-    "file": "history/SWAP_AUDIT.md",
+    "file": "SWAP_AUDIT.md",
     "title": "Complete-swap audit: findings",
     "kind": "audit",
     "date": "2026-09-30",

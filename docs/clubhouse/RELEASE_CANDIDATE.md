@@ -111,7 +111,7 @@ globally, so a
 team canary must not be described as a per-team sign-in rollout.
 
 The existing complete-swap audit still names owner-held database work and phone
-acceptance. Consult [SWAP_AUDIT.md](history/SWAP_AUDIT.md) and
+acceptance. Consult [SWAP_AUDIT.md](SWAP_AUDIT.md) and
 [HELD.md](../../supabase/migrations/HELD.md) before enabling Clubhouse broadly.
 In particular, qualifier reasoning isolation, round-submit version checks and
 stats/cache corrections must be reconciled with the approved rollout. This PR

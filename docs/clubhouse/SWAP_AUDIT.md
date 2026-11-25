@@ -25,14 +25,14 @@ audit tracked is complete: the Fairway screens, `golf_clubhouse_ui`,
 `golf_clubhouse_front_door` and the `HELM_CLUBHOUSE_TEAMS` allowlist are gone,
 and "flag on" below now means every coach and player. The route table in §3 is
 updated; the findings are kept as the record. Current state and the retired
-features: [STATUS.md](../STATUS.md).
+features: [STATUS.md](STATUS.md).
 
 **Production flag state (updated 2026-10-12, history):** `golf_clubhouse_ui` and
 `golf_clubhouse_front_door` are off in production and on in preview and
 development (`config/feature-flags.yml`). `golf_clubhouse_ui` was on in
 production from 2026-10-08 to 2026-10-11 through #2180 by mistake; #2188 turned
 it off. The baselines above are the 2026-09-30 audit's; current state, turn-on
-and rollback are in [STATUS.md](../STATUS.md). Every finding below that says "flag
+and rollback are in [STATUS.md](STATUS.md). Every finding below that says "flag
 on" affects no customer until the owner turns the flag on.
 
 ## 2. Scorecard (audit §20)
@@ -51,7 +51,7 @@ on" affects no customer until the owner turns the flag on.
 | Phone/accessibility | **Partly exercised**: 46-page sweep, both roles at 390 and 1440 px (dev for visuals, the preview for timing). Fixed: F-29, F-30, F-35..F-39, F-41..F-50. Not run: real iPhone, VoiceOver, keyboard pass | §4 Full sweep |
 | Build/regression | Local gates on `c7e24b4f9`: typecheck, lint ratchet, Supabase-error and fail-open audits, `clubhouse:check`, `docs:check` all 0; unit suite 2067 files, 22182 tests, all pass; local production build used for the F-56 timings. CI on PR #2111 at `9d65dd3ff`: see §4 | §4 |
 | Cutover/rollback | Q-131 built: `HELM_CLUBHOUSE_TEAMS` allowlist (`a49a75f6a`); Q-132 held migration written (`9a49d3bf9`). **Open**: setting the allowlist, applying the held files, the flag flip (all owner) | §18 §7 |
-| Legacy retirement | **Done (2026-11-14)**: every row in §3 has a destination; the Fairway screens are deleted and the redirect-only pages are `next.config.mjs` redirects (F-13) | F-13, [STATUS.md](../STATUS.md) |
+| Legacy retirement | **Done (2026-11-14)**: every row in §3 has a destination; the Fairway screens are deleted and the redirect-only pages are `next.config.mjs` redirects (F-13) | F-13, [STATUS.md](STATUS.md) |
 
 ## 3. Role × route table (F-01)
 

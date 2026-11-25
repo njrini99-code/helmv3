@@ -135,6 +135,7 @@ vercel:
     # future carve-out must not quietly re-include them.
     - docs/qa/
     - docs/archive/
+    - docs/audits/
     - deno.lock
     - node_modules/
     - .next/

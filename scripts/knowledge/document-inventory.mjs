@@ -141,7 +141,8 @@ function categorise(path, body) {
   if (/-contract\.md$/.test(path) || path.startsWith('docs/ai-system/selfheal/')) return 'PROCESS_CONTRACT';
   if (path.startsWith('memory/system/')) return 'PROCESS_CONTRACT';
   if (path.startsWith('docs/superpowers/specs/')) return 'DESIGN_SPEC';
-  // docs/superpowers/plans/ and docs/audits/ moved under docs/archive/ (2026-11-25) and are ARCHIVE above.
+  // docs/superpowers/plans/ and most of docs/audits/ moved under docs/archive/ (2026-11-25) and are ARCHIVE above.
+  // The two audits still in docs/audits/ match the AUDIT regex below.
   if (/PLAN[_.-]|_PLAN|\/plans\//i.test(path)) return 'PLAN';
   if (/AUDIT|FINDINGS|POSTMORTEM/i.test(path)) return 'AUDIT_SNAPSHOT';
   if (path.startsWith('docs/operations/') && /RUNBOOK|CI_RUNBOOK/i.test(path)) return 'RUNBOOK';
