@@ -372,7 +372,8 @@ async function signupActionImpl(
     const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
     return {
       success: false,
-      // The code already matched by now, so this says what is wrong: the network, not the code.
+      // This limit runs before the server re-checks the code, but the screen's own check already matched it by now, so
+      // this says what is wrong: the network, not the code.
       error: `Too many sign-ups from this network right now. Please try again in ${remaining}.`,
     };
   }
@@ -812,7 +813,8 @@ async function signupWithStaffInviteActionImpl(
     const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
     return {
       success: false,
-      // The code already matched by now, so this says what is wrong: the network, not the code.
+      // This limit runs before the server re-checks the code, but the screen's own check already matched it by now, so
+      // this says what is wrong: the network, not the code.
       error: `Too many sign-ups from this network right now. Please try again in ${remaining}.`,
     };
   }

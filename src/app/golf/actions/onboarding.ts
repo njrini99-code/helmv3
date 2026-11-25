@@ -631,7 +631,7 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
         joinedTeam = joinResult.success === true;
         if (!joinedTeam) {
           joinError = joinResult.error ?? null;
-          await logServerError(`[Onboarding] Auto-join skipped (${joinResult.error ?? 'unknown'}) for code ${joinCode.trim().toUpperCase()}`, { action: 'onboarding.completePlayerOnboarding' });
+          await logServerError(`[Onboarding] Auto-join skipped (${joinResult.error ?? 'unknown'}) for a code of ${joinCode.trim().length} characters`, { action: 'onboarding.completePlayerOnboarding' });
         }
       } catch (thrown) {
         joinError = 'Failed to join team. Please try again.';

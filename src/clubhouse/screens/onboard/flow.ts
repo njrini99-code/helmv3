@@ -121,10 +121,13 @@ export function reduceFlow(s: FlowState, a: Action): FlowState {
  * truth for who they are, so its answers win where it has one; a blank from the server never wipes what was typed. The
  * team code is the exception: when the link carried one (`seed.code` present, even empty) it is the code, since a player
  * who moves from the men's to the women's team arrives with the new code over a draft that held the old.
- * A draft kept for a different email belongs to someone else on this tab and is not used at all.
+ * A draft is used only when its email and the account's are both present and equal.
  */
 export function mergeResumed(saved: Draft | null, seed: Partial<Draft>): Draft {
-  const mine = saved && (!saved.email || !seed.email || saved.email.trim().toLowerCase() === seed.email.trim().toLowerCase()) ? saved : null;
+  // A kept draft is used only when both it and the account name the same email: a draft with no email, or an account with
+  // none, is not proof it is this person's, and on a shared phone it could be someone else's answers.
+  const sameEmail = !!saved?.email && !!seed.email && saved.email.trim().toLowerCase() === seed.email.trim().toLowerCase();
+  const mine = saved && sameEmail ? saved : null;
   const base: Draft = { ...EMPTY_DRAFT, ...(mine ?? {}) };
   const out: Record<string, unknown> = { ...base };
   for (const [k, v] of Object.entries(seed)) {

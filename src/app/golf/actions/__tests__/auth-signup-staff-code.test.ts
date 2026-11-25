@@ -28,7 +28,7 @@ vi.mock('@/lib/auth/rate-limit', () => ({
 }));
 vi.mock('@/lib/auth/supabase-rate-limit', () => ({
   checkRateLimit: vi.fn(async () => allow),
-  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, SIGNUP_SAME_CODE: { maxAttempts: 60, windowMs: 3_600_000 } },
+  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, SIGNUP_SAME_CODE: { maxAttempts: 60, windowMs: 3_600_000 }, SIGNUP_ALL: { maxAttempts: 200, windowMs: 3_600_000 } },
 }));
 
 const signUp = vi.fn();

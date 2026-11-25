@@ -7,11 +7,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  */
 const rpc = vi.hoisted(() => vi.fn());
 const logged = vi.hoisted(() => vi.fn());
+const limiter = vi.hoisted(() => vi.fn());
 function from() {
   const chain = { select: () => chain, eq: () => chain, maybeSingle: () => Promise.resolve({ data: null, error: null }) };
   return chain;
 }
 vi.mock('server-only', () => ({}));
+vi.mock('@/lib/auth/supabase-rate-limit', () => ({ checkRateLimit: limiter, RATE_LIMITS: { TEAM_LOOKUP: { maxAttempts: 30, windowMs: 3_600_000 } } }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ from, rpc }) }));
 vi.mock('@/lib/auth/resilient-get-user', () => ({ getUserResilient: async () => ({ user: { id: 'u1', email: 'p@example.test', user_metadata: {} } }) }));
 vi.mock('../../lib/track-server', () => ({ chLogServer: logged }));
@@ -20,6 +22,8 @@ import { loadPlayerOnboard } from '../onboard';
 
 beforeEach(() => {
   rpc.mockReset();
+  limiter.mockReset();
+  limiter.mockResolvedValue({ allowed: true, remaining: 29, resetAt: Date.now() + 1000 });
   logged.mockClear();
 });
 
@@ -61,5 +65,19 @@ describe('loadPlayerOnboard · the team from the link', () => {
     const s = await seed('--');
     expect(rpc).not.toHaveBeenCalled();
     expect('code' in s).toBe(false);
+  });
+});
+
+describe('loadPlayerOnboard · the team lookup is throttled per account', () => {
+  it('is keyed on the signed-in user, 30 an hour', async () => {
+    rpc.mockResolvedValue({ data: [{ id: 't1', name: 'Men’s Golf' }], error: null });
+    await seed('K7PQX4MN');
+    expect(limiter).toHaveBeenCalledWith('team-lookup:u1', expect.objectContaining({ maxAttempts: 30 }));
+  });
+
+  it('throttled, it names no team, keeps the code and never asks the database', async () => {
+    limiter.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 1000 });
+    expect(await seed('K7PQX4MN')).toMatchObject({ code: 'K7PQX4MN', teamName: null });
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

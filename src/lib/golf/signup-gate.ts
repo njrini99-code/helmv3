@@ -2,6 +2,7 @@ import 'server-only';
 
 import { cookies, headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { resolveClientIp } from '@/lib/security/client-ip';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/supabase-rate-limit';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
@@ -79,12 +80,9 @@ async function warnMissingAccessCodeOnce(): Promise<void> {
  * platform-wide decision, not something to invent inside the signup gate.
  */
 async function clientIp(): Promise<string> {
-  const headersList = await headers();
-  return (
-    headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    headersList.get('x-real-ip') ??
-    'unknown'
-  );
+  // The platform-set address when there is one, else the first forwarded hop, and anything that is not an address collapses
+  // into one shared bucket (src/lib/security/client-ip.ts), so a varied header cannot mint a bucket per request.
+  return resolveClientIp(await headers());
 }
 
 /**
@@ -100,6 +98,9 @@ async function clientIp(): Promise<string> {
  * A refusal still reads as "no match" to the caller (Q-99): nothing here says which namespace a code belongs to.
  */
 async function codeCheckAllowed(kind: 'gate' | 'verify', ip: string, code: string): Promise<boolean> {
+  // Coarse cap first: every attempt from an IP counts here, so random codes cannot mint unbounded per-code rows.
+  const all = await checkRateLimit(`signup:${kind}:all:${ip}`, RATE_LIMITS.SIGNUP_ALL);
+  if (!all.allowed) return false;
   const normalised = code.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24) || 'EMPTY';
   const key = `signup:${kind}:${ip}:${normalised}`;
   const same = await checkRateLimit(key, RATE_LIMITS.SIGNUP_SAME_CODE);

@@ -10,11 +10,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const counts = new Map<string, number>();
 const blocked = new Map<string, number>();
-let ip = '203.0.113.9';
+let vercelIp: string | null = null;
+let forwarded = '203.0.113.9';
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/headers', () => ({
-  headers: vi.fn(async () => new Map([['x-forwarded-for', ip]])),
+  headers: vi.fn(async () => new Map<string, string>([['x-forwarded-for', forwarded], ...(vercelIp ? ([['x-vercel-forwarded-for', vercelIp]] as Array<[string, string]>) : [])])),
   cookies: vi.fn(async () => ({ get: () => undefined, set: () => {} })),
 }));
 vi.mock('@/lib/supabase/admin', () => ({
@@ -45,7 +46,8 @@ import { grantSignupAccessDetailed } from '../signup-gate';
 beforeEach(() => {
   counts.clear();
   blocked.clear();
-  ip = '203.0.113.9';
+  forwarded = '203.0.113.9';
+  vercelIp = null;
 });
 
 describe('a roster on one network', () => {
@@ -91,7 +93,7 @@ describe('guessing is still bounded', () => {
 
   it('another network is not affected', async () => {
     for (let i = 0; i < 12; i++) await grantSignupAccessDetailed(`CODE${String(i).padStart(4, '0')}`);
-    ip = '198.51.100.7';
+    forwarded = '198.51.100.7';
     expect((await grantSignupAccessDetailed('K7PQX4MN')).granted).toBe(true);
   });
 });
@@ -101,5 +103,37 @@ describe('the budgets', () => {
     expect(GOLF_LIMITS.GOLF_SIGNUP).toMatchObject({ maxAttempts: 60, windowMs: 3_600_000 });
     expect(RATE_LIMITS.SIGNUP.maxAttempts).toBe(10);
     expect(RATE_LIMITS.SIGNUP_SAME_CODE.maxAttempts).toBe(60);
+  });
+});
+
+describe('random-code spam cannot mint unbounded rows', () => {
+  it('past the coarse per-IP cap nothing is created for the code, and the answer is no', async () => {
+    const cap = RATE_LIMITS.SIGNUP_ALL.maxAttempts;
+    expect(cap).toBe(200);
+    for (let i = 0; i < cap + 50; i++) await grantSignupAccessDetailed(`RND${String(i).padStart(5, '0')}`);
+    const perCodeKeys = [...counts.keys()].filter((k) => /^signup:gate:203\.0\.113\.9:RND/.test(k));
+    // Only attempts under the cap reached a per-code key (and only ten of those were new codes that got past the guess budget).
+    expect(perCodeKeys.length).toBeLessThanOrEqual(cap);
+    expect(counts.get('signup:gate:all:203.0.113.9')).toBe(cap + 50);
+    expect(await grantSignupAccessDetailed('K7PQX4MN')).toEqual({ granted: false, kind: 'none', teamName: null });
+    expect(counts.has('signup:gate:203.0.113.9:K7PQX4MN')).toBe(false);
+  });
+});
+
+describe('the address the throttle keys on', () => {
+  it('a varied or junk forwarded header collapses into one bucket instead of one per request', async () => {
+    for (const junk of ['junk-1', 'junk-2', '<script>', '999.1.1.1, 8.8.8.8x']) {
+      forwarded = junk;
+      await grantSignupAccessDetailed('K7PQX4MN');
+    }
+    expect(counts.get('signup:gate:all:unknown')).toBe(4);
+  });
+
+  it('the platform-set address wins over a client-supplied one', async () => {
+    vercelIp = '198.51.100.20';
+    forwarded = '203.0.113.99';
+    await grantSignupAccessDetailed('K7PQX4MN');
+    expect(counts.has('signup:gate:all:198.51.100.20')).toBe(true);
+    expect(counts.has('signup:gate:all:203.0.113.99')).toBe(false);
   });
 });

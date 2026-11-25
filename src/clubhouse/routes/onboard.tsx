@@ -2,7 +2,7 @@ import 'server-only';
 import { redirect } from 'next/navigation';
 import { loadPlayerOnboard } from '../data/onboard';
 import { Onboard } from '../screens/onboard/Onboard';
-import { resumeStep } from '../screens/onboard/logic';
+import { CODE_MIN, cleanCode, resumeStep } from '../screens/onboard/logic';
 import { GateFailed } from '../screens/auth/GateLoading';
 
 /** /golf/signup in Clubhouse: the intro, the code, and the questions before the account. */
@@ -18,7 +18,11 @@ export function ClubhouseSignupRoute() {
 export async function ClubhousePlayerOnboardRoute({ searchParams }: { searchParams?: Promise<{ joinCode?: string | string[] }> } = {}) {
   const joinCode = (await searchParams)?.joinCode;
   const load = await loadPlayerOnboard(Array.isArray(joinCode) ? joinCode[0] : joinCode);
-  if (load.kind === 'signedOut') redirect('/golf/login');
+  if (load.kind === 'signedOut') {
+    // The invitation survives the trip to sign in: the same returnTo the invite page uses.
+    const code = cleanCode(Array.isArray(joinCode) ? (joinCode[0] ?? '') : (joinCode ?? ''));
+    redirect(code.length >= CODE_MIN ? `/golf/login?returnTo=${encodeURIComponent(`/golf/join/${code}`)}` : '/golf/login');
+  }
   // A failed read is said, with Try again (GAP-S-04): never the blank player form for someone who may be a coach or onboarded.
   if (load.kind === 'failed') return <GateFailed label="Your game" title="Your game" />;
   if (load.kind === 'coach' || load.kind === 'onboarded') redirect('/golf/dashboard');

@@ -210,6 +210,16 @@ export const RATE_LIMITS = {
   // The team-code checks at the signup gate, per (IP, code). A whole roster arrives from one campus IP with the SAME code,
   // so the budget per code is generous; guessing many DIFFERENT codes from one IP is bounded separately (SIGNUP above,
   // spent once per new code). Owner-delegated default, 2026-11-24.
+  // Every code check from one IP, whatever the code: bounds how many per-code rows an IP can create.
+  SIGNUP_ALL: {
+    maxAttempts: 200,
+    windowMs: 60 * 60 * 1000,
+  },
+  // Team lookups by the signed-in player's link (/golf/player?joinCode=), per user.
+  TEAM_LOOKUP: {
+    maxAttempts: 30,
+    windowMs: 60 * 60 * 1000,
+  },
   SIGNUP_SAME_CODE: {
     maxAttempts: 60,
     windowMs: 60 * 60 * 1000, // 1 hour

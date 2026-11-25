@@ -173,6 +173,19 @@ describe('the draft this tab kept meets what the server knows', () => {
   });
 });
 
+describe('a kept draft is used only when both emails are present and equal', () => {
+  it.each([
+    ['the draft has no email', made({ first: 'Someone', email: '' }), { first: '', email: 'a@school.test' }],
+    ['the account has no email', made({ first: 'Someone' }), { first: '' }],
+    ['the emails differ', made({ first: 'Someone', email: 'other@school.test' }), { first: '', email: 'a@school.test' }],
+  ])('%s: start empty', (_n, saved, seed) => {
+    expect(mergeResumed(saved, seed).first).toBe('');
+  });
+  it('the same email in any case is the same person', () => {
+    expect(mergeResumed(made({ first: 'Ana', email: 'A@School.test' }), { email: 'a@school.test' }).first).toBe('Ana');
+  });
+});
+
 describe('a player who could not join says why, and what to do', () => {
   it('already on another team: keep that team, leave it in Settings or ask the coach', () => {
     const r = joinReason('You are already on Men’s Golf. Golf players can only be on one team at a time.');

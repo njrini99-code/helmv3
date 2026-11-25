@@ -23,6 +23,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 }));
 vi.mock('@/app/golf/actions/teams', () => ({ processGolfTeamInvitation: invite.impl }));
 
+import { logServerError } from '@/lib/server-error-logger';
 import { completePlayerOnboarding } from '../onboarding';
 
 const INPUT = { firstName: 'Ana', lastName: 'Ruiz', gradYear: 2027 };
@@ -64,5 +65,13 @@ describe('completePlayerOnboarding reports why a player is not on the team', () 
     const r = await completePlayerOnboarding({ ...INPUT, firstName: '' }, 'K7PQX4MN');
     expect(r.success).toBe(false);
     expect(invite.impl).not.toHaveBeenCalled();
+  });
+
+  it('a skipped join logs how long the code was, never the code', async () => {
+    invite.impl.mockResolvedValue({ success: false, error: 'Invalid join code' });
+    await completePlayerOnboarding(INPUT, 'k7pqx4mn');
+    const logged = vi.mocked(logServerError).mock.calls.map((c) => String(c[0])).join('\n');
+    expect(logged).toMatch(/Auto-join skipped/);
+    expect(logged.toUpperCase()).not.toContain('K7PQX4MN');
   });
 });

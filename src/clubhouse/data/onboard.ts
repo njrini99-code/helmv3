@@ -1,6 +1,7 @@
 import 'server-only';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/supabase-rate-limit';
 import { pickGolfDashboardRole, type GolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { chLogServer } from '../lib/track-server';
 import { CODE_MIN, cleanCode } from '../screens/onboard/logic';
@@ -75,7 +76,7 @@ export async function loadPlayerOnboard(joinCode?: string | null): Promise<Playe
   // The team the link names (`?joinCode=`), so a player who signed in on another phone still sees which team they are joining.
   // A code that does not resolve is kept: finishing tries it and says why it did not take (never a silent no-team).
   const code = cleanCode(joinCode ?? '');
-  const team = code.length >= CODE_MIN ? await resolveTeamName(supabase, code) : undefined;
+  const team = code.length >= CODE_MIN ? await resolveTeamName(supabase, code, user.id) : undefined;
 
   const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string };
   const hcp = (p?.handicap ?? p?.handicap_index ?? null) as number | null;
@@ -99,8 +100,11 @@ export async function loadPlayerOnboard(joinCode?: string | null): Promise<Playe
 }
 
 /** The name of the team a code resolves to, null when it names none or the lookup failed (the join says which when it runs). */
-async function resolveTeamName(supabase: Awaited<ReturnType<typeof createClient>>, code: string): Promise<string | null> {
+async function resolveTeamName(supabase: Awaited<ReturnType<typeof createClient>>, code: string, userId: string): Promise<string | null> {
   try {
+    // A signed-in account can ask which team a code names only so often (a link carries one code; nobody needs thirty).
+    const allowed = await checkRateLimit(`team-lookup:${userId}`, RATE_LIMITS.TEAM_LOOKUP);
+    if (!allowed.allowed) return null;
     const { data, error } = await supabase.rpc('golf_team_by_join_code', { p_code: code });
     if (error) {
       chLogServer(SURFACE, 'onboard.team', error, AREA);
