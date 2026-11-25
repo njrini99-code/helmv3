@@ -11,14 +11,14 @@ import { createClient } from '@/lib/supabase/server';
  *
  * Unlike GolfHelm (whose shared account password is a setup-time random secret
  * read strictly from env), the BaseballHelm demo coach is created by
- * `scripts/seed-baseball-demo.ts` with DETERMINISTIC credentials so the gate is
+ * `scripts/seed/seed-baseball-demo.ts` with DETERMINISTIC credentials so the gate is
  * reachable on any environment the seed has run against. We therefore prefer
  * env overrides (`DEMO_BASEBALL_COACH_EMAIL` / `DEMO_BASEBALL_COACH_PASSWORD`)
  * but fall back to the seed's baked-in values. Keep these two in sync with the
  * seed script (`DEMO_COACH_EMAIL` / `DEMO_PASSWORD` there).
  */
 
-// Seed defaults — MUST match scripts/seed-baseball-demo.ts.
+// Seed defaults — MUST match scripts/seed/seed-baseball-demo.ts.
 const SEED_DEMO_COACH_EMAIL = 'demo-coach@baseballhelmdemo.com';
 const SEED_DEMO_PASSWORD = 'BaseballDemo2026';
 

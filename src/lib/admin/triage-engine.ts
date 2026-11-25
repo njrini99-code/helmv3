@@ -19,7 +19,7 @@
  * `now` is a parameter. Everything here is a function of its inputs, which is
  * what makes the plan testable against fixtures AND runnable against a
  * production dump without a service-role key in the process. The I/O lives in
- * `scripts/run-triage.ts`.
+ * `scripts/coachhelm/run-triage.ts`.
  *
  * WHAT IT WILL NOT DO. It never decides that a defect is "already fixed" —
  * that claim needs a commit SHA checked against the serving deployment, and

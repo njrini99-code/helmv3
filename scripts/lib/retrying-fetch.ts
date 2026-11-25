@@ -6,7 +6,7 @@
  *
  * WHY THIS EXISTS
  * ---------------
- * `scripts/seed-baseball-demo.ts` runs as the `Seed BaseballHelm CI accounts`
+ * `scripts/seed/seed-baseball-demo.ts` runs as the `Seed BaseballHelm CI accounts`
  * step, immediately in front of the BaseballHelm authenticated smoke — which
  * feeds the `all` aggregate, one of main's three REQUIRED status checks. So a
  * single unretried request in that script is a direct path from "Supabase

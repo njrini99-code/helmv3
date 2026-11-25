@@ -34,11 +34,11 @@ Four commands. All are static or in-process; none opens a database connection
 or makes a network call.
 
 ```bash
-node scripts/db-observability-replay.mjs     # replay fixtures
-node scripts/db-observability-certify.mjs    # certification matrix
-node scripts/db-observability-security.mjs   # security posture
-node scripts/db-observability-coverage.mjs   # regenerate the coverage matrix
-node scripts/db-observability-coverage.mjs --check   # fail if it is stale
+node scripts/observability/db-observability-replay.mjs     # replay fixtures
+node scripts/observability/db-observability-certify.mjs    # certification matrix
+node scripts/observability/db-observability-security.mjs   # security posture
+node scripts/observability/db-observability-coverage.mjs   # regenerate the coverage matrix
+node scripts/observability/db-observability-coverage.mjs --check   # fail if it is stale
 ```
 
 The first two re-exec themselves under the `tsx` ESM loader, because the
@@ -123,7 +123,7 @@ proves they produce one ROW, and the upsert that would do it is held.
 
 ## 3. Certification matrix (brief section 58)
 
-`scripts/db-observability-certify.mjs` walks every scenario the brief names —
+`scripts/observability/db-observability-certify.mjs` walks every scenario the brief names —
 42501, 42883, 57014, an expected 23505, handled and unhandled server DB
 errors, a failed RPC with rollback, Realtime CHANNEL_ERROR and TIMED_OUT, an
 expected Storage miss, an Auth invalid credential, a synthetic actionable Auth
@@ -211,7 +211,7 @@ make; it is left as an owner decision.
 
 ## 5. Security posture (brief sections 60 and 61)
 
-`scripts/db-observability-security.mjs` is static and read-only: it reads
+`scripts/observability/db-observability-security.mjs` is static and read-only: it reads
 migrations and source, opens no connection and makes no request.
 
 | Check | Verdict |

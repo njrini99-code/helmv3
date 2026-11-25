@@ -10,7 +10,7 @@ import { join, resolve } from 'node:path';
  */
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
-const SEED_DIR = join(REPO_ROOT, 'scripts');
+const SEED_DIR = join(REPO_ROOT, 'scripts', 'seed');
 
 const SEED_FILES = [
   'seed-baseball-roster.mjs',

@@ -503,7 +503,7 @@ since both change behaviour the first pass shipped.
   `ANTHROPIC_API_KEY` and `CRON_SECRET`, so Diagnose runs here instead.
 - **Extracted, no behaviour change**: `collectAdminEvents`,
   `collectReliabilitySignals`, `collectRelAnalyses` and `applyPlan` moved out
-  of `scripts/run-triage.ts` into `src/lib/admin/triage-collect.ts` /
+  of `scripts/coachhelm/run-triage.ts` into `src/lib/admin/triage-collect.ts` /
   `triage-apply.ts`; the CLI is now a thin wrapper over both, byte-identical
   output. `runRcaForFingerprint` / `persistRcaAnalysis` moved out of
   `src/app/admin/actions/analyze-error.ts` into `src/lib/admin/rca-run.ts`
@@ -1461,7 +1461,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   wording and found already fully exposed (required field on
   `FlightTraceRun`, already rendered in `TracesClient.tsx` and
   `trace-fleet.ts`) — no gap, no change made.
-  New: `scripts/flight-recorder-audit.mjs` +
+  New: `scripts/observability/flight-recorder-audit.mjs` +
   `scripts/lib/flight-recorder-audit-lib.mjs` (`npm run flight-recorder:audit`)
   — a read-only script over the two `helm_debug_*` RPCs (the only reachable
   path for a service-role key; `helm_debug` is outside PostgREST's exposed

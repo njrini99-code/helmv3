@@ -19,7 +19,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // `generateLLMRecap`'s `fallbackText` argument to `compose()`) as the live,
 // persisted LLM-fallback core — neither states that
 // `src/lib/golf/round-review/deterministic-review.ts` (which is only used by
-// `scripts/coachhelm-prewarm-round-reviews.ts`) is that path. This test pins
+// `scripts/coachhelm/coachhelm-prewarm-round-reviews.ts`) is that path. This test pins
 // the correct wiring so a future edit that says otherwise fails here first.
 // ---------------------------------------------------------------------------
 

@@ -20,7 +20,7 @@
  * the page was asking.
  *
  * /api/health stays the readiness probe for the things that do ask it:
- * scripts/warm-edge.ts, StaleDeploymentRecoveryScript, and the Sentry uptime
+ * scripts/crm/warm-edge.ts, StaleDeploymentRecoveryScript, and the Sentry uptime
  * monitor "Helm readiness /api/health".
  */
 import { NextResponse } from 'next/server';

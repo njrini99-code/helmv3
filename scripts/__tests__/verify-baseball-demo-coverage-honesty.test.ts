@@ -1,4 +1,4 @@
-// Regression guards for the three ways scripts/verify-baseball-demo-coverage.ts
+// Regression guards for the three ways scripts/seed/verify-baseball-demo-coverage.ts
 // used to overstate demo coverage. The pure reporting logic is exported, so
 // these run without a database.
 //
@@ -36,11 +36,11 @@ import {
   INTENTIONALLY_EMPTY,
   evaluateCoverage,
   formatReportLine,
-} from '../verify-baseball-demo-coverage';
+} from '../seed/verify-baseball-demo-coverage';
 import { isRecruitingEnabled } from '../../src/lib/baseball/product-modules';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
-const VERIFIER_FILE = join(REPO_ROOT, 'scripts', 'verify-baseball-demo-coverage.ts');
+const VERIFIER_FILE = join(REPO_ROOT, 'scripts', 'seed', 'verify-baseball-demo-coverage.ts');
 
 // ---------------------------------------------------------------------------
 // LIE #1 — an unscoped global count passing as team coverage.

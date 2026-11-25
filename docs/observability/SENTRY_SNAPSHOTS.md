@@ -119,7 +119,7 @@ disposable Supabase stack on the runner, seed it, and test against that
 instead of production — and that pattern was deliberately **not** reused
 here, for two concrete reasons:
 
-1. **No GolfHelm demo-seed script exists.** `scripts/seed-baseball-demo.ts`
+1. **No GolfHelm demo-seed script exists.** `scripts/seed/seed-baseball-demo.ts`
    (`npm run seed:baseball:ci`) is baseball-only; there is no
    `seed:golf:ci` or equivalent anywhere in `package.json`. Building one
    would make this change a new seeding subsystem, not a CI job.

@@ -83,7 +83,7 @@ export interface RecordDbErrorOptions {
    * Production callers never pass this: `scheduleDbErrorRecording` omits it,
    * so `createAdminClient()` stays the only path a request can take. It is a
    * parameter rather than a module mock because the replay runner
-   * (scripts/db-observability-replay.mjs) executes under plain Node, where
+   * (scripts/observability/db-observability-replay.mjs) executes under plain Node, where
    * `vi.mock` does not exist — and a fixture suite that can only run inside
    * one test framework is a fixture suite that cannot be run from a runbook.
    */

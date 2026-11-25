@@ -2,7 +2,7 @@
 
 ## Status: ROTATION REQUIRED — human action, not automatable from a PR
 
-`scripts/seed-baseball-stats.mjs` previously (commit `ef1dc926`, fixed in
+`scripts/seed/seed-baseball-stats.mjs` previously (commit `ef1dc926`, fixed in
 `6418559a` / #417) had the following committed in plaintext, in tracked
 source, for the production Supabase project `qmnssrrolpinvwjjnufo`:
 

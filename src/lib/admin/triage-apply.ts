@@ -1,7 +1,7 @@
 /**
  * Triage — apply.
  *
- * Extracted from `scripts/run-triage.ts` so both the CLI's `--apply` flag and
+ * Extracted from `scripts/coachhelm/run-triage.ts` so both the CLI's `--apply` flag and
  * the `selfheal-triage` Vercel cron (`src/app/api/cron/selfheal-triage/route.ts`)
  * close the closeable set through the exact same two-write mechanism.
  */

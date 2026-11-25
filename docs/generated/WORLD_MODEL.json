@@ -1734,8 +1734,8 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/coachhelm-prewarm-round-reviews.ts",
-        "pattern": "scripts/coachhelm-prewarm-round-reviews.ts",
+        "id": "services:scripts/coachhelm/coachhelm-prewarm-round-reviews.ts",
+        "pattern": "scripts/coachhelm/coachhelm-prewarm-round-reviews.ts",
         "category": "services"
       },
       {
@@ -1754,16 +1754,6 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/db-observability-metrics-names.mjs",
-        "pattern": "scripts/db-observability-metrics-names.mjs",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/db-observability-trace-cert.mjs",
-        "pattern": "scripts/db-observability-trace-cert.mjs",
-        "category": "services"
-      },
-      {
         "id": "services:scripts/fail-open-audit.mjs",
         "pattern": "scripts/fail-open-audit.mjs",
         "category": "services"
@@ -1771,11 +1761,6 @@
       {
         "id": "services:scripts/flags/**",
         "pattern": "scripts/flags/**",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/golf-demo-refresh.ts",
-        "pattern": "scripts/golf-demo-refresh.ts",
         "category": "services"
       },
       {
@@ -1829,6 +1814,16 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/observability/db-observability-metrics-names.mjs",
+        "pattern": "scripts/observability/db-observability-metrics-names.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/observability/db-observability-trace-cert.mjs",
+        "pattern": "scripts/observability/db-observability-trace-cert.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/paginated-read-audit.mjs",
         "pattern": "scripts/paginated-read-audit.mjs",
         "category": "services"
@@ -1841,6 +1836,16 @@
       {
         "id": "services:scripts/repo-doctor/checks/db-observability.mjs",
         "pattern": "scripts/repo-doctor/checks/db-observability.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/seed/golf-demo-refresh.ts",
+        "pattern": "scripts/seed/golf-demo-refresh.ts",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/seed/verify-golf-demo-coverage.ts",
+        "pattern": "scripts/seed/verify-golf-demo-coverage.ts",
         "category": "services"
       },
       {
@@ -1861,11 +1866,6 @@
       {
         "id": "services:scripts/supabase-error-audit.mjs",
         "pattern": "scripts/supabase-error-audit.mjs",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/verify-golf-demo-coverage.ts",
-        "pattern": "scripts/verify-golf-demo-coverage.ts",
         "category": "services"
       },
       {
@@ -19478,25 +19478,37 @@
     },
     {
       "source": "golf_round_lifecycle",
-      "target": "services:scripts/coachhelm-prewarm-round-reviews.ts",
+      "target": "services:scripts/coachhelm/coachhelm-prewarm-round-reviews.ts",
       "kind": "feature_service",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "scripts/coachhelm-prewarm-round-reviews.ts"
+          "pattern": "scripts/coachhelm/coachhelm-prewarm-round-reviews.ts"
         }
       ]
     },
     {
       "source": "golf_round_lifecycle",
-      "target": "services:scripts/golf-demo-refresh.ts",
+      "target": "services:scripts/seed/golf-demo-refresh.ts",
       "kind": "feature_service",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "scripts/golf-demo-refresh.ts"
+          "pattern": "scripts/seed/golf-demo-refresh.ts"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "services:scripts/seed/verify-golf-demo-coverage.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/seed/verify-golf-demo-coverage.ts"
         }
       ]
     },
@@ -19521,18 +19533,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/sql/strip-demo-seed-tags.sql"
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
-      "target": "services:scripts/verify-golf-demo-coverage.ts",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/verify-golf-demo-coverage.ts"
         }
       ]
     },
@@ -21237,25 +21237,25 @@
     },
     {
       "source": "observability_supabase",
-      "target": "services:scripts/db-observability-metrics-names.mjs",
+      "target": "services:scripts/observability/db-observability-metrics-names.mjs",
       "kind": "feature_service",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "scripts/db-observability-metrics-names.mjs"
+          "pattern": "scripts/observability/db-observability-metrics-names.mjs"
         }
       ]
     },
     {
       "source": "observability_supabase",
-      "target": "services:scripts/db-observability-trace-cert.mjs",
+      "target": "services:scripts/observability/db-observability-trace-cert.mjs",
       "kind": "feature_service",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "scripts/db-observability-trace-cert.mjs"
+          "pattern": "scripts/observability/db-observability-trace-cert.mjs"
         }
       ]
     },

@@ -30,7 +30,7 @@ other server-only Supabase caller in this repo already holds it
 60s per brief §20 and is called from the existing 5-minute
 `db-health-sampler` cron (no new schedule).
 
-**Allow-list — DOCS-DERIVED, NOT LIVE-VERIFIED.** `scripts/db-observability-metrics-names.mjs`
+**Allow-list — DOCS-DERIVED, NOT LIVE-VERIFIED.** `scripts/observability/db-observability-metrics-names.mjs`
 is the read-only discovery script that fetches the live endpoint and prints
 only metric names + label keys (never values, never the credential) — it
 could not be run here (no credential). The allow-list in

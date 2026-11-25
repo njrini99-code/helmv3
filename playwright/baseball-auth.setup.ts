@@ -13,7 +13,7 @@
  * Run `npm run seed:baseball:ci` first so these accounts actually exist (the
  * shipped demo seed creates demo-coach@baseballhelmdemo.com /
  * demo-player@baseballhelmdemo.com / BaseballDemo2026 — see
- * scripts/seed-baseball-demo.ts).
+ * scripts/seed/seed-baseball-demo.ts).
  *
  * FAIL-LOUD BEHAVIOR (diverges from Golf's graceful skip): the whole point of
  * #372 is that the mandatory baseball smoke suite can no longer be silently

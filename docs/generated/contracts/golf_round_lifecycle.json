@@ -425,7 +425,7 @@
     {
       "id": "c21-service",
       "kind": "service",
-      "text": "scripts/coachhelm-prewarm-round-reviews.ts",
+      "text": "scripts/coachhelm/coachhelm-prewarm-round-reviews.ts",
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
@@ -437,7 +437,7 @@
       "refs": {
         "paths": [],
         "globs": [
-          "scripts/coachhelm-prewarm-round-reviews.ts"
+          "scripts/coachhelm/coachhelm-prewarm-round-reviews.ts"
         ],
         "identifiers": []
       },
@@ -1348,7 +1348,7 @@
     {
       "id": "c65-service",
       "kind": "service",
-      "text": "- `src/lib/coachhelm/v2/post-round-trigger.ts`\n- `src/lib/coachhelm/v2/shot-analysis/**`\n- `src/lib/golf/round-review/deterministic-review.ts` — worker-safe\n  (non-cookie, no `revalidatePath`) deterministic review generation for\n  `scripts/coachhelm-prewarm-round-reviews.ts` (CoachHelm repair plan\n  §5.5/§14.8 Package 6, the 30-day missing-review pre-warm). Insert-only:\n  `writeReviewIfAbsent` always upserts with `ignoreDuplicates: true`, so it\n  can create a missing review but never overwrite an existing one's\n  coach-authored/published/shared state. Deliberately skips the CoachHelm v2\n  enhancement branch (deterministic-only) — see the module's header comment.\n- `src/lib/observability/helm-flight-recorder.ts`,\n  `src/lib/observability/golf-round-flight-workflow.ts` — the\n  `trace_runs`/`helm_debug` diagnostic trace AND (as of 2026-09-03) the\n  Sentry `helm.workflow.*` metric + structured log for `golf.round.submit`/\n  `.autosave`/`golf.shot.delete`/`.add_or_edit`. See the \"Current State\"\n  note above.",
+      "text": "- `src/lib/coachhelm/v2/post-round-trigger.ts`\n- `src/lib/coachhelm/v2/shot-analysis/**`\n- `src/lib/golf/round-review/deterministic-review.ts` — worker-safe\n  (non-cookie, no `revalidatePath`) deterministic review generation for\n  `scripts/coachhelm/coachhelm-prewarm-round-reviews.ts` (CoachHelm repair plan\n  §5.5/§14.8 Package 6, the 30-day missing-review pre-warm). Insert-only:\n  `writeReviewIfAbsent` always upserts with `ignoreDuplicates: true`, so it\n  can create a missing review but never overwrite an existing one's\n  coach-authored/published/shared state. Deliberately skips the CoachHelm v2\n  enhancement branch (deterministic-only) — see the module's header comment.\n- `src/lib/observability/helm-flight-recorder.ts`,\n  `src/lib/observability/golf-round-flight-workflow.ts` — the\n  `trace_runs`/`helm_debug` diagnostic trace AND (as of 2026-09-03) the\n  Sentry `helm.workflow.*` metric + structured log for `golf.round.submit`/\n  `.autosave`/`golf.shot.delete`/`.add_or_edit`. See the \"Current State\"\n  note above.",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/golf-round-lifecycle.md",
@@ -1361,7 +1361,7 @@
         "paths": [
           "src/lib/coachhelm/v2/post-round-trigger.ts",
           "src/lib/golf/round-review/deterministic-review.ts",
-          "scripts/coachhelm-prewarm-round-reviews.ts",
+          "scripts/coachhelm/coachhelm-prewarm-round-reviews.ts",
           "src/lib/observability/helm-flight-recorder.ts",
           "src/lib/observability/golf-round-flight-workflow.ts"
         ],

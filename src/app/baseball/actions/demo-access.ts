@@ -481,7 +481,7 @@ async function captureDemoGateVisit(visit: DemoGateVisit): Promise<void> {
  * the very reason every OTHER baseball server action runs through
  * `withBaseballAction`'s demo read-only guard: this account can never mutate
  * state another visitor would see (see src/lib/baseball/with-baseball-action.ts).
- * The seeded demo coach (scripts/seed-baseball-demo.ts) owns a fully-populated
+ * The seeded demo coach (scripts/seed/seed-baseball-demo.ts) owns a fully-populated
  * program, so the visitor lands on real data, not an empty state.
  *
  * INTENTIONALLY PUBLIC / unauthenticated, and therefore NOT wrapped in

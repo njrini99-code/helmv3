@@ -89,7 +89,7 @@ owner's machine, for anyone who needs to see exactly what ran before.
   server action (`admin_incidents`'s `analyze-error.ts`), factored out from
   behind that action's `requireSuperAdmin()` gate.
 - `src/lib/admin/triage-collect.ts`, `triage-apply.ts` — collection/apply core
-  shared with the `npm run triage` CLI (`scripts/run-triage.ts`, now a thin
+  shared with the `npm run triage` CLI (`scripts/coachhelm/run-triage.ts`, now a thin
   wrapper over both).
 - `src/lib/admin/auto-resolve.ts` — the Close stage's nightly auto-resolution.
 - The Repair stage's GitHub Actions runner from 2026-09-05 to 2026-09-23 was

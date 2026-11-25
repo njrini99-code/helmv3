@@ -10,7 +10,7 @@
 -- outright: "null value in column user_id violates not-null constraint".)
 -- They come from writes that BYPASS the RPC — the demo seed inserts athlete
 -- rows directly with user_id: null
--- (scripts/seed-baseball-lifting-demo.ts:311). Under DO NOTHING those NULLs
+-- (scripts/seed/seed-baseball-lifting-demo.ts:311). Under DO NOTHING those NULLs
 -- were permanent, because the one mechanism that could have supplied the id
 -- declined to write it, and /lifting/dashboard's athlete-self gate resolves
 -- the viewer through that column.

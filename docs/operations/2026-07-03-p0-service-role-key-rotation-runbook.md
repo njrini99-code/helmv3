@@ -91,7 +91,7 @@ this silently.
 `check-rls.ts` and `diagnose-rls.ts` (both deleted 2026-11-25; in git
 history) hardcoded a real plaintext password for the developer's own demo coach/player accounts
 (`njrini99@gmail.com` / `rinin376@gmail.com`, shared between BaseballHelm
-and GolfHelm logins per `scripts/seed-rini-baseball-demo.ts`'s own header
+and GolfHelm logins per `scripts/seed/seed-rini-baseball-demo.ts`'s own header
 comment). This is not a customer's credential, but it has been sitting in
 git history since 2026-02-14 and is trivially recoverable by anyone who
 ever cloned the repo.

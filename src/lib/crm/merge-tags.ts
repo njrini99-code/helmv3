@@ -4,7 +4,7 @@
 //
 // One canonical `mergeTags(text, recipient)` that BOTH the manual "Open in
 // Gmail" path (src/lib/crm/gmail-compose.ts) and the automated Resend sends
-// (src/app/api/admin/crm/send-email/route.ts, scripts/process-sequence-batch.mjs)
+// (src/app/api/admin/crm/send-email/route.ts, scripts/crm/process-sequence-batch.mjs)
 // delegate to, so a template renders byte-identically no matter who sends it.
 //
 // The 11 tokens + name-split fallbacks intentionally MIRROR the canonical merge

@@ -8,7 +8,7 @@
  * and one-click clients POST here. Honoring it instantly is the #1 free Gmail-Primary signal and the
  * cheapest way to keep the complaint rate near zero.
  *
- * The token is an HMAC of the coach id with CRM_UNSUB_SECRET (must match scripts/process-sequence-batch.mjs),
+ * The token is an HMAC of the coach id with CRM_UNSUB_SECRET (must match scripts/crm/process-sequence-batch.mjs),
  * so a stranger can't suppress arbitrary coaches by guessing ids.
  */
 import { NextResponse } from 'next/server';

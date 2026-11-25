@@ -2,7 +2,7 @@
 // scripts/lib/seed-target-guard.ts — the "did you mean to write HERE?" rules.
 //
 // WHY THIS FILE EXISTS: these rules used to live inline in
-// scripts/seed-baseball-demo.ts, and the only thing checking them was a
+// scripts/seed/seed-baseball-demo.ts, and the only thing checking them was a
 // source-text assertion in scripts/__tests__/baseball-demo-seed-contract.test.mjs
 // that grepped for the strings `HELM_PROD_PROJECT_REF` and `--allow-prod`. That
 // catches deletion. It cannot catch the guard being WRONG — and this guard has
