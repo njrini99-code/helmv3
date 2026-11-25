@@ -578,11 +578,17 @@
     color-mix(in oklab, var(--ch-light-key) calc(4% + var(--ch-sun-intensity, 1) * 6% + var(--ch-sun-warmth, 0) * 9%), transparent),
     transparent 70%
   );
-  /* The light falling across the top of the parchment canvas. */
+  /* The ambient ivory light over the parchment canvas (owner, 24 Nov 2026: "It's supposed to be an ivory... there's no
+     ambient light"). It was a 14% glow in a 420px band that went to nothing after dark, leaving bare linen. Now a warm
+     ivory that is always there and fills the page, brightest at the top under the sun: 45% at night, up to 60% under a
+     high sun or at golden hour. Never the moon's blue on the light page; the sun only moves it and warms it. Its peak
+     (#f5f0e4 or so) stays under the ivory card (#faf7ef), so cards still lift off it. */
+  --ch-light-ivory: #fffaf0;
   --ch-light-canvas: radial-gradient(
-    70% 420px at calc(var(--ch-sun-x, 0.5) * 100%) 0%,
-    color-mix(in oklab, var(--ch-light-key) calc(var(--ch-sun-intensity, 1) * 14% + var(--ch-sun-warmth, 0) * 12%), transparent),
-    transparent 80%
+    140% 1100px at calc(var(--ch-sun-x, 0.5) * 100%) 0%,
+    color-mix(in oklab, var(--ch-light-ivory) calc(45% + var(--ch-sun-intensity, 1) * 10% + var(--ch-sun-warmth, 0) * 5%), transparent),
+    color-mix(in oklab, var(--ch-light-ivory) 30%, transparent) 60%,
+    color-mix(in oklab, var(--ch-light-ivory) 18%, transparent) 100%
   );
   /* The light across a reading surface (the Calendar's week): the key falling from the sun's side over its whole height,
      strongest along the top edge, so the grid sits in the same daylight as the canvas around it. */
@@ -591,13 +597,9 @@
     color-mix(in oklab, var(--ch-light-key) calc(6% + var(--ch-sun-intensity, 1) * 14% + var(--ch-sun-warmth, 0) * 12%), transparent),
     transparent 85%
   );
-  /* Paper temperature: a flat wash over the canvas, warm toward golden hour and cool at night (a few percent at most). */
-  --ch-light-paper-tint: color-mix(
-    in oklab,
-    color-mix(in oklab, #e8b46a, #5d74a6 calc(var(--ch-sun-night, 0) * 100%))
-      calc(var(--ch-sun-warmth, 0) * 7% + var(--ch-sun-night, 0) * 4%),
-    transparent
-  );
+  /* Paper temperature: a flat wash over the canvas, warm toward golden hour (a few percent at most). It no longer cools
+     at night: the blue wash greyed the ivory after dark (owner, 24 Nov 2026). Dark mode has its own night. */
+  --ch-light-paper-tint: color-mix(in oklab, #e8b46a calc(var(--ch-sun-warmth, 0) * 7%), transparent);
   --ch-light-paper: linear-gradient(var(--ch-light-paper-tint), var(--ch-light-paper-tint));
   /* The page (DESIGN_LANGUAGE law 2; Nick, 15 Nov 2026, audit WHITE-00): the ivory light falling across the top, the
      paper's temperature, over the deeper linen. One paint for the phone page, a pushed screen, a crash screen and a page
