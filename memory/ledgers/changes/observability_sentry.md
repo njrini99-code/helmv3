@@ -270,7 +270,7 @@
   in favor of `release` (`NEXT_PUBLIC_SENTRY_RELEASE ??
   VERCEL_GIT_COMMIT_SHA ?? 'unknown'`), with no sensitive fields.
 - Every real consumer of the old `deploymentId` field was found and fixed
-  in the same commit: `scripts/warm-edge.ts`,
+  in the same commit: `scripts/crm/warm-edge.ts`,
   `StaleDeploymentRecoveryScript.tsx`, `src/app/layout.tsx`'s
   `x-deployment-id` meta tag. Also fixed a latent bug found while auditing
   consumers: `src/hooks/golf/use-connection-status.ts` was conflating

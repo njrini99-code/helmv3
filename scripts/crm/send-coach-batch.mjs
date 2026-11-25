@@ -6,7 +6,7 @@
  * export-coach-prospects.mjs (customers + Piedmont out, valid email, last name,
  * not bounced, not suppressed).
  *
- * Usage: node scripts/send-coach-batch.mjs [size] [--apply]
+ * Usage: node scripts/crm/send-coach-batch.mjs [size] [--apply]
  *   size     how many of the NEXT unsent coaches to email (default 10). It is a
  *            count, not a batch number: each run takes the next `size` coaches
  *            with no "Coach First Touch" log row, so re-running never repeats.
@@ -16,10 +16,10 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
-import { cliGuard } from './lib/cli-guard.mjs';
+import { cliGuard } from '../lib/cli-guard.mjs';
 
 const cli = cliGuard({
-  name: 'scripts/send-coach-batch.mjs',
+  name: 'scripts/crm/send-coach-batch.mjs',
   summary:
     'Emails the next N unsent cold-outreach coaches with the live "Coach First Touch" template through Resend and logs each send to crm_contact_log. Reads the production CRM.',
   usage: '[size]',
@@ -28,7 +28,7 @@ const cli = cliGuard({
 });
 
 const env = {};
-for (const file of ['../.env.local', '../.env']) {
+for (const file of ['../../.env.local', '../../.env']) {
   try {
     for (const line of readFileSync(new URL(file, import.meta.url), 'utf8').split('\n')) {
       const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);

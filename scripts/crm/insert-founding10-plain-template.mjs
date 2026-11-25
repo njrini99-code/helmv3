@@ -8,21 +8,21 @@ import { join } from 'node:path';
  * lands in Gmail Primary and earns replies.
  *
  * Idempotent + migrates the older '(Plain)' row to this one in place (no dupes).
- * Run: node scripts/insert-founding10-plain-template.mjs
+ * Run: node scripts/crm/insert-founding10-plain-template.mjs
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
-import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+import { cliGuard, dryRunClient } from '../lib/cli-guard.mjs';
 
 const cli = cliGuard({
-  name: 'scripts/insert-founding10-plain-template.mjs',
+  name: 'scripts/crm/insert-founding10-plain-template.mjs',
   summary:
     "Replaces the Founding 10 plain-text email template in crm_email_templates (updates the target, deletes duplicates, inserts when missing) on the project in .env.local.",
   secrets: "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)",
 });
 
 const env = {};
-for (const file of ['../.env.local', '../.env']) {
+for (const file of ['../../.env.local', '../../.env']) {
   try {
     for (const line of readFileSync(new URL(file, import.meta.url), 'utf8').split('\n')) {
       const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);

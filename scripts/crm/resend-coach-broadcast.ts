@@ -5,11 +5,11 @@
  *   UPDATE an existing draft (recommended): create the broadcast in the Resend
  *     dashboard first (pick audience + from + subject there), copy its id, then:
  *       BROADCAST_ID=<id> DOTENV_CONFIG_PATH=.env.local \
- *         npx tsx -r dotenv/config scripts/resend-coach-broadcast.ts
+ *         npx tsx -r dotenv/config scripts/crm/resend-coach-broadcast.ts
  *
  *   CREATE a new draft from code: set your audience/segment id, then:
  *       RESEND_SEGMENT_ID=<id> DOTENV_CONFIG_PATH=.env.local \
- *         npx tsx -r dotenv/config scripts/resend-coach-broadcast.ts
+ *         npx tsx -r dotenv/config scripts/crm/resend-coach-broadcast.ts
  *
  * Reads RESEND_API_KEY from the environment (e.g. .env.local). The HTML body is
  * the single source of truth at public/email/coach-demo-invite.html — edit there,
@@ -19,10 +19,10 @@
 import { Resend } from 'resend';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { cliGuard } from './lib/cli-guard.mjs';
+import { cliGuard } from '../lib/cli-guard.mjs';
 
 const cli = cliGuard({
-  name: 'scripts/resend-coach-broadcast.ts',
+  name: 'scripts/crm/resend-coach-broadcast.ts',
   summary:
     'Writes the coach demo invite HTML into a Resend broadcast DRAFT (updates BROADCAST_ID, or creates one in RESEND_SEGMENT_ID). It never sends; sending stays a dashboard click.',
   usage: '[broadcast-id]',

@@ -10,7 +10,7 @@
 // from both client components and server actions / tests.
 //
 // The token set + merge semantics intentionally MIRROR the cold-batch sender
-// (scripts/process-sequence-batch.mjs `sub()`), so a template merged here
+// (scripts/crm/process-sequence-batch.mjs `sub()`), so a template merged here
 // renders identically to one merged by the automated batch:
 //   {name} {first_name} {last_name} {email} {school} {title}
 //   {conference} {division} {program} {team_size} {current_software}
@@ -42,11 +42,11 @@ export interface MergeableCoach {
  *   to `first_name` when the name is a single token (matches the batch sender).
  * - Any missing / null value renders as an empty string.
  *
- * Mirrors `sub()` in scripts/process-sequence-batch.mjs exactly.
+ * Mirrors `sub()` in scripts/crm/process-sequence-batch.mjs exactly.
  */
 export function mergeTemplate(text: string, coach: MergeableCoach): string {
   // Derive first/last the same trimmed, whitespace-collapsing way this module
-  // always has (matches scripts/process-sequence-batch.mjs `sub()`), then hand
+  // always has (matches scripts/crm/process-sequence-batch.mjs `sub()`), then hand
   // off to the canonical mergeTags() so every token renders from one place.
   const name = (coach.name ?? '').trim();
   const parts = name ? name.split(/\s+/) : [];

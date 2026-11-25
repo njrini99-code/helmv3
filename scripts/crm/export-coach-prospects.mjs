@@ -5,21 +5,21 @@ import { join } from 'node:path';
  * customer school (Denison/Guilford/Hampden-Sydney/Shenandoah/Lynchburg) and
  * NOT Piedmont, with a deliverable email + a last name, excluding bounced and
  * suppressed addresses. Batched into 10s. Writes a private temp CSV (path printed) and
- * prints batch 1. Read-only. Run: node scripts/export-coach-prospects.mjs
+ * prints batch 1. Read-only. Run: node scripts/crm/export-coach-prospects.mjs
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/export-coach-prospects.mjs',
+  name: 'scripts/crm/export-coach-prospects.mjs',
   summary:
     "Exports the cold-outreach prospect list (every coach not at a current customer school) from the CRM. Read-only.",
   secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
 });
 
 const env = {};
-for (const file of ['../.env.local', '../.env']) {
+for (const file of ['../../.env.local', '../../.env']) {
   try {
     for (const line of readFileSync(new URL(file, import.meta.url), 'utf8').split('\n')) {
       const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);

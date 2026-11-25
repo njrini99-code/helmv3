@@ -12,8 +12,8 @@
  * sending. It warms only the edge POP(s) this runner can reach; geo-distributed
  * coaches hit other POPs. Use it as: deploy → wait → warm-edge → if PASS, blast.
  *
- * Run:  npx tsx scripts/warm-edge.ts
- *       BASE=https://www.helmsportslabs.com ROUNDS=4 SLOW_MS=1500 npx tsx scripts/warm-edge.ts
+ * Run:  npx tsx scripts/crm/warm-edge.ts
+ *       BASE=https://www.helmsportslabs.com ROUNDS=4 SLOW_MS=1500 npx tsx scripts/crm/warm-edge.ts
  * Exit: 0 = warm (all chunks fast on the final round → safe to send)
  *       1 = still cold/slow (don't blast yet) or a hard failure
  */

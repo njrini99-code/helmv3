@@ -34,7 +34,7 @@ import {
 // ============================================================================
 
 // Resolves what will actually be SENT for this step: override wins over the
-// template, exactly mirroring scripts/process-sequence-batch.mjs's
+// template, exactly mirroring scripts/crm/process-sequence-batch.mjs's
 // `step.subject_override || tpl?.subject || ''` / same-for-body / `tpl?.format
 // || 'text'` — so what the operator previews here is what the cron sends.
 // Exported (pure, no I/O) for colocated unit coverage.

@@ -5,7 +5,7 @@
 // ============================================================================
 // A ranked, client-side-computed shortlist (top ~40) of SCHOOLS due a manual
 // touch today, ONE main contact per school. It mirrors the intent of
-// scripts/coach-priority.mjs (customer-like first) without a server round-trip:
+// scripts/crm/coach-priority.mjs (customer-like first) without a server round-trip:
 //   • include only status === 'new_lead' with a valid email
 //   • exclude anyone contacted in the last 7 days (frequency cap mirror)
 //   • GROUP BY SCHOOL → show only the highest-level "main contact" per school

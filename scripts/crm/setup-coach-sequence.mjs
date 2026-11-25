@@ -21,7 +21,7 @@
  *   displacing a head. If a slot's only coach on file is an assistant, that assistant is
  *   the best available contact and is kept.
  *
- * This NEVER sends email. Sends happen only when you run scripts/process-sequence-batch.mjs.
+ * This NEVER sends email. Sends happen only when you run scripts/crm/process-sequence-batch.mjs.
  *
  * Safe to re-run (no deletes anywhere):
  *   - reuses the sequence/step by name
@@ -35,22 +35,22 @@
  * Paginates every read: PostgREST caps a single response at 1000 rows regardless of
  * .limit(), so a plain .select() silently saw only the first 1000 coaches.
  *
- * Run: node scripts/setup-coach-sequence.mjs
+ * Run: node scripts/crm/setup-coach-sequence.mjs
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { scoreCoach, tierOf } from './coach-priority.mjs';
-import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+import { cliGuard, dryRunClient } from '../lib/cli-guard.mjs';
 
 const cli = cliGuard({
-  name: 'scripts/setup-coach-sequence.mjs',
+  name: 'scripts/crm/setup-coach-sequence.mjs',
   summary:
     "Creates or maintains the \"Coach First Touch (Cold Outreach)\" sequence, its step and one enrollment per target coach in the production CRM. It never sends email.",
   secrets: "SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL (.env.local)",
 });
 
 const env = {};
-for (const file of ['../.env.local', '../.env']) {
+for (const file of ['../../.env.local', '../../.env']) {
   try {
     for (const line of readFileSync(new URL(file, import.meta.url), 'utf8').split('\n')) {
       const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
@@ -109,7 +109,7 @@ let { data: seq } = await supa.from('crm_sequences').select('id').eq('name', SEQ
 if (!seq) {
   const ins = await supa.from('crm_sequences').insert({
     name: SEQUENCE_NAME,
-    description: 'Single-touch cold intro to college golf coaches. Human-triggered — sends fire only via scripts/process-sequence-batch.mjs. Targets the highest-level coach per school+program (no assistants).',
+    description: 'Single-touch cold intro to college golf coaches. Human-triggered — sends fire only via scripts/crm/process-sequence-batch.mjs. Targets the highest-level coach per school+program (no assistants).',
     trigger_kind: 'manual', is_active: true, created_by: ADMIN_ID,
   }).select('id').single();
   if (ins.error) { console.error('sequence insert failed:', ins.error.message); process.exit(1); }
@@ -270,5 +270,5 @@ const tierDist = activeScored.reduce((a, r) => (a[r.tier] = (a[r.tier] || 0) + 1
 console.log(`\nActive send queue by tier (warmest first): ${Object.entries(tierDist).sort().map(([t, n]) => `${t}=${n}`).join(', ')}`);
 console.log('Next up:');
 for (const r of activeScored.slice(0, 10)) console.log(`  [${r.tier} ${r.score}] ${r.coach?.name ?? '?'} — ${r.coach?.title ?? '?'} · ${r.coach?.school ?? '?'} (${r.coach?.program ?? '?'})`);
-console.log(`\nNO emails were sent. To send the next batch:  node scripts/process-sequence-batch.mjs 10 --apply`);
+console.log(`\nNO emails were sent. To send the next batch:  node scripts/crm/process-sequence-batch.mjs 10 --apply`);
 if (!cli.apply) console.log('[dry-run] this run only reported the writes above and made none. Re-run with --apply to create the sequence and enrollments.');

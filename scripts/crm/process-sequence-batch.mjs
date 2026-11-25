@@ -19,7 +19,7 @@
  * sets crm_coaches.status='contacted' + last_contacted_at, completes the enrollment.
  * Re-running can never double-send: sent coaches are 'contacted' + 'completed' + capped.
  *
- * Usage: node scripts/process-sequence-batch.mjs [N=40] [--apply]
+ * Usage: node scripts/crm/process-sequence-batch.mjs [N=40] [--apply]
  *   N = how many emails to actually SEND this run (skips/stops don't count toward N).
  *   --apply = send for real. Without it this is a DRY RUN: it reads the CRM,
  *   ranks the due leads and prints who would be emailed, and sends and writes
@@ -29,10 +29,10 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { createHmac } from 'node:crypto';
 import { scoreCoach, tierOf, byPriority } from './coach-priority.mjs';
-import { cliGuard } from './lib/cli-guard.mjs';
+import { cliGuard } from '../lib/cli-guard.mjs';
 
 const cli = cliGuard({
-  name: 'scripts/process-sequence-batch.mjs',
+  name: 'scripts/crm/process-sequence-batch.mjs',
   summary:
     'Human-triggered batch sender for the "Coach First Touch (Cold Outreach)" sequence: emails the next N fresh leads through Resend, at most one email per coach per week, and updates the production CRM.',
   usage: '[N]',
@@ -41,7 +41,7 @@ const cli = cliGuard({
 });
 
 const env = {};
-for (const file of ['../.env.local', '../.env']) {
+for (const file of ['../../.env.local', '../../.env']) {
   try {
     for (const line of readFileSync(new URL(file, import.meta.url), 'utf8').split('\n')) {
       const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);

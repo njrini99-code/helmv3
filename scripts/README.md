@@ -5,6 +5,33 @@ generators, database tooling, demo seeders, and one-off CRM, Resend and Stripe
 operations. Most have an npm script in `package.json`; those that do not are
 run by path.
 
+## Layout
+
+Scripts live in purpose folders. Gates, ratchets, database tooling and the
+dev, worktree and release scripts stay at the top level; everything one-off
+or domain-specific is in a folder.
+
+| Folder | What is in it |
+| --- | --- |
+| `seed/` | BaseballHelm and golf demo seeders, the golf demo refresh, and the demo-coverage verifiers |
+| `crm/` | CRM outreach, email, Resend and Stripe one-offs (coach batches, sequences, send priority, CDN warm-up) |
+| `repair/` | Data backfills and recomputes, and the one-shot incident archiver |
+| `baseball/` | BaseballHelm readiness matrix and route-coverage reports |
+| `coachhelm/` | CoachHelm backfills, prewarm, refresh, triage, pattern miner and evals |
+| `observability/` | Database observability certification, coverage and replay, flight-recorder audit, diagnostics health, the local trace collector |
+| `ui-intelligence/` | UI smoke, App Store screenshots, desktop screenshots and the UI atlas |
+| `clubhouse/` | Clubhouse checks, capture and quality tooling |
+| `db/` | Migration, schema and advisor tooling |
+| `knowledge/` | Feature registry and knowledge-base checks and generators |
+| `github/` | CI helpers: PR status, drift gate, repo settings |
+| `golf/`, `flags/`, `contracts/`, `janitor/`, `release-intel/`, `repo-doctor/`, `screens/` | Their own tools, each with a `__tests__` or README of its own |
+| `phone/`, `ops/`, `quick-chat/`, `sql/` | Device measurement, Mac mini hardening, quick-chat capture, one-off SQL |
+| `lib/` | Shared helpers (`cli-guard.mjs`, target guards); a moved script imports them as `../lib/` |
+| `__tests__/` | Tests for the scripts, including the ones for scripts that moved into a folder |
+
+A script inside a folder resolves the repo root two levels up from its own file
+(`../../src/...`, `../../.env.local`), not one.
+
 ## Before you run one
 
 Run it with `--help` first. Never run a script with no arguments to find out
@@ -26,8 +53,8 @@ A script that writes to a database, sends mail or calls a paid API defaults to a
 dry run: it reads what it needs, prints what it would write (`[dry-run] would
 insert 12 rows into crm_coaches`), and writes nothing. Pass `--apply` to do it.
 
-    node scripts/send-coach-batch.mjs 10            # who would be emailed
-    node scripts/send-coach-batch.mjs 10 --apply    # send
+    node scripts/crm/send-coach-batch.mjs 10            # who would be emailed
+    node scripts/crm/send-coach-batch.mjs 10 --apply    # send
 
 The npm wrappers pass it through: `npm run coachhelm:refresh -- --apply`,
 `npm run coachhelm:regen -- --apply`. Without `--apply` they print what they would

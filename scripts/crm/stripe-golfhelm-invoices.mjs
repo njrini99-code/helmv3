@@ -15,8 +15,8 @@
 //     so a re-run repairs a partial batch instead of duplicating it.
 //
 // Usage:
-//   node --env-file=.env.local scripts/stripe-golfhelm-invoices.mjs
-//   node --env-file=.env.local scripts/stripe-golfhelm-invoices.mjs --commit --live
+//   node --env-file=.env.local scripts/crm/stripe-golfhelm-invoices.mjs
+//   node --env-file=.env.local scripts/crm/stripe-golfhelm-invoices.mjs --commit --live
 //
 // Stripe Tax is OFF for this batch: the account has no tax registrations, so
 // `automatic_tax` would collect $0 silently anyway, and these are educational
@@ -24,10 +24,10 @@
 // exist AND you've confirmed the obligation with a tax advisor.
 
 import Stripe from 'stripe';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/stripe-golfhelm-invoices.mjs',
+  name: 'scripts/crm/stripe-golfhelm-invoices.mjs',
   summary:
     "GolfHelm \u2014 batch invoice builder (2026-07 billing run).",
   guard: "its own --commit / --live flag (unchanged)",
@@ -247,7 +247,7 @@ async function main() {
           helm_batch_id: BATCH_ID,
           helm_school_key: school.key,
           helm_product: 'golfhelm',
-          source: 'scripts/stripe-golfhelm-invoices.mjs',
+          source: 'scripts/crm/stripe-golfhelm-invoices.mjs',
         },
       },
       { idempotencyKey: `${BATCH_ID}:invoice:${school.key}` },
