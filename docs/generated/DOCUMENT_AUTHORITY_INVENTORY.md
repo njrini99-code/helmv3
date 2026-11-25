@@ -2446,7 +2446,7 @@ them would bury everything above.
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | - |
 | `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | - |
-| `docs/operations/WORKSPACES.md` | current | - | - | yes | 2 |
+| `docs/operations/WORKSPACES.md` | current | - | - | yes | 3 |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | - |
 | `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 1 |

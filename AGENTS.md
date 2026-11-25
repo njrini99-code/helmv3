@@ -59,7 +59,9 @@ Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with
 
 - Use your own checkout when others may be writing: `scripts/new-worktree.sh
   <task>` creates `agent/<task>` under `~/worktrees/helmv3/`. In a quiet
-  canonical checkout on `main` you can branch in place.
+  canonical checkout on `main` you can branch in place. The checkout count is
+  advice; the 12 GiB disk reserve is the one hard refusal
+  (`docs/operations/WORKSPACES.md`).
 - Files you did not create that are dirty belong to another session. Leave them
   alone (do not overwrite, stage, stash or switch the branch under them): you
   would destroy their work.
