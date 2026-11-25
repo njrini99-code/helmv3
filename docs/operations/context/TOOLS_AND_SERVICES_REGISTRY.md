@@ -48,7 +48,7 @@ These feed the Mission Control **Telemetry / App Health** space in Huly.
 | **PostHog** | Product analytics / event capture | Free / paid | `posthog-js ^1.257`, `posthog-node ^4.18` | Summaries only | — |
 | **Datadog** | Browser logs + Real User Monitoring (RUM) | Paid | `@datadog/browser-logs`, `@datadog/browser-rum ^7.15`; `datadog/` (README only) | No | — |
 | **Vercel Analytics + Speed Insights** | Traffic + Core Web Vitals | Included w/ Vercel | `@vercel/analytics ^2.0`, `@vercel/speed-insights ^2.0` | No | — |
-| **Lighthouse CI** | Performance / a11y / CLS budgets | Open-source | `@lhci/cli ^0.15`; `lighthouserc.cjs`; `npm run lighthouse` | No | a11y + CLS are hard errors, perf is a warning; manual only — no CI job runs it, `lighthouse-preview` never existed in `.circleci/config.yml` |
+| **Lighthouse CI** | Performance / a11y / CLS budgets | Open-source | `@lhci/cli ^0.15`; `config/lighthouserc.cjs`; `npm run lighthouse` | No | a11y + CLS are hard errors, perf is a warning; manual only — no CI job runs it, `lighthouse-preview` never existed in `.circleci/config.yml` |
 
 ---
 
@@ -60,7 +60,7 @@ Two AI reviewers run in parallel on every PR, plus a local gate that mirrors the
 |------|---------|-----------|------------------|------------------|-------|
 | **GitHub Actions** | Per-PR fast path: typecheck, lint, vitest, build, RLS tests, Review Gate | Included w/ GitHub | `.github/workflows/ci.yml` | No | — |
 | **CircleCI** | Heavier jobs: weekly checks + iOS Capacitor compile | Paid | `.circleci/config.yml`; `.circleci/README.md` | No | `weekly` (Mon 06:00 UTC, via `run-weekly` pipeline param) + `ios` on native branches |
-| **CodeRabbit** | Blocking AI line-level review | Paid (GitHub App) | `.coderabbit.yaml`; `.coderabbit/ast-grep/`, `.coderabbit/semgrep/` | No | Assertive profile, pre-merge gate; blocks on service-role-in-client, missing RLS, unauth server action, sport-prefix violation, destructive DELETE-then-INSERT |
+| **CodeRabbit** | Blocking AI line-level review | Paid (GitHub App) | `.coderabbit.yaml`; `config/review-rules/ast-grep/`, `config/review-rules/semgrep/` | No | Assertive profile, pre-merge gate; blocks on service-role-in-client, missing RLS, unauth server action, sport-prefix violation, destructive DELETE-then-INSERT |
 | **the external review bot** | Whole-codebase AI review (business-context aware) | Paid (GitHub App) | `its config` (holds the `instructions` field + ignores), the Review Gate rule packs (hard rules), `.external-review-bot/files.json` (business-context docs) | No | Catches duplicated logic, broken callers, architecture drift. (Note: `CLAUDE.md` mentions a `.external-review-bot/instructions.md`, but this checkout keeps that context inside `config.json`) |
 | **Review Gate** | Local mirror of the linter toolchain so merges block even if AI reviewers are down | In-house workflow | `.github/workflows/review-gate.yml` | No | Aggregate check `Review Gate / all` |
 | **Vitest** | Unit / integration / RLS / business test runner | Open-source | `vitest ^4.0.18`; `vitest.config.ts` | No | Split by project: unit, integration, rls, business |

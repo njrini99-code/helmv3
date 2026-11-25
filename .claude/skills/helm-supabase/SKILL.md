@@ -133,7 +133,7 @@ runs past 200k characters and is saved to a file; parse `result.lints[]
 .findings[]` (each has `metadata.schema` / `metadata.name`) with a script
 instead of reading it. `scripts/db/advisor-ratchet.mjs`
 already does this per class for the drift-alert baseline
-(`supabase-advisor-baseline.json`).
+(`config/baselines/supabase-advisor-baseline.json`).
 
 ## When to invoke deeper guidance
 The vendored skills `supabase` and `supabase-postgres-best-practices`

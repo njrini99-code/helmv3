@@ -1804,7 +1804,7 @@ No pin action exists: pins use direct Supabase calls
   `npm run clubhouse:check`. Update `memory/features/team-communications.md` and
   P007 CONTRACT/DESIGN/WIRING if the contract changes.
 - `npm run lint:test-location` counts only `src/test/**` (baseline
-  `.test-location-baseline.json`); new tests go in
+  `config/baselines/.test-location-baseline.json`); new tests go in
   `src/clubhouse/screens/messages/__tests__/` (not counted), except
   catalog-naming tests (flat `src/clubhouse/__tests__/`).
 - Other per-file ratchets that list `messages.css` (only fall):

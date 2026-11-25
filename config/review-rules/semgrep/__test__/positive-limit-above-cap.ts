@@ -1,11 +1,11 @@
 // POSITIVE fixture for helmv3-no-limit-above-postgrest-cap.
 //
 // Intentionally broken — this file exists only to prove the rule still fires.
-// CI excludes .coderabbit/**/__test__/ from scans of changed files.
+// CI excludes config/review-rules/**/__test__/ from scans of changed files.
 //
 // Run locally:
-//   ast-grep scan --rule .coderabbit/ast-grep/no-limit-above-postgrest-cap.yml \
-//     .coderabbit/semgrep/__test__/positive-limit-above-cap.ts
+//   ast-grep scan --rule config/review-rules/ast-grep/no-limit-above-postgrest-cap.yml \
+//     config/review-rules/semgrep/__test__/positive-limit-above-cap.ts
 //
 // Expected: 2 errors (the 5000 and the 2000). The 1000 and 500 are clean, and
 // a non-literal argument is out of scope — the rule is syntactic, so a const

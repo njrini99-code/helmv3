@@ -7,7 +7,7 @@
 //
 // Never import real client code here; this file exists only to be scanned
 // by the Review Gate's rule packs, never executed. Excluded from the real
-// CI scans (review-gate.yml greps out `.coderabbit/(semgrep|ast-grep)/__test__/`)
+// CI scans (review-gate.yml greps out `config/review-rules/(semgrep|ast-grep)/__test__/`)
 // and scanned only by scripts/__tests__/review-gate-rules.test.mjs.
 
 export function leakedKeys() {

@@ -421,7 +421,7 @@ jobs:
 
       # Value-level import cycles typecheck and build cleanly but can crash at
       # cold runtime (TDZ) — the #803/#804 prod-crash class. Baseline-aware:
-      # fails only on cycles not in .cycles-baseline.json.
+      # fails only on cycles not in config/baselines/.cycles-baseline.json.
       - name: Import-cycle ratchet
         id: import_cycles
         continue-on-error: true
@@ -431,7 +431,7 @@ jobs:
       # against scripts/knowledge/bench/gold-set.v1.json and fails if
       # docs/generated/RETRIEVAL_BENCH.md / retrieval-bench.json are stale,
       # or if feature_recall drops / wrong_feature_rate rises versus
-      # retrieval-bench-baseline.json. The ratchet may only improve;
+      # config/baselines/retrieval-bench-baseline.json. The ratchet may only improve;
       # `node scripts/knowledge/bench.mjs --update-baseline` locks in a gain.
       - name: Retrieval bench ratchet
         id: knowledge_bench
@@ -444,7 +444,7 @@ jobs:
       # DESIGN_SPEC, STATE_SNAPSHOT, AGENT_SKILL) — HISTORY_LEDGER, ARCHIVE,
       # PLAN, AUDIT_SNAPSHOT, ADR, INCIDENT, INDEX and UNKNOWN are excluded
       # because dated/historical records are allowed to name paths that no
-      # longer exist. Ratchets against .dead-refs-baseline.json — the
+      # longer exist. Ratchets against config/baselines/.dead-refs-baseline.json — the
       # baseline may only fall, never rise; a NEW dead reference always
       # fails regardless of the baseline.
       #
@@ -670,7 +670,7 @@ jobs:
         continue-on-error: true
         run: npm run audit:paginated-reads
 
-      # Duplicate exports had a committed baseline (.duplicate-exports-baseline.json,
+      # Duplicate exports had a committed baseline (config/baselines/.duplicate-exports-baseline.json,
       # 27 grandfathered) and a process.exit(1) on anything new — but NO job ran it,
       # so the ratchet could never ratchet and new duplicates landed silently. A
       # baseline nothing compares against is a green that means nothing.

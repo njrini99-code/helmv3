@@ -15,8 +15,8 @@
  *                 scripts/db/apply.mjs runs every line under this block
  *                 after a real `--apply`.
  *
- * Existing files are GRANDFATHERED via .migration-headers-baseline.json,
- * ratchet-style (same shape as .lint-baseline.json / lint-ratchet.mjs): the
+ * Existing files are GRANDFATHERED via config/baselines/.migration-headers-baseline.json,
+ * ratchet-style (same shape as config/baselines/.lint-baseline.json / lint-ratchet.mjs): the
  * baseline can only shrink. A NEW migration file (not in the baseline) that
  * matches the mutating-keyword pattern and lacks either header ALWAYS fails,
  * regardless of baseline size.
@@ -44,7 +44,7 @@ import { extractVerifyQueries } from './apply.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..');
 const MIGRATIONS_DIR = join(REPO_ROOT, 'supabase/migrations');
-const BASELINE_PATH = join(REPO_ROOT, '.migration-headers-baseline.json');
+const BASELINE_PATH = join(REPO_ROOT, 'config/baselines/.migration-headers-baseline.json');
 
 const MUTATING_KEYWORD_RE = /\b(INSERT\s+INTO|UPDATE\s+\S|DELETE\s+FROM|DROP\s+(TABLE|COLUMN|FUNCTION|INDEX|POLICY|EXTENSION|TRIGGER|VIEW|MATERIALIZED\s+VIEW|SCHEMA)|ALTER\s+(TABLE|COLUMN|FUNCTION|POLICY|EXTENSION))\b/i;
 

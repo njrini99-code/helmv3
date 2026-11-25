@@ -186,7 +186,7 @@ jobs:
           # only to exercise the rules locally and are intentionally broken.
           mapfile -t all_files < <(bash .github/scripts/changed-files.sh \
             | grep -E '\.(ts|tsx)$' \
-            | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
+            | grep -vE '^config/review-rules/(semgrep|ast-grep)/__test__/' \
             || true)
           if [ "${#all_files[@]}" -eq 0 ]; then
             echo "No changed TypeScript files for ast-grep."
@@ -238,33 +238,33 @@ jobs:
           }
 
           # Repo-wide rules — match every changed TS/TSX file.
-          run_rule .coderabbit/ast-grep/no-bare-table-names.yml \
+          run_rule config/review-rules/ast-grep/no-bare-table-names.yml \
             '' '' 'repo-wide'
-          run_rule .coderabbit/ast-grep/no-deep-types-import.yml \
+          run_rule config/review-rules/ast-grep/no-deep-types-import.yml \
             '' '' 'repo-wide'
 
           # PostgREST row-cap rule — repo-wide on source, never on tests: a test
           # that asserts what the 1,000-row cap DOES has to ask for more than
           # 1,000. The rule carries the same exemption in its own `ignores`,
           # this is belt-and-braces at the scoping layer.
-          run_rule .coderabbit/ast-grep/no-limit-above-postgrest-cap.yml \
+          run_rule config/review-rules/ast-grep/no-limit-above-postgrest-cap.yml \
             '\.(ts|tsx)$' \
             '(\.test\.tsx?$|/__tests__/|^src/test/)' \
             'source-only'
 
           # Edge-Functions-only rule — Deno runtime, process.env is undefined.
           # Mirrors .coderabbit.yaml > path_instructions for supabase/functions/.
-          run_rule .coderabbit/ast-grep/no-process-env-in-edge.yml \
+          run_rule config/review-rules/ast-grep/no-process-env-in-edge.yml \
             '^supabase/functions/.*\.ts$' '' 'supabase/functions/**'
 
           # Service-role rule — must skip admin-only / server-only / cron /
           # rate-limit / push-notification / Edge Function paths. Mirrors the
-          # exclude list in .coderabbit/semgrep/helmv3.yml for the equivalent
+          # exclude list in config/review-rules/semgrep/helmv3.yml for the equivalent
           # semgrep rule (helmv3-service-role-outside-admin).
           excl='^(src/lib/supabase/admin|src/lib/supabase/keys|src/lib/supabase/service'
           excl+='|src/lib/auth/supabase-rate-limit|src/lib/notifications/push'
           excl+='|src/app/api/admin/|src/app/api/.+/admin/|scripts/|supabase/functions/)'
-          run_rule .coderabbit/ast-grep/no-service-role-in-client.yml \
+          run_rule config/review-rules/ast-grep/no-service-role-in-client.yml \
             '\.(ts|tsx)$' \
             "$excl" \
             'no-admin/scripts/edge'
@@ -275,7 +275,7 @@ jobs:
           # only be registered at `error` because the action tree is currently
           # clean of the pattern (verified 2026-08-26). If a legitimate silent
           # fallback is ever needed, log first, then return.
-          run_rule .coderabbit/ast-grep/no-silent-catch-fallback.yml \
+          run_rule config/review-rules/ast-grep/no-silent-catch-fallback.yml \
             '^src/app/.*/actions/.*\.tsx?$' \
             '(\.test\.tsx?$|/__tests__/)' \
             'actions-only'
@@ -358,7 +358,7 @@ jobs:
       # far too many to unmask as a hard zero-violations gate. Replaced with
       # a full-scope, per-rule count ratchet (scripts/markdown-lint-ratchet.mjs,
       # same shape as scripts/lint-ratchet.mjs): the existing backlog is
-      # grandfathered via .markdownlint-baseline.json, and the step fails
+      # grandfathered via config/baselines/.markdownlint-baseline.json, and the step fails
       # only if any rule's count goes UP. Full-scope (not changed-files) on
       # purpose — a ratchet baseline is only meaningful if measured over a
       # scope that doesn't shift under it. The script only imports node:
@@ -398,7 +398,7 @@ jobs:
       # (scripts/sql-lint-ratchet.mjs) over supabase/migrations/*.sql +
       # supabase/seed/*.sql. The existing backlog (7,649 violations across
       # 264 of 303 files at the time; sqlfluff's own 20KB large-file safety
-      # limit skips the other 18) is grandfathered via .sqlfluff-baseline.json,
+      # limit skips the other 18) is grandfathered via config/baselines/.sqlfluff-baseline.json,
       # and the step fails only if any rule's count goes UP. Full-scope on
       # purpose, for the same reason.
       - name: sqlfluff (ratchet)
@@ -487,20 +487,20 @@ jobs:
         run: |
           set -eu
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          # Skip the `.coderabbit/semgrep/__test__/` positive fixtures —
+          # Skip the `config/review-rules/semgrep/__test__/` positive fixtures —
           # they are intentionally broken code that exists only to verify
           # rule-pack behaviour locally. Letting them flow into CI would
           # block every PR that touches the rule pack.
           changed_files="$(bash .github/scripts/changed-files.sh)"
           mapfile -t files < <(printf '%s\n' "$changed_files" \
             | grep -E '\.(ts|tsx|js|jsx|sql|py)$' \
-            | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
+            | grep -vE '^config/review-rules/(semgrep|ast-grep)/__test__/' \
             || :)
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No changed files for semgrep."
             exit 0
           fi
-          semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions "${files[@]}"
+          semgrep --error --config config/review-rules/semgrep/helmv3.yml --skip-unknown-extensions "${files[@]}"
       # The "Scan with default p/ci ruleset" step that used to run here was
       # removed 2026-09-05: it was a bare community ruleset with no
       # repo-specific tuning, redundant with the custom-rules step above (the

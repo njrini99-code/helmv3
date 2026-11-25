@@ -210,8 +210,8 @@ them would have broken those routes, not the dead one.
   (duplicate helpers, dead flags, stale docs, orphan routes, deprecated
   APIs, stale TODOs, oversized modules, unused tests, mock inflation,
   duplicate telemetry, missing feature mappings, abandoned experiments)
-  using only signals this repo already produces — `.duplicate-exports-baseline.json`,
-  `.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,
+  using only signals this repo already produces — `config/baselines/.duplicate-exports-baseline.json`,
+  `config/baselines/.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,
   `memory/registry.yml` (via `scripts/knowledge/lib/registry.mjs`),
   `git ls-files`/`git grep`/`git log` — never a filesystem walk. Every
   classifier returns one of three verdicts, `FINDINGS` /

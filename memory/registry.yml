@@ -54,7 +54,7 @@ features:
       services:
         - src/lib/security/clubhouse-preview-headers.mjs
         - next.config.mjs
-        - stylelint.clubhouse.config.mjs
+        - config/stylelint.clubhouse.config.mjs
         - playwright.clubhouse.config.ts
         - e2e/clubhouse-quality.setup.ts
         - playwright.clubhouse-journeys.config.ts

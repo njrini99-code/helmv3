@@ -10,7 +10,7 @@
 > It previously named 17 tables, **10 of which do not exist** — and, because it
 > listed them beside the 8 real ones in the same format, described several
 > subsystems the product does not have. The 10 are recorded in
-> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on any new one.
+> `config/baselines/.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on any new one.
 >
 > **The 8 calendar tables that exist in production** (verified by direct
 > `pg_class` query, and matching what the shipped calendar code queries):

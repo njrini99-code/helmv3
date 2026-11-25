@@ -7,13 +7,13 @@ export const TITLE = 'Stale docs (path-drift baseline)';
 const MAX_FINDINGS = 10;
 
 /**
- * Reuses `.doc-path-baseline.json`, the live ratchet baseline for
+ * Reuses `config/baselines/.doc-path-baseline.json`, the live ratchet baseline for
  * `npm run docs:path-drift` (paths named in navigation docs that do not
  * resolve on disk). Does not re-walk docs itself — the baseline IS the
  * generator's output, already run in CI on every PR.
  */
 export function run({ repoRoot }) {
-  const path = join(repoRoot, '.doc-path-baseline.json');
+  const path = join(repoRoot, 'config/baselines/.doc-path-baseline.json');
   const baseline = readJsonIfExists(path);
 
   if (!baseline || typeof baseline.total !== 'number' || !Array.isArray(baseline.entries)) {
@@ -21,7 +21,7 @@ export function run({ repoRoot }) {
       classId: CLASS_ID,
       title: TITLE,
       verdict: NO_SIGNAL,
-      note: '.doc-path-baseline.json is missing or malformed.',
+      note: 'config/baselines/.doc-path-baseline.json is missing or malformed.',
       evidenceCommand: 'npm run docs:path-drift',
     };
   }

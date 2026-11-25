@@ -4,7 +4,7 @@
 // two statements, the user's row is permanently lost. The project
 // memory note "GolfHelm — no destructive writes" forbids this pattern.
 //
-// Mirrored under .coderabbit/semgrep/__test__/. See
+// Mirrored under config/review-rules/semgrep/__test__/. See
 // docs/operations/2026-05-28-coderabbit-fails-investigation.md.
 
 'use server';

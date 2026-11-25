@@ -17,7 +17,7 @@
  * SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_ID secrets db-drift.yml already
  * uses — no new credential), tallies findings by advisor NAME (the class,
  * e.g. `unused_index`, `rls_enabled_no_policy`), and compares each class's
- * count against `supabase-advisor-baseline.json`. A class may only shrink.
+ * count against `config/baselines/supabase-advisor-baseline.json`. A class may only shrink.
  * A brand-new class at count > 0 is also a regression (baseline treats an
  * absent key as 0).
  *
@@ -47,7 +47,7 @@ helpOnly({
 });
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const BASELINE_PATH = resolve(ROOT, 'supabase-advisor-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/supabase-advisor-baseline.json');
 const UPDATE = process.argv.includes('--update');
 
 /** @param {'security'|'performance'} type */

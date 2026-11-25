@@ -84,7 +84,7 @@ routines:
     status: active
     description: >-
       Weekly Supabase security/performance advisor ratchet against
-      supabase-advisor-baseline.json — a class may only shrink. On
+      config/baselines/supabase-advisor-baseline.json — a class may only shrink. On
       regression opens/updates the same `db-drift` issue and emails the
       owner; uploads the full advisor JSON as a run artifact every run.
 

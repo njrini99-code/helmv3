@@ -40,7 +40,7 @@
  *     tracked) restricted to the LIVING categories — REFERENCE,
  *     GENERATED_TRUTH, CURRENT_FEATURE, PROCESS_CONTRACT, RUNBOOK, POLICY,
  *     DESIGN_SPEC, STATE_SNAPSHOT, AGENT_SKILL — and ratchets the total
- *     against `.dead-refs-baseline.json`. Same shape as
+ *     against `config/baselines/.dead-refs-baseline.json`. Same shape as
  *     scripts/markdown-lint-ratchet.mjs: the baseline may only fall, never
  *     rise; `--update` rewrites it from the current count.
  *   node scripts/knowledge/document-inventory.mjs --dead-refs --introduced-since <ref>
@@ -68,7 +68,7 @@ import * as yaml from 'js-yaml';
 
 const ROOT = process.cwd();
 const OUT = resolve(ROOT, 'docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md');
-const DEAD_REFS_BASELINE_PATH = resolve(ROOT, '.dead-refs-baseline.json');
+const DEAD_REFS_BASELINE_PATH = resolve(ROOT, 'config/baselines/.dead-refs-baseline.json');
 
 /**
  * Categories this repo expects to stay correct day to day — the set the

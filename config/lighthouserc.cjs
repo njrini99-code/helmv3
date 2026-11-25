@@ -4,11 +4,11 @@
  * Wired into CircleCI's `lighthouse-preview` job which:
  *   1. Polls the Vercel API for the current PR's preview URL until ready
  *      (.circleci/scripts/wait-for-vercel-preview.sh)
- *   2. Runs `lhci autorun --config=lighthouserc.cjs`
+ *   2. Runs `lhci autorun --config=config/lighthouserc.cjs`
  *
  * Run locally against any URL:
  *   PREVIEW_URL=https://your-preview.vercel.app npx lhci autorun \
- *     --config=lighthouserc.cjs
+ *     --config=config/lighthouserc.cjs
  *
  * Asserts are split: a11y + CLS are HARD ERRORS (user-visible failures
  * worth blocking on). Perf/best-practices/SEO are WARNINGS so a one-off

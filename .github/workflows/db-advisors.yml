@@ -91,7 +91,7 @@ jobs:
 
           Run: ${RUN_URL}
 
-          The full advisor JSON is attached to the run as an artifact. Baseline: supabase-advisor-baseline.json."
+          The full advisor JSON is attached to the run as an artifact. Baseline: config/baselines/supabase-advisor-baseline.json."
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
           else

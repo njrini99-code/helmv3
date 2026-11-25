@@ -191,7 +191,7 @@ jobs:
     # same way review-gate.yml's per-PR sqlfluff job was fixed: run
     # scripts/sql-lint-ratchet.mjs (a full-scope, per-rule count ratchet;
     # fails only if a rule's violation count goes UP vs. the checked-in
-    # .sqlfluff-baseline.json) instead of a bare lint-and-discard.
+    # config/baselines/.sqlfluff-baseline.json) instead of a bare lint-and-discard.
     #
     # Note this job is now largely a BACKSTOP, not the primary coverage: the
     # per-PR review-gate.yml sqlfluff job used to be changed-files-only

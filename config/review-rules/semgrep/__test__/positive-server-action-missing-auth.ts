@@ -3,7 +3,7 @@
 // function that calls supabase.from() and supabase.rpc() without ever
 // calling supabase.auth.getUser() — a class-1 RLS bypass risk.
 //
-// Mirrored under .coderabbit/semgrep/__test__/ so the rule pack has at
+// Mirrored under config/review-rules/semgrep/__test__/ so the rule pack has at
 // least one known-positive that exercises both `from` and `rpc`
 // branches of the rule. See
 // docs/operations/2026-05-28-coderabbit-fails-investigation.md.

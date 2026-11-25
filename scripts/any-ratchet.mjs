@@ -21,7 +21,7 @@
  *   node scripts/any-ratchet.mjs --update   # rewrite the baseline after paying down
  *   node scripts/any-ratchet.mjs --list     # print every offending file with its counts
  *
- * Baseline: .any-ratchet-baseline.json. Only rewrite it to LOWER counts. A
+ * Baseline: config/baselines/.any-ratchet-baseline.json. Only rewrite it to LOWER counts. A
  * rewrite that raises a count is weakening the gate.
  */
 import { execFileSync } from 'node:child_process';
@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE_PATH = resolve(ROOT, '.any-ratchet-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.any-ratchet-baseline.json');
 const TEST_FILE_NAME = /^.*(\.(test|spec)\.[cm]?[jt]sx?|\.d\.ts)$/;
 /** Tests and declaration files: named *.test.* / *.spec.* / *.d.ts, or inside a __tests__, test or tests directory. */
 function isTestFile(file) {

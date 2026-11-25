@@ -32,7 +32,7 @@ paths:
 - **Promptfoo** (LLM evals) — config at `evals/round-review.yaml`.
   Run via `npm run evals` locally; runs weekly in CircleCI's
   `promptfoo-evals` job. Catches silent prompt drift between deploys.
-- **Lighthouse CI** — config at `lighthouserc.cjs`, run manually via
+- **Lighthouse CI** — config at `config/lighthouserc.cjs`, run manually via
   `npm run lighthouse` (`lhci autorun`). No CI job runs it: `.circleci/config.yml`
   has never defined a `lighthouse-preview` job (`.circleci/README.md` already
   corrects the same stale claim), and there is no Vercel preview URL for it

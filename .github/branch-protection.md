@@ -149,7 +149,7 @@ so a job split/rename does not silently break protection.
   from the required set: its credit quota had become the slowest step in shipping,
   and the Review Gate + CodeQL cover the same hard rules deterministically.
   `.coderabbit.yaml` is now a disable stub. The custom rule packs under
-  `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` REMAIN — CI consumes them
+  `config/review-rules/ast-grep/` and `config/review-rules/semgrep/` REMAIN — CI consumes them
   directly — so treat that directory name as historical. The GitHub App itself
   still needs an owner uninstall.
 

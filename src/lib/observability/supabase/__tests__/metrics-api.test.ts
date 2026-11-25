@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mocked, never a direct `process.env.SUPABASE_SERVICE_ROLE_KEY` reference in
 // this test file — the Review Gate's `no-service-role-in-client` ast-grep
-// rule (`.coderabbit/ast-grep/no-service-role-in-client.yml`) matches that
+// rule (`config/review-rules/ast-grep/no-service-role-in-client.yml`) matches that
 // literal pattern anywhere, test files included, and its allowlist
 // (`scripts/__tests__/review-gate-rules.test.mjs`) only covers
 // `src/lib/supabase/admin*`. Mocking `getServiceRoleKey` (the one function

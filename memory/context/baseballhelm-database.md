@@ -19,7 +19,7 @@
 > exactly **one** survivor of the old family (`baseball_exercises`). It *was* a
 > supersession and it completed — there is no twin, and nothing to keep in sync.
 > **§2d is retired schema; do not query anything in it.** The 35 dead names are
-> recorded in `.doc-schema-baseline.json`; `npm run docs:schema-drift` will fail on any
+> recorded in `config/baselines/.doc-schema-baseline.json`; `npm run docs:schema-drift` will fail on any
 > *new* one.
 >
 > This is the exact failure mode this file's own G8 warns about, pointed the other way:

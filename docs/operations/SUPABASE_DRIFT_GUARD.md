@@ -45,7 +45,7 @@ A separate weekly workflow, `.github/workflows/db-advisors.yml` (Mondays
 07:20 UTC, after the daily drift run), runs `npm run db:advisor-ratchet`
 (`scripts/db/advisor-ratchet.mjs`) against the Supabase Management API's
 security and performance advisors, comparing counts per advisor class
-against `supabase-advisor-baseline.json`. A class may only shrink; a
+against `config/baselines/supabase-advisor-baseline.json`. A class may only shrink; a
 brand-new class at a nonzero count is also a regression. On failure it
 alerts through the same `db-drift` issue thread and the same email path,
 and uploads the full advisor JSON (both types) as a run artifact

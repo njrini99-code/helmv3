@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { loadResults, sourceFile } from './lib/lint-results.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE_PATH = resolve(ROOT, '.fail-open-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.fail-open-baseline.json');
 const RULE = 'helm/no-empty-collection-on-error';
 const UPDATE = process.argv.includes('--update');
 
@@ -91,7 +91,7 @@ if (total < baseline) {
   console.error(
     `\nSLACK: ${total} against a baseline of ${baseline}. Lock the paydown in:\n` +
       '  npm run audit:fail-open -- --update\n' +
-      'and commit .fail-open-baseline.json alongside the fix.',
+      'and commit config/baselines/.fail-open-baseline.json alongside the fix.',
   );
   process.exit(1);
 }
