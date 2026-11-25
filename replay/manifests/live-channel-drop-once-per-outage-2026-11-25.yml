@@ -1,0 +1,29 @@
+schema_version: 1
+replay_id: live-channel-drop-once-per-outage-2026-11-25
+incident_id: /admin/errors/2169818a
+feature_id: clubhouse
+title: >-
+  The tournaments home, qualifier and calendar live feeds reported every
+  realtime CHANNEL_ERROR, including drops supabase-js rejoins from a second
+  later. channelDropReporter reports once per outage, after
+  REPORT_AFTER_FAILURES failed statuses in a row.
+bad_version: 88a3cf021274182488e85fcea3d0d671358ebbc7
+fixed_version: 8820200087c51b212461078e05004d889ace4833
+fixture:
+  - source: drop-reporter.test.ts
+    target: src/clubhouse/live/__tests__/drop-reporter.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/clubhouse/live/__tests__/drop-reporter.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: missing-export
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic channel statuses only; no production rows, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-11-25"
+notes: >-
+  On bad_version channelDropReporter does not exist, so all four cases fail
+  with "channelDropReporter is not a function".
