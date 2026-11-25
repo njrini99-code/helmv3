@@ -205,7 +205,7 @@ export class CausalEngine {
         mechanism:
           'Playing more often may keep rhythm and feel sharper, so scores can tend to track how often rounds are played',
       },
-      // docs/archive/v3/v3-research-golf-domain.md:146, "Drive -> Approach Distance/Lie
+      // docs/v3-research-golf-domain.md:146, "Drive -> Approach Distance/Lie
       // -> GIR ... fairway -> ~65% GIR from 150; rough -> ~45%; sand -> ~25%".
       {
         cause: 'driving_accuracy',
@@ -217,7 +217,7 @@ export class CausalEngine {
         mechanism:
           'Approaches from the fairway tend to hold more greens (~65% GIR at 150 yards against ~45% from rough and ~25% from sand), which may be why these two often move together (research: Drive -> Approach Lie -> GIR)',
       },
-      // docs/archive/v3/v3-research-golf-domain.md:29: "putts-per-round is *lower* for
+      // docs/v3-research-golf-domain.md:29: "putts-per-round is *lower* for
       // bad iron players (they chip close and 1-putt for bogey)". Where this
       // pair moves together, a putt count can reflect greens hit rather than
       // putting.

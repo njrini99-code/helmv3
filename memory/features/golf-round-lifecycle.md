@@ -298,7 +298,7 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Cache invalidation must include player-facing and coach-facing views that
   reflect the round.
 - Score, hole, shot, lie, and strokes-gained calculations must stay consistent
-  with `docs/archive/v3/v3-research-golf-domain.md`.
+  with `docs/v3-research-golf-domain.md`.
 - Completed score history is immutable. Any post-submit derived write must use
   its explicit protected database capability: strokes gained through
   `recalculate_round_strokes_gained`, CoachHelm markers through
@@ -895,7 +895,7 @@ offset below Continue Round's inset-aware context (the published
 `FairwayNewRoundEntry` step wrappers plus `FairwayCoursePicker`'s floating
 Close fold the inset into their top offsets. Off-iOS these resolve to the
 prior paddings (env() = 0). No lifecycle, autosave, or navigation semantics
-changed. Context: docs/archive/audits-2026-08/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
+changed. Context: docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
 (F-SAFEAREA-02/03/04); change ledger entry of the same date.
 
 Addendum (same date, live owner QA): the shared `Segmented` control — used

@@ -100,7 +100,7 @@ After the "Start here" list above, read these for a specific doc cluster (in rou
   **`memory/context/baseballhelm-features.md`**; the golf equivalent
   (`memory/context/golfhelm-features.md`) is historical as of 2026-08-30 and
   is routed from nowhere.
-- **`docs/archive/audits-2026-08/BASEBALLHELM_CANONICAL_SPEC.md`** — source of truth for what BaseballHelm
+- **`docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`** — source of truth for what BaseballHelm
   should be.
 - **`memory/incidents/`** — confirmed product defects, one file per incident, per
   feature. This entry used to point at `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md`

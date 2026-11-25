@@ -5,7 +5,7 @@ Status: active
 > **Saved to repo memory 2026-08-25 (evening) by the overnight commander session.**
 > This is the owner's verbatim master prompt. Any session resuming this work reads
 > this file top to bottom and obeys it. Execution state lives in
-> `docs/archive/audits-2026-08/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md` (produced by Phase 0/5 below)
+> `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md` (produced by Phase 0/5 below)
 > and on branch `feat/ios-premium-native-update`.
 >
 > Owner directives attached at handoff:
@@ -334,7 +334,7 @@ Do not upload to App Store, deploy production, or mutate production data without
 Create/update one active audit:
 
 ```text
-docs/archive/audits-2026-08/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
+docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
 ```
 
 Inventory:
@@ -2390,7 +2390,7 @@ Leave behind:
 ### Audit
 
 ```text
-docs/archive/audits-2026-08/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
+docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
 ```
 
 ### Active system spec

@@ -11,7 +11,7 @@
  *
  *   2. coachable_timeframe_weeks
  *      Typical weeks of focused work to close a meaningful gap. Source:
- *      docs/archive/v3/v3-research-golf-domain.md §10 (Coachable vs Uncoachable).
+ *      docs/v3-research-golf-domain.md §10 (Coachable vs Uncoachable).
  *      Used to set the "(≈N wks)" footer.
  *
  * Both values are estimates — every coach will quibble with the

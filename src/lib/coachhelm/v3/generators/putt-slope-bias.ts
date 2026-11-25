@@ -17,7 +17,7 @@
  * The "why focus on short putts at all" framing traces to the domain
  * research doc's Short Putt (3-8 ft) Performance → Round Variance section:
  * "Short putts have highest leverage per attempt because make-vs-miss is 1
- * full stroke and frequency is ~6-10/round" (docs/archive/v3/v3-research-golf-domain.md).
+ * full stroke and frequency is ~6-10/round" (docs/v3-research-golf-domain.md).
  * The pace-control MECHANISM for why downhill specifically underperforms
  * inside 6 ft is this generator's own inference from the measured pattern
  * (vanishes by 7-10 ft, where line/read — not pace — dominates per the same

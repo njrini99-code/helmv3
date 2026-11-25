@@ -376,7 +376,7 @@ legacy `is_recurring` flag in sync for older consumers.
 - `memory/context/golfhelm-features.md`
 - `memory/context/golfhelm-database.md`
 - `docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md`
-- `docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md`
+- `docs/PUSH_NOTIFICATION_AUDIT.md`
 
 Mobile calendar day cells retain a 44px width and scroll horizontally when the week cannot fit; the
 selected date stays visible after selection and resize. Phone hero padding and day-cell height are

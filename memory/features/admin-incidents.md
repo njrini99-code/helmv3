@@ -514,7 +514,7 @@ always derived at read time.
 
 ## Related Docs
 
-- `docs/archive/stale-root-2026-11/SECURITY_AUDIT.md`
+- `docs/SECURITY_AUDIT.md`
 - `docs/observability/OBSERVABILITY.md`
 - `memory/features/admin-platform.md` — the shared shell this entry was
   carved from.

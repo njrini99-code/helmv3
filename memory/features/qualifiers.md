@@ -448,8 +448,8 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
 
 - `memory/context/golfhelm-features.md`
 - `memory/context/golfhelm-database.md`
-- `docs/archive/v3/v3-feature-audit.md`
-- `docs/archive/v3/v3-page-audit.md`
+- `docs/v3-feature-audit.md`
+- `docs/v3-page-audit.md`
 
 ## 9-hole rounds (owner, 2026-10-31)
 

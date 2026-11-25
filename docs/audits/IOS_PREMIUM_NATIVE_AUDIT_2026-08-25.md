@@ -3,7 +3,7 @@
 > The active audit for the iOS premium native update. Master plan:
 > `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md`. Branch:
 > `feat/ios-premium-native-update`. Evidence:
-> `docs/audits/evidence/ios-premium-2026-08-25/`.
+> `docs/archive/audits-2026-08/evidence/ios-premium-2026-08-25/`.
 > Status: IN PROGRESS (overnight run, commander session). Sections marked
 > PENDING fill in as workflow results land.
 
@@ -26,7 +26,7 @@
 
 ## 2. Hands-on simulator findings (signed-out surface, tonight)
 
-Evidence files referenced are in `docs/audits/evidence/ios-premium-2026-08-25/`.
+Evidence files referenced are in `docs/archive/audits-2026-08/evidence/ios-premium-2026-08-25/`.
 
 - **F-DARK-01 (P1, verify intent):** With system appearance = dark, the login
   screen renders the light theme (`login-dark-iphone17e.jpeg`,

@@ -91,7 +91,7 @@ most mature product and the reference implementation for the platform.
 | Admin (platform ops) | `/golf/admin` | multiple |
 
 ### Must-never-break invariants (cite [03-product-invariants.md](../../business/03-product-invariants.md))
-- **SG math correctness** (§c) — `SG = baseline_expected(start) − baseline_expected(end) − 1`, four fixed categories, cached in `golf_player_stats_cache` (never recomputed on read), every causal claim traceable to [docs/archive/v3/v3-research-golf-domain.md](../../archive/v3/v3-research-golf-domain.md). Highest numeric-correctness bar in the codebase.
+- **SG math correctness** (§c) — `SG = baseline_expected(start) − baseline_expected(end) − 1`, four fixed categories, cached in `golf_player_stats_cache` (never recomputed on read), every causal claim traceable to [docs/v3-research-golf-domain.md](../../v3-research-golf-domain.md). Highest numeric-correctness bar in the codebase.
 - **RLS-first tenancy** (§a) — coach↔team via `golf_team_coach_staff`, never
   `golf_coaches.team_id`; RLS enabled in the same migration as every new table.
 - **No destructive DELETE-then-INSERT** (§f) — highest-risk surfaces: roster,
@@ -104,7 +104,7 @@ most mature product and the reference implementation for the platform.
 Mature and shipping; 28 tracked features, most complete ([memory/context/golfhelm-features.md](../../../memory/context/golfhelm-features.md)). ~74 `golf_*` tables in production. **Known honest gap:** SG columns exist in the stats cache but are documented as **not yet populated from shot data**, and offline shot-sync via IndexedDB is disabled — treat "fix stats" PRs skeptically. Positioned against **Clippd** (NCAA's official scoring/rankings vendor since 2023, 200+ D1 programs): strategy is "don't out-stat them, out-coach them" — win on conversational LLM round review, the qualifying workspace, and goals-driven insights ([08-golfhelm-business-context.md](../../business/08-golfhelm-business-context.md) §7).
 
 ### Deep docs
-[08-golfhelm-business-context.md](../../business/08-golfhelm-business-context.md) · [memory/context/golfhelm-features.md](../../../memory/context/golfhelm-features.md) · [memory/context/golfhelm-database.md](../../../memory/context/golfhelm-database.md) · [src/app/golf/README.md](../../../src/app/golf/README.md) · [docs/archive/v3/v3-research-golf-domain.md](../../archive/v3/v3-research-golf-domain.md)
+[08-golfhelm-business-context.md](../../business/08-golfhelm-business-context.md) · [memory/context/golfhelm-features.md](../../../memory/context/golfhelm-features.md) · [memory/context/golfhelm-database.md](../../../memory/context/golfhelm-database.md) · [src/app/golf/README.md](../../../src/app/golf/README.md) · [docs/v3-research-golf-domain.md](../../v3-research-golf-domain.md)
 
 ---
 
@@ -118,7 +118,7 @@ No separate buyer, SKU, or pricing — its trust and cost properties are inherit
 ### Top jobs-to-be-done ([02-jobs-to-be-done.md](../../business/02-jobs-to-be-done.md) §3)
 1. **Get a plain-language round review** — narrative that ties specific holes/shots to causes (`composeRoundReview`); the named category white-space vs. Clippd ("nobody has it").
 2. **Talk to a coaching assistant** — natural-language Q&A grounded in a player's real data (`composeCoachChat`).
-3. **Trust the number behind the narrative** — every causal/comparative claim traces back to [docs/archive/v3/v3-research-golf-domain.md](../../archive/v3/v3-research-golf-domain.md), not an LLM guess.
+3. **Trust the number behind the narrative** — every causal/comparative claim traces back to [docs/v3-research-golf-domain.md](../../v3-research-golf-domain.md), not an LLM guess.
 
 ### Key surfaces / internals
 - Three server-only composers: `composeRoundReview`, `composeCoachChat`, `composeHeroNarrative`.
@@ -249,7 +249,7 @@ Not sold on its own. Its "users" are the other products and the engineers/agents
 Live and load-bearing. Note: there is a **documented prior RLS incident** ([docs/archive/audits-2026-08/COACH_DASHBOARD_AUDIT_REPORT.md](../../archive/audits-2026-08/COACH_DASHBOARD_AUDIT_REPORT.md)) — treat every RLS-touching change as requiring explicit verification, not assumed correctness. Compliance surface (FERPA/COPPA-adjacent minors' PII; TCPA/DNC for outreach) is framed as *stakes*, not a claim of current violation; account deletion exists but full cascade is not confirmed complete, and there is no cookie/consent banner today.
 
 ### Deep docs
-[00-business-context.md](../../business/00-business-context.md) · [CLAUDE.md](../../../CLAUDE.md) · [docs/v3-master-plan.md](../../v3-master-plan.md) · [docs/archive/v3/v3-rls-template.md](../../archive/v3/v3-rls-template.md) · [.external-review-bot/rules.md](../../../.external-review-bot/rules.md)
+[00-business-context.md](../../business/00-business-context.md) · [CLAUDE.md](../../../CLAUDE.md) · [docs/v3-master-plan.md](../../v3-master-plan.md) · [docs/v3-rls-template.md](../../v3-rls-template.md) · [.external-review-bot/rules.md](../../../.external-review-bot/rules.md)
 
 ---
 
@@ -261,6 +261,6 @@ How the three automation/knowledge systems should use this doc.
 |---|---|---|
 | **n8n** (automation/orchestration) | Route product-scoped work: map an incoming ticket/lead/alert to the right product brief, resolve the correct route prefix (`/golf/*`, `/baseball/*`, `/lifting/*`) and table prefix (`golf_*`, `baseball_*`, `helm_lifting_*`), and gate flows on maturity (do **not** trigger automations that assume BaseballHelm/Lift Lab detail is stable — both are mid-rebuild). | Never write player/coach PII into workflow logs or external calls. Never bypass the org→team→coach/player tenancy. Any LLM-calling automation must respect the per-coach daily budget model — never add a call site that skips it. Treat this doc as the index; pull live specifics from the linked deep docs, not from memory. |
 | **Huly** (project/issue tracking) | Structure epics/issues by product (BaseballHelm, GolfHelm, CoachHelm, Lift Lab, Platform) and tag by the invariant a change touches (RLS §a, SG §c, LLM budget §e, destructive-write §f). Use the "Current maturity / state" sections to set severity — regressions on GolfHelm SG, qualifier integrity, or any RLS boundary are top-severity. | Link every issue back to a section here and to the relevant deep doc. Flag BaseballHelm/Lift Lab issues as "verify against current code" since route/schema detail is not frozen. |
-| **the external review bot** (AI code review) | Use these product boundaries and invariant citations as the "why" behind cross-file review. Enforce the same hard rules ([03-product-invariants.md](../../business/03-product-invariants.md), [.external-review-bot/rules.md](../../../.external-review-bot/rules.md)): RLS-on-new-tables, coach↔team via join table (never `golf_coaches.team_id`), SG traceability to [docs/archive/v3/v3-research-golf-domain.md](../../archive/v3/v3-research-golf-domain.md), LLM budget routing, 5-value baseball pipeline enum, no DELETE-then-INSERT. | Flag any PR that conflates GolfHelm's mature behavior with BaseballHelm/Lift Lab's mid-rebuild state, invents pricing/tiers, or adds a PII-holding table without RLS + deletion-cascade consideration. Prefer the deep docs over this index for line-level truth. |
+| **the external review bot** (AI code review) | Use these product boundaries and invariant citations as the "why" behind cross-file review. Enforce the same hard rules ([03-product-invariants.md](../../business/03-product-invariants.md), [.external-review-bot/rules.md](../../../.external-review-bot/rules.md)): RLS-on-new-tables, coach↔team via join table (never `golf_coaches.team_id`), SG traceability to [docs/v3-research-golf-domain.md](../../v3-research-golf-domain.md), LLM budget routing, 5-value baseball pipeline enum, no DELETE-then-INSERT. | Flag any PR that conflates GolfHelm's mature behavior with BaseballHelm/Lift Lab's mid-rebuild state, invents pricing/tiers, or adds a PII-holding table without RLS + deletion-cascade consideration. Prefer the deep docs over this index for line-level truth. |
 
 > Maintenance: this is an index/brief, not a spec. When a product's maturity changes (e.g. BaseballHelm exits rebuild, Lift Lab gets a `10-liftlab-business-context.md`), update the maturity rows here and keep the deep-doc pointers in sync.

@@ -130,9 +130,9 @@ Served by: `composeCoachChat` (part of the same LLM budget/citation/fallback con
 
 ### 3.3 Trust the number behind the narrative
 
-- **When** CoachHelm tells me a player is improving or declining, **I want** that claim traceable back to actual round/shot data and the golf-domain research baseline (`docs/archive/v3/v3-research-golf-domain.md`), not a plausible-sounding LLM guess, **so I can** act on it with confidence in front of a player or a parent.
+- **When** CoachHelm tells me a player is improving or declining, **I want** that claim traceable back to actual round/shot data and the golf-domain research baseline (`docs/v3-research-golf-domain.md`), not a plausible-sounding LLM guess, **so I can** act on it with confidence in front of a player or a parent.
 
-This is a cross-cutting invariant more than a standalone feature, but it is worth stating as a job because it is the thing that makes jobs 1.2 and 3.1 trustworthy rather than merely fluent: the Review Gate rule packs states every causal assertion in v3 generators must trace back to `docs/archive/v3/v3-research-golf-domain.md`, and the v2 scoring functions (`v2/insights/`, `v2/composite/`) must stay pure (no fetches/Supabase inside scoring) so their output is deterministic and auditable.
+This is a cross-cutting invariant more than a standalone feature, but it is worth stating as a job because it is the thing that makes jobs 1.2 and 3.1 trustworthy rather than merely fluent: the Review Gate rule packs states every causal assertion in v3 generators must trace back to `docs/v3-research-golf-domain.md`, and the v2 scoring functions (`v2/insights/`, `v2/composite/`) must stay pure (no fetches/Supabase inside scoring) so their output is deterministic and auditable.
 
 ---
 
@@ -148,7 +148,7 @@ BaseballHelm and Lift Lab are actively being rebuilt at the time of writing; do 
 ## For the reviewer
 
 - Flag a PR when it changes qualifier-selection save/submit logic without preserving upsert/`ON CONFLICT` semantics — this is job 1.1 and a documented destructive-write incident class (`.claude/rules/golf.md`).
-- Flag a PR when it touches SG calculation, `golf_player_stats_cache`, or round-review causal narrative and does not cite `docs/archive/v3/v3-research-golf-domain.md` for the underlying claim — this undermines jobs 1.2, 2.2, and 3.1 simultaneously.
+- Flag a PR when it touches SG calculation, `golf_player_stats_cache`, or round-review causal narrative and does not cite `docs/v3-research-golf-domain.md` for the underlying claim — this undermines jobs 1.2, 2.2, and 3.1 simultaneously.
 - Flag a PR that adds or changes CoachHelm LLM output (round review, coach chat, hero narrative) without going through the budget check in `src/lib/coachhelm/v3/llm/budget.ts` or without preserving the citation-verify-then-regenerate-once-then-template-fallback contract — this can silently break job 3.1 into either runaway cost or silent quality downgrade.
 - Flag a PR that changes round submission, roster writes, or any other save path to DELETE-then-INSERT — this directly threatens job 2.1 (a player's just-logged round) and the documented prior data-loss incident.
 - Flag a PR that changes calendar/recurring-event/timezone logic without test coverage for the recurring-edit scopes (`this | thisAndFuture | all`) and iCal export — this threatens job 1.3 and 2.3 silently (wrong-time bugs don't crash, they just erode trust).

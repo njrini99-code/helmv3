@@ -6,7 +6,7 @@ interactive visuals and, with approval, acts across Clubhouse. This file is the
 repo-side record: the decision, the audit of what exists, and the phase gates.
 The full brief lives with the owner.
 
-## Decision (recorded in `docs/archive/v3/v3-decisions.md` and `docs/v3-master-plan.md`)
+## Decision (recorded in `docs/v3-decisions.md` and `docs/v3-master-plan.md`)
 
 Coach chat is Q&A with grounded interactive visuals, and creates goals, focus
 areas, tasks, announcements and recurring practices from chat, each only after

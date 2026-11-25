@@ -992,7 +992,7 @@ a new maturation confirmation.
 - `memory/features/stats-analytics.md`
 - `memory/context/coachhelm-ai.md`
 - `memory/context/golfhelm-features.md`
-- `docs/archive/v3/v3-feature-audit.md`
+- `docs/v3-feature-audit.md`
 
 Stats uses CoachHelmShell as its only horizontal container, including the loading fallback. The
 Player CoachHelm overview (2026-09-24 rebuild) has no spine at any width: the section tabs sit above one

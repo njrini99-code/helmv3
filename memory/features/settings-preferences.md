@@ -104,7 +104,7 @@ would otherwise affect controls throughout the Clubhouse tree.
 
 - `memory/context/golfhelm-features.md`
 - `memory/features/coach-intelligence-triage.md`
-- `docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md`
+- `docs/PUSH_NOTIFICATION_AUDIT.md`
 
 ## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
 

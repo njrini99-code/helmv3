@@ -6,7 +6,7 @@ import { nowIso, type ToolEnvelope } from './provenance';
 
 /**
  * The on-demand golf reference behind `get_reference` (topic golf): sections of the sourced golf research
- * (`docs/archive/v3/v3-research-golf-domain.md`, compiled 2026-05-24 from Broadie, ShotLink, Shot Scope, Arccos and college scoring
+ * (`docs/v3-research-golf-domain.md`, compiled 2026-05-24 from Broadie, ShotLink, Shot Scope, Arccos and college scoring
  * sources). It is general golf knowledge, never the team's data: every section is tagged `kind: 'reference'` and carries its
  * source, and the read says so in its summary.
  *

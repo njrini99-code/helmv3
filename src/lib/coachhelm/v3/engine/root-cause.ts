@@ -986,7 +986,7 @@ export function observedAction(target: SequenceTarget, pattern: string): string 
       return `Practice the shot these misses leave you (${first}) and the recovery that follows`;
     case 'putt': {
       // Only lag pace is a sourced lever: from 25+ ft, 3-putts are driven by
-      // speed control, not line (docs/archive/v3/v3-research-golf-domain.md, "Lag
+      // speed control, not line (docs/v3-research-golf-domain.md, "Lag
       // Putting (>25 ft)"). Start line and other stroke mechanics cannot be
       // inferred from outcome data (same doc, engine constraint 5), so the
       // shorter bands get a neutral practice line.

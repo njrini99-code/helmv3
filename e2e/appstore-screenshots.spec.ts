@@ -7,7 +7,7 @@ import { golfPlayerTest as test, hasGolfPlayerAuth, requireGolfAuthOrSkip } from
  * e2e/appstore-screenshots.spec.ts — App Store screenshot capture for the
  * v2.0 (build 9) submission (plan §68 "APP STORE SCREENSHOTS" story; see
  * docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md and
- * docs/archive/audits-2026-08/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md). Existing package:
+ * docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md). Existing package:
  * ios/appstore/SUBMISSION.md §10 — that doc's screenshots predate this
  * rebuild and its 5-shot recommendation; this spec captures the current
  * 6-shot story instead: dashboard, rounds (active-round surface), stats,

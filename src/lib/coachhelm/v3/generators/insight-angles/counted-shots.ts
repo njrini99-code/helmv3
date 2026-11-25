@@ -132,7 +132,7 @@ export function approachBandOf(yards: number): ApproachBand | null {
   return null;
 }
 
-/** Par-3 tee-shot length bands (`docs/archive/v3/v3-research-golf-domain.md` §Par-3 Length Tiers). */
+/** Par-3 tee-shot length bands (`docs/v3-research-golf-domain.md` §Par-3 Length Tiers). */
 export type Par3Band = 'lt150' | '150_175' | '175_plus';
 export const PAR3_BANDS: readonly Par3Band[] = ['lt150', '150_175', '175_plus'];
 export const PAR3_BAND_LABEL: Record<Par3Band, string> = {

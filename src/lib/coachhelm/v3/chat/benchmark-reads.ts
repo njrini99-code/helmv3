@@ -110,7 +110,7 @@ const TABLE_COLUMN: Record<TableLevel, 'div1_avg_value' | 'div2_avg_value' | 'di
  * Their notes cite an internal research document's "§3 college trend" (no published source behind it; its unsourced D1 profile was removed from
  * the golf reference for that reason), Shot Scope's 0-handicap amateurs (scratch golfers, not a college population), or nothing at all (every
  * Division II, Division III and high school value, and the Division I approach proximity, big-number, opening hole, penalty and practice-gap
- * values). `docs/archive/v3/v3-research-golf-domain.md` ("Published College Baselines") lists what college figures are published: strokes gained against
+ * values). `docs/v3-research-golf-domain.md` ("Published College Baselines") lists what college figures are published: strokes gained against
  * the Tour field, not these. So every level is "no college figure" until a figure is added here with its source.
  */
 export interface LevelFigureSource {

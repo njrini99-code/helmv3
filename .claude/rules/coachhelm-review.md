@@ -33,7 +33,7 @@ routine backend plumbing. Business context:
   `composeHeroNarrative`, `composeCoachChat` must verify citations against real
   data, regenerate once on failure, then fall back to a deterministic template.
   Never surface an ungrounded/hallucinated narrative.
-- **Every causal or comparative claim traces to `docs/archive/v3/v3-research-golf-domain.md`.**
+- **Every causal or comparative claim traces to `docs/v3-research-golf-domain.md`.**
 - **Never call the LLM client-side** — composers are server-only; a `'use client'`
   component making a model call bypasses budget + citation checks.
 - **Scoring functions stay pure.** Code under `v2/insights/`, `v3/composite/`

@@ -1,7 +1,7 @@
 /**
  * CoachHelm chat knowledge: the on-demand golf reference, by topic.
  *
- * The text is `docs/archive/v3/v3-research-golf-domain.md`, split into sections by the generator (`../golf-reference.generated.ts`).
+ * The text is `docs/v3-research-golf-domain.md`, split into sections by the generator (`../golf-reference.generated.ts`).
  * This file decides what of it the assistant is served and under which name, because the document was written for the
  * insight engine and not all of it is fit to hand a coach as fact:
  *

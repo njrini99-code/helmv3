@@ -490,7 +490,7 @@ export function composeLieApproach(agg: LieApproachAggregate): ComposedContent &
     label: 'Tour lie-adjusted baseline (rough penalty already priced in)',
     value: 0,
     n: null,
-    citation: 'docs/archive/v3/v3-research-golf-domain.md §Strokes Gained (Broadie): expected strokes by lie and distance',
+    citation: 'docs/v3-research-golf-domain.md §Strokes Gained (Broadie): expected strokes by lie and distance',
   };
   const receipts: AngleReceipts = {
     window: r.window,

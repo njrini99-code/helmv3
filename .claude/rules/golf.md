@@ -105,13 +105,13 @@ the mapped `memory/features/*.md`, `memory/context/golfhelm-database.md`.
 - **Strokes-Gained & stat cache** — SG is served from `golf_player_stats_cache`,
   not recomputed on read; recompute happens at write (round save). Two read
   paths must not drift. SG math must match the Broadie formula in
-  `docs/archive/v3/v3-research-golf-domain.md`.
+  `docs/v3-research-golf-domain.md`.
 - **Round/qualifier data integrity** — round save and qualifier-selection saves
   are the highest-risk surfaces for the no-destructive-write rule and for silent
   duplication. Coach↔team is via `golf_team_coach_staff`, players via
   `golf_team_members` (`status='active'`).
 - **CoachHelm insight traceability** — every causal claim traces to
-  `docs/archive/v3/v3-research-golf-domain.md`; see `coachhelm-review.md`.
+  `docs/v3-research-golf-domain.md`; see `coachhelm-review.md`.
 - **Calendar/time-sensitive surfaces** — timestamps UTC, display in team/user
   timezone, tz-aware day boundaries, DST-tested recurrence, required-vs-optional
   legible to players. Apply the same care to any time-, money-, or

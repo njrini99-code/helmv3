@@ -40,7 +40,7 @@ This context pack is a **lens**, not a duplicate. The authoritative detail lives
 - `.devin/wiki.json` — Devin's repo map (repo notes + titled pages).
 - `docs/CODEBASE_MAP.md` — Cartographer system overview + mermaid diagram (~1,752 files).
 - `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-01/architecture/ROUTE_INVENTORY.md` — route/page/layout inventory + orphan detection (archived, stale — dated 2026-01-01).
-- `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/baseballhelm_revolution_plan_v2/` — the BaseballHelm program plan, IA maps, data model v2 (superseded by `docs/archive/audits-2026-08/BASEBALLHELM_CANONICAL_SPEC.md`; archived 2026-07).
+- `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/baseballhelm_revolution_plan_v2/` — the BaseballHelm program plan, IA maps, data model v2 (superseded by `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`; archived 2026-07).
 
 **Mission Control operating model:**
 - `docs/operations/HELM_MISSION_CONTROL_OS.md` — the master operating system.

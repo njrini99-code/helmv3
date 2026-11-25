@@ -29,11 +29,11 @@ Every product sits on the same four load-bearing layers. A reviewer should assum
 
 ### 2.1 Auth + tenancy
 - Tenancy shape: `organization → team → coach/player`, matching the structure of a real athletic program (a school/org runs multiple teams; each team has coaches and players).
-- Isolation is enforced at the **database layer via Postgres Row-Level Security**, not by application-layer filtering (`docs/v3-master-plan.md` Part II; `docs/archive/v3/v3-rls-template.md`). This is a business-critical choice: a bug in an app-layer `WHERE` clause is a routine bug; a bug in RLS is a cross-tenant data leak (see §5).
+- Isolation is enforced at the **database layer via Postgres Row-Level Security**, not by application-layer filtering (`docs/v3-master-plan.md` Part II; `docs/v3-rls-template.md`). This is a business-critical choice: a bug in an app-layer `WHERE` clause is a routine bug; a bug in RLS is a cross-tenant data leak (see §5).
 - Canonical link tables/helpers (do not deviate without updating this doc):
   - Coach↔team: `golf_team_coach_staff` — **never** `golf_coaches.team_id` (that column does not exist) (`docs/v3-master-plan.md:184`).
   - Player↔team: `golf_team_members`.
-  - RLS helper functions: `current_player_id()`, `is_team_coach(team_uuid)`, `is_team_player(team_uuid)` — all `SECURITY DEFINER` with `SET search_path` pinned, specifically to close the Postgres search-path-hijack attack class against `SECURITY DEFINER` functions (`docs/archive/v3/v3-rls-template.md:9`).
+  - RLS helper functions: `current_player_id()`, `is_team_coach(team_uuid)`, `is_team_player(team_uuid)` — all `SECURITY DEFINER` with `SET search_path` pinned, specifically to close the Postgres search-path-hijack attack class against `SECURITY DEFINER` functions (`docs/v3-rls-template.md:9`).
 
 ### 2.2 CoachHelm (the AI layer)
 - A composition engine that generates round reviews, hero narratives, and coach-chat responses, all citation-verified against real data before being shown to a coach or player, with a template fallback when the LLM path isn't available or affordable (`.claude/rules/coachhelm-review.md`).
@@ -70,7 +70,7 @@ GolfHelm's promise has two layers: a system-of-record layer and an intelligence 
 **System of record.** Full college golf team management: round and shot-by-shot tracking (50+ stats per round), roster, calendar/scheduling, qualifiers and travel selection, messaging, announcements, tasks, documents, travel logistics, class-schedule conflict detection (`src/app/golf/README.md:16-31`).
 
 **Intelligence layer — CoachHelm.** The differentiated promise is turning that round/shot data into decision support:
-- **Strokes Gained analytics** — the canonical statistical model. `SG = baseline_expected_strokes(start_lie) − baseline_expected_strokes(end_lie) − 1`, computed per shot and summed into four categories (Off-the-Tee, Approach, Around-the-Green, Putting) that roll up to `SG:Total` (`docs/archive/v3/v3-research-golf-domain.md`, cited in `.claude/rules/golf.md`). This is the reference model every causal claim the AI layer makes must trace back to.
+- **Strokes Gained analytics** — the canonical statistical model. `SG = baseline_expected_strokes(start_lie) − baseline_expected_strokes(end_lie) − 1`, computed per shot and summed into four categories (Off-the-Tee, Approach, Around-the-Green, Putting) that roll up to `SG:Total` (`docs/v3-research-golf-domain.md`, cited in `.claude/rules/golf.md`). This is the reference model every causal claim the AI layer makes must trace back to.
   - SG values are **cached, not recomputed on read**, in `golf_player_stats_cache` (`docs/v3-master-plan.md` Part II: "SG ALREADY COMPUTED — read, don't recompute"). A reviewer should treat any new code path that recomputes SG inline, or that reads a stale cache without a documented invalidation trigger, as suspect.
   - Because SG is the platform's flagship numeric claim and its most direct point of comparison against competitors (see below), **SG math correctness gets the highest scrutiny bar in the codebase** (`.claude/rules/golf.md`).
 - **Insights, patterns, predictions, round reviews** — the CoachHelm engine turns SG and shot-level data into natural-language coaching narrative, always citation-checked against underlying data before display, with a template fallback if the LLM path fails or is over budget.
@@ -112,7 +112,7 @@ A meaningful share of end users (student-athlete players) are minors, and the da
 DELETE-then-INSERT in **any** save/submit/sync code path is forbidden platform-wide. This is not a style preference — there is a documented prior incident where a transient failure between the DELETE and the INSERT permanently lost user data (`.claude/rules/golf.md`). Use `upsert`/`ON CONFLICT` or stage-and-swap instead. The highest-risk surfaces for this pattern are roster edits, qualifier selections, and round-save — exactly the workflows where a coach or player is mid-task and a lost write is both invisible until too late and impossible to explain. This rule is enforced as a blocking CodeRabbit check platform-wide (`CLAUDE.md:430-435`).
 
 ### 5.4 SG / scoring correctness
-Because Strokes Gained analytics is GolfHelm's flagship quantitative claim and its most direct comparison point against Clippd, an incorrect SG calculation is not a cosmetic bug — it directly undermines the core value proposition to a coach deciding whether to trust the product's numbers over a competitor's. Every causal or comparative claim CoachHelm's narrative layer makes about a player's performance must trace back to `docs/archive/v3/v3-research-golf-domain.md`.
+Because Strokes Gained analytics is GolfHelm's flagship quantitative claim and its most direct comparison point against Clippd, an incorrect SG calculation is not a cosmetic bug — it directly undermines the core value proposition to a coach deciding whether to trust the product's numbers over a competitor's. Every causal or comparative claim CoachHelm's narrative layer makes about a player's performance must trace back to `docs/v3-research-golf-domain.md`.
 
 ### 5.5 LLM budget integrity
 See §6 — this is both a cost-control and a trust invariant. A budget bypass is bad in two directions: unbounded LLM spend (cost risk), or a coach silently getting template-quality output while believing they're getting AI-composed analysis (trust risk, since the fallback is not visibly distinguished from a genuine outage without checking).
@@ -161,7 +161,7 @@ Flag a PR when:
 
 - A new table, column, or query holding player/coach data is added **without** a corresponding RLS policy using the canonical helpers (`current_player_id()`, `is_team_coach()`, `is_team_player()`) — see §2.1 and §5.1.
 - A save/submit/sync path performs DELETE-then-INSERT instead of `upsert`/`ON CONFLICT` or stage-and-swap, especially in roster, qualifier-selection, or round-save code — see §5.3.
-- SG or any other scoring/stats calculation is recomputed inline instead of reading the cached value in `golf_player_stats_cache`, or is changed without a trace back to `docs/archive/v3/v3-research-golf-domain.md` — see §4.1, §5.4.
+- SG or any other scoring/stats calculation is recomputed inline instead of reading the cached value in `golf_player_stats_cache`, or is changed without a trace back to `docs/v3-research-golf-domain.md` — see §4.1, §5.4.
 - A new LLM call site in CoachHelm does not route through `checkBudget()` / the compose() budget gate, or hardcodes a $/token figure instead of reading `golf_coachhelm_settings.llm_budget_usd_per_day` — see §5.5, §6.
 - A new PII-holding table or field for player/coach data is added without considering account-deletion cascade coverage — see §5.2.
 - Copy, docs, or code comments state or imply a live pricing plan, tier, or seat price — none exists in-repo; must be labeled intended/aspirational if discussed at all — see §6.

@@ -2,7 +2,7 @@
 
 > Prepared overnight 2026-08-25 → 2026-08-26 per
 > `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md`. Audit:
-> `docs/archive/audits-2026-08/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md`. Metadata base:
+> `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md`. Metadata base:
 > `ios/appstore/SUBMISSION.md` (v2.0 package; the build number moved 8 → 9).
 > **Upload / Submit for Review are owner actions (§89) — nothing here uploads.**
 

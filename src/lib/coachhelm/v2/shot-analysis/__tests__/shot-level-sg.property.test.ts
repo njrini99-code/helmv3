@@ -5,7 +5,7 @@
  * tests catch the cases you didn't. fast-check generates hundreds of
  * inputs per invariant and shrinks failures to the minimal repro.
  *
- * Invariants under test (from docs/archive/v3/v3-research-golf-domain.md):
+ * Invariants under test (from docs/v3-research-golf-domain.md):
  *   1. Holed shots have SG = baseline_start - 1. The first term is
  *      the expected strokes to hole out from the start; subtracting 1
  *      (the shot just taken) gives the strokes gained vs baseline.

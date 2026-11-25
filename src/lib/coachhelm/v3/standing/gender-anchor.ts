@@ -32,7 +32,7 @@
  *   - gender = 'womens' AND NO women's anchor exists (course_management:
  *     big_number_rate / penalty_rate_per_round; par-type: scoring_par_*) → the
  *     men's Tour value would MISLEAD, and no credible women's-college baseline
- *     exists in docs/archive/v3/v3-research-golf-domain.md to substitute. Per the audit's
+ *     exists in docs/v3-research-golf-domain.md to substitute. Per the audit's
  *     "honesty over coverage" rule we OMIT rather than fabricate: the returned
  *     standing carries `pga_omitted: true` so the render layer can suppress the
  *     PGA marker for this woman instead of drawing a wrong one. pga_value is
