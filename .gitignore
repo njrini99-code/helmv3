@@ -161,7 +161,6 @@ playwright/.auth/
 !/momentic/auth/.gitkeep
 # Momentic captures environment values, including test-account credentials.
 /.momentic-mcp/environment-variables-*.json
-/tests/golf/qualifier-hell/.momentic-mcp/environment-variables-*.json
 # Local product-audit browser states use several historical layouts. Keep the
 # generated JSON out of Git even when an audit writes outside playwright/.auth/.
 /audit/**/auth/*.json
