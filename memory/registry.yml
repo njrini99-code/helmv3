@@ -2095,6 +2095,7 @@ features:
       db: []
       tests:
         - src/lib/email/__tests__/outbound-gate.test.ts
+        - src/lib/email/__tests__/reply-to.test.ts
         - src/lib/coachhelm/v3/foundation/__tests__/email.test.ts
         - src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts
     integrations:

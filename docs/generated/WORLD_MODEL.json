@@ -2561,6 +2561,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/lib/email/__tests__/reply-to.test.ts",
+        "pattern": "src/lib/email/__tests__/reply-to.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/lib/golf/__tests__/client-resource-cache.test.ts",
         "pattern": "src/lib/golf/__tests__/client-resource-cache.test.ts",
         "category": "tests"
@@ -17569,6 +17574,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/email/__tests__/outbound-gate.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "tests:src/lib/email/__tests__/reply-to.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/email/__tests__/reply-to.test.ts"
         }
       ]
     },

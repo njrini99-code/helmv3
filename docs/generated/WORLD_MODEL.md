@@ -149,7 +149,7 @@ Outbound Customer Email (kill switch) · active · criticality high · owner fou
 - **Relations:** 0 doc/structurally-evidenced, 11 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
-- **Test surfaces:** 3
+- **Test surfaces:** 4
 - **Sentry/admin_events signals:** none
 
 ### `feature_awareness_system`

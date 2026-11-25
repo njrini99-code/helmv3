@@ -11,6 +11,7 @@ import { gateCustomerEmail } from '@/lib/email/outbound-gate';
 import type { NotificationPreferences, NotificationType, EmailTemplate } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
 import { enqueueJob, isHelmQueueEnabled } from '@/lib/jobs/enqueue';
+import { HELM_REPLY_TO } from '@/lib/email/reply-to';
 
 // Resend client - lazy loaded
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1003,6 +1004,7 @@ export async function sendEmailNotificationDirect(
     // Send email
     const { error } = await resend.emails.send({
       from: 'Helm Sports <notifications@helmsportslabs.com>',
+      replyTo: HELM_REPLY_TO,
       to: recipientEmail,
       subject: template.subject,
       html: template.html,

@@ -94,6 +94,14 @@ reported `{ success: true }` — fixed to destructure `{ error }` and return
 `src/lib/coachhelm/v3/foundation/email.ts`. Matters the day the switch turns
 back on.
 
+Replies go to a real inbox: every coach- or player-facing send passes
+`replyTo: HELM_REPLY_TO` (`src/lib/email/reply-to.ts`, default
+admin@helmsportslabs.com, overridden by the `HELM_REPLY_TO` env var the
+CRM outreach already reads). The senders stay notifications@ and noreply@,
+which have no mailbox. Pinned by `src/lib/email/__tests__/reply-to.test.ts`.
+The ops digest goes to the owner and is exempt. Coach welcome emails
+(`scripts/golf/send-coach-welcome.mjs`) send from admin@ itself.
+
 ## Primary Entry Points
 
 - `src/lib/email/outbound-gate.ts` — the switch and the gate
