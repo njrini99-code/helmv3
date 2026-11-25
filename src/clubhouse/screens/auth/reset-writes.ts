@@ -3,6 +3,8 @@
 import { requestPasswordResetAction } from '@/app/golf/actions/auth';
 import { raceWithTimeout } from '@/lib/demo/gate-probe';
 import { createClient } from '@/lib/supabase/client';
+import { teardownDeviceTokenOnSignOut } from '@/lib/utils/push-registration';
+import { CH_PUSH_TEARDOWN_WAIT_MS, chEndSession } from '../../lib/sign-out';
 import { chReport } from '../../lib/track';
 import { FAILURE_COPY } from '../../ui/Notices';
 import { describeResetFailure, type ResetFailure } from './reset-state';
@@ -43,6 +45,15 @@ export const resetWrites: ResetWrites = {
         .then((r) => r.data.session?.user ?? null)
         // A slow or unreadable stored session only drops the "someone else was signed in" line; the link check goes on.
         .catch(() => null);
+      // Someone already signed in on this device is signed out properly first, the way Sign out does it: their push
+      // token switched off while their session still exists, the session revoked on the server, the offline page cache
+      // and the active team cleared. verifyOtp alone only overwrites the stored session, so a shared phone kept the last
+      // person's pushes and cached pages. (A spent link then lands on "request a new one", signed out, as it should.)
+      if (before) {
+        const teardown = Promise.resolve(teardownDeviceTokenOnSignOut()).catch(() => undefined);
+        await Promise.race([teardown, new Promise((done) => window.setTimeout(done, CH_PUSH_TEARDOWN_WAIT_MS))]);
+        await chEndSession('auth.reset');
+      }
       // Every GolfHelm reset link carries a token_hash, minted on the server and sent through Resend; there is no PKCE
       // code to exchange. A link without one goes to verifyOtp with an empty hash, which Supabase refuses: a missing or
       // tampered parameter can only land on "expired".

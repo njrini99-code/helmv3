@@ -155,6 +155,10 @@ export function CProfile({ d, up, next, back, dir, phone }: StepProps) {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Where a refusal points (the dashboard for a coach already on a program, the approval page for one waiting).
+  const [errHref, setErrHref] = useState<string | null>(null);
+  // One program per tap: a double tap must not run the setup twice and show the second refusal over the first success.
+  const inFlight = useRef(false);
   const name = `${d.first} ${d.last}`.trim();
 
   const take = async (f: File | undefined) => {
@@ -179,20 +183,24 @@ export function CProfile({ d, up, next, back, dir, phone }: StepProps) {
   };
 
   const submit = async () => {
-    if (busy || uploading) return;
+    if (busy || uploading || inFlight.current) return;
     const problem = coachNameProblem(d.first, d.last);
     if (problem) {
       setBad(problem.field);
       haptic('warning');
       return;
     }
+    inFlight.current = true;
     setBusy(true);
     setErr(null);
+    setErrHref(null);
     haptic('press');
     const r = await finishCoach(d.prog, name, d.title, d.photoUrl);
     if (!r.ok) {
+      inFlight.current = false;
       setBusy(false);
       setErr(r.error);
+      setErrHref(r.href ?? null);
       haptic('error');
       return;
     }
@@ -262,6 +270,12 @@ export function CProfile({ d, up, next, back, dir, phone }: StepProps) {
         <div className="ch-ox-err">
           <AuthNotice tone="danger" code="CH-15035">
             {err}
+            {errHref && (
+              <>
+                {' '}
+                <a href={errHref}>{errHref === '/golf/coach/pending' ? 'See your request' : 'Go to your dashboard'}</a>
+              </>
+            )}
           </AuthNotice>
         </div>
       )}

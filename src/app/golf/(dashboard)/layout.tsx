@@ -1,10 +1,12 @@
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { onboardedGolfRole, pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
+import { declaredGolfRole, onboardedGolfRole, pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { resolveCoachActiveTeamIdForRequest, getActivePlayerTeamMembership } from '@/lib/golf/dashboard-request-cache';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
+import { isSuperAdminUserId } from '@/lib/admin/super-admin-shared';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -44,6 +46,8 @@ export default async function GolfDashboardLayout({
 
   let { coach, player } = session;
   let declaredRole: 'coach' | 'player' | null;
+  // A failed users.role read on the slow path: an unknown account then gets a retry, not a guess.
+  let roleReadFailed = false;
 
   if (coach?.onboarding_completed || player?.onboarding_completed) {
     // Fast path (>99% of requests) — onboarded user, derive role from profiles.
@@ -82,12 +86,26 @@ export default async function GolfDashboardLayout({
 
     // Admin users don't have golf profiles — send them to the admin dashboard
     if (userData?.role === 'admin') {
-      redirect(resolveAdminPostLoginPath(true));
+      // /admin lets in only the allowlisted admin, and never inside the iOS app; the middleware sends anyone else back
+      // here, which looped. Anyone /admin would refuse gets this route's error screen instead of the loop.
+      const ua = (await headers()).get('user-agent') ?? '';
+      if (isSuperAdminUserId(session.userId, process.env.SUPER_ADMIN_USER_IDS) && !ua.includes('HelmSportsLabsApp')) {
+        redirect(resolveAdminPostLoginPath(true));
+      }
+      throw new Error('This is an admin account with no golf profile. Open Helm admin in a web browser.');
     }
 
     declaredRole = (userData?.role === 'coach' || userData?.role === 'player')
       ? userData.role
       : null;
+    // No role on the users row (or no row yet): the account's own sign-up metadata says which, as loginAction already
+    // reads it. Without this the unknown branch below sent a signed-in account to /golf/signup, which bounces signed-in
+    // visitors back here: a redirect loop.
+    if (!declaredRole && !roleError) {
+      const { data: authData } = await supabase.auth.getUser();
+      declaredRole = declaredGolfRole(null, authData.user?.user_metadata?.role);
+    }
+    roleReadFailed = !!roleError;
 
     // Re-read the profiles, waiting for eventual consistency ONLY if needed.
     //
@@ -285,8 +303,14 @@ export default async function GolfDashboardLayout({
       redirect('/golf/coach');
     } else if (declaredRole === 'player') {
       redirect('/golf/player');
+    } else if (roleReadFailed) {
+      // Who this is could not be read: the route's error screen offers Try again, where a guess could send an admin or a
+      // coach into the wrong onboarding.
+      throw new Error('The account’s role could not be read. Try again.');
     } else {
-      redirect('/golf/signup');
+      // Signed in with no role anywhere and no profile: never /golf/signup (it bounces signed-in visitors straight back
+      // here). Player setup is the one onboarding a signed-in account with nothing yet can finish.
+      redirect('/golf/player');
     }
     // TypeScript: redirect() throws, but TS doesn't know that — this is unreachable
     return null;

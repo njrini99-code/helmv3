@@ -23,7 +23,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { requireCronAuth } from '@/lib/cron/auth';
-import { logServerEvent } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
+import { getDemoCoachCredentials } from '@/lib/demo/config.server';
 import { isDemoRefreshEnabled } from '@/lib/golf/demo/flag';
 import { refreshDemoTeam } from '@/lib/golf/demo/refresh';
 import { DemoPlumbingMissingError } from '@/lib/golf/demo/writer';
@@ -37,6 +39,11 @@ export async function GET(req: NextRequest) {
   if (unauthorized) return unauthorized;
 
   return recordJobRun('golf-demo-refresh', async () => {
+    // The shared demo login is the same for every visitor, so one visitor who changes its password or email (Settings,
+    // or the browser console) would lock the demo for everyone. Every run puts both back to the configured values,
+    // whatever the refresh flag says.
+    await restoreDemoLogin();
+
     // Off: nothing is read and nothing is written.
     if (!isDemoRefreshEnabled()) return NextResponse.json({ ok: true, skipped: 'flag_off' });
 
@@ -87,4 +94,21 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ ok: true, ...summary });
   });
+}
+
+async function restoreDemoLogin(): Promise<void> {
+  const creds = getDemoCoachCredentials();
+  if (!creds) return;
+  try {
+    const admin = createAdminClient();
+    const { data: row, error } = await admin.from('users').select('id').eq('email', creds.email.toLowerCase()).maybeSingle();
+    if (error || !row) {
+      if (error) await logServerError(`[golf-demo-refresh] demo login lookup failed: ${describeError(error)}`, { action: 'cron.golf-demo-refresh' });
+      return;
+    }
+    const { error: updateError } = await admin.auth.admin.updateUserById(row.id, { email: creds.email, password: creds.password });
+    if (updateError) await logServerError(`[golf-demo-refresh] demo login restore failed: ${describeError(updateError)}`, { action: 'cron.golf-demo-refresh' });
+  } catch (err) {
+    await logServerError(`[golf-demo-refresh] demo login restore threw: ${describeError(err)}`, { action: 'cron.golf-demo-refresh' });
+  }
 }

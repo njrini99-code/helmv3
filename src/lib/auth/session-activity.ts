@@ -161,7 +161,8 @@ export function useSessionActivity() {
     // (src/lib/offline/private-caches.ts). Bounded, never throws.
     await clearPrivateServiceWorkerCaches();
     try {
-      await supabase.auth.signOut();
+      // The shared demo account: an idle visitor's timeout must not end every other visitor's demo (global would).
+      await supabase.auth.signOut(isDemo ? { scope: 'local' } : undefined);
     } catch {
       /* best-effort — still redirect to the login screen below */
     }

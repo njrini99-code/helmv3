@@ -169,8 +169,8 @@ describe('Settings · 80xx error toasts', () => {
   it('CH-8004 password change fails with the reason', async () => {
     const { user } = setup({ writes: { changePassword: vi.fn(() => fail('Your current password is incorrect.')) } });
     await user.type(screen.getByLabelText('Current password'), 'old-pass');
-    await user.type(screen.getByLabelText('New password'), 'new-password');
-    await user.type(screen.getByLabelText('Confirm new password'), 'new-password');
+    await user.type(screen.getByLabelText('New password'), 'New-password-1');
+    await user.type(screen.getByLabelText('Confirm new password'), 'New-password-1');
     await user.click(screen.getByRole('button', { name: 'Update password' }));
     await expectCode('CH-8004', /incorrect/);
   });
@@ -388,9 +388,9 @@ describe('Settings · 81xx validation', () => {
   });
 
   it.each([
-    ['CH-8105', '', 'new-password', 'new-password', /current password/, 'Current password'],
+    ['CH-8105', '', 'New-password-1', 'New-password-1', /current password/, 'Current password'],
     ['CH-8106', 'old', 'short', 'short', /8 characters/, 'New password'],
-    ['CH-8107', 'old', 'new-password', 'other-password', /don’t match/, 'Confirm new password'],
+    ['CH-8107', 'old', 'New-password-1', 'Other-password-1', /don’t match/, 'Confirm new password'],
   ])('%s password checks; focus goes to the field it names (row 86)', async (c, cur, next, confirm, text, field) => {
     const { user, writes } = setup();
     if (cur) await user.type(screen.getByLabelText('Current password'), cur);
@@ -2323,8 +2323,8 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await user.click(await screen.findByRole('button', { name: /^Password/ }));
       const sheet = dialog('Password');
       await user.type(within(sheet).getByLabelText('Current password'), 'old-pass');
-      await user.type(within(sheet).getByLabelText('New password'), 'new-password');
-      await user.type(within(sheet).getByLabelText('Confirm new password'), 'other-password');
+      await user.type(within(sheet).getByLabelText('New password'), 'New-password-1');
+      await user.type(within(sheet).getByLabelText('Confirm new password'), 'Other-password-1');
       hapticSpy.mockClear();
       await user.click(within(sheet).getByRole('button', { name: 'Update' }));
       await expectCode('CH-8107', /don’t match/);
@@ -2334,10 +2334,10 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       expect(within(sheet).getByLabelText('Confirm new password').getAttribute('aria-invalid')).toBe('true');
       expect(writes.changePassword).not.toHaveBeenCalled();
       await user.clear(within(sheet).getByLabelText('Confirm new password'));
-      await user.type(within(sheet).getByLabelText('Confirm new password'), 'new-password');
+      await user.type(within(sheet).getByLabelText('Confirm new password'), 'New-password-1');
       await user.click(within(sheet).getByRole('button', { name: 'Update' }));
       await expectCode('CH-8004', /incorrect/);
-      expect(writes.changePassword).toHaveBeenCalledWith('old-pass', 'new-password');
+      expect(writes.changePassword).toHaveBeenCalledWith('old-pass', 'New-password-1');
     });
 
     it('81901 CH-8016 CH-8113 golf details open in a sheet from any row, and a handicap out of range keeps Save off (player)', async () => {
