@@ -362,8 +362,8 @@
     "katex": "^0.18.2",
     "@tootallnate/once": "^2.0.1",
     "@vercel/node": {
-      "undici": "^6.29.1",
-      "path-to-regexp": "^6.3.0"
+      "path-to-regexp": "^6.3.0",
+      "undici": "^5.29.0"
     },
     "@vercel/remix-builder": {
       "path-to-regexp": "^6.3.0"
@@ -381,7 +381,6 @@
       "zod": "$zod"
     },
     "vercel": {
-      "undici": "^6.29.1",
       "zod": "$zod"
     },
     "markdownlint-cli2": {
