@@ -1779,6 +1779,16 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/golf/coach-welcome/**",
+        "pattern": "scripts/golf/coach-welcome/**",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/golf/send-coach-welcome.mjs",
+        "pattern": "scripts/golf/send-coach-welcome.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/janitor/**",
         "pattern": "scripts/janitor/**",
         "category": "services"
@@ -2298,6 +2308,11 @@
       {
         "id": "tests:scripts/clubhouse/__tests__/material-inventory.test.mjs",
         "pattern": "scripts/clubhouse/__tests__/material-inventory.test.mjs",
+        "category": "tests"
+      },
+      {
+        "id": "tests:scripts/golf/__tests__/send-coach-welcome.test.mjs",
+        "pattern": "scripts/golf/__tests__/send-coach-welcome.test.mjs",
         "category": "tests"
       },
       {
@@ -9816,6 +9831,30 @@
     },
     {
       "source": "auth_onboarding_join",
+      "target": "services:scripts/golf/coach-welcome/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/golf/coach-welcome/**"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
+      "target": "services:scripts/golf/send-coach-welcome.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/golf/send-coach-welcome.mjs"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
       "target": "services:src/clubhouse/routes/auth.tsx",
       "kind": "feature_service",
       "evidence": [
@@ -9895,6 +9934,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "e2e/auth.spec.ts"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
+      "target": "tests:scripts/golf/__tests__/send-coach-welcome.test.mjs",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/golf/__tests__/send-coach-welcome.test.mjs"
         }
       ]
     },

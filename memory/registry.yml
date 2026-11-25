@@ -1430,6 +1430,8 @@ features:
         - src/lib/supabase/**
         - src/hooks/use-presence.ts
         - src/clubhouse/routes/auth.tsx
+        - scripts/golf/send-coach-welcome.mjs
+        - scripts/golf/coach-welcome/**
       db:
         - supabase/migrations/*auth*.sql
         - supabase/migrations/*user*.sql
@@ -1438,6 +1440,7 @@ features:
         - e2e/auth.spec.ts
         - src/test/lib/auth/**
         - src/clubhouse/__tests__/auth*.test.*
+        - scripts/golf/__tests__/send-coach-welcome.test.mjs
     integrations:
       - supabase
       - team_access_control

@@ -79,7 +79,7 @@ Auth Onboarding And Join · active · criticality high · owner platform
 - **Relations:** 1 doc/structurally-evidenced, 31 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `check_rate_limit_atomic`, `golf_team_by_join_code`
-- **Test surfaces:** 3
+- **Test surfaces:** 4
 - **Sentry/admin_events signals:** `auth_onboarding`, `join_team_flow`
 
 ### `baseball_core`

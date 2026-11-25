@@ -157,6 +157,16 @@ Join code
   join code, a coach refusal in
   `golf_join_team_with_code`, and pending-only player join requests.
 
+- A head coach can be set up and welcomed by the owner with
+  `npm run golf:coach-welcome -- --env production --coach-email <email> ...`
+  (`scripts/golf/send-coach-welcome.mjs`, a dry run unless `--send`). For a
+  new coach it writes the rows coach onboarding writes (login with role
+  coach, organization, coach profile, one team per `--teams` entry, a
+  head-coach staff row each), checks the temporary password signs in, then
+  sends the Locker welcome email (login, temporary password, team codes)
+  through Resend. An existing coach's password is replaced only with
+  `--reset-password`. `--preview-to` sends a preview and changes nothing.
+
 ## UI Contract
 
 - Auth/onboarding errors should be specific enough to recover: not signed in, missing profile, invalid code, already joined, or pending approval.
