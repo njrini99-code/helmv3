@@ -75,3 +75,22 @@ describe('completePlayerOnboarding reports why a player is not on the team', () 
     expect(logged.toUpperCase()).not.toContain('K7PQX4MN');
   });
 });
+
+describe('completePlayerOnboarding never turns a coach login into a player', () => {
+  it('a coach login with no profile yet (a staff-code account) is refused before anything is written', async () => {
+    tables = { golf_players: [], golf_coaches: [], users: [] };
+    fake = createFakeSupabase({ user: { id: 'user-2', email: 'asst@school.test', user_metadata: { role: 'coach' } }, tables });
+    const r = await completePlayerOnboarding(INPUT, 'K7PQX4MN');
+    expect(r).toMatchObject({ success: false, error: expect.stringMatching(/coach/) });
+    expect(tables.golf_players?.length).toBe(0);
+    expect(invite.impl).not.toHaveBeenCalled();
+  });
+
+  it('a coach row part way through its own setup is refused too', async () => {
+    tables = { golf_players: [], golf_coaches: [{ id: 'coach-1', user_id: 'user-3', onboarding_completed: false }], users: [] };
+    fake = createFakeSupabase({ user: { id: 'user-3', email: 'hc@school.test' }, tables });
+    const r = await completePlayerOnboarding(INPUT, 'K7PQX4MN');
+    expect(r.success).toBe(false);
+    expect(tables.golf_players?.length).toBe(0);
+  });
+});

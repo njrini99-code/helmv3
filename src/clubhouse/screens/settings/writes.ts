@@ -104,7 +104,13 @@ export function createLiveWrites(ctx: {
     },
 
     async changeEmail(email) {
-      const { error } = await sb.auth.updateUser({ email: email.trim() });
+      // The confirmation link comes back through the app's own callback (which finishes the sign-in and routes by role),
+      // not to Supabase's default site address.
+      const { error } = await sb.auth.updateUser(
+        { email: email.trim() },
+        typeof window !== 'undefined' ? { emailRedirectTo: `${window.location.origin}/auth/callback?next=/golf/dashboard` } : undefined,
+      );
+      if (error && (error as { code?: string }).code === 'email_exists') return { success: false, error: 'That email is already on another GolfHelm account.' };
       return res(error);
     },
 
@@ -112,8 +118,18 @@ export function createLiveWrites(ctx: {
       if (!ctx.email) return { success: false, error: 'Your account has no email to confirm with.' };
       // Re-authenticate first, as the current page does.
       const check = await sb.auth.signInWithPassword({ email: ctx.email, password: current });
-      if (check.error) return { success: false, error: 'Your current password is incorrect.' };
+      if (check.error) {
+        // Only a refused password is "incorrect": a throttle or a dropped connection says so, so nobody retries into a lockout.
+        const status = (check.error as { status?: number }).status;
+        const code = (check.error as { code?: string }).code;
+        if (status === 429 || code === 'over_request_rate_limit') return { success: false, error: 'Too many tries just now. Wait a few minutes, then try again.' };
+        const said = (check.error as { message?: string }).message ?? '';
+        if (code === 'invalid_credentials' || status === 400 || /invalid login credentials/i.test(said)) return { success: false, error: 'Your current password is incorrect.' };
+        return { success: false, error: 'We couldn’t check your current password just now. Nothing was changed. Try again.' };
+      }
       const { error } = await sb.auth.updateUser({ password: next });
+      if (error && (error as { code?: string }).code === 'same_password') return { success: false, error: 'Choose a password you don’t already use.' };
+      if (error && (error as { code?: string }).code === 'weak_password') return { success: false, error: 'Choose a stronger password. That one is too common or has appeared in a data breach.' };
       return res(error);
     },
 

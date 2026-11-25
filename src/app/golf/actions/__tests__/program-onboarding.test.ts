@@ -258,8 +258,10 @@ describe('completeCoachOnboarding', () => {
     // was rewritten to point at the team code, and re-pinning whole prose is how
     // the next copy fix turns main red again.
     expect(result.error).toMatch(/already set up on Helm/i);
-    // What the message must ACHIEVE: send them to the thing that works.
-    expect(result.error).toMatch(/team code/i);
+    // What the message must ACHIEVE: send them to the thing that works. A roster team code no longer makes a coach
+    // (players only), so that is the head coach's staff invite, opened while signed in.
+    expect(result.error).toMatch(/staff invite/i);
+    expect(result.error).not.toMatch(/team code/i);
     // Must NOT proceed to create a coach/team after the org collision.
     expect(serverMock.insertCalls.find((c) => c.table === 'golf_coaches')).toBeUndefined();
   });

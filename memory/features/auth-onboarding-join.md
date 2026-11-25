@@ -132,6 +132,31 @@ Join code
   `src/app/golf/actions/__tests__/assistant-join-surface.test.ts` and
   `auth-signup-gate.test.ts`.
 
+- A player's team code rides on the account, not only the browser:
+  `signupActionImpl` stores it as `user_metadata.join_code`, and
+  `loadPlayerOnboard` uses it when the URL has no `?joinCode=`. A
+  player who confirms on another device still finishes on that team
+  (`src/clubhouse/data/__tests__/onboard-team.test.ts`).
+- A staff code at sign-up is checked like the invite link: the token's
+  expiry and its single-use nonce, before `auth.signUp`, so a used code
+  creates nothing (`auth-signup-staff-code.test.ts`).
+- Only a refused password (`invalid_credentials`) counts toward the
+  sign-in lockout. Unconfirmed email, GoTrue throttling and outages
+  return their own messages (`auth-login-failures.test.ts`). The
+  per-IP sign-in limit is 60 a minute, sized for a team on one campus
+  IP.
+- A coach login (a coach row, or `user_metadata.role = 'coach'`) never
+  gets a first player profile through `completePlayerOnboarding`.
+- Settings password changes use sign-up's `passwordProblem` rules.
+- The demo account's sign-out (route and idle timeout) is local scope,
+  and the demo refresh cron restores the demo login's password and
+  email.
+- Held: `20261125130000_golf_auth_integrity.sql` copies email changes
+  from `auth.users` to `users` and the profile tables, and stops
+  self-edits of `users.email`. It also adds a case-insensitive unique
+  join code, a coach refusal in
+  `golf_join_team_with_code`, and pending-only player join requests.
+
 ## UI Contract
 
 - Auth/onboarding errors should be specific enough to recover: not signed in, missing profile, invalid code, already joined, or pending approval.

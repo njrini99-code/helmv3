@@ -3,6 +3,7 @@ import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/c
 import type { ChClock } from '../../lib/clock-cookie';
 import { formatHcp } from '../../lib/format';
 import { plural } from '../../lib/plural';
+import { passwordProblem as newPasswordProblem } from '../onboard/logic';
 
 /**
  * Settings (Clubhouse): one page with a section rail. Every section carries
@@ -249,7 +250,10 @@ export function profileProblem(role: 'coach' | 'player', p: { fullName: string; 
 
 export function passwordProblem(current: string, next: string, confirm: string): ChProblem | null {
   if (!current) return problem('CH-8105', 'Enter your current password.', 'set-pw-cur');
-  if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.', 'set-pw-new');
+  // The same rules sign up and the reset link hold a password to, so Settings cannot set one they would refuse.
+  const rule = newPasswordProblem(next);
+  if (rule) return problem('CH-8106', rule, 'set-pw-new');
+  if (next === current) return problem('CH-8106', 'Choose a password you don’t already use.', 'set-pw-new');
   if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.", 'set-pw-confirm');
   return null;
 }
