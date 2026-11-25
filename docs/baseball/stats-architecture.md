@@ -16,7 +16,7 @@ tests the issue's acceptance criteria ask for. Phase 0 of the #379 design
 defers (b) — the shared adapter is a later chunk — but **directly fixes the
 reported symptom and adds (c)**:
 
-- **`scripts/seed-baseball-stats.mjs`** now writes BOTH stats layers for
+- **`scripts/seed/seed-baseball-stats.mjs`** now writes BOTH stats layers for
   every `stat_type: 'game'` session it seeds: it still upserts the legacy
   flat/aggregate rows (so the ~30 grandfathered consumers keep showing real
   numbers during the migration window), and it additionally upserts ONE
@@ -31,7 +31,7 @@ reported symptom and adds (c)**:
   Practice sessions have no box-score equivalent yet (see the practice-shape
   open question below) and stay legacy-only. Every write is an upsert keyed
   on team+date (never player); nothing is ever deleted and reinserted.
-- **`scripts/seed-baseball-demo.ts`**'s doc comment previously claimed Stats
+- **`scripts/seed/seed-baseball-demo.ts`**'s doc comment previously claimed Stats
   Center *should* stay empty after seeding — that claim was the root cause
   #379 flagged (a coach running both demo seed scripts still saw a
   contradictory product). The comment now points at

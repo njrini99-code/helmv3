@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
-import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+import { cliGuard, dryRunClient } from '../lib/cli-guard.mjs';
 
 const cli = cliGuard({
-  name: 'scripts/seed-baseball-roster.mjs',
+  name: 'scripts/seed/seed-baseball-roster.mjs',
   summary:
     "Seeds a demo BaseballHelm roster (players, auth users, team members, stats, aggregates) into the org and coach named by BASEBALL_SEED_ORG_ID and BASEBALL_SEED_COACH_ID.",
   secrets: "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, BASEBALL_SEED_ORG_ID, BASEBALL_SEED_COACH_ID",

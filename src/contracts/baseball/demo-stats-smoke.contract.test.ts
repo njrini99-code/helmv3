@@ -11,7 +11,7 @@ const read = (path: string) => readFileSync(join(repo, path), 'utf8');
  */
 describe('Baseball demo stats smoke contract (#382)', () => {
   it('rini demo seed writes games and stats-facing tables', () => {
-    const seed = read('scripts/seed-rini-baseball-demo.ts');
+    const seed = read('scripts/seed/seed-rini-baseball-demo.ts');
     expect(seed).toContain("upsert('baseball_games'");
     expect(seed).toContain("upsert('baseball_coach_insights'");
     expect(seed).toContain('recruiting_activated: false');

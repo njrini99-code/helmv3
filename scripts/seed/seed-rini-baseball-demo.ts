@@ -2,13 +2,13 @@
  * seed-rini-baseball-demo.ts — full BaseballHelm + Helm Lift Lab demo for the
  * user's REAL accounts (njrini99 = coach, rinin376 = player), on ONE team.
  *
- * Modeled on scripts/seed-baseball-demo.ts (Phase-1) + seed-baseball-lifting-demo.ts
+ * Modeled on scripts/seed/seed-baseball-demo.ts (Phase-1) + seed-baseball-lifting-demo.ts
  * (Phase-2): deterministic uuid ids, upsert-only (no destructive writes except the
  * explicit old-team delete below), dry-run by default, --confirm to write.
  *
  * Run:
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-rini-baseball-demo.ts          # dry run
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-rini-baseball-demo.ts --confirm # write
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-rini-baseball-demo.ts          # dry run
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-rini-baseball-demo.ts --confirm # write
  *
  * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
  * RINI_DEMO_COACH_PASSWORD, RINI_DEMO_PLAYER_PASSWORD, RINI_DEMO_FILLER_PASSWORD.
@@ -18,10 +18,10 @@
 import { config as loadEnv } from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/seed-rini-baseball-demo.ts',
+  name: 'scripts/seed/seed-rini-baseball-demo.ts',
   summary:
     "Seeds the BaseballHelm and Lift Lab demo for the owner accounts on one team.",
   guard: "its own --confirm flag (unchanged)",

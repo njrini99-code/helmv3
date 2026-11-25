@@ -20,7 +20,7 @@
  * without reading the header comment, and there is no automated backstop
  * between that and production round data.
  *
- * `scripts/seed-baseball-stats.mjs` already solved this. This module is that
+ * `scripts/seed/seed-baseball-stats.mjs` already solved this. This module is that
  * pattern extracted so the scripts above stop each needing to remember it.
  *
  * WHAT IT DOES NOT DO

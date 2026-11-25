@@ -56,9 +56,9 @@
  *
  * Run:
  *   # 1. Dry run (default — prints the plan, touches nothing):
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-e2e.ts
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-e2e.ts
  *   # 2. Actually seed:
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-e2e.ts --confirm
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-e2e.ts --confirm
  *   # (or via the npm script):
  *   npm run seed:baseball:e2e -- --confirm
  *
@@ -69,15 +69,15 @@
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
-import { isRecruitingEnabled } from '../src/lib/baseball/product-modules';
+import { isRecruitingEnabled } from '../../src/lib/baseball/product-modules';
 import {
   assertWriteTargetAllowed,
   describeSeedTarget,
-} from './lib/seed-target-guard';
-import { helpOnly } from './lib/cli-guard.mjs';
+} from '../lib/seed-target-guard';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/seed-baseball-e2e.ts',
+  name: 'scripts/seed/seed-baseball-e2e.ts',
   summary:
     "Deterministic seed for the BaseballHelm Camps, Pipeline and Box Score Playwright specs (issue #375). Run by CI against the local stack.",
   guard: "its own --confirm flag (unchanged)",
@@ -109,7 +109,7 @@ const SEED_ONLY_PASSWORD = 'BaseballE2eSeed2026!';
 const SEED_ONLY_DOMAIN = 'baseballhelm-e2e.test';
 
 // Fixed namespace for all deterministic ids in this seed — isolated from
-// scripts/seed-baseball-demo.ts (`baseballhelm-demo-phase1`) and any other
+// scripts/seed/seed-baseball-demo.ts (`baseballhelm-demo-phase1`) and any other
 // seed script so E2E fixtures never collide with demo/production rows.
 const NS = 'baseballhelm-e2e';
 
@@ -270,7 +270,7 @@ async function main() {
     assertWriteTargetAllowed({
       url,
       destructiveWarning: DESTRUCTIVE_WARNING,
-      scriptPath: 'scripts/seed-baseball-e2e.ts',
+      scriptPath: 'scripts/seed/seed-baseball-e2e.ts',
     });
   }
 

@@ -3,7 +3,7 @@
  *
  * The public BaseballHelm demo ("Demo University Baseball", entered via
  * /baseball/demo) promises a "fully-populated" program but — once past the
- * Phase-1 seed (scripts/seed-baseball-demo.ts) — actually shows an empty
+ * Phase-1 seed (scripts/seed/seed-baseball-demo.ts) — actually shows an empty
  * season: 0 games on record in Stats Center, 0 open risk flags, an empty
  * recruiting board, and a single stale practice on the calendar. This script
  * closes that gap for the SAME Phase-1 demo team, WITHOUT re-seeding org/
@@ -40,7 +40,7 @@
  *      run date, plus 2 more baseball_practices (with blocks) so Practice
  *      Planner shows more than Phase-1's single practice.
  *
- * SAFETY / IDEMPOTENCY (same guarantees as scripts/seed-baseball-demo.ts):
+ * SAFETY / IDEMPOTENCY (same guarantees as scripts/seed/seed-baseball-demo.ts):
  *   - Every row id is deterministic (`detId()`, sha1 under a fixed
  *     namespace DISTINCT from Phase-1's, so nothing here can ever collide
  *     with or overwrite a Phase-1 row by accident).
@@ -56,21 +56,21 @@
  *     missing — never deleted, never password-reset (unlike the two shared
  *     CI login identities Phase-1 force-resets).
  *
- * DEPENDS ON scripts/seed-baseball-demo.ts having run at least once — this
+ * DEPENDS ON scripts/seed/seed-baseball-demo.ts having run at least once — this
  * script re-derives the Phase-1 org/team/coach/roster ids from the same
- * namespace + keys (mirrors scripts/seed-baseball-lifting-demo.ts's
+ * namespace + keys (mirrors scripts/seed/seed-baseball-lifting-demo.ts's
  * `p1Id()` pattern) rather than re-creating them. If Phase-1 hasn't run,
  * the FK-dependent writes below will fail loudly with a clear Postgres
- * foreign-key error — run scripts/seed-baseball-demo.ts --confirm first.
+ * foreign-key error — run scripts/seed/seed-baseball-demo.ts --confirm first.
  *
  * SAFE BY DEFAULT — dry run unless --confirm is passed.
  *
  * Run (later, by a human — this PR ships the script REVIEWED-ONLY, it is
  * never executed by the agent that authored it):
  *   # Dry run (prints the plan, writes nothing):
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo-program.ts
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-demo-program.ts
  *   # Actually seed:
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo-program.ts --confirm
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-demo-program.ts --confirm
  *
  * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
  */
@@ -81,12 +81,12 @@ import {
   simulateGame,
   type HitterSkill,
   type PitcherSkill,
-} from '../src/lib/baseball/seed/demo-program-sim';
-import { isRecruitingEnabled } from '../src/lib/baseball/product-modules';
-import { helpOnly } from './lib/cli-guard.mjs';
+} from '../../src/lib/baseball/seed/demo-program-sim';
+import { isRecruitingEnabled } from '../../src/lib/baseball/product-modules';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/seed-baseball-demo-program.ts',
+  name: 'scripts/seed/seed-baseball-demo-program.ts',
   summary:
     "Seeds the BaseballHelm demo program (fixes #912).",
   guard: "its own --confirm flag (unchanged)",
@@ -94,7 +94,7 @@ helpOnly({
 });
 
 // ---------------------------------------------------------------------------
-// CI guard (mirrors scripts/seed-baseball-demo.ts) — fail loudly before any
+// CI guard (mirrors scripts/seed/seed-baseball-demo.ts) — fail loudly before any
 // async work if the required Supabase credentials are missing.
 // ---------------------------------------------------------------------------
 function assertRequiredSeedEnv(): void {
@@ -114,7 +114,7 @@ assertRequiredSeedEnv();
 // ---------------------------------------------------------------------------
 // Deterministic ids.
 //
-// NS_P1 re-derives scripts/seed-baseball-demo.ts's ids (org/team/coach/
+// NS_P1 re-derives scripts/seed/seed-baseball-demo.ts's ids (org/team/coach/
 // roster) — MUST stay byte-identical to that script's namespace + keys.
 // NS is THIS script's own namespace for every new row it creates, so ids
 // here can never collide with Phase-1 (or seed-baseball-lifting-demo.ts's
@@ -137,7 +137,7 @@ const p1Id = (key: string) => detIdIn(NS_P1, key);
 const TEAM_ID = p1Id('team');
 const COACH_ID = p1Id('coach');
 
-// Phase-1 roster (byte-identical to ROSTER in scripts/seed-baseball-demo.ts —
+// Phase-1 roster (byte-identical to ROSTER in scripts/seed/seed-baseball-demo.ts —
 // only the fields THIS script needs: position for def_position/lineup slotting
 // and bats/throws for the recruit profiles' flavor is not needed here).
 const ROSTER = [
@@ -199,7 +199,7 @@ function isoDaysAgo(days: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// Upsert wrapper + counters (identical shape to scripts/seed-baseball-demo.ts).
+// Upsert wrapper + counters (identical shape to scripts/seed/seed-baseball-demo.ts).
 // ---------------------------------------------------------------------------
 type Counts = Record<string, number>;
 const counts: Counts = {};

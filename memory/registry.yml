@@ -206,8 +206,8 @@ features:
         - src/lib/observability/supabase/**
         - src/lib/admin/database/**
         - src/lib/admin/incidents/db-observability-source.ts
-        - scripts/db-observability-trace-cert.mjs
-        - scripts/db-observability-metrics-names.mjs
+        - scripts/observability/db-observability-trace-cert.mjs
+        - scripts/observability/db-observability-metrics-names.mjs
         - scripts/repo-doctor/checks/db-observability.mjs
       db:
         - supabase/migrations/*helm_debug_db_error_events*.sql
@@ -236,7 +236,7 @@ features:
       required_checks:
         - npm run typecheck
         - npx vitest run src/lib/observability/supabase src/lib/admin/database src/lib/admin/incidents
-        - node scripts/db-observability-trace-cert.mjs
+        - node scripts/observability/db-observability-trace-cert.mjs
         - npm run repo:doctor
 
   coachhelm_ai:
@@ -478,10 +478,10 @@ features:
       services:
         - src/lib/golf/**
         - src/lib/coachhelm/v2/post-round-trigger.ts
-        - scripts/coachhelm-prewarm-round-reviews.ts
+        - scripts/coachhelm/coachhelm-prewarm-round-reviews.ts
         # The demo team generator's scripts and owner SQL.
-        - scripts/golf-demo-refresh.ts
-        - scripts/verify-golf-demo-coverage.ts
+        - scripts/seed/golf-demo-refresh.ts
+        - scripts/seed/verify-golf-demo-coverage.ts
         - scripts/sql/golf-demo-cleanup.sql
         - scripts/sql/strip-demo-seed-tags.sql
       db:

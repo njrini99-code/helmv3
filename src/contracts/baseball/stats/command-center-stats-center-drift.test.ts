@@ -56,7 +56,7 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { getStatsCenter } from '@/lib/baseball/read-models/stats-center';
 import { getCommandCenter } from '@/lib/baseball/read-models/command-center';
-import { seedTeamStats } from '../../../../scripts/seed-baseball-stats.mjs';
+import { seedTeamStats } from '../../../../scripts/seed/seed-baseball-stats.mjs';
 
 const TEAM_ID = 'team-1';
 const SEASON = 2026;
@@ -66,7 +66,7 @@ const SEASON = 2026;
 const FIXED_NOW = Date.UTC(SEASON, 5, 15);
 
 // Deterministic PRNG (mulberry32) — the same implementation already used by
-// scripts/seed-baseball-box-scores.mjs for reproducible seed data. Unlike a
+// scripts/seed/seed-baseball-box-scores.mjs for reproducible seed data. Unlike a
 // constant-value stub (which would deterministically pick the SAME
 // stat_type for every session — fine for a minimal smoke check, but not a
 // realistic player), this produces a genuinely varied, realistic game +

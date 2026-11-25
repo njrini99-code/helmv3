@@ -27,15 +27,15 @@
  * Target: --team <uuid> (SEED_TEAM_ID). Coach is not needed (box scores are
  * team+player scoped), but --coach is accepted for symmetry with the sibling seeder.
  *
- *   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/seed-baseball-box-scores.mjs --team <uuid>
- *   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/seed-baseball-box-scores.mjs --team <uuid> --confirm --allow-prod
+ *   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/seed/seed-baseball-box-scores.mjs --team <uuid>
+ *   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/seed/seed-baseball-box-scores.mjs --team <uuid> --confirm --allow-prod
  */
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/seed-baseball-box-scores.mjs',
+  name: 'scripts/seed/seed-baseball-box-scores.mjs',
   summary:
     "Seeds BaseballHelm box scores. Dry-run by default; env-gated.",
   guard: "its own --confirm / --allow-prod flag (unchanged)",

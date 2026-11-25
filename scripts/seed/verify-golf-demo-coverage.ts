@@ -16,22 +16,22 @@
  * HELM_ALLOW_PRODUCTION=1, though this only reads.
  *
  * Usage:
- *   npx tsx scripts/verify-golf-demo-coverage.ts [--today YYYY-MM-DD] [--out <file>]
+ *   npx tsx scripts/seed/verify-golf-demo-coverage.ts [--today YYYY-MM-DD] [--out <file>]
  */
 import { existsSync, writeFileSync } from 'node:fs';
 import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
-import { helpOnly } from './lib/cli-guard.mjs';
-import { refuseProduction } from './lib/production-site-guard.mjs';
-import { DEMO_TEAM_ID } from '../src/lib/demo/config';
-import type { Database } from '../src/lib/types/database';
-import { getValidTimezone } from '../src/lib/calendar/timezone';
-import { checkDemoCoverage, formatCoverage } from '../src/lib/golf/demo/coverage';
-import { localDate } from '../src/lib/golf/demo/refresh';
-import { readDemoSnapshot } from '../src/lib/golf/demo/snapshot';
+import { helpOnly } from '../lib/cli-guard.mjs';
+import { refuseProduction } from '../lib/production-site-guard.mjs';
+import { DEMO_TEAM_ID } from '../../src/lib/demo/config';
+import type { Database } from '../../src/lib/types/database';
+import { getValidTimezone } from '../../src/lib/calendar/timezone';
+import { checkDemoCoverage, formatCoverage } from '../../src/lib/golf/demo/coverage';
+import { localDate } from '../../src/lib/golf/demo/refresh';
+import { readDemoSnapshot } from '../../src/lib/golf/demo/snapshot';
 
 helpOnly({
-  name: 'scripts/verify-golf-demo-coverage.ts',
+  name: 'scripts/seed/verify-golf-demo-coverage.ts',
   summary:
     'Reads the demo team (DEMO_TEAM_ID) as a prospect sees it and runs the demo coverage check. Read-only; exit 1 when a check fails. Production is refused unless HELM_ALLOW_PRODUCTION=1.',
   usage: '[--today YYYY-MM-DD] [--out <file>]',
@@ -48,7 +48,7 @@ async function main(): Promise<void> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are needed.');
-  refuseProduction({ what: 'scripts/verify-golf-demo-coverage.ts', supabaseUrl: url });
+  refuseProduction({ what: 'scripts/seed/verify-golf-demo-coverage.ts', supabaseUrl: url });
 
   const client = createClient<Database>(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   let today = arg('--today');

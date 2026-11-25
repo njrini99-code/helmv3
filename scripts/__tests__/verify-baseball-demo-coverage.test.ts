@@ -6,7 +6,7 @@ import {
   INTENTIONALLY_EMPTY,
   evaluateCoverage,
   formatReportLine,
-} from '../verify-baseball-demo-coverage';
+} from '../seed/verify-baseball-demo-coverage';
 
 test('evaluateCoverage passes a required surface with rows', () => {
   const entry = SURFACE_COVERAGE[0];

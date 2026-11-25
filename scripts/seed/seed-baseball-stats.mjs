@@ -9,8 +9,8 @@
  * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  * Target: SEED_TEAM_ID + SEED_COACH_ID (or --team / --coach)
  *
- *   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/seed-baseball-stats.mjs
- *   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/seed-baseball-stats.mjs --confirm --team <uuid> --coach <uuid>
+ *   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/seed/seed-baseball-stats.mjs
+ *   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/seed/seed-baseball-stats.mjs --confirm --team <uuid> --coach <uuid>
  *
  * #379 RECONCILIATION — this seeder writes BOTH stats layers, not just the
  * legacy one:
@@ -32,7 +32,7 @@
  *      with every attending player's batting (always) and pitching (when
  *      the session recorded innings pitched) box-score line referencing
  *      that SAME shared `game_id` — mirroring the existing correct pattern
- *      in `scripts/seed-rini-baseball-demo.ts` (build N team games once,
+ *      in `scripts/seed/seed-rini-baseball-demo.ts` (build N team games once,
  *      then loop players and attach lines to the same `game.id`). It then
  *      calls the SAME `recalculate_baseball_season_stats` RPC
  *      `src/app/baseball/actions/games.ts`'s box-score save flow calls
@@ -81,10 +81,10 @@
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/seed-baseball-stats.mjs',
+  name: 'scripts/seed/seed-baseball-stats.mjs',
   summary:
     "Seeds BaseballHelm player stats. Dry-run by default; env-gated.",
   guard: "its own --confirm / --allow-prod flag (unchanged)",
@@ -190,7 +190,7 @@ function shuffled(arr, next) {
  * on `gameDate`" reference the SAME `baseball_games` row (built once by
  * `buildBoxScoreRowsForSessions`, keyed on team+date) instead of each player
  * minting a private one — mirroring the existing correct pattern in
- * `scripts/seed-rini-baseball-demo.ts` (build N team games once, then loop
+ * `scripts/seed/seed-rini-baseball-demo.ts` (build N team games once, then loop
  * players and attach lines to the same `game.id`).
  *
  * Pure — no I/O. `rng`/`now` injectable for the same determinism reasons as
@@ -383,7 +383,7 @@ export function buildAggregateRow(teamId, playerId, sessions) {
  * review of this chunk caught exactly that bug), with every attending
  * player's batting line (always) and pitching line (when the session
  * recorded innings pitched) for that date referencing the SAME `game_id`.
- * Mirrors the existing correct pattern in `scripts/seed-rini-baseball-demo.ts`
+ * Mirrors the existing correct pattern in `scripts/seed/seed-rini-baseball-demo.ts`
  * (build N team games once, then loop players and attach lines to the same
  * `game.id`).
  *
@@ -654,7 +654,7 @@ async function run() {
   console.log(dryRun ? '\n[DRY RUN] Complete — re-run with --confirm to write.' : '\n✅ Stats seeded for all roster players!');
 }
 
-// Only auto-run when executed directly (`node scripts/seed-baseball-stats.mjs`),
+// Only auto-run when executed directly (`node scripts/seed/seed-baseball-stats.mjs`),
 // not when imported — the smoke/drift tests (#379) import the exported
 // builders above and must not trigger a live `parseConfig()`/`process.exit`.
 const isMainModule = (() => {

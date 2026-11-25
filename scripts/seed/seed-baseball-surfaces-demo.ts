@@ -2,11 +2,11 @@
  * seed-baseball-surfaces-demo.ts — Phase-3 BaseballHelm demo surface seed.
  *
  * Closes the gap recorded in https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/BASEBALLHELM_STALE_SURFACE_AUDIT_2026-06-25.md:
- * the Phase-1 demo seed (scripts/seed-baseball-demo.ts) does not populate
+ * the Phase-1 demo seed (scripts/seed/seed-baseball-demo.ts) does not populate
  * messaging, video, tasks, strength groups, developmental plans, seasons,
  * import-source registry, or stats/aggregates — so those routes render empty
  * states for the demo login. This script is a DEPENDENT extension (same
- * pattern as scripts/seed-baseball-lifting-demo.ts): it re-derives the
+ * pattern as scripts/seed/seed-baseball-lifting-demo.ts): it re-derives the
  * Phase-1 org/team/coach/roster ids and seeds everything else.
  *
  * Full per-table contract (anchoring parents, route mapping, schema caveats,
@@ -39,7 +39,7 @@
  *     are skipped with a warning instead of failing the run.
  *   - Scoped strictly to the Phase-1 demo org/team/coach/roster ids. Phase-1
  *     MUST have run first (this script depends on ids it created). Phase-2
- *     (lifting, scripts/seed-baseball-lifting-demo.ts) does NOT need to have
+ *     (lifting, scripts/seed/seed-baseball-lifting-demo.ts) does NOT need to have
  *     run for most of this script. The one exception is helm_lifting_
  *     group_members (§4): each member row needs the player's
  *     helm_lifting_athletes row (created by Phase-2) to resolve an
@@ -54,9 +54,9 @@
  *
  * Run:
  *   # Dry run (prints plan, touches nothing):
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-surfaces-demo.ts
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-surfaces-demo.ts
  *   # Actually seed:
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-surfaces-demo.ts --confirm
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-surfaces-demo.ts --confirm
  *
  * Requires: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
  */
@@ -64,10 +64,10 @@
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/seed-baseball-surfaces-demo.ts',
+  name: 'scripts/seed/seed-baseball-surfaces-demo.ts',
   summary:
     "Phase 3 BaseballHelm demo seed for the remaining product surfaces.",
   guard: "its own --confirm flag (unchanged)",
@@ -75,7 +75,7 @@ helpOnly({
 });
 
 // ---------------------------------------------------------------------------
-// Shared identity (MUST match scripts/seed-baseball-demo.ts exactly).
+// Shared identity (MUST match scripts/seed/seed-baseball-demo.ts exactly).
 // ---------------------------------------------------------------------------
 const DEMO_DOMAIN = 'baseballhelmdemo.com';
 const DEMO_COACH_EMAIL = `demo-coach@${DEMO_DOMAIN}`;
@@ -240,7 +240,7 @@ async function main() {
   const coachUserId = await lookupUserId(DEMO_COACH_EMAIL);
   if (!coachUserId) {
     console.warn(
-      `  ⚠ ${DEMO_COACH_EMAIL} not found — has scripts/seed-baseball-demo.ts run with --confirm yet? Messaging tables will be skipped.`,
+      `  ⚠ ${DEMO_COACH_EMAIL} not found — has scripts/seed/seed-baseball-demo.ts run with --confirm yet? Messaging tables will be skipped.`,
     );
   }
   const playerUserIdByKey: Partial<Record<RosterKey, string>> = {};
@@ -576,7 +576,7 @@ async function main() {
   ]);
 
   // Members need each player's helm_lifting_athletes.id (athlete_id), which
-  // only exists once Phase-2 (scripts/seed-baseball-lifting-demo.ts) has run.
+  // only exists once Phase-2 (scripts/seed/seed-baseball-lifting-demo.ts) has run.
   // Resolve what we can and skip the rest honestly — never throw.
   const memberSpecs: {
     idKey: string;
@@ -608,7 +608,7 @@ async function main() {
     .filter((r): r is NonNullable<typeof r> => r !== null);
   if (groupMemberRows.length < memberSpecs.length) {
     skipped.push(
-      `helm_lifting_group_members — ${memberSpecs.length - groupMemberRows.length} of ${memberSpecs.length} member(s) skipped (player not yet seeded in helm_lifting_athletes; run scripts/seed-baseball-lifting-demo.ts --confirm first for full coverage)`,
+      `helm_lifting_group_members — ${memberSpecs.length - groupMemberRows.length} of ${memberSpecs.length} member(s) skipped (player not yet seeded in helm_lifting_athletes; run scripts/seed/seed-baseball-lifting-demo.ts --confirm first for full coverage)`,
     );
   }
   await upsert('helm_lifting_group_members', groupMemberRows);
@@ -942,7 +942,7 @@ async function main() {
   }
   console.log(`\nTeam: Demo University Baseball (${TEAM_ID})`);
   console.log('Full per-table contract: docs/seed/BASEBALLHELM_DEMO_DATA_CONTRACT.md');
-  console.log('Verify coverage with: scripts/verify-baseball-demo-coverage.ts');
+  console.log('Verify coverage with: scripts/seed/verify-baseball-demo-coverage.ts');
 }
 
 main().catch((e) => {

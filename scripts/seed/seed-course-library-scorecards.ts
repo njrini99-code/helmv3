@@ -54,9 +54,9 @@
  * then decide whether/when to run --apply against a real database.
  *
  * Usage:
- *   npx tsx scripts/seed-course-library-scorecards.ts               # dry-run (default)
- *   npx tsx scripts/seed-course-library-scorecards.ts --apply       # writes
- *   npx tsx scripts/seed-course-library-scorecards.ts --course="Pinehurst No. 2" --apply
+ *   npx tsx scripts/seed/seed-course-library-scorecards.ts               # dry-run (default)
+ *   npx tsx scripts/seed/seed-course-library-scorecards.ts --apply       # writes
+ *   npx tsx scripts/seed/seed-course-library-scorecards.ts --course="Pinehurst No. 2" --apply
  *
  * Requires (only when --apply is actually invoked by a human):
  *   - NEXT_PUBLIC_SUPABASE_URL
@@ -64,12 +64,12 @@
  */
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
-import { normalizeName } from '../src/lib/golf/course-library';
-import { buildCourseSeed, type CourseFact } from '../src/lib/golf/course-scorecard-generator';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { normalizeName } from '../../src/lib/golf/course-library';
+import { buildCourseSeed, type CourseFact } from '../../src/lib/golf/course-scorecard-generator';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/seed-course-library-scorecards.ts',
+  name: 'scripts/seed/seed-course-library-scorecards.ts',
   summary:
     "Seeds course library scorecards (fixes #913, part 1 of 3).",
   guard: "its own --apply flag (unchanged); --dry-run previews",

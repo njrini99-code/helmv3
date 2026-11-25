@@ -1,6 +1,6 @@
 /**
  * baseball-seed-manifest.ts — single source of truth for what
- * scripts/seed-rini-baseball-demo.ts CLAIMS to have written, consumed by
+ * scripts/seed/seed-rini-baseball-demo.ts CLAIMS to have written, consumed by
  * e2e/baseball-stats-smoke.spec.ts (#382).
  *
  * WHY THIS EXISTS: the smoke spec's core job is catching "empty state shown
@@ -22,10 +22,10 @@
  */
 import { createHash } from 'node:crypto';
 
-// Must match NS in scripts/seed-rini-baseball-demo.ts exactly.
+// Must match NS in scripts/seed/seed-rini-baseball-demo.ts exactly.
 const SEED_NAMESPACE = 'rini-baseball-demo-v1';
 
-/** Mirrors detId() in scripts/seed-rini-baseball-demo.ts. */
+/** Mirrors detId() in scripts/seed/seed-rini-baseball-demo.ts. */
 function deterministicId(key: string): string {
   const h = createHash('sha1').update(`${SEED_NAMESPACE}:${key}`).digest('hex');
   const b = h.slice(0, 32).split('');
@@ -38,7 +38,7 @@ function deterministicId(key: string): string {
 }
 
 export const BASEBALL_SEED_MANIFEST = {
-  /** scripts/seed-rini-baseball-demo.ts — Section 2 (org + team). */
+  /** scripts/seed/seed-rini-baseball-demo.ts — Section 2 (org + team). */
   teamName: 'Rini University Baseball',
 
   /**
@@ -57,7 +57,7 @@ export const BASEBALL_SEED_MANIFEST = {
 
   /**
    * Minimum counts the seed guarantees once aligned with the read models
-   * (scripts/seed-rini-baseball-demo.ts §5b). Kept deliberately conservative
+   * (scripts/seed/seed-rini-baseball-demo.ts §5b). Kept deliberately conservative
    * (>= 1, not the exact seeded count) so the manifest stays correct even if
    * a future seed run lands near a season-year boundary and a couple of the
    * relatively-dated games roll into a different `season_year` window (see
@@ -75,7 +75,7 @@ export const BASEBALL_SEED_MANIFEST = {
 
   /**
    * A representative COMPLETED game guaranteed to have both batting and
-   * pitching box-score lines — scripts/seed-rini-baseball-demo.ts seeds this
+   * pitching box-score lines — scripts/seed/seed-rini-baseball-demo.ts seeds this
    * as `pastGames[0]` (vs "Coastal State", §5/§5b). Used to deep-link
    * directly to /baseball/dashboard/stats/games/{gameId} for the Box Score
    * assertions instead of depending on click-through games-list ordering.

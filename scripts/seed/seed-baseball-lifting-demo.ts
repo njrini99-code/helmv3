@@ -1,7 +1,7 @@
 /**
  * seed-baseball-lifting-demo.ts — Helm Lifting Lab demo data helper.
  *
- * Extends the Phase-1 demo seed (scripts/seed-baseball-demo.ts) with:
+ * Extends the Phase-1 demo seed (scripts/seed/seed-baseball-demo.ts) with:
  *
  *   (a) A LIFTING-COACH auth user (demo-lift-coach@baseballhelmdemo.com /
  *       BaseballDemo2026) wired into:
@@ -41,9 +41,9 @@
  *
  * Run:
  *   # Dry run (prints plan, touches nothing):
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-lifting-demo.ts
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-lifting-demo.ts
  *   # Actually seed:
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-lifting-demo.ts --confirm
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-lifting-demo.ts --confirm
  *
  * Requires: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
  *
@@ -69,10 +69,10 @@
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/seed-baseball-lifting-demo.ts',
+  name: 'scripts/seed/seed-baseball-lifting-demo.ts',
   summary:
     "Seeds Helm Lift Lab demo data for the BaseballHelm demo team.",
   guard: "its own --confirm flag (unchanged)",
@@ -80,7 +80,7 @@ helpOnly({
 });
 
 // ---------------------------------------------------------------------------
-// Shared identity (MUST match scripts/seed-baseball-demo.ts exactly).
+// Shared identity (MUST match scripts/seed/seed-baseball-demo.ts exactly).
 // ---------------------------------------------------------------------------
 const DEMO_DOMAIN = 'baseballhelmdemo.com';
 const DEMO_PASSWORD = 'BaseballDemo2026';

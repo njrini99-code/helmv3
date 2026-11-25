@@ -15,11 +15,11 @@
  * first production run is the owner's step.
  *
  * Usage:
- *   npx tsx scripts/golf-demo-refresh.ts --no-db [--today 2026-11-15]
+ *   npx tsx scripts/seed/golf-demo-refresh.ts --no-db [--today 2026-11-15]
  *       generate and check only; no database, no credentials
- *   npx tsx scripts/golf-demo-refresh.ts
+ *   npx tsx scripts/seed/golf-demo-refresh.ts
  *       dry run against the database: reads the ledger, writes nothing
- *   npx tsx scripts/golf-demo-refresh.ts --apply [--full]
+ *   npx tsx scripts/seed/golf-demo-refresh.ts --apply [--full]
  *       write; --full re-sends every row (after a hand edit, or when the
  *       ledger is in doubt)
  *   --out <file> also writes the report to a file.
@@ -27,18 +27,18 @@
 import { existsSync, writeFileSync } from 'node:fs';
 import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
-import { cliGuard } from './lib/cli-guard.mjs';
-import { refuseProduction } from './lib/production-site-guard.mjs';
-import { DEMO_TEAM_ID } from '../src/lib/demo/config';
-import type { Database } from '../src/lib/types/database';
-import { checkDemoCoverage, formatCoverage } from '../src/lib/golf/demo/coverage';
-import { generateDemoTeam } from '../src/lib/golf/demo/generate';
-import { refreshDemoTeam } from '../src/lib/golf/demo/refresh';
-import { DEFAULT_SEED } from '../src/lib/golf/demo/story';
-import { summarizeDataset } from '../src/lib/golf/demo/summary';
+import { cliGuard } from '../lib/cli-guard.mjs';
+import { refuseProduction } from '../lib/production-site-guard.mjs';
+import { DEMO_TEAM_ID } from '../../src/lib/demo/config';
+import type { Database } from '../../src/lib/types/database';
+import { checkDemoCoverage, formatCoverage } from '../../src/lib/golf/demo/coverage';
+import { generateDemoTeam } from '../../src/lib/golf/demo/generate';
+import { refreshDemoTeam } from '../../src/lib/golf/demo/refresh';
+import { DEFAULT_SEED } from '../../src/lib/golf/demo/story';
+import { summarizeDataset } from '../../src/lib/golf/demo/summary';
 
 const cli = cliGuard({
-  name: 'scripts/golf-demo-refresh.ts',
+  name: 'scripts/seed/golf-demo-refresh.ts',
   summary:
     'Regenerates the demo team (DEMO_TEAM_ID only) for today and writes the difference through the generator functions of migration 20261115211000. Never touches a row the generator did not write. Production is refused unless HELM_ALLOW_PRODUCTION=1.',
   usage: '[--no-db] [--today YYYY-MM-DD] [--full] [--seed <seed>] [--out <file>]',
@@ -93,7 +93,7 @@ async function main(): Promise<void> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are needed (or pass --no-db).');
-  refuseProduction({ what: 'scripts/golf-demo-refresh.ts', supabaseUrl: url });
+  refuseProduction({ what: 'scripts/seed/golf-demo-refresh.ts', supabaseUrl: url });
 
   const client = createClient<Database>(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   let now: Date | undefined;

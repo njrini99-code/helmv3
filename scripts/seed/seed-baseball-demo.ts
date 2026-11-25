@@ -33,17 +33,17 @@
  *     (every table + row count) and writes NOTHING to the database or auth.
  *   - It only writes when you pass --confirm explicitly.
  *   - PRODUCTION IS REFUSED even with --confirm. It additionally requires
- *     --allow-prod, the same escape hatch scripts/seed-baseball-stats.mjs and
+ *     --allow-prod, the same escape hatch scripts/seed/seed-baseball-stats.mjs and
  *     seed-baseball-box-scores.mjs use for the same project. Any other remote
  *     project must be named back to the script. See assertWriteTargetAllowed().
  *
  * Run (later, by the user):
  *   # 1. Dry run (default — prints the plan, touches nothing):
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo.ts
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-demo.ts
  *   # 2. Seed a LOCAL stack (the intended target — `supabase start` first):
- *   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 npx tsx scripts/seed-baseball-demo.ts --confirm
+ *   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 npx tsx scripts/seed/seed-baseball-demo.ts --confirm
  *   # 3. Seed production (deliberate, loud, rarely correct):
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo.ts --confirm --allow-prod
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-demo.ts --confirm --allow-prod
  *
  * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
  *
@@ -71,7 +71,7 @@
  *   were dropped from the summary and the run still reported success. The
  *   live successors are the helm_lifting_* family, and the sessions/set-results/
  *   readiness half of it is already seeded in full by Phase 2
- *   (scripts/seed-baseball-lifting-demo.ts) — so those three writes are simply
+ *   (scripts/seed/seed-baseball-lifting-demo.ts) — so those three writes are simply
  *   GONE here rather than repointed. What Phase 2 does NOT cover, and what this
  *   script now owns, is the progression layer: helm_lifting_maxes and
  *   helm_lifting_bodyweight_entries (see section 7).
@@ -89,8 +89,8 @@
  *     baseball_player_stats / baseball_player_aggregates /
  *     baseball_player_season_stats rows are written here, so a Phase-1-only
  *     database still shows an honestly-empty Stats Center. The stats seeders
- *     are scripts/seed-baseball-stats.mjs (#379) and Phase 4
- *     (scripts/seed-baseball-demo-program.ts), which recalculates season
+ *     are scripts/seed/seed-baseball-stats.mjs (#379) and Phase 4
+ *     (scripts/seed/seed-baseball-demo-program.ts), which recalculates season
  *     stats through the same RPC the app uses and will pick this game up.
  *   - No recruiting data of any kind. The recruiting module is SUNSET
  *     (src/lib/baseball/product-modules.ts, enabled: false) — the product
@@ -101,7 +101,7 @@
  */
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { createRetryingFetch, describeFetchError } from './lib/retrying-fetch';
+import { createRetryingFetch, describeFetchError } from '../lib/retrying-fetch';
 import { createHash } from 'node:crypto';
 
 // ---------------------------------------------------------------------------
@@ -131,7 +131,7 @@ assertRequiredSeedEnv();
 // The rules and the reasoning behind them (production is a DENY, not an ALLOW;
 // `.local` is not a loopback suffix; a foreign project must be named back) live
 // in that module's header. It was extracted from this file because
-// scripts/seed-baseball-e2e.ts had NO target guard at all while CI ran it
+// scripts/seed/seed-baseball-e2e.ts had NO target guard at all while CI ran it
 // against production on every push — a safety rule only one of its callers
 // enforces is not a safety rule. Extracting it also made the rules executable:
 // scripts/lib/__tests__/seed-target-guard.test.ts now asserts them by calling
@@ -140,30 +140,30 @@ assertRequiredSeedEnv();
 import {
   assertWriteTargetAllowed,
   describeSeedTarget,
-} from './lib/seed-target-guard';
+} from '../lib/seed-target-guard';
 
 const DESTRUCTIVE_WARNING = [
   'This script creates a fake "Demo University" org and 10 auth users,',
   'force-resets two passwords, and deletes login_attempts rows.',
 ].join('\n');
 
-import type { BaseballPlayerTimelineEventInsert } from '../src/lib/types/baseball-extended';
-import type { BaseballEventAcknowledgementInsert } from '../src/lib/types/baseball-acknowledgements';
+import type { BaseballPlayerTimelineEventInsert } from '../../src/lib/types/baseball-extended';
+import type { BaseballEventAcknowledgementInsert } from '../../src/lib/types/baseball-acknowledgements';
 import type {
   BaseballImportRunInsert,
   BaseballPlayerExternalIdInsert,
-} from '../src/lib/types/baseball-imports';
+} from '../../src/lib/types/baseball-imports';
 import type {
   BaseballPracticeInsert,
   BaseballPracticeBlockInsert,
   BaseballPracticeAttendanceInsert,
-} from '../src/lib/types/baseball-practice';
-import type { BaseballExerciseInsert } from '../src/lib/types/baseball-lifting';
-import type { BaseballInsightSourceRef } from '../src/lib/types/baseball-coachhelm';
+} from '../../src/lib/types/baseball-practice';
+import type { BaseballExerciseInsert } from '../../src/lib/types/baseball-lifting';
+import type { BaseballInsightSourceRef } from '../../src/lib/types/baseball-coachhelm';
 import type {
   BaseballPostgameReviewInsert,
   BaseballPostgameReviewItemInsert,
-} from '../src/lib/types/baseball-postgame';
+} from '../../src/lib/types/baseball-postgame';
 // The demo's postgame review is generated by the SAME pure builder the product
 // runs (src/lib/baseball/postgame/build-review.ts), fed the exact box-score
 // rows seeded below — so every sentence and every source_ref in the demo is a
@@ -174,11 +174,11 @@ import {
   type PostgameBattingLine,
   type PostgameGameInput,
   type PostgamePitchingLine,
-} from '../src/lib/baseball/postgame/build-review';
-import { helpOnly } from './lib/cli-guard.mjs';
+} from '../../src/lib/baseball/postgame/build-review';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/seed-baseball-demo.ts',
+  name: 'scripts/seed/seed-baseball-demo.ts',
   summary:
     "Phase 1 BaseballHelm demo seed: coach, player, team and roster data.",
   guard: "its own --confirm / --allow-prod flag (unchanged)",
@@ -206,7 +206,7 @@ const NS = 'baseballhelm-demo-phase1';
 // Deterministic uuid v5-style from a stable key (no external dep).
 // Namespace-parameterised so this script can also re-derive ANOTHER phase's ids
 // byte-for-byte (see the cross-phase convergence note in section 7b) — the same
-// `detIdIn` shape scripts/seed-baseball-demo-program.ts uses.
+// `detIdIn` shape scripts/seed/seed-baseball-demo-program.ts uses.
 function detIdIn(namespace: string, key: string): string {
   const h = createHash('sha1').update(`${namespace}:${key}`).digest('hex');
   // Format as a v5 uuid (set version nibble + variant).
@@ -389,7 +389,7 @@ async function main() {
     assertWriteTargetAllowed({
       url,
       destructiveWarning: DESTRUCTIVE_WARNING,
-      scriptPath: 'scripts/seed-baseball-demo.ts',
+      scriptPath: 'scripts/seed/seed-baseball-demo.ts',
     });
   }
 
@@ -754,7 +754,7 @@ async function main() {
 
   // --- 7b. Lift Lab progression: maxes + bodyweight ------------------------
   //
-  // Phase 2 (scripts/seed-baseball-lifting-demo.ts) seeds the PROGRAMMING half
+  // Phase 2 (scripts/seed/seed-baseball-lifting-demo.ts) seeds the PROGRAMMING half
   // of Helm Lift Lab (programs -> weeks -> days -> prescriptions -> sessions ->
   // set results -> readiness). It never seeds the PROGRESSION half, so
   // helm_lifting_maxes and helm_lifting_bodyweight_entries were empty in every
@@ -1568,7 +1568,7 @@ async function main() {
     for (const s of skipped) console.log(`  ⚠ ${s}`);
     console.log(
       '  A skip means the surface backed by that table will be EMPTY in the demo.\n' +
-      '  Run scripts/verify-baseball-demo-coverage.ts to see which routes that affects.',
+      '  Run scripts/seed/verify-baseball-demo-coverage.ts to see which routes that affects.',
     );
   }
   console.log(`\nDemo logins (password: ${DEMO_PASSWORD}):`);

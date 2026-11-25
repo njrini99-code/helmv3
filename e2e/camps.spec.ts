@@ -13,7 +13,7 @@ import { RECRUITING_ENABLED, RECRUITING_SUNSET_REASON } from './helpers/product-
  *
  * Exercises the real camp browse/register (player) and create/manage
  * (coach) flows against the deterministic fixtures provisioned by
- * `scripts/seed-baseball-e2e.ts` (issue #375):
+ * `scripts/seed/seed-baseball-e2e.ts` (issue #375):
  *   - one open camp ("E2E Prospect Camp") owned by the seeded test coach
  *   - one bench roster player ("Riley Bennett") pre-registered for it
  *   - the shared test-player login intentionally left UNREGISTERED so the

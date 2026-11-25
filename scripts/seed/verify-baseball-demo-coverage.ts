@@ -37,8 +37,8 @@
  * asserted EMPTY instead.
  *
  * Run:
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/verify-baseball-demo-coverage.ts
- *   BASEBALL_DEMO_COVERAGE_PROFILE=rini DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/verify-baseball-demo-coverage.ts
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/verify-baseball-demo-coverage.ts
+ *   BASEBALL_DEMO_COVERAGE_PROFILE=rini DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/verify-baseball-demo-coverage.ts
  *
  * Requires: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
  */
@@ -47,17 +47,17 @@ import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
 
-import { isRecruitingEnabled } from '../src/lib/baseball/product-modules';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { isRecruitingEnabled } from '../../src/lib/baseball/product-modules';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/verify-baseball-demo-coverage.ts',
+  name: 'scripts/seed/verify-baseball-demo-coverage.ts',
   summary:
     "Standalone BaseballHelm demo-coverage report. Read-only.",
   secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
 });
 
-// Must match scripts/seed-baseball-demo.ts and scripts/seed-rini-baseball-demo.ts
+// Must match scripts/seed/seed-baseball-demo.ts and scripts/seed/seed-rini-baseball-demo.ts
 // exactly. (Lift Lab rows are reached through helm_lifting_athletes' team_id
 // rather than by re-deriving Phase 2's namespace, so no lifting namespace is
 // needed here.)
@@ -207,7 +207,7 @@ const PHASE1_SURFACE_COVERAGE: readonly CoverageEntry[] = [
 
 /**
  * RINI PROFILE — the founder's personal demo team, seeded by
- * scripts/seed-rini-baseball-demo.ts. A narrower contract than the shipped
+ * scripts/seed/seed-rini-baseball-demo.ts. A narrower contract than the shipped
  * demo: it exists to exercise the surfaces that seed script fills.
  */
 const RINI_SURFACE_COVERAGE: readonly CoverageEntry[] = [
