@@ -53,9 +53,10 @@ npm run triage -- --hours 72 --json
 That is the whole of collection, grouping and the deterministic verdicts. It
 lives in `scripts/coachhelm/run-triage.ts` and
 `src/lib/admin/triage-engine.ts`, it is covered by tests, and it is what CI
-checks. **Do not write your own SQL for this.** An earlier version of this contract asked each run to hand-roll the
-queries, and every run re-derived them slightly differently — which is how the
-stage spent a week reading one source and calling the board clean.
+checks. **Do not write your own SQL for this.** An earlier version of this
+contract asked each run to hand-roll the queries, and every run re-derived them
+slightly differently — which is how the stage spent a week reading one source
+and calling the board clean.
 
 The plan it prints has three lists and a source-health block:
 
