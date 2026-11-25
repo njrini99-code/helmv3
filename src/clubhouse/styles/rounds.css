@@ -6447,3 +6447,49 @@ button.ch-hip__row:focus-visible,
     box-shadow: var(--ch-card-shadow);
   }
 }
+
+/*
+ * look-09, option F on the round review (Nick approved the card rollout for phone and desktop, 21 Nov 2026): every card's head
+ * is the deep green title bar the Stats cards carry. Its title, count and the strokes-gained total read in the feature inks, the
+ * total's gain and loss in the feature's mint and gold. Quiet text inside a card is darker, so no label reads pale. The doubled
+ * classes outrank the zone, canopy and phone layouts' own head colours (`.ch-rv .ch-zn .ch-rv-card__h h2`).
+ */
+.ch-rv-card {
+  --ch-text-secondary: color-mix(in oklab, var(--ch-text-primary) 82%, var(--ch-bg-surface));
+  --ch-text-tertiary: color-mix(in oklab, var(--ch-text-primary) 72%, var(--ch-bg-surface));
+  overflow: hidden;
+}
+.ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h {
+  /* The green stage redefines the chart's gain and loss pair to the feature's mint and gold (CONS-20). */
+  --ch-chart-gain: var(--ch-feature-gain);
+  --ch-chart-loss: var(--ch-feature-loss);
+  margin-bottom: 8px;
+  padding-block: 12px;
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
+}
+.ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h :is(h2, h3) {
+  margin-bottom: 2px;
+  color: var(--ch-feature-ink);
+}
+.ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h :is(span, em) {
+  color: var(--ch-feature-ink-2);
+}
+.ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h b {
+  color: var(--ch-feature-ink);
+}
+.ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h b.is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h b.is-loss {
+  color: var(--ch-chart-loss);
+}
+/* The phone review is a flush ledger, no card surface: its title bar runs the page's width, its words on the page's margin. */
+.ch-rv.is-phone .ch-rv-card.ch-rv-card {
+  overflow: visible;
+}
+.ch-rv.is-phone .ch-rv-card.ch-rv-card > .ch-rv-card__h.ch-rv-card__h {
+  margin-inline: calc(-1 * var(--ch-page-x-phone));
+  padding: 12px var(--ch-page-x-phone);
+  border-top: 0;
+}

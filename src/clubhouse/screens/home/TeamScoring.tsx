@@ -155,7 +155,7 @@ export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean 
 
   if (phone) {
     return (
-      <section className="ch-hm-sec" aria-labelledby="ch-ph-tm-scoring">
+      <section className="ch-hm-sec ch-hm-sec--stat" aria-labelledby="ch-ph-tm-scoring">
         <div className="ch-hm-sec__h">
           <h2 id="ch-ph-tm-scoring">Team scoring</h2>
           <span className="ch-hm-meta">{meta}</span>
@@ -195,7 +195,7 @@ export function TeamScoringFailed({ phone, covered }: { phone: boolean; covered:
   const notice = <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again." covered={covered} />;
   if (phone)
     return (
-      <section className="ch-hm-sec" aria-labelledby="ch-ph-tm-scoring">
+      <section className="ch-hm-sec ch-hm-sec--stat" aria-labelledby="ch-ph-tm-scoring">
         <div className="ch-hm-sec__h">
           <h2 id="ch-ph-tm-scoring">Team scoring</h2>
         </div>

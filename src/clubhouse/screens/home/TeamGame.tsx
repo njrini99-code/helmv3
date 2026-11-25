@@ -34,7 +34,7 @@ export function TeamGame({ legs, phone, covered = false }: { legs: ChTeamLegs; p
     </div>
   );
   return (
-    <section className={phone ? 'ch-hm-sec ch-ph-legs-sec is-phone ch-ph-tm' : 'ch-ph-legs-sec ch-ph-tm'} aria-labelledby="ch-ph-tm-legs">
+    <section className={phone ? 'ch-hm-sec ch-hm-sec--stat ch-ph-legs-sec is-phone ch-ph-tm' : 'ch-ph-legs-sec ch-ph-tm'} aria-labelledby="ch-ph-tm-legs">
       {head}
       <Notices legs={legs} covered={covered} />
       {legs.holeRounds === 0 ? (

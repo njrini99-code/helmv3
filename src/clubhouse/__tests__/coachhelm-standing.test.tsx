@@ -543,6 +543,18 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     expect(none.data.ladder.readsFailed).toBe(false);
   });
 
+  it('a page that draws no ladder asks for no reads: no feed is read and an empty one is never reported as failed (e1c5ca86)', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    const row = (i: ReturnType<typeof slope>) => ({ ...i, metadata: i.metadata ?? null });
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 77.2 } }, golf_coach_insights: { data: [row(slope('pl-jonah'))] } };
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah', ladder: false });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(feed.read).not.toHaveBeenCalled();
+    expect(logServer).not.toHaveBeenCalled();
+    expect(out.data.ladder.readsFailed).toBe(false);
+    expect(out.data.ladder.rows.map((r) => r.strokes)).toEqual(['−0.4', '−0.9', '−0.2', '−0.6']);
+  });
+
   it('CH-13273 the ladder’s reads failing leaves the strokes drawn and says so; the page is not failed', async () => {
     standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
     tables.current = { golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 77.2 } }, golf_coach_insights: { error: { message: 'boom' } } };

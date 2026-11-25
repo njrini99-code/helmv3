@@ -1,5 +1,5 @@
 import { roundShares } from '../../lib/shares';
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChPuttBand } from '../../data/stats-common';
 import type { ChProfileExtra } from '../../data/stats-player';
@@ -7,7 +7,8 @@ import { changeInk, formatAvg, formatDistance, formatFixed, formatPct, formatSig
 import { InlineNotice } from '../../ui/Notices';
 import { Compare } from './charts';
 import { ScoreMixBar } from './ScoreMixBar';
-import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type Tone } from './detail';
+import { DataTable, Empty, MoreOpen, Panel, RoundLine, SectorGrid, Tiles, type Cell, type Tone } from './detail';
+import { HBars } from './MiniCharts';
 import { plural } from '../../lib/plural';
 import { NoData } from '../../ui/NoData';
 
@@ -256,6 +257,8 @@ export function ApproachMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtr
 }
 
 export function ShortMore({ s }: { s: GolfStats }) {
+  /** Inside a pushed detail (the Stats redesign's cards) the comparisons read as the page's rows; a closed "More detail" keeps its tables. */
+  const asRows = useContext(MoreOpen);
   const lie = s.atgEffByDistanceLie ?? {};
   const eff: Array<[string, number | null, { fairway: number | null; rough: number | null; sand: number | null } | undefined]> = [
     ['0–10 yds', s.atgEfficiency0_10, lie['0_10']],
@@ -271,6 +274,15 @@ export function ShortMore({ s }: { s: GolfStats }) {
     { label: 'Sand', value: s.atgProximityByLie?.sand ?? null },
   ];
   const cap = (k: string) => k[0]!.toUpperCase() + k.slice(1);
+  /**
+   * In a detail, a lie's strokes against the same distance over every lie: fewer is the gain, more the loss, and within
+   * 0.05 of it untoned. Colour only; the figure is the calculator's.
+   */
+  const lieCell = (v: number | null | undefined, all: number | null | undefined): Cell | string =>
+    !asRows || v == null || all == null || Math.abs(v - all) < 0.05 ? num(v, 2) : { v: num(v, 2), tone: v < all ? 'gain' : 'loss' };
+  const made = (m: number, n: number, p: number | null) => (asRows && p != null ? { value: pct(p), sub: `${m} of ${n}` } : { value: `${m} of ${n}`, sub: undefined });
+  const sand = made(s.sandSavesMade, s.sandSaveAttempts, s.sandSavePercentage);
+  const ud = made(s.scramblesMade, s.scrambleAttempts, s.scramblingPercentage);
   return (
     <>
       <Panel title="Short-game numbers" wide>
@@ -279,19 +291,29 @@ export function ShortMore({ s }: { s: GolfStats }) {
           items={[
             { label: 'Strokes to hole out', value: num(s.atgEfficiencyAvg, 2), sub: 'From a chip or pitch' },
             { label: 'Finish after the chip', value: ft(s.atgProximityAvg), sub: 'Chips that reached the green' },
-            { label: 'Sand saves', value: s.sandSaveAttempts ? `${s.sandSavesMade} of ${s.sandSaveAttempts}` : NO_DATA, empty: !s.sandSaveAttempts, code: NOTHING },
-            { label: 'Up and downs', value: s.scrambleAttempts ? `${s.scramblesMade} of ${s.scrambleAttempts}` : NO_DATA, empty: !s.scrambleAttempts, code: NOTHING },
+            { label: 'Sand saves', value: s.sandSaveAttempts ? sand.value : NO_DATA, sub: s.sandSaveAttempts ? sand.sub : undefined, empty: !s.sandSaveAttempts, code: NOTHING },
+            { label: 'Up and downs', value: s.scrambleAttempts ? ud.value : NO_DATA, sub: s.scrambleAttempts ? ud.sub : undefined, empty: !s.scrambleAttempts, code: NOTHING },
           ]}
         />
       </Panel>
-      <Panel title="Strokes to hole out from around the green" wide note="Average strokes to hole out from a chip or pitch within 50 yards, by distance and lie. Averages only.">
+      <Panel
+        title="Strokes to hole out from around the green"
+        wide
+        note={`Average strokes to hole out from a chip or pitch within 50 yards, by distance and lie. Averages only.${asRows ? ' Green is fewer strokes than the All lies figure for that distance, amber more.' : ''}`}
+      >
         {hasEff ? (
           <DataTable
             label="Strokes to hole out from around the green by distance and lie"
             cols={['Distance', 'All lies', 'Fairway', 'Rough', 'Sand']}
+            keyCol={0}
             rows={[
-              ...eff.map(([label, all, l]) => ({ key: label, head: label, cells: [num(all, 2), num(l?.fairway, 2), num(l?.rough, 2), num(l?.sand, 2)] })),
-              { key: 'all', head: 'All distances', cells: [num(s.atgEfficiencyAvg, 2), num(s.atgEffFairway, 2), num(s.atgEffRough, 2), num(s.atgEffSand, 2)] },
+              ...eff.map(([label, all, l]) => ({ key: label, head: label, cells: [num(all, 2), lieCell(l?.fairway, all), lieCell(l?.rough, all), lieCell(l?.sand, all)] })),
+              {
+                key: 'all',
+                head: 'All distances',
+                total: true,
+                cells: [num(s.atgEfficiencyAvg, 2), lieCell(s.atgEffFairway, s.atgEfficiencyAvg), lieCell(s.atgEffRough, s.atgEfficiencyAvg), lieCell(s.atgEffSand, s.atgEfficiencyAvg)],
+              },
             ]}
           />
         ) : (
@@ -299,7 +321,21 @@ export function ShortMore({ s }: { s: GolfStats }) {
         )}
       </Panel>
       <Panel title="Up and down by where the green was missed" note="A miss that was short and left counts on both axes, so shares can add to more than 100%.">
-        {dir.length ? (
+        {dir.length && asRows ? (
+          // Each miss against the player's own up-and-down rate over every chance: the tick, and green at or above it.
+          <HBars
+            wide
+            tourKey={s.scramblingPercentage != null}
+            tickKey={s.scramblingPercentage != null ? `All chances, ${pct(s.scramblingPercentage)}` : undefined}
+            rows={dir.map(([k, v]) => ({
+              label: cap(k),
+              sub: v!.shareOfMisses == null ? null : `${pct(v!.shareOfMisses)} of misses`,
+              value: v!.pct,
+              tour: s.scramblingPercentage,
+              valueSub: `${v!.made} of ${v!.attempts}`,
+            }))}
+          />
+        ) : dir.length ? (
           <DataTable
             label="Up and down by the direction of the missed green"
             cols={['Missed', 'Up and down', 'Chances', 'Share of misses']}
@@ -310,7 +346,22 @@ export function ShortMore({ s }: { s: GolfStats }) {
         )}
       </Panel>
       <Panel title="Finish after the chip" note="Average distance left by chips and pitches that reached the green; a holed chip counts 0.">
-        {prox.some((r) => r.value != null) ? <Compare unit=" ft" rows={prox} /> : <Empty code={NOTHING}>No chips finished on the green in this window.</Empty>}
+        {prox.some((r) => r.value != null) && asRows ? (
+          // Each lie against the overall finish: shorter is the gain.
+          <HBars
+            wide
+            lowerIsBetter
+            tourKey={s.atgProximityAvg != null}
+            tickKey={`Overall, ${ft(s.atgProximityAvg)}`}
+            scale={Math.max(1, ...prox.map((r) => r.value ?? 0))}
+            format={(v) => ft(v)}
+            rows={prox.map((r, i) => ({ ...r, tour: i ? s.atgProximityAvg : null }))}
+          />
+        ) : prox.some((r) => r.value != null) ? (
+          <Compare unit=" ft" rows={prox} />
+        ) : (
+          <Empty code={NOTHING}>No chips finished on the green in this window.</Empty>
+        )}
       </Panel>
     </>
   );

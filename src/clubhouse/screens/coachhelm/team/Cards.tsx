@@ -118,14 +118,15 @@ export function ringValue(p: { from: number; now: number; target: number }): num
   return Math.max(0, Math.min(1, (p.from - p.now) / span));
 }
 
-function Ring({ v }: { v: number }) {
-  const r = 15;
-  const c = 2 * Math.PI * r;
+/**
+ * How far a focus is toward its target (look-09, "make it specific to what it is displaying"): a short bar from where it started,
+ * filled to now, with the target as the firm tick at its end. It closes the row; the row's line already says the figures.
+ */
+function TargetBar({ v }: { v: number }) {
   return (
-    <svg className="ringc" width="38" height="38" viewBox="0 0 38 38" aria-hidden="true">
-      <circle className="trk" cx="19" cy="19" r={r} fill="none" strokeWidth="4" />
-      <circle className={'fil' + (v < 0.5 ? ' mid' : '')} cx="19" cy="19" r={r} fill="none" strokeWidth="4" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - v)} transform="rotate(-90 19 19)" />
-    </svg>
+    <span className="tgtbar" aria-hidden="true">
+      <i className={v < 0.5 ? 'mid' : undefined} style={{ width: `${Math.round(v * 100)}%` }} />
+    </span>
   );
 }
 
@@ -150,9 +151,9 @@ export function workingRows(working: readonly ChBriefWorking[]): Array<{ key: st
 
 /**
  * Working on (W11, staging 11 Nov: nine focus areas, nearly all with an empty ring, every state line in the same green, and one
- * focus repeated for three players). The words lead every row; a ring closes it only when the focus has a target to fill toward
- * (AC-WORK-02), so a focus without one, or a proposal whose player sets it, has none. A focus several players share is one row
- * with their names and no ring, since one ring for several targets would be a figure nobody measured. The state line is quiet ink.
+ * focus repeated for three players). The words lead every row; a bar to the target closes it only when the focus has a target to
+ * fill toward (AC-WORK-02, rings until look-09), so a focus without one, or a proposal whose player sets it, has none. A focus several
+ * players share is one row with their names and no bar, since one bar for several targets would be a figure nobody measured. The state line is quiet ink.
  */
 export function WorkingCard({ working, proposed, failed, onRetry }: { working: readonly ChBriefWorking[]; proposed: ReadonlyArray<{ player: ChTeamPlayer; read: ChInsight }>; failed: boolean; onRetry?: () => void }) {
   const n = working.length + proposed.length;
@@ -193,7 +194,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
                   {w.line && <span>{w.line}</span>}
                   <span className="st">{[w.word, w.since].filter(Boolean).join(' · ')}</span>
                 </div>
-                {w.progress && <Ring v={ringValue(w.progress)} />}
+                {w.progress && <TargetBar v={ringValue(w.progress)} />}
               </div>
             );
           })}

@@ -199,10 +199,10 @@ describe('the preview’s crowded board, staging’s shape on the owner’s walk
     expect(tiles.map((t) => !!t.querySelector('.tv'))).toEqual([false, true, false]);
     for (const t of tiles) expect(t.firstElementChild?.classList.contains('tt')).toBe(true);
     const work = document.querySelector('[data-ch-team-card="work"]') as HTMLElement;
-    // Ten focus areas and the fixture's one proposal, which has no target yet and so no ring.
+    // Ten focus areas and the fixture's one proposal, which has no target yet and so no bar.
     expect(work.querySelector('.meta')!.textContent).toBe('11 focus areas');
     expect(work.querySelectorAll('.wk.is-shared')).toHaveLength(1);
-    expect(work.querySelectorAll('.ringc')).toHaveLength(2);
+    expect(work.querySelectorAll('.tgtbar')).toHaveLength(2);
     // The stored "Eli: …" titles read without the name beside Eli's coin.
     expect(document.body.textContent).not.toMatch(/(\w+): \1: /);
   });

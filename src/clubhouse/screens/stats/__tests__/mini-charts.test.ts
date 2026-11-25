@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TICKER_MIN_SPAN, tickerBars } from '../MiniCharts';
+import { roundStripBest, TICKER_MIN_SPAN, tickerBars } from '../MiniCharts';
 
 /**
  * My stats round ticker (stats and charts audit 2026-11-15, CH-09): a round is a mark at its score's height, all marks one size, on a
@@ -31,5 +31,15 @@ describe('tickerBars · positions, not lengths (CH-09)', () => {
     const bars = tickerBars([{ id: 'a', score: 68 }, { id: 'b', score: 84 }], 300, H);
     expect(bars[0]!.y).toBeCloseTo(0, 5);
     expect(bars[1]!.y + bars[1]!.h).toBeCloseTo(H, 5);
+  });
+});
+
+describe('roundStripBest · the overview’s rounds (look-09)', () => {
+  it('lights every round at the best score', () => {
+    expect(roundStripBest([73, 72, 72, 75])).toEqual([false, true, true, false]);
+  });
+  it('lights nothing when every round is the same, or there is one round', () => {
+    expect(roundStripBest([72, 72])).toEqual([false, false]);
+    expect(roundStripBest([72])).toEqual([false]);
   });
 });
