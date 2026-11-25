@@ -18962,6 +18962,11 @@
           "kind": "import_graph",
           "path": "src/lib/golf/player-invite-email.ts",
           "anchor": "src/lib/email/outbound-gate"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/player-invite-email.ts",
+          "anchor": "src/lib/email/reply-to"
         }
       ]
     },
@@ -20171,6 +20176,11 @@
           "kind": "import_graph",
           "path": "src/lib/lifting/invite-email.ts",
           "anchor": "src/lib/email/outbound-gate"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/lifting/invite-email.ts",
+          "anchor": "src/lib/email/reply-to"
         }
       ]
     },

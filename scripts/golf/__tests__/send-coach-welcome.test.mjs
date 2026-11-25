@@ -7,12 +7,13 @@ const TEAMS = [
   { name: 'Riverbend Women’s Golf', gender: 'womens', join_code: 'P2WH9RNB' },
   { name: 'Riverbend Men’s Golf', gender: 'mens', join_code: 'K7MQ4TXA' },
 ];
-const base = { coachLastName: 'Ellis', schoolName: 'Riverbend', email: 'ellisj@riverbend.test', password: 'Birdie-Wedge-42!', teams: TEAMS };
+// A generated password, so no password literal sits in the repo (scripts-no-committed-secrets).
+const base = { coachLastName: 'Ellis', schoolName: 'Riverbend', email: 'ellisj@riverbend.test', password: temporaryPassword(), teams: TEAMS };
 
 test('the email carries the login, the password, both codes and the join steps', () => {
   const { subject, html, text } = buildCoachWelcomeEmail(base);
   assert.equal(subject, 'Welcome to Helm, Coach Ellis');
-  for (const s of ['Welcome to Helm, Coach Ellis.', 'ellisj@riverbend.test', 'Birdie-Wedge-42!', 'K7MQ4TXA', 'P2WH9RNB', 'https://helmsportslabs.com/golf/login', 'https://helmsportslabs.com/golf/signup']) {
+  for (const s of ['Welcome to Helm, Coach Ellis.', 'ellisj@riverbend.test', base.password, 'K7MQ4TXA', 'P2WH9RNB', 'https://helmsportslabs.com/golf/login', 'https://helmsportslabs.com/golf/signup']) {
     assert.ok(html.includes(s), `html has ${s}`);
     assert.ok(text.includes(s), `text has ${s}`);
   }

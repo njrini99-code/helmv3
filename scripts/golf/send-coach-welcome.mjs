@@ -278,7 +278,7 @@ async function main() {
     const sample = mode === 'existing'
       ? { school: found.school ?? a.school ?? 'Your school', teams: found.teams }
       : { school: a.school, teams: a.teams.map((g) => ({ name: g, gender: g, join_code: 'MADE-ON-SEND' })) };
-    const email = buildCoachWelcomeEmail({ coachLastName: lastName, schoolName: sample.school, email: a.email, password: 'Shown-when-sent', teams: sample.teams });
+    const email = buildCoachWelcomeEmail({ coachLastName: lastName, schoolName: sample.school, email: a.email, password: '(shown when sent)', teams: sample.teams });
     if (a.htmlOut) writeFileSync(a.htmlOut, email.html);
     if (a.previewTo) {
       const id = await send(a.previewTo, { ...email, subject: `[Preview] ${email.subject}` }, false);
