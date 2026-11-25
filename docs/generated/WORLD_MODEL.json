@@ -13941,6 +13941,18 @@
     },
     {
       "source": "clubhouse",
+      "target": "golf_team_by_join_code",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/clubhouse/data/onboard.ts",
+          "anchor": "golf_team_by_join_code"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
       "target": "golf_team_seasons",
       "kind": "feature_table",
       "evidence": [
@@ -18682,6 +18694,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/shot-analytics.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/__tests__/signup-gate-throttle.test.ts",
+          "anchor": "src/lib/auth/supabase-rate-limit"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/__tests__/signup-gate-throttle.test.ts",
+          "anchor": "src/lib/auth/rate-limit"
         },
         {
           "kind": "import_graph",
