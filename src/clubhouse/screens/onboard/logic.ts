@@ -268,13 +268,14 @@ export function signInHrefFor(code: string, base: string): string {
 }
 
 /**
- * A hint for a code that matched nothing. Codes made today are eight characters from an alphabet with no O, I, 0 or 1
- * (they are too easily mistaken for each other), so an eight-character code that has one of them was misread. Older
- * six- and nine-character codes were not made that way, so no hint is given for them.
+ * A hint for a code that matched NOTHING (shown only after the lookup has said so, never before it and never on a match).
+ * Codes made today are eight characters from an alphabet with no O, I, 0 or 1, but a few older codes were not made that
+ * way and are valid as typed, so this only suggests a second look: nothing is rewritten, refused or checked differently.
+ * Older six- and nine-character codes get no hint.
  */
 export function lookalikeHint(code: string): string | null {
   if (code.length !== CODE_SLOTS || !/[OI01]/.test(code)) return null;
-  return 'GolfHelm codes never use the letters O or I, or the numbers 0 or 1. Check those characters.';
+  return 'Newer codes don’t use the letters O or I, or the numbers 0 or 1, so check those characters.';
 }
 
 // ── Picking up after the account ─────────────────────────────────────────────

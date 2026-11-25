@@ -60,7 +60,7 @@ describe('the sign-in address keeps the team', () => {
 
 describe('a code that matched nothing', () => {
   it('an eight-character code with an O, I, 0 or 1 was misread: new codes never have them', () => {
-    expect(lookalikeHint('K7PQX0MN')).toMatch(/never use the letters O or I/);
+    expect(lookalikeHint('K7PQX0MN')).toMatch(/Newer codes don’t use the letters O or I/);
     expect(lookalikeHint('K7PQXIMN')).not.toBeNull();
   });
   it('older six- and nine-character codes were not made that way, so no hint', () => {

@@ -242,3 +242,33 @@ describe('finishing', () => {
     expect(screen.getByRole('link', { name: /Enter a team code/ }).getAttribute('href')).toBe('/golf/join');
   });
 });
+
+describe('a valid older code is never rewritten, refused or doubted (O, I, 0, 1 and any length)', () => {
+  const OLD = ['A0B1O7IK', 'K7PQ0N', 'K7PQX4MN9'];
+
+  it.each(OLD)('%s is looked up exactly as typed, and a match shows no hint', async (code) => {
+    const w = makeWrites({ checkCode: vi.fn(async () => ({ kind: 'ok' as const, code: 'roster' as const, teamName: 'Old Team' })) });
+    mount(w, 'code', { intent: 'code' });
+    typeCode(code.toLowerCase());
+    expect((screen.getByLabelText('Team code') as HTMLInputElement).value).toBe(code);
+    expect(screen.queryByText(/Newer codes don’t use/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
+    expect(await screen.findByText('Welcome to Old Team.')).toBeTruthy();
+    expect(w.checkCode).toHaveBeenCalledWith(code);
+    expect(screen.queryByText(/Newer codes don’t use/)).toBeNull();
+  });
+
+  it('the hint appears only after the lookup says no match, and only for an eight-character code', async () => {
+    mount(makeWrites(), 'code', { intent: 'code' });
+    typeCode('ZZ0ZZZZZ');
+    expect(screen.queryByText(/Newer codes don’t use/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
+    expect(await screen.findByText(/Newer codes don’t use the letters O or I/)).toBeTruthy();
+    cleanup();
+    mount(makeWrites(), 'code', { intent: 'code' });
+    typeCode('ZZ0ZZ');
+    fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
+    await screen.findByText('That code didn’t match a team');
+    expect(screen.queryByText(/Newer codes don’t use/)).toBeNull();
+  });
+});
