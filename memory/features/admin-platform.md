@@ -287,7 +287,8 @@ them would have broken those routes, not the dead one.
   (The launchd Repair script and its own Sentry check-in helper —
   scripts/lib/sentry-cron-checkin.mjs no longer exists — were removed 2026-09-05
   along with the rest of the launchd Repair path — see `memory/features/admin-selfheal.md`;
-  Repair ran as `.github/workflows/selfheal-repair.yml` from 2026-09-05 and,
+  Repair ran as a GitHub Actions workflow from 2026-09-05 (deleted 2026-11-25;
+  .github/workflows/selfheal-repair.yml no longer exists) and,
   since 2026-09-23, as the Claude desktop health routine; both report through
   a `background_job_logs` heartbeat, not a Sentry Cron Monitor.)
 - **Only a TOTALLY blind reliability run returns 503; a partially blind one
