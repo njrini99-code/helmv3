@@ -281,7 +281,8 @@ async function main() {
       const id = await send(a.previewTo, { ...email, subject: `[Preview] ${email.subject}` });
       step(true, `preview sent to ${a.previewTo} (Resend ${id}); no account was changed`);
     } else {
-      console.log(`DRY RUN: nothing written, nothing sent. Add --preview-to <you> to see it, or --send to ${mode === 'new' ? 'create the program and ' : 'reset the password and '}email ${a.email}.`);
+      const what = mode === 'new' ? 'create the program and ' : a.currentPassword ? '' : 'reset the password and ';
+      console.log(`DRY RUN: nothing written, nothing sent. Add --preview-to <you> to see it, or --send to ${what}email ${a.email}.`);
     }
     return;
   }
