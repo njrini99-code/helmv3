@@ -15,6 +15,8 @@
 // contrast, WCAG and APCA, scripts/clubhouse/audit/contrast.mjs, on every shot) · --scroll 0,400,bottom (a shot and
 // its measurements at each position, in the page's own scroller). Each shot asserts the theme it asked for actually
 // applied (data-fw-theme on <html> after load); a mismatch is reported as a finding, not silently shot.
+// Robustness: --shot-timeout 180 (seconds per viewport and theme; a stuck page is logged as an error and skipped) ·
+// results.partial.json is saved after every screen · --resume continues a stopped run into the same --out.
 // It only navigates: no click, no typing, no submit. Signed-in pages still write when opened
 // (docs/clubhouse/audit/WRITES-ON-OPEN.md), which is why a signed-in sweep belongs on seeded local data, as in the
 // journeys workflow. A route that makes a paid AI call on open is skipped unless --allow-paid.
@@ -191,6 +193,8 @@ function args(argv) {
     desktopEngine: get('--desktop-engine', 'chromium'),
     contrast: argv.includes('--contrast'),
     scroll: get('--scroll', '0').split(',').filter(Boolean),
+    shotTimeoutMs: Number(get('--shot-timeout', '180')) * 1000,
+    resume: argv.includes('--resume'),
     help: argv.includes('--help') || argv.includes('-h'),
   };
 }
@@ -233,9 +237,20 @@ export async function main(argv = process.argv.slice(2)) {
   const pending = visits.filter((v) => v.screen.dynamic.length);
   const seen = new Set();
   const results = [];
+  // --resume: keep what a stopped run already saved (results.partial.json) and skip those screens.
+  const partialPath = join(o.out, 'results.partial.json');
+  const resumedHrefs = [];
+  if (o.resume && existsSync(partialPath)) {
+    const saved = JSON.parse(readFileSync(partialPath, 'utf8'));
+    resumedHrefs.push(...(saved.hrefs ?? []));
+    for (const r of saved.results ?? []) {
+      results.push(r);
+      seen.add(`${r.url}|${r.session}`);
+    }
+  }
   const browsers = {};
   try {
-    const shoot = async (visit, url, vp, theme, collect) => {
+    const shootOnce = async (visit, url, vp, theme, collect, out) => {
       const spec = VP[vp];
       browsers[spec.engine] ??= await pw[spec.engine].launch();
       const ctx = await browsers[spec.engine].newContext({
@@ -295,7 +310,7 @@ export async function main(argv = process.argv.slice(2)) {
           const shot = `shots/${slug}.jpg`;
           await page.screenshot({ path: join(o.out, shot), type: 'jpeg', quality: 70 });
           const fails = contrast?.filter((r) => r.failWcag || r.failApca) ?? [];
-          results.push({
+          out.push({
             url, route: visit.screen.route, product: visit.screen.product, access: visit.screen.access, session: visit.session,
             viewport: vp, tier: spec.tier, theme, scroll: pos, scrolledTo: at, status, finalPath, signInWall, shot,
             findings: {
@@ -310,18 +325,58 @@ export async function main(argv = process.argv.slice(2)) {
           });
         }
       } catch (e) {
-        results.push({ url, route: visit.screen.route, product: visit.screen.product, access: visit.screen.access, session: visit.session, viewport: vp, tier: spec.tier, theme, status, error: String(e.message).slice(0, 200), shot: '', findings: { consoleErrors } });
+        out.push({ url, route: visit.screen.route, product: visit.screen.product, access: visit.screen.access, session: visit.session, viewport: vp, tier: spec.tier, theme, status, error: String(e.message).slice(0, 200), shot: '', findings: { consoleErrors } });
       } finally {
-        await ctx.close();
+        await ctx.close().catch(() => {});
       }
     };
-    const hrefs = new Set();
+    // Watchdog: coach and player Settings on desk WebKit (2026-11-18) wedge the browser so that an evaluate never returns
+    // and even closing the context hangs. Past --shot-timeout the shot is logged as an error, the whole browser is
+    // abandoned (a fresh one launches for the next shot), and the same page in the other theme is skipped.
+    const stuck = new Set();
+    const shoot = async (visit, url, vp, theme, collect) => {
+      const spec = VP[vp];
+      const row = { url, route: visit.screen.route, product: visit.screen.product, access: visit.screen.access, session: visit.session, viewport: vp, tier: spec.tier, theme, status: null, shot: '', findings: { consoleErrors: [] } };
+      if (stuck.has(`${url}|${vp}`)) { results.push({ ...row, error: 'skipped: this page timed out in the other theme' }); return; }
+      const out = [];
+      let timer;
+      const outcome = await Promise.race([
+        shootOnce(visit, url, vp, theme, collect, out).then(() => 'done', () => 'done'),
+        new Promise((r) => { timer = setTimeout(() => r('timeout'), o.shotTimeoutMs); }),
+      ]);
+      clearTimeout(timer);
+      if (outcome === 'done') { results.push(...out); return; }
+      stuck.add(`${url}|${vp}`);
+      results.push({ ...row, error: `timed out after ${o.shotTimeoutMs / 1000} s (watchdog); browser abandoned` });
+      const wedged = browsers[spec.engine];
+      delete browsers[spec.engine];
+      wedged?.close().catch(() => {});
+    };
+    const hrefs = new Set(resumedHrefs);
+    // A resumed run skips the screens it already shot, so it never read their links, and the dynamic routes ([id]) are
+    // resolved from those links. If the saved run predates saving them, read them again: one plain visit per screen.
+    if (o.resume && !resumedHrefs.length) {
+      for (const v of queue.filter((q) => seen.has(`${q.url ?? q.screen.route}|${q.session}`))) {
+        const spec = VP[o.viewports[0]];
+        browsers[spec.engine] ??= await pw[spec.engine].launch();
+        const ctx = await browsers[spec.engine].newContext({ ...(spec.device ? pw.devices[spec.device] : { viewport: spec.viewport }), storageState: v.storage ?? undefined });
+        try {
+          const page = await ctx.newPage();
+          await page.goto(base + (v.url ?? v.screen.route), { waitUntil: 'load', timeout: 60_000 });
+          await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+          const hs = await page.evaluate(() => [...document.querySelectorAll('a[href]')].map((a) => a.getAttribute('href')).filter((h) => h && h.startsWith('/')).map((h) => h.split(/[?#]/)[0]));
+          hs.forEach((h) => hrefs.add(h));
+        } catch { /* a page that will not load gives no links */ } finally { await ctx.close().catch(() => {}); }
+      }
+    }
     const run = async (list) => {
       for (const v of list) {
         const url = v.url ?? v.screen.route;
         if (seen.has(`${url}|${v.session}`)) continue;
         seen.add(`${url}|${v.session}`);
         for (const vp of o.viewports) for (const theme of o.themes) await shoot(v, url, vp, theme, vp === o.viewports[0] && theme === o.themes[0] ? (hs) => hs.forEach((h) => hrefs.add(h)) : null);
+        // Save after every screen, so a stopped run keeps what it measured.
+        writeFileSync(join(o.out, 'results.partial.json'), `${JSON.stringify({ base, at: new Date().toISOString(), hrefs: [...hrefs], results }, null, 2)}\n`);
         process.stdout.write(`\r${results.length} shots`);
         if (o.limit && seen.size >= o.limit) return;
       }

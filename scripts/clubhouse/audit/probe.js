@@ -541,6 +541,23 @@
       }
       if (R - L < 2 || B - T < 2 || (R - L) * (B - T) < 0.5 * full.width * full.height) continue;
       const r = { left: L, top: T, width: R - L, height: B - T };
+      // Text scrolled under a layer drawn above it (the frosted, translucent top bar) was read as failing: hiding the
+      // text still changed the pixels through the glass, so the painted check passed it (sweep, 2026-11-18, about 1.2:1
+      // on rows that read fine unscrolled). Sample the box; where a layer that is neither the text's ancestor nor its
+      // descendant, with a fill or a backdrop filter, sits above the text at most sample points, the text is covered.
+      const covered = [0.2, 0.5, 0.8].filter((fx) => {
+        const stack = document.elementsFromPoint(L + (R - L) * fx, T + (B - T) / 2);
+        for (const hit of stack) {
+          if (hit === el || el.contains(hit) || hit.contains(el)) return false;
+          const hs = getComputedStyle(hit);
+          if ((hs.backdropFilter && hs.backdropFilter !== 'none') || (hs.webkitBackdropFilter && hs.webkitBackdropFilter !== 'none')) return true;
+          const bg = toRGBA(hs.backgroundColor);
+          if (bg && bg[3] > 0.05) return true;
+          if (hs.backgroundImage && hs.backgroundImage !== 'none') return true;
+        }
+        return false;
+      }).length;
+      if (covered >= 2) continue;
       const cs = getComputedStyle(el);
       let opacity = 1;
       for (let p = el; p; p = p.parentElement) opacity *= +getComputedStyle(p).opacity;
