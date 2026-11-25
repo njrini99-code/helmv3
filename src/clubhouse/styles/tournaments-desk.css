@@ -498,8 +498,10 @@ button.ch-tour-desk-sc:focus-visible {
   color: var(--ch-green-600);
   cursor: pointer;
 }
-.ch-tour-desk-link:hover {
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .ch-tour-desk-link:hover {
+    text-decoration: underline;
+  }
 }
 .ch-tour-desk-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);

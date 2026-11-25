@@ -118,7 +118,7 @@ export function JoinTeam({ data, playerId, writes = gateWrites, initial, navigat
               </button>
             </div>
           </div>
-          <p className="ch-au-body">Golf players are on one team at a time. If you’re on another team, leave it first.</p>
+          <p className="ch-au-body">Golf players are on one team at a time. To move to this team, leave your current one in Settings, or ask your coach to move you.</p>
           {failure && (
             <div className="ch-au-err" key={failure.message}>
               <AuthNotice tone={failure.tone} code={failure.code}>

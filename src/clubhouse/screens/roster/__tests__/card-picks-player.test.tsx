@@ -24,6 +24,8 @@ import { ToastProvider } from '../../../ui/Toast';
 import { Roster } from '../Roster';
 
 beforeEach(() => {
+  // The cards are the other desk layout since the table became the default (premium plan 3.8); these tests are about them.
+  localStorage.setItem('ch-roster-view', 'faces');
   clearPeople();
   push.mockClear();
   window.sessionStorage.clear();

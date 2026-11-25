@@ -604,6 +604,29 @@
   white-space: nowrap;
 }
 
+/* S8, the hover lift (GES-19 / OQ-23, owner default yes): a card that opens something lifts while a fine pointer rests
+   on it. Its raised shadow is a layer of its own that fades in over the quick beat on the iOS curve: opacity only, no
+   animated box-shadow and no scale (MOTION-AND-VISUAL 3.2). A tap never lights it, Reduce Motion shows no lift, and
+   Animations off swaps at once. */
+.ch-lift::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--ch-elevation-raised);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-ios);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .ch-lift:hover::after {
+    opacity: 1;
+  }
+}
+[data-motion='off'] .ch-lift::after {
+  transition: none;
+}
+
 /* Surface (design system: surfaces/Surface). Every variant with depth reads the one card recipe (tokens.css
    --ch-card-shadow); nothing below sets another. */
 .ch-surface {

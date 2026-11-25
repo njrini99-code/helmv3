@@ -623,15 +623,19 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
     // blocks onboarding — the player still completes setup and reaches the
     // dashboard, where they can join from the invite link as a fallback.
     let joinedTeam = false;
+    // The server's own reason, so the finish screen can say what to do (another team, a code that no longer matches).
+    let joinError: string | null = null;
     if (joinCode?.trim() && playerId) {
       try {
         const joinResult = await processGolfTeamInvitation(joinCode.trim(), playerId);
         joinedTeam = joinResult.success === true;
         if (!joinedTeam) {
-          await logServerError(`[Onboarding] Auto-join skipped (${joinResult.error ?? 'unknown'}) for code ${joinCode.trim().toUpperCase()}`, { action: 'onboarding.completePlayerOnboarding' });
+          joinError = joinResult.error ?? null;
+          await logServerError(`[Onboarding] Auto-join skipped (${joinResult.error ?? 'unknown'}) for a code of ${joinCode.trim().length} characters`, { action: 'onboarding.completePlayerOnboarding' });
         }
-      } catch (joinError) {
-        await logServerError(`[Onboarding] Auto-join threw: ${describeError(joinError)}`, { action: 'onboarding.completePlayerOnboarding' });
+      } catch (thrown) {
+        joinError = 'Failed to join team. Please try again.';
+        await logServerError(`[Onboarding] Auto-join threw: ${describeError(thrown)}`, { action: 'onboarding.completePlayerOnboarding' });
       }
     }
 
@@ -640,6 +644,7 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
     return {
       success: true,
       joinedTeam,
+      joinError,
     };
 
   } catch (error) {

@@ -552,8 +552,8 @@ export async function joinGolfTeam(
 async function processGolfTeamInvitationImpl(joinCode: string, playerId: string): Promise<GolfJoinTeamResult> {
   const supabase = await createClient();
 
-  // Normalize join code to uppercase for case-insensitive matching
-  const normalizedCode = joinCode.toUpperCase();
+  // Normalize the code the way people write it: any case, and no spaces or dashes ("k7pq-x4mn" is K7PQX4MN).
+  const normalizedCode = joinCode.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
   // Find the team by join code.
   //

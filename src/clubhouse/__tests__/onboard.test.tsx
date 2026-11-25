@@ -191,7 +191,8 @@ describe('the account', () => {
     mount(makeWrites({ createAccount: vi.fn(async () => ({ ok: false as const, error: 'An account with this email already exists. Please sign in instead.' })) }), 'account', PLAYER);
     fill('theo@school.edu', 'Fairway#26');
     expect(await screen.findByText('This email already has a GolfHelm account.')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Go to sign in' }).getAttribute('href')).toBe('/golf/login');
+    // The team code typed here rides to sign in, so signing in lands the player on the team they were joining.
+    expect(screen.getByRole('link', { name: 'Go to sign in' }).getAttribute('href')).toBe('/golf/login?returnTo=%2Fgolf%2Fjoin%2FK7PQX4MN');
   });
 
   it('CH-15012 the server’s own sentence about a breached password is shown as it arrives', async () => {

@@ -21,6 +21,6 @@ export function teamPlace(team: { season?: string | null; organization?: { name:
 export function joinFailure(error?: string | null, network = false): { message: string; tone: 'danger' | 'warning'; code: string } {
   if (network) return { message: 'Couldn’t join the team. Try again.', tone: 'danger', code: 'CH-15033' };
   const message = error || 'Failed to join team. Please try again.';
-  if (/already on|one team/i.test(message)) return { message, tone: 'warning', code: 'CH-15939' };
+  if (/already on|one team/i.test(message)) return { message: `${message} To move, leave that team in Settings or ask your coach to move you.`, tone: 'warning', code: 'CH-15939' };
   return { message, tone: 'danger', code: 'CH-15032' };
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { AFTER_ACCOUNT, EMPTY_PROGRAM, PLAN, pathOf, type CodeKind, type OnboardPath, type OnboardStep, type ProgramDetails, type RequestDetails } from './logic';
+import { AFTER_ACCOUNT, EMPTY_PROGRAM, PLAN, pathOf, resumeStep, stepSatisfied, type CodeKind, type OnboardPath, type OnboardStep, type ProgramDetails, type RequestDetails } from './logic';
 
 /**
  * Where someone is in sign-up, and what they have told us. The password is
@@ -31,6 +31,8 @@ export interface Draft {
   /** Set once the account exists: Back never crosses it, and a reload resumes after it. */
   accountMade: boolean;
   joinedTeam: boolean | null;
+  /** Why the server did not add the player to the team (its own words), when it did not; null otherwise. */
+  joinError: string | null;
 }
 
 export const EMPTY_DRAFT: Draft = {
@@ -52,6 +54,7 @@ export const EMPTY_DRAFT: Draft = {
   teamCode: null,
   accountMade: false,
   joinedTeam: null,
+  joinError: null,
 };
 
 export const DRAFT_KEY = 'ch.onboard.v1';
@@ -94,16 +97,52 @@ export function reduceFlow(s: FlowState, a: Action): FlowState {
       const d = { ...s.d, ...(a.patch ?? {}) };
       const plan = PLAN[pathOfDraft(d)];
       const i = plan.indexOf(cur);
-      const to = a.to ?? plan[i >= 0 ? i + 1 : 1];
+      let to = a.to ?? plan[i >= 0 ? i + 1 : 1];
+      // After the account exists, a question it already answers is not asked again (name, class) and the account is never remade.
+      if (!a.to) {
+        let at = plan.indexOf(to as OnboardStep);
+        while (to && at >= 0 && stepSatisfied(to, d)) to = plan[++at];
+      }
       if (!to) return { ...s, d };
       const kept = s.hist.filter((x) => plan.includes(x));
-      return { d, hist: [...kept, to], dir: 'fwd', n: s.n + 1 };
+      // Going to a question already behind (Check my code, a name asked for again) returns to it rather than stacking a second copy.
+      const at = kept.lastIndexOf(to);
+      return { d, hist: at >= 0 ? kept.slice(0, at + 1) : [...kept, to], dir: 'fwd', n: s.n + 1 };
     }
     case 'back':
       return canGoBack(s) ? { ...s, hist: s.hist.slice(0, -1), dir: 'back', n: s.n + 1 } : s;
     case 'restore':
       return a.state;
   }
+}
+
+/**
+ * What a signed-in player's draft becomes when the server's seed meets the one this tab kept. The server's account is the
+ * truth for who they are, so its answers win where it has one; a blank from the server never wipes what was typed. The
+ * team code is the exception: when the link carried one (`seed.code` present, even empty) it is the code, since a player
+ * who moves from the men's to the women's team arrives with the new code over a draft that held the old.
+ * A draft is used only when its email and the account's are both present and equal.
+ */
+export function mergeResumed(saved: Draft | null, seed: Partial<Draft>): Draft {
+  // A kept draft is used only when both it and the account name the same email: a draft with no email, or an account with
+  // none, is not proof it is this person's, and on a shared phone it could be someone else's answers.
+  const sameEmail = !!saved?.email && !!seed.email && saved.email.trim().toLowerCase() === seed.email.trim().toLowerCase();
+  const mine = saved && sameEmail ? saved : null;
+  const base: Draft = { ...EMPTY_DRAFT, ...(mine ?? {}) };
+  const out: Record<string, unknown> = { ...base };
+  for (const [k, v] of Object.entries(seed)) {
+    if (k === 'code' || k === 'teamName') {
+      out[k] = v ?? (k === 'code' ? '' : null);
+    } else if (v !== '' && v !== null && v !== undefined) {
+      out[k] = v;
+    }
+  }
+  if (mine && seed.code !== undefined && seed.code !== mine.code) {
+    // A new code is a new team: what the old one said is not carried over.
+    out.joinedTeam = null;
+    out.joinError = null;
+  }
+  return { ...(out as unknown as Draft), accountMade: true };
 }
 
 /** A saved draft, read defensively: anything malformed starts over. */
@@ -178,10 +217,11 @@ export function useFlow(start: OnboardStep, seed: Partial<Draft>, persist = true
       if (saved.d.accountMade) return;
       dispatch({ t: 'restore', state: { ...saved, d: { ...saved.d, ...seed, code: seed.code || saved.d.code } } });
     } else {
-      // Picking up after the account: keep what was answered, start at `start`.
-      const d = { ...saved.d, ...seed, accountMade: true };
+      // Picking up after the account: keep what was answered, and start at the first question the account does not answer.
+      const d = mergeResumed(saved.d, seed);
       const plan = PLAN[pathOfDraft(d)];
-      const i = plan.indexOf(start);
+      const at = start === 'game' || start === 'name' || start === 'grad' ? resumeStep(d) : start;
+      const i = plan.indexOf(at);
       if (i < 0) return;
       dispatch({ t: 'restore', state: { d, hist: plan.slice(0, i + 1) as OnboardStep[], dir: 'fwd', n: 0 } });
     }

@@ -12,8 +12,16 @@ const isControl = (r: HTMLElement) => (r.matches('a[href]') || r.matches('button
  * inside `root`, so rows that arrive, leave or reorder are picked up as they are; a row that is leaving
  * (`[data-leaving]`) is skipped, and so is anything that isn't a link or an enabled button (a skeleton's placeholder
  * row). A key typed in a field inside the list is left alone.
+ *
+ * `letters` (a desk table, premium plan S7): J and K step down and up too, as in Mail, Gmail and Linear. A row whose
+ * row element is `aria-current` (a table’s selected row) keeps the Tab stop as a chosen control does.
  */
-export function useRovingRows(root: RefObject<HTMLElement | null>, selector: string, /** Re-attach when the list mounts (a popover's). */ shown = true) {
+export function useRovingRows(
+  root: RefObject<HTMLElement | null>,
+  selector: string,
+  /** Re-attach when the list mounts (a popover’s). */ shown = true,
+  { letters = false }: { letters?: boolean } = {},
+) {
   useEffect(() => {
     const el = root.current;
     if (!el || !shown) return;
@@ -24,7 +32,8 @@ export function useRovingRows(root: RefObject<HTMLElement | null>, selector: str
     const settle = () => {
       const all = rows();
       if (!all.length) return;
-      const keep = (last && all.includes(last) ? last : null) ?? all.find((r) => r.matches('[aria-current="true"], [aria-current="page"], [aria-selected="true"]')) ?? all[0]!;
+      const chosen = (r: HTMLElement) => r.matches('[aria-current="true"], [aria-current="page"], [aria-selected="true"]') || r.closest('[role="row"][aria-current="true"]') !== null;
+      const keep = (last && all.includes(last) ? last : null) ?? all.find(chosen) ?? all[0]!;
       for (const r of all) r.tabIndex = r === keep ? 0 : -1;
     };
     const onKey = (e: KeyboardEvent) => {
@@ -33,7 +42,8 @@ export function useRovingRows(root: RefObject<HTMLElement | null>, selector: str
       if ((e.target as Element).matches('input, textarea, select, [contenteditable="true"]')) return;
       const all = rows();
       const i = all.indexOf(row);
-      const to = e.key === 'ArrowDown' ? all[i + 1] : e.key === 'ArrowUp' ? all[i - 1] : e.key === 'Home' ? all[0] : e.key === 'End' ? all.at(-1) : undefined;
+      const key = letters && !e.shiftKey && (e.key === 'j' || e.key === 'k') ? (e.key === 'j' ? 'ArrowDown' : 'ArrowUp') : e.key;
+      const to = key === 'ArrowDown' ? all[i + 1] : key === 'ArrowUp' ? all[i - 1] : key === 'Home' ? all[0] : key === 'End' ? all.at(-1) : undefined;
       if (!to) return;
       e.preventDefault();
       to.focus();
@@ -55,5 +65,5 @@ export function useRovingRows(root: RefObject<HTMLElement | null>, selector: str
       el.removeEventListener('keydown', onKey);
       el.removeEventListener('focusin', onFocus);
     };
-  }, [root, selector, shown]);
+  }, [root, selector, shown, letters]);
 }

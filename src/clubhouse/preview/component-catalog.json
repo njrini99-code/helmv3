@@ -13165,6 +13165,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/ui/DataTable.tsx",
+      "group": "ui",
+      "exports": [
+        "DataTable"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/DateField.tsx",
       "group": "ui",
       "exports": [
@@ -31571,6 +31581,7 @@
         "ch-lgr__title",
         "ch-lgr__trail",
         "ch-lgr__txt",
+        "ch-lift",
         "ch-line",
         "ch-line__dot",
         "ch-line__grid",

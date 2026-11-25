@@ -49,3 +49,16 @@ export function pickGolfDashboardRole(
   if (player) return 'player';
   return declared;
 }
+
+/**
+ * The role an account declared when it was made: `users.role` when that row exists, else the role sign-up put in the
+ * auth account's own metadata. A sign-up whose session never started (or whose `users` row was never written) leaves an
+ * account with neither profile and no `users.role`; without this fallback its sign-in found no role and landed on the
+ * dashboard, which has nowhere to send it. With it, a player account goes to player onboarding (and a coach to coach
+ * onboarding) like any other unfinished account.
+ */
+export function declaredGolfRole(usersRole: unknown, metadataRole: unknown): GolfDashboardRole | null {
+  if (usersRole === 'coach' || usersRole === 'player') return usersRole;
+  if (metadataRole === 'coach' || metadataRole === 'player') return metadataRole;
+  return null;
+}

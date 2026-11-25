@@ -24,6 +24,24 @@ Sign-in also gates duplicate submissions synchronously before React commits the
 busy button. The gate stays set through a successful handoff or stale-bundle
 reload; a refused or failed attempt releases it so credentials can be retried.
 
+Resuming player onboarding (a sign-in after "account created but session could
+not be established", or on a phone that lost the draft) starts at the first
+question the account does not answer (`resumeStep` in
+`src/clubhouse/screens/onboard/logic.ts`): name, class, then Your game.
+`/golf/player?joinCode=` is read on the server so the team is named from the
+first question. The server's account wins over a kept draft, a draft kept for
+another email is ignored, and a new link's code replaces the draft's. Finishing
+returns the server's `joinError`; the one-team rule is unchanged (a player
+already on a team is told to leave it in Settings or ask the coach), and a
+finish with no code offers "Enter a team code" rather than looking complete.
+Sign-up's sign-in links carry the typed code as `returnTo`. `/golf/join/[code]`
+cleans the address to its letters and numbers before it feeds a redirect. The
+signup code check and its pre-signup re-check are throttled per (IP, normalised
+code): 60 an hour for one code, and each new code an IP tries spends one of ten
+an hour; account creation is 60 an hour per IP, and its throttle says "Too many
+sign-ups from this network" rather than "code didn't match" (owner-delegated
+default, 2026-11-24).
+
 Coach and player onboarding are separate routes. Join-code links can redirect users into player onboarding when the player profile is incomplete.
 
 ## Primary Entry Points

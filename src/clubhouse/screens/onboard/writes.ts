@@ -69,7 +69,7 @@ export interface ProfileInput {
   avatarUrl: string | null;
 }
 
-export type ProfileResult = { ok: true; joinedTeam: boolean | null } | { ok: false; error: string };
+export type ProfileResult = { ok: true; joinedTeam: boolean | null; joinError?: string | null } | { ok: false; error: string };
 
 /** Finishes a player: the same action and fields as today's /golf/player, with the join code the link or gate carried. */
 export async function finishPlayer(p: ProfileInput, joinCode: string | null): Promise<ProfileResult> {
@@ -88,7 +88,8 @@ export async function finishPlayer(p: ProfileInput, joinCode: string | null): Pr
       joinCode ?? undefined,
     );
     if (!r.success) return { ok: false, error: ('error' in r && r.error) || 'We couldn’t save your profile. Please try again.' };
-    return { ok: true, joinedTeam: joinCode ? ('joinedTeam' in r ? r.joinedTeam === true : false) : null };
+    const joinedTeam = joinCode ? ('joinedTeam' in r ? r.joinedTeam === true : false) : null;
+    return { ok: true, joinedTeam, joinError: joinedTeam === false && 'joinError' in r ? (r.joinError ?? null) : null };
   } catch (e) {
     if (!offlineLike(e)) chReport(e, { surface: 'onboard.profile', severity: 'high' });
     return { ok: false, error: 'Unable to reach the server. Please check your internet connection and try again.' };

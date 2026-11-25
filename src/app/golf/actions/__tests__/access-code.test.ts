@@ -60,7 +60,7 @@ vi.mock('next/headers', () => ({
 
 vi.mock('@/lib/auth/supabase-rate-limit', () => ({
   checkRateLimit: (identifier: string, config: unknown) => checkRateLimit(identifier, config),
-  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 60 * 60 * 1000 } },
+  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 60 * 60 * 1000 }, SIGNUP_SAME_CODE: { maxAttempts: 60, windowMs: 60 * 60 * 1000 }, SIGNUP_ALL: { maxAttempts: 200, windowMs: 60 * 60 * 1000 } },
 }));
 
 import { validateAccessCode } from '../access-code';
@@ -208,7 +208,7 @@ describe('validateAccessCode', () => {
   it('keys the throttle by client IP', async () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     await validateAccessCode('HELM25');
-    expect(checkRateLimit).toHaveBeenCalledWith('signup:gate:203.0.113.9', expect.anything());
+    expect(checkRateLimit).toHaveBeenCalledWith('signup:gate:203.0.113.9:HELM25', expect.anything());
   });
 
   // ── B8-1 grant cookie ───────────────────────────────────────────────────
@@ -289,7 +289,7 @@ describe('verifySignupGate', () => {
     process.env.SIGNUP_ACCESS_CODE = 'HELM25';
     cookieJar.set(GRANT_COOKIE, 'HELM25');
     await verifySignupGate();
-    expect(checkRateLimit).toHaveBeenCalledWith('signup:gate:verify:203.0.113.9', expect.anything());
+    expect(checkRateLimit).toHaveBeenCalledWith('signup:verify:203.0.113.9:HELM25', expect.anything());
   });
 
   it('round-trips a gate pass into a verified signup grant', async () => {
