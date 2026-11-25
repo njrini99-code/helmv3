@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { declaredGolfRole, onboardedGolfRole, pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
@@ -102,8 +103,8 @@ export default async function GolfDashboardLayout({
     // reads it. Without this the unknown branch below sent a signed-in account to /golf/signup, which bounces signed-in
     // visitors back here: a redirect loop.
     if (!declaredRole && !roleError) {
-      const { data: authData } = await supabase.auth.getUser();
-      declaredRole = declaredGolfRole(null, authData.user?.user_metadata?.role);
+      const { user: authUser } = await getUserResilient(supabase);
+      declaredRole = declaredGolfRole(null, authUser?.user_metadata?.role);
     }
     roleReadFailed = !!roleError;
 

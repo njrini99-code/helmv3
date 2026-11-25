@@ -189,10 +189,11 @@ async function loginActionImpl(
       return { success: false, error: 'Email not confirmed' };
     }
     recordLoginOutcome('auth_unavailable', code ?? (status ? String(status) : undefined));
-    return {
-      success: false,
-      error: status === 429 || code === 'over_request_rate_limit' ? 'Too many requests' : 'Network error: sign-in could not be reached',
-    };
+    if (status === 429 || code === 'over_request_rate_limit') return { success: false, error: 'Too many requests' };
+    // An outage (5xx, no status: the resilient helper's timeout) reads as one; any other refusal (a banned account, a
+    // malformed request) is not a connection problem and says only that sign in did not go through.
+    if (!status || status >= 500) return { success: false, error: 'Network error: sign-in could not be reached' };
+    return { success: false, error: 'We couldn’t sign you in. Please try again.' };
   }
 
   if (error || !data.user) {

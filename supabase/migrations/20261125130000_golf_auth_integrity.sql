@@ -13,7 +13,7 @@
 -- 6. A player's own join request can only be created as pending.
 --
 -- Checked on production before writing (read-only, 2026-11-25): 0 email drift between auth.users and public.users,
--- 0 case-insensitive duplicate join codes, 0 join codes outside ^[A-Z0-9]+$, 0 players with two active or pending
+-- 0 case-insensitive duplicate join codes, 0 join codes outside ^[A-Z0-9]+$ (lengths 6, 8 and 9), 0 players with two active or pending
 -- memberships, no trigger on auth.users other than on_auth_user_created.
 
 -- 1 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -44,9 +44,11 @@ $$;
 REVOKE ALL ON FUNCTION public.sync_user_email_from_auth() FROM PUBLIC, anon, authenticated;
 
 DROP TRIGGER IF EXISTS on_auth_user_email_changed ON auth.users;
+-- WHEN keeps it off GoTrue's other user updates (every sign in writes the row).
 CREATE TRIGGER on_auth_user_email_changed
   AFTER UPDATE OF email ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.sync_user_email_from_auth();
+  FOR EACH ROW WHEN (OLD.email IS DISTINCT FROM NEW.email)
+  EXECUTE FUNCTION public.sync_user_email_from_auth();
 -- ROLLBACK: DROP TRIGGER on_auth_user_email_changed ON auth.users; DROP FUNCTION public.sync_user_email_from_auth();
 
 -- 2 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -74,6 +76,7 @@ CREATE TRIGGER guard_users_email_self_change
 
 -- 3 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 CREATE UNIQUE INDEX IF NOT EXISTS golf_teams_join_code_upper_uidx ON public.golf_teams (upper(join_code));
+ALTER TABLE public.golf_teams DROP CONSTRAINT IF EXISTS golf_teams_join_code_format;
 ALTER TABLE public.golf_teams
   ADD CONSTRAINT golf_teams_join_code_format CHECK (join_code IS NULL OR join_code ~ '^[A-Z0-9]{4,12}$') NOT VALID;
 ALTER TABLE public.golf_teams VALIDATE CONSTRAINT golf_teams_join_code_format;
@@ -137,7 +140,9 @@ BEGIN
   -- invite flow relies on: it runs the join twice by design.
   INSERT INTO public.golf_team_members (player_id, team_id, status)
   VALUES (v_player_id, v_team.id, 'active')
-  ON CONFLICT (team_id, player_id) DO NOTHING;
+  -- Named constraint, not a column list: team_id is also this function's OUT column, so a column list is ambiguous
+  -- (42702) and every join would fail.
+  ON CONFLICT ON CONSTRAINT golf_team_members_team_id_player_id_key DO NOTHING;
 
   RETURN QUERY SELECT v_team.id, v_team.name;
 END;

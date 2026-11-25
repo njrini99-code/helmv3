@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     // whatever the refresh flag says.
     await restoreDemoLogin();
 
-    // Off: nothing is read and nothing is written.
+    // Off: the demo team is not refreshed (the demo login above is still restored).
     if (!isDemoRefreshEnabled()) return NextResponse.json({ ok: true, skipped: 'flag_off' });
 
     const lines: string[] = [];
@@ -103,7 +103,12 @@ async function restoreDemoLogin(): Promise<void> {
     const admin = createAdminClient();
     const { data: row, error } = await admin.from('users').select('id').eq('email', creds.email.toLowerCase()).maybeSingle();
     if (error || !row) {
-      if (error) await logServerError(`[golf-demo-refresh] demo login lookup failed: ${describeError(error)}`, { action: 'cron.golf-demo-refresh' });
+      // Not found means the demo login's email was changed (a visitor confirmed a new address): say so, someone must
+      // put it back by hand, because the demo is locked for everyone until then.
+      await logServerError(
+        error ? `[golf-demo-refresh] demo login lookup failed: ${describeError(error)}` : '[golf-demo-refresh] demo login not found by its configured email; its email may have been changed',
+        { action: 'cron.golf-demo-refresh' },
+      );
       return;
     }
     const { error: updateError } = await admin.auth.admin.updateUserById(row.id, { email: creds.email, password: creds.password });
