@@ -52,3 +52,21 @@ buttons say more, and a few questions are skipped when the account already answe
 `src/clubhouse/data/__tests__/onboard-team.test.ts`, `src/app/golf/actions/__tests__/join-hardening.test.ts`,
 `src/app/golf/actions/__tests__/player-onboarding-join-reason.test.ts`, `src/app/golf/join/[code]/__tests__/page.test.tsx`.
 `onboard.test.tsx` CH-15011 now expects the sign-in link to carry the typed code.
+
+## Rate limits on a shared network (owner-delegated default, 2026-11-24)
+
+The code check and account creation were limited to 10 an hour per IP each, so one team on one campus network or carrier
+NAT ran out after about ten players and the next was told their coach's code "didn't match".
+
+- **Code checks** (`src/lib/golf/signup-gate.ts`, the check and the check before signup) are keyed on IP plus the
+  normalised code (any case, spaces and dashes dropped). The same code from one IP has a budget of 60 an hour
+  (`SIGNUP_SAME_CODE`), so a roster of 15 passes. Each new code an IP tries spends one slot of the old 10-an-hour guessing
+  budget (`SIGNUP`), so trying many different codes from one IP is limited exactly as before; a refused code stays
+  refused (a block is stamped on its own bucket), so asking again is not a free second lookup. A throttle still reads as
+  "no match" (Q-99).
+- **Account creation** (`signupAction`, `signupWithStaffInviteAction`) is 60 an hour per IP (`GOLF_SIGNUP`). When it is the
+  throttled one, the message is "Too many sign-ups from this network right now. Please try again in <time>.", because the
+  code has already matched by then.
+- BaseballHelm's limits are unchanged.
+- Mistyped codes from a room each count as a new code, so ten different typos from one network in an hour still use up
+  the guessing budget; valid codes never do after their first use.

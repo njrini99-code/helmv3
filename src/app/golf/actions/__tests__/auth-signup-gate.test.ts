@@ -38,13 +38,13 @@ const allow = { allowed: true, remaining: 9, resetAt: Date.now() + 60_000 };
 vi.mock('@/lib/auth/rate-limit', () => ({
   checkRateLimit: vi.fn(async () => allow),
   resetRateLimit: vi.fn(),
-  RATE_LIMITS: { LOGIN: {}, SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, PASSWORD_RESET: {} },
+  RATE_LIMITS: { LOGIN: {}, SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, GOLF_SIGNUP: { maxAttempts: 60, windowMs: 3_600_000 }, PASSWORD_RESET: {} },
   formatTimeRemaining: () => '1 minute',
 }));
 
 vi.mock('@/lib/auth/supabase-rate-limit', () => ({
   checkRateLimit: vi.fn(async () => allow),
-  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 } },
+  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, SIGNUP_SAME_CODE: { maxAttempts: 60, windowMs: 3_600_000 } },
 }));
 
 // ── Supabase ─────────────────────────────────────────────────────────────
@@ -163,6 +163,20 @@ describe('signupAction — server-side access-code gate (B8-1)', () => {
     signUp.mockResolvedValue({ data: { user: { id: 'user-1' }, session: null }, error: null });
     const result = await signupAction('player@example.com', STRONG_PASSWORD, 'player', 'New', 'Player');
     expect(result).toEqual({ success: false, error: 'Account created but session could not be established. Please try signing in.' });
+  });
+
+  // (b1b) By the time the account is made the code has already matched: a throttle on account creation says what is wrong.
+  it('says "too many sign-ups from this network" (not that the code did not match) when account creation is throttled', async () => {
+    maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
+    cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
+    const { checkRateLimit } = await import('@/lib/auth/rate-limit');
+    vi.mocked(checkRateLimit).mockResolvedValueOnce({ allowed: false, remaining: 0, resetAt: Date.now() + 5 * 60_000 });
+    const result = await signupAction('player@example.com', STRONG_PASSWORD, 'player', 'New', 'Player');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/Too many sign-ups from this network right now\. Please try again in/);
+    expect(result.error).not.toMatch(/match/i);
+    expect(checkRateLimit).toHaveBeenCalledWith(expect.stringMatching(/^signup:ip:/), expect.objectContaining({ maxAttempts: 60 }));
+    expect(signUp).not.toHaveBeenCalled();
   });
 
   // (b2) A TEAM CODE SIGNS UP PLAYERS ONLY (owner decision 2026-09-30).

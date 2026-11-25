@@ -40,7 +40,7 @@ vi.mock('next/headers', () => ({
 const allow = { allowed: true, remaining: 9, resetAt: Date.now() + 60_000 };
 vi.mock('@/lib/auth/supabase-rate-limit', () => ({
   checkRateLimit: vi.fn(async () => allow),
-  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 } },
+  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, SIGNUP_SAME_CODE: { maxAttempts: 60, windowMs: 3_600_000 } },
 }));
 
 const { logServerEvent } = vi.hoisted(() => ({ logServerEvent: vi.fn(async () => undefined) }));

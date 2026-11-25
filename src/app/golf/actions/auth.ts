@@ -366,13 +366,14 @@ async function signupActionImpl(
   const ip = resolveClientIp(headersList);
 
   // Check rate limit
-  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
+  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.GOLF_SIGNUP);
 
   if (!rateLimit.allowed) {
     const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
     return {
       success: false,
-      error: `Too many signup attempts. Please try again in ${remaining}.`,
+      // The code already matched by now, so this says what is wrong: the network, not the code.
+      error: `Too many sign-ups from this network right now. Please try again in ${remaining}.`,
     };
   }
 
@@ -806,12 +807,13 @@ async function signupWithStaffInviteActionImpl(
   const headersList = await headers();
   const ip = resolveClientIp(headersList);
 
-  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
+  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.GOLF_SIGNUP);
   if (!rateLimit.allowed) {
     const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
     return {
       success: false,
-      error: `Too many signup attempts. Please try again in ${remaining}.`,
+      // The code already matched by now, so this says what is wrong: the network, not the code.
+      error: `Too many sign-ups from this network right now. Please try again in ${remaining}.`,
     };
   }
 

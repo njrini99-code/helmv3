@@ -207,6 +207,13 @@ export const RATE_LIMITS = {
     maxAttempts: 10,
     windowMs: 60 * 60 * 1000, // 1 hour
   },
+  // The team-code checks at the signup gate, per (IP, code). A whole roster arrives from one campus IP with the SAME code,
+  // so the budget per code is generous; guessing many DIFFERENT codes from one IP is bounded separately (SIGNUP above,
+  // spent once per new code). Owner-delegated default, 2026-11-24.
+  SIGNUP_SAME_CODE: {
+    maxAttempts: 60,
+    windowMs: 60 * 60 * 1000, // 1 hour
+  },
   PASSWORD_RESET: {
     maxAttempts: 3,
     windowMs: 60 * 60 * 1000, // 1 hour

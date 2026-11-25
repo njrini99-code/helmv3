@@ -145,6 +145,13 @@ export const RATE_LIMITS = {
     maxAttempts: 10,
     windowMs: 60 * 60 * 1000,
   },
+  // GolfHelm account creation, per IP. A team signs up together from one campus network (20 players at practice is the
+  // normal case), so this is sized for a roster; the code gate is what bounds guessing, and it is keyed per code.
+  // Owner-delegated default, 2026-11-24.
+  GOLF_SIGNUP: {
+    maxAttempts: 60,
+    windowMs: 60 * 60 * 1000,
+  },
   PASSWORD_RESET: {
     maxAttempts: 3,
     windowMs: 60 * 60 * 1000,
