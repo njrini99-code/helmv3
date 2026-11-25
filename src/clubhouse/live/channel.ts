@@ -34,6 +34,28 @@ export const HIDDEN_LEAVE_MS = 5 * 60_000;
  */
 export const REPORT_AFTER_FAILURES = 4;
 
+/**
+ * The same rule for a postgres_changes channel that supabase-js rejoins by itself (the tournaments and qualifier pages):
+ * feed it every subscribe status. CHANNEL_ERROR and TIMED_OUT count as failures, SUBSCRIBED ends the outage, CLOSED (the
+ * page leaving) is neither. One low-severity report per outage, after REPORT_AFTER_FAILURES failures in a row (2169818a).
+ */
+export function channelDropReporter(message: string, surface: string): (status: string) => void {
+  let failures = 0;
+  let reported = false;
+  return (status) => {
+    if (status === 'SUBSCRIBED') {
+      failures = 0;
+      reported = false;
+      return;
+    }
+    if (status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT') return;
+    failures += 1;
+    if (reported || failures < REPORT_AFTER_FAILURES) return;
+    reported = true;
+    chReport(new Error(message), { surface, severity: 'low', extra: { status, failures } });
+  };
+}
+
 export const LIVE_EVENTS = ['lane', 'hide', 'gone'] as const;
 
 export function joinLiveTopic(args: {

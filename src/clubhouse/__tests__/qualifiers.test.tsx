@@ -50,6 +50,7 @@ import QualifierSelectionPage from '@/app/golf/(dashboard)/dashboard/qualifiers/
 import { advanceSelectionState, confirmQualifierSelection, removeQualifierCoachPick, setQualifierCoachPick } from '@/app/golf/actions/v3/qualifying';
 import { loadQualifierDetail, loadQualifierForm, loadQualifierList, loadQualifierSelection, type ChQDetail, type ChQDetailCore, type ChQDetailLoad, type ChQDetailSecondary, type ChQFormData, type ChQList, type ChQSelectionData } from '../data/qualifiers';
 import { chReport, chTrail } from '../lib/track';
+import { REPORT_AFTER_FAILURES } from '../live/channel';
 import { ClubhouseQualifiersRoute } from '../routes/qualifiers';
 import { resolveClubhouseTeam } from '../routes/team';
 import { markAppRunning, RouteScope } from '../lib/session-state';
@@ -3253,7 +3254,14 @@ describe('Qualifiers · live standings (background refresh)', () => {
     handle.status('SUBSCRIBED');
     expect(chReport).not.toHaveBeenCalled();
     handle.status('CHANNEL_ERROR');
-    expect(chReport).toHaveBeenCalledWith(expect.objectContaining({ message: 'qualifier realtime channel error' }), { surface: 'qualifiers.live', severity: 'low' });
+    // One drop is the network and is not reported; a feed that stays down is, once (2169818a).
+    expect(chReport).not.toHaveBeenCalled();
+    for (let i = 1; i < REPORT_AFTER_FAILURES; i += 1) handle.status('CHANNEL_ERROR');
+    expect(chReport).toHaveBeenCalledWith(expect.objectContaining({ message: 'qualifier realtime channel error' }), {
+      surface: 'qualifiers.live',
+      severity: 'low',
+      extra: { status: 'CHANNEL_ERROR', failures: REPORT_AFTER_FAILURES },
+    });
     // Leaving the page drops the channel and any re-read still waiting.
     handle.change();
     unmount();
