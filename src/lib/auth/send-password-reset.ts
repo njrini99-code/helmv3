@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 import { renderGolfHelmResetEmail } from '@/lib/auth/golfhelm-reset-email';
+import { HELM_REPLY_TO } from '@/lib/email/reply-to';
 
 /**
  * Password-reset delivery through OUR Resend account, not Supabase's mailer.
@@ -145,6 +146,7 @@ export async function sendPasswordResetEmail(
   try {
     const { error } = await new Resend(apiKey).emails.send({
       from: process.env.PASSWORD_RESET_FROM || DEFAULT_FROM,
+      replyTo: HELM_REPLY_TO,
       to: [email],
       ...message,
     });

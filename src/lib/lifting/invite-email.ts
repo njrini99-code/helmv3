@@ -18,6 +18,7 @@ import 'server-only';
 import { logServerException } from '@/lib/server-error-logger';
 import { renderLiftingInviteEmail } from '@/lib/email/lifting-invite-template';
 import { gateCustomerEmail } from '@/lib/email/outbound-gate';
+import { HELM_REPLY_TO } from '@/lib/email/reply-to';
 
 const FEATURE = 'lifting-invites';
 
@@ -81,6 +82,7 @@ export async function sendLiftingInviteEmail(params: {
 
     await resend.emails.send({
       from: 'Helm Sports Labs <noreply@helmsportslabs.com>',
+      replyTo: HELM_REPLY_TO,
       to: params.toEmail,
       subject,
       html,

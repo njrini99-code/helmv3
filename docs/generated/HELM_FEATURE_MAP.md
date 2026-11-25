@@ -212,7 +212,7 @@ is a second thing to keep true.
 **Auth Onboarding And Join** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/auth-onboarding-join.md`
-- **Code:** `src/app/golf/(auth)/**`, `src/app/golf/(onboarding)/**`, `src/app/golf/join/**`, `src/clubhouse/screens/auth/**`, `src/app/api/golf/auth/**`, `src/app/golf/actions/auth.ts` … and 16 more in the registry
+- **Code:** `src/app/golf/(auth)/**`, `src/app/golf/(onboarding)/**`, `src/app/golf/join/**`, `src/clubhouse/screens/auth/**`, `src/app/api/golf/auth/**`, `src/app/golf/actions/auth.ts` … and 19 more in the registry
 - **Telemetry:** `auth_onboarding` (golfhelm, med), `join_team_flow` (golfhelm, med)
 - **Incidents:** `memory/incidents/auth_onboarding_join/INC-2026-09-27-presence-webkit-abort-noise.md`
 - **Repair units:** `presence-webkit-abort-2026-09-27` (verified)
@@ -311,7 +311,7 @@ is a second thing to keep true.
 **Outbound Customer Email (kill switch)** · active · criticality high · owner founder
 
 - **Behaviour:** `memory/features/email_outbound.md`
-- **Code:** `src/app/api/cron/v3/weekly-coach-email/**`, `src/app/lifting/actions/invites.ts`, `src/lib/notifications/email.ts`, `src/lib/auth/send-password-reset.ts`, `src/lib/coachhelm/v3/foundation/email.ts`, `src/lib/email/**` … and 3 more in the registry
+- **Code:** `src/app/api/cron/v3/weekly-coach-email/**`, `src/app/lifting/actions/invites.ts`, `src/lib/notifications/email.ts`, `src/lib/auth/send-password-reset.ts`, `src/lib/coachhelm/v3/foundation/email.ts`, `src/lib/email/**` … and 4 more in the registry
 - **Telemetry:** none. The gate itself is not wrapped/feature-tagged. It writes its own admin_events row (event_type email.suppressed) directly via src/lib/admin-logger.ts, not through the Bridge withFeature path.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

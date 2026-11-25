@@ -18,6 +18,7 @@
 
 import { Resend } from 'resend';
 import { gateCustomerEmail } from '@/lib/email/outbound-gate';
+import { HELM_REPLY_TO } from '@/lib/email/reply-to';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL =
@@ -101,6 +102,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const payload: any = {
     from: input.from ?? FROM_EMAIL,
+    replyTo: HELM_REPLY_TO,
     to: Array.isArray(input.to) ? input.to : [input.to],
     subject: input.subject,
     tags: input.tags,
