@@ -21,17 +21,17 @@
  *
  * Usage:
  *   DOTENV_CONFIG_PATH=.vercel/.env.production.local \
- *     npx tsx -r dotenv/config scripts/recompute-round-totals.ts
+ *     npx tsx -r dotenv/config scripts/repair/recompute-round-totals.ts
  *
  *   Pass --dry-run to log changes without writing.
  *   Pass --round=<uuid> to scope to a single round.
  */
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/recompute-round-totals.ts',
+  name: 'scripts/repair/recompute-round-totals.ts',
   summary:
     "Recompute round-level totals + per-hole GIR flags from per-hole rows.",
   guard: "its own --dry-run flag (unchanged)",

@@ -15,10 +15,10 @@
  *
  * Usage:
  *   DOTENV_CONFIG_PATH=.vercel/.env.production.local \
- *     npx tsx -r dotenv/config scripts/archive-todays-resolved-incidents.ts
+ *     npx tsx -r dotenv/config scripts/repair/archive-todays-resolved-incidents.ts
  */
 import 'dotenv/config';
-import { archiveIncidentsByCriteria, archiveKnownResolvedIncidents } from '../src/lib/admin/incident-resolver';
+import { archiveIncidentsByCriteria, archiveKnownResolvedIncidents } from '../../src/lib/admin/incident-resolver';
 
 async function main() {
   const predictor = await archiveIncidentsByCriteria({

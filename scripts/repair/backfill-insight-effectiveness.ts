@@ -7,7 +7,7 @@
  * natural key `(team_id, insight_type, period_start, period_end)`.
  *
  * Run after the cron route + writer have shipped to production:
- *   npx tsx scripts/backfill-insight-effectiveness.ts
+ *   npx tsx scripts/repair/backfill-insight-effectiveness.ts
  *
  * Requires:
  *   - NEXT_PUBLIC_SUPABASE_URL
@@ -15,11 +15,11 @@
  */
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
-import { rollupInsightEffectivenessForRange } from '../src/lib/coachhelm/v2/analytics/effectiveness-writer';
-import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+import { rollupInsightEffectivenessForRange } from '../../src/lib/coachhelm/v2/analytics/effectiveness-writer';
+import { cliGuard, dryRunClient } from '../lib/cli-guard.mjs';
 
 const cli = cliGuard({
-  name: 'scripts/backfill-insight-effectiveness.ts',
+  name: 'scripts/repair/backfill-insight-effectiveness.ts',
   summary:
     'Walks every day from the earliest golf_coach_insights row to yesterday and upserts golf_insight_effectiveness for each one-day window on the project in .env.local. Idempotent.',
   secrets: 'NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)',

@@ -9,7 +9,7 @@
  * metadata with `auto_resolved`, `resolution`, and `resolved_at`, the row
  * disappears from the surfaced lists while remaining queryable for debug.
  *
- * Use from one-shot scripts (see `scripts/archive-todays-resolved-incidents.ts`)
+ * Use from one-shot scripts (see `scripts/repair/archive-todays-resolved-incidents.ts`)
  * or future server actions that can prove a class of incident is fixed.
  */
 import { createAdminClient } from '@/lib/supabase/admin';

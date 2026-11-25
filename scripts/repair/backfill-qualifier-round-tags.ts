@@ -27,7 +27,7 @@
  * successful pass finds zero matching rows and is a no-op. UPDATE only (one
  * column, `round_type`) — no inserts, no deletes, no other columns touched.
  *
- * Connection modeled on scripts/backfill-baseball-slash-lines.ts: env from
+ * Connection modeled on scripts/repair/backfill-baseball-slash-lines.ts: env from
  * .env.local, `createClient(url, key, { auth: { persistSession: false,
  * autoRefreshToken: false } })`. Dry-run by default (prints the plan, writes
  * nothing) — pass --confirm to write.
@@ -36,17 +36,17 @@
  * the author. A human runs it (dry-run first) after review.
  *
  * Run:
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/backfill-qualifier-round-tags.ts            # dry run
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/backfill-qualifier-round-tags.ts --confirm  # write
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/repair/backfill-qualifier-round-tags.ts            # dry run
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/repair/backfill-qualifier-round-tags.ts --confirm  # write
  *
  * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
  */
 import { config as loadEnv } from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/backfill-qualifier-round-tags.ts',
+  name: 'scripts/repair/backfill-qualifier-round-tags.ts',
   summary:
     "One-time backfill for `golf_rounds.round_type` on rounds that ARE linked to a qualifier (`qualifier_id IS NOT NULL`) but were never tagged `round_type = 'qualifier'`.",
   guard: "its own --confirm flag (unchanged)",

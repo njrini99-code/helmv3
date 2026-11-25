@@ -25,28 +25,28 @@
  * Safe: UPDATE only (`career_obp`, `career_slg`, `career_ops`) on rows that
  * already exist. No inserts, no deletes, no other columns touched.
  *
- * Connection modeled EXACTLY on scripts/seed-rini-baseball-demo.ts: env from
+ * Connection modeled EXACTLY on scripts/seed/seed-rini-baseball-demo.ts: env from
  * .env.local, `createClient(url, key, { auth: { persistSession: false,
  * autoRefreshToken: false } })`. Dry-run by default (prints the plan, writes
  * nothing) — pass --confirm to write, matching the sibling seed scripts'
  * safety convention.
  *
  * Run:
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/backfill-baseball-slash-lines.ts            # dry run
- *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/backfill-baseball-slash-lines.ts --confirm  # write
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/repair/backfill-baseball-slash-lines.ts            # dry run
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/repair/backfill-baseball-slash-lines.ts --confirm  # write
  *
- * (`npx tsx scripts/backfill-baseball-slash-lines.ts` also works standalone —
+ * (`npx tsx scripts/repair/backfill-baseball-slash-lines.ts` also works standalone —
  * the script loads .env.local itself via `dotenv` below.)
  *
  * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
  */
 import { config as loadEnv } from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { computeCareerSlashLine, type SlashLineStatRow } from '../src/lib/baseball/aggregates/career-slash-line';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { computeCareerSlashLine, type SlashLineStatRow } from '../../src/lib/baseball/aggregates/career-slash-line';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/backfill-baseball-slash-lines.ts',
+  name: 'scripts/repair/backfill-baseball-slash-lines.ts',
   summary:
     "One-time backfill for `baseball_player_aggregates.career_obp` / `career_slg` / `career_ops`.",
   guard: "its own --confirm flag (unchanged)",
