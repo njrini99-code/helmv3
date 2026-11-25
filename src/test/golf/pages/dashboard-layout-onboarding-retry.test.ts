@@ -345,12 +345,27 @@ describe('golf dashboard layout — a failed read must not fail open', () => {
     await flushMicrotasks();
     await vi.advanceTimersByTimeAsync(300);
     await flushMicrotasks();
-    await pending;
-
+    const outcome = await pending;
     const said = logServerError.mock.calls.map((c) => String((c as unknown[])[0]));
     expect(said.some((m) => /role lookup failed/i.test(m))).toBe(true);
-    // No profile and no readable role is genuinely "start onboarding" — but it
-    // must be reached with the failure recorded, not inferred from silence.
-    expect(redirect).toHaveBeenCalledWith('/golf/signup');
+    // No profile and an unreadable role is not evidence of anything: the route's error screen offers Try again. It is
+    // never /golf/signup, which bounces a signed-in visitor straight back here (a redirect loop).
+    expect(outcome).toBeInstanceOf(Error);
+    expect(redirect).not.toHaveBeenCalledWith('/golf/signup');
+  });
+
+  it('a signed-in account with no role row and no profile goes to player setup, never back to sign up', async () => {
+    queues.set('users', [ok(null)]);
+    queues.set('golf_coaches', [ok(null)]);
+    queues.set('golf_players', [ok(null)]);
+
+    const pending = renderLayout().catch((e: Error) => e);
+    await flushMicrotasks();
+    await vi.advanceTimersByTimeAsync(300);
+    await flushMicrotasks();
+    await pending;
+
+    expect(redirect).toHaveBeenCalledWith('/golf/player');
+    expect(redirect).not.toHaveBeenCalledWith('/golf/signup');
   });
 });

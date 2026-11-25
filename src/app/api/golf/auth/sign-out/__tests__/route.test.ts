@@ -3,13 +3,18 @@ import { NextRequest } from 'next/server';
 
 /** POST /api/golf/auth/sign-out: one request ends the session and clears the active team; cross-site callers are refused. */
 
-const auth = vi.hoisted(() => ({ signOut: vi.fn(async () => ({ error: null as unknown })), throws: false }));
+const auth = vi.hoisted(() => ({
+  signOut: vi.fn(async (_opts?: unknown) => ({ error: null as unknown })),
+  email: 'coach@school.edu' as string | null,
+  throws: false,
+}));
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => {
     if (auth.throws) throw new Error('no client');
-    return { auth: { signOut: auth.signOut } };
+    return { auth: { signOut: auth.signOut, getUser: async () => ({ data: { user: auth.email ? { email: auth.email } : null }, error: null }) } };
   },
 }));
+vi.mock('@/lib/demo/config.server', () => ({ isDemoCoachEmail: (e: string | null | undefined) => e === 'demo@helm.test' }));
 const logged = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: logged }));
 
@@ -23,6 +28,7 @@ afterEach(() => {
   auth.signOut.mockClear();
   auth.signOut.mockResolvedValue({ error: null });
   auth.throws = false;
+  auth.email = 'coach@school.edu';
   logged.mockClear();
 });
 
@@ -32,6 +38,14 @@ describe('POST /api/golf/auth/sign-out', () => {
     expect(res.status).toBe(200);
     expect(auth.signOut).toHaveBeenCalledTimes(1);
     expect(clearsTeam(res)).toBe(true);
+  });
+
+  it('ends every session for an ordinary account, and only this device’s for the shared demo account', async () => {
+    await POST(req('https://golfhelm.test'));
+    expect(auth.signOut).toHaveBeenLastCalledWith(undefined);
+    auth.email = 'demo@helm.test';
+    await POST(req('https://golfhelm.test'));
+    expect(auth.signOut).toHaveBeenLastCalledWith({ scope: 'local' });
   });
 
   it('accepts a request without an Origin header (same-origin navigations may omit it)', async () => {

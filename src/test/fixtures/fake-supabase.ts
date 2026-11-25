@@ -26,7 +26,7 @@ type Row = Record<string, unknown>;
 interface FakeOptions {
   tables?: Record<string, Row[]>;
   rpc?: Record<string, (args: unknown) => Promise<{ data: unknown; error: unknown }>>;
-  user?: { id: string; email?: string } | null;
+  user?: { id: string; email?: string; user_metadata?: Record<string, unknown> } | null;
   // Opt-in, consumed-once error injection for a SELECT read's very next
   // `.maybeSingle()`/`.single()` call against the named table — models a
   // transient read failure (a dropped connection, an unreadable row) for

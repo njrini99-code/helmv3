@@ -47,7 +47,7 @@ export function AccountPhone({
           <NavRow label="Name and photo" value={data.profile.value.fullName} onClick={onProfile} />
         )}
       </Group>
-      <Group title="Sign in" note={sentTo ? `Check ${sentTo}. Open the link in that inbox to finish the change. Your current email works until then.` : "Where GolfHelm sends sign-in links and email notifications. You’ll confirm your current password before changing it."}>
+      <Group title="Sign in" note={sentTo ? `Check ${sentTo}. Open the link in that inbox to finish the change. If a link also arrives at your current address, open that one too. Your current email works until then.` : "Where GolfHelm sends sign-in links and email notifications. You’ll confirm your current password before changing it."}>
         <NavRow label="Email" value={data.email ?? 'No email on file'} onClick={onEmail} />
         <NavRow label="Password" disabled={!data.email} onClick={onPassword} />
       </Group>
@@ -304,7 +304,7 @@ export function PasswordSheet({ open, onClose, hasEmail, writes }: { open: boole
       <div className="ch-setm-card">
         {/* The field the problem names is marked invalid; its words are the Problem line under the card. */}
         <FieldRow id="set-pw-cur" label="Current password" type="password" autoComplete="current-password" aria-invalid={invalidAt('set-pw-cur')} value={cur} onChange={(e) => setCur(e.target.value)} />
-        <FieldRow id="set-pw-new" label="New password" type="password" autoComplete="new-password" help="At least 8 characters." aria-invalid={invalidAt('set-pw-new')} value={next} onChange={(e) => setNext(e.target.value)} />
+        <FieldRow id="set-pw-new" label="New password" type="password" autoComplete="new-password" help="8 or more characters, with upper and lower case, a number and a symbol." aria-invalid={invalidAt('set-pw-new')} value={next} onChange={(e) => setNext(e.target.value)} />
         <FieldRow id="set-pw-confirm" label="Confirm new password" type="password" autoComplete="new-password" aria-invalid={invalidAt('set-pw-confirm')} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
       </div>
       {tried && problem && <Problem problem={problem} />}

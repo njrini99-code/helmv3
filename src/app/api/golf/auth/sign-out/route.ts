@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { ACTIVE_TEAM_COOKIE } from '@/app/golf/actions/team-switcher.constants';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { isDemoCoachEmail } from '@/lib/demo/config.server';
 
 /**
  * Sign out in one request: the session ends and the active-team cookie goes, and the caller then loads the login page.
@@ -38,7 +39,10 @@ export async function POST(request: NextRequest) {
   let signedOut = true;
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.signOut();
+    // The shared demo account is signed in on many visitors' devices at once: a global sign out from one of them would
+    // end every other visitor's demo. Its sign out ends this device's session only.
+    const { data: who } = await supabase.auth.getUser();
+    const { error } = await supabase.auth.signOut(isDemoCoachEmail(who.user?.email) ? { scope: 'local' } : undefined);
     if (error) {
       signedOut = false;
       await logServerError(`[sign-out] auth.signOut failed: ${describeError(error)}`, { action: 'golf.auth.signOut', featureArea: 'auth' });

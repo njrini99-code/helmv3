@@ -75,10 +75,12 @@ export async function loadPlayerOnboard(joinCode?: string | null): Promise<Playe
 
   // The team the link names (`?joinCode=`), so a player who signed in on another phone still sees which team they are joining.
   // A code that does not resolve is kept: finishing tries it and says why it did not take (never a silent no-team).
-  const code = cleanCode(joinCode ?? '');
+  // Without a link, the code the account signed up with (sign-up stores it on the account), so a player who confirmed
+  // their email on another phone, or signed in again later, is not finished onto no team.
+  const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string; join_code?: unknown };
+  const code = cleanCode(joinCode || (typeof meta.join_code === 'string' ? meta.join_code : ''));
   const team = code.length >= CODE_MIN ? await resolveTeamName(supabase, code, user.id) : undefined;
 
-  const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string };
   const hcp = (p?.handicap ?? p?.handicap_index ?? null) as number | null;
   return {
     kind: 'ready',
