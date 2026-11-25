@@ -4,7 +4,7 @@ paths:
   - "src/app/golf/actions/round-review*"
   - "src/app/api/coachhelm/**"
   - "src/hooks/coachhelm/**"
-  - "src/components/golf/coachhelm/**"
+  - "src/clubhouse/screens/coachhelm/**"
 ---
 
 # CoachHelm review checklist
