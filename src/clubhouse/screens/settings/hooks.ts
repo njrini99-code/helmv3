@@ -245,6 +245,35 @@ export function useInvite(initial: string, writes: ChSettingsWrites) {
   return { code, canShare, link, regen, copy, copied, share };
 }
 
+/**
+ * Copy for another team's code (a men's and women's coach sees both): the code only, with the same toast, tick and
+ * failure copy as the active team's Copy code. The toast names the team, so the coach knows which code they took.
+ */
+export function useCopyTeamCode(code: string, label: string) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (timer.current !== null) window.clearTimeout(timer.current);
+  }, []);
+  const toast = useToast();
+  const copy = async () => {
+    chTrail('settings copy other team code');
+    try {
+      await navigator.clipboard.writeText(code);
+      haptic('success');
+      toast({ title: `${label} code copied` });
+      setCopied(true);
+      if (timer.current !== null) window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => setCopied(false), 1800);
+    } catch (err) {
+      haptic('error');
+      chReport(err, { surface: 'settings.invite', action: 'copy', severity: 'low' });
+      toast({ tone: 'error', title: "Couldn’t copy", body: 'Select the text and copy it yourself.', code: 'CH-8013' });
+    }
+  };
+  return { copy, copied };
+}
+
 const landed = (r: ChResult<unknown>) => !!(r.success || r.ok);
 
 /**

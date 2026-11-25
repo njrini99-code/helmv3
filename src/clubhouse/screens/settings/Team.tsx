@@ -12,17 +12,21 @@ import {
   HANDICAP_OPTIONS,
   hoursLabel,
   minutesLabel,
+  programCodeLabel,
+  programCodePhrase,
   REMINDER_RANGES,
   remindersProblem,
+  splitProgramCodes,
   teamProblem,
   TIMEZONE_OPTIONS,
+  type ChProgramCode,
   type ChReminders,
   type ChScoring,
   type ChSettingsData,
   type ChSettingsWrites,
   type ChTeamInfo,
 } from './model';
-import { SAVE_COPY, useInvite } from './hooks';
+import { SAVE_COPY, useCopyTeamCode, useInvite } from './hooks';
 import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SettingSwitch, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 import { StaffCards } from './Staff';
 import { NoTeam } from '../../ui/NoTeam';
@@ -50,7 +54,7 @@ export function TeamSection({ data, writes }: { data: ChSettingsData; writes: Ch
     <>
       <ReadsFailed parts={failed} onRetry={writes.refresh} />
       {/* The team code first: it is what a coach comes here for most, and Team details ran it under the fold (wave-6 #20). */}
-      {data.joinCode?.error ? <ReadFailed what="Your team code" code="CH-8206" onRetry={writes.refresh} title="Invite players" description="Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster." covered={covered} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} />}
+      {data.joinCode?.error ? <ReadFailed what="Your team code" code="CH-8206" onRetry={writes.refresh} title="Invite players" description="Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster." covered={covered} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} program={splitProgramCodes(data.programCodes, data.teamId)} />}
       {data.team?.error ? <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} title="Team details" description="Shown to your players, and on invites and exports." covered={covered} /> : data.team && <TeamCard team={data.team.value} writes={writes} />}
       <StaffCards coachId={data.coachId} writes={writes} />
       {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} title="Scoring and format" description="Defaults for new rounds and events. The timezone sets when every event and reminder happens." covered={covered} /> : data.scoring && <ScoringCard scoring={data.scoring.value} writes={writes} />}
@@ -100,16 +104,26 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
   );
 }
 
-function InviteCard({ code: initial, writes }: { code: string; writes: ChSettingsWrites }) {
+function InviteCard({ code: initial, writes, program = null }: { code: string; writes: ChSettingsWrites; program?: ReturnType<typeof splitProgramCodes> }) {
   const { code, canShare, regen, copy, copied, share } = useInvite(initial, writes);
   const [confirm, setConfirm] = useState(false);
   useWarnOnOpen(confirm);
+  // A men's and women's coach: each team's code, named, so the wrong one is never handed out.
+  const activeLabel = program?.active ? programCodeLabel(program.active) : null;
   return (
-    <Card id="set-invite" title="Invite players" description="Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster.">
+    <Card
+      id="set-invite"
+      title="Invite players"
+      description={
+        program
+          ? 'Each team has its own code. Players who sign up with a code join that team right away. You can remove anyone from Roster.'
+          : 'Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster.'
+      }
+    >
       {/* One code style for the app: large, tabular, Instrument Sans (.ch-set-code), with its Copy beside it. */}
-      <div className="ch-inset ch-set-codebox">
+      <div className="ch-inset ch-set-codebox" data-team-code={program?.active?.gender ?? undefined}>
         <div className="ch-set-codebox__c">
-          <span>Team code</span>
+          <span>{activeLabel ? `${activeLabel} code` : 'Team code'}</span>
           <b className="ch-set-code ch-num" aria-live="polite">
             {code}
           </b>
@@ -128,7 +142,15 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
           )}
         </div>
       </div>
-      <Row label="New code" help="Stops the current code from working right away. Anyone mid-join will need the new one.">
+      {program?.others.map((t) => <OtherTeamCode key={t.teamId} team={t} />)}
+      <Row
+        label={activeLabel ? `New code for ${programCodePhrase(program!.active!)}` : 'New code'}
+        help={
+          activeLabel
+            ? 'Stops this team’s current code from working right away. To replace the other team’s code, switch to that team first.'
+            : 'Stops the current code from working right away. Anyone mid-join will need the new one.'
+        }
+      >
         <Button size="sm" variant="secondary" leftIcon={RotateCw} busy={regen.pending} onClick={() => setConfirm(true)}>
           {regen.pending ? 'Making…' : 'Make a new code'}
         </Button>
@@ -158,6 +180,25 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
         }
       />
     </Card>
+  );
+}
+
+/** Another team's code in the same well as the active one, named, with its own Copy. */
+function OtherTeamCode({ team }: { team: ChProgramCode }) {
+  const label = programCodeLabel(team);
+  const { copy, copied } = useCopyTeamCode(team.code, label);
+  return (
+    <div className="ch-inset ch-set-codebox" data-team-code={team.gender ?? undefined}>
+      <div className="ch-set-codebox__c">
+        <span>{label} code</span>
+        <b className="ch-set-code ch-num">{team.code}</b>
+      </div>
+      <div className="ch-set-codebox__acts">
+        <Button size="sm" variant="secondary" leftIcon={copied ? Check : Copy} onClick={() => void copy()} aria={{ label: `Copy ${label.toLowerCase()} code` }}>
+          {copied ? 'Copied' : 'Copy code'}
+        </Button>
+      </div>
+    </div>
   );
 }
 

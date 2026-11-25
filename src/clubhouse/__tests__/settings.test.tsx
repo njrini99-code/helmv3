@@ -416,6 +416,42 @@ describe('Settings · 81xx validation', () => {
     expect(within(invite).getByText('Team code')).toBeTruthy();
   });
 
+  it('a men’s and women’s head coach sees both team codes, each named, active team first', async () => {
+    const base = coachData();
+    const { user } = setup({
+      section: 'team',
+      data: {
+        ...base,
+        programCodes: [
+          { teamId: 'preview-team-w', name: 'Varsity Women', gender: 'womens', code: 'W4NP8RTE' },
+          { teamId: base.teamId!, name: 'Varsity', gender: 'mens', code: base.joinCode && !base.joinCode.error ? base.joinCode.value : 'X' },
+        ],
+      },
+    });
+    const invite = screen.getByRole('region', { name: 'Invite players' });
+    expect(invite.textContent).toMatch(/Each team has its own code\./);
+    const mens = within(invite).getByText('Men’s team code');
+    const womens = within(invite).getByText('Women’s team code');
+    expect(mens.compareDocumentPosition(womens) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(invite).getByText('W4NP8RTE')).toBeTruthy();
+    expect(within(invite).queryByText('Team code')).toBeNull();
+    // Replacing a code says which team's code it replaces.
+    expect(within(invite).getByText('New code for the men’s team')).toBeTruthy();
+    // The other team's code copies on its own, and the toast names the team.
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await user.click(within(invite).getByRole('button', { name: 'Copy women’s team code' }));
+    expect(writeText).toHaveBeenCalledWith('W4NP8RTE');
+    expect(await screen.findByText('Women’s team code copied')).toBeTruthy();
+  });
+
+  it('a one-team coach keeps the single "Team code" card', () => {
+    setup({ section: 'team', data: { ...coachData(), programCodes: null } });
+    const invite = screen.getByRole('region', { name: 'Invite players' });
+    expect(within(invite).getByText('Team code')).toBeTruthy();
+    expect(within(invite).queryByText(/Men’s team|Women’s team/)).toBeNull();
+  });
+
   it.each([
     ['CH-8108', 'Team name', '', /team needs a name/],
     ['CH-8109', 'Name', '', /school needs a name/],

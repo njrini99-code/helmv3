@@ -6,18 +6,22 @@ import {
   HANDICAP_OPTIONS,
   hoursLabel,
   minutesLabel,
+  programCodeLabel,
+  programCodePhrase,
   REMINDER_RANGES,
   remindersProblem,
+  splitProgramCodes,
   teamProblem,
   TIMEZONE_OPTIONS,
   type ChProblem,
+  type ChProgramCode,
   type ChReminders,
   type ChScoring,
   type ChSettingsData,
   type ChSettingsWrites,
   type ChTeamInfo,
 } from '../model';
-import { SAVE_COPY, useInvite } from '../hooks';
+import { SAVE_COPY, useCopyTeamCode, useInvite } from '../hooks';
 import { ReadFailed, ReadsFailed, useInstantSave, useSaveAction } from '../parts';
 import { teamReadsFailed } from '../Team';
 import { TEES } from '../Team';
@@ -54,7 +58,7 @@ function TeamBody({ data, writes }: { data: ChSettingsData; writes: ChSettingsWr
           <ReadFailed bare what="Your team code" code="CH-8206" onRetry={writes.refresh} covered={covered} />
         </Group>
       ) : (
-        data.joinCode && <InvitePhone code={data.joinCode.value} writes={writes} />
+        data.joinCode && <InvitePhone code={data.joinCode.value} writes={writes} program={splitProgramCodes(data.programCodes, data.teamId)} />
       )}
       <StaffPhone coachId={data.coachId} writes={writes} />
       {data.team?.error && (
@@ -87,16 +91,18 @@ function TeamBody({ data, writes }: { data: ChSettingsData; writes: ChSettingsWr
  * (the Mobile clubhouse pass, owner 2026-10-08): the code is what a coach most often opens Team for, so it sits first,
  * on the frame's green, with Share as its action and New code as the quiet way to replace it.
  */
-function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettingsWrites }) {
+function InvitePhone({ code: initial, writes, program = null }: { code: string; writes: ChSettingsWrites; program?: ReturnType<typeof splitProgramCodes> }) {
   const { code, canShare, regen, copy, copied, share } = useInvite(initial, writes);
   const [asking, setAsking] = useState(false);
   const labelId = useId();
+  // A men's and women's coach: each card names its team, so the wrong code is never handed out.
+  const activeLabel = program?.active ? programCodeLabel(program.active) : null;
   return (
     <>
-      <section className="ch-feat ch-setm-code" aria-labelledby={labelId}>
+      <section className="ch-feat ch-setm-code" aria-labelledby={labelId} data-team-code={program?.active?.gender ?? undefined}>
         <span className="ch-feat__k">
           <span className="ch-feat__kicker" id={labelId}>
-            Invite players
+            {activeLabel ? `${activeLabel} code` : 'Invite players'}
           </span>
           {/* Where the device has no share sheet, Share copies the invite link instead. */}
           <button type="button" className="ch-setm-pill is-on-green" onClick={() => void (canShare ? share() : copy('link'))}>
@@ -106,7 +112,11 @@ function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettin
         <b className="ch-feat__title ch-setm-code__v ch-num" aria-live="polite">
           {code}
         </b>
-        <span className="ch-feat__line">Players who sign up with this code or open the invite link join right away.</span>
+        <span className="ch-feat__line">
+          {activeLabel
+            ? `Players who sign up with this code join ${programCodePhrase(program!.active!)} right away.`
+            : 'Players who sign up with this code or open the invite link join right away.'}
+        </span>
         <span className="ch-feat__foot">
           <button type="button" className="ch-setm-link is-on-green" onClick={() => void copy('code')}>
             {copied === 'code' ? 'Copied' : 'Copy code'}
@@ -116,6 +126,7 @@ function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettin
           </button>
         </span>
       </section>
+      {program?.others.map((t) => <OtherTeamCodePhone key={t.teamId} team={t} />)}
       <ActionSheet
         open={asking}
         onClose={() => setAsking(false)}
@@ -133,6 +144,29 @@ function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettin
         ]}
       />
     </>
+  );
+}
+
+/** Another team's code, on its own green card under the active team's, named so a coach hands out the right one. */
+function OtherTeamCodePhone({ team }: { team: ChProgramCode }) {
+  const label = programCodeLabel(team);
+  const { copy, copied } = useCopyTeamCode(team.code, label);
+  const labelId = useId();
+  return (
+    <section className="ch-feat ch-setm-code" aria-labelledby={labelId} data-team-code={team.gender ?? undefined}>
+      <span className="ch-feat__k">
+        <span className="ch-feat__kicker" id={labelId}>
+          {label} code
+        </span>
+      </span>
+      <b className="ch-feat__title ch-setm-code__v ch-num">{team.code}</b>
+      <span className="ch-feat__line">Players who sign up with this code join {programCodePhrase(team)} right away.</span>
+      <span className="ch-feat__foot">
+        <button type="button" className="ch-setm-link is-on-green" onClick={() => void copy()}>
+          {copied ? 'Copied' : 'Copy code'}
+        </button>
+      </span>
+    </section>
   );
 }
 
