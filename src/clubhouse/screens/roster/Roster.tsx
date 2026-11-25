@@ -1,8 +1,8 @@
 'use client';
 
 import { usePushOnce } from '../../lib/nav-once';
-import { ArrowDown, ArrowUp, Bandage, ChartColumn, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Bandage, ChartColumn, ChevronDown, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
@@ -28,7 +28,8 @@ import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { sgBaseline } from '../../lib/sg';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
-import { RovingRows } from '../../ui/RovingRows';
+import { DataTable, type DataColumn } from '../../ui/DataTable';
+import { useHScroll } from '../../ui/use-hscroll';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { changeTone, formatAvg, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
@@ -54,30 +55,9 @@ import { classNoteFor, type RosterClassLines } from './class-line';
 import { useRosterClassLines } from './useClassLines';
 import { ClassStatusLine } from '../../ui/ClassStatusLine';
 import '../../styles/roster.css';
-import { SideScroll } from '../../ui/SideScroll';
 import { ROSTER_SORT_DIRECTION, sortRoster, type RosterSort } from './sort';
 import { TERMS } from '../../lib/glossary';
 import { plural } from '../../lib/plural';
-
-/**
- * B10.5: a sortable column's header is a button that sorts by it (the same orders as Sort players, from ./sort), and the
- * column sorted by says so (`aria-sort`, and an arrow the way it runs).
- */
-function SortHeader({ k, sort, onSort, end = false, children }: { k: Sort; sort: Sort; onSort: (s: Sort) => void; end?: boolean; children: ReactNode }) {
-  const on = sort === k;
-  const dir = ROSTER_SORT_DIRECTION[k];
-  return (
-    <span role="columnheader" className={end ? 'r' : undefined} aria-sort={on ? dir : 'none'}>
-      <button type="button" className={'ch-rs-sorth' + (on ? ' is-on' : '')} onClick={() => onSort(k)}>
-        {children}
-        {/* The arrow's room is kept on every sortable header, so a right-aligned label doesn't move when it is chosen. */}
-        <span className="ch-rs-sorth__ar" aria-hidden="true">
-          <Icon icon={dir === 'ascending' ? ArrowUp : ArrowDown} size={12} />
-        </span>
-      </button>
-    </span>
-  );
-}
 
 type Sort = Extract<RosterSort, 'avg' | 'hcp' | 'rounds' | 'name'>;
 type Show = 'active' | 'inactive' | 'all';
@@ -115,8 +95,9 @@ export function Roster({ data }: { data: ChRoster; }) {
   const [q, setQ] = useChSessionState('q', '');
   const [show, setShow] = useChSessionState<Show>('show', 'active');
   const [sort, setSort] = useChSessionState<Sort>('sort', 'avg');
-  // The cards are what Roster opens on, as the owner's design does (design/handoff/roster.jsx); the table is the other layout.
-  const [view, setView] = useChSessionState<View>('view', 'faces');
+  // A coach’s desk opens on the table with its panel beside it (owner, premium plan 2026-11-19, decision 8: “list”); the
+  // cards are the other layout, and a coach who chose them keeps them (the device remembers, below).
+  const [view, setView] = useChSessionState<View>('view', 'list');
   // Counts the coach's own layout changes: the cards and the table swap with motion on those (CH-3603), never when the
   // kept layout comes back as the page opens.
   const [viewTurn, setViewTurn] = useState(0);
@@ -258,6 +239,13 @@ export function Roster({ data }: { data: ChRoster; }) {
   const sgScale = useMemo(() => sgBarScale(players.map((p) => p.sgPerRound)), [players]);
   // Avg sorts nothing while season stats are missing: the order falls back to Name (P003 #7).
   const sortBy: Sort = data.statsError && sort === 'avg' ? 'name' : sort;
+  const sortOptions: { value: Sort; label: string }[] = [
+    ...(data.statsError ? [] : [{ value: 'avg' as const, label: TERMS.scoringAvg.short }]),
+    { value: 'hcp', label: TERMS.handicap.long },
+    { value: 'rounds', label: 'Rounds' },
+    { value: 'name', label: 'Name' },
+  ];
+  const sortLabel = sortOptions.find((o) => o.value === sortBy)?.label ?? 'Name';
 
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -649,17 +637,18 @@ export function Roster({ data }: { data: ChRoster; }) {
                     ]}
                   />
                 </>
-              <Segmented<Sort>
-                size="sm"
+              {/* CONS-31 (plan §3.8): Sort is a menu, so the bar keeps one segmented control for what it filters. Its key
+                  names the order in force; the table’s headers sort too. */}
+              <Menu
                 label="Sort players"
-                value={sortBy}
-                onChange={setSort}
-                options={[
-                  ...(data.statsError ? [] : [{ value: 'avg' as const, label: TERMS.scoringAvg.short }]),
-                  { value: 'hcp', label: TERMS.handicap.long },
-                  { value: 'rounds', label: 'Rounds' },
-                  { value: 'name', label: 'Name' },
-                ]}
+                align="end"
+                width={200}
+                items={sortOptions.map((o) => ({ label: o.label, checked: sortBy === o.value, onSelect: () => setSort(o.value) }))}
+                trigger={(t) => (
+                  <Button size="sm" rightIcon={ChevronDown} menu={t} aria={{ label: 'Sort players, by ' + sortLabel }}>
+                    {'Sort: ' + sortLabel}
+                  </Button>
+                )}
               />
             </div>
           </div>
@@ -710,7 +699,10 @@ export function Roster({ data }: { data: ChRoster; }) {
   );
 }
 
-const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between players', keys: ['Up', 'Down'] }];
+const ROW_KEYS: readonly ChPageKey[] = [
+  { label: 'Move between players', keys: ['Up', 'Down'] },
+  { label: 'Next or previous player', keys: ['J', 'K'] },
+];
 
 /** A player's profile, where Stats is rebuilt for the coach; otherwise null (the peek opens instead). */
 // `from=roster`: the profile keeps Roster lit in the sidebar and as its way back (coach audit 13 Nov 2026, §8 #7).
@@ -773,6 +765,91 @@ function RosterList({
   const faceHowId = useId();
   // The profile is fetched whole as the pointer goes down on a face or a name (A13).
   const press = usePressPrefetch();
+  // A table wider than its column scrolls sideways and fades the clipped edge (a narrow desk); a wide one is clipped,
+  // so its header can stay under the top bar (roster.css).
+  const edges = useHScroll<HTMLDivElement>();
+  const columns: DataColumn<ChRosterPlayer, Sort>[] = [
+    {
+      id: 'who',
+      header: 'Player',
+      sortKey: 'name',
+      sortDirection: ROSTER_SORT_DIRECTION.name,
+      className: 'ch-rs-who__cell',
+      cell: (p) => (
+        <button
+          type="button"
+          className="ch-rs-who"
+          onClick={() => (onSelect ? onSelect(p.id) : openProfile(p.id))}
+          // Command-Enter opens the profile, as on the cards.
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              openProfile(p.id);
+            }
+          }}
+          aria-label={p.name + '. Show in the panel'}
+        >
+          <Avatar name={p.name} id={p.id} size="lg" year={yearKeyOf(p.gradYear, clock)} dim={p.status === 'inactive'} />
+          <span>
+            <b>{p.name}</b>
+            <RowMeta p={p} line={classNoteFor(p, classLines.get(p.id))} />
+          </span>
+        </button>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (p) => {
+        const injured = p.status === 'active' && p.availability === 'injured';
+        if (injured) return <span className="ch-rsx-chip is-amber">Injured</span>;
+        return <span className="ch-rsx-chip">{p.status === 'active' ? 'Active' : 'Inactive'}</span>;
+      },
+    },
+    {
+      // The lines share one range (B5), and the header says its ends (row 102).
+      id: 'form',
+      header: 'Last 5',
+      cell: (p) =>
+        p.trend.length >= 3 ? (
+          <FormBars data={p.trend} mean={mean} />
+        ) : (
+          // Grey bars read as loading (QA-13): no form yet is a dash, and it says why.
+          <Tooltip>
+            {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focusable so a keyboard can open the tooltip that says why */}
+            <span className="ch-num" role="img" tabIndex={0} aria-label="Needs 3 rounds">
+              —
+            </span>
+          </Tooltip>
+        ),
+    },
+    // Avg sorts nothing while season stats are missing (P003 #7), so its header is plain then.
+    { id: 'avg', header: 'Avg', align: 'end', sortKey: sortableAvg ? 'avg' : undefined, sortDirection: ROSTER_SORT_DIRECTION.avg, className: 'ch-num ch-rs-num', cell: (p) => formatFixed(p.avg) },
+    { id: 'hcp', header: TERMS.handicap.long, align: 'end', sortKey: 'hcp', sortDirection: ROSTER_SORT_DIRECTION.hcp, className: 'ch-num ch-rs-num2', cell: (p) => formatHcp(p.handicap) },
+    {
+      id: 'sg',
+      header: 'SG/rd',
+      align: 'end',
+      className: (p) => 'ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1),
+      cell: (p) => (p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)),
+    },
+    {
+      id: 'rounds',
+      header: <span title="Rounds this season">Rds</span>,
+      headerLabel: 'Rounds this season',
+      align: 'end',
+      sortKey: 'rounds',
+      sortDirection: ROSTER_SORT_DIRECTION.rounds,
+      className: 'ch-num ch-rs-num2',
+      cell: (p) => roundsPlayed(p),
+    },
+    {
+      id: 'actions',
+      header: <span className="ch-sr-only">Actions</span>,
+      align: 'end',
+      cell: (p) => <Menu label={'Actions for ' + p.name} items={menuFor(p)} trigger={(t) => <IconButton icon={Ellipsis} size="sm" label={'Actions for ' + p.name} menu={t} />} />,
+    },
+  ];
   return (
     // B5: every row's form line on one range, so the same height is the same score down the table.
     <FormRange trends={rows.map((p) => (lastFive(p.trend)))} earlyBelow={3}>
@@ -790,7 +867,7 @@ function RosterList({
               <button
                 key={p.id}
                 type="button"
-                className={'ch-rs-face' + ((onSelect ? selected : sel) === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+                className={'ch-rs-face ch-lift' + ((onSelect ? selected : sel) === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
                 // Named by what the card shows (F-21, WCAG 2.5.3: a label that left out the visible text), with what a press does
                 // read last (ch-rs-face__how).
                 aria-describedby={`${faceHowId}-${p.id}`}
@@ -859,97 +936,29 @@ function RosterList({
           </div>
         ) : (
           <>
-          {/* B11: Up and Down walk the table's players (their name buttons), Home and End go to the ends, and the table is
-              one Tab stop. Inside the roster.list boundary, so it runs once that has hydrated. */}
-          <RovingRows selector=".ch-rs-list .ch-rs-who" within=".ch-rs-body" />
-          <SideScroll className={'ch-rs-list ch-sheet' + (oneStatus ? ' is-one-status' : '')} role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
-            <div className={'ch-rs-row ch-rs-row--head' + ''} role="row">
-              <SortHeader k="name" sort={sortBy} onSort={onSort}>
-                Player
-              </SortHeader>
-              <span role="columnheader">Status</span>
-              {/* The lines share one range (B5), and the header says its ends (row 102). */}
-              <span role="columnheader">Last 5</span>
-              {!sortableAvg ? (
-                <span role="columnheader" className="r">
-                  Avg
-                </span>
-              ) : (
-                <SortHeader k="avg" sort={sortBy} onSort={onSort} end>
-                  Avg
-                </SortHeader>
-              )}
-              <SortHeader k="hcp" sort={sortBy} onSort={onSort} end>
-                Handicap
-              </SortHeader>
-              <span role="columnheader" className="r">{'SG/rd'}</span>
-              <SortHeader k="rounds" sort={sortBy} onSort={onSort} end>
-                <span title="Rounds this season">Rds</span>
-              </SortHeader>
-              <span role="columnheader">
-                <span className="ch-sr-only">Actions</span>
-              </span>
-            </div>
-            {rows.map((p) => (
-              <div
-                key={p.id}
-                role="row"
-                data-ch-player={p.id}
-                className={'ch-rs-row' + (selected === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-                {...bind(p)}
-                {...hold}
-              >
-                <span role="cell" className="ch-rs-who__cell">
-                  <button
-                    type="button"
-                    className="ch-rs-who"
-                    onClick={() => (onSelect ? onSelect(p.id) : openProfile(p.id))}
-                    {...({})}
-                    aria-label={`${p.name}. Show in the panel`}
-                  >
-                    <Avatar name={p.name} id={p.id} size="lg" year={yearKeyOf(p.gradYear, clock)} dim={p.status === 'inactive'} />
-                    <span>
-                      <b>{p.name}</b>
-                      <RowMeta p={p} line={classNoteFor(p, classLines.get(p.id))} />
-                    </span>
-                  </button>
-                </span>
-                <span role="cell">
-                  {p.status === 'active' && p.availability === 'injured' ? (
-                    <span className="ch-rsx-chip is-amber">Injured</span>
-                  ) : (
-                    <span className="ch-rsx-chip">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
-                  )}
-                </span>
-                <span role="cell">
-                  {(
-                    p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : (
-                      // Grey bars read as loading (QA-13): no form yet is a dash, and it says why.
-                      <Tooltip>
-                        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focusable so a keyboard can open the tooltip that says why */}
-                        <span className="ch-num" role="img" tabIndex={0} aria-label="Needs 3 rounds">
-                          —
-                        </span>
-                      </Tooltip>
-                    )
-                  )}
-                </span>
-                <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
-                <span role="cell" className="r ch-num ch-rs-num2">{formatHcp(p.handicap)}</span>
-                <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
-                  {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
-                </span>
-                <span role="cell" className="r ch-num ch-rs-num2">{roundsPlayed(p)}</span>
-                <span role="cell" className="r">
-                  <Menu
-                    label={`Actions for ${p.name}`}
-                    items={menuFor(p)}
-                    trigger={(t) => <IconButton icon={Ellipsis} size="sm" label={`Actions for ${p.name}`} menu={t} />}
-                  />
-                </span>
-              </div>
-            ))}
-          </SideScroll>
+          {/* §3.8 (owner, list as the desk default): the shared DataTable. Its header stays under the top bar, a column
+              header sorts (the same orders as Sort, ./sort), and the table is one Tab stop: Up and Down, or J and K, walk
+              the players and the panel beside it follows the keys (B11, CH-3801: every value in a cell under a header). */}
+          <DataTable<ChRosterPlayer, Sort>
+            label="Roster"
+            rootRef={edges}
+            rows={rows}
+            rowKey={(p) => p.id}
+            primary=".ch-rs-who"
+            sort={sortBy}
+            onSort={onSort}
+            selected={selected}
+            onSelect={onSelect}
+            columns={columns}
+            classNames={{
+              table: 'ch-hscroll ch-rs-list ch-sheet' + (oneStatus ? ' is-one-status' : ''),
+              head: 'ch-rs-row ch-rs-row--head',
+              row: (p) => 'ch-rs-row' + (selected === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : ''),
+              sort: 'ch-rs-sorth',
+              sortArrow: 'ch-rs-sorth__ar',
+            }}
+            rowProps={(p) => ({ 'data-ch-player': p.id, ...bind(p), ...hold })}
+          />
           </>
         )}
     </FormRange>

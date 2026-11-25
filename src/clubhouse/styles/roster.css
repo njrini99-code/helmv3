@@ -280,14 +280,8 @@
   text-align: center;
   cursor: pointer;
   box-shadow: var(--ch-elevation-reading);
-  transition: box-shadow var(--ch-dur-base) var(--ch-ease), transform var(--ch-dur-base) var(--ch-ease);
 }
-@media (hover: hover) {
-  .ch-rs-face:not(.ch-rs-face--static):hover {
-    transform: translateY(-2px);
-    box-shadow: var(--ch-elevation-reading-hover);
-  }
-}
+/* S8: a card the pointer rests on lifts by the shared layer (ui.css .ch-lift), not by an animated box-shadow. */
 /* Pressing drops the hover lift. A card never scales: the shell's press is for keys (lib/press.ts, CH-1606). */
 .ch-rs-face:not(.ch-rs-face--static)[data-ch-pressed] {
   background: var(--ch-sel);
@@ -3713,6 +3707,20 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     gap: 8px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+  }
+}
+/* Plan section 3.8 (the table is the desk default): where the table and its panel fit side by side, the table is
+   clipped rather than scrolled, so its header stays under the top bar as the canvas scrolls (ui/DataTable.tsx), and a
+   row the keys reach stops clear of the bar and the header. A narrower desk keeps the sideways scroll. */
+@media (min-width: 1193px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-crh='on'].ch-rsd .ch-rs-list {
+    overflow: clip;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-row--head {
+    top: var(--ch-topbar-h);
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-row {
+    scroll-margin-top: calc(var(--ch-topbar-h) + 48px);
   }
 }
 @media print {

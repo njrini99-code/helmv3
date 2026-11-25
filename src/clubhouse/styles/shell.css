@@ -17,6 +17,10 @@
   overflow: auto;
   /* The page never shifts sideways when a scrollbar comes or goes (SYS-09). */
   scrollbar-gutter: stable;
+  /* AX-15 (premium plan S7): a control that Tab or a find scrolls into view stops clear of the sticky top bar and the
+     dock, never under them. */
+  scroll-padding-top: calc(var(--ch-topbar-h) + 8px);
+  scroll-padding-bottom: calc(var(--ch-dock-h, 0px) + 8px);
   overscroll-behavior: contain;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-page-paint);

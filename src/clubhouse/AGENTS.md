@@ -33,8 +33,9 @@ the phone-design workflow in `.claude/rules/clubhouse.md`.
 Each line is the one current version of a page. Do not work on, screenshot or
 copy any other version; an old address opens the current page.
 
-- Roster: as built in `screens/roster`. Coach desktop opens on the cards
-  (commit `9e6db115f3`); the phone follows `design-refresh/classes-roster-home`
+- Roster: as built in `screens/roster`. Coach desktop opens on the table with its
+  sticky panel (owner, premium plan 19 Nov, decision 8; it opened on the cards
+  from commit `9e6db115f3`); the phone follows `design-refresh/classes-roster-home`
   (approved 31 Oct). The "Your players." Roster in `design/handoff/` is retired
   (`design/handoff/RETIRED.md`).
 - Player Home: the 28 Oct version, permanent (commit `dc11bf6b7e`). Do not
