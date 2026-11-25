@@ -21,7 +21,7 @@ import {
   type ChSettingsWrites,
   type ChTeamInfo,
 } from '../model';
-import { SAVE_COPY, useCopyTeamCode, useInvite } from '../hooks';
+import { SAVE_COPY, useInvite, useTeamCodeActions } from '../hooks';
 import { ReadFailed, ReadsFailed, useInstantSave, useSaveAction } from '../parts';
 import { teamReadsFailed } from '../Team';
 import { TEES } from '../Team';
@@ -121,12 +121,20 @@ function InvitePhone({ code: initial, writes, program = null }: { code: string; 
           <button type="button" className="ch-setm-link is-on-green" onClick={() => void copy('code')}>
             {copied === 'code' ? 'Copied' : 'Copy code'}
           </button>
-          <button type="button" className="ch-setm-link is-on-green is-quiet" disabled={regen.pending} onClick={() => setAsking(true)}>
-            {regen.pending ? 'Making…' : 'New code'}
-          </button>
+          {!program && (
+            <button type="button" className="ch-setm-link is-on-green is-quiet" disabled={regen.pending} onClick={() => setAsking(true)}>
+              {regen.pending ? 'Making…' : 'New code'}
+            </button>
+          )}
         </span>
       </section>
       {program?.others.map((t) => <OtherTeamCodePhone key={t.teamId} team={t} />)}
+      {/* Two teams: every code card is the same, and replacing a code is its own row naming the team being viewed. */}
+      {program && program.active && (
+        <Group note={`Replaces the code for ${programCodePhrase(program.active)}, the team you’re viewing. To replace another team’s code, switch to that team.`}>
+          <NavRow label={regen.pending ? 'Making…' : 'New code'} disabled={regen.pending} onClick={() => setAsking(true)} />
+        </Group>
+      )}
       <ActionSheet
         open={asking}
         onClose={() => setAsking(false)}
@@ -147,10 +155,10 @@ function InvitePhone({ code: initial, writes, program = null }: { code: string; 
   );
 }
 
-/** Another team's code, on its own green card under the active team's, named so a coach hands out the right one. */
+/** Another team's code: the same green card, with the same Share and Copy code, as the team being viewed. */
 function OtherTeamCodePhone({ team }: { team: ChProgramCode }) {
   const label = programCodeLabel(team);
-  const { copy, copied } = useCopyTeamCode(team.code, label);
+  const { canShare, copy, copied, share } = useTeamCodeActions(team.code, label);
   const labelId = useId();
   return (
     <section className="ch-feat ch-setm-code" aria-labelledby={labelId} data-team-code={team.gender ?? undefined}>
@@ -158,12 +166,15 @@ function OtherTeamCodePhone({ team }: { team: ChProgramCode }) {
         <span className="ch-feat__kicker" id={labelId}>
           {label} code
         </span>
+        <button type="button" className="ch-setm-pill is-on-green" onClick={() => void (canShare ? share() : copy('link'))}>
+          Share
+        </button>
       </span>
       <b className="ch-feat__title ch-setm-code__v ch-num">{team.code}</b>
       <span className="ch-feat__line">Players who sign up with this code join {programCodePhrase(team)} right away.</span>
       <span className="ch-feat__foot">
-        <button type="button" className="ch-setm-link is-on-green" onClick={() => void copy()}>
-          {copied ? 'Copied' : 'Copy code'}
+        <button type="button" className="ch-setm-link is-on-green" onClick={() => void copy('code')}>
+          {copied === 'code' ? 'Copied' : 'Copy code'}
         </button>
       </span>
     </section>

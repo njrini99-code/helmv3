@@ -16,9 +16,14 @@ Held items: none
 - Settings › Team, for a coach staffed on more than one team: the invite
   card shows every team's code, each labelled "Men's team code" or
   "Women's team code" (or the team's own name), the active team first.
-  The other team's code has its own Copy, and its toast names the team.
-- "Make a new code" names the team it replaces and says to switch teams
-  to replace the other one (regenerating still acts on the active team).
-- Phone: the second code is its own green card under the first.
+  Every team's code is drawn by the same box with the same actions (Copy
+  code, Copy link, Share) in the same style, so neither team's code reads
+  as the lesser one (owner: the first draft gave the men's code the
+  primary button and the women's a single plain one). Toasts name the team.
+- "New code" is one row under the codes that names the team being viewed
+  and says to switch teams to replace the other (regenerating still acts
+  on the active team only; the server allows nothing else).
+- Phone: each team's code is the same green card with Share and Copy code;
+  New code moves to its own row under them.
 - A one-team coach sees exactly what they saw before.
 - Preview: `/clubhouse-preview/settings?state=twoteams&section=team`.

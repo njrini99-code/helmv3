@@ -435,8 +435,16 @@ describe('Settings · 81xx validation', () => {
     expect(mens.compareDocumentPosition(womens) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(invite).getByText('W4NP8RTE')).toBeTruthy();
     expect(within(invite).queryByText('Team code')).toBeNull();
-    // Replacing a code says which team's code it replaces.
-    expect(within(invite).getByText('New code for the men’s team')).toBeTruthy();
+    // Both teams' codes get exactly the same actions, in the same style: neither reads as the lesser one.
+    const actionsOf = (side: string) =>
+      within(invite)
+        .getAllByRole('button')
+        .filter((b) => new RegExp(` ${side}`).test(b.getAttribute('aria-label') ?? ''))
+        .map((b) => [b.textContent, b.className.replace(/\s+/g, ' ').trim()]);
+    expect(actionsOf('men’s team').length).toBeGreaterThanOrEqual(2);
+    expect(actionsOf('women’s team')).toEqual(actionsOf('men’s team'));
+    // Replacing a code names the team being viewed, and how to replace the other.
+    expect(invite.textContent).toMatch(/Replaces the code for the men’s team, the team you’re viewing/);
     // The other team's code copies on its own, and the toast names the team.
     const writeText = vi.fn(() => Promise.resolve());
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });

@@ -246,32 +246,46 @@ export function useInvite(initial: string, writes: ChSettingsWrites) {
 }
 
 /**
- * Copy for another team's code (a men's and women's coach sees both): the code only, with the same toast, tick and
- * failure copy as the active team's Copy code. The toast names the team, so the coach knows which code they took.
+ * Copy code, Copy link and Share for another team's code (a men's and women's coach sees both teams' codes, each with
+ * exactly the same actions as the team being viewed). The toast names the team, so the coach knows which one they took.
  */
-export function useCopyTeamCode(code: string, label: string) {
-  const [copied, setCopied] = useState(false);
+export function useTeamCodeActions(code: string, label: string) {
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => setCanShare(typeof navigator.share === 'function'), []);
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null);
   const timer = useRef<number | null>(null);
   useEffect(() => () => {
     if (timer.current !== null) window.clearTimeout(timer.current);
   }, []);
   const toast = useToast();
-  const copy = async () => {
-    chTrail('settings copy other team code');
+  const link = typeof window === 'undefined' ? `/golf/join/${code}` : `${window.location.origin}/golf/join/${code}`;
+  const copy = async (what: 'code' | 'link') => {
+    chTrail(`settings copy team ${what}`);
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(what === 'code' ? code : link);
       haptic('success');
-      toast({ title: `${label} code copied` });
-      setCopied(true);
+      toast({ title: what === 'code' ? `${label} code copied` : `${label} invite link copied` });
+      setCopied(what);
       if (timer.current !== null) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => setCopied(false), 1800);
+      timer.current = window.setTimeout(() => setCopied(null), 1800);
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.invite', action: 'copy', severity: 'low' });
       toast({ tone: 'error', title: "Couldn’t copy", body: 'Select the text and copy it yourself.', code: 'CH-8013' });
     }
   };
-  return { copy, copied };
+  const share = async () => {
+    chTrail('settings share team invite');
+    try {
+      await navigator.share({ title: 'Join our team on GolfHelm', text: `Join with code ${code}`, url: link });
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
+        chReport(err, { surface: 'settings.invite', action: 'share', severity: 'low' });
+        void copy('link');
+      }
+    }
+  };
+  return { canShare, copy, copied, share };
 }
 
 const landed = (r: ChResult<unknown>) => !!(r.success || r.ok);

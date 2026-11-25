@@ -26,7 +26,7 @@ import {
   type ChSettingsWrites,
   type ChTeamInfo,
 } from './model';
-import { SAVE_COPY, useCopyTeamCode, useInvite } from './hooks';
+import { SAVE_COPY, useInvite, useTeamCodeActions } from './hooks';
 import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SettingSwitch, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 import { StaffCards } from './Staff';
 import { NoTeam } from '../../ui/NoTeam';
@@ -120,34 +120,15 @@ function InviteCard({ code: initial, writes, program = null }: { code: string; w
           : 'Players who sign up with your team code or open your invite link join right away. You can remove anyone from Roster.'
       }
     >
-      {/* One code style for the app: large, tabular, Instrument Sans (.ch-set-code), with its Copy beside it. */}
-      <div className="ch-inset ch-set-codebox" data-team-code={program?.active?.gender ?? undefined}>
-        <div className="ch-set-codebox__c">
-          <span>{activeLabel ? `${activeLabel} code` : 'Team code'}</span>
-          <b className="ch-set-code ch-num" aria-live="polite">
-            {code}
-          </b>
-        </div>
-        <div className="ch-set-codebox__acts">
-          <Button size="sm" variant="primary" leftIcon={copied === 'code' ? Check : Copy} onClick={() => void copy('code')}>
-            {copied === 'code' ? 'Copied' : 'Copy code'}
-          </Button>
-          <Button size="sm" leftIcon={copied === 'link' ? Check : Link2} onClick={() => void copy('link')}>
-            {copied === 'link' ? 'Copied' : 'Copy link'}
-          </Button>
-          {canShare && (
-            <Button size="sm" leftIcon={Share} onClick={() => void share()}>
-              Share
-            </Button>
-          )}
-        </div>
-      </div>
+      {/* One code style for the app: large, tabular, Instrument Sans (.ch-set-code), with its actions beside it. Every
+          team's code is drawn by the same box with the same actions, so no team's code reads as the lesser one. */}
+      <CodeBox label={activeLabel ? `${activeLabel} code` : 'Team code'} code={code} live gender={program?.active?.gender} named={!!program} actions={{ canShare, copy, copied, share }} />
       {program?.others.map((t) => <OtherTeamCode key={t.teamId} team={t} />)}
       <Row
-        label={activeLabel ? `New code for ${programCodePhrase(program!.active!)}` : 'New code'}
+        label="New code"
         help={
           activeLabel
-            ? 'Stops this team’s current code from working right away. To replace the other team’s code, switch to that team first.'
+            ? `Replaces the code for ${programCodePhrase(program!.active!)}, the team you’re viewing, and stops the old one working right away. To replace another team’s code, switch to that team.`
             : 'Stops the current code from working right away. Anyone mid-join will need the new one.'
         }
       >
@@ -183,23 +164,44 @@ function InviteCard({ code: initial, writes, program = null }: { code: string; w
   );
 }
 
-/** Another team's code in the same well as the active one, named, with its own Copy. */
-function OtherTeamCode({ team }: { team: ChProgramCode }) {
-  const label = programCodeLabel(team);
-  const { copy, copied } = useCopyTeamCode(team.code, label);
+type CodeActions = { canShare: boolean; copy: (what: 'code' | 'link') => Promise<void>; copied: 'code' | 'link' | null; share: () => Promise<void> };
+
+/** A team's code with Copy code, Copy link and Share: the same box for every team. */
+function CodeBox({ label, code, live = false, gender, named = false, actions }: { label: string; code: string; live?: boolean; gender?: string | null; named?: boolean; actions: CodeActions }) {
+  const { canShare, copy, copied, share } = actions;
+  // With two teams on screen each action says whose code it is; one team keeps the plain names.
+  const name = label.toLowerCase();
+  const aria = (l: string) => (named ? { label: l } : undefined);
   return (
-    <div className="ch-inset ch-set-codebox" data-team-code={team.gender ?? undefined}>
+    <div className="ch-inset ch-set-codebox" data-team-code={gender ?? undefined}>
       <div className="ch-set-codebox__c">
-        <span>{label} code</span>
-        <b className="ch-set-code ch-num">{team.code}</b>
+        <span>{label}</span>
+        <b className="ch-set-code ch-num" aria-live={live ? 'polite' : undefined}>
+          {code}
+        </b>
       </div>
       <div className="ch-set-codebox__acts">
-        <Button size="sm" variant="secondary" leftIcon={copied ? Check : Copy} onClick={() => void copy()} aria={{ label: `Copy ${label.toLowerCase()} code` }}>
-          {copied ? 'Copied' : 'Copy code'}
+        <Button size="sm" variant="primary" leftIcon={copied === 'code' ? Check : Copy} onClick={() => void copy('code')} aria={aria(`Copy ${name}`)}>
+          {copied === 'code' ? 'Copied' : 'Copy code'}
         </Button>
+        <Button size="sm" leftIcon={copied === 'link' ? Check : Link2} onClick={() => void copy('link')} aria={aria(`Copy ${name} link`)}>
+          {copied === 'link' ? 'Copied' : 'Copy link'}
+        </Button>
+        {canShare && (
+          <Button size="sm" leftIcon={Share} onClick={() => void share()} aria={aria(`Share ${name}`)}>
+            Share
+          </Button>
+        )}
       </div>
     </div>
   );
+}
+
+/** Another team's code: the same box and actions as the team being viewed. */
+function OtherTeamCode({ team }: { team: ChProgramCode }) {
+  const label = programCodeLabel(team);
+  const actions = useTeamCodeActions(team.code, label);
+  return <CodeBox label={`${label} code`} code={team.code} gender={team.gender} named actions={actions} />;
 }
 
 export const TEES = [
