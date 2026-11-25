@@ -84,9 +84,9 @@ SELF-HEAL CONTRACT
 
 HISTORICAL EVIDENCE ONLY
   tag docs-attic-2026-09 (see docs/README.md)   never current architecture or schema
-  docs/audits/*                         dated audits
+  docs/archive/audits-2026-08/*                         dated audits
   docs/ai-system/selfheal/STATE-*.md    dated snapshots
-  docs/superpowers/plans|specs/**       plans and design specs
+  docs/archive/superpowers-plans|specs/**       plans and design specs
 ```
 
 ---

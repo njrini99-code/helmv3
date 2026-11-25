@@ -4,7 +4,7 @@
 
 Helm Sports Labs ships a multi-sport SaaS platform (`CLAUDE.md:9`). The flagship, feature-complete product is **GolfHelm** — college golf team management with an embedded AI insight/narrative layer called **CoachHelm** (`CLAUDE.md:9-13`, `src/app/golf/README.md`). CoachHelm is not a separate product or a separate persona surface; it is analytics/AI functionality inside GolfHelm's coach and player dashboards (`memory/context/coachhelm-ai.md`). **BaseballHelm** (college baseball recruiting + team management) and **Lift Lab** (strength & conditioning) are real, shipping surfaces but are under active rebuild — this doc frames them only at the stable, high level needed to reason about personas; it does not document their current implementation (see `fairway_baseballhelm_migration_deferred` memory and docs/fairway-baseballhelm-migration-plan.md).
 
-All personas below are scoped by Postgres Row-Level Security (RLS), not application-layer filtering. The tenancy chain is `organization -> team -> coach/player`, enforced by `SECURITY DEFINER` helper functions with `SET search_path = ''` to block search-path attacks: `current_player_id()`, `is_team_coach(team_uuid)`, `is_team_player(team_uuid)` (`docs/v3-rls-template.md:11-57`, `docs/v3-master-plan.md:80-99`). Coach-to-team is via the join table `golf_team_coach_staff` — **never** a `team_id` column on `golf_coaches`, which does not exist (`docs/v3-master-plan.md:96`, `CLAUDE.md`). Player-to-team is via `golf_team_members`, gated to `status = 'active'` (`docs/v3-rls-template.md:9`).
+All personas below are scoped by Postgres Row-Level Security (RLS), not application-layer filtering. The tenancy chain is `organization -> team -> coach/player`, enforced by `SECURITY DEFINER` helper functions with `SET search_path = ''` to block search-path attacks: `current_player_id()`, `is_team_coach(team_uuid)`, `is_team_player(team_uuid)` (`docs/archive/v3/v3-rls-template.md:11-57`, `docs/v3-master-plan.md:80-99`). Coach-to-team is via the join table `golf_team_coach_staff` — **never** a `team_id` column on `golf_coaches`, which does not exist (`docs/v3-master-plan.md:96`, `CLAUDE.md`). Player-to-team is via `golf_team_members`, gated to `status = 'active'` (`docs/archive/v3/v3-rls-template.md:9`).
 
 ---
 
@@ -27,7 +27,7 @@ GolfHelm models exactly one coach persona type for golf — there is no separate
 
 ### Goals
 - Run a team's day-to-day operations: roster, calendar, messaging, announcements, documents, travel (`CLAUDE.md` role/feature ownership table; `memory/context/golfhelm-features.md` features #4–#10).
-- Track player performance objectively via Strokes Gained (SG) rather than raw scoring average, and get AI-generated, citation-backed narrative on rounds and trends (`docs/v3-research-golf-domain.md`; `.claude/rules/coachhelm-review.md`).
+- Track player performance objectively via Strokes Gained (SG) rather than raw scoring average, and get AI-generated, citation-backed narrative on rounds and trends (`docs/archive/v3/v3-research-golf-domain.md`; `.claude/rules/coachhelm-review.md`).
 - Solve the qualifying/travel-roster selection workflow, explicitly called out in the competitive research as "the most-painful, most-frequent, most-poorly-tooled workflow in college golf" and a stated GolfHelm differentiator (`docs/v3-research-competitive-landscape.md:393`).
 - Set and approve player development Goals as a coach-endorsed, first-class object (v3 Goals system, `docs/v3-master-plan.md` Part VI) — a stated point of differentiation from competitors.
 - Get an AI assistant (CoachHelm) that behaves like an analyst, not a black box: every LLM-composed insight must cite underlying data and regenerate once before silently falling back to a template (`.claude/rules/coachhelm-review.md`).
@@ -41,7 +41,7 @@ GolfHelm models exactly one coach persona type for golf — there is no separate
 - Invite/manage other coaches on staff via `golf_team_coach_staff` (role + primary-coach flag).
 
 ### Permission scope
-- Scoped to the team(s) they are linked to via `golf_team_coach_staff`; RLS enforces this through `is_team_coach(team_uuid)`, never a direct `team_id` FK (`docs/v3-rls-template.md`).
+- Scoped to the team(s) they are linked to via `golf_team_coach_staff`; RLS enforces this through `is_team_coach(team_uuid)`, never a direct `team_id` FK (`docs/archive/v3/v3-rls-template.md`).
 - Cannot see other teams/programs (cross-tenant isolation is an RLS invariant, not an app-layer check — see `03-product-invariants.md` for enforcement rules).
 - Primary-coach flag (`is_primary`) implies elevated in-team authority (e.g., final say on qualifier selections, settings) versus assistant/staff coaches on the same team — this is a `role`/`is_primary` distinction within one persona type, not a second coach persona.
 
@@ -63,7 +63,7 @@ For baseball, coach *typing* is richer at the program level (College/HS/JUCO/Sho
 ## 4. Player / student-athlete
 
 ### Goals
-- See their own performance (SG breakdown by category — Off-the-Tee, Approach, Around-the-Green, Putting — plus round history) contextualized against PGA Tour and team baselines (`docs/v3-research-golf-domain.md`; SG cached in `golf_player_stats_cache`).
+- See their own performance (SG breakdown by category — Off-the-Tee, Approach, Around-the-Green, Putting — plus round history) contextualized against PGA Tour and team baselines (`docs/archive/v3/v3-research-golf-domain.md`; SG cached in `golf_player_stats_cache`).
 - Get an AI round review that is conversational and specific to their round rather than generic ("nobody has it" per competitive research, docs/v3-research-competitive-landscape.md).
 - Set personal development Goals, optionally sharing them with their coach (default share-with-coach is OFF per the locked v3 decision log — `docs/v3-master-plan.md` Part 0 Q&A summary).
 - See qualifying/travel status and their own qualifier entries/selections.
@@ -76,7 +76,7 @@ For baseball, coach *typing* is richer at the program level (College/HS/JUCO/Sho
 - Participate in team calendar/messaging/tasks/announcements as a recipient/participant, not as an owner of team-wide configuration.
 
 ### Permission scope
-- Tenant-scoped to their own team only, via `golf_team_members` and enforced by `is_team_player(team_uuid)`, which additionally requires `status = 'active'` — a `pending`, `inactive`, or `removed` team-member row does not grant access (`docs/v3-rls-template.md`).
+- Tenant-scoped to their own team only, via `golf_team_members` and enforced by `is_team_player(team_uuid)`, which additionally requires `status = 'active'` — a `pending`, `inactive`, or `removed` team-member row does not grant access (`docs/archive/v3/v3-rls-template.md`).
 - Can see only their own individual performance data and Goals by default; cannot see teammates' Goals, coach-only insights/alerts/patterns, or coach philosophy settings (these are explicitly Coach-Only Features per `CLAUDE.md`).
 - Cannot see or act on other teams/programs.
 
@@ -85,7 +85,7 @@ For baseball, coach *typing* is richer at the program level (College/HS/JUCO/Sho
 - This sits on **FERPA / COPPA-adjacent ground**. Framed as stakes, not as an assertion of current non-compliance: the product must be built and reviewed as if minors' educational + athletic records are in scope, because for many rosters they are.
 - **Account deletion exists** (`src/app/api/account/delete/route.ts`) but cascade cleanup across related tables is documented as incomplete — a retention gap that specifically matters for a minor's PII (see `03-product-invariants.md` for the deletion/retention invariant this implies).
 - **No cookie/consent banner** exists in-repo — relevant if/when COPPA-style parental-consent flows become required.
-- A cross-tenant RLS leak exposing one team's players to another team, or a broken player/coach RLS boundary exposing player data to the wrong coach, is the worst-case, business-ending failure mode for a student-athlete data product. There is a documented prior RLS incident (`docs/audits/COACH_DASHBOARD_AUDIT_REPORT.md`) — every new table touching player data must ship RLS per `docs/v3-rls-template.md`, and reviewers must treat missing/misconfigured RLS as the top-severity class of bug (see `03-product-invariants.md`).
+- A cross-tenant RLS leak exposing one team's players to another team, or a broken player/coach RLS boundary exposing player data to the wrong coach, is the worst-case, business-ending failure mode for a student-athlete data product. There is a documented prior RLS incident (`docs/archive/audits-2026-08/COACH_DASHBOARD_AUDIT_REPORT.md`) — every new table touching player data must ship RLS per `docs/archive/v3/v3-rls-template.md`, and reviewers must treat missing/misconfigured RLS as the top-severity class of bug (see `03-product-invariants.md`).
 - Destructive-write risk is elevated on player-adjacent surfaces: roster, qualifier selections, and round-save are explicitly called out as the highest-risk surfaces for the DELETE-then-INSERT anti-pattern ban (`.claude/rules/golf.md`) — a transient failure mid-sequence has previously caused permanent data loss.
 
 ---
@@ -138,7 +138,7 @@ At a stable, product-framing level:
 
 ## For the reviewer
 
-- Flag a PR when any new player-facing table or query is missing an RLS policy, or uses app-layer filtering (`WHERE team_id = ...` in application code) instead of `is_team_coach()`/`is_team_player()`/`current_player_id()` as the enforcement boundary — see `docs/v3-rls-template.md`.
+- Flag a PR when any new player-facing table or query is missing an RLS policy, or uses app-layer filtering (`WHERE team_id = ...` in application code) instead of `is_team_coach()`/`is_team_player()`/`current_player_id()` as the enforcement boundary — see `docs/archive/v3/v3-rls-template.md`.
 - Flag a PR that introduces or assumes a second `Coach` schema type (e.g., a separate `assistant_coaches` table or a hardcoded role check outside `golf_team_coach_staff.role`) — golf coaches are one persona type differentiated only by staff-join role/`is_primary`.
 - Flag a PR that grants a player visibility into another player's Goals, another team's data, or coach-only surfaces (Alerts/Patterns/Insights/Intelligence Hub/CoachHelm Analytics per `CLAUDE.md`'s Coach-Only Features table) without an explicit, reviewed sharing mechanism.
 - Flag a PR touching `/golf/admin` or any admin route that does not explicitly justify its cross-tenant reach — admin code is the highest-blast-radius surface in the persona model and deserves the most scrutiny, not the least.

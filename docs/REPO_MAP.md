@@ -291,7 +291,7 @@ Fairway-tokened boundary per its own comment), but:
 Eight traps found with concrete repo evidence (not assumed from memory).
 
 1. **Schema-drift — migration recorded-but-not-applied.**
-   `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md:128`: Supabase's
+   `docs/archive/audits-2026-08/REPO_UNTANGLE_AND_CLEAN_BASE.md:128`: Supabase's
    migration-history table can show a migration as applied without the DDL
    having actually run against the target DB (or vice versa). Never trust
    the history table alone before writing code that assumes a
@@ -324,7 +324,7 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    season must go through `fetchAllRowsResult` with a stable `.order('id')`.
 
 4. **Glob-shaped token inside a CSS/JS block comment prematurely closes it.**
-   `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md:101` (real, shipped
+   `docs/archive/audits-2026-08/REPO_UNTANGLE_AND_CLEAN_BASE.md:101` (real, shipped
    incident, PR #650): `src/app/globals.css` lines 2-4 contained comment
    text `--pursuit-*/` — the literal `*/` terminated the block comment
    early, causing a postcss syntax error at 3:42 and a broken Next build.
@@ -343,7 +343,7 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    when `VERCEL_ENV=production` even with an empty
    `VERCEL_GIT_COMMIT_REF`. Vercel preview builds being off is **by
    design** (cost control) — a red/skipped Vercel preview check on a PR is
-   expected, not a CI failure to chase. `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md:96`
+   expected, not a CI failure to chase. `docs/archive/audits-2026-08/REPO_UNTANGLE_AND_CLEAN_BASE.md:96`
    (archived) attributed a red `lighthouse-preview` check to this — that job
    was never defined in `.circleci/config.yml`; see `.circleci/README.md` and
    `.claude/rules/integrations.md` for the correction. Flipping the Ignored Build Step back on is a

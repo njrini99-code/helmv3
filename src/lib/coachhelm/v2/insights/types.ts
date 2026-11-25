@@ -1,7 +1,7 @@
 /**
  * Canonical types for evidence-backed insights.
  *
- * Source of truth: docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md
+ * Source of truth: docs/archive/superpowers-plans/2026-04-22-insight-quality/00-design-contract.md
  * Every Tier-1 insight generator imports these from here — do not redeclare
  * the shapes in generator files.
  */

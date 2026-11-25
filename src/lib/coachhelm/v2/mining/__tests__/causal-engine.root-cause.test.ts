@@ -22,7 +22,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  * A root cause needs an effect that is NOT the score. The product's own
  * research doc supplies one, quantified:
  *
- *   docs/v3-research-golf-domain.md:146
+ *   docs/archive/v3/v3-research-golf-domain.md:146
  *     "### Drive -> Approach Distance/Lie -> GIR
  *      Lie quality premium: fairway -> ~65% GIR from 150; rough -> ~45%;
  *      sand -> ~25%."
@@ -172,7 +172,7 @@ describe('CausalEngine — can explain a component, not only the score', () => {
    * The second non-tautological chain, and the one that changes what a coach
    * concludes rather than only what the engine says.
    *
-   * `docs/v3-research-golf-domain.md:29`: "putts-per-round is *lower* for bad
+   * `docs/archive/v3/v3-research-golf-domain.md:29`: "putts-per-round is *lower* for bad
    * iron players (they chip close and 1-putt for bogey)". So a low putt count
    * is not evidence of good putting — it can be evidence of missed greens. The
    * engine already tests `total_putts -> score_to_par`, which reports the

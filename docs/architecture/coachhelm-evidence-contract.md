@@ -2148,7 +2148,7 @@ tell a likely cause from a not-traced one.
 - **Putt actions stay sourced.** Lag pace advice is given only for first
   putts from 25 ft or more; shorter ranges get a neutral "Practice first
   putts from …". No start-line advice (unsourced in
-  `docs/v3-research-golf-domain.md`).
+  `docs/archive/v3/v3-research-golf-domain.md`).
 - **No window, no trace.** A read without a stamped window (`window_start`,
   or `window_days` > 0 with an end) is `no_window`; a zero-day span is not a
   window. Rolling generators (`tee-strategy`, `approach-miss`, `scrambling`,

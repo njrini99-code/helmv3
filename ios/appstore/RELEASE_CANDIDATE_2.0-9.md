@@ -2,7 +2,7 @@
 
 > Prepared overnight 2026-08-25 → 2026-08-26 per
 > `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md`. Audit:
-> `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md`. Metadata base:
+> `docs/archive/audits-2026-08/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md`. Metadata base:
 > `ios/appstore/SUBMISSION.md` (v2.0 package; the build number moved 8 → 9).
 > **Upload / Submit for Review are owner actions (§89) — nothing here uploads.**
 
@@ -62,7 +62,7 @@ Recommendation:     SHIP — after the 4 owner steps below complete cleanly.
    17 Pro sim, already logged in as the demo player) → New round → confirm the
    dark setup band and the Prev/Exit/Next row now clear the clock/Dynamic
    Island. Approve the dark/tinted icon from
-   `docs/audits/evidence/ios-premium-2026-08-25/` + Settings→App Icon check.
+   `docs/archive/audits-2026-08/evidence/ios-premium-2026-08-25/` + Settings→App Icon check.
 4. **Archive + upload**:
    ```bash
    cd /Users/ricknini/Downloads/helmv3/ios/App

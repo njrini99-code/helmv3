@@ -15,7 +15,7 @@
 # (which lives in src/lib/coachhelm/v2/composers/). Replace the
 # `prompts:` block with the actual prompt template, then expand the
 # `tests:` block to cover every assertion in
-# docs/v3-testing-standards.md "LLM Layer (W30+)".
+# docs/archive/v3/v3-testing-standards.md "LLM Layer (W30+)".
 #
 # Required CI env (or local):
 #   ANTHROPIC_API_KEY  — for Claude provider

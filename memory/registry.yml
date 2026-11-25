@@ -254,12 +254,12 @@ features:
       feature: memory/features/coachhelm-ai.md
       flows:
         - docs/architecture/coachhelm-evidence-contract.md
-        - docs/v3-research-golf-domain.md
+        - docs/archive/v3/v3-research-golf-domain.md
       ui:
         - memory/projects/golfhelm.md
       business_logic:
         - memory/context/coachhelm-ai.md
-        - docs/v3-decisions.md
+        - docs/archive/v3/v3-decisions.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -392,7 +392,7 @@ features:
       flows:
         - memory/context/baseballhelm-features.md
       ui:
-        - docs/audits/BASEBALLHELM_CANONICAL_SPEC.md
+        - docs/archive/audits-2026-08/BASEBALLHELM_CANONICAL_SPEC.md
       business_logic:
         # STALE 2026-06-30 and carries no AUTOGEN:columns block, unlike its
         # golf counterpart. For live column truth prefer src/lib/types/
@@ -451,7 +451,7 @@ features:
       ui:
         - memory/projects/golfhelm.md
       business_logic:
-        - docs/v3-research-golf-domain.md
+        - docs/archive/v3/v3-research-golf-domain.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -608,8 +608,8 @@ features:
     docs:
       feature: memory/features/qualifiers.md
       flows:
-        - docs/v3-feature-audit.md
-        - docs/v3-page-audit.md
+        - docs/archive/v3/v3-feature-audit.md
+        - docs/archive/v3/v3-page-audit.md
       ui:
         - memory/projects/golfhelm.md
       business_logic:
@@ -682,7 +682,7 @@ features:
       ui:
         - memory/projects/golfhelm.md
       business_logic:
-        - docs/v3-research-golf-domain.md
+        - docs/archive/v3/v3-research-golf-domain.md
       incidents: []
     code:
       routes:
@@ -777,7 +777,7 @@ features:
       ui:
         - memory/projects/golfhelm.md
       business_logic:
-        - docs/v3-research-golf-domain.md
+        - docs/archive/v3/v3-research-golf-domain.md
       incidents: []
     code:
       routes:
@@ -866,7 +866,7 @@ features:
       business_logic:
         - memory/context/golfhelm-database.md
       incidents:
-        - docs/PUSH_NOTIFICATION_AUDIT.md
+        - docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/calendar/**
@@ -955,7 +955,7 @@ features:
       ui:
         - memory/projects/golfhelm.md
       business_logic:
-        - docs/v3-decisions.md
+        - docs/archive/v3/v3-decisions.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -1025,11 +1025,11 @@ features:
       feature: memory/features/player-coachhelm-development.md
       flows:
         - memory/context/coachhelm-ai.md
-        - docs/v3-feature-audit.md
+        - docs/archive/v3/v3-feature-audit.md
       ui:
         - memory/projects/golfhelm.md
       business_logic:
-        - docs/v3-research-golf-domain.md
+        - docs/archive/v3/v3-research-golf-domain.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -1081,7 +1081,7 @@ features:
     docs:
       feature: memory/features/team-communications.md
       flows:
-        - docs/PUSH_NOTIFICATION_AUDIT.md
+        - docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
       business_logic:
@@ -1209,7 +1209,7 @@ features:
     docs:
       feature: memory/features/team-operations.md
       flows:
-        - docs/PUSH_NOTIFICATION_AUDIT.md
+        - docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
       business_logic:
@@ -1405,7 +1405,7 @@ features:
       ui:
         - memory/projects/golfhelm.md
       business_logic:
-        - docs/v3-rls-template.md
+        - docs/archive/v3/v3-rls-template.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -1447,7 +1447,7 @@ features:
     review:
       required_docs:
         - memory/features/auth-onboarding-join.md
-        - docs/v3-rls-template.md
+        - docs/archive/v3/v3-rls-template.md
         - docs/security/auth-config.md
         - memory/context/engineering-methodology.md
       required_checks:
@@ -1465,13 +1465,13 @@ features:
     docs:
       feature: memory/features/settings-preferences.md
       flows:
-        - docs/v3-feature-audit.md
+        - docs/archive/v3/v3-feature-audit.md
       ui:
         - memory/projects/golfhelm.md
       business_logic:
         - memory/context/golfhelm-database.md
       incidents:
-        - docs/PUSH_NOTIFICATION_AUDIT.md
+        - docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/settings/**
@@ -1521,7 +1521,7 @@ features:
     docs:
       feature: memory/features/player-hub.md
       flows:
-        - docs/PUSH_NOTIFICATION_AUDIT.md
+        - docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
       business_logic:
@@ -1582,8 +1582,8 @@ features:
     docs:
       feature: memory/features/admin-platform.md
       flows:
-        - docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md
-        - docs/BI_DASHBOARD_ARCHITECTURE.md
+        - docs/archive/stale-root-2026-11/ADMIN_DASHBOARD_UPGRADE_PLAN.md
+        - docs/archive/stale-root-2026-11/BI_DASHBOARD_ARCHITECTURE.md
         # Literal paths, not a glob: document-inventory.mjs's `routed` check is
         # an exact-string Set membership test against each real file, so a
         # glob string here is never `.has()`-equal to an expanded path and
@@ -1605,7 +1605,7 @@ features:
       ui:
         - memory/projects/golfhelm.md
       business_logic:
-        - docs/SECURITY_AUDIT.md
+        - docs/archive/stale-root-2026-11/SECURITY_AUDIT.md
         - docs/OBSERVABILITY.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
@@ -1784,7 +1784,7 @@ features:
       required_docs:
         - memory/features/admin-platform.md
         - docs/OBSERVABILITY.md
-        - docs/SECURITY_AUDIT.md
+        - docs/archive/stale-root-2026-11/SECURITY_AUDIT.md
       required_checks:
         - npm run typecheck
         - npm run test -- --run src/test/lib/cron/auth.test.ts src/test/api/cron/shared-auth.test.ts src/app/admin/__tests__/admin-gate-coverage.test.ts
@@ -1802,7 +1802,7 @@ features:
     docs:
       feature: memory/features/admin-incidents.md
       business_logic:
-        - docs/SECURITY_AUDIT.md
+        - docs/archive/stale-root-2026-11/SECURITY_AUDIT.md
         - docs/OBSERVABILITY.md
       incidents: []
     code:
@@ -2122,14 +2122,14 @@ features:
     docs:
       feature: memory/features/team-access-control.md
       flows:
-        - docs/v3-rls-template.md
+        - docs/archive/v3/v3-rls-template.md
       ui:
         - AGENTS.md
         - memory/projects/golfhelm.md
       business_logic:
         - memory/glossary.md
         - memory/context/golfhelm-database.md
-        - docs/SECURITY_AUDIT.md
+        - docs/archive/stale-root-2026-11/SECURITY_AUDIT.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
         - docs/operations/2026-07-03-p0-service-role-key-rotation-runbook.md
@@ -2191,7 +2191,7 @@ features:
         - memory/features/team-access-control.md
         - memory/glossary.md
         - memory/context/golfhelm-database.md
-        - docs/v3-rls-template.md
+        - docs/archive/v3/v3-rls-template.md
       required_checks:
         - npm run typecheck
         - npm run test:rls
@@ -2211,7 +2211,7 @@ features:
     docs:
       feature: memory/features/ios-native-shell.md
       flows:
-        - docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
+        - docs/archive/audits-2026-08/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
         - ios/appstore/RELEASE_CANDIDATE_2.0-9.md
       business_logic:
         - docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md

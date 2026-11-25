@@ -39,7 +39,7 @@ The repo records the decisions, not a reason in the owner's words:
 Two recorded facts stand behind the sentences the prompt uses, and the prompt states only these and what is true in
 general:
 1. Nothing measured exists for college golf to anchor to. The research document lists strokes gained by category
-   for any college division as not published (`docs/v3-research-golf-domain.md:126-128`), and every division figure
+   for any college division as not published (`docs/archive/v3/v3-research-golf-domain.md:126-128`), and every division figure
    in the standards table failed the source check (`src/lib/coachhelm/v3/chat/benchmark-reads.ts:104-121`). The
    removed NCAA and scratch baselines were the Tour curve multiplied by a factor, not measured data
    (`src/lib/golf/sg-benchmarks.ts:126-152`).
@@ -182,7 +182,7 @@ model to say "the Tour benchmark" and to name a tour only when a read named it.
   (A1). Fixed in this change, with three value lists the schema does fix (`golf_focus_area_criteria.source`,
   `golf_focus_area_practice_sessions.logged_by_role`, `golf_tournament_rounds.status`).
 - `readers.ts:427`, `:440`, `:450` say "since 1 August" as a fixed phrase. True (A3), and stable.
-- The golf research document (`docs/v3-research-golf-domain.md`) states college figures with no source in three
+- The golf research document (`docs/archive/v3/v3-research-golf-domain.md`) states college figures with no source in three
   causal sections (wedge proximity, sand saves, the practice-to-tournament gap in strokes) although its own section
   3 says no college figure is quoted without one, and its chapter 2 holds men's Tour 2024 tables that duplicate
   the standards table and are wrong for a women's team. The on-demand reference withholds those (see

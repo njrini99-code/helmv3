@@ -29,7 +29,7 @@ All three share the same LLM budget/citation/fallback contract (`.claude/rules/c
 The thing that makes CoachHelm's narrative trustworthy rather than "an LLM wrapper" is that every claim it makes is checked against real data before a coach or player ever sees it:
 
 - **Citation-verify, regenerate once, then template fallback.** `composeRoundReview`, `composeHeroNarrative`, and `composeCoachChat` must verify citations against real underlying data, regenerate once on failure, and fall back to a deterministic template rather than surface a hallucinated narrative (`00-business-context.md` §2.2, `03-product-invariants.md` §(e), `04-workflow-maps.md` §3).
-- **Every causal or comparative claim must trace back to `docs/v3-research-golf-domain.md`.** A generator asserting a causal relationship (e.g. "putting explains most of your scoring gap") without grounding in the documented Broadie variance breakdown is a fabricated claim, not an insight — this is the same invariant that governs SG correctness generally (`03-product-invariants.md` §(c), (e); `02-jobs-to-be-done.md` §3.3).
+- **Every causal or comparative claim must trace back to `docs/archive/v3/v3-research-golf-domain.md`.** A generator asserting a causal relationship (e.g. "putting explains most of your scoring gap") without grounding in the documented Broadie variance breakdown is a fabricated claim, not an insight — this is the same invariant that governs SG correctness generally (`03-product-invariants.md` §(c), (e); `02-jobs-to-be-done.md` §3.3).
 - **Never call the LLM client-side.** A `'use client'` component making a direct model call bypasses both the citation check and the budget check and is a hard block (`03-product-invariants.md` §(e)).
 - **V2 scoring functions must stay pure.** Pattern-mining and composite-scoring code under `v2/insights/`, `v2/composite/` must not perform fetches or Supabase calls inside scoring logic — scoring takes data in, returns a score out, nothing else, so output stays deterministic and auditable (`03-product-invariants.md` §(e), `04-workflow-maps.md` §3).
 
@@ -70,6 +70,6 @@ The `golf_insight_*` tables (`golf_insight_effectiveness`, `golf_insight_feedbac
 - Flag any change that defaults a coach's or team's resolved budget to a nonzero fallback instead of `0` when no staff row or settings row exists — `0` is the deliberately safe default.
 - Flag any composer (`composeRoundReview`, `composeHeroNarrative`, `composeCoachChat`) that skips citation verification, skips the regenerate-once-before-template-fallback step, or is invoked from a `'use client'` component.
 - Flag any change that collapses `budget_zero` and `budget_exhausted` into one generic fallback reason, or that falls back to template on a transient failure unrelated to budget exhaustion.
-- Flag any causal or comparative claim in CoachHelm output that isn't traceable to `docs/v3-research-golf-domain.md`.
+- Flag any causal or comparative claim in CoachHelm output that isn't traceable to `docs/archive/v3/v3-research-golf-domain.md`.
 - Flag any new insight-generation code that doesn't write to the `golf_insight_*` effectiveness ledger, given existing generators do.
 - Flag any Supabase call or network fetch added inside a `v2/insights/` or `v2/composite/` scoring function — these must stay pure.

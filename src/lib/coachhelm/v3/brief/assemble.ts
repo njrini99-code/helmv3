@@ -7,7 +7,7 @@
  * template prose from `generateCategoryInsights` in `team-category-insights.ts`
  * (team trend / attention-count / standout sentences, no real engine signal).
  *
- * Per docs/fairway-coachhelm-insight-rebuild.md ("The unlock"): every
+ * Per docs/archive/stale-root-2026-11/fairway-coachhelm-insight-rebuild.md ("The unlock"): every
  * `golf_coach_insights` row already carries `evidence.counterfactual` (a real
  * per-cause strokes-saved number) and `evidence.standing`. This module is a
  * PURE, read-time-only re-shaper — NO IO, NO schema change, NO new shot math —

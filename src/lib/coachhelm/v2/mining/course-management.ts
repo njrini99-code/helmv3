@@ -12,7 +12,7 @@
  *     AND the player has played hole 1 at least 6 times.
  *
  * Source of truth:
- *   docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md
+ *   docs/archive/superpowers-plans/2026-04-22-insight-quality/00-design-contract.md
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';

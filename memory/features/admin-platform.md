@@ -1681,10 +1681,10 @@ assumed it would:
 
 ## Related Docs
 
-- `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md`
-- `docs/BI_DASHBOARD_ARCHITECTURE.md`
+- `docs/archive/stale-root-2026-11/ADMIN_DASHBOARD_UPGRADE_PLAN.md`
+- `docs/archive/stale-root-2026-11/BI_DASHBOARD_ARCHITECTURE.md`
 - `docs/OBSERVABILITY.md`
-- `docs/SECURITY_AUDIT.md`
+- `docs/archive/stale-root-2026-11/SECURITY_AUDIT.md`
 - `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` —
   the Bridge Premium Observability brief the "Phase 0 truth models" and
   "Phase 5 Engineering OS" sections above implement. Verified resolvable in

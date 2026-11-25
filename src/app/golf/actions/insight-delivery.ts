@@ -10,7 +10,7 @@
  * `lifecycle_state`. We NEVER fall back to the in-memory engine output for
  * delivery.
  *
- * Contract: docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md
+ * Contract: docs/archive/superpowers-plans/2026-04-22-insight-delivery/00-design-contract.md
  *
  * Every fetcher pre-joins `golf_insight_drill_attachments → golf_drills` so
  * the primitive can render drill chips inline without a second round-trip per

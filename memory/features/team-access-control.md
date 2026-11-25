@@ -117,5 +117,5 @@ Use `memory/glossary.md` for table lookup and `memory/context/golfhelm-database.
 - `memory/glossary.md`
 - `memory/context/golfhelm-database.md`
 - `docs/architecture/USER_ROLE_DATA_OWNERSHIP.md`
-- `docs/v3-rls-template.md`
-- `docs/SECURITY_AUDIT.md`
+- `docs/archive/v3/v3-rls-template.md`
+- `docs/archive/stale-root-2026-11/SECURITY_AUDIT.md`

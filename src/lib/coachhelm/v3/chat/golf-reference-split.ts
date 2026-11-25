@@ -1,5 +1,5 @@
 /**
- * Splits `docs/v3-research-golf-domain.md` (the sourced golf reference) into sections for Ask's `get_golf_reference`.
+ * Splits `docs/archive/v3/v3-research-golf-domain.md` (the sourced golf reference) into sections for Ask's `get_golf_reference`.
  * Pure: the generator (`scripts/coachhelm/gen-golf-reference.ts`) writes the result to `golf-reference.generated.ts`, and a test
  * recomputes it from the document, so the module cannot drift from the doc.
  *

@@ -829,7 +829,7 @@ A test that renders with `loading: false` from the start cannot see either half.
 
 - `memory/context/golfhelm-features.md`
 - `memory/context/golfhelm-database.md`
-- `docs/PUSH_NOTIFICATION_AUDIT.md`
+- `docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md`
 
 Group participant requests are invalidated when conversation selection changes; late results and mutation refresh callbacks cannot overwrite the next conversation’s identity map. Empty membership clears stale members.
 

@@ -334,7 +334,7 @@ _staging-snapshot/
 # .jpg half was simply never covered. The audit markdown is the durable
 # artifact and IS committed — the images are regenerable evidence that was
 # blocking a clean working tree on main.
-docs/ui-audits/**/*.jpg
+docs/archive/ui-audits-2026-08/**/*.jpg
 # Janitor entropy-report output (scripts/janitor/run.mjs). NOT tracked,
 # deliberately — the report embeds a HEAD SHA and an ISO timestamp that
 # change on every regeneration, which would make every future `npm run

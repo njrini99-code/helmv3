@@ -356,7 +356,7 @@ still use `getPlayerStatsDashboardBundle`.
 - `memory/context/golfhelm-database.md`
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
-- `docs/v3-research-golf-domain.md`
+- `docs/archive/v3/v3-research-golf-domain.md`
 
 ## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
 

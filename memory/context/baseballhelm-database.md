@@ -26,7 +26,7 @@
 > a migration existing in the repo is not evidence the table is live — and here, a table
 > documented in detail was not evidence either.
 >
-> Per `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md` (2026-06-25), prod already had "118
+> Per `docs/archive/audits-2026-08/BASEBALLHELM_PRODUCTION_VERDICT.md` (2026-06-25), prod already had "118
 > baseball + 26 lifting tables" applied via an out-of-band session **before** the file-list
 > above was reconciled — i.e. the migrations directory and the actual applied state have
 > disagreed at least once already this cycle. Treat "the migration exists in this repo" as
@@ -120,7 +120,7 @@ RLS: SELECT — team coach/member OR any coach in the same organization_id (`bas
 Purpose: A coach's profile, one row per `auth.users` coach account.
 Key columns: id (uuid, PK), user_id (uuid, NOT NULL), organization_id (uuid, nullable), coach_type (baseball_coach_type enum, NOT NULL), full_name, email, phone, title, bio, onboarding_completed
 FKs: user_id → auth.users.id; organization_id → organizations.id
-RLS: SELECT — own row OR any authenticated coach (`baseball_coaches_select` + redundant `baseball_coaches_select_all USING (true)` — coaches are intentionally publicly visible platform-wide, per `docs/BASEBALL_RLS_SECURITY_AUDIT.md` §1); INSERT/UPDATE/DELETE — self only (`user_id = auth.uid()`). [`supabase/migrations/20260527000000_prod_public_baseline.sql:7578-7592`, policies at 17823-17838]
+RLS: SELECT — own row OR any authenticated coach (`baseball_coaches_select` + redundant `baseball_coaches_select_all USING (true)` — coaches are intentionally publicly visible platform-wide, per `docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md` §1); INSERT/UPDATE/DELETE — self only (`user_id = auth.uid()`). [`supabase/migrations/20260527000000_prod_public_baseline.sql:7578-7592`, policies at 17823-17838]
 
 ### baseball_players
 Purpose: A player's profile — measurables, academics, recruiting-activation flag; one row per `auth.users` player account.
@@ -132,13 +132,13 @@ RLS: INSERT/UPDATE — self only (`user_id = auth.uid()`). **SELECT — `USING (
 Purpose: Coach↔team join with a full staff-capability model (analog of `golf_team_coach_staff`, see Tenancy Chain above).
 Key columns: id, team_id, coach_id, role (text, default 'head_coach'), is_primary (bool), is_head_coach (bool), status (text, default 'active'), title, capabilities (jsonb), can_manage_roster/practice/lifting/imports/stats/settings/calendar (bool ×7), can_view_academics/can_view_medical (bool), can_invite_staff (bool), can_message_team (bool)
 FKs: team_id → baseball_teams.id; coach_id → baseball_coaches.id
-RLS: SELECT — team coach OR own record; INSERT/UPDATE/DELETE — head coach only (`docs/BASEBALL_RLS_SECURITY_AUDIT.md` §5, pre-dates the 0030 capability columns — verify current predicate against `is_baseball_primary_coach`/`has_baseball_staff_capability` before relying on the audit doc's exact wording). [`supabase/migrations/20260527000000_prod_public_baseline.sql:8134-8141`; capability columns added by `supabase/migrations/20260624000030_baseball_staff_capabilities.sql:27-47`]
+RLS: SELECT — team coach OR own record; INSERT/UPDATE/DELETE — head coach only (`docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md` §5, pre-dates the 0030 capability columns — verify current predicate against `is_baseball_primary_coach`/`has_baseball_staff_capability` before relying on the audit doc's exact wording). [`supabase/migrations/20260527000000_prod_public_baseline.sql:8134-8141`; capability columns added by `supabase/migrations/20260624000030_baseball_staff_capabilities.sql:27-47`]
 
 ### baseball_team_members
 Purpose: Player↔team roster join (analog of `golf_team_members`).
 Key columns: id, team_id, player_id, status (team_member_status enum — SHARED with golf), jersey_number, position, joined_at, approved_by, approved_at
 FKs: team_id → baseball_teams.id; player_id → baseball_players.id
-RLS: SELECT — team coach, team member, or own record; INSERT/UPDATE — team coaches only; DELETE — team coach OR self (player can leave a team). [`supabase/migrations/20260527000000_prod_public_baseline.sql:8177-8189`; `docs/BASEBALL_RLS_SECURITY_AUDIT.md` §4]
+RLS: SELECT — team coach, team member, or own record; INSERT/UPDATE — team coaches only; DELETE — team coach OR self (player can leave a team). [`supabase/migrations/20260527000000_prod_public_baseline.sql:8177-8189`; `docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md` §4]
 
 ### baseball_team_invitations
 Purpose: A shareable join code/link for players to join a team (distinct from staff invitations below).
@@ -153,7 +153,7 @@ FKs: team_id → baseball_teams.id; invited_by_coach_id → baseball_coaches.id
 RLS: INSERT/manage gated by `baseball_can_invite_staff(team_id)` (primary coach OR `is_head_coach`/`can_invite_staff` capability — `supabase/migrations/20260624000030_baseball_staff_capabilities.sql:72-92`); acceptance flows through the dedicated `baseball_accept_staff_invite` RPC (`supabase/migrations/20260624000062_baseball_accept_staff_invite_rpc.sql`). [`supabase/migrations/20260624000030_baseball_staff_capabilities.sql:98+`]
 
 ### baseball_staff_audit_events
-Purpose: Append-only audit trail of staff-role/capability changes (who changed what capability on which staff row, and when) — the compliance answer to `docs/BASEBALL_RLS_SECURITY_AUDIT.md`'s §11 gap "No audit trail for sensitive actions."
+Purpose: Append-only audit trail of staff-role/capability changes (who changed what capability on which staff row, and when) — the compliance answer to `docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md`'s §11 gap "No audit trail for sensitive actions."
 Key columns: id, team_id, staff_id (→ baseball_team_coach_staff), actor_coach_id, change_type, before/after snapshot (jsonb)
 FKs: team_id → baseball_teams.id; actor_coach_id → baseball_coaches.id
 RLS: staff-only SELECT (team staff); INSERT is meant to be system-written via the `baseball_log_staff_change` trigger function per the migration [`supabase/migrations/20260624000081_baseball_staff_roles_scope_audit.sql:104+`], not a direct client write. **The function does not exist live and no trigger fires on `baseball_team_coach_staff`** — verified directly against `pg_proc`/`pg_trigger` in production; the table itself IS live, but nothing currently writes to it that way. Same G8 caveat as everywhere else: migration-file presence is not proof of a live effect.
@@ -162,7 +162,7 @@ RLS: staff-only SELECT (team staff); INSERT is meant to be system-written via th
 Purpose: A player's academic class schedule entry (course name, meeting days/times) — feeds the class-conflict engine.
 Key columns: id, player_id, course_name, days (array/text), start_time, end_time, term
 FKs: player_id → baseball_players.id
-RLS: player owns own rows; coaches on the player's team can SELECT (academic visibility, per `docs/BASEBALL_RLS_SECURITY_AUDIT.md` §12 "Academic"). [`supabase/migrations/20260527000000_prod_public_baseline.sql`]
+RLS: player owns own rows; coaches on the player's team can SELECT (academic visibility, per `docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md` §12 "Academic"). [`supabase/migrations/20260527000000_prod_public_baseline.sql`]
 
 ### baseball_player_settings
 Purpose: Per-player app preferences, notably `profile_visibility` (public or private) which gates recruiting discoverability alongside `recruiting_activated`.
@@ -174,7 +174,7 @@ RLS: player-owned only (self CRUD). Read by `src/lib/baseball/recruitability.ts:
 Purpose: Coach-entered NCAA/academic eligibility tracking record for a player (GPA checkpoints, eligibility status).
 Key columns: id, player_id, team_id, status, notes, recorded_by_coach_id
 FKs: player_id → baseball_players.id; team_id → baseball_teams.id
-RLS: coach INSERT/manage; player + team coaches SELECT own/team records. [`supabase/migrations/20260527000000_prod_public_baseline.sql`; `docs/BASEBALL_RLS_SECURITY_AUDIT.md` §12]
+RLS: coach INSERT/manage; player + team coaches SELECT own/team records. [`supabase/migrations/20260527000000_prod_public_baseline.sql`; `docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md` §12]
 
 ### baseball_class_conflicts
 Purpose: Detected overlap between a player's class schedule (`baseball_player_classes`) and a team event/practice — feeds `src/lib/baseball/class-conflict-engine.ts`.
@@ -276,7 +276,7 @@ RLS: single ALL-command policy scoped to own coach_id. [`supabase/migrations/202
 Purpose: Event log of recruiting engagement (profile views, watchlist adds) — source of "A coach viewed your profile" notifications; drives the anonymous-vs-identified activation UX from CLAUDE.md.
 Key columns: id, player_id, coach_id (nullable), engagement_type, metadata (jsonb), created_at
 FKs: player_id → baseball_players.id; coach_id → baseball_coaches.id (nullable)
-RLS: INSERT restricted to the acting coach; SELECT allowed to either the subject player or the coach who generated the event. INSERT additionally requires the target player have `recruiting_activated = true` (`docs/BASEBALL_RLS_SECURITY_AUDIT.md` §9). [`supabase/migrations/20260527000000_prod_public_baseline.sql:7856-7864`]
+RLS: INSERT restricted to the acting coach; SELECT allowed to either the subject player or the coach who generated the event. INSERT additionally requires the target player have `recruiting_activated = true` (`docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md` §9). [`supabase/migrations/20260527000000_prod_public_baseline.sql:7856-7864`]
 
 ### baseball_player_comparisons
 Purpose: Coach-saved side-by-side comparison sets of multiple prospects.
@@ -930,7 +930,7 @@ Database types" — but `src/lib/types/database.ts` DOES contain every live `hel
 table, so that comment (and possibly the whole untyped-cast pattern for this table family) is
 stale.
 
-**G2 — `docs/BASEBALL_RLS_SECURITY_AUDIT.md` (dated 2026-02-21) describes a schema that no longer exists.**
+**G2 — `docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md` (dated 2026-02-21) describes a schema that no longer exists.**
 The audit doc's §3/§5 describe `baseball_teams` UPDATE/DELETE as "Head coach only," resolved via
 a `baseball_teams.head_coach_id` column, and its Executive Summary lists `is_baseball_team_coach()`/
 `is_baseball_team_member()` as "the" security helpers. The `head_coach_id` column was DROPPED by
@@ -943,7 +943,7 @@ baseline). The 0050 RLS-helpers migration's own header spells this out explicitl
 head-coach identity now lives on `baseball_team_coach_staff.is_head_coach` ... NOT on a
 `baseball_teams.head_coach_id` column — that column does not exist in the prod baseline, and
 referencing it here would make every caller throw `column t.head_coach_id does not exist` at
-query time."* Treat every policy description in `docs/BASEBALL_RLS_SECURITY_AUDIT.md` as a
+query time."* Treat every policy description in `docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md` as a
 snapshot of the pre-2026-05-27 schema, not the current one — verify against the actual
 `CREATE POLICY` text before relying on it.
 
@@ -985,7 +985,7 @@ is `FOR SELECT TO authenticated USING (true)` — **any authenticated user (coac
 read every column of every `baseball_players` row**, regardless of `recruiting_activated` or
 team membership, and no later migration touches this policy (grepped every migration for
 `baseball_players_select`/any `POLICY.*baseball_players` — none found outside the baseline).
-This directly contradicts both `docs/BASEBALL_RLS_SECURITY_AUDIT.md` §2 (which describes a
+This directly contradicts both `docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md` §2 (which describes a
 multi-condition SELECT gated by `recruiting_activated`/team membership — that description is
 stale, see G2) and the CLAUDE.md "opt-in recruiting activation" product model (players who have
 NOT activated recruiting should be invisible to non-team coaches, but currently are not, at
@@ -1007,7 +1007,7 @@ file as exhaustive for new work.
 **G8 — Migration-file presence in this repo is not proof a table/policy is live in prod; verify against `information_schema`.**
 Two contradictory signals exist in the docs for the same week: `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md`
 (morning of 2026-06-25) states "59 pending migrations not applied to prod DB — all tables
-gated," while `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md` (same day, later) reports prod
+gated," while `docs/archive/audits-2026-08/BASEBALLHELM_PRODUCTION_VERDICT.md` (same day, later) reports prod
 already had "118 baseball + 26 lifting tables" applied via an out-of-band session that predated
 the audit. Several individual migration file headers in this repo also say **"This file is
 WRITTEN, NOT APPLIED"** verbatim (e.g. `supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:19`,

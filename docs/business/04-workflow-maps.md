@@ -246,7 +246,7 @@ Route (shared): /golf/dashboard/roster/[id] — player profile detail
      workflow 1)
 ```
 
-- **Coach<->team binding**: coach access to a roster is via `golf_team_coach_staff`, never `golf_coaches.team_id` — this is called out repeatedly in the RLS template (`docs/v3-rls-template.md:11-57`) and is the single most common tenancy foot-gun in this codebase. `[INVARIANT: RLS/tenancy]`
+- **Coach<->team binding**: coach access to a roster is via `golf_team_coach_staff`, never `golf_coaches.team_id` — this is called out repeatedly in the RLS template (`docs/archive/v3/v3-rls-template.md:11-57`) and is the single most common tenancy foot-gun in this codebase. `[INVARIANT: RLS/tenancy]`
 - **Destructive-write risk**: roster is named explicitly as one of the highest-risk surfaces for the delete-then-insert ban (`.claude/rules/golf.md`) — removing/reactivating a player must be a status UPDATE (or upsert), never a delete-then-reinsert of `golf_team_members`. A transient failure mid-operation must not be able to permanently drop a real roster row; there is a documented prior incident of exactly this class of bug. `[INVARIANT: destructive-write ban]`
 - **Minors' PII**: roster rows carry academic + athletic PII for players who are frequently minors — any new roster export, bulk-action, or admin view must be checked against FERPA/COPPA-adjacent handling expectations, not just RLS. `[COMPLIANCE SURFACE]`
 
@@ -293,7 +293,7 @@ At the highest, stable level, the shape mirrors GolfHelm's tenancy pattern (orga
 
 - **Flag a PR when** a save/submit/sync path (round submit, qualifier selections, roster status change, event RSVP, notification fan-out) uses DELETE-then-INSERT instead of `upsert(...).onConflict(...)` or stage-and-swap — this is a named, previously-incident-causing pattern (`.claude/rules/golf.md`).
 - **Flag a PR when** a new query against a coach/player/team-scoped table filters by `team_id` or `organization_id` in application code instead of relying on RLS + the canonical helpers (`current_player_id()`, `is_team_coach()`, `is_team_player()`), or when a coach<->team check uses `golf_coaches.team_id` instead of `golf_team_coach_staff`.
-- **Flag a PR when** SG values are read from `golf_player_stats_cache` without handling `null` (unpopulated SG), or when SG math changes without re-grounding in `docs/v3-research-golf-domain.md`.
+- **Flag a PR when** SG values are read from `golf_player_stats_cache` without handling `null` (unpopulated SG), or when SG math changes without re-grounding in `docs/archive/v3/v3-research-golf-domain.md`.
 - **Flag a PR when** any LLM composer (`composeRoundReview`, `composeHeroNarrative`, `composeCoachChat`, `composeTravelBrief`, or any new one) is callable client-side, skips the `golf_coachhelm_llm_budget` check, hardcodes a dollar/token figure instead of reading `golf_coachhelm_settings.llm_budget_usd_per_day`, or drops the citation-verify -> regenerate-once -> template fallback chain.
 - **Flag a PR when** a `v2/mining/` or `v2/composite/` scoring function performs a fetch or Supabase call inside pure scoring logic.
 - **Flag a PR when** calendar/scheduling logic (event creation, RRULE expansion, conflict detection, iCal/CalDAV feed generation) does timezone math without an explicit, tested timezone — this is a named high-severity class for this business.

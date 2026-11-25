@@ -447,7 +447,7 @@ export function resolveTeeFairway(
  * Load this player's tee shots joined to per-hole context, scoped to
  * par-4/5 only (par-3 tees are irrelevant for driver-vs-layback). Used
  * by TeeStrategyGenerator to compare driver-vs-non_driver fairway% +
- * distance gap. See docs/superpowers/plans/2026-04-22-insight-quality/
+ * distance gap. See docs/archive/superpowers-plans/2026-04-22-insight-quality/
  * 00-design-contract.md (group B3) for the original v2 contract this
  * loader implements at v3.
  */

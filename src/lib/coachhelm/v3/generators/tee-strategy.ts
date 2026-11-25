@@ -13,7 +13,7 @@
  *
  * Thresholds + sample-size gates (driver ≥ 15 attempts,
  * non-driver ≥ 8) are calibrated per the 2026-04-22 insight-quality
- * design contract (see docs/superpowers/plans/).
+ * design contract (see docs/archive/superpowers-plans/).
  *
  * Player-vs-self diagnostic — no PGA benchmark for "driver strategy
  * quality" exists today, so requiresStanding=false (no standing-backed

@@ -8,7 +8,7 @@
  *   the tee shots lean to one side or the penalties pile up. Research §Penalty
  *   strokes → scoring (each penalty ≈ 1.5 strokes for amateurs) and §Course
  *   management (on tight holes, the target that keeps the penalty out of play
- *   is net positive) in docs/v3-research-golf-domain.md.
+ *   is net positive) in docs/archive/v3/v3-research-golf-domain.md.
  * - Par 3s: over par a round across the par 3s, greens hit, and the short /
  *   long (or left / right) lean of the misses. Research §Approach (proximity
  *   and GIR by distance); Arccos "3 mistakes" in supercharge 05-sources

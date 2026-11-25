@@ -31,7 +31,7 @@
 //
 // ---------------------------------------------------------------------------
 // WHAT THIS HARNESS USED TO GET WRONG (all fixed 2026-08-15; read before
-// trusting any pre-2026-08-15 report in docs/ui-audits/)
+// trusting any pre-2026-08-15 report in docs/archive/ui-audits-2026-08/)
 // ---------------------------------------------------------------------------
 // The 2026-08-15 post-deploy run produced 105 findings. Roughly 94 of them were
 // artifacts of the harness, not defects in the app. Six separate bugs, each of
@@ -101,7 +101,7 @@ const arg = (k, d) => {
 };
 const BASE = arg('base', 'https://helmsportslabs.com').replace(/\/$/, '');
 const ONLY = arg('persona', '');
-const OUT = path.join(process.cwd(), 'docs/ui-audits');
+const OUT = path.join(process.cwd(), 'docs/archive/ui-audits-2026-08');
 const SHOTS = path.join(OUT, `shots-${new Date().toISOString().slice(0, 10)}`);
 
 // Routes a coach can reach. Ordered the way a coach actually moves through the

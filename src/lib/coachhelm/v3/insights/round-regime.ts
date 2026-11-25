@@ -3,7 +3,7 @@
  *
  * ── THE MECHANISM ───────────────────────────────────────────────────────────
  *
- * `docs/v3-research-golf-domain.md` §4, "GIR → Scrambling Load (Inverse
+ * `docs/archive/v3/v3-research-golf-domain.md` §4, "GIR → Scrambling Load (Inverse
  * Coupling)": *"If player hits 12+ GIR, putting drives score. If 8 or fewer,
  * scrambling % is more predictive than putting."*
  *

@@ -324,4 +324,4 @@ in `memory/features/coachhelm-ai.md`.
 
 - `memory/context/golfhelm-features.md`
 - `memory/context/golfhelm-database.md`
-- `docs/PUSH_NOTIFICATION_AUDIT.md`
+- `docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md`

@@ -544,11 +544,11 @@ export interface AngleFamily {
   cap: AngleLadderCap;
   /** Shrinkage κ default (`02` §4) and its unit. */
   kappa: { value: number; unit: AngleSampleUnit };
-  /** Where the comparison or causal wording traces (`docs/v3-research-golf-domain.md` or `05-sources.md`). */
+  /** Where the comparison or causal wording traces (`docs/archive/v3/v3-research-golf-domain.md` or `05-sources.md`). */
   citations: readonly string[];
 }
 
-const RESEARCH_DOC = 'docs/v3-research-golf-domain.md';
+const RESEARCH_DOC = 'docs/archive/v3/v3-research-golf-domain.md';
 const SG_CITATION = `${RESEARCH_DOC} §Strokes Gained (Broadie, Every Shot Counts): expected strokes by lie and distance`;
 
 /**

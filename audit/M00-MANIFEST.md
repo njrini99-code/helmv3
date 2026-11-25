@@ -745,6 +745,6 @@ Consequences for findings already in this manifest:
 - §16 assigns search state to M01/M02, but search lives entirely in
   `MessageConversationRail.tsx` — M03A's leased file (M02). The lease and the ownership
   table disagree.
-- `docs/PUSH_NOTIFICATION_AUDIT.md` claims message push is missing/critical. It is
+- `docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md` claims message push is missing/critical. It is
   self-marked STALE and the current fanout code does dispatch push for `new_message`
   (M04). The doc is in this feature's mapped doc set, so it will mislead the next reader.

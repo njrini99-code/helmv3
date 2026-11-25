@@ -11,7 +11,7 @@ KEPT FOR HISTORY -- do not delete this file.
 **Status:** Locked 2026-05-24. Source of truth for the v3 upgrade. Every wave PR description must reference its section here.
 
 **Companion reference docs (preserved alongside this plan):**
-- [`docs/v3-research-golf-domain.md`](./v3-research-golf-domain.md) — canonical golf knowledge base (SG framework, PGA + college baselines, putt make-% curves, causal chains, lie taxonomy, pressure research, coachable timeframes, full source list). Every v3 generator's causal claims must trace back here.
+- [`docs/archive/v3/v3-research-golf-domain.md`](./archive/v3/v3-research-golf-domain.md) — canonical golf knowledge base (SG framework, PGA + college baselines, putt make-% curves, causal chains, lie taxonomy, pressure research, coachable timeframes, full source list). Every v3 generator's causal claims must trace back here.
 - [`docs/v3-research-competitive-landscape.md`](./v3-research-competitive-landscape.md) — full competitor analysis (Clippd, DECADE, Arccos, CoachNow, Whoop, 13 total). White-space wedges, what to adopt, what to avoid.
 
 ---
@@ -84,7 +84,7 @@ A v3 engine under `v3/` namespaces, 9 SG-spined generators with shared base clas
 
 **Rollback discipline:** Every migration includes a `-- ROLLBACK:` comment block with the safe undo SQL. For human-eyes during incidents.
 
-**Review tooling:** `.coderabbit.yaml` enables every static analyzer relevant to this stack (ESLint, Biome, oxc, ast-grep, ruff, pylint, swiftlint, shellcheck, yamllint, actionlint, markdownlint, languagetool, hadolint, checkov, gitleaks, semgrep, sqlfluff). Path-scoped instructions enforce the rules in this file plus `docs/v3-rls-template.md`, `docs/v3-testing-standards.md`, `CLAUDE.md`, and `AGENTS.md`. Update `.coderabbit.yaml`'s `knowledge_base.code_guidelines.filePatterns` whenever a new `docs/v3-*.md` spec is added.
+**Review tooling:** `.coderabbit.yaml` enables every static analyzer relevant to this stack (ESLint, Biome, oxc, ast-grep, ruff, pylint, swiftlint, shellcheck, yamllint, actionlint, markdownlint, languagetool, hadolint, checkov, gitleaks, semgrep, sqlfluff). Path-scoped instructions enforce the rules in this file plus `docs/archive/v3/v3-rls-template.md`, `docs/archive/v3/v3-testing-standards.md`, `CLAUDE.md`, and `AGENTS.md`. Update `.coderabbit.yaml`'s `knowledge_base.code_guidelines.filePatterns` whenever a new `docs/v3-*.md` spec is added.
 
 ---
 
@@ -1504,7 +1504,7 @@ Every shim has a removal wave or the PR is rejected.
 - [ ] No V2 files modified (or, if cutover wave, list deletes explicitly)
 - [ ] Backfill (if applicable) shipping in separate PR
 - [ ] Compatibility shim registry updated (if applicable)
-- [ ] RLS policies on any new table (from `docs/v3-rls-template.md`)
+- [ ] RLS policies on any new table (from `docs/archive/v3/v3-rls-template.md`)
 - [ ] Cold-start, loading, error, empty states specified for any new UI
 - [ ] Test mocks updated for any new component/hook
 
@@ -1604,9 +1604,9 @@ W9 ships as ONE branch (`wave9-foundation`) with three sequential PRs:
 **W9-pt1: Docs + decisions** (~2 hours, zero code, zero migrations)
 - `docs/v3-wave-sequence.md` — references this plan; tracks per-wave status as they ship
 - `docs/v3-compatibility-shims.md` — shim registry (table header + 3 initial rows from Part XXIV.3)
-- `docs/v3-rls-template.md` — canonical RLS patterns coach/player/admin can copy
-- `docs/v3-testing-standards.md` — required test types per feature category (generators, composites, LLM, RLS, lifecycle)
-- `docs/v3-decisions.md` — locked decisions (Part III content + provider names)
+- `docs/archive/v3/v3-rls-template.md` — canonical RLS patterns coach/player/admin can copy
+- `docs/archive/v3/v3-testing-standards.md` — required test types per feature category (generators, composites, LLM, RLS, lifecycle)
+- `docs/archive/v3/v3-decisions.md` — locked decisions (Part III content + provider names)
 - `docs/v3-player-transfer-playbook.md` — edge cases: transfer, multi-team, graduation, new player
 
 **W9-pt2: RLS helpers + `golf_metrics` table + seed + extend `golf_coachhelm_settings`** (~1 day, 6 migrations — split per Rule 2 + backfill rule)

@@ -7,10 +7,10 @@ import { getGolfReference, searchGolfReference } from '../golf-reference';
 import { readFigure } from '../provenance';
 import { auditNumericClaims, collectEnvelopeNumbers } from './grounded';
 
-const doc = readFileSync(resolve(process.cwd(), 'docs/v3-research-golf-domain.md'), 'utf8');
+const doc = readFileSync(resolve(process.cwd(), 'docs/archive/v3/v3-research-golf-domain.md'), 'utf8');
 
 describe('the golf reference module', () => {
-  it('is in sync with docs/v3-research-golf-domain.md (run: npm run coachhelm:golf-reference)', () => {
+  it('is in sync with docs/archive/v3/v3-research-golf-domain.md (run: npm run coachhelm:golf-reference)', () => {
     expect(GOLF_REFERENCE_SECTIONS).toEqual(splitGolfReference(doc));
   });
 

@@ -86,7 +86,7 @@ the matching migration — see `docs/operations/DECLARATIVE_SCHEMA.md`.
 This is a multi-tenant college-athletics SaaS holding minors' academic +
 athletic PII. **Database safety IS product safety** — a cross-tenant leak
 is the worst-case, business-ending failure. Patterns + required tests:
-`docs/v3-rls-template.md`. Schema: `memory/context/{golfhelm,baseballhelm}-database.md`.
+`docs/archive/v3/v3-rls-template.md`. Schema: `memory/context/{golfhelm,baseballhelm}-database.md`.
 
 ### Always check on a migration / policy PR
 
@@ -129,7 +129,7 @@ is the worst-case, business-ending failure. Patterns + required tests:
 ### Suggest (non-blocking) enhancements
 
 - A missing positive/negative/cross-team/transfer RLS test for a new
-  policy (`docs/v3-rls-template.md` testing section).
+  policy (`docs/archive/v3/v3-rls-template.md` testing section).
 - An index that a new RLS predicate or hot query will need.
 - Capturing source/timestamp/confidence columns on a new import target so
   later automation and dedup are possible.

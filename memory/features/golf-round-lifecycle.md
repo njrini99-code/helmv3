@@ -298,7 +298,7 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 - Cache invalidation must include player-facing and coach-facing views that
   reflect the round.
 - Score, hole, shot, lie, and strokes-gained calculations must stay consistent
-  with `docs/v3-research-golf-domain.md`.
+  with `docs/archive/v3/v3-research-golf-domain.md`.
 - Completed score history is immutable. Any post-submit derived write must use
   its explicit protected database capability: strokes gained through
   `recalculate_round_strokes_gained`, CoachHelm markers through
@@ -895,7 +895,7 @@ offset below Continue Round's inset-aware context (the published
 `FairwayNewRoundEntry` step wrappers plus `FairwayCoursePicker`'s floating
 Close fold the inset into their top offsets. Off-iOS these resolve to the
 prior paddings (env() = 0). No lifecycle, autosave, or navigation semantics
-changed. Context: docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
+changed. Context: docs/archive/audits-2026-08/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md
 (F-SAFEAREA-02/03/04); change ledger entry of the same date.
 
 Addendum (same date, live owner QA): the shared `Segmented` control — used
@@ -914,7 +914,7 @@ by live bridge-log QA).
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
 - `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md`
-- `docs/v3-testing-standards.md`
+- `docs/archive/v3/v3-testing-standards.md`
 
 ## iOS shell chrome (updated 2026-08-26)
 
@@ -927,7 +927,7 @@ control sits below the status bar. The shared `Segmented` control renders an
 accent-green selected thumb in dark scope. Presentation layer only — no
 lifecycle contract change. Ledger: the round-lifecycle file under
 `memory/ledgers/changes/`
-(2026-08-26 entries); evidence: `docs/audits/evidence/ios-premium-2026-08-25/`
+(2026-08-26 entries); evidence: `docs/archive/audits-2026-08/evidence/ios-premium-2026-08-25/`
 (course picker, tee step, setup band, and scorecard header captures).
 
 ### Course picker viewport repair (2026-09-08)

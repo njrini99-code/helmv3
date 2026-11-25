@@ -135,7 +135,7 @@ uses one generic icon too. What is missing is the 38×38 icon tile.
   select. Check the schema before concluding a feature needs building.
 - **Worktrees do not inherit main's `.env.local`** — they get a stub, deliberately. No
   DB-touching script runs from one.
-- `docs/PUSH_NOTIFICATION_AUDIT.md` is in this feature's mapped doc set, is self-marked
+- `docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md` is in this feature's mapped doc set, is self-marked
   STALE, and says message push is missing. The code does dispatch push. It will mislead you.
 
 ---

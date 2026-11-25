@@ -15,7 +15,7 @@
  * attemptDirectSubmitFallback itself is a hardcoded stub today — it always
  * returns `{ success: false }` (src/app/golf/actions/golf.ts, ~line 1958;
  * see also golf-round-submit-abort-no-destructive-fallback.test.ts and
- * docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md for why a real
+ * docs/archive/audits-2026-08/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md for why a real
  * delete-and-reinsert fallback was retired). So the "fallback rescued the
  * write" branch is not reachable through this public action today; that
  * branch is proven directly against the extracted

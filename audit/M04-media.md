@@ -16,7 +16,7 @@
 - `src/hooks/golf/use-golf-messages.ts` (lines 420-620 — realtime channel setup, typing broadcast)
 - `src/components/fairway/pages/messages/MessageThreadPane.tsx` (lines 505-620 — attachment signing/refetch)
 - `src/components/fairway/pages/messages/FairwayMessages.tsx` (lines 1-60, 355-390 — send-with-attachments call site)
-- `docs/PUSH_NOTIFICATION_AUDIT.md` (grepped; header + message-related lines)
+- `docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md` (grepped; header + message-related lines)
 - `src/test/lib/notifications/golf-message-fanout.test.ts` (grepped test titles only, not full bodies)
 
 ## Findings
@@ -78,7 +78,7 @@
 - M-T18 (presence — real private authorized state, multi-device expiry, removed-member handling; no invented online identity): **PASS on "no invented identity"** — I found no "Active now"/online-presence feature anywhere in the messaging surfaces I read (not proposing one, per brief instruction). Typing-indicator authorization is a **risk** per M04-07, not a confirmed pass, and I did not verify multi-device/backgrounding/expiry behavior at runtime (**NOT_RUN**).
 
 ## Plan-vs-tree drift
-- `docs/PUSH_NOTIFICATION_AUDIT.md:190-201,307` claims "No push notification is sent for new messages... **MISSING**, CRITICAL" — this is stale relative to the current tree: `src/lib/notifications/golf-message-fanout.ts:141-152` does dispatch `sendPushNotification('new_message', ...)`, gated on the recipient's `push_messages` preference. The doc's own header already self-flags `STATUS: STALE, DATE: 2026-07-10`, so this is not an undisclosed staleness — noting it here only so the write phase doesn't cite this doc's message-push claim as current.
+- `docs/archive/stale-root-2026-11/PUSH_NOTIFICATION_AUDIT.md:190-201,307` claims "No push notification is sent for new messages... **MISSING**, CRITICAL" — this is stale relative to the current tree: `src/lib/notifications/golf-message-fanout.ts:141-152` does dispatch `sendPushNotification('new_message', ...)`, gated on the recipient's `push_messages` preference. The doc's own header already self-flags `STATUS: STALE, DATE: 2026-07-10`, so this is not an undisclosed staleness — noting it here only so the write phase doesn't cite this doc's message-push claim as current.
 - The brief's assigned scope mentions "any leased/temp path helper" for storage — I found no separate temp-path helper beyond `generateStoragePath()` inline in `src/lib/storage/attachments.ts:175-183`, which keys the storage path on a client-generated `temp-<timestamp>-<random>` string (`use-message-attachments.ts:50`) that is **never rewritten** to the real message id after the message insert succeeds. This isn't a security issue (the path is opaque and access is scoped by conversation via the storage RLS policy, not by message id), but it means the on-disk path permanently reads `temp-...` rather than the real message id — worth flagging as an inconsistency between the intended path shape documented in the storage-bucket migration's comments (`conversations/<conversationId>/<messageId>/...`) and what actually lands (`conversations/<conversationId>/temp-.../...`).
 
 ## What I could not determine and why

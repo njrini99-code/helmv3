@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
  * Helm Bridge — Flight Recorder.
  *
  * This is the "Visual Trace Explorer" from
- * `docs/superpowers/plans/2026-08-25-golf-flight-recorder.md`: one golf round
+ * `docs/archive/superpowers-plans/2026-08-25-golf-flight-recorder.md`: one golf round
  * mutation, rendered as the containment tree it actually is — client → server
  * action → RPC → in-transaction checkpoints → verification → background work —
  * with steps that never ran shown explicitly rather than absent.

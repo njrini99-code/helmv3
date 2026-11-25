@@ -225,7 +225,7 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     // CLASSIFICATION only (tail-cost vs birdie-shortfall branching — never a
     // standing/impact number, and the rates are never printed on the card).
     // Rescore item 7 reviewed this: no credible women's per-par birdie
-    // baseline exists in docs/v3-research-golf-domain.md, and since the value
+    // baseline exists in docs/archive/v3/v3-research-golf-domain.md, and since the value
     // only picks which driver SENTENCE renders (both sentences cite only the
     // player's OWN rates), the classification-side use is gender-safe. If a
     // women's baseline ever lands in Phase D (D7), swap this to it.

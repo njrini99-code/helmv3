@@ -1,7 +1,7 @@
 /**
  * CoachHelm chat knowledge: the golf reference in the words an answer may use.
  *
- * The research document (`docs/v3-research-golf-domain.md`) is written in an analyst's shorthand: "SG:APP", "GIR", "FW%",
+ * The research document (`docs/archive/v3/v3-research-golf-domain.md`) is written in an analyst's shorthand: "SG:APP", "GIR", "FW%",
  * "15-HCP", "25+ ft", "~65%", "vs", arrows. A model handed that text copies it to a coach, and the owner's complaint was
  * exactly that ("n=4", abbreviations, capitals). The document is not edited. Its text is expanded here, at the point
  * the reference a read returns is built (`../golf-reference.ts`), so the model never sees a token the writing rules

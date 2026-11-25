@@ -1,9 +1,9 @@
 <!-- BaseballHelm — UNIFIED PRODUCTION ROADMAP (the single source of truth).
      Author: Fable 5, product owner + lead planner · 2026-07-01 · Repo: /Users/ricknini/Downloads/helmv3
      Reconciles-and-supersedes-for-sequencing:
-       1. docs/audits/BASEBALLHELM_HONEST_FEATURE_READ.md        (feature truth: 72/21/18/7 · ~61%)
+       1. docs/archive/audits-2026-08/BASEBALLHELM_HONEST_FEATURE_READ.md        (feature truth: 72/21/18/7 · ~61%)
        2. https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/PRODUCTION_READINESS_MASTER_PLAN.md      (56-task plan; its spec blocks remain the per-task specs, cited as MP WSx.y)
-       3. docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md            (git/PR/issue/check untangle, cited as UT §x)
+       3. docs/archive/audits-2026-08/REPO_UNTANGLE_AND_CLEAN_BASE.md            (git/PR/issue/check untangle, cited as UT §x)
        4. docs/baseball/COACH_NAV_8TAB_PROPOSAL.md               (8-tab nav consolidation)
        5. Live prod DB baseline (shared golf+baseball; captured in Phase 0/3 below)
      Where this doc and an input disagree on ORDER, this doc wins. Where a task needs its full spec,
@@ -141,7 +141,7 @@
 - **P3.4 — Classification sign-off** `[OWNER-GATED]`. Review `docs/audits/DB_SECDEF_INVENTORY_2026-07.md`: for each of the 155 functions, verdict = keep-authenticated / REVOKE-from-anon / REVOKE-from-both / convert-to-invoker. The 30 baseball RLS helpers (`is_baseball_team_coach`, `can_view_baseball_player`, …) generally need `authenticated` EXECUTE (policies call them) but NOT anon. Anything golf-shared gets flagged to owner separately — golf behavior must not change.
 - **P3.5 — REVOKE waves (baseball).** Execute the signed-off verdicts in ≤15-file migration batches. Per function: REVOKE, then adversarial verify — (a) `pg_proc.proacl` shows the intended ACL; (b) an anon PostgREST `.rpc()` call fails; (c) the function's legitimate callers (grep `.rpc('<name>'`) still work via an authenticated smoke. Never REVOKE authenticated EXECUTE from a function referenced by any RLS policy without running the full pgTAP suite.
 - **P3.6 — Anon re-sweep + CI guard.** MP WS2.2 queries → zero rows; add a pgTAP/CI check asserting no `public`-schema `baseball%` function or relation carries anon in its ACL, so the auto-grant failure mode can never silently return.
-- **P3.7 — Announcements-family cycle-freedom sweep.** Full spec: **MP WS2.1** (post-#652 pg_policies audit + `docs/BASEBALL_RLS_SECURITY_AUDIT.md` status update).
+- **P3.7 — Announcements-family cycle-freedom sweep.** Full spec: **MP WS2.1** (post-#652 pg_policies audit + `docs/archive/stale-root-2026-11/BASEBALL_RLS_SECURITY_AUDIT.md` status update).
 
 ### 3-C · RECRUITING RLS — its own carefully-verified sub-track
 *The recruiting domain is where a mistake = cross-tenant PII exposure of minors. Every task here gets an adversarial verify by a SECOND agent that tries to break it, plus pgTAP.*
@@ -214,7 +214,7 @@
 - **P6.1 — Ledger reconciliation.** Full spec: **MP WS7.1**: re-verify each of the 25 fleet-absorbed issues' acceptance criteria on prod; close with evidence; anything regressed becomes a scoped task before the verdict.
 - **P6.2 — Full green gate.** On main: `npm run test:all` (unit + integration + rls) + `npm run build` + `supabase test db` + Playwright E2E + smoke, all green; lint ratchet re-locked down-only; DB-types drift + route hygiene + schema invariants green.
 - **P6.3 — 72-hour prod watch.** Zero baseball 42703/42P17 in postgres logs; zero new baseball Sentry issues; Vercel function durations nominal on the perf-touched paths.
-- **P6.4 — `[OWNER-GATED]` Re-issue the verdict.** Update `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md` to SHIP with pasted command evidence per MP §5's Definition of SHIP (all six conditions). Owner signs.
+- **P6.4 — `[OWNER-GATED]` Re-issue the verdict.** Update `docs/archive/audits-2026-08/BASEBALLHELM_PRODUCTION_VERDICT.md` to SHIP with pasted command evidence per MP §5's Definition of SHIP (all six conditions). Owner signs.
 
 ---
 
