@@ -3,6 +3,7 @@ import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { createClient } from '@/lib/supabase/server';
 import { pickGolfDashboardRole, type GolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { chLogServer } from '../lib/track-server';
+import { CODE_MIN, cleanCode } from '../screens/onboard/logic';
 
 const SURFACE = 'auth';
 const AREA = 'golf_auth';
@@ -15,7 +16,22 @@ export type PlayerOnboardLoad =
   | { kind: 'onboarded' }
   | {
       kind: 'ready';
-      seed: { first: string; last: string; grad: number | null; hcp: number | null; city: string; state: string; photoUrl: string | null; email: string; accountMade: true; intent: 'code'; kind: 'roster' };
+      seed: {
+        first: string;
+        last: string;
+        grad: number | null;
+        hcp: number | null;
+        city: string;
+        state: string;
+        photoUrl: string | null;
+        email: string;
+        accountMade: true;
+        intent: 'code';
+        kind: 'roster';
+        /** Present only when the link carried a team code: the code as the server will use it, and the team's name when it resolves. */
+        code?: string;
+        teamName?: string | null;
+      };
     };
 
 /**
@@ -28,7 +44,7 @@ export type PlayerOnboardLoad =
  * (`pickGolfDashboardRole`, users.role deciding when both profiles exist and neither is finished), so an account with an
  * unfinished coach row and an unfinished player row is not bounced between here and the dashboard (GAP-R-04).
  */
-export async function loadPlayerOnboard(): Promise<PlayerOnboardLoad> {
+export async function loadPlayerOnboard(joinCode?: string | null): Promise<PlayerOnboardLoad> {
   const supabase = await createClient();
   const { user } = await getUserResilient(supabase);
   if (!user) return { kind: 'signedOut' };
@@ -56,6 +72,11 @@ export async function loadPlayerOnboard(): Promise<PlayerOnboardLoad> {
   if (coach.data && pickGolfDashboardRole({ coach: coach.data, player: p }, declared) === 'coach') return { kind: 'coach' };
   if (p?.onboarding_completed) return { kind: 'onboarded' };
 
+  // The team the link names (`?joinCode=`), so a player who signed in on another phone still sees which team they are joining.
+  // A code that does not resolve is kept: finishing tries it and says why it did not take (never a silent no-team).
+  const code = cleanCode(joinCode ?? '');
+  const team = code.length >= CODE_MIN ? await resolveTeamName(supabase, code) : undefined;
+
   const meta = (user.user_metadata ?? {}) as { first_name?: string; last_name?: string };
   const hcp = (p?.handicap ?? p?.handicap_index ?? null) as number | null;
   return {
@@ -72,6 +93,23 @@ export async function loadPlayerOnboard(): Promise<PlayerOnboardLoad> {
       accountMade: true,
       intent: 'code',
       kind: 'roster',
+      ...(team !== undefined ? { code, teamName: team } : {}),
     },
   };
+}
+
+/** The name of the team a code resolves to, null when it names none or the lookup failed (the join says which when it runs). */
+async function resolveTeamName(supabase: Awaited<ReturnType<typeof createClient>>, code: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.rpc('golf_team_by_join_code', { p_code: code });
+    if (error) {
+      chLogServer(SURFACE, 'onboard.team', error, AREA);
+      return null;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    return typeof row?.name === 'string' && row.name ? row.name : null;
+  } catch (e) {
+    chLogServer(SURFACE, 'onboard.team', e, AREA);
+    return null;
+  }
 }

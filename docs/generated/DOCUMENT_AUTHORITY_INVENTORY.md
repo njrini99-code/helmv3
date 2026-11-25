@@ -1177,6 +1177,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-24-join-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -2266,6 +2267,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-20-components.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-24-join-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/DESIGN.md` | current | - | - | - | - |

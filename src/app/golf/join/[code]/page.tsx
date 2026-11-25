@@ -4,6 +4,15 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { redirect } from 'next/navigation';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
+import { cleanCode } from '@/clubhouse/screens/onboard/logic';
+
+function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
 
 export const metadata = {
   title: 'Join Team',
@@ -15,14 +24,17 @@ interface PageProps {
 }
 
 export default async function GolfJoinTeamPage({ params }: PageProps) {
-  const { code } = await params;
+  const { code: rawCode } = await params;
+  // The address is whatever was pasted: any case, spaces and dashes, even a stray "&" or "?". The code is its letters and
+  // numbers, so it can never add a parameter to the redirects below or reach the lookup as anything but a code.
+  const code = cleanCode(safeDecode(rawCode));
   const supabase = await createClient();
 
   // Check if user is authenticated
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     // Redirect to signup with return URL
-    redirect(`/golf/signup?returnTo=/golf/join/${code}`);
+    redirect(`/golf/signup?returnTo=${encodeURIComponent(`/golf/join/${code}`)}`);
   }
 
   // A coach can't "join" a team as a player. If this user is a coach, do NOT
@@ -81,7 +93,7 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   // the code I typed" — it can only widen visibility — so the lookup moved into
   // a SECURITY DEFINER function that resolves the single match and, by design,
   // does not return join_code at all.
-  const normalizedCode = code.toUpperCase();
+  const normalizedCode = code;
   const { data: teamRows, error: teamError } = await supabase
     .rpc('golf_team_by_join_code', { p_code: normalizedCode });
 
@@ -105,7 +117,7 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
     throw new Error('Failed to resolve your account');
   }
 
-  if (teamError || !team) {
+  if (teamError || !team || code.length < 4) {
     // Everything above, and what is decided, is read before anything is drawn.
     return <ClubhouseJoinInvalidRoute />;
   }
@@ -117,7 +129,7 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   if (!player || !player.onboarding_completed) {
     // User is logged in but hasn't completed player onboarding
     // Store the join code so they can auto-join after onboarding
-    redirect(`/golf/player?joinCode=${code}`);
+    redirect(`/golf/player?joinCode=${encodeURIComponent(code)}`);
   }
 
   // The RPC returns the organization fields flattened alongside the team,

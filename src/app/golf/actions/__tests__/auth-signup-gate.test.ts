@@ -143,6 +143,28 @@ describe('signupAction — server-side access-code gate (B8-1)', () => {
     expect(signUp).toHaveBeenCalledTimes(1);
   });
 
+  // (b1) If email confirmation is ever on, the link in the inbox must not drop the team.
+  it('points the confirmation link at onboarding with the team code, and a coach or global code at the dashboard', async () => {
+    maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
+    cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
+    await signupAction('player@example.com', STRONG_PASSWORD, 'player', 'New', 'Player');
+    expect(signUp.mock.calls[0]![0].options.emailRedirectTo).toMatch(/\/golf\/player\?joinCode=K7PQX4MN$/);
+
+    signUp.mockClear();
+    maybeSingle.mockResolvedValue({ data: null, error: null });
+    cookieJar.set(GRANT_COOKIE, 'HELM25');
+    await signupAction('c@example.com', STRONG_PASSWORD, 'coach', 'New', 'Coach');
+    expect(signUp.mock.calls[0]![0].options.emailRedirectTo).toMatch(/\/golf\/dashboard$/);
+  });
+
+  it('a signup that made the account but no session says to sign in, in the words the screen turns into that', async () => {
+    maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
+    cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
+    signUp.mockResolvedValue({ data: { user: { id: 'user-1' }, session: null }, error: null });
+    const result = await signupAction('player@example.com', STRONG_PASSWORD, 'player', 'New', 'Player');
+    expect(result).toEqual({ success: false, error: 'Account created but session could not be established. Please try signing in.' });
+  });
+
   // (b2) A TEAM CODE SIGNS UP PLAYERS ONLY (owner decision 2026-09-30).
   //
   // The team code is shared with the whole roster, so it can never mint a coach:

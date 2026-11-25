@@ -15,7 +15,7 @@ import { isDarkSky } from '../auth/scene-sky';
 import { useLocalHour, useSkyHour } from '../auth/use-hour';
 import { dropHandoffCurtain } from '../../lib/handoff';
 import { isCoachStart, useFlow, type Draft } from './flow';
-import { FULL_STEPS, codeFromSearch, railOf, zoomOf, type OnboardStep } from './logic';
+import { FULL_STEPS, codeFromSearch, railOf, signInHrefFor, zoomOf, type OnboardStep } from './logic';
 import { MemberCard, cardOf, seasonLabel } from './MemberCard';
 import { Rail } from './Rail';
 import { STEPS } from './steps-map';
@@ -124,7 +124,8 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
     if (start !== 'intro') {
       // After the account: the team code the server put on the URL is the one the join uses.
       const joinCode = codeFromSearch(window.location.search);
-      if (joinCode) f.up({ code: joinCode });
+      // The server read it already when the link carried one (the seed); this is the fallback for a link it could not read.
+      if (joinCode && !f.d.code) f.up({ code: joinCode });
       return;
     }
     if (isNativeApp()) {
@@ -185,6 +186,8 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
   );
 
   const step = f.step;
+  // Whoever is already a member can sign in from any question, and the team code typed here rides with them.
+  const signInTo = signInHrefFor(f.d.kind === 'roster' ? f.d.code : '', signInHref);
   // Moving on is asked by the question on screen: a double tap, or a choice's timer after Back, moves nothing.
   const { next: flowNext } = f;
   const next = useCallback((patch?: Partial<Draft>, to?: OnboardStep) => flowNext(patch, to, step), [flowNext, step]);
@@ -218,7 +221,7 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
             {!issued && !f.d.accountMade ? (
               <div className="ch-ox-signin">
                 <span>Already a member?</span>
-                <Link href={signInHref}>Sign in</Link>
+                <Link href={signInTo}>Sign in</Link>
               </div>
             ) : (
               <span />
@@ -240,7 +243,7 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
                     now={now}
                     phone={phone}
                     finish={finish}
-                    signInHref={signInHref}
+                    signInHref={signInTo}
                   />
                 </Turn>
               </AnimatePresence>

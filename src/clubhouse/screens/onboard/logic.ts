@@ -204,10 +204,27 @@ export function passwordProblem(p: string): string | null {
  * the server already wrote for people (a breached password, a lockout) passes
  * through, as today's form does.
  */
-export type AccountError = { field: 'email' | 'pw' | null; message: string; signIn?: boolean };
+export type AccountError = {
+  field: 'email' | 'pw' | null;
+  message: string;
+  /** The way forward is the sign-in page (the account exists), carrying the team code. */
+  signIn?: boolean;
+  /** What the sign-in notice says when it is not the "already has an account" one. */
+  notice?: string;
+  /** The team code has to be checked again (the gate's grant is gone): the way forward is the code question. */
+  recheckCode?: boolean;
+};
+
+export const SESSION_NOT_ESTABLISHED = /session could not be established/i;
+const STALE_BUNDLE = /unexpected response was received from the server|failed to find server action/i;
 
 export function accountErrorFor(raw: string): AccountError {
   const lower = raw.toLowerCase();
+  if (SESSION_NOT_ESTABLISHED.test(raw)) {
+    // The account exists; only the session did not start. Signing in finishes the job, and the team code rides along.
+    const notice = 'Your account is ready. If we emailed you a link, open it first. Then sign in to finish joining your team.';
+    return { field: null, message: notice, signIn: true, notice };
+  }
   if (lower.includes('already registered') || lower.includes('already exists') || lower.includes('user_already_exists')) {
     return { field: 'email', message: 'An account with this email already exists. Please sign in instead, or use a different email.', signIn: true };
   }
@@ -220,13 +237,66 @@ export function accountErrorFor(raw: string): AccountError {
       message: /[a-z]{4,}\s+[a-z]{4,}/i.test(raw) ? raw : 'That password was rejected. Try a longer one with a mix of letters, numbers and symbols that you have not used elsewhere.',
     };
   }
-  if (lower.includes('network') || lower.includes('fetch')) {
+  if (lower.includes('access code could not be verified')) {
+    return { field: null, message: 'We need to check your team code again. Your answers are saved.', recheckCode: true };
+  }
+  // The server's own waits say how long ("Please wait 57 seconds…", "…try again in 12 minutes"): keep the number.
+  if (/please wait \d+ seconds?|try again in/i.test(raw)) {
+    return { field: null, message: raw };
+  }
+  if (STALE_BUNDLE.test(raw)) {
+    return { field: null, message: 'GolfHelm just updated. Reload this page and your answers will still be here.' };
+  }
+  if (lower.includes('network') || lower.includes('fetch') || lower.includes('load failed')) {
     return { field: null, message: 'Unable to reach the server. Please check your internet connection and try again.' };
   }
   if (lower.includes('rate limit') || lower.includes('too many')) {
     return { field: null, message: 'Too many attempts. Please wait a moment and try again.' };
   }
   return { field: null, message: raw };
+}
+
+/**
+ * The sign-in address that keeps the invitation: an invite link's own returnTo wins, else the team code typed here
+ * returns to /golf/join/<code>, so signing in on another phone (or after "account ready, sign in") still lands on the team.
+ */
+export function signInHrefFor(code: string, base: string): string {
+  if (/[?&]returnTo=/.test(base)) return base;
+  const c = cleanCode(code);
+  if (c.length < CODE_MIN) return base;
+  return `/golf/login?returnTo=${encodeURIComponent(`/golf/join/${c}`)}`;
+}
+
+/**
+ * A hint for a code that matched nothing. Codes made today are eight characters from an alphabet with no O, I, 0 or 1
+ * (they are too easily mistaken for each other), so an eight-character code that has one of them was misread. Older
+ * six- and nine-character codes were not made that way, so no hint is given for them.
+ */
+export function lookalikeHint(code: string): string | null {
+  if (code.length !== CODE_SLOTS || !/[OI01]/.test(code)) return null;
+  return 'GolfHelm codes never use the letters O or I, or the numbers 0 or 1. Check those characters.';
+}
+
+// ── Picking up after the account ─────────────────────────────────────────────
+
+/**
+ * Whether a question has nothing left to ask once the account exists. Someone who signs in on another phone, or after
+ * "account ready, sign in", resumes without the draft the first phone held: the name and class are asked only if the
+ * account does not already hold them, and the account question is never asked again.
+ */
+export function stepSatisfied(step: OnboardStep, d: { accountMade: boolean; first: string; last: string; grad: number | null }): boolean {
+  if (!d.accountMade) return false;
+  if (step === 'account') return true;
+  if (step === 'name') return !!d.first.trim() && !!d.last.trim();
+  if (step === 'grad') return d.grad != null;
+  return false;
+}
+
+/** Where a signed-in new player picks up: the first of name, class, game that the account does not already answer. */
+export function resumeStep(d: { first?: string; last?: string; grad?: number | null }): OnboardStep {
+  if (!d.first?.trim() || !d.last?.trim()) return 'name';
+  if (d.grad == null) return 'grad';
+  return 'game';
 }
 
 // ── Your game ────────────────────────────────────────────────────────────────

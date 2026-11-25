@@ -36,6 +36,7 @@ import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
 import { verifySignupGate } from '@/lib/golf/signup-gate';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
+import { declaredGolfRole } from '@/lib/auth/golf-dashboard-role';
 import { recordLoginOutcome } from '@/lib/observability/golf-login-outcome';
 import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
@@ -268,9 +269,9 @@ async function loginActionImpl(
   }
 
   // Resolve role using profile presence to avoid misrouting
-  const declaredRole = (userData?.role === 'coach' || userData?.role === 'player')
-    ? userData.role
-    : null;
+  // `users.role`, else the role sign-up recorded on the account: an account whose `users` row was never written is
+  // still sent to the onboarding it was made for, not to a dashboard that has no profile to show.
+  const declaredRole = declaredGolfRole(userData?.role, data.user.user_metadata?.role);
   const resolvedRole = coachProfile && playerProfile
     ? (declaredRole || 'coach')
     : coachProfile
@@ -445,8 +446,14 @@ async function signupActionImpl(
         first_name: firstName || '',
         last_name: lastName || '',
       },
-      // Skip email confirmation redirect - user will be auto-confirmed if disabled in Supabase
-      emailRedirectTo: `${getAppBaseUrl()}/golf/dashboard`,
+      // Skip email confirmation redirect - user will be auto-confirmed if disabled in Supabase.
+      // When confirmation is on, the link opens the account where it left off: a player who joined with their coach's
+      // team code lands in onboarding with that code (the same parameter the invite link uses), so the team survives
+      // the trip through the inbox.
+      emailRedirectTo:
+        role === 'player' && gate.teamJoinCode
+          ? `${getAppBaseUrl()}/golf/player?joinCode=${encodeURIComponent(gate.teamJoinCode)}`
+          : `${getAppBaseUrl()}/golf/dashboard`,
     },
   });
 
