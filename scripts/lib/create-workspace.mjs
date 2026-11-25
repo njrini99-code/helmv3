@@ -15,7 +15,7 @@
  *
  * and `listWorkspaces()` is the one place that turns `git worktree list` into
  * classified rows, shared by the mutation-budget check, the SessionStart
- * stamp hook, and (indirectly, via scripts/lib/worktree-lifecycle.mjs) repo:doctor.
+ * worktree-count line, and (indirectly, via scripts/lib/worktree-lifecycle.mjs) repo:doctor.
  *
  * DEPENDENCIES: a clone, never a symlink, never a private install by default
  *
@@ -105,12 +105,12 @@ function branchExists(repo, branch) {
 }
 
 /**
- * Free space, in whole GiB, at `path`. Mirrors new-worktree.sh's own
- * `free_gib` — a small duplication rather than an import, because this must
- * keep working even if ensure-worktree-deps.mjs's install-budget policy
- * changes independently (that file answers "can I afford an install"; this
- * answers "can I afford to allocate a checkout at all", a stricter and
- * earlier question).
+ * Free space, in whole GiB, at `path`. A small duplication of the same `df`
+ * read in ensure-worktree-deps.mjs rather than an import, because this must
+ * keep working even if that file's install-budget policy changes independently
+ * (that file answers "can I afford an install or a clone"; this answers "can I
+ * afford to allocate a checkout at all", a stricter and earlier question: the
+ * 12 GiB machine reserve).
  */
 function freeGib(path) {
   try {
@@ -133,7 +133,8 @@ function freeGib(path) {
  * @param {object} opts
  * @param {string} opts.name     task name; slashes become dashes, empty refused
  * @param {string} [opts.base]   ref to branch from — default origin/main
- * @param {boolean} [opts.install] real isolated `npm ci` instead of a symlink
+ * @param {boolean} [opts.install] on a deps-store miss, run the one real `npm ci`
+ *   that fills the store; on a hit node_modules is an APFS clone either way
  * @param {boolean} [opts.reattach] check out an EXISTING branch instead of
  *   creating one — the inverse of `--park`, which removes a checkout and
  *   keeps its branch. Without this there is no supported way back: the door

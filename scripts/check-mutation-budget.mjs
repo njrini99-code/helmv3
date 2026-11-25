@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 /**
- * Enforce HELM_MAX_MUTATION_WORKTREES before any allocation happens.
+ * Report the workspace count against HELM_MAX_MUTATION_WORKTREES, as a CLI.
  *
- * Called by new-worktree.sh BEFORE `git worktree add` and before any dependency
- * install, so a refusal costs nothing. Kept separate from
- * worktree-lifecycle.mjs's reporter because this must be fast and must never
- * touch the network — it runs on the hot path of every worktree creation.
+ * Nothing on the creation path shells out to this: scripts/lib/create-workspace.mjs
+ * imports `inspectWorkspaces` (git worktree list -> classified rows) from here
+ * and applies the budget itself. The count is advisory unless
+ * HELM_MAX_MUTATION_WORKTREES is set; see docs/operations/WORKSPACES.md.
+ * Run directly it prints whether the budget has room. It never touches the
+ * network, so it is cheap to run anywhere.
  *
- * Exit 0 = budget available. Exit 1 = refused. Exit 2 = usage error.
+ * Exit 0 = budget available, or over it with no explicit cap (advisory).
+ * Exit 1 = over an explicit HELM_MAX_MUTATION_WORKTREES cap. Exit 2 = usage error.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
