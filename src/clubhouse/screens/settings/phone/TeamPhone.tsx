@@ -105,9 +105,7 @@ function InvitePhone({ code: initial, writes, program = null }: { code: string; 
             {activeLabel ? `${activeLabel} code` : 'Invite players'}
           </span>
           {/* Where the device has no share sheet, Share copies the invite link instead. */}
-          <button type="button" className="ch-setm-pill is-on-green" onClick={() => void (canShare ? share() : copy('link'))}>
-            Share
-          </button>
+          <SharePill onShare={() => void (canShare ? share() : copy('link'))} />
         </span>
         <b className="ch-feat__title ch-setm-code__v ch-num" aria-live="polite">
           {code}
@@ -155,6 +153,16 @@ function InvitePhone({ code: initial, writes, program = null }: { code: string; 
   );
 }
 
+/** Share on a code card: one pill for every team's card, so each card's Share is the same key. Where the device has no
+    share sheet, the caller copies the invite link instead. */
+function SharePill({ onShare }: { onShare: () => void }) {
+  return (
+    <button type="button" className="ch-setm-pill is-on-green" onClick={onShare}>
+      Share
+    </button>
+  );
+}
+
 /** Another team's code: the same green card, with the same Share and Copy code, as the team being viewed. */
 function OtherTeamCodePhone({ team }: { team: ChProgramCode }) {
   const label = programCodeLabel(team);
@@ -166,9 +174,7 @@ function OtherTeamCodePhone({ team }: { team: ChProgramCode }) {
         <span className="ch-feat__kicker" id={labelId}>
           {label} code
         </span>
-        <button type="button" className="ch-setm-pill is-on-green" onClick={() => void (canShare ? share() : copy('link'))}>
-          Share
-        </button>
+        <SharePill onShare={() => void (canShare ? share() : copy('link'))} />
       </span>
       <b className="ch-feat__title ch-setm-code__v ch-num">{team.code}</b>
       <span className="ch-feat__line">Players who sign up with this code join {programCodePhrase(team)} right away.</span>
