@@ -1,14 +1,20 @@
--- pgTAP contract for 20261125130000_golf_auth_integrity.sql (auth scrub, 2026-11-25).
+-- pgTAP contract for 20261125130000_golf_auth_integrity.sql (auth scrub,
+-- 2026-11-25).
 --
 -- 1. An email change in auth.users reaches users and the golf profile rows.
--- 2. A signed-in user cannot rewrite their own users.email (it blocked the owner's sign-up), but their other writes to
+-- 2. A signed-in user cannot rewrite their own users.email (it blocked the
+--    owner's sign-up), but their other writes to
 --    users still work.
--- 3. Join codes are unique ignoring case, and stored upper case in the 4 to 12 letter-and-digit shape.
--- 5. golf_join_team_with_code: joins, re-joins its own team as a no-op, refuses a second team and a coach's login.
+-- 3. Join codes are unique ignoring case, and stored upper case in the 4 to 12
+--    letter-and-digit shape.
+-- 5. golf_join_team_with_code: joins, re-joins its own team as a no-op, refuses
+--    a second team and a coach's login.
 -- 6. A player's own join request can only be inserted as pending.
 --
--- Fixture: org A with teams TA (code G9TEAMA1) and TB (G9TEAMB1). P1 and P2 are players with no team. C1 is a coach
--- who also has a player row (the coach-into-player case). Ids use the 0000...0c9xxx range.
+-- Fixture: org A with teams TA (code G9TEAMA1) and TB (G9TEAMB1). P1 and P2 are
+-- players with no team. C1 is a coach
+-- who also has a player row (the coach-into-player case). Ids use the
+-- 0000...0c9xxx range.
 
 BEGIN;
 \ir _helpers.sql
@@ -41,7 +47,7 @@ BEGIN
 END $$;
 SET LOCAL session_replication_role = origin;
 
--- 1. Email changes reach the app's copies ─────────────────────────────────────────────────────────────────────────
+-- 1. Email changes reach the app's copies ─────────────────────────────────────
 SELECT has_trigger('auth', 'users', 'on_auth_user_email_changed', 'auth.users has the email-change trigger');
 UPDATE auth.users SET email = 'c9-p1-new@helm.test' WHERE id = '00000000-0000-0000-0000-0000000c9b01';
 SELECT is((SELECT email FROM public.users WHERE id = '00000000-0000-0000-0000-0000000c9b01'), 'c9-p1-new@helm.test',
@@ -51,7 +57,8 @@ SELECT is((SELECT email FROM public.golf_players WHERE user_id = '00000000-0000-
 UPDATE auth.users SET email = 'c9-coach-new@helm.test' WHERE id = '00000000-0000-0000-0000-0000000c9c01';
 SELECT is((SELECT email FROM public.golf_coaches WHERE user_id = '00000000-0000-0000-0000-0000000c9c01'), 'c9-coach-new@helm.test',
   'golf_coaches.email follows a coach''s change');
--- A copy that cannot be written (the new address already held by a stale users row) never blocks the auth change.
+-- A copy that cannot be written (the new address already held by a stale users
+-- row) never blocks the auth change.
 UPDATE public.users SET email = 'c9-held@helm.test' WHERE id = '00000000-0000-0000-0000-0000000c9b02';
 SELECT lives_ok(
   $$UPDATE auth.users SET email = 'c9-held@helm.test' WHERE id = '00000000-0000-0000-0000-0000000c9b01'$$,
@@ -61,7 +68,7 @@ SELECT is((SELECT email FROM auth.users WHERE id = '00000000-0000-0000-0000-0000
 UPDATE auth.users SET email = 'c9-p1-new@helm.test' WHERE id = '00000000-0000-0000-0000-0000000c9b01';
 UPDATE public.users SET email = 'c9-p2@helm.test' WHERE id = '00000000-0000-0000-0000-0000000c9b02';
 
--- 2. users.email is not self-editable; other self-writes are ────────────────────────────────────────────────────────
+-- 2. users.email is not self-editable; other self-writes are ──────────────────
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-0000000c9b02", "role": "authenticated"}';
 SELECT throws_ok(
@@ -74,7 +81,7 @@ RESET ROLE;
 SELECT is((SELECT email FROM public.users WHERE id = '00000000-0000-0000-0000-0000000c9b02'), 'c9-p2@helm.test',
   'the address was not changed');
 
--- 3. Join codes ─────────────────────────────────────────────────────────────────────────────────────────────────────
+-- 3. Join codes ───────────────────────────────────────────────────────────────
 SELECT throws_ok(
   $$INSERT INTO public.golf_teams (name, join_code, organization_id) VALUES ('C9 Dupe', 'g9teama1', '00000000-0000-0000-0000-0000000c9101')$$,
   NULL, NULL, 'a code that differs from another only in case is refused');
@@ -86,7 +93,7 @@ SELECT lives_ok(
   'a new upper-case code is accepted (Settings, New code)');
 UPDATE public.golf_teams SET join_code = 'G9TEAMB1' WHERE id = '00000000-0000-0000-0000-0000000c9202';
 
--- 5. The join function ──────────────────────────────────────────────────────────────────────────────────────────────
+-- 5. The join function ────────────────────────────────────────────────────────
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-0000000c9b02", "role": "authenticated"}';
 SELECT lives_ok($$SELECT * FROM public.golf_join_team_with_code('g9teama1 ')$$, 'a player joins with the code, any case, trimmed');
@@ -102,7 +109,7 @@ SELECT is((SELECT count(*)::int FROM public.golf_team_members WHERE player_id = 
 SELECT is((SELECT count(*)::int FROM public.golf_team_members WHERE player_id = '00000000-0000-0000-0000-0000000c9403'), 0,
   'the coach is on no roster');
 
--- 6. Join requests start pending ────────────────────────────────────────────────────────────────────────────────────
+-- 6. Join requests start pending ──────────────────────────────────────────────
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-0000000c9b01", "role": "authenticated"}';
 SELECT throws_ok(
