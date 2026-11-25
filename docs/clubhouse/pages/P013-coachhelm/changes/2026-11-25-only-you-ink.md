@@ -13,7 +13,7 @@ Held items: none
 
 ### Changed
 
-- The "Only you" label on the player file's "Your plan for <name>" card takes
+- The "Only you" label on the player file's "Your plan for …" card takes
   the title bar's ink (`--ch-feature-ink-2`), as the other cards' metas do.
 
 ### Why
