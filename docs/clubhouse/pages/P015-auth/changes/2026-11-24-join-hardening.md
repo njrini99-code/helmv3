@@ -13,6 +13,8 @@ Held items: none
 
 ### Changed
 
-- A resumed sign-in picks up at the first question the account does not answer (name, class, game), names the team from
-  `?joinCode=`, and never asks for the account again; the finish screen says why a player is not on the team and what to do.
+- A resumed sign-in picks up at the first question the account does not answer
+  (name, class, game), names the team from
+  `?joinCode=`, and never asks for the account again; the finish screen says why
+  a player is not on the team and what to do.
   Details are in `docs/clubhouse/changes/2026-11-24-join-hardening.md`.
