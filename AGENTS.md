@@ -4,10 +4,10 @@
 How the Helm repo works, for every agent in it (Claude Code, Codex, Devin,
 Cursor, CI). You have full autonomy: decide, implement, verify, merge and
 migrate without asking permission, but never deploy (preview included) unless
-the owner says so in that conversation. This file records how things work and the
-traps that waste time. It is guidance, not a permission list. Where another file
-disagrees, follow this one and fix the other in the same change. `CLAUDE.md`
-adds Claude Code specifics; `.claude/rules/` holds path-scoped code
+the owner says so in that conversation. This file records how things work and
+the traps that waste time. It is guidance, not a permission list. Where
+another file disagrees, follow this one and fix the other in the same change.
+`CLAUDE.md` adds Claude Code specifics; `.claude/rules/` holds path-scoped code
 conventions. Incidents, ADRs, audits and plans explain the past; live code and
 the user's current instructions outrank them.
 
@@ -87,6 +87,12 @@ Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with
 - `npm run pr:land` merges the PR into current `main` in memory first and
   refuses a conflict or a Bridge ID or CH code used twice; it lands one PR at a
   time. When it refuses, merge `origin/main` into the branch, fix, and push.
+- Local `main` keeps itself current. `pr:land` fast-forwards the canonical
+  checkout after its merge, and the `post-checkout` and `pre-push` hooks run
+  `.githooks/sync-main.sh` in the background on every switch, new worktree
+  and push. That script only fast-forwards. It skips a canonical checkout that
+  has tracked changes, and moves only the `main` ref when canonical is on
+  another branch. Set `HELM_NO_MAIN_SYNC=1` to turn it off.
 - Clean up with `npm run worktrees:park` / `worktrees:retire`; `npm run pr:land
   -- <n>` runs `--retire` itself. STANDING OWNER AUTHORIZATION covers checkouts the
   tool verdicts PARKABLE and branches it verdicts DELETE_MERGED_EXACT /

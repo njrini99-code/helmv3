@@ -46,7 +46,8 @@ Collect (admin_reliability_collector, Vercel cron, 3h)
 (`SELFHEAL_STAGES.repair.runner` is `'local-agent'`, cadence 6h; heartbeats
 carry `metadata.runner = 'desktop-routine'`). From 2026-09-05 to 2026-09-23 it
 ran as a GitHub Actions workflow, disabled on 2026-09-23 and deleted on
-2026-11-25 (.github/workflows/selfheal-repair.yml no longer exists). Before 2026-09-05 it
+2026-11-25 (.github/workflows/selfheal-repair.yml no longer exists).
+Before 2026-09-05 it
 also ran as a launchd agent on the owner's Mac
 (`com.helm.bridge-rca-repair`) in parallel with the GHA workflow — a live
 duplicate-effort risk (two separately-billed agent sessions per day, each

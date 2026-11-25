@@ -122,6 +122,6 @@ in.
 - [ ] Logged in `PROGRESS.md` with the device and iOS version
 
 Shipping follows the desktop rules. Clubhouse is on for every team and has no
-flag; rollback is in [STATUS.md](STATUS.md), and deploys follow AGENTS.md "Production". A native change (a
-new plugin, anything in `ios/`) also needs a new App Store build, which is
-the owner's call too (`ios/appstore/`).
+flag; rollback is in [STATUS.md](STATUS.md), and deploys follow AGENTS.md
+"Production". A native change (a new plugin, anything in `ios/`) also needs a
+new App Store build, which is the owner's call too (`ios/appstore/`).
