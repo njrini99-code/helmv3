@@ -399,7 +399,9 @@
 .ch-hf .card > .card__h h4 {
   color: var(--ch-feature-ink);
 }
+/* .vis too: it sets its own ink, the card's dark one, so the small around it can't recolour it (1.23:1 on the bar). */
 .ch-hf .card > .card__h :is(h4 svg, small),
+.ch-hf .card > .card__h .vis,
 .ch-hf .card > .card__h > :not(h4) {
   color: var(--ch-feature-ink-2);
 }
