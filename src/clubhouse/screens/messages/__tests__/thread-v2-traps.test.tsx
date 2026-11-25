@@ -4,10 +4,13 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { useRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ThreadDatePill, ThreadJumpKey } from '../thread-v2';
+import { THREAD_SETTLE_MS } from '../use-thread-anchor';
 
 afterEach(cleanup);
 
 const raf = () => act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); });
+/** A thread's open is over: useThreadAnchor's settle hold has run out. */
+const settle = () => act(async () => { await new Promise((r) => setTimeout(r, THREAD_SETTLE_MS + 50)); });
 
 function setBox(el: HTMLElement, box: { scrollHeight: number; clientHeight: number; scrollTop: number }) {
   for (const [k, v] of Object.entries(box)) Object.defineProperty(el, k, { configurable: true, writable: true, value: v });
@@ -35,8 +38,24 @@ function Jump({ box, unseen = 0, onJump = () => undefined }: { box: { scrollHeig
  * `document.fonts.ready` needs a real layout (the lane's Playwright check) and is not asserted here.
  */
 describe('the jump key', () => {
+  // The nightly motion gate (2026-11-25, messages-stress, motion and reduce): a thread whose messages were already laid out
+  // when it opened, still at its top before useThreadAnchor pinned it to its end, flashed the key in and out as it opened.
+  it('does not flash in while a thread that opened with its messages laid out settles to its end', async () => {
+    render(<Jump box={{ scrollHeight: 2000, clientHeight: 500, scrollTop: 0 }} />);
+    await raf();
+    expect(screen.queryByRole('button', { name: /Jump to latest/ })).toBeNull();
+    const s = screen.getByTestId('s');
+    s.scrollTop = 1500;
+    fireEvent.scroll(s);
+    await raf();
+    expect(screen.queryByRole('button', { name: /Jump to latest/ })).toBeNull();
+    await settle();
+    expect(screen.queryByRole('button', { name: /Jump to latest/ })).toBeNull();
+  });
+
   it('shows past 0.9 of the scroller above the end', async () => {
     render(<Jump box={{ scrollHeight: 2000, clientHeight: 500, scrollTop: 1000 }} />);
+    await settle();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Jump to latest' })).toBeTruthy());
   });
 
@@ -55,6 +74,7 @@ describe('the jump key', () => {
 
   it('shows the count of what arrived while the reader is far above the end', async () => {
     render(<Jump box={{ scrollHeight: 2000, clientHeight: 500, scrollTop: 0 }} unseen={2} />);
+    await settle();
     const key = await screen.findByRole('button', { name: 'Jump to latest, 2 new' });
     expect(key.querySelector('b')!.textContent).toBe('2');
   });
@@ -62,12 +82,14 @@ describe('the jump key', () => {
   it('calls its jump', async () => {
     const onJump = vi.fn();
     render(<Jump box={{ scrollHeight: 2000, clientHeight: 500, scrollTop: 0 }} onJump={onJump} />);
+    await settle();
     fireEvent.click(await screen.findByRole('button', { name: 'Jump to latest' }));
     expect(onJump).toHaveBeenCalledTimes(1);
   });
 
   it('a scroll down to the end takes it away; a scroll back up brings it back', async () => {
     render(<Jump box={{ scrollHeight: 2000, clientHeight: 500, scrollTop: 0 }} />);
+    await settle();
     await screen.findByRole('button', { name: 'Jump to latest' });
     const s = screen.getByTestId('s');
     s.scrollTop = 1500;

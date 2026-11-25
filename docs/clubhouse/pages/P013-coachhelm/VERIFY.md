@@ -303,6 +303,10 @@ before, after, baseline or evidence.
 | `P013__team-board-course__coach__1440x932__default__before__c882964.png` | before | c882964 | team-board-course (coach), 1440x932px, default; /clubhouse-preview/coachhelm-team?station=course |
 | `P013__team-board-course__coach__402__default__after__8c9eb23.png` | after | 8c9eb23 | team-board-course (coach), 402px, default; /clubhouse-preview/coachhelm-team?station=course |
 | `P013__team-board-course__coach__402__default__before__c882964.png` | before | c882964 | team-board-course (coach), 402px, default; /clubhouse-preview/coachhelm-team?station=course |
+| `P013__file-plan-card__coach__1440__light__after__263d102.png` | after | 263d102 | file-plan-card (coach), 1440px, light |
+| `P013__file-plan-card__coach__1440__light__before__263d102.png` | before | 263d102 | file-plan-card (coach), 1440px, light |
+| `P013__file-plan-card__coach__390__light__after__263d102.png` | after | 263d102 | file-plan-card (coach), 390px, light |
+| `P013__file-plan-card__coach__390__light__before__263d102.png` | before | 263d102 | file-plan-card (coach), 390px, light |
 
 ## Historical verification gaps
 
