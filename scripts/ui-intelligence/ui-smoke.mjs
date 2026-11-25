@@ -2,14 +2,14 @@
 // Headless-Chrome smoke test for the team-toggle build.
 // Logs in as the demo coach and visits every coach surface touched in Phase B,
 // asserting no console errors / page errors / 5xx / Next error overlay.
-// Usage: node scripts/ui-smoke.mjs
+// Usage: node scripts/ui-intelligence/ui-smoke.mjs
 import { chromium } from 'playwright';
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { helpOnly } from './lib/cli-guard.mjs';
-import { refuseProduction } from './lib/production-site-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
+import { refuseProduction } from '../lib/production-site-guard.mjs';
 
 helpOnly({
-  name: 'scripts/ui-smoke.mjs',
+  name: 'scripts/ui-intelligence/ui-smoke.mjs',
   summary:
     "Headless-Chrome smoke test of the coach surfaces: signs in as the demo coach and asserts no console errors, page errors, 5xx responses or Next error overlay. Reads only.",
   secrets: "SMOKE_BASE, SMOKE_EMAIL, SMOKE_PASSWORD",
@@ -17,7 +17,7 @@ helpOnly({
 
 const BASE = process.env.SMOKE_BASE || 'http://localhost:3000';
 // It signs in, and a signed-in page writes on open: never the production site by accident (HELM_ALLOW_PRODUCTION=1 overrides).
-refuseProduction({ what: 'scripts/ui-smoke.mjs', baseUrl: BASE });
+refuseProduction({ what: 'scripts/ui-intelligence/ui-smoke.mjs', baseUrl: BASE });
 const EMAIL = process.env.SMOKE_EMAIL || 'demo@golfhelmdemo.com';
 const PASSWORD = process.env.SMOKE_PASSWORD || 'Demo2026';
 const SHOTS = '/tmp/ui-shots';

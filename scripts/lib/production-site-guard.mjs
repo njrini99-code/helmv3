@@ -5,7 +5,7 @@
  * ---------------
  * The 15 Nov 2026 tooling audit found browser tools that reach production signed in, with nothing in the way: the root
  * Playwright suite takes any PLAYWRIGHT_BASE_URL and loads `.env.local`, whose Supabase URL is production (it once wrote
- * 37 production rounds); `scripts/ui-smoke.mjs` and the `ui:screenshots` capture sign in at any base URL; the baseball
+ * 37 production rounds); `scripts/ui-intelligence/ui-smoke.mjs` and the `ui:screenshots` capture sign in at any base URL; the baseball
  * visual audit defaulted to the live site. Opening a signed-in page writes rows (docs/clubhouse/audit/WRITES-ON-OPEN.md),
  * so "it only reads" is never true of a signed-in run. Users include players under 18.
  *

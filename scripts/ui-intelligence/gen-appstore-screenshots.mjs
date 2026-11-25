@@ -1,16 +1,16 @@
 // Generate App Store screenshots from the LIVE app at iPhone 6.7" (1290 x 2796).
 //
-//   node scripts/gen-appstore-screenshots.mjs
+//   node scripts/ui-intelligence/gen-appstore-screenshots.mjs
 //
 // Targets production (no local server needed). Logs in with the demo coach,
 // captures the key screens to ios/appstore/screenshots/. For the crispest result
 // you can instead recapture on the iOS Simulator — but these are submittable.
 import { chromium, devices } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/gen-appstore-screenshots.mjs',
+  name: 'scripts/ui-intelligence/gen-appstore-screenshots.mjs',
   summary:
     "Generates the App Store screenshots from the running app with headless Chrome. Writes image files locally only.",
 });

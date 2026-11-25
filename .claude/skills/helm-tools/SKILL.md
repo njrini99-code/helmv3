@@ -45,7 +45,7 @@ Rules:
   audit browsers also start with `--blocked-origins` for the production site.
 - Outside an audit, suites and scripts that sign in refuse production on their
   own (`scripts/lib/production-site-guard.mjs`): the root Playwright suite,
-  `ui:auth` / `ui:screenshots`, `scripts/ui-smoke.mjs` and the baseball visual
+  `ui:auth` / `ui:screenshots`, `scripts/ui-intelligence/ui-smoke.mjs` and the baseball visual
   audit. `HELM_ALLOW_PRODUCTION=1` is the owner-approved override. `debugger`,
   `helm-worker` and `helm-ui-worker` have no production write tools
   (`disallowedTools`); production changes go to the Production rollout thread.
