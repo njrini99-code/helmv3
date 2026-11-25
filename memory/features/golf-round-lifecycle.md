@@ -33,7 +33,7 @@ Clubhouse flag on, `/golf/dashboard/rounds/recover` opens the Clubhouse recovery
 screen. New and Continue round use that destination when submission requires
 recovery. The screen exposes device snapshots with Restore, Retry and explicit
 Discard, rather than sending the player to a library that cannot read them
-(resolved F-02, `docs/clubhouse/SWAP_AUDIT.md`). Source and unit verification
+(resolved F-02, `docs/clubhouse/history/SWAP_AUDIT.md`). Source and unit verification
 are recorded there; a physical-device failed-submit journey remains unverified.
 
 This is one of the highest-risk product areas because a broken write path can

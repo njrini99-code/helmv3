@@ -26,7 +26,7 @@ export function renderRelatedBlock({ m, audits, exists }) {
   const from = `${pageDir(m)}/PAGE.md`;
   const row = (label, cells) => (cells.length ? `| ${label} | ${cells.join(' · ')} |\n` : '');
   const code = [m.implementation?.root, m.implementation?.loader, m.implementation?.route, m.implementation?.styles, ...(m.implementation?.also ?? [])].filter(Boolean);
-  const named = auditsFor(audits, m).map((a) => link(from, `docs/clubhouse/${a.file}`, a.file.replace(/\.md$/, '')));
+  const named = auditsFor(audits, m).map((a) => link(from, `docs/clubhouse/${a.file}`, a.file.split('/').pop().replace(/\.md$/, '')));
   if (audits.some((a) => a.allPages)) named.push(link(from, 'docs/clubhouse/AUDITS.md', 'all audits'));
   let out = `${RELATED_START}\n## Related\n\n| | |\n| --- | --- |\n`;
   out += row('Manifest', [link(from, `config/clubhouse/pages/${m.id}-${m.slug}.json`)]);
@@ -64,7 +64,7 @@ export function renderAudits({ audits, manifests, head }) {
     const links = (a.pages ?? []).filter((id) => byId.has(id)).map((id) => `[${id}](pages/${id}-${byId.get(id).slug}/PAGE.md)`);
     return a.allPages ? `all${links.length ? ` (detail: ${links.join(', ')})` : ''}` : links.join(', ');
   };
-  let out = head('Clubhouse audits and plans', 'Every audit, plan and inventory doc in `docs/clubhouse/`: when, what it covers, where it stands and which pages it touches. The owner decisions behind them are in [`PROGRESS.md`](PROGRESS.md); the screenshot evidence is in each page\'s VERIFY.md "Screenshots" table. A new audit doc is registered in `config/clubhouse/audits.json`, then `node scripts/clubhouse/registry.mjs sync`.');
+  let out = head('Clubhouse audits and plans', 'Every audit, plan and inventory doc in `docs/clubhouse/` and `docs/clubhouse/history/`: when, what it covers, where it stands and which pages it touches. The owner decisions behind them are in [`PROGRESS.md`](PROGRESS.md); the screenshot evidence is in each page\'s VERIFY.md "Screenshots" table. A new audit doc is registered in `config/clubhouse/audits.json`, then `node scripts/clubhouse/registry.mjs sync`.');
   out += '\n| Doc | Kind | Date | Scope | Status | Pages |\n| --- | --- | --- | --- | --- | --- |\n';
   for (const a of [...audits].sort((x, y) => y.date.localeCompare(x.date) || x.file.localeCompare(y.file))) {
     out += `| [${cell(a.title ?? a.file)}](${encodeURI(a.file)}) | ${a.kind} | ${a.date} | ${cell(a.scope)} | ${a.status.replace('_', ' ')}${a.note ? `: ${cell(a.note)}` : ''} | ${pagesCell(a)} |\n`;
@@ -79,7 +79,7 @@ export function checkAudits({ audits, manifests, exists, docs, readmeMd, progres
   const seen = new Set();
   for (const a of audits) {
     const at = `config/clubhouse/audits.json ${a.file ?? '(entry)'}`;
-    if (!a.file || !/^[A-Za-z0-9_.-]+\.md$/.test(a.file)) v.push(`${at}: file must be a docs/clubhouse/*.md name`);
+    if (!a.file || !/^(?:history\/)?[A-Za-z0-9_.-]+\.md$/.test(a.file)) v.push(`${at}: file must be a docs/clubhouse/*.md or docs/clubhouse/history/*.md name`);
     else if (seen.has(a.file)) v.push(`${at}: listed twice`);
     else if (!exists(`docs/clubhouse/${a.file}`)) v.push(`${at}: docs/clubhouse/${a.file} does not exist`);
     seen.add(a.file);

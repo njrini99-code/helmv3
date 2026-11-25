@@ -1,6 +1,6 @@
 # Clubhouse clickable inventory: the v2 boards against the built Clubhouse
 
-> **Superseded by [generated/CLUBHOUSE_CLICKABLE_MAP.md](generated/CLUBHOUSE_CLICKABLE_MAP.md)
+> **Superseded by [generated/CLUBHOUSE_CLICKABLE_MAP.md](../generated/CLUBHOUSE_CLICKABLE_MAP.md)
 > (`npm run clubhouse:clickables`); this file is a snapshot of 2026-09-30, kept
 > as history.** Its line citations point at code that has since moved: nine of
 > the files it cites no longer exist and many lines run past the end of their
@@ -13,8 +13,8 @@ The board comparison below is a September source snapshot. Its line numbers
 and works/GAP judgments retain that baseline; current runtime owners and
 action mappings are in the October audit.
 
-[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) covers all 15 page families;
-[SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records confirmed motion findings.
+[ALL_PAGE_AUDIT.md](../ALL_PAGE_AUDIT.md) covers all 15 page families;
+[SMOOTHNESS_AUDIT.md](../SMOOTHNESS_AUDIT.md) records confirmed motion findings.
 Physical Safari/iPhone acceptance and production-build profiling remain open.
 
 Compiled 2026-09-30 on branch `agent/clubhouse` at `96445d13a`, from a read of

@@ -11,7 +11,7 @@
     "pages": []
   },
   {
-    "file": "COMPLETION_PLAN_2026-10-18.md",
+    "file": "history/COMPLETION_PLAN_2026-10-18.md",
     "title": "Complete and elevate: the full-auto plan",
     "kind": "plan",
     "date": "2026-10-18",
@@ -22,7 +22,7 @@
     "pages": []
   },
   {
-    "file": "PREMIUM_PASS_AUDIT.md",
+    "file": "history/PREMIUM_PASS_AUDIT.md",
     "title": "Premium pass: owner answers and backlog",
     "kind": "audit",
     "date": "2026-10-08",
@@ -33,7 +33,7 @@
     "pages": []
   },
   {
-    "file": "AUDIT_PLAN.md",
+    "file": "history/AUDIT_PLAN.md",
     "title": "Swap audit: execution plan",
     "kind": "plan",
     "date": "2026-09-30",
@@ -44,7 +44,7 @@
     "pages": []
   },
   {
-    "file": "SWAP_AUDIT.md",
+    "file": "history/SWAP_AUDIT.md",
     "title": "Complete-swap audit: findings",
     "kind": "audit",
     "date": "2026-09-30",
@@ -55,7 +55,7 @@
     "pages": []
   },
   {
-    "file": "CLICKABLES.md",
+    "file": "history/CLICKABLES.md",
     "title": "Clickable inventory",
     "kind": "inventory",
     "date": "2026-09-30",
@@ -79,7 +79,7 @@
     ]
   },
   {
-    "file": "HIGH_FIDELITY_AUDIT.md",
+    "file": "history/HIGH_FIDELITY_AUDIT.md",
     "title": "High-fidelity audit",
     "kind": "audit",
     "date": "2026-10-01",
@@ -90,7 +90,7 @@
     "pages": []
   },
   {
-    "file": "DEPTH_AUDIT.md",
+    "file": "history/DEPTH_AUDIT.md",
     "title": "Component depth audit",
     "kind": "audit",
     "date": "2026-10-01",
@@ -118,7 +118,7 @@
     ]
   },
   {
-    "file": "AESTHETIC_AUDIT.md",
+    "file": "history/AESTHETIC_AUDIT.md",
     "title": "Targeted aesthetic audit",
     "kind": "audit",
     "date": "2026-10-01",
@@ -136,7 +136,7 @@
     ]
   },
   {
-    "file": "INTUITIVE_SECONDARY_AUDIT.md",
+    "file": "history/INTUITIVE_SECONDARY_AUDIT.md",
     "title": "Secondary screens: Intuitive Software Design improvement",
     "kind": "audit",
     "date": "2026-10-02",
@@ -163,7 +163,7 @@
     "pages": []
   },
   {
-    "file": "UX_OPTIMIZATION.md",
+    "file": "history/UX_OPTIMIZATION.md",
     "title": "Mobile and desktop UX optimization",
     "kind": "plan",
     "date": "2026-10-02",
@@ -229,7 +229,7 @@
     "pages": []
   },
   {
-    "file": "NATIVE_FEEL_PERF_AUDIT_2026-10-08.md",
+    "file": "history/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md",
     "title": "Native feel and performance audit (phone, measured)",
     "kind": "audit",
     "date": "2026-10-08",
@@ -239,7 +239,7 @@
     "allPages": true
   },
   {
-    "file": "NATIVE_FEEL_RESEARCH_2026-10-08.md",
+    "file": "history/NATIVE_FEEL_RESEARCH_2026-10-08.md",
     "title": "Native feel research: what makes a phone web app feel native",
     "kind": "audit",
     "date": "2026-10-08",

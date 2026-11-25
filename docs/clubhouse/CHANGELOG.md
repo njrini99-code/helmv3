@@ -333,7 +333,7 @@ W4b.
 ## 2026-10-19 — Complete and elevate: shared pieces
 
 The shared primitives behind the complete-and-elevate pass
-([COMPLETION_PLAN_2026-10-18.md](COMPLETION_PLAN_2026-10-18.md)); each page's
+([COMPLETION_PLAN_2026-10-18.md](history/COMPLETION_PLAN_2026-10-18.md)); each page's
 own changelog says what changed on it.
 
 - **Date and time fields** (`ui/DateField.tsx`, `ui/TimeField.tsx`, with
@@ -1233,7 +1233,7 @@ page's own files change. Not yet reviewed by the owner.
 
 ## 2026-10-08 — Native phone navigation: cached tabs, steady bars, push and pop
 
-From the native-feel audit (docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md,
+From the native-feel audit (docs/clubhouse/history/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md,
 P0-2, P0-3, P1-1, P1-2). Not yet reviewed by the owner.
 
 - **Router cache and prefetch** (`next.config.mjs`,
@@ -1278,7 +1278,7 @@ P0-2, P0-3, P1-1, P1-2). Not yet reviewed by the owner.
 ## 2026-10-08 — Premium pass backlog: one light, peeks, the Ask sheet, a dock
 
 Approved by the owner on 2026-10-08 (owner review;
-docs/clubhouse/PREMIUM_PASS_AUDIT.md). Each page's part is in its own log.
+docs/clubhouse/history/PREMIUM_PASS_AUDIT.md). Each page's part is in its own log.
 
 - **The global light** (`lib/light.ts`, `lib/sun.ts`, `shell/light.tsx`). One
   sun for the whole app, from the time of day and the team's course location

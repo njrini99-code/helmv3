@@ -111,7 +111,7 @@ globally, so a
 team canary must not be described as a per-team sign-in rollout.
 
 The existing complete-swap audit still names owner-held database work and phone
-acceptance. Consult [SWAP_AUDIT.md](SWAP_AUDIT.md) and
+acceptance. Consult [SWAP_AUDIT.md](history/SWAP_AUDIT.md) and
 [HELD.md](../../supabase/migrations/HELD.md) before enabling Clubhouse broadly.
 In particular, qualifier reasoning isolation, round-submit version checks and
 stats/cache corrections must be reconciled with the approved rollout. This PR
@@ -207,7 +207,7 @@ The follow-up runtime is committed as e8a103c2a. It consolidates remaining
 custom dialog lifetimes, fixes narrow Round setup and Settings controls,
 retains Roster message recipients, stabilizes phone Stats card/loading
 geometry and gives slow feedback the lifetime of its request and team scope.
-[UX_OPTIMIZATION.md](UX_OPTIMIZATION.md) records the measured limits and
+[UX_OPTIMIZATION.md](history/UX_OPTIMIZATION.md) records the measured limits and
 remaining task coverage.
 
 The optimized local build passed in 282 seconds, including TypeScript,

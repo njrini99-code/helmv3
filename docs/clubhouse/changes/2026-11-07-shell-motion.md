@@ -38,4 +38,4 @@ in while a thread opens.
 
 Each segmented label now takes its new ink as the pill crosses it, set from the
 glide itself. Player Home's segments are 44 tall. The numbers are in
-docs/clubhouse/motion/2026-11-07-shell-motion.md.
+docs/clubhouse/history/motion/2026-11-07-shell-motion.md.

@@ -3,7 +3,7 @@
 The owner's brief for this pass: be creative, go beyond the guidelines, take command and complete every
 aspect of Clubhouse, on the phone and on desktop. Production limits still hold: no deploy, no production
 migration and no production flag change without the owner's word. Open owner decisions that are cheap to
-reverse are decided here under that delegation and recorded in [PROGRESS.md](PROGRESS.md).
+reverse are decided here under that delegation and recorded in [PROGRESS.md](../PROGRESS.md).
 
 Inputs: the full premium capture of every fixture state at 390 and 1280 (`premium-capture.mjs`, baseline
 `afbcf78`), a mining pass over every audit in this folder (18 items still open in code), a code sweep of

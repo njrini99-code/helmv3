@@ -2,7 +2,7 @@
 
 Date: 2026-10-08. Scope: GolfHelm Clubhouse on iPhone (Next.js App Router in a
 Capacitor 8 WKWebView shell, iOS 26). Companion to the measured audit
-`docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md`.
+`docs/clubhouse/history/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md`.
 
 What we measured: tab switches take 0.7-1.35 s and show full-page skeletons. A
 crossfade fades the tab bar along with the page. Drill-ins crossfade instead of

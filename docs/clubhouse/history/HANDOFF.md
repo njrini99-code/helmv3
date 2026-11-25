@@ -6,8 +6,8 @@ This September handoff describes a historical branch. Current Clubhouse
 is on main behind flags; the old agent/clubhouse checkout is not the audit
 target. Read the current inventory before using its branch or check claims.
 
-[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) covers all 15 page families;
-[SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records confirmed motion findings.
+[ALL_PAGE_AUDIT.md](../ALL_PAGE_AUDIT.md) covers all 15 page families;
+[SMOOTHNESS_AUDIT.md](../SMOOTHNESS_AUDIT.md) records confirmed motion findings.
 Physical Safari/iPhone acceptance and production-build profiling remain open.
 
 Read this first, then `docs/clubhouse/foundation-v2/START_HERE.md` (the owner's

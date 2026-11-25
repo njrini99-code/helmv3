@@ -13,7 +13,7 @@ focus indication and data behavior remain intact. This updates the October 2
 depth direction; earlier audit entries below record that prior review.
 
 Before/after normal-content captures are in page VERIFY logs. Physical-device
-and owner visual acceptance remain open in [POPUP_AUDIT](POPUP_AUDIT.md).
+and owner visual acceptance remain open in [POPUP_AUDIT](../POPUP_AUDIT.md).
 
 ## Historical October 2 audit
 
@@ -104,7 +104,7 @@ not exercised.
 
 ## Current premium composition review
 
-[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md) applies the October 6 quiet-depth revision
+[PREMIUM_AUDIT.md](../PREMIUM_AUDIT.md) applies the October 6 quiet-depth revision
 to all 15 families. Its material inventory distinguishes semantic references,
 focus/scoring/spatial exceptions and review candidates. The owner’s supplied
 older 44/52px ambient examples are historical hypotheses, not current values.

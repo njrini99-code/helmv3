@@ -98,5 +98,5 @@ No composite score is given: most runtime evidence is missing.
 ## October 6 premium audit follow-up
 
 Current source/browser evidence, the complete component/style inventory and
-per-family partial visual scores are in [PREMIUM_AUDIT.md](PREMIUM_AUDIT.md).
+per-family partial visual scores are in [PREMIUM_AUDIT.md](../PREMIUM_AUDIT.md).
 Earlier device/performance observations above retain their original scope.

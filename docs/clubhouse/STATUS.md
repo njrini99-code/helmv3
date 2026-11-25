@@ -704,7 +704,7 @@ already marked RELEASED:
 | Every state and outcome (CH- codes) | `catalog/` and `config/clubhouse/bridge-contracts.json` |
 | Page manifests | `config/clubhouse/pages/` |
 | The flag and the team allowlist | `config/feature-flags.yml`, `src/clubhouse/gate.ts` |
-| Route aliases | `src/clubhouse/routes/alias.ts` and the route `layout.tsx` files; the table is [SWAP_AUDIT.md](SWAP_AUDIT.md) §3 |
+| Route aliases | `src/clubhouse/routes/alias.ts` and the route `layout.tsx` files; the table is [SWAP_AUDIT.md](history/SWAP_AUDIT.md) §3 |
 | Audits and plans | [AUDITS.md](AUDITS.md) |
 | How to build a page | [README.md](README.md); phone: [MOBILE.md](MOBILE.md) |
 | Deploy and release check | AGENTS.md "Production", `docs/setup/DEPLOY.md`, `npm run release:status` |
