@@ -138,7 +138,7 @@ separate `recordWorkflow` calls directly in `golf.ts`.
 - `src/lib/coachhelm/v2/shot-analysis/**`
 - `src/lib/golf/round-review/deterministic-review.ts` — worker-safe
   (non-cookie, no `revalidatePath`) deterministic review generation for
-  `scripts/coachhelm-prewarm-round-reviews.ts` (CoachHelm repair plan
+  `scripts/coachhelm/coachhelm-prewarm-round-reviews.ts` (CoachHelm repair plan
   §5.5/§14.8 Package 6, the 30-day missing-review pre-warm). Insert-only:
   `writeReviewIfAbsent` always upserts with `ignoreDuplicates: true`, so it
   can create a missing review but never overwrite an existing one's

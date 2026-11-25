@@ -20,7 +20,7 @@
 # Usage:
 #   npm run coachhelm:refresh -- --apply
 #   # or directly:
-#   ./scripts/coachhelm-refresh-all.sh --apply
+#   ./scripts/coachhelm/coachhelm-refresh-all.sh --apply
 #
 # Default is a DRY RUN: it lists the crons it would fire and fires none.
 # --apply fires them (they write to the database behind HELM_HOST).

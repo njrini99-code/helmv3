@@ -53,13 +53,13 @@
  *
  *   # Point at the intended environment first — e.g. for production:
  *   DOTENV_CONFIG_PATH=.vercel/.env.production.local npx tsx -r dotenv/config \
- *     scripts/coachhelm-prewarm-round-reviews.ts                      # dry run
+ *     scripts/coachhelm/coachhelm-prewarm-round-reviews.ts                      # dry run
  *
  *   DOTENV_CONFIG_PATH=.vercel/.env.production.local npx tsx -r dotenv/config \
- *     scripts/coachhelm-prewarm-round-reviews.ts --confirm            # write
+ *     scripts/coachhelm/coachhelm-prewarm-round-reviews.ts --confirm            # write
  *
  *   # Equivalently, --env=<path> instead of -r dotenv/config:
- *   npx tsx scripts/coachhelm-prewarm-round-reviews.ts --env=.vercel/.env.production.local
+ *   npx tsx scripts/coachhelm/coachhelm-prewarm-round-reviews.ts --env=.vercel/.env.production.local
  *
  *   # There is no default target — omitting both prints
  *   # "target Supabase project: (unset)" and fails at the credential guard
@@ -84,7 +84,7 @@ import { randomUUID } from 'crypto';
 
 // Load env BEFORE importing anything that reads process.env at call time
 // (createAdminClient reads it lazily on call, but load first regardless —
-// matches scripts/run-pattern-miner-for-team.ts's ordering comment).
+// matches scripts/coachhelm/run-pattern-miner-for-team.ts's ordering comment).
 //
 // Deliberately NO implicit default here. An earlier version of this line
 // fell back to `.env.local` whenever `--env=` was omitted — which silently
@@ -92,7 +92,7 @@ import { randomUUID } from 'crypto';
 // single shared production Supabase project as everything else (no staging
 // copy exists; see memory/context/golfhelm-database.md and
 // memory/projects/golfhelm.md's `qmnssrrolpinvwjjnufo` project ref). That
-// meant a bare `npx tsx scripts/coachhelm-prewarm-round-reviews.ts` with
+// meant a bare `npx tsx scripts/coachhelm/coachhelm-prewarm-round-reviews.ts` with
 // stray/unset target env vars would still resolve a real service-role
 // credential against production instead of failing loudly. The owner must
 // now point this at an explicit target: `--env=<path>`, or preload with
@@ -113,10 +113,10 @@ import {
   toReviewInsertPayload,
   writeReviewIfAbsent,
 } from '@/lib/golf/round-review/deterministic-review';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/coachhelm-prewarm-round-reviews.ts',
+  name: 'scripts/coachhelm/coachhelm-prewarm-round-reviews.ts',
   summary:
     "CoachHelm repair plan \u00a75.5/\u00a714.8/\u00a716 (Package 6): create MISSING round reviews for completed rounds in a fixed recent window (default 30 days, per plan \u00a716.4's owner-selected first pass), without touching any round that already has one.",
   guard: "its own --confirm flag (unchanged)",
@@ -138,7 +138,7 @@ helpOnly({
  * synchronously inside `createAdminClient()`, before any query runs, so it
  * does not put data at risk — but it does mean the tool this package exists
  * to ship could not run at all via its own documented command.
- * `scripts/run-triage.ts` and `scripts/run-pattern-miner-for-team.ts` call
+ * `scripts/coachhelm/run-triage.ts` and `scripts/coachhelm/run-pattern-miner-for-team.ts` call
  * the same `createAdminClient()` under the same `tsx` invocation and are
  * LIKELY exposed to the same crash, but that was not run/confirmed here —
  * reported to team-lead as a separate finding, not patched here.

@@ -37,25 +37,25 @@
 import 'dotenv/config';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../src/lib/types/database';
+import type { Database } from '../../src/lib/types/database';
 import {
   buildTriagePlan,
   type TriageCandidate,
   type SourceHealth,
   type TriagePlan,
   type TriageGroup,
-} from '../src/lib/admin/triage-engine';
+} from '../../src/lib/admin/triage-engine';
 import {
   collectAdminEvents,
   collectReliabilitySignals,
   collectRelAnalyses,
   type AdminClient,
-} from '../src/lib/admin/triage-collect';
-import { applyPlan } from '../src/lib/admin/triage-apply';
-import { helpOnly } from './lib/cli-guard.mjs';
+} from '../../src/lib/admin/triage-collect';
+import { applyPlan } from '../../src/lib/admin/triage-apply';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/run-triage.ts',
+  name: 'scripts/coachhelm/run-triage.ts',
   summary:
     "Runs the admin triage pipeline on demand. Writes only with its own --apply.",
   guard: "its own --apply flag (unchanged)",

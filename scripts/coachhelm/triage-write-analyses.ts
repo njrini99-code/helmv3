@@ -27,13 +27,13 @@
 import 'dotenv/config';
 import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../src/lib/types/database';
-import { resolveTriageMember, type AdminClient } from '../src/lib/admin/triage-apply';
-import { deriveRcaCategory } from '../src/lib/admin/rca-category';
-import { helpOnly } from './lib/cli-guard.mjs';
+import type { Database } from '../../src/lib/types/database';
+import { resolveTriageMember, type AdminClient } from '../../src/lib/admin/triage-apply';
+import { deriveRcaCategory } from '../../src/lib/admin/rca-category';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/triage-write-analyses.ts',
+  name: 'scripts/coachhelm/triage-write-analyses.ts',
   summary:
     "Triage \u2014 write analyses (operator path).",
   guard: "its own --apply flag (unchanged)",

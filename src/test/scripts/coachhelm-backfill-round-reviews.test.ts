@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   selectBackfillCandidates,
   type CandidateRoundRow,
-} from '../../../scripts/coachhelm-backfill-round-reviews';
+} from '../../../scripts/coachhelm/coachhelm-backfill-round-reviews';
 
 /**
  * Audit row 39 backfill: the selection rule is the safety-relevant part of the

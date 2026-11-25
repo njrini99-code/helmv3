@@ -9,19 +9,19 @@
  *
  * Usage:
  *   - Default (Larsen + one teammate from Guilford College Men's Golf):
- *       npx tsx scripts/run-pattern-miner-for-team.ts
+ *       npx tsx scripts/coachhelm/run-pattern-miner-for-team.ts
  *   - Specific player(s):
- *       npx tsx scripts/run-pattern-miner-for-team.ts <playerId> [<playerId> ...]
+ *       npx tsx scripts/coachhelm/run-pattern-miner-for-team.ts <playerId> [<playerId> ...]
  *
  * Loads env from `.vercel/.env.production.local` (matches what the live cron
  * sees), so DB writes go to production. Uses the admin client throughout.
  */
 import { config as loadEnv } from 'dotenv';
 import { resolve } from 'path';
-import { cliGuard } from './lib/cli-guard.mjs';
+import { cliGuard } from '../lib/cli-guard.mjs';
 
 const cli = cliGuard({
-  name: 'scripts/run-pattern-miner-for-team.ts',
+  name: 'scripts/coachhelm/run-pattern-miner-for-team.ts',
   summary:
     'Runs the CoachHelm round and shot pattern miners for the given players against PRODUCTION (reads .vercel/.env.production.local) and persists the mined patterns.',
   usage: '[playerId ...]',

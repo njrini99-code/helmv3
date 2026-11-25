@@ -34,11 +34,11 @@
  *   - Rate-limited: --batch-size rounds (default 5) built sequentially, then
  *     a --delay-ms pause (default 1000) between batches.
  *   - No notification side effects: golf_round_reviews has no INSERT trigger
- *     (see scripts/coachhelm-prewarm-round-reviews.ts header).
+ *     (see scripts/coachhelm/coachhelm-prewarm-round-reviews.ts header).
  *
  * Usage (owner-run; the script prints the target host before any query):
- *   npx tsx scripts/coachhelm-backfill-round-reviews.ts --env=.vercel/.env.production.local           # dry run
- *   npx tsx scripts/coachhelm-backfill-round-reviews.ts --env=.vercel/.env.production.local --apply   # write
+ *   npx tsx scripts/coachhelm/coachhelm-backfill-round-reviews.ts --env=.vercel/.env.production.local           # dry run
+ *   npx tsx scripts/coachhelm/coachhelm-backfill-round-reviews.ts --env=.vercel/.env.production.local --apply   # write
  * Flags: --days=N (default 60), --batch-size=N (default 5), --delay-ms=N
  * (default 1000), --limit=N (process at most N rounds this run).
  *
@@ -63,10 +63,10 @@ import {
   toReviewInsertPayload,
   writeReviewIfAbsent,
 } from '@/lib/golf/round-review/deterministic-review';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/coachhelm-backfill-round-reviews.ts',
+  name: 'scripts/coachhelm/coachhelm-backfill-round-reviews.ts',
   summary:
     "CoachHelm deep audit row 39: create the round reviews that were never generated because nobody opened the round (reviews are built lazily on page open).",
   guard: "its own --apply flag (unchanged)",

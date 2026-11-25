@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 /**
  * Repair plan §5.5/§14.8 (Package 6, the 30-day pre-warm tool). This module
  * (src/lib/golf/round-review/deterministic-review.ts) is the worker-safe
- * core the pre-warm script (scripts/coachhelm-prewarm-round-reviews.ts)
+ * core the pre-warm script (scripts/coachhelm/coachhelm-prewarm-round-reviews.ts)
  * builds on. Three plan-mandated safety properties, verified directly
  * against the exported functions rather than paraphrased:
  *

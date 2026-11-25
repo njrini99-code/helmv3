@@ -33,7 +33,7 @@
  *
  * Run:
  *   DOTENV_CONFIG_PATH=.vercel/.env.production.local \
- *     npx tsx -r dotenv/config scripts/regen-coachhelm-from-corrected-stats.ts [--probe] [playerId]
+ *     npx tsx -r dotenv/config scripts/coachhelm/regen-coachhelm-from-corrected-stats.ts [--probe] [playerId]
  *
  *   --probe        import-only smoke test (no analysis), prints typeof singleton
  *   playerId       regenerate a single player instead of the whole roster
@@ -42,12 +42,12 @@
  */
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
-import { cliGuard } from './lib/cli-guard.mjs';
+import { cliGuard } from '../lib/cli-guard.mjs';
 
 const cli = cliGuard({
-  name: 'scripts/regen-coachhelm-from-corrected-stats.ts',
+  name: 'scripts/coachhelm/regen-coachhelm-from-corrected-stats.ts',
   summary:
-    'Re-runs the CoachHelm v2 engine for every active golf player (or one) and rewrites their stored insights, patterns and predictions on the project in .env.local. Run with `npx tsx -r dotenv/config scripts/regen-coachhelm-from-corrected-stats.ts`.',
+    'Re-runs the CoachHelm v2 engine for every active golf player (or one) and rewrites their stored insights, patterns and predictions on the project in .env.local. Run with `npx tsx -r dotenv/config scripts/coachhelm/regen-coachhelm-from-corrected-stats.ts`.',
   usage: '[--probe] [playerId]',
   options: [
     ['--probe', 'Import-only smoke test: no analysis, no reads, no writes'],
@@ -59,10 +59,10 @@ const cli = cliGuard({
 // Loaded on demand, AFTER the argument guard: the orchestrator pulls in app
 // modules that import `server-only`, and a static import made even `--help`
 // crash before the guard could run.
-type Intelligence = (typeof import('../src/lib/coachhelm/v2/orchestrator'))['coachHelmIntelligence'];
+type Intelligence = (typeof import('../../src/lib/coachhelm/v2/orchestrator'))['coachHelmIntelligence'];
 let coachHelmIntelligence: Intelligence;
 async function loadEngine(): Promise<void> {
-  ({ coachHelmIntelligence } = await import('../src/lib/coachhelm/v2/orchestrator'));
+  ({ coachHelmIntelligence } = await import('../../src/lib/coachhelm/v2/orchestrator'));
 }
 
 const BATCH_SIZE = 3; // matches generateTeamInsights — avoids connection-pool exhaustion
