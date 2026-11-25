@@ -42,7 +42,7 @@ never existed. Check the code before concluding anything is absent.
 <!-- schema-drift-absent: golf_recurring_events -->
 
 ⚠️ **Do not bulk-repoint dead paths by basename search.** It was tried; the
-nearest-name matches were build artifacts under `src/.helmdev/`. That trades a
+nearest-name matches were build artifacts under a scratch directory (since deleted). That trades a
 visibly broken path for a confidently wrong one. Fix by hand.
 
 ---
