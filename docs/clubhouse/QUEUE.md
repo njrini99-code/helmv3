@@ -253,7 +253,7 @@ its rows together and does not map them one to one.
 | doc-60 | Invite players by email from Roster (a new server action; no migration) | Clubhouse parity & pages | done | #2334 | claude/project-thread-a106un; same window as doc-07; uses CH-3080 (30680), CH-3180 (30580), CH-3880 (31880), CH-3980 (30780) |
 | doc-61 | Classes: two imports at once save a class once (held migration `20261021110000`, applied 2026-10-22) | Clubhouse fixes | done | #2289 | claude/clubhouse-classes-import-race |
 | doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | done | #2284 | claude/clubhouse-audit-polish |
-| doc-63 | Fix rules that say Clubhouse is off in production, and make AGENTS.md match the owner's never-deploy rule (no Bridge IDs or CH codes) | docs | in progress | | claude/project-thread-9mfoe1 |
+| doc-63 | Fix rules that say Clubhouse is off in production, and make AGENTS.md match the owner's never-deploy rule (no Bridge IDs or CH codes) | docs | in progress | #2617 | claude/project-thread-9mfoe1 |
 | pr-01 | As chs-07: CoachHelm v3 slices 0 to 8 are in main; #2283 turned the flags on in preview, production stays off | CoachHelm engine | done | #2283 | |
 | pr-02 | Clubhouse was off in production (`golf_clubhouse_ui` production false; #2188). Superseded: live for every team since 2026-11-15 and the flag is removed (see STATUS.md) | Owner | closed | #2188 | |
 | pr-03 | Old CoachHelm root-map redesign, 9 surfaces switched on, summary-card openers (PR #2073): closed as superseded | CoachHelm board UI | closed | #2073 (closed) | |

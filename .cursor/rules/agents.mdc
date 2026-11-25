@@ -7,9 +7,10 @@ alwaysApply: true
 Read `AGENTS.md` before any work: it is the operating guide for every agent in
 this repo. This adapter adds nothing; it points.
 
-- Design/UI work: the binding rule is `.claude/rules/design-system.md`; the
-  canonical tokens are `src/styles/design-tokens.css`; the shipped components
-  are `src/components/fairway/**`. Tokens beat prose. Do not use external UI
+- Design/UI work: coach and player screens are Clubhouse (`src/clubhouse/**`,
+  rules in `.claude/rules/clubhouse.md`). The rest (admin, BaseballHelm, the
+  CRM) uses `.claude/rules/design-system.md`, tokens in
+  `src/styles/design-tokens.css` and `src/components/fairway/**`. Tokens beat prose. Do not use external UI
   kits, Google Fonts, or `!important`.
 - Database work: `src/lib/types/database.ts` is the generated source of truth
   for every table and column; sport prefixes (`golf_`, `baseball_`,
@@ -18,4 +19,4 @@ this repo. This adapter adds nothing; it points.
   directly. A concurrent session takes its own worktree with
   `scripts/new-worktree.sh <task>` (it adds the workspace marker and the disk
   and checkout checks a raw `git worktree add` skips). Merging to main does not
-  deploy; deploy from the linked checkout per AGENTS.md "Production".
+  deploy, and never deploy unless the owner asks (AGENTS.md "Production").

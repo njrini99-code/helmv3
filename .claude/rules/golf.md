@@ -151,17 +151,14 @@ src/app/golf/
 ├── join/[code]/          # Team join flow
 └── admin/                # Admin panel
 
-src/components/fairway/   # THE SHIPPED GOLF DASHBOARD UI — pages/ organized
-│                         # by surface (rounds-tracking, rounds-new, team-hub,
-│                         # settings, qualifiers, …) plus the shared kit
-│                         # (surfaces/, controls/, overlays/, charts/, …).
-│                         # New golf dashboard UI goes here.
+src/clubhouse/            # THE COACH AND PLAYER UI (screens/, shell/, ui/, styles/).
+│                         # Rules: .claude/rules/clubhouse.md. New golf UI goes here.
 
-src/components/golf/      # Older component tree: coachhelm/ (CoachHelm AI),
-├── coachhelm/            # calendar/, player-hub/, and a mix of live and
-├── calendar/             # retired surfaces. Check whether a fairway/
-├── player-hub/           # equivalent exists before adding here.
-└── ...
+src/components/fairway/   # Shared Fairway primitives still used by admin,
+│                         # BaseballHelm and the CRM. Not for golf screens.
+
+src/components/golf/      # What is left after Fairway's screens went: calendar/
+                          # and documents/ (BaseballHelm's calendar and document previews).
 
 src/lib/
 ├── supabase/             # server.ts, client.ts
