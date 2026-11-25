@@ -1,3 +1,8 @@
+> Archived 2026-11-25 (repo tidy 1): this folder was `docs/superpowers/plans/`
+> and moved here with `git mv`; the plans below are verbatim. `docs/superpowers/specs/`
+> stays where it was. Paths in the text that start `docs/superpowers/plans/`
+> mean this folder.
+
 # `docs/superpowers/plans/` — historical design records
 
 **Nothing in this directory is current authority.** These are the plans that

@@ -703,7 +703,7 @@ fails the required check.
 
 Measured that day: ~42% of PRs failed their first push, mostly for reasons
 the PR did not cause; queueing was 64% of PR wait against the account's
-20-job concurrency cap. What changed (docs/CI_RUNBOOK.md has the table):
+20-job concurrency cap. What changed (docs/operations/CI_RUNBOOK.md has the table):
 
   - `Database types drift` left `Static checks`; types-regen.yml owns it.
   - Generated-artifact and dead-reference checks fail a PR only for drift
@@ -733,11 +733,11 @@ build, supabase, aggregate); per merge to main: 20 → 13.
 
 See also:
 
-- [`docs/operations/COST_CONTROLS.md`](operations/COST_CONTROLS.md) — Vercel
+- [`docs/operations/COST_CONTROLS.md`](COST_CONTROLS.md) — Vercel
   preview policy, PR vs main Playwright, manual full E2E, spend alerts
-- [`.claude/rules/code-review-tooling.md`](../.claude/rules/code-review-tooling.md)
+- [`.claude/rules/code-review-tooling.md`](../../.claude/rules/code-review-tooling.md)
   — the authority on what reviews this repo actually runs
-- [`.github/branch-protection.md`](../.github/branch-protection.md) — required
+- [`.github/branch-protection.md`](../../.github/branch-protection.md) — required
   checks enforcement policy
 
 `docs/operations/coderabbit-review-workflow.md` still exists but describes a

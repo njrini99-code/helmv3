@@ -2,7 +2,7 @@ name: CI
 
 # The long history of why this workflow is shaped as it is (job consolidation,
 # the shared detector, parallel ordering, the 2026-09-23 red-by-default work)
-# lives in docs/CI_RUNBOOK.md, "ci.yml: how it got its shape". Read that before
+# lives in docs/operations/CI_RUNBOOK.md, "ci.yml: how it got its shape". Read that before
 # restructuring jobs; this file keeps only the comments that explain a line.
 
 on:
@@ -1081,7 +1081,7 @@ jobs:
           version: 2.119.0
 
       # Squawk lints only the migration files this PR adds — pinned version,
-      # scoped to the PR diff (see docs/CI_RUNBOOK.md / .circleci/README.md:
+      # scoped to the PR diff (see docs/operations/CI_RUNBOOK.md / .circleci/README.md:
       # the weekly CircleCI squawk job stays as an advisory full-history
       # sweep; this is the per-PR blocking gate for NEW migrations).
       - name: Lint new migrations with squawk
@@ -1216,7 +1216,7 @@ jobs:
     # Renamed from the bare `all` (2026-08-19): review-gate.yml's aggregate
     # job was ALSO named `all`, so both workflows posted an identically-named
     # check run and a single required context "all" could not tell them
-    # apart — see .github/branch-protection.md and docs/CI_RUNBOOK.md for the
+    # apart — see .github/branch-protection.md and docs/operations/CI_RUNBOOK.md for the
     # PR #1125 incident this caused (a red BaseballHelm smoke merged because
     # Review Gate's "all" reported green while CI's "all" was still running).
     # This job's id stays `all` (nothing references it via `needs:` — grepped

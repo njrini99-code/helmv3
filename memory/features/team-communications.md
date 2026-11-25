@@ -380,7 +380,7 @@ separate and is used inside that function only by its own `ORDER BY`; nothing
 in the messages UI branches on it. `golf_conversations_select_v2` grants on the
 union of the two, and `idx_golf_conversations_team_channel` indexes only
 `is_team_channel = true`. Full evidence and the production distribution:
-`audit/M01-TEAM-FLAGS.md`.
+`docs/archive/messages-v2-audit-2026-09/M01-TEAM-FLAGS.md`.
 
 Two consequences worth carrying:
 
@@ -738,7 +738,7 @@ element over a zero-height row and painted on top of the sender name of the
 group beneath it. `Group.dc.html:44` is the artboard that matches a group thread
 and draws the same chip `display: flex; justify-content: center; padding: 0 0
 16px 0` — in flow, so it structurally cannot collide. The chip's material stays
-Thread's glass, which `audit/DECISIONS.md` froze; only the placement moved.
+Thread's glass, which `docs/archive/messages-v2-audit-2026-09/DECISIONS.md` froze; only the placement moved.
 
 ## Touch: the chips scroll without blur, and the bubble text never highlights (2026-09-09)
 
@@ -746,7 +746,7 @@ Owner report from a phone: the thread scrolls choppily, and a long-press opens
 the reactions row correctly but also starts a text highlight when the hold lands
 on the message text. Two causes, both in `MessageThreadPane.tsx`'s territory.
 
-**Scroll.** G-50a (`audit/DECISIONS.md`) costed the day chip's 22px glass blur
+**Scroll.** G-50a (`docs/archive/messages-v2-audit-2026-09/DECISIONS.md`) costed the day chip's 22px glass blur
 as "a single ~90×26px element" — one chip pinned at the head of the pane. The
 2026-09-07 change above made it a per-boundary separator in flow, so a
 200-message group thread scrolls dozens of them, and on iOS every

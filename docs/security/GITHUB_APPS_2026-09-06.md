@@ -30,7 +30,7 @@ brief-referenced "seven idle apps" list was searched for in
 was not found there; nothing in this session's file set contains that
 specific enumeration. What follows is every app this session could confirm
 as idle or slated for removal from the repo's own current documentation
-(`.github/branch-protection.md`, `docs/CI_RUNBOOK.md`,
+(`.github/branch-protection.md`, `docs/operations/CI_RUNBOOK.md`,
 `.claude/rules/code-review-tooling.md`, `exec/reads/github.md`'s
 check-run `app.slug` sample from PR #1862 / `cf37ea702`), each with its
 source cited. If the owner's browser session at

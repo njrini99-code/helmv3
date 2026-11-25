@@ -1606,7 +1606,7 @@ features:
         - memory/projects/golfhelm.md
       business_logic:
         - docs/archive/stale-root-2026-11/SECURITY_AUDIT.md
-        - docs/OBSERVABILITY.md
+        - docs/observability/OBSERVABILITY.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -1783,7 +1783,7 @@ features:
     review:
       required_docs:
         - memory/features/admin-platform.md
-        - docs/OBSERVABILITY.md
+        - docs/observability/OBSERVABILITY.md
         - docs/archive/stale-root-2026-11/SECURITY_AUDIT.md
       required_checks:
         - npm run typecheck
@@ -1803,7 +1803,7 @@ features:
       feature: memory/features/admin-incidents.md
       business_logic:
         - docs/archive/stale-root-2026-11/SECURITY_AUDIT.md
-        - docs/OBSERVABILITY.md
+        - docs/observability/OBSERVABILITY.md
       incidents: []
     code:
       routes:
@@ -1844,7 +1844,7 @@ features:
     review:
       required_docs:
         - memory/features/admin-incidents.md
-        - docs/OBSERVABILITY.md
+        - docs/observability/OBSERVABILITY.md
       required_checks:
         - npm run typecheck
         # Split across two lines to stay under the Review Gate's yamllint
@@ -1866,7 +1866,7 @@ features:
     docs:
       feature: memory/features/admin-reliability-collector.md
       business_logic:
-        - docs/OBSERVABILITY.md
+        - docs/observability/OBSERVABILITY.md
       incidents: []
     code:
       routes:
@@ -1900,7 +1900,7 @@ features:
     review:
       required_docs:
         - memory/features/admin-reliability-collector.md
-        - docs/OBSERVABILITY.md
+        - docs/observability/OBSERVABILITY.md
       required_checks:
         - npm run typecheck
         - npx vitest run src/lib/reliability src/app/admin/errors/_components/sources src/lib/admin/release-intel
@@ -1965,7 +1965,7 @@ features:
         - docs/ai-system/selfheal/triage-contract.md
         - docs/ai-system/selfheal/STATE-2026-08-28.md
       business_logic:
-        - docs/OBSERVABILITY.md
+        - docs/observability/OBSERVABILITY.md
       incidents: []
     code:
       routes: []
@@ -2396,7 +2396,7 @@ integrations:
       - src/app/api/**
     criticality: medium
   sentry:
-    docs: docs/guides/SENTRY_SETUP_GUIDE.md
+    docs: docs/observability/SENTRY_SETUP_GUIDE.md
     code:
       - src/instrumentation*.ts
       # Client "maximum observability" build (2026-09-02/03): the pure
@@ -2413,7 +2413,7 @@ integrations:
       - src/lib/observability/client-breadcrumbs.ts
     criticality: medium
   datadog:
-    docs: docs/OBSERVABILITY.md
+    docs: docs/observability/OBSERVABILITY.md
     code:
       - docs/observability/DATADOG.md
       - src/instrumentation*.ts

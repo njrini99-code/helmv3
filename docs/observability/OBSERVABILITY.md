@@ -6,7 +6,7 @@ define what each surface *knows*, and the table below describes the intended
 path for errors that reach `logServerError` — not every failure in production.
 
 **What each surface actually knows, and which one is authoritative for a given
-class of error, is `docs/OBSERVABILITY_AUTHORITY.md`.** Read it before
+class of error, is `docs/observability/OBSERVABILITY_AUTHORITY.md`.** Read it before
 concluding anything from a count. Measured 2026-08-30: `admin_events` reported
 zero error-or-worse rows over 48 hours while Sentry held twelve unresolved
 issues, and both were correct — unhandled framework and platform errors never

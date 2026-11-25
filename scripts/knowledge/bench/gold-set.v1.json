@@ -270,7 +270,7 @@
       "seed_file": ".claude/rules/code-review-tooling.md",
       "gold_files": [
         ".claude/rules/quality-gates.md",
-        "docs/CI_RUNBOOK.md"
+        "docs/operations/CI_RUNBOOK.md"
       ],
       "task_description": "Roughly 47 check runs per PR were starving a 20-slot runner pool. Find where the consolidated CI job shape (one Review Gate checks job, one Static checks/Lint job) is documented."
     },

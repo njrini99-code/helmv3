@@ -28,6 +28,6 @@ owns the weekly heavy jobs and two native compile checks gated by branch
 name (iOS on `main`/`release/*`/`ios/*`/`capacitor/*`; Android on those plus
 `android/*`/`ci/android-*`). See `.circleci/README.md` for setup.
 
-`docs/CI_RUNBOOK.md` classifies every check as hard-gate vs. advisory with
+`docs/operations/CI_RUNBOOK.md` classifies every check as hard-gate vs. advisory with
 rerun commands — use it when a check is red or stuck. `.gitleaks.toml`'s
 `[allowlist]` `paths` are global across every rule, not scoped to one entry.

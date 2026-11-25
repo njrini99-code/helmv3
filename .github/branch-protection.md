@@ -232,7 +232,7 @@ sqlfluff, hadolint) plus CodeQL cover the same hard rules and report on every PR
   reviews required).
 - Restrict who can push to matching branches: **OFF** (no push-restriction list).
 - Do not allow bypassing the above settings: **ON** — `enforce_admins` is
-  enabled as of the 2026-09-06 verification below (`docs/CI_RUNBOOK.md` and
+  enabled as of the 2026-09-06 verification below (`docs/operations/CI_RUNBOOK.md` and
   `.claude/rules/quality-gates.md` agree); the owner can no longer
   direct-push past required checks. This reverses the "OFF" state recorded
   2026-08-20 above — read the API, not this bullet, before relying on it.
@@ -244,7 +244,7 @@ sqlfluff, hadolint) plus CodeQL cover the same hard rules and report on every PR
   unpinned action fail at the platform.
 - Merge queue: **none** (2026-10-07). `gh api repos/{o}/{r}/rulesets` is empty,
   so the `merge_group` triggers were removed from the workflows. Add them back
-  before enabling a queue (docs/CI_RUNBOOK.md, 2026-10-07 section).
+  before enabling a queue (docs/operations/CI_RUNBOOK.md, 2026-10-07 section).
 - Allow force pushes: **OFF**. Required status checks, verified against
   commit `1e5d10a34` (2026-09-06): CI aggregate, Review Gate aggregate,
   Analyze (actions / javascript-typescript / python), and

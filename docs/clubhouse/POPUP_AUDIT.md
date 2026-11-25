@@ -126,7 +126,7 @@ The PR’s cancelled detector spent its five-minute limit fetching all branches
 and tags before classification. A two-deep PR merge checkout retains both
 base/head trees; the local Git fixture confirms its diff matches full history.
 The detector timeout and fail-closed required checks are preserved. See
-[CI runbook](../CI_RUNBOOK.md).
+[CI runbook](../operations/CI_RUNBOOK.md).
 
 ## Final local verification
 
