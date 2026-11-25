@@ -364,7 +364,7 @@ at `44f4ce183`, not a claim taken from a doc.
 | `config/change-risk.yml` | **MISSING** | not in `ls config/` |
 | `config/feature-flags.yml` | **MISSING** | not in `ls config/` |
 | `scripts/control-plane-verify.mjs` | **EXISTS**, live (`npm run control-plane:verify`; `wc -l` it for current size) | header read, lines 1-40 |
-| `scripts/diagnostics-health.mjs` | **EXISTS**, live evidence-path probe | header read |
+| `scripts/observability/diagnostics-health.mjs` | **EXISTS**, live evidence-path probe | header read |
 | `scripts/knowledge/*` | **EXISTS**, live (`npm run knowledge:*`; `find scripts/knowledge` for the current list) | `find scripts/knowledge` |
 | `scripts/release/` | **MISSING** | `find` — no such directory |
 | `scripts/operations/daily-health/` | **MISSING** | `find` — no such directory |
@@ -1029,7 +1029,7 @@ Chaos Lab), §18 (Janitor), §19 (OS self-improvement/learning metrics).
   (`|| true` at line 152).
 - `evals/round-review.yaml` + `promptfoo-evals` CircleCI job prove the
   eval-authoring and CI-wiring pattern at one-file scale.
-- `scripts/diagnostics-health.mjs` **is** a Tool Chaos Lab primitive
+- `scripts/observability/diagnostics-health.mjs` **is** a Tool Chaos Lab primitive
   already: it probes "which evidence path actually works, right now"
   across Vercel/Sentry/GitHub connectors and treats a non-working path as
   a hard fact, not an assumption — exactly the "does Claude say UNKNOWN"

@@ -24,8 +24,17 @@ or domain-specific is in a folder.
 | `db/` | Migration, schema and advisor tooling |
 | `knowledge/` | Feature registry and knowledge-base checks and generators |
 | `github/` | CI helpers: PR status, drift gate, repo settings |
-| `golf/`, `flags/`, `contracts/`, `janitor/`, `release-intel/`, `repo-doctor/`, `screens/` | Their own tools, each with a `__tests__` or README of its own |
-| `phone/`, `ops/`, `quick-chat/`, `sql/` | Device measurement, Mac mini hardening, quick-chat capture, one-off SQL |
+| `golf/` | The coach welcome email send |
+| `flags/` | Feature-flag generator and its checks |
+| `contracts/` | The active contract resolver (`npm run contract:resolve`) |
+| `janitor/` | The repo janitor and its classifiers |
+| `release-intel/` | Change scoring and rollback evaluation |
+| `repo-doctor/` | The control-plane integrity checks behind `repo:doctor` |
+| `screens/` | Screen listing and sweep tooling |
+| `phone/` | iPhone and Simulator smoothness measurement |
+| `ops/` | Mac mini headless hardening and its runbook |
+| `quick-chat/` | Quick-chat capture |
+| `sql/` | One-off SQL files |
 | `lib/` | Shared helpers (`cli-guard.mjs`, target guards); a moved script imports them as `../lib/` |
 | `__tests__/` | Tests for the scripts, including the ones for scripts that moved into a folder |
 

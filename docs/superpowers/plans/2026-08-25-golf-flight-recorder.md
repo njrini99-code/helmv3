@@ -49,7 +49,7 @@ Status: active
 **Files:**
 - Modify: generated migration from Task 2
 - Create: `supabase/tests/rls/golf_flight_recorder.sql`
-- Create: `scripts/trace-db.ts`
+- Create: `scripts/observability/trace-db.ts`
 
 - [ ] Add transaction-local trace context and `HELM_TRACE` structured log helper.
 - [ ] Instrument only the active atomic save/submit functions and relevant round/shot triggers at workflow level.
