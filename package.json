@@ -291,7 +291,7 @@
     "@axe-core/playwright": "^4.14.0",
     "@capacitor/cli": "^8.5.3",
     "@eslint/js": "^10.0.1",
-    "@lhci/cli": "^0.15.1",
+    "@lhci/cli": "^0.16.1",
     "@next/bundle-analyzer": "^16.4.3",
     "@noble/curves": "1.9.7",
     "@playwright/test": "^1.64.1",
@@ -344,22 +344,48 @@
     "tmp": "^0.2.7",
     "@vercel/python-analysis": {
       "js-yaml": "^4.3.1",
-      "minimatch": "^10.2.3"
+      "minimatch": "^10.2.3",
+      "zod": "$zod"
     },
     "@vercel/fun": {
-      "tar": "^7.5.22"
+      "tar": "^7.5.22",
+      "path-to-regexp": "^8.4.2"
     },
     "@vercel/container": {
       "tar": "^7.5.22"
     },
     "next-devtools-mcp": {
-      "@modelcontextprotocol/sdk": "^1.31.0"
+      "@modelcontextprotocol/sdk": "^1.31.0",
+      "zod": "$zod"
     },
     "smol-toml": "^1.9.0",
     "katex": "^0.18.2",
     "@tootallnate/once": "^2.0.1",
     "@vercel/node": {
+      "path-to-regexp": "^6.3.0",
       "undici": "^5.29.0"
+    },
+    "@vercel/remix-builder": {
+      "path-to-regexp": "^6.3.0"
+    },
+    "@vercel/backends": {
+      "path-to-regexp": "^8.4.2",
+      "zod": "$zod"
+    },
+    "@vercel/express": {
+      "path-to-regexp": "^8.4.2",
+      "zod": "$zod"
+    },
+    "@vercel/hono": {
+      "path-to-regexp": "^8.4.2",
+      "zod": "$zod"
+    },
+    "vercel": {
+      "zod": "$zod"
+    },
+    "markdownlint-cli2": {
+      "markdownlint": "0.42.0",
+      "re2js": "^2.9.1"
     }
   },
   "allowScripts": {
