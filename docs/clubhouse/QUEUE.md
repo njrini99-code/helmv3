@@ -255,7 +255,7 @@ its rows together and does not map them one to one.
 | doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | done | #2284 | claude/clubhouse-audit-polish |
 | doc-63 | Fix rules that say Clubhouse is off in production, and make AGENTS.md match the owner's never-deploy rule (no Bridge IDs or CH codes) | docs | in progress | | claude/project-thread-9mfoe1 |
 | pr-01 | As chs-07: CoachHelm v3 slices 0 to 8 are in main; #2283 turned the flags on in preview, production stays off | CoachHelm engine | done | #2283 | |
-| pr-02 | Clubhouse is off in production (`golf_clubhouse_ui` production false; #2188 turned it back off after #2180). It stays off until the owner's canary (doc-46) | Owner | held | #2188 | |
+| pr-02 | Clubhouse was off in production (`golf_clubhouse_ui` production false; #2188). Superseded: live for every team since 2026-11-15 and the flag is removed (see STATUS.md) | Owner | closed | #2188 | |
 | pr-03 | Old CoachHelm root-map redesign, 9 surfaces switched on, summary-card openers (PR #2073): closed as superseded | CoachHelm board UI | closed | #2073 (closed) | |
 | pr-04 | As doc-39 | Clubhouse fixes | done | #2217 | |
 | pr-05 | As doc-50: phone Roster and Team stats figures render as plain text | Clubhouse fixes | done | #2282 (landed in #2314) | |

@@ -2,8 +2,9 @@
 # Helm agent instructions
 
 How the Helm repo works, for every agent in it (Claude Code, Codex, Devin,
-Cursor, CI). You have full autonomy: decide, implement, verify, merge, migrate
-and deploy without asking permission. This file records how things work and the
+Cursor, CI). You have full autonomy: decide, implement, verify, merge and
+migrate without asking permission, but never deploy (preview included) unless
+the owner says so in that conversation. This file records how things work and the
 traps that waste time. It is guidance, not a permission list. Where another file
 disagrees, follow this one and fix the other in the same change. `CLAUDE.md`
 adds Claude Code specifics; `.claude/rules/` holds path-scoped code
@@ -32,8 +33,8 @@ migration or deploy and know how you would roll it back.
    user said otherwise. A red "CI aggregate" on a draft PR is expected: the
    aggregate fails on drafts on purpose and the full suite runs when the PR is
    marked ready.
-4. Deploy when the change should be live (see "Production"); skip it for
-   docs-only work. Report a release as live only after `npm run release:status`
+4. Deploy only when the owner asks in that conversation (see "Production").
+   Report a release as live only after `npm run release:status`
    shows the SHA.
 5. The final report says what changed, where it is, what was verified, and what
    was left untouched or unverified.
@@ -48,8 +49,8 @@ green, updates the docs, checks correctness and lands it. Neither role runs
 answer: take the recommended default, record it, and ask the coordinator.
 `npm run pr:status -- <n>` is the one-call view of a PR's CI state. Production
 changes (migrations, deploys) go to the Production rollout thread, which applies
-them only after showing they do no harm; flag flips and the Clubhouse turn-on
-wait on the owner.
+them only after showing they do no harm; deploys and flag flips wait on the
+owner. Clubhouse is already on for every team.
 
 ## Workspace and Git
 
@@ -149,9 +150,10 @@ do.
 ## Production
 
 `vercel.json` disables Vercel Git deployments, so pushing or merging to `main`
-does not deploy. Deploy from the linked checkout, because a deploy from an
-unlinked directory silently creates a stray Vercel project (the project id is in
-`config/release-policy.yml`):
+does not deploy. Owner rule: no `vercel deploy`, preview included, unless the
+owner asks in that conversation. When asked, deploy from the linked checkout,
+because a deploy from an unlinked directory silently creates a stray Vercel
+project (the project id is in `config/release-policy.yml`):
 
     SHA=$(git rev-parse HEAD); SCOPE=$(node -p 'require("./.vercel/project.json").orgId')
     ./node_modules/.bin/vercel deploy --prod --yes --archive=tgz --scope "$SCOPE" \
