@@ -34,7 +34,6 @@ The foundation everything runs on.
 | **Vercel AI Gateway** | Primary LLM routing for CoachHelm (narrative, hero insight, coach chat) | Vercel platform feature (used via the `ai` SDK) | `src/lib/coachhelm/v3/llm/compose.ts` (routing via `generateText`), `src/lib/coachhelm/v3/llm/types.ts` (model strings), `src/lib/coachhelm/v3/chat/agent.ts` | No (outputs surface as insights) | **Verified in source.** Gateway path uses OIDC + Vercel credits (per `agent.ts` comment); routes to Claude models. Not a package.json dependency |
 | **Anthropic (Claude) via `@ai-sdk/anthropic` + `ai` SDK** | Direct-to-Anthropic fallback when a key is set | Paid API | `@ai-sdk/anthropic ^3.0.81`, `ai 6.0.197`; `src/lib/coachhelm/v3/chat/agent.ts` reads `ANTHROPIC_API_KEY` | No | Fallback path: `agent.ts` uses the direct Anthropic provider when `ANTHROPIC_API_KEY` is present, otherwise the Gateway model string |
 | **CoachHelm insight / NLG engine** | Helm's own AI layer: mining, prediction, learning, natural-language generation | In-house | `src/lib/coachhelm/v2/` (and `v3/`); ref `memory/context/coachhelm-ai.md` | Yes (insights, alerts, round reviews are the product) | Not a vendor — Helm-built on top of Claude |
-| **Promptfoo** | LLM eval harness (catches silent prompt drift) | Open-source | `promptfoo ^0.121.12`; `evals/round-review.yaml`; `npm run evals` | No | Runs weekly in CircleCI `promptfoo-evals`. Per CLAUDE.md, needs `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` |
 
 ---
 

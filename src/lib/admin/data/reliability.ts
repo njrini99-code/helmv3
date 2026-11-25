@@ -100,7 +100,7 @@ export async function fetchReliabilitySnapshot(): Promise<AdminFetchResult<Relia
  *
  * The nightly triage writes an analysis for a reliability signal into
  * `admin_events` as an `rca_analysis` row under `fingerprint = 'rel:' +
- * signature` (see `scripts/run-triage.ts` / `triage-engine.ts`). The
+ * signature` (see `scripts/coachhelm/run-triage.ts` / `triage-engine.ts`). The
  * Reliability tab holds `signal.signature` but never looked the analysis up,
  * so every one of them was invisible. This is that lookup.
  *

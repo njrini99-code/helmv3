@@ -166,7 +166,7 @@ Columns: **Err** (Errors) · **Trc** (Trace) · **BSpan** (Business span) · **D
 - **Mon**: NO.
 - **Alrt**: UNKNOWN.
 - **Live?**: NO.
-- **Blind spot**: **CLOSED by Phase C Deliverable 4, re-verified 2026-09-03.** `/api/health` was rewritten: bounded Supabase query (`.abortSignal(AbortSignal.timeout(2500))`), honest HTTP status (200 only when `status:'healthy'`, else 503), and a 60-second-throttled `logServerError` on the degraded branch (never logged every poll, so a monitoring service hitting this route frequently can't turn a real outage into a self-inflicted log storm). Every real consumer of the response shape (`scripts/warm-edge.ts`, `StaleDeploymentRecoveryScript.tsx`, `layout.tsx`'s `x-deployment-id` meta tag) was updated in the same change.
+- **Blind spot**: **CLOSED by Phase C Deliverable 4, re-verified 2026-09-03.** `/api/health` was rewritten: bounded Supabase query (`.abortSignal(AbortSignal.timeout(2500))`), honest HTTP status (200 only when `status:'healthy'`, else 503), and a 60-second-throttled `logServerError` on the degraded branch (never logged every poll, so a monitoring service hitting this route frequently can't turn a real outage into a self-inflicted log storm). Every real consumer of the response shape (`scripts/crm/warm-edge.ts`, `StaleDeploymentRecoveryScript.tsx`, `layout.tsx`'s `x-deployment-id` meta tag) was updated in the same change.
 
 ### 8. RSC (React Server Component) failure
 - **Err**: YES — M4's `mapRouteTypeToSource` maps Next's `'render'` routeType to `'server_component'` (`instrumentation.ts:382-384`), so any RSC render failure that escapes to `onRequestError` is captured the same as any other route.

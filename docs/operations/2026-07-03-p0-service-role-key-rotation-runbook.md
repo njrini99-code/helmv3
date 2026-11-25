@@ -20,8 +20,8 @@ closure was **incomplete**:
   `run-sql.mjs`) **still had the literal production `service_role` JWT**
   (and, in two of them, the `anon` JWT + a real plaintext account password)
   hardcoded in tracked source on `main`, as of this pass.
-- One additional script not named in #516, `scripts/run-migration.mjs`,
-  had the same hardcoded prod URL/pattern.
+- One additional script not named in #516, `run-migration.mjs` (deleted
+  2026-11-25; in git history), had the same hardcoded prod URL/pattern.
 - The JWT's `iat` claim decodes to 2026-01-13 and the files were last
   touched 2026-02-14 — i.e. the key looks like it was reissued around
   2026-01-13 and then immediately re-embedded in these scripts afterward,
@@ -88,10 +88,10 @@ this silently.
 
 ## 2. Rotate the exposed demo account password
 
-`scripts/check-rls.ts` and `scripts/diagnose-rls.ts` hardcoded a real
-plaintext password for the developer's own demo coach/player accounts
+`check-rls.ts` and `diagnose-rls.ts` (both deleted 2026-11-25; in git
+history) hardcoded a real plaintext password for the developer's own demo coach/player accounts
 (`njrini99@gmail.com` / `rinin376@gmail.com`, shared between BaseballHelm
-and GolfHelm logins per `scripts/seed-rini-baseball-demo.ts`'s own header
+and GolfHelm logins per `scripts/seed/seed-rini-baseball-demo.ts`'s own header
 comment). This is not a customer's credential, but it has been sitting in
 git history since 2026-02-14 and is trivially recoverable by anyone who
 ever cloned the repo.

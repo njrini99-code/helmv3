@@ -398,7 +398,7 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     group: 'test',
     status: 'pending migration',
     note:
-      '#379 Phase 0 seeded-data smoke test. Exercises scripts/seed-baseball-stats.mjs\'s seedTeamStats() against a fake Supabase client; that script intentionally still writes baseball_player_stats/baseball_player_aggregates (layer 1) ALONGSIDE the new box-score/season writes (layer 2) so grandfathered consumers keep working during the migration window — this test\'s docblock names both deprecated tables as prose, not a new production read. Retires only if the seed script ever stops writing layer 1 (blocked on the same Phase 5 decision as imports.ts).',
+      '#379 Phase 0 seeded-data smoke test. Exercises scripts/seed/seed-baseball-stats.mjs\'s seedTeamStats() against a fake Supabase client; that script intentionally still writes baseball_player_stats/baseball_player_aggregates (layer 1) ALONGSIDE the new box-score/season writes (layer 2) so grandfathered consumers keep working during the migration window — this test\'s docblock names both deprecated tables as prose, not a new production read. Retires only if the seed script ever stops writing layer 1 (blocked on the same Phase 5 decision as imports.ts).',
   },
   {
     path: 'src/contracts/baseball/stats/command-center-stats-center-drift.test.ts',

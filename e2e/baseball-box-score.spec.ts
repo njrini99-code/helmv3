@@ -11,7 +11,7 @@ import { waitForPageLoad } from './helpers/common';
  * Baseball Box Score E2E Tests
  *
  * Exercises the full box-score lifecycle against the deterministic fixtures
- * provisioned by `scripts/seed-baseball-e2e.ts` (issue #375):
+ * provisioned by `scripts/seed/seed-baseball-e2e.ts` (issue #375):
  *   - one SCHEDULED game (vs "Riverside University") with no stats yet —
  *     used for manual entry / save flows
  *   - one COMPLETED game (vs "Eastview College", final 5-3 W) with full
@@ -34,7 +34,7 @@ import { waitForPageLoad } from './helpers/common';
  * happens directly against the database: a `test.afterAll` below deletes
  * every `baseball_games` row (+ its linked `baseball_events` row) this file
  * created, via the same service-role client construction
- * `scripts/seed-baseball-e2e.ts` uses for seeding. See e2e/README.md.
+ * `scripts/seed/seed-baseball-e2e.ts` uses for seeding. See e2e/README.md.
  *
  * Gated on PLAYWRIGHT_BASEBALL_SEEDED=1, with a per-test self-skip if the
  * login fixture is unavailable in the target environment — same pattern as

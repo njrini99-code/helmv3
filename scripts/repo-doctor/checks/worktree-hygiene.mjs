@@ -24,7 +24,7 @@
 // change, once merging origin/main made the duplication visible: checks/
 // workspace.mjs (owned by #1840/A1, "one door") already added
 // `workspace.worktree-markers`, doing the identical check with the SAME
-// classifier `.claude/hooks/stamp-workspace.mjs` and
+// classifier `.claude/hooks/lib/worktree-line.mjs` and
 // `.claude/hooks/worktree-create.mjs` rely on. Shipping two independent
 // implementations of "is this worktree marked" is exactly the kind of
 // second authority this whole reset exists to remove — the first version

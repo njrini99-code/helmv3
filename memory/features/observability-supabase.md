@@ -411,7 +411,7 @@ Added on top of Phase 1, at $0 incremental recurring cost — full detail in
   server-only fetch of the Prometheus-compatible platform endpoint, 60s
   cache, delta-based CPU%, every field independently nullable. Allow-list
   is docs-derived, not live-verified (no credential available when built) —
-  `scripts/db-observability-metrics-names.mjs` corrects it once one is.
+  `scripts/observability/db-observability-metrics-names.mjs` corrects it once one is.
 - **Advisors** (`advisors.ts` + `src/lib/admin/database/advisors.ts`):
   Security/Performance Advisor findings via the documented Management API
   endpoint, 10-minute cache, deduped by (advisorType, name, object). No
@@ -448,7 +448,7 @@ Added on top of Phase 1, at $0 incremental recurring cost — full detail in
   `SUPABASE_ACCESS_TOKEN`, so a missing optional owner credential never
   flips `repo:doctor`'s exit code for every other contributor.
 - **W3C trace-propagation certification**
-  (`scripts/db-observability-trace-cert.mjs`): 5 static checks, PASS 5/5 as
+  (`scripts/observability/db-observability-trace-cert.mjs`): 5 static checks, PASS 5/5 as
   of 2026-09-03. The live proof (a real Sentry trace id matched to a real
   Supabase log line) is a separate, manual, on-demand procedure documented
   in `docs/observability/SUPABASE_TRACE_PROPAGATION.md` and currently

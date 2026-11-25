@@ -23,7 +23,7 @@ import { shouldEmit } from '@/lib/admin/emit-throttle';
  * for 35s defeats the entire point of having one.
  *
  * `organizations_public_profile` is probed, not `users`. The probe runs with
- * the cookie client, so a monitor or scripts/warm-edge.ts (no session) reads
+ * the cookie client, so a monitor or scripts/crm/warm-edge.ts (no session) reads
  * as `anon`. Held migration 20261007102000_revoke_anon_public_table_grants
  * removes anon's SELECT on `users`, which would turn every signed-out probe
  * into a permission error and a 503. This view keeps an explicit anon SELECT
@@ -36,7 +36,7 @@ import { shouldEmit } from '@/lib/admin/emit-throttle';
  * NEVER a deployment id/URL/secret in the body — `release` (git SHA) is the
  * standard Sentry release identifier and does not let an unauthenticated
  * caller enumerate anything Vercel-internal the way `deploymentId` could.
- * scripts/warm-edge.ts (the one real consumer, verified via
+ * scripts/crm/warm-edge.ts (the one real consumer, verified via
  * `grep -rln "api/health" .github .circleci scripts vercel.json e2e`) reads
  * `release` now instead of the old `deploymentId` field.
  */

@@ -2,8 +2,8 @@
 # Supabase observability coverage matrix
 
 <!-- GENERATED FILE - DO NOT HAND-EDIT.
-     Produced by `node scripts/db-observability-coverage.mjs`.
-     Verify with `node scripts/db-observability-coverage.mjs --check`.
+     Produced by `node scripts/observability/db-observability-coverage.mjs`.
+     Verify with `node scripts/observability/db-observability-coverage.mjs --check`.
      Every cell is derived by reading the modules named in
      `scripts/lib/db-observability-coverage.mjs`, with comments stripped
      first - never transcribed from the brief's intent. Edit the detectors,

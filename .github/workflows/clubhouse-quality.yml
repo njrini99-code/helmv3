@@ -121,7 +121,9 @@ jobs:
       # only the last step's evidence. The gate runs even when the smoke fails (it is a separate question).
       - name: Presentation gate
         if: ${{ !cancelled() && !inputs.visual }}
-        timeout-minutes: 40
+        # 144 page loads at about 10 s, and each failing case restarts its worker and loads its page again. With ~70 red
+        # cases the 1,296 cases pass 40 minutes, and the step was killed before it printed one reason (24 and 25 Nov 2026).
+        timeout-minutes: 60
         env:
           CH_GATE_REPORT: test-results/clubhouse-quality/gate-report.jsonl
         run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project gate-phone --project gate-desktop --output test-results/clubhouse-quality/gate

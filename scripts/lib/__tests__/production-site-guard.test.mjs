@@ -54,8 +54,8 @@ function attempt(cmd, args, env) {
 }
 
 describe('entry points refuse production before a browser starts', () => {
-  it('scripts/ui-smoke.mjs refuses SMOKE_BASE on the production site', () => {
-    const r = attempt('node', ['scripts/ui-smoke.mjs'], { SMOKE_BASE: 'https://helmsportslabs.com' });
+  it('scripts/ui-intelligence/ui-smoke.mjs refuses SMOKE_BASE on the production site', () => {
+    const r = attempt('node', ['scripts/ui-intelligence/ui-smoke.mjs'], { SMOKE_BASE: 'https://helmsportslabs.com' });
     expect(r.status).not.toBe(0);
     expect(r.out).toMatch(/ui-smoke\.mjs refuses to run: its base URL is the production site/);
   });

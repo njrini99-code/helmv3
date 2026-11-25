@@ -32,24 +32,6 @@ routines:
       and a soft no-PR-ever-branches listing. Opens/updates one GitHub issue
       titled "Control plane weekly".
 
-  - id: selfheal-repair
-    trigger: github-actions-schedule
-    source: .github/workflows/selfheal-repair.yml
-    schedule: "40 6 * * *"
-    status: disabled
-    description: >-
-      Daily Bridge self-heal/repair run, migrated from a launchd agent to
-      GitHub Actions with the 06:40 UTC schedule kept. The workflow is
-      disabled in GitHub (disabled_manually; last runs 2026-09-23, all
-      failed) and the work moved to the `helm-app-health-selfheal` Claude
-      scheduled task below.
-    superseded:
-      - launchd_label: com.helm.bridge-rca-repair
-        note: >-
-          The launchd agent this replaced. Its plist was gone from
-          ~/Library/LaunchAgents when checked on 2026-10-10; the label stays
-          listed so an archived copy is still a known name.
-
   - id: helm-app-health-selfheal
     trigger: claude-scheduled-task
     source: ~/.claude/scheduled-tasks/helm-app-health-selfheal
@@ -58,9 +40,16 @@ routines:
     description: >-
       App-health overview from production tables, fixes in one PR, the
       rolling GitHub report (issue #2061, last updated 2026-10-08) and a
-      Bridge heartbeat. Runs in the Claude desktop app on the owner's Mac
-      and replaces the disabled selfheal-repair workflow. Machine-local:
-      the prompt lives outside this repo.
+      Bridge heartbeat. Runs in the Claude desktop app on the owner's Mac.
+      It replaced the selfheal-repair GitHub Actions workflow (disabled
+      2026-09-23, file deleted 2026-11-25). Machine-local: the prompt
+      lives outside this repo.
+    superseded:
+      - launchd_label: com.helm.bridge-rca-repair
+        note: >-
+          The launchd agent that ran Repair before 2026-09-05. Its plist was
+          gone from ~/Library/LaunchAgents when checked on 2026-10-10; the
+          label stays listed so an archived copy is still a known name.
 
   - id: db-drift-production
     trigger: github-actions-schedule

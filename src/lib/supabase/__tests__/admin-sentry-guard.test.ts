@@ -5,8 +5,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * `Sentry.instrumentSupabaseClient(client, ...)` unconditionally. That
  * export is `undefined` when `@sentry/nextjs` is loaded outside the Next.js
  * runtime — e.g. any repo script run with plain `tsx`
- * (scripts/run-triage.ts, scripts/run-pattern-miner-for-team.ts,
- * scripts/coachhelm-prewarm-round-reviews.ts) — so every such script crashed
+ * (scripts/coachhelm/run-triage.ts, scripts/coachhelm/run-pattern-miner-for-team.ts,
+ * scripts/coachhelm/coachhelm-prewarm-round-reviews.ts) — so every such script crashed
  * inside `createAdminClient()`, before making a single query. The fix guards
  * the call with `typeof Sentry.instrumentSupabaseClient === 'function'`; the
  * two tests below cover both branches directly, mocking `@sentry/nextjs`

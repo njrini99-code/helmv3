@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
-const SCRIPT = join(REPO_ROOT, 'scripts', 'seed-baseball-stats.mjs');
+const SCRIPT = join(REPO_ROOT, 'scripts', 'seed', 'seed-baseball-stats.mjs');
 
 const HARDCODED_JWT = /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9/;
 const HARDCODED_URL = /qmnssrrolpinvwjjnufo\.supabase\.co/;

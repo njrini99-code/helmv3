@@ -639,16 +639,19 @@ export function classifyWorkspaceKind(facts) {
 // Raised 1 -> 3 with the "one workspace door" change (2026-09-05), then
 // 3 -> 6 with the tree/routing/speed reorg (2026-09-06) once gate timing
 // (scripts/serialize.mjs, .helm/runtime/gates.jsonl) gave visibility into
-// actual machine load instead of a guess. The mutation budget now has to
-// cover every path that allocates a workspace, not just a human running
-// scripts/new-worktree.sh: the WorktreeCreate hook routes
-// `isolation: "worktree"` subagents and background sessions through the same
-// door (scripts/lib/create-workspace.mjs), and a session doing legitimate
-// parallel work — several task worktrees plus isolated subagent checks —
-// would otherwise be refused by a budget sized for far less concurrency.
-// 6 is still a budget, not a suggestion: it is refused BEFORE allocation the
-// same way 1 and 3 were before it. See docs/operations/WORKSPACES.md for the
-// full history of this number.
+// actual machine load instead of a guess. The count has to cover every path
+// that allocates a workspace, not just a human running scripts/new-worktree.sh:
+// the WorktreeCreate hook routes `isolation: "worktree"` subagents and
+// background sessions through the same module (scripts/lib/create-workspace.mjs).
+//
+// 6 is ADVISORY. A folder count cannot tell how many agents are working, so
+// create-workspace.mjs only prints a warning at this number and carries on;
+// repo:doctor warns above DEFAULT_MUTATION_BUDGET + 1; the SessionStart line
+// (.claude/hooks/lib/worktree-line.mjs) shows the count and says so. It becomes
+// a hard refusal, before allocation, only when HELM_MAX_MUTATION_WORKTREES is
+// set (opt-in; nothing sets it by default). The one unconditional refusal at
+// creation is the disk reserve (HELM_DISK_RESERVE_GIB, 12 GiB).
+// docs/operations/WORKSPACES.md is the one place that explains all three.
 export const DEFAULT_MUTATION_BUDGET = 6;
 
 /**

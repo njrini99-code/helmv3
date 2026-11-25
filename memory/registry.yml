@@ -206,8 +206,8 @@ features:
         - src/lib/observability/supabase/**
         - src/lib/admin/database/**
         - src/lib/admin/incidents/db-observability-source.ts
-        - scripts/db-observability-trace-cert.mjs
-        - scripts/db-observability-metrics-names.mjs
+        - scripts/observability/db-observability-trace-cert.mjs
+        - scripts/observability/db-observability-metrics-names.mjs
         - scripts/repo-doctor/checks/db-observability.mjs
       db:
         - supabase/migrations/*helm_debug_db_error_events*.sql
@@ -236,7 +236,7 @@ features:
       required_checks:
         - npm run typecheck
         - npx vitest run src/lib/observability/supabase src/lib/admin/database src/lib/admin/incidents
-        - node scripts/db-observability-trace-cert.mjs
+        - node scripts/observability/db-observability-trace-cert.mjs
         - npm run repo:doctor
 
   coachhelm_ai:
@@ -478,10 +478,10 @@ features:
       services:
         - src/lib/golf/**
         - src/lib/coachhelm/v2/post-round-trigger.ts
-        - scripts/coachhelm-prewarm-round-reviews.ts
+        - scripts/coachhelm/coachhelm-prewarm-round-reviews.ts
         # The demo team generator's scripts and owner SQL.
-        - scripts/golf-demo-refresh.ts
-        - scripts/verify-golf-demo-coverage.ts
+        - scripts/seed/golf-demo-refresh.ts
+        - scripts/seed/verify-golf-demo-coverage.ts
         - scripts/sql/golf-demo-cleanup.sql
         - scripts/sql/strip-demo-seed-tags.sql
       db:
@@ -1710,8 +1710,8 @@ features:
         - src/lib/observability/supabase/**
         # The self-heal loop's Repair stage runs as the Claude desktop health
         # routine since 2026-09-23 (the GitHub Actions workflow
-        # .github/workflows/selfheal-repair.yml ran it 2026-09-05..09-23 and is
-        # now disabled). On 2026-09-05
+        # .github/workflows/selfheal-repair.yml ran it 2026-09-05..09-23; it was
+        # deleted 2026-11-25). On 2026-09-05
         # the launchd agent, its outer bounded-runner script, and its
         # launchd-only support tooling (scripts/run-selfheal-repair.mjs,
         # scripts/lib/selfheal-repair-runner.mjs,
@@ -1984,7 +1984,7 @@ features:
         - src/lib/admin/triage-*.ts
         - src/lib/admin/auto-resolve.ts
         # Repair runs as the Claude desktop health routine since 2026-09-23
-        # (.github/workflows/selfheal-repair.yml 2026-09-05..09-23, disabled).
+        # (.github/workflows/selfheal-repair.yml 2026-09-05..09-23, deleted 2026-11-25).
         # On 2026-09-05 the launchd agent, its outer runner
         # (scripts/run-selfheal-repair.mjs, scripts/lib/selfheal-repair-runner.mjs),
         # its install/doctor tooling, and config/launchd/** were retired in

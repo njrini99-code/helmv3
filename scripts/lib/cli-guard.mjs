@@ -5,7 +5,7 @@
  * ---------------
  * `scripts/README.md` used to tell people to "read a script's header comment
  * first" because several scripts acted the moment they were launched: a bare
- * `node scripts/send-coach-batch.mjs` posted live email through Resend. That
+ * `node scripts/crm/send-coach-batch.mjs` posted live email through Resend. That
  * is the wrong default for a file that holds a service-role key. This module
  * gives every credentialed script the same three behaviours:
  *

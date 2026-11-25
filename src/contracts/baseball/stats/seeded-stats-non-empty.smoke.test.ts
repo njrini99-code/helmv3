@@ -4,7 +4,7 @@
 // PRODUCT TRUTH THIS FILE PINS (#379 acceptance criteria — "Add a seeded-data
 // smoke test that asserts Stats Center is non-empty when the seed claims
 // stats exist"):
-//   `scripts/seed-baseball-stats.mjs` seeds a team's stats and prints a per-
+//   `scripts/seed/seed-baseball-stats.mjs` seeds a team's stats and prints a per-
 //   player "seeded" summary. Before #379's fix, that script wrote ONLY the
 //   legacy flat/aggregate layer (`baseball_player_stats` /
 //   `baseball_player_aggregates`) — `src/lib/baseball/read-models/
@@ -28,7 +28,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 import { getStatsCenter } from '@/lib/baseball/read-models/stats-center';
-import { seedTeamStats } from '../../../../scripts/seed-baseball-stats.mjs';
+import { seedTeamStats } from '../../../../scripts/seed/seed-baseball-stats.mjs';
 
 const TEAM_ID = 'team-1';
 // Fixed mid-year timestamp — decoupled from the real "today" so this test
@@ -75,7 +75,7 @@ describe('Seeded stats are non-empty in Stats Center (#379 smoke test)', () => {
     });
 
     // Exercise the real reconciled seed logic — the same function
-    // scripts/seed-baseball-stats.mjs's run() calls once it has fetched the
+    // scripts/seed/seed-baseball-stats.mjs's run() calls once it has fetched the
     // roster — against the fake client, not a re-derived fixture.
     const summaries = await seedTeamStats(fake, {
       teamId: TEAM_ID,

@@ -34,7 +34,7 @@
  * The count may only shrink.
  *
  * NOTE ON REPAIR: do NOT bulk-repoint these by basename search. The audit tried
- * and the nearest-name matches were build artifacts under src/.helmdev/ and
+ * and the nearest-name matches were build artifacts under a since-deleted scratch directory and
  * unrelated directories — auto-repointing would replace a path that is visibly
  * broken with one that is confidently wrong. Fix them by hand, in the feature
  * you are already working on, or delete the stale line.

@@ -5,7 +5,7 @@ import { Page } from '@playwright/test';
  *
  * Credential-driven (#382): reads from env vars so this same helper can
  * authenticate as the seeded Rini University Baseball demo accounts
- * (scripts/seed-rini-baseball-demo.ts — njrini99@gmail.com / rinin376@gmail.com)
+ * (scripts/seed/seed-rini-baseball-demo.ts — njrini99@gmail.com / rinin376@gmail.com)
  * in a real seeded environment, while falling back to the original
  * placeholder values for environments with no seeded fixture (existing specs
  * that call loginAsCoach/loginAsPlayer continue to self-skip via their own
@@ -68,7 +68,7 @@ export async function loginAsPlayer(page: Page) {
 /**
  * The dedicated #375 e2e-fixture accounts.
  *
- * scripts/seed-baseball-e2e.ts seeds a self-contained team ("E2E Test
+ * scripts/seed/seed-baseball-e2e.ts seeds a self-contained team ("E2E Test
  * University Baseball") owned by these HARD-CODED accounts and force-resets
  * their passwords every run — the box-score / pipeline / camps specs assert
  * that team's deterministic fixtures (Riverside/Eastview games, the "Jordan
@@ -83,7 +83,7 @@ export async function loginAsPlayer(page: Page) {
  * seeded games absent). These credential-pinned helpers keep the #375 lane
  * pointed at its own seeded team regardless of the demo-lane env override.
  * Keep the values in sync with COACH_EMAIL/PASSWORD + PLAYER_EMAIL/PASSWORD in
- * scripts/seed-baseball-e2e.ts.
+ * scripts/seed/seed-baseball-e2e.ts.
  */
 export const E2E_FIXTURE_USERS = {
   coach: { email: 'testcoach@helm.test', password: 'TestCoach123!' },

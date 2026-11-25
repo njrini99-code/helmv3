@@ -5,9 +5,13 @@ implementation and diagnostics; it adds no permission requirements.
 
 ## Creation
 
-`scripts/lib/create-workspace.mjs` implements both `scripts/new-worktree.sh`
-and `.claude/hooks/worktree-create.mjs`. The WorktreeCreate hook is wired in
-`.claude/settings.json`; SessionStart also runs `stamp-workspace.mjs`.
+`scripts/lib/create-workspace.mjs` (`createWorkspace()`) is the one creation
+module. Two thin callers use it and nothing else creates a workspace:
+`scripts/new-worktree.sh` (people and agents) and the WorktreeCreate hook
+`.claude/hooks/worktree-create.mjs` (wired in `.claude/settings.json`; the
+harness calls it for `claude --worktree`, `isolation: worktree` subagents and
+background sessions). A raw `git worktree add` is unsupported: it gets the
+`post-checkout` dependency clone but no marker and no checks.
 
 ```bash
 scripts/new-worktree.sh <task>
@@ -18,12 +22,25 @@ then checks capacity, fetches the base, creates an `agent/<task>` branch with
 `--no-track`, and writes `.helm/workspace.json`. The default location is
 `~/worktrees/helmv3/<task>`; `HELM_WORKTREE_HOME` overrides it.
 
-Existing checkout count is advisory by default. The threshold is
-`DEFAULT_MUTATION_BUDGET` (currently 6), shared with the lifecycle classifier.
-A folder count cannot establish how many agents are currently working.
-Setting `HELM_MAX_MUTATION_WORKTREES` explicitly makes that value a hard cap.
-The disk reserve remains enforced: 12 GiB by default, configurable through
-`HELM_DISK_RESERVE_GIB` (or legacy `HELM_MIN_FREE_GIB`).
+**Base.** `new-worktree.sh` branches from `origin/main` unless `--base` says
+otherwise. The WorktreeCreate hook always branches from `origin/main` (its call
+passes `base: 'origin/main'`; the harness hands it only `cwd` and `name`), so an
+isolated subagent started from a session on an unpushed or unmerged branch
+cannot see that branch's commits. Push the work and tell the subagent which
+ref to `git fetch`, or do the slice in the parent's checkout.
+
+**Capacity: one advisory number and one hard refusal.**
+
+| Rule | Value | What happens |
+| --- | --- | --- |
+| Checkout count (`DEFAULT_MUTATION_BUDGET`, `scripts/lib/worktree-lifecycle.mjs`) | 6 | Advisory. With 6 or more counted checkouts, creation prints a warning and carries on. `repo:doctor` warns above 7. The SessionStart line `worktrees: N linked (advisory; ...)` shows the count and nothing refuses at it. A folder count cannot tell how many agents are working. |
+| `HELM_MAX_MUTATION_WORKTREES=<n>` | unset | Opt-in. Setting it makes `<n>` a hard cap: creation refuses with `BUDGET_EXCEEDED` and `repo:doctor` fails instead of warning. Nothing sets it today. `scripts/check-mutation-budget.mjs` reports the same count as a CLI; creation does not call it. |
+| Disk reserve (`HELM_DISK_RESERVE_GIB`, legacy `HELM_MIN_FREE_GIB`) | 12 GiB | Hard. Creation refuses with `DISK_LOW` when less than 12 GiB is free under the worktree home. At zero free bytes no command can run, not even the cleanup, so this is the machine's floor. |
+| Clone floor (`HELM_CLONE_RESERVE_GIB`, `HELM_CLONE_BUDGET_GIB`) | 2 GiB + 0.5 GiB | The `post-checkout` clone and the deps-hygiene backstop need only this much free, so a raw `git worktree add` can succeed where `new-worktree.sh` is refused. |
+
+When `DISK_LOW` hits, run `npm run worktrees` (report), then
+`npm run worktrees:park` or `worktrees:retire`; they remove disposable checkouts
+and keep or retire only branches the classifier proves safe.
 
 A failed fetch produces a warning and uses the available base. `--no-track`
 prevents a new task branch from inheriting `origin/main` as its upstream.
@@ -98,17 +115,26 @@ The lifecycle classifier owns cleanup decisions, including dirty work,
 upstream evidence, PR state, and `parkPolicy`. Follow `AGENTS.md` for standing
 cleanup authorization. Do not delete unrelated work to make a count green.
 
-A checkout with no `.helm/workspace.json` (made by the Desktop app, by hand, or
-before the marker existed) is kept, with one exception: when its branch's PR has
-merged and the checkout's tip is that merged head, or every change is proven in
-main, it parks like a released one. An explicit `KEEP`, an unreadable marker,
+A checkout with no `.helm/workspace.json` (made by hand with `git worktree add`,
+or before the marker existed) is kept, with one exception: when its branch's PR
+has merged and the checkout's tip is that merged head, or every change is proven
+in main, it parks like a released one. An explicit `KEEP`, an unreadable marker,
 and an unmarked checkout on an open, closed or missing PR are still kept.
 
-`repo:doctor` reports old merged checkouts, branch counts, and default
-workspace counts as cleanup warnings. An explicit workspace cap remains
-enforced. Nested locations and missing markers have separate diagnostics;
-SessionStart stamps the active workspace automatically. Read live results
-instead of treating an older machine snapshot as current.
+The SessionStart backstop (`.claude/hooks/stamp-workspace.mjs`) writes a marker
+into an unmarked linked checkout that a session starts in. It stamps
+`parkPolicy: PARK_IF_REPRODUCIBLE`, the door's own default, never `KEEP`: `KEEP`
+comes only from `--keep` or a human edit. (Until 2026-11-25 it stamped `KEEP`,
+which made the merged-PR exception above unreachable for any checkout a session
+had opened and made the WorktreeRemove hook refuse it forever.) A stamped
+checkout is still never parked while it is dirty, unpushed, held by a live
+process, or on an open PR without a recorded disposition.
+
+`repo:doctor` reports old merged checkouts, branch counts, and the checkout
+count as cleanup warnings; an explicit `HELM_MAX_MUTATION_WORKTREES` cap fails
+instead. Nested locations and missing markers have separate diagnostics, and
+SessionStart stamps the active workspace (above). Read live results instead of
+treating an older machine snapshot as current.
 
 Three cleanup paths share `scripts/lib/worktree-lifecycle.mjs`:
 
@@ -150,6 +176,9 @@ npx vitest run --project unit src/test/scripts/worktree-lifecycle.test.ts \
 Fixtures cover existing-name refusals, advisory default counts, enforced
 explicit caps, disk reserve, marker contents, dependency clones (never links), shared runtime links and
 environment updates, and the hook's path-only stdout contract.
+`scripts/__tests__/stamp-workspace-backstop.test.ts` pins the backstop: a
+checkout it stamps parks once its PR merges, and the dirty, unpushed and
+live-process refusals still hold.
 
 The Supabase CLI also shares canonical `supabase/.temp/project-ref` and
 `pooler-url`, so `--linked` commands have the same project identity in every
@@ -191,7 +220,7 @@ purpose: this repo keeps no PreToolUse hook outside an audit session, see
   installed while `next dev|build` is running. It also points a bare `promptfoo` /
   `momentic` call at its pinned form.
 - **On-demand tools** (not dependencies, so they do not bloat every install):
-  `npm run evals` / `npx --yes promptfoo@0.124.0 <cmd>`; `npx --yes momentic@3.63.1 <cmd>`.
+  `npx --yes promptfoo@0.124.0 <cmd>`; `npx --yes momentic@3.63.1 <cmd>`.
   The pins live in `ON_DEMAND_TOOLS` in the hook, `package.json` and
   `.circleci/config.yml`; bump them together.
 

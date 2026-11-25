@@ -11,8 +11,8 @@
  * ⚠️ THE PRODUCTION REF IS A DENY, NOT AN ALLOW. An earlier version of this
  * guard treated `qmnssrrolpinvwjjnufo` as the expected demo project and let it
  * through on `--confirm` alone. That ref is PRODUCTION — the same one
- * `.env.local` points at, and the same one scripts/seed-baseball-stats.mjs:85
- * and scripts/seed-baseball-box-scores.mjs:36 both REFUSE by name. A guard that
+ * `.env.local` points at, and the same one scripts/seed/seed-baseball-stats.mjs:85
+ * and scripts/seed/seed-baseball-box-scores.mjs:36 both REFUSE by name. A guard that
  * allowlists the one target it exists to protect is worse than no guard,
  * because it reads as protection.
  *
@@ -27,8 +27,8 @@
  *     hit a foreign project by accident, only on purpose.
  *
  * WHY THIS IS A MODULE AND NOT A COPY IN EACH SCRIPT: it started as ~130 lines
- * inline in scripts/seed-baseball-demo.ts, which meant
- * scripts/seed-baseball-e2e.ts — a script CI ran against production on every
+ * inline in scripts/seed/seed-baseball-demo.ts, which meant
+ * scripts/seed/seed-baseball-e2e.ts — a script CI ran against production on every
  * push — had no guard at all. A safety rule that only one of its callers
  * enforces is not a safety rule. Extracting it also makes it executable in the
  * unit suite: the two typo-squat classes below are now asserted by behaviour

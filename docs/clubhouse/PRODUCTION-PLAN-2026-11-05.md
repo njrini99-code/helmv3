@@ -1,5 +1,9 @@
 # Clubhouse redesign: production plan
 
+> **Historical.** Clubhouse went live for every team on 2026-11-15 and the flag
+> and its switches are removed. This page records the plan as it was. Current
+> state, rollback and what is left: [STATUS.md](STATUS.md).
+
 Owner's goal, 5 Nov 2026: ready for production and usable tomorrow. This file is
 the working plan. Status updates go in the Status table.
 

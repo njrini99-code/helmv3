@@ -1,6 +1,6 @@
 /**
  * demo-program-sim.ts — pure, deterministic box-score simulation used by
- * scripts/seed-baseball-demo-program.ts (Fixes #912).
+ * scripts/seed/seed-baseball-demo-program.ts (Fixes #912).
  *
  * WHY THIS LIVES UNDER src/lib (not inline in the script):
  *   scripts/*.ts files are never exercised by `npm test` (vitest's "unit"
@@ -24,7 +24,7 @@
 
 // -----------------------------------------------------------------------------
 // Seeded PRNG — mulberry32, seeded from a string via a small FNV-1a hash.
-// Same algorithm shape used by scripts/seed-baseball-box-scores.mjs.
+// Same algorithm shape used by scripts/seed/seed-baseball-box-scores.mjs.
 // -----------------------------------------------------------------------------
 
 export function seedFromString(s: string): number {

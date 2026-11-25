@@ -9,7 +9,7 @@
 //
 // The token is an HMAC-SHA256 of the coach id, keyed by CRM_UNSUB_SECRET,
 // truncated to the first 16 hex chars — exactly matching
-// scripts/process-sequence-batch.mjs.
+// scripts/crm/process-sequence-batch.mjs.
 //
 // Node-runtime only (uses node:crypto). Import from API routes / server code.
 // ============================================================================
@@ -20,7 +20,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 // env var is unset, which is exactly what happened (found 2026-08-01, see
 // scripts/check-env-secret-fallbacks.mjs). Fail closed on SIGNING instead,
 // mirroring createAdminClient()'s missing-key behaviour. Must be set in BOTH
-// Vercel and whatever env scripts/process-sequence-batch.mjs runs under -- the
+// Vercel and whatever env scripts/crm/process-sequence-batch.mjs runs under -- the
 // two must produce byte-identical tokens.
 //
 // Resolved LAZILY, per call. Reading it at module scope made the throw happen at
@@ -50,7 +50,7 @@ function requireUnsubSecret(): string {
 // deployed were signed with the old key. Accept those too so in-flight
 // unsubscribe links keep working, without letting any NEW link use the weak key
 // (nothing signs with it -- signUnsubToken() only ever uses CRM_UNSUB_SECRET,
-// and scripts/process-sequence-batch.mjs fails closed too).
+// and scripts/crm/process-sequence-batch.mjs fails closed too).
 //
 // 2026-08-27 (security scan finding F6, CWE-798): the legacy key used to be a
 // PLAINTEXT LITERAL right here, and the window runs until November — so it was
@@ -75,7 +75,7 @@ function resolveLegacyUnsubSecret(): string | null {
   return raw ? raw : null;
 }
 
-// Base URL for the emailed unsubscribe link. scripts/process-sequence-batch.mjs uses
+// Base URL for the emailed unsubscribe link. scripts/crm/process-sequence-batch.mjs uses
 // NEXT_PUBLIC_APP_URL (default https://helmsportslabs.com); keep that FIRST so existing
 // links stay byte-identical, with NEXT_PUBLIC_SITE_URL / HELM_DOMAIN as fallbacks.
 const APP_URL = (
@@ -126,7 +126,7 @@ export function verifyUnsubToken(coachId: string | null | undefined, token: stri
 /**
  * The exact unsubscribe URL emailed today:
  *   {APP_URL}/api/crm/unsubscribe?c=<coachId>&t=<token>
- * (matches scripts/process-sequence-batch.mjs `unsubUrl()` param shape).
+ * (matches scripts/crm/process-sequence-batch.mjs `unsubUrl()` param shape).
  *
  * Throws when CRM_UNSUB_SECRET is unset — a send path must fail rather than mail
  * a link signed with a key that is readable in source. Callers are send paths, so

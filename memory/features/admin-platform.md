@@ -117,7 +117,7 @@ This area is high criticality because it often uses broader access patterns, ope
   stage, moved here from an Anthropic-hosted cloud routine (2026-09-02). Its
   collection/apply core is `src/lib/admin/triage-collect.ts` /
   `triage-apply.ts` (shared with the `npm run triage` CLI,
-  `scripts/run-triage.ts`, which is now a thin wrapper over both) and its
+  `scripts/coachhelm/run-triage.ts`, which is now a thin wrapper over both) and its
   analyzer core is `src/lib/admin/rca-run.ts` (shared with the super-admin
   `analyzeErrorFingerprint` server action). See
   `docs/ai-system/selfheal/README.md`.
@@ -287,7 +287,8 @@ them would have broken those routes, not the dead one.
   (The launchd Repair script and its own Sentry check-in helper —
   scripts/lib/sentry-cron-checkin.mjs no longer exists — were removed 2026-09-05
   along with the rest of the launchd Repair path — see `memory/features/admin-selfheal.md`;
-  Repair ran as `.github/workflows/selfheal-repair.yml` from 2026-09-05 and,
+  Repair ran as a GitHub Actions workflow from 2026-09-05 (deleted 2026-11-25;
+  .github/workflows/selfheal-repair.yml no longer exists) and,
   since 2026-09-23, as the Claude desktop health routine; both report through
   a `background_job_logs` heartbeat, not a Sentry Cron Monitor.)
 - **Only a TOTALLY blind reliability run returns 503; a partially blind one
@@ -501,7 +502,7 @@ them would have broken those routes, not the dead one.
   fixed column list that omits it. So the warning `InlineNotice` in
   `TracesClient.tsx` can only ever render on the opened trace's detail panel —
   never as a fleet-list row badge — without a list-RPC migration change.
-- **`npm run flight-recorder:audit`** (`scripts/flight-recorder-audit.mjs` +
+- **`npm run flight-recorder:audit`** (`scripts/observability/flight-recorder-audit.mjs` +
   `scripts/lib/flight-recorder-audit-lib.mjs`) is the read-only, post-deploy
   check that the two in-flight timing/checkpoint branches actually wrote real
   data: runs/steps/distinct-step-keys/steps-with-identity/zero-step-runs/

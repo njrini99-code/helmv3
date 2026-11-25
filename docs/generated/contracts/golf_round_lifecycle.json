@@ -6,7 +6,7 @@
     "via": "direct",
     "note": null
   },
-  "anchor_sha": "d2241d263f2d",
+  "anchor_sha": "c7f9d4a04786",
   "current_contract": [
     {
       "id": "c1-status",
@@ -362,7 +362,7 @@
     {
       "id": "c18-service",
       "kind": "service",
-      "text": "scripts/coachhelm-prewarm-round-reviews.ts",
+      "text": "scripts/coachhelm/coachhelm-prewarm-round-reviews.ts",
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
@@ -374,7 +374,7 @@
       "refs": {
         "paths": [],
         "globs": [
-          "scripts/coachhelm-prewarm-round-reviews.ts"
+          "scripts/coachhelm/coachhelm-prewarm-round-reviews.ts"
         ],
         "identifiers": []
       },
@@ -383,7 +383,7 @@
     {
       "id": "c19-service",
       "kind": "service",
-      "text": "scripts/golf-demo-refresh.ts",
+      "text": "scripts/seed/golf-demo-refresh.ts",
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
@@ -395,7 +395,7 @@
       "refs": {
         "paths": [],
         "globs": [
-          "scripts/golf-demo-refresh.ts"
+          "scripts/seed/golf-demo-refresh.ts"
         ],
         "identifiers": []
       },
@@ -404,7 +404,7 @@
     {
       "id": "c20-service",
       "kind": "service",
-      "text": "scripts/verify-golf-demo-coverage.ts",
+      "text": "scripts/seed/verify-golf-demo-coverage.ts",
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
@@ -416,7 +416,7 @@
       "refs": {
         "paths": [],
         "globs": [
-          "scripts/verify-golf-demo-coverage.ts"
+          "scripts/seed/verify-golf-demo-coverage.ts"
         ],
         "identifiers": []
       },
@@ -1333,7 +1333,7 @@
     {
       "id": "c65-current_state",
       "kind": "current_state",
-      "text": "Both shells run the offline sync engine (`src/lib/offline/sync-engine.ts`) for\nthe whole session. Fairway starts it in `OfflineProvider`, and Clubhouse starts\nit in `src/clubhouse/shell/OfflineSync.tsx` (swap audit F-14, 2026-09-30).\nQueued rounds, holes and shots therefore sync on the engine's interval, after a\nreload and on reconnect, not only while a round screen is open. With the\nClubhouse flag on, `/golf/dashboard/rounds/recover` opens the Clubhouse recovery\nscreen. New and Continue round use that destination when submission requires\nrecovery. The screen exposes device snapshots with Restore, Retry and explicit\nDiscard, rather than sending the player to a library that cannot read them\n(resolved F-02, `docs/clubhouse/history/SWAP_AUDIT.md`). Source and unit verification\nare recorded there; a physical-device failed-submit journey remains unverified.",
+      "text": "Both shells run the offline sync engine (`src/lib/offline/sync-engine.ts`) for\nthe whole session. Fairway starts it in `OfflineProvider`, and Clubhouse starts\nit in `src/clubhouse/shell/OfflineSync.tsx` (swap audit F-14, 2026-09-30).\nQueued rounds, holes and shots therefore sync on the engine's interval, after a\nreload and on reconnect, not only while a round screen is open. With the\nClubhouse flag on, `/golf/dashboard/rounds/recover` opens the Clubhouse recovery\nscreen. New and Continue round use that destination when submission requires\nrecovery. The screen exposes device snapshots with Restore, Retry and explicit\nDiscard, rather than sending the player to a library that cannot read them\n(resolved F-02, `docs/clubhouse/SWAP_AUDIT.md`). Source and unit verification\nare recorded there; a physical-device failed-submit journey remains unverified.",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/golf-round-lifecycle.md",
@@ -1346,7 +1346,7 @@
         "paths": [
           "src/lib/offline/sync-engine.ts",
           "src/clubhouse/shell/OfflineSync.tsx",
-          "docs/clubhouse/history/SWAP_AUDIT.md"
+          "docs/clubhouse/SWAP_AUDIT.md"
         ],
         "globs": [],
         "identifiers": []
@@ -1516,7 +1516,7 @@
     {
       "id": "c73-service",
       "kind": "service",
-      "text": "- `src/lib/coachhelm/v2/post-round-trigger.ts`\n- `src/lib/coachhelm/v2/shot-analysis/**`\n- `src/lib/golf/round-review/deterministic-review.ts` — worker-safe\n  (non-cookie, no `revalidatePath`) deterministic review generation for\n  `scripts/coachhelm-prewarm-round-reviews.ts` (CoachHelm repair plan\n  §5.5/§14.8 Package 6, the 30-day missing-review pre-warm). Insert-only:\n  `writeReviewIfAbsent` always upserts with `ignoreDuplicates: true`, so it\n  can create a missing review but never overwrite an existing one's\n  coach-authored/published/shared state. Deliberately skips the CoachHelm v2\n  enhancement branch (deterministic-only) — see the module's header comment.\n- `src/lib/observability/helm-flight-recorder.ts`,\n  `src/lib/observability/golf-round-flight-workflow.ts` — the\n  `trace_runs`/`helm_debug` diagnostic trace AND (as of 2026-09-03) the\n  Sentry `helm.workflow.*` metric + structured log for `golf.round.submit`/\n  `.autosave`/`golf.shot.delete`/`.add_or_edit`. See the \"Current State\"\n  note above.",
+      "text": "- `src/lib/coachhelm/v2/post-round-trigger.ts`\n- `src/lib/coachhelm/v2/shot-analysis/**`\n- `src/lib/golf/round-review/deterministic-review.ts` — worker-safe\n  (non-cookie, no `revalidatePath`) deterministic review generation for\n  `scripts/coachhelm/coachhelm-prewarm-round-reviews.ts` (CoachHelm repair plan\n  §5.5/§14.8 Package 6, the 30-day missing-review pre-warm). Insert-only:\n  `writeReviewIfAbsent` always upserts with `ignoreDuplicates: true`, so it\n  can create a missing review but never overwrite an existing one's\n  coach-authored/published/shared state. Deliberately skips the CoachHelm v2\n  enhancement branch (deterministic-only) — see the module's header comment.\n- `src/lib/observability/helm-flight-recorder.ts`,\n  `src/lib/observability/golf-round-flight-workflow.ts` — the\n  `trace_runs`/`helm_debug` diagnostic trace AND (as of 2026-09-03) the\n  Sentry `helm.workflow.*` metric + structured log for `golf.round.submit`/\n  `.autosave`/`golf.shot.delete`/`.add_or_edit`. See the \"Current State\"\n  note above.",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/golf-round-lifecycle.md",
@@ -1529,7 +1529,7 @@
         "paths": [
           "src/lib/coachhelm/v2/post-round-trigger.ts",
           "src/lib/golf/round-review/deterministic-review.ts",
-          "scripts/coachhelm-prewarm-round-reviews.ts",
+          "scripts/coachhelm/coachhelm-prewarm-round-reviews.ts",
           "src/lib/observability/helm-flight-recorder.ts",
           "src/lib/observability/golf-round-flight-workflow.ts"
         ],

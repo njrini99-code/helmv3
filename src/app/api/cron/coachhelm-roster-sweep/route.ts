@@ -11,7 +11,7 @@
  * Runs FIRST in the nightly chain (02:00). Everything downstream —
  * standing-refresh, genome, causality, goal-suggestions, calibration,
  * lifecycle — depends on the insight state this sweep produces, so it must
- * complete before any of them. See scripts/coachhelm-refresh-all.sh for the
+ * complete before any of them. See scripts/coachhelm/coachhelm-refresh-all.sh for the
  * canonical order.
  *
  * Who runs: every player whose most recent completed round is unanalyzed

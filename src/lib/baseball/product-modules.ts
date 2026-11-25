@@ -84,7 +84,7 @@ export const PRODUCT_MODULES: Readonly<Record<ProductModuleId, ProductModule>> =
       'server route guards in server-route-guards.ts still match the intended ' +
       'program types; (3) recruiting tables still satisfy current RLS — they ' +
       'were not exercised while disabled, so policy drift is likely; ' +
-      '(4) recruiting seed data exists — scripts/seed-baseball-demo-program.ts ' +
+      '(4) recruiting seed data exists — scripts/seed/seed-baseball-demo-program.ts ' +
       'Section C (3 feeder orgs, 8 recruits, 8 watchlist rows) and its ' +
       'stale-outreach coach insight are BOTH gated on this flag, so they come ' +
       'back automatically; re-run `npm run seed:baseball:demo`; ' +

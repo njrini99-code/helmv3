@@ -4,7 +4,7 @@
 -- restore. Run as postgres, in one transaction (db query --linked does that).
 --
 -- What rolling back costs: the generator can no longer write (the cron and
--- scripts/golf-demo-refresh.ts stop at golf_demo_begin with "plumbing
+-- scripts/seed/golf-demo-refresh.ts stop at golf_demo_begin with "plumbing
 -- missing"). Rows it already wrote stay on the demo team; the ledger that
 -- marks them as generated goes, so a later re-apply treats them as not its own
 -- and skips them. Save the ledger first if the generator will come back:

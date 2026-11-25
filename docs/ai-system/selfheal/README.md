@@ -49,8 +49,9 @@ past 03/09/15/21 UTC (30 minutes after Diagnose), following
 `metadata.runner = 'desktop-routine'`, lands its own PR once required checks
 are green (owner-authorized 2026-09-23; never deploys), and performs the
 fix-is-live resolutions the Close cron cannot. The GitHub Actions workflow
-`.github/workflows/selfheal-repair.yml` that ran Repair from 2026-09-05 is
-disabled; its heartbeats (`metadata.runtime = 'github-actions'`) are history.
+that ran Repair from 2026-09-05 to 2026-09-23 was disabled, then deleted on
+2026-11-25 (.github/workflows/selfheal-repair.yml no longer exists); its
+heartbeats (`metadata.runtime = 'github-actions'`) are history.
 >
 > **Previously ran as a launchd agent on the owner's Mac in parallel with the
 > GHA workflow, retired 2026-09-05.** Both runners read the same

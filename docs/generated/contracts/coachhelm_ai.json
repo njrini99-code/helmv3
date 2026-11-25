@@ -6,7 +6,7 @@
     "via": "direct",
     "note": null
   },
-  "anchor_sha": "d2241d263f2d",
+  "anchor_sha": "c7f9d4a04786",
   "current_contract": [
     {
       "id": "c1-status",
@@ -4140,7 +4140,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_TRACKED_FILES",
         "confidence": "mechanical",
-        "evidence": "src/components/golf/coachhelm/** — matches 0 files in `git ls-files` as of d2241d263f2d"
+        "evidence": "src/components/golf/coachhelm/** — matches 0 files in `git ls-files` as of c7f9d4a04786"
       }
     }
   ],

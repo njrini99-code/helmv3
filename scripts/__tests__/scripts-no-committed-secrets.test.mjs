@@ -15,7 +15,7 @@ const HARDCODED_JWT = /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9/;
 const HARDCODED_PROD_URL = /qmnssrrolpinvwjjnufo\.supabase\.co/;
 // Known-leaked demo credential (#516 follow-up) — must never be reintroduced
 // literally, even for the developer's own demo accounts. Real values belong
-// in env vars only (see scripts/seed-rini-baseball-demo.ts).
+// in env vars only (see scripts/seed/seed-rini-baseball-demo.ts).
 const KNOWN_LEAKED_DEMO_PASSWORD = /Pirates#09/;
 const PASSWORD_LITERAL_ASSIGNMENT =
   /\b(?:const|let|var)\s+[$\w]*(?:PASS|PASSWORD|PW)[$\w]*\s*=\s*(?:process\.env\.[A-Z0-9_]+\s*\|\|\s*)?(['"`])([^'"`\n]{8,})\1/g;
@@ -23,15 +23,15 @@ const PASSWORD_PROPERTY_LITERAL = /\bpassword\s*:\s*(['"`])([^'"`\n]{8,})\1/g;
 
 const SCRIPT_EXTENSIONS = new Set(['.ts', '.mjs', '.js', '.cjs', '.sh']);
 const GENERIC_PASSWORD_ALLOWLIST = new Set([
-  'scripts/seed-baseball-e2e.ts::TestCoach123!',
-  'scripts/seed-baseball-e2e.ts::TestPlayer123!',
-  'scripts/seed-baseball-e2e.ts::BaseballE2eSeed2026!',
-  'scripts/ui-smoke.mjs::Demo2026',
-  'scripts/seed-baseball-lifting-demo.ts::BaseballDemo2026',
-  'scripts/gen-appstore-screenshots.mjs::Demo2026',
-  'scripts/seed-baseball-roster.mjs::HelmSeed2026!!',
-  'scripts/seed-baseball-demo.ts::BaseballDemo2026',
-  'scripts/seed-baseball-demo-program.ts::BaseballDemo2026',
+  'scripts/seed/seed-baseball-e2e.ts::TestCoach123!',
+  'scripts/seed/seed-baseball-e2e.ts::TestPlayer123!',
+  'scripts/seed/seed-baseball-e2e.ts::BaseballE2eSeed2026!',
+  'scripts/ui-intelligence/ui-smoke.mjs::Demo2026',
+  'scripts/seed/seed-baseball-lifting-demo.ts::BaseballDemo2026',
+  'scripts/ui-intelligence/gen-appstore-screenshots.mjs::Demo2026',
+  'scripts/seed/seed-baseball-roster.mjs::HelmSeed2026!!',
+  'scripts/seed/seed-baseball-demo.ts::BaseballDemo2026',
+  'scripts/seed/seed-baseball-demo-program.ts::BaseballDemo2026',
 ]);
 const SECRET_FIXTURE_ALLOWLIST = new Set([
   'scripts/__tests__/check-required-env.test.mjs::prod-url-fixture',

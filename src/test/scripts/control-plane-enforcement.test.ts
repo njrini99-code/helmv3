@@ -80,9 +80,9 @@ describe('hook wiring is real', () => {
     // The same guard also reads Bash and WebFetch in an audit (15 Nov 2026), so a shell call or a fetch cannot reach the
     // live site either.
     const blocking = hookRows().filter((r) => r.event === 'PreToolUse');
+    // One entry, one matcher (merged 25 Nov 2026 from two entries that ran the same command).
     expect(blocking.map((r) => [r.matcher, scriptPath(r.command)])).toEqual([
-      ['mcp__.*', '.claude/hooks/no-prod-in-audit.mjs'],
-      ['Bash|WebFetch', '.claude/hooks/no-prod-in-audit.mjs'],
+      ['mcp__.*|Bash|WebFetch', '.claude/hooks/no-prod-in-audit.mjs'],
     ]);
     for (const row of blocking) expect(row.command).toMatch(/^\[ "\$HELM_AUDIT" = "1" \] \|\| exit 0;/);
   });

@@ -1,5 +1,9 @@
 # Clubhouse release candidate — 2026-10-02
 
+> **Historical.** Clubhouse went live for every team on 2026-11-15 and the flag
+> and its switches are removed. This page records the plan as it was. Current
+> state, rollback and what is left: [STATUS.md](STATUS.md).
+
 ## October 6 current audit
 
 [ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) inventories the current flagged

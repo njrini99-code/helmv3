@@ -636,7 +636,7 @@ The product must never show:
 | P1-4 | Fix off-palette `indigo`/`sky` chips in `PlayerNotesSection.tsx` and anywhere else in baseball components |
 | P1-5 | Add `<AnimatePresence>` tab transitions to `CommandCenterClient.tsx` and `PlayerProfileClient.tsx` |
 | P1-6 | Consolidate 3 near-identical shell layouts into single layout with role-aware sidebar from `useBaseballAuth()` |
-| P1-7 | Demo data: extend `scripts/seed-baseball-demo.ts` with lifting data + lifting-coach demo login |
+| P1-7 | Demo data: extend `scripts/seed/seed-baseball-demo.ts` with lifting data + lifting-coach demo login |
 | P1-8 | `trend_magnitude` card permanently invisible — wire or remove (data honesty rule) |
 | P1-9 | Events page bypasses server actions — wired directly to Supabase client; rewrite to use server action |
 | P1-10 | `demo_mode_enabled` setting does nothing — wire to demo data gate or remove |

@@ -13,7 +13,7 @@ import { RECRUITING_ENABLED, RECRUITING_SUNSET_REASON } from './helpers/product-
  *
  * Exercises the real recruiting pipeline board (Kanban), list view, grad-year
  * filter, notes, and keyboard navigation against the deterministic fixture
- * provisioned by `scripts/seed-baseball-e2e.ts` (issue #375):
+ * provisioned by `scripts/seed/seed-baseball-e2e.ts` (issue #375):
  *   - one off-roster pipeline candidate ("Jordan Hayes", grad year 2027) on
  *     the seeded test coach's watchlist, stage = "watchlist"
  *

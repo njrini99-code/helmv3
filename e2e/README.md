@@ -101,7 +101,7 @@ COACH : testcoach@helm.test  / TestCoach123!
 PLAYER: testplayer@helm.test / TestPlayer123!
 ```
 
-The seed script (`scripts/seed-baseball-e2e.ts`) attaches both to a
+The seed script (`scripts/seed/seed-baseball-e2e.ts`) attaches both to a
 dedicated `E2E Test University Baseball` team, with the coach granted full
 `baseball_team_coach_staff` capabilities (head coach, all `can_*` flags) so
 every coach-only write path the specs touch (camps, box scores, pipeline
@@ -121,7 +121,7 @@ Every seeded row's `id` is derived from a stable key via
 UUID. Re-running the script `upsert`s the same rows in place instead of
 duplicating them — safe to run repeatedly, including in CI on every PR. The
 `baseballhelm-e2e` namespace is fixed and distinct from
-`scripts/seed-baseball-demo.ts`'s `baseballhelm-demo-phase1` namespace, so
+`scripts/seed/seed-baseball-demo.ts`'s `baseballhelm-demo-phase1` namespace, so
 the two seed scripts can never collide.
 
 The one exception: the test player's camp registration. Registering via the
@@ -203,7 +203,7 @@ Rather than accept that as permanent test-database pollution, the
 that deletes exactly the `baseball_games` row(s) (and their linked
 `baseball_events` row(s)) it created, by opponent name, via a service-role
 Supabase client — the same construction pattern
-`scripts/seed-baseball-e2e.ts` uses for seeding
+`scripts/seed/seed-baseball-e2e.ts` uses for seeding
 (`NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, session-less).
 The teardown is a silent no-op (never a failure) when the service-role key
 isn't present in the environment, matching every other seed/cleanup path in
@@ -505,7 +505,7 @@ E2E_BASEBALL_*_PASSWORD and run `npm run seed:baseball:ci` ``.
 supabase start
 
 # Dry run (prints the plan AND the resolved target, writes nothing):
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 npx tsx scripts/seed-baseball-demo.ts
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 npx tsx scripts/seed/seed-baseball-demo.ts
 
 # Actually seed (idempotent — safe to re-run any time, upserts by deterministic id):
 npm run seed:baseball:ci
@@ -527,7 +527,7 @@ operator's LAN is not loopback.
 
 This creates/upserts **Demo University Baseball** with a coach
 (`demo-coach@baseballhelmdemo.com`) and player (`demo-player@baseballhelmdemo.com`),
-both with password `BaseballDemo2026` (see `scripts/seed-baseball-demo.ts` for
+both with password `BaseballDemo2026` (see `scripts/seed/seed-baseball-demo.ts` for
 the full roster + practice/lift/readiness/insight fixtures it seeds). If you
 point `E2E_BASEBALL_*` at those exact values, the demo seed doubles as the
 CI fixture; otherwise point them at a dedicated CI-only account and seed that

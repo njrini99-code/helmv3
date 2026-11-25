@@ -319,7 +319,7 @@ export interface ShotRow {
 // calculateComparisonAverages and buildHoleBreakdowns moved to
 // ./round-review-content (a plain, non-'use server' module) so the Package 6
 // pre-warm tool (src/lib/golf/round-review/deterministic-review.ts,
-// scripts/coachhelm-prewarm-round-reviews.ts) can reuse the exact same
+// scripts/coachhelm/coachhelm-prewarm-round-reviews.ts) can reuse the exact same
 // deterministic content logic outside a server action. A `'use server'` file
 // may only export async functions as values, so these pure functions could
 // not stay here and still be importable from a script. HoleParRow and

@@ -308,7 +308,7 @@
   (`src/app/admin/database/{log-evidence-actions.ts,LogEvidenceForm.tsx}`)
   and four new `/admin/database` page sections (Platform, Advisors, Alert
   policy, Fetch Supabase evidence); added a `db-observability` repo-doctor
-  check module (14 keys) and `scripts/db-observability-trace-cert.mjs`
+  check module (14 keys) and `scripts/observability/db-observability-trace-cert.mjs`
   (static W3C propagation certification, 5/5 PASS); added the
   `'database'` `IncidentSourceName` (minimal edit to
   `src/lib/admin/incidents/{types,sources}.ts` plus a new adapter,
@@ -325,7 +325,7 @@
   (`PLATFORM_METRIC_ALLOW_LIST`, `metrics-api.ts`) is DOCS-DERIVED, not
   live-verified — `SUPABASE_ACCESS_TOKEN`/`SUPABASE_SERVICE_ROLE_KEY` were
   unavailable in the worktree this was built in (`.env.local` withheld by
-  `.worktreeinclude`, per `AGENTS.md`). `scripts/db-observability-metrics-names.mjs`
+  `.worktreeinclude`, per `AGENTS.md`). `scripts/observability/db-observability-metrics-names.mjs`
   is the read-only discovery script to correct it once a credential is
   available; every derived field degrades to `null` on a name mismatch, so
   a wrong allow-list entry cannot fabricate a healthy or unhealthy reading.
@@ -345,7 +345,7 @@
 - Verified: `npx tsc --noEmit -p .` clean; `npx eslint` (changed files,
   `--max-warnings 0`) clean; 575+ vitest tests pass across
   `src/lib/observability/supabase`, `src/lib/admin/database`,
-  `src/lib/admin/incidents`; `node scripts/db-observability-trace-cert.mjs`
+  `src/lib/admin/incidents`; `node scripts/observability/db-observability-trace-cert.mjs`
   PASS 5/5; `npm run repo:doctor` PASS (1 named WARN for the
   `db_platform_samples` retention gap, 0 FAIL/DRIFT/BLOCKED). No migration
   applied to production — see `supabase/migrations/HELD.md`.
@@ -428,11 +428,11 @@
   (`src/app/admin/traces/trace-explorer-layers.ts` +
   `TraceExplorerLayerPanel.tsx`, mounted in `TraceTree.tsx`); replay
   fixtures and a runner (`src/lib/observability/supabase/__fixtures__/`,
-  `scripts/db-observability-replay.mjs`); a certification matrix
-  (`scripts/db-observability-certify.mjs`); a fault-injection suite; a
-  static security-posture check (`scripts/db-observability-security.mjs`);
+  `scripts/observability/db-observability-replay.mjs`); a certification matrix
+  (`scripts/observability/db-observability-certify.mjs`); a fault-injection suite; a
+  static security-posture check (`scripts/observability/db-observability-security.mjs`);
   and a GENERATED coverage matrix
-  (`scripts/db-observability-coverage.mjs` ->
+  (`scripts/observability/db-observability-coverage.mjs` ->
   `docs/observability/SUPABASE_COVERAGE_MATRIX.md`, `--check` supported).
   Full narrative in `docs/observability/SUPABASE_CERTIFICATION.md`.
 - Production-code changes are three and are all one seam:

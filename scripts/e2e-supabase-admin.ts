@@ -3,7 +3,7 @@
  *
  * Service-role Supabase client for E2E teardown-only writes (deleting rows a
  * spec itself created). Same construction pattern as
- * `scripts/seed-baseball-e2e.ts` — `NEXT_PUBLIC_SUPABASE_URL` +
+ * `scripts/seed/seed-baseball-e2e.ts` — `NEXT_PUBLIC_SUPABASE_URL` +
  * `SUPABASE_SERVICE_ROLE_KEY`, session-less.
  *
  * Lives in scripts/ (never bundled, Node-only) so no e2e spec file has to

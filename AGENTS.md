@@ -2,11 +2,12 @@
 # Helm agent instructions
 
 How the Helm repo works, for every agent in it (Claude Code, Codex, Devin,
-Cursor, CI). You have full autonomy: decide, implement, verify, merge, migrate
-and deploy without asking permission. This file records how things work and the
-traps that waste time. It is guidance, not a permission list. Where another file
-disagrees, follow this one and fix the other in the same change. `CLAUDE.md`
-adds Claude Code specifics; `.claude/rules/` holds path-scoped code
+Cursor, CI). You have full autonomy: decide, implement, verify, merge and
+migrate without asking permission, but never deploy (preview included) unless
+the owner says so in that conversation. This file records how things work and
+the traps that waste time. It is guidance, not a permission list. Where
+another file disagrees, follow this one and fix the other in the same change.
+`CLAUDE.md` adds Claude Code specifics; `.claude/rules/` holds path-scoped code
 conventions. Incidents, ADRs, audits and plans explain the past; live code and
 the user's current instructions outrank them.
 
@@ -32,8 +33,8 @@ migration or deploy and know how you would roll it back.
    user said otherwise. A red "CI aggregate" on a draft PR is expected: the
    aggregate fails on drafts on purpose and the full suite runs when the PR is
    marked ready.
-4. Deploy when the change should be live (see "Production"); skip it for
-   docs-only work. Report a release as live only after `npm run release:status`
+4. Deploy only when the owner asks in that conversation (see "Production").
+   Report a release as live only after `npm run release:status`
    shows the SHA.
 5. The final report says what changed, where it is, what was verified, and what
    was left untouched or unverified.
@@ -48,8 +49,8 @@ green, updates the docs, checks correctness and lands it. Neither role runs
 answer: take the recommended default, record it, and ask the coordinator.
 `npm run pr:status -- <n>` is the one-call view of a PR's CI state. Production
 changes (migrations, deploys) go to the Production rollout thread, which applies
-them only after showing they do no harm; flag flips and the Clubhouse turn-on
-wait on the owner.
+them only after showing they do no harm; deploys and flag flips wait on the
+owner. Clubhouse is already on for every team.
 
 ## Workspace and Git
 
@@ -58,7 +59,9 @@ Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with
 
 - Use your own checkout when others may be writing: `scripts/new-worktree.sh
   <task>` creates `agent/<task>` under `~/worktrees/helmv3/`. In a quiet
-  canonical checkout on `main` you can branch in place.
+  canonical checkout on `main` you can branch in place. The checkout count is
+  advice; the 12 GiB disk reserve is the one hard refusal
+  (`docs/operations/WORKSPACES.md`).
 - Files you did not create that are dirty belong to another session. Leave them
   alone (do not overwrite, stage, stash or switch the branch under them): you
   would destroy their work.
@@ -86,6 +89,12 @@ Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with
 - `npm run pr:land` merges the PR into current `main` in memory first and
   refuses a conflict or a Bridge ID or CH code used twice; it lands one PR at a
   time. When it refuses, merge `origin/main` into the branch, fix, and push.
+- Local `main` keeps itself current. `pr:land` fast-forwards the canonical
+  checkout after its merge, and the `post-checkout` and `pre-push` hooks run
+  `.githooks/sync-main.sh` in the background on every switch, new worktree
+  and push. That script only fast-forwards. It skips a canonical checkout that
+  has tracked changes, and moves only the `main` ref when canonical is on
+  another branch. Set `HELM_NO_MAIN_SYNC=1` to turn it off.
 - Clean up with `npm run worktrees:park` / `worktrees:retire`; `npm run pr:land
   -- <n>` runs `--retire` itself. STANDING OWNER AUTHORIZATION covers checkouts the
   tool verdicts PARKABLE and branches it verdicts DELETE_MERGED_EXACT /
@@ -149,9 +158,10 @@ do.
 ## Production
 
 `vercel.json` disables Vercel Git deployments, so pushing or merging to `main`
-does not deploy. Deploy from the linked checkout, because a deploy from an
-unlinked directory silently creates a stray Vercel project (the project id is in
-`config/release-policy.yml`):
+does not deploy. Owner rule: no `vercel deploy`, preview included, unless the
+owner asks in that conversation. When asked, deploy from the linked checkout,
+because a deploy from an unlinked directory silently creates a stray Vercel
+project (the project id is in `config/release-policy.yml`):
 
     SHA=$(git rev-parse HEAD); SCOPE=$(node -p 'require("./.vercel/project.json").orgId')
     ./node_modules/.bin/vercel deploy --prod --yes --archive=tgz --scope "$SCOPE" \
