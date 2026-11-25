@@ -220,7 +220,7 @@ purpose: this repo keeps no PreToolUse hook outside an audit session, see
   installed while `next dev|build` is running. It also points a bare `promptfoo` /
   `momentic` call at its pinned form.
 - **On-demand tools** (not dependencies, so they do not bloat every install):
-  `npm run evals` / `npx --yes promptfoo@0.124.0 <cmd>`; `npx --yes momentic@3.63.1 <cmd>`.
+  `npx --yes promptfoo@0.124.0 <cmd>`; `npx --yes momentic@3.63.1 <cmd>`.
   The pins live in `ON_DEMAND_TOOLS` in the hook, `package.json` and
   `.circleci/config.yml`; bump them together.
 

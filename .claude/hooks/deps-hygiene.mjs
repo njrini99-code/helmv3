@@ -33,7 +33,7 @@ const ENSURE = resolve(dirname(fileURLToPath(import.meta.url)), '../../scripts/e
 
 // name -> pinned invocation. Keep in sync with package.json scripts / CI.
 export const ON_DEMAND_TOOLS = {
-  promptfoo: 'npm run evals (or: npx --yes promptfoo@0.124.0 <cmd>)',
+  promptfoo: 'npx --yes promptfoo@0.124.0 <cmd>',
   momentic: 'npx --yes momentic@3.63.1 <cmd>',
   'react-devtools': 'npm run clubhouse:profile (npx --yes react-devtools@8.0.0)',
 };

@@ -46,9 +46,6 @@ Org is already installed at https://app.circleci.com/organization/github/njrini9
      they were reserved for a planned `lighthouse-preview` job that
      `config.yml` has never defined (see "What runs when" below). Don't add
      them speculatively.
-   - **For Promptfoo evals** (weekly job):
-     - `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` — the job no-ops
-       cleanly if neither is set.
    When you add Fastlane/TestFlight (see "Future" below), you'll
    additionally need:
    - `APP_STORE_CONNECT_API_KEY_ID`
@@ -61,7 +58,7 @@ Org is already installed at https://app.circleci.com/organization/github/njrini9
 
 | Workflow      | Trigger                                  | Jobs                                                 | Cost          |
 | ------------- | ---------------------------------------- | ---------------------------------------------------- | ------------- |
-| `weekly`      | Scheduled (Mondays 06:00 UTC, `run-weekly=true`) | knip, sqlfluff-full, squawk-migrations, npm-audit, stryker-coachhelm, promptfoo-evals, janitor | ~$2-3/week    |
+| `weekly`      | Scheduled (Mondays 06:00 UTC, `run-weekly=true`) | knip, sqlfluff-full, squawk-migrations, npm-audit, stryker-coachhelm, janitor | ~$2-3/week    |
 | `ios`         | Push to `main` / `release/*` / `ios/*` / `capacitor/*` / `agent/fix-circleci-ios-*` | ios-compile (M-series macOS)                         | ~$0.15-0.30/run |
 | `android`     | Push to `main` / `release/*` / `android/*` / `capacitor/*` / `ci/android-*` | android-compile (`cimg/android`, `assembleDebug`, no signing) | ~$0.05-0.10/run |
 

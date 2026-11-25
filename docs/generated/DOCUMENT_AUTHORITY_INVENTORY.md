@@ -340,7 +340,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | - |
 | `memory/glossary.md` | current | yes | yes | yes | - |
 | `memory/projects/golfhelm.md` | current | yes | yes | - | - |
-| `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | - |
 
 ### `PROCESS_CONTRACT`
 
@@ -480,7 +479,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 6 |
 | `docs/SECURITY_AUDIT.md` | current | yes | - | - | - |
 | `docs/UIUX_AUDIT.md` | current | - | - | - | - |
-| `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 1 |
+| `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 2 |
 | `docs/audits/BASEBALLHELM_HONEST_FEATURE_READ.md` | current | - | - | yes | - |
 | `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md` | current | - | - | yes | 1 |
 | `docs/audits/COACHHELM_PIPELINE_TRACE_2026-08-20.md` | current | - | - | yes | 5 |
@@ -537,7 +536,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-phone-audit-overlays.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-15-phone-audit-overlays.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-phone-audit-overlays.md` | current | - | - | - | - |
-| `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 4 |
+| `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 5 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
 | `docs/security/S4_TEAMMATE_READ_AUDIT_2026-10-21.md` | current | - | - | - | - |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | - |
@@ -548,13 +547,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/v3-page-audit.md` | current | yes | - | yes | - |
 | `memory/prompts/master-feature-audit.md` | current | - | - | - | - |
 | `supabase/investigations/shot_type_findings.md` | current | - | - | yes | - |
-| `tools/ultra-agent-audit/README.md` | current | - | - | - | - |
-| `tools/ux-flow-auditor/CLAUDE.md` | current | - | - | yes | - |
-| `tools/ux-flow-auditor/README-V4.md` | current | - | - | - | - |
-| `tools/ux-flow-auditor/README.md` | current | - | - | - | - |
-| `tools/ux-flow-auditor/SCREENSHOT_INTEGRATION_GUIDE.md` | current | - | - | - | 1 |
-| `tools/ux-flow-auditor/VISUAL_DASHBOARD_STATUS.md` | current | - | - | - | - |
-| `tools/ux-flow-auditor/dashboard-v6/README.md` | current | - | - | - | - |
 
 ### `STATE_SNAPSHOT`
 
@@ -743,10 +735,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `supabase/demo/README.md` | current | - | - | yes | - |
 | `supabase/functions/README.md` | current | - | - | - | - |
 | `supabase/rollbacks/README.md` | current | - | - | - | - |
-| `tests/golf/qualifier-hell/README.md` | current | - | - | - | - |
-| `tools/README.md` | current | - | - | yes | - |
-| `tools/baseballhelm-command-center/vendor/README.md` | current | - | - | - | - |
-| `tools/continuous-improvement/README.md` | current | - | - | - | 2 |
 
 ### `ARCHIVE`
 
@@ -2469,7 +2457,3 @@ them would bury everything above.
 | `src/lib/coachhelm/v3/chat/tasks/INVENTORY.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 7 |
 | `supabase/migrations/HELD.md` | current | - | - | yes | 5 |
-| `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
-| `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |
-| `tools/QUICK_REFERENCE.md` | current | - | - | - | - |
-| `tools/baseballhelm-command-center/CONTRACT.md` | current | - | - | - | - |
