@@ -122,4 +122,4 @@ The click-extraction trigger didn't install or the payload shape changed. Confir
 - Webhook: `src/app/api/webhooks/resend/route.ts`
 - Server actions: `src/app/golf/actions/resend-activity.ts` (includes `getEmailClicks` and `getCoachLastEmailActivity`)
 - UI components: `src/app/golf/admin/crm/components/resend/`
-- Backfill script: `backfill-resend-emails.ts` (deleted 2026-11-25; in git history)
+- Backfill script: `backfill-resend-emails.ts` (deleted 2026-11-25)
