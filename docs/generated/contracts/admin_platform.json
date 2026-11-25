@@ -6,7 +6,7 @@
     "via": "direct",
     "note": null
   },
-  "anchor_sha": "4655c6a04ba9",
+  "anchor_sha": "d2241d263f2d",
   "current_contract": [
     {
       "id": "c1-status",
@@ -15,7 +15,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1547,
+        "line": 1576,
         "heading": "admin_platform"
       },
       "date": null,
@@ -34,7 +34,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1548,
+        "line": 1577,
         "heading": "admin_platform"
       },
       "date": null,
@@ -53,7 +53,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1551,
+        "line": 1580,
         "heading": "admin_platform"
       },
       "date": null,
@@ -72,7 +72,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1585,
+        "line": 1614,
         "heading": "code.routes"
       },
       "date": null,
@@ -93,7 +93,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1586,
+        "line": 1615,
         "heading": "code.routes"
       },
       "date": null,
@@ -114,7 +114,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1592,
+        "line": 1621,
         "heading": "code.routes"
       },
       "date": null,
@@ -135,7 +135,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1593,
+        "line": 1622,
         "heading": "code.routes"
       },
       "date": null,
@@ -156,7 +156,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1594,
+        "line": 1623,
         "heading": "code.routes"
       },
       "date": null,
@@ -177,7 +177,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1595,
+        "line": 1624,
         "heading": "code.routes"
       },
       "date": null,
@@ -198,7 +198,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1596,
+        "line": 1625,
         "heading": "code.routes"
       },
       "date": null,
@@ -219,7 +219,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1597,
+        "line": 1626,
         "heading": "code.routes"
       },
       "date": null,
@@ -240,7 +240,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1598,
+        "line": 1627,
         "heading": "code.routes"
       },
       "date": null,
@@ -261,7 +261,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1599,
+        "line": 1628,
         "heading": "code.routes"
       },
       "date": null,
@@ -282,7 +282,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1600,
+        "line": 1629,
         "heading": "code.routes"
       },
       "date": null,
@@ -303,7 +303,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1601,
+        "line": 1630,
         "heading": "code.routes"
       },
       "date": null,
@@ -324,7 +324,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1602,
+        "line": 1631,
         "heading": "code.routes"
       },
       "date": null,
@@ -345,7 +345,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1603,
+        "line": 1632,
         "heading": "code.routes"
       },
       "date": null,
@@ -366,7 +366,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1604,
+        "line": 1633,
         "heading": "code.routes"
       },
       "date": null,
@@ -387,7 +387,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1605,
+        "line": 1634,
         "heading": "code.routes"
       },
       "date": null,
@@ -408,7 +408,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1606,
+        "line": 1635,
         "heading": "code.routes"
       },
       "date": null,
@@ -429,7 +429,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1607,
+        "line": 1636,
         "heading": "code.routes"
       },
       "date": null,
@@ -450,7 +450,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1608,
+        "line": 1637,
         "heading": "code.routes"
       },
       "date": null,
@@ -471,7 +471,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1610,
+        "line": 1639,
         "heading": "code.components"
       },
       "date": null,
@@ -492,7 +492,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1617,
+        "line": 1646,
         "heading": "code.components"
       },
       "date": null,
@@ -513,7 +513,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1618,
+        "line": 1647,
         "heading": "code.components"
       },
       "date": null,
@@ -534,7 +534,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1626,
+        "line": 1655,
         "heading": "code.components"
       },
       "date": null,
@@ -555,7 +555,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1631,
+        "line": 1660,
         "heading": "code.components"
       },
       "date": null,
@@ -576,7 +576,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1633,
+        "line": 1662,
         "heading": "code.api"
       },
       "date": null,
@@ -597,7 +597,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1637,
+        "line": 1666,
         "heading": "code.api"
       },
       "date": null,
@@ -618,7 +618,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1638,
+        "line": 1667,
         "heading": "code.api"
       },
       "date": null,
@@ -639,7 +639,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1642,
+        "line": 1671,
         "heading": "code.api"
       },
       "date": null,
@@ -660,7 +660,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1643,
+        "line": 1672,
         "heading": "code.api"
       },
       "date": null,
@@ -681,7 +681,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1644,
+        "line": 1673,
         "heading": "code.api"
       },
       "date": null,
@@ -702,7 +702,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1646,
+        "line": 1675,
         "heading": "code.actions"
       },
       "date": null,
@@ -723,7 +723,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1647,
+        "line": 1676,
         "heading": "code.actions"
       },
       "date": null,
@@ -744,7 +744,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1648,
+        "line": 1677,
         "heading": "code.actions"
       },
       "date": null,
@@ -765,7 +765,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1649,
+        "line": 1678,
         "heading": "code.actions"
       },
       "date": null,
@@ -786,7 +786,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1655,
+        "line": 1684,
         "heading": "code.actions"
       },
       "date": null,
@@ -807,7 +807,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1656,
+        "line": 1685,
         "heading": "code.actions"
       },
       "date": null,
@@ -828,7 +828,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1657,
+        "line": 1686,
         "heading": "code.actions"
       },
       "date": null,
@@ -849,7 +849,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1658,
+        "line": 1687,
         "heading": "code.actions"
       },
       "date": null,
@@ -870,7 +870,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1660,
+        "line": 1689,
         "heading": "code.services"
       },
       "date": null,
@@ -891,7 +891,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1661,
+        "line": 1690,
         "heading": "code.services"
       },
       "date": null,
@@ -912,7 +912,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1672,
+        "line": 1701,
         "heading": "code.services"
       },
       "date": null,
@@ -933,7 +933,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1673,
+        "line": 1702,
         "heading": "code.services"
       },
       "date": null,
@@ -954,7 +954,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1681,
+        "line": 1710,
         "heading": "code.services"
       },
       "date": null,
@@ -975,7 +975,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1698,
+        "line": 1727,
         "heading": "code.services"
       },
       "date": null,
@@ -996,7 +996,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1699,
+        "line": 1728,
         "heading": "code.services"
       },
       "date": null,
@@ -1017,7 +1017,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1700,
+        "line": 1729,
         "heading": "code.services"
       },
       "date": null,
@@ -1038,7 +1038,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1701,
+        "line": 1730,
         "heading": "code.services"
       },
       "date": null,
@@ -1059,7 +1059,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1713,
+        "line": 1742,
         "heading": "code.services"
       },
       "date": null,
@@ -1080,7 +1080,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1723,
+        "line": 1752,
         "heading": "code.db"
       },
       "date": null,
@@ -1101,7 +1101,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1724,
+        "line": 1753,
         "heading": "code.db"
       },
       "date": null,
@@ -1122,7 +1122,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1725,
+        "line": 1754,
         "heading": "code.db"
       },
       "date": null,
@@ -1143,7 +1143,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1726,
+        "line": 1755,
         "heading": "code.db"
       },
       "date": null,
@@ -1164,7 +1164,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1730,
+        "line": 1759,
         "heading": "code.db"
       },
       "date": null,
@@ -1185,7 +1185,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1731,
+        "line": 1760,
         "heading": "code.db"
       },
       "date": null,
@@ -1206,7 +1206,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1732,
+        "line": 1761,
         "heading": "code.db"
       },
       "date": null,
@@ -1227,7 +1227,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1733,
+        "line": 1762,
         "heading": "code.db"
       },
       "date": null,
@@ -1248,7 +1248,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1735,
+        "line": 1764,
         "heading": "code.tests"
       },
       "date": null,
@@ -1269,7 +1269,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1736,
+        "line": 1765,
         "heading": "code.tests"
       },
       "date": null,
@@ -1290,7 +1290,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1747,
+        "line": 1776,
         "heading": "code.tests"
       },
       "date": null,
@@ -1311,7 +1311,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1760,
+        "line": 1789,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -1330,7 +1330,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1761,
+        "line": 1790,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -1349,7 +1349,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1762,
+        "line": 1791,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -1368,7 +1368,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1748,
+        "line": 1777,
         "heading": "admin_platform"
       },
       "date": null,
@@ -1387,7 +1387,7 @@
       "source": {
         "kind": "feature_registry_ts",
         "path": "src/lib/admin/feature-registry.ts",
-        "line": 621,
+        "line": 637,
         "heading": "admin_dashboard"
       },
       "date": null,
@@ -1557,7 +1557,7 @@
     {
       "id": "c74-action",
       "kind": "action",
-      "text": "- `src/app/golf/actions/admin-dashboard-data.ts`, `admin-incidents-data.ts`, `admin-dashboard-assemble.ts`, `admin-data-shared.ts` (split out of the former `admin-data.ts`)\n- `src/app/golf/actions/admin-people-data.ts`\n- `src/app/golf/actions/admin-system-data.ts`\n- `src/app/golf/actions/admin-tracer-data.ts`\n- `src/app/golf/actions/admin-bi-data.ts`\n- `src/app/golf/actions/admin/**`\n- `src/app/golf/actions/crm-*.ts`\n- `src/app/golf/actions/resend-activity.ts`\n- `src/app/admin/actions/view-as.ts`, `golf-tracer.ts`, `billing.ts`,\n  `sessions.ts` — general admin actions; `analyze-error.ts`/`resolve-error.ts`/\n  `sentry-resolve.ts` moved to `admin_incidents` and `triage.ts` moved to\n  `admin_selfheal` in the same change that mapped `src/app/admin/actions/**`\n  (previously unmapped to any feature — a closed system gap).\n- `src/lib/supabase/admin*`\n- `src/lib/cron/**`\n- `src/lib/observability/supabase/**` — the zero-cost Supabase observability\n  layer (Phase 1): `envelope.ts` (canonical error shape, code-first\n  fingerprint), `classify.ts` (SQLSTATE/PostgREST classifier), `observe-\n  result.ts` (`observeSupabaseResult()` — the call a server call site adds\n  around a `{data,error}` result), `record-db-error.ts` (fail-open\n  out-of-band durable writer), `integrity.ts` (the HTTP-200-with-error\n  primitive), `db-health-delta.ts` / `query-regression.ts` (pure delta and\n  regression-detection arithmetic the two health/stat collectors call). See\n  `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`.\n  **Phase 2 Track B (2026-09-03)** extended the SAME directory with\n  service-specific classifiers/observers for Auth, Storage, Realtime, and\n  Edge Functions, plus a pure retry/timeout/commit-outcome model — see\n  `memory/features/observability-supabase.md` for that current-state doc and\n  `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` for the full\n  design/verification writeup. Kept as a SEPARATE feature doc rather than\n  folded into this section because it is large enough (four services, its\n  own fetched-docs ledger) to need its own current-state doc; this section\n  stays the pointer, not a duplicate.\n- `src/lib/admin/database/**` — the `/admin/database` read models.\n- `src/lib/admin/**` — the remainder not carved into a sub-capability above\n  (deploy-freshness, integration-health, sentry-api, vercel-api,\n  feature-registry, error-trend, severity, credential-shape, and the rest).\n  Overlaps by design with the sub-capabilities' narrower globs on their own\n  carved files — see the registry comment on this glob.\n- `scripts/janitor/**` — the Phase K.4.5 (Engineering OS Intelligence) Janitor\n  entropy-report generator. Read-only: it never modifies source files, only\n  writes `JANITOR_REPORT.md` (written under the generated-docs directory, gitignored) and\n  `janitor-findings.json` (same directory, gitignored). Scans the entropy classes\n  (duplicate helpers, dead flags, stale docs, orphan routes, deprecated\n  APIs, stale TODOs, oversized modules, unused tests, mock inflation,\n  duplicate telemetry, missing feature mappings, abandoned experiments)\n  using only signals this repo already produces — `.duplicate-exports-baseline.json`,\n  `.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,\n  `memory/registry.yml` (via `scripts/knowledge/lib/registry.mjs`),\n  `git ls-files`/`git grep`/`git log` — never a filesystem walk. Every\n  classifier returns one of three verdicts, `FINDINGS` /\n  `ZERO_FINDINGS_VERIFIED` / `NO_SIGNAL` (`scripts/janitor/lib/verdicts.mjs`);\n  `NO_SIGNAL` means the substrate a class needs does not exist yet (no\n  feature-flag module, no committed Knip report) and is never conflated with\n  a genuine zero-findings pass. Findings are written in\n  `config/control-plane-gaps.json`'s `id`/`owner`/`opened`/`scope`/`reason`/\n  `closes_when` field shape but to a SEPARATE file — never into that file\n  itself, which records human-approved \"won't fix\" decisions\n  (\"Adding one is a decision, not a repair\" — its own `$comment`). `npm run\n  janitor` regenerates both output files; a weekly CircleCI job\n  (`.circleci/config.yml`'s `janitor` job) runs it as an advisory artifact.\n  `npm run test:janitor` (`node --test scripts/janitor/__tests__/*.test.mjs`)\n  covers every classifier against real disposable git-repo fixtures.",
+      "text": "- `src/app/golf/actions/admin-dashboard-data.ts`, `admin-incidents-data.ts`, `admin-dashboard-assemble.ts`, `admin-data-shared.ts` (split out of the former `admin-data.ts`)\n- `src/app/golf/actions/admin-people-data.ts`\n- `src/app/golf/actions/admin-system-data.ts`\n- `src/app/golf/actions/admin-tracer-data.ts`\n- `src/app/golf/actions/admin-bi-data.ts`\n- `src/app/golf/actions/admin/**`\n- `src/app/golf/actions/crm-*.ts`\n- `src/app/golf/actions/resend-activity.ts`\n- `src/app/admin/actions/view-as.ts`, `golf-tracer.ts`, `billing.ts`,\n  `sessions.ts` — general admin actions; `analyze-error.ts`/`resolve-error.ts`/\n  `sentry-resolve.ts` moved to `admin_incidents` and `triage.ts` moved to\n  `admin_selfheal` in the same change that mapped `src/app/admin/actions/**`\n  (previously unmapped to any feature — a closed system gap).\n- `src/lib/supabase/admin*`\n- `src/lib/cron/**`\n- `src/lib/observability/supabase/**` — the zero-cost Supabase observability\n  layer (Phase 1): `envelope.ts` (canonical error shape, code-first\n  fingerprint), `classify.ts` (SQLSTATE/PostgREST classifier), `observe-\n  result.ts` (`observeSupabaseResult()` — the call a server call site adds\n  around a `{data,error}` result), `record-db-error.ts` (fail-open\n  out-of-band durable writer), `integrity.ts` (the HTTP-200-with-error\n  primitive), `db-health-delta.ts` / `query-regression.ts` (pure delta and\n  regression-detection arithmetic the two health/stat collectors call). See\n  `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`.\n  **Phase 2 Track B (2026-09-03)** extended the SAME directory with\n  service-specific classifiers/observers for Auth, Storage, Realtime, and\n  Edge Functions, plus a pure retry/timeout/commit-outcome model — see\n  `memory/features/observability-supabase.md` for that current-state doc and\n  `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` for the full\n  design/verification writeup. Kept as a SEPARATE feature doc rather than\n  folded into this section because it is large enough (four services, its\n  own fetched-docs ledger) to need its own current-state doc; this section\n  stays the pointer, not a duplicate.\n- `src/lib/admin/database/**` — the `/admin/database` read models.\n- `src/lib/admin/**` — the remainder not carved into a sub-capability above\n  (deploy-freshness, integration-health, sentry-api, vercel-api,\n  feature-registry, error-trend, severity, credential-shape, and the rest).\n  Overlaps by design with the sub-capabilities' narrower globs on their own\n  carved files — see the registry comment on this glob.\n- `scripts/janitor/**` — the Phase K.4.5 (Engineering OS Intelligence) Janitor\n  entropy-report generator. Read-only: it never modifies source files, only\n  writes `JANITOR_REPORT.md` (written under the generated-docs directory, gitignored) and\n  `janitor-findings.json` (same directory, gitignored). Scans the entropy classes\n  (duplicate helpers, dead flags, stale docs, orphan routes, deprecated\n  APIs, stale TODOs, oversized modules, unused tests, mock inflation,\n  duplicate telemetry, missing feature mappings, abandoned experiments)\n  using only signals this repo already produces — `config/baselines/.duplicate-exports-baseline.json`,\n  `config/baselines/.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,\n  `memory/registry.yml` (via `scripts/knowledge/lib/registry.mjs`),\n  `git ls-files`/`git grep`/`git log` — never a filesystem walk. Every\n  classifier returns one of three verdicts, `FINDINGS` /\n  `ZERO_FINDINGS_VERIFIED` / `NO_SIGNAL` (`scripts/janitor/lib/verdicts.mjs`);\n  `NO_SIGNAL` means the substrate a class needs does not exist yet (no\n  feature-flag module, no committed Knip report) and is never conflated with\n  a genuine zero-findings pass. Findings are written in\n  `config/control-plane-gaps.json`'s `id`/`owner`/`opened`/`scope`/`reason`/\n  `closes_when` field shape but to a SEPARATE file — never into that file\n  itself, which records human-approved \"won't fix\" decisions\n  (\"Adding one is a decision, not a repair\" — its own `$comment`). `npm run\n  janitor` regenerates both output files; a weekly CircleCI job\n  (`.circleci/config.yml`'s `janitor` job) runs it as an advisory artifact.\n  `npm run test:janitor` (`node --test scripts/janitor/__tests__/*.test.mjs`)\n  covers every classifier against real disposable git-repo fixtures.",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
@@ -2508,7 +2508,7 @@
     {
       "id": "c113-other",
       "kind": "other",
-      "text": "- `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md`\n- `docs/BI_DASHBOARD_ARCHITECTURE.md`\n- `docs/OBSERVABILITY.md`\n- `docs/SECURITY_AUDIT.md`\n- `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` —\n  the Bridge Premium Observability brief the \"Phase 0 truth models\" and\n  \"Phase 5 Engineering OS\" sections above implement. Verified resolvable in\n  this checkout 2026-09-03 — the \"Phase 0\" section's claim above that it\n  \"does not resolve in this checkout yet\" is now stale; corrected here\n  rather than edited in place, per `.claude/rules/shipping.md` §1 (leave\n  the original reasoning legible, don't silently rewrite history).\n- `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` §J.4.5 —\n  the \"do not build a second Decision Inbox\" finding the Phase 5 section's\n  Decision Inbox module is scoped against.\n- `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` —\n  `AGENT_FLIGHT_RECORDER_STORAGE`, the owner decision the Phase 5 section's\n  migration implements.\n- `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` — Phase 1's\n  re-measured production baseline for the Supabase/Postgres observability\n  program (the master brief itself lands separately, on the sibling\n  control-plane branch).\n- `memory/features/admin-incidents.md`\n- `memory/features/admin-reliability-collector.md`\n- `memory/features/admin-selfheal.md`\n- The Bridge Premium Observability brief the \"Phase 0 truth models\" section\n  above implements — see that section for its worktree location as of\n  2026-09-03; not linked here as a repo path because it does not resolve in\n  this checkout yet (`docs:path-drift` would flag it).",
+      "text": "- `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md`\n- `docs/BI_DASHBOARD_ARCHITECTURE.md`\n- `docs/observability/OBSERVABILITY.md`\n- `docs/SECURITY_AUDIT.md`\n- `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` —\n  the Bridge Premium Observability brief the \"Phase 0 truth models\" and\n  \"Phase 5 Engineering OS\" sections above implement. Verified resolvable in\n  this checkout 2026-09-03 — the \"Phase 0\" section's claim above that it\n  \"does not resolve in this checkout yet\" is now stale; corrected here\n  rather than edited in place, per `.claude/rules/shipping.md` §1 (leave\n  the original reasoning legible, don't silently rewrite history).\n- `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` §J.4.5 —\n  the \"do not build a second Decision Inbox\" finding the Phase 5 section's\n  Decision Inbox module is scoped against.\n- `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` —\n  `AGENT_FLIGHT_RECORDER_STORAGE`, the owner decision the Phase 5 section's\n  migration implements.\n- `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` — Phase 1's\n  re-measured production baseline for the Supabase/Postgres observability\n  program (the master brief itself lands separately, on the sibling\n  control-plane branch).\n- `memory/features/admin-incidents.md`\n- `memory/features/admin-reliability-collector.md`\n- `memory/features/admin-selfheal.md`\n- The Bridge Premium Observability brief the \"Phase 0 truth models\" section\n  above implements — see that section for its worktree location as of\n  2026-09-03; not linked here as a repo path because it does not resolve in\n  this checkout yet (`docs:path-drift` would flag it).",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
@@ -2521,7 +2521,7 @@
         "paths": [
           "docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md",
           "docs/BI_DASHBOARD_ARCHITECTURE.md",
-          "docs/OBSERVABILITY.md",
+          "docs/observability/OBSERVABILITY.md",
           "docs/SECURITY_AUDIT.md",
           "docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md",
           "docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md",
@@ -6268,7 +6268,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_TRACKED_FILES",
         "confidence": "mechanical",
-        "evidence": "scripts/lib/selfheal-repair-runner.mjs, src/test/scripts/run-selfheal-repair.test.ts, src/test/scripts/selfheal-repair-launchd.test.ts — matches 0 files in `git ls-files` as of 4655c6a04ba9"
+        "evidence": "scripts/lib/selfheal-repair-runner.mjs, src/test/scripts/run-selfheal-repair.test.ts, src/test/scripts/selfheal-repair-launchd.test.ts — matches 0 files in `git ls-files` as of d2241d263f2d"
       }
     },
     {
@@ -6294,7 +6294,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_GENERATED_SCHEMA_TYPES",
         "confidence": "mechanical",
-        "evidence": "baseball_strength_group_audit not found in src/lib/types/database.ts (baseball_strength_group_audit NOT yet in .doc-schema-baseline.json — run npm run docs:schema-drift)"
+        "evidence": "baseball_strength_group_audit not found in src/lib/types/database.ts (baseball_strength_group_audit NOT yet in config/baselines/.doc-schema-baseline.json — run npm run docs:schema-drift)"
       }
     },
     {
@@ -6320,7 +6320,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_GENERATED_SCHEMA_TYPES",
         "confidence": "mechanical",
-        "evidence": "helm_debug_record_agent_run not found in src/lib/types/database.ts (helm_debug_record_agent_run NOT yet in .doc-schema-baseline.json — run npm run docs:schema-drift)"
+        "evidence": "helm_debug_record_agent_run not found in src/lib/types/database.ts (helm_debug_record_agent_run NOT yet in config/baselines/.doc-schema-baseline.json — run npm run docs:schema-drift)"
       }
     },
     {
@@ -6346,7 +6346,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_GENERATED_SCHEMA_TYPES",
         "confidence": "mechanical",
-        "evidence": "helm_debug_list_agent_runs not found in src/lib/types/database.ts (helm_debug_list_agent_runs NOT yet in .doc-schema-baseline.json — run npm run docs:schema-drift)"
+        "evidence": "helm_debug_list_agent_runs not found in src/lib/types/database.ts (helm_debug_list_agent_runs NOT yet in config/baselines/.doc-schema-baseline.json — run npm run docs:schema-drift)"
       }
     },
     {
@@ -6372,7 +6372,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_GENERATED_SCHEMA_TYPES",
         "confidence": "mechanical",
-        "evidence": "helm_debug_get_agent_run not found in src/lib/types/database.ts (helm_debug_get_agent_run NOT yet in .doc-schema-baseline.json — run npm run docs:schema-drift)"
+        "evidence": "helm_debug_get_agent_run not found in src/lib/types/database.ts (helm_debug_get_agent_run NOT yet in config/baselines/.doc-schema-baseline.json — run npm run docs:schema-drift)"
       }
     }
   ],
@@ -6603,6 +6603,18 @@
     },
     {
       "path": "supabase/migrations/20260906142000_pgaudit_ddl_role_only.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20261023151000_graveyard_orphan_admin_telemetry_tables.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20261028140700_capture_helm_bridge_feedback_bucket.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20261116190000_admin_read_policies_initplan.sql",
       "kind": "migration"
     }
   ]

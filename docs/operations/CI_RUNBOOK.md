@@ -161,7 +161,7 @@ went green (the account runs at most 20 jobs at once). The changes:
   current `main`, so a stale `main`, or two PRs regenerating the same
   file, failed every open PR. They now run through
   `scripts/github/pr-drift-gate.mjs`, and `Docs Regen` regenerates on
-  `main` (it opens `docs/auto-regen`).
+  `main` (it opens docs/auto-regen).
 - **Dead references count only new ones.** CI runs `docs:dead-refs` with
   `--introduced-since <base>`; the whole-tree count failed every PR once
   `main` itself passed the baseline ("REGRESSION 4 -> 6").
@@ -194,7 +194,7 @@ went green (the account runs at most 20 jobs at once). The changes:
 **Owner actions (optional; nothing here needs them to work):**
 
 - Give the regeneration PRs a token so they get CI on their own. Without one,
-  a `docs/auto-regen` PR sits with no CI until a human pushes to it (#2249,
+  a docs/auto-regen PR sits with no CI until a human pushes to it (#2249,
   2026-10-21, was closed that way). `docs-regen.yml` takes the first that is
   set: a GitHub App (repository variable `REGEN_APP_ID` and secret
   `REGEN_APP_PRIVATE_KEY`, installed on this repo with Contents and Pull
