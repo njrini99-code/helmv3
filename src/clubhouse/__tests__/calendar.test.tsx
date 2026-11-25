@@ -366,16 +366,18 @@ describe('Calendar · a held move comes back (P-4)', () => {
   });
 });
 
-describe('Calendar · a busy block lies under the events it overlaps (A26)', () => {
-  it('the staff meeting stepped in over the team round sits under it; the round keeps its lane', () => {
+describe('Calendar · overlaps sit side by side in the desk week (A26)', () => {
+  it('the staff meeting and the team round each take a lane of their own; neither lies under or over the other', () => {
     wrap(cal());
     const round = screen.getByRole('button', { name: /^Team round, / });
     const busy = screen.getAllByRole('button', { name: /Staff meeting, / }).find((b) => b.className.includes('ch-ev--lane'))!;
-    expect(busy.className).toContain('ch-ev--under');
+    // A26 (owner, 19 Nov 2026): lanes side by side, not stacked. It was the cascade, the busy block under the round.
+    expect(busy.className).not.toContain('ch-ev--under');
     expect(round.className).not.toContain('ch-ev--under');
-    // Its place is its class (z-index 0 in calendar.css), never inline, so hover can raise it; the round keeps its lane's.
-    expect(busy.style.zIndex).toBe('');
-    expect(Number(round.style.zIndex)).toBeGreaterThan(0);
+    expect(busy.style.left).not.toBe(round.style.left);
+    expect(busy.style.width).toBe(round.style.width);
+    expect(round.style.width).toMatch(/^calc\(50% - 4px\)$/);
+    // The cascade's under rule stays in calendar.css for a grid drawn without lanes.
     expect(readFileSync(join(__dirname, '..', 'styles', 'calendar.css'), 'utf8')).toMatch(/\.ch-ev--under \{\s*z-index: 0;/);
   });
 });

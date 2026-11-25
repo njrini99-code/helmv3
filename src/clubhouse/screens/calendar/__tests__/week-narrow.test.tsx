@@ -93,6 +93,22 @@ describe('the cascade step', () => {
     const lefts = [...container.querySelectorAll<HTMLElement>('[data-ev-id]')].map((x) => x.style.left).sort();
     expect(lefts).toEqual(['calc(0% + 3px)', 'calc(50% + 3px)']);
   });
+
+  it('A26 (owner, 19 Nov 2026): the desk week packs too, three overlaps in three lanes of a third, none over another', () => {
+    const week = ['2026-10-19', '2026-10-20', DAY, '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25'];
+    const a = ev({ id: 'a', type: 'practice', start: 9, end: 11 });
+    const b = ev({ id: 'b', type: 'meeting', start: 9.5, end: 10.5 });
+    const c = ev({ id: 'c', type: 'busy', start: 10, end: 12 });
+    const { container } = render(<TimeGrid pack dates={week} events={[a, b, c]} people={new Map()} now={{ date: '2026-10-20', hour: 8 }} selId={null} flagged={new Set()} onSelect={() => {}} onDay={() => {}} />);
+    const boxes = [...container.querySelectorAll<HTMLElement>('[data-ev-id]')].map((x) => [x.style.left, x.style.width]).sort();
+    expect(boxes).toEqual([
+      ['calc(0% + 3px)', 'calc(33.3333% - 4px)'],
+      ['calc(33.3333% + 3px)', 'calc(33.3333% - 4px)'],
+      ['calc(66.6667% + 3px)', 'calc(33.3333% - 4px)'],
+    ]);
+    // A busy block no longer lies under the others: it has its own lane.
+    expect(container.querySelector('[data-ev-id="c"]')!.className).not.toContain('ch-ev--under');
+  });
 });
 
 describe('a busy block under an event comes out as a tile of its own', () => {

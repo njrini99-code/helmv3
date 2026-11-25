@@ -4967,7 +4967,8 @@
       "file": "src/clubhouse/screens/home/CoachQueue.tsx",
       "group": "screens",
       "exports": [
-        "CoachQueue"
+        "CoachQueue",
+        "CoachQueueCards"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -5347,7 +5348,6 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
-        "src/clubhouse/styles/tournaments-player.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -19011,6 +19011,10 @@
         "ch-h-card",
         "ch-h-card--none",
         "ch-h-col",
+        "ch-h-dash",
+        "ch-h-dash__card",
+        "ch-h-dash__col",
+        "ch-h-dash__wide",
         "ch-h-day",
         "ch-h-day--event",
         "ch-h-day--today",
@@ -19070,6 +19074,7 @@
         "ch-h-legs__t",
         "ch-h-legs__who",
         "ch-h-main",
+        "ch-h-main--dash",
         "ch-h-main--desk",
         "ch-h-main--first",
         "ch-h-main--setup",
@@ -19081,6 +19086,14 @@
         "ch-h-pager",
         "ch-h-pane",
         "ch-h-pane__head",
+        "ch-h-qc",
+        "ch-h-qc__a",
+        "ch-h-qc__fail",
+        "ch-h-qc__k",
+        "ch-h-qc__l",
+        "ch-h-qc__list",
+        "ch-h-qc__n",
+        "ch-h-qc__v",
         "ch-h-queue",
         "ch-h-queue__a",
         "ch-h-queue__fail",
