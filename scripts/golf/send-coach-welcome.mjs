@@ -267,8 +267,9 @@ async function main() {
   }
 
   const resend = new Resend(resendKey());
-  const send = async (to, email) => {
-    const { data, error } = await resend.emails.send({ from: FROM, replyTo: REPLY_TO, to, subject: email.subject, html: email.html, text: email.text, attachments: attachments() });
+  // A real send BCCs admin@: Resend's mail never shows in Gmail's Sent folder, so this is the owner's record of it.
+  const send = async (to, email, record = true) => {
+    const { data, error } = await resend.emails.send({ from: FROM, replyTo: REPLY_TO, to, ...(record ? { bcc: REPLY_TO } : {}), subject: email.subject, html: email.html, text: email.text, attachments: attachments() });
     if (error) throw new Error(`Resend refused the email: ${error.message ?? JSON.stringify(error)}`);
     return data?.id;
   };
@@ -280,7 +281,7 @@ async function main() {
     const email = buildCoachWelcomeEmail({ coachLastName: lastName, schoolName: sample.school, email: a.email, password: 'Shown-when-sent', teams: sample.teams });
     if (a.htmlOut) writeFileSync(a.htmlOut, email.html);
     if (a.previewTo) {
-      const id = await send(a.previewTo, { ...email, subject: `[Preview] ${email.subject}` });
+      const id = await send(a.previewTo, { ...email, subject: `[Preview] ${email.subject}` }, false);
       step(true, `preview sent to ${a.previewTo} (Resend ${id}); no account was changed`);
     } else {
       const what = mode === 'new' ? 'create the program and ' : a.currentPassword ? '' : 'reset the password and ';
