@@ -23662,6 +23662,7 @@
         "ch-set-grid",
         "ch-set-group",
         "ch-set-head",
+        "ch-set-head__k",
         "ch-set-inline",
         "ch-set-layout",
         "ch-set-link",
@@ -27093,7 +27094,7 @@
         },
         {
           "name": "--ch-type-large-title",
-          "value": "700 calc(30 * var(--ch-type-k))/calc(36 * var(--ch-type-k)) var(--ch-font-sans)",
+          "value": "700 calc(40 * var(--ch-type-k))/calc(46 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27507,8 +27508,13 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-light-ivory",
+          "value": "#fffaf0",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-light-canvas",
-          "value": "radial-gradient(\n    70% 420px at calc(var(--ch-sun-x, 0.5) * 100%) 0%,\n    color-mix(in oklab, var(--ch-light-key) calc(var(--ch-sun-intensity, 1) * 14% + var(--ch-sun-warmth, 0) * 12%), transparent),\n    transparent 80%\n  )",
+          "value": "radial-gradient(\n    140% 1100px at calc(var(--ch-sun-x, 0.5) * 100%) 0%,\n    color-mix(in oklab, var(--ch-light-ivory) calc(45% + var(--ch-sun-intensity, 1) * 10% + var(--ch-sun-warmth, 0) * 5%), transparent),\n    color-mix(in oklab, var(--ch-light-ivory) 30%, transparent) 60%,\n    color-mix(in oklab, var(--ch-light-ivory) 18%, transparent) 100%\n  )",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27518,7 +27524,7 @@
         },
         {
           "name": "--ch-light-paper-tint",
-          "value": "color-mix(\n    in oklab,\n    color-mix(in oklab, #e8b46a, #5d74a6 calc(var(--ch-sun-night, 0) * 100%))\n      calc(var(--ch-sun-warmth, 0) * 7% + var(--ch-sun-night, 0) * 4%),\n    transparent\n  )",
+          "value": "color-mix(in oklab, #e8b46a calc(var(--ch-sun-warmth, 0) * 7%), transparent)",
           "scope": "[data-ui='clubhouse']"
         },
         {

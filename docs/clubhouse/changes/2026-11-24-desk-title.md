@@ -9,7 +9,7 @@ Data impact: none
 Held items: none
 ```
 
-### Changed
+## Changed
 
 - Every desktop page title (the large title role, `--ch-type-large-title`)
   goes from 30/36 to 40/46, and from the near-black primary ink to the

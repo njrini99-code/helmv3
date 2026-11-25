@@ -156,7 +156,7 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 
 | Role | Token | Desktop: weight, size / leading | Phone: weight, size / leading |
 |---|---|---|---|
-| Large title: the page title | `--ch-type-large-title` | 700, 30 / 36 | 700, 34 / 41 |
+| Large title: the page title | `--ch-type-large-title` | 700, 40 / 46 | 700, 34 / 41 |
 | Title: card hero titles, a hole number | `--ch-type-title` | 600, 22 / 28 | same |
 | Headline: card heads, bar titles, row titles that lead | `--ch-type-headline` | 600, 16 / 22 | 600, 17 / 22 |
 | Body: prose, CoachHelm answers | `--ch-type-body` | 400, 15 / 22 | 400, 17 / 24 |
