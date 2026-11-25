@@ -1178,6 +1178,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-21-desk-keys.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1343,6 +1344,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-24-desktop-keys-scroll-padding.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
@@ -1426,6 +1428,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-no-double-empty.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-21-desk-dashboard.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-21-stat-card-title-bars.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
@@ -1724,6 +1727,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-20-desk-shell.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-21-week-lanes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1836,6 +1840,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-18-webkit-freeze.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-19-shadow-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-24-dual-team-codes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | 1 |

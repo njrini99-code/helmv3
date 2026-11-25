@@ -825,7 +825,7 @@ function RosterList({
     },
     // Avg sorts nothing while season stats are missing (P003 #7), so its header is plain then.
     { id: 'avg', header: 'Avg', align: 'end', sortKey: sortableAvg ? 'avg' : undefined, sortDirection: ROSTER_SORT_DIRECTION.avg, className: 'ch-num ch-rs-num', cell: (p) => formatFixed(p.avg) },
-    { id: 'hcp', header: 'Handicap', align: 'end', sortKey: 'hcp', sortDirection: ROSTER_SORT_DIRECTION.hcp, className: 'ch-num ch-rs-num2', cell: (p) => formatHcp(p.handicap) },
+    { id: 'hcp', header: TERMS.handicap.long, align: 'end', sortKey: 'hcp', sortDirection: ROSTER_SORT_DIRECTION.hcp, className: 'ch-num ch-rs-num2', cell: (p) => formatHcp(p.handicap) },
     {
       id: 'sg',
       header: 'SG/rd',

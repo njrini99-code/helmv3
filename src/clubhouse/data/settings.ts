@@ -14,7 +14,7 @@ import { isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/lib/notifications/types';
 import { chLogServer } from '../lib/track-server';
 import { readPlayerPrivateFields } from '@/lib/golf/player-private-fields';
-import type { ChCoachHelmSettings, ChScoring, ChSettingsData } from '../screens/settings/model';
+import type { ChCoachHelmSettings, ChProgramCode, ChScoring, ChSettingsData } from '../screens/settings/model';
 
 /**
  * Settings (Clubhouse). Every read the page needs, in one server pass, each
@@ -104,6 +104,8 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
               : Promise.resolve({ data: null, error: null }),
             supabase.from('golf_coachhelm_settings').select('enabled, auto_insights, weekly_summary, trend_alerts').eq('coach_id', coachId!).maybeSingle(),
             supabase.from('golf_coach_philosophy').select('*').eq('coach_id', coachId!).maybeSingle(),
+            // Every team this coach is staffed on, with its code: a men's and women's coach sees both codes, each named.
+            supabase.from('golf_team_coach_staff').select('team:golf_teams(id, name, gender, join_code)').eq('coach_id', coachId!),
           ]),
         );
   const [userRes, deliveryRes, savedPrefsRes, profileRes, contactRes] = await Promise.all([
@@ -202,7 +204,11 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
   }
 
   // ── Coach ──
-  const [settingsRes, teamRes, chCoachRes, philosophyRes] = await coachReads!;
+  const [settingsRes, teamRes, chCoachRes, philosophyRes, staffTeamsRes] = await coachReads!;
+
+  // A failed read of the other teams only loses the second code: the active team's code below still shows.
+  if (staffTeamsRes.error) log('programCodes', staffTeamsRes.error, 'teams');
+  else base.programCodes = programCodesFrom(staffTeamsRes.data);
 
   // The digest is a column of the philosophy row. A missing row or null means the digest is on, as the current app reads it.
   if (philosophyRes.error) log('digest', philosophyRes.error, 'notifications');
@@ -249,6 +255,21 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
 
   base.coachhelm = await loadCoachHelm(supabase, teamId, chCoachRes, philosophyRes, coachId!);
   return base;
+}
+
+type StaffTeamRow = { team: { id: string; name: string; gender: string | null; join_code: string | null } | null };
+
+/** Each staffed team once, with a code; null unless there are at least two to show. */
+export function programCodesFrom(rows: unknown): ChProgramCode[] | null {
+  const seen = new Set<string>();
+  const out: ChProgramCode[] = [];
+  for (const r of (rows as StaffTeamRow[] | null) ?? []) {
+    const t = r.team;
+    if (!t?.join_code || seen.has(t.id)) continue;
+    seen.add(t.id);
+    out.push({ teamId: t.id, name: t.name, gender: t.gender, code: t.join_code });
+  }
+  return out.length > 1 ? out : null;
 }
 
 async function loadCoachHelm(

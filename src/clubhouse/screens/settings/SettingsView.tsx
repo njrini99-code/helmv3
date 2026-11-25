@@ -159,10 +159,16 @@ export function SettingsView({
     <DirtyContext.Provider value={report}>
       <main className="ch-set" data-canopy="">
         <header className="ch-set-head" data-canopy-head="tight">
+          {/* The page's eyebrow, as Roster's: whose settings these are (owner, 24 Nov 2026: the head read bare). */}
+          {data.teamName && (
+            <span className="ch-set-head__k">
+              {data.teamName}
+              {data.team && !data.team.error && data.team.value.season ? ` · ${data.team.value.season}` : ''}
+            </span>
+          )}
           <h1 className="ch-display">Settings</h1>
           <p>
             {viewerRoleLabel(data)}
-            {data.teamName ? ` · ${data.teamName}` : ''}
             {data.email ? ` · ${data.email}` : ''}
           </p>
         </header>

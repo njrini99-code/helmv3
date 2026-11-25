@@ -2689,6 +2689,124 @@
   }
 }
 
+/* Coach Home's desk dashboard (premium plan 2026-11-19 §3.1; law 1 on a desk, G1b). One grid, one focal point: what waits
+   on the coach (count cards) and the week on the left, Up next (the one feature card) and the latest round on the right,
+   then Team scoring and the team's game across both. Every group is a card with its title inside it; nothing but the
+   head sits on the canvas, and no card holds another (the week strip is a well, the scorecard the green board). Desk only: the
+   phone draws HomePhone. Home stays centred on its measure (owner question, 11 Nov 2026), now the wide one. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ui='clubhouse'] main.ch-h-main--dash {
+    max-width: var(--ch-measure-wide);
+  }
+  .ch-h-dash {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 24px;
+    align-items: start;
+    margin-top: 32px;
+  }
+  .ch-h-head + .ch-h-dash,
+  .ch-h-dash:first-child {
+    margin-top: 24px;
+  }
+  .ch-h-dash__col {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+  }
+  /* Every card title is the card header's headline (DESIGN_LANGUAGE §4 anatomy), whichever part drew it. */
+  .ch-h-main--dash[data-canopy] .ch-h-dash__card :is(.ch-h-pane__head, .ch-ph-game__h) h2 {
+    font: var(--ch-type-headline);
+  }
+  .ch-h-dash__wide {
+    grid-column: 1 / -1;
+  }
+  .ch-h-dash__card,
+  .ch-h-qc {
+    min-width: 0;
+    padding: 20px;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-card-shadow);
+  }
+  /* The week and the latest round take the card's inset, not the Ledger pane's. */
+  .ch-h-dash__card > .ch-h-pane {
+    padding: 0;
+  }
+  /* Up next opens the right column as the one feature card; the Ledger gave it a margin to sit inside a pane. */
+  .ch-h-dash__col > .ch-ph-next {
+    margin: 0;
+  }
+  /* Team scoring and the team's game: their own heads are the card's header (title, meta, a hairline under it). */
+  .ch-h-main--dash[data-canopy] .ch-h-dash__card > .ch-ph-game,
+  .ch-h-main--dash[data-canopy] .ch-h-dash__card > .ch-ph-legs-sec {
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  /* Waiting on you: the count is the figure, its words under it, a verb that opens where it is. */
+  .ch-h-qc {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ch-h-qc__k {
+    font: var(--ch-type-headline);
+    color: var(--ch-text-primary);
+  }
+  .ch-h-qc__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ch-h-qc__a {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    height: 100%;
+    padding: 12px 16px;
+    border-radius: var(--ch-radius-md);
+    background: var(--ch-well-bg-flat);
+    color: var(--ch-text-primary);
+    text-decoration: none;
+    transition: background-color var(--ch-dur-release) var(--ch-ease-ios);
+  }
+  .ch-h-qc__n {
+    font: var(--ch-type-title);
+  }
+  .ch-h-qc__l {
+    font: var(--ch-type-footnote);
+    color: var(--ch-text-secondary);
+  }
+  .ch-h-qc__v {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-top: 6px;
+    font: var(--ch-type-footnote);
+    color: var(--ch-green-600);
+  }
+  @media (hover: hover) {
+    .ch-h-qc__a:hover {
+      background: var(--ch-sel);
+      transition-duration: 0s;
+    }
+  }
+  .ch-h-qc__a[data-ch-pressed] {
+    background: var(--ch-sel);
+    transition-duration: var(--ch-dur-press);
+  }
+  .ch-h-qc__fail {
+    font: var(--ch-type-footnote);
+    color: var(--ch-text-tertiary);
+  }
+}
+
 /* Coach Home on the phone: the "Mobile clubhouse pass" board (owner, 2026-10-08), ported from its m-clubhouse.css
    (rounds 1 to 3, in order, so its last word wins): the green chassis over a parchment sheet, the editorial greeting,
    one green feature card (Up next), and every other section flush under an engraved double rule. */
