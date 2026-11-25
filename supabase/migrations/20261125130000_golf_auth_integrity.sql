@@ -95,6 +95,10 @@ FOR EACH ROW EXECUTE FUNCTION public.guard_users_email_self_change();
 -- FUNCTION public.guard_users_email_self_change();
 
 -- 3 ───────────────────────────────────────────────────────────────────────────
+-- golf_teams holds 14 rows on production: the index build and the
+-- constraint's validation each lock it for milliseconds, and
+-- scripts/db/apply.mjs refuses CONCURRENTLY (it runs in one transaction).
+-- squawk-ignore require-concurrent-index-creation
 CREATE UNIQUE INDEX IF NOT EXISTS golf_teams_join_code_upper_uidx
 ON public.golf_teams (
     upper(join_code)
@@ -102,10 +106,10 @@ ON public.golf_teams (
 ALTER TABLE public.golf_teams
 DROP CONSTRAINT IF EXISTS golf_teams_join_code_format;
 ALTER TABLE public.golf_teams
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT golf_teams_join_code_format CHECK (
     join_code IS NULL OR join_code ~ '^[A-Z0-9]{4,12}$'
-) NOT VALID;
-ALTER TABLE public.golf_teams VALIDATE CONSTRAINT golf_teams_join_code_format;
+);
 -- ROLLBACK: DROP INDEX public.golf_teams_join_code_upper_uidx; ALTER TABLE
 -- public.golf_teams DROP CONSTRAINT golf_teams_join_code_format;
 

@@ -94,18 +94,24 @@ describe('loginActionImpl wiring — recordLoginOutcome is called at every exist
     'rate_limited_email',
     'rate_limited_ip',
     'invalid_credentials',
+    'email_not_confirmed',
+    'rate_limited_auth',
+    'auth_unavailable',
+    'auth_refused',
     'success',
   ])('calls recordLoginOutcome(%s) somewhere in loginActionImpl', (outcome) => {
     expect(body).toContain(`recordLoginOutcome('${outcome}')`);
   });
 
-  it('calls recordLoginOutcome exactly once per return statement (8 branches, 2 share "account_locked")', () => {
+  // 12 since the auth scrub (2026-11-25): an unconfirmed email, GoTrue's throttle, an outage and any other refusal are
+  // their own branches, none counted toward the lockout.
+  it('calls recordLoginOutcome exactly once per return statement (12 branches, 2 share "account_locked")', () => {
     const calls = body.match(/recordLoginOutcome\(/g) ?? [];
-    expect(calls).toHaveLength(8);
+    expect(calls).toHaveLength(12);
   });
 
   it('every recordLoginOutcome(...) call is immediately followed by a return (no dangling telemetry-only branch)', () => {
     const callSites = [...body.matchAll(/recordLoginOutcome\('[a-z_]+'\);\n\s*return/g)];
-    expect(callSites).toHaveLength(8);
+    expect(callSites).toHaveLength(12);
   });
 });

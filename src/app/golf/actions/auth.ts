@@ -176,28 +176,8 @@ async function loginActionImpl(
     password,
   });
 
-  // Only a refused password is a failed attempt. An unconfirmed email, GoTrue's own throttle, a 5xx or the resilient
-  // helper's timeout say what happened and count nothing toward the lockout: a coach with the right password must not
-  // be told it is wrong (and locked out after retrying) because the auth server blinked.
-  if (error && !isRefusedPassword(error)) {
-    observeAuthResult({ error, feature: 'golf_auth', action: 'golf.login', operation: 'sign_in', sport: 'golf' });
-    const code = (error as { code?: string }).code;
-    const status = (error as { status?: number }).status;
-    if (code === 'email_not_confirmed') {
-      recordLoginOutcome('email_not_confirmed', code);
-      // The form's own words for this (getErrorMessage maps "email not confirmed").
-      return { success: false, error: 'Email not confirmed' };
-    }
-    recordLoginOutcome('auth_unavailable', code ?? (status ? String(status) : undefined));
-    if (status === 429 || code === 'over_request_rate_limit') return { success: false, error: 'Too many requests' };
-    // An outage (5xx, no status: the resilient helper's timeout) reads as one; any other refusal (a banned account, a
-    // malformed request) is not a connection problem and says only that sign in did not go through.
-    if (!status || status >= 500) return { success: false, error: 'Network error: sign-in could not be reached' };
-    return { success: false, error: 'We couldn’t sign you in. Please try again.' };
-  }
-
-  if (error || !data.user) {
-    // Additive to `recordLoginOutcome` above, not a replacement: that helper
+  if (error) {
+    // Additive to `recordLoginOutcome` below, not a replacement: that helper
     // records the PRODUCT outcome (locked / invalid / rate-limited), this
     // records the SUPABASE AUTH failure behind it. A wrong password
     // (`invalid_credentials`) classifies EXPECTED and stays silent; a 429, a
@@ -209,6 +189,34 @@ async function loginActionImpl(
       operation: 'sign_in',
       sport: 'golf',
     });
+  }
+
+  // Only a refused password is a failed attempt. An unconfirmed email, GoTrue's own throttle, a 5xx or the resilient
+  // helper's timeout say what happened and count nothing toward the lockout: a coach with the right password must not
+  // be told it is wrong (and locked out after retrying) because the auth server blinked.
+  if (error && !isRefusedPassword(error)) {
+    const code = (error as { code?: string }).code;
+    const status = (error as { status?: number }).status;
+    // The form's own words for this (getErrorMessage maps "email not confirmed").
+    if (code === 'email_not_confirmed') {
+      recordLoginOutcome('email_not_confirmed');
+      return { success: false, error: 'Email not confirmed' };
+    }
+    if (status === 429 || code === 'over_request_rate_limit') {
+      recordLoginOutcome('rate_limited_auth');
+      return { success: false, error: 'Too many requests' };
+    }
+    // An outage (5xx, no status: the resilient helper's timeout) reads as one; any other refusal (a banned account, a
+    // malformed request) is not a connection problem and says only that sign in did not go through.
+    if (!status || status >= 500) {
+      recordLoginOutcome('auth_unavailable');
+      return { success: false, error: 'Network error: sign-in could not be reached' };
+    }
+    recordLoginOutcome('auth_refused');
+    return { success: false, error: 'We couldn’t sign you in. Please try again.' };
+  }
+
+  if (error || !data.user) {
     const lockoutResult = await recordFailedLogin(normalizedEmail, ip, userAgent);
 
     // Log failed login attempt (fire-and-forget)
