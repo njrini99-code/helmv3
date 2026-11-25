@@ -50,22 +50,9 @@ In the Resend dashboard → Webhooks → Add endpoint:
 
 The handler lives in `src/app/api/webhooks/resend/route.ts` and verifies signatures via Svix.
 
-## 4. Backfill historical emails (optional but recommended)
+## 4. Backfill historical emails (optional, one-off)
 
-Pulls every email from the Resend REST API and seeds the snapshot + event timeline. The click-extraction and coach-denorm triggers fire on each inserted event, so running the backfill also populates `email_clicks` and `crm_coaches.last_email_event_*` for historical traffic.
-
-```bash
-# Dry run first to preview counts
-RESEND_BACKFILL_DRY_RUN=1 npx tsx scripts/backfill-resend-emails.ts
-
-# Full run
-npx tsx scripts/backfill-resend-emails.ts
-
-# Only the most recent 500 (faster smoke test)
-RESEND_BACKFILL_LIMIT=500 npx tsx scripts/backfill-resend-emails.ts
-```
-
-The script is idempotent — safe to re-run if it fails mid-way.
+The one-off backfill script (`backfill-resend-emails.ts`) was deleted 2026-11-25; it is in git history. It pulled every email from the Resend REST API and seeded the snapshot + event timeline; the click-extraction and coach-denorm triggers fired on each inserted event, so a backfill also populated `email_clicks` and `crm_coaches.last_email_event_*` for historical traffic. Recover it from history if a backfill is needed again.
 
 ## 5. View the dashboard
 
@@ -135,4 +122,4 @@ The click-extraction trigger didn't install or the payload shape changed. Confir
 - Webhook: `src/app/api/webhooks/resend/route.ts`
 - Server actions: `src/app/golf/actions/resend-activity.ts` (includes `getEmailClicks` and `getCoachLastEmailActivity`)
 - UI components: `src/app/golf/admin/crm/components/resend/`
-- Backfill script: `scripts/backfill-resend-emails.ts`
+- Backfill script: `backfill-resend-emails.ts` (deleted 2026-11-25; in git history)
