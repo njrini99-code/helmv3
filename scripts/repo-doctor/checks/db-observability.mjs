@@ -246,10 +246,10 @@ export async function run(ctx) {
   }
 
   {
-    const certScriptPath = join(repoRoot, 'scripts/db-observability-trace-cert.mjs');
+    const certScriptPath = join(repoRoot, 'scripts/observability/db-observability-trace-cert.mjs');
     const proofDoc = readIfExists(repoRoot, 'docs/observability/SUPABASE_TRACE_PROPAGATION.md') ?? '';
     if (!existsSync(certScriptPath)) {
-      out.push(check('db-observability.TRACEPARENT_CERTIFIED', Status.FAIL, 'TRACEPARENT_CERTIFIED: scripts/db-observability-trace-cert.mjs is missing'));
+      out.push(check('db-observability.TRACEPARENT_CERTIFIED', Status.FAIL, 'TRACEPARENT_CERTIFIED: scripts/observability/db-observability-trace-cert.mjs is missing'));
     } else {
       try {
         let stdout;

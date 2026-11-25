@@ -13,7 +13,7 @@
  *
  * Usage (needs the sandbox disabled — this makes a real network request and
  * reads `.env.local`):
- *   node scripts/db-observability-metrics-names.mjs
+ *   node scripts/observability/db-observability-metrics-names.mjs
  *
  * Requires `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in
  * `.env.local` or the environment. Prints a clear, non-throwing message and
@@ -21,10 +21,10 @@
  * credential is not a crash.
  */
 import { config as loadEnv } from 'dotenv';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/db-observability-metrics-names.mjs',
+  name: 'scripts/observability/db-observability-metrics-names.mjs',
   summary:
     "Read-only discovery of the Supabase Metrics API metric names.",
   secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',

@@ -117,7 +117,7 @@ This area is high criticality because it often uses broader access patterns, ope
   stage, moved here from an Anthropic-hosted cloud routine (2026-09-02). Its
   collection/apply core is `src/lib/admin/triage-collect.ts` /
   `triage-apply.ts` (shared with the `npm run triage` CLI,
-  `scripts/run-triage.ts`, which is now a thin wrapper over both) and its
+  `scripts/coachhelm/run-triage.ts`, which is now a thin wrapper over both) and its
   analyzer core is `src/lib/admin/rca-run.ts` (shared with the super-admin
   `analyzeErrorFingerprint` server action). See
   `docs/ai-system/selfheal/README.md`.
@@ -502,7 +502,7 @@ them would have broken those routes, not the dead one.
   fixed column list that omits it. So the warning `InlineNotice` in
   `TracesClient.tsx` can only ever render on the opened trace's detail panel —
   never as a fleet-list row badge — without a list-RPC migration change.
-- **`npm run flight-recorder:audit`** (`scripts/flight-recorder-audit.mjs` +
+- **`npm run flight-recorder:audit`** (`scripts/observability/flight-recorder-audit.mjs` +
   `scripts/lib/flight-recorder-audit-lib.mjs`) is the read-only, post-deploy
   check that the two in-flight timing/checkpoint branches actually wrote real
   data: runs/steps/distinct-step-keys/steps-with-identity/zero-step-runs/

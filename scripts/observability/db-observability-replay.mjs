@@ -8,8 +8,8 @@
  * suite can never disagree about what the classifier did.
  *
  * Usage:
- *   node scripts/db-observability-replay.mjs           # human table
- *   node scripts/db-observability-replay.mjs --json    # machine report
+ *   node scripts/observability/db-observability-replay.mjs           # human table
+ *   node scripts/observability/db-observability-replay.mjs --json    # machine report
  *
  * Exit 0: every fixture matched its declared contract.
  * Exit 1: at least one mismatch (a real failure, never a NOT VERIFIED).
@@ -27,7 +27,7 @@
  * `tsx scripts/*.ts` entries in package.json), and `--import tsx/esm`
  * installs it as a loader rather than through the tsx CLI - which needs a
  * unix socket for IPC and therefore cannot start inside the agent sandbox.
- * Re-execing keeps `node scripts/db-observability-replay.mjs` working as
+ * Re-execing keeps `node scripts/observability/db-observability-replay.mjs` working as
  * written, with no wrapper to remember.
  */
 import { spawnSync } from 'node:child_process';
@@ -35,7 +35,7 @@ import { registerHooks } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 const BOOTSTRAP_FLAG = 'HELM_REPLAY_TSX_LOADER';
 
@@ -75,12 +75,12 @@ registerHooks({
 
 const JSON_MODE = process.argv.includes('--json');
 
-const { REPLAY_FIXTURES } = await import('../src/lib/observability/supabase/__fixtures__/replay-fixtures.ts');
+const { REPLAY_FIXTURES } = await import('../../src/lib/observability/supabase/__fixtures__/replay-fixtures.ts');
 const { compareFixture, fingerprintGroups, persistedStringsOf } = await import(
-  '../src/lib/observability/supabase/__fixtures__/replay-runner.ts'
+  '../../src/lib/observability/supabase/__fixtures__/replay-runner.ts'
 );
 const { ALL_SENTINELS, SENTINEL_FRAGMENTS } = await import(
-  '../src/lib/observability/supabase/__fixtures__/privacy-sentinels.ts'
+  '../../src/lib/observability/supabase/__fixtures__/privacy-sentinels.ts'
 );
 
 const rows = [];

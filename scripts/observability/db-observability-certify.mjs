@@ -15,9 +15,9 @@
  * is how a certification report ends up asserting things nobody checked.
  *
  * Usage:
- *   node scripts/db-observability-certify.mjs            # human report
- *   node scripts/db-observability-certify.mjs --json     # machine report
- *   node scripts/db-observability-certify.mjs --failures # only FAIL rows
+ *   node scripts/observability/db-observability-certify.mjs            # human report
+ *   node scripts/observability/db-observability-certify.mjs --json     # machine report
+ *   node scripts/observability/db-observability-certify.mjs --failures # only FAIL rows
  *
  * NEVER TOUCHES A DATABASE. Every exercised claim runs the real production
  * function with an injected fake client; every claim that would need real
@@ -31,7 +31,7 @@ import { registerHooks } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BOOTSTRAP_FLAG = 'HELM_CERTIFY_TSX_LOADER';
 
 if (!process.env[BOOTSTRAP_FLAG]) {
@@ -59,7 +59,7 @@ const JSON_MODE = process.argv.includes('--json');
 const FAILURES_ONLY = process.argv.includes('--failures');
 
 const { runCertification, summarizeCertification, REQUIRED_SCENARIO_IDS } = await import(
-  '../src/lib/observability/supabase/__fixtures__/certification.ts'
+  '../../src/lib/observability/supabase/__fixtures__/certification.ts'
 );
 
 const scenarios = runCertification();

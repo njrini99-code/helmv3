@@ -2,7 +2,7 @@
  * ============================================================================
  * Flight Recorder audit — pure summarization (no I/O)
  * ----------------------------------------------------------------------------
- * Behind `npm run flight-recorder:audit` (scripts/flight-recorder-audit.mjs).
+ * Behind `npm run flight-recorder:audit` (scripts/observability/flight-recorder-audit.mjs).
  * These functions take already-fetched run/step data — from the two
  * `helm_debug_list_traces` / `helm_debug_get_trace` RPCs, the only reachable
  * path for a service-role key (helm_debug is not in PostgREST's exposed

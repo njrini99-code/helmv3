@@ -8,14 +8,14 @@
  * because everything it inspects is text.
  *
  * Usage:
- *   node scripts/db-observability-security.mjs          # human report
- *   node scripts/db-observability-security.mjs --json   # machine report
+ *   node scripts/observability/db-observability-security.mjs          # human report
+ *   node scripts/observability/db-observability-security.mjs --json   # machine report
  *
  * Exit 0: no FAIL. Exit 1: at least one FAIL.
  * FINDING and NOT_CONFIGURED never affect the exit code and are never
  * presented as a pass.
  */
-import { runSecurityPosture, summarizeSecurityPosture } from './lib/db-observability-security.mjs';
+import { runSecurityPosture, summarizeSecurityPosture } from '../lib/db-observability-security.mjs';
 
 const JSON_MODE = process.argv.includes('--json');
 

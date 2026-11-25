@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// scripts/flight-recorder-audit.mjs — read-only Flight Recorder health check.
+// scripts/observability/flight-recorder-audit.mjs — read-only Flight Recorder health check.
 //
 // Usage:
-//   node --env-file=.env.local scripts/flight-recorder-audit.mjs
+//   node --env-file=.env.local scripts/observability/flight-recorder-audit.mjs
 //   npm run flight-recorder:audit -- --env-file=.env.local   (npm forwards
 //     extra flags after `--`, but Node's --env-file must come before the
 //     script path to take effect, so prefer the explicit `node` form above)
@@ -42,11 +42,11 @@
 // picture — see coverageNotGuaranteed in flight-recorder-audit-lib.mjs.
 
 import { createClient } from '@supabase/supabase-js';
-import { summarizeFlightRecorderAudit } from './lib/flight-recorder-audit-lib.mjs';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { summarizeFlightRecorderAudit } from '../lib/flight-recorder-audit-lib.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/flight-recorder-audit.mjs',
+  name: 'scripts/observability/flight-recorder-audit.mjs',
   summary:
     "Read-only health check of the Flight Recorder tables.",
   secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',

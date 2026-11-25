@@ -13,8 +13,8 @@
  * brief §14/§32 are explicit that this stays "no continuous ingestion".
  *
  * Usage:
- *   node scripts/db-observability-trace-cert.mjs           # human report
- *   node scripts/db-observability-trace-cert.mjs --json     # machine report
+ *   node scripts/observability/db-observability-trace-cert.mjs           # human report
+ *   node scripts/observability/db-observability-trace-cert.mjs --json     # machine report
  *
  * Exit 0: every item PASS (or explicitly N/A with a stated reason).
  * Exit 1: at least one item FAIL.
@@ -40,7 +40,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const JSON_MODE = process.argv.includes('--json');
 
 function read(relPath) {

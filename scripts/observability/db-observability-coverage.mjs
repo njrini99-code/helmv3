@@ -8,9 +8,9 @@
  * rather than a diff against the clock.
  *
  * Usage:
- *   node scripts/db-observability-coverage.mjs           # regenerate
- *   node scripts/db-observability-coverage.mjs --check   # fail if stale
- *   node scripts/db-observability-coverage.mjs --json    # machine report
+ *   node scripts/observability/db-observability-coverage.mjs           # regenerate
+ *   node scripts/observability/db-observability-coverage.mjs --check   # fail if stale
+ *   node scripts/observability/db-observability-coverage.mjs --json    # machine report
  *
  * Exit 0: written, or (with --check) already current.
  * Exit 1: --check found the file missing or out of date.
@@ -21,9 +21,9 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { OUTPUT_PATH, buildMatrix, renderReport } from './lib/db-observability-coverage.mjs';
+import { OUTPUT_PATH, buildMatrix, renderReport } from '../lib/db-observability-coverage.mjs';
 
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CHECK = process.argv.includes('--check');
 const JSON_MODE = process.argv.includes('--json');
 
@@ -37,12 +37,12 @@ if (JSON_MODE) {
 
 if (CHECK) {
   if (!existsSync(target)) {
-    console.error(`FAIL - ${OUTPUT_PATH} does not exist. Run: node scripts/db-observability-coverage.mjs`);
+    console.error(`FAIL - ${OUTPUT_PATH} does not exist. Run: node scripts/observability/db-observability-coverage.mjs`);
     process.exit(1);
   }
   const current = readFileSync(target, 'utf-8');
   if (current !== rendered) {
-    console.error(`FAIL - ${OUTPUT_PATH} is out of date. Run: node scripts/db-observability-coverage.mjs`);
+    console.error(`FAIL - ${OUTPUT_PATH} is out of date. Run: node scripts/observability/db-observability-coverage.mjs`);
     process.exit(1);
   }
   console.log(`PASS - ${OUTPUT_PATH} is current.`);
