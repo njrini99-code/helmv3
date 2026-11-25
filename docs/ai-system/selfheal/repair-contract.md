@@ -9,8 +9,9 @@
 > (30 minutes after Diagnose). Heartbeat `job_type`: `selfheal-repair`, with
 > `metadata.runner = 'desktop-routine'`. Read [`README.md`](README.md) first.
 >
-> **Retired runners.** `.github/workflows/selfheal-repair.yml` (GitHub
-> Actions, 2026-09-05 → 2026-09-23) is disabled; do not re-enable it. Its
+> **Retired runners.** The GitHub Actions workflow (2026-09-05 → 2026-09-23)
+> was deleted on 2026-11-25 (.github/workflows/selfheal-repair.yml no longer
+> exists); do not bring it back. Its
 > heartbeats carry `metadata.runtime = 'github-actions'` and are history. The
 > launchd agent before it was retired 2026-09-05. A cached prompt that
 > references either, or `--env-file=/Users/ricknini/...`, is stale; this file

@@ -1,6 +1,6 @@
 /**
  * Exports stored CoachHelm Ask turns from STAGING to JSON fixtures for the offline replay suite
- * (src/lib/coachhelm/v3/chat/__tests__/ask-replay.test.ts).
+ * (planned; that test, src/lib/coachhelm/v3/chat/__tests__/ask-replay.test.ts, is not written yet).
  *
  *   node scripts/coachhelm/export-ask-turns.mjs            dry run: lists what it would write
  *   node scripts/coachhelm/export-ask-turns.mjs --apply    writes one JSON file per turn

@@ -1,5 +1,9 @@
 # Clubhouse redesign: go-live runbook
 
+> **Historical.** Clubhouse went live for every team on 2026-11-15 and the flag
+> and its switches are removed. This page records the plan as it was. Current
+> state, rollback and what is left: [STATUS.md](STATUS.md).
+
 Nothing here has been run on production. Every step needs the owner's word in
 the conversation: production migrations, flags and deploys are all off limits
 until then. Not yet rehearsed end to end: stage 4 of

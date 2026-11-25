@@ -121,8 +121,7 @@ in.
   - dark status-bar glyphs on the light theme, light glyphs on the dark theme
 - [ ] Logged in `PROGRESS.md` with the device and iOS version
 
-Shipping follows the desktop rules. The flag is off in production until the
-owner turns it on; the canary steps and rollback are in [STATUS.md](STATUS.md),
-and deploys follow AGENTS.md "Production". A native change (a
-new plugin, anything in `ios/`) also needs a new App Store build, which is
-the owner's call too (`ios/appstore/`).
+Shipping follows the desktop rules. Clubhouse is on for every team and has no
+flag; rollback is in [STATUS.md](STATUS.md), and deploys follow AGENTS.md
+"Production". A native change (a new plugin, anything in `ios/`) also needs a
+new App Store build, which is the owner's call too (`ios/appstore/`).

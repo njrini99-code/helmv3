@@ -26,8 +26,9 @@ and 4: land with `pr:land`, deploy), these win.
    `docs/generated/*`.
 7. Never deploy. Owner rule: no `vercel deploy` of any kind, preview included,
    unless the owner says so in that conversation.
-8. Clubhouse stays off in production (`golf_clubhouse_ui` is
-   `production: false`). Do not change that.
+8. Clubhouse is the only coach and player UI and is live in production for
+   every team since 2026-11-15. There is no Clubhouse flag; current state and
+   rollback are in `docs/clubhouse/STATUS.md`.
 9. Push rarely. GitHub Actions runs at most 40 jobs at once on this account
    (GitHub Pro) and a full CI run costs about 40 runner-minutes. Use local
    checks (`npm run check:changed`, `npm run clubhouse:check`) as the inner
