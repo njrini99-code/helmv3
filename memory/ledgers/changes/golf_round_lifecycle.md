@@ -212,7 +212,7 @@
   the status-bar zone. Presentation-only — no autosave/navigation/score logic
   touched; the `--scorecard-height` publish keeps padding inside the measured
   element so ShotPills sticky offsets stay correct.
-- Why: iOS premium audit 2026-08-25 (docs/archive/audits-2026-08/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md,
+- Why: iOS premium audit 2026-08-25 (docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md,
   F-SAFEAREA-02/03/04) — the WKWebView is edge-to-edge (`contentInset:
   'never'`), so shell-less round pages owned the status-bar zone and collided
   with system UI on the flagship screen. Neutral off-iOS by construction
