@@ -8,7 +8,7 @@
  * coach row?".
  */
 import { describe, expect, it } from 'vitest';
-import { onboardedGolfRole, pickGolfDashboardRole } from '../golf-dashboard-role';
+import { declaredGolfRole, onboardedGolfRole, pickGolfDashboardRole } from '../golf-dashboard-role';
 
 const done = { onboarding_completed: true };
 const open = { onboarding_completed: false };
@@ -51,5 +51,21 @@ describe('pickGolfDashboardRole', () => {
         }
       }
     }
+  });
+});
+
+
+describe('declaredGolfRole: an account with no users row still has the role sign-up gave it', () => {
+  it('users.role wins when the row exists', () => {
+    expect(declaredGolfRole('coach', 'player')).toBe('coach');
+    expect(declaredGolfRole('player', undefined)).toBe('player');
+  });
+  it('falls back to the role in the account metadata (a session that never started leaves no users row)', () => {
+    expect(declaredGolfRole(undefined, 'player')).toBe('player');
+    expect(declaredGolfRole(null, 'coach')).toBe('coach');
+  });
+  it('an unknown role (admin, junk) declares nothing', () => {
+    expect(declaredGolfRole('admin', 'admin')).toBeNull();
+    expect(declaredGolfRole(undefined, undefined)).toBeNull();
   });
 });

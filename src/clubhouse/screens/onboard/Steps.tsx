@@ -48,13 +48,13 @@ import {
   clampHcp,
   classOf,
   cleanCity,
-  cleanCode,
   cleanState,
   codeAutoChecks,
   codeCanSubmit,
   gradYears,
   hcpWords,
   hometownProblem,
+  lookalikeHint,
   needsGuardianConsent,
   passwordProblem,
   passwordRules,
@@ -68,6 +68,8 @@ import {
   type RequestWho,
 } from './logic';
 import { useOnboardWrites } from './writes-context';
+import { codeFromEntry } from '../auth/join-state';
+import { joinReason } from './join-reason';
 
 export interface StepProps {
   d: Draft;
@@ -291,7 +293,8 @@ export function Code({ d, up, next, back, dir, phone }: StepProps) {
 
   const set = (v: string) => {
     seq.current++;
-    up({ code: cleanCode(v), kind: null, teamName: null });
+    // A pasted invite link becomes the code it carries; spaces, dashes and case are dropped (codeFromEntry).
+    up({ code: codeFromEntry(v), kind: null, teamName: null });
     setSt('idle');
   };
   const submit = () => {
@@ -332,7 +335,8 @@ export function Code({ d, up, next, back, dir, phone }: StepProps) {
             spellCheck={false}
             enterKeyHint="go"
             inputMode="text"
-            maxLength={14}
+            // A pasted link is longer than a code: it is cut down to the code it carries, not to the box.
+            maxLength={200}
           />
           <div className="ch-ox-slots" aria-hidden="true" style={{ ['--ch-ox-rest' as string]: String(n - 4) }}>
             {slots.map((i) =>
@@ -392,7 +396,8 @@ export function Code({ d, up, next, back, dir, phone }: StepProps) {
         {st === 'error' && (
           <div className="ch-ox-err">
             <AuthNotice tone="danger" code="CH-15110">
-              Check the code with your coach and try again. Assistant coaches use the staff code from their head coach.
+              {lookalikeHint(d.code) ? `${lookalikeHint(d.code)} ` : ''}
+              Check it with your coach and try again. If they made a new code, use the newest one. Assistant coaches use the staff code from their head coach.
             </AuthNotice>
           </div>
         )}
@@ -537,11 +542,13 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
   const [pw, setPw] = useState('');
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  // A second tap can land before React commits `busy`: the ref is read at once.
+  const inFlight = useRef(false);
   const [err, setErr] = useState<AccountError | null>(null);
   const player = path === 'player';
 
   const submit = async () => {
-    if (busy || !d.kind) return;
+    if (busy || inFlight.current || !d.kind) return;
     const email = d.email.trim();
     if (!EMAIL_RE.test(email)) {
       setErr({ field: 'email', message: email ? 'Please enter a valid email address.' : 'Enter your email.' });
@@ -557,10 +564,12 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
       return;
     }
     setErr(null);
+    inFlight.current = true;
     setBusy(true);
     haptic('press');
     const r = await createAccount({ kind: d.kind, email, password: pw, first: d.first, last: d.last });
     if (!r.ok) {
+      inFlight.current = false;
       setBusy(false);
       const e = accountErrorFor(r.error);
       setErr(e);
@@ -603,6 +612,7 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
                 autoComplete="email"
                 inputMode="email"
                 autoCapitalize="none"
+                autoCorrect="off"
                 spellCheck={false}
                 placeholder="you@school.edu"
                 aria-invalid={emailErr ? true : undefined}
@@ -676,13 +686,23 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
               </Button>
             }
           >
-            This email already has a GolfHelm account.
+            {err.notice ?? 'This email already has a GolfHelm account.'}
           </AuthNotice>
         </div>
       )}
-      {err && !err.field && (
+      {err && !err.field && !err.signIn && (
         <div className="ch-ox-err">
-          <AuthNotice tone="danger" code="CH-15012">
+          <AuthNotice
+            tone="danger"
+            code="CH-15012"
+            action={
+              err.recheckCode ? (
+                <Button size="sm" onClick={() => next({ kind: null, teamName: null }, 'code')}>
+                  Check my code
+                </Button>
+              ) : undefined
+            }
+          >
             {err.message}
           </AuthNotice>
         </div>
@@ -837,6 +857,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
   const [over, setOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
   const [err, setErr] = useState<string | null>(null);
 
   const take = async (f: File | undefined) => {
@@ -861,18 +882,26 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
   };
 
   const finish = async () => {
-    if (busy || uploading) return;
+    if (busy || inFlight.current || uploading) return;
+    // A name is the one answer the profile cannot be saved without: ask for it here rather than fail at the end.
+    if (!d.first.trim() || !d.last.trim()) {
+      haptic('warning');
+      next({}, 'name');
+      return;
+    }
+    inFlight.current = true;
     setBusy(true);
     setErr(null);
     const r = await finishPlayer({ first: d.first, last: d.last, grad: d.grad, hcp: d.hcp, city: d.city, state: d.state, avatarUrl: d.photoUrl }, d.code || null);
     if (!r.ok) {
+      inFlight.current = false;
       setBusy(false);
       setErr(r.error);
       haptic('error');
       return;
     }
     haptic('success');
-    next({ joinedTeam: r.joinedTeam }, 'done');
+    next({ joinedTeam: r.joinedTeam, joinError: r.joinError ?? null }, 'done');
   };
 
   const name = `${d.first} ${d.last}`.trim() || 'You';
@@ -979,6 +1008,7 @@ export function Done({ d, finish, dir }: StepProps) {
     router.prefetch('/golf/dashboard');
   }, [router]);
   const first = d.first.trim() || 'there';
+  const reason = joinReason(d.joinError);
   if (d.joinedTeam === false) {
     return (
       <Q
@@ -990,13 +1020,48 @@ export function Done({ d, finish, dir }: StepProps) {
           </>
         }
         title={`Your profile is saved, ${first}.`}
-        sub="We couldn’t add you to your coach’s team with that code. Ask your coach to resend it, or enter the team code again."
+        sub={reason.sub}
+      >
+        <div className="ch-ox-act">
+          {reason.onAnotherTeam ? (
+            <>
+              <Button variant="primary" size="lg" rightIcon={ArrowRight} onClick={() => finish('/golf/dashboard')}>
+                Go to your dashboard
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="primary" size="lg" rightIcon={ArrowRight} href="/golf/join">
+                Enter a team code
+              </Button>
+              <Button variant="ghost" size="lg" onClick={() => finish('/golf/dashboard')}>
+                Go to your dashboard
+              </Button>
+            </>
+          )}
+        </div>
+      </Q>
+    );
+  }
+  if (!d.code) {
+    // Finished with no team code at all (signed in on a phone that never saw one): never a dead end, the code is one tap away.
+    return (
+      <Q
+        dir={dir}
+        eyebrow={
+          <>
+            <Icon icon={CircleCheck} size={15} />
+            Welcome to GolfHelm
+          </>
+        }
+        title={`You’re all set, ${first}.`}
+        sub="You’re not on a team yet. When your coach sends you a team code, enter it to join the roster."
       >
         <div className="ch-ox-act">
           <Button variant="primary" size="lg" rightIcon={ArrowRight} href="/golf/join">
             Enter a team code
           </Button>
-          <Button variant="ghost" size="lg" onClick={() => finish('/golf/dashboard')}>
+          <Button variant="ghost" size="lg" feel="success" onClick={() => finish('/golf/dashboard')}>
             Go to your dashboard
           </Button>
         </div>

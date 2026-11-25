@@ -88,7 +88,13 @@ export function isStaleBundleError(message: string): boolean {
 /** A join code out of a returnTo that points at the invite route, e.g. /golf/join/ABC123 gives "ABC123" (any query or hash stripped). */
 export function extractJoinCode(path: string): string | null {
   const match = path.match(/^\/golf\/join\/([^/?#]+)/);
-  return match?.[1] ? decodeURIComponent(match[1]) : null;
+  if (!match?.[1]) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    // A malformed escape (%E0%A4%A) in a pasted link must not throw out of sign-in: the code as written.
+    return match[1];
+  }
 }
 
 /** The two onboarding routes the server action names for someone with no profile yet. */

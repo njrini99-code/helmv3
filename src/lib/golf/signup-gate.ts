@@ -2,6 +2,7 @@ import 'server-only';
 
 import { cookies, headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { resolveClientIp } from '@/lib/security/client-ip';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/supabase-rate-limit';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
@@ -79,12 +80,41 @@ async function warnMissingAccessCodeOnce(): Promise<void> {
  * platform-wide decision, not something to invent inside the signup gate.
  */
 async function clientIp(): Promise<string> {
-  const headersList = await headers();
-  return (
-    headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    headersList.get('x-real-ip') ??
-    'unknown'
-  );
+  // The platform-set address when there is one, else the first forwarded hop, and anything that is not an address collapses
+  // into one shared bucket (src/lib/security/client-ip.ts), so a varied header cannot mint a bucket per request.
+  return resolveClientIp(await headers());
+}
+
+/**
+ * The throttle in front of the service-role join_code lookup, keyed on (IP, code).
+ *
+ * Keyed on IP alone, it let about ten players an hour through per network: a team in one room, or one carrier NAT, ran
+ * out and the eleventh was told their coach's code "didn't match". Now:
+ *  - the same code from one IP has a roster-sized budget (SIGNUP_SAME_CODE), and
+ *  - each NEW code an IP tries spends one slot of the old ten-an-hour budget (SIGNUP), so guessing many different codes
+ *    from one IP is still bounded exactly as before.
+ * "New" is read from the per-code bucket's own count (its first attempt in the window). The code is normalised the
+ * way people write it, so "k7pq-x4mn" and "K7PQX4MN" are one code, and capped so a long junk string cannot make a key.
+ * A refusal still reads as "no match" to the caller (Q-99): nothing here says which namespace a code belongs to.
+ */
+async function codeCheckAllowed(kind: 'gate' | 'verify', ip: string, code: string): Promise<boolean> {
+  // Coarse cap first: every attempt from an IP counts here, so random codes cannot mint unbounded per-code rows.
+  const all = await checkRateLimit(`signup:${kind}:all:${ip}`, RATE_LIMITS.SIGNUP_ALL);
+  if (!all.allowed) return false;
+  const normalised = code.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24) || 'EMPTY';
+  const key = `signup:${kind}:${ip}:${normalised}`;
+  const same = await checkRateLimit(key, RATE_LIMITS.SIGNUP_SAME_CODE);
+  if (!same.allowed) return false;
+  if (same.remaining === RATE_LIMITS.SIGNUP_SAME_CODE.maxAttempts - 1) {
+    const distinct = await checkRateLimit(`signup:${kind}:codes:${ip}`, RATE_LIMITS.SIGNUP);
+    if (!distinct.allowed) {
+      // Remember the refusal: without this, asking again about the same code would be "not new" and walk past the
+      // guessing budget (one free lookup per guessed code). A block stamped on the code's own bucket makes it stick.
+      await checkRateLimit(key, { maxAttempts: 0, windowMs: RATE_LIMITS.SIGNUP.windowMs, blockDurationMs: RATE_LIMITS.SIGNUP.windowMs });
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -276,10 +306,11 @@ export async function grantSignupAccessDetailed(
   // distributed caller got a fresh budget per lambda and the throttle bounded
   // nothing. SIGNUP carries no blockDurationMs, so a DB blip fails OPEN here
   // rather than sealing off signup.
-  const rateLimit = await checkRateLimit(`signup:gate:${await clientIp()}`, RATE_LIMITS.SIGNUP);
+  const ip = await clientIp();
+  const allowed = await codeCheckAllowed('gate', ip, candidate);
   // A throttle reads as "no", and reports kind 'none' — a rate-limited caller
   // must not learn which namespace a code belongs to.
-  if (!rateLimit.allowed) return { granted: false, kind: 'none', teamName: null };
+  if (!allowed) return { granted: false, kind: 'none', teamName: null };
 
   const { kind, teamName } = await classifySignupCodeDetailed(candidate);
   if (kind === 'none') return { granted: false, kind, teamName: null };
@@ -337,11 +368,7 @@ export async function verifySignupGate(): Promise<SignupGateResult> {
   const granted = cookieStore.get(SIGNUP_GATE_COOKIE)?.value?.trim();
   if (!granted) return denied;
 
-  const rateLimit = await checkRateLimit(
-    `signup:gate:verify:${await clientIp()}`,
-    RATE_LIMITS.SIGNUP,
-  );
-  if (!rateLimit.allowed) return denied;
+  if (!(await codeCheckAllowed('verify', await clientIp(), granted))) return denied;
 
   const match = await classifySignupCode(granted);
   if (match === 'none') return denied;

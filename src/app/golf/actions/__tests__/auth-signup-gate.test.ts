@@ -38,13 +38,13 @@ const allow = { allowed: true, remaining: 9, resetAt: Date.now() + 60_000 };
 vi.mock('@/lib/auth/rate-limit', () => ({
   checkRateLimit: vi.fn(async () => allow),
   resetRateLimit: vi.fn(),
-  RATE_LIMITS: { LOGIN: {}, SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, PASSWORD_RESET: {} },
+  RATE_LIMITS: { LOGIN: {}, SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, GOLF_SIGNUP: { maxAttempts: 60, windowMs: 3_600_000 }, PASSWORD_RESET: {} },
   formatTimeRemaining: () => '1 minute',
 }));
 
 vi.mock('@/lib/auth/supabase-rate-limit', () => ({
   checkRateLimit: vi.fn(async () => allow),
-  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 } },
+  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, SIGNUP_SAME_CODE: { maxAttempts: 60, windowMs: 3_600_000 }, SIGNUP_ALL: { maxAttempts: 200, windowMs: 3_600_000 } },
 }));
 
 // ── Supabase ─────────────────────────────────────────────────────────────
@@ -141,6 +141,42 @@ describe('signupAction — server-side access-code gate (B8-1)', () => {
     // onboarding with NO team and had to be invited a second time.
     expect(result).toEqual({ success: true, redirectTo: '/golf/player?joinCode=K7PQX4MN' });
     expect(signUp).toHaveBeenCalledTimes(1);
+  });
+
+  // (b1) If email confirmation is ever on, the link in the inbox must not drop the team.
+  it('points the confirmation link at onboarding with the team code, and a coach or global code at the dashboard', async () => {
+    maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
+    cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
+    await signupAction('player@example.com', STRONG_PASSWORD, 'player', 'New', 'Player');
+    expect(signUp.mock.calls[0]![0].options.emailRedirectTo).toMatch(/\/golf\/player\?joinCode=K7PQX4MN$/);
+
+    signUp.mockClear();
+    maybeSingle.mockResolvedValue({ data: null, error: null });
+    cookieJar.set(GRANT_COOKIE, 'HELM25');
+    await signupAction('c@example.com', STRONG_PASSWORD, 'coach', 'New', 'Coach');
+    expect(signUp.mock.calls[0]![0].options.emailRedirectTo).toMatch(/\/golf\/dashboard$/);
+  });
+
+  it('a signup that made the account but no session says to sign in, in the words the screen turns into that', async () => {
+    maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
+    cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
+    signUp.mockResolvedValue({ data: { user: { id: 'user-1' }, session: null }, error: null });
+    const result = await signupAction('player@example.com', STRONG_PASSWORD, 'player', 'New', 'Player');
+    expect(result).toEqual({ success: false, error: 'Account created but session could not be established. Please try signing in.' });
+  });
+
+  // (b1b) By the time the account is made the code has already matched: a throttle on account creation says what is wrong.
+  it('says "too many sign-ups from this network" (not that the code did not match) when account creation is throttled', async () => {
+    maybeSingle.mockResolvedValue({ data: { id: 'team-1' }, error: null });
+    cookieJar.set(GRANT_COOKIE, 'K7PQX4MN');
+    const { checkRateLimit } = await import('@/lib/auth/rate-limit');
+    vi.mocked(checkRateLimit).mockResolvedValueOnce({ allowed: false, remaining: 0, resetAt: Date.now() + 5 * 60_000 });
+    const result = await signupAction('player@example.com', STRONG_PASSWORD, 'player', 'New', 'Player');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/Too many sign-ups from this network right now\. Please try again in/);
+    expect(result.error).not.toMatch(/match/i);
+    expect(checkRateLimit).toHaveBeenCalledWith(expect.stringMatching(/^signup:ip:/), expect.objectContaining({ maxAttempts: 60 }));
+    expect(signUp).not.toHaveBeenCalled();
   });
 
   // (b2) A TEAM CODE SIGNS UP PLAYERS ONLY (owner decision 2026-09-30).
