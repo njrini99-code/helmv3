@@ -46,7 +46,9 @@ import { buildCoachWelcomeEmail, HERO_CID, MARK_CID, orderTeams } from './coach-
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../..');
 export const PROJECTS = { production: 'qmnssrrolpinvwjjnufo', staging: 'ybmwektreyrwjscxlogv' };
-const FROM = 'GolfHelm <notifications@helmsportslabs.com>';
+// The owner's real inbox (notifications@ has no mailbox), so a coach's reply reaches a person.
+const FROM = 'GolfHelm <admin@helmsportslabs.com>';
+const REPLY_TO = 'admin@helmsportslabs.com';
 const JOIN_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // generateJoinCode's: no I, O, 0 or 1
 const WORDS = ['Birdie', 'Fairway', 'Eagle', 'Wedge', 'Putter', 'Bunker', 'Albatross', 'Driver', 'Links', 'Tee', 'Green', 'Caddie', 'Mashie', 'Niblick', 'Spoon', 'Brassie'];
 
@@ -266,7 +268,7 @@ async function main() {
 
   const resend = new Resend(resendKey());
   const send = async (to, email) => {
-    const { data, error } = await resend.emails.send({ from: FROM, to, subject: email.subject, html: email.html, text: email.text, attachments: attachments() });
+    const { data, error } = await resend.emails.send({ from: FROM, replyTo: REPLY_TO, to, subject: email.subject, html: email.html, text: email.text, attachments: attachments() });
     if (error) throw new Error(`Resend refused the email: ${error.message ?? JSON.stringify(error)}`);
     return data?.id;
   };
