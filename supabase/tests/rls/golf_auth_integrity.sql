@@ -4,7 +4,6 @@
 -- 2. A signed-in user cannot rewrite their own users.email (it blocked the owner's sign-up), but their other writes to
 --    users still work.
 -- 3. Join codes are unique ignoring case, and stored upper case in the 4 to 12 letter-and-digit shape.
--- 4. One current (active or pending) team per player; history rows (inactive, removed) may pile up.
 -- 5. golf_join_team_with_code: joins, re-joins its own team as a no-op, refuses a second team and a coach's login.
 -- 6. A player's own join request can only be inserted as pending.
 --
@@ -14,7 +13,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(22);
+SELECT plan(20);
 
 SET LOCAL session_replication_role = replica;
 DO $$
@@ -102,16 +101,6 @@ SELECT is((SELECT count(*)::int FROM public.golf_team_members WHERE player_id = 
   'the player is on exactly one team');
 SELECT is((SELECT count(*)::int FROM public.golf_team_members WHERE player_id = '00000000-0000-0000-0000-0000000c9403'), 0,
   'the coach is on no roster');
-
--- 4. One current team, enforced by the database ─────────────────────────────────────────────────────────────────────
-SELECT throws_ok(
-  $$INSERT INTO public.golf_team_members (player_id, team_id, status)
-    VALUES ('00000000-0000-0000-0000-0000000c9402', '00000000-0000-0000-0000-0000000c9202', 'active')$$,
-  '23505', NULL, 'a second active membership is refused even without the function (the race)');
-SELECT lives_ok(
-  $$INSERT INTO public.golf_team_members (player_id, team_id, status)
-    VALUES ('00000000-0000-0000-0000-0000000c9402', '00000000-0000-0000-0000-0000000c9202', 'inactive')$$,
-  'a history row on another team is allowed');
 
 -- 6. Join requests start pending ────────────────────────────────────────────────────────────────────────────────────
 SET LOCAL ROLE authenticated;

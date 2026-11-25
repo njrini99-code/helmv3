@@ -7,8 +7,8 @@
 -- 2. A signed-in user cannot rewrite their own public.users.email through PostgREST (GRANT ALL + users_update_own let
 --    them), which let anyone squat an address and block its owner's sign-up in all three sports.
 -- 3. Join codes are unique ignoring case and stored upper case, as every join path compares them (upper(join_code)).
--- 4. One team per player is enforced by the database, not only by the join function's check-then-insert, and the join
---    function no longer reports success when it loses that race.
+-- 4. (Not here.) A database-wide one-current-team rule was left out on purpose: golf_division_cohort.sql covers a player
+--    active on two teams by design, so it is an owner decision. The self-serve join still refuses a second team.
 -- 5. A coach account cannot join a team as a player through the join function.
 -- 6. A player's own join request can only be created as pending.
 --
@@ -82,14 +82,8 @@ ALTER TABLE public.golf_teams
 ALTER TABLE public.golf_teams VALIDATE CONSTRAINT golf_teams_join_code_format;
 -- ROLLBACK: DROP INDEX public.golf_teams_join_code_upper_uidx; ALTER TABLE public.golf_teams DROP CONSTRAINT golf_teams_join_code_format;
 
--- 4 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
--- Active or pending: a player can be on one team at a time; inactive and removed rows are history and may pile up.
-CREATE UNIQUE INDEX IF NOT EXISTS golf_team_members_one_current_team_uidx
-  ON public.golf_team_members (player_id) WHERE status IN ('active', 'pending');
--- ROLLBACK: DROP INDEX public.golf_team_members_one_current_team_uidx;
-
--- 4 and 5: the join function. Unchanged except the coach refusal and the conflict target: re-joining your own team is
--- still a no-op success, but losing the one-team race to a concurrent join now raises instead of returning this team.
+-- 5: the join function. Unchanged except the coach refusal and the conflict target (named, see below): re-joining your
+-- own team is still a no-op success.
 CREATE OR REPLACE FUNCTION public.golf_join_team_with_code(p_code text)
  RETURNS TABLE(team_id uuid, team_name text)
  LANGUAGE plpgsql

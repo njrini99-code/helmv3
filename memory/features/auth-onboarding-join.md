@@ -154,7 +154,7 @@ Join code
 - Held: `20261125130000_golf_auth_integrity.sql` copies email changes
   from `auth.users` to `users` and the profile tables, and stops
   self-edits of `users.email`. It also adds a case-insensitive unique
-  join code, one current team per player, a coach refusal in
+  join code, a coach refusal in
   `golf_join_team_with_code`, and pending-only player join requests.
 
 ## UI Contract
