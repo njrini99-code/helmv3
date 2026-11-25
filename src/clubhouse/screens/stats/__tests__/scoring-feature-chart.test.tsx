@@ -1,4 +1,4 @@
-import { cleanup, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
@@ -66,6 +66,46 @@ describe('scoring hero · rounds sit by their dates (CH-11)', () => {
     const c = draw(rounds([72, 74, 73]));
     const xs = [...c.querySelectorAll('.ch-shs-rdot')].map((d) => Number(d.getAttribute('cx')));
     expect(xs[1]! - xs[0]!).toBeCloseTo(xs[2]! - xs[1]!, 5);
+  });
+});
+
+describe('scoring hero · a finger held still reads the round under it (0822e4af)', () => {
+  // jsdom has no pointer capture; the chart takes it as the hold lands.
+  const capture = vi.fn();
+  const proto = HTMLElement.prototype as unknown as Record<string, unknown>;
+  beforeEach(() => {
+    vi.useFakeTimers();
+    proto.setPointerCapture = capture;
+    proto.hasPointerCapture = () => false;
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    capture.mockReset();
+    delete proto.setPointerCapture;
+    delete proto.hasPointerCapture;
+  });
+  const hold = (x: number) => {
+    const onRead = vi.fn();
+    const c = render(<ScoringFeatureChart rounds={rounds([74, 70, 77])} tone="flat" onRead={onRead} />).container;
+    const chart = c.querySelector<HTMLElement>('[data-ch="stats-hero-chart"]')!;
+    chart.getBoundingClientRect = () => ({ left: 100, top: 0, width: 320, height: H, right: 420, bottom: H, x: 100, y: 0, toJSON: () => ({}) });
+    fireEvent.pointerDown(chart, { pointerType: 'touch', pointerId: 7, clientX: x });
+    return { onRead, chart };
+  };
+
+  it('reads the nearest round once the hold lands, measured from the chart’s own left edge, and nothing before it', () => {
+    const { onRead } = hold(104);
+    act(() => vi.advanceTimersByTime(119));
+    expect(onRead).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(capture).toHaveBeenCalledWith(7);
+    expect(onRead).toHaveBeenLastCalledWith(0);
+  });
+
+  it('a hold at the far end reads the newest round', () => {
+    const { onRead } = hold(400);
+    act(() => vi.advanceTimersByTime(120));
+    expect(onRead).toHaveBeenLastCalledWith(2);
   });
 });
 
