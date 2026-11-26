@@ -10,6 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import type { CohortGender } from './cohort-baselines';
 import { describeError } from '@/lib/utils/describe-error';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 
 export interface PlayerCohort {
   gender: CohortGender;
@@ -59,8 +60,7 @@ export async function loadPlayerCohorts(
 
   try {
     const admin = createAdminClient();
-    for (let i = 0; i < ids.length; i += COHORT_PLAYER_BATCH) {
-      const batch = ids.slice(i, i + COHORT_PLAYER_BATCH);
+    for (const batch of chunkIds(ids, COHORT_PLAYER_BATCH)) {
       const { data, error } = await admin
         .from('golf_team_members')
         .select('player_id, golf_teams(gender)')

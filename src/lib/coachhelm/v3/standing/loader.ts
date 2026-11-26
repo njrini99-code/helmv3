@@ -12,6 +12,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import {
@@ -286,8 +287,7 @@ export async function loadPlayersStandingMap(
 
   const supabase = createAdminClient();
   const rows: RawRow[] = [];
-  for (let i = 0; i < playerIds.length; i += STANDING_PLAYER_BATCH) {
-    const batch = playerIds.slice(i, i + STANDING_PLAYER_BATCH);
+  for (const batch of chunkIds(playerIds, STANDING_PLAYER_BATCH)) {
     // Paginate each batch past the 1000-row cap (a 300-player batch can exceed
     // 1000 standing rows) with a stable order on the table's natural key.
     const fetchBatch = (fields: string) =>
