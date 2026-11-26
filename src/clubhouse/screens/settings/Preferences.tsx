@@ -41,7 +41,7 @@ export function PreferencesSection({ device }: { device: ChDevice }) {
         <Row label={<><Icon icon={Vibrate} size={15} /> Haptics</>} help="Taps you feel on buttons, switches and saves.">
           <span className="ch-set-pair">
             {/* P008-C3: feel what the switch controls, once. */}
-            <Button size="sm" disabled={!haptics} onClick={() => haptic('success')}>
+            <Button data-ctl="CTL-P008-025" size="sm" disabled={!haptics} onClick={() => haptic('success')}>
               Feel it
             </Button>
             <SettingSwitch label="Haptics" hideLabel checked={haptics} onChange={setHaptics} />

@@ -18,7 +18,7 @@ export function PreferencesPhone({ device }: { device: ChDevice }) {
       <PickerRow label="Time format" value={clock} options={CLOCK_OPTIONS} onPick={setClock} />
       {device.native && <SwitchRow label="Haptics" help="Taps you feel on buttons, switches and saves." checked={haptics} onChange={setHaptics} />}
       {/* P008-C3: feel what the switch controls, once. */}
-      {device.native && <ActionRow label="Feel it" disabled={!haptics} onClick={() => haptic('success')} />}
+      {device.native && <ActionRow data-ctl="CTL-P008-068" label="Feel it" disabled={!haptics} onClick={() => haptic('success')} />}
       {/* P008-C1: Clubhouse follows the iPhone's Text Size; nothing to set here. */}
       {device.native && <InfoRow label="Text size" value="Automatic" help="Follows your iPhone’s text size." />}
     </Group>

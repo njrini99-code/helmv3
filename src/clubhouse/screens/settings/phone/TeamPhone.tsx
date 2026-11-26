@@ -116,11 +116,11 @@ function InvitePhone({ code: initial, writes, program = null }: { code: string; 
             : 'Players who sign up with this code or open the invite link join right away.'}
         </span>
         <span className="ch-feat__foot">
-          <button type="button" className="ch-setm-link is-on-green" onClick={() => void copy('code')}>
+          <button data-ctl="CTL-P008-085" type="button" className="ch-setm-link is-on-green" onClick={() => void copy('code')}>
             {copied === 'code' ? 'Copied' : 'Copy code'}
           </button>
           {!program && (
-            <button type="button" className="ch-setm-link is-on-green is-quiet" disabled={regen.pending} onClick={() => setAsking(true)}>
+            <button data-ctl="CTL-P008-086" type="button" className="ch-setm-link is-on-green is-quiet" disabled={regen.pending} onClick={() => setAsking(true)}>
               {regen.pending ? 'Making…' : 'New code'}
             </button>
           )}
@@ -130,7 +130,7 @@ function InvitePhone({ code: initial, writes, program = null }: { code: string; 
       {/* Two teams: every code card is the same, and replacing a code is its own row naming the team being viewed. */}
       {program && program.active && (
         <Group note={`Replaces the code for ${programCodePhrase(program.active)}, the team you’re viewing. To replace another team’s code, switch to that team.`}>
-          <NavRow label={regen.pending ? 'Making…' : 'New code'} disabled={regen.pending} onClick={() => setAsking(true)} />
+          <NavRow data-ctl="CTL-P008-087" label={regen.pending ? 'Making…' : 'New code'} disabled={regen.pending} onClick={() => setAsking(true)} />
         </Group>
       )}
       <ActionSheet
@@ -157,7 +157,7 @@ function InvitePhone({ code: initial, writes, program = null }: { code: string; 
     share sheet, the caller copies the invite link instead. */
 function SharePill({ onShare }: { onShare: () => void }) {
   return (
-    <button type="button" className="ch-setm-pill is-on-green" onClick={onShare}>
+    <button data-ctl="CTL-P008-088" type="button" className="ch-setm-pill is-on-green" onClick={onShare}>
       Share
     </button>
   );
@@ -179,7 +179,7 @@ function OtherTeamCodePhone({ team }: { team: ChProgramCode }) {
       <b className="ch-feat__title ch-setm-code__v ch-num">{team.code}</b>
       <span className="ch-feat__line">Players who sign up with this code join {programCodePhrase(team)} right away.</span>
       <span className="ch-feat__foot">
-        <button type="button" className="ch-setm-link is-on-green" onClick={() => void copy('code')}>
+        <button data-ctl="CTL-P008-089" type="button" className="ch-setm-link is-on-green" onClick={() => void copy('code')}>
           {copied === 'code' ? 'Copied' : 'Copy code'}
         </button>
       </span>
@@ -223,7 +223,7 @@ function DetailsPhone({ team, scoring, writes }: { team: ChTeamInfo | null; scor
     <>
       {/* The timezone row is here, so the sentence about it is too (wave-6 #19). */}
       <Group title="Team details" note={scoring.s ? 'The timezone sets when every event and reminder happens.' : undefined}>
-        {team && <NavRow label="Team name" value={team.name} onClick={() => setEditing(true)} />}
+        {team && <NavRow data-ctl="CTL-P008-090" label="Team name" value={team.name} onClick={() => setEditing(true)} />}
         {scoring.s && <PickerRow label="Team timezone" value={scoring.s.timezone} options={TIMEZONE_OPTIONS} disabled={scoring.busy} onPick={(v) => scoring.pick('timezone', v)} />}
       </Group>
       {team && <TeamSheet open={editing} onClose={() => setEditing(false)} team={team} writes={writes} />}
@@ -328,8 +328,8 @@ function RemindersPhone({ reminders, writes }: { reminders: ChReminders; writes:
         <SwitchRow label="Send reminders" checked={r.enabled} busy={save.pending.has('enabled')} onChange={flip} />
         {r.enabled && (
           <>
-            <NavRow label="First reminder" value={hoursLabel(r.earlyHours)} onClick={() => setField('earlyHours')} />
-            <NavRow label="Final reminder" value={minutesLabel(r.lateMinutes)} onClick={() => setField('lateMinutes')} />
+            <NavRow data-ctl="CTL-P008-091" label="First reminder" value={hoursLabel(r.earlyHours)} onClick={() => setField('earlyHours')} />
+            <NavRow data-ctl="CTL-P008-092" label="Final reminder" value={minutesLabel(r.lateMinutes)} onClick={() => setField('lateMinutes')} />
           </>
         )}
       </Group>

@@ -244,14 +244,14 @@ function Row({
         <span>{PRIORITY_LABEL[k].label}</span>
         <span>{PRIORITY_LABEL[k].hint}</span>
       </span>
-      <button ref={setActivatorNodeRef} type="button" className="ch-setm-rank__h" aria-label={`Reorder ${PRIORITY_LABEL[k].label}`} aria-describedby={hintId} onKeyDown={onKey}>
+      <button data-ctl="CTL-P008-069" ref={setActivatorNodeRef} type="button" className="ch-setm-rank__h" aria-label={`Reorder ${PRIORITY_LABEL[k].label}`} aria-describedby={hintId} onKeyDown={onKey}>
         <Icon icon={Menu} size={20} />
       </button>
       <span className="ch-sr-only ch-sr-only--focusable">
-        <button type="button" disabled={first} onClick={() => onStep(k, -1)}>
+        <button data-ctl="CTL-P008-070" type="button" disabled={first} onClick={() => onStep(k, -1)}>
           Move {PRIORITY_LABEL[k].label} up
         </button>
-        <button type="button" disabled={last} onClick={() => onStep(k, 1)}>
+        <button data-ctl="CTL-P008-071" type="button" disabled={last} onClick={() => onStep(k, 1)}>
           Move {PRIORITY_LABEL[k].label} down
         </button>
       </span>

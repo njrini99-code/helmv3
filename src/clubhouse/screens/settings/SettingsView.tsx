@@ -176,7 +176,7 @@ export function SettingsView({
           {/* CH-8801: the section list is a navigation landmark; the open section is marked current. */}
           <nav ref={sectionRail} className="ch-set-rail" aria-label="Settings sections">
             {sections.map((s) => (
-              <button
+              <button data-ctl="CTL-P008-026"
                 key={s.id}
                 type="button"
                 className={'ch-set-rail__i' + (s.id === section ? ' is-on' : '')}
@@ -234,10 +234,10 @@ export function SettingsView({
         description="Your changes in this section haven’t been saved."
         footer={
           <>
-            <Button variant="secondary" onClick={() => setAsk(null)}>
+            <Button data-ctl="CTL-P008-027" variant="secondary" onClick={() => setAsk(null)}>
               Keep editing
             </Button>
-            <Button
+            <Button data-ctl="CTL-P008-028"
               variant="danger"
               feel="warning"
               onClick={() => {

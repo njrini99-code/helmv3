@@ -50,7 +50,7 @@ export function Slider({
         </output>
       </div>
       {description && <p className="ch-slider__d">{description}</p>}
-      <input
+      <input data-ctl="CTL-P008-098"
         id={id}
         type="range"
         min={min}

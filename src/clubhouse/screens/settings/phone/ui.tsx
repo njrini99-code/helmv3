@@ -42,6 +42,7 @@ export function NavRow({
   onClick,
   code,
   ariaLabel,
+  'data-ctl': ctl,
 }: {
   label: string;
   value?: ReactNode;
@@ -54,9 +55,10 @@ export function NavRow({
   onClick: () => void;
   code?: string;
   ariaLabel?: string;
+  'data-ctl'?: string;
 }) {
   return (
-    <button
+    <button data-ctl={ctl ?? 'CTL-P008-094'}
       type="button"
       className={'ch-setm-row is-nav' + (danger ? ' is-danger' : '') + (icon ? ' has-tile' : '')}
       disabled={disabled}
@@ -95,18 +97,18 @@ export function InfoRow({ label, value, help }: { label: string; value: ReactNod
 }
 
 /** A row that is a link (Privacy policy, Terms of service). */
-export function LinkRow({ label, href }: { label: string; href: string }) {
+export function LinkRow({ label, href, 'data-ctl': ctl }: { label: string; href: string; 'data-ctl'?: string }) {
   return (
-    <a className="ch-setm-row is-plain" href={href} target="_blank" rel="noreferrer">
+    <a data-ctl={ctl ?? 'CTL-P008-095'} className="ch-setm-row is-plain" href={href} target="_blank" rel="noreferrer">
       <span className="ch-setm-row__l">{label}</span>
     </a>
   );
 }
 
 /** A row that does something now, with no chevron (Report a problem). */
-export function ActionRow({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+export function ActionRow({ label, onClick, disabled, 'data-ctl': ctl }: { label: string; onClick: () => void; disabled?: boolean; 'data-ctl'?: string }) {
   return (
-    <button type="button" className="ch-setm-row is-plain" disabled={disabled} onClick={onClick}>
+    <button data-ctl={ctl ?? 'CTL-P008-096'} type="button" className="ch-setm-row is-plain" disabled={disabled} onClick={onClick}>
       <span className="ch-setm-row__l">{label}</span>
     </button>
   );
@@ -151,7 +153,7 @@ export function PickerRow<V extends string>({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <NavRow label={label} value={options.find((o) => o.value === value)?.label ?? ''} disabled={disabled} onClick={() => setOpen(true)} />
+      <NavRow data-ctl="CTL-P008-097" label={label} value={options.find((o) => o.value === value)?.label ?? ''} disabled={disabled} onClick={() => setOpen(true)} />
       <PickerSheet
         open={open}
         onClose={() => setOpen(false)}
