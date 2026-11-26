@@ -1361,9 +1361,12 @@ flags:
       team every day.
 
   # Clubhouse Bridge signals (plan docs/superpowers/specs/helm-bridge/
-  # 2026-11-18-clubhouse-bridge-redesign.md §4.4). Off everywhere until the
-  # held migration 20261124090000_clubhouse_bridge_signals.sql is applied and
-  # the owner turns the pipe on.
+  # 2026-11-18-clubhouse-bridge-redesign.md §4.4). Migration
+  # 20261124090000_clubhouse_bridge_signals.sql is applied to production, and
+  # the owner turned the pipe on there on 2026-11-26. Preview stays off until
+  # staging (PROSP DATA) is confirmed to have the migration's tables;
+  # development stays off because .env.local may point at production, so a
+  # local dev server would write its traffic into the production tables.
   - feature_id: clubhouse_signals
     owner: golf/clubhouse
     purpose: >-
@@ -1378,7 +1381,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: false
       development: false
     kill_switch_behavior: >-
