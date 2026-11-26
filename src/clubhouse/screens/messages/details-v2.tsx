@@ -156,10 +156,10 @@ export function MuteMenu({ onPick, onClose, anchor }: { onPick: (hours: number |
   return createPortal(
     <div className="ch-mso-pop ch-msd-lift" data-ch-ms-v2="on">
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Esc is the keyboard's way out */}
-      <div className="ch-mso-pop__scrim" onClick={() => leave(onClose)} />
+      <div data-ctl="CTL-P007-025" className="ch-mso-pop__scrim" onClick={() => leave(onClose)} />
       <div ref={menu} className="ch-mso-menu ch-msd-menu" role="menu" aria-label="Mute this conversation" style={anchor ? { left: anchor.left, top: anchor.top } : undefined}>
         {MUTE_CHOICES.map((c) => (
-          <button key={c.label} type="button" role="menuitem" onClick={() => leave(() => onPick(c.hours))}>
+          <button data-ctl="CTL-P007-026" key={c.label} type="button" role="menuitem" onClick={() => leave(() => onPick(c.hours))}>
             <span className="ch-mso-menu__t">{c.label}</span>
           </button>
         ))}
@@ -207,7 +207,7 @@ export function QuickActions({
   }, [mute.muted, pop]);
   return (
     <div className="ch-msp-tiles ch-msd-tiles" style={{ ['--ch-msp-n' as string]: n }}>
-      <button
+      <button data-ctl="CTL-P007-027"
         ref={muteTile}
         type="button"
         className="ch-msp-tile ch-msd-tile"
@@ -224,28 +224,28 @@ export function QuickActions({
         <Icon icon={mute.muted ? BellOff : Bell} size={20} />
         <span>{mute.muted ? 'Muted' : 'Mute'}</span>
       </button>
-      <button type="button" className="ch-msp-tile ch-msd-tile" onClick={onSearch}>
+      <button data-ctl="CTL-P007-028" type="button" className="ch-msp-tile ch-msd-tile" onClick={onSearch}>
         <Icon icon={Search} size={20} />
         <span>Search</span>
       </button>
-      <button type="button" className="ch-msp-tile ch-msd-tile" onClick={onFiles}>
+      <button data-ctl="CTL-P007-029" type="button" className="ch-msp-tile ch-msd-tile" onClick={onFiles}>
         <Icon icon={FileText} size={20} />
         <span>Files</span>
       </button>
       {profileHref && (
-        <Link className="ch-msp-tile ch-msd-tile" href={profileHref}>
+        <Link data-ctl="CTL-P007-030" className="ch-msp-tile ch-msd-tile" href={profileHref}>
           <Icon icon={UserRound} size={20} />
           <span>Profile</span>
         </Link>
       )}
       {lastTile === 'add' && (
-        <button type="button" className="ch-msp-tile ch-msd-tile" onClick={onAdd}>
+        <button data-ctl="CTL-P007-031" type="button" className="ch-msp-tile ch-msd-tile" onClick={onAdd}>
           <Icon icon={UserPlus} size={20} />
           <span>Add</span>
         </button>
       )}
       {lastTile === 'leave' && (
-        <button type="button" className="ch-msp-tile ch-msd-tile" onClick={onLeave}>
+        <button data-ctl="CTL-P007-032" type="button" className="ch-msp-tile ch-msd-tile" onClick={onLeave}>
           <Icon icon={LogOut} size={20} />
           <span>Leave</span>
         </button>
@@ -286,7 +286,7 @@ export function ConversationSearch({ api, conv, onClose, onPicked }: { api: ChMe
     <div className="ch-msv-consearch">
       <div className="ch-msv-consearch__f">
         <SearchField value={q} onChange={setQ} placeholder="Search" label={`Search this conversation with ${conv.title}`} />
-        <button type="button" className="ch-msv-consearch__x" onClick={onClose}>
+        <button data-ctl="CTL-P007-033" type="button" className="ch-msv-consearch__x" onClick={onClose}>
           Cancel
         </button>
       </div>
@@ -334,7 +334,7 @@ export function MembersCard({
             return (
               <div key={m.userId} className="ch-msv-member ch-msd-member">
                 {/* The drawn row has no key of its own: the row is what messages them (today's action, kept). */}
-                <button type="button" className="ch-msv-member__to" disabled={you} aria-label={you ? undefined : `Message ${m.name}`} onClick={() => onMessage(m.userId)}>
+                <button data-ctl="CTL-P007-034" type="button" className="ch-msv-member__to" disabled={you} aria-label={you ? undefined : `Message ${m.name}`} onClick={() => onMessage(m.userId)}>
                   <Avatar name={m.name} id={personOf(api, m.userId)?.playerId ?? m.userId} size={32} />
                   <span className="ch-msv-member__b">
                     <b>{you ? 'You' : m.name}</b>
@@ -343,7 +343,7 @@ export function MembersCard({
                 </button>
                 {coach && <span className="ch-msv-coachchip ch-msd-chip">Coach</span>}
                 {onRemove && !you && (
-                  <button type="button" className="ch-msp-icon is-remove" aria-label={`Remove ${m.name}`} onClick={() => onRemove(m)}>
+                  <button data-ctl="CTL-P007-035" type="button" className="ch-msp-icon is-remove" aria-label={`Remove ${m.name}`} onClick={() => onRemove(m)}>
                     <Icon icon={UserMinus} size={17} />
                   </button>
                 )}
@@ -351,7 +351,7 @@ export function MembersCard({
             );
           })}
           {!all && list.length > 6 && (
-            <button type="button" className="ch-msv-seeall ch-msd-seeall" onClick={() => setAll(true)}>
+            <button data-ctl="CTL-P007-036" type="button" className="ch-msv-seeall ch-msd-seeall" onClick={() => setAll(true)}>
               Show all {list.length}
             </button>
           )}
@@ -407,7 +407,7 @@ function PhotoTile({ api, file, onOpen }: { api: ChMessagesApi; file: ChFile; on
     };
   }, [read, file.id, file.messageId]);
   return (
-    <button type="button" className="ch-msv-ptile" aria-label={`Open ${file.name}`} onClick={onOpen}>
+    <button data-ctl="CTL-P007-037" type="button" className="ch-msv-ptile" aria-label={`Open ${file.name}`} onClick={onOpen}>
       {url ? <img src={url} alt="" loading="lazy" /> : failed ? <span className="ch-msv-photo-off"><Icon icon={ImageOff} size={20} /></span> : <span className="ch-msv-sk" aria-hidden="true" />}
     </button>
   );
@@ -427,7 +427,7 @@ export function PhotosAndFiles({ api, conv }: { api: ChMessagesApi; conv: ChConv
       <header className="ch-msv-members__h ch-msd-lcard__h">
         <b>Photos and files</b>
         {more && (
-          <button type="button" className="ch-msd-link" onClick={() => setAll(true)}>
+          <button data-ctl="CTL-P007-038" type="button" className="ch-msd-link" onClick={() => setAll(true)}>
             See all
           </button>
         )}
@@ -452,7 +452,7 @@ export function PhotosAndFiles({ api, conv }: { api: ChMessagesApi; conv: ChConv
             </div>
           )}
           {shownRest.map((f) => (
-            <button key={f.id} type="button" className="ch-msv-frow ch-msd-frow" onClick={() => void open(f)}>
+            <button data-ctl="CTL-P007-039" key={f.id} type="button" className="ch-msv-frow ch-msd-frow" onClick={() => void open(f)}>
               <span className="ch-msv-frow__ic">
                 <Icon icon={FileText} size={16} />
               </span>

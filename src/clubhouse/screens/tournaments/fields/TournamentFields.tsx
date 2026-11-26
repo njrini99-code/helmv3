@@ -170,7 +170,7 @@ export function TournamentFields({
       <div className="ch-tfx__row">
         <span className="ch-tfx__lbl">Course</span>
         <div>
-          <button
+          <button data-ctl="CTL-P016-129"
             type="button"
             id={`${idPrefix}-course`}
             className={'ch-tfx__course' + (s.course ? '' : ' is-empty')}
@@ -193,7 +193,7 @@ export function TournamentFields({
           )}
           {s.rounds.length >= 2 && (
             <label className="ch-switch ch-tfx__gap">
-              <input
+              <input data-ctl="CTL-P016-130"
                 type="checkbox"
                 role="switch"
                 checked={s.sameCourse}
@@ -264,7 +264,7 @@ export function TournamentFields({
               ))}
             </AnimatePresence>
             {custom && s.rounds.length < MAX_ROUNDS && (
-              <button type="button" className="ch-tfx__add" onClick={() => setRounds(addRound(s.rounds))}>
+              <button data-ctl="CTL-P016-131" type="button" className="ch-tfx__add" onClick={() => setRounds(addRound(s.rounds))}>
                 <Icon icon={Plus} size={16} />
                 Add a round
               </button>
@@ -314,7 +314,7 @@ export function TournamentFields({
         </div>
       </div>
 
-      <button type="button" className="ch-tfx__disclose" aria-expanded={more} aria-controls={`${idPrefix}-more`} onClick={() => setMore((o) => !o)}>
+      <button data-ctl="CTL-P016-132" type="button" className="ch-tfx__disclose" aria-expanded={more} aria-controls={`${idPrefix}-more`} onClick={() => setMore((o) => !o)}>
         More details
         <Icon icon={ChevronDown} size={16} />
       </button>

@@ -37,7 +37,7 @@ export function StaffPhone({ coachId, writes }: { coachId: string | null; writes
       )}
       {requestsFailed ? (
         <Group title="Assistant coach requests" code="CH-8213" note="Requests didn’t load. Nothing was changed.">
-          <ActionRow label="Try again" onClick={staff.retry} />
+          <ActionRow data-ctl="CTL-P008-078" label="Try again" onClick={staff.retry} />
         </Group>
       ) : (
         requests.length > 0 && (
@@ -45,10 +45,10 @@ export function StaffPhone({ coachId, writes }: { coachId: string | null; writes
             {requests.map((c) => (
               <div key={c.coachId} className={'ch-setm-row is-info' + (c.fullName?.trim() && c.email ? ' has-help' : '')}>
                 <span className="ch-setm-row__l">{pendingCoachName(c)}</span>
-                <button type="button" className="ch-setm-link is-quiet" disabled={deciding} onClick={() => setDeclining(c)}>
+                <button data-ctl="CTL-P008-079" type="button" className="ch-setm-link is-quiet" disabled={deciding} onClick={() => setDeclining(c)}>
                   {staff.decline.pending && staff.busyId === c.coachId ? 'Declining…' : 'Decline'}
                 </button>
-                <button type="button" className="ch-setm-pill" disabled={deciding} onClick={() => void staff.approve.run(c)}>
+                <button data-ctl="CTL-P008-080" type="button" className="ch-setm-pill" disabled={deciding} onClick={() => void staff.approve.run(c)}>
                   {staff.approve.pending && staff.busyId === c.coachId ? 'Approving…' : 'Approve'}
                 </button>
                 {c.fullName?.trim() && c.email && <span className="ch-setm-help">{c.email}</span>}
@@ -78,7 +78,7 @@ export function StaffPhone({ coachId, writes }: { coachId: string | null; writes
       {!staff.isAssistant && (
         <Group title="Staff invitations" note={invite.made ? staffInviteNote(invite.made) : STAFF_ROLE_HELP[invite.role]}>
           <PickerRow label="Staff role" value={invite.role} options={STAFF_ROLE_OPTIONS} onPick={invite.setRole} />
-          <ActionRow label={invite.create.pending ? 'Making…' : 'Create invite'} disabled={invite.create.pending} onClick={() => void invite.create.run(invite.role)} />
+          <ActionRow data-ctl="CTL-P008-081" label={invite.create.pending ? 'Making…' : 'Create invite'} disabled={invite.create.pending} onClick={() => void invite.create.run(invite.role)} />
           {invite.made && (
             <div className="ch-setm-invite">
               <div className="ch-setm-invite__top">
@@ -89,17 +89,17 @@ export function StaffPhone({ coachId, writes }: { coachId: string | null; writes
                   </b>
                 </span>
                 {/* Where the device has no share sheet, Share copies the invite link instead. */}
-                <button type="button" className="ch-setm-pill" onClick={() => void (invite.canShare ? invite.share() : invite.copy('link'))}>
+                <button data-ctl="CTL-P008-082" type="button" className="ch-setm-pill" onClick={() => void (invite.canShare ? invite.share() : invite.copy('link'))}>
                   Share
                 </button>
               </div>
               <div className="ch-setm-invite__links">
                 {invite.made.code && (
-                  <button type="button" className="ch-setm-link" onClick={() => void invite.copy('code')}>
+                  <button data-ctl="CTL-P008-083" type="button" className="ch-setm-link" onClick={() => void invite.copy('code')}>
                     Copy code
                   </button>
                 )}
-                <button type="button" className="ch-setm-link" onClick={() => void invite.copy('link')}>
+                <button data-ctl="CTL-P008-084" type="button" className="ch-setm-link" onClick={() => void invite.copy('link')}>
                   Copy link
                 </button>
               </div>

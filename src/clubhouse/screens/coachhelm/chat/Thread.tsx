@@ -410,7 +410,7 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
       </div>
       {more &&
         createPortal(
-          <button type="button" className={'ch-ak-jump' + (busy ? ' is-live' : '')} aria-label={busy ? 'More below. Jump to the latest' : 'Jump to the latest'} data-ch-press="" style={{ bottom: more.bottom }} onClick={toLatest}>
+          <button data-ctl="CTL-P013-039" type="button" className={'ch-ak-jump' + (busy ? ' is-live' : '')} aria-label={busy ? 'More below. Jump to the latest' : 'Jump to the latest'} data-ch-press="" style={{ bottom: more.bottom }} onClick={toLatest}>
             <Icon icon={ArrowDown} size={19} />
             {busy && <LiveDot />}
           </button>,

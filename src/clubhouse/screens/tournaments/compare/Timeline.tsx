@@ -165,12 +165,12 @@ export function Timeline({
         </div>
         <div className="ch-tour-cmp-tl__axis" />
         {other && <div className="ch-tour-cmp-tl__sel is-other" style={{ left: `${pct(other[0])}%`, width: `${Math.max(0.6, pct(other[1]) - pct(other[0]))}%` }} />}
-        <div className={'ch-tour-cmp-tl__sel' + (target === 'b' ? ' is-b' : '')} style={{ left: `${pct(cur[0])}%`, width: `${Math.max(0.6, pct(cur[1]) - pct(cur[0]))}%` }} onPointerDown={gesture('mid')}>
+        <div data-ctl="CTL-P016-124" className={'ch-tour-cmp-tl__sel' + (target === 'b' ? ' is-b' : '')} style={{ left: `${pct(cur[0])}%`, width: `${Math.max(0.6, pct(cur[1]) - pct(cur[0]))}%` }} onPointerDown={gesture('mid')}>
           <span className="ch-tour-cmp-tl__tag">{target.toUpperCase()}</span>
         </div>
         {finished.map((e) => (
           <span key={e.id} className="ch-tour-cmp-tl__mk" style={{ left: `${pct(e.startDate)}%` }}>
-            <button
+            <button data-ctl="CTL-P016-125"
               type="button"
               aria-label={`Use ${e.name}`}
               aria-pressed={tsc.context.kind === 'event' && tsc.context.id === e.id}
@@ -185,7 +185,7 @@ export function Timeline({
           </span>
         ))}
         {([0, 1] as const).map((w) => (
-          <button
+          <button data-ctl="CTL-P016-126"
             key={w}
             type="button"
             role="slider"

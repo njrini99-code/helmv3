@@ -124,7 +124,7 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
       </div>
       {!done && (
         <>
-          <button type="button" className="row" aria-expanded={open} disabled={busy || folders === null} onClick={() => setOpen((v) => !v)}>
+          <button data-ctl="CTL-P013-096" type="button" className="row" aria-expanded={open} disabled={busy || folders === null} onClick={() => setOpen((v) => !v)}>
             <span ref={icon} className="fi" aria-hidden="true">
               <Icon icon={FolderClosed} size={18} />
             </span>
@@ -137,7 +137,7 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
           {open && (
             <div className="list" role="menu" aria-label="Folders">
               {[{ name: ROOT, count: countOf(ROOT) }, ...list].map((f) => (
-                <button
+                <button data-ctl="CTL-P013-097"
                   key={f.name || 'documents'}
                   type="button"
                   role="menuitemradio"
@@ -190,13 +190,13 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
                       }
                     }}
                   />
-                  <Button variant="secondary" size="sm" type="submit" disabled={!clean || dupe}>
+                  <Button data-ctl="CTL-P013-098" variant="secondary" size="sm" type="submit" disabled={!clean || dupe}>
                     Create
                   </Button>
                   {clean && dupe && <p className="bad">You already have that folder.</p>}
                 </form>
               ) : (
-                <button type="button" className="fr nw" onClick={() => setNaming(true)}>
+                <button data-ctl="CTL-P013-099" type="button" className="fr nw" onClick={() => setNaming(true)}>
                   <Icon icon={FolderClosed} size={18} />
                   <span className="n">New folder</span>
                 </button>
@@ -212,7 +212,7 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
             On save: only you can see it, in <b>Documents{folder ? ` · ${folder}` : ''}</b>. Players are told when you publish.
           </p>
           <div className="btns">
-            <Button variant="ghost" onClick={onClose} disabled={busy}>
+            <Button data-ctl="CTL-P013-100" variant="ghost" onClick={onClose} disabled={busy}>
               Cancel
             </Button>
             {busy ? (
@@ -220,7 +220,7 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
                 Saving…
               </span>
             ) : (
-              <Button variant="primary" disabled={folders === null || (naming && !!clean)} onClick={() => void save()}>
+              <Button data-ctl="CTL-P013-101" variant="primary" disabled={folders === null || (naming && !!clean)} onClick={() => void save()}>
                 {folder ? `Save to ${folder}` : 'Save'}
               </Button>
             )}
@@ -236,12 +236,12 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
             <b>Draft saved · Documents{phase.folder ? ` · ${phase.folder}` : ''}</b>
             <span className="sub">{problem ?? phase.note ?? 'Only you can see it. Players are told when you publish.'}</span>
           </div>
-          <a className="lk" href="/golf/dashboard/documents">
+          <a data-ctl="CTL-P013-102" className="lk" href="/golf/dashboard/documents">
             Open
             <Icon icon={ArrowUpRight} size={14} />
           </a>
           {phase.id && undoOpen && (
-            <button type="button" className="lk undo" data-ch-ask-undo="" disabled={undoing} aria-label="Undo, 8 seconds" onClick={undo}>
+            <button data-ctl="CTL-P013-103" type="button" className="lk undo" data-ch-ask-undo="" disabled={undoing} aria-label="Undo, 8 seconds" onClick={undo}>
               <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" aria-hidden="true">
                 <circle className="trk" cx="12" cy="12" r="10" />
                 <circle className="drn" cx="12" cy="12" r="10" suppressHydrationWarning />
@@ -254,7 +254,7 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
       {phase.k === 'undone' && <p className="cxl">Removed. Nothing was saved.</p>}
       {done && (
         <div className="btns">
-          <Button variant="primary" onClick={onClose}>
+          <Button data-ctl="CTL-P013-104" variant="primary" onClick={onClose}>
             Done
           </Button>
         </div>

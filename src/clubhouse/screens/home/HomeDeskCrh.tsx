@@ -24,7 +24,7 @@ export function DeskNext({ e, now }: { e: ChHomeEvent; now: Date | null }) {
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
   return (
-    <Link href={eventHref(e)} className="ch-h-herocard__next">
+    <Link data-ctl="CTL-P002-023" href={eventHref(e)} className="ch-h-herocard__next">
       <span className="ch-dh-next__k">
         <span>
           <Icon icon={TYPE_ICON[e.type]} size={13} />
@@ -56,7 +56,7 @@ export function DeskHead({ id, title, href, link }: { id: string; title: string;
         {title}
       </h2>
       {href && (
-        <Link href={href} className="ch-hm-link">
+        <Link data-ctl="CTL-P002-024" href={href} className="ch-hm-link">
           {link}
         </Link>
       )}
@@ -73,7 +73,7 @@ export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now
   const t = now?.getTime();
   return (
     <section className="ch-dh-card" aria-labelledby="ch-dh-today">
-      <DeskHead id="ch-dh-today" title="Today" href={CALENDAR} link="Calendar" />
+      <DeskHead data-ctl="CTL-P002-025" id="ch-dh-today" title="Today" href={CALENDAR} link="Calendar" />
       {events.length === 0 ? (
         <EmptyState compact kind="first-run" code="CH-2301" title="Nothing scheduled" body="Players can still post rounds from the course." />
       ) : (
@@ -82,7 +82,7 @@ export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now
             const live = !e.allDay && t != null && Date.parse(e.startIso) <= t && Date.parse(e.endIso ?? e.startIso) > t;
             return (
               <li key={e.id}>
-                <Link href={eventHref(e)} className="ch-dh-rows__a">
+                <Link data-ctl="CTL-P002-026" href={eventHref(e)} className="ch-dh-rows__a">
                   <span className="ch-dh-time ch-num">{e.allDay ? 'All day' : t12(e.startLabel)}</span>
                   <i className={`ch-dh-dot is-${e.type}`} aria-hidden="true" />
                   <span className="ch-dh-rows__b">
@@ -111,7 +111,7 @@ export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now
 export function DeskTodayFirst() {
   return (
     <section className="ch-dh-card" aria-labelledby="ch-dh-today">
-      <DeskHead id="ch-dh-today" title="Today" href={CALENDAR} link="Calendar" />
+      <DeskHead data-ctl="CTL-P002-027" id="ch-dh-today" title="Today" href={CALENDAR} link="Calendar" />
       <EmptyState
         compact
         kind="first-run"
@@ -119,7 +119,7 @@ export function DeskTodayFirst() {
         title="Nothing on the calendar today"
         body="New events show here with who’s going."
         action={
-          <Button size="sm" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1">
+          <Button data-ctl="CTL-P002-028" size="sm" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1">
             New event
           </Button>
         }
@@ -137,7 +137,7 @@ export function DeskRounds({ rounds }: { rounds: ChCoachHome['latestRounds']['ro
   const shown = latestRows(rounds, DESK_ROUNDS);
   return (
     <section className="ch-dh-card" aria-labelledby="ch-dh-rounds">
-      <DeskHead id="ch-dh-rounds" title="Latest rounds" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" />
+      <DeskHead data-ctl="CTL-P002-029" id="ch-dh-rounds" title="Latest rounds" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" />
       <ul className="ch-dh-rows ch-dh-rows--rounds">
         {shown.map((r) => (
           <li key={r.key}>

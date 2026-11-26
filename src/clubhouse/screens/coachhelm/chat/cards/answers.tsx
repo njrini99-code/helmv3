@@ -23,7 +23,7 @@ export interface AppLink {
 /** D14: a quiet row under the paragraph that names the place. The whole row is the link, at 44px. */
 export function AppLinkRow({ link }: { link: AppLink }) {
   return (
-    <a className="ch-akc-link" href={link.href} data-ch-press=".97" data-ch-app-link="">
+    <a data-ctl="CTL-P013-042" className="ch-akc-link" href={link.href} data-ch-press=".97" data-ch-app-link="">
       <span className="ch-akc-link__ico" aria-hidden="true">
         <Icon icon={ArrowUpRight} size={16} />
       </span>
@@ -56,7 +56,7 @@ export function CoachNoteChip({ note, onRemove }: { note: CoachNote; /** Absent:
         <span>{note.text}</span>
         {saved && <small>Only you. Players never see notes.</small>}
       </span>
-      {saved && onRemove && <IconButton icon={X} label={`Remove the note: ${note.text}`} size="sm" variant="ghost" onClick={() => onRemove(note.note_id)} />}
+      {saved && onRemove && <IconButton data-ctl="CTL-P013-043" icon={X} label={`Remove the note: ${note.text}`} size="sm" variant="ghost" onClick={() => onRemove(note.note_id)} />}
     </div>
   );
 }

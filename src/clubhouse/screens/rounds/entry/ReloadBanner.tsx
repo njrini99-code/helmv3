@@ -41,7 +41,7 @@ export function ReloadBanner({ reloading = false, onReload }: { reloading?: bool
       <span>
         <b>This round was updated on another device.</b> Saving is paused here so this device can’t overwrite the newer round. Reload to continue.
       </span>
-      <Button variant="secondary" size="sm" busy={reloading} onClick={onReload}>
+      <Button data-ctl="CTL-P011-075" variant="secondary" size="sm" busy={reloading} onClick={onReload}>
         {reloading ? 'Reloading…' : 'Reload'}
       </Button>
     </div>
@@ -65,7 +65,7 @@ export function RoundErrorBanner({ message, onDismiss }: { message: string; onDi
     <div className="ch-rt-note is-danger" role="alert" data-ch-code="CH-11013">
       <Icon icon={TriangleAlert} size={15} />
       <span>{message}</span>
-      <Button variant="ghost" size="sm" onClick={onDismiss}>
+      <Button data-ctl="CTL-P011-076" variant="ghost" size="sm" onClick={onDismiss}>
         Dismiss
       </Button>
     </div>

@@ -1,5 +1,15 @@
 type AdminHref =
   | '/admin'
+  | '/admin/clubhouse'
+  | '/admin/clubhouse/controls'
+  | '/admin/clubhouse/actions'
+  | '/admin/clubhouse/codes'
+  | '/admin/clubhouse/readiness'
+  | '/admin/clubhouse/drift'
+  | '/admin/clubhouse/duet'
+  | '/admin/clubhouse/sessions'
+  | '/admin/clubhouse/experience'
+  | '/admin/clubhouse/releases'
   | '/admin/activity'
   | '/admin/errors'
   | '/admin/traces'
@@ -22,25 +32,59 @@ type AdminHref =
 export interface AdminNavEntry {
   label: string;
   href: AdminHref;
-  key: string;
+  /**
+   * '1'-'9', '0' or a Shift+letter. Absent only where no letter is free: every
+   * unused letter is either live or a retired shortcut operators still use
+   * (RETIRED_SHORTCUTS), so Experience, Releases, Drift and the Duet desk have none yet.
+   */
+  key?: string;
   // 'More' — an OWNER-DECIDED deprioritized group: still fully wired (URL,
   // shortcut, ⌘K, mobile More sheet), just rendered under its own heading at
   // the end of the rail/⌘K instead of alongside the primary tabs. Derived
   // the same way every other section is (NAV_SECTION_ORDER in AdminShell.tsx)
   // — never a second hand-listed rail.
-  section: 'Triage' | 'Customers' | 'Apps' | 'Platform' | 'Revenue' | 'More';
+  section: 'Clubhouse' | 'Triage' | 'Customers' | 'Platform' | 'More';
   description: string;
   meta?: string;
 }
 
-/** The primary Bridge tabs. Order is the keyboard map: '1'-'9' for the
- *  original first nine tabs, '0' for Health, 'B' for the Ben + Leah intake
- *  desk, and single letters for tabs added after that numeric map was
- *  fixed (Lift Lab, Utilization) — never renumbering '1'-'9' avoids
- *  reassigning a shortcut an admin already has muscle memory for. */
+/** The primary Bridge tabs. Order is the rail order; `key` is the keyboard map.
+ *
+ * KEYS NEVER MOVE. '1'-'9' and '0' keep the routes they had when the numeric
+ * map was fixed, letters are Shift+letter, and a letter is never reused while
+ * `RETIRED_SHORTCUTS` (src/lib/admin/retired-routes.ts) still sends it to the
+ * view that absorbed a retired tab. That is why the Clubhouse screens are
+ * H, I, J, C and M rather than the plan's P, O, A, C and G
+ * (docs/superpowers/specs/helm-bridge/2026-11-18-clubhouse-bridge-redesign.md
+ * §7.1): P, O, A and G are retired shortcuts operators still use.
+ *
+ * Grouping (plan §7.1, owner decision D3, 2026-11-24): Clubhouse leads; Golf
+ * (legacy), Baseball, Lift Lab, Engineering OS and Ben + Leah sit under More.
+ * URLs and keys are unchanged by the regrouping. */
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
+  // CLUBHOUSE — "is Clubhouse doing what its contract says" (plan §7.1).
+  // '/admin' is B01 Pulse, with the cross-sport overview below it (it stays
+  // there; it does not move to Health). Its URL and key '1' are unchanged. The
+  // bottom bar, the tab title and this rail name it one way.
+  { label: 'Pulse', href: '/admin', key: '1', section: 'Clubhouse', description: 'Is Clubhouse OK right now, and if not, where; the cross-sport overview below', meta: 'B01' },
+  { label: 'Pages', href: '/admin/clubhouse', key: 'H', section: 'Clubhouse', description: 'The 17 pages against their contracts', meta: 'B02' },
+  { label: 'Controls', href: '/admin/clubhouse/controls', key: 'I', section: 'Clubhouse', description: 'Every button, labelled, and what it runs', meta: 'B03' },
+  { label: 'Actions', href: '/admin/clubhouse/actions', key: 'J', section: 'Clubhouse', description: 'Each press: handler, tables and outcomes', meta: 'B04' },
+  { label: 'Codes', href: '/admin/clubhouse/codes', key: 'C', section: 'Clubhouse', description: 'Every Bridge ID and CH- code, one dossier each', meta: 'B05' },
+  { label: 'Readiness', href: '/admin/clubhouse/readiness', key: 'M', section: 'Clubhouse', description: 'How finished Clubhouse is, by its own gates', meta: 'B12' },
+  // The live lenses, then Drift and the Duet desk. N is the one
+  // letter no live or retired shortcut holds, and Sessions is the lens reached
+  // for most, so it takes N. The plan's S, E, V, D and Q are retired shortcuts
+  // (RETIRED_SHORTCUTS): reusing one would silently retrain an operator's hands,
+  // so Experience, Releases, Drift and the Duet desk carry no key until the owner
+  // retires a letter. All five are on the rail and in ⌘K.
+  { label: 'Sessions', href: '/admin/clubhouse/sessions', key: 'N', section: 'Clubhouse', description: 'What exactly one person saw, in order', meta: 'B07' },
+  { label: 'Experience', href: '/admin/clubhouse/experience', section: 'Clubhouse', description: 'Vitals, rage clicks and waits on real phones', meta: 'B09' },
+  { label: 'Releases', href: '/admin/clubhouse/releases', section: 'Clubhouse', description: 'What each release changed for real people', meta: 'B10' },
+  { label: 'Drift', href: '/admin/clubhouse/drift', section: 'Clubhouse', description: 'Are the docs still the truth: nine lists to drive to zero', meta: 'B11' },
+  { label: 'Duet desk', href: '/admin/clubhouse/duet', section: 'Clubhouse', description: 'The context pack Claude Duet needs, in one paste', meta: 'B13' },
+
   // TRIAGE — "what is broken right now"
-  { label: 'Overview', href: '/admin', key: '1', section: 'Triage', description: 'Command posture, triage, deploys', meta: 'live' },
   // "Incidents", not "Errors". The list now carries app errors, Sentry
   // issues, Supabase faults, Vercel faults, reliability-only signals and
   // regressions folded into ONE incident each — "Errors" had become too
@@ -64,24 +108,19 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // healthy), performance (what is slow), schema (is it safe). A ?incident=
   // deep link renders above the rail under every one of them.
   { label: 'Database', href: '/admin/database', key: 'X', section: 'Triage', description: 'Postgres posture, performance, schema', meta: '5m' },
-  // Was reachable ONLY from a text-xs back-arrow three levels deep, despite
-  // being the one cross-sport board built to answer "who needs attention" —
-  // 30-day activity/error EKG with four triage sorts.
   // The Flight Recorder tree. Distinct from the Golf Tracer at /admin/golf/tracer:
   // that answers "which rounds are stuck", this answers "walk me through one
   // execution and show me where it diverged".
   { label: 'Flight Recorder', href: '/admin/traces', key: 'F', section: 'Triage', description: 'One round mutation traced end to end', meta: 'trace' },
+  // Was reachable ONLY from a text-xs back-arrow three levels deep, despite
+  // being the one cross-sport board built to answer "who needs attention" —
+  // 30-day activity/error EKG with four triage sorts.
   { label: 'Teams pulse', href: '/admin/teams', key: 'T', section: 'Triage', description: 'Cross-sport team activity and error EKG' },
 
   // CUSTOMERS — "who is this, and how are they doing"
   { label: 'Users & Teams', href: '/admin/users', key: '7', section: 'Customers', description: 'Accounts, teams, engagement' },
   { label: 'Activity', href: '/admin/activity', key: '2', section: 'Customers', description: 'User and product event stream' },
   { label: 'Utilization', href: '/admin/utilization', key: 'U', section: 'Customers', description: 'Feature usage and adoption' },
-
-  // APPS — per-sport production signals
-  { label: 'Golf', href: '/admin/golf', key: '5', section: 'Apps', description: 'GolfHelm production signals' },
-  { label: 'Baseball', href: '/admin/baseball', key: '6', section: 'Apps', description: 'BaseballHelm production signals' },
-  { label: 'Lift Lab', href: '/admin/lifting', key: 'L', section: 'Apps', description: 'Cross-sport strength program activity' },
 
   // PLATFORM
   { label: 'Deploys & Infra', href: '/admin/deploys', key: '9', section: 'Platform', description: 'Vercel releases and web insight' },
@@ -94,15 +133,63 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // SAME entries (repair verdict, shipped release, post-deploy delta). They
   // were two tabs until the 30→19 consolidation; one feed, two framings.
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline and change-to-proof', meta: 'prs' },
-  // OWNER DECISION (bridge-tab-audit-p0p1): moved out of the primary rail
-  // into its own 'More' section — this tab is agent/engineering-process
-  // tooling, not a daily-operator surface. Its URL and 'Z' shortcut are
-  // unchanged; it still appears in ⌘K and the mobile More sheet.
-  { label: 'Engineering OS', href: '/admin/engineering', key: 'Z', section: 'More', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
 
-  // INTAKE
-  { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Platform', description: 'Log tester-reported bugs on their behalf', meta: 'issues' },
+  // MORE — owner-deprioritized (D3). The per-sport tabs moved here when the
+  // rail started leading with Clubhouse; Golf's incident panel already shows
+  // Clubhouse only, hence "legacy".
+  { label: 'Golf (legacy)', href: '/admin/golf', key: '5', section: 'More', description: 'GolfHelm production signals' },
+  { label: 'Baseball', href: '/admin/baseball', key: '6', section: 'More', description: 'BaseballHelm production signals' },
+  { label: 'Lift Lab', href: '/admin/lifting', key: 'L', section: 'More', description: 'Cross-sport strength program activity' },
+  // OWNER DECISION (bridge-tab-audit-p0p1): agent/engineering-process tooling,
+  // not a daily-operator surface. Its URL and 'Z' shortcut are unchanged.
+  { label: 'Engineering OS', href: '/admin/engineering', key: 'Z', section: 'More', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
+  { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'More', description: 'Log tester-reported bugs on their behalf', meta: 'issues' },
 ] as const;
+
+/**
+ * Owner decision D5: the self-heal views sit under More, and their jobs keep
+ * running. They are VIEWS of other tabs (a `?view=` or a section of a page),
+ * not routes of their own, so they cannot be ADMIN_NAV entries (every entry is
+ * a real page: nav-covers-every-route.test.ts). AdminShell appends them to the
+ * More group of the rail and ⌘K; they never light up as the current tab,
+ * because the tab that owns them already does.
+ */
+export interface AdminMoreView {
+  label: string;
+  href: string;
+  description: string;
+  /** A retired shortcut that already lands here, shown as the hint. */
+  key?: string;
+}
+
+export const ADMIN_MORE_VIEWS: readonly AdminMoreView[] = [
+  { label: 'Self-heal loop', href: '/admin/errors?view=loop', key: 'S', description: 'Collect, diagnose, repair, close: has each stage produced its output' },
+  { label: 'Self-healing jobs', href: '/admin/jobs#self-heal', description: 'The loop’s stages as jobs, and whether each has run' },
+] as const;
+
+/**
+ * The nav entry that owns `pathname`: the LONGEST matching href, on a segment
+ * boundary. `/admin/clubhouse/controls/CTL-1` belongs to Controls, not to
+ * Pages (`/admin/clubhouse`), which a first-match `startsWith` picks; and
+ * `/admin/users-x` is not under `/admin/users`. `/admin` owns only itself.
+ * The rail highlight, the bottom bar and the breadcrumbs all read this, so
+ * they cannot disagree.
+ */
+export function navEntryForPath(pathname: string): AdminNavEntry | null {
+  let best: AdminNavEntry | null = null;
+  for (const entry of ADMIN_NAV) {
+    const hit =
+      entry.href === '/admin'
+        ? pathname === '/admin'
+        : pathname === entry.href || pathname.startsWith(`${entry.href}/`);
+    if (hit && (!best || entry.href.length > best.href.length)) best = entry;
+  }
+  return best;
+}
+
+export function isNavEntryActive(href: string, pathname: string): boolean {
+  return navEntryForPath(pathname)?.href === href;
+}
 
 export function hrefForShortcut(key: string): string | null {
   return ADMIN_NAV.find((e) => e.key === key)?.href ?? null;
@@ -145,7 +232,7 @@ export const BRIDGE_BOTTOM_NAV_HREFS = [
  * tab column; the rail keeps the fuller label).
  */
 export const BRIDGE_BOTTOM_NAV_LABELS: Record<(typeof BRIDGE_BOTTOM_NAV_HREFS)[number], string> = {
-  '/admin': 'Overview',
+  '/admin': 'Pulse',
   // Matches the rail label. The bottom tab is the same destination, and two
   // names for one place is how muscle memory gets taught wrong.
   '/admin/errors': 'Incidents',

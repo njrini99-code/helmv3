@@ -178,6 +178,13 @@ describe('buildIngest bounds what a client can mint (security review of #2611, M
     expect(hourly[0]).toMatchObject({ code: 'unknown', act: '', count: 8 });
   });
 
+  it("keeps a vital's metric apart, so INP, LCP and CLS are three histograms (B09, R-12)", () => {
+    const plan = build({
+      signals: (['INP', 'LCP', 'CLS', 'TTFB'] as const).map((m, i) => signal({ seq: i + 1, kind: 'vital', outcome: undefined, code: 'CH-1954', act: m, durationMs: 300 })),
+    });
+    expect(plan.sessions[0]!.hourly.map((r) => r.act).sort()).toEqual(['', 'CLS', 'INP', 'LCP']);
+  });
+
   it('caps drift rows per session batch', () => {
     const plan = build({
       signals: Array.from({ length: 20 }, (_, i) => signal({ seq: i + 1, kind: 'state', outcome: undefined, code: `CH-9${String(i).padStart(2, '0')}99` })),

@@ -60,7 +60,7 @@ export function CoachNote({ roundId, note, error, canWrite, playerFirst }: { rou
           <span>{canWrite ? (playerFirst ? `${playerFirst} reads this on the round` : 'The player reads this on the round') : 'Left on this round'}</span>
         </div>
         {canWrite && !editing && (
-          <Button size="sm" variant="ghost" onClick={start}>
+          <Button data-ctl="CTL-P011-012" size="sm" variant="ghost" onClick={start}>
             {shown ? 'Edit' : 'Add a note'}
           </Button>
         )}
@@ -92,10 +92,10 @@ export function CoachNote({ roundId, note, error, canWrite, playerFirst }: { rou
             <span className="ch-num ch-rv-cn__count" aria-live="polite">
               {draft.length}/{NOTE_MAX}
             </span>
-            <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={save.pending}>
+            <Button data-ctl="CTL-P011-013" variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={save.pending}>
               Cancel
             </Button>
-            <Button variant="primary" size="sm" type="submit" busy={save.pending} disabled={!trimmed}>
+            <Button data-ctl="CTL-P011-014" variant="primary" size="sm" type="submit" busy={save.pending} disabled={!trimmed}>
               {save.pending ? 'Saving…' : 'Save note'}
             </Button>
           </div>

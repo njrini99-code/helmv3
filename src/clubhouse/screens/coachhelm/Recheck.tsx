@@ -98,7 +98,7 @@ function useRecheckReads({ players, writes = LIVE_RECHECK_WRITES }: { players: n
 
   const running = state.kind === 'running';
   const trigger = (
-    <Button variant="secondary" leftIcon={RotateCw} busy={running} onClick={() => void run()}>
+    <Button data-ctl="CTL-P013-011" variant="secondary" leftIcon={RotateCw} busy={running} onClick={() => void run()}>
       {running ? recheckRunningLabel(players) : 'Re-check reads'}
     </Button>
   );

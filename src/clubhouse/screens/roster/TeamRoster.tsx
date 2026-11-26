@@ -137,7 +137,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster; }) {
                   ] as const
                 ).map(([v, icon, label]) => (
                   <Tooltip key={v}>
-                    <button
+                    <button data-ctl="CTL-P003-050"
                       type="button"
                       className="ch-rs-vt__b"
                       aria-pressed={view === v}
@@ -215,7 +215,7 @@ function TeammateList({ rows, view, q, onClearSearch, clock }: { rows: ChTeammat
         code="CH-3302"
         title={`No players match “${q.trim()}”`}
         body="Search matches player names."
-        action={<Button onClick={onClearSearch}>Show everyone</Button>}
+        action={<Button data-ctl="CTL-P003-051" onClick={onClearSearch}>Show everyone</Button>}
       />
     );
   }

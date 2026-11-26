@@ -38,7 +38,7 @@ export function Sources({ reads, onOpen, openRef = null, action, plain = false }
           </>
         );
         return onOpen ? (
-          <button
+          <button data-ctl="CTL-P013-105"
             key={r.ref}
             type="button"
             className={'ch-ak-src__row' + (openRef === r.ref ? ' is-on' : '')}

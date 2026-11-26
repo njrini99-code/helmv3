@@ -60,7 +60,7 @@ export function CProgram({ d, up, next, back, dir, phone }: StepProps) {
             </div>
             <div className="ch-ox-tiles ch-ox-tiles--sm" role="radiogroup" aria-labelledby="ch-ox-cdiv-k">
               {DIVISIONS.map((v) => (
-                <button
+                <button data-ctl="CTL-P015-046"
                   key={v}
                   type="button"
                   role="radio"
@@ -121,7 +121,7 @@ export function CProgram({ d, up, next, back, dir, phone }: StepProps) {
             </div>
             <div className="ch-ox-tiles ch-ox-tiles--sm ch-ox-tiles--two" role="radiogroup" aria-labelledby="ch-ox-cgender-k">
               {(['mens', 'womens'] as const).map((g) => (
-                <button
+                <button data-ctl="CTL-P015-047"
                   key={g}
                   type="button"
                   role="radio"
@@ -254,11 +254,11 @@ export function CProfile({ d, up, next, back, dir, phone }: StepProps) {
               <b>Photo</b>
               <span>{uploading ? 'Uploading…' : d.photoUrl ? 'Players see this on your messages.' : 'Optional. Players see it on your messages.'}</span>
             </div>
-            <button type="button" className="ch-ox-link" onClick={() => file.current?.click()} disabled={uploading || busy}>
+            <button data-ctl="CTL-P015-048" type="button" className="ch-ox-link" onClick={() => file.current?.click()} disabled={uploading || busy}>
               {d.photoUrl ? 'Replace' : 'Add a photo'}
             </button>
             {d.photoUrl && (
-              <button type="button" className="ch-ox-link" onClick={() => up({ photoUrl: null })} disabled={busy}>
+              <button data-ctl="CTL-P015-049" type="button" className="ch-ox-link" onClick={() => up({ photoUrl: null })} disabled={busy}>
                 Remove
               </button>
             )}
@@ -273,7 +273,7 @@ export function CProfile({ d, up, next, back, dir, phone }: StepProps) {
             {errHref && (
               <>
                 {' '}
-                <a href={errHref}>{errHref === '/golf/coach/pending' ? 'See your request' : 'Go to your dashboard'}</a>
+                <a data-ctl="CTL-P015-050" href={errHref}>{errHref === '/golf/coach/pending' ? 'See your request' : 'Go to your dashboard'}</a>
               </>
             )}
           </AuthNotice>
@@ -333,10 +333,10 @@ export function CDone({ d, finish, dir }: StepProps) {
               )}
             </div>
             <div className="ch-ox-teamcode__act">
-              <Button size="sm" leftIcon={copied === 'code' ? Check : Copy} onClick={() => void copy('code')}>
+              <Button data-ctl="CTL-P015-051" size="sm" leftIcon={copied === 'code' ? Check : Copy} onClick={() => void copy('code')}>
                 {copied === 'code' ? 'Copied' : 'Copy code'}
               </Button>
-              <Button size="sm" leftIcon={copied === 'link' ? Check : Link2} onClick={() => void copy('link')}>
+              <Button data-ctl="CTL-P015-052" size="sm" leftIcon={copied === 'link' ? Check : Link2} onClick={() => void copy('link')}>
                 {copied === 'link' ? 'Copied' : 'Copy invite link'}
               </Button>
             </div>
@@ -355,10 +355,10 @@ export function CDone({ d, finish, dir }: StepProps) {
       )}
       <div className="ch-ox-act">
         {/* Next (STATE-O3): a new team's dashboard is empty until players join, so the roster, where invites live, is first. */}
-        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard/roster')}>
+        <Button data-ctl="CTL-P015-053" variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard/roster')}>
           Invite players
         </Button>
-        <Button variant="ghost" size="lg" onClick={() => finish('/golf/dashboard')}>
+        <Button data-ctl="CTL-P015-054" variant="ghost" size="lg" onClick={() => finish('/golf/dashboard')}>
           Go to your dashboard
         </Button>
       </div>

@@ -38,6 +38,7 @@ import { fetchCurrentReleaseWatch } from '@/lib/admin/incidents/release-watch';
 import { ReleaseRelationshipLabel } from '@/components/admin/premium';
 import { IncidentGenomePanel } from '../_components/IncidentGenomePanel';
 import { AffectedPeoplePanel } from '../_components/AffectedPeoplePanel';
+import { ClubhouseBridgePanel } from '../_components/ClubhouseBridgePanel';
 import { fetchAffectedPeopleForFingerprint } from '@/lib/admin/data/affected-people';
 import type { Metadata } from 'next';
 
@@ -475,6 +476,12 @@ export default async function FingerprintDetailPage({
         ← Incidents
       </Link>
       <h1 className="break-words font-fw-mono text-lg text-warm-900 [overflow-wrap:anywhere]">fingerprint {fingerprint}</h1>
+      {/* B06 additions (bridge plan §8): the Clubhouse code, page, action,
+          release, platform and session. Its own read and boundary, so a held
+          migration can never take the forensics below down. */}
+      <PanelBoundary title="Clubhouse fields" skeleton={null}>
+        <ClubhouseBridgePanel fingerprint={fingerprint} />
+      </PanelBoundary>
       <PanelBoundary title="Fingerprint detail" skeleton={<PanelPageSkeleton stats={3} rows={4} />}>
         <Body />
       </PanelBoundary>

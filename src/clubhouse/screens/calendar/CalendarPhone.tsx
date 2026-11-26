@@ -109,9 +109,9 @@ export function CalendarPhone({
   return (
     <main className="ch-calm" aria-label="Calendar">
       {coach ? (
-        <PhoneTop start title="Calendar" action={<PhoneIconAction icon={Plus} label="New event" onClick={() => onNew(anchor)} />} />
+        <PhoneTop start title="Calendar" action={<PhoneIconAction data-ctl="CTL-P006-018" icon={Plus} label="New event" onClick={() => onNew(anchor)} />} />
       ) : (
-        <PhoneTop title="Calendar" start action={<PhoneIconAction icon={Rss} label="Add to calendar app" onClick={onSubscribe} />} />
+        <PhoneTop title="Calendar" start action={<PhoneIconAction data-ctl="CTL-P006-019" icon={Rss} label="Add to calendar app" onClick={onSubscribe} />} />
       )}
       {/* The page's opening (the Ledger kit's PageIntro, as an h2: the bar holds the page's h1): the team's timezone engraved
           over the month and its year (L-069: month then year, as the desk reads), and the view switch beside it. */}
@@ -119,7 +119,7 @@ export function CalendarPhone({
         <span className="ch-intro__eyebrow">{data.zoneLabel}</span>
         {/* On the eyebrow's line at the right, so it takes no room when it comes and goes. */}
         {away && (
-          <Button size="sm" variant="ghost" className="ch-calm-today" leftIcon={CalendarCheck} onClick={goToday} feel={null}>
+          <Button data-ctl="CTL-P006-020" size="sm" variant="ghost" className="ch-calm-today" leftIcon={CalendarCheck} onClick={goToday} feel={null}>
             Today
           </Button>
         )}
@@ -129,8 +129,8 @@ export function CalendarPhone({
           {/* AX-4: Month turns by swipe, so it also has a button path (VoiceOver, Switch Control, a mouse). */}
           {pv === 'month' && (
             <span className="ch-calm-mnav">
-              <IconButton icon={ChevronLeft} label="Previous month" size="sm" onClick={() => onStep(-1)} />
-              <IconButton icon={ChevronRight} label="Next month" size="sm" onClick={() => onStep(1)} />
+              <IconButton data-ctl="CTL-P006-021" icon={ChevronLeft} label="Previous month" size="sm" onClick={() => onStep(-1)} />
+              <IconButton data-ctl="CTL-P006-022" icon={ChevronRight} label="Next month" size="sm" onClick={() => onStep(1)} />
             </span>
           )}
           <span className="ch-intro__action">
@@ -147,7 +147,7 @@ export function CalendarPhone({
             />
             {/* Row 81: the coach's More, beside the view switch; the top bar keeps its one action, New event (B10.1). Two
                 items: a menu anchored to the key, not a sheet with a title, a grab and a Close (CALMORE-03, S3.5). */}
-            {!!more?.length && <Menu label="More" items={more} trigger={(t) => <IconButton icon={Ellipsis} label="More" className="ch-calm-more" menu={t} />} />}
+            {!!more?.length && <Menu label="More" items={more} trigger={(t) => <IconButton data-ctl="CTL-P006-023" icon={Ellipsis} label="More" className="ch-calm-more" menu={t} />} />}
           </span>
         </span>
       </header>
@@ -458,15 +458,15 @@ function DayPage({
             VoiceOver and the keyboard. */}
         {onWeek && (
           <span className="ch-calm-weekstep">
-            <IconButton icon={ChevronLeft} label="Previous week" size="sm" onClick={() => (haptic('select'), onWeek(-1))} />
-            <IconButton icon={ChevronRight} label="Next week" size="sm" onClick={() => (haptic('select'), onWeek(1))} />
+            <IconButton data-ctl="CTL-P006-024" icon={ChevronLeft} label="Previous week" size="sm" onClick={() => (haptic('select'), onWeek(-1))} />
+            <IconButton data-ctl="CTL-P006-025" icon={ChevronRight} label="Next week" size="sm" onClick={() => (haptic('select'), onWeek(1))} />
           </span>
         )}
       </div>
       {hint && !failed && list.some((e) => liftFor?.(e)) && (
         <p className="ch-calm-hint">
           <span>Hold an event to move it.</span>
-          <IconButton icon={X} label="Dismiss" size="sm" className="ch-calm-hint__x" onClick={hint} />
+          <IconButton data-ctl="CTL-P006-026" icon={X} label="Dismiss" size="sm" className="ch-calm-hint__x" onClick={hint} />
         </p>
       )}
       {failed ? (
@@ -480,7 +480,7 @@ function DayPage({
           body={coach ? 'Plan something for the team.' : 'Events your coach invites you to will show up here.'}
           action={
             coach && onNew ? (
-              <Button size="sm" variant="ghost" leftIcon={Plus} onClick={() => onNew(anchor)}>
+              <Button data-ctl="CTL-P006-027" size="sm" variant="ghost" leftIcon={Plus} onClick={() => onNew(anchor)}>
                 New event
               </Button>
             ) : undefined
@@ -513,7 +513,7 @@ function DayPage({
                 {/* P006-C3: a hold lifts the event's card with its actions; the row keeps its tap. P-4: a coach's movable
                     row is picked up by the hold instead, and opens its peek when let go without moving. */}
                 <EventPeek e={e} coach={coach} people={people} onOpen={() => onOpen(e.id, e.date)} lift={lift} onAdjust={onAdjust && (() => onAdjust(e))}>
-                  <button
+                  <button data-ctl="CTL-P006-028"
                     type="button"
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '') + (lift ? ' is-movable' : '') + (liftedId === e.id ? ' is-lifted' : '')}
                     ref={lift ? holdCardStill : undefined}

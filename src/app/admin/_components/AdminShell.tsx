@@ -28,13 +28,23 @@ import {
   LogOut,
   Bot,
   ToggleLeft,
+  AppWindow,
+  MousePointerClick,
+  Zap,
+  Hash,
+  ClipboardCheck,
+  Repeat,
+  ListVideo,
+  Smartphone,
+  Tag,
+  GitCompareArrows,
+  PackageOpen,
 } from 'lucide-react';
 import {
   AppShell,
   Button,
   IconButton,
   CommandMenu,
-  type Breadcrumb,
   type NavSection,
   type CommandGroup,
   type CommandItem,
@@ -51,71 +61,65 @@ import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import {
   ADMIN_NAV,
+  ADMIN_MORE_VIEWS,
   hrefForShortcut,
+  isNavEntryActive,
   RESERVED_LOCAL_SHORTCUTS,
   BRIDGE_BOTTOM_NAV_HREFS,
   BRIDGE_BOTTOM_NAV_LABELS,
 } from './admin-nav';
+import { computeBreadcrumbs } from './admin-breadcrumbs';
 import { RETIRED_SHORTCUTS } from '@/lib/admin/retired-routes';
+import { SEARCH_MIN_QUERY, type BridgeSearchHit, type BridgeSearchKind } from '@/lib/admin/clubhouse/search';
+import { BR } from '@/lib/admin/clubhouse/br-codes';
 import { RelativeTime } from './RelativeTime';
 
-/** Sub-route leaf labels the Breadcrumb trail can't derive from ADMIN_NAV
- *  (dynamic `[id]`/`[fingerprint]` segments render as "Detail" instead of
- *  the raw id/uuid). */
-const SUBROUTE_LABELS: Record<string, string> = {
-  tracer: 'Tracer',
-  'view-as': 'View as',
-  // titleCaseSegment would render this "Self Heal"; the product name is one
-  // hyphenated word.
-  'self-heal': 'Self-heal',
+/** Rows of the palette's graph group (B14), one icon per kind. */
+const GRAPH_HIT_ICON: Record<BridgeSearchKind, typeof House> = {
+  page: AppWindow,
+  control: MousePointerClick,
+  action: Zap,
+  code: Hash,
+  finding: ClipboardCheck,
+  release: GitBranch,
+  person: Users,
+  team: Users,
 };
 
-/** Dynamic-route segments (uuids, opaque ids) are never surfaced verbatim. */
-function isOpaqueIdSegment(segment: string): boolean {
-  return /^[0-9a-f-]{8,}$/i.test(segment) || segment.length > 24;
-}
-
-/** `ben-leah` → `Ben Leah`, `thread` → `Thread`. Raw URL segments only —
- *  `isOpaqueIdSegment` screens ids out before this is ever reached. */
-function titleCaseSegment(segment: string): string {
-  return segment
-    .split('-')
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
-function computeBreadcrumbs(pathname: string): readonly Breadcrumb[] {
-  const tab = ADMIN_NAV.find((entry) =>
-    entry.href === '/admin' ? pathname === '/admin' : pathname.startsWith(entry.href),
-  );
-  // No nav entry owns this path — today that is /admin/thread/<entity>/<id>,
-  // the destination of every entity link in the console (and an explicit
-  // detail leaf in nav-covers-every-route.test.ts). The LEAF crumb is also the
-  // phone header's standing title and the header's aria-label (see the
-  // `breadcrumbs` note below), so the old single "Bridge" crumb made those
-  // routes announce themselves with the Overview tab's own name. Derive the
-  // section from the first path segment instead.
-  if (!tab) {
-    const first = pathname.split('/').filter(Boolean)[1];
-    if (!first || isOpaqueIdSegment(first)) return [{ label: 'Bridge', href: '/admin' }];
-    return [
-      { label: 'Bridge', href: '/admin' },
-      { label: SUBROUTE_LABELS[first] ?? titleCaseSegment(first) },
-    ];
-  }
-
-  const rest = pathname.slice(tab.href.length).split('/').filter(Boolean);
-  const crumbs: Breadcrumb[] = [
-    { label: 'Bridge', href: '/admin' },
-    { label: tab.label, href: rest.length > 0 ? tab.href : undefined },
-  ];
-  rest.forEach((segment, i) => {
-    const isLast = i === rest.length - 1;
-    const label = SUBROUTE_LABELS[segment] ?? (isOpaqueIdSegment(segment) ? 'Detail' : segment);
-    crumbs.push({ label, href: isLast ? undefined : pathname });
-  });
-  return crumbs;
+/**
+ * B14 (plan §7.2): the palette asks the server for graph matches as you type.
+ * Debounced, and a stale answer never lands: each query aborts the last.
+ * Below `SEARCH_MIN_QUERY` characters, or on any failure, the palette shows its
+ * nav rows alone rather than an error, because the nav still works.
+ */
+function useBridgeGraphSearch(open: boolean, query: string): BridgeSearchHit[] {
+  const [hits, setHits] = useState<BridgeSearchHit[]>([]);
+  const q = open ? query.trim() : '';
+  useEffect(() => {
+    if (q.length < SEARCH_MIN_QUERY) {
+      setHits([]);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/admin/clubhouse/search?q=${encodeURIComponent(q)}`, {
+        signal: controller.signal,
+        cache: 'no-store',
+      })
+        .then((res) => (res.ok ? res.json() : { items: [] }))
+        .then((body: { items?: BridgeSearchHit[] }) => {
+          if (!controller.signal.aborted) setHits(Array.isArray(body.items) ? body.items : []);
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setHits([]);
+        });
+    }, 150);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [q]);
+  return hits;
 }
 
 /**
@@ -135,6 +139,19 @@ const NAV_ICON_BY_HREF = {
   // 2×2 grid glyph, and LayoutDashboard is a grid too — on a phone the first
   // and last tabs read as the same button.
   '/admin': House,
+  // Clubhouse (plan §7.1). A window, not a grid, for Pages: a grid glyph would
+  // read as the bottom bar's More button in the More sheet.
+  '/admin/clubhouse': AppWindow,
+  '/admin/clubhouse/controls': MousePointerClick,
+  '/admin/clubhouse/actions': Zap,
+  '/admin/clubhouse/codes': Hash,
+  '/admin/clubhouse/readiness': ClipboardCheck,
+  '/admin/clubhouse/sessions': ListVideo,
+  '/admin/clubhouse/experience': Smartphone,
+  '/admin/clubhouse/releases': Tag,
+  // B11: the docs against the running code. B13: the pack Duet takes.
+  '/admin/clubhouse/drift': GitCompareArrows,
+  '/admin/clubhouse/duet': PackageOpen,
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,
@@ -214,7 +231,7 @@ function BridgeMoreSheetHeader({
         onClick={onSearchOpen}
         leftIcon={<Search size={16} aria-hidden />}
       >
-        Jump to command, incident, user…
+        Jump to a tab, page, action or code…
       </Button>
       <Button
         type="button"
@@ -337,12 +354,26 @@ export function AdminShell({
           description: entry.description,
           shortcut: entry.key === '0' ? '0' : entry.key,
           meta: entry.meta,
-          activeMatch: (p: string) =>
-            entry.href === '/admin' ? p === '/admin' : p.startsWith(entry.href),
+          // Longest match wins (navEntryForPath): on a Controls dossier only
+          // Controls lights up, never Pages (`/admin/clubhouse`) beside it.
+          activeMatch: (p: string) => isNavEntryActive(entry.href, p),
         })),
       }));
+      // D5: the self-heal views close the More group. They never claim the
+      // highlight; the tab that owns them (Incidents, Jobs) already has it.
+      const moreViews: NavItem[] = ADMIN_MORE_VIEWS.map((view) => ({
+        label: view.label,
+        href: view.href,
+        icon: Repeat,
+        description: view.description,
+        shortcut: view.key,
+        meta: 'view',
+        activeMatch: () => false,
+      }));
       return [
-        ...groups,
+        ...groups.map((group) =>
+          group.heading === 'More' ? { ...group, items: [...group.items, ...moreViews] } : group,
+        ),
         {
           heading: 'Elsewhere',
           items: [
@@ -410,17 +441,22 @@ export function AdminShell({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [router, doRefresh]);
 
-  const commandGroups: CommandGroup[] = useMemo(
+  // The ⌘K nav rows never change; the graph rows (B14) follow the query.
+  const navCommandGroups: CommandGroup[] = useMemo(
     () =>
       [
         {
           heading: 'Saved Views',
+          // No `shortcut` hints here. These rows used to show P, L, D and F,
+          // but Shift+L opens Lift Lab, Shift+F the Flight Recorder, Shift+D
+          // Users and Shift+P the retired lifting lens: none of them opened
+          // the view it sat beside. A key hint is a promise; these are reached
+          // through ⌘K by name only.
           items: [
             {
               id: '/admin/errors?window=24&severity=error',
               label: 'Production Health',
               description: 'Grouped incidents, high-signal errors, live posture',
-              shortcut: 'P',
               keywords: ['prod', 'health', 'errors', 'truth layer'],
               tone: 'danger',
               icon: <Gauge size={16} aria-hidden />,
@@ -429,7 +465,6 @@ export function AdminShell({
               id: '/admin/users?sport=baseball&attention=watch',
               label: 'Baseball Launch',
               description: 'Baseball teams, player watchlist, profile gaps',
-              shortcut: 'L',
               keywords: ['baseball', 'players', 'teams', 'launch'],
               tone: 'accent',
               icon: <SearchCheck size={16} aria-hidden />,
@@ -438,7 +473,6 @@ export function AdminShell({
               id: '/admin/users?attention=demo',
               label: 'Demo Readiness',
               description: 'Demo accounts, rosters, activity signals',
-              shortcut: 'D',
               keywords: ['demo', 'accounts', 'roster'],
               tone: 'accent',
               icon: <Users size={16} aria-hidden />,
@@ -447,7 +481,6 @@ export function AdminShell({
               id: '/admin/errors?source=rls_denial&window=168',
               label: 'Error Forensics',
               description: 'RLS, route, action, feature traceability',
-              shortcut: 'F',
               keywords: ['forensics', 'rls', 'trace', 'source'],
               tone: 'danger',
               icon: <AlertTriangle size={16} aria-hidden />,
@@ -456,22 +489,61 @@ export function AdminShell({
         },
         ...NAV_SECTION_ORDER.map((section) => ({
           heading: section,
-          items: ADMIN_NAV.filter((entry) => entry.section === section).map((entry) => {
-            const Icon = NAV_ICON_BY_HREF[entry.href];
-            return {
-              id: entry.href,
-              label: entry.label,
-              description: entry.description,
-              shortcut: entry.key,
-              keywords: [section, entry.meta ?? '', 'helm bridge', 'command center'],
-              tone: (entry.meta === 'trace' ? 'danger' : entry.meta ? 'accent' : 'default') as CommandItem['tone'],
-              icon: <Icon size={16} aria-hidden />,
-            };
-          }),
+          items: [
+            ...ADMIN_NAV.filter((entry) => entry.section === section).map((entry) => {
+              const Icon = NAV_ICON_BY_HREF[entry.href];
+              return {
+                id: entry.href,
+                label: entry.label,
+                description: entry.description,
+                shortcut: entry.key,
+                keywords: [section, entry.meta ?? '', 'helm bridge', 'command center'],
+                tone: (entry.meta === 'trace' ? 'danger' : entry.meta ? 'accent' : 'default') as CommandItem['tone'],
+                icon: <Icon size={16} aria-hidden />,
+              };
+            }),
+            // D5: the self-heal views, under More here as in the rail.
+            ...(section === 'More'
+              ? ADMIN_MORE_VIEWS.map((view) => ({
+                  id: view.href,
+                  label: view.label,
+                  description: view.description,
+                  shortcut: view.key,
+                  keywords: ['self-heal', 'self heal', 'loop', 'repair', 'more'],
+                  tone: 'default' as CommandItem['tone'],
+                  icon: <Repeat size={16} aria-hidden />,
+                }))
+              : []),
+          ],
         })),
       ],
     [],
   );
+
+  const [paletteQuery, setPaletteQuery] = useState('');
+  const graphHits = useBridgeGraphSearch(commandOpen, paletteQuery);
+  const commandGroups: CommandGroup[] = useMemo(() => {
+    if (graphHits.length === 0) return navCommandGroups;
+    const graphGroup: CommandGroup = {
+      heading: 'Clubhouse contract',
+      items: graphHits.map((hit) => {
+        const Icon = GRAPH_HIT_ICON[hit.kind];
+        return {
+          id: hit.href,
+          label: hit.label,
+          description: hit.description,
+          // The server already matched these against the query. Carrying it
+          // keeps cmdk's own matcher from hiding a hit it would score low (a
+          // CH- code resolving to its Bridge ID, a word inside a meaning).
+          keywords: [hit.key, paletteQuery.trim()],
+          tone: (hit.kind === 'finding' ? 'danger' : 'accent') as CommandItem['tone'],
+          icon: <Icon size={16} aria-hidden />,
+          dataAttributes: { 'data-br': hit.kind === 'code' ? BR.palette.byCode : BR.palette.result },
+        };
+      }),
+    };
+    return [graphGroup, ...navCommandGroups];
+  }, [graphHits, navCommandGroups, paletteQuery]);
 
   // Stable element/object identities (perf packet [shell-render-hygiene]):
   // inline literals here are fresh objects every render (e.g. each ⌘K
@@ -640,7 +712,7 @@ export function AdminShell({
         linkComponent={Link}
         breadcrumbs={breadcrumbs}
         onSearchOpen={() => setCommandOpen(true)}
-        searchPlaceholder="Jump to command, incident, user…"
+        searchPlaceholder="Jump to a tab, page, action or code…"
         topBarActions={topBarActions}
         // M1 (bridge-chrome): Bridge's own `template.tsx` already owns the
         // route-reveal fade (useRouteRevealMotion, keyed on pathname) —
@@ -668,7 +740,9 @@ export function AdminShell({
           setCommandOpen(false);
           router.push(item.id);
         }}
-        placeholder="Jump to…"
+        placeholder="Jump to a tab, page, action or code…"
+        emptyMessage="Nothing matches. Try a CH- code, a Bridge ID, ACT- or a page name."
+        onQueryChange={setPaletteQuery}
       />
     </div>
     </SessionActivityProvider>

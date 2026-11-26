@@ -50,7 +50,7 @@ export function BubbleReceipt({
           {m.failed === "unknown"
             ? "Couldn’t confirm this message sent. Check before sending again."
             : "Not delivered ·"}
-          <button
+          <button data-ctl="CTL-P007-122"
             type="button"
             onClick={() => {
               toast({ title: "Sending again" });
@@ -59,7 +59,7 @@ export function BubbleReceipt({
           >
             Try again
           </button>
-          <button type="button" onClick={() => api.discard(m.id)}>
+          <button data-ctl="CTL-P007-123" type="button" onClick={() => api.discard(m.id)}>
             Discard
           </button>
         </span>

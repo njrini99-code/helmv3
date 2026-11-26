@@ -168,7 +168,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
         <PhoneTop title="Plan format" back={{ label: 'Practice', onBack: () => router.push('/golf/dashboard/practice') }} />
       ) : (
         <>
-          <BackLink href="/golf/dashboard/practice">Practice</BackLink>
+          <BackLink data-ctl="CTL-P013-210" href="/golf/dashboard/practice">Practice</BackLink>
           <header className="ch-prc-h">
             <LargeTitle id="ch-cpv-fmt-title">Plan format</LargeTitle>
           </header>
@@ -219,10 +219,10 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </div>
           ))}
           <div className="acts is-pad">
-            <Button variant="secondary" onClick={openUpload}>
+            <Button data-ctl="CTL-P013-211" variant="secondary" onClick={openUpload}>
               Try another
             </Button>
-            <Button variant="primary" className="is-fill" disabled={formatUnread} onClick={() => void use()}>
+            <Button data-ctl="CTL-P013-212" variant="primary" className="is-fill" disabled={formatUnread} onClick={() => void use()}>
               Use this format
             </Button>
           </div>
@@ -242,12 +242,12 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
           </div>
           <div className="rlinks">
             {see && (
-              <a href={see.href}>
+              <a data-ctl="CTL-P013-213" href={see.href}>
                 <span className="ell">{see.label}</span>
               </a>
             )}
             {undoOpen && (
-              <button
+              <button data-ctl="CTL-P013-214"
                 type="button"
                 onClick={() => {
                   if (preview) return setView({ k: 'empty' });
@@ -288,7 +288,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </p>
           )}
           <div className="acts is-pad">
-            <Button variant="primary" size="lg" className="is-wide" onClick={openUpload}>
+            <Button data-ctl="CTL-P013-215" variant="primary" size="lg" className="is-wide" onClick={openUpload}>
               Upload a plan
             </Button>
           </div>
@@ -322,15 +322,15 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </div>
           ) : (
             <div className="grp">
-              <button type="button" className="upopt" onClick={() => fileInput.current?.click()}>
+              <button data-ctl="CTL-P013-216" type="button" className="upopt" onClick={() => fileInput.current?.click()}>
                 <Icon icon={FileText} size={22} />
                 Choose file
               </button>
-              <button type="button" className="upopt" onClick={() => libraryInput.current?.click()}>
+              <button data-ctl="CTL-P013-217" type="button" className="upopt" onClick={() => libraryInput.current?.click()}>
                 <Icon icon={ImageIcon} size={22} />
                 Photo library
               </button>
-              <button type="button" className="upopt" onClick={() => cameraInput.current?.click()}>
+              <button data-ctl="CTL-P013-218" type="button" className="upopt" onClick={() => cameraInput.current?.click()}>
                 <Icon icon={Camera} size={22} />
                 Take a photo
               </button>

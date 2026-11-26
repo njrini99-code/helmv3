@@ -49,7 +49,7 @@ export function SearchField({
       />
       {value && (
         <Tooltip>
-          <button type="button" className="ch-search__x" aria-label="Clear search" onClick={() => onChange('')}>
+          <button data-ctl="CTL-P000-038" type="button" className="ch-search__x" aria-label="Clear search" onClick={() => onChange('')}>
             <Icon icon={X} size={13} />
           </button>
         </Tooltip>

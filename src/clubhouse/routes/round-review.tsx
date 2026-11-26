@@ -57,7 +57,7 @@ export function RoundNotFound({ coach }: { coach: boolean }) {
         title="This round isn’t here"
         body="It may have been deleted, or the link is wrong. Everything else is where you left it."
         action={
-          <Button variant="primary" href={coach ? '/golf/dashboard/stats' : '/golf/dashboard/rounds'}>
+          <Button data-ctl="CTL-P011-005" variant="primary" href={coach ? '/golf/dashboard/stats' : '/golf/dashboard/rounds'}>
             {coach ? 'Go to Stats' : 'Go to your rounds'}
           </Button>
         }

@@ -28,7 +28,7 @@ function TrackFrame({ children }: { children: ReactNode }) {
           either (the tight head, coachhelm.css). The desk keeps the coach's full head on the sheet. */}
       <header className="ch-hl-h ch-htr-h" data-canopy-head={phone ? 'tight' : ''}>
         {!phone && (
-          <BackLink href={COACH_BOARD_HREF}>CoachHelm</BackLink>
+          <BackLink data-ctl="CTL-P013-302" href={COACH_BOARD_HREF}>CoachHelm</BackLink>
         )}
         {phone ? (
           <LargeTitle as="p" className="ch-hl-h__t">

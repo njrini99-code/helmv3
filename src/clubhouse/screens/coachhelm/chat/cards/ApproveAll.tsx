@@ -141,12 +141,12 @@ export function ApproveAll({ cards, phase = 'waiting', seconds = 0, stoppedAt = 
           )}
         </div>
         {(phase === 'waiting' || phase === 'confirming') && (
-          <Button variant="secondary" busy={phase === 'confirming'} disabled={!onApproveAll} onClick={() => onApproveAll?.(keys)}>
+          <Button data-ctl="CTL-P013-040" variant="secondary" busy={phase === 'confirming'} disabled={!onApproveAll} onClick={() => onApproveAll?.(keys)}>
             {phase === 'confirming' ? 'Approving…' : all ? `Approve all ${n}` : `Approve these ${n}`}
           </Button>
         )}
         {phase === 'held' && (
-          <Button variant="secondary" leftIcon={Undo2} disabled={!onUndoAll} onClick={() => onUndoAll?.(keys)}>
+          <Button data-ctl="CTL-P013-041" variant="secondary" leftIcon={Undo2} disabled={!onUndoAll} onClick={() => onUndoAll?.(keys)}>
             {`Undo all ${n}`}
           </Button>
         )}

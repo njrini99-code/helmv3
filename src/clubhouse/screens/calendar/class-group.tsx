@@ -149,7 +149,7 @@ export function ClassGroupBlock({
 
   return (
     <>
-      <button
+      <button data-ctl="CTL-P006-037"
         ref={btn}
         type="button"
         data-print-visible
@@ -205,7 +205,7 @@ export function ClassGroupBlock({
                     const [code, course] = courseParts(e.title);
                     const who = nameOf(e);
                     return (
-                      <button
+                      <button data-ctl="CTL-P006-038"
                         key={e.id}
                         type="button"
                         className={'ch-cg__row' + (e.id === selId ? ' is-sel' : '')}

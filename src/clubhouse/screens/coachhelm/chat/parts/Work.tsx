@@ -141,7 +141,7 @@ export function WorkLine({ work, listId, handle }: { work: WorkModel; listId: st
   const say = line.kind === 'none' ? '' : line.text;
   if (line.kind === 'summary')
     return (
-      <button type="button" className="ch-ak-wl is-sum" aria-expanded={handle ? handle.open : work.open} aria-controls={handle ? undefined : listId} onClick={handle ? handle.onOpen : work.toggle} data-ch-press="" data-ch-isl-handle={handle ? '' : undefined}>
+      <button data-ctl="CTL-P013-112" type="button" className="ch-ak-wl is-sum" aria-expanded={handle ? handle.open : work.open} aria-controls={handle ? undefined : listId} onClick={handle ? handle.onOpen : work.toggle} data-ch-press="" data-ch-isl-handle={handle ? '' : undefined}>
         <span className="t ch-num">{line.text}</span>
         <Icon icon={ChevronDown} size={15} className="chev" />
       </button>

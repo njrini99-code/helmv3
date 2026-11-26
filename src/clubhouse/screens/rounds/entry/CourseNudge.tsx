@@ -90,7 +90,7 @@ export function CourseNudge({ nudge, ports, sheet = false }: { nudge: ChCourseNu
         sheet={sheet}
         line={linkedName === null ? `${courseName.trim() ? `“${courseName.trim()}” isn’t linked to the course library. ` : ''}Linked rounds build your hole history and course plans.` : `It saves ${sheet ? 'when you post the round' : 'with your next shot'}. Your pars and yardages stay as you entered them.`}
       >
-        <Button size="sm" className="ch-rt-ask__go" onClick={pick}>
+        <Button data-ctl="CTL-P011-066" size="sm" className="ch-rt-ask__go" onClick={pick}>
           {linkedName === null ? 'Pick the course' : 'Change'}
         </Button>
       </AskRow>

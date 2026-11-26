@@ -32,7 +32,7 @@ export function GateFailed({ label, title }: { label: string; title: string }) {
         <div className="ch-au-err">
           <AuthNotice tone="danger">We couldn’t check your account just now. Nothing you saved is lost. Try again.</AuthNotice>
         </div>
-        <GateKey idle="Try again" working="Checking…" busy={refreshing} type="button" onClick={refresh} />
+        <GateKey data-ctl="CTL-P015-015" idle="Try again" working="Checking…" busy={refreshing} type="button" onClick={refresh} />
       </div>
     </GateFrame>
   );

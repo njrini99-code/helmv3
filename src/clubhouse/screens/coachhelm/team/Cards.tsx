@@ -77,7 +77,7 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
       {sorted.map((p) => {
         const open = p.reads.needs.length + p.reads.working.length;
         return (
-          <button type="button" className="rr tapp" key={p.id} onClick={() => onPlayer(p.id)}>
+          <button data-ctl="CTL-P013-241" type="button" className="rr tapp" key={p.id} onClick={() => onPlayer(p.id)}>
             <Coin player={p} />
             <span>
               <b>{p.name}</b>

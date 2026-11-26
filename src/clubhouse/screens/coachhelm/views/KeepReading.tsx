@@ -11,7 +11,7 @@ export function KeepReading({ id, line, items, title = 'Keep reading' }: { id: s
       <h3 id={id}>{title}</h3>
       <p>{line}</p>
       {items.map((i) => (
-        <Link key={i.href} className="ch-hv-link" href={i.href}>
+        <Link data-ctl="CTL-P013-285" key={i.href} className="ch-hv-link" href={i.href}>
           <span>
             <b className="ch-num">{i.title}</b>
             <em>{i.note}</em>

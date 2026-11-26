@@ -103,7 +103,7 @@ export function RoundTrend({
           {shown ?? trendNote(kind, rounds)}
         </p>
         {href && (
-          <Link href={href} className="ch-sv-open" data-ch-press="">
+          <Link data-ctl="CTL-P005-023" href={href} className="ch-sv-open" data-ch-press="">
             Open round
           </Link>
         )}

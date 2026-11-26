@@ -569,7 +569,8 @@ async function JobsBody() {
     <div className="space-y-6">
       <HelmJobsQueuePanel status={helmJobsStatus} />
 
-      <Surface padding="sm">
+      {/* `#self-heal` is the More rail's "Self-healing jobs" destination (admin-nav ADMIN_MORE_VIEWS, owner D5). */}
+      <Surface padding="sm" id="self-heal" className="scroll-mt-20">
         <KeyPanelRule />
         <SectionLabel>Self-healing loop — error to diagnosis to repair to closure</SectionLabel>
         <p className="mt-1 text-xs text-warm-500">

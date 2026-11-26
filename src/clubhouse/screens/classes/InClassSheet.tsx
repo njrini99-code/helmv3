@@ -136,7 +136,7 @@ function Popover(props: InClassSheetProps & { model: ReturnType<typeof sheetMode
           <h2 tabIndex={-1}>{title}</h2>
           {model && <p>{sub}</p>}
         </div>
-        <IconButton icon={X} label="Close" size="sm" onClick={onClose} />
+        <IconButton data-ctl="CTL-P012-047" icon={X} label="Close" size="sm" onClick={onClose} />
       </header>
       <SheetBody {...props} model={model} />
     </div>
@@ -154,7 +154,7 @@ function SheetBody({ day, status, now, opts, onRetry, onEditTerm, onBreaks, onCl
       return (
         <div className="ch-ca-state" data-ch-code="CH-2270">
           <p>Class status didn’t load.</p>
-          <Button size="sm" onClick={onRetry}>
+          <Button data-ctl="CTL-P012-048" size="sm" onClick={onRetry}>
             Try again
           </Button>
         </div>
@@ -210,7 +210,7 @@ function SheetBody({ day, status, now, opts, onRetry, onEditTerm, onBreaks, onCl
           {lowCoverage && tn && <p className="ch-ca-note">Class schedules shared by {tn.tracked} of {tn.total}.</p>}
           {model.none.length > 0 && <p className="ch-ca-names">{model.none.join(', ')}</p>}
           {askHref && (
-            <Button
+            <Button data-ctl="CTL-P012-049"
               size="sm"
               variant="ghost"
               onClick={() => {
@@ -233,11 +233,11 @@ function SheetBody({ day, status, now, opts, onRetry, onEditTerm, onBreaks, onCl
       <footer className="ch-ca-foot">
         <div className="ch-ca-foot__row">
           <span>{term ?? 'No term dates set'}</span>
-          <Button size="sm" variant="ghost" onClick={onEditTerm}>
+          <Button data-ctl="CTL-P012-050" size="sm" variant="ghost" onClick={onEditTerm}>
             {term ? 'Edit' : 'Set dates'}
           </Button>
         </div>
-        <button type="button" className="ch-ca-foot__row is-button" onClick={onBreaks}>
+        <button data-ctl="CTL-P012-051" type="button" className="ch-ca-foot__row is-button" onClick={onBreaks}>
           <span>Mark a day with no classes</span>
           <Icon icon={ChevronRight} size={14} />
         </button>

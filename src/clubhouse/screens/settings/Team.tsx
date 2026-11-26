@@ -132,7 +132,7 @@ function InviteCard({ code: initial, writes, program = null }: { code: string; w
             : 'Stops the current code from working right away. Anyone mid-join will need the new one.'
         }
       >
-        <Button size="sm" variant="secondary" leftIcon={RotateCw} busy={regen.pending} onClick={() => setConfirm(true)}>
+        <Button data-ctl="CTL-P008-037" size="sm" variant="secondary" leftIcon={RotateCw} busy={regen.pending} onClick={() => setConfirm(true)}>
           {regen.pending ? 'Making…' : 'Make a new code'}
         </Button>
       </Row>
@@ -145,10 +145,10 @@ function InviteCard({ code: initial, writes, program = null }: { code: string; w
         description={`${code} stops working as soon as the new code is made. Share the new one with anyone who hasn’t joined yet.`}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setConfirm(false)}>
+            <Button data-ctl="CTL-P008-038" variant="secondary" onClick={() => setConfirm(false)}>
               Keep this code
             </Button>
-            <Button
+            <Button data-ctl="CTL-P008-039"
               variant="primary"
               onClick={() => {
                 setConfirm(false);
@@ -181,14 +181,14 @@ function CodeBox({ label, code, live = false, gender, named = false, actions }: 
         </b>
       </div>
       <div className="ch-set-codebox__acts">
-        <Button size="sm" variant="primary" leftIcon={copied === 'code' ? Check : Copy} onClick={() => void copy('code')} aria={aria(`Copy ${name}`)}>
+        <Button data-ctl="CTL-P008-040" size="sm" variant="primary" leftIcon={copied === 'code' ? Check : Copy} onClick={() => void copy('code')} aria={aria(`Copy ${name}`)}>
           {copied === 'code' ? 'Copied' : 'Copy code'}
         </Button>
-        <Button size="sm" leftIcon={copied === 'link' ? Check : Link2} onClick={() => void copy('link')} aria={aria(`Copy ${name} link`)}>
+        <Button data-ctl="CTL-P008-041" size="sm" leftIcon={copied === 'link' ? Check : Link2} onClick={() => void copy('link')} aria={aria(`Copy ${name} link`)}>
           {copied === 'link' ? 'Copied' : 'Copy link'}
         </Button>
         {canShare && (
-          <Button size="sm" leftIcon={Share} onClick={() => void share()} aria={aria(`Share ${name}`)}>
+          <Button data-ctl="CTL-P008-042" size="sm" leftIcon={Share} onClick={() => void share()} aria={aria(`Share ${name}`)}>
             Share
           </Button>
         )}

@@ -94,11 +94,11 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
         {/* On the parchment the hero's two keys are the shared buttons: Start a round the one primary, Message coach
             the quiet one beside it (both tap lightly, D-70). */}
         <div className="ch-ph-acts">
-          <Button size="lg" leftIcon={MessageSquare} href={messageCoachHref(data.coachUserId)} feel="press">
+          <Button data-ctl="CTL-P002-063" size="lg" leftIcon={MessageSquare} href={messageCoachHref(data.coachUserId)} feel="press">
             Message coach
           </Button>
           {post && (
-            <Button size="lg" variant="primary" leftIcon={Plus} href={post}>
+            <Button data-ctl="CTL-P002-064" size="lg" variant="primary" leftIcon={Plus} href={post}>
               New round
             </Button>
           )}
@@ -169,7 +169,7 @@ export function NoRoundsYet() {
       }
       secondaryAction={
         classes ? (
-          <Button leftIcon={GraduationCap} href={classes}>
+          <Button data-ctl="CTL-P002-065" leftIcon={GraduationCap} href={classes}>
             Add classes
           </Button>
         ) : undefined
@@ -197,13 +197,13 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
         {data.rounds.length > 1 && (
           <span className="ch-ph-pg">
             {/* Keys: they shrink when pressed, as every button does (`data-ch-press`, CH-1606), and tint (home.css). */}
-            <button type="button" aria-label="Previous round" onClick={() => go(-1)} data-ch-press="">
+            <button data-ctl="CTL-P002-066" type="button" aria-label="Previous round" onClick={() => go(-1)} data-ch-press="">
               <Icon icon={ChevronLeft} size={18} />
             </button>
             <span className="ch-num" aria-live="polite">
               {i + 1} of {data.rounds.length}
             </span>
-            <button type="button" aria-label="Next round" onClick={() => go(1)} data-ch-press="">
+            <button data-ctl="CTL-P002-067" type="button" aria-label="Next round" onClick={() => go(1)} data-ch-press="">
               <Icon icon={ChevronRight} size={18} />
             </button>
           </span>
@@ -247,7 +247,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
             ]}
           />
           {/* The board's "Open recap": the round's own review; My stats when it isn't rebuilt. */}
-          <Button variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} ahead={!!roundHref(r.id, 'player')} className="ch-ph-card__more ch-btn--flush-end">
+          <Button data-ctl="CTL-P002-068" variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} ahead={!!roundHref(r.id, 'player')} className="ch-ph-card__more ch-btn--flush-end">
             {roundHref(r.id, 'player') ? 'Open recap' : 'My stats'}
           </Button>
         </div>

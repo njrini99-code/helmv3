@@ -39,6 +39,15 @@ test('a file belongs to the page with the longest matching implementation path',
   assert.equal(pageOf('src/clubhouse/shellx/A.tsx', manifests), null);
 });
 
+test('two pages sharing a directory: an exact file in also wins, and a tie goes to the lower page id', () => {
+  const manifests = [
+    { id: 'P005', name: 'Stats (player)', implementation: { root: 'src/clubhouse/screens/stats', also: ['src/clubhouse/screens/stats/StatsPlayer.tsx'] } },
+    { id: 'P004', name: 'Stats (team)', implementation: { root: 'src/clubhouse/screens/stats' } },
+  ];
+  assert.equal(pageOf('src/clubhouse/screens/stats/StatsPlayer.tsx', manifests).id, 'P005');
+  assert.equal(pageOf('src/clubhouse/screens/stats/StatsFilter.tsx', manifests).id, 'P004');
+});
+
 test('the map is deterministic and puts unclaimed files last under Shared', () => {
   const manifests = [{ id: 'P001', name: 'Shell', implementation: { root: 'src/clubhouse/shell' } }];
   const files = { 'src/clubhouse/ui/B.tsx': src, 'src/clubhouse/shell/A.tsx': src };

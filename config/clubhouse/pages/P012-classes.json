@@ -54,7 +54,8 @@
     "also": [
       "src/clubhouse/data/class-day.ts",
       "src/clubhouse/data/class-day-shape.ts",
-      "src/clubhouse/data/classes-shape.ts"
+      "src/clubhouse/data/classes-shape.ts",
+      "src/clubhouse/ui/ClassStatusRow.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/classes.md",

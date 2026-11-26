@@ -66,7 +66,7 @@ export function GateFrame({
 
   return (
     <AuthFrame screen="signin" phase={phase}>
-      <a className="ch-au-skip" href="#ch-au-form">
+      <a data-ctl="CTL-P015-011" className="ch-au-skip" href="#ch-au-form">
         Skip to the form
       </a>
       <div className="ch-au-photo" aria-hidden="true" data-dark={dark ? '' : undefined}>
@@ -98,7 +98,7 @@ export function GateFrame({
       >
         <div className="ch-au-top">
           {back && !(back.hideInApp && native) && (
-            <Link href={back.href} className="ch-au-back" aria-label={back.label === 'Home' ? 'Back to home' : `Back to ${back.label.toLowerCase()}`}>
+            <Link data-ctl="CTL-P015-012" href={back.href} className="ch-au-back" aria-label={back.label === 'Home' ? 'Back to home' : `Back to ${back.label.toLowerCase()}`}>
               <Icon icon={ChevronLeft} size={16} />
               {back.label}
             </Link>
@@ -119,9 +119,9 @@ export function GateFrame({
           <div className="ch-au-foot">
             {foot}
             <span className="ch-au-legal">
-              <Link href="/privacy">Privacy</Link>
+              <Link data-ctl="CTL-P015-013" href="/privacy">Privacy</Link>
               <span aria-hidden="true">·</span>
-              <Link href="/terms">Terms</Link>
+              <Link data-ctl="CTL-P015-014" href="/terms">Terms</Link>
             </span>
           </div>
           <div className="ch-au-hsl">

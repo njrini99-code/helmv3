@@ -130,7 +130,7 @@ export function FileFailed({ who, onRetry }: { who: string; onRetry: () => void 
         </span>
         <b>Couldn’t load {who}</b>
         <p>{FAILURE_COPY.page}</p>
-        <Button data={{ 'data-ch-hf-retry': '' }} variant="secondary" size="lg" onClick={onRetry}>
+        <Button data-ctl="CTL-P013-149" data={{ 'data-ch-hf-retry': '' }} variant="secondary" size="lg" onClick={onRetry}>
           Try again
         </Button>
       </div>
@@ -227,10 +227,10 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens, ana
     lens === 'player' ? (
       planNow?.stage === 'suggested' || planNow?.stage === 'shown' ? (
         <>
-          <Button data={{ 'data-ch-hf-accept': '' }} variant="secondary" size="lg" disabled>
+          <Button data-ctl="CTL-P013-150" data={{ 'data-ch-hf-accept': '' }} variant="secondary" size="lg" disabled>
             Accept
           </Button>
-          <Button data={{ 'data-ch-hf-decline': '' }} variant="ghost" size="lg" className="ch-btn--on-green" disabled>
+          <Button data-ctl="CTL-P013-151" data={{ 'data-ch-hf-decline': '' }} variant="ghost" size="lg" className="ch-btn--on-green" disabled>
             Decline
           </Button>
         </>
@@ -267,7 +267,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens, ana
           body="Reads start after 4 full rounds in the last 90 days."
           action={
             lens === 'coach' ? (
-              <Button variant="secondary" size="lg" href={messageHref}>
+              <Button data-ctl="CTL-P013-152" variant="secondary" size="lg" href={messageHref}>
                 Message {first}
               </Button>
             ) : undefined
@@ -362,7 +362,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens, ana
         <PhoneTop
           back={{ label: 'CoachHelm', onBack: () => (window.history.length > 1 ? router.back() : router.push(PLAYER_HELM_HREF.board)) }}
           title={head.name}
-          action={more(((p: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void }) => <PhoneIconAction icon={Ellipsis} label={`More for ${first}`} onClick={p.onClick} />) as never)}
+          action={more(((p: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void }) => <PhoneIconAction data-ctl="CTL-P013-153" icon={Ellipsis} label={`More for ${first}`} onClick={p.onClick} />) as never)}
         />
       )}
       <div className="dmain">
@@ -375,7 +375,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens, ana
               </div>
               <div className="rows">
                 {roster.map((r) => (
-                  <Link key={r.id} replace prefetch={false} href={playerFileHref(r.id)} className={'r' + (r.id === head.playerId ? ' is-sel' : '')} aria-current={r.id === head.playerId ? 'page' : undefined} data-ch-hf-open="">
+                  <Link data-ctl="CTL-P013-154" key={r.id} replace prefetch={false} href={playerFileHref(r.id)} className={'r' + (r.id === head.playerId ? ' is-sel' : '')} aria-current={r.id === head.playerId ? 'page' : undefined} data-ch-hf-open="">
                     <Avatar name={r.name} size="md" />
                     <span className="r__t">
                       <b>{r.name}</b>
@@ -397,7 +397,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens, ana
               </div>
               <div className="aseg">{lensBar}</div>
               {more(((p: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void }) => (
-                <button type="button" ref={p.ref} className="ib" data-ch-hf-more="" aria-label={`More for ${first}`} onClick={p.onClick}>
+                <button data-ctl="CTL-P013-155" type="button" ref={p.ref} className="ib" data-ch-hf-more="" aria-label={`More for ${first}`} onClick={p.onClick}>
                   <Icon icon={Ellipsis} size={19} />
                 </button>
               )) as never)}
@@ -435,7 +435,7 @@ export function PartFailed({ title }: { title: string }) {
       </div>
       <p className="card__n ch-hf-partfail" data-ch-code="CH-13761">
         Couldn’t load this part
-        <button type="button" disabled={refreshing} onClick={refresh}>
+        <button data-ctl="CTL-P013-156" type="button" disabled={refreshing} onClick={refresh}>
           Try again
         </button>
       </p>

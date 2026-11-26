@@ -281,7 +281,7 @@ export function EventBlock({
     </>
   );
   return (
-    <button
+    <button data-ctl="CTL-P006-151"
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap (SWP-03: the title drawn, then hidden words). CH-6601:
@@ -333,8 +333,8 @@ export function EventBlock({
       {/* P-4 4.3: the resize grips, pointer-only (the keyboard path is Alt+Shift); a block under 32px keeps the bottom one. */}
       {drag && !state && (
         <>
-          {h >= 32 && <span className="ch-ev__grip is-top" aria-hidden="true" onPointerDown={drag.grip('start')} onClick={(ev) => ev.stopPropagation()} />}
-          <span className={'ch-ev__grip is-bottom' + (h < 32 ? ' is-small' : '')} aria-hidden="true" onPointerDown={drag.grip('end')} onClick={(ev) => ev.stopPropagation()} />
+          {h >= 32 && <span data-ctl="CTL-P006-152" className="ch-ev__grip is-top" aria-hidden="true" onPointerDown={drag.grip('start')} onClick={(ev) => ev.stopPropagation()} />}
+          <span data-ctl="CTL-P006-153" className={'ch-ev__grip is-bottom' + (h < 32 ? ' is-small' : '')} aria-hidden="true" onPointerDown={drag.grip('end')} onClick={(ev) => ev.stopPropagation()} />
         </>
       )}
     </button>
@@ -451,7 +451,7 @@ export function TimeGrid({
         <div className="ch-wk__head">
           <div />
           {dates.map((d) => (
-            <button
+            <button data-ctl="CTL-P006-154"
               key={d}
               type="button"
               data-print-visible
@@ -590,7 +590,7 @@ function LaneBar({
   const run = !narrow && (b.c0 === b.c1 || b.c1 - b.c0 >= 2) && !e.allDay && e.span?.start != null && e.span.end != null;
   const days = span.from === span.to ? `${dowOf(span.from)} ${dayNum(span.from)}` : `${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}`;
   return (
-    <button
+    <button data-ctl="CTL-P006-155"
       type="button"
       data-print-visible
       data-ev-id={state === 'card' ? undefined : e.id}
@@ -622,8 +622,8 @@ function LaneBar({
       )}
       {drag && !state && (
         <>
-          {!b.clipStart && <span className="ch-ev-bar__grip is-from" aria-hidden="true" onPointerDown={drag.grip('from')} onClick={(ev) => ev.stopPropagation()} />}
-          {!b.clipEnd && <span className="ch-ev-bar__grip is-to" aria-hidden="true" onPointerDown={drag.grip('to')} onClick={(ev) => ev.stopPropagation()} />}
+          {!b.clipStart && <span data-ctl="CTL-P006-156" className="ch-ev-bar__grip is-from" aria-hidden="true" onPointerDown={drag.grip('from')} onClick={(ev) => ev.stopPropagation()} />}
+          {!b.clipEnd && <span data-ctl="CTL-P006-157" className="ch-ev-bar__grip is-to" aria-hidden="true" onPointerDown={drag.grip('to')} onClick={(ev) => ev.stopPropagation()} />}
         </>
       )}
     </button>
@@ -770,7 +770,7 @@ export function AgendaView({
     <div className="ch-ag">
       {past.length > 0 && (
         <div>
-          <Button size="sm" variant="ghost" leftIcon={early ? ChevronUp : ChevronDown} onClick={() => setEarly(!early)}>
+          <Button data-ctl="CTL-P006-158" size="sm" variant="ghost" leftIcon={early ? ChevronUp : ChevronDown} onClick={() => setEarly(!early)}>
             {early ? 'Hide earlier days' : `Show ${past.length} earlier ${pluralWord(past.length, 'day')}`}
           </Button>
         </div>
@@ -801,7 +801,7 @@ export function AgendaView({
           }
           prev = e;
           rows.push(
-            <button
+            <button data-ctl="CTL-P006-159"
               key={e.id}
               type="button"
               data-print-visible

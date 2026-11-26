@@ -85,7 +85,7 @@ export function HandoffCard({ handoff, tiles }: { handoff: AskHandoffData; tiles
       )}
       <p className="oncf">{head.on}</p>
       <div className="btns">
-        <Button variant="primary" busy={busy} onClick={() => void open()}>
+        <Button data-ctl="CTL-P013-086" variant="primary" busy={busy} onClick={() => void open()}>
           Open in Messages
         </Button>
       </div>

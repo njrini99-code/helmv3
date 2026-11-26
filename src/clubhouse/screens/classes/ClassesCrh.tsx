@@ -87,7 +87,7 @@ export function TermCard({ term, classes, week, todayIso, overlaps, overlapsErro
           <span className="ch-num">{sub}</span>
         </span>
         {!overlapsError && overlaps > 0 && (
-          <button type="button" className="ch-cl-term__over" onClick={onOverlaps}>
+          <button data-ctl="CTL-P012-019" type="button" className="ch-cl-term__over" onClick={onOverlaps}>
             <Icon icon={AlertTriangle} size={13} />
             <span className="ch-num">{plural(overlaps, 'overlap')}</span>
           </button>
@@ -149,7 +149,7 @@ function ClassRow({ c, sub, onOpen }: { c: ChClass; sub: string | null; onOpen?:
   return (
     <GroupRow twoLine className="ch-cl-tr">
       {onOpen ? (
-        <button type="button" className="ch-cl-tr__btn" data-ch-class-row="" onClick={() => onOpen(c)}>
+        <button data-ctl="CTL-P012-020" type="button" className="ch-cl-tr__btn" data-ch-class-row="" onClick={() => onOpen(c)}>
           {body}
           <Icon icon={ChevronRight} size={15} />
         </button>

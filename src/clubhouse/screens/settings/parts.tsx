@@ -243,11 +243,11 @@ export function SaveBar({ dirty, pending, invalid, onSave, onReset, label = 'Sav
           {editing && (
             <span className="ch-set-savebar__acts">
               {onReset && !pending && (
-                <Button variant="ghost" size="sm" feel="warning" onClick={onReset}>
+                <Button data-ctl="CTL-P008-049" variant="ghost" size="sm" feel="warning" onClick={onReset}>
                   Discard
                 </Button>
               )}
-              <Button variant="primary" size="sm" busy={pending} disabled={!!invalid} onClick={onSave}>
+              <Button data-ctl="CTL-P008-050" variant="primary" size="sm" busy={pending} disabled={!!invalid} onClick={onSave}>
                 {pending ? 'Saving…' : label}
               </Button>
             </span>
@@ -353,10 +353,10 @@ export function useUnsavedGuard(dirty: boolean) {
       description="Your changes on this page haven’t been saved."
       footer={
         <>
-          <Button variant="secondary" onClick={() => setPendingHref(null)}>
+          <Button data-ctl="CTL-P008-051" variant="secondary" onClick={() => setPendingHref(null)}>
             Keep editing
           </Button>
-          <Button
+          <Button data-ctl="CTL-P008-052"
             variant="danger"
             feel="warning"
             onClick={() => {

@@ -1,20 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import {
   ADMIN_NAV,
+  ADMIN_MORE_VIEWS,
   hrefForShortcut,
+  isNavEntryActive,
+  navEntryForPath,
   RESERVED_LOCAL_SHORTCUTS,
   BRIDGE_BOTTOM_NAV_HREFS,
   BRIDGE_BOTTOM_NAV_LABELS,
 } from '@/app/admin/_components/admin-nav';
+import { RETIRED_SHORTCUTS } from '@/lib/admin/retired-routes';
 
 describe('ADMIN_NAV', () => {
-  // Regrouped 2026-08-06 from system-shaped sections (Operations/Apps/Platform)
-  // to question-shaped ones, and the two orphaned boards were added. Keyboard
-  // keys are deliberately NOT renumbered — '1'-'9'/'0' keep their original
-  // routes so existing muscle memory survives the regrouping.
+  // Regrouped 2026-11-25 for the Clubhouse edition (plan §7.1, owner D3): a
+  // Clubhouse section leads, the per-sport tabs and Ben + Leah moved under
+  // More. Keyboard keys are deliberately NOT renumbered — '1'-'9'/'0' and
+  // every existing letter keep their routes, so muscle memory survives the
+  // regrouping; the five Clubhouse screens take letters nothing else used.
   it('declares the canonical tabs in order', () => {
     expect(ADMIN_NAV.map((e) => e.href)).toEqual([
       '/admin',
+      '/admin/clubhouse',
+      '/admin/clubhouse/controls',
+      '/admin/clubhouse/actions',
+      '/admin/clubhouse/codes',
+      '/admin/clubhouse/readiness',
+      '/admin/clubhouse/sessions',
+      '/admin/clubhouse/experience',
+      '/admin/clubhouse/releases',
+      '/admin/clubhouse/drift',
+      '/admin/clubhouse/duet',
       '/admin/errors',
       '/admin/health',
       '/admin/jobs',
@@ -24,28 +39,70 @@ describe('ADMIN_NAV', () => {
       '/admin/users',
       '/admin/activity',
       '/admin/utilization',
-      '/admin/golf',
-      '/admin/baseball',
-      '/admin/lifting',
       '/admin/deploys',
       '/admin/releases',
       '/admin/auth',
       '/admin/work',
+      '/admin/golf',
+      '/admin/baseball',
+      '/admin/lifting',
       '/admin/engineering',
       '/admin/ben-leah',
     ]);
+    // Sessions took N, the last free letter; Experience, Releases, Drift and the
+    // Duet desk have none (undefined), a deliberate change: the plan's letters
+    // for them are retired shortcuts still in use.
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      '1', '3', '0', '8', 'X', 'F', 'T', '7',
-      '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'Z', 'B',
+      '1', 'H', 'I', 'J', 'C', 'M', 'N', undefined, undefined, undefined, undefined,
+      '3', '0', '8', 'X', 'F', 'T',
+      '7', '2', 'U',
+      '9', 'K', '4', 'W',
+      '5', '6', 'L', 'Z', 'B',
     ]);
   });
 
-  it('groups by the question being asked, not by subsystem', () => {
+  it('leads with Clubhouse and keeps More last (D3)', () => {
     const sections = [...new Set(ADMIN_NAV.map((e) => e.section))];
-    // 'More' (added for Engineering OS, OWNER DECISION bridge-tab-audit-p0p1)
-    // is a deliberate deprioritized group, not a subsystem — it trails the
-    // question-shaped sections rather than sitting among them.
-    expect(sections).toEqual(['Triage', 'Customers', 'Apps', 'Platform', 'More']);
+    expect(sections).toEqual(['Clubhouse', 'Triage', 'Customers', 'Platform', 'More']);
+    const more = ADMIN_NAV.filter((e) => e.section === 'More').map((e) => e.href);
+    expect(more).toEqual(['/admin/golf', '/admin/baseball', '/admin/lifting', '/admin/engineering', '/admin/ben-leah']);
+  });
+
+  it('every key a tab had before the regrouping still opens that tab', () => {
+    // The pre-Clubhouse map, verbatim. A regrouping that moved one of these
+    // would silently retrain an operator's hands.
+    const before: Record<string, string> = {
+      '1': '/admin', '3': '/admin/errors', '0': '/admin/health', '8': '/admin/jobs', X: '/admin/database',
+      F: '/admin/traces', T: '/admin/teams', '7': '/admin/users', '2': '/admin/activity', U: '/admin/utilization',
+      '5': '/admin/golf', '6': '/admin/baseball', L: '/admin/lifting', '9': '/admin/deploys', K: '/admin/releases',
+      '4': '/admin/auth', W: '/admin/work', Z: '/admin/engineering', B: '/admin/ben-leah',
+    };
+    for (const [key, href] of Object.entries(before)) expect(hrefForShortcut(key), key).toBe(href);
+  });
+
+  it('the Clubhouse screens take letters no live or retired shortcut uses', () => {
+    const clubhouse = ADMIN_NAV.filter((e) => e.section === 'Clubhouse' && e.href !== '/admin');
+    for (const entry of clubhouse) {
+      // A Clubhouse screen with no free letter has no key at all, never a borrowed one.
+      if (entry.key === undefined) continue;
+      expect(entry.key, entry.href).toMatch(/^[A-Z]$/);
+      expect(RETIRED_SHORTCUTS[entry.key], `${entry.key} is a retired shortcut`).toBeUndefined();
+    }
+    expect(hrefForShortcut('C')).toBe('/admin/clubhouse/codes');
+    expect(hrefForShortcut('H')).toBe('/admin/clubhouse');
+    expect(hrefForShortcut('N')).toBe('/admin/clubhouse/sessions');
+  });
+
+  // PR 3 and PR 4 change this on purpose: a tab may go without a key, but only
+  // when no letter is free. Every key-less tab is a Clubhouse lens, and every
+  // letter is taken by a live tab or a retired shortcut, so giving one a letter
+  // would retrain an operator's hands or break a shortcut they still use.
+  it('leaves a tab without a key only when no letter is free', () => {
+    const keyless = ADMIN_NAV.filter((e) => e.key === undefined).map((e) => e.href);
+    expect(keyless).toEqual(['/admin/clubhouse/experience', '/admin/clubhouse/releases', '/admin/clubhouse/drift', '/admin/clubhouse/duet']);
+    const taken = new Set([...ADMIN_NAV.map((e) => e.key), ...Object.keys(RETIRED_SHORTCUTS)]);
+    const free = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter((l) => !taken.has(l));
+    expect(free).toEqual([]);
   });
 
   it('maps shortcut keys to hrefs', () => {
@@ -68,10 +125,48 @@ describe('ADMIN_NAV', () => {
   it('no ADMIN_NAV shortcut collides with a key AdminShell reserves locally', () => {
     for (const entry of ADMIN_NAV) {
       expect(
-        RESERVED_LOCAL_SHORTCUTS.has(entry.key),
+        entry.key !== undefined && RESERVED_LOCAL_SHORTCUTS.has(entry.key),
         `${entry.href}'s shortcut '${entry.key}' is reserved by AdminShell's local keydown ` +
           'handler (see RESERVED_LOCAL_SHORTCUTS) and can never navigate there',
       ).toBe(false);
+    }
+  });
+});
+
+describe('navEntryForPath (rail highlight and breadcrumbs)', () => {
+  it('picks the longest matching tab, so a Clubhouse sub-screen never lights up Pages too', () => {
+    expect(navEntryForPath('/admin/clubhouse')?.label).toBe('Pages');
+    expect(navEntryForPath('/admin/clubhouse/P007')?.label).toBe('Pages');
+    expect(navEntryForPath('/admin/clubhouse/controls')?.label).toBe('Controls');
+    expect(navEntryForPath('/admin/clubhouse/controls/CTL-P007-014')?.label).toBe('Controls');
+    expect(navEntryForPath('/admin/clubhouse/codes/70603')?.label).toBe('Codes');
+    expect(isNavEntryActive('/admin/clubhouse', '/admin/clubhouse/codes/70603')).toBe(false);
+    expect(isNavEntryActive('/admin/clubhouse/codes', '/admin/clubhouse/codes/70603')).toBe(true);
+  });
+
+  it('matches on a segment boundary, and /admin owns only itself', () => {
+    expect(navEntryForPath('/admin')?.label).toBe('Pulse');
+    expect(navEntryForPath('/admin/users/abc')?.href).toBe('/admin/users');
+    expect(navEntryForPath('/admin/users-archive')).toBeNull();
+    expect(navEntryForPath('/admin/thread/user/1')).toBeNull();
+  });
+});
+
+describe('ADMIN_MORE_VIEWS (owner D5: self-heal views under More)', () => {
+  it('points at views of live tabs, never at a route of its own', () => {
+    const navHrefs = new Set(ADMIN_NAV.map((e) => e.href as string));
+    for (const view of ADMIN_MORE_VIEWS) {
+      const path = view.href.split(/[?#]/)[0]!;
+      expect(navHrefs.has(path), `${view.href} is not a view of a live tab`).toBe(true);
+      expect(view.href).not.toBe(path);
+    }
+  });
+
+  it('shows a key hint only when that key already lands on it', () => {
+    for (const view of ADMIN_MORE_VIEWS) {
+      if (!view.key) continue;
+      expect(hrefForShortcut(view.key)).toBeNull();
+      expect(RETIRED_SHORTCUTS[view.key]).toBe(view.href);
     }
   });
 });
@@ -94,5 +189,9 @@ describe('BRIDGE_BOTTOM_NAV_HREFS', () => {
     }
     // "Users & Teams" (the rail label) is deliberately shortened for the tab column.
     expect(BRIDGE_BOTTOM_NAV_LABELS['/admin/users']).toBe('Users');
+  });
+
+  it('the bottom bar and the rail name the same place the same way', () => {
+    expect(BRIDGE_BOTTOM_NAV_LABELS['/admin']).toBe(ADMIN_NAV.find((e) => e.href === '/admin')!.label);
   });
 });

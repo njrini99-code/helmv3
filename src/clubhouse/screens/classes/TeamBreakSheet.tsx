@@ -81,10 +81,10 @@ export function TeamBreakSheet({ open, onClose, teamId, today }: { open: boolean
         description="No one shows as in class on these days, and waiting pushes are delivered."
         footer={
           <>
-            <Button variant="ghost" disabled={add.pending} onClick={onClose}>
+            <Button data-ctl="CTL-P012-056" variant="ghost" disabled={add.pending} onClick={onClose}>
               Close
             </Button>
-            <Button variant="primary" busy={add.pending} disabled={!startsOn} onClick={() => void submit()}>
+            <Button data-ctl="CTL-P012-057" variant="primary" busy={add.pending} disabled={!startsOn} onClick={() => void submit()}>
               {add.pending ? 'Saving…' : 'Mark no classes'}
             </Button>
           </>
@@ -98,7 +98,7 @@ export function TeamBreakSheet({ open, onClose, teamId, today }: { open: boolean
             void submit();
           }}
         >
-          <button type="submit" hidden />
+          <button data-ctl="CTL-P012-058" type="submit" hidden />
           <div className="ch-field">
             <span className="ch-field__label">First day</span>
             <DateField value={startsOn} onChange={(d) => setStartsOn(d)} label="First day" min={today} today={today} />
@@ -126,7 +126,7 @@ export function TeamBreakSheet({ open, onClose, teamId, today }: { open: boolean
             {rows.map((b) => (
               <li key={b.id}>
                 <span>{breakLine(b)}</span>
-                <IconButton icon={Trash2} label={`Remove ${breakLine(b)}`} size="sm" onClick={() => setRemoving(b)} />
+                <IconButton data-ctl="CTL-P012-059" icon={Trash2} label={`Remove ${breakLine(b)}`} size="sm" onClick={() => setRemoving(b)} />
               </li>
             ))}
           </ul>
@@ -141,10 +141,10 @@ export function TeamBreakSheet({ open, onClose, teamId, today }: { open: boolean
         description={removing ? `${breakLine(removing)}. Class status counts those days again.` : undefined}
         footer={
           <>
-            <Button variant="ghost" disabled={remove.pending} onClick={() => setRemoving(null)}>
+            <Button data-ctl="CTL-P012-060" variant="ghost" disabled={remove.pending} onClick={() => setRemoving(null)}>
               Keep it
             </Button>
-            <Button variant="danger" busy={remove.pending} onClick={() => void confirmRemove()}>
+            <Button data-ctl="CTL-P012-061" variant="danger" busy={remove.pending} onClick={() => void confirmRemove()}>
               {remove.pending ? 'Removing…' : 'Remove break'}
             </Button>
           </>

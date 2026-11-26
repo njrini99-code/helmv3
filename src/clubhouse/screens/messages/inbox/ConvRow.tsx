@@ -90,7 +90,7 @@ export function ConvRow({ api, c, phone = false }: { api: ChMessagesApi; c: ChCo
   if (!phone) {
     return (
       <>
-        <ConvRowButton api={api} c={c} onOpen={open} bind={ctx.bind(c)} />
+        <ConvRowButton data-ctl="CTL-P007-068" api={api} c={c} onOpen={open} bind={ctx.bind(c)} />
         {sheets}
       </>
     );
@@ -103,10 +103,10 @@ export function ConvRow({ api, c, phone = false }: { api: ChMessagesApi; c: ChCo
         leading={{ label: unread ? "Read" : "Unread", icon: unread ? MailOpen : Mail, tone: "accent", run: toggleRead }}
         trailing={askDelete && { label: "Delete", icon: Trash2, tone: "danger", run: askDelete }}
       >
-        <ConvRowButton api={api} c={c} onOpen={open} bind={ctx.bind(c)} plain />
+        <ConvRowButton data-ctl="CTL-P007-069" api={api} c={c} onOpen={open} bind={ctx.bind(c)} plain />
         {/* VoiceOver and a keyboard can't swipe or hold: the same actions, one control away (shown when focused). */}
         <span className="ch-sr-only ch-sr-only--focusable">
-          <button type="button" onClick={(e) => ctx.openAt(c, e.currentTarget)}>
+          <button data-ctl="CTL-P007-070" type="button" onClick={(e) => ctx.openAt(c, e.currentTarget)}>
             Actions for {c.title}
           </button>
         </span>

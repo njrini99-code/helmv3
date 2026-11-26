@@ -45,7 +45,7 @@ export async function ClubhouseCourseHistoryRoute({ rawKey, player, hole, window
           title="Choose a player to see their course history"
           body="A course’s history belongs to one player. Open a player from Roster to see theirs."
           action={
-            <Button variant="primary" href="/golf/dashboard/roster">
+            <Button data-ctl="CTL-P011-003" variant="primary" href="/golf/dashboard/roster">
               Open Roster
             </Button>
           }
@@ -70,7 +70,7 @@ export async function ClubhouseCourseHistoryRoute({ rawKey, player, hole, window
           title={off ? 'This player isn’t on your team' : 'No rounds here'}
           body={off ? 'Their history at this course isn’t yours to see.' : 'There are no rounds at this course to show.'}
           action={
-            <Button variant="primary" href={coach ? '/golf/dashboard/stats' : '/golf/dashboard/rounds'}>
+            <Button data-ctl="CTL-P011-004" variant="primary" href={coach ? '/golf/dashboard/stats' : '/golf/dashboard/rounds'}>
               {coach ? 'Go to Stats' : 'Go to your rounds'}
             </Button>
           }

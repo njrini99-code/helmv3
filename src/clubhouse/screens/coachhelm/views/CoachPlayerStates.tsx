@@ -26,7 +26,7 @@ export function CoachPlayerNotOnTeam() {
         title="That player isn’t on your team"
         body="They may have been removed, or the link is from another team."
         action={
-          <Button variant="primary" href={PLAYER_HELM_HREF.board}>
+          <Button data-ctl="CTL-P013-273" variant="primary" href={PLAYER_HELM_HREF.board}>
             Back to the board
           </Button>
         }

@@ -57,7 +57,7 @@ export function Details({
     <aside ref={detailsBody} className="ch-ms-det ch-msd-det" aria-label={conv.group ? "Group details" : "Details"}>
       {/* The content is 300 wide and pinned to the column's right edge, so the track opening reveals it (MSG-602). */}
       <div className="ch-msd-det__in">
-        <IconButton className="ch-msd-det__x" icon={X} label="Close details" size="sm" onClick={onClose} />
+        <IconButton data-ctl="CTL-P007-040" className="ch-msd-det__x" icon={X} label="Close details" size="sm" onClick={onClose} />
         <div className="ch-ms-det__hero ch-msd-hero">
           {conv.group ? (
             <span className="ch-ms-grp is-xl">

@@ -301,7 +301,7 @@ export function MenuItems({
         const role = it.checked !== undefined ? 'menuitemradio' : 'menuitem';
         if (it.href) {
           return (
-            <Link key={it.label} href={it.href} replace={replace || undefined} role={role} aria-checked={it.checked} className={cls} tabIndex={i === first ? 0 : -1} onClick={() => {
+            <Link data-ctl="CTL-P000-020" key={it.label} href={it.href} replace={replace || undefined} role={role} aria-checked={it.checked} className={cls} tabIndex={i === first ? 0 : -1} onClick={() => {
               // A link item can also note something as it opens (the rounds library notes the round, so the review's Back is a step back).
               it.onSelect?.();
               onFollow?.();
@@ -312,7 +312,7 @@ export function MenuItems({
           );
         }
         return (
-          <button
+          <button data-ctl="CTL-P000-021"
             disabled={it.disabled}
             key={it.label}
             type="button"

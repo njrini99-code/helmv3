@@ -51,7 +51,7 @@ function DetailsPhone({ details, writes }: { details: ChGolfDetails; writes: ChS
     <>
       <Group title="Golf details" note="Your coaches and teammates see your handicap and class on the roster.">
         {FIELDS.map((f) => (
-          <NavRow key={f.key} label={f.label} value={shown[f.key] || 'Not set'} onClick={() => setEditing(true)} />
+          <NavRow data-ctl="CTL-P008-060" key={f.key} label={f.label} value={shown[f.key] || 'Not set'} onClick={() => setEditing(true)} />
         ))}
       </Group>
       <GolfSheet open={editing} onClose={() => setEditing(false)} details={details} writes={writes} />
@@ -114,7 +114,7 @@ function MembershipPhone({ m, writes }: { m: ChMembership; writes: ChSettingsWri
           </div>
         </Group>
         <Group>
-          <NavRow label="Leave team" danger disabled={leave.pending} onClick={() => setLeaving(true)} />
+          <NavRow data-ctl="CTL-P008-061" label="Leave team" danger disabled={leave.pending} onClick={() => setLeaving(true)} />
         </Group>
         <ActionSheet
           open={leaving}
@@ -142,13 +142,13 @@ function MembershipPhone({ m, writes }: { m: ChMembership; writes: ChSettingsWri
         {requests.map((r) => (
           <div key={r.id} className="ch-setm-row is-info has-help" data-ch-code="CH-8303">
             <span className="ch-setm-row__l">Waiting on {r.teamName}</span>
-            <button type="button" className="ch-setm-link" disabled={cancel.pending} onClick={() => void cancel.run(r.id)}>
+            <button data-ctl="CTL-P008-062" type="button" className="ch-setm-link" disabled={cancel.pending} onClick={() => void cancel.run(r.id)}>
               Cancel
             </button>
             <span className="ch-setm-help">Sent {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
           </div>
         ))}
-        {requests.length === 0 && <NavRow label="Team code" value="Enter" onClick={() => setJoining(true)} />}
+        {requests.length === 0 && <NavRow data-ctl="CTL-P008-063" label="Team code" value="Enter" onClick={() => setJoining(true)} />}
       </Group>
       <FormSheet
         open={joining}

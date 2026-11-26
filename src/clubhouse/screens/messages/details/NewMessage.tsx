@@ -120,10 +120,10 @@ export function NewMessage({
       }
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P007-041" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={busy} onClick={() => void go()}>
+          <Button data-ctl="CTL-P007-042" variant="primary" busy={busy} onClick={() => void go()}>
             {busy
               ? announce
                 ? "Posting…"
@@ -191,7 +191,7 @@ export function NewMessage({
             </label>
             <div className="ch-ms-mute__opts" style={{ gap: 24 }}>
               <label className="ch-switch">
-                <input
+                <input data-ctl="CTL-P007-043"
                   type="checkbox"
                   checked={urgent}
                   onChange={(e) => (
@@ -203,7 +203,7 @@ export function NewMessage({
                 Urgent
               </label>
               <label className="ch-switch">
-                <input
+                <input data-ctl="CTL-P007-044"
                   type="checkbox"
                   checked={ack}
                   onChange={(e) => (haptic("select"), setAck(e.target.checked))}
@@ -254,7 +254,7 @@ export function NewMessage({
                       <Avatar name={p?.name ?? FORMER_MEMBER} id={p?.playerId ?? id} size={20} />
                       {(p?.name ? firstName(p?.name) : FORMER_MEMBER)}
                       <Tooltip>
-                        <button
+                        <button data-ctl="CTL-P007-045"
                           type="button"
                           aria-label={`Remove ${p?.name ?? "member"}`}
                           onClick={() => toggle(id)}
@@ -284,7 +284,7 @@ export function NewMessage({
                 {people.map((p) => {
                   const on = to.includes(p.userId);
                   return (
-                    <button
+                    <button data-ctl="CTL-P007-046"
                       key={p.userId}
                       type="button"
                       role="option"

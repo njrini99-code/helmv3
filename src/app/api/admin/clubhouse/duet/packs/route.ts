@@ -1,0 +1,50 @@
+import type { NextRequest } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { loadBridgeGraph } from '@/lib/admin/clubhouse/graph-server';
+import { buildPack, renderPackMarkdown, resolvePackTarget } from '@/lib/admin/clubhouse/pack';
+import { bridgePackSources, packPseudonym, pseudonym, teamPseudonym } from '@/lib/admin/clubhouse/pack-server';
+import { auditDuetRead, duetAccess, duetJson, namesFor } from '@/lib/admin/clubhouse/duet-access';
+import { liveRef } from '@/lib/admin/clubhouse/screens';
+import { createAdminClient } from '@/lib/supabase/admin';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * GET /api/admin/clubhouse/duet/packs?t=<target>[&names=1] (plan §9.2): the §9.1 context pack for a page, control,
+ * action, code, finding, release (`rel:<sha>`), person (`user:<uuid>`) or team (`team:<uuid>`), as JSON (`pack`) and as the paste (`markdown`). Read-only, bearer-token only, off until
+ * BRIDGE_DUET_TOKEN is set (404 until then). See src/lib/admin/clubhouse/duet-access.ts.
+ */
+export async function GET(request: NextRequest) {
+  const access = await duetAccess(request);
+  if (!access.ok) return access.response;
+
+  const raw = (request.nextUrl.searchParams.get('t') ?? '').trim().slice(0, 80);
+  if (!raw) return duetJson({ error: 'missing t: a page (P007), control (CTL-…), action (ACT-…), code (70603, CH-7004), finding (F-0001), rel:<sha>, user:<uuid> or team:<uuid>' }, 400);
+
+  const graph = loadBridgeGraph();
+  if (!graph) return duetJson({ error: 'graph unavailable' }, 503);
+  const target = resolvePackTarget(graph, raw);
+  if (!target) return duetJson({ error: 'unknown target', t: raw, contract: graph.contentHash }, 404);
+
+  const includeNames = namesFor(request, access);
+  let client: SupabaseClient | null = null;
+  try {
+    client = createAdminClient() as unknown as SupabaseClient;
+  } catch {
+    // No service role on this server: the incidents section stays "No signal yet", and the live reads say they failed.
+  }
+  const pack = await buildPack(graph, target, { includeNames, release: liveRef(), pseudonymize: packPseudonym, sources: bridgePackSources(client) });
+  // The audit names the target as the pack does: a person or team by pseudonym unless names were asked for.
+  const shown =
+    includeNames || !target.ref
+      ? target.key
+      : target.kind === 'person'
+        ? `user:${pseudonym(target.ref)}`
+        : target.kind === 'team'
+          ? `team:${teamPseudonym(target.ref)}`
+          : target.key;
+  const audited = await auditDuetRead('packs', shown, includeNames, access.caller);
+  // Names never leave unaudited.
+  if (includeNames && !audited) return duetJson({ error: 'unavailable' }, 503);
+  return duetJson({ pack, markdown: renderPackMarkdown(pack) });
+}

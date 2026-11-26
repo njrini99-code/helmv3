@@ -537,7 +537,15 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+Status: DEFINED
 
-already has its Bridge ID; the commands (open a prospect, add one, move one to a
-stage) are defined when the Bridge is.
+What the Bridge does with this page (owner decision D4, plan §6): it opens the
+page as a dossier, reads the signals the page sends, and builds the page's
+context pack for Claude Duet. The rows below are the Bridge's, not the page's,
+so they never count as the page's own contract (B11 drift list 8).
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 142501 | — | `OPEN_IN_BRIDGE` | The Bridge opens P014 Recruiting as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 142502 | — | `SIGNAL_THE_BRIDGE_READS` | P014 Recruiting's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 142503 | — | `CONTEXT_PACK` | The Duet desk (B13) builds P014 Recruiting's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |

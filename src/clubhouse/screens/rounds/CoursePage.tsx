@@ -75,7 +75,7 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
                   </>
                 );
                 return f.roundId ? (
-                  <Link prefetch={false} key={f.label} className="ch-ch-fig__c is-link" href={reviewHref(f.roundId)} aria-label={`${f.label}: ${f.value}, ${f.sub}. Open the round`}>
+                  <Link data-ctl="CTL-P011-019" prefetch={false} key={f.label} className="ch-ch-fig__c is-link" href={reviewHref(f.roundId)} aria-label={`${f.label}: ${f.value}, ${f.sub}. Open the round`}>
                     {body}
                   </Link>
                 ) : (
@@ -160,13 +160,13 @@ function CourseHero({ h, coach, who, playerId }: { h: ChCourseHistory; coach: bo
         </div>
         {f.kind === 'average' && f.early != null && <p className="ch-ch-hero__e">Early read · {f.early} rounds</p>}
         {message && (
-          <Button variant="secondary" className="ch-ch-hero__go" href={message}>
+          <Button data-ctl="CTL-P011-020" variant="secondary" className="ch-ch-hero__go" href={message}>
             <Icon icon={MessageSquare} size={16} />
             Message {who}
           </Button>
         )}
         {!coach && h.courseId && (
-          <Button variant="secondary" className="ch-ch-hero__go" href={`/golf/dashboard/rounds/new?course=${h.courseId}`}>
+          <Button data-ctl="CTL-P011-021" variant="secondary" className="ch-ch-hero__go" href={`/golf/dashboard/rounds/new?course=${h.courseId}`}>
             Start a round here
           </Button>
         )}
@@ -182,7 +182,7 @@ function LastTime({ t, who }: { t: NonNullable<ChCourseHistory['lastTime']>; who
       <div className="ch-ch-sec__h">
         <h2 id="ch-ch-last-h">Last time here</h2>
       </div>
-      <Link className="ch-ch-last__sub ch-num" href={reviewHref(t.id)}>
+      <Link data-ctl="CTL-P011-022" className="ch-ch-last__sub ch-num" href={reviewHref(t.id)}>
         {t.line}
       </Link>
       {t.note && <NotePlate label={who ? `${who}’s note` : 'Your note'} text={t.note} />}
@@ -202,7 +202,7 @@ function NotePlate({ label, text }: { label: string; text: string }) {
         <p className={long && !all ? 'is-clamped' : undefined}>{text}</p>
       </SwapFade>
       {long && (
-        <button type="button" className="ch-ch-note__more" aria-expanded={all} onClick={() => setAll((v) => !v)}>
+        <button data-ctl="CTL-P011-023" type="button" className="ch-ch-note__more" aria-expanded={all} onClick={() => setAll((v) => !v)}>
           {all ? 'Show less' : 'Show all'}
         </button>
       )}

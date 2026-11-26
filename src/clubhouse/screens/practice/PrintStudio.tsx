@@ -475,12 +475,12 @@ export function PrintStudio({ plan, drills, planHref, draft = false, drillsUnrea
   const spilled = counted.filter((p) => p.sheets > 1).map((p) => p.part).filter((part, i, all) => all.indexOf(part) === i);
   return (
     <main className={'ch-page ch-prc ch-prt' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
-      {phone && <PhoneTop title="Print" back={{ label: 'Plan', onBack: () => router.push(planHref) }} action={pages.length > 0 ? <PhoneIconAction icon={Printer} label="Print" onClick={print} /> : undefined} />}
+      {phone && <PhoneTop title="Print" back={{ label: 'Plan', onBack: () => router.push(planHref) }} action={pages.length > 0 ? <PhoneIconAction data-ctl="CTL-P017-060" icon={Printer} label="Print" onClick={print} /> : undefined} />}
       <header className="ch-prc-h">
         <LargeTitle id="ch-prc-title">Print</LargeTitle>
         {!phone && (
           <div className="ch-prc-h__a">
-            <Button variant="primary" disabled={pages.length === 0} onClick={print}>
+            <Button data-ctl="CTL-P017-061" variant="primary" disabled={pages.length === 0} onClick={print}>
               Print
             </Button>
           </div>

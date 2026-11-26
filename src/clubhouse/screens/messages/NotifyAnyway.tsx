@@ -92,7 +92,7 @@ export function SendCluster({
 
   const sendButton = (ref?: (el: HTMLButtonElement | null) => void) => (
     <Tooltip>
-      <button
+      <button data-ctl="CTL-P007-015"
         ref={ref}
         type="button"
         className={'ch-ms-send' + (ready ? ' is-ready' : '')}
@@ -137,7 +137,7 @@ export function SendCluster({
         />
         <span id={HOLD_HINT_ID} className="ch-sr-only">Long press for more send options</span>
         <span className="ch-sr-only ch-sr-only--focusable">
-          <button type="button" data-ch-code="CH-7870" disabled={!ready} onClick={() => setOpen(true)}>More send options</button>
+          <button data-ctl="CTL-P007-016" type="button" data-ch-code="CH-7870" disabled={!ready} onClick={() => setOpen(true)}>More send options</button>
         </span>
       </>
     );
@@ -152,7 +152,7 @@ export function SendCluster({
         width={300}
         items={items}
         trigger={(p) => (
-          <button
+          <button data-ctl="CTL-P007-017"
             ref={p.ref}
             type="button"
             className="ch-ms-send__more"

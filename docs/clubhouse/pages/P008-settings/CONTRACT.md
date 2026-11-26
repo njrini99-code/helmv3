@@ -37,6 +37,17 @@ Rows without a code are behaviours with no single element, recorded in
 namespace 1) apply here too and are named where they carry a category.
 `clubhouse:check` holds this file to the registry.
 
+## October 6 premium interaction corrections
+
+Keyboard Move up/down alternatives reveal in their own row on focus.
+Ordinary assistive descriptions remain hidden; the visible reorder handle and
+its arrow-key path remain available.
+
+Since 2026-10-08 the phone ranker runs on dnd-kit: the handle's arrows still
+move one place and save each move, and space (or Enter) also picks the row up,
+the arrows carry it a place at a time (a tick and the place spoken each), space
+puts it down with one save and Escape puts it back unsaved.
+
 ## 01 — Default / core UI
 
 Status: DEFINED
@@ -591,18 +602,15 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+Status: DEFINED
 
-already has its Bridge ID; the commands (open a section, save the open card) are
-defined when the Bridge is.
+What the Bridge does with this page (owner decision D4, plan §6): it opens the
+page as a dossier, reads the signals the page sends, and builds the page's
+context pack for Claude Duet. The rows below are the Bridge's, not the page's,
+so they never count as the page's own contract (B11 drift list 8).
 
-## October 6 premium interaction corrections
-
-Keyboard Move up/down alternatives reveal in their own row on focus.
-Ordinary assistive descriptions remain hidden; the visible reorder handle and
-its arrow-key path remain available.
-
-Since 2026-10-08 the phone ranker runs on dnd-kit: the handle's arrows still
-move one place and save each move, and space (or Enter) also picks the row up,
-the arrows carry it a place at a time (a tick and the place spoken each), space
-puts it down with one save and Escape puts it back unsaved.
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 82501 | — | `OPEN_IN_BRIDGE` | The Bridge opens P008 Settings as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 82502 | — | `SIGNAL_THE_BRIDGE_READS` | P008 Settings's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 82503 | — | `CONTEXT_PACK` | The Duet desk (B13) builds P008 Settings's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |

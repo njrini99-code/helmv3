@@ -36,7 +36,7 @@ const ProseBlockView = memo(function ProseBlockView({ sig, lead, streaming, tail
       const id = seg.mention ? playersByName[seg.mention] : undefined;
       const href = id ? playerStatsHref(id) : null;
       const body = href ? (
-        <Link href={href} className="ch-th-mention">
+        <Link data-ctl="CTL-P013-035" href={href} className="ch-th-mention">
           {words(seg.text)}
         </Link>
       ) : (

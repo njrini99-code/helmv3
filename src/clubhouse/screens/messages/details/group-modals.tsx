@@ -25,10 +25,10 @@ export function LeaveGroupModal({ api, conv, open, onClose, onLeft }: { api: ChM
       description="You stop getting its messages. Someone in the group can add you back."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P007-058" variant="ghost" onClick={onClose}>
             Stay
           </Button>
-          <Button
+          <Button data-ctl="CTL-P007-059"
             variant="danger"
             feel="warning"
             busy={busy}
@@ -63,10 +63,10 @@ export function DeleteConversationModal({ api, conv, open, onClose, onDeleted }:
       description="It leaves your inbox. The other people keep their copy, and it comes back if someone sends a new message."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P007-060" variant="ghost" onClick={onClose}>
             Keep conversation
           </Button>
-          <Button
+          <Button data-ctl="CTL-P007-061"
             variant="danger"
             feel="warning"
             busy={busy}
@@ -107,10 +107,10 @@ export function RemoveMemberModal({ api, conv, member, onClose }: { api: ChMessa
       description={`${first} stops getting its messages. You can add them back from Add.`}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P007-062" variant="ghost" onClick={onClose}>
             {keep}
           </Button>
-          <Button
+          <Button data-ctl="CTL-P007-063"
             variant="danger"
             feel="warning"
             busy={busy}
@@ -170,7 +170,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
       title={`Add to ${conv.title}`}
       description="Players and coaches on the team who aren’t in this group."
       footer={
-        <Button variant="primary" onClick={onClose}>
+        <Button data-ctl="CTL-P007-064" variant="primary" onClick={onClose}>
           Done
         </Button>
       }
@@ -203,7 +203,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
                   <b>{p.name}</b>
                   <span>{p.subtitle}</span>
                 </span>
-                <button
+                <button data-ctl="CTL-P007-065"
                   type="button"
                   className={"ch-btn ch-btn--sm " + (done ? "ch-btn--ghost" : "ch-btn--secondary")}
                   disabled={done || busy === p.userId}

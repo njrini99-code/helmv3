@@ -100,7 +100,7 @@ function SaysTile({ f }: { f: ChSaysFigure }) {
         </span>
         <span className="ch-says__cap">{f.caption}</span>
       </figcaption>
-      <button type="button" className="ch-says__info" aria-label={`About ${lowerFirst(f.label)}`} aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
+      <button data-ctl="CTL-P011-043" type="button" className="ch-says__info" aria-label={`About ${lowerFirst(f.label)}`} aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
         <Icon icon={Info} size={16} />
       </button>
       <p id={id} className="ch-says__about" hidden={!open}>

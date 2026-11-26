@@ -79,7 +79,7 @@ export function MessageHits({ api, q, nameMatches, conversationId, onPicked, lay
             // The row is one line: it opens just before the match, which is marked (wave 5 #11).
             const cut = searchSnippet(h.text, term);
             return (
-            <button
+            <button data-ctl="CTL-P007-076"
               key={h.messageId}
               type="button"
               className="ch-ms-row is-hit"

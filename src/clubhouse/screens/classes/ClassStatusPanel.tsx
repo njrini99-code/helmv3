@@ -85,7 +85,7 @@ export function ClassStatusPanel({
       return (
         <section className="ch-ca-panel" aria-label="Class status" data-ch-code="CH-12270">
           <p className="ch-ca-panel__state">Class status didn’t load.</p>
-          <Button size="sm" onClick={() => void refetch()}>
+          <Button data-ctl="CTL-P012-014" size="sm" onClick={() => void refetch()}>
             Try again
           </Button>
         </section>
@@ -201,7 +201,7 @@ export function ClassStatusPanel({
             <span aria-live="polite">{delivered ? 'Delivered' : pushes.waiting}</span>
           </div>
           {settingsHref ? (
-            <Link className="ch-ca-panel__change" href={settingsHref}>
+            <Link data-ctl="CTL-P012-015" className="ch-ca-panel__change" href={settingsHref}>
               {pushes.value} · Change
             </Link>
           ) : (
@@ -209,14 +209,14 @@ export function ClassStatusPanel({
           )}
         </div>
         {pushes.waiting && !delivered && (
-          <Button size="sm" variant="ghost" className="ch-ca-panel__deliver" busy={deliver.pending} onClick={() => void sendNow()}>
+          <Button data-ctl="CTL-P012-016" size="sm" variant="ghost" className="ch-ca-panel__deliver" busy={deliver.pending} onClick={() => void sendNow()}>
             Deliver now
           </Button>
         )}
       </div>
 
       {day.term && (
-        <button type="button" className="ch-ca-panel__link" onClick={() => setSheet(true)}>
+        <button data-ctl="CTL-P012-017" type="button" className="ch-ca-panel__link" onClick={() => setSheet(true)}>
           <span>No class today</span>
           <Icon icon={ChevronRight} size={14} />
         </button>
@@ -227,7 +227,7 @@ export function ClassStatusPanel({
           {notices.map((n) => (
             <li key={n.kind === 'untagged' ? 'untagged' : `${n.kind}:${n.classId}`}>
               <span>{n.text}</span>
-              <Button
+              <Button data-ctl="CTL-P012-018"
                 size="sm"
                 variant="ghost"
                 busy={n.kind === 'untagged' && tag.pending}

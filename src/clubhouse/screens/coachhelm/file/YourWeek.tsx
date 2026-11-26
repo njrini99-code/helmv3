@@ -121,7 +121,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES, own = null }: { lo
                 title="No rounds yet"
                 body="Reads start after 4 full rounds in the last 90 days."
                 action={
-                  <Button variant="primary" size="lg" href="/golf/dashboard/rounds">
+                  <Button data-ctl="CTL-P013-157" variant="primary" size="lg" href="/golf/dashboard/rounds">
                     Go to Rounds
                   </Button>
                 }

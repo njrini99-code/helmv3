@@ -72,8 +72,41 @@ The shell's rows (1xxx) hold for every page: offline, slow saves, full-page
 errors, navigation motion and haptics, skip link. A page lists only what is
 its own.
 
+## Control ids (`CTL-`)
+
+A `CH-` number names a state; a `CTL-` id names a control a person can
+press (spec §4.7, owner decision D11). Every button, link, tab, switch and
+row in `src/clubhouse` carries one on its element, `data-ctl="CTL-P007-014"`:
+the page it was first numbered on (`P000` for shared files no page claims),
+then a number. The Bridge counts taps by it, so an id is permanent. It stays
+with the element when the code moves, and a removed control's id goes to the
+ledger's tombstones and is never reused.
+
+The ledger is `config/clubhouse/controls/P###.json`, one entry per id: page,
+file, element, label (or `labelTemplate`, "Open {name}'s thread", when the
+label is built at run time), a plain description, role, viewport, the `ACT-`
+actions it runs and its 2026-09-30 board verdict from `../CLICKABLES.md`.
+`label`, `labelTemplate` and `description` are yours to edit; the rest is
+read from the code on every run. The Bridge reads it through the graph
+(`generated/bridge-graph.json`, `controls`).
+
+To add a control, write it, then run `npm run clubhouse:controls`. It numbers
+anything new, rewrites the ledger and the
+[clickable map](../generated/CLUBHOUSE_CLICKABLE_MAP.md), and syncs the graph.
+Running it twice changes nothing. If the control has no visible words, give it
+an `aria-label` in the code, or a `label` in the ledger when the name comes
+from elsewhere (an `aria-labelledby`, say). A shared component (`ui/Button`,
+`IconButton`, a page's `NavRow`) takes `data-ctl` from its caller and writes
+it as `data-ctl={…}` on its own element. An element written that way forwards
+its caller's id and takes none of its own. After a rebase or a merge
+conflict, take either side of a conflicted ledger and rerun the command. Two
+branches that took the same next number are split, and the first occurrence
+keeps the id.
+
 ## Checks
 
+- `npm run clubhouse:check` (CI): every control has a `data-ctl` and a label
+  (in the code or the ledger), and the ledgers match the code.
 - `npm run clubhouse:check` (CI): every number used in `src/clubhouse` is
   catalogued once in its page's block; every row of kinds 0–5 is used in code
   and named by a test; retired numbers stay unused.

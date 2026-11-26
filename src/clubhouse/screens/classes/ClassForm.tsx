@@ -147,10 +147,10 @@ export function ClassForm({
         width={520}
         footer={
           <>
-            <Button variant="ghost" onClick={requestClose}>
+            <Button data-ctl="CTL-P012-006" variant="ghost" onClick={requestClose}>
               Cancel
             </Button>
-            <Button variant="primary" busy={saving} onClick={submit}>
+            <Button data-ctl="CTL-P012-007" variant="primary" busy={saving} onClick={submit}>
               {saving ? (editing ? 'Saving…' : 'Adding…') : editing ? 'Save changes' : 'Add class'}
             </Button>
           </>
@@ -165,7 +165,7 @@ export function ClassForm({
           }}
         >
           {/* Enter in a field saves, as on every other form. */}
-          <button type="submit" hidden />
+          <button data-ctl="CTL-P012-008" type="submit" hidden />
           <div className="ch-cl-2">
             <div className="ch-field">
               <label htmlFor={id('code')} className="ch-field__label">
@@ -232,7 +232,7 @@ export function ClassForm({
             </span>
             <div className="ch-cl-daypick" role="group" aria-labelledby={id('days-l')} id={id('days')} tabIndex={-1} style={{ ['--ch-cl-pick' as string]: offered.length }}>
               {offered.map((d) => (
-                <button
+                <button data-ctl="CTL-P012-009"
                   key={d}
                   type="button"
                   aria-pressed={v.days.includes(d)}
@@ -328,10 +328,10 @@ export function ClassForm({
         description="What you typed here isn’t saved."
         footer={
           <>
-            <Button variant="ghost" onClick={() => setDiscarding(false)}>
+            <Button data-ctl="CTL-P012-010" variant="ghost" onClick={() => setDiscarding(false)}>
               Keep editing
             </Button>
-            <Button
+            <Button data-ctl="CTL-P012-011"
               variant="danger"
               feel="warning"
               onClick={() => {

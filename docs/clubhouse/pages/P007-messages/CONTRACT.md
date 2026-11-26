@@ -22,6 +22,12 @@ Rows without a code are behaviours with no single element, recorded in
 namespace 1) apply here too and are named where they carry a category.
 `clubhouse:check` holds this file to the registry.
 
+## October 6 premium interaction corrections
+
+Keyboard-only Message actions reveal visibly on focus without covering the
+message. Quoted-message scrolling observes OS reduced motion and the live
+Clubhouse Animations preference; disabled animation means an immediate jump.
+
 ## 01 — Default / core UI
 
 Status: DEFINED
@@ -464,13 +470,15 @@ catalog row of kinds 0 to 5 that no test names.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+Status: DEFINED
 
-already has its Bridge ID; the commands (focus the composer, open New message,
-retry the last send) are defined when the Bridge is.
+What the Bridge does with this page (owner decision D4, plan §6): it opens the
+page as a dossier, reads the signals the page sends, and builds the page's
+context pack for Claude Duet. The rows below are the Bridge's, not the page's,
+so they never count as the page's own contract (B11 drift list 8).
 
-## October 6 premium interaction corrections
-
-Keyboard-only Message actions reveal visibly on focus without covering the
-message. Quoted-message scrolling observes OS reduced motion and the live
-Clubhouse Animations preference; disabled animation means an immediate jump.
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 72501 | — | `OPEN_IN_BRIDGE` | The Bridge opens P007 Messages as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 72502 | — | `SIGNAL_THE_BRIDGE_READS` | P007 Messages's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 72503 | — | `CONTEXT_PACK` | The Duet desk (B13) builds P007 Messages's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |

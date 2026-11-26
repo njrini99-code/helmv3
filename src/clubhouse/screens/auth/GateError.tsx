@@ -31,7 +31,7 @@ export function GateError({ kind, isRetrying, retryCount, onRetry, homePath, rou
           <AuthNotice tone="danger">{words.body}</AuthNotice>
         </div>
         {retryCount > 0 && !isRetrying && <p className="ch-au-sub">{retryCount === 1 ? 'Tried again once.' : `Tried again ${retryCount} times.`}</p>}
-        <GateKey idle={reload ? 'Reload' : 'Try again'} working="Trying again…" busy={isRetrying} type="button" onClick={onRetry} />
+        <GateKey data-ctl="CTL-P015-009" idle={reload ? 'Reload' : 'Try again'} working="Trying again…" busy={isRetrying} type="button" onClick={onRetry} />
         {digest && <p className="ch-au-sub ch-num">Reference {digest}</p>}
         {devDetail && <pre className="ch-au-sub">{devDetail}</pre>}
       </div>
@@ -50,7 +50,7 @@ export function GateNotFound() {
         <h1>We couldn’t find that</h1>
         <p className="ch-au-sub">It may have been deleted, or the link is wrong. Everything else is where you left it.</p>
         <div className="ch-au-submit">
-          <Button variant="primary" size="lg" leftIcon={House} href="/golf">
+          <Button data-ctl="CTL-P015-010" variant="primary" size="lg" leftIcon={House} href="/golf">
             Back to Home
           </Button>
         </div>

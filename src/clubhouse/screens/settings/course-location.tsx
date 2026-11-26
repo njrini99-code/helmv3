@@ -196,11 +196,11 @@ export function CourseLocationCard({ teamId }: { teamId: string }) {
           <span className="ch-set-course__state">{c.saved ? `Set${c.saved.label ? `: ${c.saved.label}` : ''}` : 'Not set'}</span>
           <span className="ch-set-course__acts">
             {c.saved && (
-              <Button variant="ghost" size="sm" onClick={() => void c.save.run(null)} disabled={c.save.pending}>
+              <Button data-ctl="CTL-P008-043" variant="ghost" size="sm" onClick={() => void c.save.run(null)} disabled={c.save.pending}>
                 Clear
               </Button>
             )}
-            <Button variant="primary" size="sm" onClick={() => value && void c.save.run(value)} disabled={!c.dirty || !value || c.save.pending}>
+            <Button data-ctl="CTL-P008-044" variant="primary" size="sm" onClick={() => value && void c.save.run(value)} disabled={!c.dirty || !value || c.save.pending}>
               Save
             </Button>
           </span>
@@ -211,7 +211,7 @@ export function CourseLocationCard({ teamId }: { teamId: string }) {
         <div className="ch-set-course__where">
           <Icon icon={MapPin} size={15} />
           <span className="ch-num">{c.point ? fmt({ ...c.point, label: null }) : 'No location yet'}</span>
-          <Button variant="secondary" size="sm" leftIcon={LocateFixed} onClick={() => void c.locate()} disabled={c.locating}>
+          <Button data-ctl="CTL-P008-045" variant="secondary" size="sm" leftIcon={LocateFixed} onClick={() => void c.locate()} disabled={c.locating}>
             {c.locating ? 'Finding you…' : 'Use this device’s location'}
           </Button>
         </div>
@@ -256,7 +256,7 @@ export function CourseLocationPhone({ teamId }: { teamId: string }) {
         <span className="ch-setm-row__l">{c.saved?.label || 'Location'}</span>
         <span className="ch-setm-row__v ch-num">{c.point ? fmt({ ...c.point, label: null }) : 'Not set'}</span>
       </div>
-      <button type="button" className="ch-setm-row is-plain" onClick={() => void c.locate()} disabled={c.locating}>
+      <button data-ctl="CTL-P008-046" type="button" className="ch-setm-row is-plain" onClick={() => void c.locate()} disabled={c.locating}>
         <span className="ch-setm-row__l">{c.locating ? 'Finding you…' : 'Use this phone’s location'}</span>
       </button>
       {c.problem && (
@@ -270,12 +270,12 @@ export function CourseLocationPhone({ teamId }: { teamId: string }) {
         <input id={labelId} className="ch-set-course__pin" value={c.label} maxLength={COURSE_LABEL_MAX} placeholder="Home course" onChange={(e) => c.setLabel(e.target.value)} />
       </label>
       {c.dirty && value && (
-        <button type="button" className="ch-setm-row is-plain" onClick={() => void c.save.run(value)} disabled={c.save.pending}>
+        <button data-ctl="CTL-P008-047" type="button" className="ch-setm-row is-plain" onClick={() => void c.save.run(value)} disabled={c.save.pending}>
           <span className="ch-setm-row__l ch-set-course__save">Save</span>
         </button>
       )}
       {c.saved && !c.dirty && (
-        <button type="button" className="ch-setm-row is-plain" onClick={() => void c.save.run(null)} disabled={c.save.pending}>
+        <button data-ctl="CTL-P008-048" type="button" className="ch-setm-row is-plain" onClick={() => void c.save.run(null)} disabled={c.save.pending}>
           <span className="ch-setm-row__l">Clear</span>
         </button>
       )}

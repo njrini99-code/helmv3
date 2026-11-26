@@ -44,3 +44,69 @@ These are BINDING inputs for planning. Do not re-litigate.
 - All new event emitters are fire-and-forget (swallowed try/catch or `after()`) — logging must NEVER fail a live user request.
 - The `handle_new_user()` privilege-escalation fix ships as its own P0 PR BEFORE any `/admin` code.
 - Add `/admin` to the iOS `AdminNativeGuard` + `proxy.ts` native-UA exclusion in the first routing PR.
+
+## Clubhouse edition, as built (redesign PRs 2 and 4, 2026-11-25)
+
+The Clubhouse edition's owner decisions (D1-D12) are in
+`2026-11-18-clubhouse-bridge-redesign.md` §15. These are the choices made while
+building them, each with its reason.
+
+- **Shortcut keys.** The §7.1 letters (P, O, A, G, D, Q, S, Y, E, V) are retired
+  shortcuts (`src/lib/admin/retired-routes.ts`) that still send operators to the
+  views that absorbed old tabs, so the Clubhouse screens take free letters: Pages
+  H, Controls I, Actions J, Codes C, Readiness M, Drift N. N was the last free
+  letter; Duet desk has no key and is reached from the rail and ⌘K. Reclaiming Q
+  for it (and letters for PR 3's screens) is an owner call.
+- **Drift lists held at zero.** Lists 1, 6 and 7 (build half) were already
+  registry violations; list 9 is `clickable-map.mjs --check`; list 8 is a new
+  registry check (a page needs a Bridge ID outside category 25). All run in
+  `clubhouse:check`. The §4.7 list (controls with neither an action nor a link,
+  1,364 of 1,784) is shown on B11 and not gated, because it is not zero.
+- **Runtime drift.** Read from `clubhouse_drift` as the super admin; a missing
+  table or column (42P01, PGRST205, 42703, PGRST204) reads "No signal yet", never
+  zero.
+- **The pack's live parts are pluggable.** `PackLiveSource` readers, each "No
+  signal yet" by default, replaced by id (`withSources`). `pack-server.ts`
+  registers the `admin_events` reader and the live lenses' readers (counters,
+  envelopes, sessions, release, rules: `livePackSources`, one snapshot read per
+  pack, pure matching in `pack-live.ts`); `bridgePackSources` is the one list
+  the Duet desk and the door both use.
+- **Pack targets** (2026-11-25 follow-up): page, control, action, code, finding
+  (`F-0001`), release (`rel:<sha>`), person (`user:<uuid>`) and team
+  (`team:<uuid>`). The live-only kinds are prefixed because bare digits are a
+  Bridge ID, and a person or team pack names its subject by pseudonym unless
+  names were asked for.
+- **D7 in packs.** People, teams and sessions are keyed HMAC pseudonyms (`u-`,
+  `t-`, `s-`; `src/lib/admin/clubhouse/pseudonym.ts`, key `BRIDGE_PSEUDONYM_KEY`
+  or one derived from the service-role secret), so a list of user ids can't be
+  hashed back to them. Free text in a pseudonymous pack loses uuids and
+  PostgREST `details=`/`hint=` tails. "Include names" prints names, never emails
+  or raw ids. Person and team packs read Clubhouse rows only. Copy reports use
+  the same pseudonyms (security review of PRs 2-4, 2026-11-25).
+- **D9, the Duet door.** `GET /api/admin/clubhouse/duet/{packs,drift}` (the
+  brief's path, not §9.2's `/api/admin/bridge/v1/…`). Off while
+  `BRIDGE_DUET_TOKEN` is unset or under 32 characters: 404, nothing read,
+  nothing audited. Bearer token compared as SHA-256 digests with
+  `timingSafeEqual`; 60 requests a minute per caller, counted before the token
+  check; every read audited to `audit_log` (`record_id` is a uuid column, so the
+  target, pseudonymous unless names were asked for, is in `new_data`); a names
+  read that can't be audited answers 503. The limiter is the durable one, and
+  in production the door answers 503 rather than trust a per-instance count.
+  Names only when `BRIDGE_DUET_ALLOW_NAMES=1` and the request asks.
+- **D4, the Bridge numbers itself.** `br-codes.ts` is the code map;
+  `config/bridge/contracts.json` is the labelled list;
+  `docs/bridge/generated/BRIDGE_UI_MAP.md` is generated from it by
+  `scripts/clubhouse/bridge-ui-map.mjs`, whose `--check` joined
+  `clubhouse:check` (where the registry and the graph already live). Codes the
+  §8 tables don't name take the next free number (the evidence footer's Copy,
+  B13's Build pack and Include names).
+- **Category 25.** Minted by `registry.mjs sync` from a table, not by hand:
+  -01 Open in Bridge and -03 Context pack implemented, -02 Signal the Bridge
+  reads reserved until signals arrive. Every page's CONTRACT.md §25 is DEFINED.
+- **B13's queue** (Mark sent, Verify after release, Archive) renders as pending
+  controls until `bridge_notes` exists (held migration 20261124090000). No
+  `'use server'` surface was added in PR 4.
+- **The cross-sport overview stays on `/admin` (owner, 2026-11-25).** It sits
+  below B01 Pulse and does not move to Health, which overrides plan §11's "the
+  cross-sport pieces move to Health". `/admin` keeps its URL and key 1; Health
+  is unchanged.

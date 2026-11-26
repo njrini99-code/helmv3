@@ -115,7 +115,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
                   : "Message a player, a coach or the whole team."
               }
               action={
-                <Button
+                <Button data-ctl="CTL-P007-009"
                   variant="primary"
                   leftIcon={SquarePen}
                   onClick={() => setCompose(true)}

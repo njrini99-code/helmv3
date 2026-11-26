@@ -25,7 +25,7 @@ export function ExportStandings({
   size?: 'sm' | 'md';
 }) {
   return (
-    <ExportButton
+    <ExportButton data-ctl="CTL-P009-008"
       file={() => standingsCsv({ name, board, numRounds, day: isoDay(new Date()) })}
       done={(f) => `Standings exported · ${plural(f.rows.length, 'player')}`}
       failed="Couldn’t export the standings"

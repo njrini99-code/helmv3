@@ -18,7 +18,7 @@ export function MessageText({ text }: { text: string }) {
     <>
       {linkParts(text).map((p, i) =>
         typeof p === "string" ? p : (
-          <a
+          <a data-ctl="CTL-P007-130"
             key={i}
             className="ch-ms-link"
             href={p.href}
@@ -51,7 +51,7 @@ export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: 
   const parent = api.msgs.find((m) => m.id === replyToId);
   const name = parent ? (parent.mine ? "You" : personOf(api, parent.senderId)?.name ?? FORMER_MEMBER) : "Reply";
   return (
-    <button type="button" className="ch-ms-quote" aria-label={`Reply to ${name}`} disabled={!parent}
+    <button data-ctl="CTL-P007-131" type="button" className="ch-ms-quote" aria-label={`Reply to ${name}`} disabled={!parent}
       onClick={() => document.getElementById(`ch-ms-message-${replyToId}`)?.scrollIntoView({
         block: "center",
         behavior: reduced ? "instant" : "smooth",

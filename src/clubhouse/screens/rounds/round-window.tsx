@@ -66,7 +66,7 @@ export function ShowEarlier({ hidden, onMore, className }: { hidden: number; onM
   if (hidden <= 0) return null;
   return (
     <div className={className}>
-      <Button variant="secondary" size="sm" leftIcon={ChevronDown} onClick={onMore} aria={{ label: `Show earlier rounds, ${hidden} more` }}>
+      <Button data-ctl="CTL-P011-101" variant="secondary" size="sm" leftIcon={ChevronDown} onClick={onMore} aria={{ label: `Show earlier rounds, ${hidden} more` }}>
         Show earlier rounds
       </Button>
       <span className="ch-num" aria-hidden="true">

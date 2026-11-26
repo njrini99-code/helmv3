@@ -45,7 +45,7 @@ export function ReadRow({ player, read, onOpen }: { player: ChTeamPlayer; read: 
   const { byRead, pending } = useContext(ReadWorthContext);
   const worth = byRead?.[read.id] ?? null;
   return (
-    <button type="button" className="rd tapp" data-ch-press-scale=".97" onClick={() => onOpen(read.id)}>
+    <button data-ctl="CTL-P013-271" type="button" className="rd tapp" data-ch-press-scale=".97" onClick={() => onOpen(read.id)}>
       <Coin player={player} />
       <span>
         {/* The coin says whose read it is; the name is said for a screen reader only, since the coin is hidden from it. */}
@@ -85,7 +85,7 @@ export function Notice({ title, body, onRetry }: { title: ReactNode; body?: Reac
         <b>{title}</b>
         {body && <span>{body}</span>}
         {onRetry && (
-          <Button variant="ghost" size="sm" onClick={onRetry}>
+          <Button data-ctl="CTL-P013-272" variant="ghost" size="sm" onClick={onRetry}>
             Try again
           </Button>
         )}

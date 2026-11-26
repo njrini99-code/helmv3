@@ -376,6 +376,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/clubhouse/**",
+        "pattern": "src/app/admin/clubhouse/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/database/**",
         "pattern": "src/app/admin/database/**",
         "category": "routes"
@@ -1639,6 +1644,11 @@
         "category": "services"
       },
       {
+        "id": "services:config/bridge/**",
+        "pattern": "config/bridge/**",
+        "category": "services"
+      },
+      {
         "id": "services:config/feature-flags.yml",
         "pattern": "config/feature-flags.yml",
         "category": "services"
@@ -1746,6 +1756,11 @@
       {
         "id": "services:scripts/claude.mjs",
         "pattern": "scripts/claude.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/clubhouse/bridge-ui-map.mjs",
+        "pattern": "scripts/clubhouse/bridge-ui-map.mjs",
         "category": "services"
       },
       {
@@ -7252,6 +7267,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/clubhouse/duet-access.ts",
+          "anchor": "src/lib/auth/rate-limit"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/data/activation-funnel.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
         },
@@ -8128,6 +8148,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/observed-action.ts",
+          "anchor": "src/lib/observability/ui-surface"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/schedule-bridge-write.ts",
           "anchor": "src/lib/observability/vercel-wait-until"
         },
@@ -8332,6 +8357,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "routes:src/app/admin/clubhouse/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/clubhouse/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "routes:src/app/admin/database/**",
       "kind": "feature_route",
       "evidence": [
@@ -8500,6 +8537,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "services:config/bridge/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "config/bridge/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "services:config/feature-flags.yml",
       "kind": "feature_service",
       "evidence": [
@@ -8519,6 +8568,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/checks/check-feature-flags.mjs"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:scripts/clubhouse/bridge-ui-map.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/clubhouse/bridge-ui-map.mjs"
         }
       ]
     },

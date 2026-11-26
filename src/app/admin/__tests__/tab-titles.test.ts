@@ -41,7 +41,7 @@ describe('admin tab titles', () => {
     expect(missing).toEqual([]);
   });
 
-  it('the overview spells the suffix out, since its own layout’s template does not reach it', () => {
-    expect(titleOf(join(root, 'src/app/admin/page.tsx'))).toBe('Overview · Admin');
+  it('Pulse (the overview) spells the suffix out, since its own layout’s template does not reach it', () => {
+    expect(titleOf(join(root, 'src/app/admin/page.tsx'))).toBe('Pulse · Admin');
   });
 });

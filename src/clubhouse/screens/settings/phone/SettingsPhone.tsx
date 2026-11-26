@@ -282,7 +282,7 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
     <>
       {everyReadFailed(data) && <InlineNotice code="CH-8214" title="Settings didn’t load" body="Nothing was changed. Try again." onRetry={writes.refresh} />}
       {/* A profile that didn't load opens Account, where the notice and Try again are. */}
-      <button type="button" className="ch-setm-id" onClick={profile ? onProfile : () => onOpen('account')}>
+      <button data-ctl="CTL-P008-072" type="button" className="ch-setm-id" onClick={profile ? onProfile : () => onOpen('account')}>
         <span className={'ch-setm-coin' + (coach ? '' : ' is-player')} aria-hidden="true">
           {photo ? (
             // A user-uploaded storage URL, shown as a plain image.
@@ -300,21 +300,21 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
       <nav className="ch-setm-group" aria-label="Settings sections">
         <div className="ch-setm-card">
           {SECTIONS[data.role].map((s) => (
-            <NavRow key={s.id} label={s.label} value={SUMMARY[data.role][s.id]} icon={ICON[s.id]} onClick={() => onOpen(s.id)} />
+            <NavRow data-ctl="CTL-P008-073" key={s.id} label={s.label} value={SUMMARY[data.role][s.id]} icon={ICON[s.id]} onClick={() => onOpen(s.id)} />
           ))}
         </div>
       </nav>
 
       <Group title="Help and legal">
-        <ActionRow label="Report a problem" disabled={opening} onClick={() => void report()} />
-        <LinkRow label="Privacy policy" href="/privacy" />
-        <LinkRow label="Terms of service" href="/terms" />
+        <ActionRow data-ctl="CTL-P008-074" label="Report a problem" disabled={opening} onClick={() => void report()} />
+        <LinkRow data-ctl="CTL-P008-075" label="Privacy policy" href="/privacy" />
+        <LinkRow data-ctl="CTL-P008-076" label="Terms of service" href="/terms" />
         {/* About: which GolfHelm this is, for a problem report or support. */}
         <InfoRow label="Version" value={<span className="ch-num">{version}</span>} />
       </Group>
 
       <div className="ch-setm-group is-end">
-        <button type="button" className="ch-setm-signout" disabled={signingOut} onClick={() => void signOut()}>
+        <button data-ctl="CTL-P008-077" type="button" className="ch-setm-signout" disabled={signingOut} onClick={() => void signOut()}>
           {signingOut ? 'Signing out…' : 'Sign out'}
         </button>
       </div>

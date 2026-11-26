@@ -32,7 +32,7 @@ function BriefFrame({ sub, children }: { sub?: string; children: ReactNode }) {
           either (the tight head, coachhelm.css). The desk keeps the coach's full head on the sheet. */}
       <header className="ch-hl-h ch-hmb-h" data-canopy-head={phone ? 'tight' : ''}>
         {!phone && (
-          <BackLink href={COACH_BOARD_HREF}>CoachHelm</BackLink>
+          <BackLink data-ctl="CTL-P013-286" href={COACH_BOARD_HREF}>CoachHelm</BackLink>
         )}
         {phone ? (
           <LargeTitle as="p" className="ch-hl-h__t">
@@ -57,7 +57,7 @@ function BriefFrame({ sub, children }: { sub?: string; children: ReactNode }) {
 export function Row({ r }: { r: ChBriefRow }) {
   return (
     <li className={'ch-hmb-row is-' + r.kind} data-ch-code={r.kind === 'team_pattern' ? 'CH-13934' : 'CH-13933'}>
-      <Link className="ch-hmb-row__a" href={r.href}>
+      <Link data-ctl="CTL-P013-287" className="ch-hmb-row__a" href={r.href}>
         {r.kind !== 'team_pattern' && <Avatar name={r.who} size="md" />}
         <span className="ch-hmb-row__main">
           <span className="ch-hmb-row__who">{r.who}</span>
@@ -96,7 +96,7 @@ function Lead({ r }: { r: ChBriefRow }) {
         </Inset>
       )}
       <div className="ch-hmb-lead__a">
-        <Button variant="ghost" rightIcon={ArrowRight} href={r.href} feel="select">
+        <Button data-ctl="CTL-P013-288" variant="ghost" rightIcon={ArrowRight} href={r.href} feel="select">
           Open the pattern
         </Button>
       </div>

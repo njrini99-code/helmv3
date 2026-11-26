@@ -10,7 +10,7 @@ import { Icon } from '../../ui/Icon';
  * · 6 rounds"; a coach's "Lena's history at Finley · 6 rounds"). The first round there says so, unlinked. Nothing when the
  * round has no course, or the history didn't load.
  */
-export function CourseLink({ review: r, coach }: { review: ChRoundReview; coach: boolean }) {
+export function CourseLink({ review: r, coach, 'data-ctl': ctl }: { review: ChRoundReview; coach: boolean; 'data-ctl'?: string }) {
   const c = r.history?.course;
   if (!c) return null;
   if (c.rounds < 2) return <p className="ch-rv-crs is-first">First round at {c.name}</p>;
@@ -20,7 +20,7 @@ export function CourseLink({ review: r, coach }: { review: ChRoundReview; coach:
   const text = `${whose} history at ${c.name} · ${c.rounds} rounds`;
   if (!href) return null;
   return (
-    <Link className="ch-rv-crs" href={href}>
+    <Link data-ctl={ctl ?? 'CTL-P011-018'} className="ch-rv-crs" href={href}>
       <span>{text}</span>
       <Icon icon={ChevronRight} size={16} className="ch-rv-crs__go" />
     </Link>

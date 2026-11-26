@@ -145,7 +145,7 @@ export function PhoneThread({
           // The push lands focus on the name's box (PhoneScreen focuses the labelled element when it takes focus), not on
           // the key inside it: a key focused by script on a fresh load (a notification, a link) draws its keyboard ring.
           <span className="ch-msp-whobox" id={titleId} tabIndex={-1}>
-          <button type="button" className="ch-msp-who" onClick={onDetails} aria-label={`Details for ${conv.group ? conv.title : firstName(conv.title)}`}>
+          <button data-ctl="CTL-P007-132" type="button" className="ch-msp-who" onClick={onDetails} aria-label={`Details for ${conv.group ? conv.title : firstName(conv.title)}`}>
             {conv.group ? <GroupMark size="md" flag={!!conv.channel} /> : <Avatar name={convAvatarName(conv)} id={convAvatarId(api, conv)} size="md" year={convYear(api, conv)} />}
             <span>
               <b>{!conv.group ? firstName(conv.title) : conv.title}</b>
@@ -156,7 +156,7 @@ export function PhoneThread({
           </button>
           </span>
         }
-        action={<PhoneIconAction icon={Info} label="Details" onClick={onDetails} />}
+        action={<PhoneIconAction data-ctl="CTL-P007-133" icon={Info} label="Details" onClick={onDetails} />}
       />
       <SectionBoundary surface="messages.thread" label="This conversation" code="CH-7212">
         <ThreadScroller
@@ -228,13 +228,13 @@ export function PhoneThread({
           bar={<HoldReactKeys reacts={api.reactions.get(acting.id) ?? []} onPick={(key, on) => pickHold(() => api.react(acting.id, key, on))} />}
         >
           {acting.poll && <PollSheetRows hold id={acting.id} done={() => pickHold(() => undefined)} />}
-          <SheetRow hold icon={Reply} label="Reply" disabled={replySending} onClick={() => pickHold(() => reply(acting))} />
+          <SheetRow data-ctl="CTL-P007-134" hold icon={Reply} label="Reply" disabled={replySending} onClick={() => pickHold(() => reply(acting))} />
           {conv.group && !acting.mine && <SeenSheetRow hold api={api} m={acting} open={() => pickHold(() => seenList.open(acting, null))} />}
-          {acting.text && <SheetRow hold icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => pickHold(() => void copy(acting))} />}
-          {acting.mine && acting.text && !acting.poll && <SheetRow hold icon={Pencil} label="Edit" onClick={() => pickHold(() => setEditing(acting))} />}
+          {acting.text && <SheetRow data-ctl="CTL-P007-135" hold icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => pickHold(() => void copy(acting))} />}
+          {acting.mine && acting.text && !acting.poll && <SheetRow data-ctl="CTL-P007-136" hold icon={Pencil} label="Edit" onClick={() => pickHold(() => setEditing(acting))} />}
           {conv.group && acting.mine && <HoldSeenRow api={api} m={acting} onOpen={() => pickHold(() => seenList.open(acting, null))} />}
           {acting.mine && <hr />}
-          {acting.mine && <SheetRow hold icon={Trash2} label="Delete" danger onClick={() => pickHold(() => setDeleting(acting))} />}
+          {acting.mine && <SheetRow data-ctl="CTL-P007-137" hold icon={Trash2} label="Delete" danger onClick={() => pickHold(() => setDeleting(acting))} />}
         </HoldLift>
       )}
       <Modal code="CH-7604" open={false} onClose={() => setActing(null)} title="Message">
@@ -252,7 +252,7 @@ export function PhoneThread({
               {REACTIONS.map((r) => {
                 const on = (api.reactions.get(acting.id) ?? []).some((x) => x.key === r.key && x.mine);
                 return (
-                  <button
+                  <button data-ctl="CTL-P007-138"
                     key={r.key}
                     type="button"
                     className={"ch-ms-reactbar__b" + (on ? " is-on" : "")}
@@ -271,16 +271,16 @@ export function PhoneThread({
             </div>
             <div className="ch-msp-panel">
               {acting.poll && <PollSheetRows id={acting.id} done={() => setActing(null)} />}
-              <SheetRow icon={Reply} label="Reply" disabled={replySending} onClick={() => reply(acting)} />
+              <SheetRow data-ctl="CTL-P007-139" icon={Reply} label="Reply" disabled={replySending} onClick={() => reply(acting)} />
               {conv.group && <SeenSheetRow api={api} m={acting} open={() => (setActing(null), seenList.open(acting, null))} />}
               {acting.text && (
-                <SheetRow icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => (setActing(null), void copy(acting))} />
+                <SheetRow data-ctl="CTL-P007-140" icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => (setActing(null), void copy(acting))} />
               )}
               {acting.mine && acting.text && !acting.poll && (
-                <SheetRow icon={Pencil} label="Edit" onClick={() => (setActing(null), setEditing(acting))} />
+                <SheetRow data-ctl="CTL-P007-141" icon={Pencil} label="Edit" onClick={() => (setActing(null), setEditing(acting))} />
               )}
               {acting.mine && (
-                <SheetRow icon={Trash2} label="Delete" danger onClick={() => (setActing(null), setDeleting(acting))} />
+                <SheetRow data-ctl="CTL-P007-142" icon={Trash2} label="Delete" danger onClick={() => (setActing(null), setDeleting(acting))} />
               )}
             </div>
           </div>

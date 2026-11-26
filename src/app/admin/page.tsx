@@ -21,13 +21,16 @@ import { BRIDGE_UI_SCOPE } from '@/lib/admin/bridge-scope';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { fetchChangeTimeline } from '@/lib/admin/data/change-timeline';
 import { ChangeTimeline } from './_components/ChangeTimeline';
-import { TabHeader } from './_components/TabHeader';
+import { ClubhousePulse } from './clubhouse/_components/Pulse';
+import { ScreenSkeleton } from './clubhouse/_components/ScreenSkeleton';
+import { BR } from '@/lib/admin/clubhouse/br-codes';
+import type { SearchParams } from '@/lib/admin/clubhouse/screens';
 import { CommandDeck } from '@/components/admin/command-deck/CommandDeck';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
 // The admin layout's '%s · Admin' template reaches child segments only, not this page in its own segment, so the overview spells it out.
-export const metadata: Metadata = { title: { absolute: 'Overview · Admin' } };
+export const metadata: Metadata = { title: { absolute: 'Pulse · Admin' } };
 
 export const dynamic = 'force-dynamic';
 
@@ -254,17 +257,37 @@ async function ChangeTimelinePanel() {
   return <ChangeTimeline snapshot={timeline.data} />;
 }
 
-export default async function AdminOverviewPage() {
+export default async function AdminOverviewPage({
+  searchParams,
+}: {
+  searchParams?: Promise<SearchParams>;
+}) {
   await requireSuperAdmin();
+  const sp = (await searchParams) ?? {};
 
   return (
     <div className="space-y-5">
-      <AutoRefresh />
+      <span data-br={BR.pulse.pauseLive} className="contents">
+        <AutoRefresh />
+      </span>
 
-      {/* The one header every Bridge tab carries (TabHeader renders a plain
-          <header>, no aria-label: overview-composition.test.ts pins this
-          file's labelled sections to exactly the three below the Deck). */}
-      <TabHeader title="Overview" description="Incidents and error counts cover Clubhouse only." />
+      {/* B01 Pulse (bridge plan §8) leads: Clubhouse first. It carries the
+          page's header (the frame's TabHeader). The cross-sport overview
+          stays below it, on /admin: the owner decided it does not move to
+          Health (plan §11; DECISIONS.md, 2026-11-25). */}
+      <PanelBoundary title="Clubhouse Pulse" skeleton={<ScreenSkeleton code={BR.pulse.loading} rows={6} />}>
+        <ClubhousePulse searchParams={sp} />
+      </PanelBoundary>
+
+      {/* The cross-sport overview, under its own h2 (Pulse's frame owns the
+          page's h1). A plain <header>, no aria-label: overview-composition.test.ts
+          pins this file's labelled sections to exactly the three below the Deck. */}
+      <header className="min-w-0 border-t border-border-subtle pt-5">
+        <h2 className="text-h3 font-semibold text-warm-900">Cross-sport overview</h2>
+        <p className="mt-0.5 max-w-3xl text-body-sm text-warm-600">
+          Command posture, triage and deploys across every sport. Incidents and error counts cover Clubhouse only.
+        </p>
+      </header>
 
       {/* HELM COMMAND DECK (brief §10; bridge redesign plan §2) — THE
           Overview. Posture sentence + blindness beacon, System Orbit,

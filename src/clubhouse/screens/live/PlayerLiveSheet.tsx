@@ -174,18 +174,18 @@ export function PlayerLiveBody({
         </section>
       )}
       <details className="ch-lv-read">
-        <summary>How to read this</summary>
+        <summary data-ctl="CTL-P011-007">How to read this</summary>
         <p>Circles are under par, a dot is par, squares are over par. Filled squares are double bogey or worse.</p>
       </details>
       {coach && (msg || qualifierHref) && (
         <div className="ch-lv-actions">
           {msg && (
-            <Button variant="secondary" leftIcon={MessageSquare} href={msg}>
+            <Button data-ctl="CTL-P011-008" variant="secondary" leftIcon={MessageSquare} href={msg}>
               Message {firstName(lane.name)}
             </Button>
           )}
           {qualifierHref && (
-            <Button variant="secondary" leftIcon={Flag} href={qualifierHref}>
+            <Button data-ctl="CTL-P011-009" variant="secondary" leftIcon={Flag} href={qualifierHref}>
               Open qualifier
             </Button>
           )}

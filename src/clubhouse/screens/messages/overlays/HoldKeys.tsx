@@ -16,7 +16,7 @@ export function HoldReactKeys({ reacts, onPick }: { reacts: readonly ChReaction[
       {REACTIONS.map((r) => {
         const on = reacts.some((x) => x.key === r.key && x.mine);
         return (
-          <button
+          <button data-ctl="CTL-P007-079"
             key={r.key}
             type="button"
             className={on ? 'is-on' : undefined}

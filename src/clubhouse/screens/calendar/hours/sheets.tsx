@@ -194,10 +194,10 @@ export function LimitsSheet({
       description="What each week is read against. Your players see the same limits."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P006-112" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={save.pending} disabled={!dirty} onClick={submit}>
+          <Button data-ctl="CTL-P006-113" variant="primary" busy={save.pending} disabled={!dirty} onClick={submit}>
             {save.pending ? 'Saving…' : 'Save limits'}
           </Button>
         </>
@@ -418,10 +418,10 @@ export function AdjustSheet({ line, onClose, teamId, onSaved }: { line: ChHoursL
       description={l ? `${shortDay(l.date)} · Drafted: ${l.adjustment ? 'changed by you' : l.why}` : undefined}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P006-114" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={save.pending} disabled={!dirty} onClick={submit}>
+          <Button data-ctl="CTL-P006-115" variant="primary" busy={save.pending} disabled={!dirty} onClick={submit}>
             {save.pending ? 'Saving…' : 'Save'}
           </Button>
         </>

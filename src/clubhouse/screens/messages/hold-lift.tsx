@@ -257,8 +257,8 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
   const by = (geom.bubble.top + geom.bubble.bottom) / 2 - geom.row.top;
   return createPortal(
     <div className="ch-mso-lift" data-ch-ms-v2="on" role="dialog" aria-modal="true" aria-label="Message actions" data-ch-code="CH-7604">
-      <div ref={scrim} className="ch-mso-lift__scrim" onClick={() => (closing.current ? reopen() : dismiss())} aria-hidden="true" />
-      <div
+      <div data-ctl="CTL-P007-066" ref={scrim} className="ch-mso-lift__scrim" onClick={() => (closing.current ? reopen() : dismiss())} aria-hidden="true" />
+      <div data-ctl="CTL-P007-067"
         ref={copy}
         className={'ch-mso-lift__copy' + (geom.scope ? ` ${geom.scope}` : '')}
         aria-hidden="true"

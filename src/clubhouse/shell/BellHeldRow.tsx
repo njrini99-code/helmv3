@@ -41,7 +41,7 @@ export function BellHeldRow() {
       <Icon icon={Clock} size={16} />
       <span className="ch-ca-bell__text ch-num">{delivered ? 'Delivered' : line}</span>
       {!delivered && (
-        <Button
+        <Button data-ctl="CTL-P001-016"
           size="sm"
           variant="ghost"
           className="ch-ca-bell__deliver"

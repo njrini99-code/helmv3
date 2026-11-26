@@ -20,7 +20,7 @@ export function NextBeyond({ e }: { e: ChHomeEvent }) {
   const t = useChClockText();
   const { day, time } = afterWhen(e);
   return (
-    <Link href={eventHref(e)} className="ch-hm-next" data-ch-code="CH-2316" onClick={() => chTrail('home open next event')}>
+    <Link data-ctl="CTL-P002-055" href={eventHref(e)} className="ch-hm-next" data-ch-code="CH-2316" onClick={() => chTrail('home open next event')}>
       <span className="ch-hm-next__k">
         <span className="ch-hm-next__type">
           <Icon icon={CalendarDays} size={13} />
@@ -52,7 +52,7 @@ export function DeskNextBeyond({ e }: { e: ChHomeEvent }) {
   const t = useChClockText();
   const { day, time } = afterWhen(e);
   return (
-    <Link href={eventHref(e)} className="ch-ph-next" data-ch-code="CH-2316" onClick={() => chTrail('home open next event')}>
+    <Link data-ctl="CTL-P002-056" href={eventHref(e)} className="ch-ph-next" data-ch-code="CH-2316" onClick={() => chTrail('home open next event')}>
       <span className="ch-ph-next__k">
         <span>
           <Icon icon={CalendarDays} size={13} />

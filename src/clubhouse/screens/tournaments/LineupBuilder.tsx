@@ -184,18 +184,18 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
   );
 
   const publishKey = (size?: 'lg') => (
-    <Button variant="primary" size={size} busy={publish.pending} disabled={!!block || (busy && !publish.pending) || (published && !dirty)} onClick={() => void publish.run()}>
+    <Button data-ctl="CTL-P016-054" variant="primary" size={size} busy={publish.pending} disabled={!!block || (busy && !publish.pending) || (published && !dirty)} onClick={() => void publish.run()}>
       {published && !dirty ? 'Published' : 'Publish lineup'}
     </Button>
   );
   const actions = editable ? (
     <>
       {dirty && (
-        <Button variant="secondary" busy={save.pending} disabled={busy && !save.pending} onClick={() => void save.run()}>
+        <Button data-ctl="CTL-P016-055" variant="secondary" busy={save.pending} disabled={busy && !save.pending} onClick={() => void save.run()}>
           Save draft
         </Button>
       )}
-      <Button variant="ghost" leftIcon={Lock} disabled={busy || set === 0} onClick={() => setAsking(true)}>
+      <Button data-ctl="CTL-P016-056" variant="ghost" leftIcon={Lock} disabled={busy || set === 0} onClick={() => setAsking(true)}>
         Lock lineup
       </Button>
       {publishKey()}
@@ -206,7 +206,7 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
   const bar = editable ? (
     <div className="ch-tour-lu-bar" role="group" aria-label="Lineup actions" data-ch-lineup-bar="">
       {dirty ? (
-        <Button variant="secondary" size="lg" busy={save.pending} disabled={busy && !save.pending} onClick={() => void save.run()}>
+        <Button data-ctl="CTL-P016-057" variant="secondary" size="lg" busy={save.pending} disabled={busy && !save.pending} onClick={() => void save.run()}>
           Save draft
         </Button>
       ) : (
@@ -214,7 +214,7 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
           <span className="ch-num">{set}</span> of <span className="ch-num">{of}</span> set
         </span>
       )}
-      <Button variant="secondary" size="lg" leftIcon={Lock} disabled={busy || set === 0} onClick={() => setAsking(true)} aria={{ label: 'Lock lineup' }}>
+      <Button data-ctl="CTL-P016-058" variant="secondary" size="lg" leftIcon={Lock} disabled={busy || set === 0} onClick={() => setAsking(true)} aria={{ label: 'Lock lineup' }}>
         Lock
       </Button>
       {publishKey('lg')}
@@ -228,7 +228,7 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
         tightAlways
         id={TITLE_ID}
         phone={phone}
-        crumb={phone ? undefined : <TourCrumb href={paths.desk(e.id)}>{e.name}</TourCrumb>}
+        crumb={phone ? undefined : <TourCrumb data-ctl="CTL-P016-059" href={paths.desk(e.id)}>{e.name}</TourCrumb>}
         eyebrow={`${tourRange(e.startDate, e.endDate)} · ${e.name}`}
         title="Lineup"
         line={editable ? `${e.format.players} play, ${e.format.counting} count each round. Set each spot, then publish.` : 'The lineup is locked. From here a change is a substitution, made round by round on the event.'}
@@ -252,7 +252,7 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
         data.errors.roster ? (
           <InlineNotice code="CH-16262" title="The roster didn’t load" body="Nothing has changed. Try again." onRetry={refresh} retrying={refreshing} />
         ) : (
-          <EmptyState size="page" kind="first-run" code="CH-16362" title="No players on the roster" body="Add players to your roster, then build the lineup from them." action={<Button href="/golf/dashboard/roster">Open the roster</Button>} />
+          <EmptyState size="page" kind="first-run" code="CH-16362" title="No players on the roster" body="Add players to your roster, then build the lineup from them." action={<Button data-ctl="CTL-P016-060" href="/golf/dashboard/roster">Open the roster</Button>} />
         )
       ) : (
         <div className="ch-tour-lu-body">
@@ -310,7 +310,7 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
                           />
                           {id && <Form candidate={stats.get(id)} />}
                         </div>
-                        {editable && id && <IconButton icon={X} label={`Take ${player(id)?.first ?? 'player'} out of spot ${i + 1}`} onClick={() => move(id, { kind: 'bench' })} />}
+                        {editable && id && <IconButton data-ctl="CTL-P016-061" icon={X} label={`Take ${player(id)?.first ?? 'player'} out of spot ${i + 1}`} onClick={() => move(id, { kind: 'bench' })} />}
                       </li>
                     ))}
                   </ol>
@@ -336,7 +336,7 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
                         {draft.individuals.map((id) => (
                           <span key={id} className="ch-tour-lu-pill">
                             {player(id)?.name ?? 'Player'}
-                            {editable && <IconButton icon={X} label={`Take ${player(id)?.first ?? 'player'} out of the individuals`} onClick={() => move(id, { kind: 'bench' })} />}
+                            {editable && <IconButton data-ctl="CTL-P016-062" icon={X} label={`Take ${player(id)?.first ?? 'player'} out of the individuals`} onClick={() => move(id, { kind: 'bench' })} />}
                           </span>
                         ))}
                         {editable && (
@@ -381,7 +381,7 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
                               <TourChip tone="ok">{whereWords(w)}</TourChip>
                             ) : (
                               editable && (
-                                <Button size="sm" leftIcon={UserPlus} disabled={busy || !target} onClick={() => target && move(p.id, target)}>
+                                <Button data-ctl="CTL-P016-063" size="sm" leftIcon={UserPlus} disabled={busy || !target} onClick={() => target && move(p.id, target)}>
                                   {target ? 'Add' : 'Full'}
                                 </Button>
                               )
@@ -408,10 +408,10 @@ function LineupPage({ data, phone }: { data: ChTourLineupData; phone: boolean })
         description={`${placedIds(draft).length ? `${set} of ${of} spots are set. ` : ''}Once it is locked, a change is a substitution made round by round. This can’t be undone from here.`}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setAsking(false)}>
+            <Button data-ctl="CTL-P016-064" variant="ghost" onClick={() => setAsking(false)}>
               Keep editing
             </Button>
-            <Button
+            <Button data-ctl="CTL-P016-065"
               variant="primary"
               busy={lock.pending}
               onClick={() => {
@@ -474,7 +474,7 @@ function BTeam({
               />
               {id && <Form candidate={stats.get(id)} />}
             </div>
-            {editable && id && <IconButton icon={X} label={`Take ${name(id)} out of B spot ${i + 1}`} onClick={() => move(id, { kind: 'bench' })} />}
+            {editable && id && <IconButton data-ctl="CTL-P016-066" icon={X} label={`Take ${name(id)} out of B spot ${i + 1}`} onClick={() => move(id, { kind: 'bench' })} />}
           </li>
         ))}
       </ol>

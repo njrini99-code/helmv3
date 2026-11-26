@@ -210,11 +210,11 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const next = stage === 0 ? 'start' : stage === 1 ? 'confirm' : null;
   const primary =
     next === 'start' ? (
-      <Button variant="primary" leftIcon={ListChecks} feel="warning" onClick={() => ask('start')}>
+      <Button data-ctl="CTL-P009-039" variant="primary" leftIcon={ListChecks} feel="warning" onClick={() => ask('start')}>
         Start selecting
       </Button>
     ) : next === 'confirm' ? (
-      <Button variant="primary" leftIcon={Check} feel="warning" disabled={!canConfirm} onClick={() => ask('confirm')}>
+      <Button data-ctl="CTL-P009-040" variant="primary" leftIcon={Check} feel="warning" disabled={!canConfirm} onClick={() => ask('confirm')}>
         Confirm squad
       </Button>
     ) : null;
@@ -228,7 +228,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
     <main className="ch-qf ch-qfs" data-canopy="">
       {phone && <PhoneTop heading={false} title="Selections" back={{ label: 'Qualifier', onBack: back.onBack }} />}
       <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
-        <BackLink href={detailHref}>Qualifier</BackLink>
+        <BackLink data-ctl="CTL-P009-041" href={detailHref}>Qualifier</BackLink>
       </div>
       <header className="ch-qf-head" data-canopy-head="tight">
         <div>
@@ -361,11 +361,11 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                       {c.pick?.reasoning ? <p className="ch-qf-why">{c.pick.reasoning}</p> : <p className="ch-qf-why is-missing">No reason given yet. Add one to confirm the squad.</p>}
                       {stage === 1 && (
                         <div className="ch-qfs-pick__act">
-                          <Button size="sm" variant="ghost" leftIcon={Pencil} onClick={() => setChoosing({ playerId: c.playerId })}>
+                          <Button data-ctl="CTL-P009-042" size="sm" variant="ghost" leftIcon={Pencil} onClick={() => setChoosing({ playerId: c.playerId })}>
                             {c.pick?.reasoning ? 'Change reason' : 'Add a reason'}{' '}
                             <span className="ch-sr-only">for {c.name}</span>
                           </Button>
-                          <Button size="sm" variant="ghost" leftIcon={UserMinus} feel="warning" onClick={() => setRemoving(c)}>
+                          <Button data-ctl="CTL-P009-043" size="sm" variant="ghost" leftIcon={UserMinus} feel="warning" onClick={() => setRemoving(c)}>
                             Remove{' '}
                             <span className="ch-sr-only">{c.name}</span>
                           </Button>
@@ -386,7 +386,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                       </div>
                       {stage === 1 && (
                         <div className="ch-qfs-pick__act">
-                          <Button size="sm" leftIcon={UserPlus} onClick={() => setChoosing({ playerId: null })}>
+                          <Button data-ctl="CTL-P009-044" size="sm" leftIcon={UserPlus} onClick={() => setChoosing({ playerId: null })}>
                             Choose a player
                           </Button>
                         </div>
@@ -413,10 +413,10 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         description="Coach’s picks open. This step can’t be undone. The standings keep updating, and the places on score are set when you confirm the squad."
         footer={
           <>
-            <Button variant="ghost" onClick={() => setAsking(null)}>
+            <Button data-ctl="CTL-P009-045" variant="ghost" onClick={() => setAsking(null)}>
               Not yet
             </Button>
-            <Button
+            <Button data-ctl="CTL-P009-046"
               variant="primary"
               feel={null}
               busy={start.pending}
@@ -437,10 +437,10 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         description={`${plural(onScore.length + picks.length, 'player')} make the trip: ${[...onScore, ...picks].map((c) => c.name).join(', ')}. Every entrant is told whether they made it, and the squad can’t be changed afterwards.`}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setAsking(null)}>
+            <Button data-ctl="CTL-P009-047" variant="ghost" onClick={() => setAsking(null)}>
               Keep editing
             </Button>
-            <Button
+            <Button data-ctl="CTL-P009-048"
               variant="primary"
               feel={null}
               busy={confirm.pending}
@@ -461,10 +461,10 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
         description="Their reason is removed with them. You can pick them again."
         footer={
           <>
-            <Button variant="ghost" onClick={() => setRemoving(null)}>
+            <Button data-ctl="CTL-P009-049" variant="ghost" onClick={() => setRemoving(null)}>
               Keep them
             </Button>
-            <Button
+            <Button data-ctl="CTL-P009-050"
               variant="danger"
               // The warning came with the question (D-70): the yes is silent, and the result answers.
               feel={null}
@@ -521,7 +521,7 @@ function TieRow({ c, stage, full, choose }: { c: ChQCandidate; stage: 0 | 1 | 2;
       <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
       <ToPar value={c.toPar} />
       {stage === 1 && (
-        <Button size="sm" variant="ghost" busy={act.pending} disabled={(!c.onScore && full)} onClick={() => void act.run(!c.onScore)}>
+        <Button data-ctl="CTL-P009-051" size="sm" variant="ghost" busy={act.pending} disabled={(!c.onScore && full)} onClick={() => void act.run(!c.onScore)}>
           {act.pending ? <span data-ch-code="CH-09408">Saving…</span> : c.onScore ? 'Take it back' : 'Give the place'} <span className="ch-sr-only">{c.name}</span>
         </Button>
       )}
@@ -539,7 +539,7 @@ function Row({ c, onPick }: { c: ChQCandidate; onPick?: () => void }) {
       <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
       <ToPar value={c.toPar} />
       {onPick && (
-        <Button size="sm" variant="ghost" leftIcon={UserPlus} onClick={onPick}>
+        <Button data-ctl="CTL-P009-052" size="sm" variant="ghost" leftIcon={UserPlus} onClick={onPick}>
           Pick <span className="ch-sr-only">{c.name}</span>
         </Button>
       )}
@@ -633,10 +633,10 @@ function PickDialog({
       description={fixed ? 'Players see that they were picked; the reason is for the coaches.' : 'Players outside the places on score, in standings order.'}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P009-053" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button
+          <Button data-ctl="CTL-P009-054"
             variant="primary"
             leftIcon={Check}
             busy={act.pending}
@@ -657,7 +657,7 @@ function PickDialog({
             <legend className="ch-field__label">Player</legend>
             {options.map((c) => (
               <label key={c.playerId} className={'ch-qfs-opt' + (picked === c.playerId ? ' is-on' : '')}>
-                <input
+                <input data-ctl="CTL-P009-055"
                   type="radio"
                   name="qfs-who"
                   value={c.playerId}

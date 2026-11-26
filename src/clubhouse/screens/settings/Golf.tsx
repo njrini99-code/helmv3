@@ -79,7 +79,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
         {/* Last in the section, on its own: leaving can't be undone from here (D-42). The confirm is unchanged. */}
         <Card id="set-leave" title="Danger zone" description="Things that can’t be undone." tone="danger">
           <Row label="Leave team" help="You come off the roster right away.">
-            <Button size="sm" variant="danger" leftIcon={LogOut} onClick={() => setLeaving(true)}>
+            <Button data-ctl="CTL-P008-014" size="sm" variant="danger" leftIcon={LogOut} onClick={() => setLeaving(true)}>
               Leave team
             </Button>
           </Row>
@@ -93,10 +93,10 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
           description="You come off the roster right away. To come back, you’ll need the team code or an invite link from your coach."
           footer={
             <>
-              <Button variant="secondary" disabled={leave.pending} onClick={() => setLeaving(false)}>
+              <Button data-ctl="CTL-P008-015" variant="secondary" disabled={leave.pending} onClick={() => setLeaving(false)}>
                 Stay on the team
               </Button>
-              <Button variant="danger" busy={leave.pending} onClick={() => void leave.run()}>
+              <Button data-ctl="CTL-P008-016" variant="danger" busy={leave.pending} onClick={() => void leave.run()}>
                 {leave.pending ? 'Leaving…' : 'Leave team'}
               </Button>
             </>
@@ -127,7 +127,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
                 <b>Waiting on {r.teamName}</b>
                 <span>Sent {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </span>
-              <Button
+              <Button data-ctl="CTL-P008-017"
                 size="sm"
                 variant="ghost"
                 disabled={cancel.pending}

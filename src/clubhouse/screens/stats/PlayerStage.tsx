@@ -82,7 +82,7 @@ export function PlayerStage({ rounds, first, coach, teamAvg, meta, note }: { rou
         </dl>
       </header>
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- a drag across the rounds and the arrow keys read one; every round stays a list item with its own label */}
-      <ol
+      <ol data-ctl="CTL-P005-020"
         className="ch-fm__bars"
         style={{ ['--ch-n' as string]: n }}
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focusable so the arrow keys can read a round, as a scroll region is focusable to scroll

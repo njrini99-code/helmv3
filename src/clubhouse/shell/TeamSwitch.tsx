@@ -98,7 +98,7 @@ export function TeamSwitch({ model, teamName }: { model: ChTeamSwitch; teamName:
 
   return (
     <>
-      <button
+      <button data-ctl="CTL-P001-037"
         ref={btn}
         type="button"
         className="ch-nav__section ch-nav__team ch-nav__team--switch"
@@ -139,7 +139,7 @@ export function TeamSwitch({ model, teamName }: { model: ChTeamSwitch; teamName:
                   {model.choices.map((c) => {
                     const on = c.id === sw.shownId;
                     return (
-                      <button key={c.id} type="button" role="option" aria-selected={on} tabIndex={-1} className="ch-tsw__opt" onClick={() => choose(c.id)}>
+                      <button data-ctl="CTL-P001-038" key={c.id} type="button" role="option" aria-selected={on} tabIndex={-1} className="ch-tsw__opt" onClick={() => choose(c.id)}>
                         <span className="ch-tsw__ic">
                           <Icon icon={Users} size={15} />
                         </span>
@@ -175,7 +175,7 @@ export function MoreTeamSwitch({ model, onSwitched }: { model: ChTeamSwitch; onS
         {model.choices.map((c) => {
           const on = c.id === sw.shownId;
           return (
-            <button
+            <button data-ctl="CTL-P001-039"
               key={c.id}
               type="button"
               className="ch-more__row"

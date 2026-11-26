@@ -43,13 +43,13 @@ export function CoachLatest({ data, covered, years }: { data: ChCoachHome['lates
         <h2 id="ch-ph-tm-latest">Latest rounds</h2>
         {rounds.length > 1 && (
           <span className="ch-ph-pg">
-            <button type="button" aria-label="Previous round" onClick={() => go(-1)} data-ch-press="">
+            <button data-ctl="CTL-P002-004" type="button" aria-label="Previous round" onClick={() => go(-1)} data-ch-press="">
               <Icon icon={ChevronLeft} size={18} />
             </button>
             <span className="ch-num" aria-live="polite">
               {i + 1} of {rounds.length}
             </span>
-            <button type="button" aria-label="Next round" onClick={() => go(1)} data-ch-press="">
+            <button data-ctl="CTL-P002-005" type="button" aria-label="Next round" onClick={() => go(1)} data-ch-press="">
               <Icon icon={ChevronRight} size={18} />
             </button>
           </span>
@@ -91,7 +91,7 @@ export function CoachLatest({ data, covered, years }: { data: ChCoachHome['lates
           />
           {/* The round's own review; the player's stats where the review isn't rebuilt for coaches. */}
           {(recap || stats) && (
-            <Button variant="ghost" rightIcon={ArrowRight} href={(recap ?? stats)!} ahead={!!recap} className="ch-ph-card__more ch-btn--flush-end">
+            <Button data-ctl="CTL-P002-006" variant="ghost" rightIcon={ArrowRight} href={(recap ?? stats)!} ahead={!!recap} className="ch-ph-card__more ch-btn--flush-end">
               {recap ? 'Open recap' : `${firstName(r.playerName)}’s stats`}
             </Button>
           )}

@@ -63,6 +63,77 @@ export interface GraphId {
   catalogRow?: { when?: string; theySee?: string; how?: string; test?: string };
 }
 
+/**
+ * One numbered control (`CTL-P###-NNN`, plan §4.7). The ledger that fills these lands separately; every field past
+ * `page` and `actions` is optional so the Bridge renders whatever the ledger carries without a second type change.
+ */
+export interface GraphControl {
+  page: PageId;
+  /** The label as drawn. Absent when the label is built at run time; `labelTemplate` then says how. */
+  label?: string;
+  labelTemplate?: string;
+  /** Plain words: what pressing it does. */
+  description?: string;
+  /** `src/...tsx` or `src/...tsx:line` or `file#symbol`. */
+  file?: string;
+  /** coach, player, both, visitor (signed out), or a `+` mix such as `player+visitor`. */
+  role?: string;
+  viewport?: 'desk' | 'phone' | 'both';
+  /** The JSX element or component drawn (`button`, `LedgerRow`). */
+  element?: string;
+  /** The nearest `CH-` code on the element or an ancestor. */
+  code?: string;
+  surface?: string;
+  actions: string[];
+  /** The design-board verdict (CLICKABLES.md): works, decided, GAP, hidden, data-gap. */
+  verdict?: string;
+  /** The board section that row sits under. */
+  board?: string;
+  /** The control's name on that board, when it differs from the label. */
+  boardControl?: string;
+}
+
+/** A control as `scripts/clubhouse/bridge-graph.mjs` writes it from the ledgers (config/clubhouse/controls/P###.json). */
+export interface RawGraphControl {
+  page: PageId;
+  file?: string | null;
+  element?: string | null;
+  label?: string | null;
+  labelTemplate?: string | null;
+  description?: string | null;
+  role?: string | null;
+  viewport?: 'all' | 'phone' | 'desktop' | string | null;
+  actions?: string[] | null;
+  verdict?: { status: string; board?: string; control?: string } | string | null;
+  code?: string | null;
+}
+
+/** The ledger's shape to the Bridge's: nulls become absent, `desktop`/`all` become `desk`/`both`, the verdict splits. */
+export function normalizeControl(raw: RawGraphControl): GraphControl {
+  const out: GraphControl = { page: raw.page, actions: raw.actions ?? [] };
+  if (raw.file) out.file = raw.file;
+  if (raw.element) out.element = raw.element;
+  if (raw.label) out.label = raw.label;
+  if (raw.labelTemplate) out.labelTemplate = raw.labelTemplate;
+  if (raw.description) out.description = raw.description;
+  if (raw.role) out.role = raw.role;
+  if (raw.code) out.code = raw.code;
+  if (raw.viewport) out.viewport = raw.viewport === 'desktop' || raw.viewport === 'desk' ? 'desk' : raw.viewport === 'phone' ? 'phone' : 'both';
+  if (typeof raw.verdict === 'string') out.verdict = raw.verdict;
+  else if (raw.verdict) {
+    out.verdict = raw.verdict.status;
+    if (raw.verdict.board) out.board = raw.verdict.board;
+    if (raw.verdict.control) out.boardControl = raw.verdict.control;
+  }
+  return out;
+}
+
+export function normalizeControls(raw: Record<string, RawGraphControl> | null | undefined): Record<string, GraphControl> {
+  const out: Record<string, GraphControl> = {};
+  for (const [id, c] of Object.entries(raw ?? {})) out[id] = normalizeControl(c);
+  return out;
+}
+
 export interface GraphFinding {
   page: PageId;
   screen: string;
@@ -70,7 +141,8 @@ export interface GraphFinding {
   dimension: string;
   standard: string;
   title: string;
-  repro: string;
+  /** One step per entry in the generated file; older audits wrote one string. */
+  repro: string | string[];
   fix: string;
   files: string[];
   tier: 'W' | 'S' | 'D' | 'C';
@@ -85,7 +157,7 @@ export interface BridgeGraph {
   pages: Record<PageId, GraphPage>;
   surfaces: Record<string, { page: PageId | null; files: string[] }>;
   /** Empty until PR 2 numbers the controls (§4.7). */
-  controls: Record<string, { page: PageId; label: string; actions: string[] }>;
+  controls: Record<string, GraphControl>;
   actions: Record<string, GraphAction>;
   ids: Record<string, GraphId>;
   tombstones: Record<string, { removedAt: string; replacement: BridgeId | null }>;

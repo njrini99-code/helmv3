@@ -39,19 +39,19 @@ export function IntentSheet({ open, playerId, first, value, save = LIVE_SAVE_INT
   const footer = asking ? (
     <div className="sheet__f is-discard">
       <p>Discard changes?</p>
-      <Button variant="secondary" onClick={onClose}>
+      <Button data-ctl="CTL-P013-142" variant="secondary" onClick={onClose}>
         Discard
       </Button>
-      <Button variant="primary" onClick={() => setAsking(false)}>
+      <Button data-ctl="CTL-P013-143" variant="primary" onClick={() => setAsking(false)}>
         Keep editing
       </Button>
     </div>
   ) : (
     <div className="sheet__f">
-      <Button variant="secondary" data-ch-sheet-close="" disabled={run.pending} onClick={onClose}>
+      <Button data-ctl="CTL-P013-144" variant="secondary" data-ch-sheet-close="" disabled={run.pending} onClick={onClose}>
         Cancel
       </Button>
-      <Button variant="primary" data-ch-hf-intent-save="" disabled={run.pending} aria-busy={run.pending || undefined} onClick={() => void run.run()}>
+      <Button data-ctl="CTL-P013-145" variant="primary" data-ch-hf-intent-save="" disabled={run.pending} aria-busy={run.pending || undefined} onClick={() => void run.run()}>
         {run.pending ? 'Saving' : 'Save plan'}
       </Button>
     </div>
@@ -68,7 +68,7 @@ export function IntentSheet({ open, playerId, first, value, save = LIVE_SAVE_INT
           <h5>Aim this season</h5>
           <div className="picks">
             {FILE_AIMS.map((a) => (
-              <button key={a.id} type="button" data-ch-hf-pick="" data-ch-press="" aria-pressed={aim === a.id} onClick={() => setAim(a.id)}>
+              <button data-ctl="CTL-P013-146" key={a.id} type="button" data-ch-hf-pick="" data-ch-press="" aria-pressed={aim === a.id} onClick={() => setAim(a.id)}>
                 {a.label}
               </button>
             ))}
@@ -78,7 +78,7 @@ export function IntentSheet({ open, playerId, first, value, save = LIVE_SAVE_INT
           <h5>How often CoachHelm flags {first}</h5>
           <div className="picks">
             {FILE_ALERTS.map((a) => (
-              <button key={a.id} type="button" data-ch-hf-pick="" data-ch-press="" aria-pressed={alerts === a.id} onClick={() => setAlerts(a.id)}>
+              <button data-ctl="CTL-P013-147" key={a.id} type="button" data-ch-hf-pick="" data-ch-press="" aria-pressed={alerts === a.id} onClick={() => setAlerts(a.id)}>
                 {a.label}
               </button>
             ))}
@@ -91,7 +91,7 @@ export function IntentSheet({ open, playerId, first, value, save = LIVE_SAVE_INT
             {FILE_AREAS.map((a) => {
               const on = watching.includes(a.id);
               return (
-                <button key={a.id} type="button" data-ch-hf-pick="" data-ch-press="" aria-pressed={on} onClick={() => setWatching((w) => (on ? w.filter((x) => x !== a.id) : [...w, a.id]))}>
+                <button data-ctl="CTL-P013-148" key={a.id} type="button" data-ch-hf-pick="" data-ch-press="" aria-pressed={on} onClick={() => setWatching((w) => (on ? w.filter((x) => x !== a.id) : [...w, a.id]))}>
                   {a.label}
                 </button>
               );

@@ -99,7 +99,7 @@ function MonthDay({ day, modifiers, className, children, ...rest }: DayButtonPro
   const n = marks?.n ?? 0;
   const cls = [className, modifiers.outside && 'is-out', modifiers.today && 'is-today', modifiers.selected && 'is-on'].filter(Boolean).join(' ');
   return (
-    <RdpDayButton
+    <RdpDayButton data-ctl="CTL-P006-149"
       {...rest}
       day={day}
       modifiers={modifiers}
@@ -156,7 +156,7 @@ export function MonthGrid({
   const swiped = useRef(false);
 
   return (
-    <section
+    <section data-ctl="CTL-P006-150"
       className="ch-calm-month"
       aria-label={monthName(anchor)}
       onPointerDown={(e) => {

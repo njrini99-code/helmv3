@@ -79,7 +79,7 @@ export function PlayerPracticeHome({ data }: { data: ChPlayerPracticeHome }) {
               ))}
             </section>
           )}
-          <Button variant="primary" href={next.planHref} className="ch-prc-today__go">
+          <Button data-ctl="CTL-P017-039" variant="primary" href={next.planHref} className="ch-prc-today__go">
             {next.stops.length > stops.length ? `Open plan · ${next.stops.length} stops` : 'Open plan'}
           </Button>
         </div>
@@ -94,7 +94,7 @@ export function PlayerPracticeHome({ data }: { data: ChPlayerPracticeHome }) {
           body="Your coach hasn’t published a plan for this practice yet."
           code="CH-13397"
           action={
-            <Button variant="ghost" href="/golf/dashboard/calendar">
+            <Button data-ctl="CTL-P017-040" variant="ghost" href="/golf/dashboard/calendar">
               See calendar
             </Button>
           }

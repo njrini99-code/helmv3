@@ -398,7 +398,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
             const on = key === picked.key;
             const bar = drawn[i];
             return (
-              <button
+              <button data-ctl="CTL-P004-025"
                 key={key}
                 id={`ch-stm-leg-${key}`}
                 type="button"
@@ -475,7 +475,7 @@ export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: C
               <li key={p.id}>
                 {/* P003-C1: a hold peeks at the player; a tap still opens their stats. */}
                 <PlayerPeek player={gridPeek(p)}>
-                  <Link href={teamPlayerHref(p.id, data.filter)} className="ch-stm-row" {...press(teamPlayerHref(p.id, data.filter))}>
+                  <Link data-ctl="CTL-P004-026" href={teamPlayerHref(p.id, data.filter)} className="ch-stm-row" {...press(teamPlayerHref(p.id, data.filter))}>
                     <Avatar name={p.name} id={p.id} size="md" />
                     <span className="ch-stm-row__b">
                       <b>{p.name}</b>

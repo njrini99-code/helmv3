@@ -150,10 +150,10 @@ export function PlanRun({ planId, title, version, body, start, zone, serverNow }
         </ul>
         <div className="ch-prc-run__a" role="group" aria-label="Shift the rest of practice">
           <span>Shift the rest</span>
-          <Button className="ch-num" onClick={() => setMoving(-5)} aria={{ label: '5 min earlier' }}>
+          <Button data-ctl="CTL-P017-035" className="ch-num" onClick={() => setMoving(-5)} aria={{ label: '5 min earlier' }}>
             5 min earlier
           </Button>
-          <Button className="ch-num" onClick={() => setMoving(5)} aria={{ label: 'Shift the rest 5 min later' }}>
+          <Button data-ctl="CTL-P017-036" className="ch-num" onClick={() => setMoving(5)} aria={{ label: 'Shift the rest 5 min later' }}>
             5 min later
           </Button>
         </div>
@@ -184,10 +184,10 @@ export function PlanRun({ planId, title, version, body, start, zone, serverNow }
         width={420}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setMoving(null)}>
+            <Button data-ctl="CTL-P017-037" variant="ghost" onClick={() => setMoving(null)}>
               Cancel
             </Button>
-            <Button variant="primary" busy={busy} onClick={() => void move()}>
+            <Button data-ctl="CTL-P017-038" variant="primary" busy={busy} onClick={() => void move()}>
               Move
             </Button>
           </>

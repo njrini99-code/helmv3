@@ -149,7 +149,7 @@ function CoachOnly({ view, id }: { view: 'new' | 'edit' | 'selection'; id?: stri
             : 'You can see your team’s qualifiers and where you stand in the ones you’re entered in.'
         }
         action={
-          <Button size="sm" href={back ? `/golf/dashboard/qualifiers/${id}` : '/golf/dashboard/qualifiers'}>
+          <Button data-ctl="CTL-P009-001" size="sm" href={back ? `/golf/dashboard/qualifiers/${id}` : '/golf/dashboard/qualifiers'}>
             {back ? 'Back to the qualifier' : 'See your qualifiers'}
           </Button>
         }

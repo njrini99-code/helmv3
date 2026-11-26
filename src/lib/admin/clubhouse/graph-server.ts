@@ -2,7 +2,7 @@ import 'server-only';
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { BridgeGraph } from './graph';
+import { type BridgeGraph, normalizeControls, type RawGraphControl } from './graph';
 
 /**
  * The Bridge graph this deploy was built with (`docs/clubhouse/generated/bridge-graph.json`, written by
@@ -20,7 +20,10 @@ export function loadBridgeGraph(): BridgeGraph | null {
   if (cached !== undefined) return cached;
   try {
     const graph = JSON.parse(readFileSync(join(process.cwd(), BRIDGE_GRAPH_PATH), 'utf8')) as BridgeGraph;
-    cached = graph.version === 1 && graph.ids && graph.chIndex && graph.pages ? graph : null;
+    if (graph.version === 1 && graph.ids && graph.chIndex && graph.pages) {
+      graph.controls = normalizeControls(graph.controls as unknown as Record<string, RawGraphControl>);
+      cached = graph;
+    } else cached = null;
   } catch {
     cached = null;
   }

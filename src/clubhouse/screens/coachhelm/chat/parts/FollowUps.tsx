@@ -11,7 +11,7 @@ export function FollowUps({ items, prompts, onSend }: { items: string[]; /** Wha
     <ul className="chips" aria-label="Next steps">
       {items.slice(0, 3).map((f, i) => (
         <li key={f}>
-          <button
+          <button data-ctl="CTL-P013-085"
             type="button"
             className="chip"
             data-ch-press=""

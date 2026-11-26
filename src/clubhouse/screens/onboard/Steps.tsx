@@ -127,7 +127,7 @@ export function Q({
       }}
     >
       {back && (
-        <button type="button" className="ch-ox-back" onClick={back} disabled={hold}>
+        <button data-ctl="CTL-P015-056" type="button" className="ch-ox-back" onClick={back} disabled={hold}>
           <Icon icon={ChevronLeft} size={16} />
           Back
         </button>
@@ -145,7 +145,7 @@ export function Q({
 export function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight, children, phone }: { label?: string; disabled?: boolean; busy?: boolean; busyLabel?: string; icon?: typeof ArrowRight; children?: ReactNode; phone: boolean }) {
   return (
     <div className="ch-ox-act">
-      <Button type="submit" variant="primary" size="lg" rightIcon={icon} busy={busy} disabled={disabled}>
+      <Button data-ctl="CTL-P015-057" type="submit" variant="primary" size="lg" rightIcon={icon} busy={busy} disabled={disabled}>
         {busy ? busyLabel ?? label : label}
       </Button>
       {!disabled && !busy && !phone && (
@@ -192,9 +192,9 @@ function Who({ d, path }: { d: Draft; path: OnboardPath }) {
 // ── Intro ────────────────────────────────────────────────────────────────────
 
 /** The phone's way back to sign in (wave 10): the top bar's pill is hidden at phone widths (onboard.css), and a returning player can land here from an invite link. */
-const SignInLine = ({ href }: { href: string }) => (
+const SignInLine = ({ href, 'data-ctl': ctl }: { href: string; 'data-ctl'?: string }) => (
   <p className="ch-ox-signin-m">
-    Already a member? <Link href={href}>Sign in</Link>
+    Already a member? <Link data-ctl={ctl ?? 'CTL-P015-058'} href={href}>Sign in</Link>
   </p>
 );
 
@@ -204,11 +204,11 @@ export function Intro({ d, next, hour, dir, signInHref }: StepProps) {
     return (
       <Q dir={dir} eyebrow={hour === null ? undefined : greetingWord(hour)} title="You’ve been invited to a team." sub="Your coach sent you a team code. Set up your account and you’ll be with the team in about two minutes." onSubmit={() => next({ intent: 'code' })}>
         <div className="ch-ox-act">
-          <Button type="submit" variant="primary" size="lg" rightIcon={ArrowRight}>
+          <Button data-ctl="CTL-P015-059" type="submit" variant="primary" size="lg" rightIcon={ArrowRight}>
             Accept invite
           </Button>
         </div>
-        <SignInLine href={signInHref} />
+        <SignInLine data-ctl="CTL-P015-060" href={signInHref} />
       </Q>
     );
   }
@@ -216,7 +216,7 @@ export function Intro({ d, next, hour, dir, signInHref }: StepProps) {
     <Q dir={dir} eyebrow={hour === null ? undefined : greetingWord(hour)} title="Welcome to the clubhouse." sub="GolfHelm keeps your team’s rounds, stats, travel and qualifiers in one place. Let’s get you in.">
       <div className="ch-ox-body">
         <div className="ch-ox-choice" role="group" aria-label="How are you joining">
-          <button type="button" className="ch-ox-card" onClick={() => next({ intent: 'code' })}>
+          <button data-ctl="CTL-P015-061" type="button" className="ch-ox-card" onClick={() => next({ intent: 'code' })}>
             <span className="ch-ox-art">
               <Icon icon={KeyRound} size={24} />
             </span>
@@ -229,7 +229,7 @@ export function Intro({ d, next, hour, dir, signInHref }: StepProps) {
               <Icon icon={ArrowRight} size={14} />
             </span>
           </button>
-          <button type="button" className="ch-ox-card" onClick={() => next({ intent: 'request' })}>
+          <button data-ctl="CTL-P015-062" type="button" className="ch-ox-card" onClick={() => next({ intent: 'request' })}>
             <span className="ch-ox-art">
               <Icon icon={Mail} size={24} />
             </span>
@@ -244,7 +244,7 @@ export function Intro({ d, next, hour, dir, signInHref }: StepProps) {
           </button>
         </div>
       </div>
-      <SignInLine href={signInHref} />
+      <SignInLine data-ctl="CTL-P015-063" href={signInHref} />
     </Q>
   );
 }
@@ -381,7 +381,7 @@ export function Code({ d, up, next, back, dir, phone }: StepProps) {
             <span className="ch-ox-hint">{d.code.length > 0 && d.code.length !== CODE_SLOTS ? 'Press Continue to check it.' : 'Paste it or type it. We check as you go.'}</span>
           )}
           {d.code && st !== 'checking' && (
-            <button
+            <button data-ctl="CTL-P015-064"
               type="button"
               className="ch-ox-link"
               onClick={() => {
@@ -407,7 +407,7 @@ export function Code({ d, up, next, back, dir, phone }: StepProps) {
               tone="warning"
               code="CH-15010"
               action={
-                <Button size="sm" onClick={() => void run(d.code)}>
+                <Button data-ctl="CTL-P015-065" size="sm" onClick={() => void run(d.code)}>
                   Try again
                 </Button>
               }
@@ -430,10 +430,10 @@ export function Code({ d, up, next, back, dir, phone }: StepProps) {
         <Act phone={phone} label={staff ? 'Join the staff' : 'Continue'} />
       ) : (
         <div className="ch-ox-act">
-          <Button type="submit" variant="primary" size="lg" rightIcon={ArrowRight} busy={st === 'checking'} disabled={!codeCanSubmit(d.code)}>
+          <Button data-ctl="CTL-P015-066" type="submit" variant="primary" size="lg" rightIcon={ArrowRight} busy={st === 'checking'} disabled={!codeCanSubmit(d.code)}>
             Continue
           </Button>
-          <button type="button" className="ch-ox-link" onClick={() => next({ intent: 'request', code: '', kind: null, teamName: null }, 'rwho')}>
+          <button data-ctl="CTL-P015-067" type="button" className="ch-ox-link" onClick={() => next({ intent: 'request', code: '', kind: null, teamName: null }, 'rwho')}>
             I don’t have a code
           </button>
         </div>
@@ -510,7 +510,7 @@ export function Grad({ d, up, next, path, back, dir, now }: StepProps) {
       <div className="ch-ox-body">
         <div className="ch-ox-tiles" role="radiogroup" aria-label="Graduation year">
           {years.map((y) => (
-            <button
+            <button data-ctl="CTL-P015-068"
               key={y}
               type="button"
               role="radio"
@@ -647,7 +647,7 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
                 aria-describedby={pwErr ? 'ch-ox-pw-e ch-ox-pw-r' : 'ch-ox-pw-r'}
               />
               <Tooltip>
-                <button type="button" className="ch-ox-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} onClick={() => setShow(!show)}>
+                <button data-ctl="CTL-P015-069" type="button" className="ch-ox-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} onClick={() => setShow(!show)}>
                   <Icon icon={show ? EyeOff : Eye} size={16} />
                 </button>
               </Tooltip>
@@ -681,7 +681,7 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
             tone="danger"
             code="CH-15011"
             action={
-              <Button size="sm" href={signInHref}>
+              <Button data-ctl="CTL-P015-070" size="sm" href={signInHref}>
                 Go to sign in
               </Button>
             }
@@ -697,7 +697,7 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
             code="CH-15012"
             action={
               err.recheckCode ? (
-                <Button size="sm" onClick={() => next({ kind: null, teamName: null }, 'code')}>
+                <Button data-ctl="CTL-P015-071" size="sm" onClick={() => next({ kind: null, teamName: null }, 'code')}>
                   Check my code
                 </Button>
               ) : undefined
@@ -709,7 +709,7 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
       )}
       <Act phone={phone} label="Create account" busy={busy} busyLabel="Creating your account…" />
       <p className="ch-ox-legal">
-        By creating an account you agree to the <Link href="/terms">Terms of service</Link> and <Link href="/privacy">Privacy policy</Link>.
+        By creating an account you agree to the <Link data-ctl="CTL-P015-072" href="/terms">Terms of service</Link> and <Link data-ctl="CTL-P015-073" href="/privacy">Privacy policy</Link>.
         {player && d.grad != null && needsGuardianConsent(d.grad, now) ? ' If you’re under 18, a parent or guardian acknowledges and consents to the collection of information described in our privacy policy.' : ''}
       </p>
     </Q>
@@ -755,7 +755,7 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
             <span className="ch-ox-hcp__k" id="ch-ox-hcp-k">
               Handicap index
             </span>
-            <button type="button" className="ch-ox-link" onClick={() => up({ hcp: none ? 8 : null })}>
+            <button data-ctl="CTL-P015-074" type="button" className="ch-ox-link" onClick={() => up({ hcp: none ? 8 : null })}>
               {none ? 'I have one' : 'I don’t have one yet'}
             </button>
           </div>
@@ -768,12 +768,12 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
             {!none && (
               <span className="ch-ox-steps">
                 <Tooltip>
-                  <button type="button" className="ch-ox-step" aria-label="Lower" onClick={() => step(-0.1)}>
+                  <button data-ctl="CTL-P015-075" type="button" className="ch-ox-step" aria-label="Lower" onClick={() => step(-0.1)}>
                     <Icon icon={Minus} size={16} />
                   </button>
                 </Tooltip>
                 <Tooltip>
-                  <button type="button" className="ch-ox-step" aria-label="Higher" onClick={() => step(0.1)}>
+                  <button data-ctl="CTL-P015-076" type="button" className="ch-ox-step" aria-label="Higher" onClick={() => step(0.1)}>
                     <Icon icon={Plus} size={16} />
                   </button>
                 </Tooltip>
@@ -910,7 +910,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
     <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title="Put a face to the name." sub="Teammates see this on the roster and in messages." onSubmit={() => void finish()}>
       <div className="ch-ox-body">
         <div className="ch-ox-photo">
-          <button
+          <button data-ctl="CTL-P015-077"
             type="button"
             className="ch-ox-drop"
             data-over={over ? '' : undefined}
@@ -985,7 +985,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
       )}
       <Act phone={phone} label="Finish setup" busy={busy} busyLabel="Finishing…" icon={Check} disabled={uploading}>
         {!d.photoUrl && !busy && (
-          <button type="submit" className="ch-ox-link">
+          <button data-ctl="CTL-P015-078" type="submit" className="ch-ox-link">
             Skip for now
           </button>
         )}
@@ -1025,16 +1025,16 @@ export function Done({ d, finish, dir }: StepProps) {
         <div className="ch-ox-act">
           {reason.onAnotherTeam ? (
             <>
-              <Button variant="primary" size="lg" rightIcon={ArrowRight} onClick={() => finish('/golf/dashboard')}>
+              <Button data-ctl="CTL-P015-079" variant="primary" size="lg" rightIcon={ArrowRight} onClick={() => finish('/golf/dashboard')}>
                 Go to your dashboard
               </Button>
             </>
           ) : (
             <>
-              <Button variant="primary" size="lg" rightIcon={ArrowRight} href="/golf/join">
+              <Button data-ctl="CTL-P015-080" variant="primary" size="lg" rightIcon={ArrowRight} href="/golf/join">
                 Enter a team code
               </Button>
-              <Button variant="ghost" size="lg" onClick={() => finish('/golf/dashboard')}>
+              <Button data-ctl="CTL-P015-081" variant="ghost" size="lg" onClick={() => finish('/golf/dashboard')}>
                 Go to your dashboard
               </Button>
             </>
@@ -1058,10 +1058,10 @@ export function Done({ d, finish, dir }: StepProps) {
         sub="You’re not on a team yet. When your coach sends you a team code, enter it to join the roster."
       >
         <div className="ch-ox-act">
-          <Button variant="primary" size="lg" rightIcon={ArrowRight} href="/golf/join">
+          <Button data-ctl="CTL-P015-082" variant="primary" size="lg" rightIcon={ArrowRight} href="/golf/join">
             Enter a team code
           </Button>
-          <Button variant="ghost" size="lg" feel="success" onClick={() => finish('/golf/dashboard')}>
+          <Button data-ctl="CTL-P015-083" variant="ghost" size="lg" feel="success" onClick={() => finish('/golf/dashboard')}>
             Go to your dashboard
           </Button>
         </div>
@@ -1081,14 +1081,14 @@ export function Done({ d, finish, dir }: StepProps) {
       sub="Your member card is ready."
     >
       <div className="ch-ox-act">
-        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard')}>
+        <Button data-ctl="CTL-P015-084" variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard')}>
           Go to your dashboard
         </Button>
       </div>
       <ul className="ch-ox-list" aria-label="Next steps">
         {NEXT_STEPS.map(([ic, t, m, href]) => (
           <li key={t}>
-            <button type="button" className="ch-ox-nextstep" onClick={() => finish(href)}>
+            <button data-ctl="CTL-P015-085" type="button" className="ch-ox-nextstep" onClick={() => finish(href)}>
               <span className="ch-ox-list__ic">
                 <Icon icon={ic} size={15} />
               </span>
@@ -1124,7 +1124,7 @@ export function StaffDone({ d, finish, dir }: StepProps) {
       sub="Your head coach added you as an assistant coach. The roster, calendar and stats are ready for you."
     >
       <div className="ch-ox-act">
-        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard')}>
+        <Button data-ctl="CTL-P015-086" variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard')}>
           Go to your dashboard
         </Button>
       </div>
@@ -1146,7 +1146,7 @@ export function RWho({ d, up, next, back, dir }: StepProps) {
       <div className="ch-ox-body">
         <div className="ch-ox-choice" data-n="3" role="radiogroup" aria-label="I am a">
           {WHO.map(([v, ic, t, s]) => (
-            <button
+            <button data-ctl="CTL-P015-087"
               key={v}
               type="button"
               role="radio"
@@ -1328,7 +1328,7 @@ export function Sent({ d, dir }: StepProps) {
         ))}
       </div>
       <div className="ch-ox-act">
-        <Button size="lg" href="/golf/login">
+        <Button data-ctl="CTL-P015-088" size="lg" href="/golf/login">
           Back to sign in
         </Button>
       </div>

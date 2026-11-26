@@ -56,6 +56,8 @@
 //     supported, and alpha is dropped rather than approximated.
 // =============================================================================
 
+import { clubhouseDigestLines, type ClubhouseDigest } from '@/lib/admin/clubhouse/pulse';
+
 export interface DigestData {
   generatedAt: string;
   errors24h: {
@@ -115,6 +117,13 @@ export interface DigestData {
    * `reds` by the caller, so this field carries only the descriptive line.
    */
   deploy?: { state: 'unknown' | 'current' | 'behind' | 'stale'; summary: string };
+  /**
+   * The Clubhouse section (Bridge plan §10): rules fired, pipe health, the page
+   * wall in words, top codes, the release delta and drift. `undefined` means
+   * the read could not be made ("could not check"), never "all clear". Digest
+   * only: no push alerts (owner decision D10).
+   */
+  clubhouse?: ClubhouseDigest;
 }
 
 export interface DigestEmail {
@@ -346,6 +355,8 @@ export function buildDigestEmail(data: DigestData): DigestEmail {
   if (data.deploy) {
     lines.push('', 'RELEASE', `  ${data.deploy.summary}`);
   }
+  const clubhouseLines = clubhouseDigestLines(data.clubhouse);
+  lines.push('', 'CLUBHOUSE', ...clubhouseLines);
   lines.push('', 'Open the admin: https://helmsportslabs.com/admin');
   const text = lines.join('\n');
 
@@ -517,6 +528,11 @@ export function buildDigestEmail(data: DigestData): DigestEmail {
   ${section('Overnight errors', errorBody, `${data.errors24h.critical} critical`)}
   ${section('Activity, last 24h', activityBody, `${activityTotal} total`)}
   ${section('Shipped yesterday', shippedBody)}
+  ${section(
+    'Clubhouse',
+    clubhouseLines.map((l) => quiet(l.trim())).join(''),
+    data.clubhouse?.untrusted ? 'untrusted' : data.clubhouse ? `${data.clubhouse.alerts.length} rule hits` : 'unknown',
+  )}
   ${tasksBody ? section('On deck', tasksBody, `${tasks.length} due`) : ''}
   ${
     data.deploy

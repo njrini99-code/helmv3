@@ -68,7 +68,7 @@ export function PageRetry({ children }: { children?: ReactNode }) {
         </p>
       )}
       <div className="ch-empty-page__a">
-        <Button variant="primary" leftIcon={RotateCw} onClick={retry} busy={refreshing}>
+        <Button data-ctl="CTL-P000-037" variant="primary" leftIcon={RotateCw} onClick={retry} busy={refreshing}>
           {refreshing ? 'Trying again…' : 'Try again'}
         </Button>
         {children}

@@ -392,10 +392,10 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
           description="This removes them from your list, with their notes and documents. This can’t be undone."
           footer={
             <>
-              <Button variant="ghost" disabled={del.pending} onClick={() => setAsking(null)}>
+              <Button data-ctl="CTL-P014-033" variant="ghost" disabled={del.pending} onClick={() => setAsking(null)}>
                 Keep them
               </Button>
-              <Button variant="danger" busy={del.pending} feel="warning" onClick={() => asking && void del.run(asking)}>
+              <Button data-ctl="CTL-P014-034" variant="danger" busy={del.pending} feel="warning" onClick={() => asking && void del.run(asking)}>
                 {del.pending ? <span data-ch-code="CH-14406">Deleting…</span> : 'Delete prospect'}
               </Button>
             </>

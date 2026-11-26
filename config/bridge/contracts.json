@@ -1,0 +1,1208 @@
+{
+  "$comment": "Every BR- code on the Bridge's own screens (plan §6, owner decision D4): the screen, the control's label and what it does. The source of truth beside src/lib/admin/clubhouse/br-codes.ts (a test holds the two to each other and to every data-br under src/app/admin). docs/bridge/generated/BRIDGE_UI_MAP.md is generated from this file by node scripts/clubhouse/bridge-ui-map.mjs; never edit that file by hand.",
+  "screens": {
+    "B01": {
+      "name": "Pulse",
+      "route": "/admin"
+    },
+    "B02": {
+      "name": "Pages",
+      "route": "/admin/clubhouse"
+    },
+    "B03": {
+      "name": "Controls",
+      "route": "/admin/clubhouse/controls"
+    },
+    "B04": {
+      "name": "Actions",
+      "route": "/admin/clubhouse/actions"
+    },
+    "B05": {
+      "name": "Codes",
+      "route": "/admin/clubhouse/codes"
+    },
+    "B06": {
+      "name": "Incidents",
+      "route": "/admin/errors"
+    },
+    "B07": {
+      "name": "Sessions",
+      "route": "/admin/clubhouse/sessions"
+    },
+    "B08": {
+      "name": "People and teams",
+      "route": "/admin/clubhouse/people"
+    },
+    "B09": {
+      "name": "Experience",
+      "route": "/admin/clubhouse/experience"
+    },
+    "B10": {
+      "name": "Releases",
+      "route": "/admin/clubhouse/releases"
+    },
+    "B11": {
+      "name": "Drift",
+      "route": "/admin/clubhouse/drift"
+    },
+    "B12": {
+      "name": "Readiness",
+      "route": "/admin/clubhouse/readiness"
+    },
+    "B13": {
+      "name": "Duet desk",
+      "route": "/admin/clubhouse/duet"
+    },
+    "B14": {
+      "name": "Command palette",
+      "route": "⌘K, every /admin screen"
+    },
+    "B15": {
+      "name": "Shell",
+      "route": "every /admin screen"
+    }
+  },
+  "codes": [
+    {
+      "code": "BR-0101",
+      "screen": "B01",
+      "key": "pulse.pageTile",
+      "label": "Page tile",
+      "does": "Opens that page in B02"
+    },
+    {
+      "code": "BR-0102",
+      "screen": "B01",
+      "key": "pulse.risingRow",
+      "label": "Rising row",
+      "does": "Opens the B05 code dossier"
+    },
+    {
+      "code": "BR-0103",
+      "screen": "B01",
+      "key": "pulse.actionRow",
+      "label": "Action row",
+      "does": "Opens the B04 action"
+    },
+    {
+      "code": "BR-0104",
+      "screen": "B01",
+      "key": "pulse.incidentRow",
+      "label": "Incident row",
+      "does": "Opens B06 detail"
+    },
+    {
+      "code": "BR-0105",
+      "screen": "B01",
+      "key": "pulse.releaseCard",
+      "label": "Release card",
+      "does": "Opens B10 for that release"
+    },
+    {
+      "code": "BR-0106",
+      "screen": "B01",
+      "key": "pulse.pipeDot",
+      "label": "Pipe dot",
+      "does": "Opens B11 at the pipe panel"
+    },
+    {
+      "code": "BR-0107",
+      "screen": "B01",
+      "key": "pulse.refresh",
+      "label": "Refresh (r)",
+      "does": "Reads again; the screen stays up while it does"
+    },
+    {
+      "code": "BR-0108",
+      "screen": "B01",
+      "key": "pulse.copy",
+      "label": "Copy",
+      "does": "A Markdown pulse report"
+    },
+    {
+      "code": "BR-0109",
+      "screen": "B01",
+      "key": "pulse.pauseLive",
+      "label": "Pause live",
+      "does": "Stops auto-refresh (the existing AutoRefresh)"
+    },
+    {
+      "code": "BR-0110",
+      "screen": "B01",
+      "key": "pulse.alertRow",
+      "label": "Alert row",
+      "does": "A rule hit (R-01 to R-12); the same list the digest sends"
+    },
+    {
+      "code": "BR-0190",
+      "screen": "B01",
+      "key": "pulse.loading",
+      "label": "Loading",
+      "does": "Skeleton while the screen reads"
+    },
+    {
+      "code": "BR-0191",
+      "screen": "B01",
+      "key": "pulse.empty",
+      "label": "Empty",
+      "does": "Nothing to show yet"
+    },
+    {
+      "code": "BR-0192",
+      "screen": "B01",
+      "key": "pulse.failed",
+      "label": "Failed",
+      "does": "The read failed; Try again"
+    },
+    {
+      "code": "BR-0193",
+      "screen": "B01",
+      "key": "pulse.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not flowing yet (the held migration or the switch)"
+    },
+    {
+      "code": "BR-0201",
+      "screen": "B02",
+      "key": "pages.row",
+      "label": "Page row",
+      "does": "Opens the dossier"
+    },
+    {
+      "code": "BR-0202",
+      "screen": "B02",
+      "key": "pages.sort",
+      "label": "Sort",
+      "does": "Failures · coverage · never seen · gates"
+    },
+    {
+      "code": "BR-0203",
+      "screen": "B02",
+      "key": "pages.viewRail",
+      "label": "View rail",
+      "does": "Overview · States · Controls · Actions · Contract · Phone · History"
+    },
+    {
+      "code": "BR-0204",
+      "screen": "B02",
+      "key": "pages.matrixCell",
+      "label": "Matrix cell",
+      "does": "Opens that ID's dossier (B05)"
+    },
+    {
+      "code": "BR-0205",
+      "screen": "B02",
+      "key": "pages.categoryLabel",
+      "label": "Category label",
+      "does": "Shows that category alone, with its default and exception note"
+    },
+    {
+      "code": "BR-0206",
+      "screen": "B02",
+      "key": "pages.show",
+      "label": "Show",
+      "does": "All · fired · never seen · failures"
+    },
+    {
+      "code": "BR-0207",
+      "screen": "B02",
+      "key": "pages.docLink",
+      "label": "Doc link",
+      "does": "Opens the doc on GitHub at the live SHA"
+    },
+    {
+      "code": "BR-0208",
+      "screen": "B02",
+      "key": "pages.forceState",
+      "label": "Force this state",
+      "does": "Opens /clubhouse-preview/<screen>?state=… in an iPhone frame (D6)"
+    },
+    {
+      "code": "BR-0209",
+      "screen": "B02",
+      "key": "pages.pack",
+      "label": "Context pack",
+      "does": "The whole page's pack, to B13"
+    },
+    {
+      "code": "BR-0210",
+      "screen": "B02",
+      "key": "pages.copy",
+      "label": "Copy",
+      "does": "The page report"
+    },
+    {
+      "code": "BR-0290",
+      "screen": "B02",
+      "key": "pages.loading",
+      "label": "Loading",
+      "does": "A skeleton shaped like the screen (xx90)"
+    },
+    {
+      "code": "BR-0291",
+      "screen": "B02",
+      "key": "pages.empty",
+      "label": "Empty",
+      "does": "Nothing in this scope, with the reason (xx91)"
+    },
+    {
+      "code": "BR-0292",
+      "screen": "B02",
+      "key": "pages.failed",
+      "label": "Failed to load",
+      "does": "The read failed; Try again re-requests it (xx92)"
+    },
+    {
+      "code": "BR-0293",
+      "screen": "B02",
+      "key": "pages.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not reaching the Bridge yet, so nothing is claimed (xx93)"
+    },
+    {
+      "code": "BR-0301",
+      "screen": "B03",
+      "key": "controls.row",
+      "label": "Control row",
+      "does": "Opens the dossier"
+    },
+    {
+      "code": "BR-0302",
+      "screen": "B03",
+      "key": "controls.filter",
+      "label": "Filter chips",
+      "does": "Never pressed · frustrated · GAP · unlabelled"
+    },
+    {
+      "code": "BR-0303",
+      "screen": "B03",
+      "key": "controls.actionChip",
+      "label": "Action chip",
+      "does": "Opens B04"
+    },
+    {
+      "code": "BR-0304",
+      "screen": "B03",
+      "key": "controls.codeLink",
+      "label": "Code link",
+      "does": "Opens the file at the live SHA"
+    },
+    {
+      "code": "BR-0305",
+      "screen": "B03",
+      "key": "controls.boardNote",
+      "label": "Board note",
+      "does": "Opens the CLICKABLES section"
+    },
+    {
+      "code": "BR-0306",
+      "screen": "B03",
+      "key": "controls.pack",
+      "label": "Context pack",
+      "does": "To B13"
+    },
+    {
+      "code": "BR-0307",
+      "screen": "B03",
+      "key": "controls.copy",
+      "label": "Copy",
+      "does": "The evidence footer: the screen as Markdown"
+    },
+    {
+      "code": "BR-0390",
+      "screen": "B03",
+      "key": "controls.loading",
+      "label": "Loading",
+      "does": "A skeleton shaped like the screen (xx90)"
+    },
+    {
+      "code": "BR-0391",
+      "screen": "B03",
+      "key": "controls.empty",
+      "label": "Empty",
+      "does": "Nothing in this scope, with the reason (xx91)"
+    },
+    {
+      "code": "BR-0392",
+      "screen": "B03",
+      "key": "controls.failed",
+      "label": "Failed to load",
+      "does": "The read failed; Try again re-requests it (xx92)"
+    },
+    {
+      "code": "BR-0393",
+      "screen": "B03",
+      "key": "controls.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not reaching the Bridge yet, so nothing is claimed (xx93)"
+    },
+    {
+      "code": "BR-0401",
+      "screen": "B04",
+      "key": "actions.row",
+      "label": "Action row",
+      "does": "Opens the dossier"
+    },
+    {
+      "code": "BR-0402",
+      "screen": "B04",
+      "key": "actions.sort",
+      "label": "Sort",
+      "does": "Failure % · p95 · volume · rescued"
+    },
+    {
+      "code": "BR-0403",
+      "screen": "B04",
+      "key": "actions.funnelSegment",
+      "label": "Funnel segment",
+      "does": "Opens that outcome's code"
+    },
+    {
+      "code": "BR-0404",
+      "screen": "B04",
+      "key": "actions.wiringLink",
+      "label": "Wiring link",
+      "does": "GitHub at the live SHA"
+    },
+    {
+      "code": "BR-0405",
+      "screen": "B04",
+      "key": "actions.failureReason",
+      "label": "Failure reason",
+      "does": "Opens B06 filtered to it"
+    },
+    {
+      "code": "BR-0406",
+      "screen": "B04",
+      "key": "actions.sessions",
+      "label": "Sessions",
+      "does": "Opens B07 filtered to sessions that hit it"
+    },
+    {
+      "code": "BR-0407",
+      "screen": "B04",
+      "key": "actions.pack",
+      "label": "Context pack",
+      "does": "To B13"
+    },
+    {
+      "code": "BR-0408",
+      "screen": "B04",
+      "key": "actions.copy",
+      "label": "Copy",
+      "does": "The evidence footer: the screen as Markdown"
+    },
+    {
+      "code": "BR-0490",
+      "screen": "B04",
+      "key": "actions.loading",
+      "label": "Loading",
+      "does": "A skeleton shaped like the screen (xx90)"
+    },
+    {
+      "code": "BR-0491",
+      "screen": "B04",
+      "key": "actions.empty",
+      "label": "Empty",
+      "does": "Nothing in this scope, with the reason (xx91)"
+    },
+    {
+      "code": "BR-0492",
+      "screen": "B04",
+      "key": "actions.failed",
+      "label": "Failed to load",
+      "does": "The read failed; Try again re-requests it (xx92)"
+    },
+    {
+      "code": "BR-0493",
+      "screen": "B04",
+      "key": "actions.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not reaching the Bridge yet, so nothing is claimed (xx93)"
+    },
+    {
+      "code": "BR-0501",
+      "screen": "B05",
+      "key": "codes.row",
+      "label": "Code row",
+      "does": "Opens the dossier"
+    },
+    {
+      "code": "BR-0502",
+      "screen": "B05",
+      "key": "codes.filters",
+      "label": "Filters",
+      "does": "Page · category · status · seen · expected"
+    },
+    {
+      "code": "BR-0503",
+      "screen": "B05",
+      "key": "codes.search",
+      "label": "Search",
+      "does": "Codes, meanings, exact words, files"
+    },
+    {
+      "code": "BR-0504",
+      "screen": "B05",
+      "key": "codes.occurrence",
+      "label": "Occurrence row",
+      "does": "Opens B07"
+    },
+    {
+      "code": "BR-0505",
+      "screen": "B05",
+      "key": "codes.sentry",
+      "label": "Sentry · Replay",
+      "does": "Out to Sentry"
+    },
+    {
+      "code": "BR-0506",
+      "screen": "B05",
+      "key": "codes.markExpected",
+      "label": "Mark expected…",
+      "does": "A note on why this firing is normal; R-01 and R-02 skip it; stored with who and when"
+    },
+    {
+      "code": "BR-0507",
+      "screen": "B05",
+      "key": "codes.watch",
+      "label": "Watch",
+      "does": "Pins it to Pulse and the digest"
+    },
+    {
+      "code": "BR-0508",
+      "screen": "B05",
+      "key": "codes.forceState",
+      "label": "Force this state",
+      "does": "The preview link (D6)"
+    },
+    {
+      "code": "BR-0509",
+      "screen": "B05",
+      "key": "codes.pack",
+      "label": "Context pack",
+      "does": "To B13"
+    },
+    {
+      "code": "BR-0510",
+      "screen": "B05",
+      "key": "codes.copy",
+      "label": "Copy",
+      "does": "The dossier as Markdown"
+    },
+    {
+      "code": "BR-0590",
+      "screen": "B05",
+      "key": "codes.loading",
+      "label": "Loading",
+      "does": "A skeleton shaped like the screen (xx90)"
+    },
+    {
+      "code": "BR-0591",
+      "screen": "B05",
+      "key": "codes.empty",
+      "label": "Empty",
+      "does": "Nothing in this scope, with the reason (xx91)"
+    },
+    {
+      "code": "BR-0592",
+      "screen": "B05",
+      "key": "codes.failed",
+      "label": "Failed to load",
+      "does": "The read failed; Try again re-requests it (xx92)"
+    },
+    {
+      "code": "BR-0593",
+      "screen": "B05",
+      "key": "codes.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not reaching the Bridge yet, so nothing is claimed (xx93)"
+    },
+    {
+      "code": "BR-0601",
+      "screen": "B06",
+      "key": "incidents.filterChips",
+      "label": "Filter chips",
+      "does": "Page · code · action · platform"
+    },
+    {
+      "code": "BR-0602",
+      "screen": "B06",
+      "key": "incidents.idChip",
+      "label": "ID chip",
+      "does": "Opens B05"
+    },
+    {
+      "code": "BR-0603",
+      "screen": "B06",
+      "key": "incidents.peopleCount",
+      "label": "People count",
+      "does": "Opens B07 filtered"
+    },
+    {
+      "code": "BR-0604",
+      "screen": "B06",
+      "key": "incidents.resolve",
+      "label": "Resolve / Reopen",
+      "does": "As now, now numbered"
+    },
+    {
+      "code": "BR-0605",
+      "screen": "B06",
+      "key": "incidents.sendToDuet",
+      "label": "Send to Duet",
+      "does": "A pack to B13"
+    },
+    {
+      "code": "BR-0606",
+      "screen": "B06",
+      "key": "incidents.copy",
+      "label": "Copy report",
+      "does": "As now, now with codes"
+    },
+    {
+      "code": "BR-0607",
+      "screen": "B06",
+      "key": "incidents.sessionLink",
+      "label": "Session link",
+      "does": "Opens the session (B07) that hit this incident"
+    },
+    {
+      "code": "BR-0690",
+      "screen": "B06",
+      "key": "incidents.loading",
+      "label": "Loading",
+      "does": "Skeleton while the screen reads"
+    },
+    {
+      "code": "BR-0691",
+      "screen": "B06",
+      "key": "incidents.empty",
+      "label": "Empty",
+      "does": "Nothing to show yet"
+    },
+    {
+      "code": "BR-0692",
+      "screen": "B06",
+      "key": "incidents.failed",
+      "label": "Failed",
+      "does": "The read failed; Try again"
+    },
+    {
+      "code": "BR-0693",
+      "screen": "B06",
+      "key": "incidents.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not flowing yet (the held migration or the switch)"
+    },
+    {
+      "code": "BR-0701",
+      "screen": "B07",
+      "key": "sessions.row",
+      "label": "Session row",
+      "does": "Opens the timeline"
+    },
+    {
+      "code": "BR-0702",
+      "screen": "B07",
+      "key": "sessions.filters",
+      "label": "Filters",
+      "does": "Failure · role · platform · page · person · release"
+    },
+    {
+      "code": "BR-0703",
+      "screen": "B07",
+      "key": "sessions.mark",
+      "label": "Mark",
+      "does": "Shows its envelope"
+    },
+    {
+      "code": "BR-0704",
+      "screen": "B07",
+      "key": "sessions.idChip",
+      "label": "ID chip",
+      "does": "Opens B05"
+    },
+    {
+      "code": "BR-0705",
+      "screen": "B07",
+      "key": "sessions.replay",
+      "label": "Replay",
+      "does": "Opens Sentry Replay at the moment"
+    },
+    {
+      "code": "BR-0706",
+      "screen": "B07",
+      "key": "sessions.person",
+      "label": "Person",
+      "does": "Opens B08"
+    },
+    {
+      "code": "BR-0707",
+      "screen": "B07",
+      "key": "sessions.reproduce",
+      "label": "Reproduce",
+      "does": "A pack written as reproduction steps (route, role, taps, state link)"
+    },
+    {
+      "code": "BR-0708",
+      "screen": "B07",
+      "key": "sessions.copy",
+      "label": "Copy",
+      "does": "Copies the session as Markdown"
+    },
+    {
+      "code": "BR-0790",
+      "screen": "B07",
+      "key": "sessions.loading",
+      "label": "Loading",
+      "does": "Skeleton while the screen reads"
+    },
+    {
+      "code": "BR-0791",
+      "screen": "B07",
+      "key": "sessions.empty",
+      "label": "Empty",
+      "does": "Nothing to show yet"
+    },
+    {
+      "code": "BR-0792",
+      "screen": "B07",
+      "key": "sessions.failed",
+      "label": "Failed",
+      "does": "The read failed; Try again"
+    },
+    {
+      "code": "BR-0793",
+      "screen": "B07",
+      "key": "sessions.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not flowing yet (the held migration or the switch)"
+    },
+    {
+      "code": "BR-0801",
+      "screen": "B08",
+      "key": "people.sessionRow",
+      "label": "Session row",
+      "does": "Opens B07"
+    },
+    {
+      "code": "BR-0802",
+      "screen": "B08",
+      "key": "people.codeRow",
+      "label": "Code row",
+      "does": "Opens B05 filtered to this person or team"
+    },
+    {
+      "code": "BR-0803",
+      "screen": "B08",
+      "key": "people.viewAs",
+      "label": "View as",
+      "does": "The existing read-only view-as, audited"
+    },
+    {
+      "code": "BR-0804",
+      "screen": "B08",
+      "key": "people.account",
+      "label": "Account",
+      "does": "Opens Users & Teams"
+    },
+    {
+      "code": "BR-0805",
+      "screen": "B08",
+      "key": "people.pack",
+      "label": "Context pack",
+      "does": "Everything for this person or team"
+    },
+    {
+      "code": "BR-0806",
+      "screen": "B08",
+      "key": "people.copy",
+      "label": "Copy",
+      "does": "Copies the person or team as Markdown"
+    },
+    {
+      "code": "BR-0890",
+      "screen": "B08",
+      "key": "people.loading",
+      "label": "Loading",
+      "does": "Skeleton while the screen reads"
+    },
+    {
+      "code": "BR-0891",
+      "screen": "B08",
+      "key": "people.empty",
+      "label": "Empty",
+      "does": "Nothing to show yet"
+    },
+    {
+      "code": "BR-0892",
+      "screen": "B08",
+      "key": "people.failed",
+      "label": "Failed",
+      "does": "The read failed; Try again"
+    },
+    {
+      "code": "BR-0893",
+      "screen": "B08",
+      "key": "people.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not flowing yet (the held migration or the switch)"
+    },
+    {
+      "code": "BR-0901",
+      "screen": "B09",
+      "key": "experience.viewRail",
+      "label": "View rail",
+      "does": "Vitals · Frustration · Waits · iOS app vs Safari"
+    },
+    {
+      "code": "BR-0902",
+      "screen": "B09",
+      "key": "experience.pageRow",
+      "label": "Page row",
+      "does": "Opens B02, Phone view"
+    },
+    {
+      "code": "BR-0903",
+      "screen": "B09",
+      "key": "experience.controlRow",
+      "label": "Control row",
+      "does": "Opens B03"
+    },
+    {
+      "code": "BR-0904",
+      "screen": "B09",
+      "key": "experience.compareReleases",
+      "label": "Compare releases",
+      "does": "Two releases side by side"
+    },
+    {
+      "code": "BR-0905",
+      "screen": "B09",
+      "key": "experience.copy",
+      "label": "Copy",
+      "does": "Copies the experience view as Markdown"
+    },
+    {
+      "code": "BR-0990",
+      "screen": "B09",
+      "key": "experience.loading",
+      "label": "Loading",
+      "does": "Skeleton while the screen reads"
+    },
+    {
+      "code": "BR-0991",
+      "screen": "B09",
+      "key": "experience.empty",
+      "label": "Empty",
+      "does": "Nothing to show yet"
+    },
+    {
+      "code": "BR-0992",
+      "screen": "B09",
+      "key": "experience.failed",
+      "label": "Failed",
+      "does": "The read failed; Try again"
+    },
+    {
+      "code": "BR-0993",
+      "screen": "B09",
+      "key": "experience.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not flowing yet (the held migration or the switch)"
+    },
+    {
+      "code": "BR-1001",
+      "screen": "B10",
+      "key": "releases.row",
+      "label": "Release row",
+      "does": "Opens it"
+    },
+    {
+      "code": "BR-1002",
+      "screen": "B10",
+      "key": "releases.compareWith",
+      "label": "Compare with",
+      "does": "Picks the base release"
+    },
+    {
+      "code": "BR-1003",
+      "screen": "B10",
+      "key": "releases.deltaRow",
+      "label": "Delta row",
+      "does": "Opens B05 or B04"
+    },
+    {
+      "code": "BR-1004",
+      "screen": "B10",
+      "key": "releases.pr",
+      "label": "PR",
+      "does": "GitHub"
+    },
+    {
+      "code": "BR-1005",
+      "screen": "B10",
+      "key": "releases.pack",
+      "label": "Regression pack",
+      "does": "The release's regression pack, opened in the Duet desk (B13)"
+    },
+    {
+      "code": "BR-1006",
+      "screen": "B10",
+      "key": "releases.copy",
+      "label": "Copy",
+      "does": "Copies the release diff as Markdown"
+    },
+    {
+      "code": "BR-1090",
+      "screen": "B10",
+      "key": "releases.loading",
+      "label": "Loading",
+      "does": "Skeleton while the screen reads"
+    },
+    {
+      "code": "BR-1091",
+      "screen": "B10",
+      "key": "releases.empty",
+      "label": "Empty",
+      "does": "Nothing to show yet"
+    },
+    {
+      "code": "BR-1092",
+      "screen": "B10",
+      "key": "releases.failed",
+      "label": "Failed",
+      "does": "The read failed; Try again"
+    },
+    {
+      "code": "BR-1093",
+      "screen": "B10",
+      "key": "releases.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not flowing yet (the held migration or the switch)"
+    },
+    {
+      "code": "BR-1101",
+      "screen": "B11",
+      "key": "drift.listTab",
+      "label": "List tab",
+      "does": "Switches list"
+    },
+    {
+      "code": "BR-1102",
+      "screen": "B11",
+      "key": "drift.row",
+      "label": "Row",
+      "does": "Opens the code, the file or the page"
+    },
+    {
+      "code": "BR-1103",
+      "screen": "B11",
+      "key": "drift.export",
+      "label": "Export",
+      "does": "Markdown or JSON, for Duet"
+    },
+    {
+      "code": "BR-1104",
+      "screen": "B11",
+      "key": "drift.pipePanel",
+      "label": "Pipe panel",
+      "does": "Opens it"
+    },
+    {
+      "code": "BR-1190",
+      "screen": "B11",
+      "key": "drift.loading",
+      "label": "Loading",
+      "does": "A skeleton shaped like the screen (xx90)"
+    },
+    {
+      "code": "BR-1191",
+      "screen": "B11",
+      "key": "drift.empty",
+      "label": "Empty",
+      "does": "Nothing in this scope, with the reason (xx91)"
+    },
+    {
+      "code": "BR-1192",
+      "screen": "B11",
+      "key": "drift.failed",
+      "label": "Failed to load",
+      "does": "The read failed; Try again re-requests it (xx92)"
+    },
+    {
+      "code": "BR-1193",
+      "screen": "B11",
+      "key": "drift.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not reaching the Bridge yet, so nothing is claimed (xx93)"
+    },
+    {
+      "code": "BR-1201",
+      "screen": "B12",
+      "key": "readiness.pageRow",
+      "label": "Page row",
+      "does": "Opens B02, Contract view"
+    },
+    {
+      "code": "BR-1202",
+      "screen": "B12",
+      "key": "readiness.gateCell",
+      "label": "Gate cell",
+      "does": "Opens its evidence"
+    },
+    {
+      "code": "BR-1203",
+      "screen": "B12",
+      "key": "readiness.heldPlan",
+      "label": "Held plan",
+      "does": "Opens the plan"
+    },
+    {
+      "code": "BR-1204",
+      "screen": "B12",
+      "key": "readiness.migration",
+      "label": "Migration",
+      "does": "Shows whether it is applied"
+    },
+    {
+      "code": "BR-1205",
+      "screen": "B12",
+      "key": "readiness.viewRail",
+      "label": "View rail",
+      "does": "Grid · Findings · Number truth"
+    },
+    {
+      "code": "BR-1206",
+      "screen": "B12",
+      "key": "readiness.findingRow",
+      "label": "Finding row",
+      "does": "Opens the finding (observed, expected, repro, fix, files)"
+    },
+    {
+      "code": "BR-1207",
+      "screen": "B12",
+      "key": "readiness.findingPack",
+      "label": "Finding → pack",
+      "does": "Sends the finding to B13 as a pack"
+    },
+    {
+      "code": "BR-1208",
+      "screen": "B12",
+      "key": "readiness.numberCheck",
+      "label": "Number check row",
+      "does": "Shows the query, the shown and expected values, and the team"
+    },
+    {
+      "code": "BR-1209",
+      "screen": "B12",
+      "key": "readiness.copy",
+      "label": "Copy",
+      "does": "The evidence footer: the screen as Markdown"
+    },
+    {
+      "code": "BR-1290",
+      "screen": "B12",
+      "key": "readiness.loading",
+      "label": "Loading",
+      "does": "A skeleton shaped like the screen (xx90)"
+    },
+    {
+      "code": "BR-1291",
+      "screen": "B12",
+      "key": "readiness.empty",
+      "label": "Empty",
+      "does": "Nothing in this scope, with the reason (xx91)"
+    },
+    {
+      "code": "BR-1292",
+      "screen": "B12",
+      "key": "readiness.failed",
+      "label": "Failed to load",
+      "does": "The read failed; Try again re-requests it (xx92)"
+    },
+    {
+      "code": "BR-1293",
+      "screen": "B12",
+      "key": "readiness.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not reaching the Bridge yet, so nothing is claimed (xx93)"
+    },
+    {
+      "code": "BR-1301",
+      "screen": "B13",
+      "key": "duet.packRow",
+      "label": "Pack row",
+      "does": "Opens the preview"
+    },
+    {
+      "code": "BR-1302",
+      "screen": "B13",
+      "key": "duet.copy",
+      "label": "Copy pack",
+      "does": "To the clipboard"
+    },
+    {
+      "code": "BR-1303",
+      "screen": "B13",
+      "key": "duet.download",
+      "label": "Download",
+      "does": ".md with a JSON block"
+    },
+    {
+      "code": "BR-1304",
+      "screen": "B13",
+      "key": "duet.markSent",
+      "label": "Mark sent",
+      "does": "Status: sent"
+    },
+    {
+      "code": "BR-1305",
+      "screen": "B13",
+      "key": "duet.verify",
+      "label": "Verify after release",
+      "does": "Sets the expected change; B10 decides it"
+    },
+    {
+      "code": "BR-1306",
+      "screen": "B13",
+      "key": "duet.archive",
+      "label": "Archive",
+      "does": "Takes it off the queue"
+    },
+    {
+      "code": "BR-1307",
+      "screen": "B13",
+      "key": "duet.build",
+      "label": "Build pack",
+      "does": "Builds the pack for a page, control, action or code typed in the box"
+    },
+    {
+      "code": "BR-1308",
+      "screen": "B13",
+      "key": "duet.names",
+      "label": "Include names",
+      "does": "Puts names in the pack instead of pseudonymous ids (D7); off by default"
+    },
+    {
+      "code": "BR-1390",
+      "screen": "B13",
+      "key": "duet.loading",
+      "label": "Loading",
+      "does": "A skeleton shaped like the screen (xx90)"
+    },
+    {
+      "code": "BR-1391",
+      "screen": "B13",
+      "key": "duet.empty",
+      "label": "Empty",
+      "does": "Nothing in this scope, with the reason (xx91)"
+    },
+    {
+      "code": "BR-1392",
+      "screen": "B13",
+      "key": "duet.failed",
+      "label": "Failed to load",
+      "does": "The read failed; Try again re-requests it (xx92)"
+    },
+    {
+      "code": "BR-1393",
+      "screen": "B13",
+      "key": "duet.noSignal",
+      "label": "No signal yet",
+      "does": "Live data is not reaching the Bridge yet, so nothing is claimed (xx93)"
+    },
+    {
+      "code": "BR-1401",
+      "screen": "B14",
+      "key": "palette.open",
+      "label": "Open (⌘K)",
+      "does": "Opens the command palette"
+    },
+    {
+      "code": "BR-1402",
+      "screen": "B14",
+      "key": "palette.result",
+      "label": "Result",
+      "does": "Opens the dossier the result names"
+    },
+    {
+      "code": "BR-1403",
+      "screen": "B14",
+      "key": "palette.byCode",
+      "label": "Jump by code",
+      "does": "A CH- code or Bridge ID lands on its B05 dossier"
+    },
+    {
+      "code": "BR-1404",
+      "screen": "B14",
+      "key": "palette.byPerson",
+      "label": "By person",
+      "does": "An email or a name lands on B08 (PR 3)"
+    },
+    {
+      "code": "BR-1405",
+      "screen": "B14",
+      "key": "palette.bySha",
+      "label": "By SHA",
+      "does": "Seven or more hex characters land on B10 (PR 3)"
+    },
+    {
+      "code": "BR-1406",
+      "screen": "B14",
+      "key": "palette.buildPack",
+      "label": "Build pack",
+      "does": ">pack <target> opens B13 with the pack built"
+    },
+    {
+      "code": "BR-1501",
+      "screen": "B15",
+      "key": "shell.railItem",
+      "label": "Rail item",
+      "does": "Opens that screen"
+    },
+    {
+      "code": "BR-1502",
+      "screen": "B15",
+      "key": "shell.sectionFold",
+      "label": "Section fold",
+      "does": "Folds or opens a rail section"
+    },
+    {
+      "code": "BR-1503",
+      "screen": "B15",
+      "key": "shell.scopeBar",
+      "label": "Scope bar",
+      "does": "Sets page, role and viewport; kept in the URL across screens"
+    },
+    {
+      "code": "BR-1504",
+      "screen": "B15",
+      "key": "shell.refresh",
+      "label": "Refresh",
+      "does": "Re-reads the screen (plain r)"
+    },
+    {
+      "code": "BR-1505",
+      "screen": "B15",
+      "key": "shell.pauseLive",
+      "label": "Pause live",
+      "does": "Stops live polling"
+    },
+    {
+      "code": "BR-1506",
+      "screen": "B15",
+      "key": "shell.viewAsExit",
+      "label": "View-as exit",
+      "does": "Leaves read-only view-as"
+    },
+    {
+      "code": "BR-1507",
+      "screen": "B15",
+      "key": "shell.phoneMore",
+      "label": "Phone More",
+      "does": "Opens the More sheet on a phone"
+    }
+  ]
+}

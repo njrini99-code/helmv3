@@ -59,10 +59,10 @@ export function NoClassTodaySheet({
       description="Coaches stop seeing you in class, and anything waiting arrives now."
       footer={
         <>
-          <Button variant="ghost" disabled={pending} onClick={onClose}>
+          <Button data-ctl="CTL-P012-052" variant="ghost" disabled={pending} onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={pending} onClick={() => onMark(chosen ? { classId: chosen.classId, label: chosen.label } : { classId: null, label: '' })}>
+          <Button data-ctl="CTL-P012-053" variant="primary" busy={pending} onClick={() => onMark(chosen ? { classId: chosen.classId, label: chosen.label } : { classId: null, label: '' })}>
             {pending ? 'Saving…' : 'Mark no class'}
           </Button>
         </>
@@ -72,13 +72,13 @@ export function NoClassTodaySheet({
         <legend className="ch-sr-only">Which classes</legend>
         {choices.map((c) => (
           <label key={c.classId} className="ch-ca-radio" htmlFor={`${id}-${c.classId}`}>
-            <input id={`${id}-${c.classId}`} type="radio" name={`${id}-which`} checked={picked === c.classId} onChange={() => setPicked(c.classId)} />
+            <input data-ctl="CTL-P012-054" id={`${id}-${c.classId}`} type="radio" name={`${id}-which`} checked={picked === c.classId} onChange={() => setPicked(c.classId)} />
             <span>{c.label}</span>
             {c.range && <span className="ch-num">{c.range}</span>}
           </label>
         ))}
         <label className="ch-ca-radio" htmlFor={`${id}-all`}>
-          <input id={`${id}-all`} type="radio" name={`${id}-which`} checked={picked === 'all'} onChange={() => setPicked('all')} />
+          <input data-ctl="CTL-P012-055" id={`${id}-all`} type="radio" name={`${id}-which`} checked={picked === 'all'} onChange={() => setPicked('all')} />
           <span>All my classes today</span>
         </label>
       </fieldset>

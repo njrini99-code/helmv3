@@ -183,7 +183,7 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
   }, [wanted, reduced]);
   if (!mounted) return null;
   return (
-    <button ref={key} type="button" className="ch-msv-jump" aria-label={unseen > 0 ? `Jump to latest, ${unseen} new` : 'Jump to latest'} onClick={onJump}>
+    <button data-ctl="CTL-P007-112" ref={key} type="button" className="ch-msv-jump" aria-label={unseen > 0 ? `Jump to latest, ${unseen} new` : 'Jump to latest'} onClick={onJump}>
       <Icon icon={ArrowDown} size={19} />
       {unseen > 0 && <b className="ch-num">{unseen}</b>}
     </button>

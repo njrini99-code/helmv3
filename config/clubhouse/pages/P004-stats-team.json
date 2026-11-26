@@ -60,7 +60,15 @@
       "src/clubhouse/data/stats-reads.ts",
       "src/clubhouse/data/stats-weight.ts",
       "src/clubhouse/data/paging.ts",
-      "src/clubhouse/data/leg-rows.ts"
+      "src/clubhouse/data/leg-rows.ts",
+      "src/clubhouse/screens/stats/StatsTeam.tsx",
+      "src/clubhouse/screens/stats/StatsTeamFirstRun.tsx",
+      "src/clubhouse/screens/stats/StatsTeamIslands.tsx",
+      "src/clubhouse/screens/stats/StatsTeamPhone.tsx",
+      "src/clubhouse/screens/stats/StatsTeamPhoneShs.tsx",
+      "src/clubhouse/screens/stats/TeamRank.tsx",
+      "src/clubhouse/screens/stats/TeamTape.tsx",
+      "src/clubhouse/screens/stats/TeamTrendChart.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/stats-team.md",

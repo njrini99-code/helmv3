@@ -133,7 +133,7 @@ export function CoachActions({
   const state = held === 'remove' ? 'removed' : assignStateOf(ins, { dismissed: !!fa.dismissed[ins.id], assigned: !!mine, missing });
 
   const message = messageHref ? (
-    <Button variant="ghost" leftIcon={MessageSquare} href={messageHref} data={{ 'data-ch-read-act': 'message' }}>
+    <Button data-ctl="CTL-P013-226" variant="ghost" leftIcon={MessageSquare} href={messageHref} data={{ 'data-ch-read-act': 'message' }}>
       Message {first}
     </Button>
   ) : null;
@@ -227,7 +227,7 @@ export function CoachActions({
           <Icon icon={Archive} size={14} />
           <span>Dismissed. It no longer shows on the board or on {first}’s.</span>
         </p>
-        <Button variant="ghost" leftIcon={RotateCcw} busy={fa.here('undo', ins.id)} disabled={fa.busy && !fa.here('undo', ins.id)} onClick={() => void fa.undo.run(target)} data={{ 'data-ch-read-act': 'undo' }}>
+        <Button data-ctl="CTL-P013-227" variant="ghost" leftIcon={RotateCcw} busy={fa.here('undo', ins.id)} disabled={fa.busy && !fa.here('undo', ins.id)} onClick={() => void fa.undo.run(target)} data={{ 'data-ch-read-act': 'undo' }}>
           Undo
         </Button>
       </div>
@@ -239,12 +239,12 @@ export function CoachActions({
     return (
       <div className="ch-hl-cact" data-ch-read-actions="assigned" data-ch-code="CH-13601">
         {messageHref && (
-          <Button variant="secondary" leftIcon={MessageSquare} href={messageHref} data={{ 'data-ch-read-act': 'message' }}>
+          <Button data-ctl="CTL-P013-228" variant="secondary" leftIcon={MessageSquare} href={messageHref} data={{ 'data-ch-read-act': 'message' }}>
             Message {first}
           </Button>
         )}
         {removable && (
-          <Button variant="ghost" onClick={() => remove(removable)} data={{ 'data-ch-read-act': 'remove' }}>
+          <Button data-ctl="CTL-P013-229" variant="ghost" onClick={() => remove(removable)} data={{ 'data-ch-read-act': 'remove' }}>
             Remove focus
           </Button>
         )}
@@ -253,7 +253,7 @@ export function CoachActions({
     );
   }
   const dismiss = (
-    <Button
+    <Button data-ctl="CTL-P013-230"
       variant="ghost"
       leftIcon={Archive}
       busy={fa.here('dismiss', ins.id)}
@@ -285,11 +285,11 @@ export function CoachActions({
       {state === 'unknown' ? (
         <RefreshNotice code="CH-13207" title="Assign as focus isn’t offered right now" body={`${focusStatusSaid(missing, first)} Dismiss still works. Try again in a moment.`} />
       ) : state === 'stale' ? (
-        <Button variant="primary" leftIcon={RotateCw} busy={rechecking} onClick={() => void recheck()} data={{ 'data-ch-read-act': 'recheck' }}>
+        <Button data-ctl="CTL-P013-231" variant="primary" leftIcon={RotateCw} busy={rechecking} onClick={() => void recheck()} data={{ 'data-ch-read-act': 'recheck' }}>
           Re-check now
         </Button>
       ) : (
-        <Button variant="primary" leftIcon={Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={assign} data={{ 'data-ch-read-act': 'assign' }}>
+        <Button data-ctl="CTL-P013-232" variant="primary" leftIcon={Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={assign} data={{ 'data-ch-read-act': 'assign' }}>
           {state === 'declined' ? 'Propose again' : 'Assign as focus'}
         </Button>
       )}
@@ -335,12 +335,12 @@ export function PlayerActions({ d, askHref, messageHref, coachName, coachUserId,
   return (
     <div className="ch-hl-cact" data-ch-read-actions={mine ? 'focus' : 'open'}>
       {askHref && (
-        <Button variant={mine ? 'secondary' : 'primary'} leftIcon={MessageCircleQuestion} href={askHref}>
+        <Button data-ctl="CTL-P013-233" variant={mine ? 'secondary' : 'primary'} leftIcon={MessageCircleQuestion} href={askHref}>
           Ask about this
         </Button>
       )}
       {messageHref && (
-        <Button variant="ghost" leftIcon={MessageSquare} href={messageHref} data={{ 'data-ch-read-act': 'message' }}>
+        <Button data-ctl="CTL-P013-234" variant="ghost" leftIcon={MessageSquare} href={messageHref} data={{ 'data-ch-read-act': 'message' }}>
           Message {coachName ?? 'your coach'}
         </Button>
       )}

@@ -1088,7 +1088,7 @@ errors.
 
 | Tab today | After |
 | --- | --- |
-| Overview | Becomes B01 Pulse (Clubhouse first). The cross-sport pieces move to Health. |
+| Overview | Becomes B01 Pulse (Clubhouse first). The cross-sport overview stays below Pulse on `/admin`; it does not move to Health (owner decision, 2026-11-25). |
 | Incidents | B06, enriched. URL unchanged. |
 | Health, Jobs & Integrity, Database, Flight Recorder, Teams pulse | Unchanged, under Platform. |
 | Users & Teams, Activity, Utilization | Unchanged, under Customers. B08 links to them. |
@@ -1125,6 +1125,57 @@ built in their own worktrees, in parallel with PR 1, against a seeded fixture.
   the Bridge, which is once the migration is applied and the flag is on.
 - Waiting on the owner: applying the migration, and the W-tier check (a forced
   CH-7004 landing one row with `bridge_id 70603`), which needs it.
+
+**PR 2 as built (branch `bridge/pr2-registry`, 2026-11-25):**
+
+- Done: B02 to B05 and B12 with their dossiers, the scope bar, the category
+  legend and chips, the ⌘K graph search (`/api/admin/clubhouse/search`), the
+  BR- codes (`br-codes.ts`), the Clubhouse rail section (D3), and all 1,784
+  controls numbered `CTL-P###-NNN` with ledgers in `config/clubhouse/controls/`.
+- Changed: the screens take Shift+H, I, J, C and M, because the §7.1 letters
+  are retired shortcuts still in use.
+
+**PR 4 as built (branch `bridge/pr4-drift-duet`, 2026-11-25):**
+
+- Done: B11 Drift (the nine lists, plus the §4.3 and §4.7 lists), B13 Duet desk
+  and the §9.1 pack with pluggable live sources, the "Context pack" controls on
+  B02 to B05 and ⌘K `>pack`, the §9.2 door, `config/bridge/contracts.json` with
+  the generated `docs/bridge/generated/BRIDGE_UI_MAP.md` (checked by
+  `clubhouse:check`), category 25 rows for all 17 pages, and the docs.
+- Changed: the door's routes are `/api/admin/clubhouse/duet/{packs,drift}`, not
+  `/api/admin/bridge/v1/…`; codes, actions and controls come through `packs`
+  (and, after the follow-up below, findings, releases, people and teams). Its switch is `BRIDGE_DUET_TOKEN`. Drift is
+  Shift+N; Duet desk has no key (D and Q are retired shortcuts). The rail
+  regrouping had already landed in PR 2.
+- Drift today: lists 1, 6, 7 (build half), 8 and 9 are zero and held by
+  `clubhouse:check`. Lists 2 to 5, the run-time half of 7 and the wrong-page
+  list wait for signals. The §4.7 list (controls with neither an action nor a
+  link) is not zero and is not gated.
+- Waiting on the owner: the migration (for the run-time lists, the incidents
+  evidence and the B13 queue) and the Duet token.
+
+**After PR 3 and PR 4 merged (branch `bridge/pr4-followups`, 2026-11-25):**
+
+- Done: the last pending pack controls open B13 with the pack built: the
+  regression pack on B10 (BR-1005), a person's or team's pack (BR-0805) and a
+  readiness finding's (BR-1207). The pack reads `rel:<sha>`, `user:<uuid>`,
+  `team:<uuid>` and `F-0001` beside page, control, action and code, and a
+  person or team pack names its subject by pseudonym (D7).
+- Done: the pack's live evidence comes from the live lenses (`livePackSources`
+  in `pack-server.ts`, pure matching in `pack-live.ts`): counts and their
+  split, three envelopes with trails, the failing sessions, the release it
+  started in (a release pack: what is new or rising against the one before)
+  and the rules firing, all from one snapshot read, "No signal yet" while the
+  migration is held.
+- Done: B04's Sessions (BR-0406) opens B07 with `?act=`, which keeps the
+  sessions whose kept events ran the action (only sessions with a failure keep
+  events). The Pipe dot (BR-0106) and every truth line's pipe open B11's pipe
+  panel (`/admin/clubhouse/drift?pipe=1#pipe`).
+- Still pending, by design: Mark expected, Watch, and the B13 queue (Mark
+  sent, Verify, Archive) need `bridge_notes`; B04's "Open in Incidents" per
+  failure reason needs counted failures. All wait for the held migration
+  20261124090000.
+- Decided: the cross-sport overview stays below Pulse on `/admin` (§11).
 
 ---
 

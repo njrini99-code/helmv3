@@ -175,7 +175,7 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
         eyebrow={phone ? undefined : 'Tournaments'}
         title={heading}
         line={editing ? 'Change the days, the course or the format. Scores and the lineup stay as they are.' : 'Name it, pick the days and the course. The team’s lineup comes next.'}
-        crumb={phone ? undefined : <TourCrumb href={back}>{editing ? data.initial.name || 'Event' : 'Tournaments'}</TourCrumb>}
+        crumb={phone ? undefined : <TourCrumb data-ctl="CTL-P016-027" href={back}>{editing ? data.initial.name || 'Event' : 'Tournaments'}</TourCrumb>}
       />
       <form
         className="ch-tour-lu-form__body"
@@ -191,7 +191,7 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
             {/* The generic refusal already is this sentence: say it once (audit 2026-10-31). */}
             {note.text !== 'Couldn’t set up the tournament. Nothing was saved.' && <span>{note.text}</span>}
             {stale && (
-              <Button size="sm" onClick={() => router.refresh()}>
+              <Button data-ctl="CTL-P016-028" size="sm" onClick={() => router.refresh()}>
                 Reload the event
               </Button>
             )}
@@ -251,10 +251,10 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
             {said}
           </p>
           <div className="ch-tour-lu-form__actions">
-            <Button variant="ghost" href={back}>
+            <Button data-ctl="CTL-P016-029" variant="ghost" href={back}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit" busy={save.pending}>
+            <Button data-ctl="CTL-P016-030" variant="primary" type="submit" busy={save.pending}>
               {editing ? (save.pending ? 'Saving…' : 'Save changes') : save.pending ? 'Creating…' : 'Create tournament'}
             </Button>
           </div>

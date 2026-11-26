@@ -89,14 +89,14 @@ export function SummaryCard({
   return (
     // A press anywhere opens the card; VoiceOver and the keyboard get the one real button inside it (STATS-8).
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- the button below is the keyboard path
-    <section
+    <section data-ctl="CTL-P004-030"
       className={'ch-shs-card ch-shs-sum' + (feature ? ' ch-shs-feature' : '')} suppressHydrationWarning
       data-go={go}
       data-ch="stats-card"
       data-ch-pressable=""
       onClick={onClick}
     >
-      <button type="button" className="ch-shs-sum__key" data-ch-no-open aria-label={ariaLabel} onClick={open} />
+      <button data-ctl="CTL-P004-031" type="button" className="ch-shs-sum__key" data-ch-no-open aria-label={ariaLabel} onClick={open} />
       <div className="ch-shs-ah">
         <h3>
           {icon && <ShsIcon name={icon} />}
@@ -105,7 +105,7 @@ export function SummaryCard({
         {meta != null && <span className="ch-shs-ah__meta ch-num">{meta}</span>}
         {feature ? (
           // The chevron is the keyboard's way in when the chart holds focus: 24 drawn, 44 to the finger.
-          <button
+          <button data-ctl="CTL-P004-032"
             type="button"
             className="ch-shs-dlink"
             aria-label={`Open ${title.toLowerCase()} details`}

@@ -16,7 +16,7 @@ export function SearchPill() {
   if (!desktop) return null;
   const apple = isApple(navigator);
   return (
-    <button
+    <button data-ctl="CTL-P001-042"
       type="button"
       className="ch-topbar__search"
       aria-haspopup="dialog"

@@ -192,6 +192,7 @@
     "clubhouse:profile": "npx --yes react-devtools@8.0.0",
     "clubhouse:materials": "node scripts/clubhouse/material-inventory.mjs",
     "clubhouse:clickables": "node scripts/clubhouse/clickable-map.mjs",
+    "clubhouse:controls": "node scripts/clubhouse/clickable-map.mjs --assign && node scripts/clubhouse/registry.mjs sync",
     "clubhouse:premium": "node scripts/clubhouse/premium-capture.mjs"
   },
   "keywords": [],

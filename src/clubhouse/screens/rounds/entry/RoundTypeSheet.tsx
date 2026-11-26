@@ -104,10 +104,10 @@ export function RoundTypeSheet({
       width={480}
       footer={
         <>
-          <Button variant="ghost" disabled={pending} onClick={onClose}>
+          <Button data-ctl="CTL-P011-078" variant="ghost" disabled={pending} onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={pending} disabled={!ready} onClick={() => onSave(choice)}>
+          <Button data-ctl="CTL-P011-079" variant="primary" busy={pending} disabled={!ready} onClick={() => onSave(choice)}>
             {pending ? <span data-ch-code="CH-11411">Saving…</span> : 'Save'}
           </Button>
         </>
@@ -146,7 +146,7 @@ export function RoundTypeSheet({
               <em>Which qualifier?</em>
               <Opts>
                 {options.qualifiers.map((q) => (
-                  <Opt
+                  <Opt data-ctl="CTL-P011-080"
                     key={q.id}
                     icon={Medal}
                     tone={qualifierId === q.id ? 'primary' : undefined}
@@ -173,7 +173,7 @@ export function RoundTypeSheet({
                   {Array.from({ length: Math.max(chosen.numRounds, 1) }, (_, i) => i + 1).map((n) => {
                     const taken = !free.includes(n);
                     return (
-                      <Opt
+                      <Opt data-ctl="CTL-P011-081"
                         key={n}
                         icon={Flag}
                         tone={!taken && roundNumber === n ? 'primary' : undefined}

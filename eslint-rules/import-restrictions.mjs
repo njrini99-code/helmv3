@@ -84,7 +84,9 @@ const CLUBHOUSE_FAIRWAY_PATTERN = {
 };
 
 const CLUBHOUSE_BOUNDARY_PATTERN = {
-  group: ['@/clubhouse', '@/clubhouse/*', '**/clubhouse', '**/clubhouse/*'],
+  // The Bridge's own Clubhouse modules (src/lib/admin/clubhouse: the graph, its view models, the palette search) are
+  // admin code that READS the contract, not the Clubhouse UI tree; the `**/clubhouse/*` pattern caught them by name.
+  group: ['@/clubhouse', '@/clubhouse/*', '**/clubhouse', '**/clubhouse/*', '!@/lib/admin/clubhouse', '!@/lib/admin/clubhouse/*'],
   message:
     'Code outside src/clubhouse may not import it except route files (page, layout, loading, ...). ' +
     'Pass what you need in from the route file. See src/clubhouse/README.md.',

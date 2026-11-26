@@ -26,10 +26,10 @@ export function EditMessageModal({ api, message, onClose }: { api: ChMessagesApi
       description="Everyone in the conversation sees it marked as edited."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P007-084" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button
+          <Button data-ctl="CTL-P007-085"
             variant="primary"
             busy={busy}
             disabled={!text.trim() || same}
@@ -71,10 +71,10 @@ export function DeleteMessageModal({ api, message, onClose }: { api: ChMessagesA
       description="It’s removed for everyone in the conversation. This can’t be undone."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P007-086" variant="ghost" onClick={onClose}>
             Keep it
           </Button>
-          <Button
+          <Button data-ctl="CTL-P007-087"
             variant="danger"
             feel="warning"
             busy={busy}

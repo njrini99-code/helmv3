@@ -169,7 +169,7 @@ export function DndMonth({
                       className={'ch-mo__cell' + (out ? ' is-out' : '') + (date === now.date ? ' is-today' : !out && date < now.date ? ' is-past' : '') + (date === selDate ? ' is-sel' : '') + (over === date ? ' is-target' : '')}
                       style={lanes ? ({ ['--ch-mo-lanes' as string]: lanes } as React.CSSProperties) : undefined}
                     >
-                      <button
+                      <button data-ctl="CTL-P006-146"
                         type="button"
                         data-print-visible
                         className="ch-mo__n"
@@ -288,7 +288,7 @@ function Chip({ e, two = false, tab, canDrag, onPick, lifted, onAltMove }: { e: 
   // the chip is narrow and the day's order already reads morning to evening.
   const at = e.allDay || e.start == null ? null : fmtHour(e.start, false, clock);
   return (
-    <button
+    <button data-ctl="CTL-P006-147"
       ref={setNodeRef}
       type="button"
       data-print-visible
@@ -332,7 +332,7 @@ function Ribbon({ r, tab, canDrag, onPick, onGrab, dates, lifted }: { r: ChLaneB
   const n = r.c1 - r.c0 + 1;
   const { e, span } = r;
   return (
-    <button
+    <button data-ctl="CTL-P006-148"
       ref={setNodeRef}
       type="button"
       data-print-visible

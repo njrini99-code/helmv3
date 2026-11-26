@@ -63,7 +63,7 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
             // Your next round in a live qualifier opens round setup on it (wave 7); the round's course streams in after the board.
             return (
               <li key={n}>
-                <Link prefetch={false} href={playHref} className="ch-qf-prounds__r is-todo is-play" data-ch-code="CH-09906">
+                <Link data-ctl="CTL-P009-063" prefetch={false} href={playHref} className="ch-qf-prounds__r is-todo is-play" data-ch-code="CH-09906">
                   {/* Named "Play round 3", then the course: the chip repeats the number, so it is not read. */}
                   <span className="ch-qf-prounds__n" aria-hidden="true">
                     R{n}
@@ -97,7 +97,7 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
           return (
             <li key={n}>
               {/* A round opens in place to its visuals (owner, 2026-10-16: "round detail when you click"). */}
-              <button
+              <button data-ctl="CTL-P009-064"
                 type="button"
                 className={'ch-qf-prounds__r' + (isBest ? ' is-best' : '') + (isOpen ? ' is-open' : '')}
                 aria-expanded={isOpen}
@@ -197,7 +197,7 @@ export function holeBars(diffs: ReadonlyArray<number | null>, unit: number): Arr
  */
 function RoundVisual({ round, holes, field }: { round: ChQRound; holes: ChQHole[] | undefined; field: number[] }) {
   const full = (
-    <Link prefetch={false} href={`/golf/dashboard/rounds/${round.id}`} className="ch-qf-rv__link">
+    <Link data-ctl="CTL-P009-065" prefetch={false} href={`/golf/dashboard/rounds/${round.id}`} className="ch-qf-rv__link">
       Open the full round
       <Icon icon={ArrowRight} size={14} />
     </Link>
