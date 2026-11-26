@@ -1621,6 +1621,8 @@ features:
         - src/app/admin/jobs/**
         - src/app/admin/thread/**
         - src/app/admin/*.tsx
+        # B01 Pulse, moved from /admin when Today became the front door (2026-11-26).
+        - src/app/admin/pulse/**
         # The Clubhouse section of the rail (B02-B05, B11-B13; Bridge redesign
         # PRs 2 and 4). Its numbering (config/bridge/contracts.json) and
         # generator (scripts/clubhouse/bridge-ui-map.mjs) are under services.
