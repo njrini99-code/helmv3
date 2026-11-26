@@ -138,7 +138,7 @@ describe('run() — end to end against tmp fixtures', () => {
     mkdirSync(join(home, '.claude'), { recursive: true });
     writeFileSync(
       join(home, '.claude', 'settings.json'),
-      JSON.stringify({ permissions: { allow: ['Bash(node scripts/schema.mjs:*) # helm_ specific'], deny: [] } }),
+      JSON.stringify({ permissions: { allow: ['Bash(node scripts/db/schema.mjs:*) # helm_ specific'], deny: [] } }),
     );
     const results = await run({ repoRoot: repo, homeDir: home });
     expect(byId(results, 'settings-ownership.user-scope-repo-leak').status).toBe(Status.FAIL);

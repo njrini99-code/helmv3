@@ -1,9 +1,9 @@
 import { readFileSync } from 'fs';
 import { config as loadEnv } from 'dotenv';
-import { cliGuard } from './lib/cli-guard.mjs';
+import { cliGuard } from '../lib/cli-guard.mjs';
 
 const cli = cliGuard({
-  name: 'scripts/run-sql.mjs',
+  name: 'scripts/db/run-sql.mjs',
   summary:
     'Executes a file of SQL statements one at a time through the production REST rpc/sql endpoint with the service-role key. Prefer `npm run db:apply -- <file>` for migrations (docs/operations/APPLY_PATH.md).',
   usage: '[sql-file]',

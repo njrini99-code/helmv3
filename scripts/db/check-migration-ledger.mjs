@@ -16,10 +16,10 @@
 import { readdir } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/check-migration-ledger.mjs',
+  name: 'scripts/db/check-migration-ledger.mjs',
   summary:
     "Checks that every migration file is recorded in the migration ledger, and the reverse. Read-only.",
   secrets: 'DATABASE_URL',
@@ -54,7 +54,7 @@ export function reconcile(files, ledger) {
 // CLI entrypoint — only runs when this file is executed directly.
 if (import.meta.url === `file://${process.argv[1]}`) {
   const __dirname = dirname(fileURLToPath(import.meta.url));
-  const migrationsDir = resolve(__dirname, '..', 'supabase', 'migrations');
+  const migrationsDir = resolve(__dirname, '..', '..', 'supabase', 'migrations');
 
   // Read on-disk filenames.
   let files;
@@ -85,7 +85,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     '  psql "$DATABASE_URL" -Atc \\',
     `    "select json_agg(json_build_object('version',version,'name',name)) \\`,
     '     from supabase_migrations.schema_migrations" \\',
-    '    | node scripts/check-migration-ledger.mjs',
+    '    | node scripts/db/check-migration-ledger.mjs',
     '',
     `Currently ${files.length} migration file(s) on disk.`,
   ].join('\n');

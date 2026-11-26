@@ -22,7 +22,7 @@
  * the apply order stays deterministic.
  *
  * Usage (CLI):
- *   node scripts/check-migration-versions.mjs
+ *   node scripts/db/check-migration-versions.mjs
  *
  * Exits 0 if every migration has a unique, well-formed version prefix.
  * Exits 1 (and prints offenders to stderr) on any duplicate or malformed
@@ -95,7 +95,7 @@ export function analyzeMigrationVersions(files) {
 // CLI entrypoint — only runs when this file is executed directly.
 if (import.meta.url === `file://${process.argv[1]}`) {
   const __dirname = dirname(fileURLToPath(import.meta.url));
-  const migrationsDir = resolve(__dirname, '..', 'supabase', 'migrations');
+  const migrationsDir = resolve(__dirname, '..', '..', 'supabase', 'migrations');
 
   let files;
   try {

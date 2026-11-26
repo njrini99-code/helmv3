@@ -127,7 +127,7 @@ jobs:
       - name: Schema invariants
         id: schema_invariants
         continue-on-error: true
-        run: ./scripts/check-schema-invariants.sh
+        run: ./scripts/db/check-schema-invariants.sh
 
       # Catches `.limit(N > 1000)` including behind a named constant, which the
       # ast-grep rule cannot see through — that is exactly where the live

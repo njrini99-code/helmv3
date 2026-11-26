@@ -91,7 +91,7 @@ json.dump(data,open("/tmp/db_changes.json","w"))
 # ── manifest markdown ──
 L=[]
 L.append("# DB Changes Manifest — Premium Remediation (Phase 3/4 + CoachHelm)")
-L.append(f"\n_Scan of all remediation agent transcripts + `supabase/migrations/`. Re-run `scripts/scan_db_changes.py` to refresh._\n")
+L.append(f"\n_Scan of all remediation agent transcripts + `supabase/migrations/`. Re-run `scripts/db/scan_db_changes.py` to refresh._\n")
 L.append("> Purpose: ONE apply-to-prod checklist so no schema change drifts. Nothing here is auto-applied to prod by this manifest.\n")
 
 L.append("## 1. Applied to LIVE prod during the run (verify each has a committed migration file)")

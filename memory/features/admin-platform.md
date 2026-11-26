@@ -1297,7 +1297,7 @@ Phase 0 entry above.
   still in progress with no run yet reads `unknown`, never a fabricated
   `missed`.
 - **`invariant-lattice.ts`** (`/admin/health`) — checked both brief-named
-  sources directly: `scripts/check-schema-invariants.sh` and
+  sources directly: `scripts/db/check-schema-invariants.sh` and
   `npm run test:business` are CI-only and persist NO outcome anywhere this
   codebase can read (no table, no `docs/generated` file, no `admin_events`
   row) — their lattice rows are honestly `unknown` on every single request,

@@ -132,11 +132,11 @@ hook reminds you when a migration is staged.
     npm run db:types          # regenerate (writes the file)
     npm run db:types:check    # compare only; never writes the file
 
-`db:types:check` runs `scripts/check-types-drift.sh`. Without
+`db:types:check` runs `scripts/db/check-types-drift.sh`. Without
 `SUPABASE_ACCESS_TOKEN` it cannot reproduce the production schema and passes
 with a warning.
 
-`./scripts/apply-migration.sh <file> --yes` regenerates types after a migration
+`./scripts/db/apply-migration.sh <file> --yes` regenerates types after a migration
 has been applied some other way. It does not apply anything and never waits for
 a keypress; without `--yes` it prints what to do and exits.
 

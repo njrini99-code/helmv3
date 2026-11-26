@@ -16,7 +16,7 @@
 # 2026-07-25 while regenerating types for PR #1051.
 #
 # This script fixes both halves:
-#   1. Resolve the project id the same way scripts/apply-migration.sh does
+#   1. Resolve the project id the same way scripts/db/apply-migration.sh does
 #      (env → .env.local → derive from NEXT_PUBLIC_SUPABASE_URL) and FAIL LOUDLY
 #      before touching the output file.
 #   2. Generate into a temp file and only move it into place after the CLI
@@ -43,7 +43,7 @@ if [ ! -x "$SUPABASE_CLI" ]; then
   exit 1
 fi
 
-# ── Resolve the project id (mirrors scripts/apply-migration.sh) ──────────────
+# ── Resolve the project id (mirrors scripts/db/apply-migration.sh) ──────────────
 if [ -z "${SUPABASE_PROJECT_ID:-}" ]; then
   if [ -f .env.local ]; then
     SUPABASE_PROJECT_ID=$(grep -E "^SUPABASE_PROJECT_ID=" .env.local | cut -d '=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ' || true)

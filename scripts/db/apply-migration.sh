@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Helper script to regenerate types after a migration has been applied.
-# Usage: ./scripts/apply-migration.sh path/to/migration.sql [--yes]
+# Usage: ./scripts/db/apply-migration.sh path/to/migration.sql [--yes]
 #
 # This script does NOT apply the migration. Apply it first with
 # `npm run db:apply -- <file>` (docs/operations/APPLY_PATH.md) or the project
@@ -27,7 +27,7 @@ done
 
 if [ -z "$MIGRATION_FILE" ]; then
   echo "❌ Error: Migration file path required"
-  echo "Usage: ./scripts/apply-migration.sh path/to/migration.sql [--yes]"
+  echo "Usage: ./scripts/db/apply-migration.sh path/to/migration.sql [--yes]"
   exit 1
 fi
 
@@ -75,7 +75,7 @@ echo "   3. Direct psql connection"
 echo ""
 if [ "$YES" -ne 1 ]; then
   echo "Once it is applied, re-run with --yes to regenerate types:"
-  echo "   ./scripts/apply-migration.sh $MIGRATION_FILE --yes"
+  echo "   ./scripts/db/apply-migration.sh $MIGRATION_FILE --yes"
   exit 0
 fi
 
