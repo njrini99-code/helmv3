@@ -90,7 +90,7 @@ export function CourseView({
   return (
     // The click is only the backdrop's; Esc arrives through onCancel.
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-    <dialog
+    <dialog data-ctl="CTL-P011-119"
       ref={ref}
       className="ch-rtcv-d"
       aria-label={`Course view, hole ${hole.number}`}
@@ -119,7 +119,7 @@ export function CourseView({
             />
             <header className="ch-rtcv__top">
               <Tooltip>
-                <button
+                <button data-ctl="CTL-P011-120"
                   type="button"
                   className="ch-rtcv__glass ch-rtcv__back"
                   aria-label={pending ? `Back to shot ${pending.shot}` : 'Back to the hole'}
@@ -137,7 +137,7 @@ export function CourseView({
               </h2>
               <div className="ch-rtcv__glass ch-rtcv__nav" role="group" aria-label="Look at another hole">
                 <Tooltip>
-                  <button
+                  <button data-ctl="CTL-P011-121"
                     type="button"
                     disabled={index === 0}
                     aria-label={index > 0 ? `Hole ${holes[index - 1]!.number}` : 'No earlier hole'}
@@ -147,7 +147,7 @@ export function CourseView({
                   </button>
                 </Tooltip>
                 <Tooltip>
-                  <button
+                  <button data-ctl="CTL-P011-122"
                     type="button"
                     disabled={index === holes.length - 1}
                     aria-label={index < holes.length - 1 ? `Hole ${holes[index + 1]!.number}` : 'No later hole'}
@@ -159,7 +159,7 @@ export function CourseView({
               </div>
             </header>
             <section className={'ch-rtcv__sheet' + (listOpen ? ' is-open' : '')} aria-labelledby="ch-rtcv-h">
-              <button
+              <button data-ctl="CTL-P011-123"
                 type="button"
                 className="ch-rtcv__sh"
                 aria-expanded={listOpen}

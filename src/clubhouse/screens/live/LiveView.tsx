@@ -49,7 +49,7 @@ export function LiveDenied() {
         title={LIVE_COPY.noAccess}
         body="Live shows the players of the team you coach. Your team, rounds and stats are on Home."
         action={
-          <Button variant="primary" leftIcon={House} href="/golf/dashboard">
+          <Button data-ctl="CTL-P011-006" variant="primary" leftIcon={House} href="/golf/dashboard">
             Back to Home
           </Button>
         }

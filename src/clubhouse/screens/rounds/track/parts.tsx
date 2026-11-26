@@ -34,7 +34,7 @@ export function Seg<T extends string>({
   return (
     <div className={'ch-rt-seg' + (cols ? ' ch-rt-seg--grid' : '')} role="radiogroup" aria-label={label} style={cols ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` } : undefined}>
       {options.map((o) => (
-        <button
+        <button data-ctl="CTL-P011-145"
           key={o.value}
           type="button"
           role="radio"
@@ -137,7 +137,7 @@ export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: R
         );
         const canGo = !!onJump && i !== current && (playedBefore(i, current, holes.length, startHole) || score != null || i === frontier);
         return canGo ? (
-          <button key={h.number} type="button" className={cls} aria-label={name} onClick={() => onJump!(i)}>
+          <button data-ctl="CTL-P011-146" key={h.number} type="button" className={cls} aria-label={name} onClick={() => onJump!(i)}>
             {inner}
           </button>
         ) : (
@@ -390,7 +390,7 @@ export function ShotLog({
   const lastText = lastShotWords(last, pref);
   return (
     <div className={'ch-rt-log' + (open ? ' is-open' : '')}>
-      <button
+      <button data-ctl="CTL-P011-147"
         type="button"
         className="ch-rt-log__h"
         aria-expanded={open}
@@ -436,7 +436,7 @@ export function ShotLog({
             );
             return onEdit ? (
               <li key={s.id ?? `${s.shotNumber}-${i}`}>
-                <button
+                <button data-ctl="CTL-P011-148"
                   type="button"
                   className="ch-rt-log__r ch-rt-log__r--btn"
                   disabled={editDisabled}

@@ -218,7 +218,7 @@ export function HoleMap({ holes: all, selected: asked, onSelect, coverage, sampl
     const s = h.stats;
     const on = h.n === selected;
     return (
-      <button
+      <button data-ctl="CTL-P011-025"
         key={h.n}
         type="button"
         role="radio"
@@ -277,7 +277,7 @@ export function HoleMap({ holes: all, selected: asked, onSelect, coverage, sampl
       {/* Both views render; CSS shows one (data-view, the phone gate, the fit), so the first paint is final. */}
       <div className="ch-hmap-mapv">
         {/* The scrub surface wraps the group: pointer handlers here, the radios' keys on each radio. */}
-        <div className="ch-hmap" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+        <div data-ctl="CTL-P011-026" className="ch-hmap" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
           <div ref={group} role="radiogroup" className="ch-hmap__grid" data-phone-cols={PHONE_COLS} aria-label="Hole by hole, average to par" aria-controls="ch-hmap-detail">
             {/* Phone only: six across, the turn lands mid row two, so Out and In share one line above the grid. */}
             <span className="ch-hmap__sum" aria-hidden="true">
@@ -299,10 +299,10 @@ export function HoleMap({ holes: all, selected: asked, onSelect, coverage, sampl
           </div>
         </div>
         <div className="ch-hmap__steps">
-          <button type="button" className="ch-hmap__step" aria-label="Previous hole" onClick={() => step(-1)}>
+          <button data-ctl="CTL-P011-027" type="button" className="ch-hmap__step" aria-label="Previous hole" onClick={() => step(-1)}>
             <Icon icon={ChevronLeft} size={20} />
           </button>
-          <button type="button" className="ch-hmap__step" aria-label="Next hole" onClick={() => step(1)}>
+          <button data-ctl="CTL-P011-028" type="button" className="ch-hmap__step" aria-label="Next hole" onClick={() => step(1)}>
             <Icon icon={ChevronRight} size={20} />
           </button>
         </div>
@@ -322,7 +322,7 @@ export function HoleMap({ holes: all, selected: asked, onSelect, coverage, sampl
             {holes.map((h) => (
               <tr key={h.n} className={h.n === selected ? 'is-sel' : undefined} aria-selected={h.n === selected}>
                 <th scope="row">
-                  <button type="button" className="ch-hmap-list__go" onClick={() => pick(h.n)} aria-label={tileLabel(h, gain === h.n)}>
+                  <button data-ctl="CTL-P011-029" type="button" className="ch-hmap-list__go" onClick={() => pick(h.n)} aria-label={tileLabel(h, gain === h.n)}>
                     {h.n}
                   </button>
                 </th>
@@ -358,13 +358,13 @@ export function HoleMap({ holes: all, selected: asked, onSelect, coverage, sampl
           {plays.length > 0 && (
             <div className="ch-hmap-d__plays">
               {plays.map((p) => (
-                <Link prefetch={false} key={p.roundId} className="ch-hmap-d__pill" href={reviewAt(p.roundId)} aria-label={`${shortDate(p.date)}: ${p.score} on par ${p.par}. Open the round at this hole`}>
+                <Link data-ctl="CTL-P011-030" prefetch={false} key={p.roundId} className="ch-hmap-d__pill" href={reviewAt(p.roundId)} aria-label={`${shortDate(p.date)}: ${p.score} on par ${p.par}. Open the round at this hole`}>
                   <ScoreMark score={p.score} par={p.par} size="sm" hidden />
                   <span className="ch-num">{shortDate(p.date)}</span>
                 </Link>
               ))}
               {!allPlays && hole.plays.length > PILLS_MAX && (
-                <button type="button" className="ch-hmap-d__all" onClick={() => setAllPlays(true)}>
+                <button data-ctl="CTL-P011-031" type="button" className="ch-hmap-d__all" onClick={() => setAllPlays(true)}>
                   All {hole.plays.length}
                 </button>
               )}

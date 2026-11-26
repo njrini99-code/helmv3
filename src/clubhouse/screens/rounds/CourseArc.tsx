@@ -93,7 +93,7 @@ export function CourseArc({
         <h2 id="ch-carc-h">The round here</h2>
       </div>
       <div className="ch-carc">
-        <svg
+        <svg data-ctl="CTL-P011-015"
           viewBox={`0 0 ${W} ${H}`}
           className="ch-carc__svg"
           role="slider"
@@ -153,12 +153,12 @@ export function CourseArc({
       {(lines.best || lines.last) && (
         <div className="ch-pills ch-carc__pills" role="group" aria-label="Draw over the average">
           {lines.best && (
-            <button type="button" className="ch-pill ch-num" aria-pressed={show.best} onClick={() => toggle('best')}>
+            <button data-ctl="CTL-P011-016" type="button" className="ch-pill ch-num" aria-pressed={show.best} onClick={() => toggle('best')}>
               Best · {lines.best.score}
             </button>
           )}
           {lines.last && (
-            <button type="button" className="ch-pill ch-num" aria-pressed={show.last} onClick={() => toggle('last')}>
+            <button data-ctl="CTL-P011-017" type="button" className="ch-pill ch-num" aria-pressed={show.last} onClick={() => toggle('last')}>
               Last · {lines.last.score}
             </button>
           )}

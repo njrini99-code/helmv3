@@ -1412,314 +1412,314 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/live/FreshnessChip.tsx`
 
-- 39 `button` "{Trying…|Try again}" (button, onClick)
+- CTL-P011-001 39 `button` "{Trying…|Try again}" (button, onClick)
 
 ### `src/clubhouse/live/PlayerLane.tsx`
 
-- 94 `button` "{label}" (button, onClick)
+- CTL-P011-002 94 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/routes/course-history.tsx`
 
-- 48 `Button` "Open Roster" (button, href) CH-11391
-- 73 `Button` "{Go to Stats|Go to your rounds}" (button, href)
+- CTL-P011-003 48 `Button` "Open Roster" (button, href) CH-11391
+- CTL-P011-004 73 `Button` "{Go to Stats|Go to your rounds}" (button, href)
 
 ### `src/clubhouse/routes/round-review.tsx`
 
-- 60 `Button` "{Go to Stats|Go to your rounds}" (button, href) CH-11307
+- CTL-P011-005 60 `Button` "{Go to Stats|Go to your ro…" (button, href) CH-11307
 
 ### `src/clubhouse/screens/live/LiveView.tsx`
 
-- 52 `Button` "Back to Home" (button, href) CH-16609
+- CTL-P011-006 52 `Button` "Back to Home" (button, href) CH-16609
 
 ### `src/clubhouse/screens/live/PlayerLiveSheet.tsx`
 
-- 177 `summary` "How to read this" (button)
-- 183 `Button` "Message {firstName}" (button, href)
-- 188 `Button` "Open qualifier" (button, href)
+- CTL-P011-007 177 `summary` "How to read this" (button)
+- CTL-P011-008 183 `Button` "Message {firstName}" (button, href)
+- CTL-P011-009 188 `Button` "Open qualifier" (button, href)
 
 ### `src/clubhouse/screens/live/live-parts.tsx`
 
-- 93 `button` "{sortLabel}" (button) CH-16615
-- 108 `button` "{plural}" (button, onClick)
+- CTL-P011-010 93 `button` "{sortLabel}" (button) CH-16615
+- CTL-P011-011 108 `button` "{plural}" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/CoachNote.tsx`
 
-- 63 `Button` "{Edit|Add a note}" (button, onClick) CH-11523
-- 95 `Button` "Cancel" (button, onClick) CH-11523
-- 98 `Button` "{Saving…|Save note}" (button) CH-11523
+- CTL-P011-012 63 `Button` "{Edit|Add a note}" (button, onClick) CH-11523
+- CTL-P011-013 95 `Button` "Cancel" (button, onClick) CH-11523
+- CTL-P011-014 98 `Button` "{Saving…|Save note}" (button) CH-11523
 
 ### `src/clubhouse/screens/rounds/CourseArc.tsx`
 
-- 96 `svg` "Average running score to par" (onClick)
-- 156 `button` "Best · {score}" (button, onClick)
-- 161 `button` "Last · {score}" (button, onClick)
+- CTL-P011-015 96 `svg` "Average running score to par" (onClick)
+- CTL-P011-016 156 `button` "Best · {score}" (button, onClick)
+- CTL-P011-017 161 `button` "Last · {score}" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/CourseLink.tsx`
 
-- 23 `Link` "{text}" (link, href)
+- CTL-P011-018 23 `Link` "{text}" (link, href)
 
 ### `src/clubhouse/screens/rounds/CoursePage.tsx`
 
-- 78 `Link` "{label}: {value}, {sub}. Open the round" (link, href) CH-11291
-- 163 `Button` "Message {who}" (button, href)
-- 169 `Button` "Start a round here" (button, href)
-- 185 `Link` "{line}" (link, href)
-- 205 `button` "{Show less|Show all}" (button, onClick)
+- CTL-P011-019 78 `Link` "{label}: {value}, {sub}. Open …" (link, href) CH-11291
+- CTL-P011-020 163 `Button` "Message {who}" (button, href)
+- CTL-P011-021 169 `Button` "Start a round here" (button, href)
+- CTL-P011-022 185 `Link` "{line}" (link, href)
+- CTL-P011-023 205 `button` "{Show less|Show all}" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/ExportRounds.tsx`
 
-- 47 `ExportButton` "(no label)" (button) CH-11080
+- CTL-P011-024 47 `ExportButton` "Export (ledger)" (button) CH-11080
 
 ### `src/clubhouse/screens/rounds/HoleMap.tsx`
 
-- 221 `button` "{tileLabel}" (button, onClick)
-- 280 `div` "Hole by hole, average to par" (onPointerDown)
-- 302 `button` "Previous hole" (button, onClick)
-- 305 `button` "Next hole" (button, onClick)
-- 325 `button` "{tileLabel}" (button, onClick)
-- 361 `Link` "{shortDate}: {score} on par {par}. Open the round a…" (link, href)
-- 367 `button` "All {length}" (button, onClick)
+- CTL-P011-025 221 `button` "{tileLabel}" (button, onClick)
+- CTL-P011-026 280 `div` "Hole by hole, average to par" (onPointerDown)
+- CTL-P011-027 302 `button` "Previous hole" (button, onClick)
+- CTL-P011-028 305 `button` "Next hole" (button, onClick)
+- CTL-P011-029 325 `button` "{tileLabel}" (button, onClick)
+- CTL-P011-030 361 `Link` "{shortDate}: {score} on par {par}. Ope…" (link, href)
+- CTL-P011-031 367 `button` "All {length}" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/HowItPlays.tsx`
 
-- 21 `button` "{label} {value}" (button, onClick)
+- CTL-P011-032 21 `button` "{label} {value}" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/RoundReview.tsx`
 
-- 172 `button` "Hole {n}" (button, onClick)
-- 193 `td` "(no label)" (onClick)
-- 272 `button` "Previous hole" (button, onClick)
-- 278 `button` "Next hole" (button, onClick)
-- 290 `Link` "Hole {n} at {course}" (link, href)
-- 371 `Button` "Change round type" (button, onClick) CH-11522
-- 446 `Link` "Why?" (link, href)
-- 608 `Link` "{label}" (link, onClick, href)
-- 634 `CourseLink` "(no label)" (link)
-- 809 `button` "{n} Hole {n} · Par {par} {{scoreName}|{score…" (button, onClick)
+- CTL-P011-033 172 `button` "Hole {n}" (button, onClick)
+- CTL-P011-034 193 `td` "(no label)" (onClick)
+- CTL-P011-035 272 `button` "Previous hole" (button, onClick)
+- CTL-P011-036 278 `button` "Next hole" (button, onClick)
+- CTL-P011-037 290 `Link` "Hole {n} at {course}" (link, href)
+- CTL-P011-038 371 `Button` "Change round type" (button, onClick) CH-11522
+- CTL-P011-039 446 `Link` "Why?" (link, href)
+- CTL-P011-040 608 `Link` "{label}" (link, onClick, href)
+- CTL-P011-041 634 `CourseLink` "(no label)" (link)
+- CTL-P011-042 809 `button` "{n} Hole {n} · Par {par} {{scor…" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/RoundSays.tsx`
 
-- 103 `button` "About {lowerFirst}" (button, onClick)
+- CTL-P011-043 103 `button` "About {lowerFirst}" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/RoundZones.tsx`
 
-- 176 `svg` "Running score to par" (onClick)
+- CTL-P011-044 176 `svg` "Running score to par" (onClick)
 
 ### `src/clubhouse/screens/rounds/RoundsHere.tsx`
 
-- 50 `button` "{Cancel|Compare}" (button, onClick)
-- 63 `button` "{Compare {shortDate}, {score}|…" (button, onClick, role=checkbox)
-- 86 `RoundRow` "(no label)" (href)
-- 106 `Button` "Compare {shortDate} and {shortDate}" (button, onClick)
+- CTL-P011-045 50 `button` "{Cancel|Compare}" (button, onClick)
+- CTL-P011-046 63 `button` "{Compare {shortDa…" (button, onClick, role=checkbox)
+- CTL-P011-047 86 `RoundRow` "(no label)" (href)
+- CTL-P011-048 106 `Button` "Compare {shortDate} and {shortD…" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/RoundsLibrary.tsx`
 
-- 88 `Link` "{name}: your history here" (link, href)
-- 219 `Button` "New round" (button, href)
-- 238 `Button` "New round" (button, href) CH-11301
-- 290 `button` "Discard the round at {course}" (button, onClick)
-- 295 `Link` "{Post|Continue}" (link, onClick, href)
-- 332 `GroupHead` "{key} {length} {pluralWord} {avg {formatFix…" (href) CH-11203
-- 353 `RoundRow` "(no label)" (href) CH-11203
-- 384 `Button` "Keep it" (button, onClick) CH-11501
-- 388 `Button` "{Discarding…|Discard round}" (button, onClick) CH-11501
+- CTL-P011-049 88 `Link` "{name}: your history here" (link, href)
+- CTL-P011-050 219 `Button` "New round" (button, href)
+- CTL-P011-051 238 `Button` "New round" (button, href) CH-11301
+- CTL-P011-052 290 `button` "Discard the round at {course}" (button, onClick)
+- CTL-P011-053 295 `Link` "{Post|Continue}" (link, onClick, href)
+- CTL-P011-054 332 `GroupHead` "{key} {length} {pluralWord} {a…" (href) CH-11203
+- CTL-P011-055 353 `RoundRow` "(no label)" (href) CH-11203
+- CTL-P011-056 384 `Button` "Keep it" (button, onClick) CH-11501
+- CTL-P011-057 388 `Button` "{Discarding…|Discard r…" (button, onClick) CH-11501
 
 ### `src/clubhouse/screens/rounds/TeamRounds.tsx`
 
-- 137 `LedgerRow` "{player|course}" (onClick, href)
-- 203 `Link` "{label}" (link, onClick, href)
-- 425 `Button` "Invite players" (button, href) CH-11317
-- 440 `Button` "Open roster" (button, href) CH-11320
+- CTL-P011-058 137 `LedgerRow` "{player|course}" (onClick, href)
+- CTL-P011-059 203 `Link` "{label}" (link, onClick, href)
+- CTL-P011-060 425 `Button` "Invite players" (button, href) CH-11317
+- CTL-P011-061 440 `Button` "Open roster" (button, href) CH-11320
 
 ### `src/clubhouse/screens/rounds/card/RoundCard.tsx`
 
-- 283 `Button` "Cancel" (button, onClick) CH-11921
-- 286 `Button` "{Share|Save image}" (button, onClick) CH-11921
-- 369 `Button` "Share card" (button, onClick) CH-11920
-- 373 `Button` "Print" (button, onClick) CH-11920
+- CTL-P011-062 283 `Button` "Cancel" (button, onClick) CH-11921
+- CTL-P011-063 286 `Button` "{Share|Save image}" (button, onClick) CH-11921
+- CTL-P011-064 369 `Button` "Share card" (button, onClick) CH-11920
+- CTL-P011-065 373 `Button` "Print" (button, onClick) CH-11920
 
 ### `src/clubhouse/screens/rounds/entry/CourseNudge.tsx`
 
-- 93 `Button` "{Pick the course|Change}" (button, onClick) CH-11962
+- CTL-P011-066 93 `Button` "{Pick the course|Change}" (button, onClick) CH-11962
 
 ### `src/clubhouse/screens/rounds/entry/InProgressConflictDialog.tsx`
 
-- 123 `Opt` "Resume" (onClick) CH-11514
-- 134 `Opt` "New round" (onClick) CH-11514
-- 135 `Opt` "Discard" (onClick) CH-11514
+- CTL-P011-067 123 `Opt` "Resume" (onClick) CH-11514
+- CTL-P011-068 134 `Opt` "New round" (onClick) CH-11514
+- CTL-P011-069 135 `Opt` "Discard" (onClick) CH-11514
 
 ### `src/clubhouse/screens/rounds/entry/QualifierRoundSheet.tsx`
 
-- 55 `Button` "Back" (button, onClick) CH-11518
-- 59 `Button` "Post round" (button, onClick) CH-11518
-- 69 `Opt` "Qualifier round {n}" (onClick) CH-11518
+- CTL-P011-070 55 `Button` "Back" (button, onClick) CH-11518
+- CTL-P011-071 59 `Button` "Post round" (button, onClick) CH-11518
+- CTL-P011-072 69 `Opt` "Qualifier round {n}" (onClick) CH-11518
 
 ### `src/clubhouse/screens/rounds/entry/RecoveryDialog.tsx`
 
-- 129 `Opt` "{Restoring…|Restore round}" (onClick) CH-11512
-- 140 `Opt` "Discard saved shots" (onClick) CH-11512
+- CTL-P011-073 129 `Opt` "{Restoring…|Restore round}" (onClick) CH-11512
+- CTL-P011-074 140 `Opt` "Discard saved shots" (onClick) CH-11512
 
 ### `src/clubhouse/screens/rounds/entry/ReloadBanner.tsx`
 
-- 44 `Button` "{Reloading…|Reload}" (button, onClick) CH-11902
-- 68 `Button` "Dismiss" (button, onClick) CH-11013
+- CTL-P011-075 44 `Button` "{Reloading…|Reload}" (button, onClick) CH-11902
+- CTL-P011-076 68 `Button` "Dismiss" (button, onClick) CH-11013
 
 ### `src/clubhouse/screens/rounds/entry/RoundRuntime.tsx`
 
-- 299 `Button` "Review and post" (button, onClick) CH-11910
+- CTL-P011-077 299 `Button` "Review and post" (button, onClick) CH-11910
 
 ### `src/clubhouse/screens/rounds/entry/RoundTypeSheet.tsx`
 
-- 107 `Button` "Cancel" (button, onClick) CH-11521
-- 110 `Button` "{Saving…|Save}" (button, onClick) CH-11521
-- 149 `Opt` "{name}" (onClick) CH-11521
-- 176 `Opt` "Round {n}" (onClick) CH-11521
+- CTL-P011-078 107 `Button` "Cancel" (button, onClick) CH-11521
+- CTL-P011-079 110 `Button` "{Saving…|Save}" (button, onClick) CH-11521
+- CTL-P011-080 149 `Opt` "{name}" (onClick) CH-11521
+- CTL-P011-081 176 `Opt` "Round {n}" (onClick) CH-11521
 
 ### `src/clubhouse/screens/rounds/entry/SaveAsPracticeSheet.tsx`
 
-- 111 `Opt` "{Saving as practice…|Save as practice round}" (onClick) CH-11516
-- 122 `Opt` "{Saving…|Save for later}" (onClick) CH-11516
-- 123 `Opt` "Go back" (onClick) CH-11516
-- 124 `Opt` "Discard round" (onClick) CH-11516
+- CTL-P011-082 111 `Opt` "{Saving as practice…|Save as prac…" (onClick) CH-11516
+- CTL-P011-083 122 `Opt` "{Saving…|Save for later}" (onClick) CH-11516
+- CTL-P011-084 123 `Opt` "Go back" (onClick) CH-11516
+- CTL-P011-085 124 `Opt` "Discard round" (onClick) CH-11516
 
 ### `src/clubhouse/screens/rounds/entry/parts.tsx`
 
-- 92 `button` "{label} {hint}" (button, onClick)
-- 149 `Button` "{keepLabel}" (button, onClick)
-- 152 `Button` "{Discarding…|{discardLabel}}" (button, onClick)
+- CTL-P011-086 92 `button` "{label} {hint}" (button, onClick)
+- CTL-P011-087 149 `Button` "{keepLabel}" (button, onClick)
+- CTL-P011-088 152 `Button` "{Discarding…|{discardLabel}}" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/parts.tsx`
 
-- 149 `Link` "New round" (link, onClick, href) CH-11304
-- 173 `button` "Sharing: {label}. Change who sees t…" (button, onClick) CH-16631
-- 201 `button` "Discard the round at {course}" (button, onClick)
-- 206 `Link` "{cta}" (link, onClick, href)
-- 640 `Link` "{body}" (link, onClick, href)
+- CTL-P011-089 149 `Link` "New round" (link, onClick, href) CH-11304
+- CTL-P011-090 173 `button` "Sharing: {label}. Chan…" (button, onClick) CH-16631
+- CTL-P011-091 201 `button` "Discard the round at {course}" (button, onClick)
+- CTL-P011-092 206 `Link` "{cta}" (link, onClick, href)
+- CTL-P011-093 640 `Link` "{body}" (link, onClick, href)
 
 ### `src/clubhouse/screens/rounds/recover/RoundRecover.tsx`
 
-- 73 `Button` "{Restoring…|{Post round|Restore round}}" (button, onClick)
-- 77 `Button` "Retry sync" (button, onClick)
-- 81 `Button` "Discard" (button, onClick)
-- 208 `Button` "Back to Rounds" (button, href)
-- 242 `Button` "Back to Rounds" (button, href) CH-11314
-- 289 `Button` "Keep it" (button, onClick) CH-11520
-- 293 `Button` "{Discarding…|Discard round}" (button, onClick) CH-11520
+- CTL-P011-094 73 `Button` "{Restoring…|{Post round|Restore …" (button, onClick)
+- CTL-P011-095 77 `Button` "Retry sync" (button, onClick)
+- CTL-P011-096 81 `Button` "Discard" (button, onClick)
+- CTL-P011-097 208 `Button` "Back to Rounds" (button, href)
+- CTL-P011-098 242 `Button` "Back to Rounds" (button, href) CH-11314
+- CTL-P011-099 289 `Button` "Keep it" (button, onClick) CH-11520
+- CTL-P011-100 293 `Button` "{Discarding…|Discard r…" (button, onClick) CH-11520
 
 ### `src/clubhouse/screens/rounds/round-window.tsx`
 
-- 69 `Button` "Show earlier rounds, {hidden} more" (button, onClick)
+- CTL-P011-101 69 `Button` "Show earlier rounds, {hidden} mo…" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/setup/AddCourseSheet.tsx`
 
-- 130 `button` "{STEPS}" (button, onClick) CH-11511
-- 135 `button` "Cancel" (button, onClick) CH-11511
-- 139 `button` "{Next: {STEPS}|Use this course}" (button, onClick) CH-11511
-- 199 `button` "{n}" (button, onClick) CH-11511
-- 347 `button` "Remove photo" (button, onClick)
+- CTL-P011-102 130 `button` "{STEPS}" (button, onClick) CH-11511
+- CTL-P011-103 135 `button` "Cancel" (button, onClick) CH-11511
+- CTL-P011-104 139 `button` "{Next: {STEPS}|Use thi…" (button, onClick) CH-11511
+- CTL-P011-105 199 `button` "{n}" (button, onClick) CH-11511
+- CTL-P011-106 347 `button` "Remove photo" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/setup/CoursePicker.tsx`
 
-- 96 `Button` "Add a course" (button, onClick) CH-11510
-- 162 `button` "{name} {{place}|} {join}" (button, onClick, onPointerDown)
-- 211 `BackLink` "Courses" (link, onClick)
-- 229 `button` "Play the {name} tees{, {toLocaleString} yard…" (button, onClick)
+- CTL-P011-107 96 `Button` "Add a course" (button, onClick) CH-11510
+- CTL-P011-108 162 `button` "{name} {{place}|…" (button, onClick, onPointerDown)
+- CTL-P011-109 211 `BackLink` "Courses" (link, onClick)
+- CTL-P011-110 229 `button` "Play the {name} tees{, {toLocal…" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/setup/HoleConfig.tsx`
 
-- 105 `button` "{p}" (button, onClick)
+- CTL-P011-111 105 `button` "{p}" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/setup/RoundSetup.tsx`
 
-- 272 `Link` "Rounds" (link, href)
-- 319 `button` "Change course" (button, onClick)
-- 333 `button` "Browse courses" (button, onClick)
-- 352 `button` "Open qualifier {name} {join} Play" (button, onClick)
-- 456 `button` "{name} {Round {nextRound} of {rounds} · {com…" (button, onClick)
-- 551 `button` "{Starting…|Start round}" (button, onClick)
-- 612 `Link` "See hole by hole" (link, href)
+- CTL-P011-112 272 `Link` "Rounds" (link, href)
+- CTL-P011-113 319 `button` "Change course" (button, onClick)
+- CTL-P011-114 333 `button` "Browse courses" (button, onClick)
+- CTL-P011-115 352 `button` "Open qualifier {name} {join} Pl…" (button, onClick)
+- CTL-P011-116 456 `button` "{name} {Round {nextRound} of {r…" (button, onClick)
+- CTL-P011-117 551 `button` "{Starting…|Start round}" (button, onClick)
+- CTL-P011-118 612 `Link` "See hole by hole" (link, href)
 
 ### `src/clubhouse/screens/rounds/track/CourseView.tsx`
 
-- 93 `dialog` "Course view, hole {number}" (onClick)
-- 122 `button` "{Back to shot {shot}|Back to the hole}" (button, onClick)
-- 140 `button` "{Hole {number}|No earlier hole}" (button, onClick)
-- 150 `button` "{Hole {number}|No later hole}" (button, onClick)
-- 162 `button` "{This hole|Hole {number}} {{s…" (button, onClick, onPointerDown)
+- CTL-P011-119 93 `dialog` "Course view, hole {number}" (onClick)
+- CTL-P011-120 122 `button` "{Back to shot {shot}|Back to th…" (button, onClick)
+- CTL-P011-121 140 `button` "{Hole {number}|No earlier hole}" (button, onClick)
+- CTL-P011-122 150 `button` "{Hole {number}|No later hole}" (button, onClick)
+- CTL-P011-123 162 `button` "{This hole|Hole …" (button, onClick, onPointerDown)
 
 ### `src/clubhouse/screens/rounds/track/DataPrompts.tsx`
 
-- 44 `button` "{skipLabel}" (button, onClick)
-- 75 `button` "{PUTT_LABEL}" (button, onClick) CH-11960
-- 109 `button` "{label}" (button, onClick) CH-11961
+- CTL-P011-124 44 `button` "{skipLabel}" (button, onClick)
+- CTL-P011-125 75 `button` "{PUTT_LABEL}" (button, onClick) CH-11960
+- CTL-P011-126 109 `button` "{label}" (button, onClick) CH-11961
 
 ### `src/clubhouse/screens/rounds/track/HoleReview.tsx`
 
-- 71 `Button` "Try again" (button, onClick) CH-11003
-- 90 `button` "Change shot {shotNumber}: {shotTitle}, {shotL…" (button, onClick)
+- CTL-P011-127 71 `Button` "Try again" (button, onClick) CH-11003
+- CTL-P011-128 90 `button` "Change shot {shotNumber}: {shotT…" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/track/LiveShareSheet.tsx`
 
-- 75 `Button` "Done" (button, onClick)
+- CTL-P011-129 75 `Button` "Done" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/track/RoundTracking.tsx`
 
-- 275 `button` "Exit" (button, onClick)
-- 295 `button` "Scorecard" (button, onClick)
-- 321 `button` "Course view of hole {number}" (button, onClick) CH-11291
+- CTL-P011-130 275 `button` "Exit" (button, onClick)
+- CTL-P011-131 295 `button` "Scorecard" (button, onClick)
+- CTL-P011-132 321 `button` "Course view of hole {n…" (button, onClick) CH-11291
 
 ### `src/clubhouse/screens/rounds/track/ShotEntry.tsx`
 
-- 213 `Button` "Confirm" (button, onClick) CH-11102
-- 279 `button` "{resultLabel}: {resultWord|none}. Change" (button, onClick)
-- 305 `button` "{l}" (button, onClick)
-- 326 `button` "{label}" (button, onClick)
-- 393 `button` "{q}" (button, onClick)
-- 422 `button` "Break and slope {{puttRead}|Optional}" (button, onClick)
-- 475 `button` "Undo last shot" (button, onClick)
-- 486 `button` "Add penalty stroke" (button, onClick)
-- 490 `button` "{undefined|Hole out, score {score}|Hole out,…" (button, onClick)
-- 523 `button` "{label}" (button, onClick) CH-11913
-- 571 `Button` "Keep it" (button, onClick) CH-11502
-- 573 `Button` "{Undoing…|Undo}" (button, onClick) CH-11502
+- CTL-P011-133 213 `Button` "Confirm" (button, onClick) CH-11102
+- CTL-P011-134 279 `button` "{resultLabel}: {resultWord|none…" (button, onClick)
+- CTL-P011-135 305 `button` "{l}" (button, onClick)
+- CTL-P011-136 326 `button` "{label}" (button, onClick)
+- CTL-P011-137 393 `button` "{q}" (button, onClick)
+- CTL-P011-138 422 `button` "Break and slope {{puttRead}|Opt…" (button, onClick)
+- CTL-P011-139 475 `button` "Undo last shot" (button, onClick)
+- CTL-P011-140 486 `button` "Add penalty stroke" (button, onClick)
+- CTL-P011-141 490 `button` "{undefined|Hole out, score {sco…" (button, onClick)
+- CTL-P011-142 523 `button` "{label}" (button, onClick) CH-11913
+- CTL-P011-143 571 `Button` "Keep it" (button, onClick) CH-11502
+- CTL-P011-144 573 `Button` "{Undoing…|Undo}" (button, onClick) CH-11502
 
 ### `src/clubhouse/screens/rounds/track/parts.tsx`
 
-- 37 `button` "{label}{{note}|}" (button, onClick)
-- 140 `button` "{name}" (button, onClick)
-- 393 `button` "{length} {pluralWord}{· {plural}|} {lastText}" (button, onClick)
-- 439 `button` "Change shot {shotNumber}: {shotTitle}, {shot…" (button, onClick)
+- CTL-P011-145 37 `button` "{label}{{note}|}" (button, onClick)
+- CTL-P011-146 140 `button` "{name}" (button, onClick)
+- CTL-P011-147 393 `button` "{length} {pluralWord}{· {plural…" (button, onClick)
+- CTL-P011-148 439 `button` "Change shot {shotNumber}: {shot…" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/track/round-sheets.tsx`
 
-- 181 `Button` "Keep it" (button, onClick) CH-11507
-- 182 `Button` "{Discarding…|Discard round}" (button, onClick) CH-11507
-- 188 `button` "{Saving…|Save for later} {Keep this…" (button, onClick) CH-11506
-- 195 `button` "Keep playing Back to hole {currentN…" (button, onClick) CH-11506
-- 203 `button` "Change round type {label} now. Chan…" (button, onClick) CH-11506
-- 212 `button` "Sharing {label} now. Who sees this …" (button, onClick) CH-11506
-- 220 `button` "Discard round Deletes every shot. Y…" (button, onClick) CH-11506
-- 290 `Button` "Back to hole {backHole}" (button, onClick) CH-11508
-- 291 `button` "Post round" (button, onClick) CH-11508
-- 379 `a` "Rounds" (link, href) CH-11909
-- 396 `a` "View round review" (link, href)
-- 412 `Button` "Try again" (button, onClick)
-- 414 `Button` "Go back" (button, onClick)
+- CTL-P011-149 181 `Button` "Keep it" (button, onClick) CH-11507
+- CTL-P011-150 182 `Button` "{Discarding…|Discard r…" (button, onClick) CH-11507
+- CTL-P011-151 188 `button` "{Saving…|Save for late…" (button, onClick) CH-11506
+- CTL-P011-152 195 `button` "Keep playing Back to h…" (button, onClick) CH-11506
+- CTL-P011-153 203 `button` "Change round type {lab…" (button, onClick) CH-11506
+- CTL-P011-154 212 `button` "Sharing {label} now. W…" (button, onClick) CH-11506
+- CTL-P011-155 220 `button` "Discard round Deletes …" (button, onClick) CH-11506
+- CTL-P011-156 290 `Button` "Back to hole {backHole}" (button, onClick) CH-11508
+- CTL-P011-157 291 `button` "Post round" (button, onClick) CH-11508
+- CTL-P011-158 379 `a` "Rounds" (link, href) CH-11909
+- CTL-P011-159 396 `a` "View round review" (link, href)
+- CTL-P011-160 412 `Button` "Try again" (button, onClick)
+- CTL-P011-161 414 `Button` "Go back" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/track/sheets.tsx`
 
-- 27 `button` "{title} {{detail}|}" (button, onClick)
-- 92 `Button` "Cancel" (button, onClick) CH-11503
-- 93 `Button` "Add 1 stroke" (button, onClick) CH-11503
-- 137 `Button` "Stay" (button, onClick) CH-11504
-- 138 `Button` "Leave without it" (button, onClick) CH-11504
-- 217 `Button` "Keep it" (button, onClick) CH-11505
-- 219 `Button` "{Deleting…|Delete shot}" (button, onClick) CH-11505
-- 225 `Button` "Delete" (button, onClick) CH-11505
-- 227 `Button` "Cancel" (button, onClick) CH-11505
-- 228 `Button` "{Saving…|{Save anyway|Save shot}}" (button, onClick) CH-11505
-- 333 `button` "{l}" (button, onClick) CH-11505
-- 356 `button` "{label}" (button, onClick) CH-11505
+- CTL-P011-162 27 `button` "{title} {{detail}|}" (button, onClick)
+- CTL-P011-163 92 `Button` "Cancel" (button, onClick) CH-11503
+- CTL-P011-164 93 `Button` "Add 1 stroke" (button, onClick) CH-11503
+- CTL-P011-165 137 `Button` "Stay" (button, onClick) CH-11504
+- CTL-P011-166 138 `Button` "Leave without it" (button, onClick) CH-11504
+- CTL-P011-167 217 `Button` "Keep it" (button, onClick) CH-11505
+- CTL-P011-168 219 `Button` "{Deleting…|Delete shot}" (button, onClick) CH-11505
+- CTL-P011-169 225 `Button` "Delete" (button, onClick) CH-11505
+- CTL-P011-170 227 `Button` "Cancel" (button, onClick) CH-11505
+- CTL-P011-171 228 `Button` "{Saving…|{Save anyway|…" (button, onClick) CH-11505
+- CTL-P011-172 333 `button` "{l}" (button, onClick) CH-11505
+- CTL-P011-173 356 `button` "{label}" (button, onClick) CH-11505
 
 ## P012 Classes
 
@@ -1727,112 +1727,112 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/screens/classes/ClassDetail.tsx`
 
-- 115 `Button` "Remove" (button, onClick)
-- 126 `Button` "Edit class" (button, onClick)
-- 142 `Button` "{Syncing…|Retry sync}" (button, onClick)
-- 237 `Button` "Cancel" (button, onClick) CH-12570
-- 240 `Button` "{Removing…|Remove}" (button, onClick) CH-12570
+- CTL-P012-001 115 `Button` "Remove" (button, onClick)
+- CTL-P012-002 126 `Button` "Edit class" (button, onClick)
+- CTL-P012-003 142 `Button` "{Syncing…|Retry sync}" (button, onClick)
+- CTL-P012-004 237 `Button` "Cancel" (button, onClick) CH-12570
+- CTL-P012-005 240 `Button` "{Removing…|Remove}" (button, onClick) CH-12570
 
 ### `src/clubhouse/screens/classes/ClassForm.tsx`
 
-- 150 `Button` "Cancel" (button, onClick)
-- 153 `Button` "{{Saving…|Adding…}|{Save changes|Add class}}" (button, onClick)
-- 168 `button` "(no label)" (button)
-- 235 `button` "{DAY_SHORT}" (button, onClick)
-- 331 `Button` "Keep editing" (button, onClick) CH-12502
-- 334 `Button` "Discard" (button, onClick) CH-12502
+- CTL-P012-006 150 `Button` "Cancel" (button, onClick)
+- CTL-P012-007 153 `Button` "{{Saving…|Adding…}|{Save change…" (button, onClick)
+- CTL-P012-008 168 `button` "Save class (Enter) (ledger)" (button)
+- CTL-P012-009 235 `button` "{DAY_SHORT}" (button, onClick)
+- CTL-P012-010 331 `Button` "Keep editing" (button, onClick) CH-12502
+- CTL-P012-011 334 `Button` "Discard" (button, onClick) CH-12502
 
 ### `src/clubhouse/screens/classes/ClassStatusDetail.tsx`
 
-- 42 `button` "Add an exam" (button, onClick)
-- 53 `IconButton` "Remove {label} on {shortDay}" (button, onClick)
+- CTL-P012-012 42 `button` "Add an exam" (button, onClick)
+- CTL-P012-013 53 `IconButton` "Remove {label} on {shortDay}" (button, onClick)
 
 ### `src/clubhouse/screens/classes/ClassStatusPanel.tsx`
 
-- 88 `Button` "Try again" (button, onClick) CH-12270
-- 204 `Link` "{value} · Change" (link, href) CH-12271
-- 212 `Button` "Deliver now" (button, onClick) CH-12271
-- 219 `button` "No class today" (button, onClick) CH-12870
-- 230 `Button` "{action}" (button, onClick) CH-12870
+- CTL-P012-014 88 `Button` "Try again" (button, onClick) CH-12270
+- CTL-P012-015 204 `Link` "{value} · Change" (link, href) CH-12271
+- CTL-P012-016 212 `Button` "Deliver now" (button, onClick) CH-12271
+- CTL-P012-017 219 `button` "No class today" (button, onClick) CH-12870
+- CTL-P012-018 230 `Button` "{action}" (button, onClick) CH-12870
 
 ### `src/clubhouse/screens/classes/ClassesCrh.tsx`
 
-- 90 `button` "{plural}" (button, onClick)
-- 152 `button` "{body}" (button, onClick)
+- CTL-P012-019 90 `button` "{plural}" (button, onClick)
+- CTL-P012-020 152 `button` "{body}" (button, onClick)
 
 ### `src/clubhouse/screens/classes/ClassesView.tsx`
 
-- 335 `IconButton` "More for your classes" (button)
-- 395 `PhoneIconAction` "Add or import a class" (onClick)
-- 426 `Button` "Import schedule" (button, onClick)
-- 432 `Button` "Add class" (button, onClick)
-- 443 `Button` "Try again" (button, onClick) CH-12201
-- 451 `Button` "Import schedule" (button, onClick) CH-12301
-- 454 `Button` "Add a class" (button, onClick) CH-12301
-- 552 `Button` "Keep it" (button, onClick) CH-12501
-- 555 `Button` "{Removing…|Remove class}" (button, onClick) CH-12501
-- 584 `Button` "Keep them" (button, onClick) CH-12503
-- 588 `Button` "{Deleting…|Delete all classes}" (button, onClick) CH-12503
+- CTL-P012-021 335 `IconButton` "More for your classes" (button)
+- CTL-P012-022 395 `PhoneIconAction` "Add or import a class" (onClick)
+- CTL-P012-023 426 `Button` "Import schedule" (button, onClick)
+- CTL-P012-024 432 `Button` "Add class" (button, onClick)
+- CTL-P012-025 443 `Button` "Try again" (button, onClick) CH-12201
+- CTL-P012-026 451 `Button` "Import schedule" (button, onClick) CH-12301
+- CTL-P012-027 454 `Button` "Add a class" (button, onClick) CH-12301
+- CTL-P012-028 552 `Button` "Keep it" (button, onClick) CH-12501
+- CTL-P012-029 555 `Button` "{Removing…|Remove clas…" (button, onClick) CH-12501
+- CTL-P012-030 584 `Button` "Keep them" (button, onClick) CH-12503
+- CTL-P012-031 588 `Button` "{Deleting…|Delete all …" (button, onClick) CH-12503
 
 ### `src/clubhouse/screens/classes/ExamSheet.tsx`
 
-- 59 `Button` "Cancel" (button, onClick)
-- 62 `Button` "{Adding…|Add exam}" (button, onClick)
-- 76 `button` "(no label)" (button)
+- CTL-P012-032 59 `Button` "Cancel" (button, onClick)
+- CTL-P012-033 62 `Button` "{Adding…|Add exam}" (button, onClick)
+- CTL-P012-034 76 `button` "Save exam (Enter) (ledger)" (button)
 
 ### `src/clubhouse/screens/classes/ImportSchedule.tsx`
 
-- 239 `Button` "View classes" (button, onClick)
-- 244 `Button` "Start over" (button, onClick)
-- 247 `Button` "{Importing…|Import {plural}}" (button, onClick)
-- 285 `Button` "Try again" (button, onClick)
-- 289 `Button` "Choose another file" (button, onClick)
-- 299 `Button` "{Paste text|Paste text instead}" (button, onClick)
-- 365 `button` "Remove {code}" (button, onClick)
-- 393 `button` "Drop your schedule here or choose a file · P…" (button, onClick)
-- 455 `Button` "Read schedule" (button, onClick)
-- 483 `Button` "Keep reviewing" (button, onClick) CH-12504
-- 487 `Button` "Start over" (button, onClick) CH-12504
-- 562 `button` "Open {code} to add what’s missing" (button, onClick)
+- CTL-P012-035 239 `Button` "View classes" (button, onClick)
+- CTL-P012-036 244 `Button` "Start over" (button, onClick)
+- CTL-P012-037 247 `Button` "{Importing…|Import {plural}}" (button, onClick)
+- CTL-P012-038 285 `Button` "Try again" (button, onClick)
+- CTL-P012-039 289 `Button` "Choose another file" (button, onClick)
+- CTL-P012-040 299 `Button` "{Paste text|Paste text instead}" (button, onClick)
+- CTL-P012-041 365 `button` "Remove {code}" (button, onClick)
+- CTL-P012-042 393 `button` "Drop your schedule here or choo…" (button, onClick)
+- CTL-P012-043 455 `Button` "Read schedule" (button, onClick)
+- CTL-P012-044 483 `Button` "Keep reviewing" (button, onClick) CH-12504
+- CTL-P012-045 487 `Button` "Start over" (button, onClick) CH-12504
+- CTL-P012-046 562 `button` "Open {code} to add what’s missi…" (button, onClick)
 
 ### `src/clubhouse/screens/classes/InClassSheet.tsx`
 
-- 139 `IconButton` "Close" (button, onClick)
-- 157 `Button` "Try again" (button, onClick) CH-2270
-- 213 `Button` "Ask for schedules" (button, onClick)
-- 236 `Button` "{Edit|Set dates}" (button, onClick)
-- 240 `button` "Mark a day with no classes" (button, onClick)
+- CTL-P012-047 139 `IconButton` "Close" (button, onClick)
+- CTL-P012-048 157 `Button` "Try again" (button, onClick) CH-2270
+- CTL-P012-049 213 `Button` "Ask for schedules" (button, onClick)
+- CTL-P012-050 236 `Button` "{Edit|Set dates}" (button, onClick)
+- CTL-P012-051 240 `button` "Mark a day with no classes" (button, onClick)
 
 ### `src/clubhouse/screens/classes/NoClassTodaySheet.tsx`
 
-- 62 `Button` "Cancel" (button, onClick)
-- 65 `Button` "{Saving…|Mark no class}" (button, onClick)
-- 75 `input` "{label} {{range}|}" (type=radio)
-- 81 `input` "All my classes today" (type=radio)
+- CTL-P012-052 62 `Button` "Cancel" (button, onClick)
+- CTL-P012-053 65 `Button` "{Saving…|Mark no class}" (button, onClick)
+- CTL-P012-054 75 `input` "{label} {{range}|}" (type=radio)
+- CTL-P012-055 81 `input` "All my classes today" (type=radio)
 
 ### `src/clubhouse/screens/classes/TeamBreakSheet.tsx`
 
-- 84 `Button` "Close" (button, onClick)
-- 87 `Button` "{Saving…|Mark no classes}" (button, onClick)
-- 101 `button` "(no label)" (button)
-- 129 `IconButton` "Remove {breakLine}" (button, onClick)
-- 144 `Button` "Keep it" (button, onClick) CH-2570
-- 147 `Button` "{Removing…|Remove break}" (button, onClick) CH-2570
+- CTL-P012-056 84 `Button` "Close" (button, onClick)
+- CTL-P012-057 87 `Button` "{Saving…|Mark no classes}" (button, onClick)
+- CTL-P012-058 101 `button` "Save team break (Enter) (ledger)" (button)
+- CTL-P012-059 129 `IconButton` "Remove {breakLine}" (button, onClick)
+- CTL-P012-060 144 `Button` "Keep it" (button, onClick) CH-2570
+- CTL-P012-061 147 `Button` "{Removing…|Remove break}" (button, onClick) CH-2570
 
 ### `src/clubhouse/screens/classes/TermSheet.tsx`
 
-- 98 `Button` "Cancel" (button, onClick)
-- 101 `Button` "{Saving…|Save dates}" (button, onClick)
-- 115 `button` "(no label)" (button)
+- CTL-P012-062 98 `Button` "Cancel" (button, onClick)
+- CTL-P012-063 101 `Button` "{Saving…|Save dates}" (button, onClick)
+- CTL-P012-064 115 `button` "Save term (Enter) (ledger)" (button)
 
 ### `src/clubhouse/screens/classes/parts.tsx`
 
-- 87 `button` "{top} {bottom} {{credits} cr|} {name} {instru…" (button, onClick)
-- 205 `Button` "Retry sync" (button, onClick)
+- CTL-P012-065 87 `button` "{top} {bottom} {{credits} cr|} {…" (button, onClick)
+- CTL-P012-066 205 `Button` "Retry sync" (button, onClick)
 
 ### `src/clubhouse/ui/ClassStatusRow.tsx`
 
-- 47 `button` "{label}" (button, onClick)
+- CTL-P012-067 47 `button` "{label}" (button, onClick)
 
 ## P013 CoachHelm
 
@@ -1840,527 +1840,527 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/screens/coachhelm/CoachHelmOffNotice.tsx`
 
-- 27 `Button` "Open CoachHelm settings" (button, href) CH-13305
+- CTL-P013-001 27 `Button` "Open CoachHelm settings" (button, href) CH-13305
 
 ### `src/clubhouse/screens/coachhelm/Corrections.tsx`
 
-- 113 `button` "Change your answer on this read" (button, onClick) CH-13971
-- 136 `button` "{ARIA}" (button, onClick)
-- 156 `button` "Not this: {toLowerCase}" (button, onClick)
-- 160 `button` "Not this, with no reason" (button, onClick)
-- 170 `button` "Keep your answer on this read" (button, onClick)
+- CTL-P013-002 113 `button` "Change your answer on …" (button, onClick) CH-13971
+- CTL-P013-003 136 `button` "{ARIA}" (button, onClick)
+- CTL-P013-004 156 `button` "Not this: {toLowerCase}" (button, onClick)
+- CTL-P013-005 160 `button` "Not this, with no reason" (button, onClick)
+- CTL-P013-006 170 `button` "Keep your answer on this read" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/EngineState.tsx`
 
-- 100 `button` "Why do you think so?" (button, onClick)
+- CTL-P013-007 100 `button` "Why do you think so?" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/Proposals.tsx`
 
-- 115 `Button` "Tell coach why" (button, href)
-- 122 `Button` "{Accepting…|Accept}" (button, onClick)
-- 125 `Button` "{Declining…|Decline}" (button, onClick)
+- CTL-P013-008 115 `Button` "Tell coach why" (button, href)
+- CTL-P013-009 122 `Button` "{Accepting…|Accept}" (button, onClick)
+- CTL-P013-010 125 `Button` "{Declining…|Decline}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/Recheck.tsx`
 
-- 101 `Button` "{{recheckRunningLabel}|Re-check reads}" (button, onClick)
+- CTL-P013-011 101 `Button` "{{recheckRunningLabel}|Re-check…" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/Ask.tsx`
 
-- 428 `button` "Chats" (button, onClick) CH-13820
-- 438 `PhoneIconAction` "Chat settings" (onClick) CH-13820
-- 439 `PhoneIconAction` "New chat" (onClick) CH-13820
-- 476 `button` "Show chats" (button, onClick) CH-13820
-- 482 `button` "New chat" (button, onClick) CH-13820
+- CTL-P013-012 428 `button` "Chats" (button, onClick) CH-13820
+- CTL-P013-013 438 `PhoneIconAction` "Chat settings" (onClick) CH-13820
+- CTL-P013-014 439 `PhoneIconAction` "New chat" (onClick) CH-13820
+- CTL-P013-015 476 `button` "Show chats" (button, onClick) CH-13820
+- CTL-P013-016 482 `button` "New chat" (button, onClick) CH-13820
 
 ### `src/clubhouse/screens/coachhelm/chat/Composer.tsx`
 
-- 394 `button` "Add to your question" (button)
-- 406 `button` "{Stop generating|Send}" (button, onClick)
-- 468 `button` "Players" (button, onClick) CH-13821
-- 482 `button` "{{label}|Any dates}" (button) CH-13821
-- 492 `button` "Mention a player or stat" (button, onClick) CH-13821
-- 512 `button` "{command} {label}" (button, onClick, role=option) CH-13821
+- CTL-P013-017 394 `button` "Add to your question" (button)
+- CTL-P013-018 406 `button` "{Stop generating|Send}" (button, onClick)
+- CTL-P013-019 468 `button` "Players" (button, onClick) CH-13821
+- CTL-P013-020 482 `button` "{{label}|Any dates}" (button) CH-13821
+- CTL-P013-021 492 `button` "Mention a player or st…" (button, onClick) CH-13821
+- CTL-P013-022 512 `button` "{command}…" (button, onClick, role=option) CH-13821
 
 ### `src/clubhouse/screens/coachhelm/chat/Evidence.tsx`
 
-- 135 `Link` "{body}" (link, href) CH-13914
+- CTL-P013-023 135 `Link` "{body}" (link, href) CH-13914
 
 ### `src/clubhouse/screens/coachhelm/chat/EvidencePanel.tsx`
 
-- 107 `IconButton` "Close evidence" (button, onClick) CH-13851
+- CTL-P013-024 107 `IconButton` "Close evidence" (button, onClick) CH-13851
 
 ### `src/clubhouse/screens/coachhelm/chat/History.tsx`
 
-- 64 `Button` "New chat" (button, onClick) CH-13323
-- 87 `Link` "{title}" (link, onClick, href)
-- 125 `button` "Hide chats" (button, onClick) CH-13820
-- 130 `button` "New chat" (button, onClick) CH-13820
-- 156 `dialog` "Chats" (onClick) CH-13822
-- 170 `aside` "Chats" (onPointerDown) CH-13822
-- 176 `button` "New chat" (button, onClick) CH-13822
+- CTL-P013-025 64 `Button` "New chat" (button, onClick) CH-13323
+- CTL-P013-026 87 `Link` "{title}" (link, onClick, href)
+- CTL-P013-027 125 `button` "Hide chats" (button, onClick) CH-13820
+- CTL-P013-028 130 `button` "New chat" (button, onClick) CH-13820
+- CTL-P013-029 156 `dialog` "Chats" (onClick) CH-13822
+- CTL-P013-030 170 `aside` "Chats" (onPointerDown) CH-13822
+- CTL-P013-031 176 `button` "New chat" (button, onClick) CH-13822
 
 ### `src/clubhouse/screens/coachhelm/chat/Home.tsx`
 
-- 61 `button` "{text}" (button, onClick)
-- 74 `button` "{headline}" (button, onClick)
-- 87 `button` "{text} {{TAG}|}" (button, onClick) CH-13721
+- CTL-P013-032 61 `button` "{text}" (button, onClick)
+- CTL-P013-033 74 `button` "{headline}" (button, onClick)
+- CTL-P013-034 87 `button` "{text} {{TAG}|}" (button, onClick) CH-13721
 
 ### `src/clubhouse/screens/coachhelm/chat/Prose.tsx`
 
-- 39 `Link` "{words}" (link, href)
+- CTL-P013-035 39 `Link` "{words}" (link, href)
 
 ### `src/clubhouse/screens/coachhelm/chat/States.tsx`
 
-- 26 `Button` "Invite players" (button, href) CH-13321
-- 60 `button` "start a new chat" (button, onClick)
-- 82 `Button` "Start a new chat" (button, onClick) CH-13320
+- CTL-P013-036 26 `Button` "Invite players" (button, href) CH-13321
+- CTL-P013-037 60 `button` "start a new chat" (button, onClick)
+- CTL-P013-038 82 `Button` "Start a new chat" (button, onClick) CH-13320
 
 ### `src/clubhouse/screens/coachhelm/chat/Thread.tsx`
 
-- 413 `button` "{More below. Jump to the latest|Jum…" (button, onClick) CH-13850
+- CTL-P013-039 413 `button` "{More below. Jump to t…" (button, onClick) CH-13850
 
 ### `src/clubhouse/screens/coachhelm/chat/cards/ApproveAll.tsx`
 
-- 144 `Button` "{Approving…|{Approve all {n}|Approve these {…" (button, onClick)
-- 149 `Button` "Undo all {n}" (button, onClick)
+- CTL-P013-040 144 `Button` "{Approving…|{Approve all {n}|Ap…" (button, onClick)
+- CTL-P013-041 149 `Button` "Undo all {n}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/cards/answers.tsx`
 
-- 26 `a` "{label} {{purpose}|}" (link, href)
-- 59 `IconButton` "Remove the note: {text}" (button, onClick)
+- CTL-P013-042 26 `a` "{label} {{purpose}|}" (link, href)
+- CTL-P013-043 59 `IconButton` "Remove the note: {text}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/cards/bodies-schedule.tsx`
 
-- 100 `Button` "Show all {length}" (button, onClick)
+- CTL-P013-044 100 `Button` "Show all {length}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/cards/edit.tsx`
 
-- 155 `IconButton` "Remove {item}" (button, onClick)
-- 159 `Button` "Add one" (button, onClick)
-- 218 `Button` "{Discard changes|Close}" (button, onClick)
-- 221 `Button` "{Updating the card…|Update the card}" (button)
+- CTL-P013-045 155 `IconButton` "Remove {item}" (button, onClick)
+- CTL-P013-046 159 `Button` "Add one" (button, onClick)
+- CTL-P013-047 218 `Button` "{Discard changes|Close}" (button, onClick)
+- CTL-P013-048 221 `Button` "{Updating the card…|Update the card}" (button)
 
 ### `src/clubhouse/screens/coachhelm/chat/cards/kit.tsx`
 
-- 132 `button` "{inner} {. Hide the list|. Show all {count}}" (button, onClick)
-- 180 `Button` "{Show less|Show the whole {what} · {count} c…" (button, onClick)
-- 261 `Button` "Set it" (button, onClick)
-- 457 `Button` "Edit" (button, onClick)
-- 462 `Button` "{Details · {count} assumed|Details}" (button, onClick)
+- CTL-P013-049 132 `button` "{inner} {. Hide the list|. Show…" (button, onClick)
+- CTL-P013-050 180 `Button` "{Show less|Show the whole {what…" (button, onClick)
+- CTL-P013-051 261 `Button` "Set it" (button, onClick)
+- CTL-P013-052 457 `Button` "Edit" (button, onClick)
+- CTL-P013-053 462 `Button` "{Details · {count} assumed|Deta…" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/island/ActivityIsland.tsx`
 
-- 113 `button` "{label}{, {detail}|}. Open what it found" (button, onClick)
-- 218 `button` "{head}{and {more} more|} {{done} of…" (button, onClick) CH-13860
+- CTL-P013-054 113 `button` "{label}{, {detail}|}. Open what…" (button, onClick)
+- CTL-P013-055 218 `button` "{head}{and {more} more…" (button, onClick) CH-13860
 
 ### `src/clubhouse/screens/coachhelm/chat/island/TurnIsland.tsx`
 
-- 69 `button` "{line}" (button, onClick) CH-13860
+- CTL-P013-056 69 `button` "{line}" (button, onClick) CH-13860
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/Allowance.tsx`
 
-- 52 `Button` "{Sent|Request more}" (button, onClick)
-- 144 `Button` "Cancel" (button, onClick)
-- 150 `Button` "Send request" (button, onClick)
-- 166 `button` "{Undoing|Undo}" (button, onClick)
+- CTL-P013-057 52 `Button` "{Sent|Request more}" (button, onClick)
+- CTL-P013-058 144 `Button` "Cancel" (button, onClick)
+- CTL-P013-059 150 `Button` "Send request" (button, onClick)
+- CTL-P013-060 166 `button` "{Undoing|Undo}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/AnswerCard.tsx`
 
-- 257 `button` "Copy" (button, onClick)
+- CTL-P013-061 257 `button` "Copy" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/Artifact.tsx`
 
-- 16 `button` "{title} {KIND_LABEL} Open" (button, onClick)
-- 68 `button` "Earlier version" (button, onClick)
-- 72 `button` "Later version" (button, onClick)
-- 89 `Button` "Edit in builder" (button, href)
-- 94 `Button` "Save draft…" (button, onClick)
-- 99 `Button` "Publish…" (button, onClick)
-- 149 `button` "Close" (button, onClick)
+- CTL-P013-062 16 `button` "{title} {KIND_LABEL} Open" (button, onClick)
+- CTL-P013-063 68 `button` "Earlier version" (button, onClick)
+- CTL-P013-064 72 `button` "Later version" (button, onClick)
+- CTL-P013-065 89 `Button` "Edit in builder" (button, href)
+- CTL-P013-066 94 `Button` "Save draft…" (button, onClick)
+- CTL-P013-067 99 `Button` "Publish…" (button, onClick)
+- CTL-P013-068 149 `button` "Close" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/BriefCard.tsx`
 
-- 54 `button` "Change answers" (button, onClick)
-- 85 `button` "{label} {{hint}|}" (button, onClick)
-- 101 `button` "Anything else?" (button, onClick)
-- 107 `Button` "Back" (button, onClick)
-- 110 `Button` "Skip, just build" (button, onClick)
-- 113 `Button` "{Build it|Next}" (button, onClick)
+- CTL-P013-069 54 `button` "Change answers" (button, onClick)
+- CTL-P013-070 85 `button` "{label} {{hint}|}" (button, onClick)
+- CTL-P013-071 101 `button` "Anything else?" (button, onClick)
+- CTL-P013-072 107 `Button` "Back" (button, onClick)
+- CTL-P013-073 110 `Button` "Skip, just build" (button, onClick)
+- CTL-P013-074 113 `Button` "{Build it|Next}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/ConfirmCard.tsx`
 
-- 194 `button` "{value} {source}" (button, onClick)
-- 231 `Button` "Change" (button, onClick)
-- 312 `button` "See what this is based on" (button, onClick)
-- 320 `Button` "Cancel" (button, onClick)
-- 329 `Button` "{{action}|{verb}}" (button, onClick)
-- 522 `button` "Save now and open" (button, onClick)
-- 529 `Button` "Undo, {when} left" (button, onClick)
-- 552 `Button` "Ask again" (button, onClick)
-- 557 `Button` "Try again" (button, onClick)
-- 581 `a` "Open" (link, onClick, href)
+- CTL-P013-075 194 `button` "{value} {source}" (button, onClick)
+- CTL-P013-076 231 `Button` "Change" (button, onClick)
+- CTL-P013-077 312 `button` "See what this is based on" (button, onClick)
+- CTL-P013-078 320 `Button` "Cancel" (button, onClick)
+- CTL-P013-079 329 `Button` "{{action}|{verb}}" (button, onClick)
+- CTL-P013-080 522 `button` "Save now and open" (button, onClick)
+- CTL-P013-081 529 `Button` "Undo, {when} left" (button, onClick)
+- CTL-P013-082 552 `Button` "Ask again" (button, onClick)
+- CTL-P013-083 557 `Button` "Try again" (button, onClick)
+- CTL-P013-084 581 `a` "Open" (link, onClick, href)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/FollowUps.tsx`
 
-- 14 `button` "{f}" (button, onClick)
+- CTL-P013-085 14 `button` "{f}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/HandoffCard.tsx`
 
-- 88 `Button` "Open in Messages" (button, onClick)
+- CTL-P013-086 88 `Button` "Open in Messages" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/KnowsPanel.tsx`
 
-- 94 `Button` "Remove: {text}" (button, onClick)
-- 120 `Button` "Save" (button)
-- 123 `Button` "Cancel" (button, onClick)
-- 129 `button` "Edit what it knows" (button, onClick)
-- 133 `button` "What CoachHelm can see" (button, onClick)
+- CTL-P013-087 94 `Button` "Remove: {text}" (button, onClick)
+- CTL-P013-088 120 `Button` "Save" (button)
+- CTL-P013-089 123 `Button` "Cancel" (button, onClick)
+- CTL-P013-090 129 `button` "Edit what it knows" (button, onClick)
+- CTL-P013-091 133 `button` "What CoachHelm can see" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/ReadChip.tsx`
 
-- 52 `button` "Source {n}: {name}" (button, onClick)
-- 68 `button` "Source {n}: {chip}" (button, onClick)
-- 86 `Link` "Open in Stats" (link, href)
-- 91 `button` "Sources" (button, onClick)
+- CTL-P013-092 52 `button` "Source {n}: {name}" (button, onClick)
+- CTL-P013-093 68 `button` "Source {n}: {chip}" (button, onClick)
+- CTL-P013-094 86 `Link` "Open in Stats" (link, href)
+- CTL-P013-095 91 `button` "Sources" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/SaveCard.tsx`
 
-- 127 `button` "Save to {label} {countOf}" (button, onClick)
-- 140 `button` "{name} {{count}|}" (button, onClick)
-- 193 `Button` "Create" (button)
-- 199 `button` "New folder" (button, onClick)
-- 215 `Button` "Cancel" (button, onClick)
-- 223 `Button` "{Save to {folder}|Save}" (button, onClick)
-- 239 `a` "Open" (link, href)
-- 244 `button` "Undo, 8 seconds" (button, onClick)
-- 257 `Button` "Done" (button, onClick)
+- CTL-P013-096 127 `button` "Save to {label} {countOf}" (button, onClick)
+- CTL-P013-097 140 `button` "{name} {{count}|}" (button, onClick)
+- CTL-P013-098 193 `Button` "Create" (button)
+- CTL-P013-099 199 `button` "New folder" (button, onClick)
+- CTL-P013-100 215 `Button` "Cancel" (button, onClick)
+- CTL-P013-101 223 `Button` "{Save to {folder}|Save}" (button, onClick)
+- CTL-P013-102 239 `a` "Open" (link, href)
+- CTL-P013-103 244 `button` "Undo, 8 seconds" (button, onClick)
+- CTL-P013-104 257 `Button` "Done" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/Sources.tsx`
 
-- 41 `button` "{inner}" (button, onClick)
+- CTL-P013-105 41 `button` "{inner}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/Steps.tsx`
 
-- 130 `button` "{stepsReceipt}" (button, onClick)
+- CTL-P013-106 130 `button` "{stepsReceipt}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/TaskCard.tsx`
 
-- 175 `button` "See what this is based on" (button, onClick) CH-13951
-- 185 `Button` "{dismiss}" (button, onClick) CH-13951
-- 194 `Button` "{primary}" (button, onClick) CH-13951
+- CTL-P013-107 175 `button` "See what this is based…" (button, onClick) CH-13951
+- CTL-P013-108 185 `Button` "{dismiss}" (button, onClick) CH-13951
+- CTL-P013-109 194 `Button` "{primary}" (button, onClick) CH-13951
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/TurnNotice.tsx`
 
-- 48 `Button` "Try again" (button, onClick) CH-13251
-- 53 `Button` "Start a new chat" (button, onClick) CH-13251
+- CTL-P013-110 48 `Button` "Try again" (button, onClick) CH-13251
+- CTL-P013-111 53 `Button` "Start a new chat" (button, onClick) CH-13251
 
 ### `src/clubhouse/screens/coachhelm/chat/parts/Work.tsx`
 
-- 144 `button` "{text}" (button, onClick)
+- CTL-P013-112 144 `button` "{text}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/studio/MissCompass.tsx`
 
-- 85 `button` "{Said} , {n} {shot,|shots,} {{share}%|none}" (button, onClick)
-- 175 `button` "Close the shots" (button, onClick)
-- 192 `a` "Open the round: {{player}, |}{when}{, {course}|}{, {sa…" (link, href)
-- 212 `Button` "Ask about these shots" (button, onClick)
+- CTL-P013-113 85 `button` "{Said} , {n} {shot,|shots,} {{sh…" (button, onClick)
+- CTL-P013-114 175 `button` "Close the shots" (button, onClick)
+- CTL-P013-115 192 `a` "Open the round: {{player}, |}{when}{, {co…" (link, href)
+- CTL-P013-116 212 `Button` "Ask about these shots" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/chat/studio/ask.tsx`
 
-- 41 `button` "{label}" (button, onClick)
-- 51 `a` "{label}" (link, href)
+- CTL-P013-117 41 `button` "{label}" (button, onClick)
+- CTL-P013-118 51 `a` "{label}" (link, href)
 
 ### `src/clubhouse/screens/coachhelm/chat/studio/components.tsx`
 
-- 83 `OpenKey` "Open {label}" (href)
-- 113 `OpenKey` "Open {label}’s stats" (href)
-- 154 `OpenKey` "Open {label}’s stats" (href)
-- 243 `OpenLine` "Open the round" (href)
-- 277 `OpenLine` "Open the round" (href)
-- 289 `a` "{label} {{purpose}|}" (link, href)
-- 301 `LinkRow` "{label}" (href)
-- 477 `OpenKey` "Open {title} on the Calendar" (href)
-- 485 `OpenLine` "Open the Calendar" (href)
-- 539 `OpenKey` "Open {name}’s rounds" (href)
-- 548 `OpenLine` "Open the board" (href)
-- 567 `LinkRow` "{label}" (href)
+- CTL-P013-119 83 `OpenKey` "Open {label}" (href)
+- CTL-P013-120 113 `OpenKey` "Open {label}’s stats" (href)
+- CTL-P013-121 154 `OpenKey` "Open {label}’s stats" (href)
+- CTL-P013-122 243 `OpenLine` "Open the round" (href)
+- CTL-P013-123 277 `OpenLine` "Open the round" (href)
+- CTL-P013-124 289 `a` "{label} {{purpose}|}" (link, href)
+- CTL-P013-125 301 `LinkRow` "{label}" (href)
+- CTL-P013-126 477 `OpenKey` "Open {title} on the Calendar" (href)
+- CTL-P013-127 485 `OpenLine` "Open the Calendar" (href)
+- CTL-P013-128 539 `OpenKey` "Open {name}’s rounds" (href)
+- CTL-P013-129 548 `OpenLine` "Open the board" (href)
+- CTL-P013-130 567 `LinkRow` "{label}" (href)
 
 ### `src/clubhouse/screens/coachhelm/chat/visual/blocks.tsx`
 
-- 38 `g` "Ask about {said} misses, {count}" (onClick, role=button)
-- 95 `button` "{name}{{n} rounds|} {{fmt}|—}" (button, onClick)
-- 140 `button` "{hole_number} {—|{+{to_par}|{E|−{abs}}}}" (button, onClick)
+- CTL-P013-131 38 `g` "Ask about {said} misses, {count}" (onClick, role=button)
+- CTL-P013-132 95 `button` "{name}{{n} rounds|} {{fmt}|—}" (button, onClick)
+- CTL-P013-133 140 `button` "{hole_number} {—|{+{to_par}|{E|…" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/file/AnalystRead.tsx`
 
-- 120 `Button` "The {length} rounds behind it" (button, onClick)
-- 250 `Button` "The {length} rounds behind it" (button, onClick)
-- 257 `Button` "Set as focus" (button, onClick)
-- 261 `Button` "Not useful" (button, onClick)
-- 264 `Button` "Wrong" (button, onClick)
-- 300 `Button` "Cancel" (button, onClick)
-- 303 `Button` "Mark as wrong" (button)
-- 333 `Link` "{date}{, {course}|}{, {score}|} {line}" (link, href)
+- CTL-P013-134 120 `Button` "The {length} rounds behind it" (button, onClick)
+- CTL-P013-135 250 `Button` "The {length} rounds behind it" (button, onClick)
+- CTL-P013-136 257 `Button` "Set as focus" (button, onClick)
+- CTL-P013-137 261 `Button` "Not useful" (button, onClick)
+- CTL-P013-138 264 `Button` "Wrong" (button, onClick)
+- CTL-P013-139 300 `Button` "Cancel" (button, onClick)
+- CTL-P013-140 303 `Button` "Mark as wrong" (button)
+- CTL-P013-141 333 `Link` "{date}{, {course}|}{, {score}|} {line}" (link, href)
 
 ### `src/clubhouse/screens/coachhelm/file/IntentSheet.tsx`
 
-- 42 `Button` "Discard" (button, onClick)
-- 45 `Button` "Keep editing" (button, onClick)
-- 51 `Button` "Cancel" (button, onClick)
-- 54 `Button` "{Saving|Save plan}" (button, onClick)
-- 71 `button` "{label}" (button, onClick)
-- 81 `button` "{label}" (button, onClick)
-- 94 `button` "{label}" (button, onClick)
+- CTL-P013-142 42 `Button` "Discard" (button, onClick)
+- CTL-P013-143 45 `Button` "Keep editing" (button, onClick)
+- CTL-P013-144 51 `Button` "Cancel" (button, onClick)
+- CTL-P013-145 54 `Button` "{Saving|Save plan}" (button, onClick)
+- CTL-P013-146 71 `button` "{label}" (button, onClick)
+- CTL-P013-147 81 `button` "{label}" (button, onClick)
+- CTL-P013-148 94 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/file/PlayerFile.tsx`
 
-- 133 `Button` "Try again" (button, onClick)
-- 230 `Button` "Accept" (button)
-- 233 `Button` "Decline" (button)
-- 270 `Button` "Message {first}" (button, href) CH-13386
-- 365 `PhoneIconAction` "More for {first}" (onClick)
-- 378 `Link` "{name} {{line}|}" (link, href)
-- 400 `button` "More for {first}" (button, onClick)
-- 438 `button` "Try again" (button, onClick) CH-13761
+- CTL-P013-149 133 `Button` "Try again" (button, onClick)
+- CTL-P013-150 230 `Button` "Accept" (button)
+- CTL-P013-151 233 `Button` "Decline" (button)
+- CTL-P013-152 270 `Button` "Message {first}" (button, href) CH-13386
+- CTL-P013-153 365 `PhoneIconAction` "More for {first}" (onClick)
+- CTL-P013-154 378 `Link` "{name} {{line}|}" (link, href)
+- CTL-P013-155 400 `button` "More for {first}" (button, onClick)
+- CTL-P013-156 438 `button` "Try again" (button, onClick) CH-13761
 
 ### `src/clubhouse/screens/coachhelm/file/YourWeek.tsx`
 
-- 124 `Button` "Go to Rounds" (button, href) CH-13386
+- CTL-P013-157 124 `Button` "Go to Rounds" (button, href) CH-13386
 
 ### `src/clubhouse/screens/coachhelm/file/cards.tsx`
 
-- 83 `section` "{{first}’s top read · {AREA}|{playerKicker}} {title}…" (onClick)
-- 103 `button` "Open the read: {title}" (button, onClick)
-- 186 `Button` "Message {first}" (button, href)
-- 213 `Button` "{Assigning|Assign as focus}" (button, onClick)
-- 428 `Link` "{Full standing, {toLowerCase}|Full standing}" (link, href)
-- 444 `button` "{word} {title} {join}" (button, onClick)
-- 493 `button` "{Undoing|Undo}" (button, onClick)
-- 524 `button` "Working {title} {meta}" (button, onClick)
-- 565 `button` "Edit plan" (button, onClick)
-- 575 `Button` "Set a plan" (button, onClick)
+- CTL-P013-158 83 `section` "{{first}’s top read · {AREA}|{playerKic…" (onClick)
+- CTL-P013-159 103 `button` "Open the read: {title}" (button, onClick)
+- CTL-P013-160 186 `Button` "Message {first}" (button, href)
+- CTL-P013-161 213 `Button` "{Assigning|Assign as focus}" (button, onClick)
+- CTL-P013-162 428 `Link` "{Full standing, {toLowerCase}|Full sta…" (link, href)
+- CTL-P013-163 444 `button` "{word} {title} {join}" (button, onClick)
+- CTL-P013-164 493 `button` "{Undoing|Undo}" (button, onClick)
+- CTL-P013-165 524 `button` "Working {title} {meta}" (button, onClick)
+- CTL-P013-166 565 `button` "Edit plan" (button, onClick)
+- CTL-P013-167 575 `Button` "Set a plan" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/parts.tsx`
 
-- 242 `Button` "{Undoing…|Undo}" (button, onClick) CH-13901
-- 276 `Button` "{Assigning…|{Propose again|Assign as focus}}" (button, onClick)
-- 280 `Button` "{Dismissing…|Dismiss}" (button, onClick)
+- CTL-P013-168 242 `Button` "{Undoing…|Undo}" (button, onClick) CH-13901
+- CTL-P013-169 276 `Button` "{Assigning…|{Propose again|Assi…" (button, onClick)
+- CTL-P013-170 280 `Button` "{Dismissing…|Dismiss}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/plan/PlanCard.tsx`
 
-- 143 `button` "Send" (button, onClick)
-- 357 `button` "{undefined|Close the plan}" (button, onClick)
-- 370 `button` "More for this plan" (button)
-- 378 `button` "Earlier version" (button, onClick)
-- 382 `button` "Later version" (button, onClick)
-- 401 `button` "Undo" (button, onClick)
-- 408 `Button` "Edit in builder" (button, onClick)
-- 413 `Button` "{Saving…|{Try again|Save draft}}" (button, onClick)
-- 417 `Button` "Publish…" (button, onClick)
-- 437 `Button` "Open" (button, onClick)
-- 490 `button` "{title}" (button, onClick)
-- 517 `button` "{label}" (button, onClick)
-- 534 `button` "{label}" (button, onClick)
-- 586 `button` "Open" (button, onClick)
-- 590 `button` "Undo" (button, onClick)
-- 601 `Button` "Publish…" (button, onClick)
-- 607 `button` "Save to {folder}" (button, onClick)
-- 617 `button` "{name} {count}" (button, onClick)
-- 651 `Button` "Create" (button)
-- 657 `button` "New folder" (button, onClick)
-- 676 `Button` "{Try again|Save draft}" (button, onClick)
-- 679 `Button` "Publish…" (button, onClick)
-- 703 `button` "{r}" (button, onClick)
-- 720 `button` "Shorter" (button, onClick)
-- 732 `button` "Longer" (button, onClick)
-- 762 `button` "{name} ›" (button, onClick)
-- 775 `button` "{name} ›" (button, onClick)
-- 816 `Button` "Use" (button, onClick)
+- CTL-P013-171 143 `button` "Send" (button, onClick)
+- CTL-P013-172 357 `button` "{undefined|Close the plan}" (button, onClick)
+- CTL-P013-173 370 `button` "More for this plan" (button)
+- CTL-P013-174 378 `button` "Earlier version" (button, onClick)
+- CTL-P013-175 382 `button` "Later version" (button, onClick)
+- CTL-P013-176 401 `button` "Undo" (button, onClick)
+- CTL-P013-177 408 `Button` "Edit in builder" (button, onClick)
+- CTL-P013-178 413 `Button` "{Saving…|{Try again|Save draft}}" (button, onClick)
+- CTL-P013-179 417 `Button` "Publish…" (button, onClick)
+- CTL-P013-180 437 `Button` "Open" (button, onClick)
+- CTL-P013-181 490 `button` "{title}" (button, onClick)
+- CTL-P013-182 517 `button` "{label}" (button, onClick)
+- CTL-P013-183 534 `button` "{label}" (button, onClick)
+- CTL-P013-184 586 `button` "Open" (button, onClick)
+- CTL-P013-185 590 `button` "Undo" (button, onClick)
+- CTL-P013-186 601 `Button` "Publish…" (button, onClick)
+- CTL-P013-187 607 `button` "Save to {folder}" (button, onClick)
+- CTL-P013-188 617 `button` "{name} {count}" (button, onClick)
+- CTL-P013-189 651 `Button` "Create" (button)
+- CTL-P013-190 657 `button` "New folder" (button, onClick)
+- CTL-P013-191 676 `Button` "{Try again|Save draft}" (button, onClick)
+- CTL-P013-192 679 `Button` "Publish…" (button, onClick)
+- CTL-P013-193 703 `button` "{r}" (button, onClick)
+- CTL-P013-194 720 `button` "Shorter" (button, onClick)
+- CTL-P013-195 732 `button` "Longer" (button, onClick)
+- CTL-P013-196 762 `button` "{name} ›" (button, onClick)
+- CTL-P013-197 775 `button` "{name} ›" (button, onClick)
+- CTL-P013-198 816 `Button` "Use" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/plan/PlanIntake.tsx`
 
-- 37 `button` "{label}" (button, onClick)
-- 67 `Button` "Build the plan" (button, onClick)
+- CTL-P013-199 37 `button` "{label}" (button, onClick)
+- CTL-P013-200 67 `Button` "Build the plan" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/plan/PlanPageActions.tsx`
 
-- 55 `Button` "Print" (button, onClick)
-- 56 `Button` "Share PDF" (button, onClick)
-- 69 `PhoneIconAction` "Print" (onClick)
-- 79 `BackLink` "Practice" (link, onClick)
-- 86 `Button` "Edit" (button, href)
-- 88 `Button` "Share PDF" (button, onClick)
-- 93 `Button` "Print" (button, onClick)
-- 105 `Button` "Edit" (button, href)
-- 109 `Button` "Share PDF" (button, onClick)
+- CTL-P013-201 55 `Button` "Print" (button, onClick)
+- CTL-P013-202 56 `Button` "Share PDF" (button, onClick)
+- CTL-P013-203 69 `PhoneIconAction` "Print" (onClick)
+- CTL-P013-204 79 `BackLink` "Practice" (link, onClick)
+- CTL-P013-205 86 `Button` "Edit" (button, href)
+- CTL-P013-206 88 `Button` "Share PDF" (button, onClick)
+- CTL-P013-207 93 `Button` "Print" (button, onClick)
+- CTL-P013-208 105 `Button` "Edit" (button, href)
+- CTL-P013-209 109 `Button` "Share PDF" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/plan/format/PlanFormat.tsx`
 
-- 171 `BackLink` "Practice" (link, href)
-- 222 `Button` "Try another" (button, onClick)
-- 225 `Button` "Use this format" (button, onClick)
-- 245 `a` "{label}" (link, href)
-- 250 `button` "Undo" (button, onClick)
-- 291 `Button` "Upload a plan" (button, onClick)
-- 325 `button` "Choose file" (button, onClick)
-- 329 `button` "Photo library" (button, onClick)
-- 333 `button` "Take a photo" (button, onClick)
+- CTL-P013-210 171 `BackLink` "Practice" (link, href)
+- CTL-P013-211 222 `Button` "Try another" (button, onClick)
+- CTL-P013-212 225 `Button` "Use this format" (button, onClick)
+- CTL-P013-213 245 `a` "{label}" (link, href)
+- CTL-P013-214 250 `button` "Undo" (button, onClick)
+- CTL-P013-215 291 `Button` "Upload a plan" (button, onClick)
+- CTL-P013-216 325 `button` "Choose file" (button, onClick)
+- CTL-P013-217 329 `button` "Photo library" (button, onClick)
+- CTL-P013-218 333 `button` "Take a photo" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/plan/player/PlayerPractice.tsx`
 
-- 135 `a` "In Documents {label}" (link, href)
-- 139 `Button` "Open the plan" (button, onClick)
+- CTL-P013-219 135 `a` "In Documents {label}" (link, href)
+- CTL-P013-220 139 `Button` "Open the plan" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/read/ReadPage.tsx`
 
-- 218 `button` "More" (button)
-- 248 `Button` "{Open {first}’s reads|Open your reads}" (button, href) CH-13861
-- 323 `Link` "CoachHelm" (link, href)
-- 332 `IconButton` "Previous read" (button, onClick)
-- 333 `IconButton` "Next read" (button, onClick)
+- CTL-P013-221 218 `button` "More" (button)
+- CTL-P013-222 248 `Button` "{Open {first}’s reads|Ope…" (button, href) CH-13861
+- CTL-P013-223 323 `Link` "CoachHelm" (link, href)
+- CTL-P013-224 332 `IconButton` "Previous read" (button, onClick)
+- CTL-P013-225 333 `IconButton` "Next read" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/read/actions.tsx`
 
-- 136 `Button` "Message {first}" (button, href)
-- 230 `Button` "Undo" (button, onClick) CH-13901
-- 242 `Button` "Message {first}" (button, href) CH-13601
-- 247 `Button` "Remove focus" (button, onClick) CH-13601
-- 256 `Button` "Dismiss" (button, onClick)
-- 288 `Button` "Re-check now" (button, onClick)
-- 292 `Button` "{Propose again|Assign as focus}" (button, onClick)
-- 338 `Button` "Ask about this" (button, href)
-- 343 `Button` "Message {coachName}" (button, href)
+- CTL-P013-226 136 `Button` "Message {first}" (button, href)
+- CTL-P013-227 230 `Button` "Undo" (button, onClick) CH-13901
+- CTL-P013-228 242 `Button` "Message {first}" (button, href) CH-13601
+- CTL-P013-229 247 `Button` "Remove focus" (button, onClick) CH-13601
+- CTL-P013-230 256 `Button` "Dismiss" (button, onClick)
+- CTL-P013-231 288 `Button` "Re-check now" (button, onClick)
+- CTL-P013-232 292 `Button` "{Propose again|Assign as focus}" (button, onClick)
+- CTL-P013-233 338 `Button` "Ask about this" (button, href)
+- CTL-P013-234 343 `Button` "Message {coachName}" (button, href)
 
 ### `src/clubhouse/screens/coachhelm/read/parts.tsx`
 
-- 453 `Link` "Review the round on {date}{ at {course}|}, hole {ho…" (link, href)
-- 487 `Link` "Review the round on {date}{ at {course}|}" (link, href)
-- 542 `button` "How sure is this{· {word}|}" (button, onClick)
-- 615 `Link` "{body}" (link, href)
-- 669 `Link` "{category} {title} {word} {value}{{unit}|}" (link, href)
-- 712 `Link` "{title} {now} {· {firm}|} {value}{{unit}|}" (link, href) CH-13890
+- CTL-P013-235 453 `Link` "Review the round on {date}{ at {course…" (link, href)
+- CTL-P013-236 487 `Link` "Review the round on {date}{ at {course…" (link, href)
+- CTL-P013-237 542 `button` "How sure is this{· {word}|}" (button, onClick)
+- CTL-P013-238 615 `Link` "{body}" (link, href)
+- CTL-P013-239 669 `Link` "{category} {title} {word} {value}{{uni…" (link, href)
+- CTL-P013-240 712 `Link` "{title} {now} {· {firm}|} {va…" (link, href) CH-13890
 
 ### `src/clubhouse/screens/coachhelm/team/Cards.tsx`
 
-- 80 `button` "{name} {join}{· early|}{· estimated|}{· {held…" (button, onClick)
+- CTL-P013-241 80 `button` "{name} {join}{· early|}{· estima…" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/team/CourseCard.tsx`
 
-- 95 `button` "{name} {rounds} rounds · last {day}{· {readCo…" (button, onClick)
-- 175 `button` "{Show fewer|Show all {length} courses}" (button, onClick)
-- 194 `button` "{Show fewer|Show {length} more}" (button, onClick)
+- CTL-P013-242 95 `button` "{name} {rounds} rounds · last {d…" (button, onClick)
+- CTL-P013-243 175 `button` "{Show fewer|Show all {length} c…" (button, onClick)
+- CTL-P013-244 194 `button` "{Show fewer|Show {length} more}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/team/Huddle.tsx`
 
-- 185 `g` "{initials}, {name}: striking {formatSigned},…" (onClick, role=button)
+- CTL-P013-245 185 `g` "{initials}, {name}: striking {f…" (onClick, role=button)
 
 ### `src/clubhouse/screens/coachhelm/team/SpotCard.tsx`
 
-- 42 `button` "{name} {missing}" (button, onClick)
-- 50 `button` "{name} {formatSigned}" (button, onClick)
+- CTL-P013-246 42 `button` "{name} {missing}" (button, onClick)
+- CTL-P013-247 50 `button` "{name} {formatSigned}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/team/StationControl.tsx`
 
-- 29 `button` "{STATION_SHORT}, {not measured|{formatSigned}…" (button, onClick)
-- 42 `button` "Course, {words}, course and scoring" (button, onClick)
+- CTL-P013-248 29 `button` "{STATION_SHORT}, {not measured|{…" (button, onClick)
+- CTL-P013-249 42 `button` "Course, {words}, course and scor…" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/team/Stories.tsx`
 
-- 234 `div` "Story, {nameOf}" (onPointerDown)
-- 265 `div` "{map}" (onPointerDown)
-- 272 `div` "{split} {storyWhen} Close stories" (onPointerDown)
-- 278 `button` "Close stories" (button, onClick)
-- 283 `div` "(no label)" (onClick)
-- 291 `Button` "{actionOf}" (button, onClick)
-- 294 `Button` "{Next|Done}" (button, onClick)
-- 406 `button` "{{figure}{text}|{text} {figure}}" (button, onClick)
-- 463 `button` "Close" (button, onClick)
-- 470 `Button` "{actionOf}" (button, onClick)
+- CTL-P013-250 234 `div` "Story, {nameOf}" (onPointerDown)
+- CTL-P013-251 265 `div` "{map}" (onPointerDown)
+- CTL-P013-252 272 `div` "{split} {storyWhen} Close stories" (onPointerDown)
+- CTL-P013-253 278 `button` "Close stories" (button, onClick)
+- CTL-P013-254 283 `div` "Story body (next) (ledger)" (onClick)
+- CTL-P013-255 291 `Button` "{actionOf}" (button, onClick)
+- CTL-P013-256 294 `Button` "{Next|Done}" (button, onClick)
+- CTL-P013-257 406 `button` "{{figure}{text}|{text} {figure}}" (button, onClick)
+- CTL-P013-258 463 `button` "Close" (button, onClick)
+- CTL-P013-259 470 `Button` "{actionOf}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/team/TeamBoard.tsx`
 
-- 285 `TeamReadsLink` "(no label)" (link, href)
-- 375 `Button` "Go to Roster" (button, href)
+- CTL-P013-260 285 `TeamReadsLink` "Team reads (ledger)" (link, href)
+- CTL-P013-261 375 `Button` "Go to Roster" (button, href)
 
 ### `src/clubhouse/screens/coachhelm/team/TeamHole.tsx`
 
-- 135 `g` "{STATION_SHORT}, {Not measured|{formatSigned…" (onClick, role=button)
-- 177 `g` "+{length} more at {STATION_SHORT}" (onClick, role=button)
+- CTL-P013-262 135 `g` "{STATION_SHORT}, {Not measured|…" (onClick, role=button)
+- CTL-P013-263 177 `g` "+{length} more at {STATION_SHOR…" (onClick, role=button)
 
 ### `src/clubhouse/screens/coachhelm/team/panels.tsx`
 
-- 42 `button` "Close" (button, onClick)
-- 264 `Button` "Ask about this" (button, href)
-- 271 `Link` "Open the full read" (link, href)
-- 289 `Link` "Open {first}’s page" (link, href)
-- 341 `button` "{name}: {toPar} a round here from {rounds} {…" (button, onClick)
-- 388 `button` "Read the story from {when} at {name}" (button, onClick)
-- 402 `Button` "Close" (button, onClick)
+- CTL-P013-264 42 `button` "Close" (button, onClick)
+- CTL-P013-265 264 `Button` "Ask about this" (button, href)
+- CTL-P013-266 271 `Link` "Open the full read" (link, href)
+- CTL-P013-267 289 `Link` "Open {first}’s page" (link, href)
+- CTL-P013-268 341 `button` "{name}: {toPar} a round here fr…" (button, onClick)
+- CTL-P013-269 388 `button` "Read the story from {when} at {…" (button, onClick)
+- CTL-P013-270 402 `Button` "Close" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/team/parts.tsx`
 
-- 48 `button` "{first}: {readTitle} {{sample}|}{{word}|}{Out…" (button, onClick)
-- 88 `Button` "Try again" (button, onClick)
+- CTL-P013-271 48 `button` "{first}: {readTitle} {{sample}|}…" (button, onClick)
+- CTL-P013-272 88 `Button` "Try again" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/views/CoachPlayerStates.tsx`
 
-- 29 `Button` "Back to the board" (button, href) CH-13311
+- CTL-P013-273 29 `Button` "Back to the board" (button, href) CH-13311
 
 ### `src/clubhouse/screens/coachhelm/views/DeepDive.tsx`
 
-- 234 `Link` "Review the round on {date}{ at {course}|}" (link, href)
-- 311 `Link` "Review the round on {date}{ at {course}|},…" (link, href) CH-13996
-- 412 `Link` "{body}" (link, href)
-- 431 `Button` "Open Development" (button, href) CH-13384
-- 502 `Link` "Message {first}" (link, href)
-- 546 `button` "{title} {Dismissed|{word}} {· {firmness}|} {…" (button, onClick)
-- 620 `button` "{more} more cleared" (button, onClick) CH-13992
-- 760 `Button` "{label}" (button, href)
+- CTL-P013-274 234 `Link` "Review the round on {date}{ at {course…" (link, href)
+- CTL-P013-275 311 `Link` "Review the round on {date}{ a…" (link, href) CH-13996
+- CTL-P013-276 412 `Link` "{body}" (link, href)
+- CTL-P013-277 431 `Button` "Open Development" (button, href) CH-13384
+- CTL-P013-278 502 `Link` "Message {first}" (link, href)
+- CTL-P013-279 546 `button` "{title} {Dismissed|{word}} {· {…" (button, onClick)
+- CTL-P013-280 620 `button` "{more} more cleared" (button, onClick) CH-13992
+- CTL-P013-281 760 `Button` "{label}" (button, href)
 
 ### `src/clubhouse/screens/coachhelm/views/Frame.tsx`
 
-- 61 `Link` "CoachHelm" (link, href)
-- 98 `Button` "Open CoachHelm settings" (button, href) CH-13313
+- CTL-P013-282 61 `Link` "CoachHelm" (link, href)
+- CTL-P013-283 98 `Button` "Open CoachHelm settings" (button, href) CH-13313
 
 ### `src/clubhouse/screens/coachhelm/views/HowYouPlay.tsx`
 
-- 96 `summary` "How it is measured" (button)
+- CTL-P013-284 96 `summary` "How it is measured" (button)
 
 ### `src/clubhouse/screens/coachhelm/views/KeepReading.tsx`
 
-- 14 `Link` "{title} {note}" (link, href)
+- CTL-P013-285 14 `Link` "{title} {note}" (link, href)
 
 ### `src/clubhouse/screens/coachhelm/views/MondayBrief.tsx`
 
-- 35 `BackLink` "CoachHelm" (link, href) CH-13932
-- 60 `Link` "{who} {title} {tag} {· {strokes}|} {Practice block. …" (link, href)
-- 99 `Button` "Open the pattern" (button, href) CH-13934
+- CTL-P013-286 35 `BackLink` "CoachHelm" (link, href) CH-13932
+- CTL-P013-287 60 `Link` "{who} {title} {tag} {· {strokes}|} {Pra…" (link, href)
+- CTL-P013-288 99 `Button` "Open the pattern" (button, href) CH-13934
 
 ### `src/clubhouse/screens/coachhelm/views/PlayerHelmTabs.tsx`
 
-- 71 `button` "{labelOf}" (button, onClick) CH-13930
-- 86 `Link` "Development" (link, href) CH-13930
-- 99 `Button` "Development" (button, href)
+- CTL-P013-289 71 `button` "{labelOf}" (button, onClick) CH-13930
+- CTL-P013-290 86 `Link` "Development" (link, href) CH-13930
+- CTL-P013-291 99 `Button` "Development" (button, href)
 
 ### `src/clubhouse/screens/coachhelm/views/Standing.tsx`
 
-- 53 `Link` "Open the read" (link, href)
-- 152 `OpenRead` "(no label)" (href)
-- 257 `button` "Because {length} {pluralWord}" (button, onClick)
-- 269 `a` "{title}" (link, href)
-- 396 `Button` "{label}" (button, href) CH-13370
+- CTL-P013-292 53 `Link` "Open the read" (link, href)
+- CTL-P013-293 152 `OpenRead` "Open the read (ledger)" (href)
+- CTL-P013-294 257 `button` "Because {length} {pluralWord}" (button, onClick)
+- CTL-P013-295 269 `a` "{title}" (link, href)
+- CTL-P013-296 396 `Button` "{label}" (button, href) CH-13370
 
 ### `src/clubhouse/screens/coachhelm/views/TeamReads.tsx`
 
-- 34 `BackLink` "CoachHelm" (link, href)
-- 117 `Link` "{name} {text}" (link, href)
-- 143 `Link` "{name} {text}" (link, href)
-- 162 `Link` "{name} {lost} {certainty} {distinct} {{exception}|}" (link, href)
-- 181 `Link` "Team reads What the team shares, said once, and eac…" (link, href)
+- CTL-P013-297 34 `BackLink` "CoachHelm" (link, href)
+- CTL-P013-298 117 `Link` "{name} {text}" (link, href)
+- CTL-P013-299 143 `Link` "{name} {text}" (link, href)
+- CTL-P013-300 162 `Link` "{name} {lost} {certainty} {distinct} {…" (link, href)
+- CTL-P013-301 181 `Link` "Team reads What the team shares, said …" (link, href)
 
 ### `src/clubhouse/screens/coachhelm/views/TrackRecord.tsx`
 
-- 31 `BackLink` "CoachHelm" (link, href) CH-13960
+- CTL-P013-302 31 `BackLink` "CoachHelm" (link, href) CH-13960
 
 ## P014 Recruiting
 
@@ -2368,63 +2368,63 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/screens/recruiting/Documents.tsx`
 
-- 259 `button` "Upload" (button, onClick)
-- 286 `button` "{title} {categoryLabel}" (button, onClick)
-- 291 `button` "Remove {title}" (button, onClick)
-- 337 `Button` "Keep it" (button, onClick) CH-14502
-- 340 `Button` "{Removing…|Remove document}" (button, onClick) CH-14502
-- 390 `Button` "Cancel" (button, onClick)
-- 393 `Button` "Choose another file" (button, onClick)
-- 399 `Button` "Cancel" (button, onClick)
-- 402 `Button` "{{Uploading…|Uploading… {progress}%}|Upload}" (button, onClick)
-- 440 `button` "(no label)" (button)
+- CTL-P014-001 259 `button` "Upload" (button, onClick)
+- CTL-P014-002 286 `button` "{title} {categoryLabel}" (button, onClick)
+- CTL-P014-003 291 `button` "Remove {title}" (button, onClick)
+- CTL-P014-004 337 `Button` "Keep it" (button, onClick) CH-14502
+- CTL-P014-005 340 `Button` "{Removing…|Remove docu…" (button, onClick) CH-14502
+- CTL-P014-006 390 `Button` "Cancel" (button, onClick)
+- CTL-P014-007 393 `Button` "Choose another file" (button, onClick)
+- CTL-P014-008 399 `Button` "Cancel" (button, onClick)
+- CTL-P014-009 402 `Button` "{{Uploading…|Uploading… {progre…" (button, onClick)
+- CTL-P014-010 440 `button` "Upload (Enter) (ledger)" (button)
 
 ### `src/clubhouse/screens/recruiting/Pipeline.tsx`
 
-- 46 `button` "Show all {total}" (button, onClick) CH-14601
-- 61 `button` "{label} , {plural} {{Showing only th…" (button, onClick) CH-14801
+- CTL-P014-011 46 `button` "Show all {total}" (button, onClick) CH-14601
+- CTL-P014-012 61 `button` "{label} , {plural} {{Sh…" (button, onClick) CH-14801
 
 ### `src/clubhouse/screens/recruiting/ProspectForm.tsx`
 
-- 177 `button` "Delete prospect" (button, onClick)
-- 197 `button` "(no label)" (button)
-- 218 `Button` "Cancel" (button, onClick)
-- 221 `Button` "{Saving…|{Add|Save changes}}" (button, onClick)
+- CTL-P014-013 177 `button` "Delete prospect" (button, onClick)
+- CTL-P014-014 197 `button` "Save prospect (Enter) (ledger)" (button)
+- CTL-P014-015 218 `Button` "Cancel" (button, onClick)
+- CTL-P014-016 221 `Button` "{Saving…|{Add|Save changes}}" (button, onClick)
 
 ### `src/clubhouse/screens/recruiting/RecruitingDesktop.tsx`
 
-- 38 `Button` "New prospect" (button, onClick) CH-14904
-- 69 `Button` "Add your first prospect" (button, onClick) CH-14301
-- 112 `Button` "{Search all stages|Show all stages}" (button, onClick)
-- 116 `Button` "Clear search" (button, onClick)
-- 158 `button` "{name} {rowLineOf}" (button, onClick) CH-14802
-- 209 `Button` "Edit" (button, onClick)
-- 216 `IconButton` "More for {name}" (button)
+- CTL-P014-017 38 `Button` "New prospect" (button, onClick) CH-14904
+- CTL-P014-018 69 `Button` "Add your first prospect" (button, onClick) CH-14301
+- CTL-P014-019 112 `Button` "{Search all stages|Show all sta…" (button, onClick)
+- CTL-P014-020 116 `Button` "Clear search" (button, onClick)
+- CTL-P014-021 158 `button` "{name} {rowLineOf}" (button, onClick) CH-14802
+- CTL-P014-022 209 `Button` "Edit" (button, onClick)
+- CTL-P014-023 216 `IconButton` "More for {name}" (button)
 
 ### `src/clubhouse/screens/recruiting/RecruitingPhone.tsx`
 
-- 50 `PhoneIconAction` "New prospect" (onClick) CH-14904
-- 69 `Button` "Add your first prospect" (button, onClick) CH-14301
-- 93 `button` "{label}" (button) CH-14904
-- 104 `button` "{name} {rowLineOf}" (button, onClick) CH-14802
-- 134 `PhoneTextAction` "Edit" (onClick) CH-14602
-- 165 `button` "Stage" (button, onClick)
-- 174 `a` "Email {email}" (link, href)
-- 183 `a` "Call {phone}" (link, href)
-- 212 `button` "{blurb}" (button, onClick)
+- CTL-P014-024 50 `PhoneIconAction` "New prospect" (onClick) CH-14904
+- CTL-P014-025 69 `Button` "Add your first prospect" (button, onClick) CH-14301
+- CTL-P014-026 93 `button` "{label}" (button) CH-14904
+- CTL-P014-027 104 `button` "{name} {rowLineOf}" (button, onClick) CH-14802
+- CTL-P014-028 134 `PhoneTextAction` "Edit" (onClick) CH-14602
+- CTL-P014-029 165 `button` "Stage" (button, onClick)
+- CTL-P014-030 174 `a` "Email {email}" (link, href)
+- CTL-P014-031 183 `a` "Call {phone}" (link, href)
+- CTL-P014-032 212 `button` "{blurb}" (button, onClick)
 
 ### `src/clubhouse/screens/recruiting/RecruitingView.tsx`
 
-- 395 `Button` "Keep them" (button, onClick) CH-14501
-- 398 `Button` "{Deleting…|Delete prospect}" (button, onClick) CH-14501
+- CTL-P014-033 395 `Button` "Keep them" (button, onClick) CH-14501
+- CTL-P014-034 398 `Button` "{Deleting…|Delete pros…" (button, onClick) CH-14501
 
 ### `src/clubhouse/screens/recruiting/parts.tsx`
 
-- 104 `button` "{value} Change" (button, onClick)
-- 145 `button` "{actionLabel}" (button, onClick)
-- 158 `a` "{email} Email" (link, href)
-- 165 `a` "{phone} Call" (link, href)
-- 263 `button` "{{short}|Choose your division}" (button) CH-14808
+- CTL-P014-035 104 `button` "{value} Change" (button, onClick)
+- CTL-P014-036 145 `button` "{actionLabel}" (button, onClick)
+- CTL-P014-037 158 `a` "{email} Email" (link, href)
+- CTL-P014-038 165 `a` "{phone} Call" (link, href)
+- CTL-P014-039 263 `button` "{{short}|Choose your division}" (button) CH-14808
 
 ## P015 Auth
 

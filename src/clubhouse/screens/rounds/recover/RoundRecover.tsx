@@ -70,15 +70,15 @@ function RecoverCard({
         {why && <p className="ch-rcv-why">{why}</p>}
         {ago && <p className="ch-rcv-saved">Saved {ago}</p>}
         <div className="ch-rcv-acts" role="group" aria-label={`Actions for the round at ${round.course}`}>
-          <Button variant="primary" size={size} leftIcon={History} busy={resuming} disabled={busy && !resuming} onClick={onResume}>
+          <Button data-ctl="CTL-P011-094" variant="primary" size={size} leftIcon={History} busy={resuming} disabled={busy && !resuming} onClick={onResume}>
             {resuming ? 'Restoring…' : round.finished ? 'Post round' : 'Restore round'}
           </Button>
           {round.queued && (
-            <Button size={size} leftIcon={RotateCw} disabled={busy} onClick={onRetry}>
+            <Button data-ctl="CTL-P011-095" size={size} leftIcon={RotateCw} disabled={busy} onClick={onRetry}>
               Retry sync
             </Button>
           )}
-          <Button variant="ghost" size={size} leftIcon={Trash2} disabled={busy} onClick={onDiscard}>
+          <Button data-ctl="CTL-P011-096" variant="ghost" size={size} leftIcon={Trash2} disabled={busy} onClick={onDiscard}>
             Discard
           </Button>
         </div>
@@ -205,7 +205,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
         </div>
         {/* The empty page carries its own way back. The phone's top bar has the back link. */}
         {!phone && !empty && (
-          <Button variant="secondary" href={ROUNDS_LIBRARY}>
+          <Button data-ctl="CTL-P011-097" variant="secondary" href={ROUNDS_LIBRARY}>
             Back to Rounds
           </Button>
         )}
@@ -239,7 +239,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
           title="Nothing to recover"
           body="Rounds saved only on this device after an interruption or failed save will show here."
           action={
-            <Button variant="primary" href={ROUNDS_LIBRARY}>
+            <Button data-ctl="CTL-P011-098" variant="primary" href={ROUNDS_LIBRARY}>
               Back to Rounds
             </Button>
           }
@@ -286,11 +286,11 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
         }
         footer={
           <>
-            <Button variant="ghost" onClick={() => setAsking(null)}>
+            <Button data-ctl="CTL-P011-099" variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
             {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
-            <Button variant="danger" busy={discard.pending} feel={null} onClick={() => asking && void discard.run(asking)}>
+            <Button data-ctl="CTL-P011-100" variant="danger" busy={discard.pending} feel={null} onClick={() => asking && void discard.run(asking)}>
               {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>
           </>

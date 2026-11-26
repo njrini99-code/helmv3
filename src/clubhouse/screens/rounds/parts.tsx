@@ -146,7 +146,7 @@ export function UnfinishedCard({
           </span>
           {startHref && (
             // CH-11703: Start a round, Continue and Post round are primary taps (light).
-            <Link href={startHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
+            <Link data-ctl="CTL-P011-089" href={startHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
               New round
               <Icon icon={ArrowRight} size={15} />
             </Link>
@@ -170,7 +170,7 @@ export function UnfinishedCard({
       <b className="ch-rd-unf__c">{round.course}</b>
       <span className="ch-rd-unf__m">{[round.tee, round.type ? TYPE_LABEL[round.type] : null, `${round.holes} holes`].filter(Boolean).join(' · ')}</span>
       {sharing && (
-        <button type="button" className="ch-lv-sharechip" data-ch-code="CH-16631" onClick={sharing.onChange} aria-label={`Sharing: ${sharing.label}. Change who sees this round live`}>
+        <button data-ctl="CTL-P011-090" type="button" className="ch-lv-sharechip" data-ch-code="CH-16631" onClick={sharing.onChange} aria-label={`Sharing: ${sharing.label}. Change who sees this round live`}>
           <Icon icon={Eye} size={14} />
           {sharing.label}
         </button>
@@ -198,12 +198,12 @@ export function UnfinishedCard({
         </span>
         <span className="ch-rd-unf__acts">
           <Tooltip>
-            <button type="button" className="ch-rd-unf__discard" data-ch-press="" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
+            <button data-ctl="CTL-P011-091" type="button" className="ch-rd-unf__discard" data-ch-press="" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
               <Icon icon={Trash2} size={14} />
             </button>
           </Tooltip>
           {continueHref && (
-            <Link href={continueHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
+            <Link data-ctl="CTL-P011-092" href={continueHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
               {cta}
               <Icon icon={ArrowRight} size={15} />
             </Link>
@@ -576,7 +576,7 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
  * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap. CH-11601: on the
  * desktop Ledger a round that opens its review takes the row tint on hover (quick) and a deeper one on press, no lift.
  */
-export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void; /** The library's right-click menu (desktop). */ bind?: ContextMenuBind }) {
+export function RoundRow({ r, href, onOpen, bind, 'data-ctl': ctl }: { 'data-ctl'?: string; r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void; /** The library's right-click menu (desktop). */ bind?: ContextMenuBind }) {
   // The review is fetched whole as a finger lands on the card, so it opens without its skeleton (A13).
   const press = usePressPrefetch();
   const under = r.toPar != null && r.toPar < 0;
@@ -637,7 +637,7 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
   return href ? (
     // Named by what it shows, in the order it is drawn (MAC-09, PMAC-07: Voice Control); its score grid reads "Out 38, in 37,
     // total 75". The static card keeps its summary label: a group is not a control.
-    <Link
+    <Link data-ctl={ctl ?? 'CTL-P011-093'}
       href={href}
       className={'ch-rd-sc' + (under ? ' is-under' : '')}
       {...bind}

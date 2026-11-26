@@ -173,7 +173,7 @@ export function ScoreFlow({
   };
   return (
     <div className="ch-rzstage">
-      <svg
+      <svg data-ctl="CTL-P011-044"
         ref={svgRef}
         className="ch-rzsvg"
         viewBox={`0 0 ${W} ${height}`}

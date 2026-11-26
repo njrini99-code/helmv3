@@ -41,7 +41,7 @@ export function AskRow({ code, label, onSkip, skipLabel, line, sheet = false, ch
       <div className="ch-rt-sec__h">
         <span id={id}>{label}</span>
         {onSkip && (
-          <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" aria-label={skipLabel} onClick={onSkip}>
+          <button data-ctl="CTL-P011-124" type="button" className="ch-btn ch-btn--ghost ch-btn--sm" aria-label={skipLabel} onClick={onSkip}>
             <span>Skip</span>
           </button>
         )}
@@ -72,7 +72,7 @@ export function PuttMissPrompt({ prompt, pref }: { prompt: ChPuttPromptView; pre
     >
       <div className="ch-rt-tags" role="group" aria-label={`Which side the first putt missed, for your read “${ask.readTitle || ask.bandLabel}”`}>
         {PUTT_MISS_OPTIONS.map((tag) => (
-          <button
+          <button data-ctl="CTL-P011-125"
             key={tag}
             type="button"
             aria-pressed={saved === tag}
@@ -106,7 +106,7 @@ export function RecoveryPrompt({ prompt }: { prompt: ChRecoveryPromptView }) {
     >
       <div className="ch-rt-tags" role="group" aria-label="Next shot from where the tee shot finished">
         {RECOVERY_CHOICES.map(({ value, label }) => (
-          <button
+          <button data-ctl="CTL-P011-126"
             key={label}
             type="button"
             aria-pressed={saved === value}

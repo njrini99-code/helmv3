@@ -269,7 +269,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
   return (
     <main className="ch-rsu" data-ui="clubhouse">
       <div className="ch-rsu-band">
-        <Link className="ch-rsu-band__back" href={backHref}>
+        <Link data-ctl="CTL-P011-112" className="ch-rsu-band__back" href={backHref}>
           <Icon icon={ChevronLeft} size={16} />
           Rounds
         </Link>
@@ -316,7 +316,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
                   {p.yards ? <span>{p.yards.toLocaleString('en-US')} yds</span> : null}
                   {p.rating ? <span>Rating {p.rating}</span> : null}
                   {p.slope ? <span>Slope {p.slope}</span> : null}
-                  <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={() => setPicker({ course: null })}>
+                  <button data-ctl="CTL-P011-113" type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={() => setPicker({ course: null })}>
                     <span>Change course</span>
                   </button>
                 </div>
@@ -330,7 +330,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
                   <b>Choose a course</b>
                   <span>Search the course library, pick one you&rsquo;ve played, or add it yourself.</span>
                 </div>
-                <button type="button" className="ch-btn ch-btn--secondary" onClick={() => setPicker({ course: null })}>
+                <button data-ctl="CTL-P011-114" type="button" className="ch-btn ch-btn--secondary" onClick={() => setPicker({ course: null })}>
                   <Icon icon={Search} size={15} />
                   <span>Browse courses</span>
                 </button>
@@ -349,7 +349,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
             />
           )}
           {offer && (
-            <button type="button" className="ch-rsu-qual" onClick={() => playQualifier(offer)}>
+            <button data-ctl="CTL-P011-115" type="button" className="ch-rsu-qual" onClick={() => playQualifier(offer)}>
               <span className="ch-rsu-qual__ic" aria-hidden="true">
                 <Icon icon={Medal} size={17} />
               </span>
@@ -453,7 +453,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
                 ) : (
                   <div className="ch-rsu-opts" role="radiogroup" aria-label="Qualifier" {...roving}>
                     {qualifiers.map((q) => (
-                      <button key={q.id} type="button" role="radio" aria-checked={form.qualifierId === q.id} disabled={q.nextRound == null} className="ch-rsu-opt" onClick={() => playQualifier(q)}>
+                      <button data-ctl="CTL-P011-116" key={q.id} type="button" role="radio" aria-checked={form.qualifierId === q.id} disabled={q.nextRound == null} className="ch-rsu-opt" onClick={() => playQualifier(q)}>
                         <span className="ch-rsu-radio" aria-hidden="true" />
                         <span>
                           <b>{q.name}</b>
@@ -548,7 +548,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
             blocker
           )}
         </span>
-        <button
+        <button data-ctl="CTL-P011-117"
           type="button"
           className="ch-btn ch-btn--primary ch-btn--lg"
           disabled={!!blocker || start.pending}
@@ -609,7 +609,7 @@ function HistoryHere({ glance: g }: { glance: ChCourseGlance | null }) {
       <span className="ch-rsu-hist__k">Your history here · {plural(g.rounds, 'round')}</span>
       {line && <p className="ch-rsu-hist__l ch-num">{line}</p>}
       {g.last?.note && <p className="ch-rsu-hist__n">Your note: {g.last.note}</p>}
-      <Link className="ch-rsu-hist__go" href={courseHref(g.key)}>
+      <Link data-ctl="CTL-P011-118" className="ch-rsu-hist__go" href={courseHref(g.key)}>
         See hole by hole
         <Icon icon={ChevronRight} size={16} />
       </Link>

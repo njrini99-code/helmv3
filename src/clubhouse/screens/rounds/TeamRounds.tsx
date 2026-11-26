@@ -134,7 +134,7 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
   const open = useOpenRound(r);
   const under = r.toPar != null && r.toPar < 0;
   return (
-    <LedgerRow
+    <LedgerRow data-ctl="CTL-P011-058"
       lead={shortDay(r.date)}
       title={by === 'month' ? r.player : r.course}
       meta={
@@ -200,7 +200,7 @@ function TeamRoundTableRow({ r, by }: { r: ChTeamRound; by: Group }) {
   const under = r.toPar != null && r.toPar < 0;
   const name = by === 'month' ? r.player : r.course;
   const opener = open.href ? (
-    <Link href={open.href} className="ch-trd-open" aria-label={open.label} onClick={open.onClick} {...open.press}>
+    <Link data-ctl="CTL-P011-059" href={open.href} className="ch-trd-open" aria-label={open.label} onClick={open.onClick} {...open.press}>
       {name}
     </Link>
   ) : (
@@ -422,7 +422,7 @@ export function TeamRounds({
           // The next step, as Home's empty team offers (F-0030).
           action={
             inviteHref ? (
-              <Button variant="primary" leftIcon={UserPlus} href={inviteHref}>
+              <Button data-ctl="CTL-P011-060" variant="primary" leftIcon={UserPlus} href={inviteHref}>
                 Invite players
               </Button>
             ) : undefined
@@ -437,7 +437,7 @@ export function TeamRounds({
           body="Every round your players post shows up here, newest first."
           action={
             rosterHref ? (
-              <Button variant="secondary" href={rosterHref}>
+              <Button data-ctl="CTL-P011-061" variant="secondary" href={rosterHref}>
                 Open roster
               </Button>
             ) : undefined
