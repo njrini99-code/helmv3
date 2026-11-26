@@ -31,7 +31,7 @@ import { loadManifests, runChangelogGate } from './changelog-gate.mjs';
 import { checkScreenshotLog } from './shots.mjs';
 import { checkLinks } from './links.mjs';
 import { checkDesignLanguage } from './design-language.mjs';
-import { checkClickableMap } from './clickable-map.mjs';
+import { checkClickableMap, checkControls } from './clickable-map.mjs';
 
 /**
  * Red is for errors only (MOTION-AND-VISUAL 4.7, Nick 15 Nov 2026): a red token paints an error, a destructive action,
@@ -544,6 +544,8 @@ function main() {
 
   // The every-button map (CLUBHOUSE_CLICKABLE_MAP.md) moves with the code (D11, plan §4.7).
   if (existsSync(join(root, 'src/clubhouse'))) violations.push(...checkClickableMap(root));
+  // D11 (spec §4.7): every control has a data-ctl and a label (code or ledger), and the ledgers match the code.
+  if (existsSync(join(root, 'src/clubhouse'))) violations.push(...checkControls(root));
 
   if (violations.length) {
     console.error(gate.note);
