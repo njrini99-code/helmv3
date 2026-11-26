@@ -90,6 +90,8 @@ export interface CommandItem {
   disabled?: boolean;
   /** Arbitrary payload the consumer reads in onSelect. */
   data?: unknown;
+  /** Opt-in `data-*` attributes stamped on the row (e.g. a surface's own control code). Plain strings only. */
+  dataAttributes?: Readonly<Record<`data-${string}`, string>>;
 }
 
 export interface CommandGroup {
@@ -123,6 +125,12 @@ export interface CommandMenuProps {
   label?: string;
   /** Extra classes for the glass panel. */
   className?: string;
+  /**
+   * Opt-in: told the query as it is typed (and `''` when the menu closes), for a consumer that looks results up
+   * elsewhere and passes them back in `groups`. Those rows still go through cmdk's matcher, so each should carry
+   * the text it matched in `label`, `description` or `keywords`.
+   */
+  onQueryChange?: (query: string) => void;
 }
 
 /* ── motion variants (gated on reduced-motion at call sites) ─────────────── */
@@ -176,6 +184,7 @@ function CommandRow({ item, onPick }: RowProps) {
       value={`${item.label} ${item.description ?? ''} ${(item.keywords ?? []).join(' ')} ${item.id}`}
       disabled={item.disabled}
       onSelect={() => onPick(item)}
+      {...item.dataAttributes}
       data-slot="command-item"
       className={cn(
         'group flex cursor-pointer select-none items-center gap-3 rounded-fw-md px-3 py-2.5 outline-none',
@@ -249,9 +258,18 @@ export function CommandMenu({
   bindShortcut = true,
   label = 'Command menu',
   className,
+  onQueryChange,
 }: CommandMenuProps) {
   const reduceMotion = useReducedMotionGuard();
   const [query, setQuery] = useState('');
+  // A ref, so a consumer passing a fresh inline callback each render never re-fires this for an unchanged query.
+  const onQueryChangeRef = useRef(onQueryChange);
+  useEffect(() => {
+    onQueryChangeRef.current = onQueryChange;
+  });
+  useEffect(() => {
+    onQueryChangeRef.current?.(query);
+  }, [query]);
   const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);

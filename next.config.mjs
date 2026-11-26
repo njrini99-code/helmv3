@@ -175,6 +175,11 @@ const nextConfig = {
     // batch: the same dynamic-read gap as above, carved back into the upload
     // in .vercelignore.
     '/api/ch/signal': ['./docs/clubhouse/generated/bridge-graph.json'],
+    // The Bridge's Clubhouse screens (B02-B05, B12) and the ⌘K graph search
+    // read the same file through the same loader.
+    '/admin/clubhouse': ['./docs/clubhouse/generated/bridge-graph.json'],
+    '/admin/clubhouse/**': ['./docs/clubhouse/generated/bridge-graph.json'],
+    '/api/admin/clubhouse/search': ['./docs/clubhouse/generated/bridge-graph.json'],
   },
 
   // Bound the webpack production build and let its persistent cache trim

@@ -29,6 +29,11 @@ const DETAIL_LEAVES = new Set([
   '/admin/users/[id]/view-as',
   '/admin/thread/[entity]/[id]',
   '/admin/golf/tracer',
+  // The Clubhouse dossiers (plan §8): reached from a row, a chip or ⌘K.
+  '/admin/clubhouse/[page]',
+  '/admin/clubhouse/controls/[ctl]',
+  '/admin/clubhouse/actions/[act]',
+  '/admin/clubhouse/codes/[bridgeId]',
 ]);
 
 function walkRoutes(dir: string, base = '/admin'): string[] {
