@@ -70,3 +70,12 @@ describe('ruleBook', () => {
     expect(text).toContain('categories 6–8');
   });
 });
+
+describe('where each rule shows', () => {
+  it('a Pulse link opens Pulse at /admin/pulse, never /admin (which now redirects to Today)', () => {
+    const pulse = ruleBook().filter((r) => r.where?.startsWith('Pulse'));
+    expect(pulse.length).toBeGreaterThan(0);
+    for (const r of pulse) expect(r.href, r.id).toBe('/admin/pulse');
+    expect(ruleBook().some((r) => r.href === '/admin')).toBe(false);
+  });
+});
