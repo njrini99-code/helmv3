@@ -1012,8 +1012,9 @@ no second incident, attention, release, or self-heal model (brief §44).
   had hand-rolled). `command-deck/tone.ts` keeps only the `StateTone`-keyed
   rail/ink map `AttentionStack.tsx` still uses for its row rail — no
   `premium/*` primitive covers that exact list-row shape, so this is the
-  fourth copy of the same small pairing `AttentionQueue.tsx`/`TruthStrip.tsx`/
-  `ChangeTimeline.tsx` each already keep, not a new one.
+  fourth copy of the same small pairing
+  `AttentionQueue.tsx`/`TruthStrip.tsx` (deleted 2026-11-25)/`ChangeTimeline.tsx`
+  each kept, not a new one.
 - **Tests**: 54 vitest cases across 11 files (own suite) plus
   `bridge-premium-p1`'s 38 (`src/components/admin/premium/**`,
   `src/lib/admin/incidents/__tests__/{genome,release-watch}.test.ts`) — all
@@ -1153,8 +1154,9 @@ split its nineteen-section column into `posture | performance | schema`.
 production first: `/admin/billing` (zero `STRIPE_*` variables across 68
 production env vars, so it could only render its own "not available" notice)
 and the Deploys Traffic panel (the Vercel Web Analytics API answers `404
-not_found` for this project). `CreateInvoiceForm`, `src/lib/stripe/**` and
-`fetchVercelWebInsights()` are all untouched — each is a one-commit restore.
+not_found` for this project). `src/lib/stripe/**` and
+`fetchVercelWebInsights()` are untouched — each is a one-commit restore.
+`CreateInvoiceForm` was deleted 2026-11-25 as unused (it is in git history).
 
 **Result: 30 nav destinations → 19, with no surface lost.**
 

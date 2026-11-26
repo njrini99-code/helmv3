@@ -112,7 +112,7 @@ export const RETIRED_ADMIN_ROUTES: readonly RetiredRoute[] = [
     from: '/admin/billing',
     to: '/admin',
     reason:
-      'Production has no Stripe key — verified 2026-09-08: zero STRIPE_* variables across 68 production env vars — so isStripeConfigured() is false and this page could only ever render its own "Invoicing is not available yet" notice. A whole nav section for a surface that cannot act. CreateInvoiceForm and src/lib/stripe/** are untouched: restoring the page is one commit if a key is ever configured.',
+      'Production has no Stripe key — verified 2026-09-08: zero STRIPE_* variables across 68 production env vars — so isStripeConfigured() is false and this page could only ever render its own "Invoicing is not available yet" notice. A whole nav section for a surface that cannot act. src/lib/stripe/** is untouched. CreateInvoiceForm was deleted 2026-11-25 as unused (it is in git history), so restoring the page means restoring that form too if a key is ever configured.',
   },
 ];
 

@@ -3,8 +3,8 @@
  * onboarding-storage.test.ts
  *
  * jsdom in this workspace does not expose window.localStorage (see
- * src/lib/baseball/lifting/__tests__/live-set-offline-buffer.test.ts), so we
- * install a minimal in-memory Storage the same way that suite does — this
+ * src/lib/baseball/lifting/__tests__/live-set-offline-buffer.test.ts, deleted
+ * 2026-11-25 with its unused module), so we install a minimal in-memory Storage the way that suite did — this
  * gives the module a real persistence surface to assert against, while the
  * module itself stays guarded (typeof window === 'undefined' / try-catch) so
  * it never depends on this shim existing in production.

@@ -270,9 +270,11 @@ observation — a deliberate, documented small behavior change from a bare
 `.subscribe(cb)`):
 
 `use-task-realtime.ts`, `use-qualifier-realtime.ts`, `use-golf-messages.ts`
-(2 channels), `use-calendar-range-events.ts`, `useAdminRealtime.ts`,
-`useAdminPresence.ts`, `use-messages.ts` (2 channels), `use-unread-count.ts`,
+(2 channels), `use-calendar-range-events.ts`, `use-messages.ts` (2 channels),
+`use-unread-count.ts`,
 `useRSVP.ts` (2 channels), `LiveActivityFeed.tsx`, `LiveWeightRoomClient.tsx`.
+(`useAdminRealtime.ts` and `useAdminPresence.ts` were also on this list; both
+were deleted 2026-11-25 as unused, so the counts below are as of the audit.)
 
 Confirmed via B6's extended audit script: 14/14 `.channel(` call sites in
 these files show as OBSERVED (11 hooks, several holding two channels each).
