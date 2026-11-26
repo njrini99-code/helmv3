@@ -29,8 +29,10 @@ import {
   speedRows,
   switchMeasured,
   type SpeedWindow,
+  slowQueries,
 } from '@/lib/admin/clubhouse/speed';
 import { CopyReportButton } from '@/app/admin/_components/CopyReportButton';
+import { fetchQueryPerformance } from '@/lib/admin/database/performance';
 import { Meter, Panel, Pill, SpaceHeader, SpaceRoot, SpaceState, Stat, type Tone } from '../../_ui/ui';
 import { LinkGroup, ReliabilityTabs, PipeTruth } from '../_components/shared';
 
@@ -70,7 +72,16 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
   const graph = loadBridgeGraph();
   const now = Date.now();
   const since = new Date(now - SPEED_WINDOW_MS[scope.w]).toISOString();
-  const [pipe, hourly, failures] = await Promise.all([readPipe(now), readHourly({ sinceIso: since, kinds: ['view', 'vital', 'action'] }), readFailures(since)]);
+  const [pipe, hourly, failures, queryPerf] = await Promise.all([
+    readPipe(now),
+    readHourly({ sinceIso: since, kinds: ['view', 'vital', 'action'] }),
+    readFailures(since),
+    // Per-query time is the database's own (helm_debug.db_stat_deltas, every 15 minutes), not a Clubhouse signal, so it
+    // shows whatever the pipe says. A thrown read is a failed panel, never an empty one.
+    fetchQueryPerformance().catch((e: unknown) => ({ status: 'failed' as const, data: null, error: e instanceof Error ? e.message : String(e) })),
+  ]);
+  const queries = queryPerf.status === 'ok' && queryPerf.data ? slowQueries(queryPerf.data.latest) : null;
+  const queriesAt = queryPerf.status === 'ok' && queryPerf.data ? queryPerf.data.latestSampledAt : null;
   if (hourly.state === 'error' || failures.state === 'error') {
     await logServerError('Reliability speed: a read failed', { action: 'admin.spaces.reliability.speed', route: '/admin/spaces/reliability/speed', feature: 'admin_dashboard' });
   }
@@ -294,6 +305,41 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
           </div>
         </>
       )}
+
+      <Panel
+        title="Slowest database queries"
+        note={`The app's own requests in the latest 15-minute window, by mean time per call. Query shapes only, never the text${queriesAt ? ` · sampled ${new Date(queriesAt).toISOString().slice(11, 16)} UTC` : ''}. Not split by coach and player: the database does not know who asked.`}
+      >
+        {queryPerf.status === 'unconfigured' ? (
+          <p className="bs-panel-note" style={{ padding: '0 22px 20px' }} data-br={BR.speed.noSignal}>
+            Not measured: the per-query collector is not set up on this database.
+          </p>
+        ) : queryPerf.status !== 'ok' ? (
+          <p className="bs-panel-note" style={{ padding: '0 22px 20px' }} data-br={BR.speed.failed}>
+            The query timings could not be read, so no query is shown as fast or slow.
+          </p>
+        ) : queries && queries.length ? (
+          <div>
+            {queries.map((q) => (
+              <Link key={q.queryClass} href="/admin/database?view=performance" className="rl-db" data-br={BR.speed.queryRow}>
+                <span className="bs-chip" style={{ justifySelf: 'start' }}>
+                  {q.regressed ? 'slower' : 'query'}
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <b className="bs-mono" style={{ overflowWrap: 'anywhere' }}>{q.queryClass}</b>
+                  <span className="bs-panel-note" style={{ display: 'block' }}>
+                    {q.calls !== null ? `${q.calls} calls` : 'calls not counted'}
+                    {q.maxMs !== null ? ` · slowest ${msText(q.maxMs)}` : ''}
+                  </span>
+                </span>
+                <span className={`rl-db-n ${q.meanMs > 500 ? 'bs-tone-bad' : q.meanMs > 100 ? 'bs-tone-watch' : 'bs-tone-good'}`}>{msText(q.meanMs)}</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="bs-panel-note" style={{ padding: '0 22px 20px' }}>No timed app query in the latest window yet.</p>
+        )}
+      </Panel>
     </SpaceRoot>
   );
 }

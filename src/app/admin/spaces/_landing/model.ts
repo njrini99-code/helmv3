@@ -9,6 +9,7 @@
  */
 
 import type { Tone } from '../_ui/ui';
+import { teamState } from '@/lib/admin/data/people-space-model';
 
 export const DAY_MS = 86_400_000;
 export const WEEK_MS = 7 * DAY_MS;
@@ -97,12 +98,16 @@ export interface TeamBucketsLite {
   sport: 'golf' | 'baseball';
   /** Oldest first, one per UTC day, the last one today. */
   buckets: ReadonlyArray<{ activity: number }>;
+  /** Teams pulse's halo, the same input People's team state reads. Absent in older callers: then not counted as active now. */
+  halo?: 'fresh' | 'cooling' | 'silent';
 }
 
 export interface TeamActivity {
   total: number;
   /** Teams with any activity in the last 7 daily buckets (today included). */
   activeThisWeek: number;
+  /** Teams People calls "active": its teamState() on the pulse halo (did something in the last 2 days). */
+  activeNow: number;
   /** Active in the 7 days before that, silent in the last 7: the halo went from lit to dark this week. */
   wentQuiet: ReadonlyArray<{ teamId: string; name: string }>;
 }
@@ -112,14 +117,16 @@ const activityIn = (buckets: ReadonlyArray<{ activity: number }>, from: number, 
 
 export function teamActivity(teams: readonly TeamBucketsLite[]): TeamActivity {
   let activeThisWeek = 0;
+  let activeNow = 0;
   const wentQuiet: Array<{ teamId: string; name: string }> = [];
   for (const t of teams) {
     const thisWeek = activityIn(t.buckets, 0, 7);
     const weekBefore = activityIn(t.buckets, 7, 14);
+    if (t.halo && teamState(t.halo, true) === 'active') activeNow += 1;
     if (thisWeek > 0) activeThisWeek += 1;
     else if (weekBefore > 0) wentQuiet.push({ teamId: t.teamId, name: t.name });
   }
-  return { total: teams.length, activeThisWeek, wentQuiet };
+  return { total: teams.length, activeThisWeek, activeNow, wentQuiet };
 }
 
 /** fetchPulseGrid reports a failed sub-read only in its note text; treat that as a failed read, not a partial zero. */

@@ -63,7 +63,16 @@ describe('teamActivity', () => {
       { teamId: 'q', name: 'Quiet', sport: 'golf', buckets: days(quietWeek) },
       { teamId: 's', name: 'Silent', sport: 'baseball', buckets: days(new Array(30).fill(0)) },
     ]);
-    expect(r).toEqual({ total: 3, activeThisWeek: 1, wentQuiet: [{ teamId: 'q', name: 'Quiet' }] });
+    expect(r).toEqual({ total: 3, activeThisWeek: 1, activeNow: 0, wentQuiet: [{ teamId: 'q', name: 'Quiet' }] });
+  });
+  it('counts "active now" exactly as People does: its teamState() on the pulse halo', () => {
+    const r = teamActivity([
+      { teamId: 'f', name: 'Fresh', sport: 'golf', halo: 'fresh', buckets: days(new Array(30).fill(0)) },
+      { teamId: 'c', name: 'Cooling', sport: 'golf', halo: 'cooling', buckets: days([...new Array(29).fill(0), 1]) },
+      { teamId: 's', name: 'Silent', sport: 'golf', halo: 'silent', buckets: days(new Array(30).fill(0)) },
+    ]);
+    expect(r.activeNow).toBe(1);
+    expect(r.activeThisWeek).toBe(1);
   });
   it('a team silent for two weeks or more is not "went quiet this week"', () => {
     const old = [5, ...new Array(29).fill(0)];
@@ -115,7 +124,7 @@ describe('summarizeJobs / heldCount / clubhouseToday', () => {
 });
 
 describe('assembleNeeds', () => {
-  const teams: TeamActivity = { total: 4, activeThisWeek: 1, wentQuiet: [{ teamId: 't', name: 'Hampden' }] };
+  const teams: TeamActivity = { total: 4, activeThisWeek: 1, activeNow: 1, wentQuiet: [{ teamId: 't', name: 'Hampden' }] };
   it('keeps non-zero rows, names a single quiet team, and sums discrete items', () => {
     const n = assembleNeeds({
       jobs: readOk(summarizeJobs([{ status: 'failed' }, { status: 'overdue' }], [{ status: 'fail' }])),
@@ -151,15 +160,15 @@ describe('todayHeadline', () => {
   const needs = { rows: [], total: 0, unread: 0 };
   const reading = { ok: 8, total: 8 };
   it('thin usage when under a third of teams were active or nobody logged a round', () => {
-    expect(usageLine({ total: 27, activeThisWeek: 6, wentQuiet: [] }, [4, 0]).second).toBe('Usage is thin.');
-    expect(usageLine({ total: 3, activeThisWeek: 3, wentQuiet: [] }, [4, 0]).second).toBe('Usage is thin.');
-    expect(usageLine({ total: 3, activeThisWeek: 3, wentQuiet: [] }, [10, 4]).second).toBe('Usage is falling.');
-    expect(usageLine({ total: 3, activeThisWeek: 2, wentQuiet: [] }, [3, 4])).toEqual({ second: 'Teams are using it.', tone: 'good' });
-    expect(usageLine({ total: 3, activeThisWeek: 0, wentQuiet: [] }, null).second).toBe('Nobody used it this week.');
+    expect(usageLine({ total: 27, activeThisWeek: 6, activeNow: 6, wentQuiet: [] }, [4, 0]).second).toBe('Usage is thin.');
+    expect(usageLine({ total: 3, activeThisWeek: 3, activeNow: 3, wentQuiet: [] }, [4, 0]).second).toBe('Usage is thin.');
+    expect(usageLine({ total: 3, activeThisWeek: 3, activeNow: 3, wentQuiet: [] }, [10, 4]).second).toBe('Usage is falling.');
+    expect(usageLine({ total: 3, activeThisWeek: 2, activeNow: 2, wentQuiet: [] }, [3, 4])).toEqual({ second: 'Teams are using it.', tone: 'good' });
+    expect(usageLine({ total: 3, activeThisWeek: 0, activeNow: 0, wentQuiet: [] }, null).second).toBe('Nobody used it this week.');
   });
   it('writes the lede from the data', () => {
     const h = todayHeadline({
-      teams: readOk({ total: 27, activeThisWeek: 6, wentQuiet: [] }),
+      teams: readOk({ total: 27, activeThisWeek: 6, activeNow: 6, wentQuiet: [] }),
       rounds: readOk([4, 0]),
       release: readOk(releaseHealth('a863eeb', [card()])),
       needs: { rows: [], total: 23, unread: 0 },
@@ -172,7 +181,7 @@ describe('todayHeadline', () => {
     );
   });
   it('says the release left errors, and never claims usage when every input failed', () => {
-    expect(todayHeadline({ teams: readOk({ total: 2, activeThisWeek: 2, wentQuiet: [] }), rounds: readOk([1, 1]), release: readOk(releaseHealth('a863eeb', [card({ newFingerprintsSince: 1 })])), needs, reading }).title).toBe('The release left errors.');
+    expect(todayHeadline({ teams: readOk({ total: 2, activeThisWeek: 2, activeNow: 2, wentQuiet: [] }), rounds: readOk([1, 1]), release: readOk(releaseHealth('a863eeb', [card({ newFingerprintsSince: 1 })])), needs, reading }).title).toBe('The release left errors.');
     const blind = todayHeadline({ teams: readFailed('x'), rounds: readFailed('x'), release: readFailed('x'), needs: { rows: [], total: 0, unread: 3 }, reading: { ok: 2, total: 8 } });
     expect(blind.title).toBe('Bridge can’t see much.');
     expect(blind.lede).toContain('Team activity could not be read.');

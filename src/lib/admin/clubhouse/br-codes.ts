@@ -241,6 +241,8 @@ export const BR = {
     copy: 'BR-2106',
     /** 24 hours, 7 days or 30 days. */
     window: 'BR-2107',
+    /** One of the slowest database queries (per-query time from helm_debug.db_stat_deltas). */
+    queryRow: 'BR-2108',
     ...states('21'),
   },
   /** B22 Product (/admin/spaces/product; plan 2026-11-26-bridge-spaces-build.md). */

@@ -26,7 +26,7 @@ Admin Incidents · active · criticality high · owner platform
 
 Admin Platform · active · criticality high · owner platform
 
-- **Relations:** 13 doc/structurally-evidenced, 24 import-graph-only (weak)
+- **Relations:** 13 doc/structurally-evidenced, 25 import-graph-only (weak)
 - **Tables:** `admin_allowlist`, `admin_error_resolutions`, `baseball_ai_audit`, `baseball_staff_audit_events`, `baseball_strength_group_audit`, `billing_customers`, `billing_invoices`, `bridge_notes`, `clubhouse_drift`, `clubhouse_session_events`, `clubhouse_sessions`, `clubhouse_signal_hourly`, `crm_stage_transitions`, `crm_unmatched_inbound`, `helm_debug`, `helm_lifting_group_audit`
 - **RPCs:** `admin_auto_resolve_error_fingerprint`, `admin_mark_error_regressed`, `get_active_sessions`, `get_admin_dashboard_rollup`, `get_crm_coach_stage_history`, `get_crm_email_stats`, `get_crm_events_in_range`, `get_crm_funnel`, `get_crm_stage_ages`, `get_crm_time_to_open`, `get_crm_weekly_kpis`, `get_feature_health`, `get_platform_health_stats`, `helm_debug_db_health_snapshot`, `helm_debug_db_lock_snapshot`, `helm_debug_get_agent_run`, `helm_debug_list_agent_runs`, `helm_debug_list_traces`, `helm_debug_prune_observability`, `helm_debug_read_statement_alert_state`, `helm_debug_record_agent_run`, `helm_debug_stat_statements_snapshot`, `is_super_admin`, `recalculate_round_strokes_gained`, `record_db_error_event`, `record_db_health_sample`, `record_db_lock_incident`, `record_db_platform_sample`, `record_db_stat_snapshot`, `record_db_statement_samples`, `refresh_player_stats_cache`, `revoke_user_sessions`
 - **Test surfaces:** 4
@@ -206,7 +206,7 @@ Sentry Observability — Telemetry Vocabulary · active · criticality medium ·
 
 Supabase Database Observability — Zero-Cost Error/Health Control Plane · active · criticality high · owner platform
 
-- **Relations:** 1 doc/structurally-evidenced, 0 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 1 import-graph-only (weak)
 - **Tables:** `helm_debug`
 - **RPCs:** `helm_debug_read_db_analysis_samples`, `helm_debug_read_db_error_events`, `helm_debug_read_db_health_history`, `helm_debug_read_db_lock_incidents`, `helm_debug_read_db_platform_history`, `helm_debug_read_db_stat_deltas`, `helm_debug_read_db_statement_samples`, `helm_debug_read_db_table_health`, `helm_debug_read_jobs_health`, `helm_debug_read_observability_sizes`
 - **Test surfaces:** 3
@@ -379,6 +379,7 @@ Team Operations · active · criticality high · owner product
 | `admin_platform` | `crm_outreach` | import_graph (weak) |
 | `admin_platform` | `golf_round_lifecycle` | feature_doc_contract, import_graph |
 | `admin_platform` | `observability_sentry` | import_graph (weak) |
+| `admin_platform` | `observability_supabase` | import_graph (weak) |
 | `admin_platform` | `player_coachhelm_development` | import_graph (weak) |
 | `admin_platform` | `player_hub` | import_graph (weak) |
 | `admin_reliability_collector` | `admin_incidents` | feature_doc_contract |

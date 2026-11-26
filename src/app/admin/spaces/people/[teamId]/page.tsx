@@ -208,7 +208,7 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
         <Panel title="This team · last 30 days">
           <ul className="bp-facts">
             <Fact label={team.sport === 'golf' ? 'Rounds logged' : 'Games logged'} value={facts.rounds30d} sub={`${facts.rounds7d} this week`} />
-            <Fact label="Messages sent" value={facts.messages30d} sub={`${facts.messages7d} this week · by this team's people`} />
+            <Fact label="Messages sent" value={facts.messages30d} sub={`${facts.messages7d} this week · sent by this team's people, in any ${team.sport === 'golf' ? 'GolfHelm' : 'BaseballHelm'} conversation`} />
             <Fact label="Events created" value={facts.events30d} sub={facts.nextEventAt ? `next ${day(facts.nextEventAt)}` : 'none upcoming'} />
             <Fact
               label="CoachHelm insights"

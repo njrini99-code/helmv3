@@ -485,7 +485,11 @@ export async function readTeamPeople(teamId: string): Promise<TeamPeopleResult |
   const pulseRow = pulse?.teams.find((t) => t.teamId === teamId) ?? null;
   const members = roster.members;
   const userIds = members.map((m) => m.userId);
-  const read = await readTouches(r, roster, since, teamId);
+  const raw = await readTouches(r, roster, since, teamId);
+  // Messages are read per person, so keep only this team's sport: a golf team's page never counts its people's
+  // BaseballHelm messages (security review L3). They still cover every conversation in that sport, which the page says.
+  const otherSportMessages = sport === 'golf' ? 'baseball_messages' : 'golf_messages';
+  const read = { ...raw, touches: raw.touches.filter((t) => t.source !== otherSportMessages) };
   const byUser = touchesByUser(read.touches);
 
   const [errorRows, insights, nextEvent, codes] = await Promise.all([

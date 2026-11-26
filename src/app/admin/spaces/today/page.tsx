@@ -97,7 +97,7 @@ export default async function TodaySpacePage() {
   const headline = todayHeadline({ teams, rounds, release, needs, reading });
 
   const t = teams.ok ? teams.data : null;
-  const teamTone: Tone = t && t.total > 0 && t.activeThisWeek / t.total >= 1 / 3 ? 'good' : 'watch';
+  const teamTone: Tone = t && t.total > 0 && t.activeNow / t.total >= 1 / 3 ? 'good' : 'watch';
   const rel = release.ok ? release.data : null;
   const relWord = rel ? RELEASE_WORD[rel.state] : null;
   const f = features.ok ? features.data : null;
@@ -106,10 +106,10 @@ export default async function TodaySpacePage() {
   const tiles = [
     {
       label: 'Teams active',
-      value: t ? `${t.activeThisWeek}/${t.total}` : null,
-      sub: 'used Helm in the last 7 days',
+      value: t ? `${t.activeNow}/${t.total}` : null,
+      sub: 'did something in the last 2 days, counted as on People',
       tone: teamTone,
-      meter: t ? { value: t.activeThisWeek, max: t.total, label: `${t.activeThisWeek} of ${t.total} teams active` } : undefined,
+      meter: t ? { value: t.activeNow, max: t.total, label: `${t.activeNow} of ${t.total} teams active` } : undefined,
     },
     {
       label: 'Features used today',

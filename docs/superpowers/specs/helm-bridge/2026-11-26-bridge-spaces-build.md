@@ -90,8 +90,14 @@ xx90 to xx93 stay the four states (loading, empty, failed, no signal yet).
   readers' fixtures and that is said in the PR.
 - `memory/registry.yml` maps every new file; the feature map and World Model are regenerated in each PR.
 
+## Follow-ups landed after the build
+
+- Speed shows the slowest database queries per 15-minute window (`helm_debug.db_stat_deltas` through
+  `fetchQueryPerformance`, the app's own requests only, query shapes not text).
+- Today's "Teams active" uses People's `teamState()` on the pulse halo, so the two spaces count teams the same way.
+- A team page counts only its own sport's messages and says they cover every conversation in that sport.
+
 ## Not in this build
 
-- Per-query database time (needs `pg_stat_statements` read server-side; a later PR).
 - Retiring old tabs. They stay until the owner decides, after living with the spaces.
 - Deploying.
