@@ -844,8 +844,8 @@
       "code": "BR-1005",
       "screen": "B10",
       "key": "releases.pack",
-      "label": "Context pack",
-      "does": "A regression pack"
+      "label": "Regression pack",
+      "does": "The release's regression pack, opened in the Duet desk (B13)"
     },
     {
       "code": "BR-1006",

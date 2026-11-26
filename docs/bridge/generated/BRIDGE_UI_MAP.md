@@ -184,7 +184,7 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | BR-1002 | Compare with | Picks the base release | `BR.releases.compareWith` |
 | BR-1003 | Delta row | Opens B05 or B04 | `BR.releases.deltaRow` |
 | BR-1004 | PR | GitHub | `BR.releases.pr` |
-| BR-1005 | Context pack | A regression pack | `BR.releases.pack` |
+| BR-1005 | Regression pack | The release's regression pack, opened in the Duet desk (B13) | `BR.releases.pack` |
 | BR-1006 | Copy | Copies the release diff as Markdown | `BR.releases.copy` |
 | BR-1090 | Loading | Skeleton while the screen reads | `BR.releases.loading` |
 | BR-1091 | Empty | Nothing to show yet | `BR.releases.empty` |
