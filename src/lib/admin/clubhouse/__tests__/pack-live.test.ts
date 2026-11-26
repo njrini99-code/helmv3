@@ -25,10 +25,17 @@ import {
 vi.mock('server-only', () => ({}));
 vi.mock('../live', () => ({ readLiveSnapshot: vi.fn(), readPeopleNames: vi.fn(async () => new Map()) }));
 
+// Pseudonyms are keyed (pseudonym.ts): a test key, so they print rather than read "withheld".
+process.env.BRIDGE_PSEUDONYM_KEY = 'test-pseudonym-key-0123456789abcdefghij';
+
 const graph = fixtureGraph();
 graph.actions['ACT-P007-SEND-MESSAGE']!.useActionName = 'messages.send';
 const ctx = (subject: string): PackLiveContext => ({ includeNames: false, subject });
-const labels = { person: (id: string | null) => (id ? `u-${id.slice(0, 4)}` : null), team: (id: string | null) => (id ? `t-${id.slice(0, 4)}` : null) };
+const labels = {
+  person: (id: string | null) => (id ? `u-${id.slice(0, 4)}` : null),
+  team: (id: string | null) => (id ? `t-${id.slice(0, 4)}` : null),
+  session: (id: string | null) => (id ? `s-${id.slice(0, 4)}` : null),
+};
 
 const failed = session({ session_id: 'sess_fail0001', failure_count: 2, user_id: U[1]!, team_id: 'team-9' });
 const other = session({ session_id: 'sess_fail0002', failure_count: 1, release: BASE_RELEASE });
@@ -102,13 +109,13 @@ describe('the sections', () => {
   });
 
   it('envelopes are the newest failures with their trails and server codes', () => {
-    const s = envelopesSection(graph, t('CH-7004'), data(), ctx('70603 · CH-7004'));
-    expect(s.rows).toEqual([expect.objectContaining({ session: 'sess_fail0001', code: 'CH-7004', kind: 'action failure', server: '42501', trail: 'P002 > P007 > CTL-P007-014' })]);
+    const s = envelopesSection(graph, t('CH-7004'), data(), ctx('70603 · CH-7004'), labels);
+    expect(s.rows).toEqual([expect.objectContaining({ session: 's-sess', code: 'CH-7004', kind: 'action failure', server: '42501', trail: 'P002 > P007 > CTL-P007-014' })]);
   });
 
   it('sessions print people through the labels: pseudonymous by default', () => {
     const s = sessionsSection(graph, t('70603'), data(), ctx('70603'), labels);
-    expect(s.rows).toEqual([expect.objectContaining({ session: 'sess_fail0001', person: `u-${U[1]!.slice(0, 4)}`, team: 't-team', failures: 2 })]);
+    expect(s.rows).toEqual([expect.objectContaining({ session: 's-sess', person: `u-${U[1]!.slice(0, 4)}`, team: 't-team', failures: 2 })]);
     expect(JSON.stringify(s)).not.toContain(U[1]!);
   });
 
@@ -130,7 +137,7 @@ describe('the sections', () => {
 
   it('missing tables are "No signal yet" naming the held migration; a failed read is failed', () => {
     for (const section of [countersSection, envelopesSection, releaseSection, rulesSection]) {
-      const s = section(graph, t('70603'), data({ state: 'no-signal' }), ctx('70603'));
+      const s = section(graph, t('70603'), data({ state: 'no-signal' }), ctx('70603'), labels);
       expect(s.state).toBe('no-signal');
       expect(s.note).toContain(SIGNAL_MIGRATION);
     }
@@ -157,6 +164,7 @@ describe('livePackSources', () => {
     const { livePackSources, packPseudonym } = await import('../pack-server');
     const pack = await buildPack(graph, t(packTargetKey.person(U[1]!)), { pseudonymize: packPseudonym, sources: livePackSources(async () => data()) });
     expect(JSON.stringify(pack)).not.toContain(U[1]!);
-    expect(pack.evidence.find((e) => e.source === 'sessions')?.rows?.[0]?.person).toMatch(/^u-[0-9a-f]{10}$/);
+    expect(pack.evidence.find((e) => e.source === 'sessions')?.rows?.[0]?.person).toMatch(/^u-[0-9a-f]{12}$/);
+    expect(JSON.stringify(pack)).not.toContain('sess_fail0001');
   });
 });

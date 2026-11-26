@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { loadBridgeGraph } from '@/lib/admin/clubhouse/graph-server';
 import { buildPack, renderPackMarkdown, resolvePackTarget } from '@/lib/admin/clubhouse/pack';
-import { bridgePackSources, packPseudonym } from '@/lib/admin/clubhouse/pack-server';
+import { bridgePackSources, packPseudonym, pseudonym, teamPseudonym } from '@/lib/admin/clubhouse/pack-server';
 import { auditDuetRead, duetAccess, duetJson, namesFor } from '@/lib/admin/clubhouse/duet-access';
 import { liveRef } from '@/lib/admin/clubhouse/screens';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
  * BRIDGE_DUET_TOKEN is set (404 until then). See src/lib/admin/clubhouse/duet-access.ts.
  */
 export async function GET(request: NextRequest) {
-  const access = duetAccess(request);
+  const access = await duetAccess(request);
   if (!access.ok) return access.response;
 
   const raw = (request.nextUrl.searchParams.get('t') ?? '').trim().slice(0, 80);
@@ -34,6 +34,17 @@ export async function GET(request: NextRequest) {
     // No service role on this server: the incidents section stays "No signal yet", and the live reads say they failed.
   }
   const pack = await buildPack(graph, target, { includeNames, release: liveRef(), pseudonymize: packPseudonym, sources: bridgePackSources(client) });
-  await auditDuetRead('packs', target.key, includeNames, access.caller);
+  // The audit names the target as the pack does: a person or team by pseudonym unless names were asked for.
+  const shown =
+    includeNames || !target.ref
+      ? target.key
+      : target.kind === 'person'
+        ? `user:${pseudonym(target.ref)}`
+        : target.kind === 'team'
+          ? `team:${teamPseudonym(target.ref)}`
+          : target.key;
+  const audited = await auditDuetRead('packs', shown, includeNames, access.caller);
+  // Names never leave unaudited.
+  if (includeNames && !audited) return duetJson({ error: 'unavailable' }, 503);
   return duetJson({ pack, markdown: renderPackMarkdown(pack) });
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { bridgePseudonym } from '@/lib/admin/clubhouse/pseudonym';
 import type { Metadata } from 'next';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { EmptyState } from '@/components/fairway';
@@ -74,11 +75,11 @@ export default async function ClubhouseSessionsPage({ searchParams }: { searchPa
   const report = [
     '# Clubhouse sessions',
     '',
-    `${rows.length} session${rows.length === 1 ? '' : 's'} (${live.w}${failed ? ', with a failure' : ''}${act ? `, that ran ${act}` : ''}). People are short ids.`,
+    `${rows.length} session${rows.length === 1 ? '' : 's'} (${live.w}${failed ? ', with a failure' : ''}${act ? `, that ran ${act}` : ''}). People and sessions are pseudonyms.`,
     '',
     markdownTable(
       ['Session', 'Person', 'Role', 'Platform', 'Release', 'Minutes', 'Pages', 'Failures'],
-      rows.slice(0, 100).map((s) => [s.session_id, shortId(s.user_id), s.role, s.platform, s.release.slice(0, 7), String(sessionMinutes(s)), s.pages.join(' '), String(s.failure_count)]),
+      rows.slice(0, 100).map((s) => [bridgePseudonym('session', s.session_id) ?? '', bridgePseudonym('person', s.user_id) ?? 'signed out', s.role, s.platform, s.release.slice(0, 7), String(sessionMinutes(s)), s.pages.join(' '), String(s.failure_count)]),
     ),
   ].join('\n');
 

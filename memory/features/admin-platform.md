@@ -1590,8 +1590,9 @@ Bridge reads "No signal yet" (each screen's BR-xx93).
 | --- | --- | --- |
 | Migration 20261124090000 | held | Creates the signal tables and the `admin_events` Bridge columns |
 | `clubhouse_signals` flag | off | `POST /api/ch/signal` answers 204 while off |
-| `BRIDGE_DUET_TOKEN` | unset | The read-only Duet door (`GET /api/admin/clubhouse/duet/{packs,drift}`, `src/lib/admin/clubhouse/duet-access.ts`): 404 and no reads while unset or under 32 characters; then a bearer token compared as SHA-256 digests with `timingSafeEqual`, 60 requests a minute per caller, every read audited to `audit_log` |
-| `BRIDGE_DUET_ALLOW_NAMES` | unset | Only `"1"` lets a Duet request's `names=1` include emails; otherwise people stay pseudonymous |
+| `BRIDGE_DUET_TOKEN` | unset | The read-only Duet door (`GET /api/admin/clubhouse/duet/{packs,drift}`, `src/lib/admin/clubhouse/duet-access.ts`): 404 and no reads while unset or under 32 characters; then a bearer token compared as SHA-256 digests with `timingSafeEqual`, 60 requests a minute per caller on the durable limiter (503 in production if it is down), every read audited to `audit_log` (`new_data.target`; a names read that can't be audited is refused). Generate it with `openssl rand -base64 48` |
+| `BRIDGE_DUET_ALLOW_NAMES` | unset | Only `"1"` lets a Duet request's `names=1` print names (never emails, never raw ids); otherwise people stay pseudonymous |
+| `BRIDGE_PSEUDONYM_KEY` | unset | Keys the HMAC pseudonyms (`u-`, `t-`, `s-`) in packs, the Duet door and Copy reports (`src/lib/admin/clubhouse/pseudonym.ts`). Unset, a key is derived from the service-role secret; with neither, pseudonyms print as `…-withheld` |
 | Push alerts (D10) | off | Digest only |
 
 ## Known Risk Areas

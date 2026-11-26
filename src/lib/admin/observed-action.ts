@@ -85,7 +85,8 @@ export function clubhouseServerHalf(failure: unknown, startedAt: number): Record
     const f = failure && typeof failure === 'object' ? (failure as { code?: unknown; message?: unknown }) : {};
     const code = typeof f.code === 'string' && /^[A-Z0-9]{3,10}$/.test(f.code) ? f.code : null;
     const message = typeof f.message === 'string' ? f.message : '';
-    const table = /(?:table|relation) "?([a-z_][\w.]*)"?/i.exec(message)?.[1] ?? null;
+    // Postgres always double-quotes the name; requiring the quotes keeps a word of app copy out of it.
+    const table = /(?:table|relation) "([a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)?)"/.exec(message)?.[1] ?? null;
     return { origin: 'E9', kind: 'action', outcome: 'failure', durationMs: Math.max(0, Math.round(performance.now() - startedAt)), serverCode: code, table };
   } catch {
     return null;

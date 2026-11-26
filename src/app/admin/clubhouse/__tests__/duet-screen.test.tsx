@@ -38,8 +38,11 @@ vi.mock('@/lib/supabase/server', () => ({
 // The live lenses' read while the signal tables are held: the snapshot says no-signal, and the pack must too.
 vi.mock('@/lib/admin/clubhouse/live', () => ({
   readLiveSnapshot: vi.fn(async () => ({ state: 'no-signal', truncated: false, errors: [], dayRows: [], baselineRows: [], failedSessions: [], failedEvents: [], alerts: [] })),
-  readPeopleNames: vi.fn(async () => new Map()),
+  readPeopleNames: vi.fn(async (ids: string[]) => new Map(ids.map((id) => [id, { name: 'Coach Name', email: 'coach@example.com' }]))),
+  readTeamName: vi.fn(async () => 'Team Name'),
 }));
+// Pseudonyms are keyed (pseudonym.ts): a test key, so they print rather than read "withheld".
+process.env.BRIDGE_PSEUDONYM_KEY = 'test-pseudonym-key-0123456789abcdefghij';
 vi.mock('next/navigation', () => ({
   notFound: () => {
     throw new Error('NEXT_NOT_FOUND');
@@ -95,7 +98,7 @@ describe('B13 Duet desk', () => {
     expect(c.textContent).toContain('Rules firing');
   });
 
-  it('incidents read pseudonymous by default and with the email only when names are ticked', async () => {
+  it('incidents read pseudonymous by default and with names (never emails) only when names are ticked', async () => {
     eventsResult = {
       data: [{ created_at: '2026-11-20T10:00:00Z', severity: 'error', title: 'Send failed', ch_code: 'CH-7004', bridge_id: 70603, release: 'abcdef123', platform: 'ios-app', session_id: 's1', fingerprint: 'fp1', user_id: 'user-uuid-1', user_email: 'coach@example.com', team_id: 'team-1' }],
       error: null,
@@ -103,10 +106,12 @@ describe('B13 Duet desk', () => {
     const anon = await show(Duet({ searchParams: sp({ t: '70603' }) }));
     expect(anon.textContent).not.toContain('coach@example.com');
     expect(anon.textContent).not.toContain('user-uuid-1');
-    expect(anon.textContent).toMatch(/u-[0-9a-f]{10}/);
+    expect(anon.textContent).toMatch(/u-[0-9a-f]{12}/);
+    expect(anon.textContent).not.toContain('Coach Name');
     cleanup();
     const named = await show(Duet({ searchParams: sp({ t: '70603', names: '1' }) }));
-    expect(named.textContent).toContain('coach@example.com');
+    expect(named.textContent).toContain('Coach Name');
+    expect(named.textContent).not.toContain('coach@example.com');
   });
 
   it('an unknown target is xx91 with what to type', async () => {

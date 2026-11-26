@@ -38,6 +38,15 @@ export interface PackLiveData {
 export interface PackPeopleLabels {
   person: (userId: string | null) => string | null;
   team: (teamId: string | null) => string | null;
+  /** A session id joins straight to its user: printed as a pseudonym (pack-server's sessionPseudonym). */
+  session: (sessionId: string | null) => string | null;
+}
+
+const UUID_TEXT = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+/** An envelope's message in a pseudonymous paste: no uuids, no PostgREST details or hints. */
+function scrubMessage(text: string, includeNames: boolean): string {
+  const cut = includeNames ? text : text.replace(/\s*(?:[;,]\s*)?\b(?:details|hint)=.*$/is, '').replace(UUID_TEXT, '[id]');
+  return cut.slice(0, 160);
 }
 
 /** The held migration that creates the signal tables: what every "No signal yet" here waits for. */
@@ -173,7 +182,7 @@ export function countersSection(graph: BridgeGraph, target: PackTarget, data: Pa
 }
 
 /** Three representative envelopes with their trails: the newest failures about the target, from different sessions first. */
-export function envelopesSection(graph: BridgeGraph, target: PackTarget, data: PackLiveData, ctx: PackLiveContext): PackLiveSection {
+export function envelopesSection(graph: BridgeGraph, target: PackTarget, data: PackLiveData, ctx: PackLiveContext, labels: PackPeopleLabels): PackLiveSection {
   const title = 'Representative envelopes';
   const pending = notRead('envelopes', title, data, 'three envelopes with their trails, grouped stacks and server codes');
   if (pending) return pending;
@@ -193,14 +202,14 @@ export function envelopesSection(graph: BridgeGraph, target: PackTarget, data: P
     note: `The newest ${picked.length} failure envelope(s) for ${ctx.subject}, from sessions with a failure in ${SESSIONS_WINDOW}.`,
     rows: picked.map((e) => ({
       when: e.sent_at,
-      session: e.session_id,
+      session: labels.session(e.session_id),
       page: e.page_id,
       code: e.code ?? (e.bridge_id !== null ? String(e.bridge_id) : null),
       kind: e.outcome ? `${e.kind} ${e.outcome}` : e.kind,
       server: e.server_code,
       ms: e.duration_ms,
       trail: (e.trail ?? []).slice(-6).join(' > ') || null,
-      message: e.message ? e.message.slice(0, 160) : null,
+      message: e.message ? scrubMessage(e.message, ctx.includeNames) : null,
     })),
   };
 }
@@ -218,7 +227,7 @@ export function sessionsSection(graph: BridgeGraph, target: PackTarget, data: Pa
     state: 'ok',
     note: `${mine.length} session(s) with a failure touched ${ctx.subject} in ${SESSIONS_WINDOW}${mine.length > SESSION_LIMIT ? `; the newest ${SESSION_LIMIT}` : ''}. Each opens on B07.`,
     rows: mine.slice(0, SESSION_LIMIT).map((s) => ({
-      session: s.session_id,
+      session: labels.session(s.session_id),
       person: labels.person(s.user_id),
       team: labels.team(s.team_id),
       role: s.role,

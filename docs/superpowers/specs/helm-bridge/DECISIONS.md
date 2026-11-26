@@ -76,15 +76,23 @@ building them, each with its reason.
   (`team:<uuid>`). The live-only kinds are prefixed because bare digits are a
   Bridge ID, and a person or team pack names its subject by pseudonym unless
   names were asked for.
-- **D7 in packs.** People are `u-` plus a SHA-256 prefix of the user id, teams
-  `t-` likewise; "Include names" adds the email.
+- **D7 in packs.** People, teams and sessions are keyed HMAC pseudonyms (`u-`,
+  `t-`, `s-`; `src/lib/admin/clubhouse/pseudonym.ts`, key `BRIDGE_PSEUDONYM_KEY`
+  or one derived from the service-role secret), so a list of user ids can't be
+  hashed back to them. Free text in a pseudonymous pack loses uuids and
+  PostgREST `details=`/`hint=` tails. "Include names" prints names, never emails
+  or raw ids. Person and team packs read Clubhouse rows only. Copy reports use
+  the same pseudonyms (security review of PRs 2-4, 2026-11-25).
 - **D9, the Duet door.** `GET /api/admin/clubhouse/duet/{packs,drift}` (the
   brief's path, not §9.2's `/api/admin/bridge/v1/…`). Off while
   `BRIDGE_DUET_TOKEN` is unset or under 32 characters: 404, nothing read,
   nothing audited. Bearer token compared as SHA-256 digests with
   `timingSafeEqual`; 60 requests a minute per caller, counted before the token
-  check; every read audited to `audit_log`, best effort. Names only when
-  `BRIDGE_DUET_ALLOW_NAMES=1` and the request asks.
+  check; every read audited to `audit_log` (`record_id` is a uuid column, so the
+  target, pseudonymous unless names were asked for, is in `new_data`); a names
+  read that can't be audited answers 503. The limiter is the durable one, and
+  in production the door answers 503 rather than trust a per-instance count.
+  Names only when `BRIDGE_DUET_ALLOW_NAMES=1` and the request asks.
 - **D4, the Bridge numbers itself.** `br-codes.ts` is the code map;
   `config/bridge/contracts.json` is the labelled list;
   `docs/bridge/generated/BRIDGE_UI_MAP.md` is generated from it by

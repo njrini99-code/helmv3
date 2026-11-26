@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { bridgePseudonym } from '@/lib/admin/clubhouse/pseudonym';
 import type { Metadata } from 'next';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { EmptyState } from '@/components/fairway';
@@ -71,7 +72,8 @@ export default async function ClubhousePersonPage({ params, searchParams }: { pa
   const releases = [...new Set(sessions.data.map((s) => s.release.slice(0, 7)))];
 
   const report = [
-    `# Clubhouse person ${shortId(userId)}`,
+    // Pseudonymous: a report leaves the screen (D7).
+    `# Clubhouse person ${bridgePseudonym('person', userId)}`,
     '',
     `${latest?.role ?? 'unknown role'} · ${devices.join(', ') || 'no device yet'} · ${sessions.data.length} recent sessions`,
     '',

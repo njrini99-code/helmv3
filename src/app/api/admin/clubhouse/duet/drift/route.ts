@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
  * Drift carries codes and files, never people.
  */
 export async function GET(request: NextRequest) {
-  const access = duetAccess(request);
+  const access = await duetAccess(request);
   if (!access.ok) return access.response;
 
   const graph = loadBridgeGraph();
@@ -24,8 +24,11 @@ export async function GET(request: NextRequest) {
   try {
     runtime = await readRuntimeDrift(createAdminClient() as unknown as SupabaseClient);
   } catch (err) {
-    runtime = { state: 'failed', message: err instanceof Error ? err.message : String(err) };
+    // No database message through the door: it names columns and can echo values.
+    void err;
+    runtime = { state: 'failed', message: 'The drift read failed.' };
   }
+  if (runtime.state === 'failed') runtime = { ...runtime, message: 'The drift read failed.' };
   const body = driftExport(graph, buildTimeDrift(graph), runtime);
   await auditDuetRead('drift', null, false, access.caller);
   return duetJson(body);

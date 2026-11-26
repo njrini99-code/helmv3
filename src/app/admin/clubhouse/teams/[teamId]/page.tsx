@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { bridgePseudonym } from '@/lib/admin/clubhouse/pseudonym';
 import type { Metadata } from 'next';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { EmptyState } from '@/components/fairway';
@@ -60,7 +61,8 @@ export default async function ClubhouseTeamPage({ params, searchParams }: { para
   const failed = sessions.data.filter((s) => s.failure_count > 0).length;
 
   const report = [
-    `# Clubhouse team ${shortId(teamId)}`,
+    // Pseudonymous: a report leaves the screen (D7).
+    `# Clubhouse team ${bridgePseudonym('team', teamId)}`,
     '',
     `${people.length} people active · ${sessions.data.length} sessions · ${failed} with a failure (${live.w})`,
     '',

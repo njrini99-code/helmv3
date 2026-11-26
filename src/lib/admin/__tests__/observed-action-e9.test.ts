@@ -23,6 +23,9 @@ describe('clubhouseServerHalf (E9)', () => {
   });
   it('keeps a code only when it looks like one, and a table only when the message names one', () => {
     expect(clubhouseServerHalf({ code: 'not a code', message: 'boom' }, performance.now())).toMatchObject({ serverCode: null, table: null });
+    // App copy is not a table name: Postgres always quotes it (security review L3).
+    expect(clubhouseServerHalf({ message: "Couldn't add to table Jane" }, performance.now())).toMatchObject({ table: null });
+    expect(clubhouseServerHalf({ message: 'relation "public.golf_rounds" does not exist' }, performance.now())).toMatchObject({ table: 'public.golf_rounds' });
   });
   it('adds nothing off Clubhouse or with the switch off', () => {
     ui.value = 'fairway';

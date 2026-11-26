@@ -1,10 +1,10 @@
 import 'server-only';
 
-import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isMissingSchema } from './drift-server';
 import type { BridgeGraph } from './graph';
-import { readLiveSnapshot, readPeopleNames } from './live';
+import { readLiveSnapshot, readPeopleNames, readTeamName } from './live';
+import { bridgePseudonym, scrubFreeText } from './pseudonym';
 import { DEFAULT_LIVE_SOURCES, withSources, type PackLiveSource, type PackPseudonymizer, type PackTarget } from './pack';
 import {
   countersSection,
@@ -19,17 +19,20 @@ import {
 
 /**
  * A short, stable, pseudonymous id for a person (D7): the same user reads the same across packs, and the id says
- * nothing about who they are. Not reversible without the user table.
+ * nothing about who they are. Keyed (pseudonym.ts), so a list of user ids can't be hashed back to it.
  */
 export function pseudonym(userId: string | null | undefined): string | null {
-  if (!userId) return null;
-  return `u-${createHash('sha256').update(`bridge-pack:${userId}`).digest('hex').slice(0, 10)}`;
+  return bridgePseudonym('person', userId);
 }
 
-/** A team's pseudonym, the same way: `t-` and a SHA-256 prefix. */
+/** A team's pseudonym, the same way. */
 export function teamPseudonym(teamId: string | null | undefined): string | null {
-  if (!teamId) return null;
-  return `t-${createHash('sha256').update(`bridge-pack:${teamId}`).digest('hex').slice(0, 8)}`;
+  return bridgePseudonym('team', teamId);
+}
+
+/** A session's pseudonym: a session id joins straight to its user, so a pseudonymous pack never prints one. */
+export function sessionPseudonym(sessionId: string | null | undefined): string | null {
+  return bridgePseudonym('session', sessionId);
 }
 
 /** The pseudonymizer buildPack takes, so a person or team pack names its subject the way its rows name people. */
@@ -67,7 +70,6 @@ interface IncidentRow {
   session_id: string | null;
   fingerprint: string | null;
   user_id: string | null;
-  user_email: string | null;
   team_id: string | null;
 }
 
@@ -85,26 +87,35 @@ export function adminEventsPackSource(client: SupabaseClient, limit = 12): PackL
       const filter = incidentFilter(target);
       const base = client
         .from('admin_events')
-        .select('created_at, severity, title, ch_code, bridge_id, release, platform, session_id, fingerprint, user_id, user_email, team_id');
-      const filtered = filter.prefix ? base.like(filter.column, `${filter.value}%`) : base.eq(filter.column, filter.value);
+        .select('created_at, severity, title, ch_code, bridge_id, release, platform, session_id, fingerprint, user_id, team_id');
+      const matched = filter.prefix ? base.like(filter.column, `${filter.value}%`) : base.eq(filter.column, filter.value);
+      // A person's or team's rows span every sport; the pack (and the Duet door) is Clubhouse's only.
+      const filtered = target.kind === 'person' || target.kind === 'team' ? matched.not('page_id', 'is', null) : matched;
       const { data, error } = await filtered.order('created_at', { ascending: false }).limit(limit);
       if (error) {
         if (isMissingSchema(error)) {
           return { source: 'admin-events', title, state: 'no-signal', note: 'No signal yet: admin_events has no Bridge columns until migration 20261124090000 is applied.' };
         }
-        return { source: 'admin-events', title, state: 'failed', note: error.message };
+        // The code only: a database message names columns and can echo values.
+        return { source: 'admin-events', title, state: 'failed', note: `The incidents read failed${error.code ? ` (${error.code})` : ''}.` };
       }
-      const rows = ((data ?? []) as IncidentRow[]).map((r) => ({
+      const list = (data ?? []) as IncidentRow[];
+      const labels = await peopleLabelsFor(
+        list.map((r) => r.user_id),
+        list.map((r) => r.team_id),
+        ctx.includeNames,
+      );
+      const rows = list.map((r) => ({
         when: r.created_at,
         severity: r.severity,
-        title: r.title,
+        title: ctx.includeNames ? r.title : scrubFreeText(r.title),
         code: r.ch_code ?? (r.bridge_id !== null ? String(r.bridge_id) : null),
         release: r.release ? r.release.slice(0, 7) : null,
         platform: r.platform,
-        session: r.session_id,
+        session: labels.session(r.session_id),
         incident: r.fingerprint ? `/admin/errors/${r.fingerprint}` : null,
-        person: ctx.includeNames ? (r.user_email ?? r.user_id) : pseudonym(r.user_id),
-        team: r.team_id ? (ctx.includeNames ? r.team_id : teamPseudonym(r.team_id)) : null,
+        person: labels.person(r.user_id),
+        team: labels.team(r.team_id),
       }));
       return {
         source: 'admin-events',
@@ -129,7 +140,8 @@ export function adminEventsPackSource(client: SupabaseClient, limit = 12): PackL
 export async function loadPackLive(graph: BridgeGraph): Promise<PackLiveData> {
   const snap = await readLiveSnapshot(graph);
   if (snap.state !== 'ok') {
-    return { state: snap.state, error: snap.errors.join('; ') || undefined, truncated: snap.truncated, rows: [], sessions: [], events: [], alerts: [] };
+    // No database message in a paste: it names columns and can echo values. The screens show the detail to the admin.
+    return { state: snap.state, error: snap.errors.length ? 'A live read failed.' : undefined, truncated: snap.truncated, rows: [], sessions: [], events: [], alerts: [] };
   }
   return {
     state: 'ok',
@@ -141,12 +153,35 @@ export async function loadPackLive(graph: BridgeGraph): Promise<PackLiveData> {
   };
 }
 
-/** People and teams as the pack prints them: pseudonyms (D7), or the email (else the id) when names were asked for. */
+/**
+ * People, teams and sessions as a pack prints them (D7): pseudonyms by default. When names were asked for, a person is
+ * their name and a team its name, falling back to the pseudonym; never an email (contact data, and for minors) and
+ * never a raw id a token holder could turn into another pack. Session ids stay pseudonymous either way.
+ */
+export async function peopleLabelsFor(
+  userIds: readonly (string | null)[],
+  teamIds: readonly (string | null)[],
+  includeNames: boolean,
+): Promise<PackPeopleLabels> {
+  const session = (id: string | null) => sessionPseudonym(id);
+  if (!includeNames) return { person: (id) => pseudonym(id), team: (id) => teamPseudonym(id), session };
+  const people = [...new Set(userIds.filter((u): u is string => !!u))];
+  const teams = [...new Set(teamIds.filter((t): t is string => !!t))].slice(0, 20);
+  const [names, teamNames] = await Promise.all([
+    people.length ? readPeopleNames(people) : Promise.resolve(new Map<string, { name?: string | null }>()),
+    Promise.all(teams.map(async (t) => [t, await readTeamName(t).catch(() => null)] as const)),
+  ]);
+  const teamName = new Map(teamNames);
+  return {
+    person: (id) => (id ? (names.get(id)?.name ?? pseudonym(id)) : null),
+    team: (id) => (id ? (teamName.get(id) ?? teamPseudonym(id)) : null),
+    session,
+  };
+}
+
 async function peopleLabels(graph: BridgeGraph, target: PackTarget, data: PackLiveData, includeNames: boolean): Promise<PackPeopleLabels> {
-  if (!includeNames) return { person: (id) => pseudonym(id), team: (id) => teamPseudonym(id) };
-  const ids = sessionsFor(graph, target, data.sessions, data.events).map((s) => s.user_id).filter((u): u is string => !!u);
-  const names = await readPeopleNames(ids);
-  return { person: (id) => (id ? (names.get(id)?.email ?? names.get(id)?.name ?? id) : null), team: (id) => id };
+  const mine = sessionsFor(graph, target, data.sessions, data.events);
+  return peopleLabelsFor(mine.map((s) => s.user_id), mine.map((s) => s.team_id), includeNames);
 }
 
 /**
@@ -158,7 +193,14 @@ export function livePackSources(load: (graph: BridgeGraph) => Promise<PackLiveDa
   const once = (graph: BridgeGraph) => (cached ??= load(graph));
   return [
     { id: 'counters', title: 'Counts and their split', read: async (t, g, ctx) => countersSection(g, t, await once(g), ctx) },
-    { id: 'envelopes', title: 'Representative envelopes', read: async (t, g, ctx) => envelopesSection(g, t, await once(g), ctx) },
+    {
+      id: 'envelopes',
+      title: 'Representative envelopes',
+      read: async (t, g, ctx) => {
+        const data = await once(g);
+        return envelopesSection(g, t, data, ctx, await peopleLabels(g, t, data, ctx.includeNames));
+      },
+    },
     {
       id: 'sessions',
       title: 'Sessions',

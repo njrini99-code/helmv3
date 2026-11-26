@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { bridgePseudonym } from '@/lib/admin/clubhouse/pseudonym';
 import type { Metadata } from 'next';
 import { ExternalLink } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
@@ -81,14 +82,15 @@ export default async function ClubhouseSessionPage({ params, searchParams }: { p
 
   const report = s
     ? [
-        `# Clubhouse session ${s.session_id}`,
+        // Pseudonymous: a report leaves the screen, and a session id joins straight to its person (D7).
+        `# Clubhouse session ${bridgePseudonym('session', s.session_id)}`,
         '',
-        `${shortId(s.user_id)} · ${s.role} · ${PLATFORM_WORDS[s.platform] ?? s.platform} · release ${s.release.slice(0, 7)} · ${sessionMinutes(s)} min · ${s.failure_count} failures`,
+        `${bridgePseudonym('person', s.user_id) ?? 'signed out'} · ${s.role} · ${PLATFORM_WORDS[s.platform] ?? s.platform} · release ${s.release.slice(0, 7)} · ${sessionMinutes(s)} min · ${s.failure_count} failures`,
         '',
         '## Steps',
         ...steps.map((step, i) => `${i + 1}. ${step}`),
       ].join('\n')
-    : `# Clubhouse session ${sessionId}\n\nNot found.`;
+    : `# Clubhouse session ${bridgePseudonym('session', sessionId)}\n\nNot found.`;
 
   return (
     <ClubhouseFrame

@@ -17,6 +17,11 @@ vi.mock('@/lib/admin/clubhouse/graph-server', () => ({
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn(async () => undefined),
 }));
+vi.mock('@/lib/admin/clubhouse/live', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/admin/clubhouse/live')>()),
+  readPeopleNames: vi.fn(async (ids: string[]) => new Map(ids.map((id) => [id, { name: 'Coach Name', email: 'coach@example.com' }]))),
+  readTeamName: vi.fn(async () => 'Team Name'),
+}));
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => {
@@ -89,7 +94,10 @@ describe('the token', () => {
     expect(body.pack.target.key).toBe('70603');
     expect(body.pack.people).toBe('pseudonymous');
     expect(body.markdown).toContain('## 7. Done means');
-    expect(auditInsert).toHaveBeenCalledWith(expect.objectContaining({ action: 'bridge.duet.read', record_id: '70603', user_id: null }));
+    // record_id is a uuid column: the target travels in new_data (a code key there would fail the insert, 22P02).
+    expect(auditInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'bridge.duet.read', record_id: null, user_id: null, new_data: expect.objectContaining({ path: 'packs', target: '70603', names: false }) }),
+    );
   });
 
   it('right: drift as bridge-drift/v1, runtime lists not counted while the table is missing', async () => {
@@ -120,11 +128,32 @@ describe('names (D7)', () => {
     expect(body).toContain('"people":"pseudonymous"');
   });
 
-  it('only when the owner’s switch allows it and the request asks', async () => {
+  it('only when the owner’s switch allows it and the request asks: names, never emails or raw ids', async () => {
     eventsResult = { data: [row], error: null };
     vi.stubEnv(DUET_NAMES_ENV, '1');
-    expect(await (await packs(req('packs?t=70603', `Bearer ${TOKEN}`))).text()).not.toContain('coach@example.com');
-    expect(await (await packs(req('packs?t=70603&names=1', `Bearer ${TOKEN}`))).text()).toContain('coach@example.com');
+    expect(await (await packs(req('packs?t=70603', `Bearer ${TOKEN}`))).text()).not.toContain('Coach Name');
+    const named = await (await packs(req('packs?t=70603&names=1', `Bearer ${TOKEN}`))).text();
+    expect(named).toContain('Coach Name');
+    expect(named).toContain('Team Name');
+    expect(named).not.toContain('@');
+    expect(named).not.toContain('user-uuid-1');
+  });
+
+  it('a names read that cannot be audited is refused (503)', async () => {
+    eventsResult = { data: [row], error: null };
+    vi.stubEnv(DUET_NAMES_ENV, '1');
+    auditInsert.mockResolvedValueOnce({ error: { code: '22P02' } } as never);
+    expect((await packs(req('packs?t=70603&names=1', `Bearer ${TOKEN}`))).status).toBe(503);
+  });
+
+  it('a pseudonymous pack scrubs ids and PostgREST details out of free text, and never prints a session id', async () => {
+    const uuid = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
+    eventsResult = { data: [{ ...row, title: `Save failed for ${uuid} details=Key (player_id)=(${uuid}) is not present`, session_id: 'sess_secret01' }], error: null };
+    const body = await (await packs(req('packs?t=70603', `Bearer ${TOKEN}`))).text();
+    expect(body).not.toContain(uuid);
+    expect(body).not.toContain('details=');
+    expect(body).not.toContain('sess_secret01');
+    expect(body).toContain('Save failed for [id]');
   });
 });
 
