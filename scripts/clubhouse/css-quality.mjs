@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
-import config, { radiusIsToken, RAW_MOTION, shadowIsToken, systemRatchet } from '../../stylelint.clubhouse.config.mjs';
+import config, { radiusIsToken, RAW_MOTION, shadowIsToken, systemRatchet } from '../../config/stylelint.clubhouse.config.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const layout = /^(?:width|height|min-width|max-width|min-height|max-height|top|right|bottom|left|inset(?:-.+)?|margin(?:-.+)?|padding(?:-.+)?|grid-template-(?:rows|columns)|flex-basis)$/;
@@ -93,7 +93,7 @@ export function ratchetCounts(css, file = 'fixture.css') {
     if (!/(?:^|\/)tokens\.css$/.test(file)) counts.hex += (decl.value.replace(/url\([^)]*\)/g, '').match(/#[\da-f]{3,8}\b/gi) ?? []).length;
     if (decl.prop.toLowerCase() === 'overflow' && /visible/i.test(decl.value) && /svg|chart|hole|spark/i.test(scope)) counts['svg-overflow-visible'] += 1;
     if (/^margin-inline/i.test(decl.prop) && /^\s*-/.test(decl.value) && (/data-ch-crh/.test(scope) || /(?:^|\/)(?:home|roster|classes)\.css$/.test(file))) counts['crh-negative-margin'] += 1;
-    // The system's own values (stylelint.clubhouse.config.mjs, MOTION-AND-VISUAL build step 7).
+    // The system's own values (config/stylelint.clubhouse.config.mjs, MOTION-AND-VISUAL build step 7).
     if (systemRatchet.isRadius(decl.prop) && !radiusIsToken(decl.value)) counts['raw-radius'] += 1;
     if (decl.prop.toLowerCase() === 'box-shadow' && !shadowIsToken(decl.value, postcss.list.comma)) counts['raw-shadow'] += 1;
     if (!systemRatchet.tokenFile(file) && RAW_MOTION.test(decl.value.replace(/var\([^()]*\)/g, ''))) counts['raw-motion'] += 1;

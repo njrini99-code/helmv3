@@ -386,7 +386,7 @@ the legacy `IconButton` import), so a future reader does not "fix" them.
 
 The measurement IS the test. Three of the six read `--fw-radius-card` out of
 `design-tokens.css` and the dominant corner out of
-`audit/reference/Bubbles.dc.html` and compare them here, rather than asserting
+`docs/archive/messages-v2-audit-2026-09/reference/Bubbles.dc.html` and compare them here, rather than asserting
 a hardcoded "20px" — so the suite fails if the ramp is retuned OR if a new
 artboard lands with a different bubble. A literal would have kept passing
 through both. Those three pass against the pre-fix file too, which is correct:
@@ -423,7 +423,7 @@ the comment warning against it. It did, on the first run.
 pre-fix component**, verified by checking out HEAD's version and re-running.
 
 Measured on both sides, the idiom this audit has settled on: each token
-assertion reads the artboard's literal out of `audit/reference/Thread.dc.html`
+assertion reads the artboard's literal out of `docs/archive/messages-v2-audit-2026-09/reference/Thread.dc.html`
 AND the declaration out of `src/styles/design-tokens.css`, then compares them —
 so the suite fails if either side moves. A hardcoded expected string would only
 have pinned the component.
@@ -534,7 +534,7 @@ mismatched circle in the stack.
 override on that column`, `caps by no percentage anywhere in the thread`),
 verified by restoring the file from HEAD and re-running.
 
-Measures both sides: the cap is parsed out of `audit/reference/Bubbles.dc.html`'s
+Measures both sides: the cap is parsed out of `docs/archive/messages-v2-audit-2026-09/reference/Bubbles.dc.html`'s
 `.bub` rule, the pane width out of `FairwayMessages.tsx`'s `max-w-[Npx]`, and the
 arithmetic that makes the override a defect is computed from the two — so the
 suite fails if either side moves. The class list is extracted from the one
@@ -553,7 +553,7 @@ branch of the same conditional`), verified by restoring the file from HEAD and
 re-running.
 
 The byte-identity claim is MEASURED, not asserted: `.lit` is parsed out of
-`audit/reference/Bubbles.dc.html` and `--fw-shadow-card` out of
+`docs/archive/messages-v2-audit-2026-09/reference/Bubbles.dc.html` and `--fw-shadow-card` out of
 `design-tokens.css`, both whitespace-normalised, then compared. The same
 machinery proves the A03 request is real — `.lit-accent` is compared against
 every `--fw-shadow-*` token in the file and must match none.
@@ -763,7 +763,7 @@ deliberate: they prove the CONFLICT rather than the fix. The artboard's
 `--fw-color-accent-500` parsed out of `design-tokens.css` (on the oklch
 coordinates, since the artboard writes the alpha inside the parens); the focus
 token is asserted to be accent-600 in light and accent-500 in dark; and the
-frozen D-05 wording is asserted in `audit/DECISIONS.md`. If any of those move,
+frozen D-05 wording is asserted in `docs/archive/messages-v2-audit-2026-09/DECISIONS.md`. If any of those move,
 the premise under this fix is re-checked automatically instead of silently
 outliving its reason.
 

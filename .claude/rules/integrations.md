@@ -29,7 +29,7 @@ paths:
 - **@axe-core/playwright** (a11y in E2E) — `e2e/accessibility.spec.ts`
   audits the public routes (landing, login, signup) against WCAG 2.1
   AA + WCAG 2.2 AA. Extend per-route as we add seeded auth fixtures.
-- **Lighthouse CI** — config at `lighthouserc.cjs`, run manually via
+- **Lighthouse CI** — config at `config/lighthouserc.cjs`, run manually via
   `npm run lighthouse` (`lhci autorun`). No CI job runs it: `.circleci/config.yml`
   has never defined a `lighthouse-preview` job (`.circleci/README.md` already
   corrects the same stale claim), and there is no Vercel preview URL for it

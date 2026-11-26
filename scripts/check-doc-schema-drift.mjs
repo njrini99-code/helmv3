@@ -36,9 +36,9 @@
  *
  * BASELINE
  *
- * `.doc-schema-baseline.json` records the known-bad identifiers so this can
- * land red-free and ratchet down, the same pattern as `.lint-baseline.json`
- * and `.supabase-error-baseline.json`. The count may only shrink. Adding a
+ * `config/baselines/.doc-schema-baseline.json` records the known-bad identifiers so this can
+ * land red-free and ratchet down, the same pattern as `config/baselines/.lint-baseline.json`
+ * and `config/baselines/.supabase-error-baseline.json`. The count may only shrink. Adding a
  * NEW unknown identifier fails immediately; fixing one and not updating the
  * baseline also fails, so the number cannot silently drift back up.
  *
@@ -55,7 +55,7 @@ import { join } from 'node:path';
 const ROOT = process.cwd();
 const TYPES_FILE = join(ROOT, 'src/lib/types/database.ts');
 const MIGRATIONS_DIR = join(ROOT, 'supabase/migrations');
-const BASELINE_FILE = join(ROOT, '.doc-schema-baseline.json');
+const BASELINE_FILE = join(ROOT, 'config/baselines/.doc-schema-baseline.json');
 
 /** Docs that a session is routed to and will treat as fact. */
 const SCAN_DIRS = ['memory', '.claude/rules'];
@@ -413,7 +413,7 @@ async function main() {
     );
     for (const n of fixed) console.error(`   ${n}`);
     console.error(
-      `\n   Run: node scripts/check-doc-schema-drift.mjs --update && git add .doc-schema-baseline.json`
+      `\n   Run: node scripts/check-doc-schema-drift.mjs --update && git add config/baselines/.doc-schema-baseline.json`
     );
   }
 

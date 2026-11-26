@@ -16,7 +16,7 @@
  *
  * WHY THE FLOOR IS A COMMITTED NUMBER, NOT A BASELINE FILE
  *
- * This repo's usual ratchet pattern (`.lint-baseline.json` etc.) works because
+ * This repo's usual ratchet pattern (`config/baselines/.lint-baseline.json` etc.) works because
  * a human runs `--update` locally and commits the new baseline. The weekly
  * Stryker job runs on an ephemeral CircleCI container against a scheduled
  * pipeline — nothing in that job can commit a file back to the repo. A

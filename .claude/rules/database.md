@@ -24,7 +24,7 @@ Table names are sport-prefixed: `golf_*`, `baseball_*`, `helm_lifting_*`. An
 unprefixed name (`players`, `rounds`, `teams`) does not exist, and neither
 does a `lift_*` table — Lift Lab tables are `helm_lifting_*`. The few
 cross-sport tables (`users`, `organizations`, `audit_log`) are the allowlist
-in `.coderabbit/ast-grep/no-bare-table-names.yml`.
+in `config/review-rules/ast-grep/no-bare-table-names.yml`.
 
 For RLS, auth/session handling, client-library/SSR integration, Edge
 Functions, or a security audit, use the relevant connected Supabase guidance

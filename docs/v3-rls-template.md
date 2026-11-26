@@ -168,7 +168,7 @@ CREATE POLICY standing_coach_read ON golf_player_standing FOR SELECT TO authenti
 
 ## Testing Standards
 
-Every new RLS policy ships with tests (see [`docs/v3-testing-standards.md`](./v3-testing-standards.md) §RLS):
+Every new RLS policy ships with tests (see [`docs/archive/v3/v3-testing-standards.md`](./archive/v3/v3-testing-standards.md) §RLS):
 
 - A positive test: user X can read/write rows they should.
 - A negative test: user X cannot read/write rows they shouldn't.

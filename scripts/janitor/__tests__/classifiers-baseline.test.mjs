@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as duplicateHelpers from '../classifiers/duplicate-helpers.mjs';
@@ -9,6 +9,7 @@ import { FINDINGS, ZERO_FINDINGS_VERIFIED, NO_SIGNAL } from '../lib/verdicts.mjs
 
 function withTmpDir(fn) {
   const dir = mkdtempSync(join(tmpdir(), 'janitor-baseline-'));
+  mkdirSync(join(dir, 'config/baselines'), { recursive: true });
   try {
     return fn(dir);
   } finally {
@@ -27,7 +28,7 @@ test('duplicate-helpers: NO_SIGNAL when the baseline file is missing', () => {
 
 test('duplicate-helpers: ZERO_FINDINGS_VERIFIED when baseline total is 0', () => {
   withTmpDir((repoRoot) => {
-    writeFileSync(join(repoRoot, '.duplicate-exports-baseline.json'), JSON.stringify({ total: 0, entries: [] }));
+    writeFileSync(join(repoRoot, 'config/baselines/.duplicate-exports-baseline.json'), JSON.stringify({ total: 0, entries: [] }));
     const result = duplicateHelpers.run({ repoRoot });
     assert.equal(result.verdict, ZERO_FINDINGS_VERIFIED);
   });
@@ -36,7 +37,7 @@ test('duplicate-helpers: ZERO_FINDINGS_VERIFIED when baseline total is 0', () =>
 test('duplicate-helpers: FINDINGS when baseline has entries, capped and parsed', () => {
   withTmpDir((repoRoot) => {
     writeFileSync(
-      join(repoRoot, '.duplicate-exports-baseline.json'),
+      join(repoRoot, 'config/baselines/.duplicate-exports-baseline.json'),
       JSON.stringify({
         total: 1,
         entries: ['Thing :: src/app/a.tsx + src/app/b.tsx'],
@@ -52,7 +53,7 @@ test('duplicate-helpers: FINDINGS when baseline has entries, capped and parsed',
 
 test('duplicate-helpers: NO_SIGNAL when the baseline JSON is malformed', () => {
   withTmpDir((repoRoot) => {
-    writeFileSync(join(repoRoot, '.duplicate-exports-baseline.json'), '{not json');
+    writeFileSync(join(repoRoot, 'config/baselines/.duplicate-exports-baseline.json'), '{not json');
     const result = duplicateHelpers.run({ repoRoot });
     assert.equal(result.verdict, NO_SIGNAL);
   });
@@ -62,7 +63,7 @@ test('duplicate-helpers: NO_SIGNAL when the baseline JSON is malformed', () => {
 
 test('stale-docs: ZERO_FINDINGS_VERIFIED when baseline total is 0', () => {
   withTmpDir((repoRoot) => {
-    writeFileSync(join(repoRoot, '.doc-path-baseline.json'), JSON.stringify({ total: 0, entries: [] }));
+    writeFileSync(join(repoRoot, 'config/baselines/.doc-path-baseline.json'), JSON.stringify({ total: 0, entries: [] }));
     const result = staleDocs.run({ repoRoot });
     assert.equal(result.verdict, ZERO_FINDINGS_VERIFIED);
   });
@@ -71,7 +72,7 @@ test('stale-docs: ZERO_FINDINGS_VERIFIED when baseline total is 0', () => {
 test('stale-docs: FINDINGS when baseline has entries', () => {
   withTmpDir((repoRoot) => {
     writeFileSync(
-      join(repoRoot, '.doc-path-baseline.json'),
+      join(repoRoot, 'config/baselines/.doc-path-baseline.json'),
       JSON.stringify({ total: 2, entries: ['docs/dead-one.md', 'docs/dead-two.md'] }),
     );
     const result = staleDocs.run({ repoRoot });

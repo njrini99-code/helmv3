@@ -546,7 +546,7 @@ conventions followed. No destructive migration is planned anywhere in this docum
 - This file opens with `<!-- markdownlint-disable MD013 -->`, the precedent set by `AGENTS.md:1`, and uses
   space-padded table pipes so MD060's compact style is consistent. It must add zero violations under
   `npm run markdown:ratchet`.
-- Bring the two existing plan docs back under baseline without touching `.markdownlint-baseline.json`: add the
+- Bring the two existing plan docs back under baseline without touching `config/baselines/.markdownlint-baseline.json`: add the
   same MD013 disable comment as the first line of `DESIGN-PLAN.md` and `PARALLEL-EXECUTION-PLAN.md`, and rewrite
   their delimiter rows from `|---|` to `| --- |` (the MD060 findings all point at delimiter-row spacing). Re-run
   `npm run markdown:ratchet` and confirm MD013 and MD060 counts are at or below baseline. Do not run `--update`.

@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { loadResults, sourceFile } from './lib/lint-results.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE_PATH = resolve(ROOT, '.paginated-read-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.paginated-read-baseline.json');
 const RULE = 'helm/no-unchecked-paginated-read';
 const UPDATE = process.argv.includes('--update');
 
@@ -91,7 +91,7 @@ if (total < baseline) {
   console.error(
     `\nSLACK: ${total} against a baseline of ${baseline}. Lock the paydown in:\n` +
       '  npm run audit:paginated-reads -- --update\n' +
-      'and commit .paginated-read-baseline.json alongside the fix.',
+      'and commit config/baselines/.paginated-read-baseline.json alongside the fix.',
   );
   process.exit(1);
 }

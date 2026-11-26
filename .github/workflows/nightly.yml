@@ -324,7 +324,7 @@ jobs:
   # BUILD ONCE still holds, one level up: `next-build` below builds main once
   # for both and hands them the `.next` output as an artifact (node_modules is
   # not part of it, so each job still runs `npm ci`). Check names are unchanged
-  # from the workflows they replaced (docs/CI_RUNBOOK.md's table).
+  # from the workflows they replaced (docs/operations/CI_RUNBOOK.md's table).
   # ---------------------------------------------------------------------------
   next-build:
     name: Next build (advisory browser jobs)

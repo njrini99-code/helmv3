@@ -17,7 +17,7 @@
  * files — a per-rule count only means something as a stable baseline if the
  * scope it's measured over doesn't shift under it), tally violations
  * per-rule, and fail only if any rule's count goes UP versus
- * .sqlfluff-baseline.json. Existing violations are grandfathered; new ones
+ * config/baselines/.sqlfluff-baseline.json. Existing violations are grandfathered; new ones
  * block.
  *
  * Exit codes:
@@ -25,7 +25,7 @@
  *   1 — regression detected (at least one rule's count > baseline)
  *
  * Flags:
- *   --update  Rewrite .sqlfluff-baseline.json from the current run and exit 0.
+ *   --update  Rewrite config/baselines/.sqlfluff-baseline.json from the current run and exit 0.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -35,7 +35,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const BASELINE_PATH = resolve(ROOT, '.sqlfluff-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.sqlfluff-baseline.json');
 
 const UPDATE = process.argv.includes('--update');
 

@@ -1,7 +1,7 @@
 /**
  * generateApproachMissInsights — Group B1
  *
- * Design contract: docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md
+ * Design contract: docs/archive/superpowers-plans/2026-04-22-insight-quality/00-design-contract.md
  *
  * Reads `approach_miss_details` joined to `golf_shots` + `golf_rounds` and
  * emits up to three families of approach insights per distance bucket:

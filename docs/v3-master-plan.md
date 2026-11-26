@@ -84,7 +84,7 @@ A v3 engine under `v3/` namespaces, 9 SG-spined generators with shared base clas
 
 **Rollback discipline:** Every migration includes a `-- ROLLBACK:` comment block with the safe undo SQL. For human-eyes during incidents.
 
-**Review tooling:** `.coderabbit.yaml` enables every static analyzer relevant to this stack (ESLint, Biome, oxc, ast-grep, ruff, pylint, swiftlint, shellcheck, yamllint, actionlint, markdownlint, languagetool, hadolint, checkov, gitleaks, semgrep, sqlfluff). Path-scoped instructions enforce the rules in this file plus `docs/v3-rls-template.md`, `docs/v3-testing-standards.md`, `CLAUDE.md`, and `AGENTS.md`. Update `.coderabbit.yaml`'s `knowledge_base.code_guidelines.filePatterns` whenever a new `docs/v3-*.md` spec is added.
+**Review tooling:** `.coderabbit.yaml` enables every static analyzer relevant to this stack (ESLint, Biome, oxc, ast-grep, ruff, pylint, swiftlint, shellcheck, yamllint, actionlint, markdownlint, languagetool, hadolint, checkov, gitleaks, semgrep, sqlfluff). Path-scoped instructions enforce the rules in this file plus `docs/v3-rls-template.md`, `docs/archive/v3/v3-testing-standards.md`, `CLAUDE.md`, and `AGENTS.md`. Update `.coderabbit.yaml`'s `knowledge_base.code_guidelines.filePatterns` whenever a new `docs/v3-*.md` spec is added.
 
 ---
 
@@ -1605,7 +1605,7 @@ W9 ships as ONE branch (`wave9-foundation`) with three sequential PRs:
 - `docs/v3-wave-sequence.md` — references this plan; tracks per-wave status as they ship
 - `docs/v3-compatibility-shims.md` — shim registry (table header + 3 initial rows from Part XXIV.3)
 - `docs/v3-rls-template.md` — canonical RLS patterns coach/player/admin can copy
-- `docs/v3-testing-standards.md` — required test types per feature category (generators, composites, LLM, RLS, lifecycle)
+- `docs/archive/v3/v3-testing-standards.md` — required test types per feature category (generators, composites, LLM, RLS, lifecycle)
 - `docs/v3-decisions.md` — locked decisions (Part III content + provider names)
 - `docs/v3-player-transfer-playbook.md` — edge cases: transfer, multi-team, graduation, new player
 

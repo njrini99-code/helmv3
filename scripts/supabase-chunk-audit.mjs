@@ -25,7 +25,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE_PATH = resolve(ROOT, '.supabase-chunk-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.supabase-chunk-baseline.json');
 const RULE = 'helm/no-unchunked-in-filter';
 const UPDATE = process.argv.includes('--update');
 

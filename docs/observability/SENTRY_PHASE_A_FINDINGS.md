@@ -23,7 +23,7 @@ its feature doc.
 reference. `@datadog/browser-logs` and `@datadog/browser-rum` are real
 dependencies (`package.json:132-133`), and `src/lib/datadog/index.ts`,
 `src/components/providers/DatadogProvider.tsx`, and a top-level `datadog/`
-directory all exist. `docs/OBSERVABILITY.md:25`'s claim that client errors
+directory all exist. `docs/observability/OBSERVABILITY.md:25`'s claim that client errors
 also reach "Datadog RUM" was not falsified by this pass — it just was not
 independently re-verified, since Datadog itself is outside this Sentry-scoped
 audit's brief. Flagging the correction because the audit almost reported this
@@ -172,7 +172,7 @@ with **no `skipSentry: true`**. `logServerException` →
 **capture #2**. `handleUncaughtException` (`:86-89`) is the byte-identical
 pattern. **Every Node process-level `unhandledRejection` or
 `uncaughtException` currently produces exactly two Sentry issues, not one.**
-This is not hypothetical noise — `docs/OBSERVABILITY.md:88-90` itself cites
+This is not hypothetical noise — `docs/observability/OBSERVABILITY.md:88-90` itself cites
 "6 process-level rejections in Sentry" as the measured baseline this whole
 mechanism was built to serve; that count (whatever it is today) is
 double what it should be.
@@ -558,7 +558,7 @@ thread the calling action name through — `formatSafeErrorResponse(error,
 5. **`golf.ts:3054,3436,3474` — event invitation/notification sends silently swallowed** on create/update/delete ("don't fail the whole operation" — correct product behavior, but a systemic delivery outage would be invisible). Fix: `logServerEvent(..., 'warning')` per swallow.
 6. **`golf.ts:5600,5640` — notification-read WRITEs (mark-read/mark-all-read) silently fail.**
 7. **CRITICAL — `src/lib/coachhelm/v3/ingest/providers/arccos.ts:94,125,179` + `src/app/api/cron/v3/ingest-sync/route.ts`** (cross-referenced from §(d)): Arccos token decrypt/refresh/fetch failures return a soft `{errors_count, error_detail}` shape instead of throwing; the route always resolves 200. A player's shot-data ingest can silently stop forever.
-8. **`schedule-vision.ts:423` — LLM cost/budget-accounting write silently fails** on schedule import — a cost-governance blind spot given this repo already treats LLM budget accuracy as high-value telemetry (`docs/OBSERVABILITY_AUTHORITY.md`'s `v3.llm.budget.platform_default` example).
+8. **`schedule-vision.ts:423` — LLM cost/budget-accounting write silently fails** on schedule import — a cost-governance blind spot given this repo already treats LLM budget accuracy as high-value telemetry (`docs/observability/OBSERVABILITY_AUTHORITY.md`'s `v3.llm.budget.platform_default` example).
 9. **`schedule-vision.ts:375` — AI vision day-verification pass failure invisible**, silently returns the unverified extraction.
 10. **`coachhelm-data.ts:493` — CoachHelm dashboard silently serves stale/fallback scores** if the canonical score computation throws.
 11. **`src/lib/coachhelm/v3/chat/agent-tools.ts:163,240,269,549,573` — CoachHelm's AI chat tool-calling layer has no Sentry/Bridge visibility on failure** (confirmed exhaustively, not just a window read: five catches across the action/practice-plan builders and context-read tools, none logging). A systemic break (schema drift, bad DB state) is only visible as repeated user-facing "could not build the plan" messages. Fix: `logServerError` (warning severity — the user already gets a graceful message) in each.
@@ -653,7 +653,7 @@ rather than treating them as independent:
 coverage matrix) ties an `admin_events` row to a git SHA but not to any
 Sentry Release object by anything more than the two happening to share the
 same SHA string — no automated cross-link, no shared identifier field. And
-per `OBSERVABILITY_AUTHORITY.md` (already in this repo, `docs/OBSERVABILITY_AUTHORITY.md`,
+per `OBSERVABILITY_AUTHORITY.md` (already in this repo, `docs/observability/OBSERVABILITY_AUTHORITY.md`,
 last touched 2026-08-30 per its own header) — the RECONCILIATION between
 Sentry-as-a-surface and `admin_events`-as-a-surface (not the trace-ID-level
 correlation described above, but the higher-level "does surface A's silence
@@ -739,7 +739,7 @@ turn out to be a no-op fix for a line that was already achieving its
 practical intent by accident, unlike the other five.
 
 **One caveat on the fix, from the repo's OWN existing docs, not this audit's
-inference:** `docs/guides/SENTRY_SETUP_GUIDE.md:225` carries its own comment
+inference:** `docs/observability/SENTRY_SETUP_GUIDE.md:225` carries its own comment
 next to `automaticVercelMonitors: true`: *"(Does not yet work with App
 Router route handlers.)"* — every cron route in this all-App-Router repo IS
 a route handler. If that comment is still accurate for 10.71.0 (not

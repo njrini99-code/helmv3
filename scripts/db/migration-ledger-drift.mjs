@@ -20,7 +20,7 @@
  * prose, and the prose rots — `guard-bash.sh` still said "56 pending" long after
  * the real figure had moved. `.claude/rules/shipping.md` §1 is explicit: never
  * write a count into prose. This script is the alternative it prescribes — the
- * counts live in `.migration-drift-baseline.json` and may only go DOWN.
+ * counts live in `config/baselines/.migration-drift-baseline.json` and may only go DOWN.
  *
  * WHAT IT ENFORCES
  *
@@ -58,7 +58,7 @@ helpOnly({
 });
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const BASELINE_PATH = resolve(ROOT, '.migration-drift-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.migration-drift-baseline.json');
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
 const HELD_PATH = join(MIGRATIONS_DIR, 'HELD.md');
 const POOLER_HOST = 'aws-0-us-east-1.pooler.supabase.com';

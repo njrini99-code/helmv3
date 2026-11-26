@@ -45,6 +45,6 @@ review leaves the stale decision in place.
 - [ ] Posted `@coderabbitai resolve`
 - [ ] `CodeRabbit` status check is green / decision is no longer blocking
 
-See also: [`docs/CI_RUNBOOK.md`](../CI_RUNBOOK.md) for triaging other red/pending
+See also: [`docs/operations/CI_RUNBOOK.md`](CI_RUNBOOK.md) for triaging other red/pending
 PR checks, and [`.github/branch-protection.md`](../../.github/branch-protection.md)
 for the enforcement policy this workflow operates under.

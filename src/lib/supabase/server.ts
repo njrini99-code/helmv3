@@ -21,7 +21,7 @@ import { setRequestUserId } from '@/lib/admin/request-context';
  * on 2026-08-20. The same 10s cap was also silently truncating CoachHelm insight
  * delivery, where the caller catches and continues, so a coach just saw missing
  * insights and no error at all.
- * See docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md.
+ * See docs/archive/audits-2026-08/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md.
  *
  * Raising this does NOT make ordinary queries slower to fail: `authenticated`
  * still carries `statement_timeout=8s`, so a normal query returns a DB error at

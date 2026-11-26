@@ -48,7 +48,7 @@
  * (`lib/registry.mjs`'s `loadRegistry`/`mapFilesToFeatures`) — so this can
  * never disagree with what an agent session sees from that command. A file
  * matching zero features is an orphan. Ratchets against
- * `.registry-orphans-baseline.json` the same way check-registry-globs.mjs
+ * `config/baselines/.registry-orphans-baseline.json` the same way check-registry-globs.mjs
  * ratchets dead entries: the count may only go DOWN, and any NEW orphan
  * fails regardless of the baseline.
  *
@@ -64,7 +64,7 @@ import { fileURLToPath } from 'node:url';
 import { loadRegistry, mapFilesToFeatures } from './lib/registry.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const BASELINE = resolve(ROOT, '.registry-orphans-baseline.json');
+const BASELINE = resolve(ROOT, 'config/baselines/.registry-orphans-baseline.json');
 
 /**
  * Directories `memory/registry.yml` itself claims, in its own comments, to

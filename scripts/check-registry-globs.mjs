@@ -27,7 +27,7 @@
  * the plan's invariant that every migration has exactly one owner or lives
  * under `systems:`.
  *
- * Both checks ratchet against .registry-globs-baseline.json: known findings
+ * Both checks ratchet against config/baselines/.registry-globs-baseline.json: known findings
  * may only go DOWN, never up, and a brand-new finding of either kind fails
  * regardless of the baseline.
  *
@@ -42,7 +42,7 @@ import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from '
 import * as yaml from 'js-yaml';
 
 const REGISTRY = 'memory/registry.yml';
-const BASELINE = '.registry-globs-baseline.json';
+const BASELINE = 'config/baselines/.registry-globs-baseline.json';
 const MIGRATIONS_DIR = 'supabase/migrations';
 const OVERLAP_THRESHOLD = 0.4;
 

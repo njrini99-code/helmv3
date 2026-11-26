@@ -1,6 +1,6 @@
 <!--
   Keep this short and honest. Required status checks gate merge
-  automatically (list and meaning: docs/CI_RUNBOOK.md) — this template is
+  automatically (list and meaning: docs/operations/CI_RUNBOOK.md) — this template is
   the human layer.
 -->
 

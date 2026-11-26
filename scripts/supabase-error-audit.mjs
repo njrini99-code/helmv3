@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { loadResults, sourceFile } from './lib/lint-results.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE_PATH = resolve(ROOT, '.supabase-error-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.supabase-error-baseline.json');
 const RULE = 'helm/no-unchecked-supabase-error';
 const UPDATE = process.argv.includes('--update');
 
@@ -214,7 +214,7 @@ if (total < baseline) {
       `That ${baseline - total}-read gap is room for a fix to be reverted without this script noticing —\n` +
       'which is exactly how #1326 undid four files unseen. Lock the paydown in:\n' +
       '  npm run audit:supabase-errors -- --update\n' +
-      'and commit .supabase-error-baseline.json alongside the fix.',
+      'and commit config/baselines/.supabase-error-baseline.json alongside the fix.',
   );
   process.exit(1);
 }

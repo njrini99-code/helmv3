@@ -13,7 +13,7 @@ import {
  * announcements.ts + communication.ts (announcements).
  *
  * golf.ts spans FIVE batches (B1/B2/B4/B5/B6 — plan
- * docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md "Batch
+ * docs/archive/superpowers-plans/helm-bridge/waves/w15-total-coverage.md "Batch
  * notes"). This contract asserts B1's 13 + B2's 18 exports (already wrapped,
  * untouched) PLUS B4's 1 export (`createAnnouncement`) and excludes the
  * remaining 7 golf.ts exports (roster_management/B5, course_library/B6)

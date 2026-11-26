@@ -22,7 +22,7 @@
  * `src/lib/types/database.ts` — and reuses that exact file as ground truth
  * (the same source that script's own header names as canonical) rather than
  * re-deriving what "the schema" means. It also reads that script's own
- * baseline (`.doc-schema-baseline.json`) to distinguish a known, already-
+ * baseline (`config/baselines/.doc-schema-baseline.json`) to distinguish a known, already-
  * tracked absence from a brand new one — never writes to it.
  *
  * THREE CONFIDENCE TIERS, kept visually distinct in every renderer
@@ -194,8 +194,8 @@ export function checkSchemaExistence(claims, sources, registryFeatureIds, log = 
       confidence: 'mechanical',
       evidence:
         `${missing.join(', ')} not found in src/lib/types/database.ts` +
-        (known.length > 0 ? ` (${known.join(', ')} already tracked in .doc-schema-baseline.json)` : '') +
-        (brandNew.length > 0 ? ` (${brandNew.join(', ')} NOT yet in .doc-schema-baseline.json — run npm run docs:schema-drift)` : ''),
+        (known.length > 0 ? ` (${known.join(', ')} already tracked in config/baselines/.doc-schema-baseline.json)` : '') +
+        (brandNew.length > 0 ? ` (${brandNew.join(', ')} NOT yet in config/baselines/.doc-schema-baseline.json — run npm run docs:schema-drift)` : ''),
     });
   }
 }

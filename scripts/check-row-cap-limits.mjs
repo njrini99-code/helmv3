@@ -4,7 +4,7 @@
  * INCLUDING when N is a named constant.
  *
  * WHY THIS EXISTS SEPARATELY FROM THE AST-GREP RULE.
- * `.coderabbit/ast-grep/no-limit-above-postgrest-cap.yml` catches literals.
+ * `config/review-rules/ast-grep/no-limit-above-postgrest-cap.yml` catches literals.
  * It is syntactic, so it cannot see through `.limit(SHOT_DRIVERS_FETCH_CAP)`
  * — and that is exactly where the worst instance hid:
  *
@@ -44,7 +44,7 @@ const POSTGREST_MAX_ROWS = 1000;
 
 /** Tests may legitimately ask for more — one asserting what the cap DOES has
  *  to exceed it. Rule-pack fixtures are intentionally broken. */
-const EXEMPT = /(\.test\.tsx?$|__tests__|^src\/test\/|^\.coderabbit\/)/;
+const EXEMPT = /(\.test\.tsx?$|__tests__|^src\/test\/|^config\/review-rules\/)/;
 
 async function walk(dir) {
   const out = [];

@@ -5,7 +5,7 @@
  * Runs madge (config in .madgerc skips `import type` edges — those are
  * erased at compile time and cannot cause runtime TDZ crashes) via its Node
  * API — not `npx`/the CLI — and compares the RUNTIME import cycles it finds
- * against .cycles-baseline.json.
+ * against config/baselines/.cycles-baseline.json.
  *
  * Why the Node API instead of shelling out to the CLI:
  *   - `npx madge` can silently fetch an unpinned copy of the package instead
@@ -38,7 +38,7 @@
  *   1 — at least one new cycle or newly-skipped file not present in the baseline
  *
  * Flags:
- *   --update  Rewrite .cycles-baseline.json from the current run and exit 0.
+ *   --update  Rewrite config/baselines/.cycles-baseline.json from the current run and exit 0.
  */
 
 import madge from 'madge';
@@ -48,7 +48,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const BASELINE_PATH = resolve(ROOT, '.cycles-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.cycles-baseline.json');
 const MADGERC_PATH = resolve(ROOT, '.madgerc');
 
 const UPDATE = process.argv.includes('--update');

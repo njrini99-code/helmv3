@@ -210,8 +210,8 @@ them would have broken those routes, not the dead one.
   (duplicate helpers, dead flags, stale docs, orphan routes, deprecated
   APIs, stale TODOs, oversized modules, unused tests, mock inflation,
   duplicate telemetry, missing feature mappings, abandoned experiments)
-  using only signals this repo already produces — `.duplicate-exports-baseline.json`,
-  `.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,
+  using only signals this repo already produces — `config/baselines/.duplicate-exports-baseline.json`,
+  `config/baselines/.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,
   `memory/registry.yml` (via `scripts/knowledge/lib/registry.mjs`),
   `git ls-files`/`git grep`/`git log` — never a filesystem walk. Every
   classifier returns one of three verdicts, `FINDINGS` /
@@ -1684,7 +1684,7 @@ assumed it would:
 
 - `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md`
 - `docs/BI_DASHBOARD_ARCHITECTURE.md`
-- `docs/OBSERVABILITY.md`
+- `docs/observability/OBSERVABILITY.md`
 - `docs/SECURITY_AUDIT.md`
 - `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` —
   the Bridge Premium Observability brief the "Phase 0 truth models" and

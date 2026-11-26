@@ -107,7 +107,7 @@ Route groups in parens are stripped from URLs. "Access" = who the route is inten
 | `/baseball/dashboard/college-interest` | Coach view of who viewed/interested in their roster players (engagement telemetry) — coach-scoped; imports player gate hook by drift | coach/staff | `college-interest/CollegeInterestClient.tsx` |
 | `/baseball/dashboard/colleges` | (player) browse colleges + toggle interest | player | `colleges/page.tsx`; `hooks/use-colleges.ts`; `actions/interests.ts` |
 | `/baseball/dashboard/scout-packets` | Scout packet roster/link management | staff `can_export_reports` | `actions/scout-packet.ts` |
-| `/baseball/dashboard/journey` | Player recruiting journey | player | `journey/page.tsx` → `hooks/use-journey.ts` (source table now verified: `baseball_players`/`baseball_recruiting_interests`/`baseball_player_engagement_events`, all real; reads are direct-client, not a server action — a Journey-vs-Pipeline vocabulary unification memo is open pending owner sign-off, see `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md`) |
+| `/baseball/dashboard/journey` | Player recruiting journey | player | `journey/page.tsx` → `hooks/use-journey.ts` (source table now verified: `baseball_players`/`baseball_recruiting_interests`/`baseball_player_engagement_events`, all real; reads are direct-client, not a server action — a Journey-vs-Pipeline vocabulary unification memo is open pending owner sign-off, see `docs/archive/audits-2026-08/BASEBALLHELM_PRODUCTION_VERDICT.md`) |
 | `/baseball/dashboard/activate` | Player recruiting opt-in (blocks college players) | player (non-college) | `activate/page.tsx` |
 
 ### Player dashboard (mobile-first)

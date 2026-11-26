@@ -1,7 +1,7 @@
 /**
  * generateTeeStrategyInsights — Group B3
  *
- * Design contract: docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md
+ * Design contract: docs/archive/superpowers-plans/2026-04-22-insight-quality/00-design-contract.md
  *
  * Reads `golf_shots WHERE shot_type='tee'` joined to `golf_holes.par` +
  * `golf_holes.yardage` + `golf_holes.fairway_hit` (par-3s excluded) and

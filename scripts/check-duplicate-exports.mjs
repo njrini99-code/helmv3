@@ -12,7 +12,7 @@
  * one the UI calls.
  *
  * This check makes that drift shape impossible to reintroduce silently.
- * Existing duplicates are grandfathered in .duplicate-exports-baseline.json
+ * Existing duplicates are grandfathered in config/baselines/.duplicate-exports-baseline.json
  * until the dedupe pass resolves them; the count may only go DOWN.
  *
  * Usage:
@@ -24,7 +24,7 @@
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const BASELINE = '.duplicate-exports-baseline.json';
+const BASELINE = 'config/baselines/.duplicate-exports-baseline.json';
 const ROOT = 'src/app';
 const EXPORT_RE = /^export\s+(?:async\s+)?function\s+([A-Za-z0-9_]+)/gm;
 

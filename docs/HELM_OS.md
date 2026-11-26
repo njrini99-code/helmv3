@@ -32,7 +32,7 @@ The reasoning behind the map, and the alternatives rejected, is
 | Which open PRs intentionally remain? | `config/open-pr-dispositions.json` |
 | What is mechanically enforced? | `docs/CONTROL_PLANE_ENFORCEMENT.md` |
 | Which tools carry authority? | `docs/TOOL_AUTHORITY_MATRIX.md` |
-| What do Sentry and `admin_events` each mean? | `docs/OBSERVABILITY_AUTHORITY.md` |
+| What do Sentry and `admin_events` each mean? | `docs/observability/OBSERVABILITY_AUTHORITY.md` |
 | How does self-heal operate? | `docs/ai-system/selfheal/` |
 | Is production healthy right now? | Mission Control, synthesised from the rows above |
 | What was true on a past date? | the dated snapshot, audit, or the attic (tag `docs-attic-2026-09`; see `docs/README.md`) |
@@ -58,8 +58,8 @@ RUNTIME FEATURE HEALTH
   src/lib/admin/feature-registry.ts     FeatureKey vocabulary, tables, tiers
 
 OBSERVABILITY MEANING
-  docs/OBSERVABILITY_AUTHORITY.md       what each surface knows
-  docs/OBSERVABILITY.md                 how application code emits
+  docs/observability/OBSERVABILITY_AUTHORITY.md       what each surface knows
+  docs/observability/OBSERVABILITY.md                 how application code emits
 
 DEFECTS AND REPAIR
   memory/incidents/<feature_id>/        confirmed product defects
@@ -84,9 +84,9 @@ SELF-HEAL CONTRACT
 
 HISTORICAL EVIDENCE ONLY
   tag docs-attic-2026-09 (see docs/README.md)   never current architecture or schema
-  docs/audits/*                         dated audits
+  docs/archive/audits-2026-08/*                         dated audits
   docs/ai-system/selfheal/STATE-*.md    dated snapshots
-  docs/superpowers/plans|specs/**       plans and design specs
+  docs/archive/superpowers-plans|specs/**       plans and design specs
 ```
 
 ---
@@ -110,7 +110,7 @@ MISSION CONTROL — synthesis
 ```
 
 What each surface may and may not claim is
-`docs/OBSERVABILITY_AUTHORITY.md`. The rule that matters most:
+`docs/observability/OBSERVABILITY_AUTHORITY.md`. The rule that matters most:
 
 > A count of zero from one surface is not a statement about production. It is a
 > statement about that surface.

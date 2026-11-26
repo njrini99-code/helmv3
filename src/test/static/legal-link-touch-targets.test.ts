@@ -5,7 +5,7 @@
  * Measured in production 2026-08-17 on `/golf/login`: `Privacy` renders 41x16
  * and `Terms` 33x16. Neither carries any responsive sizing, so those are the
  * dimensions on a phone too. That is under the project's own documented 44px
- * standard (`docs/UIUX_AUDIT.md`, applied at 55 sites across
+ * standard (`docs/archive/stale-root-2026-11/UIUX_AUDIT.md`, applied at 55 sites across
  * `components/fairway` and `admin/crm`) and under WCAG 2.2's 24px AA minimum
  * for Target Size.
  *

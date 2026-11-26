@@ -13,7 +13,7 @@ import {
  * alerts.ts, pattern-management.ts.
  *
  * insights.ts spans THREE batches (B7/B8/B9 — plan
- * docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md "Batch
+ * docs/archive/superpowers-plans/helm-bridge/waves/w15-total-coverage.md "Batch
  * notes"), so this contract asserts ONLY B7's 16 default-tagged
  * `coachhelm_ai_engine` exports and excludes the 8 exports owned by later
  * batches (5 insights_management overrides + generateRoundReview

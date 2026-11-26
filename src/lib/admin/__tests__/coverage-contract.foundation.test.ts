@@ -369,7 +369,7 @@ describe('global tripwire', () => {
     // courses.ts (-5: getSavedCourses/getCourseWithHoles/createCourse/
     // updateCourse/deleteCourse — a self-declared "DEPRECATED — DO NOT WIRE,
     // ZERO importers" file, also independently named in
-    // docs/audits/DEAD_CODE_DEAD_DB_2026-08-20.md §B2/§B3) and
+    // docs/archive/audits-2026-08/DEAD_CODE_DEAD_DB_2026-08-20.md §B2/§B3) and
     // task-templates.ts (-13 — same §B2 zero-importer list; crm-templates.ts
     // is the live template-CRUD surface), and dropped round-reviews.ts's
     // dead `createFocusAreaFromReview(reviewId, focusAreaData)` (-1 — zero

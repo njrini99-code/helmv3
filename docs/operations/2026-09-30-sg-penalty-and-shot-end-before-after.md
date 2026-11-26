@@ -44,7 +44,7 @@ test and by a pgTAP test.
 ## How the numbers below were produced
 
 Read-only SQL on production
-(`supabase/investigations/2026-09-30-sg-penalty-shot-end-simulation.sql`, SELECT
+(`docs/archive/supabase-investigations-2026-09/2026-09-30-sg-penalty-shot-end-simulation.sql`, SELECT
 only, nothing written). The new function body was also installed on a scratch
 PostgreSQL 16 loaded with a read-only export of production shots: its
 `calculate_round_strokes_gained` equals the simulation on all 680 shot-level

@@ -15,7 +15,7 @@
  * investigation starts: what can I actually read?
  *
  * PROSE WOULD NOT WORK HERE. A markdown table saying "Vercel = native
- * connector" is a claim; this is a probe. Same reason .doc-schema-baseline.json
+ * connector" is a claim; this is a probe. Same reason config/baselines/.doc-schema-baseline.json
  * exists instead of a paragraph about the schema.
  *
  * Read-only. Exits 0 if every REQUIRED path is live, 1 otherwise.

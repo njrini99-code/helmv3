@@ -2,7 +2,7 @@
  * Nightly CoachHelm insight lifecycle progression cron (Foundation F3).
  *
  * Walks every non-terminal insight and applies the four rules from the
- * design contract at docs/superpowers/plans/2026-04-22-insight-quality/
+ * design contract at docs/archive/superpowers-plans/2026-04-22-insight-quality/
  * 00-design-contract.md. With `coachhelm_recheck_v1` on (CoachHelm Slice 3,
  * off by default), Rules 2 and 3 skip v3 reads: the round-based lifecycle
  * step (`runCheckpointLifecycle`, src/lib/coachhelm/v3/lifecycle/job.ts),
