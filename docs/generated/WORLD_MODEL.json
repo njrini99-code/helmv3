@@ -8143,6 +8143,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/observed-action.ts",
+          "anchor": "src/lib/observability/ui-surface"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/schedule-bridge-write.ts",
           "anchor": "src/lib/observability/vercel-wait-until"
         },
