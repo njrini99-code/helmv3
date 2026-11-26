@@ -180,6 +180,8 @@ const nextConfig = {
     '/admin/clubhouse': ['./docs/clubhouse/generated/bridge-graph.json'],
     '/admin/clubhouse/**': ['./docs/clubhouse/generated/bridge-graph.json'],
     '/api/admin/clubhouse/search': ['./docs/clubhouse/generated/bridge-graph.json'],
+    // The read-only Duet door (plan §9.2): packs and drift are built from it too.
+    '/api/admin/clubhouse/duet/**': ['./docs/clubhouse/generated/bridge-graph.json'],
   },
 
   // Bound the webpack production build and let its persistent cache trim
