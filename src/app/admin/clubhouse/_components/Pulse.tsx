@@ -96,4 +96,3 @@ export async function ClubhousePulse({ searchParams }: { searchParams?: SearchPa
     </ClubhouseFrame>
   );
 }
-

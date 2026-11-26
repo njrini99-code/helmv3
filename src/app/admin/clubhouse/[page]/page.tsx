@@ -411,4 +411,3 @@ function PhoneView({ graph, id, scope }: { graph: BridgeGraph; id: PageId; scope
     </div>
   );
 }
-
