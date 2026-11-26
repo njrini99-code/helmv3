@@ -3,7 +3,7 @@
 ## 2026-11-05 — What the train changed with flags off, and what its lanes got wrong
 
 ```text
-Design package: design-refresh/START_HERE.md (flag off renders as main; shared values)
+Design package: design/refresh/START_HERE.md (flag off renders as main; shared values)
 PR/commit:      agent/clubhouse-redesign-followups
 Contract IDs:   none new
 Actions:        none new

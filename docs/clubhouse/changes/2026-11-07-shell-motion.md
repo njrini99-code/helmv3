@@ -3,7 +3,7 @@
 ## 2026-11-07 — Shell motion: a push animates transform and opacity only
 
 ```text
-Design package: design-refresh/redesign-ui-sweep-2026-11-06
+Design package: design/refresh/redesign-ui-sweep-2026-11-06
 PR/commit:      agent/ch-shell-motion
 Contract IDs:   none new
 Actions:        none new

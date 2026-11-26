@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * PR 12 (design-refresh/BUILD_BRIEF.md, DESIGN_LANGUAGE §8): under Reduce Motion nothing travels. One redesigned screen per
+ * PR 12 (design/refresh/BUILD_BRIEF.md, DESIGN_LANGUAGE §8): under Reduce Motion nothing travels. One redesigned screen per
  * PR: load it, drive what opens on it, and assert no running animation or transition moves anything (transform, translate,
  * scale, rotate, or a layout property). Crossfades stay, as opacity only.
  *

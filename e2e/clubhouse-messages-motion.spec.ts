@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Messages 11g (design-refresh/messages 07 and 08, MSG-MOT-06 to 08): the 11 interrupt cases on the preview fixture, sampled
+ * Messages 11g (design/refresh/messages 07 and 08, MSG-MOT-06 to 08): the 11 interrupt cases on the preview fixture, sampled
  * every animation frame and judged by the design page's `MC.judge`. A case fails on a teleport (a one-frame speed spike), a
  * flicker (gone for a frame, or a blink in opacity) or, under Reduce Motion, on anything gliding.
  *

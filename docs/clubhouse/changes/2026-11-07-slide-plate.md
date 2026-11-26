@@ -3,7 +3,7 @@
 ## 2026-11-07 — The sliding plate no longer scales
 
 ```text
-Design package: design-refresh/redesign-ui-sweep-2026-11-06
+Design package: design/refresh/redesign-ui-sweep-2026-11-06
 PR/commit:      agent/numbers-one-source
 Contract IDs:   none new
 Actions:        none new

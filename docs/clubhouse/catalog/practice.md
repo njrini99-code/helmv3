@@ -7,7 +7,7 @@ Practice (P017) on `/golf/dashboard/practice` and its eight other routes · code
 `src/lib/coachhelm/v3/practice-plan/model.ts`.
 
 These are the practice design's own codes
-(`design-refresh/prerequisites/N-00-practice-plan-builder.md`), which the server
+(`design/refresh/prerequisites/N-00-practice-plan-builder.md`), which the server
 actions and the plan model already write as error and log codes
 (`code: 'CH-17001'`, `errorCode: 'CH-17205'`). They are registered here as they
 stand, so each has a Bridge ID in namespace 17 (plan D12, 2026-11-24: Practice

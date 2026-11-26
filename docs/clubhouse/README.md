@@ -24,7 +24,7 @@ Where things live:
 | What | Where |
 | --- | --- |
 | Current state, how to turn on, rollback, remaining work, open owner decisions | [`STATUS.md`](STATUS.md) |
-| The design system: laws, surfaces, colour, type, the one toggle, charts, banned list, generated token tables | [`DESIGN_LANGUAGE.md`](../../design-refresh/DESIGN_LANGUAGE.md) |
+| The design system: laws, surfaces, colour, type, the one toggle, charts, banned list, generated token tables | [`DESIGN_LANGUAGE.md`](../../design/refresh/DESIGN_LANGUAGE.md) |
 | Which screens exist, and which are rebuilt | `SCREENS.md` |
 | Who each address is for (routing): **coach**, **player**, **shared** or **signed-out**, and the component each role gets | [`generated/CLUBHOUSE_ROUTE_MAP.md`](generated/CLUBHOUSE_ROUTE_MAP.md), from each manifest's `screens` and `config/clubhouse/other-routes.json` (checked) |
 | Gates, decisions (latest: D-72 to D-79, 2026-10-19), questions, data gaps, verification log | `PROGRESS.md` (the overview) |

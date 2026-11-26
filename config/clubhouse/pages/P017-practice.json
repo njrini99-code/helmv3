@@ -91,9 +91,9 @@
     "docs": "current"
   },
   "design": {
-    "version": "design-refresh/practice-plan (redesign scenes 4 and 5, 05-SCREENS S-PRC rows); no owner phone board (docs/clubhouse/phone/practice.md is a draft)",
+    "version": "design/refresh/practice-plan (redesign scenes 4 and 5, 05-SCREENS S-PRC rows); no owner phone board (docs/clubhouse/phone/practice.md is a draft)",
     "desktop": [
-      "design-refresh/practice-plan/redesign/coachhelm-practice.html"
+      "design/refresh/practice-plan/redesign/coachhelm-practice.html"
     ],
     "phone": []
   },

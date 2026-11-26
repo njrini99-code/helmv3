@@ -3,7 +3,7 @@
 ## 2026-11-04 — Clubhouse redesign train
 
 ```text
-Design package: design-refresh/
+Design package: design/refresh/
 PR/commit:      agent/clubhouse-redesign-train
 Contract IDs:   none new
 Actions:        none new

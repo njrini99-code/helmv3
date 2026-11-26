@@ -2,7 +2,7 @@
 
 Source: the `MOT` tables, the spring cards, the `anim()` engine, the demos
 (`DEMO`/`PLAYS`) and the motion-check (`MCASES`) in
-`design-refresh/messages/redesign/clubhouse-messages.html`. SPEC.md is the
+`design/refresh/messages/redesign/clubhouse-messages.html`. SPEC.md is the
 layout; this file is every movement. IDs `MOT-<area>-<n>` are the artifact's
 table rows in order (49 rows). `MOT-SPR-*` are the seven springs. `MOT-X-*` are
 motions the artifact only draws in code (not in its tables). `MOT-KB-*` and

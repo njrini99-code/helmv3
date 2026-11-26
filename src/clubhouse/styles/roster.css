@@ -2799,7 +2799,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   letter-spacing: var(--ch-track-12);
 }
 
-/* Roster behind clubhouse_classes_roster_home_v1 (design-refresh/classes-roster-home 06 7 to 10). Every rule is under the flag. The type
+/* Roster behind clubhouse_classes_roster_home_v1 (design/refresh/classes-roster-home 06 7 to 10). Every rule is under the flag. The type
    and radii sit on the scale's steps and roles, where 06 draws between them (listed in the PR under "Can't match as drawn"). */
 [data-ch-crh='on'] .ch-rs-tcard {
   display: grid;

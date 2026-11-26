@@ -10,7 +10,7 @@ Every exported `async function` in `src/app/golf/actions/**` and `src/app/action
 demo files, less the reads (names beginning get, load, fetch, list, check and the like) and less the five baseball
 message actions: **304 actions that change something.** The same function exported from two files is counted twice,
 as it is two entry points. Each was set against the tools in `../tasks.ts`, `../readers-direct.ts` and this folder
-(TOOLS.md §3 is TOOLS's own list) and against the redesign's promises: `design-refresh/coachhelm/AGENT_KIT.md`,
+(TOOLS.md §3 is TOOLS's own list) and against the redesign's promises: `design/refresh/coachhelm/AGENT_KIT.md`,
 `TASK_FIELDS.md` §4 ("Status of every flow") and the Ask and quick chat 05 to 08 files.
 
 ## Totals

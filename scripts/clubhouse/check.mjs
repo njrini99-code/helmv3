@@ -17,7 +17,7 @@
  * (changelog-gate.mjs), every page's VERIFY.md keeps a `## Screenshots`
  * evidence log whose rows follow the screenshot naming (shots.mjs), and every
  * relative markdown link under docs/clubhouse resolves (links.mjs). The design system's token tables in
- * design-refresh/DESIGN_LANGUAGE.md match tokens.css (design-language.mjs).
+ * design/refresh/DESIGN_LANGUAGE.md match tokens.css (design-language.mjs).
  *
  * Usage: node scripts/clubhouse/check.mjs [--root <dir>] [--base <ref>]
  * Exit 0 clean, 1 on any violation.
@@ -413,7 +413,7 @@ const FAIRWAY_CLASS = /\b(?:font-fw-[a-z-]+|bg-canvas|fw-[a-z]+-[a-z-]+|rounded-
 export function checkGolfRoutesClubhouseOnly(files) {
   const v = [];
   for (const [file, src] of Object.entries(files)) {
-    if (!file.startsWith('src/app/golf/') || file.startsWith('src/app/golf/admin/') || /\/__tests__\/|\.test\.tsx?$/.test(file)) continue;
+    if (!file.startsWith('src/app/golf/') || file.startsWith('src/app/golf/admin/') || file.includes('/__tests__/') || /\.test\.tsx?$/.test(file)) continue;
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
     for (const m of code.matchAll(NOT_CLUBHOUSE_IMPORT)) v.push(`${file}: imports ${m[1]}; GolfHelm routes draw Clubhouse only (src/clubhouse)`);
     for (const m of code.matchAll(FAIRWAY_CLASS)) v.push(`${file}: uses the Fairway class ${m[0]}; GolfHelm routes draw Clubhouse only`);
@@ -543,7 +543,7 @@ function main() {
   if (existsSync(join(root, 'docs/clubhouse'))) walkMd('docs/clubhouse');
   violations.push(...checkLinks({ files: mdFiles, exists: (p) => existsSync(join(root, p)), read: (p) => readFileSync(join(root, p), 'utf8') }));
 
-  // The design system's token tables (design-refresh/DESIGN_LANGUAGE.md) are generated from tokens.css.
+  // The design system's token tables (design/refresh/DESIGN_LANGUAGE.md) are generated from tokens.css.
   violations.push(...checkDesignLanguage(root));
 
   // The every-button map (CLUBHOUSE_CLICKABLE_MAP.md) moves with the code (D11, plan §4.7).

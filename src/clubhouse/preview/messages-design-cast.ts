@@ -3,7 +3,7 @@ import type { Poll, PollResponseRow } from '@/lib/golf/message-polls';
 import { CAST, CAST_ASSISTANT, CAST_TEAM } from './cast';
 
 /**
- * The cast of the approved Messages design page (design-refresh/messages/redesign/prototype.js `INIT`), for
+ * The cast of the approved Messages design page (design/refresh/messages/redesign/prototype.js `INIT`), for
  * `/clubhouse-preview/messages?state=design&view=<route>`: same people, conversations, messages, reactions, poll and files, on the
  * page's clock (Friday, 8:21 AM). Synthetic. The people the shared preview cast also has (`./cast`: Eli, Sam, Owen, Dana, the
  * team's name) take their names and class years from it, so Sam is Sam Whitfield, a Junior, here as on every other screen.

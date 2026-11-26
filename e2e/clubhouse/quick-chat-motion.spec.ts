@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Quick chat's motion (design-refresh/coachhelm 02-PLAN, QC motion tests) on the preview: a toggle mid-move goes from where the panel
+ * Quick chat's motion (design/refresh/coachhelm 02-PLAN, QC motion tests) on the preview: a toggle mid-move goes from where the panel
  * is, opening holds its frames, the panel's height never moves, and only transform and opacity animate.
  *   PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test e2e/clubhouse/quick-chat-motion.spec.ts --project=chromium --headed
  */
