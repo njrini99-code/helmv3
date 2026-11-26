@@ -138,6 +138,10 @@
   color: var(--bs-ink);
 }
 .bs-headline > .bs-second { display: block; }
+@media (max-width: 640px) {
+  /* A phone's first screen is for the numbers: the headline takes two short lines, the lede a few. */
+  .bs-headline { font-size: 30px; line-height: 1.05; letter-spacing: -0.035em; margin: 8px 0 10px; }
+}
 
 .bs-lede {
   margin: 0;
@@ -145,6 +149,9 @@
   font-size: 18px;
   line-height: 1.5;
   color: var(--bs-ink-2);
+}
+@media (max-width: 640px) {
+  .bs-lede { font-size: 16px; line-height: 1.45; }
 }
 
 .bs-panel {
@@ -180,6 +187,8 @@
   /* A grid of Stat tiles goes two by two on a phone; a grid of panels stays one a row. */
   .bs-grid-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .bs-grid-stats > .bs-panel-pad { padding: 14px 14px 16px; }
+  /* An odd tile out spans the row instead of leaving a hole beside it. */
+  .bs-grid-stats > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 
 .bs-stat-value {
@@ -256,6 +265,14 @@
 @media (hover: hover) {
   .bs-link:hover { text-decoration: underline; }
 }
+/*
+ * On a touch screen a text link gets a 44pt hit area without moving its text: an invisible box around it. Links sit
+ * in panel heads and notes with room around them, so the boxes do not reach a neighbour's.
+ */
+@media (pointer: coarse) {
+  .bs-link { position: relative; }
+  .bs-link::after { content: ''; position: absolute; inset: -12px -8px; }
+}
 /* One focus ring for anything a keyboard reaches; the tap highlight is off, so focus has to be this visible. */
 .bs a:focus-visible,
 .bs button:focus-visible,
@@ -269,8 +286,9 @@
 }
 
 /*
- * A segmented control. It stays one line at every width: on a phone the options scroll sideways under the finger
- * (snap, no scrollbar) instead of wrapping into stacked pill rows.
+ * A segmented control. On a wide screen it is one line. On a phone it spans the column and wraps, every option a
+ * share of its row, so no option is cut off at the edge (owner, 2026-11-26: a half-hidden "De…" or "Needs attent"
+ * read as broken). It still scrolls sideways if one label alone is wider than the phone.
  */
 .bs-tabs {
   display: inline-flex;
@@ -310,6 +328,13 @@
 }
 @media (hover: none), (max-width: 640px) {
   .bs-tab { min-height: 44px; }
+}
+@media (max-width: 640px) {
+  .bs-tabs { display: flex; flex-wrap: wrap; width: 100%; }
+  .bs-main > .bs-tabs { align-self: stretch; }
+  .bs-tab { flex: 1 1 auto; justify-content: center; padding: 0 12px; }
+  /* Four options wrap three-and-one; two by two reads as one control. */
+  .bs-tabs:has(> .bs-tab:nth-child(4):last-child) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .bs-tab[aria-current='page'],
 .bs-tab[aria-selected='true'] {
@@ -410,7 +435,7 @@
   .bs-table-stack .bs-cell-label {
     display: block;
     margin-bottom: 3px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;

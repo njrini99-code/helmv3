@@ -25,6 +25,12 @@ Rules that do not move (admin-nav.ts):
 - Every space lives under `/admin/spaces/` (`/admin/reliability` is a retired route that redirects to Incidents,
   so a fresh prefix avoids every collision). One registry glob, `src/app/admin/spaces/**`, maps them.
 - No route is renamed or removed. `/admin/errors/<fp>` and every other stored link keeps working.
+- Menu (owner, 2026-11-26: "remove the old routes that shouldn't be in there"): the rail and the phone's More sheet
+  list the spaces and only the pages no space opens. A page a space opens in one tap (Product, Ship and Desk tab rows,
+  Today's "All activity") and the two front doors a space replaced (Pulse, Teams pulse) leave the menu and keep
+  their page, ⌘K entry and key. `src/app/admin/_components/space-tabs.ts` holds the lists; its test pins that every
+  hidden page is one tap from a space. Deleting Pulse or Teams pulse is still the owner's call: each holds a view no
+  space has (the command deck and change timeline; the activity and error EKG).
 - Shortcut keys never move. The spaces carry no keys (no letter is free); they are on the rail and in ⌘K.
 - The rail gains a **Spaces** section at the top. This replaces owner decision D3 ("Clubhouse leads") in
   `2026-11-18-clubhouse-bridge-redesign.md` §7.1; that section is updated in the same PR.
@@ -99,7 +105,7 @@ xx90 to xx93 stay the four states (loading, empty, failed, no signal yet).
 
 ## Not in this build
 
-- Retiring old tabs. They stay until the owner decides, after living with the spaces.
+- Deleting old tabs. They left the menu (2026-11-26, above) but keep their pages until the owner decides.
 - Deploying.
 
 ## Follow-up: error explanation and one read-state vocabulary

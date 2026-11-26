@@ -1500,6 +1500,14 @@ Plan: `docs/superpowers/specs/helm-bridge/2026-11-18-clubhouse-bridge-redesign.m
 (§12 records what each PR built); decisions as built:
 `docs/superpowers/specs/helm-bridge/DECISIONS.md`.
 
+### What the menu lists (2026-11-26)
+
+The rail and the phone's More sheet list the Spaces and only the admin pages no space opens. Pages a space opens
+in one tap (Product, Ship and Desk tab rows; Today's "All activity") and the replaced front doors (Pulse, Teams
+pulse) are left out of the menu but keep their routes, ⌘K entries and shortcut keys. On one of those pages the rail
+and the bottom bar light the owning space. Lists and rule: `src/app/admin/_components/space-tabs.ts`
+(`MENU_HIDDEN_HREFS`, `owningSpace`), pinned by `_components/__tests__/space-tabs.test.ts`.
+
 ### The Clubhouse section of the rail
 
 The rail leads with Clubhouse (owner decision D3; URLs and keys unchanged).

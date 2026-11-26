@@ -1,0 +1,13 @@
+/*
+ * Admin on a phone: rules that hold for every admin page under the shell (AdminShell imports this file).
+ *
+ * A sideways scroller is the containing block for what it holds. Without a position of its own, an absolutely
+ * placed child inside it (Tailwind's `sr-only` labels in table cells) is placed against the page instead, outside
+ * the scroller's clip, and the whole page scrolls sideways: Readiness measured 1,348px wide on a 390px phone
+ * (2026-11-26). `relative` keeps them inside.
+ */
+.bridge-ivory .overflow-x-auto,
+.bridge-ivory .overflow-auto,
+.bridge-ivory .overflow-x-scroll {
+  position: relative;
+}

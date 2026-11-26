@@ -14,6 +14,11 @@ import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
 import { UserRoleFilterChips, type RoleChip } from './UserRoleFilterChips';
 import { SectionLabel } from '../_components/SectionLabel';
+import { FoldRest } from '../_components/FoldRest';
+
+/** Users and at-risk accounts listed before the rest fold under "Show N more" (most recently seen first). */
+const USERS_SHOWN = 25;
+const AT_RISK_SHOWN = 15;
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Users & Teams' };
@@ -48,7 +53,14 @@ function ActivityBar({ value, max }: { value: number; max: number }) {
   );
 }
 
-function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; activeTeamId?: string }) {
+/**
+ * Rosters open on load: the team the URL is scoped to, or else the first few that need a look. Every team that
+ * needed a look used to open, which unfolded 27 rosters into about 50,000px on a phone (2026-11-26); the rest stay one
+ * tap away in the same order.
+ */
+const ROSTERS_OPEN_ON_LOAD = 3;
+
+function TeamRosterPanel({ team, activeTeamId, rank }: { team: TeamRosterInsight; activeTeamId?: string; rank: number }) {
   const maxActivity = team.players.reduce((max, player) => Math.max(max, player.activity30d), 0);
   // The "?team=<id>" filter is the promised escape hatch for teams with more
   // than 8 players (see the hint text below) — honor that promise by
@@ -61,7 +73,7 @@ function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; acti
   return (
     <details
       className="group border-b border-warm-200/70 py-4"
-      open={isFocused || team.attentionPlayers > 0 || team.health !== 'active'}
+      open={isFocused || (!activeTeamId && rank < ROSTERS_OPEN_ON_LOAD && (team.attentionPlayers > 0 || team.health !== 'active'))}
     >
       <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-2">
         <div className="min-w-0 flex-1 basis-full md:basis-auto">
@@ -339,8 +351,8 @@ function RosterIntelligence({
                     if (a.errors7d !== b.errors7d) return b.errors7d - a.errors7d;
                     return a.name.localeCompare(b.name);
                   })
-                  .map((team) => (
-                    <TeamRosterPanel key={`${team.sport}:${team.teamId}`} team={team} activeTeamId={activeTeamId} />
+                  .map((team, rank) => (
+                    <TeamRosterPanel key={`${team.sport}:${team.teamId}`} team={team} activeTeamId={activeTeamId} rank={rank} />
                   ))
               )}
             </div>
@@ -519,7 +531,8 @@ export default async function UsersPage({
               />
             ) : (
               <ul className="divide-y divide-warm-200/60">
-                {tab.users.map((u) => (
+                <FoldRest items={tab.users} shown={USERS_SHOWN} noun="more users">
+                {(u) => (
                   // The whole row is the link (the Bridge's EVERYTHING CLICKS
                   // convention): the email alone was a ~20px-tall target on a
                   // phone. Nothing else in the row is interactive — SportBadge
@@ -543,7 +556,8 @@ export default async function UsersPage({
                       </span>
                     </Link>
                   </li>
-                ))}
+                )}
+                </FoldRest>
               </ul>
             )}
           </div>
@@ -558,7 +572,8 @@ export default async function UsersPage({
               <PanelAllClear label="No at-risk accounts" checkedAt={new Date().toISOString()} />
             ) : (
               <ul className="divide-y divide-warm-200/60">
-                {tab.atRisk.map((u) => (
+                <FoldRest items={tab.atRisk} shown={AT_RISK_SHOWN} noun="more accounts">
+                {(u) => (
                   <li key={u.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
                     <StatusPill tone="warning" dot size="sm">
                       {u.lastSeen ? 'at-risk' : 'never seen'}
@@ -577,7 +592,8 @@ export default async function UsersPage({
                       Open in CRM →
                     </a>
                   </li>
-                ))}
+                )}
+                </FoldRest>
               </ul>
             )}
           </div>

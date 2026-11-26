@@ -41,7 +41,15 @@
 .bp-need-n span { font-size: 14px; color: var(--bs-ink-2); }
 .bp-need p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--bs-ink-2); }
 
-.bp-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.bp-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 0 22px 14px; }
+.bp-copy-slot { margin-left: auto; }
+@media (max-width: 640px) {
+  /* Filters span the card; the two actions share the last row, half each. */
+  .bp-controls { padding: 0 16px 14px; gap: 8px; }
+  .bp-controls > .bp-toggle, .bp-copy-slot { flex: 1 1 0; margin-left: 0; }
+  .bp-controls > .bp-toggle { justify-content: center; }
+  .bp-copy-slot > .bs-copy { width: 100%; }
+}
 .bp-toggle {
   display: inline-flex;
   align-items: center;
@@ -131,7 +139,7 @@
 }
 
 .bp-chip-sport {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -142,7 +150,7 @@
   color: var(--bs-ink-2);
 }
 .bp-chip-test {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 999px;
@@ -268,3 +276,19 @@
 
 /* Loading (xx90): static placeholders in the page's own shape. No pulse: nothing moves while it reads. */
 .bp-skel { display: block; border-radius: 8px; background: var(--bs-track); }
+
+/*
+ * A phone gets a short card a team (three lines, about 130px) instead of four with a sparkline: 27 teams were 7,500px
+ * of scrolling. The 30-day line stays on the team's own page.
+ */
+@container (max-width: 639px) {
+  .bp-team {
+    grid-template-areas:
+      'name state'
+      'active seen'
+      'rounds errors';
+    gap: 8px 12px;
+    padding: 14px 16px;
+  }
+  .bp-team > .bp-c-spark { display: none; }
+}

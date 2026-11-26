@@ -258,3 +258,14 @@
 }
 
 .bs ::selection { background: var(--bs-good-wash); color: var(--bs-ink); }
+
+/*
+ * Below 768px the bottom tab bar already holds Today, People, Reliability and Product, so Today's space cards show
+ * only the spaces the bar does not (Ship, Desk) instead of repeating it.
+ */
+@media (max-width: 767px) {
+  .bs .bs-cards > [data-tabbar] { display: none; }
+}
+.bs .bs-since-who { font-weight: 600; }
+/* The address's domain on its own line under who and what, muted; it may break anywhere since it is one word. */
+.bs .bs-since-where { display: block; font-size: 13px; color: var(--bs-ink-3); overflow-wrap: anywhere; }

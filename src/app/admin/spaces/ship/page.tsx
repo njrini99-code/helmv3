@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { SHIP_TABS } from '../../_components/space-tabs';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { BR } from '@/lib/admin/clubhouse/br-codes';
 import { fetchReleaseLedger } from '@/lib/admin/data/release-ledger';
@@ -34,12 +35,7 @@ export const dynamic = 'force-dynamic';
 
 const HREF = '/admin/spaces/ship';
 
-const TABS = [
-  { label: 'Deploys & Infra', href: '/admin/deploys', note: 'release ledger, web insight' },
-  { label: 'Releases', href: '/admin/releases', note: 'feature flags, kill switches' },
-  { label: 'Database', href: '/admin/database', note: 'posture, performance, schema' },
-  { label: 'Jobs & Integrity', href: '/admin/jobs', note: 'crons, guards, checks' },
-];
+const TABS = SHIP_TABS;
 
 /**
  * Ship space, B23 (plan: docs/superpowers/specs/helm-bridge/2026-11-26-bridge-spaces-build.md).

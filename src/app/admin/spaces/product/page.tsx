@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { PRODUCT_TABS } from '../../_components/space-tabs';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { BR } from '@/lib/admin/clubhouse/br-codes';
 import { fetchFeatureAdoption } from '@/lib/admin/data/feature-adoption';
@@ -16,13 +17,7 @@ export const dynamic = 'force-dynamic';
 
 const HREF = '/admin/spaces/product';
 
-const TABS = [
-  { label: 'Utilization', href: '/admin/utilization', note: 'adoption by day and person' },
-  { label: 'Health', href: '/admin/health', note: 'feature health, budgets, heartbeats' },
-  { label: 'Golf (legacy)', href: '/admin/golf', note: 'GolfHelm production signals' },
-  { label: 'Baseball', href: '/admin/baseball', note: 'BaseballHelm signals' },
-  { label: 'Lift Lab', href: '/admin/lifting', note: 'strength program activity' },
-];
+const TABS = PRODUCT_TABS;
 
 const HEALTH: Record<HealthStatus, { word: string; tone: Tone }> = {
   red: { word: 'Red', tone: 'bad' },
