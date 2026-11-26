@@ -8,7 +8,7 @@ vi.mock('../../lib/signal', () => signals);
 vi.mock('next/web-vitals', () => ({ useReportWebVitals: vi.fn() }));
 
 import { useReportWebVitals } from 'next/web-vitals';
-import { RAGE_CLICKS, useChSignals } from '../use-signals';
+import { RAGE_CLICKS, SWITCH_MAX_MS, useChSignals } from '../use-signals';
 
 const TEAM_A = '66666666-7777-4888-9999-000000000000';
 const TEAM_B = '66666666-7777-4888-9999-000000000001';
@@ -76,5 +76,174 @@ describe('useChSignals', () => {
     signals.chSignal.mockClear();
     for (let i = 0; i < RAGE_CLICKS; i++) fireEvent.click(document.querySelector('span')!);
     expect(signals.chSignal).not.toHaveBeenCalled();
+  });
+});
+
+/** Bridge Speed: a view after a tap on an in-app link, or after back, carries the time until the new page painted. */
+describe('useChSignals switch time', () => {
+  let now = 1000;
+  let frames: Array<FrameRequestCallback | null> = [];
+  let clock: ReturnType<typeof vi.spyOn>;
+  const runFrame = () => {
+    const due = frames;
+    frames = [];
+    due.forEach((cb) => cb?.(now));
+  };
+  type Props = { pathname: string; teamId?: string | null };
+  const mount = (pathname = '/golf/dashboard/messages') =>
+    renderHook((p: Props) => useChSignals({ enabled: true, role: 'coach', search: '', teamId: p.teamId ?? TEAM_A, pathname: p.pathname }), { initialProps: { pathname } });
+  const tapLink = (href: string, init: MouseEventInit = {}) => {
+    const { container } = render(
+      <a href={href} onClick={(e) => e.preventDefault()}>
+        go
+      </a>,
+    );
+    fireEvent.click(container.querySelector('a')!, init);
+  };
+
+  beforeEach(() => {
+    signals.chSignal.mockClear();
+    signals.configureSignals.mockClear();
+    now = 1000;
+    frames = [];
+    clock = vi.spyOn(performance, 'now').mockImplementation(() => now);
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => frames.push(cb));
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+      frames[id - 1] = null;
+    });
+  });
+  afterEach(() => {
+    clock.mockRestore();
+    vi.unstubAllGlobals();
+    document.body.replaceChildren();
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('sends the first view of a load at once, with no duration', () => {
+    mount();
+    expect(kinds()).toEqual([{ kind: 'view' }]);
+    expect(frames).toHaveLength(0);
+  });
+
+  it('times a tap on a link to the new page painted, and sends it on the view', () => {
+    const { rerender } = mount();
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/roster');
+    now = 1180;
+    rerender({ pathname: '/golf/dashboard/roster' });
+    expect(kinds()).toEqual([]);
+    now = 1200;
+    runFrame();
+    expect(kinds()).toEqual([]);
+    now = 1240;
+    runFrame();
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P003', durationMs: 240 }]);
+  });
+
+  it('times a back or forward step from the moment the browser moved', () => {
+    const { rerender } = mount();
+    signals.chSignal.mockClear();
+    window.history.pushState(null, '', '/golf/dashboard/roster');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    now = 1100;
+    rerender({ pathname: '/golf/dashboard/roster' });
+    runFrame();
+    runFrame();
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P003', durationMs: 100 }]);
+  });
+
+  it('sends no duration when the start is unknown: a push from code, or a tap that went somewhere else', () => {
+    const { rerender } = mount();
+    signals.chSignal.mockClear();
+    rerender({ pathname: '/golf/dashboard/roster' });
+    tapLink('/golf/dashboard/calendar');
+    rerender({ pathname: '/golf/dashboard/messages' });
+    expect(kinds()).toEqual([{ kind: 'view' }, { kind: 'view' }]);
+    expect(frames).toHaveLength(0);
+  });
+
+  it('ignores a link opened in a new tab and a tap on a link to this page', () => {
+    const { rerender } = mount();
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/roster', { metaKey: true });
+    tapLink('/');
+    rerender({ pathname: '/golf/dashboard/roster' });
+    expect(kinds()).toEqual([{ kind: 'view' }]);
+  });
+
+  it('sends no duration for a switch slower than SWITCH_MAX_MS', () => {
+    const { rerender } = mount();
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/roster');
+    now += SWITCH_MAX_MS + 1;
+    rerender({ pathname: '/golf/dashboard/roster' });
+    expect(kinds()).toEqual([{ kind: 'view' }]);
+  });
+
+  it('still counts a view that is left before it painted, untimed, on its own page', () => {
+    const { rerender, unmount } = mount();
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/roster');
+    rerender({ pathname: '/golf/dashboard/roster' });
+    rerender({ pathname: '/golf/dashboard/calendar' });
+    runFrame();
+    runFrame();
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P003' }, { kind: 'view' }]);
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/messages');
+    rerender({ pathname: '/golf/dashboard/messages' });
+    unmount();
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P007' }]);
+  });
+
+  it('sends a waiting view untimed when the tab is put away', () => {
+    const { rerender } = mount();
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/roster');
+    rerender({ pathname: '/golf/dashboard/roster' });
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    visibility.mockRestore();
+    runFrame();
+    runFrame();
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P003' }]);
+  });
+  it('times a switch that only the query makes: Team stats to one player is P004 to P005', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/stats');
+    const { rerender } = renderHook((p: { search: string }) => useChSignals({ enabled: true, role: 'coach', teamId: TEAM_A, pathname: '/golf/dashboard/stats', search: p.search }), {
+      initialProps: { search: '' },
+    });
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/stats?player=p1');
+    now = 1150;
+    rerender({ search: '?player=p1' });
+    runFrame();
+    runFrame();
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P005', durationMs: 150 }]);
+  });
+
+  it('does not time a query that stays on the same page, or a tap on a link to the same page with a filter', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/messages');
+    const { rerender } = renderHook((p: { search: string }) => useChSignals({ enabled: true, role: 'coach', teamId: TEAM_A, pathname: '/golf/dashboard/messages', search: p.search }), {
+      initialProps: { search: '' },
+    });
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/messages?thread=t1');
+    rerender({ search: '?thread=t1' });
+    expect(frames).toHaveLength(0);
+  });
+
+  it('drops a switch start when the tab is put away before the new page arrives', () => {
+    const { rerender } = mount();
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/roster');
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    visibility.mockRestore();
+    now = 20_000;
+    rerender({ pathname: '/golf/dashboard/roster' });
+    // No start, so the view goes at once, untimed, and nothing waits on a frame.
+    expect(frames).toHaveLength(0);
+    expect(kinds()).toEqual([{ kind: 'view' }]);
   });
 });
