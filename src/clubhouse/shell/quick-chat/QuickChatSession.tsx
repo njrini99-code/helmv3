@@ -290,7 +290,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
 
   return (
     <div className={'ch-qcs' + (phone ? ' is-phone' : ' is-desk') + (mode !== 'full' ? ' is-reduce' : '')}>
-      <div ref={scrim} className="scrim" hidden={!shown} onClick={onClose} aria-hidden="true" />
+      <div data-ctl="CTL-P001-045" ref={scrim} className="scrim" hidden={!shown} onClick={onClose} aria-hidden="true" />
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog keeps Tab inside itself (AC-QC-PNL-08) */}
       <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-modal="true" aria-label="CoachHelm" tabIndex={-1} hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
         <header className="qc__h" data-qc-drag="" {...handle}>
@@ -302,7 +302,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
           {/* The activity island's place: one line here while CoachHelm works, opening over the body; empty otherwise. */}
           <span className="qc__isl" ref={setIslandSlot} />
           {conversationId && (
-            <IconButton
+            <IconButton data-ctl="CTL-P001-046"
               icon={SquarePen}
               label="New chat"
               size="sm"
@@ -315,10 +315,10 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
               }}
             />
           )}
-          <Button variant="ghost" size="sm" className="qc__full" rightIcon={ArrowUpRight} aria={{ label: conversationId ? 'Open in Ask' : 'Open Ask' }} onClick={toAsk}>
+          <Button data-ctl="CTL-P001-047" variant="ghost" size="sm" className="qc__full" rightIcon={ArrowUpRight} aria={{ label: conversationId ? 'Open in Ask' : 'Open Ask' }} onClick={toAsk}>
             <span className="qc__full-l">{conversationId ? 'Open in Ask' : 'Open Ask'}</span>
           </Button>
-          <IconButton icon={X} label="Close" size="sm" className="qc__x" onClick={onClose} />
+          <IconButton data-ctl="CTL-P001-048" icon={X} label="Close" size="sm" className="qc__x" onClick={onClose} />
         </header>
         <div className="qc__sheet">
           <QuickChatThread

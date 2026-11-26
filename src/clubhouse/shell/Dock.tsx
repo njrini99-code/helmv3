@@ -106,7 +106,7 @@ export function PhoneDock({ round, pathname }: { round: ChRoundInProgress | null
       <div ref={setSlot} className="ch-dock__slot" />
       {href && round && (
         <div className="ch-resume">
-          <Link
+          <Link data-ctl="CTL-P001-022"
             href={href}
             className="ch-resume__link"
             data-ch-code="CH-1821"
@@ -126,7 +126,7 @@ export function PhoneDock({ round, pathname }: { round: ChRoundInProgress | null
             </span>
           </Link>
           {round.playerId && (
-            <button
+            <button data-ctl="CTL-P001-023"
               type="button"
               className="ch-resume__x"
               data-ch-code="CH-1823"
@@ -196,7 +196,7 @@ export function ResumeRoundCard({ round }: { round: ChRoundInProgress }) {
   const href = resumeRoundHref(round);
   if (!href) return null;
   return (
-    <Link href={href} className="ch-next ch-next--round" data-ch-code="CH-1822" aria-label={`Resume round, ${resumeRoundLabel(round)}`}>
+    <Link data-ctl="CTL-P001-024" href={href} className="ch-next ch-next--round" data-ch-code="CH-1822" aria-label={`Resume round, ${resumeRoundLabel(round)}`}>
       <span className="ch-next__k">
         <span>Round in progress</span>
         <span>Resume</span>

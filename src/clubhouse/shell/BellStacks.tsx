@@ -216,11 +216,11 @@ function Stack({
               exit={{ opacity: 0, transform: 'translate(8px, 0px)' }}
               transition={settle}
             >
-              <button type="button" className="ch-bst-pill" onClick={onToggle}>
+              <button data-ctl="CTL-P001-017" type="button" className="ch-bst-pill" onClick={onToggle}>
                 Show less
               </button>
               {swipe && (
-                <button type="button" className="ch-bst-pill ch-bst-pill--x" aria-label={`Mark ${label} read`} onClick={() => onClear(stack.items)}>
+                <button data-ctl="CTL-P001-018" type="button" className="ch-bst-pill ch-bst-pill--x" aria-label={`Mark ${label} read`} onClick={() => onClear(stack.items)}>
                   <Icon icon={X} size={14} />
                 </button>
               )}
@@ -426,7 +426,7 @@ function Card({
           Mark read
         </span>
       )}
-      <button
+      <button data-ctl="CTL-P001-019"
         type="button"
         className="ch-bst-card"
         data-unread={unread || undefined}
@@ -462,7 +462,7 @@ function Card({
       {/* AX-4: every gesture has a button. Swiping a card marks it read; this key does the same for VoiceOver, Switch
           Control and the keyboard. Out of sight until it has keyboard focus. */}
       {swipe && unread && (
-        <button type="button" className="ch-sr-only ch-sr-only--focusable" onClick={onClear}>
+        <button data-ctl="CTL-P001-020" type="button" className="ch-sr-only ch-sr-only--focusable" onClick={onClear}>
           Mark read
         </button>
       )}

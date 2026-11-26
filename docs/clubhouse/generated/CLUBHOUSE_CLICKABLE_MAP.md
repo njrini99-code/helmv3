@@ -24,118 +24,118 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/screens/whats-new/WhatsNew.tsx`
 
-- 70 `LedgerRow` "{what}: {title}, {player}, {time}" (href)
+- CTL-P001-001 70 `LedgerRow` "{what}: {title}, {player}, {time}" (href)
 
 ### `src/clubhouse/shell/AccountSheet.tsx`
 
-- 86 `Link` "{name} {join}" (link, onClick, href) CH-1802
-- 99 `Link` "What’s new" (link, onClick, href) CH-1802
-- 106 `Link` "Help" (link, onClick, href) CH-1802
-- 112 `button` "{Signing out…|Sign out}" (button, onClick) CH-1802
+- CTL-P001-002 86 `Link` "{name} {join}" (link, onClick, href) CH-1802
+- CTL-P001-003 99 `Link` "What’s new" (link, onClick, href) CH-1802
+- CTL-P001-004 106 `Link` "Help" (link, onClick, href) CH-1802
+- CTL-P001-005 112 `button` "{Signing out…|Sign out}" (button, onClick) CH-1802
 
 ### `src/clubhouse/shell/Bell.tsx`
 
-- 459 `button` "Show {all|label}" (button)
-- 467 `Button` "Mark all read" (button, onClick)
-- 504 `Button` "Show all" (button, onClick)
-- 521 `PresenceRow` "{Unread:|}{title} {ago} {{name}|}{{body}|}" (onClick)
-- 552 `button` "{Notifications, {unread} unre…" (button, onClick, onPointerDown)
-- 599 `m.div` "(no label)" (onClick)
-- 649 `div` "Notifications {Mark all read|}" (onPointerDown) CH-1811
-- 652 `button` "Mark all read" (button, onClick) CH-1811
-- 659 `div` "{olderNote}" (onClick) CH-1811
-- 669 `div` "(no label)" (onPointerDown) CH-1811
+- CTL-P001-006 459 `button` "Show {all|label}" (button)
+- CTL-P001-007 467 `Button` "Mark all read" (button, onClick)
+- CTL-P001-008 504 `Button` "Show all" (button, onClick)
+- CTL-P001-009 521 `PresenceRow` "{Unread:|}{title} {ago} {{name}|}{…" (onClick)
+- CTL-P001-010 552 `button` "{Notifications, …" (button, onClick, onPointerDown)
+- CTL-P001-011 599 `m.div` "Bell sheet backdrop (ledger)" (onClick)
+- CTL-P001-012 649 `div` "Notifications {Mark all read…" (onPointerDown) CH-1811
+- CTL-P001-013 652 `button` "Mark all read" (button, onClick) CH-1811
+- CTL-P001-014 659 `div` "{olderNote}" (onClick) CH-1811
+- CTL-P001-015 669 `div` "Bell sheet drag handle (ledg…" (onPointerDown) CH-1811
 
 ### `src/clubhouse/shell/BellHeldRow.tsx`
 
-- 44 `Button` "Deliver now" (button, onClick) CH-1271
+- CTL-P001-016 44 `Button` "Deliver now" (button, onClick) CH-1271
 
 ### `src/clubhouse/shell/BellStacks.tsx`
 
-- 219 `button` "Show less" (button, onClick)
-- 223 `button` "Mark {label} read" (button, onClick)
-- 429 `button` "{expandLabel}" (button, onClick, onPointerDown)
-- 465 `button` "Mark read" (button, onClick)
+- CTL-P001-017 219 `button` "Show less" (button, onClick)
+- CTL-P001-018 223 `button` "Mark {label} read" (button, onClick)
+- CTL-P001-019 429 `button` "{expandLabel}" (button, onClick, onPointerDown)
+- CTL-P001-020 465 `button` "Mark read" (button, onClick)
 
 ### `src/clubhouse/shell/ClubhouseFrame.tsx`
 
-- 195 `a` "Skip to content" (link, href) CH-1801
+- CTL-P001-021 195 `a` "Skip to content" (link, href) CH-1801
 
 ### `src/clubhouse/shell/Dock.tsx`
 
-- 109 `Link` "Resume round, {resumeRoundLabel}" (link, onClick, href) CH-1821
-- 129 `button` "Discard round, {resumeRoundLabel}" (button, onClick) CH-1823
-- 199 `Link` "Resume round, {resumeRoundLabel}" (link, href) CH-1822
+- CTL-P001-022 109 `Link` "Resume round, {resume…" (link, onClick, href) CH-1821
+- CTL-P001-023 129 `button` "Discard round, {resumeR…" (button, onClick) CH-1823
+- CTL-P001-024 199 `Link` "Resume round, {resumeRoundLabe…" (link, href) CH-1822
 
 ### `src/clubhouse/shell/NotFound.tsx`
 
-- 28 `Button` "{label}" (button, href) CH-1306
-- 32 `Button` "Back to Home" (button, href) CH-1306
+- CTL-P001-025 28 `Button` "{label}" (button, href) CH-1306
+- CTL-P001-026 32 `Button` "Back to Home" (button, href) CH-1306
 
 ### `src/clubhouse/shell/NotRebuilt.tsx`
 
-- 40 `Button` "Back to Home" (button, href) CH-1301
-- 67 `Button` "Back to Rounds" (button, href) CH-11390
+- CTL-P001-027 40 `Button` "Back to Home" (button, href) CH-1301
+- CTL-P001-028 67 `Button` "Back to Rounds" (button, href) CH-11390
 
 ### `src/clubhouse/shell/PushAsk.tsx`
 
-- 32 `Button` "Not now" (button, onClick) CH-1911
-- 35 `Button` "Turn on" (button, onClick) CH-1911
+- CTL-P001-029 32 `Button` "Not now" (button, onClick) CH-1911
+- CTL-P001-030 35 `Button` "Turn on" (button, onClick) CH-1911
 
 ### `src/clubhouse/shell/RailToggle.tsx`
 
-- 48 `button` "{label}" (button, onClick)
+- CTL-P001-031 48 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/shell/SectionStrip.tsx`
 
-- 125 `div` "(no label)" (onClick)
-- 140 `Link` "{label} {{99+|{count}} new|}" (link, onClick, href) CH-1808
-- 171 `button` "Account" (button, onClick) CH-1808
+- CTL-P001-032 125 `div` "Section strip backdrop (ledger)" (onClick)
+- CTL-P001-033 140 `Link` "{label} {{99+|{count}…" (link, onClick, href) CH-1808
+- CTL-P001-034 171 `button` "Account" (button, onClick) CH-1808
 
 ### `src/clubhouse/shell/Sidebar.tsx`
 
-- 90 `Link` "{label} {{count}|}" (link, href)
-- 177 `button` "{name}, {meta}" (button, onClick)
+- CTL-P001-035 90 `Link` "{label} {{count}|}" (link, href)
+- CTL-P001-036 177 `button` "{name}, {meta}" (button, onClick)
 
 ### `src/clubhouse/shell/TeamSwitch.tsx`
 
-- 101 `button` "{current}. Switch team" (button, onClick) CH-1813
-- 142 `button` "{label}" (button, onClick, role=option)
-- 178 `button` "{label}" (button, onClick) CH-1814
+- CTL-P001-037 101 `button` "{current}. Switch team" (button, onClick) CH-1813
+- CTL-P001-038 142 `button` "{label}" (button, onClick, role=option)
+- CTL-P001-039 178 `button` "{label}" (button, onClick) CH-1814
 
 ### `src/clubhouse/shell/TopBar.tsx`
 
-- 91 `Link` "{c}" (link, href)
-- 121 `Link` "{label}" (link, href)
+- CTL-P001-040 91 `Link` "{c}" (link, href)
+- CTL-P001-041 121 `Link` "{label}" (link, href)
 
 ### `src/clubhouse/shell/command/SearchPill.tsx`
 
-- 19 `button` "Search Clubhouse" (button, onClick)
+- CTL-P001-042 19 `button` "Search Clubhouse" (button, onClick)
 
 ### `src/clubhouse/shell/quick-chat/QuickChatProvider.tsx`
 
-- 118 `button` "CoachHelm" (button, onClick, onPointerDown)
-- 153 `button` "{label}" (button, onClick)
+- CTL-P001-043 118 `button` "CoachHelm" (button, onClick, onPointerDown)
+- CTL-P001-044 153 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/shell/quick-chat/QuickChatSession.tsx`
 
-- 293 `div` "(no label)" (onClick)
-- 305 `IconButton` "New chat" (button, onClick)
-- 318 `Button` "{Open in Ask|Open Ask}" (button, onClick)
-- 321 `IconButton` "Close" (button, onClick)
+- CTL-P001-045 293 `div` "Quick chat backdrop (ledger)" (onClick)
+- CTL-P001-046 305 `IconButton` "New chat" (button, onClick)
+- CTL-P001-047 318 `Button` "{Open in Ask|Open Ask}" (button, onClick)
+- CTL-P001-048 321 `IconButton` "Close" (button, onClick)
 
 ### `src/clubhouse/shell/quick-chat/QuickChatThread.tsx`
 
-- 320 `button` "{ask} {does}" (button, onClick)
-- 420 `button` "Remove" (button, onClick)
-- 441 `button` "Add to your question" (button)
-- 479 `button` "{Stop dictating|Dictate}" (button, onClick)
-- 484 `button` "Stop" (button, onClick)
-- 488 `button` "Send" (button, onClick)
+- CTL-P001-049 320 `button` "{ask} {does}" (button, onClick)
+- CTL-P001-050 420 `button` "Remove" (button, onClick)
+- CTL-P001-051 441 `button` "Add to your question" (button)
+- CTL-P001-052 479 `button` "{Stop dictating|Dictate}" (button, onClick)
+- CTL-P001-053 484 `button` "Stop" (button, onClick)
+- CTL-P001-054 488 `button` "Send" (button, onClick)
 
 ### `src/clubhouse/shell/section-switch.tsx`
 
-- 318 `button` "{label} {Something new in another se…" (button, onClick) CH-1816
+- CTL-P001-055 318 `button` "{label} {Something new …" (button, onClick) CH-1816
 
 ## P002 Home
 

@@ -115,7 +115,7 @@ export function HelmKey() {
   return (
     <span className={'ch-qck keyslot' + (phone ? ' is-phone' : ' is-desk') + (reduced ? ' is-reduce' : '')} ref={keyRef}>
       <Tooltip shortcut={[modKey(true), 'J']}>
-      <button
+      <button data-ctl="CTL-P001-043"
         type="button"
         className={'hkey' + (open ? ' is-on' : '') + (open && run.state === 'work' ? ' is-working' : '') + (flag ? ' has-flag' : '')}
         aria-haspopup="dialog"
@@ -150,7 +150,7 @@ export function HelmKey() {
       </Tooltip>
       {phone && <input className="ch-qc-kbd" tabIndex={-1} aria-hidden="true" enterKeyHint="send" />}
       {live && (
-        <button type="button" className="live" aria-live="polite" onClick={toggle}>
+        <button data-ctl="CTL-P001-044" type="button" className="live" aria-live="polite" onClick={toggle}>
           <span className="live__ic">
             {run.state === 'work' && <span className="live__spin" />}
             {run.state === 'wait' && <span className="live__dot" />}

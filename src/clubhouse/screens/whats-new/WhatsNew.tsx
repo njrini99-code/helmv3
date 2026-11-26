@@ -67,7 +67,7 @@ function WhatsNewRow({ it, phone, repeat = false }: { it: ChWhatsNewItem; phone:
   const href = whatsNewLink(it);
   const time = useChClockText()(it.time);
   return (
-    <LedgerRow
+    <LedgerRow data-ctl="CTL-P001-001"
       lead={phone ? undefined : time}
       title={it.title}
       meta={

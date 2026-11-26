@@ -456,7 +456,7 @@ export function Bell() {
         ...cats.map((c) => ({ label: CATEGORY[c].label, icon: CATEGORY[c].icon, checked: filter === c, onSelect: () => setFilter(c) })),
       ]}
       trigger={(p) => (
-        <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm ch-bellp__filter" aria-label={`Show ${filter === 'all' ? 'all' : CATEGORY[filter].label}`} {...p}>
+        <button data-ctl="CTL-P001-006" type="button" className="ch-btn ch-btn--ghost ch-btn--sm ch-bellp__filter" aria-label={`Show ${filter === 'all' ? 'all' : CATEGORY[filter].label}`} {...p}>
           {filter === 'all' ? 'All' : CATEGORY[filter].label}
           <Icon icon={ChevronDown} size={13} />
         </button>
@@ -464,7 +464,7 @@ export function Bell() {
     />
   );
   const markAllButton = (
-    <Button
+    <Button data-ctl="CTL-P001-007"
       size="sm"
       variant="ghost"
       disabled={unread === 0 || markAll.pending}
@@ -501,7 +501,7 @@ export function Bell() {
           body={filter === 'all' ? 'Messages, events, reminders and CoachHelm updates show up here.' : 'Clear the filter to see everything.'}
           action={
             filter !== 'all' && (
-              <Button size="sm" variant="secondary" onClick={() => setFilter('all')}>
+              <Button data-ctl="CTL-P001-008" size="sm" variant="secondary" onClick={() => setFilter('all')}>
                 Show all
               </Button>
             )
@@ -518,7 +518,7 @@ export function Bell() {
                 const unreadRow = isUnread(item);
                 const other = otherTeamOf(item, activeTeamId);
                 return (
-                  <PresenceRow as="button" key={`${item.source}:${item.id}`} type="button" className={'ch-bellp__row' + (unreadRow ? ' is-unread' : '')} onClick={() => openItem(item)}>
+                  <PresenceRow data-ctl="CTL-P001-009" as="button" key={`${item.source}:${item.id}`} type="button" className={'ch-bellp__row' + (unreadRow ? ' is-unread' : '')} onClick={() => openItem(item)}>
                     <span className="ch-bellp__ic">
                       <Icon icon={cat.icon} size={15} />
                     </span>
@@ -549,7 +549,7 @@ export function Bell() {
 
   return (
     <>
-      <button
+      <button data-ctl="CTL-P001-010"
         ref={btn}
         type="button"
         className="ch-btn ch-btn--ghost ch-iconbtn ch-bell"
@@ -596,7 +596,7 @@ export function Bell() {
                 section switch), and the swipeable cards under it rendered again with it, each having Motion measure the
                 arriving page (2026-10-15). */}
             {phone && (
-              <m.div
+              <m.div data-ctl="CTL-P001-011"
                 key="veil"
                 className="ch-bst-veil"
                 data-ui="clubhouse"
@@ -646,17 +646,17 @@ export function Bell() {
                 {/* No OverlayScrollLock: freezing the body re-lays out the whole page in the drop's first frame (and again as
                     it closes), the stutter. The drop covers the screen and takes the touches (touch-action in shell.css),
                     and its list contains its own scroll, so the page under it cannot move anyway. */}
-                <div className="ch-bst__head" onPointerDown={drag.onPointerDown}>
+                <div data-ctl="CTL-P001-012" className="ch-bst__head" onPointerDown={drag.onPointerDown}>
                   <b>Notifications</b>
                   {shownUnread > 0 && (
-                    <button type="button" className="ch-bst__all" disabled={markAll.pending} onClick={() => void markAllNow()}>
+                    <button data-ctl="CTL-P001-013" type="button" className="ch-bst__all" disabled={markAll.pending} onClick={() => void markAllNow()}>
                       Mark all read
                     </button>
                   )}
                 </div>
                 {/* A tap on the open space puts the drop away; the keyboard has Esc, so the space needs no key of its own. */}
                 {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- see above */}
-                <div
+                <div data-ctl="CTL-P001-014"
                   className="ch-bst__scroll"
                   onClick={(e) => {
                     if (e.target === e.currentTarget || (e.target as Element).classList?.contains('ch-bst-feed')) close();
@@ -666,7 +666,7 @@ export function Bell() {
                   <BellStacks items={items} failed={listFailed} onRetry={() => setAttempt((x) => x + 1)} onOpen={openItem} onClear={clearItems} />
                   {olderNote}
                 </div>
-                <div className="ch-bst__drag" aria-hidden="true" onPointerDown={drag.onPointerDown}>
+                <div data-ctl="CTL-P001-015" className="ch-bst__drag" aria-hidden="true" onPointerDown={drag.onPointerDown}>
                   <span className="ch-grab" />
                 </div>
               </m.div>
