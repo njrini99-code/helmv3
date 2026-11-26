@@ -1634,6 +1634,10 @@ features:
         - src/app/admin/jobs/**
         - src/app/admin/thread/**
         - src/app/admin/*.tsx
+        # The Clubhouse section of the rail (B02-B05, B11-B13; Bridge redesign
+        # PRs 2 and 4). Its numbering (config/bridge/contracts.json) and
+        # generator (scripts/clubhouse/bridge-ui-map.mjs) are under services.
+        - src/app/admin/clubhouse/**
         - src/app/golf/admin/**
       components:
         - src/app/admin/_components/**
@@ -1725,6 +1729,8 @@ features:
         # hand-edited — see FEATURE_FLAGS.md); scripts/flags/** + the
         # top-level check script are the generator and the CI expiry gate.
         - config/feature-flags.yml
+        - config/bridge/**
+        - scripts/clubhouse/bridge-ui-map.mjs
         - src/lib/flags/**
         - scripts/flags/**
         - scripts/check-feature-flags.mjs

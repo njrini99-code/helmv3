@@ -1492,6 +1492,92 @@ assumed it would:
   mechanism could in principle cover admin routes, but only once a
   super-admin auth fixture exists. No new screenshot system was built.
 
+## The Clubhouse Bridge (redesign PRs 1-4, 2026-11)
+
+Plan: `docs/superpowers/specs/helm-bridge/2026-11-18-clubhouse-bridge-redesign.md`
+(§12 records what each PR built); decisions as built:
+`docs/superpowers/specs/helm-bridge/DECISIONS.md`.
+
+### The Clubhouse section of the rail
+
+The rail leads with Clubhouse (owner decision D3; URLs and keys unchanged).
+Every screen reads `docs/clubhouse/generated/bridge-graph.json`, the contract
+this deploy shipped with (`src/lib/admin/clubhouse/graph-server.ts`, traced
+into each function by `next.config.mjs` `outputFileTracingIncludes`), and shares
+one anatomy (`src/app/admin/clubhouse/_components/frame.tsx`): the question
+line, the truth line, the scope bar, the body, the evidence footer.
+
+| Screen | Route | Key | Reads |
+| --- | --- | --- | --- |
+| B02 Pages | `/admin/clubhouse`, `/[page]` | Shift+H | graph |
+| B03 Controls | `/admin/clubhouse/controls`, `/[ctl]` | Shift+I | graph (control ledgers) |
+| B04 Actions | `/admin/clubhouse/actions`, `/[act]` | Shift+J | graph |
+| B05 Codes | `/admin/clubhouse/codes`, `/[bridgeId]` | Shift+C | graph |
+| B11 Drift | `/admin/clubhouse/drift` | Shift+N | graph; `clubhouse_drift` |
+| B12 Readiness | `/admin/clubhouse/readiness` | Shift+M | graph |
+| B13 Duet desk | `/admin/clubhouse/duet` | none | graph; `admin_events` Bridge columns |
+| B14 ⌘K | every screen | ⌘K | `GET /api/admin/clubhouse/search` |
+
+The plan's letters (P, O, A, G, D, Q, S, Y, E, V) are retired shortcuts
+(`src/lib/admin/retired-routes.ts`) that operators still use, so the screens
+take free letters; N was the last one, and Duet desk has no key.
+
+**B11 Drift** (`src/lib/admin/clubhouse/drift.ts`) lists the plan's nine drift
+lists plus the two it names in §4.3 and §4.7. Build lists count from the graph
+now; runtime lists read `clubhouse_drift` (`drift-server.ts`) and say "No signal
+yet" on 42P01, PGRST205, 42703 or PGRST204, never zero. "Copy as JSON" exports
+`bridge-drift/v1`.
+
+**B13 Duet desk** (`src/lib/admin/clubhouse/pack.ts`) builds the §9.1 context
+pack (Markdown with one `bridge-pack/v1` JSON block) for a page, control,
+action or code. The contract, code, reading, reproduction and done parts come
+from the graph. The evidence comes from `PackLiveSource` readers, each "No
+signal yet" by default: `adminEventsPackSource` (`pack-server.ts`) reads the
+`admin_events` Bridge columns, and PR 3's live layer adds its readers by id
+with `withSources`. People are pseudonymous (`u-` + a SHA-256 prefix) unless
+"Include names" is ticked (D7). The dossiers' "Context pack" controls and ⌘K
+`>pack <target>` open it. The queue (Mark sent, Verify after release, Archive)
+waits on `bridge_notes` in the held migration.
+
+### The pipe
+
+Clubhouse sends signals to `POST /api/ch/signal`
+(`src/app/api/ch/signal/route.ts`), which resolves them against the graph,
+writes failures to `admin_events` and counts the rest through
+`clubhouse_ingest_signals`. The tables are in held migration
+`supabase/migrations/20261124090000_clubhouse_bridge_signals.sql`. Until it is
+applied and the `clubhouse_signals` switch is on, every live figure on the
+Bridge reads "No signal yet" (each screen's BR-xx93).
+
+### The gates
+
+- `npm run clubhouse:check` holds the registry (catalog rows, Bridge IDs,
+  `where` paths, action outcomes, a page's own Bridge IDs: B11 lists 1, 6, 7
+  and 8), the control numbering (`clickable-map.mjs --check`: list 9), the
+  category 25 rows, and `bridge-ui-map.mjs --check`.
+- The Bridge numbers itself (D4): `src/lib/admin/clubhouse/br-codes.ts` is the
+  code map; `config/bridge/contracts.json` lists every code with its screen,
+  label and what it does; `docs/bridge/generated/BRIDGE_UI_MAP.md` is generated
+  from it. `src/app/admin/clubhouse/__tests__/bridge-contracts.test.ts` holds
+  the three together and resolves every `data-br` under `src/app/admin`.
+- Category 25 (Helm Bridge action) has three rows per page, minted by
+  `node scripts/clubhouse/registry.mjs sync`: -01 Open in Bridge and -03
+  Context pack are implemented (proved by
+  `src/app/admin/clubhouse/__tests__/category-25.test.ts`), -02 Signal the
+  Bridge reads is reserved until signals arrive.
+- `src/app/admin/__tests__/admin-gate-coverage.test.ts`: every page calls
+  `requireSuperAdmin()` first.
+
+### The owner switches
+
+| Switch | Default | What it does |
+| --- | --- | --- |
+| Migration 20261124090000 | held | Creates the signal tables and the `admin_events` Bridge columns |
+| `clubhouse_signals` flag | off | `POST /api/ch/signal` answers 204 while off |
+| `BRIDGE_DUET_TOKEN` | unset | The read-only Duet door (`GET /api/admin/clubhouse/duet/{packs,drift}`, `src/lib/admin/clubhouse/duet-access.ts`): 404 and no reads while unset or under 32 characters; then a bearer token compared as SHA-256 digests with `timingSafeEqual`, 60 requests a minute per caller, every read audited to `audit_log` |
+| `BRIDGE_DUET_ALLOW_NAMES` | unset | Only `"1"` lets a Duet request's `names=1` include emails; otherwise people stay pseudonymous |
+| Push alerts (D10) | off | Digest only |
+
 ## Known Risk Areas
 
 - Admin actions are more likely to use broad permissions; review for service-role and RLS bypass carefully.
