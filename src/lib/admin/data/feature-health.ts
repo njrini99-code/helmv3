@@ -521,6 +521,30 @@ export const fetchFeatureHealthRedCount = cache(async (): Promise<number | null>
   return red;
 });
 
+/**
+ * Every feature's status from DATABASE signals only: the same RPC round-trip as `fetchFeatureHealthRedCount()`
+ * (shared through `cache()`), no Sentry sweep. The Product space (/admin/spaces/product) reads this so a page that may
+ * be opened often never pays the per-feature Sentry fan-out.
+ *
+ * What it can and cannot say: RED is exact (the RED branch never reads Sentry, see above). AMBER is a lower bound,
+ * because the one AMBER rule that needs unresolved non-critical Sentry issues cannot fire here. So a feature that is
+ * not red or amber here is "no flag from the database", never "green"; the screen says so.
+ *
+ * Returns `null`, never an empty map, when the pipeline is degraded.
+ */
+export const fetchFeatureHealthDbStatuses = cache(async (): Promise<Map<FeatureKey, FeatureStatus> | null> => {
+  const { rows, degraded } = await fetchFeatureHealthRows();
+  if (degraded) return null;
+
+  const now = new Date();
+  const rowByKey = new Map((rows ?? []).map((r) => [r.key, r]));
+  const out = new Map<FeatureKey, FeatureStatus>();
+  for (const def of FEATURE_REGISTRY.filter((d) => !d.excluded)) {
+    out.set(def.key, computeFeatureStatus(inputsForFeature(def, rowByKey.get(def.key), null, now)).status);
+  }
+  return out;
+});
+
 // ---------------------------------------------------------------------------
 // Overview rollup support (W16 Task 5) — pure, unit-tested independently of
 // React/Supabase so banner discipline (Charter N6) is verifiable directly.

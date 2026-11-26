@@ -39,6 +39,11 @@ const DETAIL_LEAVES = new Set([
   // B08: a person and a team are reached from a session, an incident or ⌘K; there is no index of people.
   '/admin/clubhouse/people/[userId]',
   '/admin/clubhouse/teams/[teamId]',
+  // Bridge spaces (2026-11-26-bridge-spaces-build.md): one team is reached from a People row; the counting rules and
+  // Speed are tabs inside the Reliability space, which lights up for both.
+  '/admin/spaces/people/[teamId]',
+  '/admin/spaces/reliability/rules',
+  '/admin/spaces/reliability/speed',
 ]);
 
 function walkRoutes(dir: string, base = '/admin'): string[] {

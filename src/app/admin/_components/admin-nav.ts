@@ -1,5 +1,11 @@
 type AdminHref =
   | '/admin'
+  | '/admin/spaces/today'
+  | '/admin/spaces/people'
+  | '/admin/spaces/product'
+  | '/admin/spaces/reliability'
+  | '/admin/spaces/ship'
+  | '/admin/spaces/desk'
   | '/admin/clubhouse'
   | '/admin/clubhouse/controls'
   | '/admin/clubhouse/actions'
@@ -43,7 +49,7 @@ export interface AdminNavEntry {
   // the end of the rail/⌘K instead of alongside the primary tabs. Derived
   // the same way every other section is (NAV_SECTION_ORDER in AdminShell.tsx)
   // — never a second hand-listed rail.
-  section: 'Clubhouse' | 'Triage' | 'Customers' | 'Platform' | 'More';
+  section: 'Spaces' | 'Clubhouse' | 'Triage' | 'Customers' | 'Platform' | 'More';
   description: string;
   meta?: string;
 }
@@ -62,6 +68,17 @@ export interface AdminNavEntry {
  * (legacy), Baseball, Lift Lab, Engineering OS and Ben + Leah sit under More.
  * URLs and keys are unchanged by the regrouping. */
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
+  // SPACES — the six questions the Bridge answers (plan
+  // docs/superpowers/specs/helm-bridge/2026-11-26-bridge-spaces-build.md, owner approval 2026-11-26). They lead the
+  // rail ahead of Clubhouse, replacing D3's "Clubhouse leads". Each is a new page under /admin/spaces/ built over the
+  // readers the tabs below already use; no tab moved, no URL changed, and they carry no key because no letter is free.
+  { label: 'Today', href: '/admin/spaces/today', section: 'Spaces', description: 'What is happening with Helm right now', meta: 'B16' },
+  { label: 'People', href: '/admin/spaces/people', section: 'Spaces', description: 'Who uses Helm, team by team, coach and player', meta: 'B17' },
+  { label: 'Product', href: '/admin/spaces/product', section: 'Spaces', description: 'Which parts of the app are alive', meta: 'B22' },
+  { label: 'Reliability', href: '/admin/spaces/reliability', section: 'Spaces', description: 'What is breaking, for whom, on which button', meta: 'B19' },
+  { label: 'Ship', href: '/admin/spaces/ship', section: 'Spaces', description: 'What is live, what is next, is the platform OK', meta: 'B23' },
+  { label: 'Desk', href: '/admin/spaces/desk', section: 'Spaces', description: 'What is waiting on you', meta: 'B24' },
+
   // CLUBHOUSE — "is Clubhouse doing what its contract says" (plan §7.1).
   // '/admin' is B01 Pulse, with the cross-sport overview below it (it stays
   // there; it does not move to Health). Its URL and key '1' are unchanged. The

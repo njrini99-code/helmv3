@@ -426,6 +426,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/spaces/**",
+        "pattern": "src/app/admin/spaces/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/teams/**",
         "pattern": "src/app/admin/teams/**",
         "category": "routes"
@@ -7339,6 +7344,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/data/people-space.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/data/people-space.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/data/pulse-grid.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
         },
@@ -7366,6 +7381,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/data/team-scope.ts",
           "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/data/today-space.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
           "kind": "import_graph",
@@ -8470,6 +8490,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/lifting/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "routes:src/app/admin/spaces/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/spaces/**"
         }
       ]
     },

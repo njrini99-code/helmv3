@@ -370,6 +370,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/specs/README.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/helm-bridge/2026-11-18-clubhouse-bridge-redesign.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/helm-bridge/2026-11-25-bridge-clubhouse-sync-execution.md` | current | - | - | yes | - |
+| `docs/superpowers/specs/helm-bridge/2026-11-26-bridge-spaces-build.md` | current | - | - | - | - |
 | `docs/superpowers/specs/helm-bridge/DECISIONS.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` | current | - | - | yes | - |
 

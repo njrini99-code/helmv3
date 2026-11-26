@@ -170,6 +170,12 @@ const nextConfig = {
   // all-clear inbox) — this entry closes the gap, it isn't load-bearing for
   // correctness.
     '/admin': ['./supabase/migrations/HELD.md'],
+    // The Bridge spaces read the same HELD register through `held-migrations.ts` (Today's "waiting on you", Ship's
+    // "next to ship", Desk's queue). The `/admin` entry above covers only `/admin` itself, not `/admin/spaces/*`.
+    // A failed read still renders "could not be read", never zero.
+    '/admin/spaces/today': ['./supabase/migrations/HELD.md'],
+    '/admin/spaces/ship': ['./supabase/migrations/HELD.md'],
+    '/admin/spaces/desk': ['./supabase/migrations/HELD.md'],
     // `graph-server.ts` (`src/lib/admin/clubhouse/graph-server.ts`) reads the
     // Bridge graph via `readFileSync` when POST /api/ch/signal resolves a
     // batch: the same dynamic-read gap as above, carved back into the upload

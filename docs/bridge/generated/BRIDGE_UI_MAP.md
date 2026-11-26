@@ -21,8 +21,17 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | B13 | Duet desk | /admin/clubhouse/duet | 12 |
 | B14 | Command palette | ⌘K, every /admin screen | 6 |
 | B15 | Shell | every /admin screen | 7 |
+| B16 | Today | /admin/spaces/today | 8 |
+| B17 | Teams activity | /admin/spaces/people | 10 |
+| B18 | One team | /admin/spaces/people/[teamId] | 11 |
+| B19 | Error feed | /admin/spaces/reliability | 15 |
+| B20 | Counting rules | /admin/spaces/reliability/rules | 5 |
+| B21 | Speed | /admin/spaces/reliability/speed | 11 |
+| B22 | Product | /admin/spaces/product | 6 |
+| B23 | Ship | /admin/spaces/ship | 6 |
+| B24 | Desk | /admin/spaces/desk | 6 |
 
-164 codes in all.
+242 codes in all.
 
 ## B01 Pulse
 
@@ -262,3 +271,126 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | BR-1505 | Pause live | Stops live polling | `BR.shell.pauseLive` |
 | BR-1506 | View-as exit | Leaves read-only view-as | `BR.shell.viewAsExit` |
 | BR-1507 | Phone More | Opens the More sheet on a phone | `BR.shell.phoneMore` |
+
+## B16 Today
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-1601 | Waiting-on-you row | Opens the tab that owns that item | `BR.today.needsRow` |
+| BR-1602 | Space card | Opens that space | `BR.today.spaceCard` |
+| BR-1603 | Since-midnight row | Opens the event it names | `BR.today.sinceRow` |
+| BR-1604 | Copy report | Copies the day as Markdown | `BR.today.copy` |
+| BR-1690 | Loading | Shown while the space reads | `BR.today.loading` |
+| BR-1691 | Empty | Nothing to show, said plainly | `BR.today.empty` |
+| BR-1692 | Failed | The read failed; never shown as all clear | `BR.today.failed` |
+| BR-1693 | No signal yet | The signal pipe is off or silent | `BR.today.noSignal` |
+
+## B17 Teams activity
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-1701 | Team row | Opens that team | `BR.teams.row` |
+| BR-1702 | Sport filter | Shows one sport or all | `BR.teams.sport` |
+| BR-1703 | Sort | Orders teams by activity, last seen, attention or errors | `BR.teams.sort` |
+| BR-1704 | Hide test and demo | Hides test and demo teams | `BR.teams.hideTest` |
+| BR-1705 | Needs-you card | Opens the team it names | `BR.teams.needsCard` |
+| BR-1706 | Copy report | Copies the team list as Markdown | `BR.teams.copy` |
+| BR-1790 | Loading | Shown while the space reads | `BR.teams.loading` |
+| BR-1791 | Empty | Nothing to show, said plainly | `BR.teams.empty` |
+| BR-1792 | Failed | The read failed; never shown as all clear | `BR.teams.failed` |
+| BR-1793 | No signal yet | The signal pipe is off or silent | `BR.teams.noSignal` |
+
+## B18 One team
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-1801 | Tab | Switches between People, Activity and Errors | `BR.team.tab` |
+| BR-1802 | People sort | Orders people by a column | `BR.team.sortPeople` |
+| BR-1803 | Person row | Opens that person | `BR.team.personRow` |
+| BR-1804 | View as | Opens the team as its coach (View as) | `BR.team.viewAs` |
+| BR-1805 | Error row | Opens that code | `BR.team.errorRow` |
+| BR-1806 | Copy report | Copies the team report as Markdown | `BR.team.copy` |
+| BR-1807 | All teams | Back to the team list | `BR.team.back` |
+| BR-1890 | Loading | Shown while the space reads | `BR.team.loading` |
+| BR-1891 | Empty | Nothing to show, said plainly | `BR.team.empty` |
+| BR-1892 | Failed | The read failed; never shown as all clear | `BR.team.failed` |
+| BR-1893 | No signal yet | The signal pipe is off or silent | `BR.team.noSignal` |
+
+## B19 Error feed
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-1901 | Coach or player card | Shows only that role; again shows both | `BR.feed.roleCard` |
+| BR-1902 | Error row | Opens that error in the detail panel | `BR.feed.row` |
+| BR-1903 | Filter | Narrows the feed by page, team, device or release | `BR.feed.filter` |
+| BR-1904 | Detail tab | Switches between Where, What they did, How it counts and Server | `BR.feed.detailTab` |
+| BR-1905 | Open the full story | Opens the code dossier (B05) | `BR.feed.openStory` |
+| BR-1906 | Watch | Pins the code to Today and the digest (BR-0507) | `BR.feed.watch` |
+| BR-1907 | Mark expected | Marks the code expected with a reason (BR-0506) | `BR.feed.expected` |
+| BR-1908 | Fix pack | Copies the fix pack for the code (BR-0509) | `BR.feed.fixPack` |
+| BR-1909 | Replay | Opens the session that hit it (B07) | `BR.feed.replay` |
+| BR-1910 | Copy report | Copies the feed as Markdown | `BR.feed.copy` |
+| BR-1911 | Space tab | Switches between the error feed, How it counts (B20) and Speed (B21) | `BR.feed.spaceTab` |
+| BR-1990 | Loading | Shown while the space reads | `BR.feed.loading` |
+| BR-1991 | Empty | Nothing to show, said plainly | `BR.feed.empty` |
+| BR-1992 | Failed | The read failed; never shown as all clear | `BR.feed.failed` |
+| BR-1993 | No signal yet | The signal pipe is off or silent | `BR.feed.noSignal` |
+
+## B20 Counting rules
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-2001 | Rule row | Opens the alerts that rule raised | `BR.rules.ruleRow` |
+| BR-2090 | Loading | Shown while the space reads | `BR.rules.loading` |
+| BR-2091 | Empty | Nothing to show, said plainly | `BR.rules.empty` |
+| BR-2092 | Failed | The read failed; never shown as all clear | `BR.rules.failed` |
+| BR-2093 | No signal yet | The signal pipe is off or silent | `BR.rules.noSignal` |
+
+## B21 Speed
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-2101 | Role switch | Shows coaches, players or everyone | `BR.speed.role` |
+| BR-2102 | Device switch | Shows one device or all | `BR.speed.device` |
+| BR-2103 | Page row | Opens that page (B02) | `BR.speed.pageRow` |
+| BR-2104 | Button row | Opens that action (B04) | `BR.speed.actionRow` |
+| BR-2105 | Database error row | Opens the codes that carried that server code | `BR.speed.dbRow` |
+| BR-2106 | Copy report | Copies the speed table as Markdown | `BR.speed.copy` |
+| BR-2107 | Window switch | Reads the last 24 hours, 7 days or 30 days | `BR.speed.window` |
+| BR-2190 | Loading | Shown while the space reads | `BR.speed.loading` |
+| BR-2191 | Empty | Nothing to show, said plainly | `BR.speed.empty` |
+| BR-2192 | Failed | The read failed; never shown as all clear | `BR.speed.failed` |
+| BR-2193 | No signal yet | The signal pipe is off or silent | `BR.speed.noSignal` |
+
+## B22 Product
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-2201 | Feature card | Opens that feature | `BR.product.featureCard` |
+| BR-2202 | Tab link | Opens a tab grouped under Product | `BR.product.tabLink` |
+| BR-2290 | Loading | Shown while the space reads | `BR.product.loading` |
+| BR-2291 | Empty | Nothing to show, said plainly | `BR.product.empty` |
+| BR-2292 | Failed | The read failed; never shown as all clear | `BR.product.failed` |
+| BR-2293 | No signal yet | The signal pipe is off or silent | `BR.product.noSignal` |
+
+## B23 Ship
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-2301 | Release card | Opens that release | `BR.ship.releaseCard` |
+| BR-2302 | Tab link | Opens a tab grouped under Ship | `BR.ship.tabLink` |
+| BR-2390 | Loading | Shown while the space reads | `BR.ship.loading` |
+| BR-2391 | Empty | Nothing to show, said plainly | `BR.ship.empty` |
+| BR-2392 | Failed | The read failed; never shown as all clear | `BR.ship.failed` |
+| BR-2393 | No signal yet | The signal pipe is off or silent | `BR.ship.noSignal` |
+
+## B24 Desk
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-2401 | Decision row | Opens the decision it names | `BR.desk.decisionRow` |
+| BR-2402 | Tab link | Opens a tab grouped under Desk | `BR.desk.tabLink` |
+| BR-2490 | Loading | Shown while the space reads | `BR.desk.loading` |
+| BR-2491 | Empty | Nothing to show, said plainly | `BR.desk.empty` |
+| BR-2492 | Failed | The read failed; never shown as all clear | `BR.desk.failed` |
+| BR-2493 | No signal yet | The signal pipe is off or silent | `BR.desk.noSignal` |

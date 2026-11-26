@@ -383,6 +383,10 @@ the Bridge does with it.
 
 ### 7.1 The rail
 
+> **Superseded in part, 2026-11-26.** Six spaces (Today, People, Product, Reliability, Ship, Desk) now lead the rail
+> ahead of the Clubhouse section, replacing D3's "Clubhouse leads". Every tab, URL and key below is unchanged. See
+> `2026-11-26-bridge-spaces-build.md`.
+
 | Section | Screen | Route | Key |
 | --- | --- | --- | --- |
 | **Clubhouse** | B01 Pulse | `/admin` | 1 |
@@ -1238,7 +1242,7 @@ sessions keep user ids only and names are read live. D8 and D12 are done.
 | --- | --- | --- |
 | D1 | Storage as in §4.5: new columns on `admin_events` plus five small tables | **Yes** |
 | D2 | Count every success, empty state and tap (not sampled) | **Yes.** "Never seen" needs it. |
-| D3 | Lead the rail with Clubhouse; Golf (legacy), Baseball and Lift Lab under More | **Yes**, URLs and keys unchanged |
+| D3 | Lead the rail with Clubhouse; Golf (legacy), Baseball and Lift Lab under More | **Yes**, URLs and keys unchanged; superseded 2026-11-26: the six spaces lead, Clubhouse second (`2026-11-26-bridge-spaces-build.md`) |
 | D4 | `BR-` codes on the Bridge's own controls; category 25 rows per page | **Yes** |
 | D5 | The self-heal views go under More views, and their jobs keep running | **Yes**, nothing deleted |
 | D6 | "Force this state" opens the preview app from the Bridge | **Yes, if `/clubhouse-preview` is served in production** (PR 2 checks); otherwise the button is labelled "local" |

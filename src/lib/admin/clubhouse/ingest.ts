@@ -23,8 +23,8 @@ export const DURATION_EDGES_MS = [50, 100, 200, 300, 500, 750, 1000, 1500, 2000,
 export const MAX_ADMIN_ROWS_PER_BATCH = 5;
 
 /** How far a client's clock may sit from the server's before its envelopes are read at the server's time. */
-const CLOCK_PAST_MS = 24 * 60 * 60 * 1000;
-const CLOCK_FUTURE_MS = 5 * 60 * 1000;
+export const CLOCK_PAST_MS = 24 * 60 * 60 * 1000;
+export const CLOCK_FUTURE_MS = 5 * 60 * 1000;
 
 export function durationBucket(ms: number): number {
   const i = DURATION_EDGES_MS.findIndex((edge) => ms <= edge);
