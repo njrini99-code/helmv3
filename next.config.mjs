@@ -515,7 +515,7 @@ const nextConfig = {
 
       // Step 6. Billing's page is deleted, not folded — it had nothing to fold
       // into. Overview is where an operator who typed this URL should land.
-      { source: '/admin/billing', destination: '/admin', permanent: false },
+      { source: '/admin/billing', destination: '/admin/spaces/today', permanent: false },
     ];
   },
 

@@ -1,5 +1,6 @@
 type AdminHref =
   | '/admin'
+  | '/admin/pulse'
   | '/admin/spaces/today'
   | '/admin/spaces/people'
   | '/admin/spaces/product'
@@ -80,10 +81,10 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Desk', href: '/admin/spaces/desk', section: 'Spaces', description: 'What is waiting on you', meta: 'B24' },
 
   // CLUBHOUSE — "is Clubhouse doing what its contract says" (plan §7.1).
-  // '/admin' is B01 Pulse, with the cross-sport overview below it (it stays
+  // '/admin/pulse' is B01 Pulse (it moved from '/admin' when Today became the front door, 2026-11-26), with the cross-sport overview below it (it stays
   // there; it does not move to Health). Its URL and key '1' are unchanged. The
   // bottom bar, the tab title and this rail name it one way.
-  { label: 'Pulse', href: '/admin', key: '1', section: 'Clubhouse', description: 'Is Clubhouse OK right now, and if not, where; the cross-sport overview below', meta: 'B01' },
+  { label: 'Pulse', href: '/admin/pulse', key: '1', section: 'Clubhouse', description: 'Is Clubhouse OK right now, and if not, where; the cross-sport overview below', meta: 'B01' },
   { label: 'Pages', href: '/admin/clubhouse', key: 'H', section: 'Clubhouse', description: 'The 17 pages against their contracts', meta: 'B02' },
   { label: 'Controls', href: '/admin/clubhouse/controls', key: 'I', section: 'Clubhouse', description: 'Every button, labelled, and what it runs', meta: 'B03' },
   { label: 'Actions', href: '/admin/clubhouse/actions', key: 'J', section: 'Clubhouse', description: 'Each press: handler, tables and outcomes', meta: 'B04' },
@@ -230,17 +231,17 @@ export const RESERVED_LOCAL_SHORTCUTS: ReadonlySet<string> = new Set(['r']);
 
 /**
  * M1 (bridge-chrome, docs/MOBILE_DOCTRINE.md rule 10): Bridge's mobile
- * bottom-tab daily loop — Overview / Errors / Health / Users (Synthesis
- * Decision 6). A stable module-level array (never a fresh literal at the
+ * bottom tabs: the spaces Today / People / Reliability / Product (owner,
+ * 2026-11-26; Ship, Desk and every older screen are under More). A stable module-level array (never a fresh literal at the
  * call site) so it can be passed straight through as `AppShell`'s
  * `bottomNavHrefs` and `selectOverflow`'s `excludeHrefs` without defeating
  * any memoization downstream.
  */
 export const BRIDGE_BOTTOM_NAV_HREFS = [
-  '/admin',
-  '/admin/errors',
-  '/admin/health',
-  '/admin/users',
+  '/admin/spaces/today',
+  '/admin/spaces/people',
+  '/admin/spaces/reliability',
+  '/admin/spaces/product',
 ] as const satisfies readonly AdminHref[];
 
 /**
@@ -249,10 +250,10 @@ export const BRIDGE_BOTTOM_NAV_HREFS = [
  * tab column; the rail keeps the fuller label).
  */
 export const BRIDGE_BOTTOM_NAV_LABELS: Record<(typeof BRIDGE_BOTTOM_NAV_HREFS)[number], string> = {
-  '/admin': 'Pulse',
-  // Matches the rail label. The bottom tab is the same destination, and two
-  // names for one place is how muscle memory gets taught wrong.
-  '/admin/errors': 'Incidents',
-  '/admin/health': 'Health',
-  '/admin/users': 'Users',
+  // The spaces are the admin on the phone (owner, 2026-11-26). Same names as the rail: two names for one place is how
+  // muscle memory gets taught wrong. Ship, Desk and every older screen sit under More.
+  '/admin/spaces/today': 'Today',
+  '/admin/spaces/people': 'People',
+  '/admin/spaces/reliability': 'Reliability',
+  '/admin/spaces/product': 'Product',
 };
