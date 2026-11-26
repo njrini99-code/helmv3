@@ -122,7 +122,7 @@ const MESSAGE_RULES: readonly MessageRule[] = [
     label: 'Old app version',
     owner: 'app',
     why: 'The page was built for an earlier release and asked for code the server no longer has. A reload fixes it for the person.',
-    steps: ['Nothing to fix if it follows a deploy: it stops once open pages reload.', 'If it keeps happening long after a deploy, check the app’s update prompt (CH-1202).'],
+    steps: ['Nothing to fix if it follows a deploy: it stops once open pages reload.', 'If it keeps happening long after a deploy, check the app’s “newer version is ready” prompt.'],
   },
   {
     test: /jwt expired|you must be signed in|not signed in|auth session missing|refresh token|invalid jwt|\bunauthori[sz]ed\b|\b401\b/i,
