@@ -180,7 +180,7 @@ Tables:   golf_events, golf_event_attendance, golf_player_classes, golf_coach_bl
           golf_teams, golf_team_members
 RPCs:     none from this page
 Realtime: golf_events, filter team_id (useCalendarLive; the route passes live, tests and the preview don't); a change
-          or a reconnect re-reads the page (800 ms debounce); CHANNEL_ERROR is reported (calendar.live)
+          or a reconnect re-reads the page (800 ms debounce); a feed that stays down is reported once per outage (calendar.live, channelDropReporter)
 Cache:    none; router.refresh() re-runs the loader
 RLS:      the loader reads through the request's RLS client (no service role); a coach reads every rostered player's classes,
           a player only their own, and busy time is read by coach_id

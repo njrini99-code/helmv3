@@ -49,6 +49,7 @@ const rt = vi.hoisted(() => ({ on: vi.fn(), subscribe: vi.fn(), channel: vi.fn()
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ channel: rt.channel, removeChannel: rt.removeChannel }) }));
 
 import { chReport } from '../lib/track';
+import { REPORT_AFTER_FAILURES } from '../live/channel';
 import { loadCalendar, type ChCalendarData } from '../data/calendar';
 import { busyFor, focusHour, rangeLabel, startLabel, type ChCalEvent } from '../screens/calendar/model';
 import { movable } from '../screens/calendar/views';
@@ -361,7 +362,14 @@ describe('Calendar parity · realtime: the page follows the team’s events (Fai
     expect(router.refresh).toHaveBeenCalledTimes(1);
     // The feed dropped and came back: changes may have been missed, so the page reads again.
     status('CHANNEL_ERROR');
-    expect(chReport).toHaveBeenCalledWith(expect.any(Error), { surface: 'calendar.live', severity: 'low' });
+    // One drop is the network; a feed that stays down is reported once (2169818a).
+    expect(chReport).not.toHaveBeenCalled();
+    for (let i = 1; i < REPORT_AFTER_FAILURES; i += 1) status('CHANNEL_ERROR');
+    expect(chReport).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'calendar.live',
+      severity: 'low',
+      extra: { status: 'CHANNEL_ERROR', failures: REPORT_AFTER_FAILURES },
+    });
     status('SUBSCRIBED');
     vi.advanceTimersByTime(800);
     expect(router.refresh).toHaveBeenCalledTimes(2);

@@ -2,8 +2,8 @@
  * Command Deck tone tokens.
  *
  * A local `StateTone`-keyed rail/ink pairing for `AttentionStack`'s row
- * rail, same shape `AttentionQueue.tsx` / `TruthStrip.tsx` /
- * `ChangeTimeline.tsx` each already keep (see `AttentionQueue.tsx`'s header
+ * rail, same shape `AttentionQueue.tsx` / `TruthStrip.tsx` (deleted
+ * 2026-11-25) / `ChangeTimeline.tsx` each kept (see `AttentionQueue.tsx`'s header
  * comment for why: `Row.tsx`'s `RailRow` is keyed by a different five-value
  * axis, `RowSeverity`, and forcing this file's `StateTone` rows onto it is
  * the wrong fix). This is the fourth copy of that same small map, which is
