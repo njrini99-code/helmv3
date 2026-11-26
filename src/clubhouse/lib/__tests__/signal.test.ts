@@ -85,6 +85,15 @@ describe('client signals', () => {
     });
   });
 
+  it('keeps a view\'s switch time and the page it was for, after the shell has moved on (Bridge Speed)', () => {
+    configureSignals({ enabled: true, role: 'coach', teamId: TEAM, page: 'P006' });
+    chSignal({ kind: 'view', page: 'P003', durationMs: 240.4 });
+    flushSignals();
+    const parsed = chSignalSchema.parse(beacons(beacon)[0]!.signals[0]);
+    expect(parsed).toMatchObject({ kind: 'view', page: 'P003', durationMs: 240 });
+    expect(parsed.code).toBeUndefined();
+  });
+
   it(`posts at once at ${FLUSH_AT}`, async () => {
     configureSignals({ enabled: true, role: 'player', page: 'P011' });
     for (let i = 0; i < FLUSH_AT; i++) chSignal({ kind: 'state', code: 'CH-1903' });

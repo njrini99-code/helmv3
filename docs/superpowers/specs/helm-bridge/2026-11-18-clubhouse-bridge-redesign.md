@@ -204,6 +204,12 @@ writing a second one.
   `[data-ctl]`, and no element carries one until §4.7 numbers the controls
   (PR 2). A rage click is 3 clicks on one element within 600 ms. It never
   counts an enabled button, a link or a field, or a click that selects text.
+- E6 switch time (2026-11-26): a view after a tap on an in-app link, or after
+  back or forward, carries `durationMs`, from the tap to the new page's first
+  frame (two animation frames after the address changed; a loading state
+  counts). The first view of a load, a push from code, and a switch over 60 s
+  carry none. The ingest buckets it like any duration, per page, role and
+  platform.
 - E5 and E9 move to PR 3. They need server-side signals, which this route does
   not take yet.
 
