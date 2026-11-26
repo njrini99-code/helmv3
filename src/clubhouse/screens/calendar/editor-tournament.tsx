@@ -59,7 +59,7 @@ export const TournamentSection = forwardRef<HTMLElement, {
           Tournament details
         </h3>
         <label className="ch-switch ch-tfx__track">
-          <input
+          <input data-ctl="CTL-P006-064"
             type="checkbox"
             role="switch"
             checked={track}
@@ -80,7 +80,7 @@ export const TournamentSection = forwardRef<HTMLElement, {
       {track && orphan && (
         <div className="ch-tfx-note ch-tfx-note--info" data-ch-code="CH-6144">
           <span>{`This was R${orphan.round} of a tournament that was removed. Set it up again from the season home to keep all its days together.`}</span>
-          <Button variant="secondary" size="sm" className="ch-tfx-note__act" href="/golf/dashboard/tournaments">
+          <Button data-ctl="CTL-P006-065" variant="secondary" size="sm" className="ch-tfx-note__act" href="/golf/dashboard/tournaments">
             Open Set up from calendar
           </Button>
         </div>
@@ -120,12 +120,12 @@ export function TournamentSaveNotice({ code, text, onOpen, onReload }: { code: s
       <b>{code === 'CH-6241' ? text : 'Couldn’t set up the tournament. Nothing was saved.'}</b>
       {code !== 'CH-6241' && code !== 'CH-6056' && <span>{text}</span>}
       {onOpen && (
-        <Button variant="secondary" size="sm" className="ch-tfx-note__act" onClick={onOpen}>
+        <Button data-ctl="CTL-P006-066" variant="secondary" size="sm" className="ch-tfx-note__act" onClick={onOpen}>
           Open
         </Button>
       )}
       {onReload && (
-        <Button variant="secondary" size="sm" className="ch-tfx-note__act" onClick={onReload}>
+        <Button data-ctl="CTL-P006-067" variant="secondary" size="sm" className="ch-tfx-note__act" onClick={onReload}>
           Reload
         </Button>
       )}

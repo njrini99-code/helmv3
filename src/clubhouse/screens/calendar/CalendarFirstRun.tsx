@@ -22,7 +22,7 @@ export function CalendarFirstRun({ onNew }: { onNew: () => void }) {
         title="Nothing on the calendar"
         body="Add practices, qualifiers and trips. Players see them on their calendar, and reply when you require an RSVP."
         action={
-          <Button variant="primary" leftIcon={Plus} onClick={onNew}>
+          <Button data-ctl="CTL-P006-017" variant="primary" leftIcon={Plus} onClick={onNew}>
             New event
           </Button>
         }

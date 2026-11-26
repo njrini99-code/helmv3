@@ -545,219 +545,219 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/screens/calendar/Calendar.tsx`
 
-- 402 `IconButton` "Previous month" (button, onClick)
-- 403 `IconButton` "Next month" (button, onClick)
-- 404 `IconButton` "Close" (button, onClick)
-- 414 `button` "{dayNum} {monthName}{, today|}" (button, onClick)
-- 476 `button` "{label} {detail} , choose people" (button, onClick)
-- 491 `Button` "Clear" (button, onClick)
-- 499 `button` "Everyone Whole team schedule" (button, onClick)
-- 514 `button` "{name} {year}" (button, onClick)
-- 528 `Button` "Done" (button, onClick)
-- 1258 `button` "{main}{ {year}|}. Jump to a date" (button, onClick)
-- 1291 `Button` "Today" (button, onClick)
-- 1298 `IconButton` "More" (button)
-- 1301 `Button` "New event" (button, onClick)
-- 1312 `IconButton` "Previous {month|view}" (button, onClick)
-- 1313 `IconButton` "Next {month|view}" (button, onClick)
-- 1330 `Button` "{heading} · {count}" (button, onClick)
+- CTL-P006-001 402 `IconButton` "Previous month" (button, onClick)
+- CTL-P006-002 403 `IconButton` "Next month" (button, onClick)
+- CTL-P006-003 404 `IconButton` "Close" (button, onClick)
+- CTL-P006-004 414 `button` "{dayNum} {monthName}{, today|}" (button, onClick)
+- CTL-P006-005 476 `button` "{label} {detail} , choose people" (button, onClick)
+- CTL-P006-006 491 `Button` "Clear" (button, onClick)
+- CTL-P006-007 499 `button` "Everyone Whole team schedule" (button, onClick)
+- CTL-P006-008 514 `button` "{name} {year}" (button, onClick)
+- CTL-P006-009 528 `Button` "Done" (button, onClick)
+- CTL-P006-010 1258 `button` "{main}{ {year}|}. Jump to a da…" (button, onClick)
+- CTL-P006-011 1291 `Button` "Today" (button, onClick)
+- CTL-P006-012 1298 `IconButton` "More" (button)
+- CTL-P006-013 1301 `Button` "New event" (button, onClick)
+- CTL-P006-014 1312 `IconButton` "Previous {month|view}" (button, onClick)
+- CTL-P006-015 1313 `IconButton` "Next {month|view}" (button, onClick)
+- CTL-P006-016 1330 `Button` "{heading} · {count}" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/CalendarFirstRun.tsx`
 
-- 25 `Button` "New event" (button, onClick) CH-6309
+- CTL-P006-017 25 `Button` "New event" (button, onClick) CH-6309
 
 ### `src/clubhouse/screens/calendar/CalendarPhone.tsx`
 
-- 112 `PhoneIconAction` "New event" (onClick)
-- 114 `PhoneIconAction` "Add to calendar app" (onClick)
-- 122 `Button` "Today" (button, onClick)
-- 132 `IconButton` "Previous month" (button, onClick)
-- 133 `IconButton` "Next month" (button, onClick)
-- 150 `IconButton` "More" (button)
-- 461 `IconButton` "Previous week" (button, onClick)
-- 462 `IconButton` "Next week" (button, onClick)
-- 469 `IconButton` "Dismiss" (button, onClick)
-- 483 `Button` "New event" (button, onClick) CH-6308
-- 516 `button` "{title} {spokenRound}, {all day|rangeLabel|{…" (button, onClick)
+- CTL-P006-018 112 `PhoneIconAction` "New event" (onClick)
+- CTL-P006-019 114 `PhoneIconAction` "Add to calendar app" (onClick)
+- CTL-P006-020 122 `Button` "Today" (button, onClick)
+- CTL-P006-021 132 `IconButton` "Previous month" (button, onClick)
+- CTL-P006-022 133 `IconButton` "Next month" (button, onClick)
+- CTL-P006-023 150 `IconButton` "More" (button)
+- CTL-P006-024 461 `IconButton` "Previous week" (button, onClick)
+- CTL-P006-025 462 `IconButton` "Next week" (button, onClick)
+- CTL-P006-026 469 `IconButton` "Dismiss" (button, onClick)
+- CTL-P006-027 483 `Button` "New event" (button, onClick) CH-6308
+- CTL-P006-028 516 `button` "{title} {spokenRound}, {all day…" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/cancel-round.tsx`
 
-- 187 `Button` "{Keep round|Keep tournament}" (button, onClick)
-- 190 `Button` "{Cancel R{roundNo}|Cancel tournament}" (button, onClick)
-- 208 `Button` "Cancel the whole tournament instead" (button, onClick)
+- CTL-P006-029 187 `Button` "{Keep round|Keep tournament}" (button, onClick)
+- CTL-P006-030 190 `Button` "{Cancel R{roundNo}|Cancel tourn…" (button, onClick)
+- CTL-P006-031 208 `Button` "Cancel the whole tournament ins…" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/change-note.tsx`
 
-- 201 `Button` "Show the change again" (button, onClick)
-- 229 `Button` "Message players about this change" (button, href)
-- 235 `Button` "Got it. Hide this change on this device." (button, onClick)
-- 290 `button` "{aria}" (button, onClick)
-- 302 `button` "{aria}" (button, onClick)
+- CTL-P006-032 201 `Button` "Show the change again" (button, onClick)
+- CTL-P006-033 229 `Button` "Message players about this change" (button, href)
+- CTL-P006-034 235 `Button` "Got it. Hide this change on thi…" (button, onClick)
+- CTL-P006-035 290 `button` "{aria}" (button, onClick)
+- CTL-P006-036 302 `button` "{aria}" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/class-group.tsx`
 
-- 152 `button` "Class: {length} players, {fmtHour} to {fmtHo…" (button, onClick)
-- 208 `button` "{who} {{code}|}{In class|{course}} {{rangeLa…" (button, onClick)
+- CTL-P006-037 152 `button` "Class: {length} players, {fmtHo…" (button, onClick)
+- CTL-P006-038 208 `button` "{who} {{code}|}{In class|{cours…" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/day-timeline.tsx`
 
-- 581 `div` "{pill} {{clash}|}" (onPointerDown)
-- 595 `span` "(no label)" (onPointerDown)
-- 598 `span` "(no label)" (onPointerDown)
-- 608 `Button` "Cancel" (button, onClick)
-- 611 `Button` "Done" (button, onClick)
+- CTL-P006-039 581 `div` "{pill} {{clash}|}" (onPointerDown)
+- CTL-P006-040 595 `span` "Event start grip (ledger)" (onPointerDown)
+- CTL-P006-041 598 `span` "Event end grip (ledger)" (onPointerDown)
+- CTL-P006-042 608 `Button` "Cancel" (button, onClick)
+- CTL-P006-043 611 `Button` "Done" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/drag-popovers.tsx`
 
-- 64 `button` "This event" (button, onClick)
-- 67 `button` "This and following" (button, onClick)
-- 76 `button` "Cancel" (button, onClick, role=menuitem)
-- 131 `button` "Cancel" (button, onClick)
-- 134 `button` "Move round" (button, onClick)
+- CTL-P006-044 64 `button` "This event" (button, onClick)
+- CTL-P006-045 67 `button` "This and following" (button, onClick)
+- CTL-P006-046 76 `button` "Cancel" (button, onClick, role=menuitem)
+- CTL-P006-047 131 `button` "Cancel" (button, onClick)
+- CTL-P006-048 134 `button` "Move round" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/editor-round.tsx`
 
-- 242 `Button` "Close" (button, onClick)
-- 248 `Button` "Cancel round" (button, onClick)
-- 253 `Button` "Restore round" (button, onClick)
-- 258 `Button` "Cancel" (button, onClick)
-- 261 `Button` "{Saving…|Save changes}" (button, onClick)
-- 289 `Button` "Edit tournament, opens Tournaments" (button, onClick)
-- 307 `Button` "Clear time" (button, onClick)
-- 312 `Button` "Add time" (button, onClick)
-- 321 `input` "Move each player’s tee time by the same amount" (type=checkbox)
-- 351 `Button` "{Clear|Select all}" (button, onClick)
-- 359 `input` "{name}" (type=checkbox)
-- 377 `input` "Ask players to RSVP" (type=checkbox)
-- 383 `button` "(no label)" (button)
-- 399 `Button` "Keep editing" (button, onClick) CH-6503
-- 402 `Button` "Discard" (button, onClick) CH-6503
+- CTL-P006-049 242 `Button` "Close" (button, onClick)
+- CTL-P006-050 248 `Button` "Cancel round" (button, onClick)
+- CTL-P006-051 253 `Button` "Restore round" (button, onClick)
+- CTL-P006-052 258 `Button` "Cancel" (button, onClick)
+- CTL-P006-053 261 `Button` "{Saving…|Save changes}" (button, onClick)
+- CTL-P006-054 289 `Button` "Edit tournament, opens Tourname…" (button, onClick)
+- CTL-P006-055 307 `Button` "Clear time" (button, onClick)
+- CTL-P006-056 312 `Button` "Add time" (button, onClick)
+- CTL-P006-057 321 `input` "Move each player’s tee time by the…" (type=checkbox)
+- CTL-P006-058 351 `Button` "{Clear|Select all}" (button, onClick)
+- CTL-P006-059 359 `input` "{name}" (type=checkbox)
+- CTL-P006-060 377 `input` "Ask players to RSVP" (type=checkbox)
+- CTL-P006-061 383 `button` "Save round event (Enter) (ledger)" (button)
+- CTL-P006-062 399 `Button` "Keep editing" (button, onClick) CH-6503
+- CTL-P006-063 402 `Button` "Discard" (button, onClick) CH-6503
 
 ### `src/clubhouse/screens/calendar/editor-tournament.tsx`
 
-- 62 `input` "Track in Tournaments" (role=switch, type=checkbox) CH-6640
-- 83 `Button` "Open Set up from calendar" (button, href) CH-6144
-- 123 `Button` "Open" (button, onClick)
-- 128 `Button` "Reload" (button, onClick)
+- CTL-P006-064 62 `input` "Track in Tourn…" (role=switch, type=checkbox) CH-6640
+- CTL-P006-065 83 `Button` "Open Set up from calendar" (button, href) CH-6144
+- CTL-P006-066 123 `Button` "Open" (button, onClick)
+- CTL-P006-067 128 `Button` "Reload" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/editor.tsx`
 
-- 173 `div` "{map}{Event time|}" (onClick, onPointerDown)
-- 200 `span` "Event time" (onPointerDown)
-- 669 `Button` "Cancel" (button, onClick)
-- 672 `Button` "{{{Setting up…|Creating…}|{Saving…|Publishin…" (button, onClick)
-- 773 `input` "All day" (type=checkbox)
-- 835 `Button` "{Clear|Select all}" (button, onClick)
-- 843 `input` "{name}{Busy at this time|{{AVAILABILITY_WORD}|{…" (type=checkbox)
-- 869 `input` "Require RSVP" (type=checkbox)
-- 937 `button` "(no label)" (button)
-- 954 `Button` "Keep editing" (button, onClick) CH-6503
-- 957 `Button` "Discard" (button, onClick) CH-6503
-- 1008 `Button` "Keep event" (button, onClick) CH-6501
-- 1011 `Button` "{Cancelling…|Cancel event}" (button, onClick) CH-6501
-- 1065 `Button` "Keep event" (button, onClick) CH-6506
-- 1068 `Button` "{Deleting…|Delete permanently}" (button, onClick) CH-6506
-- 1212 `Button` "Done" (button, onClick)
-- 1233 `Button` "Copy link" (button, onClick)
-- 1237 `Button` "Create link" (button, onClick)
-- 1250 `Button` "Keep link" (button, onClick)
-- 1253 `Button` "{go}" (button, onClick)
-- 1261 `Button` "New link" (button, onClick)
-- 1264 `Button` "Remove" (button, onClick)
+- CTL-P006-068 173 `div` "{map}{Event time|}" (onClick, onPointerDown)
+- CTL-P006-069 200 `span` "Event time" (onPointerDown)
+- CTL-P006-070 669 `Button` "Cancel" (button, onClick)
+- CTL-P006-071 672 `Button` "{{{Setting up…|Creating…}|{Savi…" (button, onClick)
+- CTL-P006-072 773 `input` "All day" (type=checkbox)
+- CTL-P006-073 835 `Button` "{Clear|Select all}" (button, onClick)
+- CTL-P006-074 843 `input` "{name}{Busy at this time|{{AVAILAB…" (type=checkbox)
+- CTL-P006-075 869 `input` "Require RSVP" (type=checkbox)
+- CTL-P006-076 937 `button` "Save event (Enter) (ledger)" (button)
+- CTL-P006-077 954 `Button` "Keep editing" (button, onClick) CH-6503
+- CTL-P006-078 957 `Button` "Discard" (button, onClick) CH-6503
+- CTL-P006-079 1008 `Button` "Keep event" (button, onClick) CH-6501
+- CTL-P006-080 1011 `Button` "{Cancelling…|Cancel ev…" (button, onClick) CH-6501
+- CTL-P006-081 1065 `Button` "Keep event" (button, onClick) CH-6506
+- CTL-P006-082 1068 `Button` "{Deleting…|Delete perm…" (button, onClick) CH-6506
+- CTL-P006-083 1212 `Button` "Done" (button, onClick)
+- CTL-P006-084 1233 `Button` "Copy link" (button, onClick)
+- CTL-P006-085 1237 `Button` "Create link" (button, onClick)
+- CTL-P006-086 1250 `Button` "Keep link" (button, onClick)
+- CTL-P006-087 1253 `Button` "{go}" (button, onClick)
+- CTL-P006-088 1261 `Button` "New link" (button, onClick)
+- CTL-P006-089 1264 `Button` "Remove" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/extras.tsx`
 
-- 68 `BackLink` "Today" (link, onClick)
-- 107 `Button` "{Remove the series|Remove busy time}" (button, onClick)
-- 120 `Button` "Keep it" (button, onClick) CH-6502
-- 123 `Button` "{Removing…|Remove}" (button, onClick) CH-6502
-- 163 `TripLink` "(no label)" (link)
-- 174 `Link` "View itinerary · {place}" (link, href)
-- 245 `Button` "Cancel" (button, onClick)
-- 248 `Button` "{Saving…|Add busy time}" (button, onClick)
-- 287 `input` "All day" (type=checkbox)
-- 437 `Button` "Attach" (button, onClick)
-- 461 `button` "Open {title}" (button, onClick)
-- 473 `IconButton` "Remove {title}" (button, onClick)
-- 562 `Button` "Cancel" (button, onClick)
-- 565 `Button` "{Attaching…|Attach}" (button, onClick)
-- 596 `button` "{title} {Already attached|{join…" (button, onClick, role=option)
+- CTL-P006-090 68 `BackLink` "Today" (link, onClick)
+- CTL-P006-091 107 `Button` "{Remove the series|Remove busy …" (button, onClick)
+- CTL-P006-092 120 `Button` "Keep it" (button, onClick) CH-6502
+- CTL-P006-093 123 `Button` "{Removing…|Remove}" (button, onClick) CH-6502
+- CTL-P006-094 163 `TripLink` "(no label)" (link)
+- CTL-P006-095 174 `Link` "View itinerary · {place}" (link, href)
+- CTL-P006-096 245 `Button` "Cancel" (button, onClick)
+- CTL-P006-097 248 `Button` "{Saving…|Add busy time}" (button, onClick)
+- CTL-P006-098 287 `input` "All day" (type=checkbox)
+- CTL-P006-099 437 `Button` "Attach" (button, onClick)
+- CTL-P006-100 461 `button` "Open {title}" (button, onClick)
+- CTL-P006-101 473 `IconButton` "Remove {title}" (button, onClick)
+- CTL-P006-102 562 `Button` "Cancel" (button, onClick)
+- CTL-P006-103 565 `Button` "{Attaching…|Attach}" (button, onClick)
+- CTL-P006-104 596 `button` "{title} {Already a…" (button, onClick, role=option)
 
 ### `src/clubhouse/screens/calendar/hours/PracticeHours.tsx`
 
-- 211 `Button` "Change how {title} counts" (button, onClick)
-- 263 `IconButton` "Previous week" (button, onClick)
-- 267 `IconButton` "Next week" (button, onClick)
-- 269 `Button` "This week" (button, onClick)
-- 277 `ExportButton` "(no label)" (button) CH-6082
-- 298 `BackLink` "Calendar" (link, href)
-- 313 `Button` "Limits" (button, onClick)
+- CTL-P006-105 211 `Button` "Change how {title} counts" (button, onClick)
+- CTL-P006-106 263 `IconButton` "Previous week" (button, onClick)
+- CTL-P006-107 267 `IconButton` "Next week" (button, onClick)
+- CTL-P006-108 269 `Button` "This week" (button, onClick)
+- CTL-P006-109 277 `ExportButton` "Export (ledger)" (button) CH-6082
+- CTL-P006-110 298 `BackLink` "Calendar" (link, href)
+- CTL-P006-111 313 `Button` "Limits" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/hours/sheets.tsx`
 
-- 197 `Button` "Cancel" (button, onClick)
-- 200 `Button` "{Saving…|Save limits}" (button, onClick)
-- 421 `Button` "Cancel" (button, onClick)
-- 424 `Button` "{Saving…|Save}" (button, onClick)
+- CTL-P006-112 197 `Button` "Cancel" (button, onClick)
+- CTL-P006-113 200 `Button` "{Saving…|Save limits}" (button, onClick)
+- CTL-P006-114 421 `Button` "Cancel" (button, onClick)
+- CTL-P006-115 424 `Button` "{Saving…|Save}" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/inspector.tsx`
 
-- 153 `BackLink` "{label}" (link, onClick)
-- 238 `button` "{fmtHour} {title} {{location} ·|}{until}" (button, onClick)
-- 277 `button` "{title} {first} overlaps · {dowOf} {fmtHour}…" (button, onClick)
-- 298 `button` "{title} {playerOverlapWith} · {dowOf}" (button, onClick)
-- 313 `button` "{{plural} pending|{Reply needed|{title}}} {{…" (button, onClick)
-- 484 `Back` "Today" (onClick)
-- 519 `Back` "Today" (onClick)
-- 542 `IconButton` "More actions" (button)
-- 583 `Button` "Build plan" (button, href)
-- 587 `Button` "Open plan" (button, href)
-- 596 `Button` "Review" (button, onClick)
-- 609 `Button` "Message coach" (button, href)
-- 687 `Button` "Set up" (button, onClick)
-- 694 `Button` "Open in Tournaments" (button, href)
-- 698 `Button` "Edit round" (button, onClick)
-- 703 `Button` "Attendance" (button, onClick)
-- 711 `Button` "Edit event" (button, onClick)
-- 715 `Button` "Attendance" (button, onClick)
-- 732 `Back` "Today" (onClick)
-- 777 `Button` "Compare schedules" (button, onClick)
-- 796 `Back` "Today" (onClick)
-- 813 `TripLink` "(no label)" (link)
-- 893 `Back` "{title}" (onClick)
-- 914 `Button` "Mark all present" (button, onClick)
-- 947 `Button` "{Saving…|{Save attendance · {length}|All sav…" (button, onClick)
-- 1012 `Back` "Today" (onClick)
-- 1024 `Back` "Today" (onClick)
-- 1072 `Button` "Review new time" (button, onClick)
-- 1075 `Button` "Keep as is" (button, onClick)
+- CTL-P006-116 153 `BackLink` "{label}" (link, onClick)
+- CTL-P006-117 238 `button` "{fmtHour} {title} {{location} ·…" (button, onClick)
+- CTL-P006-118 277 `button` "{title} {first} overlaps · {dow…" (button, onClick)
+- CTL-P006-119 298 `button` "{title} {playerOverlapWith} · {…" (button, onClick)
+- CTL-P006-120 313 `button` "{{plural} pending|{Reply needed…" (button, onClick)
+- CTL-P006-121 484 `Back` "Today" (onClick)
+- CTL-P006-122 519 `Back` "Today" (onClick)
+- CTL-P006-123 542 `IconButton` "More actions" (button)
+- CTL-P006-124 583 `Button` "Build plan" (button, href)
+- CTL-P006-125 587 `Button` "Open plan" (button, href)
+- CTL-P006-126 596 `Button` "Review" (button, onClick)
+- CTL-P006-127 609 `Button` "Message coach" (button, href)
+- CTL-P006-128 687 `Button` "Set up" (button, onClick)
+- CTL-P006-129 694 `Button` "Open in Tournaments" (button, href)
+- CTL-P006-130 698 `Button` "Edit round" (button, onClick)
+- CTL-P006-131 703 `Button` "Attendance" (button, onClick)
+- CTL-P006-132 711 `Button` "Edit event" (button, onClick)
+- CTL-P006-133 715 `Button` "Attendance" (button, onClick)
+- CTL-P006-134 732 `Back` "Today" (onClick)
+- CTL-P006-135 777 `Button` "Compare schedules" (button, onClick)
+- CTL-P006-136 796 `Back` "Today" (onClick)
+- CTL-P006-137 813 `TripLink` "(no label)" (link)
+- CTL-P006-138 893 `Back` "{title}" (onClick)
+- CTL-P006-139 914 `Button` "Mark all present" (button, onClick)
+- CTL-P006-140 947 `Button` "{Saving…|{Save attendance · {le…" (button, onClick)
+- CTL-P006-141 1012 `Back` "Today" (onClick)
+- CTL-P006-142 1024 `Back` "Today" (onClick)
+- CTL-P006-143 1072 `Button` "Review new time" (button, onClick)
+- CTL-P006-144 1075 `Button` "Keep as is" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/live-events.tsx`
 
-- 61 `Link` "{eventRow}" (link, href) CH-16640
+- CTL-P006-145 61 `Link` "{eventRow}" (link, href) CH-16640
 
 ### `src/clubhouse/screens/calendar/month-dnd.tsx`
 
-- 172 `button` "{dowOf} {dayNum} {monthName}: {plural|no eve…" (button, onClick)
-- 291 `button` "{spokenRound}{|, {fmtHour}}{, cancelled|}{ar…" (button, onClick)
-- 335 `button` "{spokenRound}, {dowOf} {dayNum} to {dowOf} {…" (button, onClick)
+- CTL-P006-146 172 `button` "{dowOf} {dayNum} {monthName}: {…" (button, onClick)
+- CTL-P006-147 291 `button` "{spokenRound}{|, {fmtHour}}{, c…" (button, onClick)
+- CTL-P006-148 335 `button` "{spokenRound}, {dowOf} {dayNum}…" (button, onClick)
 
 ### `src/clubhouse/screens/calendar/month.tsx`
 
-- 102 `RdpDayButton` "{dowOf} {dayNum} {monthName}{, today|}: {{plura…" (button)
-- 159 `section` "{monthName}" (onPointerDown)
+- CTL-P006-149 102 `RdpDayButton` "{dowOf} {dayNum} {monthName}{, tod…" (button)
+- CTL-P006-150 159 `section` "{monthName}" (onPointerDown)
 
 ### `src/clubhouse/screens/calendar/views.tsx`
 
-- 284 `button` "{words}" (button, onClick, onPointerDown)
-- 336 `span` "(no label)" (onClick, onPointerDown)
-- 337 `span` "(no label)" (onClick, onPointerDown)
-- 454 `button` "{dowOf} {dayNum} {monthName}{, today|}. Open…" (button, onClick)
-- 593 `button` "{spokenRound}, {days}{, cance…" (button, onClick, onPointerDown)
-- 625 `span` "(no label)" (onClick, onPointerDown)
-- 626 `span` "(no label)" (onClick, onPointerDown)
-- 773 `Button` "{Hide earlier days|Show {length} earlier {pl…" (button, onClick)
-- 804 `button` "{startLabel}{{fmtHour}|} {{name} · {title}|{…" (button, onClick)
+- CTL-P006-151 284 `button` "{words}" (button, onClick, onPointerDown)
+- CTL-P006-152 336 `span` "Event start grip (week) (l…" (onClick, onPointerDown)
+- CTL-P006-153 337 `span` "Event end grip (week) (led…" (onClick, onPointerDown)
+- CTL-P006-154 454 `button` "{dowOf} {dayNum} {monthName}{, …" (button, onClick)
+- CTL-P006-155 593 `button` "{spokenRound}, {…" (button, onClick, onPointerDown)
+- CTL-P006-156 625 `span` "Event first-day grip (mont…" (onClick, onPointerDown)
+- CTL-P006-157 626 `span` "Event last-day grip (month…" (onClick, onPointerDown)
+- CTL-P006-158 773 `Button` "{Hide earlier days|Show {length…" (button, onClick)
+- CTL-P006-159 804 `button` "{startLabel}{{fmtHour}|} {{name…" (button, onClick)
 
 ## P007 Messages
 

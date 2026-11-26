@@ -208,7 +208,7 @@ function EventLines({ week, coach, onChange }: { week: ChHoursWeek; coach: boole
                   )}
                 </span>
                 {onChange && (
-                  <Button size="sm" variant="ghost" className="ch-hrs-ln__act" onClick={() => onChange(l)} aria={{ label: `Change how ${l.title} counts` }}>
+                  <Button data-ctl="CTL-P006-105" size="sm" variant="ghost" className="ch-hrs-ln__act" onClick={() => onChange(l)} aria={{ label: `Change how ${l.title} counts` }}>
                     Change
                   </Button>
                 )}
@@ -260,13 +260,13 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
 
   const stepper = (
     <div className="ch-hrs-step" role="group" aria-label="Week">
-      <IconButton icon={ChevronLeft} variant="secondary" label="Previous week" onClick={() => go(addDays(data.days[0]!, -7))} />
+      <IconButton data-ctl="CTL-P006-106" icon={ChevronLeft} variant="secondary" label="Previous week" onClick={() => go(addDays(data.days[0]!, -7))} />
       <span className="ch-hrs-step__t ch-num" aria-live="polite">
         {title}
       </span>
-      <IconButton icon={ChevronRight} variant="secondary" label="Next week" onClick={() => go(addDays(data.days[0]!, 7))} />
+      <IconButton data-ctl="CTL-P006-107" icon={ChevronRight} variant="secondary" label="Next week" onClick={() => go(addDays(data.days[0]!, 7))} />
       {!thisWeek && (
-        <Button size="sm" variant="ghost" leftIcon={CalendarCheck} onClick={() => go(null)}>
+        <Button data-ctl="CTL-P006-108" size="sm" variant="ghost" leftIcon={CalendarCheck} onClick={() => go(null)}>
           This week
         </Button>
       )}
@@ -274,7 +274,7 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
   );
 
   const exportKey = !blocked && !noRoster && week.rows.length > 0 && (
-    <ExportButton
+    <ExportButton data-ctl="CTL-P006-109"
       file={() => hoursCsv(week, data.teamName)}
       done={() => `Practice hours exported · ${plural(week.rows.length, 'player')}`}
       failed="Couldn’t export the practice hours"
@@ -295,7 +295,7 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
       )}
       <header className="ch-hrs-h" data-canopy-head={phone ? undefined : 'tight'}>
         <div className="ch-hrs-h__t">
-          {!phone && <BackLink href={CALENDAR}>Calendar</BackLink>}
+          {!phone && <BackLink data-ctl="CTL-P006-110" href={CALENDAR}>Calendar</BackLink>}
           <span className="ch-hrs-k">{kicker}</span>
           {!phone && <LargeTitle id="ch-hrs-title">{coach ? 'Practice hours' : 'Your practice hours'}</LargeTitle>}
           <p className="ch-hrs-lim ch-num">
@@ -310,7 +310,7 @@ export function PracticeHours({ data }: { data: ChHoursData }) {
           {stepper}
           <span className="ch-hrs-tools__act">
             {canSave && (
-              <Button variant="secondary" leftIcon={SlidersHorizontal} onClick={() => setLimitsOpen(true)}>
+              <Button data-ctl="CTL-P006-111" variant="secondary" leftIcon={SlidersHorizontal} onClick={() => setLimitsOpen(true)}>
                 Limits
               </Button>
             )}

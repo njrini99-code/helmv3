@@ -148,9 +148,9 @@ function Fact({ icon, tone, children }: { icon: LucideIcon; tone?: 'team' | 'cla
 /** The panel plate's tone for an event type: the colour its block has on the grid, deepened for ivory ink. */
 const plateTone = (t: ChCalType) => (t === 'practice' ? 'green' : isMajor(t) ? 'forest' : t === 'travel' || t === 'class' ? 'slate' : t === 'busy' ? 'champagne' : 'ink');
 
-function Back({ label, onClick }: { label: string; onClick: () => void }) {
+function Back({ label, onClick, 'data-ctl': ctl }: { label: string; onClick: () => void; 'data-ctl'?: string }) {
   return (
-    <BackLink className="ch-in__up" onClick={onClick}>
+    <BackLink data-ctl={ctl ?? 'CTL-P006-116'} className="ch-in__up" onClick={onClick}>
       {label}
     </BackLink>
   );
@@ -235,7 +235,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
         {today.length === 0 ? <span data-ch-code="CH-6302">Nothing on the team calendar today</span> : `${today.length} team ${pluralWord(today.length, 'event')} today`}
       </h2>
       {next && (
-        <button
+        <button data-ctl="CTL-P006-117"
           type="button"
           className="ch-in__next"
           onClick={() => {
@@ -274,7 +274,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
               weekOverlaps.map((o) => {
                 const e = find(events, o.eventId)!;
                 return (
-                  <button key={o.id} type="button" className="ch-in__need" onClick={() => ctx.go({ kind: 'overlap', id: o.id })}>
+                  <button data-ctl="CTL-P006-118" key={o.id} type="button" className="ch-in__need" onClick={() => ctx.go({ kind: 'overlap', id: o.id })}>
                     <span className="ch-in__ic">
                       <Icon icon={TriangleAlert} size={14} />
                     </span>
@@ -295,7 +295,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
               weekOverlaps.map((o) => {
                 const e = find(events, o.eventId)!;
                 return (
-                  <button key={o.id} type="button" className="ch-in__need" onClick={() => ctx.go({ kind: 'event', id: e.id, date: e.date })}>
+                  <button data-ctl="CTL-P006-119" key={o.id} type="button" className="ch-in__need" onClick={() => ctx.go({ kind: 'event', id: e.id, date: e.date })}>
                     <span className="ch-in__ic">
                       <Icon icon={TriangleAlert} size={14} />
                     </span>
@@ -310,7 +310,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                 );
               })}
             {pendingRows.slice(0, 3).map(({ e, pending }) => (
-              <button key={`${e.id}-p`} type="button" className="ch-in__need" onClick={() => ctx.go({ kind: 'event', id: e.id, date: e.date })}>
+              <button data-ctl="CTL-P006-120" key={`${e.id}-p`} type="button" className="ch-in__need" onClick={() => ctx.go({ kind: 'event', id: e.id, date: e.date })}>
                 <span className="ch-in__ic is-ok">
                   <Icon icon={MailQuestion} size={14} />
                 </span>
@@ -481,7 +481,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
   if (!e) {
     return (
       <div className="ch-in">
-        <Back label="Today" onClick={() => ctx.go(null)} />
+        <Back data-ctl="CTL-P006-121" label="Today" onClick={() => ctx.go(null)} />
         <p className="ch-in__quiet" data-ch-code="CH-6305">
           This event isn’t in the loaded range anymore. It may have moved or been cancelled.
         </p>
@@ -516,7 +516,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
 
   return (
     <div className="ch-in">
-      <Back label="Today" onClick={() => ctx.go(null)} />
+      <Back data-ctl="CTL-P006-122" label="Today" onClick={() => ctx.go(null)} />
       <div className="ch-in__plate" data-tone={plateTone(e.type)}>
 <div className="ch-in__kick">
         <Badge tone={isMajor(e.type) ? 'info' : 'accent'}>{round ? `${TYPE_LABEL[e.type]} · ${rl.caption}` : TYPE_LABEL[e.type]}</Badge>
@@ -539,7 +539,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
             ...(coach && e.canEdit && round && e.cancelled && !round.tournamentCancelled && ctx.onRestoreRound ? [{ label: 'Restore round', icon: RotateCcw, onSelect: () => ctx.onRestoreRound!(e) }] : []),
             ...(coach && e.canEdit && round?.tournamentCancelled && ctx.onRestoreTournament ? [{ label: 'Restore tournament', icon: RotateCcw, onSelect: () => ctx.onRestoreTournament!(e) }] : []),
           ]}
-          trigger={(p) => <IconButton icon={Ellipsis} size="sm" label="More actions" menu={p} />}
+          trigger={(p) => <IconButton data-ctl="CTL-P006-123" icon={Ellipsis} size="sm" label="More actions" menu={p} />}
         />
       </div>
       <h2 className="ch-in__title" tabIndex={-1} style={e.cancelled ? { textDecoration: 'line-through' } : undefined}>
@@ -580,11 +580,11 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         <div className="ch-in__sec ch-in__plan">
           <span className="ch-in__plan-s">{PLAN_WORD[e.plan.state]}</span>
           {e.plan.state === 'none' ? (
-            <Button variant="primary" href={`/golf/dashboard/practice?new=1&event=${e.id}`}>
+            <Button data-ctl="CTL-P006-124" variant="primary" href={`/golf/dashboard/practice?new=1&event=${e.id}`}>
               Build plan
             </Button>
           ) : (
-            <Button href={`/golf/dashboard/practice/plan/${e.plan.id}`}>Open plan</Button>
+            <Button data-ctl="CTL-P006-125" href={`/golf/dashboard/practice/plan/${e.plan.id}`}>Open plan</Button>
           )}
         </div>
       )}
@@ -593,7 +593,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         <Warn
           title="Schedule overlap"
           action={
-            <Button size="sm" variant="ghost" onClick={() => ctx.go({ kind: 'overlap', id: overlap.id })}>
+            <Button data-ctl="CTL-P006-126" size="sm" variant="ghost" onClick={() => ctx.go({ kind: 'overlap', id: overlap.id })}>
               Review
             </Button>
           }
@@ -606,7 +606,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         <Warn
           title="Schedule overlap"
           action={
-            <Button size="sm" variant="ghost" href={messageCoachHref(null)}>
+            <Button data-ctl="CTL-P006-127" size="sm" variant="ghost" href={messageCoachHref(null)}>
               Message coach
             </Button>
           }
@@ -684,23 +684,23 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
       {untracked && (
         <div className="ch-in__sec ch-in__setup">
           <span className="ch-in__quiet">Not in Tournaments</span>
-          <Button size="sm" variant="ghost" onClick={() => ctx.onSetUp!(e)}>
+          <Button data-ctl="CTL-P006-128" size="sm" variant="ghost" onClick={() => ctx.onSetUp!(e)}>
             Set up
           </Button>
         </div>
       )}
       {round && desk && (
         <div className="ch-in__sec ch-in__foot">
-          <Button variant="primary" rightIcon={ArrowUpRight} href={desk}>
+          <Button data-ctl="CTL-P006-129" variant="primary" rightIcon={ArrowUpRight} href={desk}>
             Open in Tournaments
           </Button>
           {coach && e.canEdit && roundOpen && !e.cancelled && (
-            <Button leftIcon={Pencil} onClick={() => ctx.onEdit(e)}>
+            <Button data-ctl="CTL-P006-130" leftIcon={Pencil} onClick={() => ctx.onEdit(e)}>
               Edit round
             </Button>
           )}
           {coach && e.people.length > 0 && (
-            <Button leftIcon={ClipboardCheck} onClick={() => ctx.go({ kind: 'attendance', id: e.id, date: e.date })}>
+            <Button data-ctl="CTL-P006-131" leftIcon={ClipboardCheck} onClick={() => ctx.go({ kind: 'attendance', id: e.id, date: e.date })}>
               Attendance
             </Button>
           )}
@@ -708,11 +708,11 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
       )}
       {coach && e.canEdit && !e.cancelled && !round && (
         <div className="ch-in__sec ch-in__foot">
-          <Button variant="primary" leftIcon={Pencil} onClick={() => ctx.onEdit(e)}>
+          <Button data-ctl="CTL-P006-132" variant="primary" leftIcon={Pencil} onClick={() => ctx.onEdit(e)}>
             Edit event
           </Button>
           {e.people.length > 0 && (
-            <Button leftIcon={ClipboardCheck} onClick={() => ctx.go({ kind: 'attendance', id: e.id, date: e.date })}>
+            <Button data-ctl="CTL-P006-133" leftIcon={ClipboardCheck} onClick={() => ctx.go({ kind: 'attendance', id: e.id, date: e.date })}>
               Attendance
             </Button>
           )}
@@ -729,7 +729,7 @@ function ClassDetail({ ctx, e }: { ctx: InspCtx; e: ChCalEvent }) {
   const [code, course] = courseParts(e.title);
   return (
     <div className="ch-in">
-      <Back label="Today" onClick={() => ctx.go(null)} />
+      <Back data-ctl="CTL-P006-134" label="Today" onClick={() => ctx.go(null)} />
       {/* Owner, 2026-10-08: a class is a slate plate (who, the course code, the course), not ink on parchment. */}
       <div className="ch-in__plate ch-in__class" data-tone="slate">
         <div className="ch-in__kick">
@@ -774,7 +774,7 @@ function ClassDetail({ ctx, e }: { ctx: InspCtx; e: ChCalEvent }) {
         <span>{mine ? 'Teammates never see your classes. Coaches see them so practice avoids them.' : 'Only coaches see class details. Teammates never see another player’s classes.'}</span>
       </p>
       {!mine && owner && ctx.onFind && (
-        <Button leftIcon={Users} onClick={() => ctx.onFind!(e.date, [owner.id])}>
+        <Button data-ctl="CTL-P006-135" leftIcon={Users} onClick={() => ctx.onFind!(e.date, [owner.id])}>
           Compare schedules
         </Button>
       )}
@@ -793,7 +793,7 @@ function TripDetail({ ctx, e, trip }: { ctx: InspCtx; e: ChCalEvent; trip: NonNu
   const times = [trip.leaves != null && `Leaves ${fmtHour(trip.leaves, true, clock)}`, trip.returns != null && `back ${fmtHour(trip.returns, true, clock)}`].filter(Boolean).join(' · ');
   return (
     <div className="ch-in">
-      <Back label="Today" onClick={() => ctx.go(null)} />
+      <Back data-ctl="CTL-P006-136" label="Today" onClick={() => ctx.go(null)} />
       <div className="ch-in__plate" data-tone={plateTone(e.type)}>
         <div className="ch-in__kick">
           <Badge tone="accent">{TYPE_LABEL[e.type]}</Badge>
@@ -810,7 +810,7 @@ function TripDetail({ ctx, e, trip }: { ctx: InspCtx; e: ChCalEvent; trip: NonNu
           {times && ` · ${ctx.zoneLabel}`}
         </Fact>
         {e.location && <Fact icon={MapPin}>{e.location}</Fact>}
-        <TripLink id={trip.id} place={e.location || e.title} />
+        <TripLink data-ctl="CTL-P006-137" id={trip.id} place={e.location || e.title} />
       </div>
       <p className="ch-in__quiet">Planned in Team Hub’s Travel, where the itinerary, rooms and changes are.</p>
     </div>
@@ -890,7 +890,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
 
   return (
     <div className="ch-in">
-      <Back label={e.title} onClick={() => ctx.go({ kind: 'event', id, date })} />
+      <Back data-ctl="CTL-P006-138" label={e.title} onClick={() => ctx.go({ kind: 'event', id, date })} />
       <div>
         <h2 className="ch-in__title" tabIndex={-1}>Attendance</h2>
         <div className="ch-cal-sub">
@@ -911,7 +911,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
             <span className="ch-num">
               {e.people.length} invited · {present} here
             </span>
-            <Button
+            <Button data-ctl="CTL-P006-139"
               size="sm"
               variant="ghost"
               onClick={() => {
@@ -944,7 +944,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
             })}
           </div>
           <div className="ch-in__sec ch-in__foot">
-            <Button
+            <Button data-ctl="CTL-P006-140"
               variant="primary"
               busy={save.pending}
               disabled={!changed.length}
@@ -1009,7 +1009,7 @@ export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
   if (!o || !e || !w) {
     return (
       <div className="ch-in">
-        <Back label="Today" onClick={() => ctx.go(null)} />
+        <Back data-ctl="CTL-P006-141" label="Today" onClick={() => ctx.go(null)} />
         <p className="ch-in__quiet">This overlap is resolved.</p>
       </div>
     );
@@ -1021,7 +1021,7 @@ export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
   const withLabel = w.type === 'class' ? 'Class' : w.title;
   return (
     <div className="ch-in">
-      <Back label="Today" onClick={() => ctx.go(null)} />
+      <Back data-ctl="CTL-P006-142" label="Today" onClick={() => ctx.go(null)} />
       <div className="ch-in__plate" data-tone="amber">
         <div className="ch-in__kick">
           <Badge tone="warning" dot>
@@ -1069,10 +1069,10 @@ export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
         )}
       </div>
       <div className="ch-in__sec ch-in__foot">
-        <Button variant="primary" disabled={!e.canEdit} onClick={() => ctx.onEdit(e, prop)}>
+        <Button data-ctl="CTL-P006-143" variant="primary" disabled={!e.canEdit} onClick={() => ctx.onEdit(e, prop)}>
           Review new time
         </Button>
-        <Button
+        <Button data-ctl="CTL-P006-144"
           variant="ghost"
           onClick={() => {
             haptic('select');
