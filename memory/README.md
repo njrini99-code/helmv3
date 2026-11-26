@@ -92,7 +92,7 @@ current corpus for it, not a duplicate of one.
 | A table, column, enum, or type name | `glossary.md` **AUTOGEN blocks** → or `src/lib/types/database.ts` directly |
 | Every column of every table | `context/golfhelm-database.md` **`AUTOGEN:columns`** |
 | How a golf feature behaves | `registry.yml` → the mapped `features/*.md` |
-| Baseball behaviour | `context/baseballhelm-features.md` + `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` |
+| Baseball behaviour | `context/baseballhelm-features.md` + `docs/baseball/BASEBALLHELM_CANONICAL_SPEC.md` |
 | CoachHelm AI internals | `context/coachhelm-ai.md` |
 | Where code lives | `projects/golfhelm.md` (AUTOGEN) or `docs/REPO_MAP.md` (⚠️ stale — it records its anchor SHA; measure the distance yourself) |
 | To add a feature doc | copy from `templates/` and register it in `registry.yml` |

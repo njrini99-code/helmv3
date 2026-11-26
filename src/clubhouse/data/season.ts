@@ -146,6 +146,7 @@ export async function loadSeasonRounds(
         let q = supabase
           .from('golf_rounds')
           .select(ROUND_COLUMNS)
+          // chunk-audit-bounded: already chunked: ids is one chunkIds(playerIds) slice
           .in('player_id', ids)
           .eq('is_test', false)
           .eq('status', 'completed')

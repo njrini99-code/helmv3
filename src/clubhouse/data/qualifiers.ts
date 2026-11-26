@@ -325,6 +325,7 @@ type TeeInfo = { tee_name: string; total_par: number | null };
 async function readTees(supabase: Supabase, courseRows: ReadonlyArray<{ tee_id: string | null }>): Promise<{ tees: Map<string, TeeInfo>; teesError: boolean }> {
   const teeIds = [...new Set(courseRows.map((c) => c.tee_id).filter((t): t is string => !!t))];
   if (!teeIds.length) return { tees: new Map(), teesError: false };
+  // chunk-audit-bounded: tees of one qualifier's course rows
   const teeRes = await supabase.from('golf_course_tees').select('id, tee_name, total_par').in('id', teeIds);
   if (teeRes.error) {
     chLogServer('qualifiers', 'tees', teeRes.error, 'qualifiers');

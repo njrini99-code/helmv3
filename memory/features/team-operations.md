@@ -324,4 +324,3 @@ in `memory/features/coachhelm-ai.md`.
 
 - `memory/context/golfhelm-features.md`
 - `memory/context/golfhelm-database.md`
-- `docs/PUSH_NOTIFICATION_AUDIT.md`

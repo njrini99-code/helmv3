@@ -192,3 +192,22 @@ WITH CHECK (
     )
 );
 -- ROLLBACK: recreate the policy without `status = 'pending' AND`.
+
+-- Post-apply checks (scripts/db/apply.mjs runs each; every line of a query
+-- keeps the -- VERIFY: prefix).
+-- VERIFY: select 1 from pg_trigger where tgname = 'on_auth_user_email_changed'
+-- VERIFY:   and tgrelid = 'auth.users'::regclass;
+-- VERIFY: select 1 from pg_trigger
+-- VERIFY:   where tgname = 'guard_users_email_self_change'
+-- VERIFY:   and tgrelid = 'public.users'::regclass;
+-- VERIFY: select 1 where not has_function_privilege('authenticated',
+-- VERIFY:   'public.sync_user_email_from_auth()', 'EXECUTE');
+-- VERIFY: select 1 from pg_indexes where schemaname = 'public'
+-- VERIFY:   and indexname = 'golf_teams_join_code_upper_uidx';
+-- VERIFY: select 1 from pg_constraint
+-- VERIFY:   where conname = 'golf_teams_join_code_format'
+-- VERIFY:   and conrelid = 'public.golf_teams'::regclass;
+-- VERIFY: select 1 from pg_policies where schemaname = 'public'
+-- VERIFY:   and tablename = 'golf_team_join_requests'
+-- VERIFY:   and policyname = 'Players can create their own join requests'
+-- VERIFY:   and with_check like '%pending%';

@@ -849,6 +849,7 @@ async function authorNames(supabase: Awaited<ReturnType<typeof createClient>>, a
   const ids = [...new Set(anns.map((a) => a.created_by).filter((id): id is string => !!id))];
   const out = new Map<string, { name: string; title: string | null }>();
   if (!ids.length) return out;
+  // chunk-audit-bounded: authors of one team's announcements (its coaches)
   const { data, error } = await supabase.from('golf_coaches').select('user_id, full_name, title').in('user_id', ids);
   if (error) log('authors', error);
   for (const c of data ?? []) if (c.user_id) out.set(c.user_id, { name: c.full_name?.trim() || 'Coach', title: c.title?.trim() || null });

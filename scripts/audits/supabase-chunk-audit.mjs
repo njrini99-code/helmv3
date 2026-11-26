@@ -9,6 +9,12 @@
  * predates the rule. How much of that to fix, and when, is a decision this
  * script defers to a shrinking baseline rather than a red build today.
  *
+ * A site whose id list is bounded by construction (one team's roster, one
+ * plan's drills, an id already inside a chunkIds slice) can carry
+ * `// chunk-audit-bounded: <reason>` on the line above it; the audit skips
+ * it. The reason is required. Inline eslint-disable cannot be used: the rule
+ * is off in the shared config, so the directive would be unused and fail lint.
+ *
  * WHAT IT ENFORCES
  *
  * The violation count may never go UP. New code cannot add an unchunked
@@ -48,11 +54,24 @@ try {
   process.exit(1);
 }
 
+const MARKER = /chunk-audit-bounded:\s*\S/;
+const sourceCache = new Map();
+function exempted(filePath, line) {
+  if (!sourceCache.has(filePath)) sourceCache.set(filePath, readFileSync(filePath, 'utf-8').split('\n'));
+  const src = sourceCache.get(filePath);
+  return MARKER.test(src[line - 1] ?? '') || MARKER.test(src[line - 2] ?? '');
+}
+
 const byArea = new Map();
+let exemptCount = 0;
 let total = 0;
 for (const file of results) {
   for (const msg of file.messages) {
     if (msg.ruleId !== RULE) continue;
+    if (exempted(file.filePath, msg.line)) {
+      exemptCount += 1;
+      continue;
+    }
     total += 1;
     const rel = file.filePath.split('/src/')[1] ?? file.filePath;
     const area = rel.split('/').slice(0, 3).join('/');
@@ -74,7 +93,7 @@ if (total === 0 && !UPDATE && existsSync(BASELINE_PATH)) {
 }
 
 const top = [...byArea.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
-console.log(`unchunked .in() filters: ${total}`);
+console.log(`unchunked .in() filters: ${total} (${exemptCount} marked chunk-audit-bounded)`);
 for (const [area, n] of top) console.log(`  ${String(n).padStart(5)}  ${area}`);
 
 if (UPDATE) {

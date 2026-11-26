@@ -6,7 +6,7 @@
     "via": "direct",
     "note": null
   },
-  "anchor_sha": "c7f9d4a04786",
+  "anchor_sha": "ff100c405143",
   "current_contract": [
     {
       "id": "c1-status",
@@ -72,7 +72,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 267,
+        "line": 266,
         "heading": "code.routes"
       },
       "date": null,
@@ -93,7 +93,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 270,
+        "line": 269,
         "heading": "code.components"
       },
       "date": null,
@@ -114,7 +114,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 272,
+        "line": 271,
         "heading": "code.api"
       },
       "date": null,
@@ -135,7 +135,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 273,
+        "line": 272,
         "heading": "code.api"
       },
       "date": null,
@@ -156,7 +156,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 274,
+        "line": 273,
         "heading": "code.api"
       },
       "date": null,
@@ -177,7 +177,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 275,
+        "line": 274,
         "heading": "code.api"
       },
       "date": null,
@@ -198,7 +198,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 276,
+        "line": 275,
         "heading": "code.api"
       },
       "date": null,
@@ -219,7 +219,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 277,
+        "line": 276,
         "heading": "code.api"
       },
       "date": null,
@@ -240,7 +240,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 278,
+        "line": 277,
         "heading": "code.api"
       },
       "date": null,
@@ -261,7 +261,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 280,
+        "line": 279,
         "heading": "code.actions"
       },
       "date": null,
@@ -282,7 +282,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 281,
+        "line": 280,
         "heading": "code.actions"
       },
       "date": null,
@@ -303,7 +303,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 282,
+        "line": 281,
         "heading": "code.actions"
       },
       "date": null,
@@ -324,7 +324,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 283,
+        "line": 282,
         "heading": "code.actions"
       },
       "date": null,
@@ -345,7 +345,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 284,
+        "line": 283,
         "heading": "code.actions"
       },
       "date": null,
@@ -366,7 +366,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 291,
+        "line": 290,
         "heading": "code.actions"
       },
       "date": null,
@@ -387,7 +387,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 292,
+        "line": 291,
         "heading": "code.actions"
       },
       "date": null,
@@ -408,7 +408,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 293,
+        "line": 292,
         "heading": "code.actions"
       },
       "date": null,
@@ -429,7 +429,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 294,
+        "line": 293,
         "heading": "code.actions"
       },
       "date": null,
@@ -450,7 +450,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 295,
+        "line": 294,
         "heading": "code.actions"
       },
       "date": null,
@@ -471,7 +471,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 296,
+        "line": 295,
         "heading": "code.actions"
       },
       "date": null,
@@ -492,7 +492,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 297,
+        "line": 296,
         "heading": "code.actions"
       },
       "date": null,
@@ -513,7 +513,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 302,
+        "line": 301,
         "heading": "code.services"
       },
       "date": null,
@@ -534,7 +534,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 305,
+        "line": 304,
         "heading": "code.services"
       },
       "date": null,
@@ -555,7 +555,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 307,
+        "line": 306,
         "heading": "code.db"
       },
       "date": null,
@@ -576,7 +576,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 309,
+        "line": 308,
         "heading": "code.db"
       },
       "date": null,
@@ -597,7 +597,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 310,
+        "line": 309,
         "heading": "code.db"
       },
       "date": null,
@@ -618,7 +618,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 311,
+        "line": 310,
         "heading": "code.db"
       },
       "date": null,
@@ -639,7 +639,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 313,
+        "line": 312,
         "heading": "code.db"
       },
       "date": null,
@@ -660,7 +660,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 315,
+        "line": 314,
         "heading": "code.tests"
       },
       "date": null,
@@ -681,7 +681,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 316,
+        "line": 315,
         "heading": "code.tests"
       },
       "date": null,
@@ -702,7 +702,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 317,
+        "line": 316,
         "heading": "code.tests"
       },
       "date": null,
@@ -723,7 +723,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 328,
+        "line": 327,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -742,7 +742,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 329,
+        "line": 328,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -761,7 +761,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 330,
+        "line": 329,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -780,7 +780,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 318,
+        "line": 317,
         "heading": "coachhelm_ai"
       },
       "date": null,
@@ -4140,7 +4140,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_TRACKED_FILES",
         "confidence": "mechanical",
-        "evidence": "src/components/golf/coachhelm/** — matches 0 files in `git ls-files` as of c7f9d4a04786"
+        "evidence": "src/components/golf/coachhelm/** — matches 0 files in `git ls-files` as of ff100c405143"
       }
     }
   ],
