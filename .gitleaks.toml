@@ -58,7 +58,7 @@ tags = ["supabase", "access-token"]
 
 [allowlist]
 paths = [
-  '''docs/superpowers/plans/2026-05-17-.*\.md''',
+  '''docs/archive/superpowers-plans/2026-05-17-.*\.md''',
   '''\.full-review-2026-05-17-golfhelm-audit/.*\.md''',
   '''docs/operations/2026-05-17-p0-runbook\.md''',
   '''docs/operations/2026-06-30-baseball-stats-seed-key-rotation\.md''',

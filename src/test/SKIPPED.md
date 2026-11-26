@@ -27,7 +27,7 @@ These specs assert against the pre-fix `comparison_source` / threshold shape. Th
   `approach-analytics.ts` does not import it — Plan 03 has not actually been
   wired into this generator yet, so that half of the stated blocker is still
   real. **Second, independent, pre-existing blocker** (surfaced by
-  `docs/audits/COMPLETE_FINDINGS_2026_08_18.md`'s `config-drift-3`, verified
+  `docs/archive/audits-2026-08/COMPLETE_FINDINGS_2026_08_18.md`'s `config-drift-3`, verified
   here rather than trusted): `approach-analytics.ts:45` has carried
   `MIN_SAMPLES_FOR_SEVERITY = 15` since 2026-04-28 (commit `4bb5768d8`) —
   BEFORE this skip was ever written — and returns early without emitting

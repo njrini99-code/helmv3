@@ -1,9 +1,9 @@
 # CodeRabbit DISABLED (2026-07-20, founder decision) — auto-reviews and the
 # pre-merge gate are off, and "CodeRabbit" was removed from main's required
 # status checks the same day. The custom semgrep/ast-grep rule packs that
-# historically lived under .coderabbit/ are consumed directly by CI
-# (.github/workflows/review-gate.yml) and remain in place — they are CI
-# assets now, not CodeRabbit assets. Full removal = uninstall the CodeRabbit
+# historically lived under .coderabbit/ now live in config/review-rules/ and
+# are consumed directly by CI (.github/workflows/review-gate.yml) — they are
+# CI assets now, not CodeRabbit assets. Full removal = uninstall the CodeRabbit
 # GitHub App (repo Settings -> Integrations), which requires the owner.
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 language: en-US

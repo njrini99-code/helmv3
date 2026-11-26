@@ -105,7 +105,7 @@ Making it "green" is not the task.
 
 **Recommendation: remove it, and point at the classification report instead.**
 The check exists to answer "does the repo agree with production's migrations".
-`docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md` answers exactly
+`docs/archive/reports-2026-08/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md` answers exactly
 that, deterministically, from the live catalog — and it can be run on demand
 rather than only on a PR that happens to touch `supabase/migrations/**`, which
 is the condition that made this check silent in the first place. Requiring an
@@ -199,7 +199,7 @@ the same rule pointed at code instead of schema.
 
 Also now checked, and no longer an open question: **all 42 repo migrations with
 no production ledger row are classified** in
-`docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md`, by extracting
+`docs/archive/reports-2026-08/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md`, by extracting
 each file's declared objects and querying the live catalog. 22 are applied, 5
 partial, 2 unapplied, 11 UNKNOWN by construction (GRANT/REVOKE and data
 backfills leave no catalog object to look for), 2 self-declared no-ops. **This

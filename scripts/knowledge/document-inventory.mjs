@@ -40,7 +40,7 @@
  *     tracked) restricted to the LIVING categories — REFERENCE,
  *     GENERATED_TRUTH, CURRENT_FEATURE, PROCESS_CONTRACT, RUNBOOK, POLICY,
  *     DESIGN_SPEC, STATE_SNAPSHOT, AGENT_SKILL — and ratchets the total
- *     against `.dead-refs-baseline.json`. Same shape as
+ *     against `config/baselines/.dead-refs-baseline.json`. Same shape as
  *     scripts/markdown-lint-ratchet.mjs: the baseline may only fall, never
  *     rise; `--update` rewrites it from the current count.
  *   node scripts/knowledge/document-inventory.mjs --dead-refs --introduced-since <ref>
@@ -68,7 +68,7 @@ import * as yaml from 'js-yaml';
 
 const ROOT = process.cwd();
 const OUT = resolve(ROOT, 'docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md');
-const DEAD_REFS_BASELINE_PATH = resolve(ROOT, '.dead-refs-baseline.json');
+const DEAD_REFS_BASELINE_PATH = resolve(ROOT, 'config/baselines/.dead-refs-baseline.json');
 
 /**
  * Categories this repo expects to stay correct day to day — the set the
@@ -141,8 +141,10 @@ function categorise(path, body) {
   if (/-contract\.md$/.test(path) || path.startsWith('docs/ai-system/selfheal/')) return 'PROCESS_CONTRACT';
   if (path.startsWith('memory/system/')) return 'PROCESS_CONTRACT';
   if (path.startsWith('docs/superpowers/specs/')) return 'DESIGN_SPEC';
-  if (path.startsWith('docs/superpowers/plans/') || /PLAN[_.-]|_PLAN|\/plans\//i.test(path)) return 'PLAN';
-  if (path.startsWith('docs/audits/') || /AUDIT|FINDINGS|POSTMORTEM/i.test(path)) return 'AUDIT_SNAPSHOT';
+  // docs/superpowers/plans/ and most of docs/audits/ moved under docs/archive/ (2026-11-25) and are ARCHIVE above.
+  // The two audits still in docs/audits/ match the AUDIT regex below.
+  if (/PLAN[_.-]|_PLAN|\/plans\//i.test(path)) return 'PLAN';
+  if (/AUDIT|FINDINGS|POSTMORTEM/i.test(path)) return 'AUDIT_SNAPSHOT';
   if (path.startsWith('docs/operations/') && /RUNBOOK|CI_RUNBOOK/i.test(path)) return 'RUNBOOK';
   if (/\/README\.md$/.test(path)) return 'INDEX';
   // Standing reference material: product/domain/architecture writing that is not
@@ -599,8 +601,8 @@ function runLifecycle() {
     if (!DONE_STATUSES.has(status)) continue;
     // "KEPT FOR HISTORY -- do not delete this file" is an existing, deliberate
     // repo convention (19 files as of 2026-09-06: docs/v3-master-plan.md,
-    // docs/v3-wave-sequence.md, both docs/superpowers/plans/2026-04-22-*/
-    // 00-design-contract.md and 15 more) for a SUPERSEDED doc that stays put
+    // docs/v3-wave-sequence.md, both 2026-04-22-*/00-design-contract.md under
+    // docs/archive/superpowers-plans/ and 15 more) for a SUPERSEDED doc that stays put
     // because live REFERENCE docs still cite it by path and line range (e.g.
     // docs/business/*.md cite `docs/v3-master-plan.md:80-99` dozens of
     // times). Moving those into the attic would sever every one of those

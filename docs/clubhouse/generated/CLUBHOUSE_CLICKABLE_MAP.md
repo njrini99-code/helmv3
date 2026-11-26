@@ -10,7 +10,7 @@ a button or link by tag, or a JSX element with `onClick`, `onPress`,
 label, what makes it a control, then the nearest `data-ch-code` or `code` prop
 (on the element or an ancestor) when there is one. A label built at run time
 says so. This supersedes the 2026-09-30 snapshot in
-[CLICKABLES.md](../CLICKABLES.md).
+[CLICKABLES.md](../history/CLICKABLES.md).
 
 1799 controls in 394 files.
 

@@ -1654,6 +1654,11 @@
         "category": "services"
       },
       {
+        "id": "services:config/stylelint.clubhouse.config.mjs",
+        "pattern": "config/stylelint.clubhouse.config.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:docs/ai-system/selfheal/**",
         "pattern": "docs/ai-system/selfheal/**",
         "category": "services"
@@ -2256,11 +2261,6 @@
       {
         "id": "services:src/proxy.ts",
         "pattern": "src/proxy.ts",
-        "category": "services"
-      },
-      {
-        "id": "services:stylelint.clubhouse.config.mjs",
-        "pattern": "stylelint.clubhouse.config.mjs",
         "category": "services"
       }
     ],
@@ -17903,6 +17903,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:config/stylelint.clubhouse.config.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "config/stylelint.clubhouse.config.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:docs/operations/WORKSPACES.md",
       "kind": "feature_service",
       "evidence": [
@@ -18234,18 +18246,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/security/clubhouse-preview-headers.mjs"
-        }
-      ]
-    },
-    {
-      "source": "feature_awareness_system",
-      "target": "services:stylelint.clubhouse.config.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "stylelint.clubhouse.config.mjs"
         }
       ]
     },

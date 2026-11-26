@@ -464,7 +464,7 @@ quiet rerun.
 
 ## 6. Release package (tonight)
 
-See `docs/clubhouse/RELEASE_2026-09-30.md`.
+See `docs/clubhouse/history/RELEASE_2026-09-30.md`.
 
 ## 7. Status after "Fix all findings" (2026-10-01)
 

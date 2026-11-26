@@ -211,7 +211,7 @@ The follow-up runtime is committed as e8a103c2a. It consolidates remaining
 custom dialog lifetimes, fixes narrow Round setup and Settings controls,
 retains Roster message recipients, stabilizes phone Stats card/loading
 geometry and gives slow feedback the lifetime of its request and team scope.
-[UX_OPTIMIZATION.md](UX_OPTIMIZATION.md) records the measured limits and
+[UX_OPTIMIZATION.md](history/UX_OPTIMIZATION.md) records the measured limits and
 remaining task coverage.
 
 The optimized local build passed in 282 seconds, including TypeScript,

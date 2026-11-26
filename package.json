@@ -112,7 +112,7 @@
     "knowledge:entry-points:check": "node scripts/knowledge/gen-entry-points.mjs --check",
     "knowledge:front-door-check": "node scripts/knowledge/check-front-door.mjs",
     "helm-os:check": "npm run docs:check && npm run knowledge:check",
-    "lighthouse": "lhci autorun --config=lighthouserc.cjs",
+    "lighthouse": "lhci autorun --config=config/lighthouserc.cjs",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 0 && npm run lint:tooling",
     "lint:tooling": "eslint scripts e2e .claude/hooks supabase/functions",
     "lint:duplicate-exports": "node scripts/check-duplicate-exports.mjs",

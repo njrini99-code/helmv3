@@ -4,7 +4,7 @@ Status: active
 
 _Date: 2026-07-01 · Base: `feat/helm-bridge-command-center` off `origin/main` (tip `53697b35c`) · Status: APPROVED design, reconciled against a fresh reground of main._
 
-This spec supersedes the raw discovery design (`docs/superpowers/specs/helm-bridge/_discovery/design.json`) wherever the two disagree. Binding decisions live in `docs/superpowers/specs/helm-bridge/DECISIONS.md` and are not re-litigated here. The implementation plan is at `docs/superpowers/plans/2026-07-01-helm-bridge-command-center.md`.
+This spec supersedes the raw discovery design (`docs/superpowers/specs/helm-bridge/_discovery/design.json`) wherever the two disagree. Binding decisions live in `docs/superpowers/specs/helm-bridge/DECISIONS.md` and are not re-litigated here. The implementation plan is at `docs/archive/superpowers-plans/2026-07-01-helm-bridge-command-center.md`.
 
 ---
 

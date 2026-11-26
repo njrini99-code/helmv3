@@ -12,7 +12,7 @@
  * they are ALLOWED to differ. What is not allowed is one of them standing in
  * for production health while the other contradicts it.
  *
- * The contract is docs/OBSERVABILITY_AUTHORITY.md; this file is the part of it
+ * The contract is docs/observability/OBSERVABILITY_AUTHORITY.md; this file is the part of it
  * a screen can render. Deliberately pure: no fetching, no React, no Supabase,
  * so every arm below is testable without a fixture.
  *

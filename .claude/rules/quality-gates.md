@@ -65,8 +65,8 @@ themselves — `tsc` costs ~2.85 GB here and dies at the default heap.
 ### Lint
 `npm run lint` is the gate; `npm run lint:ratchet` enforces the count.
 ESLint does not catch `text-[Npx]` arbitrary Tailwind values. The Review
-Gate's blocking rules live in `.coderabbit/ast-grep/` and
-`.coderabbit/semgrep/` — that directory name is historical; CI consumes
+Gate's blocking rules live in `config/review-rules/ast-grep/` and
+`config/review-rules/semgrep/` — that directory name is historical; CI consumes
 them directly. A zero-finding semgrep run is not evidence of a clean tree —
 check the scanned-file count.
 

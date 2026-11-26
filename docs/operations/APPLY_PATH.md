@@ -22,7 +22,7 @@ changes, backfills) on the local Docker stack, apply, then verify.
 3. **`scripts/db/check-migration-headers.mjs`** (`npm run
    check:migration-headers`) fails the PR if a new migration needs headers
    and lacks them. Pre-existing files are grandfathered in
-   `.migration-headers-baseline.json` — a ratchet, it only shrinks.
+   `config/baselines/.migration-headers-baseline.json` — a ratchet, it only shrinks.
 4. **PR + review** — review the SQL and target. Use
    `db-migration-reviewer` when the risk warrants an independent look; an agent
    review is optional.

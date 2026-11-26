@@ -5,7 +5,7 @@ Targets the current Clubhouse implementation on PR #2155, starting from
 formatting, sizing and responsiveness. It changes no production flags, writes,
 approved layout structure, motion tokens or dismissal policy. The owner’s
 subsequent depth review explicitly rejects the earlier broad stacked shadows;
-the shared depth scale is reduced as recorded in [DEPTH_AUDIT](DEPTH_AUDIT.md).
+the shared depth scale is reduced as recorded in [DEPTH_AUDIT](history/DEPTH_AUDIT.md).
 
 ## Source coverage
 
@@ -126,7 +126,7 @@ The PR’s cancelled detector spent its five-minute limit fetching all branches
 and tags before classification. A two-deep PR merge checkout retains both
 base/head trees; the local Git fixture confirms its diff matches full history.
 The detector timeout and fail-closed required checks are preserved. See
-[CI runbook](../CI_RUNBOOK.md).
+[CI runbook](../operations/CI_RUNBOOK.md).
 
 ## Final local verification
 

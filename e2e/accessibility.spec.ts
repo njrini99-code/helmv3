@@ -13,7 +13,7 @@ import type { Page as AxePage } from 'playwright-core';
  * `disableRules` list below tracks known acceptable violations — add
  * a rule here only with a written justification (issue link, comment).
  *
- * Background: docs/v3-testing-standards.md explicitly punted visual
+ * Background: docs/archive/v3/v3-testing-standards.md explicitly punted visual
  * regression "until a separate tooling decision" — but a11y is not
  * visual regression. axe checks semantic markup, ARIA, contrast,
  * focus order — all things a screenshot won't catch.

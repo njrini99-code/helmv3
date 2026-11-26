@@ -131,7 +131,7 @@ jobs:
           # but until an owner adds a fine-grained PAT (repo scope:
           # contents:write, pull-requests:write) as `REGEN_PR_PAT`, the PR
           # needs a human push (or close/reopen by hand) to get CI. See
-          # docs/CI_RUNBOOK.md.
+          # docs/operations/CI_RUNBOOK.md.
           token: ${{ secrets.REGEN_PR_PAT || secrets.GITHUB_TOKEN }}
           commit-message: "chore(types): regen database.ts from production schema"
           branch: types/auto-regen

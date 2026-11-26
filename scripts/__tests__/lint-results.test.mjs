@@ -16,6 +16,7 @@ function fixture() {
   temporary.push(root);
   mkdirSync(join(root, 'scripts/lib'), { recursive: true });
   mkdirSync(join(root, 'src'));
+  mkdirSync(join(root, 'config/baselines'), { recursive: true });
   writeFileSync(join(root, 'src/example.ts'), 'export const example = 1;\n');
   for (const name of ['lint-ci.mjs', 'lint-ratchet.mjs', 'supabase-error-audit.mjs', 'fail-open-audit.mjs', 'paginated-read-audit.mjs', 'lib/lint-results.mjs']) {
     copyFileSync(join(repo, 'scripts', name), join(root, 'scripts', name));
@@ -74,7 +75,7 @@ describe('one ESLint scan', () => {
     });
     expect(calls).toBe(2);
     expect(f.run('lint-ci.mjs').status).toBe(1);
-    writeFileSync(join(f.root, '.lint-baseline.json'), '{}');
+    writeFileSync(join(f.root, 'config/baselines/.lint-baseline.json'), '{}');
     expect(f.run('lint-ratchet.mjs').status).toBe(1);
     expect(loadResults(f.root, [], f.env)[0].messages).toEqual([]);
   });
@@ -132,21 +133,21 @@ describe('existing gate semantics', () => {
   it('counts script errors with ERROR: and ignores audit rules in the generic ratchet', () => {
     const f = fixture();
     f.report([f.file('src/example.ts', [diagnostic(AUDIT_RULES[0]), diagnostic('regular')]), f.file('scripts/example.mjs', [diagnostic('regular', 2), diagnostic(AUDIT_RULES[1])])]);
-    writeFileSync(join(f.root, '.lint-baseline.json'), JSON.stringify({ regular: 1, 'ERROR:regular': 1 }));
+    writeFileSync(join(f.root, 'config/baselines/.lint-baseline.json'), JSON.stringify({ regular: 1, 'ERROR:regular': 1 }));
     expect(f.run('lint-ratchet.mjs').status).toBe(0);
-    writeFileSync(join(f.root, '.lint-baseline.json'), JSON.stringify({ regular: 1 }));
+    writeFileSync(join(f.root, 'config/baselines/.lint-baseline.json'), JSON.stringify({ regular: 1 }));
     const regression = f.run('lint-ratchet.mjs');
     expect(regression.status).toBe(1);
     expect(regression.stderr).toContain('ERROR:regular');
     expect(f.run('lint-ratchet.mjs', ['--update']).status).toBe(0);
-    expect(JSON.parse(readFileSync(join(f.root, '.lint-baseline.json'), 'utf8'))).toEqual({ regular: 1, 'ERROR:regular': 1 });
+    expect(JSON.parse(readFileSync(join(f.root, 'config/baselines/.lint-baseline.json'), 'utf8'))).toEqual({ regular: 1, 'ERROR:regular': 1 });
   });
 
   it.each(['supabase-error', 'fail-open', 'paginated-read'])('%s retains src-only totals, false-zero, slack, regression and updates', (name) => {
     const f = fixture();
     const index = ['supabase-error', 'fail-open', 'paginated-read'].indexOf(name);
     const rule = AUDIT_RULES[index];
-    const baseline = join(f.root, `.${name}-baseline.json`);
+    const baseline = join(f.root, `config/baselines/.${name}-baseline.json`);
     const run = () => f.run(`${name}-audit.mjs`);
     const withTotal = (count) => f.report([f.file('src/example.ts', Array.from({ length: count }, () => diagnostic(rule))), f.file('scripts/example.mjs', [diagnostic(rule)])]);
     writeFileSync(baseline, JSON.stringify({ total: 2 }));

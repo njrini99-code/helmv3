@@ -2,7 +2,7 @@
  * G-20b — an unknown commit outcome must not be reported as a definitive
  * failure.
  *
- * §9.5's prose, quoted in `audit/M03C-composer.md:36`: "An unknown commit
+ * §9.5's prose, quoted in `docs/archive/messages-v2-audit-2026-09/M03C-composer.md:36`: "An unknown commit
  * outcome uses Checking status or Confirmation unavailable, not a red
  * definitive failure that invites duplication." M03C's F3 measures the gap:
  * `sendMessage` treats every non-success path identically, and

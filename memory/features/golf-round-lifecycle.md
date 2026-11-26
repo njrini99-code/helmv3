@@ -914,7 +914,7 @@ by live bridge-log QA).
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
 - `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md`
-- `docs/v3-testing-standards.md`
+- `docs/archive/v3/v3-testing-standards.md`
 
 ## iOS shell chrome (updated 2026-08-26)
 
@@ -927,7 +927,7 @@ control sits below the status bar. The shared `Segmented` control renders an
 accent-green selected thumb in dark scope. Presentation layer only — no
 lifecycle contract change. Ledger: the round-lifecycle file under
 `memory/ledgers/changes/`
-(2026-08-26 entries); evidence: `docs/audits/evidence/ios-premium-2026-08-25/`
+(2026-08-26 entries); evidence: `docs/archive/audits-2026-08/evidence/ios-premium-2026-08-25/`
 (course picker, tee step, setup band, and scorecard header captures).
 
 ### Course picker viewport repair (2026-09-08)

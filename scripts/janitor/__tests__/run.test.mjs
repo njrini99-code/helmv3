@@ -32,8 +32,8 @@ features:
   'src/app/unmapped/page.tsx': 'export default function Page2() { return null; }\n',
   'src/lib/thing.ts': '/** @deprecated use other */\n// TODO: revisit\nexport function thing() {}\n',
   'src/lib/thing.test.ts': "vi.mock('./a');\ntest('x', () => {});\n",
-  '.duplicate-exports-baseline.json': JSON.stringify({ total: 0, entries: [] }),
-  '.doc-path-baseline.json': JSON.stringify({ total: 0, entries: [] }),
+  'config/baselines/.duplicate-exports-baseline.json': JSON.stringify({ total: 0, entries: [] }),
+  'config/baselines/.doc-path-baseline.json': JSON.stringify({ total: 0, entries: [] }),
   // A trivial stand-in for the real scripts/find-orphan-mounts.mjs so
   // orphan-routes.mjs exercises its real success path here, not just its
   // NO_SIGNAL "script missing" path (already covered directly in

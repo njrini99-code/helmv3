@@ -45,7 +45,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
   add a `NEXT_PUBLIC_` prefix!)
 - Both bypass Row Level Security - only use in server-side code
   (`src/lib/supabase/admin.ts`, and nowhere else outside that allowlist —
-  see `.coderabbit/semgrep/helmv3.yml`'s `helmv3-service-role-outside-admin`)
+  see `config/review-rules/semgrep/helmv3.yml`'s `helmv3-service-role-outside-admin`)
 
 ### Application URL
 

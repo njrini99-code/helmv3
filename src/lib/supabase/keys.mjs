@@ -45,7 +45,7 @@
  * `process.env.SUPABASE_SERVICE_ROLE_KEY` / `process.env.SUPABASE_SECRET_KEY`
  * as the sanctioned single place both names are read together, so it is
  * allowlisted (as `src/lib/supabase/keys*`) alongside `admin*` / `service*`
- * in `.coderabbit/semgrep/helmv3.yml` and in the ast-grep path scoping in
+ * in `config/review-rules/semgrep/helmv3.yml` and in the ast-grep path scoping in
  * `.github/workflows/review-gate.yml` (mirrored in
  * `scripts/__tests__/review-gate-rules.test.mjs`). Do not add a new
  * SUPABASE_SECRET_KEY / SUPABASE_SERVICE_ROLE_KEY reader anywhere else

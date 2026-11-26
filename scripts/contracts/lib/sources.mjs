@@ -93,7 +93,7 @@ export function gatherSources(repoRoot, featureId, featureEntry, overrides = {})
   const databaseTypesPath = 'src/lib/types/database.ts';
   const databaseTypesText = readFile(databaseTypesPath);
 
-  const schemaBaselinePath = '.doc-schema-baseline.json';
+  const schemaBaselinePath = 'config/baselines/.doc-schema-baseline.json';
   let schemaBaselineIdentifiers = new Set();
   const schemaBaselineRaw = readFile(schemaBaselinePath);
   if (schemaBaselineRaw) {

@@ -578,7 +578,7 @@ export default async function ErrorsPage({
     // The two counts are also asymmetric on purpose. The application side takes
     // error-or-worse only, because admin_events is GRADED and that grading is
     // its whole value. The runtime side takes every correlated Sentry incident,
-    // ungraded, because docs/OBSERVABILITY_AUTHORITY.md forbids silencing Sentry
+    // ungraded, because docs/observability/OBSERVABILITY_AUTHORITY.md forbids silencing Sentry
     // issues Helm happens to grade info — Helm's opinion of a fault it never
     // handled is not evidence about that fault.
     //

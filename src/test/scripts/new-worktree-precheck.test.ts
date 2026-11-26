@@ -194,7 +194,7 @@ describe('worktree retirement carries a standing grant', () => {
     const agents = readFileSync(resolve(REPO, 'AGENTS.md'), 'utf-8');
     expect(agents).toMatch(/STANDING OWNER[\s\S]{0,20}AUTHORIZATION/);
     // REVISED 2026-09-06: the two-command `gh pr merge && ... --retire` form
-    // is now one command — see scripts/pr-land.mjs and docs/CI_RUNBOOK.md.
+    // is now one command — see scripts/pr-land.mjs and docs/operations/CI_RUNBOOK.md.
     expect(agents).toContain('npm run pr:land -- <n>');
     expect(agents).toMatch(/runs `--retire`/i);
   });
