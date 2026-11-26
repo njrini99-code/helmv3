@@ -97,6 +97,82 @@ export function nameFrom(when) {
   return words.join('_') || 'UNNAMED';
 }
 
+// ── Category 25: what the Bridge does with each page (plan §6, owner decision D4) ──
+
+export const BRIDGE_ACTION_CATEGORY = 25;
+const CATEGORY_25_TEST = 'src/app/admin/clubhouse/__tests__/category-25.test.ts';
+
+/**
+ * Three rows per page, minted by `sync` like catalog rows but from this table rather than a catalog: P###-25-01
+ * "Open in Bridge", -02 "Signal the Bridge reads", -03 "Context pack". Their meaning, status, where and tests follow
+ * this table; their ID and name never change. A tombstoned one is never minted again.
+ *
+ * -02 stays reserved until signals reach the Bridge (the held migration and the clubhouse_signals switch); -01 and
+ * -03 are implemented, proved by CATEGORY_25_TEST, which names every one of their IDs.
+ */
+export const BRIDGE_ACTION_ROWS = [
+  {
+    item: 1,
+    name: 'OPEN_IN_BRIDGE',
+    meaning: (m) => `The Bridge opens ${m.id} ${m.name} as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with.`,
+    status: 'implemented',
+    where: 'src/app/admin/clubhouse/[page]/page.tsx#ClubhousePageDossier',
+    tests: [CATEGORY_25_TEST],
+  },
+  {
+    item: 2,
+    name: 'SIGNAL_THE_BRIDGE_READS',
+    meaning: (m) => `${m.id} ${m.name}'s signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4).`,
+    status: 'reserved',
+    where: 'src/app/api/ch/signal/route.ts#POST',
+  },
+  {
+    item: 3,
+    name: 'CONTEXT_PACK',
+    meaning: (m) => `The Duet desk (B13) builds ${m.id} ${m.name}'s context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1).`,
+    status: 'implemented',
+    where: 'src/lib/admin/clubhouse/pack.ts#buildPack',
+    tests: [CATEGORY_25_TEST],
+  },
+];
+
+/** The category 25 records every page should have, with the key order bridge-contracts.json uses. */
+export function bridgeActionRecords(manifests) {
+  const out = [];
+  for (const m of [...manifests].sort((a, b) => a.bridgeNamespace - b.bridgeNamespace)) {
+    if (!Number.isInteger(m.bridgeNamespace)) continue;
+    for (const row of BRIDGE_ACTION_ROWS) {
+      const rec = { id: bridgeId(m.bridgeNamespace, BRIDGE_ACTION_CATEGORY, row.item), page: m.id, category: BRIDGE_ACTION_CATEGORY, item: row.item, name: row.name, meaning: row.meaning(m), status: row.status, where: row.where };
+      if (row.tests) rec.tests = [...row.tests];
+      out.push(rec);
+    }
+  }
+  return out;
+}
+
+/** Adds the missing category 25 records and refreshes the existing ones' meaning, status, where and tests. */
+export function syncBridgeActions(records, manifests, tombstones) {
+  const tomb = new Set(tombstones.map((t) => t.id));
+  const byId = new Map(records.map((r) => [r.id, r]));
+  const out = records.map((r) => ({ ...r }));
+  const outById = new Map(out.map((r) => [r.id, r]));
+  for (const want of bridgeActionRecords(manifests)) {
+    if (tomb.has(want.id)) continue;
+    const cur = outById.get(want.id);
+    if (!cur) {
+      out.push(want);
+      continue;
+    }
+    if (byId.get(want.id)?.chCode) continue; // a catalog row already owns this ID; checkRegistry reports it
+    cur.meaning = want.meaning;
+    cur.status = want.status;
+    cur.where = want.where;
+    if (want.tests) cur.tests = want.tests;
+    else delete cur.tests;
+  }
+  return out.sort((a, b) => a.id - b.id);
+}
+
 // ── Sync (append-only) ──
 
 /**
@@ -138,6 +214,12 @@ export function syncBridge({ existing, rows, manifests, map, tombstones, used })
     outByCode.set(row.code, rec);
   }
   return out.sort((a, b) => a.id - b.id);
+}
+
+/** The full sync `sync` writes and `check` compares: catalog rows, then the Bridge's category 25 rows. */
+export function syncAll(ctx) {
+  const catalog = syncBridge({ existing: ctx.bridge, rows: ctx.rows, manifests: ctx.manifests, map: ctx.map, tombstones: ctx.tombstones, used: ctx.used });
+  return syncBridgeActions(catalog, ctx.manifests, ctx.tombstones);
 }
 
 // ── Checks ──
@@ -406,6 +488,13 @@ export function checkRegistry(ctx) {
         else if (rec.status === 'deprecated') v.push(`${at}: ${a.id} bridge.${k} ${id} is retired; point it at the outcome that replaced it`);
       }
       for (const p of [a.component, a.service].filter(Boolean)) if (!exists(p.split('#')[0])) v.push(`${at}: ${a.id} path ${p} does not exist`);
+    }
+
+    // B11 drift list 8: a page needs a contract of its own; the Bridge's category 25 rows don't count (plan §13).
+    // Asked once sync has given the page its category 25 rows (a page with none at all is "out of date" first).
+    const pageRows = bridge.filter((r) => r.page === m.id);
+    if (pageRows.length && !pageRows.some((r) => r.category !== BRIDGE_ACTION_CATEGORY && r.status !== 'deprecated')) {
+      v.push(`${at}: ${m.id} has no Bridge ID of its own (category 25 is the Bridge's; give the page a catalog block)`);
     }
 
     // Held plans.
@@ -858,7 +947,7 @@ export function load(root) {
 export function runRegistryCheck(root) {
   const ctx = load(root);
   const v = checkRegistry(ctx);
-  const synced = syncBridge({ existing: ctx.bridge, rows: ctx.rows, manifests: ctx.manifests, map: ctx.map, tombstones: ctx.tombstones, used: ctx.used });
+  const synced = syncAll(ctx);
   if (JSON.stringify(synced) !== JSON.stringify(ctx.bridge)) v.push('config/clubhouse/bridge-contracts.json is out of date with the catalog; run node scripts/clubhouse/registry.mjs sync');
   for (const [p, content] of Object.entries(generateDocs({ ...ctx, bridge: synced }))) {
     if (!ctx.exists(p) || ctx.read(p) !== content) v.push(`${p} is stale; run node scripts/clubhouse/registry.mjs sync`);
@@ -871,7 +960,7 @@ function main() {
   const cmd = process.argv[2] ?? 'check';
   if (cmd === 'sync') {
     const ctx = load(root);
-    const bridge = syncBridge({ existing: ctx.bridge, rows: ctx.rows, manifests: ctx.manifests, map: ctx.map, tombstones: ctx.tombstones, used: ctx.used });
+    const bridge = syncAll(ctx);
     writeFileSync(join(root, 'config/clubhouse/bridge-contracts.json'), JSON.stringify(bridge, null, 2) + '\n');
     if (!ctx.exists('config/clubhouse/bridge-tombstones.json')) writeFileSync(join(root, 'config/clubhouse/bridge-tombstones.json'), '[]\n');
     for (const [p, content] of Object.entries(generateDocs({ ...ctx, bridge }))) {

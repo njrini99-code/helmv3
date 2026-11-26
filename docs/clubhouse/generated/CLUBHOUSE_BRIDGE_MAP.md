@@ -157,23 +157,23 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 2 | 1 | 7 | — | 18 | 8 | 4 | 1 | — | — | — | 1 | 2 | — | 22 | 9 | 28 | 1 | 3 | 1 | 3 | 1 | 1 | — | 116 |
-| P002 | 5 | 2 | 1 | 17 | 8 | 26 | 1 | 6 | — | — | 1 | — | — | 2 | — | 3 | 3 | 8 | 1 | — | 1 | — | 1 | 1 | — | 87 |
-| P003 | 4 | 3 | 3 | 9 | 4 | 27 | 4 | 6 | 3 | — | 2 | 3 | 1 | 3 | — | 4 | 4 | 10 | 1 | 1 | 1 | — | 1 | 1 | — | 95 |
-| P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 | — | — | 1 | — | 1 | — | 4 | 4 | 6 | 1 | 1 | 1 | — | 1 | 1 | — | 64 |
-| P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 | — | 1 | 2 | — | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 | — | 1 | 1 | — | 98 |
-| P006 | 9 | 6 | 3 | 13 | 16 | 68 | 1 | 8 | 4 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 12 | 1 | 1 | 1 | — | 1 | 1 | — | 172 |
-| P007 | 2 | 12 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 | — | 2 | 1 | — | 122 |
-| P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 | — | 1 | 1 | — | 138 |
-| P009 | 12 | 7 | 4 | 12 | 17 | 38 | 8 | 12 | 6 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 | — | 4 | 1 | — | 153 |
-| P010 | 3 | 10 | — | 18 | 10 | 25 | 1 | 4 | 1 | — | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 | — | 1 | 1 | — | 92 |
-| P011 | 16 | 16 | — | 28 | 11 | 47 | 22 | 5 | 3 | — | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 | — | 1 | 2 | — | 217 |
-| P012 | 3 | 3 | — | 8 | 19 | 22 | 3 | 3 | 2 | — | 5 | 1 | — | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 | — | 1 | 1 | — | 96 |
-| P013 | 6 | 13 | — | 34 | 3 | 49 | 63 | 7 | 3 | — | 3 | 1 | — | 3 | 3 | 4 | 10 | 19 | 1 | — | 1 | — | 1 | — | — | 224 |
-| P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 | — | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 | — | — | — | — | — | 69 |
-| P015 | — | 7 | 2 | 3 | 12 | 22 | 27 | 2 | 2 | — | — | 3 | — | 1 | — | 17 | 7 | 6 | 2 | 1 | 1 | — | 1 | — | — | 116 |
-| P016 | 33 | 2 | 1 | 29 | 4 | 40 | 3 | 1 | 2 | 2 | 6 | 1 | — | — | 5 | 2 | — | 4 | — | — | — | — | — | — | — | 135 |
-| P017 | — | — | — | — | 12 | 9 | — | — | — | 2 | — | — | — | — | 1 | — | — | — | — | — | — | — | 1 | — | — | 25 |
+| P001 | 3 | 2 | 1 | 7 | — | 18 | 8 | 4 | 1 | — | — | — | 1 | 2 | — | 22 | 9 | 28 | 1 | 3 | 1 | 3 | 1 | 1 | 3 | 119 |
+| P002 | 5 | 2 | 1 | 17 | 8 | 26 | 1 | 6 | — | — | 1 | — | — | 2 | — | 3 | 3 | 8 | 1 | — | 1 | — | 1 | 1 | 3 | 90 |
+| P003 | 4 | 3 | 3 | 9 | 4 | 27 | 4 | 6 | 3 | — | 2 | 3 | 1 | 3 | — | 4 | 4 | 10 | 1 | 1 | 1 | — | 1 | 1 | 3 | 98 |
+| P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 | — | — | 1 | — | 1 | — | 4 | 4 | 6 | 1 | 1 | 1 | — | 1 | 1 | 3 | 67 |
+| P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 | — | 1 | 2 | — | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 | — | 1 | 1 | 3 | 101 |
+| P006 | 9 | 6 | 3 | 13 | 16 | 68 | 1 | 8 | 4 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 12 | 1 | 1 | 1 | — | 1 | 1 | 3 | 175 |
+| P007 | 2 | 12 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 | — | 2 | 1 | 3 | 125 |
+| P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 | — | 1 | 1 | 3 | 141 |
+| P009 | 12 | 7 | 4 | 12 | 17 | 38 | 8 | 12 | 6 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 | — | 4 | 1 | 3 | 156 |
+| P010 | 3 | 10 | — | 18 | 10 | 25 | 1 | 4 | 1 | — | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 | — | 1 | 1 | 3 | 95 |
+| P011 | 16 | 16 | — | 28 | 11 | 47 | 22 | 5 | 3 | — | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 | — | 1 | 2 | 3 | 220 |
+| P012 | 3 | 3 | — | 8 | 19 | 22 | 3 | 3 | 2 | — | 5 | 1 | — | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 | — | 1 | 1 | 3 | 99 |
+| P013 | 6 | 13 | — | 34 | 3 | 49 | 63 | 7 | 3 | — | 3 | 1 | — | 3 | 3 | 4 | 10 | 19 | 1 | — | 1 | — | 1 | — | 3 | 227 |
+| P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 | — | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 | — | — | — | — | 3 | 72 |
+| P015 | — | 7 | 2 | 3 | 12 | 22 | 27 | 2 | 2 | — | — | 3 | — | 1 | — | 17 | 7 | 6 | 2 | 1 | 1 | — | 1 | — | 3 | 119 |
+| P016 | 33 | 2 | 1 | 29 | 4 | 40 | 3 | 1 | 2 | 2 | 6 | 1 | — | — | 5 | 2 | — | 4 | — | — | — | — | — | — | 3 | 138 |
+| P017 | — | — | — | — | 12 | 9 | — | — | — | 2 | — | — | — | — | 1 | — | — | — | — | — | — | — | 1 | — | 3 | 28 |
 
 ## P001 Shell
 
@@ -295,6 +295,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 12203 | CH-1953 | 22 Analytics | `A_SLOW_RESPONSE_TO_A_CLICK` | implemented | A slow response to a click (slow click) |
 | 12301 | — | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.{read}. |
 | 12401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | Every catalog code is used in code and forced by a test that names it; clubhouse:check fails a row of kinds 0 to 5 that no test names. |
+| 12501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P001 Shell as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 12502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P001 Shell's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 12503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P001 Shell's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P002 Home
 
@@ -387,6 +390,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 22101 | — | 21 Performance | `LOADERS_NEVER_THROW` | implemented | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
 | 22301 | — | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game, legs) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
 | 22401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/home.test.tsx and player-home.test.tsx name in a test title every Home catalog code of kinds 0 to 5 that is not marked preview, and each hand contract on this page. |
+| 22501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P002 Home as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 22502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P002 Home's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 22503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P002 Home's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P003 Roster
 
@@ -487,6 +493,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 32101 | — | 21 Performance | `LOADER_NEVER_THROWS` | implemented | loadRoster reads the team, the members and the join requests in one parallel round, then rounds, focus areas, goals and this coach's notes in a second (it needs the member ids); every failed read is logged through chLogServer and flagged, never thrown, and a failed read is never shown as empty. |
 | 32301 | — | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A failed change is reported through chReport with surface roster and its action name (roster.removePlayer, roster.approveRequest, roster.declineRequest, roster.approveAll, roster.coachNote), a crash with its section surface (roster.requests, roster.list, roster.peek), and a failed server read through chLogServer('roster', ...); each intent leaves a chTrail breadcrumb. |
 | 32401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/roster.test.tsx names, in a test title, every Roster catalog code of kinds 0 to 5 that is not marked preview, and each hand contract above. |
+| 32501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P003 Roster as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 32502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P003 Roster's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 32503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P003 Roster's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P004 Stats (team)
 
@@ -556,6 +565,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 42101 | — | 21 Performance | `ONE_PASS_LOADER` | implemented | loadTeamStats reads the team and its roster together, starts the D1 benchmarks before the rounds come back, then reads the round figures and the putts together, once each (id chunks in parallel); every failed read is logged and flagged, never thrown. |
 | 42301 | — | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A failed read is logged through chLogServer('stats', team\|members\|rounds\|roundCache\|putts\|tourBenchmarks); a section crash is reported through chReport with its surface (stats.team.figures, trend, legs, putting, bests) at high severity, a blocked export at low severity as stats.team.export; a window change and a focused player leave a chTrail breadcrumb. |
 | 42401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/stats-team.test.tsx names, in a test title, every Stats team catalog code it forces (the rows whose Test column names it) and each hand contract above. |
+| 42501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P004 Stats (team) as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 42502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P004 Stats (team)'s signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 42503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P004 Stats (team)'s context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P005 Stats (player)
 
@@ -659,6 +671,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 52101 | — | 21 Performance | `ONE_PASS_LOADER` | implemented | loadPlayerProfile reads the team, the player and the membership together, then the rounds, shot detail, benchmarks, focus areas and goals together, and the round figures once; a failed rounds, shot detail, benchmark, focus area or goal read is logged and flagged, never thrown. |
 | 52301 | — | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A failed read is logged through chLogServer('stats', player\|team\|membership\|rounds\|detailedStats\|tourBenchmarks\|focusAreas\|goals); a tab crash is reported through chReport with its surface (stats.player.overview, game, rounds, development) at high severity; a failed focus area save at low severity as stats.addFocusArea; a window change and a tab change leave a chTrail breadcrumb. |
 | 52401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/stats-player.test.tsx names, in a test title, every Stats player catalog code it forces (the rows whose Test column names it, and the no-team row Team stats catalogues) and each hand contract above. |
+| 52501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P005 Stats (player) as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 52502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P005 Stats (player)'s signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 52503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P005 Stats (player)'s context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P006 Calendar
 
@@ -836,6 +851,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 62101 | — | 21 Performance | `LOADER_READS_IN_THREE_ROUNDS` | implemented | The server loader reads each table once for the whole screen, in three rounds and never per event or per player: the team's zone, name and roster; then events, class schedules and (for a coach) their busy time together; then every event's replies, one read for each 200 events. A read that fails is flagged and logged, never thrown. |
 | 62301 | — | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A read that fails in the loader is logged through chLogServer("calendar", {read}) and named on the page; a write that fails is reported through chReport under the calendar surface with its action (calendar.saveEvent and the rest), after a chTrail breadcrumb for the intent; a section that cannot load reports under its own surface (calendar.subscribe, calendar.files, calendar.attendance). |
 | 62401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/calendar.test.tsx names in a test title every Calendar catalog code of kinds 0 to 5 that is not marked preview, and every hand contract on this page it proves by its Bridge ID; the calendar model checks are in logic.test.ts. |
+| 62501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P006 Calendar as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 62502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P006 Calendar's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 62503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P006 Calendar's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P007 Messages
 
@@ -963,6 +981,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 72301 | — | 23 Logging / observability | `FAILURES_REPORTED` | implemented | Every client failure is reported through chReport with surface messages.<action>; server reads log through chLogServer("messages", ...); each intent leaves a chTrail breadcrumb. |
 | 72302 | — | 23 Logging / observability | `HELD_ACTION_REFUSES_OFF` | implemented | The held conversation-files action refuses before any read unless the Clubhouse UI is on for the caller (D-61). |
 | 72401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/messages.test.tsx names every catalog code it forces, and the conversation-files action has its own test file. |
+| 72501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P007 Messages as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 72502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P007 Messages's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 72503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P007 Messages's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P008 Settings
 
@@ -1106,6 +1127,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 82101 | — | 21 Performance | `LOADER_NEVER_FAILS_THE_PAGE` | implemented | The server loader reads everything the page shows before first paint, in parallel batches; a read that returns an error or throws becomes that section's failed flag and a chLogServer line, and never fails the page. |
 | 82301 | — | 23 Logging / observability | `FAILURES_REPORTED` | implemented | Every client failure is reported through chReport with surface settings (form saves, by action name), settings.notifications, settings.routing or settings.coachhelm (switches and autosave), settings.profile, settings.invite or settings.session (cards) or settings.<section> (a crash, high severity); server reads log through chLogServer('settings', read, error, area); each intent leaves a chTrail breadcrumb. |
 | 82401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | settings.test.tsx and settings-server.test.tsx name every catalog code of kinds 0 to 5 they force, and every hand contract they prove by its Bridge ID in a test title; the settings model checks are in logic.test.ts. |
+| 82501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P008 Settings as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 82502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P008 Settings's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 82503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P008 Settings's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P009 Qualifiers
 
@@ -1264,6 +1288,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 92303 | — | 23 Logging / observability | `SELECTION_REFUSAL_KEPT_FOR_THE_TRAIL` | implemented | The selection actions' own refusal text, cut at 200 characters, goes to a chTrail breadcrumb ('qualifiers selection refused') and not to the coach, so Sentry keeps what the server said. |
 | 92304 | — | 23 Logging / observability | `INTENTS_LEAVE_BREADCRUMBS` | implemented | Each intent leaves a chTrail breadcrumb before anything is sent: a filter, opening the scorecards, asking to close, asking to start selecting or to confirm, Create, Save, and the write itself by name (action `qualifiers.<name>`). |
 | 92401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/qualifiers.test.tsx names every catalog code of kinds 0 to 5 it forces and every hand contract it proves by its Bridge ID in a test title, and the server actions behind Manage selections, Close and Edit have their own test files. |
+| 92501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P009 Qualifiers as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 92502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P009 Qualifiers's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 92503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P009 Qualifiers's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P010 Team Hub
 
@@ -1361,6 +1388,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 102101 | — | 21 Performance | `LOADER_READS_IN_ROUNDS` | implemented | The server loader reads the page for either role before first paint, in a few rounds of parallel reads and never one request per row: attendance, task completion and a player's reply rules are each read once for every event or task together (in chunks of 200); a read that fails is flagged on its own section and logged, never thrown, so a partial read still renders the rest. |
 | 102301 | — | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A read that fails in the loader is logged through chLogServer("hub", {read}) and named on the page; a write that fails is reported through chReport under the hub surface with its action (hub.reply and the rest), at low severity when the server refused it, after a chTrail breadcrumb for the intent (hub tab {tab}, action hub.{name}); a section that crashes reports under its own surface (hub.updates and the rest). |
 | 102401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | src/clubhouse/__tests__/hub.test.tsx names in a test title every Team Hub catalog code of kinds 0 to 5 that is not marked preview, and every hand contract on this page it proves by its Bridge ID. |
+| 102501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P010 Team Hub as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 102502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P010 Team Hub's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 102503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P010 Team Hub's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P011 Rounds
 
@@ -1583,6 +1613,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 112301 | — | 23 Logging / observability | `FAILURES_ARE_LOGGED_BY_NAME` | implemented | A read that fails in a loader is logged through chLogServer under its surface and read (rounds with list, unfinished or unfinished-holes; rounds.review with round, membership, holes, shots, tee or player) and named on the page. A write that fails goes through useAction, which reports it under its action (rounds.discard, rounds.start), at low severity when the server refused it. A section that crashes is contained and reported under its own surface (rounds.unfinished, rounds.season, rounds.book, rounds.review.card, rounds.review.hole). Setup's course and tee reads run in the browser and report nothing themselves: the round screen's ports must. |
 | 112401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | implemented | The page's test files (rounds.test, round-review.test, round-setup.test, round-tracking.test and round-entry.test, and, through the real engines, round-entry-wiring.test, round-entry-continue.test and round-entry-routes.test) name in a test title every P011 catalog code of kinds 0 to 5 that is not marked preview (clubhouse:check enforces it), and every hand contract they prove by its Bridge ID. |
 | 112402 | — | 24 CI / automated test | `ROUND_LIFECYCLE_MATCHES_PRODUCTION` | implemented | Driven through the real new-round engine to the same round (course, tees, nine, start hole, type, date), Clubhouse's setup (its read ports and toStartForm) and Fairway's (the library tee pick and the setup form's submit) make the same start, the same checkpoint for every hole and the same submit, field for field; the one kept difference is the back nine's start hole configs (card numbers on Fairway, 1 to 9 on Clubhouse). The course's city and state are saved as the library has them, and a round from one of the player's saved courses (110116) sends what Fairway's saved-course start sends. Yardages follow Fairway's rule for the course (yardageRule): a library tee starts on its pars with a blank yardage at 0, a saved course needs one yardage, a course typed in by hand needs every one. |
+| 112501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P011 Rounds as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 112502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P011 Rounds's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 112503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P011 Rounds's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P012 Classes
 
@@ -1684,6 +1717,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 122101 | — | 21 Performance | `LOADER_READS_IN_ONE_PASS` | implemented | The server loader reads the page before first paint in one pass: the team's time zone, then the player's classes and the team's events for the week together (each limited to 500 rows). Each failed read is flagged on its own (classes.error, week.error) and logged, never thrown, so the other still shows. "Today" is the team's day in the team's zone (in the evening in New York it is already tomorrow in UTC), and the week runs Monday to Sunday around it. |
 | 122301 | — | 23 Logging / observability | `FAILURES_REPORTED` | reserved | A read that fails in the loader is logged through chLogServer("classes", "classes" or "events") and named on the page. A write that fails is reported through chReport under the classes surface with its action (classes.save, classes.remove, classes.import, classes.sync), at low severity when the server refused it, after a chTrail breadcrumb for the intent. A calendar removal or sync that throws is reported under classes.remove or classes.sync. A section that crashes reports under its own surface (classes.term, classes.deck, classes.side). |
 | 122401 | — | 24 CI / automated test | `TESTS_NAME_CONTRACTS` | reserved | src/clubhouse/__tests__/classes.test.tsx names every Classes catalog code of kinds 0 to 5 it forces (clubhouse:check fails a row that no test names), and every hand contract it proves by its Bridge ID in a test title. Reserved: no test title carries a Bridge ID yet, and no test asserts this. |
+| 122501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P012 Classes as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 122502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P012 Classes's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 122503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P012 Classes's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P013 CoachHelm
 
@@ -1913,6 +1949,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131901 | — | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes its phone frame, the shell's top bar reads CoachHelm, and the views are a row of chips that scrolls sideways. The pages' writes and states are the desktop's. |
 | 132101 | — | 21 Performance | `LOADER_READS_IN_ROUNDS` | implemented | The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it. |
 | 132301 | — | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A read that fails in a loader is logged through chLogServer('coachhelm', {read}, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |
+| 132501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P013 CoachHelm as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 132502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P013 CoachHelm's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 132503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P013 CoachHelm's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P014 Recruiting
 
@@ -1987,6 +2026,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 141808 | CH-14808 | 18 Accessibility | `THE_RECRUITING_CALENDAR_LINE` | implemented | The recruiting calendar line |
 | 141901 | CH-14914 | 19 Responsive layout | `THE_PHONE` | implemented | The phone |
 | 142001 | CH-14913 | 20 Keyboard / input | `KEYBOARD` | implemented | Keyboard |
+| 142501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P014 Recruiting as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 142502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P014 Recruiting's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 142503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P014 Recruiting's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P015 Auth
 
@@ -2108,6 +2150,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 152001 | CH-15910 | 20 Keyboard / input | `THE_KEYBOARD` | implemented | The keyboard |
 | 152101 | CH-15907 | 21 Performance | `EITHER_SCREEN_LOADS_ON_A_SLOW_PHONE` | implemented | Either screen loads, on a slow phone or a fast desktop |
 | 152301 | CH-15908 | 23 Logging / observability | `A_READ_FAILS_OR_THE_COURSE_CRASHES` | implemented | A read fails, or the course crashes |
+| 152501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P015 Auth as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 152502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P015 Auth's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 152503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P015 Auth's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P016 Tournaments
 
@@ -2248,6 +2293,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 161802 | CH-16641 | 18 Accessibility | `CALENDAR_GRID_BLOCK` | implemented | Calendar grid block (slice 4) |
 | 161803 | CH-16850 | 18 Accessibility | `HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE_2` | implemented | Home: a tournament arrives while the page is open |
 | 161880 | CH-16880 | 18 Accessibility | `ENTER_HOLES_THE_GRID_BY_KEYBOARD_AND` | implemented | Enter holes: the grid by keyboard and screen reader |
+| 162501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P016 Tournaments as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 162502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P016 Tournaments's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 162503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P016 Tournaments's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## P017 Practice
 
@@ -2278,6 +2326,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 171002 | CH-17106 | 10 Warning | `THE_PLAN_RUNS_PAST_THE_END_OF` | implemented | The plan runs past the end of practice |
 | 171501 | CH-17505 | 15 Data freshness / sync | `ANOTHER_COACH_SAVED_THE_PLAN_FIRST` | implemented | Another coach saved the plan first |
 | 172301 | CH-17205 | 23 Logging / observability | `HOMES_PLAN_LINE_OR_THE_PLAYERS_NOTIFICATION` | implemented | Home's plan line or the players' notification fan-out fails |
+| 172501 | — | 25 Helm Bridge action | `OPEN_IN_BRIDGE` | implemented | The Bridge opens P017 Practice as a dossier (B02): its contract, states, controls, actions and docs, read from the graph this deploy shipped with. |
+| 172502 | — | 25 Helm Bridge action | `SIGNAL_THE_BRIDGE_READS` | reserved | P017 Practice's signals (views, actions, outcomes, failures) reach the Bridge through POST /api/ch/signal and are read against the graph (plan §4). |
+| 172503 | — | 25 Helm Bridge action | `CONTEXT_PACK` | implemented | The Duet desk (B13) builds P017 Practice's context pack: the contract, the code, what to read, how to reproduce and what done means (plan §9.1). |
 
 ## Tombstones
 
