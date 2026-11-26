@@ -63,6 +63,29 @@ export interface GraphId {
   catalogRow?: { when?: string; theySee?: string; how?: string; test?: string };
 }
 
+/**
+ * One numbered control (`CTL-P###-NNN`, plan §4.7). The ledger that fills these lands separately; every field past
+ * `page` and `actions` is optional so the Bridge renders whatever the ledger carries without a second type change.
+ */
+export interface GraphControl {
+  page: PageId;
+  /** The label as drawn. Absent when the label is built at run time; `labelTemplate` then says how. */
+  label?: string;
+  labelTemplate?: string;
+  /** Plain words: what pressing it does. */
+  description?: string;
+  /** `src/...tsx` or `src/...tsx:line` or `file#symbol`. */
+  file?: string;
+  role?: 'coach' | 'player' | 'both' | 'shared' | 'signed-out';
+  viewport?: 'desk' | 'phone' | 'both';
+  surface?: string;
+  actions: string[];
+  /** The design-board verdict (CLICKABLES.md): works, decided, GAP, hidden, data-gap. */
+  verdict?: string;
+  /** The board section that row sits under. */
+  board?: string;
+}
+
 export interface GraphFinding {
   page: PageId;
   screen: string;
@@ -70,7 +93,8 @@ export interface GraphFinding {
   dimension: string;
   standard: string;
   title: string;
-  repro: string;
+  /** One step per entry in the generated file; older audits wrote one string. */
+  repro: string | string[];
   fix: string;
   files: string[];
   tier: 'W' | 'S' | 'D' | 'C';
@@ -85,7 +109,7 @@ export interface BridgeGraph {
   pages: Record<PageId, GraphPage>;
   surfaces: Record<string, { page: PageId | null; files: string[] }>;
   /** Empty until PR 2 numbers the controls (§4.7). */
-  controls: Record<string, { page: PageId; label: string; actions: string[] }>;
+  controls: Record<string, GraphControl>;
   actions: Record<string, GraphAction>;
   ids: Record<string, GraphId>;
   tombstones: Record<string, { removedAt: string; replacement: BridgeId | null }>;
