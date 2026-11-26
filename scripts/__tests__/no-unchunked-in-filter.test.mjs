@@ -4,7 +4,7 @@ import tsParser from '@typescript-eslint/parser';
 import rule from '../../eslint-rules/no-unchunked-in-filter.mjs';
 
 /**
- * Canary for helm/no-unchunked-in-filter, which scripts/supabase-chunk-audit.mjs
+ * Canary for helm/no-unchunked-in-filter, which scripts/audits/supabase-chunk-audit.mjs
  * enforces as a count. The unflagged cases are lists whose size is fixed in the
  * source or that are already a chunkIds slice; the flagged cases are the
  * unbounded shapes the rule exists for, and must stay flagged.
