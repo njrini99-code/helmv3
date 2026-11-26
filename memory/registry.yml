@@ -1676,6 +1676,9 @@ features:
         - src/app/admin/actions/golf-tracer.ts
         - src/app/admin/actions/billing.ts
         - src/app/admin/actions/sessions.ts
+        # The Bridge's notes (bridge_notes): Mark expected, Watch, Mark sent
+        # and Archive on the Clubhouse screens above (Bridge notes, #2641).
+        - src/app/admin/actions/bridge-notes.ts
       services:
         - src/lib/supabase/admin*
         - src/lib/cron/**
@@ -1767,6 +1770,7 @@ features:
         # so it fell through to no owner. `scripts/knowledge/check-registry-
         # orphans.mjs` now fails the build if this ever regresses.
         - src/app/admin/__tests__/**
+        - src/app/admin/actions/__tests__/bridge-notes.test.ts
     integrations:
       - supabase
       - datadog
