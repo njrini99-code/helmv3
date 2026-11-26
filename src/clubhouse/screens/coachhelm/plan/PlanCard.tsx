@@ -140,7 +140,7 @@ export function AskIn({ label, value, onChange, onSend }: { label: string; value
           if (value.trim()) onSend();
         }}
       />
-      <button type="button" aria-label="Send" disabled={!value.trim()} onClick={onSend}>
+      <button data-ctl="CTL-P013-171" type="button" aria-label="Send" disabled={!value.trim()} onClick={onSend}>
         <Icon icon={ArrowUp} size={18} />
       </button>
     </div>
@@ -354,7 +354,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
   const fullBody = (
     <>
       <div className="fbar">
-        <button type="button" className="back" aria-label={phone ? undefined : 'Close the plan'} onClick={() => setFull(false)}>
+        <button data-ctl="CTL-P013-172" type="button" className="back" aria-label={phone ? undefined : 'Close the plan'} onClick={() => setFull(false)}>
           <Icon icon={phone ? ChevronLeft : X} size={18} />
           {phone && 'Ask'}
         </button>
@@ -367,7 +367,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             align="end"
             items={[{ label: 'Print', icon: Printer, onSelect: () => void printPlan(sheetModel) }, { label: 'Share PDF', icon: Share, onSelect: () => void sharePlanPdf(sheetModel).then((ok) => { if (!ok) toast({ tone: 'error', title: 'Couldn’t make the PDF', body: 'Print can still save one.' }); }) }]}
             trigger={(p) => (
-              <button type="button" className="fmore__b" aria-label="More for this plan" {...p}>
+              <button data-ctl="CTL-P013-173" type="button" className="fmore__b" aria-label="More for this plan" {...p}>
                 <Icon icon={Ellipsis} size={20} />
               </button>
             )}
@@ -375,11 +375,11 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
         </span>
         {!phone && versions.length > 0 && (
           <span className="vsw">
-            <button type="button" aria-label="Earlier version" disabled={(viewing ?? own) <= 0} onClick={() => setViewing((viewing ?? own) - 1)}>
+            <button data-ctl="CTL-P013-174" type="button" aria-label="Earlier version" disabled={(viewing ?? own) <= 0} onClick={() => setViewing((viewing ?? own) - 1)}>
               <Icon icon={ChevronLeft} size={14} />
             </button>
             <span className="vl ch-num">{(viewing ?? own) + 1} of {versions.length}</span>
-            <button type="button" aria-label="Later version" disabled={(viewing ?? own) >= versions.length - 1} onClick={() => setViewing((viewing ?? own) + 1)}>
+            <button data-ctl="CTL-P013-175" type="button" aria-label="Later version" disabled={(viewing ?? own) >= versions.length - 1} onClick={() => setViewing((viewing ?? own) + 1)}>
               <Icon icon={ChevronRight} size={14} />
             </button>
           </span>
@@ -398,23 +398,23 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
               <p className="fnote is-saved" role="status">
                 <b>Plan saved · Documents · {state.folder}</b>
                 {undoOpen && (
-                  <button type="button" className="fundo" disabled={undoing} onClick={undoSave}>
+                  <button data-ctl="CTL-P013-176" type="button" className="fundo" disabled={undoing} onClick={undoSave}>
                     Undo
                   </button>
                 )}
               </p>
             )}
             {state.k === 'saved' && (
-              <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}/edit`)}>
+              <Button data-ctl="CTL-P013-177" variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}/edit`)}>
                 Edit in builder
               </Button>
             )}
             {state.k !== 'saved' && (
-              <Button variant="secondary" busy={state.k === 'saving'} onClick={() => void save()}>
+              <Button data-ctl="CTL-P013-178" variant="secondary" busy={state.k === 'saving'} onClick={() => void save()}>
                 {state.k === 'saving' ? 'Saving…' : state.k === 'failed' ? 'Try again' : 'Save draft'}
               </Button>
             )}
-            <Button variant="primary" onClick={() => { setFull(false); void publish(); }}>
+            <Button data-ctl="CTL-P013-179" variant="primary" onClick={() => { setFull(false); void publish(); }}>
               Publish…
             </Button>
           </>
@@ -434,7 +434,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             <span className="m">{['Draft', redrafted.length ? plan.title : plan.when].filter(Boolean).join(' · ')}</span>
           </div>
           {!writing && (
-            <Button variant="secondary" size="sm" onClick={() => setFull(true)}>
+            <Button data-ctl="CTL-P013-180" variant="secondary" size="sm" onClick={() => setFull(true)}>
               Open
             </Button>
           )}
@@ -487,7 +487,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                 </div>
                 <div>
                   <div className="bt">
-                    <button type="button" className="btt" onClick={() => setSheet({ kind: 'block', id: b.id })}>
+                    <button data-ctl="CTL-P013-181" type="button" className="btt" onClick={() => setSheet({ kind: 'block', id: b.id })}>
                       {b.title}
                     </button>
                     {b.kind !== 'stations' && <KindChip kind={blockKind(b, plan.drills)} />}
@@ -514,7 +514,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                       {b.note || NO_CLAIM}
                       {src[0] && (
                         <span className="src">
-                          <button type="button" className="srcb" onClick={(e) => { e.stopPropagation(); setSheet({ kind: 'evidence', ref: src[0]!.ref }); }}>
+                          <button data-ctl="CTL-P013-182" type="button" className="srcb" onClick={(e) => { e.stopPropagation(); setSheet({ kind: 'evidence', ref: src[0]!.ref }); }}>
                             {src[0].label}
                           </button>
                         </span>
@@ -531,7 +531,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                       {src.length > 0 && (
                         <div className="src">
                           {src.map((x) => (
-                            <button type="button" className="srcb" key={x.ref} onClick={(e) => { e.stopPropagation(); setSheet({ kind: 'evidence', ref: x.ref }); }}>
+                            <button data-ctl="CTL-P013-183" type="button" className="srcb" key={x.ref} onClick={(e) => { e.stopPropagation(); setSheet({ kind: 'evidence', ref: x.ref }); }}>
                               {x.label}
                             </button>
                           ))}
@@ -583,11 +583,11 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                     Only coaches can see it. Players are told when you publish.
                   </span>
                   <span className="links">
-                    <button type="button" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}?from=coachhelm`)}>
+                    <button data-ctl="CTL-P013-184" type="button" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}?from=coachhelm`)}>
                       Open
                     </button>
                     {undoOpen && (
-                      <button
+                      <button data-ctl="CTL-P013-185"
                         type="button"
                         disabled={undoing}
                         onClick={undoSave}
@@ -598,13 +598,13 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                   </span>
                 </div>
                 {error && <p className="inert is-fail">{error}</p>}
-                <Button variant="primary" size="lg" className="is-wide" onClick={() => void publish()}>
+                <Button data-ctl="CTL-P013-186" variant="primary" size="lg" className="is-wide" onClick={() => void publish()}>
                   Publish…
                 </Button>
               </div>
             ) : (
               <>
-                <button type="button" className={'saverow' + (menu ? ' open' : '')} aria-expanded={menu} onClick={() => setMenu((v) => !v)} disabled={state.k === 'saving'}>
+                <button data-ctl="CTL-P013-187" type="button" className={'saverow' + (menu ? ' open' : '')} aria-expanded={menu} onClick={() => setMenu((v) => !v)} disabled={state.k === 'saving'}>
                   <Icon icon={FolderClosed} size={18} className="fi" />
                   <span>
                     Save to <b>{folder}</b>
@@ -614,7 +614,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                 {menu && (
                   <div className="flist" role="menu" aria-label="Folders">
                     {[{ name: DEFAULT, count: folders.find((f) => f.name === DEFAULT)?.count ?? 0 }, ...folders.filter((f) => f.name !== DEFAULT)].map((f) => (
-                      <button
+                      <button data-ctl="CTL-P013-188"
                         key={f.name}
                         type="button"
                         role="menuitemradio"
@@ -648,13 +648,13 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                       >
                         <Icon icon={FolderClosed} size={18} className="fi" />
                         <input ref={(el) => { el?.focus({ preventScroll: true }); }} className="inp" autoCapitalize="words" enterKeyHint="done" aria-label="Folder name" maxLength={FIELD_MAX} value={name} placeholder="Folder name" onChange={(e) => setName(e.target.value)} />
-                        <Button variant="secondary" size="sm" type="submit" disabled={!clean || dupe || reserved}>
+                        <Button data-ctl="CTL-P013-189" variant="secondary" size="sm" type="submit" disabled={!clean || dupe || reserved}>
                           Create
                         </Button>
                         {clean && (dupe || reserved) && <p className="inert is-fail">{reserved ? '“Team” is the team’s own folder.' : 'You already have that folder.'}</p>}
                       </form>
                     ) : (
-                      <button type="button" className="fr nw" onClick={() => setNaming(true)}>
+                      <button data-ctl="CTL-P013-190" type="button" className="fr nw" onClick={() => setNaming(true)}>
                         <Icon icon={FolderClosed} size={18} className="fi" />
                         <span className="n">New folder</span>
                       </button>
@@ -673,10 +673,10 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                   </div>
                 ) : (
                   <div className="acts">
-                    <Button variant="secondary" onClick={() => void save()}>
+                    <Button data-ctl="CTL-P013-191" variant="secondary" onClick={() => void save()}>
                       {state.k === 'failed' ? 'Try again' : 'Save draft'}
                     </Button>
-                    <Button variant="primary" onClick={() => void publish()}>
+                    <Button data-ctl="CTL-P013-192" variant="primary" onClick={() => void publish()}>
                       Publish…
                     </Button>
                   </div>
@@ -700,7 +700,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
       {!writing && (
         <div className="refine" role="group" aria-label="Change the plan">
           {refineChips(total).map((r) => (
-            <button type="button" key={r} onClick={() => onSend(r)}>
+            <button data-ctl="CTL-P013-193" type="button" key={r} onClick={() => onSend(r)}>
               {r}
             </button>
           ))}
@@ -717,7 +717,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                 ) : (
                   <span className="stepper">
                     {/* A stepper's change is a selection tick (MOTION-AND-VISUAL 3.10, D-70). */}
-                    <button
+                    <button data-ctl="CTL-P013-194"
                       type="button"
                       aria-label="Shorter"
                       disabled={open.len <= 5}
@@ -729,7 +729,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                       <Icon icon={Minus} size={14} />
                     </button>
                     <span className="len ch-num">{open.len} min</span>
-                    <button
+                    <button data-ctl="CTL-P013-195"
                       type="button"
                       aria-label="Longer"
                       disabled={open.len >= 360}
@@ -759,7 +759,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                 <div className="field-row">
                   <span>Drill</span>
                   {plan.alternatives?.[open.id]?.length ? (
-                    <button type="button" className="v is-link" onClick={() => setSheet({ kind: 'swap', id: open.id })}>
+                    <button data-ctl="CTL-P013-196" type="button" className="v is-link" onClick={() => setSheet({ kind: 'swap', id: open.id })}>
                       {plan.drills?.[keyOf(open.drill)]?.name ?? 'Swap'} ›
                     </button>
                   ) : (
@@ -772,7 +772,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                   <div className="field-row" key={s.id}>
                     <span>{s.place}</span>
                     {plan.alternatives?.[s.id]?.length ? (
-                      <button type="button" className="v is-link" onClick={() => setSheet({ kind: 'swap', id: s.id })}>
+                      <button data-ctl="CTL-P013-197" type="button" className="v is-link" onClick={() => setSheet({ kind: 'swap', id: s.id })}>
                         {plan.drills?.[keyOf(s.drill)]?.name ?? 'Swap'} ›
                       </button>
                     ) : (
@@ -813,7 +813,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                     {a.name}
                     <KindChip kind={a.kind} />
                   </span>
-                  <Button variant="secondary" size="sm" onClick={() => pickAlt(sheet?.kind === 'swap' ? sheet.id : '', a)}>
+                  <Button data-ctl="CTL-P013-198" variant="secondary" size="sm" onClick={() => pickAlt(sheet?.kind === 'swap' ? sheet.id : '', a)}>
                     Use
                   </Button>
                   <span className="d">

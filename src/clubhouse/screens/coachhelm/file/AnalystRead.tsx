@@ -117,7 +117,7 @@ export function PlayerReadCard({ load }: { load: ChAnalystReadLoad | null | unde
         )}
         {r.rounds.length > 0 && (
           <div className="ch-hf-an__foot">
-            <Button variant="secondary" size="lg" data={{ 'data-ch-an-rounds': '' }} onClick={() => setOpen(true)}>
+            <Button data-ctl="CTL-P013-134" variant="secondary" size="lg" data={{ 'data-ch-an-rounds': '' }} onClick={() => setOpen(true)}>
               The {r.rounds.length} rounds behind it
             </Button>
           </div>
@@ -247,21 +247,21 @@ function ReadCard({ read: r, first, writes }: { read: ChAnalystRead; first: stri
         {(r.rounds.length > 0 || key) && (
           <div className="ch-hf-an__foot">
             {r.rounds.length > 0 && (
-              <Button variant="secondary" size="lg" data={{ 'data-ch-an-rounds': '' }} onClick={() => setOpen(true)}>
+              <Button data-ctl="CTL-P013-135" variant="secondary" size="lg" data={{ 'data-ch-an-rounds': '' }} onClick={() => setOpen(true)}>
                 The {r.rounds.length} rounds behind it
               </Button>
             )}
             {key && (
               <div className="ch-hf-an__acts" role="group" aria-label={`Act on ${first}’s read`}>
                 {!focus && (
-                  <Button variant="secondary" data={{ 'data-ch-an-act': 'focus' }} busy={focusAct.pending} disabled={busy && !focusAct.pending} onClick={() => void focusAct.run({ id: newReadActionId(), playerId: r.playerId, cardKey: key })}>
+                  <Button data-ctl="CTL-P013-136" variant="secondary" data={{ 'data-ch-an-act': 'focus' }} busy={focusAct.pending} disabled={busy && !focusAct.pending} onClick={() => void focusAct.run({ id: newReadActionId(), playerId: r.playerId, cardKey: key })}>
                     Set as focus
                   </Button>
                 )}
-                <Button variant="ghost" data={{ 'data-ch-an-act': 'not-useful' }} busy={markAct.pending} disabled={busy && !markAct.pending} onClick={() => void markAct.run({ id: newReadActionId(), playerId: r.playerId, cardKey: key, verdict: 'not_useful' })}>
+                <Button data-ctl="CTL-P013-137" variant="ghost" data={{ 'data-ch-an-act': 'not-useful' }} busy={markAct.pending} disabled={busy && !markAct.pending} onClick={() => void markAct.run({ id: newReadActionId(), playerId: r.playerId, cardKey: key, verdict: 'not_useful' })}>
                   Not useful
                 </Button>
-                <Button variant="ghost" data={{ 'data-ch-an-act': 'wrong' }} disabled={busy} onClick={() => setWrongOpen(true)}>
+                <Button data-ctl="CTL-P013-138" variant="ghost" data={{ 'data-ch-an-act': 'wrong' }} disabled={busy} onClick={() => setWrongOpen(true)}>
                   Wrong
                 </Button>
               </div>
@@ -297,10 +297,10 @@ function ReadCard({ read: r, first, writes }: { read: ChAnalystRead; first: stri
               <textarea className="ch-textarea" rows={4} maxLength={WRONG_REASON_MAX} value={reason} onChange={(e) => setReason(e.target.value)} data-ch-an-reason="" />
             </label>
             <div className="ch-hf-an__wrong-foot">
-              <Button variant="secondary" onClick={() => setWrongOpen(false)}>
+              <Button data-ctl="CTL-P013-139" variant="secondary" onClick={() => setWrongOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" disabled={!reason.trim()} data={{ 'data-ch-an-wrong-send': '' }}>
+              <Button data-ctl="CTL-P013-140" variant="primary" type="submit" disabled={!reason.trim()} data={{ 'data-ch-an-wrong-send': '' }}>
                 Mark as wrong
               </Button>
             </div>
@@ -330,7 +330,7 @@ export function EvidenceRounds({ read }: { read: ChAnalystRead }) {
     <ol className="ch-hf-an__rounds">
       {read.rounds.map((x) => (
         <li key={x.id}>
-          <Link href={x.href} prefetch={false} className="ch-hf-an__round" data-ch-an-round={x.id}>
+          <Link data-ctl="CTL-P013-141" href={x.href} prefetch={false} className="ch-hf-an__round" data-ch-an-round={x.id}>
             <span className="ch-hf-an__rt">
               <b className="ch-num">
                 {x.date}

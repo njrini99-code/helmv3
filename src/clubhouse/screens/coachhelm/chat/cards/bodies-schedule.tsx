@@ -97,7 +97,7 @@ function DayTiles({ dates, limit }: { dates: string[]; limit: number | null }) {
       ))}
       {loose.length > 0 && <p className="ch-akc-days__text">{loose.join(' · ')}</p>}
       {limit && !all && dates.length > limit && (
-        <Button variant="ghost" size="sm" onClick={() => setAll(true)}>
+        <Button data-ctl="CTL-P013-044" variant="ghost" size="sm" onClick={() => setAll(true)}>
           {`Show all ${dates.length}`}
         </Button>
       )}

@@ -92,7 +92,7 @@ function signed2(v: number): string {
 function CourseRow({ row, season, readCount, onCourse }: { row: CourseHistoryRow; season: number; readCount: number; onCourse: (id: string) => void }) {
   const d = Math.round((row.value - season) * 10) / 10;
   return (
-    <button type="button" className="cr tapp" data-ch-press-scale=".97" data-ch-team-course={row.id} onClick={() => onCourse(row.id)}>
+    <button data-ctl="CTL-P013-242" type="button" className="cr tapp" data-ch-press-scale=".97" data-ch-team-course={row.id} onClick={() => onCourse(row.id)}>
       <span className="cn">
         <b>{row.name}</b>
         <span>
@@ -172,7 +172,7 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
         ))}
       </div>
       {courses.length > COURSE_CAP && (
-        <button type="button" className="more" aria-expanded={allCourses} data-ch-team-more="courses" onClick={() => setAllCourses((v) => !v)}>
+        <button data-ctl="CTL-P013-243" type="button" className="more" aria-expanded={allCourses} data-ch-team-more="courses" onClick={() => setAllCourses((v) => !v)}>
           {allCourses ? 'Show fewer' : `Show all ${courses.length} courses`}
         </button>
       )}
@@ -191,7 +191,7 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
         {!reads.length && <p className="nordss">No course or scoring reads yet. Penalties, big numbers, par scoring and the first hole get read once a player has enough rounds to stand behind it.</p>}
       </div>
       {reads.length > READ_CAP && (
-        <button type="button" className="more" aria-expanded={allReads} data-ch-team-more="reads" onClick={() => setAllReads((v) => !v)}>
+        <button data-ctl="CTL-P013-244" type="button" className="more" aria-expanded={allReads} data-ch-team-more="reads" onClick={() => setAllReads((v) => !v)}>
           {allReads ? 'Show fewer' : `Show ${reads.length - READ_CAP} more`}
         </button>
       )}

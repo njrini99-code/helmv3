@@ -132,11 +132,11 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
       )}
       {data.documents && (
         <section className="art is-docs">
-          <a className="docrow" href={data.documents.href}>
+          <a data-ctl="CTL-P013-219" className="docrow" href={data.documents.href}>
             <span className="t">In Documents</span>
             <span className="m">{data.documents.label}</span>
           </a>
-          <Button variant="secondary" size="sm" onClick={() => setTab('all')}>
+          <Button data-ctl="CTL-P013-220" variant="secondary" size="sm" onClick={() => setTab('all')}>
             Open the plan
           </Button>
         </section>

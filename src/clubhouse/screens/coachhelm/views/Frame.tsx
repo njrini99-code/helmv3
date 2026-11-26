@@ -58,7 +58,7 @@ export function PlayerHelmFrame({ view, line, off = false, covered = false, afte
               phone ? (
                 'CoachHelm'
               ) : (
-                <Link className="ch-hv-role-link" href={board}>
+                <Link data-ctl="CTL-P013-282" className="ch-hv-role-link" href={board}>
                   CoachHelm
                 </Link>
               )
@@ -95,7 +95,7 @@ export function HelmOff({ reason, voice = PLAYER_VOICE }: { reason: string | nul
         body={`It is turned off for ${first}’s team${reason ? `: “${reason}”` : ''}. Turn it on in CoachHelm settings to read ${first}’s game.`}
         action={
           settings ? (
-            <Button variant="primary" href={settings}>
+            <Button data-ctl="CTL-P013-283" variant="primary" href={settings}>
               Open CoachHelm settings
             </Button>
           ) : undefined

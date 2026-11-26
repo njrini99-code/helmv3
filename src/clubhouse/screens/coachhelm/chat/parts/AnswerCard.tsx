@@ -254,7 +254,7 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
   const windowLine = windowOf(turn.envelopes);
   const foot = settled && (reads.length > 0 || (!!turn.answerText && !turn.note));
   const copyKey = turn.answerText && !turn.note && (
-    <button type="button" className="sb" aria-label="Copy" onClick={() => void copy()}>
+    <button data-ctl="CTL-P013-061" type="button" className="sb" aria-label="Copy" onClick={() => void copy()}>
       <Icon icon={Copy} size={16} />
     </button>
   );

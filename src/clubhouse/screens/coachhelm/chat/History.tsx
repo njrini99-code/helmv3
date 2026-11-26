@@ -61,7 +61,7 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, newWaits,
         </span>
         <b>No chats yet</b>
         <span>Ask your first question and it will be kept here.</span>
-        <Button variant="secondary" disabled={newWaits} onClick={onNew}>
+        <Button data-ctl="CTL-P013-025" variant="secondary" disabled={newWaits} onClick={onNew}>
           New chat
         </Button>
       </div>
@@ -84,7 +84,7 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, newWaits,
                   const on = c.id === openId;
                   return (
                     <li key={c.id}>
-                      <Link
+                      <Link data-ctl="CTL-P013-026"
                         href={conversationHref(c.id)}
                         className={'ch-ask-hist__row' + (on ? ' is-on' : '')}
                         aria-current={on ? 'page' : undefined}
@@ -122,12 +122,12 @@ export function HistoryPanel(props: AskHistoryProps & { open: boolean; onHide: (
       <div className="ch-ask-hist__head">
         <b>{heading}</b>
         <Tooltip>
-          <button type="button" className="ch-ask-hist__iconbtn" aria-label="Hide chats" onClick={onHide}>
+          <button data-ctl="CTL-P013-027" type="button" className="ch-ask-hist__iconbtn" aria-label="Hide chats" onClick={onHide}>
             <Icon icon={PanelLeftClose} size={19} />
           </button>
         </Tooltip>
       </div>
-      <button type="button" className="ch-ask-hist__new" aria-disabled={newWaits || undefined} onClick={onNew}>
+      <button data-ctl="CTL-P013-028" type="button" className="ch-ask-hist__new" aria-disabled={newWaits || undefined} onClick={onNew}>
         <Icon icon={SquarePen} size={17} />
         New chat
       </button>
@@ -153,7 +153,7 @@ export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose:
   return (
     // The click is the scrim's dismiss; the keyboard path is Esc, which <dialog> reports through onCancel.
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-    <dialog
+    <dialog data-ctl="CTL-P013-029"
       ref={ref}
       className="ch-ask-drawer"
       aria-label="Chats"
@@ -167,13 +167,13 @@ export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose:
       }}
     >
       {retainContent(open && (
-        <aside ref={aside} className="ch-ask-hist is-drawer" aria-label="Chats" onPointerDown={drag.onPointerDown}>
+        <aside data-ctl="CTL-P013-030" ref={aside} className="ch-ask-hist is-drawer" aria-label="Chats" onPointerDown={drag.onPointerDown}>
           <div className="ch-ask-hist__head">
             <h2 className="ch-ask-hist__title" tabIndex={-1}>
               Chats
             </h2>
             <Tooltip>
-              <button
+              <button data-ctl="CTL-P013-031"
                 type="button"
                 className="ch-ask-hist__iconbtn is-accent"
                 aria-label="New chat"

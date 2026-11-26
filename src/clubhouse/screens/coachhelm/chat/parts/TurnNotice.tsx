@@ -45,12 +45,12 @@ export function TurnNotice({ end, offline, changed, onRetry, onNewChat }: { end:
         )}
       </div>
       {recovery === 'retry' && (
-        <Button size="sm" variant="secondary" leftIcon={RotateCw} disabled={offlineRetry} onClick={onRetry} data={{ 'data-ch-ask-retry': '' }}>
+        <Button data-ctl="CTL-P013-110" size="sm" variant="secondary" leftIcon={RotateCw} disabled={offlineRetry} onClick={onRetry} data={{ 'data-ch-ask-retry': '' }}>
           Try again
         </Button>
       )}
       {recovery === 'new-chat' && (
-        <Button size="sm" variant="secondary" onClick={onNewChat}>
+        <Button data-ctl="CTL-P013-111" size="sm" variant="secondary" onClick={onNewChat}>
           Start a new chat
         </Button>
       )}

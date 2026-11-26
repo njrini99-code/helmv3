@@ -231,7 +231,7 @@ function StoryViewer({
   const p = coin(story);
   return (
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog owns its hold, swipe and focus trap; each has its button
-    <div
+    <div data-ctl="CTL-P013-250"
       ref={box}
       className={'story' + (leaving ? '' : ' on') + (held ? ' is-held' : '')}
       onTransitionEnd={(e) => {
@@ -262,25 +262,25 @@ function StoryViewer({
         }
       }}
     >
-      <div className="prog" onPointerDown={drag.onPointerDown}>
+      <div data-ctl="CTL-P013-251" className="prog" onPointerDown={drag.onPointerDown}>
         {stories.map((s, j) => (
           <i key={s.id} className={j < i ? 'done' : j === i ? 'now' : ''}>
             <b />
           </i>
         ))}
       </div>
-      <div className="sto-h" onPointerDown={drag.onPointerDown}>
+      <div data-ctl="CTL-P013-252" className="sto-h" onPointerDown={drag.onPointerDown}>
         {p && <Coin player={p} />}
         <span className="c">
           <b>{nameOf(story).split(' ')[0]}</b>
           <span>{storyWhen(story, week, story.kind === 'read' ? roundOf(story) : null)}</span>
         </span>
-        <button type="button" className="xb" aria-label="Close stories" onClick={leave}>
+        <button data-ctl="CTL-P013-253" type="button" className="xb" aria-label="Close stories" onClick={leave}>
           <Icon icon={X} size={16} />
         </button>
       </div>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Next, in the footer, is the keyboard's way */}
-      <div
+      <div data-ctl="CTL-P013-254"
         ref={body}
         className={'sto-b' + (tall ? ' is-tall' : '')}
         onClick={next}
@@ -288,10 +288,10 @@ function StoryViewer({
         <StoryBody story={story} round={roundOf(story)} />
       </div>
       <div className="sto-f">
-        <Button variant="secondary" size="lg" onClick={() => onAction(story)}>
+        <Button data-ctl="CTL-P013-255" variant="secondary" size="lg" onClick={() => onAction(story)}>
           {actionOf(story)}
         </Button>
-        <Button variant="ghost" size="lg" className="ch-btn--on-green" onClick={next}>
+        <Button data-ctl="CTL-P013-256" variant="ghost" size="lg" className="ch-btn--on-green" onClick={next}>
           {i < stories.length - 1 ? 'Next' : 'Done'}
         </Button>
       </div>
@@ -403,7 +403,7 @@ export function StoriesCard({
             </>
           ) : null;
           return (
-            <button
+            <button data-ctl="CTL-P013-257"
               key={s.id}
               type="button"
               className={'tile tapp' + (seen.includes(s.id) ? '' : ' new')}
@@ -460,14 +460,14 @@ export function StoryDeskPanel({ story, week, round = null, player = null, onClo
           <b>{story.who}</b>
           <span>{storyWhen(story, week, story.kind === 'read' ? round : null)}</span>
         </span>
-        <button type="button" className="xb" aria-label="Close" onClick={onClose}>
+        <button data-ctl="CTL-P013-258" type="button" className="xb" aria-label="Close" onClick={onClose}>
           <Icon icon={X} size={16} />
         </button>
       </div>
       <div className="feat ch-htb-storydesk sto-b">
         <StoryBody story={story} round={round} />
       </div>
-      <Button variant="primary" size="lg" onClick={() => onAction(story)}>
+      <Button data-ctl="CTL-P013-259" variant="primary" size="lg" onClick={() => onAction(story)}>
         {actionOf(story)}
       </Button>
     </>

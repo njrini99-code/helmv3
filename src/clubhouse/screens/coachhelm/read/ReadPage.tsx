@@ -215,7 +215,7 @@ export function ReadPage({
             align="end"
             items={moreItems}
             trigger={(p) => (
-              <button type="button" className="ch-pbar__icon" aria-label="More" {...p}>
+              <button data-ctl="CTL-P013-221" type="button" className="ch-pbar__icon" aria-label="More" {...p}>
                 <Icon icon={Ellipsis} size={20} />
               </button>
             )}
@@ -245,7 +245,7 @@ export function ReadPage({
         title="This read is no longer open"
         body="It was replaced by a fresher read, cleared or dismissed after this link was made."
         action={
-          <Button variant="primary" rightIcon={ArrowRight} href={backHref}>
+          <Button data-ctl="CTL-P013-222" variant="primary" rightIcon={ArrowRight} href={backHref}>
             {coach ? `Open ${coach.first}’s reads` : 'Open your reads'}
           </Button>
         }
@@ -320,7 +320,7 @@ export function ReadPage({
   }
 
   const board = (
-    <Link className="ch-hv-role-link" href={backHref}>
+    <Link data-ctl="CTL-P013-223" className="ch-hv-role-link" href={backHref}>
       CoachHelm
     </Link>
   );
@@ -329,8 +329,8 @@ export function ReadPage({
       <span className="ch-num">
         {at + 1} of {order.length}
       </span>
-      <IconButton icon={ChevronLeft} label="Previous read" shortcut={['K']} variant="secondary" size="sm" disabled={at === 0} onClick={() => step(-1)} />
-      <IconButton icon={ChevronRight} label="Next read" shortcut={['J']} variant="secondary" size="sm" disabled={at === order.length - 1} onClick={() => step(1)} />
+      <IconButton data-ctl="CTL-P013-224" icon={ChevronLeft} label="Previous read" shortcut={['K']} variant="secondary" size="sm" disabled={at === 0} onClick={() => step(-1)} />
+      <IconButton data-ctl="CTL-P013-225" icon={ChevronRight} label="Next read" shortcut={['J']} variant="secondary" size="sm" disabled={at === order.length - 1} onClick={() => step(1)} />
     </div>
   );
   return frame(

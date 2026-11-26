@@ -24,7 +24,7 @@ export function CoachHelmOffNotice({ off }: { off: NonNullable<ChCoachHelmData['
       }
       action={
         settings ? (
-          <Button variant="primary" href={settings}>
+          <Button data-ctl="CTL-P013-001" variant="primary" href={settings}>
             Open CoachHelm settings
           </Button>
         ) : undefined

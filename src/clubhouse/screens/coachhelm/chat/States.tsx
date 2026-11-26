@@ -23,7 +23,7 @@ export function AskNoRoster() {
       body="CoachHelm answers from your players’ rounds, stats and schedule. Once your roster is in, ask about anyone on it."
       action={
         roster ? (
-          <Button variant="primary" leftIcon={UserPlus} href={roster}>
+          <Button data-ctl="CTL-P013-036" variant="primary" leftIcon={UserPlus} href={roster}>
             Invite players
           </Button>
         ) : undefined
@@ -57,7 +57,7 @@ export function AskThreadFailed({ onNew }: { onNew: () => void }) {
       <RefreshNotice code="CH-13224" title="That conversation didn’t load" body="Nothing is lost. The chat is still saved; try again in a moment." />
       <p className="ch-ask-state__alt">
         Or{' '}
-        <button type="button" className="ch-ask-state__link" onClick={onNew}>
+        <button data-ctl="CTL-P013-037" type="button" className="ch-ask-state__link" onClick={onNew}>
           start a new chat
         </button>
         .
@@ -79,7 +79,7 @@ export function AskUnavailable({ onNew, phone = false }: { onNew: () => void; ph
         title="That conversation isn’t available"
         body={`It may have been deleted, or it belongs to another coach. ${phone ? 'Your other chats are under History.' : 'Your other chats are on the left.'}`}
         action={
-          <Button variant="primary" onClick={onNew}>
+          <Button data-ctl="CTL-P013-038" variant="primary" onClick={onNew}>
             Start a new chat
           </Button>
         }

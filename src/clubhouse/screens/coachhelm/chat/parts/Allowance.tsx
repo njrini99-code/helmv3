@@ -49,7 +49,7 @@ export function OutCard({ live = false, sent = false, off = false, onRequest }: 
       </div>
       <div className={'ask' + (live ? ' is-late' : '') + (off ? ' is-off' : '')}>
         <span>{sent ? 'Request sent to Helm Sports Labs' : 'Need more before Monday?'}</span>
-        <Button variant="primary" disabled={sent || off} onClick={onRequest}>
+        <Button data-ctl="CTL-P013-057" variant="primary" disabled={sent || off} onClick={onRequest}>
           {sent ? 'Sent' : 'Request more'}
         </Button>
       </div>
@@ -141,13 +141,13 @@ export function PlayerOut({ live = false, from }: { live?: boolean; from: string
                 </p>
               )}
               <div className="btns">
-                <Button variant="ghost" disabled={stage === 'sending'} onClick={() => setStage('cancelled')}>
+                <Button data-ctl="CTL-P013-058" variant="ghost" disabled={stage === 'sending'} onClick={() => setStage('cancelled')}>
                   Cancel
                 </Button>
                 {stage === 'sending' ? (
                   <span className="p cap">Sending…</span>
                 ) : (
-                  <Button variant="primary" onClick={() => void send()}>
+                  <Button data-ctl="CTL-P013-059" variant="primary" onClick={() => void send()}>
                     Send request
                   </Button>
                 )}
@@ -163,7 +163,7 @@ export function PlayerOut({ live = false, from }: { live?: boolean; from: string
                 <b>Request ready for Helm Sports Labs</b>
                 <span className="sub">It sends when Undo closes</span>
               </div>
-              <button type="button" className="lk undo" data-ch-ask-undo="" disabled={stage === 'undoing'} onClick={() => void undo()}>
+              <button data-ctl="CTL-P013-060" type="button" className="lk undo" data-ch-ask-undo="" disabled={stage === 'undoing'} onClick={() => void undo()}>
                 <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" aria-hidden="true">
                   <circle className="trk" cx="12" cy="12" r="10" />
                   <circle className="drn" cx="12" cy="12" r="10" style={{ animationDuration: `${UNDO_MS}ms` }} />

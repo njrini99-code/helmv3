@@ -129,7 +129,7 @@ export function People({ people, total, label = 'players', everyone = false }: {
       {expandable ? (
         // One control for the whole line, as the work line's summary is: the names are the key that opens the names.
         // Named by what it shows, then what it does (SWP-02, WCAG 2.5.3): Voice Control reaches it by the names on its face.
-        <button type="button" className="ch-akc-people__line is-key" data-ch-press="" aria-expanded={open} aria-controls={listId} onClick={() => setOpen((v) => !v)}>
+        <button data-ctl="CTL-P013-049" type="button" className="ch-akc-people__line is-key" data-ch-press="" aria-expanded={open} aria-controls={listId} onClick={() => setOpen((v) => !v)}>
           {inner}{' '}
           <span className="ch-sr-only">{open ? '. Hide the list' : `. Show all ${count(people.length)}`}</span>
           <Icon icon={ChevronDown} size={15} className="ch-akc-people__chev" />
@@ -177,7 +177,7 @@ export function Clamp({ text, lines, density, what = 'message', className, textC
         {text}
       </p>
       {long && (
-        <Button variant="ghost" size="sm" aria={{ expanded: open, controls: id }} onClick={() => setOpen((v) => !v)}>
+        <Button data-ctl="CTL-P013-050" variant="ghost" size="sm" aria={{ expanded: open, controls: id }} onClick={() => setOpen((v) => !v)}>
           {open ? 'Show less' : `Show the whole ${what} · ${count(text.length)} characters`}
         </Button>
       )}
@@ -258,7 +258,7 @@ export function Rows({ facts, density, subject, onAsk }: { facts: readonly Propo
               <span className="ch-akc-row__unset">
                 <span>{f.value && f.value !== 'Not set' ? f.value : 'Not set'}</span>
                 {onAsk && (
-                  <Button variant="secondary" size="sm" onClick={() => onAsk(`Set the ${f.label.toLowerCase()} on ${subject}`)}>
+                  <Button data-ctl="CTL-P013-051" variant="secondary" size="sm" onClick={() => onAsk(`Set the ${f.label.toLowerCase()} on ${subject}`)}>
                     Set it
                   </Button>
                 )}
@@ -454,12 +454,12 @@ export function Body({ label, card, wordless = false, rows = [], children }: { l
         {((canEdit && !open) || hasMore) && (
           <div className="ch-akc-keys">
             {canEdit && !open && (
-              <Button variant="ghost" size="sm" leftIcon={Pencil} onClick={() => setOpen(true)} data={{ 'data-ch-card-edit': '' }}>
+              <Button data-ctl="CTL-P013-052" variant="ghost" size="sm" leftIcon={Pencil} onClick={() => setOpen(true)} data={{ 'data-ch-card-edit': '' }}>
                 Edit
               </Button>
             )}
             {hasMore && (
-              <Button variant="ghost" size="sm" rightIcon={ChevronDown} aria={{ expanded: more, controls: moreId }} onClick={() => setMore((v) => !v)} data={{ 'data-ch-card-more': '' }}>
+              <Button data-ctl="CTL-P013-053" variant="ghost" size="sm" rightIcon={ChevronDown} aria={{ expanded: more, controls: moreId }} onClick={() => setMore((v) => !v)} data={{ 'data-ch-card-more': '' }}>
                 {assumed > 0 ? `Details · ${count(assumed)} assumed` : 'Details'}
               </Button>
             )}

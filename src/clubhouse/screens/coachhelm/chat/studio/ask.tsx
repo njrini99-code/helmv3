@@ -38,7 +38,7 @@ export function AskKey({ target, id, words, label, className, children }: { targ
   const ask: StudioAsk = { kind: target.kind, read: target.read, key: id, words };
   const { onAsk } = target;
   return (
-    <button type="button" className={cls + ' is-key ch-ak-askable'} data-ask-ref={askRef(ask)} data-ch-press="" aria-label={label} onClick={() => onAsk(ask)}>
+    <button data-ctl="CTL-P013-117" type="button" className={cls + ' is-key ch-ak-askable'} data-ask-ref={askRef(ask)} data-ch-press="" aria-label={label} onClick={() => onAsk(ask)}>
       {children}
     </button>
   );
@@ -48,7 +48,7 @@ export function AskKey({ target, id, words, label, className, children }: { targ
 export function OpenKey({ href, label }: { href: string | null | undefined; label: string }) {
   if (!href) return null;
   return (
-    <a className="ch-aks-open" href={href} aria-label={label} data-ch-press="">
+    <a data-ctl="CTL-P013-118" className="ch-aks-open" href={href} aria-label={label} data-ch-press="">
       <Icon icon={ArrowUpRight} size={16} />
     </a>
   );

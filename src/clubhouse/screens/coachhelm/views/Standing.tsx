@@ -47,10 +47,10 @@ function wordsFor(voice: ChViewVoice) {
  * A coach's way from a stat to the open read on it (spec A): "Open the read", the Deep dive open on that read. Only where an open read
  * shares the stat's metric (`ChStanding.reads`); never on the player's own page. Kept apart so a section that is rewritten can put it back.
  */
-export function OpenRead({ href }: { href: string | null }) {
+export function OpenRead({ href, 'data-ctl': ctl }: { href: string | null; 'data-ctl'?: string }) {
   if (!href) return null;
   return (
-    <Link className="ch-hs-open" href={href}>
+    <Link data-ctl={ctl ?? 'CTL-P013-292'} className="ch-hs-open" href={href}>
       Open the read
       <Icon icon={ArrowRight} size={14} />
     </Link>
@@ -149,7 +149,7 @@ function Row({ r, voice = PLAYER_VOICE, readHref = null }: { r: ChStandRow; voic
       {readHref && (
         // A div, not a p: the app's narrow-width rule for links in a paragraph (globals.css) would make the link inline-block.
         <div className="ch-hs-read">
-          <OpenRead href={readHref} />
+          <OpenRead data-ctl="CTL-P013-293" href={readHref} />
         </div>
       )}
     </li>
@@ -254,7 +254,7 @@ function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; 
       )}
       {canOpen ? (
         <>
-          <button type="button" className="ch-hs-ld__why" aria-expanded={open} aria-controls={`${id}-b`} onClick={onToggle}>
+          <button data-ctl="CTL-P013-294" type="button" className="ch-hs-ld__why" aria-expanded={open} aria-controls={`${id}-b`} onClick={onToggle}>
             <span>Because</span>
             <span className="ch-hs-ld__n ch-num">
               {r.causes.length} {pluralWord(r.causes.length, 'open read')}
@@ -266,7 +266,7 @@ function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; 
             <ul>
               {r.causes.map((c) => (
                 <li key={c.id}>
-                  <a className="ch-num" href={diveReadHref(c.id, voice)}>{c.title}</a>
+                  <a data-ctl="CTL-P013-295" className="ch-num" href={diveReadHref(c.id, voice)}>{c.title}</a>
                   {c.line && <p>{c.line}</p>}
                   {c.firmness && <em>{c.firmness}</em>}
                 </li>
@@ -393,7 +393,7 @@ export function Standing({ load, voice = PLAYER_VOICE, game, at }: { load: ChVie
             }
             action={
               startHref ? (
-                <Button variant="primary" leftIcon={Plus} href={startHref.href}>
+                <Button data-ctl="CTL-P013-296" variant="primary" leftIcon={Plus} href={startHref.href}>
                   {startHref.label}
                 </Button>
               ) : undefined

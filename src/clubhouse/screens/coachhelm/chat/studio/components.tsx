@@ -80,7 +80,7 @@ export function Figure(p: StudioProps<'figure'>) {
               ))}
             </AskKey>
             {/* The one large figure stands alone, as the sheet sets it; the answer's sources open what it was read from. */}
-            {!one && <OpenKey href={f.href} label={`Open ${f.label}`} />}
+            {!one && <OpenKey data-ctl="CTL-P013-119" href={f.href} label={`Open ${f.label}`} />}
           </li>
         ))}
       </ul>
@@ -110,7 +110,7 @@ export function RankingList(p: StudioProps<'ranking'>) {
                 {r.display}
               </b>
             </AskKey>
-            <OpenKey href={hrefs?.[r.id]} label={`Open ${r.label}’s stats`} />
+            <OpenKey data-ctl="CTL-P013-120" href={hrefs?.[r.id]} label={`Open ${r.label}’s stats`} />
           </li>
         ))}
       </ol>
@@ -151,7 +151,7 @@ export function Comparison(p: StudioProps<'comparison'>) {
           {pl.sample && <small>{pl.sample}</small>}
         </AskKey>
         {/* The phone keeps every measure on screen instead of an arrow per row: the name still asks, and the full size carries the link. */}
-        {p.size === 'full' && <OpenKey href={hrefs?.[pl.id]} label={`Open ${pl.label}’s stats`} />}
+        {p.size === 'full' && <OpenKey data-ctl="CTL-P013-121" href={hrefs?.[pl.id]} label={`Open ${pl.label}’s stats`} />}
       </span>
     );
   };
@@ -240,7 +240,7 @@ export function Round(p: StudioProps<'round'>) {
       <div className="ch-aks ch-aks-round" data-size={p.size}>
         <Head title={p.data.title ?? 'Hole by hole'} aside="To par" />
         <HoleStrip block={p.data.strip} />
-        <OpenLine href={p.data.href} label="Open the round" />
+        <OpenLine data-ctl="CTL-P013-122" href={p.data.href} label="Open the round" />
       </div>
     );
   }
@@ -274,7 +274,7 @@ export function Round(p: StudioProps<'round'>) {
       </div>
       {group('Cost the most', cost)}
       {group('Gained the most', made)}
-      <OpenLine href={p.data.href} label="Open the round" />
+      <OpenLine data-ctl="CTL-P013-123" href={p.data.href} label="Open the round" />
     </div>
   );
 }
@@ -286,7 +286,7 @@ export function Round(p: StudioProps<'round'>) {
  */
 function LinkRow({ href, label, purpose }: { href: string; label: string; purpose?: string | null }) {
   return (
-    <a className="ch-aks-link" href={href} data-ch-press="" data-ch-app-link="">
+    <a data-ctl="CTL-P013-124" className="ch-aks-link" href={href} data-ch-press="" data-ch-app-link="">
       <span className="ch-aks-link__tx">
         <b>{label}</b>
         {purpose && <small>{purpose}</small>}
@@ -298,7 +298,7 @@ function LinkRow({ href, label, purpose }: { href: string; label: string; purpos
 
 /** The part's own way into the app, when it has one: the same row, at the part's foot. */
 function OpenLine({ href, label }: { href: string | null | undefined; label: string }) {
-  return href ? <LinkRow href={href} label={label} /> : null;
+  return href ? <LinkRow data-ctl="CTL-P013-125" href={href} label={label} /> : null;
 }
 
 /* ---------------------------------------------------------------- strokes gained */
@@ -474,7 +474,7 @@ export function Schedule(p: StudioProps<'schedule'>) {
                         </small>
                       )}
                     </AskKey>
-                    <OpenKey href={e.href} label={`Open ${e.title} on the Calendar`} />
+                    <OpenKey data-ctl="CTL-P013-126" href={e.href} label={`Open ${e.title} on the Calendar`} />
                   </li>
                 ))}
               </ul>
@@ -482,7 +482,7 @@ export function Schedule(p: StudioProps<'schedule'>) {
           );
         })}
       </ol>
-      <OpenLine href={p.data.href} label="Open the Calendar" />
+      <OpenLine data-ctl="CTL-P013-127" href={p.data.href} label="Open the Calendar" />
     </div>
   );
 }
@@ -536,7 +536,7 @@ export function QualifierBoard(p: StudioProps<'qualifier_board'>) {
                 <span className="ch-sr-only">. Ask about it.</span>
               </b>
             </AskKey>
-            <OpenKey href={r.href} label={`Open ${r.name}’s rounds`} />
+            <OpenKey data-ctl="CTL-P013-128" href={r.href} label={`Open ${r.name}’s rounds`} />
             {cut != null && i === cut - 1 && i < rows.length - 1 && (
               <span className="ch-aks-board__cut" role="separator" aria-label={`The cut: ${plural(cut, 'seat')}`}>
                 <span>The cut · {plural(cut, 'seat')}</span>
@@ -545,7 +545,7 @@ export function QualifierBoard(p: StudioProps<'qualifier_board'>) {
           </li>
         ))}
       </ol>
-      <OpenLine href={p.data.href} label="Open the board" />
+      <OpenLine data-ctl="CTL-P013-129" href={p.data.href} label="Open the board" />
     </div>
   );
 }
@@ -564,7 +564,7 @@ export function AppLink(p: StudioProps<'app_link'>) {
   const { link } = p.data;
   return (
     <div className="ch-aks ch-aks-applink" data-size={p.size}>
-      <LinkRow href={link.href} label={link.label} purpose={link.purpose} />
+      <LinkRow data-ctl="CTL-P013-130" href={link.href} label={link.label} purpose={link.purpose} />
     </div>
   );
 }
