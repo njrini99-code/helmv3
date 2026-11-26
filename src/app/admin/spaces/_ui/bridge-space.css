@@ -40,7 +40,8 @@
   background: radial-gradient(1000px 520px at 50% -12%, var(--bs-glow), transparent 70%), var(--bs-bg);
   color: var(--bs-ink);
   font-variant-numeric: tabular-nums;
-  min-height: 100%;
+  /* The space owns the whole canvas under the shell, even when its content is short. */
+  min-height: 100dvh;
 }
 
 .dark .bs,
