@@ -454,8 +454,9 @@ export function parseControlFilter(raw: string | string[] | undefined): ControlF
 
 function controlServesRole(control: GraphControl, role: ScopeRole): boolean {
   if (role === 'all' || !control.role) return true;
-  if (control.role === 'both' || control.role === 'shared') return role === 'coach' || role === 'player';
-  return control.role === role;
+  // The ledger writes coach, player, both, visitor (signed out) or a mix such as player+visitor.
+  const roles = control.role.split('+').flatMap((r) => (r === 'both' || r === 'shared' ? ['coach', 'player'] : r === 'visitor' ? ['signed-out'] : [r]));
+  return roles.includes(role);
 }
 
 function controlServesViewport(control: GraphControl, vp: ScopeViewport): boolean {

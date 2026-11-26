@@ -231,3 +231,50 @@ describe('links', () => {
     expect(preview).toContain("if (process.env.NODE_ENV === 'production') notFound();");
   });
 });
+
+describe('controls from the ledger (bridge-graph.mjs shape)', () => {
+  it('normalizes nulls, viewports and the board verdict', async () => {
+    const { normalizeControl } = await import('../graph');
+    expect(
+      normalizeControl({
+        page: 'P002',
+        file: 'src/clubhouse/screens/home/Home.tsx',
+        element: 'button',
+        label: null,
+        labelTemplate: 'Open {name}',
+        description: 'Opens the round',
+        role: 'player+visitor',
+        viewport: 'desktop',
+        actions: ['ACT-P002-OPEN'],
+        verdict: { status: 'GAP', board: 'Coach - Home.html (coach, desktop)', control: 'Round recap' },
+        code: null,
+      }),
+    ).toEqual({
+      page: 'P002',
+      file: 'src/clubhouse/screens/home/Home.tsx',
+      element: 'button',
+      labelTemplate: 'Open {name}',
+      description: 'Opens the round',
+      role: 'player+visitor',
+      viewport: 'desk',
+      actions: ['ACT-P002-OPEN'],
+      verdict: 'GAP',
+      board: 'Coach - Home.html (coach, desktop)',
+      boardControl: 'Round recap',
+    });
+    expect(normalizeControl({ page: 'P001', viewport: 'all' }).viewport).toBe('both');
+  });
+
+  it('reads every control in the real graph without loss', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { normalizeControls } = await import('../graph');
+    const raw = JSON.parse(readFileSync('docs/clubhouse/generated/bridge-graph.json', 'utf8')).controls;
+    const controls = normalizeControls(raw);
+    expect(Object.keys(controls).length).toBe(Object.keys(raw).length);
+    expect(Object.keys(controls).length).toBeGreaterThan(1700);
+    for (const [id, c] of Object.entries(controls)) {
+      expect(id).toMatch(/^CTL-P\d{3}-\d{3,}$/);
+      expect(c.label || c.labelTemplate, id).toBeTruthy();
+    }
+  });
+});
