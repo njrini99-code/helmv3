@@ -289,6 +289,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
           {all.length} {all.length === 1 ? 'failure' : 'failures'} {windowWords(scope.w)} · {scope.pf === 'all' ? 'every device' : PLATFORM_WORDS[scope.pf]} · from the session store (clubhouse_session_events), every failure kept
         </span>
         {failures.truncated ? <Pill tone="watch">More failures than one read keeps: the oldest are not shown</Pill> : null}
+        {!baselineComplete ? <Pill tone="watch">New in this release: unknown (the 8-day history could not be read whole), so nothing is marked new</Pill> : null}
         {notes.state === 'error' ? <p className="bs-panel-note bs-tone-watch" style={{ margin: 0 }}>The Bridge notes could not be read: nothing shows as Expected or Watching.</p> : null}
         <span data-br={BR.feed.copy}>
           <CopyReportButton report={feedReport(items, summary, scope.w, pipe.label)} variant="labeled" size="sm" label="Copy report" className="bs-copy" />

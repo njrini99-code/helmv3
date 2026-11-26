@@ -154,6 +154,20 @@ describe('assembleNeeds', () => {
     expect(n.rows.map((r) => r.key)).toEqual(['jobs-failing', 'held', 'quiet-teams', 'release-errors', 'clubhouse']);
     expect(n).toMatchObject({ total: 0, unread: 5 });
   });
+  it.each([
+    ['unstamped', null as string | null, [card()]],
+    ['outside-ledger', 'fffffff', [card()]],
+    ['gathering', 'a863eeb', [card({ gatheringSignal: true })]],
+  ])('a %s release keeps its row with an unknown count, never a clean 0', (_state, sha, cards) => {
+    const n = assembleNeeds({
+      jobs: readOk(summarizeJobs([], [])),
+      held: readOk(0),
+      teams: readOk({ total: 1, activeThisWeek: 1, activeNow: 1, wentQuiet: [] }),
+      release: readOk(releaseHealth(sha, cards)),
+      clubhouse: readOk(clubhouseToday([], { untrusted: false, label: 'pipe: live' })),
+    });
+    expect(n.rows.find((r) => r.key === 'release-errors')?.count).toBeNull();
+  });
 });
 
 describe('todayHeadline', () => {
@@ -236,5 +250,8 @@ describe('product, desk', () => {
     expect(deskHeadline(23, null).title).toBe('At least 23 decisions are waiting.');
     expect(deskHeadline(0, 0).title).toBe('Nothing is waiting on you.');
     expect(deskHeadline(null, null).tone).toBe('bad');
+    // One source unread and the other empty: "nothing found so far", never "at least 0 decisions".
+    expect(deskHeadline(0, null)).toMatchObject({ title: 'Nothing found so far.', tone: 'watch' });
+    expect(deskHeadline(null, 0).title).toBe('Nothing found so far.');
   });
 });

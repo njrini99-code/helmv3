@@ -133,7 +133,8 @@ export default async function ProductSpacePage() {
           <div className="bs-feature-grid">
             {band.features.map((f) => {
               const status = statuses?.get(f.key) ?? null;
-              const h = status ? HEALTH[status] : { word: 'Health unread', tone: 'muted' as Tone };
+              // statuses null = the read failed; a missing key = that feature has no health row yet.
+              const h = status ? HEALTH[status] : { word: statuses ? 'No data' : 'Health unread', tone: 'muted' as Tone };
               return (
                 <Link
                   key={f.key}

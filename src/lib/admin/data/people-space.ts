@@ -27,6 +27,7 @@ import {
   type TeamState,
   type TimelineItem,
   type Touch,
+  touchesForTeam,
 } from './people-space-model';
 
 /**
@@ -182,7 +183,7 @@ async function readRoster(r: Reads, sports: readonly Sport[], teamId?: string): 
 // ---------------------------------------------------------------------------
 
 type RoundRow = { team_id: string | null; player_id: string; created_at: string | null; status: string | null };
-type GameRow = { team_id: string; created_by: string | null; created_at: string | null; status: string };
+type GameRow = { team_id: string; created_by: string | null; created_at: string | null; game_date: string | null; status: string };
 type EventRow = { team_id: string; created_by: string | null; created_at: string | null };
 type SessionRow = { user_id: string | null; team_id: string | null; last_at: string; platform: string };
 
@@ -245,7 +246,13 @@ async function readTouches(r: Reads, roster: Roster, sinceIso: string, teamId?: 
         .range(from, to) as unknown as Page<RoundRow>,
     ),
     r.paged<GameRow>('baseball games', (from, to) =>
-      team(admin.from('baseball_games').select('team_id, created_by, created_at, status').gte('created_at', sinceIso))
+      team(
+        admin
+          .from('baseball_games')
+          .select('team_id, created_by, created_at, game_date, status')
+          // Scheduled before the window but played inside it still counts.
+          .or(`created_at.gte.${sinceIso},game_date.gte.${sinceIso.slice(0, 10)}`),
+      )
         .order('id', { ascending: true })
         .range(from, to) as unknown as Page<GameRow>,
     ),
@@ -262,8 +269,8 @@ async function readTouches(r: Reads, roster: Roster, sinceIso: string, teamId?: 
   ]);
 
   const touches: Touch[] = [];
-  const push = (userId: string | null | undefined, at: string | null | undefined, kind: Touch['kind'], source: string) => {
-    if (userId && at) touches.push({ userId, at, kind, source });
+  const push = (userId: string | null | undefined, at: string | null | undefined, kind: Touch['kind'], source: string, teamId?: string | null) => {
+    if (userId && at) touches.push({ userId, at, kind, source, ...(teamId !== undefined ? { teamId } : {}) });
   };
   for (const l of logins) push(l.user_id, l.created_at, 'sign_in', 'admin_events');
   for (const m of golfMessages) push(m.sender_id, m.created_at, 'message', 'golf_messages');
@@ -280,13 +287,18 @@ async function readTouches(r: Reads, roster: Roster, sinceIso: string, teamId?: 
     if (!t || !at) return;
     teamRounds.set(t, [...(teamRounds.get(t) ?? []), at]);
   };
+  // Only a completed round or game counts, for the person and the team alike, so a person's rounds add up to the
+  // team's. A game counts on the day it was played (game_date), not the day it was scheduled.
   for (const g of rounds) {
-    push(roster.playerUser.get(g.player_id), g.created_at, 'round', 'golf_rounds');
-    if (g.status === 'completed') addRound(g.team_id, g.created_at);
+    if (g.status !== 'completed') continue;
+    push(roster.playerUser.get(g.player_id), g.created_at, 'round', 'golf_rounds', g.team_id);
+    addRound(g.team_id, g.created_at);
   }
   for (const g of games) {
-    push(g.created_by ? roster.coachUser.get(g.created_by) : null, g.created_at, 'game', 'baseball_games');
-    if (g.status === 'completed') addRound(g.team_id, g.created_at);
+    if (g.status !== 'completed') continue;
+    const at = g.game_date ?? g.created_at;
+    push(g.created_by ? roster.coachUser.get(g.created_by) : null, at, 'game', 'baseball_games', g.team_id);
+    addRound(g.team_id, at);
   }
   const teamEvents = new Map<string, number>();
   for (const [rows, source] of [
@@ -294,7 +306,7 @@ async function readTouches(r: Reads, roster: Roster, sinceIso: string, teamId?: 
     [baseballEvents, 'baseball_events'],
   ] as const) {
     for (const e of rows) {
-      push(e.created_by ? roster.coachUser.get(e.created_by) : null, e.created_at, 'event', source);
+      push(e.created_by ? roster.coachUser.get(e.created_by) : null, e.created_at, 'event', source, e.team_id);
       if (e.created_at) teamEvents.set(e.team_id, (teamEvents.get(e.team_id) ?? 0) + 1);
     }
   }
@@ -378,7 +390,7 @@ export async function readTeamsActivity(): Promise<TeamsActivityResult> {
     pulse.teams.map(async (t: PulseTeamRow): Promise<TeamActivityRow> => {
       const members = membersByTeam.get(t.teamId) ?? [];
       const people = members.map((m) =>
-        summarizePerson(m, byUser.get(m.userId) ?? [], { now, errors30d: null, device: null, roundsArePerPerson: t.sport === 'golf' }),
+        summarizePerson(m, touchesForTeam(byUser.get(m.userId) ?? [], t.teamId), { now, errors30d: null, device: null, roundsArePerPerson: t.sport === 'golf' }),
       );
       const summary = summarizeTeamPeople(people);
       let lastSignIn = summary.lastSignIn ? { at: summary.lastSignIn.at, role: summary.lastSignIn.role } : null;
@@ -476,8 +488,9 @@ export async function readTeamPeople(teamId: string): Promise<TeamPeopleResult |
     admin.from('golf_teams').select('id, name').eq('id', teamId).maybeSingle(),
     admin.from('baseball_teams').select('id, name').eq('id', teamId).maybeSingle(),
   ]);
-  if (golfTeam.error && baseballTeam.error) throw new Error(`people-space team lookup: ${golfTeam.error.message}`);
   const found = golfTeam.data ? { ...golfTeam.data, sport: 'golf' as const } : baseballTeam.data ? { ...baseballTeam.data, sport: 'baseball' as const } : null;
+  // Not found AND a lookup failed: the team may exist, so this is a failed read, never a 404.
+  if (!found && (golfTeam.error || baseballTeam.error)) throw new Error(`people-space team lookup: ${(golfTeam.error ?? baseballTeam.error)!.message}`);
   if (!found) return null;
   const sport = found.sport;
 

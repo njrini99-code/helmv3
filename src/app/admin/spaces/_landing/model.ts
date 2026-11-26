@@ -344,7 +344,8 @@ export function assembleNeeds(i: NeedsInput): Needs {
   const release = valueOf(i.release);
   add({
     key: 'release-errors',
-    count: release ? (release.state === 'new-errors' ? (release.card?.newFingerprintsSince ?? 0) : 0) : null,
+    // No stamp, no ledger card or still gathering: the count is unknown, so the total reads "at least", never a clean 0.
+    count: !release || release.state === 'unstamped' || release.state === 'outside-ledger' || release.state === 'gathering' ? null : release.state === 'new-errors' ? (release.card?.newFingerprintsSince ?? 0) : 0,
     title: 'New error fingerprints since the release',
     href: '/admin/deploys',
     tone: 'bad',
@@ -585,6 +586,7 @@ export function deskHeadline(held: number | null, reports: number | null): { tit
   const total = (held ?? 0) + (reports ?? 0);
   const atLeast = held === null || reports === null ? 'At least ' : '';
   if (total === 0 && !atLeast) return { title: 'Nothing is waiting on you.', second: 'The queue is empty.', tone: 'good' };
+  if (total === 0) return { title: 'Nothing found so far.', second: 'One source could not be read, so the queue may not be empty.', tone: 'watch' };
   const title = `${atLeast}${plural(total, 'decision')} ${total === 1 && !atLeast ? 'is' : 'are'} waiting.`;
   const bits: string[] = [];
   if (held !== null && held > 0) bits.push(plural(held, 'held migration'));

@@ -75,13 +75,15 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
   const busiestValue = data.chart.values[busiest] ?? 0;
 
   const tabs: Array<{ key: TeamTab; label: string; count: number | string }> = [
-    { key: 'people', label: 'People', count: summary.people },
-    { key: 'activity', label: 'Activity', count: data.timeline.length },
+    { key: 'people', label: 'People', count: rosterReadFailed(data) ? '—' : summary.people },
+    // buildTimeline keeps the newest 60, so a full list is "60+", never a total.
+    { key: 'activity', label: 'Activity', count: data.timeline.length >= 60 ? '60+' : data.timeline.length },
     { key: 'errors', label: 'Errors', count: data.codes.state === 'ok' ? data.codes.rows.length : '—' },
   ];
 
+  const rosterFailed = rosterReadFailed(data);
   return (
-    <SpaceRoot br={summary.people === 0 ? BR.team.empty : ''}>
+    <SpaceRoot br={rosterFailed ? BR.team.failed : summary.people === 0 ? BR.team.empty : ''}>
       <nav aria-label="Breadcrumb" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14 }}>
         <BackLink />
         <span className="bs-panel-note">
@@ -100,7 +102,7 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
               </>
             }
             title={`${team.name}.`}
-            second={summary.people === 0 ? 'Nobody is on this team yet.' : `${summary.active7d} of ${summary.people} active this week.`}
+            second={rosterFailed ? 'Its people could not be read.' : summary.people === 0 ? 'Nobody is on this team yet.' : `${summary.active7d} of ${summary.people} active this week.`}
             secondTone={summary.active7d > 0 ? 'good' : 'watch'}
           />
           {summary.people > 0 ? (
@@ -244,6 +246,12 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
   );
 }
 
+/** A failed roster or staff read leaves `people` empty: that is "could not read", never "nobody is here". */
+const ROSTER_READS = ['golf roster', 'golf staff', 'baseball roster', 'baseball staff'];
+function rosterReadFailed(data: TeamPeopleResult): boolean {
+  return data.degraded.some((d) => ROSTER_READS.includes(d));
+}
+
 function BackLink() {
   return (
     <Link href="/admin/spaces/people" className="bp-back" data-br={BR.team.back}>
@@ -303,10 +311,11 @@ function SortHead({ label, k, sort, base }: { label: string; k: PeopleSort; sort
 
 function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: PeopleSort; base: string; now: Date }) {
   if (data.people.length === 0) {
+    const rosterFailed = rosterReadFailed(data);
     return (
       <div style={{ padding: '0 22px 22px' }}>
-        <SpaceState br={BR.team.empty} title="Nobody is on this team yet.">
-          Coaches appear when they are added to the staff, players when they join with the team code.
+        <SpaceState br={rosterFailed ? BR.team.failed : BR.team.empty} title={rosterFailed ? 'The roster could not be read.' : 'Nobody is on this team yet.'}>
+          {rosterFailed ? 'Reload; nothing here means the team is empty.' : 'Coaches appear when they are added to the staff, players when they join with the team code.'}
         </SpaceState>
       </div>
     );

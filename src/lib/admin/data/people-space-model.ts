@@ -62,6 +62,15 @@ export interface Touch {
   at: string;
   kind: TouchKind;
   source: string;
+  /** The team a round, game or event belongs to. Such a touch counts only for that team, on the list and the team page alike. */
+  teamId?: string | null;
+}
+
+const TEAM_BOUND: ReadonlySet<TouchKind> = new Set(['round', 'game', 'event']);
+
+/** A person's touches as one team sees them: a round, game or event counts only for the team it carries. */
+export function touchesForTeam(touches: readonly Touch[], teamId: string): Touch[] {
+  return touches.filter((t) => !TEAM_BOUND.has(t.kind) || t.teamId === teamId);
 }
 
 export interface PersonSummary {
@@ -199,24 +208,31 @@ export function summarizePerson(
   const index = new Map(keys.map((k, i) => [k, i]));
   const days: PersonSummary['days'] = keys.map(() => 'none');
   let lastActive: PersonSummary['lastActive'] = null;
+  // Any activity, for the active flags. A player's message counts as activity, but its time is never shown beside
+  // their name (players may be minors): it stays out of lastActive, the day strip and "quiet N days".
+  let lastAnyAt: number | null = null;
   let lastSignInAt: string | null = null;
   let rounds = 0;
   let messages = 0;
   for (const t of touches) {
     const at = ms(t.at);
     if (!Number.isFinite(at) || at > now + 60_000) continue;
-    if (!lastActive || at > ms(lastActive.at)) lastActive = { at: t.at, kind: t.kind };
+    const hidden = member.role === 'player' && t.kind === 'message';
+    if (lastAnyAt === null || at > lastAnyAt) lastAnyAt = at;
+    if (!hidden && (!lastActive || at > ms(lastActive.at))) lastActive = { at: t.at, kind: t.kind };
     if (t.kind === 'sign_in') lastSignInAt = latest(lastSignInAt, t.at);
     if (now - at > WINDOW_DAYS * DAY_MS) continue;
     if (t.kind === 'round') rounds += 1;
     if (t.kind === 'message') messages += 1;
+    if (hidden) continue;
     const i = index.get(dayKey(t.at));
     if (i === undefined) continue;
     if (t.kind === 'round' || t.kind === 'game') days[i] = 'round';
     else if (days[i] === 'none') days[i] = 'active';
   }
   lastSignInAt = latest(lastSignInAt, o.signInEver ?? null);
-  const since = lastActive ? now - ms(lastActive.at) : null;
+  const since = lastAnyAt === null ? null : now - lastAnyAt;
+  const shownSince = lastActive ? now - ms(lastActive.at) : null;
   return {
     userId: member.userId,
     role: member.role,
@@ -234,7 +250,7 @@ export function summarizePerson(
     messages30d: messages,
     errors30d: o.errors30d,
     device: o.device,
-    quietDays: since === null ? null : Math.floor(since / DAY_MS),
+    quietDays: shownSince === null ? null : Math.floor(shownSince / DAY_MS),
   };
 }
 
@@ -423,12 +439,13 @@ const NUMBER_WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven
 const sentenceNumber = (n: number) => NUMBER_WORDS[n] ?? String(n);
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
-/** "6 of 27 teams active." / "21 quiet for two weeks." and a lede built only from the rows. */
+/** "6 of 27 teams active in two weeks." / "21 quiet for two weeks." and a lede built only from the rows. */
 export function teamsHeadline(rows: readonly TeamActivityRow[]): { title: string; second: string; lede: string } {
   const c = stateCounts(rows);
   const recent = c.active + c.slipping;
   const quiet = c.dormant + c.never;
-  const title = rows.length === 0 ? 'No teams to show.' : `${recent} of ${rows.length} ${plural(rows.length, 'team', 'teams')} active.`;
+  // "Active" here is the last two weeks (active + slipping), and says so: the strip's "active" is the last two days.
+  const title = rows.length === 0 ? 'No teams to show.' : `${recent} of ${rows.length} ${plural(rows.length, 'team', 'teams')} active in two weeks.`;
   const second = quiet === 0 ? 'None quiet for two weeks.' : `${quiet} quiet for two weeks.`;
   const activeTest = rows.filter((r) => r.state === 'active' && r.isTest).length;
   const rounds7d = rows.reduce((s, r) => s + r.rounds7d, 0);

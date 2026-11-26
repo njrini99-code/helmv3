@@ -78,8 +78,10 @@ export default async function TodaySpacePage() {
       return heldCount(rows);
     }),
     settleRead('today.clubhouse', async () => {
-      const [hourly, pipe] = await Promise.all([readHourly({ sinceIso: new Date(midnight).toISOString() }), readPipe(now)]);
+      const [hourly, pipe] = await Promise.all([readHourly({ sinceIso: new Date(midnight).toISOString(), failuresOnly: true }), readPipe(now)]);
       if (hourly.state === 'error') throw new Error(hourly.error ?? 'clubhouse_signal_hourly read failed');
+      // A cut-off read is not today's count: show it as unread ("at least"), never as a complete, possibly clean total.
+      if (hourly.truncated) throw new Error('clubhouse_signal_hourly: more failure rows today than one read keeps');
       return clubhouseToday(hourly.data, pipe);
     }),
     settleRead('today.activity', async () => {

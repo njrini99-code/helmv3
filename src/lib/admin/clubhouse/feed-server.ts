@@ -156,6 +156,8 @@ export async function readFailureCodeReleases(sinceIso: string, cap = NEW_CODE_C
           .or(FAILURE_FILTER)
           .order('bucket_hour', { ascending: false })
           .order('code')
+          // The rest of the table's key: a total order, so paging never skips or repeats a row (live.ts).
+          .order('kind').order('outcome').order('act').order('page_id').order('role').order('platform').order('release')
           .range(from, to),
       cap,
       (r) => ({ code: String(r.code ?? ''), release: String(r.release ?? '') }),

@@ -42,11 +42,17 @@ export const dynamic = 'force-dynamic';
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
+// The feed's longest window is 7 days, so a 30-day Speed view links to the last 7 days and says so on the link.
 const FEED_WINDOW_FOR: Record<SpeedWindow, FeedWindow> = { '24h': '24h', '7d': '7d', '30d': '7d' };
 
 function lineTone(ms: number | null, line: number): Tone {
   if (ms === null) return 'muted';
   return ms > line ? 'bad' : ms > line * 0.8 ? 'watch' : 'good';
+}
+
+/** The copy report says what the page says: a missing number is "not measured yet", never a dash. */
+function measured(ms: number | null): string {
+  return ms === null ? 'not measured yet' : msText(ms);
 }
 
 function MeterCell({ ms, line, label }: { ms: number | null; line: number; label: string }) {
@@ -74,7 +80,9 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
   const since = new Date(now - SPEED_WINDOW_MS[scope.w]).toISOString();
   const [pipe, hourly, failures, queryPerf] = await Promise.all([
     readPipe(now),
-    readHourly({ sinceIso: since, kinds: ['view', 'vital', 'action'] }),
+    // Twice the default cap: a 7- or 30-day window can hold more rows than a day's read. Past it, the page says exactly
+    // which hours it covers instead of calling the result the whole window.
+    readHourly({ sinceIso: since, kinds: ['view', 'vital', 'action'], cap: 12_000 }),
     readFailures(since),
     // Per-query time is the database's own (helm_debug.db_stat_deltas, every 15 minutes), not a Clubhouse signal, so it
     // shows whatever the pipe says. A thrown read is a failed panel, never an empty one.
@@ -86,6 +94,11 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
     await logServerError('Reliability speed: a read failed', { action: 'admin.spaces.reliability.speed', route: '/admin/spaces/reliability/speed', feature: 'admin_dashboard' });
   }
 
+  // Rows come newest first, so a cut-off read covers from its oldest hour to now, not the whole window.
+  const coveredFrom = hourly.truncated && hourly.data.length ? hourly.data.reduce((m, r) => (r.bucket_hour < m ? r.bucket_hour : m), hourly.data[0]!.bucket_hour) : null;
+  const windowText = coveredFrom
+    ? `since ${new Date(coveredFrom).toISOString().slice(5, 16).replace('T', ' ')} UTC only (the last ${SPEED_WINDOW_LABEL[scope.w]} held more rows than one read keeps)`
+    : `last ${SPEED_WINDOW_LABEL[scope.w]}`;
   const rows = speedRows(hourly.data, scope);
   const pages = graph ? pageSpeed(rows, graph) : [];
   const buttons = graph ? buttonSpeed(rows, graph) : [];
@@ -99,13 +112,13 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
   const who = scope.role === 'coach' ? 'coaches' : scope.role === 'player' ? 'players' : 'everyone';
 
   const report = [
-    `# Speed, last ${SPEED_WINDOW_LABEL[scope.w]} · ${SPEED_ROLE_LABEL[scope.role]} · ${SPEED_DEVICE_LABEL[scope.device]}`,
+    `# Speed, ${windowText} · ${SPEED_ROLE_LABEL[scope.role]} · ${SPEED_DEVICE_LABEL[scope.device]}`,
     '',
     `- ${pipe.label}`,
     '',
     markdownTable(
       ['Page', 'Load (LCP p75)', 'Tap (INP p75)', 'Switch to first paint p75', 'Views'],
-      pages.map((p) => [`${p.name} (${p.page})`, msText(p.lcp), msText(p.inp), p.switchP75 === null ? 'not measured yet' : msText(p.switchP75), p.views]),
+      pages.map((p) => [`${p.name} (${p.page})`, measured(p.lcp), measured(p.inp), measured(p.switchP75), p.views]),
     ),
     '',
     markdownTable(['Button', 'p50', 'p95', 'Tries'], buttons.map((b) => [b.label, msText(b.p50), msText(b.p95), b.tries])),
@@ -131,8 +144,8 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
         <LinkGroup label="Window" br={BR.speed.window} options={SPEED_WINDOWS.map((w) => ({ key: w, label: SPEED_WINDOW_LABEL[w], href: speedHref(scope, { w }), active: scope.w === w }))} />
       </div>
       <PipeTruth pipe={pipe}>
-        <span>Field data from real users, last {SPEED_WINDOW_LABEL[scope.w]}; not the W, S and D lab tiers. A p75 reads the upper edge of its bucket, so it can read high.</span>
-        {hourly.truncated ? <Pill tone="watch">More hourly rows than one read keeps: the oldest hours are left out</Pill> : null}
+        <span>Field data from real users, {windowText}; not the W, S and D lab tiers. A p75 reads the upper edge of its bucket, so it can read high.</span>
+        {hourly.truncated ? <Pill tone="watch">Partial window: the numbers below cover fewer hours than the window names</Pill> : null}
         {failures.truncated ? <Pill tone="watch">More failures than one read keeps</Pill> : null}
         <span data-br={BR.speed.copy}>
           <CopyReportButton report={report} variant="labeled" size="sm" label="Copy report" className="bs-copy" />
@@ -279,6 +292,7 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
                       key={d.code}
                       href={feedHref({ ...DEFAULT_FEED, w: FEED_WINDOW_FOR[scope.w], role: scope.role, pf: scope.device }, { sc: d.code })}
                       className="rl-db"
+                      title={scope.w === '30d' ? 'Opens the last 7 days: the feed reaches back 7 days at most' : undefined}
                       data-br={BR.speed.dbRow}
                     >
                       <span className="bs-chip" style={{ justifySelf: 'start' }}>

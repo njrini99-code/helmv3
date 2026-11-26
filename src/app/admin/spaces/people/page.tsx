@@ -69,6 +69,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
 
   const all = result.rows;
   const shown = sortTeams(filterTeams(all, params), params.sort);
+  const rosterDown = rosterDownSports(result.degraded);
   const headline = teamsHeadline(shown);
   const counts = stateCounts(shown);
   const cards = needsCards(shown);
@@ -151,7 +152,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
               <span>State</span>
             </div>
             {shown.map((row, i) => (
-              <TeamRow key={row.teamId} row={row} rank={i + 1} now={now} />
+              <TeamRow key={row.teamId} row={row} rank={i + 1} now={now} rosterFailed={rosterDown.has(row.sport)} />
             ))}
           </div>
         )}
@@ -235,7 +236,12 @@ function NeedsCardView({ card, now }: { card: NeedsCard; now: Date }) {
   );
 }
 
-function TeamRow({ row, rank, now }: { row: TeamActivityRow; rank: number; now: Date }) {
+/** Sports whose roster or staff read failed: their teams' empty rosters are unknown, not empty. */
+function rosterDownSports(degraded: readonly string[]): Set<string> {
+  return new Set(degraded.filter((d) => / (roster|staff)$/.test(d)).map((d) => d.slice(0, d.indexOf(' '))));
+}
+
+function TeamRow({ row, rank, now, rosterFailed }: { row: TeamActivityRow; rank: number; now: Date; rosterFailed: boolean }) {
   const roundWord = row.sport === 'golf' ? 'rounds' : 'games';
   return (
     <Link href={row.href} className="bp-team" data-br={BR.teams.row}>
@@ -255,12 +261,12 @@ function TeamRow({ row, rank, now }: { row: TeamActivityRow; rank: number; now: 
         <span>
           <span className="bp-big">{row.people === 0 ? '—' : `${row.active7d} / ${row.people}`}</span>
           <span className="bp-sub" style={{ display: 'block' }}>
-            {row.people === 0 ? 'nobody on the team' : `${row.active30d} in 30 days`}
+            {row.people === 0 ? (rosterFailed ? 'roster not read' : 'nobody on the team') : `${row.active30d} in 30 days`}
           </span>
         </span>
       </span>
       <span className="bp-c-seen">
-        <SignedIn at={row.lastSignIn?.at ?? null} role={row.lastSignIn?.role ?? null} now={now} empty={row.people === 0 ? 'nobody to sign in' : 'no sign-in recorded'} />
+        <SignedIn at={row.lastSignIn?.at ?? null} role={row.lastSignIn?.role ?? null} now={now} empty={row.people === 0 ? (rosterFailed ? 'roster not read' : 'nobody to sign in') : 'no sign-in recorded'} />
       </span>
       <span className="bp-c-spark">
         <Spark values={row.activity} tone={STATE_TONE[row.state] === 'muted' ? 'muted' : STATE_TONE[row.state]} label={`${row.name}: ${row.activity.reduce((s, v) => s + v, 0)} activity ticks in 30 days`} />
