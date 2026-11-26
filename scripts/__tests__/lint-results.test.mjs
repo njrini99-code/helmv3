@@ -18,7 +18,7 @@ function fixture() {
   mkdirSync(join(root, 'src'));
   mkdirSync(join(root, 'config/baselines'), { recursive: true });
   writeFileSync(join(root, 'src/example.ts'), 'export const example = 1;\n');
-  for (const name of ['checks/lint-ci.mjs', 'lint-ratchet.mjs', 'supabase-error-audit.mjs', 'fail-open-audit.mjs', 'paginated-read-audit.mjs', 'lib/lint-results.mjs']) {
+  for (const name of ['checks/lint-ci.mjs', 'ratchets/lint-ratchet.mjs', 'supabase-error-audit.mjs', 'fail-open-audit.mjs', 'paginated-read-audit.mjs', 'lib/lint-results.mjs']) {
     mkdirSync(dirname(join(root, 'scripts', name)), { recursive: true });
     copyFileSync(join(repo, 'scripts', name), join(root, 'scripts', name));
   }
@@ -77,7 +77,7 @@ describe('one ESLint scan', () => {
     expect(calls).toBe(2);
     expect(f.run('checks/lint-ci.mjs').status).toBe(1);
     writeFileSync(join(f.root, 'config/baselines/.lint-baseline.json'), '{}');
-    expect(f.run('lint-ratchet.mjs').status).toBe(1);
+    expect(f.run('ratchets/lint-ratchet.mjs').status).toBe(1);
     expect(loadResults(f.root, [], f.env)[0].messages).toEqual([]);
   });
 
@@ -135,12 +135,12 @@ describe('existing gate semantics', () => {
     const f = fixture();
     f.report([f.file('src/example.ts', [diagnostic(AUDIT_RULES[0]), diagnostic('regular')]), f.file('scripts/example.mjs', [diagnostic('regular', 2), diagnostic(AUDIT_RULES[1])])]);
     writeFileSync(join(f.root, 'config/baselines/.lint-baseline.json'), JSON.stringify({ regular: 1, 'ERROR:regular': 1 }));
-    expect(f.run('lint-ratchet.mjs').status).toBe(0);
+    expect(f.run('ratchets/lint-ratchet.mjs').status).toBe(0);
     writeFileSync(join(f.root, 'config/baselines/.lint-baseline.json'), JSON.stringify({ regular: 1 }));
-    const regression = f.run('lint-ratchet.mjs');
+    const regression = f.run('ratchets/lint-ratchet.mjs');
     expect(regression.status).toBe(1);
     expect(regression.stderr).toContain('ERROR:regular');
-    expect(f.run('lint-ratchet.mjs', ['--update']).status).toBe(0);
+    expect(f.run('ratchets/lint-ratchet.mjs', ['--update']).status).toBe(0);
     expect(JSON.parse(readFileSync(join(f.root, 'config/baselines/.lint-baseline.json'), 'utf8'))).toEqual({ regular: 1, 'ERROR:regular': 1 });
   });
 

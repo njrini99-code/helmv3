@@ -17,9 +17,9 @@
  *                 Lines carrying an eslint-disable for no-explicit-any count
  *                 too: the disable hides the debt from ESLint, not from here.
  *
- *   node scripts/any-ratchet.mjs            # check (exit 1 on a regression)
- *   node scripts/any-ratchet.mjs --update   # rewrite the baseline after paying down
- *   node scripts/any-ratchet.mjs --list     # print every offending file with its counts
+ *   node scripts/ratchets/any-ratchet.mjs            # check (exit 1 on a regression)
+ *   node scripts/ratchets/any-ratchet.mjs --update   # rewrite the baseline after paying down
+ *   node scripts/ratchets/any-ratchet.mjs --list     # print every offending file with its counts
  *
  * Baseline: config/baselines/.any-ratchet-baseline.json. Only rewrite it to LOWER counts. A
  * rewrite that raises a count is weakening the gate.
@@ -30,7 +30,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BASELINE_PATH = resolve(ROOT, 'config/baselines/.any-ratchet-baseline.json');
 const TEST_FILE_NAME = /^.*(\.(test|spec)\.[cm]?[jt]sx?|\.d\.ts)$/;
 /** Tests and declaration files: named *.test.* / *.spec.* / *.d.ts, or inside a __tests__, test or tests directory. */
@@ -107,7 +107,7 @@ function main() {
         {
           $comment:
             'Production source under src/ (tests excluded). May only go DOWN: pay debt down, then run ' +
-            '`node scripts/any-ratchet.mjs --update`. Never raise a number to get green.',
+            '`node scripts/ratchets/any-ratchet.mjs --update`. Never raise a number to get green.',
           fromUntyped: totals.fromUntyped,
           explicitAny: totals.explicitAny,
         },
@@ -120,7 +120,7 @@ function main() {
   }
 
   if (!existsSync(BASELINE_PATH)) {
-    console.error('any-ratchet: no baseline. Run `node scripts/any-ratchet.mjs --update` once.');
+    console.error('any-ratchet: no baseline. Run `node scripts/ratchets/any-ratchet.mjs --update` once.');
     process.exit(1);
   }
   const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));

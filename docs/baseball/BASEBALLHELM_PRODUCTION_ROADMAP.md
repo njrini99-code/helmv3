@@ -226,7 +226,7 @@
 
 **Per-task verification gate (no evidence → no merge):**
 1. The task's own listed verify command(s), output pasted in the PR body.
-2. `npm run typecheck` + `npm run lint` (ratchet must not trip: `node scripts/lint-ratchet.mjs`).
+2. `npm run typecheck` + `npm run lint` (ratchet must not trip: `node scripts/ratchets/lint-ratchet.mjs`).
 3. Relevant vitest project(s); `npm run test:rls` whenever a migration or policy is touched.
 4. Migrations: post-apply `information_schema`/`pg_policies`/`pg_proc` proof — never `schema_migrations`.
 5. New DB objects: `proacl`/`relacl` output showing no anon.

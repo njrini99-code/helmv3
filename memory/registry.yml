@@ -88,7 +88,7 @@ features:
         - scripts/checks/lint-ci.mjs
         - scripts/lib/lint-results.mjs
         - scripts/__tests__/lint-results.test.mjs
-        - scripts/lint-ratchet.mjs
+        - scripts/ratchets/lint-ratchet.mjs
         - scripts/supabase-error-audit.mjs
         - scripts/fail-open-audit.mjs
         - scripts/paginated-read-audit.mjs

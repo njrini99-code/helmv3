@@ -10,9 +10,9 @@
  * Moving a test next to its code, or deleting a dead one, lowers the count;
  * run with --update to lock the gain in.
  *
- *   node scripts/test-location-ratchet.mjs            # check (exit 1 on a regression)
- *   node scripts/test-location-ratchet.mjs --update   # rewrite the baseline after moving tests
- *   node scripts/test-location-ratchet.mjs --list     # print the files
+ *   node scripts/ratchets/test-location-ratchet.mjs            # check (exit 1 on a regression)
+ *   node scripts/ratchets/test-location-ratchet.mjs --update   # rewrite the baseline after moving tests
+ *   node scripts/ratchets/test-location-ratchet.mjs --list     # print the files
  *
  * Baseline: config/baselines/.test-location-baseline.json. Only rewrite it to a LOWER count.
  * Support files that are not tests (stubs, fixtures, helpers) are not counted.
@@ -22,7 +22,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BASELINE_PATH = resolve(ROOT, 'config/baselines/.test-location-baseline.json');
 const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/;
 
@@ -48,7 +48,7 @@ function main() {
         {
           $comment:
             'Test files under src/test/**. May only go DOWN: new tests go in a __tests__/ folder next to the code ' +
-            '(AGENTS.md). After moving or deleting tests run `node scripts/test-location-ratchet.mjs --update`.',
+            '(AGENTS.md). After moving or deleting tests run `node scripts/ratchets/test-location-ratchet.mjs --update`.',
           legacyTestFiles: files.length,
         },
         null,
@@ -60,7 +60,7 @@ function main() {
   }
 
   if (!existsSync(BASELINE_PATH)) {
-    console.error('test-location-ratchet: no baseline. Run `node scripts/test-location-ratchet.mjs --update` once.');
+    console.error('test-location-ratchet: no baseline. Run `node scripts/ratchets/test-location-ratchet.mjs --update` once.');
     process.exit(1);
   }
   const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8')).legacyTestFiles;

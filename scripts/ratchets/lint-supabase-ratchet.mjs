@@ -17,7 +17,7 @@ import { spawnSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const extraArgs = process.argv.slice(2);
 
 const scripts = ['scripts/supabase-chunk-audit.mjs', 'scripts/supabase-error-audit.mjs'];

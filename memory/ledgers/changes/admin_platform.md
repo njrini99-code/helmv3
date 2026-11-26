@@ -1407,7 +1407,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   (146 files / 1671 tests, all pass, before and after the fix),
   `npm run audit:paginated-reads` (12, baseline 12, confirmed fixed),
   `npm run audit:supabase-errors` / `audit:fail-open` (1039 / 51, no
-  regression), `node scripts/markdown-lint-ratchet.mjs`,
+  regression), `node scripts/ratchets/markdown-lint-ratchet.mjs`,
   `npm run lint:duplicate-exports`,
   `node scripts/knowledge/document-inventory.mjs --check`,
   `npm run docs:path-drift`, `npm run docs:schema-drift`. `npm run build`
@@ -1975,9 +1975,9 @@ status transition, not a caller-supplied timestamp).
   changed files, `npx vitest run --maxWorkers=4` for
   `src/lib/admin/agent-runs`, `src/lib/admin/engineering`,
   `src/app/admin/engineering`, `src/app/admin/work`,
-  `node scripts/sql-lint-ratchet.mjs`,
+  `node scripts/ratchets/sql-lint-ratchet.mjs`,
   `node scripts/knowledge/document-inventory.mjs --check`,
-  `node scripts/markdown-lint-ratchet.mjs` — all exit 0.
+  `node scripts/ratchets/markdown-lint-ratchet.mjs` — all exit 0.
 - **Not verified**: no production deploy exercised the
   `outputFileTracingIncludes`/`.vercelignore` fix end to end (this repo's
   own rule: never run `next build`/`npm run build` in a mutation worktree,

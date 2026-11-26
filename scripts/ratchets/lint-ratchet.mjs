@@ -21,13 +21,13 @@
  *   --update  Rewrite config/baselines/.lint-baseline.json from the current run and exit 0.
  */
 
-import { loadResults, withoutAuditRules } from './lib/lint-results.mjs';
+import { loadResults, withoutAuditRules } from '../lib/lint-results.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, '..');
+const ROOT = resolve(__dirname, '..', '..');
 const BASELINE_PATH = resolve(ROOT, 'config/baselines/.lint-baseline.json');
 
 const UPDATE = process.argv.includes('--update');

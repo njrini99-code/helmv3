@@ -35,7 +35,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, '..');
+const ROOT = resolve(__dirname, '..', '..');
 const BASELINE_PATH = resolve(ROOT, 'config/baselines/.markdownlint-baseline.json');
 
 const UPDATE = process.argv.includes('--update');

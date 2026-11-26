@@ -356,8 +356,8 @@ jobs:
       # AGENTS.md scope (dominated by MD013 line-length and MD060
       # table-column-style — rules this repo has never enforced on prose),
       # far too many to unmask as a hard zero-violations gate. Replaced with
-      # a full-scope, per-rule count ratchet (scripts/markdown-lint-ratchet.mjs,
-      # same shape as scripts/lint-ratchet.mjs): the existing backlog is
+      # a full-scope, per-rule count ratchet (scripts/ratchets/markdown-lint-ratchet.mjs,
+      # same shape as scripts/ratchets/lint-ratchet.mjs): the existing backlog is
       # grandfathered via config/baselines/.markdownlint-baseline.json, and the step fails
       # only if any rule's count goes UP. Full-scope (not changed-files) on
       # purpose — a ratchet baseline is only meaningful if measured over a
@@ -366,7 +366,7 @@ jobs:
       - name: markdownlint (ratchet)
         id: markdownlint
         continue-on-error: true
-        run: node scripts/markdown-lint-ratchet.mjs
+        run: node scripts/ratchets/markdown-lint-ratchet.mjs
 
       - name: ruff
         id: ruff
@@ -395,7 +395,7 @@ jobs:
 
       # Same story as markdownlint: a `|| true` lint that could never fail,
       # replaced 2026-08-19 with a full-scope, per-rule count ratchet
-      # (scripts/sql-lint-ratchet.mjs) over supabase/migrations/*.sql +
+      # (scripts/ratchets/sql-lint-ratchet.mjs) over supabase/migrations/*.sql +
       # supabase/seed/*.sql. The existing backlog (7,649 violations across
       # 264 of 303 files at the time; sqlfluff's own 20KB large-file safety
       # limit skips the other 18) is grandfathered via config/baselines/.sqlfluff-baseline.json,
@@ -404,7 +404,7 @@ jobs:
       - name: sqlfluff (ratchet)
         id: sqlfluff
         continue-on-error: true
-        run: node scripts/sql-lint-ratchet.mjs
+        run: node scripts/ratchets/sql-lint-ratchet.mjs
 
       - name: hadolint
         id: hadolint

@@ -189,7 +189,7 @@ jobs:
     # matter what it found, and nothing downstream checked its output either
     # (only artifacts, no aggregator). Fixed 2026-08-19 (Wave L / Lane C) the
     # same way review-gate.yml's per-PR sqlfluff job was fixed: run
-    # scripts/sql-lint-ratchet.mjs (a full-scope, per-rule count ratchet;
+    # scripts/ratchets/sql-lint-ratchet.mjs (a full-scope, per-rule count ratchet;
     # fails only if a rule's violation count goes UP vs. the checked-in
     # config/baselines/.sqlfluff-baseline.json) instead of a bare lint-and-discard.
     #
@@ -213,7 +213,7 @@ jobs:
           node-version: "24.21"
       - run:
           name: SQL lint ratchet (full repo)
-          command: node scripts/sql-lint-ratchet.mjs
+          command: node scripts/ratchets/sql-lint-ratchet.mjs
 
   # ---------- Weekly: Postgres migration safety scan ----------
   squawk-migrations:
