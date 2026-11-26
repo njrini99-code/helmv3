@@ -1606,7 +1606,7 @@ W9 ships as ONE branch (`wave9-foundation`) with three sequential PRs:
 - `docs/v3-compatibility-shims.md` — shim registry (table header + 3 initial rows from Part XXIV.3)
 - `docs/v3-rls-template.md` — canonical RLS patterns coach/player/admin can copy
 - `docs/archive/v3/v3-testing-standards.md` — required test types per feature category (generators, composites, LLM, RLS, lifecycle)
-- `docs/v3-decisions.md` — locked decisions (Part III content + provider names)
+- `docs/archive/v3/v3-decisions.md` — locked decisions (Part III content + provider names)
 - `docs/v3-player-transfer-playbook.md` — edge cases: transfer, multi-team, graduation, new player
 
 **W9-pt2: RLS helpers + `golf_metrics` table + seed + extend `golf_coachhelm_settings`** (~1 day, 6 migrations — split per Rule 2 + backfill rule)

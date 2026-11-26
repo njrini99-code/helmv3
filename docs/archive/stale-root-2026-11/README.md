@@ -12,8 +12,12 @@ header, or had not been touched since early 2026:
 - `v3-design-language.md`: retired; `src/styles/design-tokens.css` and
   `.claude/rules/design-system.md` replaced it.
 
-Four more stale docs were meant to move here and did not, because
-`memory/registry.yml` still routes features to them and `knowledge:check`
-forbids routing to an archived document: `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md`,
-`docs/BI_DASHBOARD_ARCHITECTURE.md`, `docs/PUSH_NOTIFICATION_AUDIT.md` and
-`docs/SECURITY_AUDIT.md`. Drop those registry routes first, then archive them.
+Four more followed in repo tidy 6 (2026-11-25), once their
+`memory/registry.yml` routes were dropped or re-routed:
+
+- `SECURITY_AUDIT.md` and `PUSH_NOTIFICATION_AUDIT.md` (2026-03-05): the
+  App Store submission audits. Team access control now routes to
+  `docs/security/S4_TEAMMATE_READ_AUDIT_2026-10-21.md` and Settings to
+  `docs/clubhouse/phone/push-opt-in.md`; the other routes were dropped.
+- `ADMIN_DASHBOARD_UPGRADE_PLAN.md`, `BI_DASHBOARD_ARCHITECTURE.md`: early
+  admin plans; `memory/features/admin-platform.md` is the current doc.

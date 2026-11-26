@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
  * (src/test/route-reachability.test.ts).
  */
 
-const ROOT = resolve(__dirname, '../..');
+const ROOT = resolve(__dirname, '../../../..');
 
 /** Retired trees, as repo paths (a trailing slash is a folder). */
 export const RETIRED = [
@@ -125,7 +125,7 @@ describe('Fairway retirement: nothing imports the retired Fairway trees', () => 
   });
 
   it('the scan sees each kind of reference', () => {
-    const probe = join(ROOT, 'src/__tests__/__probe__.ts');
+    const probe = join(ROOT, 'src/components/fairway/__tests__/__probe__.ts');
     const lines = [
       "import { A } from '@/components/fairway/pages/dashboard';",
       "const B = await import('@/components/golf/coachhelm/chat/AskSurface');",

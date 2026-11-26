@@ -118,4 +118,4 @@ Use `memory/glossary.md` for table lookup and `memory/context/golfhelm-database.
 - `memory/context/golfhelm-database.md`
 - `docs/architecture/USER_ROLE_DATA_OWNERSHIP.md`
 - `docs/v3-rls-template.md`
-- `docs/SECURITY_AUDIT.md`
+- `docs/security/S4_TEAMMATE_READ_AUDIT_2026-10-21.md`

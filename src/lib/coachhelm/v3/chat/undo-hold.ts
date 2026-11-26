@@ -131,10 +131,10 @@ export async function commitHeldNow(sb: Sb, args: { coach_id: string; idempotenc
   return id ? execute(sb, id, commit.run, commit.readBack) : null;
 }
 
-/** On the next chat request: runs any overdue held row once. The function that held it may have been cut off; the take keeps it single, and the write starts only after the take. */
-export async function sweepHeld(sb: Sb, args: { coach_id: string; team_id: string; resolve: HeldResolver }): Promise<number> {
+/** On the next chat request: runs any overdue held row once. The function that held it may have been cut off; the take keeps it single, and the write starts only after the take. Returns how many it committed, or `null` when the read failed (unknown, not "none overdue"). */
+export async function sweepHeld(sb: Sb, args: { coach_id: string; team_id: string; resolve: HeldResolver }): Promise<number | null> {
   const { data, error } = await askTables(sb).from(TABLE).select(HELD_COLUMNS).eq('coach_id', args.coach_id).eq('team_id', args.team_id).eq('status', 'held').lte('run_at', new Date().toISOString()).order('run_at').limit(10);
-  if (error || !data) return 0;
+  if (error || !data) return null;
   let done = 0;
   for (const row of data as unknown as HeldRow[]) {
     const commit = args.resolve(row);

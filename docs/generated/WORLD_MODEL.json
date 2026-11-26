@@ -22162,6 +22162,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/counterfactual/player-cohort-loader.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/effectiveness/attribution-read.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -22299,6 +22304,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/standing/loader.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/standing/loader.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
         },
         {
           "kind": "import_graph",
