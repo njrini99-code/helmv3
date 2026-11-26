@@ -17,6 +17,21 @@ function states(screen: string) {
 }
 
 export const BR = {
+  /** B01 Pulse. */
+  pulse: {
+    pageTile: 'BR-0101',
+    risingRow: 'BR-0102',
+    actionRow: 'BR-0103',
+    incidentRow: 'BR-0104',
+    releaseCard: 'BR-0105',
+    pipeDot: 'BR-0106',
+    refresh: 'BR-0107',
+    copy: 'BR-0108',
+    pauseLive: 'BR-0109',
+    /** Not in the §8 table: a rule hit's row (R-01 to R-12), the list the digest also sends. */
+    alertRow: 'BR-0110',
+    ...states('01'),
+  },
   /** B02 Pages. */
   pages: {
     row: 'BR-0201',
@@ -69,6 +84,63 @@ export const BR = {
     pack: 'BR-0509',
     copy: 'BR-0510',
     ...states('05'),
+  },
+  /** B06 Incidents, the Bridge additions. */
+  incidents: {
+    filterChips: 'BR-0601',
+    idChip: 'BR-0602',
+    peopleCount: 'BR-0603',
+    resolve: 'BR-0604',
+    sendToDuet: 'BR-0605',
+    copy: 'BR-0606',
+    /** Not in the §8 table: the session link a Bridge row carries (opens B07). */
+    sessionLink: 'BR-0607',
+    ...states('06'),
+  },
+  /** B07 Sessions. */
+  sessions: {
+    row: 'BR-0701',
+    filters: 'BR-0702',
+    mark: 'BR-0703',
+    idChip: 'BR-0704',
+    replay: 'BR-0705',
+    person: 'BR-0706',
+    reproduce: 'BR-0707',
+    /** Not in the §8 table; see BR-0307. */
+    copy: 'BR-0708',
+    ...states('07'),
+  },
+  /** B08 People and teams. */
+  people: {
+    sessionRow: 'BR-0801',
+    codeRow: 'BR-0802',
+    viewAs: 'BR-0803',
+    account: 'BR-0804',
+    pack: 'BR-0805',
+    /** Not in the §8 table; see BR-0307. */
+    copy: 'BR-0806',
+    ...states('08'),
+  },
+  /** B09 Experience. */
+  experience: {
+    viewRail: 'BR-0901',
+    pageRow: 'BR-0902',
+    controlRow: 'BR-0903',
+    compareReleases: 'BR-0904',
+    /** Not in the §8 table; see BR-0307. */
+    copy: 'BR-0905',
+    ...states('09'),
+  },
+  /** B10 Releases. */
+  releases: {
+    row: 'BR-1001',
+    compareWith: 'BR-1002',
+    deltaRow: 'BR-1003',
+    pr: 'BR-1004',
+    pack: 'BR-1005',
+    /** Not in the §8 table; see BR-0307. */
+    copy: 'BR-1006',
+    ...states('10'),
   },
   /** B12 Readiness. */
   readiness: {

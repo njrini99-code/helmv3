@@ -13,6 +13,7 @@ import {
   type ScopeRole,
   type ScopeViewport,
 } from '@/lib/admin/clubhouse/screens';
+import { DEFAULT_LIVE, LIVE_PLATFORMS, LIVE_WINDOWS, PLATFORM_WORDS, parseLiveScope } from '@/lib/admin/clubhouse/live-scope';
 
 export interface ScopeBarPage {
   id: string;
@@ -38,7 +39,7 @@ const RESET_ON_CHANGE = ['p'];
  *
  * Window, platform, release and team need signals; they join the bar with the live lenses (PR 3).
  */
-export function ScopeBar({ pages }: { pages: readonly ScopeBarPage[] }) {
+export function ScopeBar({ pages, live = false }: { pages: readonly ScopeBarPage[]; live?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -46,13 +47,15 @@ export function ScopeBar({ pages }: { pages: readonly ScopeBarPage[] }) {
   const id = useId();
   const current = Object.fromEntries(searchParams?.entries() ?? []);
   const scope = parseScope(current, pages.map((p) => p.id));
-  const scoped = scope.page !== null || scope.role !== 'all' || scope.vp !== 'all';
+  const liveScope = parseLiveScope(current);
+  const scoped =
+    scope.page !== null || scope.role !== 'all' || scope.vp !== 'all' || liveScope.w !== DEFAULT_LIVE.w || liveScope.pf !== DEFAULT_LIVE.pf;
 
-  function go(next: Partial<Record<(typeof SCOPE_PARAMS)[number], string>>) {
+  function go(next: Partial<Record<(typeof SCOPE_PARAMS)[number] | 'w' | 'pf', string>>) {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
     for (const key of RESET_ON_CHANGE) params.delete(key);
     for (const [key, value] of Object.entries(next)) {
-      if (!value || value === 'all') params.delete(key);
+      if (!value || value === 'all' || (key === 'w' && value === DEFAULT_LIVE.w)) params.delete(key);
       else params.set(key, value);
     }
     const query = params.toString();
@@ -109,10 +112,34 @@ export function ScopeBar({ pages }: { pages: readonly ScopeBarPage[] }) {
           </option>
         ))}
       </select>
+      {live ? (
+        <>
+          <label htmlFor={`${id}-w`} className="sr-only">
+            Window
+          </label>
+          <select id={`${id}-w`} value={liveScope.w} onChange={(e) => go({ w: e.target.value })} className={cn(selectClass, 'flex-1 basis-24 sm:flex-none')}>
+            {LIVE_WINDOWS.map((w) => (
+              <option key={w} value={w}>
+                Last {w}
+              </option>
+            ))}
+          </select>
+          <label htmlFor={`${id}-pf`} className="sr-only">
+            Platform
+          </label>
+          <select id={`${id}-pf`} value={liveScope.pf} onChange={(e) => go({ pf: e.target.value })} className={cn(selectClass, 'flex-1 basis-32 sm:flex-none')}>
+            {LIVE_PLATFORMS.map((p) => (
+              <option key={p} value={p}>
+                {p === 'all' ? 'All platforms' : PLATFORM_WORDS[p]}
+              </option>
+            ))}
+          </select>
+        </>
+      ) : null}
       {scoped ? (
         <button
           type="button"
-          onClick={() => go({ page: 'all', role: 'all', vp: 'all' })}
+          onClick={() => go({ page: 'all', role: 'all', vp: 'all', w: DEFAULT_LIVE.w, pf: 'all' })}
           className="inline-flex h-9 items-center gap-1 rounded-fw-sm px-2 text-caption font-medium text-text-secondary hover:bg-surface hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500 [@media(pointer:coarse)]:h-11"
         >
           <X size={14} aria-hidden />
