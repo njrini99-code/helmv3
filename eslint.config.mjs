@@ -231,6 +231,18 @@ export default tseslint.config(
   // route files and the grandfathered allowlists.
   importRestrictionBase,
   {
+    // Census rules (helm/no-healthy-value-on-error and its siblings) are "off"
+    // above, so a reasoned `eslint-disable-next-line <rule> -- why` in an
+    // ordinary file is reported as an unused directive and fails
+    // `npm run lint`. A file that carries such a deliberate exemption is listed
+    // here with the rule on: the disable is then used, the audit stops counting
+    // the site, and any NEW site in the same file fails lint outright.
+    files: ["src/lib/notifications/class-hold.ts"],
+    rules: {
+      "helm/no-healthy-value-on-error": "warn",
+    },
+  },
+  {
     // CON-09 (owner decision 2026-09-23, "more contrast, more green"): the
     // golf product surfaces were swept clean of the text colours that fail AA
     // on the cream canvas. This keeps them out. Scoped to golf so BaseballHelm
