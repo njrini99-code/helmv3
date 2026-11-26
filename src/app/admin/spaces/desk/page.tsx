@@ -52,9 +52,11 @@ export default async function DeskSpacePage() {
   const queue = deskQueue(held.ok ? held.data : null, reportList);
   const head = deskHeadline(heldN, reportN);
   const anyFailed = !held.ok || !reports.ok;
+  // GitHub not configured: the reports were not read, so the queue is not known to be empty.
+  const reportsUnread = reports.ok && reports.data === null;
 
   return (
-    <SpaceRoot br={anyFailed ? BR.desk.failed : queue.length === 0 ? BR.desk.empty : ''}>
+    <SpaceRoot br={anyFailed ? BR.desk.failed : queue.length === 0 && !reportsUnread ? BR.desk.empty : ''}>
       <SpaceHeader
         eyebrow="Desk · what is waiting on you"
         title={head.title}
@@ -68,7 +70,7 @@ export default async function DeskSpacePage() {
         <Stat
           label="Open reports"
           value={reportN}
-          sub="Ben + Leah, open on GitHub"
+          sub={reportsUnread ? 'GitHub is not configured here, so reports were not read' : 'Ben + Leah, open on GitHub'}
           tone={reportN ? 'watch' : 'muted'}
           href="/admin/ben-leah"
         />
@@ -77,7 +79,12 @@ export default async function DeskSpacePage() {
       <Panel title="Decision queue" note="reports by priority, then held migrations in register order">
         {!held.ok ? <FailedInline br={BR.desk.failed} what="The held-migration register" retryHref={HREF} /> : null}
         {!reports.ok ? <FailedInline br={BR.desk.failed} what="Ben + Leah reports" retryHref={HREF} /> : null}
-        {queue.length === 0 && !anyFailed ? (
+        {reportsUnread ? (
+          <p className="bs-panel-note bs-tone-watch" style={{ margin: '0 22px 12px' }}>
+            Ben + Leah reports were not read: no GitHub token is configured here. Open reports may be waiting on the Ben + Leah tab.
+          </p>
+        ) : null}
+        {queue.length === 0 && !anyFailed && !reportsUnread ? (
           <SpaceState br={BR.desk.empty} title="Nothing is waiting on you." />
         ) : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>

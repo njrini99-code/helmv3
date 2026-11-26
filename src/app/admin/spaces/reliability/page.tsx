@@ -161,7 +161,10 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
   }
   const notesIndex = notes.state === 'ok' ? notes.data : EMPTY_NOTES;
   const release = currentRelease(liveRef(), failures.sessions);
-  const fresh = releaseRows.state === 'ok' ? newCodes(releaseRows.data, release) : new Set<string>();
+  // "New in this release" needs the whole 8-day baseline: a truncated read (newest first) can drop the older releases a
+  // code already fired in, so newness is then unknown and nothing is called new.
+  const baselineComplete = releaseRows.state === 'ok' && !(releaseRows as { truncated?: boolean }).truncated;
+  const fresh = baselineComplete ? newCodes(releaseRows.data, release) : new Set<string>();
   const all = buildFeed({ graph, events: failures.events, sessions: failures.sessions, teamNames: failures.teamNames, notes: notesIndex, fresh, release });
   const unscopedRole = filterFeed(all, { ...scope, role: 'all' });
   const summary = roleSummary(unscopedRole);

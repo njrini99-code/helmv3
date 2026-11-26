@@ -89,24 +89,38 @@ function normalizeIssue(raw: RawGitHubIssue): BenLeahGitHubIssue {
   };
 }
 
-async function fetchRawIssues(token: string, owner: string, repo: string): Promise<RawGitHubIssue[]> {
-  const params = new URLSearchParams({
-    labels: 'ben-leah',
-    state: 'all',
-    sort: 'updated',
-    direction: 'desc',
-    per_page: '50',
-  });
+/** Pages of open reports the Desk reads before it stops: 10 × 100 = 1,000 open reports, far past any real queue. */
+const OPEN_ISSUE_PAGES = 10;
 
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues?${params}`, {
-    headers: githubHeaders(token),
-    next: { revalidate: 60 },
-  });
-
-  if (res.ok) {
+/**
+ * `state: 'all'` (the board) reads the 50 most recently updated reports. `state: 'open'` (the Desk queue) asks GitHub
+ * for open reports only and pages through them, so an old open report is never pushed out by recently closed ones.
+ */
+async function fetchRawIssues(token: string, owner: string, repo: string, state: 'all' | 'open' = 'all'): Promise<RawGitHubIssue[]> {
+  const perPage = state === 'open' ? 100 : 50;
+  const pages = state === 'open' ? OPEN_ISSUE_PAGES : 1;
+  const out: RawGitHubIssue[] = [];
+  let res: Response | null = null;
+  for (let page = 1; page <= pages; page++) {
+    const params = new URLSearchParams({
+      labels: 'ben-leah',
+      state,
+      sort: 'updated',
+      direction: 'desc',
+      per_page: String(perPage),
+      page: String(page),
+    });
+    res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues?${params}`, {
+      headers: githubHeaders(token),
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) break;
     const body = (await res.json()) as RawGitHubIssue[];
-    return body.filter((issue) => !issue.pull_request);
+    out.push(...body.filter((issue) => !issue.pull_request));
+    if (body.length < perPage) return out;
   }
+  if (res?.ok) return out;
+  if (!res) return out;
 
   if (res.status !== 404 && res.status !== 422) {
     const text = await res.text();
@@ -115,10 +129,10 @@ async function fetchRawIssues(token: string, owner: string, repo: string): Promi
 
   // Label may not exist yet — fall back to title prefix (label-less retry path).
   const searchParams = new URLSearchParams({
-    q: `repo:${owner}/${repo} is:issue "[Ben + Leah]" in:title`,
+    q: `repo:${owner}/${repo} is:issue${state === 'open' ? ' is:open' : ''} "[Ben + Leah]" in:title`,
     sort: 'updated',
     order: 'desc',
-    per_page: '50',
+    per_page: state === 'open' ? '100' : '50',
   });
   const searchRes = await fetch(`https://api.github.com/search/issues?${searchParams}`, {
     headers: githubHeaders(token),
@@ -177,7 +191,7 @@ export async function fetchBenLeahOpenIssues(): Promise<AdminFetchResult<BenLeah
   if (!token) return unconfigured('GitHub issues API');
   const { owner, repo } = issueRepo();
   try {
-    const raw = await fetchRawIssues(token, owner, repo);
+    const raw = await fetchRawIssues(token, owner, repo, 'open');
     return ok(raw.map(normalizeIssue).filter((i) => i.state === 'open'));
   } catch (err) {
     return failed(err instanceof Error ? err.message : String(err));
