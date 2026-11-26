@@ -52,7 +52,7 @@ export function ClubhouseFrame({
   sources: readonly string[];
   actions?: ReactNode;
   showScope?: boolean;
-  /** A live lens (PR 3): the pipe as read, the window and platform, and whether a read was cut short. */
+  /** A live lens: the pipe as read, the window and platform, and whether a read was cut short. */
   live?: LiveTruth;
   children: ReactNode;
 }) {
@@ -75,7 +75,12 @@ export interface LiveTruth {
   pipe: PipeStatus;
   scope: LiveScope;
   truncated?: boolean;
+  /** The code the pipe link carries on this screen: Pulse's Pipe dot (BR-0106). */
+  pipeCode?: string;
 }
+
+const pipeLink =
+  'inline-flex min-h-6 items-center gap-1 rounded-fw-sm underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500';
 
 const PIPE_TONE: Record<PipeStatus['tone'], string> = {
   live: 'text-fw-success-ink',
@@ -107,20 +112,27 @@ export function TruthLine({
       <span aria-hidden>·</span>
       <span>release {ref === 'main' ? 'unstamped' : ref.slice(0, 7)}</span>
       <span aria-hidden>·</span>
+      {/* The pipe opens B11's pipe panel (BR-0106 on Pulse): ingest health lives there. */}
       {live ? (
-        <span
-          data-br={live.pipe.tone === 'no-signal' ? noSignalCode : undefined}
-          className={cn('inline-flex items-center gap-1', PIPE_TONE[live.pipe.tone])}
-          title={live.pipe.lastEnvelopeAt ? `Newest envelope ${live.pipe.lastEnvelopeAt}` : undefined}
+        <Link
+          href={clubhouseHref.pipe()}
+          prefetch={false}
+          data-br={live.pipeCode}
+          className={cn(pipeLink, PIPE_TONE[live.pipe.tone])}
+          title={live.pipe.lastEnvelopeAt ? `Newest envelope ${live.pipe.lastEnvelopeAt}. Opens the pipe panel.` : 'Opens the pipe panel'}
         >
-          <RadioTower size={12} aria-hidden />
-          {live.pipe.label}
-        </span>
+          <span data-br={live.pipe.tone === 'no-signal' ? noSignalCode : undefined} className="inline-flex items-center gap-1">
+            <RadioTower size={12} aria-hidden />
+            {live.pipe.label}
+          </span>
+        </Link>
       ) : (
-        <span data-br={noSignalCode} className="inline-flex items-center gap-1 text-text-secondary">
-          <RadioTower size={12} aria-hidden />
-          pipe: no signal yet
-        </span>
+        <Link href={clubhouseHref.pipe()} prefetch={false} className={cn(pipeLink, 'text-text-secondary')} title="Opens the pipe panel">
+          <span data-br={noSignalCode} className="inline-flex items-center gap-1">
+            <RadioTower size={12} aria-hidden />
+            pipe: no signal yet
+          </span>
+        </Link>
       )}
       <span aria-hidden>·</span>
       <span className="min-w-0 break-words font-fw-sans">

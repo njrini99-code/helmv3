@@ -115,7 +115,7 @@ export default async function ClubhouseDriftPage({ searchParams }: { searchParam
 
       <ListPanel meta={meta} entries={entries} runtime={runtime} graph={graph} scope={scope} />
 
-      <PipePanel runtime={runtime} />
+      <PipePanel runtime={runtime} open={(Array.isArray(sp.pipe) ? sp.pipe[0] : sp.pipe) === '1'} />
     </ClubhouseFrame>
   );
 }
@@ -277,10 +277,13 @@ function NeverSeen({ graph }: { graph: BridgeGraph }) {
   );
 }
 
-/** BR-1104: ingest health. Every figure needs the signal, so the panel says what it will hold and claims none. */
-function PipePanel({ runtime }: { runtime: RuntimeDrift }) {
+/**
+ * BR-1104: ingest health. Every figure needs the signal, so the panel says what it will hold and claims none. The Pipe
+ * dot (BR-0106) and every truth line's pipe land here (`?pipe=1#pipe` opens it).
+ */
+function PipePanel({ runtime, open }: { runtime: RuntimeDrift; open: boolean }) {
   return (
-    <details data-br={BR.drift.pipePanel} className="group/pipe rounded-fw-md border border-border-subtle bg-surface">
+    <details id="pipe" open={open} data-br={BR.drift.pipePanel} className="group/pipe scroll-mt-20 rounded-fw-md border border-border-subtle bg-surface">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-body-sm font-medium text-text-primary hover:bg-surface-sunken [&::-webkit-details-marker]:hidden">
         <span>Pipe</span>
         <span className="text-caption font-normal text-text-tertiary">{runtime.state === 'ok' ? 'drift table readable' : 'no signal yet'}</span>

@@ -193,6 +193,8 @@ export const clubhouseHref = {
   code: (id: string | number) => `${CLUBHOUSE_BASE}/codes/${encodeURIComponent(String(id))}`,
   readiness: () => `${CLUBHOUSE_BASE}/readiness`,
   drift: () => `${CLUBHOUSE_BASE}/drift`,
+  /** B11 with the pipe panel open and in view: where the Pipe dot (BR-0106) and the truth line's pipe go. */
+  pipe: () => `${CLUBHOUSE_BASE}/drift?pipe=1#pipe`,
   /** B13 with a pack built for `target` (P007, CTL-P007-014, ACT-P007-SEND-MESSAGE, 70603, CH-7004, F-0001, rel:…, user:…, team:…). */
   duet: (target?: string) => (target ? `${CLUBHOUSE_BASE}/duet?t=${encodeURIComponent(target)}` : `${CLUBHOUSE_BASE}/duet`),
 };

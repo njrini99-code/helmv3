@@ -55,6 +55,7 @@ import Experience from '../experience/page';
 import PersonPage from '../people/[userId]/page';
 import TeamPage from '../teams/[teamId]/page';
 import { PulseBody } from '../_components/PulseBody';
+import { TruthLine } from '../_components/frame';
 import { ClubhouseBridgeFields } from '../../errors/_components/ClubhouseBridgePanel';
 
 const USER = '11111111-1111-4111-8111-111111111111';
@@ -121,6 +122,16 @@ describe('live screens over the seeded store', () => {
     const model = pulseModel({ graph, rows: day.dayRows, dayRows: day.dayRows, alerts, pipe: livePipe, release: LIVE_RELEASE });
     const { container } = render(<PulseBody model={model} graph={graph} scope={DEFAULT_SCOPE} live={{ w: '24h', pf: 'all' }} incidents={[]} />);
     for (const code of [BR.pulse.alertRow, BR.pulse.pageTile, BR.pulse.risingRow, BR.pulse.actionRow, BR.pulse.releaseCard]) expect(has(container, code), code).toBe(true);
+  });
+  it('the Pipe dot (BR-0106) in the truth line opens B11 at the pipe panel; every lens links its pipe there', () => {
+    const graph = fixtureGraph();
+    const pulse = render(<TruthLine graph={graph} scope={DEFAULT_SCOPE} noSignalCode={BR.pulse.noSignal} live={{ pipe: livePipe, scope: { w: '24h', pf: 'all' }, pipeCode: BR.pulse.pipeDot }} />);
+    expect(pulse.container.querySelector(`a[data-br="${BR.pulse.pipeDot}"]`)?.getAttribute('href')).toBe('/admin/clubhouse/drift?pipe=1#pipe');
+    cleanup();
+    const quiet = pipeStatus({ flagOn: true, state: 'no-signal', lastEnvelopeAt: null, now: NOW, activeHours: true });
+    const other = render(<TruthLine graph={graph} scope={DEFAULT_SCOPE} noSignalCode={BR.sessions.noSignal} live={{ pipe: quiet, scope: { w: '24h', pf: 'all' } }} />);
+    const link = other.container.querySelector('a[href="/admin/clubhouse/drift?pipe=1#pipe"]');
+    expect(link?.querySelector(`[data-br="${BR.sessions.noSignal}"]`)).not.toBeNull();
   });
   it('B06 shows an incident row\'s Clubhouse fields and links its session', () => {
     const { container } = render(

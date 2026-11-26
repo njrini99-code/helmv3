@@ -3,7 +3,7 @@ import { RotateCw } from 'lucide-react';
 import { BR } from '@/lib/admin/clubhouse/br-codes';
 import { WINDOW_MS, inScope, withLive } from '@/lib/admin/clubhouse/live-model';
 import { pulseModel, pulseReport } from '@/lib/admin/clubhouse/pulse';
-import type { SearchParams } from '@/lib/admin/clubhouse/screens';
+import { clubhouseHref, type SearchParams } from '@/lib/admin/clubhouse/screens';
 import { parseLiveScope } from '@/lib/admin/clubhouse/live-scope';
 import { readHourly, readLiveSnapshot } from '@/lib/admin/clubhouse/live';
 import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
@@ -57,7 +57,7 @@ export async function ClubhousePulse({ searchParams }: { searchParams?: SearchPa
       noSignalCode={BR.pulse.noSignal}
       copyCode={BR.pulse.copy}
       report={pulseReport(model)}
-      live={{ pipe: snapshot.pipe, scope: live, truncated: snapshot.truncated || windowRows.truncated }}
+      live={{ pipe: snapshot.pipe, scope: live, truncated: snapshot.truncated || windowRows.truncated, pipeCode: BR.pulse.pipeDot }}
       sources={[
         'clubhouse_signal_hourly (last day, the week before, the same hour four weeks back)',
         'clubhouse_sessions and clubhouse_session_events (sessions with a failure)',
@@ -81,7 +81,7 @@ export async function ClubhousePulse({ searchParams }: { searchParams?: SearchPa
         <h2 id="pulse-rules" className="sr-only">
           Clubhouse rules
         </h2>
-        <PipeBanner pipe={snapshot.pipe} code={snapshot.pipe.tone === 'no-signal' ? BR.pulse.noSignal : BR.pulse.pipeDot} />
+        <PipeBanner pipe={snapshot.pipe} code={snapshot.pipe.tone === 'no-signal' ? BR.pulse.noSignal : BR.pulse.pipeDot} href={clubhouseHref.pipe()} />
         {snapshot.state === 'error' ? (
           <LiveFailed code={BR.pulse.failed} label="Clubhouse signals" error={snapshot.errors[0]} retryHref={withLive('/admin', scope, live)} />
         ) : null}

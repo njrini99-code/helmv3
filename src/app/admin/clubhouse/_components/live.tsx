@@ -80,7 +80,7 @@ export function AlertList({
  * R-09 (critical): while the pipe is silent, every "all clear" on screen is untrusted. Off and "not there yet" say so
  * more quietly: nothing claims a green it cannot see.
  */
-export function PipeBanner({ pipe, code }: { pipe: PipeStatus; code: string }) {
+export function PipeBanner({ pipe, code, href }: { pipe: PipeStatus; code: string; href?: string }) {
   if (pipe.tone === 'live') return null;
   const silent = pipe.tone === 'silent';
   const text: Record<Exclude<PipeStatus['tone'], 'live'>, string> = {
@@ -102,6 +102,14 @@ export function PipeBanner({ pipe, code }: { pipe: PipeStatus; code: string }) {
       <p className={cn('min-w-0 text-body-sm', silent ? 'text-fw-danger-ink' : 'text-text-secondary')}>
         <span className="font-medium">{silent ? 'Pipe silent (R-09). ' : pipe.tone === 'off' ? 'Pipe switched off. ' : 'No signal yet. '}</span>
         {text[pipe.tone]}
+        {href ? (
+          <>
+            {' '}
+            <Link href={href} prefetch={false} className="font-medium text-accent-ink underline-offset-2 hover:underline">
+              Open the pipe panel
+            </Link>
+          </>
+        ) : null}
       </p>
     </div>
   );

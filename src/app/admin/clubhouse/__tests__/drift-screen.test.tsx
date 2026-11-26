@@ -64,6 +64,13 @@ describe('B11 Drift', () => {
     for (const code of [BR.drift.listTab, BR.drift.row, BR.drift.export, BR.drift.pipePanel, BR.drift.noSignal]) expect(found).toContain(code);
     expect(c.textContent).toContain('CH-9999');
     expect(c.textContent).toContain('Are the docs still the truth?');
+    // The pipe panel is the Pipe dot's anchor (BR-0106): closed by default, open with ?pipe=1.
+    const panel = c.querySelector(`[data-br="${BR.drift.pipePanel}"]`);
+    expect(panel?.id).toBe('pipe');
+    expect(panel?.hasAttribute('open')).toBe(false);
+    cleanup();
+    const opened = await show(Drift({ searchParams: sp({ pipe: '1' }) }));
+    expect(opened.querySelector('#pipe')?.hasAttribute('open')).toBe(true);
   });
 
   it('a runtime list says No signal yet while the table is missing, not zero', async () => {
