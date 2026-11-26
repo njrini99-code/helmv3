@@ -36,15 +36,15 @@ export function StateMatrix({
     <div className="min-w-0 space-y-2">
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-text-secondary" aria-label="Matrix key">
         <li className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="inline-block h-3.5 w-3.5 rounded-[4px] border border-border-strong bg-surface" />
+          <span aria-hidden className="inline-block h-3.5 w-3.5 rounded-sm border border-border-strong bg-surface" />
           implemented
         </li>
         <li className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="inline-block h-3.5 w-3.5 rounded-[4px] border border-dashed border-border-strong" />
+          <span aria-hidden className="inline-block h-3.5 w-3.5 rounded-sm border border-dashed border-border-strong" />
           reserved
         </li>
         <li className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="inline-block h-3.5 w-3.5 rounded-[4px] border border-border-subtle bg-surface-sunken" />
+          <span aria-hidden className="inline-block h-3.5 w-3.5 rounded-sm border border-border-subtle bg-surface-sunken" />
           deprecated
         </li>
         <li className="text-text-tertiary">Fill (how often it fired) waits for signals.</li>
@@ -81,7 +81,7 @@ export function StateMatrix({
                       title={describe}
                       aria-label={`${cell.id}${cell.ch ? ` ${cell.ch}` : ''}, ${cell.status}: ${cell.meaning}`}
                       className={cn(
-                        'flex h-8 w-9 items-center justify-center rounded-[6px] border font-fw-mono text-caption tabular-nums transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
+                        'flex h-8 w-9 items-center justify-center rounded-sm border font-fw-mono text-caption tabular-nums transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11',
                         cell.status === 'implemented' && 'border-border-strong bg-surface text-text-primary hover:bg-accent-50',
                         cell.status === 'reserved' && 'border-dashed border-border-strong text-text-secondary hover:bg-surface-sunken',
                         cell.status === 'deprecated' && 'border-border-subtle bg-surface-sunken text-text-tertiary line-through',
