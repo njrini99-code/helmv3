@@ -39,6 +39,12 @@ import {
   Tag,
   GitCompareArrows,
   PackageOpen,
+  Sunrise,
+  UsersRound,
+  Boxes,
+  ShieldAlert,
+  Ship,
+  Inbox,
 } from 'lucide-react';
 import {
   AppShell,
@@ -139,6 +145,13 @@ const NAV_ICON_BY_HREF = {
   // 2×2 grid glyph, and LayoutDashboard is a grid too — on a phone the first
   // and last tabs read as the same button.
   '/admin': House,
+  // Spaces (plan 2026-11-26-bridge-spaces-build.md): one glyph each, none reused by a tab below.
+  '/admin/spaces/today': Sunrise,
+  '/admin/spaces/people': UsersRound,
+  '/admin/spaces/product': Boxes,
+  '/admin/spaces/reliability': ShieldAlert,
+  '/admin/spaces/ship': Ship,
+  '/admin/spaces/desk': Inbox,
   // Clubhouse (plan §7.1). A window, not a grid, for Pages: a grid glyph would
   // read as the bottom bar's More button in the More sheet.
   '/admin/clubhouse': AppWindow,

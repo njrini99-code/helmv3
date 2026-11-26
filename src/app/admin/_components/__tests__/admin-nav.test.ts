@@ -19,6 +19,12 @@ describe('ADMIN_NAV', () => {
   // regrouping; the five Clubhouse screens take letters nothing else used.
   it('declares the canonical tabs in order', () => {
     expect(ADMIN_NAV.map((e) => e.href)).toEqual([
+      '/admin/spaces/today',
+      '/admin/spaces/people',
+      '/admin/spaces/product',
+      '/admin/spaces/reliability',
+      '/admin/spaces/ship',
+      '/admin/spaces/desk',
       '/admin',
       '/admin/clubhouse',
       '/admin/clubhouse/controls',
@@ -52,7 +58,9 @@ describe('ADMIN_NAV', () => {
     // Sessions took N, the last free letter; Experience, Releases, Drift and the
     // Duet desk have none (undefined), a deliberate change: the plan's letters
     // for them are retired shortcuts still in use.
+    // The six spaces lead and carry no key: no letter is free (plan 2026-11-26-bridge-spaces-build.md).
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
+      undefined, undefined, undefined, undefined, undefined, undefined,
       '1', 'H', 'I', 'J', 'C', 'M', 'N', undefined, undefined, undefined, undefined,
       '3', '0', '8', 'X', 'F', 'T',
       '7', '2', 'U',
@@ -61,9 +69,9 @@ describe('ADMIN_NAV', () => {
     ]);
   });
 
-  it('leads with Clubhouse and keeps More last (D3)', () => {
+  it('leads with the six spaces, then Clubhouse, and keeps More last (replaces D3, owner approval 2026-11-26)', () => {
     const sections = [...new Set(ADMIN_NAV.map((e) => e.section))];
-    expect(sections).toEqual(['Clubhouse', 'Triage', 'Customers', 'Platform', 'More']);
+    expect(sections).toEqual(['Spaces', 'Clubhouse', 'Triage', 'Customers', 'Platform', 'More']);
     const more = ADMIN_NAV.filter((e) => e.section === 'More').map((e) => e.href);
     expect(more).toEqual(['/admin/golf', '/admin/baseball', '/admin/lifting', '/admin/engineering', '/admin/ben-leah']);
   });
@@ -99,10 +107,18 @@ describe('ADMIN_NAV', () => {
   // would retrain an operator's hands or break a shortcut they still use.
   it('leaves a tab without a key only when no letter is free', () => {
     const keyless = ADMIN_NAV.filter((e) => e.key === undefined).map((e) => e.href);
-    expect(keyless).toEqual(['/admin/clubhouse/experience', '/admin/clubhouse/releases', '/admin/clubhouse/drift', '/admin/clubhouse/duet']);
+    expect(keyless).toEqual([
+      '/admin/spaces/today', '/admin/spaces/people', '/admin/spaces/product', '/admin/spaces/reliability', '/admin/spaces/ship', '/admin/spaces/desk',
+      '/admin/clubhouse/experience', '/admin/clubhouse/releases', '/admin/clubhouse/drift', '/admin/clubhouse/duet']);
     const taken = new Set([...ADMIN_NAV.map((e) => e.key), ...Object.keys(RETIRED_SHORTCUTS)]);
     const free = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter((l) => !taken.has(l));
     expect(free).toEqual([]);
+  });
+
+  it('owns every page under a space with that space, so a team page lights up People', () => {
+    expect(navEntryForPath('/admin/spaces/people/abc')?.label).toBe('People');
+    expect(navEntryForPath('/admin/spaces/reliability/speed')?.label).toBe('Reliability');
+    expect(navEntryForPath('/admin/spaces')).toBeNull();
   });
 
   it('maps shortcut keys to hrefs', () => {

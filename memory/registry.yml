@@ -1625,6 +1625,10 @@ features:
         # PRs 2 and 4). Its numbering (config/bridge/contracts.json) and
         # generator (scripts/clubhouse/bridge-ui-map.mjs) are under services.
         - src/app/admin/clubhouse/**
+        # The six Bridge spaces (Today, People, Product, Reliability, Ship, Desk) and
+        # their scoped look (_ui/). Plan:
+        # docs/superpowers/specs/helm-bridge/2026-11-26-bridge-spaces-build.md.
+        - src/app/admin/spaces/**
         - src/app/golf/admin/**
       components:
         - src/app/admin/_components/**

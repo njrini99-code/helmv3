@@ -181,6 +181,82 @@ export const BR = {
     names: 'BR-1308',
     ...states('13'),
   },
+  /** B16 Today (/admin/spaces/today; plan 2026-11-26-bridge-spaces-build.md). */
+  today: {
+    needsRow: 'BR-1601',
+    spaceCard: 'BR-1602',
+    sinceRow: 'BR-1603',
+    copy: 'BR-1604',
+    ...states('16'),
+  },
+  /** B17 Teams activity (/admin/spaces/people; plan 2026-11-26-bridge-spaces-build.md). */
+  teams: {
+    row: 'BR-1701',
+    sport: 'BR-1702',
+    sort: 'BR-1703',
+    hideTest: 'BR-1704',
+    needsCard: 'BR-1705',
+    copy: 'BR-1706',
+    ...states('17'),
+  },
+  /** B18 One team (/admin/spaces/people/[teamId]; plan 2026-11-26-bridge-spaces-build.md). */
+  team: {
+    tab: 'BR-1801',
+    sortPeople: 'BR-1802',
+    personRow: 'BR-1803',
+    viewAs: 'BR-1804',
+    errorRow: 'BR-1805',
+    copy: 'BR-1806',
+    back: 'BR-1807',
+    ...states('18'),
+  },
+  /** B19 Error feed (/admin/spaces/reliability; plan 2026-11-26-bridge-spaces-build.md). */
+  feed: {
+    roleCard: 'BR-1901',
+    row: 'BR-1902',
+    filter: 'BR-1903',
+    detailTab: 'BR-1904',
+    openStory: 'BR-1905',
+    watch: 'BR-1906',
+    expected: 'BR-1907',
+    fixPack: 'BR-1908',
+    replay: 'BR-1909',
+    copy: 'BR-1910',
+    ...states('19'),
+  },
+  /** B20 Counting rules (/admin/spaces/reliability/rules; plan 2026-11-26-bridge-spaces-build.md). */
+  rules: {
+    ruleRow: 'BR-2001',
+    ...states('20'),
+  },
+  /** B21 Speed (/admin/spaces/reliability/speed; plan 2026-11-26-bridge-spaces-build.md). */
+  speed: {
+    role: 'BR-2101',
+    device: 'BR-2102',
+    pageRow: 'BR-2103',
+    actionRow: 'BR-2104',
+    dbRow: 'BR-2105',
+    copy: 'BR-2106',
+    ...states('21'),
+  },
+  /** B22 Product (/admin/spaces/product; plan 2026-11-26-bridge-spaces-build.md). */
+  product: {
+    featureCard: 'BR-2201',
+    tabLink: 'BR-2202',
+    ...states('22'),
+  },
+  /** B23 Ship (/admin/spaces/ship; plan 2026-11-26-bridge-spaces-build.md). */
+  ship: {
+    releaseCard: 'BR-2301',
+    tabLink: 'BR-2302',
+    ...states('23'),
+  },
+  /** B24 Desk (/admin/spaces/desk; plan 2026-11-26-bridge-spaces-build.md). */
+  desk: {
+    decisionRow: 'BR-2401',
+    tabLink: 'BR-2402',
+    ...states('24'),
+  },
   /** B14 command palette. */
   palette: {
     open: 'BR-1401',

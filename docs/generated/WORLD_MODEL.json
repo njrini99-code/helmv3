@@ -426,6 +426,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/spaces/**",
+        "pattern": "src/app/admin/spaces/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/teams/**",
         "pattern": "src/app/admin/teams/**",
         "category": "routes"
@@ -8470,6 +8475,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/lifting/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "routes:src/app/admin/spaces/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/spaces/**"
         }
       ]
     },

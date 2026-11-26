@@ -60,6 +60,42 @@
     "B15": {
       "name": "Shell",
       "route": "every /admin screen"
+    },
+    "B16": {
+      "name": "Today",
+      "route": "/admin/spaces/today"
+    },
+    "B17": {
+      "name": "Teams activity",
+      "route": "/admin/spaces/people"
+    },
+    "B18": {
+      "name": "One team",
+      "route": "/admin/spaces/people/[teamId]"
+    },
+    "B19": {
+      "name": "Error feed",
+      "route": "/admin/spaces/reliability"
+    },
+    "B20": {
+      "name": "Counting rules",
+      "route": "/admin/spaces/reliability/rules"
+    },
+    "B21": {
+      "name": "Speed",
+      "route": "/admin/spaces/reliability/speed"
+    },
+    "B22": {
+      "name": "Product",
+      "route": "/admin/spaces/product"
+    },
+    "B23": {
+      "name": "Ship",
+      "route": "/admin/spaces/ship"
+    },
+    "B24": {
+      "name": "Desk",
+      "route": "/admin/spaces/desk"
     }
   },
   "codes": [
@@ -1210,6 +1246,538 @@
       "key": "shell.phoneMore",
       "label": "Phone More",
       "does": "Opens the More sheet on a phone"
+    },
+    {
+      "code": "BR-1601",
+      "screen": "B16",
+      "key": "today.needsRow",
+      "label": "Waiting-on-you row",
+      "does": "Opens the tab that owns that item"
+    },
+    {
+      "code": "BR-1602",
+      "screen": "B16",
+      "key": "today.spaceCard",
+      "label": "Space card",
+      "does": "Opens that space"
+    },
+    {
+      "code": "BR-1603",
+      "screen": "B16",
+      "key": "today.sinceRow",
+      "label": "Since-midnight row",
+      "does": "Opens the event it names"
+    },
+    {
+      "code": "BR-1604",
+      "screen": "B16",
+      "key": "today.copy",
+      "label": "Copy report",
+      "does": "Copies the day as Markdown"
+    },
+    {
+      "code": "BR-1690",
+      "screen": "B16",
+      "key": "today.loading",
+      "label": "Loading",
+      "does": "Shown while the space reads"
+    },
+    {
+      "code": "BR-1691",
+      "screen": "B16",
+      "key": "today.empty",
+      "label": "Empty",
+      "does": "Nothing to show, said plainly"
+    },
+    {
+      "code": "BR-1692",
+      "screen": "B16",
+      "key": "today.failed",
+      "label": "Failed",
+      "does": "The read failed; never shown as all clear"
+    },
+    {
+      "code": "BR-1693",
+      "screen": "B16",
+      "key": "today.noSignal",
+      "label": "No signal yet",
+      "does": "The signal pipe is off or silent"
+    },
+    {
+      "code": "BR-1701",
+      "screen": "B17",
+      "key": "teams.row",
+      "label": "Team row",
+      "does": "Opens that team"
+    },
+    {
+      "code": "BR-1702",
+      "screen": "B17",
+      "key": "teams.sport",
+      "label": "Sport filter",
+      "does": "Shows one sport or all"
+    },
+    {
+      "code": "BR-1703",
+      "screen": "B17",
+      "key": "teams.sort",
+      "label": "Sort",
+      "does": "Orders teams by activity, last seen, attention or errors"
+    },
+    {
+      "code": "BR-1704",
+      "screen": "B17",
+      "key": "teams.hideTest",
+      "label": "Hide test and demo",
+      "does": "Hides test and demo teams"
+    },
+    {
+      "code": "BR-1705",
+      "screen": "B17",
+      "key": "teams.needsCard",
+      "label": "Needs-you card",
+      "does": "Opens the team it names"
+    },
+    {
+      "code": "BR-1706",
+      "screen": "B17",
+      "key": "teams.copy",
+      "label": "Copy report",
+      "does": "Copies the team list as Markdown"
+    },
+    {
+      "code": "BR-1790",
+      "screen": "B17",
+      "key": "teams.loading",
+      "label": "Loading",
+      "does": "Shown while the space reads"
+    },
+    {
+      "code": "BR-1791",
+      "screen": "B17",
+      "key": "teams.empty",
+      "label": "Empty",
+      "does": "Nothing to show, said plainly"
+    },
+    {
+      "code": "BR-1792",
+      "screen": "B17",
+      "key": "teams.failed",
+      "label": "Failed",
+      "does": "The read failed; never shown as all clear"
+    },
+    {
+      "code": "BR-1793",
+      "screen": "B17",
+      "key": "teams.noSignal",
+      "label": "No signal yet",
+      "does": "The signal pipe is off or silent"
+    },
+    {
+      "code": "BR-1801",
+      "screen": "B18",
+      "key": "team.tab",
+      "label": "Tab",
+      "does": "Switches between People, Activity and Errors"
+    },
+    {
+      "code": "BR-1802",
+      "screen": "B18",
+      "key": "team.sortPeople",
+      "label": "People sort",
+      "does": "Orders people by a column"
+    },
+    {
+      "code": "BR-1803",
+      "screen": "B18",
+      "key": "team.personRow",
+      "label": "Person row",
+      "does": "Opens that person"
+    },
+    {
+      "code": "BR-1804",
+      "screen": "B18",
+      "key": "team.viewAs",
+      "label": "View as",
+      "does": "Opens the team as its coach (View as)"
+    },
+    {
+      "code": "BR-1805",
+      "screen": "B18",
+      "key": "team.errorRow",
+      "label": "Error row",
+      "does": "Opens that code"
+    },
+    {
+      "code": "BR-1806",
+      "screen": "B18",
+      "key": "team.copy",
+      "label": "Copy report",
+      "does": "Copies the team report as Markdown"
+    },
+    {
+      "code": "BR-1807",
+      "screen": "B18",
+      "key": "team.back",
+      "label": "All teams",
+      "does": "Back to the team list"
+    },
+    {
+      "code": "BR-1890",
+      "screen": "B18",
+      "key": "team.loading",
+      "label": "Loading",
+      "does": "Shown while the space reads"
+    },
+    {
+      "code": "BR-1891",
+      "screen": "B18",
+      "key": "team.empty",
+      "label": "Empty",
+      "does": "Nothing to show, said plainly"
+    },
+    {
+      "code": "BR-1892",
+      "screen": "B18",
+      "key": "team.failed",
+      "label": "Failed",
+      "does": "The read failed; never shown as all clear"
+    },
+    {
+      "code": "BR-1893",
+      "screen": "B18",
+      "key": "team.noSignal",
+      "label": "No signal yet",
+      "does": "The signal pipe is off or silent"
+    },
+    {
+      "code": "BR-1901",
+      "screen": "B19",
+      "key": "feed.roleCard",
+      "label": "Coach or player card",
+      "does": "Shows only that role; again shows both"
+    },
+    {
+      "code": "BR-1902",
+      "screen": "B19",
+      "key": "feed.row",
+      "label": "Error row",
+      "does": "Opens that error in the detail panel"
+    },
+    {
+      "code": "BR-1903",
+      "screen": "B19",
+      "key": "feed.filter",
+      "label": "Filter",
+      "does": "Narrows the feed by page, team, device or release"
+    },
+    {
+      "code": "BR-1904",
+      "screen": "B19",
+      "key": "feed.detailTab",
+      "label": "Detail tab",
+      "does": "Switches between Where, What they did, How it counts and Server"
+    },
+    {
+      "code": "BR-1905",
+      "screen": "B19",
+      "key": "feed.openStory",
+      "label": "Open the full story",
+      "does": "Opens the code dossier (B05)"
+    },
+    {
+      "code": "BR-1906",
+      "screen": "B19",
+      "key": "feed.watch",
+      "label": "Watch",
+      "does": "Pins the code to Today and the digest (BR-0507)"
+    },
+    {
+      "code": "BR-1907",
+      "screen": "B19",
+      "key": "feed.expected",
+      "label": "Mark expected",
+      "does": "Marks the code expected with a reason (BR-0506)"
+    },
+    {
+      "code": "BR-1908",
+      "screen": "B19",
+      "key": "feed.fixPack",
+      "label": "Fix pack",
+      "does": "Copies the fix pack for the code (BR-0509)"
+    },
+    {
+      "code": "BR-1909",
+      "screen": "B19",
+      "key": "feed.replay",
+      "label": "Replay",
+      "does": "Opens the session that hit it (B07)"
+    },
+    {
+      "code": "BR-1910",
+      "screen": "B19",
+      "key": "feed.copy",
+      "label": "Copy report",
+      "does": "Copies the feed as Markdown"
+    },
+    {
+      "code": "BR-1990",
+      "screen": "B19",
+      "key": "feed.loading",
+      "label": "Loading",
+      "does": "Shown while the space reads"
+    },
+    {
+      "code": "BR-1991",
+      "screen": "B19",
+      "key": "feed.empty",
+      "label": "Empty",
+      "does": "Nothing to show, said plainly"
+    },
+    {
+      "code": "BR-1992",
+      "screen": "B19",
+      "key": "feed.failed",
+      "label": "Failed",
+      "does": "The read failed; never shown as all clear"
+    },
+    {
+      "code": "BR-1993",
+      "screen": "B19",
+      "key": "feed.noSignal",
+      "label": "No signal yet",
+      "does": "The signal pipe is off or silent"
+    },
+    {
+      "code": "BR-2001",
+      "screen": "B20",
+      "key": "rules.ruleRow",
+      "label": "Rule row",
+      "does": "Opens the alerts that rule raised"
+    },
+    {
+      "code": "BR-2090",
+      "screen": "B20",
+      "key": "rules.loading",
+      "label": "Loading",
+      "does": "Shown while the space reads"
+    },
+    {
+      "code": "BR-2091",
+      "screen": "B20",
+      "key": "rules.empty",
+      "label": "Empty",
+      "does": "Nothing to show, said plainly"
+    },
+    {
+      "code": "BR-2092",
+      "screen": "B20",
+      "key": "rules.failed",
+      "label": "Failed",
+      "does": "The read failed; never shown as all clear"
+    },
+    {
+      "code": "BR-2093",
+      "screen": "B20",
+      "key": "rules.noSignal",
+      "label": "No signal yet",
+      "does": "The signal pipe is off or silent"
+    },
+    {
+      "code": "BR-2101",
+      "screen": "B21",
+      "key": "speed.role",
+      "label": "Role switch",
+      "does": "Shows coaches, players or everyone"
+    },
+    {
+      "code": "BR-2102",
+      "screen": "B21",
+      "key": "speed.device",
+      "label": "Device switch",
+      "does": "Shows one device or all"
+    },
+    {
+      "code": "BR-2103",
+      "screen": "B21",
+      "key": "speed.pageRow",
+      "label": "Page row",
+      "does": "Opens that page (B02)"
+    },
+    {
+      "code": "BR-2104",
+      "screen": "B21",
+      "key": "speed.actionRow",
+      "label": "Button row",
+      "does": "Opens that action (B04)"
+    },
+    {
+      "code": "BR-2105",
+      "screen": "B21",
+      "key": "speed.dbRow",
+      "label": "Database error row",
+      "does": "Opens the codes that carried that server code"
+    },
+    {
+      "code": "BR-2106",
+      "screen": "B21",
+      "key": "speed.copy",
+      "label": "Copy report",
+      "does": "Copies the speed table as Markdown"
+    },
+    {
+      "code": "BR-2190",
+      "screen": "B21",
+      "key": "speed.loading",
+      "label": "Loading",
+      "does": "Shown while the space reads"
+    },
+    {
+      "code": "BR-2191",
+      "screen": "B21",
+      "key": "speed.empty",
+      "label": "Empty",
+      "does": "Nothing to show, said plainly"
+    },
+    {
+      "code": "BR-2192",
+      "screen": "B21",
+      "key": "speed.failed",
+      "label": "Failed",
+      "does": "The read failed; never shown as all clear"
+    },
+    {
+      "code": "BR-2193",
+      "screen": "B21",
+      "key": "speed.noSignal",
+      "label": "No signal yet",
+      "does": "The signal pipe is off or silent"
+    },
+    {
+      "code": "BR-2201",
+      "screen": "B22",
+      "key": "product.featureCard",
+      "label": "Feature card",
+      "does": "Opens that feature"
+    },
+    {
+      "code": "BR-2202",
+      "screen": "B22",
+      "key": "product.tabLink",
+      "label": "Tab link",
+      "does": "Opens a tab grouped under Product"
+    },
+    {
+      "code": "BR-2290",
+      "screen": "B22",
+      "key": "product.loading",
+      "label": "Loading",
+      "does": "Shown while the space reads"
+    },
+    {
+      "code": "BR-2291",
+      "screen": "B22",
+      "key": "product.empty",
+      "label": "Empty",
+      "does": "Nothing to show, said plainly"
+    },
+    {
+      "code": "BR-2292",
+      "screen": "B22",
+      "key": "product.failed",
+      "label": "Failed",
+      "does": "The read failed; never shown as all clear"
+    },
+    {
+      "code": "BR-2293",
+      "screen": "B22",
+      "key": "product.noSignal",
+      "label": "No signal yet",
+      "does": "The signal pipe is off or silent"
+    },
+    {
+      "code": "BR-2301",
+      "screen": "B23",
+      "key": "ship.releaseCard",
+      "label": "Release card",
+      "does": "Opens that release"
+    },
+    {
+      "code": "BR-2302",
+      "screen": "B23",
+      "key": "ship.tabLink",
+      "label": "Tab link",
+      "does": "Opens a tab grouped under Ship"
+    },
+    {
+      "code": "BR-2390",
+      "screen": "B23",
+      "key": "ship.loading",
+      "label": "Loading",
+      "does": "Shown while the space reads"
+    },
+    {
+      "code": "BR-2391",
+      "screen": "B23",
+      "key": "ship.empty",
+      "label": "Empty",
+      "does": "Nothing to show, said plainly"
+    },
+    {
+      "code": "BR-2392",
+      "screen": "B23",
+      "key": "ship.failed",
+      "label": "Failed",
+      "does": "The read failed; never shown as all clear"
+    },
+    {
+      "code": "BR-2393",
+      "screen": "B23",
+      "key": "ship.noSignal",
+      "label": "No signal yet",
+      "does": "The signal pipe is off or silent"
+    },
+    {
+      "code": "BR-2401",
+      "screen": "B24",
+      "key": "desk.decisionRow",
+      "label": "Decision row",
+      "does": "Opens the decision it names"
+    },
+    {
+      "code": "BR-2402",
+      "screen": "B24",
+      "key": "desk.tabLink",
+      "label": "Tab link",
+      "does": "Opens a tab grouped under Desk"
+    },
+    {
+      "code": "BR-2490",
+      "screen": "B24",
+      "key": "desk.loading",
+      "label": "Loading",
+      "does": "Shown while the space reads"
+    },
+    {
+      "code": "BR-2491",
+      "screen": "B24",
+      "key": "desk.empty",
+      "label": "Empty",
+      "does": "Nothing to show, said plainly"
+    },
+    {
+      "code": "BR-2492",
+      "screen": "B24",
+      "key": "desk.failed",
+      "label": "Failed",
+      "does": "The read failed; never shown as all clear"
+    },
+    {
+      "code": "BR-2493",
+      "screen": "B24",
+      "key": "desk.noSignal",
+      "label": "No signal yet",
+      "does": "The signal pipe is off or silent"
     }
   ]
 }
