@@ -56,7 +56,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
   const more = s ? 0 : api.announcements.length - list.length;
   return (
     <section className={'ch-ms-sec is-ann' + (shown ? ' is-open' : '')} aria-label="Announcements">
-      <button
+      <button data-ctl="CTL-P007-018"
         type="button"
         className="ch-ms-fold"
         aria-expanded={shown}
@@ -91,7 +91,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
             {list.map((a) => {
               const mine = needsMyAck(a, api.viewer.role);
               return (
-                <button
+                <button data-ctl="CTL-P007-019"
                   key={a.id}
                   type="button"
                   className={'ch-ms-row is-ann' + (mine ? ' is-unread' : '') + (api.selectedAnnId === a.id ? ' is-sel' : '')}
@@ -124,7 +124,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
             })}
           </div>
           {more > 0 && (
-            <button type="button" className="ch-ms-more" onClick={() => api.selectAnn(api.announcements[list.length]!.id)}>
+            <button data-ctl="CTL-P007-020" type="button" className="ch-ms-more" onClick={() => api.selectAnn(api.announcements[list.length]!.id)}>
               {more} earlier {pluralWord(more, 'announcement')}
             </button>
           )}
@@ -209,7 +209,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
       <header className="ch-ms-th">
         <div className="ch-ms-th__who">
           <span className="ch-ms-back">
-            <IconButton icon={ChevronLeft} label="All conversations" onClick={onBack} />
+            <IconButton data-ctl="CTL-P007-021" icon={ChevronLeft} label="All conversations" onClick={onBack} />
           </span>
           <span className={'ch-ms-grp is-lg is-ann' + (a.urgent ? ' is-urgent' : '')}>
             <Icon icon={a.urgent ? TriangleAlert : Megaphone} size={17} />
@@ -250,7 +250,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
           {mine && (
             <div className="ch-ms-ann__ack">
               <span>Coach asked everyone to confirm they’ve read this.</span>
-              <Button
+              <Button data-ctl="CTL-P007-022"
                 variant="primary"
                 leftIcon={Check}
                 busy={busy === 'ack'}
@@ -302,7 +302,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
                             Done
                           </Badge>
                         ) : (
-                          <Button
+                          <Button data-ctl="CTL-P007-023"
                             size="sm"
                             busy={busy === t.taskId}
                             onClick={async () => {
@@ -324,7 +324,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
                     <span>Files</span>
                   </div>
                   {detail.documents.map((d) => (
-                    <button
+                    <button data-ctl="CTL-P007-024"
                       key={d.id}
                       type="button"
                       className="ch-ms-bub ch-ms-bub--file"

@@ -32,7 +32,7 @@ export function HelloCard({ name, id, role, coach, year, onStarter }: { name: st
       <small>{[role, 'No messages yet'].filter(Boolean).join(' · ')}</small>
       <div className="ch-msv-hello__s">
         {(coach ? COACH_STARTERS : PLAYER_STARTERS).map((s) => (
-          <button key={s} type="button" onClick={() => fill(s)}>
+          <button data-ctl="CTL-P007-006" key={s} type="button" onClick={() => fill(s)}>
             {s}
           </button>
         ))}

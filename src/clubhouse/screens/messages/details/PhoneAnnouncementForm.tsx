@@ -39,7 +39,7 @@ export function PhoneAnnouncementForm({ api, onCancel, draft, onDraft }: { api: 
         title="New announcement"
         titleId="ch-msp-announce-title"
         action={
-          <PhoneTextAction onClick={() => void post()} busy={busy}>
+          <PhoneTextAction data-ctl="CTL-P007-047" onClick={() => void post()} busy={busy}>
             {busy ? "Posting…" : "Post"}
           </PhoneTextAction>
         }

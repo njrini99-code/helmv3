@@ -765,275 +765,275 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/screens/messages/ComposerPlusV2.tsx`
 
-- 142 `button` "{Close|Add a photo, file or poll}" (button, onClick)
-- 147 `button` "Photos" (button, onClick, role=menuitem)
-- 151 `button` "File" (button, onClick, role=menuitem)
-- 156 `button` "Poll" (button, onClick, role=menuitem)
+- CTL-P007-001 142 `button` "{Close|Add a photo, file or pol…" (button, onClick)
+- CTL-P007-002 147 `button` "Photos" (button, onClick, role=menuitem)
+- CTL-P007-003 151 `button` "File" (button, onClick, role=menuitem)
+- CTL-P007-004 156 `button` "Poll" (button, onClick, role=menuitem)
 
 ### `src/clubhouse/screens/messages/GroupClassLine.tsx`
 
-- 28 `button` "{text}" (button, onClick) CH-7272
+- CTL-P007-005 28 `button` "{text}" (button, onClick) CH-7272
 
 ### `src/clubhouse/screens/messages/HelloCard.tsx`
 
-- 35 `button` "{s}" (button, onClick)
+- CTL-P007-006 35 `button` "{s}" (button, onClick)
 
 ### `src/clubhouse/screens/messages/MessagesFirstRun.tsx`
 
-- 23 `Button` "Start a conversation" (button, onClick) CH-7309
-- 29 `Button` "Message the team" (button, onClick) CH-7309
+- CTL-P007-007 23 `Button` "Start a conversation" (button, onClick) CH-7309
+- CTL-P007-008 29 `Button` "Message the team" (button, onClick) CH-7309
 
 ### `src/clubhouse/screens/messages/MessagesView.tsx`
 
-- 118 `Button` "New message" (button, onClick) CH-7305
+- CTL-P007-009 118 `Button` "New message" (button, onClick) CH-7305
 
 ### `src/clubhouse/screens/messages/NewMessagePane.tsx`
 
-- 64 `button` "Cancel" (button, onClick)
-- 72 `button` "Remove {name}" (button, onClick)
-- 89 `button` "{name} {subtitle}" (button, onClick)
-- 102 `button` "New group" (button, onClick)
-- 110 `button` "Announcement" (button, onClick)
+- CTL-P007-010 64 `button` "Cancel" (button, onClick)
+- CTL-P007-011 72 `button` "Remove {name}" (button, onClick)
+- CTL-P007-012 89 `button` "{name} {subtitle}" (button, onClick)
+- CTL-P007-013 102 `button` "New group" (button, onClick)
+- CTL-P007-014 110 `button` "Announcement" (button, onClick)
 
 ### `src/clubhouse/screens/messages/NotifyAnyway.tsx`
 
-- 95 `button` "{Retry send|Send}" (button, onClick)
-- 140 `button` "More send options" (button, onClick) CH-7870
-- 155 `button` "More send options" (button, onClick) CH-7870
+- CTL-P007-015 95 `button` "{Retry send|Send}" (button, onClick)
+- CTL-P007-016 140 `button` "More send options" (button, onClick) CH-7870
+- CTL-P007-017 155 `button` "More send options" (button, onClick) CH-7870
 
 ### `src/clubhouse/screens/messages/announcements.tsx`
 
-- 59 `button` "Announcements {plural} · {title} {{waiting}|}" (button, onClick)
-- 94 `button` "{title} {railTime} {Urgent ·|}{{ackCount} of …" (button, onClick)
-- 127 `button` "{more} earlier {pluralWord}" (button, onClick)
-- 212 `IconButton` "All conversations" (button, onClick)
-- 253 `Button` "{Sending…|Acknowledge}" (button, onClick)
-- 305 `Button` "Mark done" (button, onClick)
-- 327 `button` "Open {title}" (button, onClick)
+- CTL-P007-018 59 `button` "Announcements {plural} · {title}…" (button, onClick)
+- CTL-P007-019 94 `button` "{title} {railTime} {Urgent ·|}{{…" (button, onClick)
+- CTL-P007-020 127 `button` "{more} earlier {pluralWord}" (button, onClick)
+- CTL-P007-021 212 `IconButton` "All conversations" (button, onClick)
+- CTL-P007-022 253 `Button` "{Sending…|Acknowledge}" (button, onClick)
+- CTL-P007-023 305 `Button` "Mark done" (button, onClick)
+- CTL-P007-024 327 `button` "Open {title}" (button, onClick)
 
 ### `src/clubhouse/screens/messages/details-v2.tsx`
 
-- 159 `div` "(no label)" (onClick)
-- 162 `button` "{label}" (button, onClick, role=menuitem)
-- 210 `button` "{Muted. Turn notifications back on|Mute this…" (button, onClick)
-- 227 `button` "Search" (button, onClick)
-- 231 `button` "Files" (button, onClick)
-- 236 `Link` "Profile" (link, href)
-- 242 `button` "Add" (button, onClick)
-- 248 `button` "Leave" (button, onClick)
-- 289 `button` "Cancel" (button, onClick)
-- 337 `button` "{undefined|Message {name}}" (button, onClick)
-- 346 `button` "Remove {name}" (button, onClick)
-- 354 `button` "Show all {length}" (button, onClick)
-- 410 `button` "Open {name}" (button, onClick)
-- 430 `button` "See all" (button, onClick)
-- 455 `button` "{name} {fileMeta}" (button, onClick)
+- CTL-P007-025 159 `div` "Mute menu backdrop (ledger)" (onClick)
+- CTL-P007-026 162 `button` "{label}" (button, onClick, role=menuitem)
+- CTL-P007-027 210 `button` "{Muted. Turn notifications back…" (button, onClick)
+- CTL-P007-028 227 `button` "Search" (button, onClick)
+- CTL-P007-029 231 `button` "Files" (button, onClick)
+- CTL-P007-030 236 `Link` "Profile" (link, href)
+- CTL-P007-031 242 `button` "Add" (button, onClick)
+- CTL-P007-032 248 `button` "Leave" (button, onClick)
+- CTL-P007-033 289 `button` "Cancel" (button, onClick)
+- CTL-P007-034 337 `button` "{undefined|Message {name}}" (button, onClick)
+- CTL-P007-035 346 `button` "Remove {name}" (button, onClick)
+- CTL-P007-036 354 `button` "Show all {length}" (button, onClick)
+- CTL-P007-037 410 `button` "Open {name}" (button, onClick)
+- CTL-P007-038 430 `button` "See all" (button, onClick)
+- CTL-P007-039 455 `button` "{name} {fileMeta}" (button, onClick)
 
 ### `src/clubhouse/screens/messages/details/Details.tsx`
 
-- 60 `IconButton` "Close details" (button, onClick)
+- CTL-P007-040 60 `IconButton` "Close details" (button, onClick)
 
 ### `src/clubhouse/screens/messages/details/NewMessage.tsx`
 
-- 123 `Button` "Cancel" (button, onClick)
-- 126 `Button` "{{Posting…|Starting…}|{Post announcement|{Cr…" (button, onClick)
-- 194 `input` "Urgent" (type=checkbox)
-- 206 `input` "Ask players to acknowledge" (type=checkbox)
-- 257 `button` "Remove {name}" (button, onClick)
-- 287 `button` "{name} {subtitle}" (button, onClick, role=option)
+- CTL-P007-041 123 `Button` "Cancel" (button, onClick)
+- CTL-P007-042 126 `Button` "{{Posting…|Starting…}|{Post ann…" (button, onClick)
+- CTL-P007-043 194 `input` "Urgent" (type=checkbox)
+- CTL-P007-044 206 `input` "Ask players to acknowledge" (type=checkbox)
+- CTL-P007-045 257 `button` "Remove {name}" (button, onClick)
+- CTL-P007-046 287 `button` "{name} {subtitle}" (button, onClick, role=option)
 
 ### `src/clubhouse/screens/messages/details/PhoneAnnouncementForm.tsx`
 
-- 42 `PhoneTextAction` "{Posting…|Post}" (onClick)
+- CTL-P007-047 42 `PhoneTextAction` "{Posting…|Post}" (onClick)
 
 ### `src/clubhouse/screens/messages/details/PhoneDetails.tsx`
 
-- 107 `Link` "Schedule" (link, href) CH-7213
+- CTL-P007-048 107 `Link` "Schedule" (link, href) CH-7213
 
 ### `src/clubhouse/screens/messages/details/PhoneNewMessage.tsx`
 
-- 146 `button` "Announcement Everyone on {teamName}, with ac…" (button, onClick)
-- 157 `button` "Whole team {length} {pluralWord} · {length} …" (button, onClick)
-- 175 `button` "Seniors {join}" (button, onClick)
-- 198 `PhoneTextAction` "{Starting…|{Create group|Next}}" (onClick)
-- 210 `button` "Remove {name}" (button, onClick)
-- 277 `button` "{name} {subtitle}" (button, onClick, role=option)
-- 302 `div` "Send" (onClick)
-- 303 `AttachButton` "(no label)" (button)
-- 316 `button` "Send" (button, onClick)
+- CTL-P007-049 146 `button` "Announcement Everyone on {teamN…" (button, onClick)
+- CTL-P007-050 157 `button` "Whole team {length} {pluralWord…" (button, onClick)
+- CTL-P007-051 175 `button` "Seniors {join}" (button, onClick)
+- CTL-P007-052 198 `PhoneTextAction` "{Starting…|{Create group|Next}}" (onClick)
+- CTL-P007-053 210 `button` "Remove {name}" (button, onClick)
+- CTL-P007-054 277 `button` "{name} {subtitle}" (button, onClick, role=option)
+- CTL-P007-055 302 `div` "Send" (onClick)
+- CTL-P007-056 303 `AttachButton` "Attach a file (ledger)" (button)
+- CTL-P007-057 316 `button` "Send" (button, onClick)
 
 ### `src/clubhouse/screens/messages/details/group-modals.tsx`
 
-- 28 `Button` "Stay" (button, onClick) CH-7502
-- 31 `Button` "{Leaving…|Leave group}" (button, onClick) CH-7502
-- 66 `Button` "Keep conversation" (button, onClick) CH-7503
-- 69 `Button` "{Deleting…|Delete conversation}" (button, onClick) CH-7503
-- 110 `Button` "{keep}" (button, onClick) CH-7504
-- 113 `Button` "{Removing…|Remove}" (button, onClick) CH-7504
-- 173 `Button` "Done" (button, onClick)
-- 206 `button` "{{name} added|Add {name}}" (button, onClick)
+- CTL-P007-058 28 `Button` "Stay" (button, onClick) CH-7502
+- CTL-P007-059 31 `Button` "{Leaving…|Leave group}" (button, onClick) CH-7502
+- CTL-P007-060 66 `Button` "Keep conversation" (button, onClick) CH-7503
+- CTL-P007-061 69 `Button` "{Deleting…|Delete conver…" (button, onClick) CH-7503
+- CTL-P007-062 110 `Button` "{keep}" (button, onClick) CH-7504
+- CTL-P007-063 113 `Button` "{Removing…|Remove}" (button, onClick) CH-7504
+- CTL-P007-064 173 `Button` "Done" (button, onClick)
+- CTL-P007-065 206 `button` "{{name} added|Add {name}}" (button, onClick)
 
 ### `src/clubhouse/screens/messages/hold-lift.tsx`
 
-- 260 `div` "(no label)" (onClick) CH-7604
-- 261 `div` "(no label)" (onPointerDown) CH-7604
+- CTL-P007-066 260 `div` "Message actions backdrop (ledger)" (onClick) CH-7604
+- CTL-P007-067 261 `div` "Held message copy (ledger)" (onPointerDown) CH-7604
 
 ### `src/clubhouse/screens/messages/inbox/ConvRow.tsx`
 
-- 93 `ConvRowButton` "(no label)" (button)
-- 106 `ConvRowButton` "(no label)" (button)
-- 109 `button` "Actions for {title}" (button, onClick)
+- CTL-P007-068 93 `ConvRowButton` "(no label)" (button)
+- CTL-P007-069 106 `ConvRowButton` "(no label)" (button)
+- CTL-P007-070 109 `button` "Actions for {title}" (button, onClick)
 
 ### `src/clubhouse/screens/messages/inbox/ConvRowButton.tsx`
 
-- 90 `button` "{body}" (button)
+- CTL-P007-071 90 `button` "{body}" (button)
 
 ### `src/clubhouse/screens/messages/inbox/PhoneInboxV2.tsx`
 
-- 62 `button` "New message" (button, onClick)
+- CTL-P007-072 62 `button` "New message" (button, onClick)
 
 ### `src/clubhouse/screens/messages/inbox/PinTile.tsx`
 
-- 26 `button` "{|{{said}|{…}}} {pinLabel}" (button, onClick)
-- 44 `button` "Actions for {title}" (button, onClick)
+- CTL-P007-073 26 `button` "{|{{said}|{…}}} {pinLabel}" (button, onClick)
+- CTL-P007-074 44 `button` "Actions for {title}" (button, onClick)
 
 ### `src/clubhouse/screens/messages/inbox/Rail.tsx`
 
-- 82 `button` "New message" (button, onClick)
+- CTL-P007-075 82 `button` "New message" (button, onClick)
 
 ### `src/clubhouse/screens/messages/message-hits.tsx`
 
-- 82 `button` "{conversationName} {railTime} {senderName}: {…" (button, onClick)
+- CTL-P007-076 82 `button` "{conversationName} {railTime} {s…" (button, onClick)
 
 ### `src/clubhouse/screens/messages/overlays/GlassMenu.tsx`
 
-- 176 `div` "(no label)" (onPointerDown) CH-7603
-- 190 `button` "{label}{{caption}|}" (button, onClick, role=menuitem) CH-7603
+- CTL-P007-077 176 `div` "Glass menu backdrop (ledger)" (onPointerDown) CH-7603
+- CTL-P007-078 190 `button` "{label}{…" (button, onClick, role=menuitem) CH-7603
 
 ### `src/clubhouse/screens/messages/overlays/HoldKeys.tsx`
 
-- 19 `button` "{key}" (button, onClick)
+- CTL-P007-079 19 `button` "{key}" (button, onClick)
 
 ### `src/clubhouse/screens/messages/overlays/bubble-actions.tsx`
 
-- 96 `button` "{label}, {count}{, including you|}. Show who …" (button, onClick)
-- 145 `button` "{Take back your reaction|React with {label}}" (button, onClick)
-- 458 `button` "{Remove|React} {toLowerCase}" (button, onClick, role=menuitem)
-- 514 `button` "{label}" (button, onClick, role=menuitem)
+- CTL-P007-080 96 `button` "{label}, {count}{, including you…" (button, onClick)
+- CTL-P007-081 145 `button` "{Take back your reaction|React …" (button, onClick)
+- CTL-P007-082 458 `button` "{Remove|React} {…" (button, onClick, role=menuitem)
+- CTL-P007-083 514 `button` "{label}" (button, onClick, role=menuitem)
 
 ### `src/clubhouse/screens/messages/overlays/message-modals.tsx`
 
-- 29 `Button` "Cancel" (button, onClick)
-- 32 `Button` "{Saving…|Save}" (button, onClick)
-- 74 `Button` "Keep it" (button, onClick) CH-7501
-- 77 `Button` "{Deleting…|Delete message}" (button, onClick) CH-7501
+- CTL-P007-084 29 `Button` "Cancel" (button, onClick)
+- CTL-P007-085 32 `Button` "{Saving…|Save}" (button, onClick)
+- CTL-P007-086 74 `Button` "Keep it" (button, onClick) CH-7501
+- CTL-P007-087 77 `Button` "{Deleting…|Delete messag…" (button, onClick) CH-7501
 
 ### `src/clubhouse/screens/messages/overlays/sheet-rows.tsx`
 
-- 14 `SheetRow` "{Not seen yet|label}" (onClick)
-- 34 `SheetRow` "See votes" (onClick)
-- 35 `SheetRow` "Remind {count}" (onClick)
-- 36 `SheetRow` "Close poll" (onClick)
-- 37 `SheetRow` "Share result" (onClick)
-- 45 `button` "{label}" (button, onClick, role=menuitem)
-- 51 `button` "{label}" (button, onClick)
+- CTL-P007-088 14 `SheetRow` "{Not seen yet|label}" (onClick)
+- CTL-P007-089 34 `SheetRow` "See votes" (onClick)
+- CTL-P007-090 35 `SheetRow` "Remind {count}" (onClick)
+- CTL-P007-091 36 `SheetRow` "Close poll" (onClick)
+- CTL-P007-092 37 `SheetRow` "Share result" (onClick)
+- CTL-P007-093 45 `button` "{label}" (button, onClick, role=menuitem)
+- CTL-P007-094 51 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/screens/messages/polls.tsx`
 
-- 298 `button` "{label}, {plural}{, your vote…" (button, onClick, onPointerDown)
-- 349 `button` "Retry" (button, onClick)
-- 354 `button` "See votes" (button, onClick)
-- 429 `button` "Draft a reminder" (button, onClick)
-- 476 `Button` "Keep open" (button, onClick)
-- 479 `Button` "{Closing…|Close poll}" (button, onClick)
-- 750 `button` "Cancel" (button, onClick)
-- 753 `button` "{Sending…|Send}" (button, onClick)
-- 830 `IconButton` "Remove choice {i}" (button, onClick)
-- 851 `Button` "Add a choice" (button, onClick)
-- 883 `button` "Closes {label}" (button)
-- 910 `Button` "Send this version" (button, onClick) CH-7031
-- 913 `Button` "Done" (button, onClick) CH-7031
-- 943 `IconButton` "New poll" (button, onClick)
+- CTL-P007-095 298 `button` "{label}, {plural…" (button, onClick, onPointerDown)
+- CTL-P007-096 349 `button` "Retry" (button, onClick)
+- CTL-P007-097 354 `button` "See votes" (button, onClick)
+- CTL-P007-098 429 `button` "Draft a reminder" (button, onClick)
+- CTL-P007-099 476 `Button` "Keep open" (button, onClick)
+- CTL-P007-100 479 `Button` "{Closing…|Close poll}" (button, onClick)
+- CTL-P007-101 750 `button` "Cancel" (button, onClick)
+- CTL-P007-102 753 `button` "{Sending…|Send}" (button, onClick)
+- CTL-P007-103 830 `IconButton` "Remove choice {i}" (button, onClick)
+- CTL-P007-104 851 `Button` "Add a choice" (button, onClick)
+- CTL-P007-105 883 `button` "Closes {label}" (button)
+- CTL-P007-106 910 `Button` "Send this version" (button, onClick) CH-7031
+- CTL-P007-107 913 `Button` "Done" (button, onClick) CH-7031
+- CTL-P007-108 943 `IconButton` "New poll" (button, onClick)
 
 ### `src/clubhouse/screens/messages/seen-by.tsx`
 
-- 90 `button` "{name}" (button, onClick) CH-7608
-- 129 `button` "Seen by {length} of {total} ·…" (button, onClick, role=menuitem)
-- 156 `button` "{faces} {name}" (button, onClick) CH-7608
+- CTL-P007-109 90 `button` "{name}" (button, onClick) CH-7608
+- CTL-P007-110 129 `button` "Seen by {length}…" (button, onClick, role=menuitem)
+- CTL-P007-111 156 `button` "{faces} {name}" (button, onClick) CH-7608
 
 ### `src/clubhouse/screens/messages/thread-v2.tsx`
 
-- 186 `button` "{Jump to latest, {unseen} new|Jump to latest}" (button, onClick)
+- CTL-P007-112 186 `button` "{Jump to latest, {unseen} new|J…" (button, onClick)
 
 ### `src/clubhouse/screens/messages/thread/Attachments.tsx`
 
-- 19 `a` "{name} {fileKind} · {fileSize}" (link, href)
-- 34 `button` "{Photo from {from}|Open {name}}" (button, onClick)
-- 41 `a` "Open original" (link, href)
-- 136 `button` "Attachment didn’t load Tap to try ag…" (button, onClick) CH-7209
-- 165 `a` "{name} {fileSubline} {Sent by you|}" (link, href)
+- CTL-P007-113 19 `a` "{name} {fileKind} · {fileSize}" (link, href)
+- CTL-P007-114 34 `button` "{Photo from {from}|Open {name}}" (button, onClick)
+- CTL-P007-115 41 `a` "Open original" (link, href)
+- CTL-P007-116 136 `button` "Attachment didn’t load …" (button, onClick) CH-7209
+- CTL-P007-117 165 `a` "{name} {fileSubline} {Sent by you|}" (link, href)
 
 ### `src/clubhouse/screens/messages/thread/Bubble.tsx`
 
-- 112 `button` "Message actions" (button, onClick) CH-7804
+- CTL-P007-118 112 `button` "Message actions" (button, onClick) CH-7804
 
 ### `src/clubhouse/screens/messages/thread/BubbleHoverBar.tsx`
 
-- 32 `button` "{key}" (button, onClick)
-- 47 `button` "Reply" (button, onClick)
-- 51 `button` "More actions" (button, onClick)
+- CTL-P007-119 32 `button` "{key}" (button, onClick)
+- CTL-P007-120 47 `button` "Reply" (button, onClick)
+- CTL-P007-121 51 `button` "More actions" (button, onClick)
 
 ### `src/clubhouse/screens/messages/thread/BubbleReceipt.tsx`
 
-- 53 `button` "Try again" (button, onClick)
-- 62 `button` "Discard" (button, onClick)
+- CTL-P007-122 53 `button` "Try again" (button, onClick)
+- CTL-P007-123 62 `button` "Discard" (button, onClick)
 
 ### `src/clubhouse/screens/messages/thread/Composer.tsx`
 
-- 344 `IconButton` "Cancel edit" (button, onClick)
-- 351 `IconButton` "Cancel reply" (button, onClick)
-- 356 `button` "Dismiss {name}" (button, onClick)
-- 365 `div` "(no label)" (onClick)
-- 422 `Button` "Keep my draft" (button, onClick)
-- 425 `Button` "Replace" (button, onClick)
+- CTL-P007-124 344 `IconButton` "Cancel edit" (button, onClick)
+- CTL-P007-125 351 `IconButton` "Cancel reply" (button, onClick)
+- CTL-P007-126 356 `button` "Dismiss {name}" (button, onClick)
+- CTL-P007-127 365 `div` "Composer field edge (ledger)" (onClick)
+- CTL-P007-128 422 `Button` "Keep my draft" (button, onClick)
+- CTL-P007-129 425 `Button` "Replace" (button, onClick)
 
 ### `src/clubhouse/screens/messages/thread/MessageText.tsx`
 
-- 21 `a` "{text}" (link, onClick, href)
-- 54 `button` "Reply to {name}" (button, onClick)
+- CTL-P007-130 21 `a` "{text}" (link, onClick, href)
+- CTL-P007-131 54 `button` "Reply to {name}" (button, onClick)
 
 ### `src/clubhouse/screens/messages/thread/PhoneThread.tsx`
 
-- 148 `button` "Details for {title|firstName}" (button, onClick)
-- 159 `PhoneIconAction` "Details" (onClick)
-- 231 `SheetRow` "Reply" (onClick)
-- 233 `SheetRow` "{Copy poll|Copy}" (onClick)
-- 234 `SheetRow` "Edit" (onClick)
-- 237 `SheetRow` "Delete" (onClick)
-- 255 `button` "{Remove|React} {toLowerCase}" (button, onClick) CH-7604
-- 274 `SheetRow` "Reply" (onClick) CH-7604
-- 277 `SheetRow` "{Copy poll|Copy}" (onClick) CH-7604
-- 280 `SheetRow` "Edit" (onClick) CH-7604
-- 283 `SheetRow` "Delete" (onClick) CH-7604
+- CTL-P007-132 148 `button` "Details for {title|firstName}" (button, onClick)
+- CTL-P007-133 159 `PhoneIconAction` "Details" (onClick)
+- CTL-P007-134 231 `SheetRow` "Reply" (onClick)
+- CTL-P007-135 233 `SheetRow` "{Copy poll|Copy}" (onClick)
+- CTL-P007-136 234 `SheetRow` "Edit" (onClick)
+- CTL-P007-137 237 `SheetRow` "Delete" (onClick)
+- CTL-P007-138 255 `button` "{Remove|React} {toLower…" (button, onClick) CH-7604
+- CTL-P007-139 274 `SheetRow` "Reply" (onClick) CH-7604
+- CTL-P007-140 277 `SheetRow` "{Copy poll|Copy}" (onClick) CH-7604
+- CTL-P007-141 280 `SheetRow` "Edit" (onClick) CH-7604
+- CTL-P007-142 283 `SheetRow` "Delete" (onClick) CH-7604
 
 ### `src/clubhouse/screens/messages/thread/Thread.tsx`
 
-- 143 `IconButton` "All conversations" (button, onClick)
-- 164 `IconButton` "Search in conversation" (button, onClick)
-- 167 `a` "Schedule" (link, href)
-- 177 `button` "Details" (button, onClick)
+- CTL-P007-143 143 `IconButton` "All conversations" (button, onClick)
+- CTL-P007-144 164 `IconButton` "Search in conversation" (button, onClick)
+- CTL-P007-145 167 `a` "Schedule" (link, href)
+- CTL-P007-146 177 `button` "Details" (button, onClick)
 
 ### `src/clubhouse/screens/messages/thread/composer-parts.tsx`
 
-- 62 `button` "Remove {name}" (button, onClick)
-- 95 `IconButton` "Attach a file" (button, onClick)
+- CTL-P007-147 62 `button` "Remove {name}" (button, onClick)
+- CTL-P007-148 97 `IconButton` "Attach a file" (button, onClick)
 
 ### `src/clubhouse/ui/SwipeRow.tsx`
 
-- 129 `PresenceRow` "{children}" (onPointerDown)
-- 216 `SwipeButton` "(no label)" (button)
-- 217 `SwipeButton` "(no label)" (button)
-- 228 `button` "{label}" (button, onClick)
+- CTL-P007-149 129 `PresenceRow` "{children}" (onPointerDown)
+- CTL-P007-150 216 `SwipeButton` "(no label)" (button)
+- CTL-P007-151 217 `SwipeButton` "(no label)" (button)
+- CTL-P007-152 228 `button` "{label}" (button, onClick)
 
 ## P008 Settings
 
