@@ -79,6 +79,8 @@
   display: flex;
   flex-direction: column;
   gap: 28px;
+  /* Long tokens (file names, codes) wrap instead of pushing the page wider than a phone. */
+  overflow-wrap: anywhere;
 }
 @media (max-width: 640px) {
   .bs-main { padding: 24px 16px 56px; gap: 20px; }

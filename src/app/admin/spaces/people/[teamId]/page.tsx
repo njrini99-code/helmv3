@@ -40,7 +40,13 @@ const dayKeyWord = (key: string) => new Date(`${key}T12:00:00Z`).toLocaleDateStr
 export default async function TeamPeoplePage({ params, searchParams }: { params: Promise<{ teamId: string }>; searchParams?: Promise<SearchParams> }) {
   await requireSuperAdmin();
   const { teamId: raw } = await params;
-  const teamId = decodeURIComponent(raw);
+  // A malformed escape is a missing team, not a 500; ids are stored lowercase, so lookups match whatever case was typed.
+  let teamId: string;
+  try {
+    teamId = decodeURIComponent(raw).toLowerCase();
+  } catch {
+    notFound();
+  }
   const { tab, sort } = parseTeamParams((await searchParams) ?? {});
   const now = new Date();
   const base = `/admin/spaces/people/${encodeURIComponent(teamId)}`;
@@ -359,7 +365,7 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
                   <td className="bp-dimmable">
                     {p.lastActive ? (
                       <>
-                        <div>{TOUCH_WORDS[p.lastActive.kind]}</div>
+                        <div>{p.role === 'player' && p.lastActive.kind === 'message' ? 'Active in the app' : TOUCH_WORDS[p.lastActive.kind]}</div>
                         <div className="bp-sub">{ago(p.lastActive.at, now)}</div>
                       </>
                     ) : (
@@ -376,7 +382,8 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
                     {p.rounds30d === null ? <span className="bp-sub">team-level</span> : p.rounds30d}
                   </td>
                   <td style={{ textAlign: 'right' }} className="bp-dimmable">
-                    {p.messages30d}
+                    {/* Privacy: a player's message count is team-level only (players may be minors). */}
+                    {p.role === 'coach' ? p.messages30d : <span className="bp-sub">team only</span>}
                   </td>
                   <td style={{ textAlign: 'right' }} className={p.errors30d === null ? 'bs-tone-muted' : p.errors30d > 0 ? 'bs-tone-bad' : 'bp-dimmable'}>
                     {p.errors30d === null ? '—' : p.errors30d}

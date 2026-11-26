@@ -515,7 +515,9 @@ export function buildTimeline(
 ): TimelineItem[] {
   const items: TimelineItem[] = touches.map((t) => {
     const m = members.get(t.userId);
-    const who = m?.name ?? (m ? (m.role === 'coach' ? 'A coach' : 'A player') : null);
+    // Privacy (players may be minors): when a player sent a message is never tied to their name; it reads "A player".
+    const anonymous = t.kind === 'message' && m?.role === 'player';
+    const who = anonymous ? 'A player' : m?.name ?? (m ? (m.role === 'coach' ? 'A coach' : 'A player') : null);
     return { at: t.at, kind: t.kind, what: TOUCH_WORDS[t.kind], who, role: m?.role ?? null, source: t.source };
   });
   return [...items, ...extra].sort((a, b) => ms(b.at) - ms(a.at)).slice(0, limit);

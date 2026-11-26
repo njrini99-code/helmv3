@@ -65,6 +65,15 @@ describe('teamState (follows the Teams pulse halo)', () => {
     expect(teamState('silent', true)).toBe('dormant');
     expect(teamState('silent', false)).toBe('never');
   });
+
+  it('never ties a player message to the player name', () => {
+    const items = buildTimeline(
+      [{ userId: 'p', at: '2026-11-20T10:00:00Z', kind: 'message', source: 'golf_messages' }, { userId: 'p', at: '2026-11-21T10:00:00Z', kind: 'round', source: 'golf_rounds' }],
+      new Map([['p', { name: 'Pat Player', role: 'player' as const }]]),
+      [],
+    );
+    expect(items.map((i) => [i.kind, i.who])).toEqual([['round', 'Pat Player'], ['message', 'A player']]);
+  });
 });
 
 describe('ago', () => {

@@ -7344,6 +7344,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/data/people-space.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/data/people-space.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/data/pulse-grid.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
         },
@@ -7371,6 +7381,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/data/team-scope.ts",
           "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/data/today-space.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
           "kind": "import_graph",

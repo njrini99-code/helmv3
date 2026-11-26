@@ -45,7 +45,8 @@ import {
  *
  * PRIVACY: players may be minors. This reads names, sign-in times and Clubhouse device only because
  * /admin/users/[id], the team page and the Clubhouse person page already show them to super admins. It never reads
- * or returns an email or phone number, and writes nothing.
+ * or returns an email or phone number, and writes nothing. Message activity is shown per coach but only at team level
+ * for players: a player's message count and message times are never tied to their name (security review 2026-11-26).
  *
  * CALLER must have passed requireSuperAdmin(): every read uses the service-role client.
  */
