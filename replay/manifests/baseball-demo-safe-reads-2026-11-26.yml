@@ -1,0 +1,30 @@
+schema_version: 1
+replay_id: baseball-demo-safe-reads-2026-11-26
+incident_id: 8dee84b8
+feature_id: baseball_core
+title: >-
+  The shared BaseballHelm demo coach was refused three read-only actions the
+  demo dashboard calls (getProgramBrand, getUnreadNotificationCount,
+  getDecisionRoomData) with "This isn't available in the live demo.", 83
+  warnings in two hours. They now take the demoSafe opt-in from #392.
+bad_version: 90fdce51660d881508e76410efb864a95a7991e9
+fixed_version: eeb729d14115f05bf8ce2552636670810c34d036
+fixture:
+  - source: demo-safe-reads.test.ts
+    target: src/app/baseball/actions/__tests__/demo-safe-reads.test.ts
+test_command: "./node_modules/.bin/vitest run src/app/baseball/actions/__tests__/demo-safe-reads.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic demo user id and the public demo email domain only; Supabase is
+    mocked with an empty query builder. No production rows, PII or tokens.
+source_incident_status: fixed
+created_at: "2026-11-26"
+notes: >-
+  On bad_version all three tests fail by assertion (the guard throws
+  BaseballDemoReadOnlyError); on fixed_version all three pass.
