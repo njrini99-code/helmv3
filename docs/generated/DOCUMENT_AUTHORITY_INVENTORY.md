@@ -2220,6 +2220,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-24-join-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-25-auth-scrub.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-26-sky-script-json.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/DESIGN.md` | current | - | - | - | - |
@@ -2276,6 +2277,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-21-hover-guards.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-25-live-drop-reporter.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-26-paste-markup-scanner.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/DESIGN.md` | current | - | - | - | - |
