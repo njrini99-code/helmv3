@@ -347,6 +347,18 @@ export async function DELETE() {
       }
     }
 
+    // The Bridge's hourly counts keep the ids of who sent each signal, with no foreign key to cascade: forget this one.
+    // PGRST202: the Bridge migration (20261124090000) isn't applied, so there is nothing to forget.
+    try {
+      const { error: bridgeForgetError } = await (admin as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { code?: string; message: string } | null }> }).rpc(
+        'clubhouse_forget_user',
+        { p_user: user.id },
+      );
+      if (bridgeForgetError && bridgeForgetError.code !== 'PGRST202') cleanupErrors.push(`clubhouse_signal_hourly: ${bridgeForgetError.message}`);
+    } catch (forgetError) {
+      cleanupErrors.push(`clubhouse_signal_hourly: ${describeError(forgetError)}`);
+    }
+
     const { error: authDeleteError } = await admin.auth.admin.deleteUser(user.id);
 
     if (authDeleteError) {

@@ -168,6 +168,7 @@
     "loader": "src/clubhouse/data/practice-home.ts",
     "route": "src/clubhouse/routes/practice.tsx"
   },
+  "catalog": "docs/clubhouse/catalog/practice.md",
   "checklist": "docs/clubhouse/screens/practice.md",
   "phoneSpec": "docs/clubhouse/phone/practice.md",
   "actions": [

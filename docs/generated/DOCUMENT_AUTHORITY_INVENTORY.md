@@ -369,6 +369,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/specs/2026-08-18-golf-team-operations-design.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/README.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/helm-bridge/2026-11-18-clubhouse-bridge-redesign.md` | current | - | - | yes | - |
+| `docs/superpowers/specs/helm-bridge/2026-11-25-bridge-clubhouse-sync-execution.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/helm-bridge/DECISIONS.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` | current | - | - | yes | - |
 
@@ -387,7 +388,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `design/refresh/messages/02-PLAN.md` | current | - | - | - | - |
 | `design/refresh/practice-plan/02-PLAN.md` | current | - | - | - | 4 |
 | `design/refresh/practice-plan/COACHHELM_PRACTICE_PLAN.md` | current | - | - | - | - |
-| `design/refresh/prerequisites/N-00-practice-plan-builder.md` | current | - | - | yes | 13 |
+| `design/refresh/prerequisites/N-00-practice-plan-builder.md` | current | - | - | yes | 12 |
 | `design/refresh/stats-home/02-PLAN.md` | current | - | - | - | - |
 | `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | - |
 | `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | yes | - | yes | 14 |
@@ -834,7 +835,7 @@ them would bury everything above.
 | `design/refresh/practice-plan/capture/contrast-table.md` | current | - | - | - | - |
 | `design/refresh/prerequisites/N-10-documents.md` | current | - | - | yes | 26 |
 | `design/refresh/prerequisites/PRACTICE_DESIGN_SPEC.md` | current | - | - | yes | - |
-| `design/refresh/prerequisites/changelog/N-00.md` | current | - | - | yes | 2 |
+| `design/refresh/prerequisites/changelog/N-00.md` | current | - | - | yes | 1 |
 | `design/refresh/prerequisites/changelog/N-10.md` | current | - | - | - | - |
 | `design/refresh/redesign-ui-sweep-2026-11-06/BUGS.md` | current | - | - | - | - |
 | `design/refresh/redesign-ui-sweep-2026-11-06/FIX_PROMPT.md` | current | - | - | - | - |
@@ -901,6 +902,7 @@ them would bury everything above.
 | `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/hub.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/messages.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/practice.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/recruiting.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/roster.md` | current | - | - | - | - |
@@ -1089,6 +1091,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-21-desk-keys.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-24-bridge-signals.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-24-join-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
@@ -1259,6 +1262,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-24-bridge-signals.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-24-desktop-keys-scroll-padding.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |

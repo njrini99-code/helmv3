@@ -1,12 +1,13 @@
 'use client';
 
 import { ChevronLeft, CircleAlert, House, RotateCw } from 'lucide-react';
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { Button } from './Button';
 import { stateTitle } from './States';
 import { OFFLINE_LINE, useOfflineRetry } from './Retry';
 import { CH_NAV_COACH, CH_NAV_PLAYER, routeLabel } from '../shell/nav';
+import { chSignal } from '../lib/signal';
 
 /**
  * Where a notice sits: `card` when nothing between it and the page paints a surface, so the notice is bare on the page
@@ -69,6 +70,10 @@ export function InlineNotice({
   useLayoutEffect(() => {
     if (ref.current) setBare(noticePlace(ref.current));
   }, []);
+  // E4 (Bridge plan §4.2): a numbered notice is counted once each time it is drawn (a PageNotice through this one).
+  useEffect(() => {
+    if (code) chSignal({ kind: 'state', code });
+  }, [code]);
   return (
     <div
       ref={ref}

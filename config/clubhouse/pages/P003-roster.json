@@ -270,7 +270,7 @@
         "core": 30101,
         "deepLink": 30102,
         "empty": 30405,
-        "loadFailed": 30615,
+        "loadFailed": 30622,
         "haptic": 31701
       },
       "tests": [

@@ -164,6 +164,10 @@
     "CH-16682": { "category": 1, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." },
     "CH-16683": { "category": 15, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." },
     "CH-16684": { "category": 1, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." },
-    "CH-16685": { "category": 1, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." }
+    "CH-16685": { "category": 1, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." },
+    "CH-17105": { "category": 10, "why": "A warning on the plan (a player in no group); publishing still goes." },
+    "CH-17106": { "category": 10, "why": "A warning on the plan (past the end of practice); publishing still goes." },
+    "CH-17205": { "category": 23, "why": "Logged on the server only (the fan-out after a publish); nothing on screen." },
+    "CH-17505": { "category": 15, "why": "Another coach saved first: Load latest is data freshness, not a destructive confirm." }
   }
 }

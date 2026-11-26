@@ -24,6 +24,7 @@ import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkAudits, renderAudits, renderRelated } from './docs-index.mjs';
+import { buildBridgeGraph, renderGraph, GRAPH_PATH } from './bridge-graph.mjs';
 
 export const CATEGORY_COUNT = 25;
 /** Categories a page may never mark N/A (D-69): loading, empty, server error, offline, permission, accessibility. */
@@ -52,6 +53,15 @@ export function decodeBridgeId(id) {
 
 /** The kind digit follows the page prefix: one digit for 4-digit codes, two for 5-digit. */
 export const kindOf = (num) => num[num.length - 3];
+
+/**
+ * The file paths a contract's free-text `where` names (`a.tsx#Sym; b.ts (x)`), in order. Each must be a full path
+ * from the repo root, so the Bridge can open it and the check can prove it still exists.
+ */
+const WHERE_PATH = /(?<![\w./(-])((?:(?:\([\w-]+\)|[\w.[\]-]+)\/)*[\w.[\]-]+\.(?:tsx|ts|mjs|cjs|js|json|css|md|sql))(?![\w])/g;
+const WHERE_ROOT = /^(?:(?:src|scripts|config|docs|supabase|e2e|tests|design|design-refresh)\/|[\w.-]+\.config\.m?[jt]s$)/;
+export const wherePaths = (where) => [...String(where ?? '').matchAll(WHERE_PATH)].map((m) => m[1]);
+export const isFullWherePath = (path) => WHERE_ROOT.test(path);
 
 export function parseCatalogRows(catalogs) {
   const rows = [];
@@ -393,6 +403,7 @@ export function checkRegistry(ctx) {
         const rec = bridge.find((r) => r.id === id);
         if (!rec) v.push(`${at}: ${a.id} bridge.${k} ${id} is not in bridge-contracts.json`);
         else if (rec.page !== m.id && rec.page !== 'P001') v.push(`${at}: ${a.id} bridge.${k} ${id} belongs to ${rec.page}`);
+        else if (rec.status === 'deprecated') v.push(`${at}: ${a.id} bridge.${k} ${id} is retired; point it at the outcome that replaced it`);
       }
       for (const p of [a.component, a.service].filter(Boolean)) if (!exists(p.split('#')[0])) v.push(`${at}: ${a.id} path ${p} does not exist`);
     }
@@ -426,6 +437,10 @@ export function checkRegistry(ctx) {
     if (!/^[A-Z0-9_]+$/.test(r.name ?? '')) v.push(`${at}: name "${r.name}" is not a CONSTANT_NAME`);
     if (!['reserved', 'implemented', 'deprecated'].includes(r.status)) v.push(`${at}: status "${r.status}" is not reserved, implemented or deprecated`);
     if (!r.meaning) v.push(`${at}: no meaning`);
+    for (const p of wherePaths(r.where)) {
+      if (!isFullWherePath(p)) v.push(`${at}: where names ${p}; write the full path from the repo root`);
+      else if (!exists(p)) v.push(`${at}: where names ${p}, which does not exist`);
+    }
     // A contract with no catalog code proves itself through a named test: implemented means a test file
     // that exists and names the Bridge ID. Without one it stays reserved.
     if (!r.chCode && r.status === 'implemented') {
@@ -472,6 +487,10 @@ export function checkRegistry(ctx) {
   }
   for (const r of bridge) if (r.chCode && !rowCodes.has(r.chCode) && r.status !== 'deprecated') v.push(`config/clubhouse/bridge-contracts.json ${r.id}: ${r.chCode} is no longer in the catalog; mark it retired there, or tombstone the ID`);
   for (const code of Object.keys(map.overrides ?? {})) if (!rowCodes.has(code)) v.push(`config/clubhouse/category-map.json: override ${code} is not a catalog row`);
+  // Plan §4.6: a code the source writes must be a catalog row, or the Bridge can't resolve it.
+  for (const [code, files] of ctx.codeIndex ?? []) {
+    if (!rowCodes.has(code)) v.push(`${[...files][0]}: writes ${code}, which is in no catalog (add the row, or use a code that is)`);
+  }
   return v;
 }
 
@@ -646,7 +665,7 @@ function renderRouteMap({ pages, otherRoutes = [] }) {
   return md;
 }
 
-export function generateDocs({ manifests, bridge, map, tombstones, read, exists, audits = [], otherRoutes = [] }) {
+export function generateDocs({ manifests, bridge, map, tombstones, read, exists, audits = [], otherRoutes = [], catalogs = {}, codeIndex = new Map(), surfaceIndex = new Map(), auditFiles = {} }) {
   const pages = [...manifests].sort((a, b) => a.id.localeCompare(b.id));
   const cats = map.categories;
   const out = {};
@@ -714,6 +733,9 @@ export function generateDocs({ manifests, bridge, map, tombstones, read, exists,
 
   out['docs/clubhouse/AUDITS.md'] = renderAudits({ audits, manifests: pages, head: GEN_HEAD });
 
+  // The Bridge graph (plan §3): the one file the Bridge screens and the signal route read.
+  out[GRAPH_PATH] = renderGraph(buildBridgeGraph({ manifests: pages, bridge, tombstones, catalogs, codeIndex, surfaceIndex, auditFiles, read, exists }));
+
   // Each page's PAGE.md carries a generated Related block (links to its docs, code, audits and tracker row).
   for (const m of pages) {
     const path = `docs/clubhouse/pages/${m.id}-${m.slug}/PAGE.md`;
@@ -753,16 +775,32 @@ export function load(root) {
       .filter((n) => n.endsWith('.sql'))
       .map((n) => [`${migrationsDir}/${n}`, r(`${migrationsDir}/${n}`)]),
   );
-  const used = new Set();
+  // The code index (plan §4.6): every CH- code written anywhere in src, and the files that write it. Tests and
+  // generated files (the flag registry quotes codes in prose) don't count as writing one.
+  const codeIndex = new Map();
+  // The surfaces the code reports under (chReport, SectionBoundary, chLogServer): `surface: 'home.leaderboard'`.
+  const surfaceIndex = new Map();
   const walk = (dir) => {
     for (const n of readdirSync(join(root, dir), { withFileTypes: true })) {
       const p = `${dir}/${n.name}`;
       if (n.isDirectory()) {
-        if (n.name !== '__tests__') walk(p);
-      } else if (/\.tsx?$/.test(n.name)) for (const m of r(p).matchAll(/CH-(\d{4,5})(?!\d)/g)) used.add(`CH-${m[1]}`);
+        if (n.name !== '__tests__' && n.name !== 'node_modules') walk(p);
+      } else if (/\.tsx?$/.test(n.name) && !/\.(generated|test|spec)\.tsx?$/.test(n.name)) {
+        const text = r(p);
+        for (const m of text.matchAll(/CH-(\d{4,5})(?!\d)/g)) {
+          const code = `CH-${m[1]}`;
+          if (!codeIndex.has(code)) codeIndex.set(code, new Set());
+          codeIndex.get(code).add(p);
+        }
+        for (const m of text.matchAll(/surface[=:]\s*\{?['"`]([a-z][\w-]*\.[\w.-]+)['"`]/g)) {
+          if (!surfaceIndex.has(m[1])) surfaceIndex.set(m[1], new Set());
+          surfaceIndex.get(m[1]).add(p);
+        }
+      }
     }
   };
-  walk('src/clubhouse');
+  walk('src');
+  const used = new Set(codeIndex.keys());
   const golfPages = [];
   const pagesUnder = (dir) => {
     for (const n of readdirSync(join(root, dir), { withFileTypes: true })) {
@@ -773,6 +811,19 @@ export function load(root) {
     }
   };
   if (ex('src/app/golf')) pagesUnder('src/app/golf');
+  // Each audit's findings and number checks feed the graph (plan §3: findings, numberChecks).
+  const auditDir = 'docs/clubhouse/audit';
+  const auditFiles = {};
+  if (ex(auditDir)) {
+    for (const d of readdirSync(join(root, auditDir), { withFileTypes: true })) {
+      if (!d.isDirectory()) continue;
+      const base = `${auditDir}/${d.name}`;
+      if (ex(`${base}/findings.jsonl`)) auditFiles[`${base}/findings.jsonl`] = r(`${base}/findings.jsonl`);
+      if (ex(`${base}/numbers`)) {
+        for (const n of readdirSync(join(root, `${base}/numbers`))) if (/^P\d{3}-.+\.md$/.test(n)) auditFiles[`${base}/numbers/${n}`] = r(`${base}/numbers/${n}`);
+      }
+    }
+  }
   return {
     manifests,
     golfPages: golfPages.sort(),
@@ -789,6 +840,10 @@ export function load(root) {
     heldMd: r('supabase/migrations/HELD.md'),
     migrations,
     used,
+    codeIndex,
+    surfaceIndex,
+    catalogs,
+    auditFiles,
     exists: ex,
     read: r,
   };

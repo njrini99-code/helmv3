@@ -14099,6 +14099,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/ui/StateSignal.tsx",
+      "group": "ui",
+      "exports": [
+        "StateSignal"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/States.tsx",
       "group": "ui",
       "exports": [

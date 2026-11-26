@@ -167,6 +167,15 @@ export function loadManifests(root) {
   return readdirSync(dir).filter((n) => /^P\d{3}-.+\.json$/.test(n)).sort().map((n) => JSON.parse(readFileSync(join(dir, n), 'utf8')));
 }
 
+/** clubhouse:check: the every-button map must match the code (plan §4.7). Returns violations, never throws. */
+export function checkClickableMap(root) {
+  const text = buildMap({ files: walk(root, 'src/clubhouse'), manifests: loadManifests(root) });
+  const path = join(root, OUT);
+  if (!existsSync(path) || readFileSync(path, 'utf8') !== text)
+    return [`${OUT} is stale: the controls in src/clubhouse changed; run npm run clubhouse:clickables`];
+  return [];
+}
+
 function main() {
   const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
   const text = buildMap({ files: walk(root, 'src/clubhouse'), manifests: loadManifests(root) });

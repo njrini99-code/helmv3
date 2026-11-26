@@ -695,3 +695,18 @@ ALTER TABLE "public"."golf_conversation_pins" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."golf_division_cohort" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "helm_private"."golf_demo_editors" ENABLE ROW LEVEL SECURITY;
+
+-- Clubhouse Bridge signals: held migration 20261124090000
+-- (clubhouse_bridge_signals.sql), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-11-25 by pg_dump of the file applied to a scratch Postgres 16
+-- with stub tables (PR #2611, branch bridge/pr1-spine).
+
+ALTER TABLE "public"."bridge_notes" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."clubhouse_drift" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."clubhouse_session_events" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."clubhouse_sessions" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."clubhouse_signal_hourly" ENABLE ROW LEVEL SECURITY;

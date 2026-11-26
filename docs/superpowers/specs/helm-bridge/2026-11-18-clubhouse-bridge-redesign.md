@@ -164,6 +164,14 @@ interface ChSignal {
 }
 ```
 
+**As built (PR 1, 2026-11-24):** `src/lib/admin/clubhouse/signal.ts`. Three
+changes from the sketch above. `kind` adds `tap` (E7). `code` may be left out
+of a view, a tap and an action's start, where the server names it from the
+page, the control or the action map. A failure carries `reported: true` when
+`chReport` or `logError` already wrote its `admin_events` row; the route then
+stamps the Bridge columns on that row (found by session and seq) instead of
+writing a second one.
+
 ### 4.2 Where it is sent from: shared components, not the 467 call sites
 
 | # | Shared component | Sends | Covers |
@@ -177,6 +185,27 @@ interface ChSignal {
 | E7 | `lib/press.ts` (`useChPress`) | `control` tap for elements with `data-ctl` (counted only) | Control Atlas taps |
 | E8 | `instrumentation-client.ts` | `vital` (INP, LCP, CLS) and `frustration` (CH-1951 to 1953), with the page | Experience screen |
 | E9 | Server actions through `observed-action.ts` | the server half of an action: duration, Postgres code, table | Shows whether a failure was the network, RLS or a constraint |
+
+**As built (PR 1, 2026-11-24):** the client queue is `src/clubhouse/lib/signal.ts`.
+
+- E1: `Toast`. An error toast nobody reported counts as a failure; Try again counts as a retry.
+- E2: `useAction`. A throw is now reported once at medium, a handled failure
+  once at low, and a quiet one not at all (the route writes its row). Each
+  report runs inside `reportingSignal()`, so `chReport` adds the signal's
+  place to its row without its callers' arguments changing.
+- E3: `SectionBoundary` and `RouteErrorBoundary`. An offline route error counts
+  under its transient or load code.
+- E4: `EmptyState`, `InlineNotice` and `PageNotice`, through `ui/StateSignal.tsx`.
+  `RefreshNotice`, `Retry` and `EmptyShape` draw through these. `NoData` takes
+  no code, so it isn't counted.
+- E6 to E8: these live in `src/clubhouse/shell/use-signals.ts`, called by
+  `ClubhouseFrame`, not in `press.ts` or `instrumentation-client.ts`. Signals
+  carry the page and the team, which only the shell knows. Taps count
+  `[data-ctl]`, and no element carries one until §4.7 numbers the controls
+  (PR 2). A rage click is 3 clicks on one element within 600 ms. It never
+  counts an enabled button, a link or a field, or a click that selects text.
+- E5 and E9 move to PR 3. They need server-side signals, which this route does
+  not take yet.
 
 ### 4.3 Runtime contract checks (the creative part of the spine)
 
@@ -207,16 +236,32 @@ Each becomes a `drift` row, not an error. B11 lists them.
 - Sending never fails a tap: no await on the hot path, and every call is wrapped
   in try/catch.
 
+**As built (PR 1, 2026-11-24):** the per-session limit counts batches: 12 a
+minute, which at 20 envelopes a flush is the 240 above. A batch carries at most
+50 envelopes, plus up to 50 earlier ones as context when it has a failure.
+Before anything is stored, each envelope is resolved against the graph this
+deploy shipped with (`graph-server.ts`). The route also stores nothing from a
+Preview or Development runtime, since those hold production credentials.
+
 ### 4.5 Storage (shared production database)
 
 | Table | One row per | Kept | Why |
 | --- | --- | --- | --- |
 | `admin_events` + new columns `ch_code`, `bridge_id`, `page_id`, `action_id`, `control_id`, `release`, `platform`, `session_id`, `server_code` (indexed) | failure: a failed action, an error toast, a crash, a failed load, a permission refusal | as now | Keeps one error store (DECISIONS 5). Incidents, the digest and auto-resolve keep working, and gain the code. |
 | `clubhouse_signal_hourly` | hour × code × role × platform × release (count, users, p50, p95, p99) | 180 days | Success, empty, waits, views and taps without a row per skeleton. "Never seen" needs every count. |
-| `clubhouse_sessions` | session (user, role, team, platform, release, start, end, pages, failures, replay id) | 30 days | The Sessions index |
+| `clubhouse_sessions` | session (user id, role, team, platform, release, start, end, pages, failures, replay id) | 30 days | The Sessions index. No name or email is stored: the Bridge reads them live from `profiles` when a session is opened (D7). |
 | `clubhouse_session_events` | envelope in a session **that has a failure**, plus the 50 before it | 14 days | The timeline, kept only where something went wrong. Volume stays bounded. |
 | `clubhouse_drift` | drift kind × code × release (count, first seen, last seen) | 180 days | B11 |
 | `bridge_notes` | an owner note: a code marked expected, a watch, a pack sent | forever | Bridge's own small state |
+
+**As built (PR 1, 2026-11-24):** `supabase/migrations/20261124090000_clubhouse_bridge_signals.sql`,
+**held** (`HELD.md`). The hourly key also carries kind, outcome, action and
+page, so success and failure, and each page, count apart; p50, p95 and p99 are
+read from a duration histogram. All writes go through one service-role function,
+`clubhouse_ingest_signals(jsonb)`, called once per session per batch. While the
+migration is held, the route writes failures to `admin_events` without the new
+columns (they travel in `metadata.bridge`), stores no counts, and says
+`persisted: false`. pgTAP: `supabase/tests/rls/clubhouse_bridge_signals.sql`.
 
 **Volume bound:** hourly rows are at most the distinct codes that fired, × 3
 roles, × 4 platforms, × the 1–2 live releases. In practice that is a few hundred
@@ -1070,6 +1115,17 @@ built in their own worktrees, in parallel with PR 1, against a seeded fixture.
 | **3. Live lenses** | B01 Pulse, B06 additions, B07, B08, B09, B10, the digest section | The same tests, plus seeded-fixture tests per rule and per screen |
 | **4. Drift, Duet, numbering** | B11, B13, the §9.2 read-only API (off by default), config/bridge/contracts.json (new) + BRIDGE_UI_MAP.md (new), category 25 rows, the rail regrouping, docs (DECISIONS, a Bridge feature doc, registry docs) | Full gates once; `verifier` agent on the done claim |
 
+**PR 1 as built (draft #2611, 2026-11-24):**
+
+- Done: the graph, the code index and its checks, the six `where` paths, P017,
+  the envelope, the resolver and the 12 rules, the route, the held migration,
+  and emitters E1 to E4 and E6 to E8.
+- Moved: E5 and E9 to PR 3. The manifests stay `bridge: reserved`: the
+  registry has no `wired` value, and D-68 says they move when signals reach
+  the Bridge, which is once the migration is applied and the flag is on.
+- Waiting on the owner: applying the migration, and the W-tier check (a forced
+  CH-7004 landing one row with `bridge_id 70603`), which needs it.
+
 ---
 
 ## 13. How we'll know it worked
@@ -1091,7 +1147,7 @@ built in their own worktrees, in parallel with PR 1, against a seeded fixture.
 | --- | --- |
 | Logging slows a tap | No await on the hot path, batched sendBeacon, try/catch, the kill switch; an E2 test asserts `run` resolves before the flush |
 | Load on the production database | Counters instead of rows; failure rows capped by the limiter; 14- and 30-day retention on session data; indexes on the new columns only |
-| Personal data, including minors' | Super-admin only; the same redaction as `/api/log-error`; packs pseudonymous by default; session events kept 14 days; security review |
+| Personal data, including minors' | Super-admin only; the same redaction as `/api/log-error`; sessions store user ids only, with names read live (D7); packs pseudonymous by default; session events kept 14 days; security review |
 | The graph and the running release disagree | One graph per SHA; events read against their own release's graph |
 | A false "all clear" | R-08 and R-09, plus the `xx93` state on every screen |
 | 92 `data-ctl` today, 666+ controls | PR 2 numbers them page by page, seeded from CLICKABLES; the check only blocks new unlabelled controls until the count is done |
@@ -1100,12 +1156,10 @@ built in their own worktrees, in parallel with PR 1, against a seeded fixture.
 
 ## 15. Your decisions
 
-D8 is done. The other eleven are open: approve them all with their defaults, or
-name the ones to change.
+**Locked on 2026-11-24, on your yes:** every default stands except D7, where
+sessions keep user ids only and names are read live. D8 and D12 are done.
 
-Each has a default, and I go with the default unless you say otherwise.
-
-| # | Question | Default |
+| # | Question | Decided |
 | --- | --- | --- |
 | D1 | Storage as in §4.5: new columns on `admin_events` plus five small tables | **Yes** |
 | D2 | Count every success, empty state and tap (not sampled) | **Yes.** "Never seen" needs it. |
@@ -1113,11 +1167,11 @@ Each has a default, and I go with the default unless you say otherwise.
 | D4 | `BR-` codes on the Bridge's own controls; category 25 rows per page | **Yes** |
 | D5 | The self-heal views go under More views, and their jobs keep running | **Yes**, nothing deleted |
 | D6 | "Force this state" opens the preview app from the Bridge | **Yes, if `/clubhouse-preview` is served in production** (PR 2 checks); otherwise the button is labelled "local" |
-| D7 | Names and emails in sessions, inside the Bridge | **Yes**, you only, kept 30 days. Packs are pseudonymous unless you tick "include names". |
+| D7 | Names and emails in sessions, inside the Bridge | **Changed: user ids only.** `clubhouse_sessions` and `clubhouse_session_events` store no name or email; the Bridge reads names live from `profiles` when you open a session or person (you only, super-admin). Packs stay pseudonymous unless you tick "include names". |
 | D8 | Land #2578 (Practice as P017, the clickable map) before this work starts | **Done.** It landed with #2588 on 2026-11-18. |
 | D9 | The read-only API for Duet | **Built, off until you add its token** |
 | D10 | Push alerts for R-09 and R-02 | **Off.** The digest only, until you ask. |
-| D12 | Practice's codes: give P017 its own catalog block (registering the 25 `CH-17xxx` codes the code already writes), or keep them under P013 as `CH-1308x` and rename the code's codes | **A P017 block.** The code already writes `CH-17xxx`, and moving them is the riskier change. Yours to decide, as `catalog/README` on #2578 says. |
+| D12 | Practice's codes: give P017 its own catalog block (registering the 25 `CH-17xxx` codes the code already writes), or keep them under P013 as `CH-1308x` and rename the code's codes | **A P017 block. Done** on `bridge/pr1-spine`: `catalog/practice.md` and Bridge IDs 170501–172301. |
 | D11 | Number the controls (`CTL-`), and block new unlabelled buttons in `clubhouse:check` | **Yes** |
 
 ---

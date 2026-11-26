@@ -116,6 +116,7 @@ const adminFrom = vi.fn((table: string) => makeTable(table));
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(() => ({
     from: adminFrom,
+    rpc: vi.fn(async () => ({ data: null, error: null })),
     auth: { admin: { deleteUser: deleteUserMock } },
   })),
 }));

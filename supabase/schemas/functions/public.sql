@@ -16760,3 +16760,337 @@ COMMENT ON FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text"
 COMMENT ON FUNCTION "public"."golf_demo_begin"("p_team" "uuid", "p_prune" boolean) IS 'Demo generator only (service_role): drop ledger rows whose table row is gone (unless p_prune is false), then return the ledger.';
 COMMENT ON FUNCTION "public"."golf_demo_finish_rounds"("p_team" "uuid", "p_rounds" "jsonb", "p_version" integer) IS 'Demo generator only (service_role): recompute totals, stats cache and strokes gained for generator rounds.';
 COMMENT ON FUNCTION "public"."golf_demo_remove"("p_team" "uuid", "p_table" "text", "p_keys" "jsonb") IS 'Demo generator only (service_role): delete rows the generator wrote for the demo team.';
+
+-- Clubhouse Bridge signals: held migration 20261124090000
+-- (clubhouse_bridge_signals.sql), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-11-25 by pg_dump of the file applied to a scratch Postgres 16
+-- with stub tables (PR #2611, branch bridge/pr1-spine).
+
+CREATE OR REPLACE FUNCTION "public"."clubhouse_bucket_quantile"("p_buckets" integer[], "p_q" numeric) RETURNS integer
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+    with b as (
+        select
+            t.n,
+            t.i,
+            sum(t.n) over (order by t.i) as cum,
+            sum(t.n) over () as total
+        from unnest(p_buckets) with ordinality as t (n, i)
+    )
+    select (array[
+        50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000, 7500,
+        10000, 20000, 30000, 60000, 600000
+    ])[b.i]
+    from b
+    where b.total > 0 and b.cum >= ceil(b.total * p_q)
+    order by b.i
+    limit 1;
+$$;
+
+ALTER FUNCTION "public"."clubhouse_bucket_quantile"("p_buckets" integer[], "p_q" numeric) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."clubhouse_forget_user"("p_user" "uuid") RETURNS integer
+    LANGUAGE "sql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+    with changed as (
+        update public.clubhouse_signal_hourly
+        set user_ids = array_remove(user_ids, p_user)
+        where p_user = any(user_ids)
+        returning 1
+    )
+    select count(*)::integer from changed;
+$$;
+
+ALTER FUNCTION "public"."clubhouse_forget_user"("p_user" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."clubhouse_ingest_signals"("p_batch" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $_$
+declare
+    v_uuid constant text :=
+        '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
+    v_session jsonb := p_batch -> 'session';
+    v_session_id text := v_session ->> 'session_id';
+    v_user_id uuid;
+    v_team_id uuid;
+    v_session_ok boolean := true;
+    v_failures integer := 0;
+    v_hourly integer := 0;
+    v_events integer := 0;
+    v_drift integer := 0;
+begin
+    if v_session_id is not null then
+        -- A user or team that is gone (or an id the client made up, or one
+        -- that is not a uuid) is dropped, not raised: one bad id must not
+        -- lose the batch.
+        select u.id into v_user_id
+        from public.users as u
+        where
+            (v_session ->> 'user_id') ~ v_uuid
+            and u.id = (v_session ->> 'user_id')::uuid;
+
+        -- is_golf_team_coach / is_golf_team_player read auth.uid(), which is
+        -- null for the service role, so the same membership test is written
+        -- out here against the verified user.
+        select t.id into v_team_id
+        from public.golf_teams as t
+        where
+            v_user_id is not null
+            and (v_session ->> 'team_id') ~ v_uuid
+            and t.id = (v_session ->> 'team_id')::uuid
+            and (
+                exists (
+                    select 1
+                    from public.golf_team_coach_staff as gtcs
+                    inner join public.golf_coaches as gc
+                        on gtcs.coach_id = gc.id
+                    where gtcs.team_id = t.id and gc.user_id = v_user_id
+                )
+                or exists (
+                    select 1
+                    from public.golf_team_members as gtm
+                    inner join public.golf_players as gp
+                        on gtm.player_id = gp.id
+                    where
+                        gtm.team_id = t.id
+                        and gp.user_id = v_user_id
+                        and gtm.status = 'active'
+                )
+            );
+
+        insert into public.clubhouse_sessions as s (
+            session_id, user_id, role, team_id, platform, release,
+            started_at, last_at, ended_at, pages, signal_count,
+            failure_count, replay_id
+        )
+        values (
+            v_session_id,
+            v_user_id,
+            v_session ->> 'role',
+            v_team_id,
+            v_session ->> 'platform',
+            v_session ->> 'release',
+            (v_session ->> 'first_at')::timestamptz,
+            (v_session ->> 'last_at')::timestamptz,
+            case
+                when (v_session ->> 'ended')::boolean
+                    then (v_session ->> 'last_at')::timestamptz
+            end,
+            coalesce(
+                array(
+                    select jsonb_array_elements_text(v_session -> 'pages')
+                ),
+                '{}'
+            ),
+            (v_session ->> 'count')::integer,
+            (v_session ->> 'failures')::integer,
+            v_session ->> 'replay_id'
+        )
+        on conflict (session_id) do update set
+            user_id = coalesce(s.user_id, excluded.user_id),
+            team_id = coalesce(excluded.team_id, s.team_id),
+            role = excluded.role,
+            release = excluded.release,
+            started_at = least(s.started_at, excluded.started_at),
+            last_at = greatest(s.last_at, excluded.last_at),
+            ended_at = coalesce(excluded.ended_at, s.ended_at),
+            pages = (
+                select coalesce(array_agg(distinct p order by p), '{}')
+                from unnest(s.pages || excluded.pages) as p
+            ),
+            signal_count = s.signal_count + excluded.signal_count,
+            failure_count = s.failure_count + excluded.failure_count,
+            replay_id = coalesce(excluded.replay_id, s.replay_id)
+        -- A session already owned by another user is left as it is.
+        where s.user_id is null or s.user_id is not distinct from excluded.user_id
+        returning s.failure_count into v_failures;
+
+        -- No row back: the WHERE above refused the update. v_failures is
+        -- left null by RETURNING INTO, so it is reset here.
+        v_session_ok := found;
+        v_failures := coalesce(v_failures, 0);
+
+        -- The timeline is kept only where something went wrong.
+        if v_session_ok and v_failures > 0 then
+            insert into public.clubhouse_session_events (
+                session_id, seq, sent_at, kind, outcome, code, bridge_id,
+                page_id, act, action_id, control_id, duration_ms,
+                server_code, message, trail, drift
+            )
+            select
+                v_session_id,
+                (e ->> 'seq')::integer,
+                (e ->> 'at')::timestamptz,
+                e ->> 'kind',
+                e ->> 'outcome',
+                e ->> 'code',
+                (e ->> 'bridge_id')::integer,
+                e ->> 'page_id',
+                e ->> 'act',
+                e ->> 'action_id',
+                e ->> 'control_id',
+                (e ->> 'duration_ms')::integer,
+                e ->> 'server_code',
+                left(e ->> 'message', 2000),
+                -- The route sends trail: null for an envelope without one,
+                -- and `?` is true for a key whose value is JSON null.
+                case
+                    when jsonb_typeof(e -> 'trail') = 'array'
+                        then array(
+                            select jsonb_array_elements_text(e -> 'trail')
+                        )
+                end,
+                coalesce(
+                    array(select jsonb_array_elements_text(e -> 'drift')),
+                    '{}'
+                )
+            from jsonb_array_elements(coalesce(p_batch -> 'events', '[]')) as e
+            on conflict (session_id, seq) do nothing;
+            get diagnostics v_events = row_count;
+        end if;
+    end if;
+
+    insert into public.clubhouse_signal_hourly as h (
+        bucket_hour, code, kind, outcome, act, role, platform, release,
+        bridge_id, page_id, signal_count, user_ids, duration_buckets,
+        p50_ms, p95_ms, p99_ms, first_at, last_at
+    )
+    select
+        (r ->> 'hour')::timestamptz,
+        coalesce(r ->> 'code', ''),
+        r ->> 'kind',
+        coalesce(r ->> 'outcome', ''),
+        coalesce(r ->> 'act', ''),
+        r ->> 'role',
+        r ->> 'platform',
+        r ->> 'release',
+        (r ->> 'bridge_id')::integer,
+        coalesce(r ->> 'page_id', ''),
+        (r ->> 'count')::bigint,
+        -- A refused session's sender is not attributed.
+        case
+            when v_session_ok then coalesce(
+                array(
+                    select distinct u::uuid
+                    from jsonb_array_elements_text(r -> 'user_ids') as u
+                    limit 500
+                ),
+                '{}'
+            )
+            else '{}'::uuid[]
+        end,
+        coalesce(
+            array(
+                select n::integer
+                from jsonb_array_elements_text(r -> 'buckets')
+                    with ordinality as x (n, i)
+                order by x.i
+            ),
+            '{}'
+        ),
+        null,
+        null,
+        null,
+        (r ->> 'first_at')::timestamptz,
+        (r ->> 'last_at')::timestamptz
+    from jsonb_array_elements(coalesce(p_batch -> 'hourly', '[]')) as r
+    on conflict (
+        bucket_hour, code, kind, outcome, act, page_id, role, platform, release
+    )
+    do update set
+        signal_count = h.signal_count + excluded.signal_count,
+        bridge_id = coalesce(excluded.bridge_id, h.bridge_id),
+        user_ids = (
+            select coalesce(array_agg(distinct u), '{}')
+            from (
+                select u
+                from unnest(h.user_ids || excluded.user_ids) as u
+                limit 500
+            ) as capped
+        ),
+        duration_buckets = case
+            when cardinality(h.duration_buckets) = 0
+                then excluded.duration_buckets
+            when cardinality(excluded.duration_buckets) = 0
+                then h.duration_buckets
+            else (
+                select array_agg(
+                    coalesce(z.a, 0) + coalesce(z.b, 0) order by z.i
+                )
+                from unnest(h.duration_buckets, excluded.duration_buckets)
+                    with ordinality as z (a, b, i)
+            )
+        end,
+        first_at = least(h.first_at, excluded.first_at),
+        last_at = greatest(h.last_at, excluded.last_at);
+    get diagnostics v_hourly = row_count;
+
+    -- Percentiles follow the merged histogram of every row this batch touched.
+    update public.clubhouse_signal_hourly as h
+    set
+        p50_ms = public.clubhouse_bucket_quantile(h.duration_buckets, 0.50),
+        p95_ms = public.clubhouse_bucket_quantile(h.duration_buckets, 0.95),
+        p99_ms = public.clubhouse_bucket_quantile(h.duration_buckets, 0.99)
+    from jsonb_array_elements(coalesce(p_batch -> 'hourly', '[]')) as r
+    where
+        h.bucket_hour = (r ->> 'hour')::timestamptz
+        and h.code = coalesce(r ->> 'code', '')
+        and h.kind = r ->> 'kind'
+        and h.outcome = coalesce(r ->> 'outcome', '')
+        and h.act = coalesce(r ->> 'act', '')
+        and h.page_id = coalesce(r ->> 'page_id', '')
+        and h.role = r ->> 'role'
+        and h.platform = r ->> 'platform'
+        and h.release = r ->> 'release'
+        and cardinality(h.duration_buckets) > 0;
+
+    insert into public.clubhouse_drift as d (
+        kind, code, release, drift_count, first_seen, last_seen
+    )
+    select
+        r ->> 'kind',
+        r ->> 'code',
+        r ->> 'release',
+        (r ->> 'count')::bigint,
+        (r ->> 'first_seen')::timestamptz,
+        (r ->> 'last_seen')::timestamptz
+    from jsonb_array_elements(coalesce(p_batch -> 'drift', '[]')) as r
+    on conflict (kind, code, release) do update set
+        drift_count = d.drift_count + excluded.drift_count,
+        first_seen = least(d.first_seen, excluded.first_seen),
+        last_seen = greatest(d.last_seen, excluded.last_seen);
+    get diagnostics v_drift = row_count;
+
+    return jsonb_build_object(
+        'hourly', v_hourly,
+        'events', v_events,
+        'drift', v_drift,
+        'failures', v_failures,
+        'session_refused', not v_session_ok
+    );
+end;
+$_$;
+
+ALTER FUNCTION "public"."clubhouse_ingest_signals"("p_batch" "jsonb") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."clubhouse_signals_prune"() RETURNS "void"
+    LANGUAGE "sql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+    delete from public.clubhouse_signal_hourly
+    where bucket_hour < now() - interval '180 days';
+    delete from public.clubhouse_drift
+    where last_seen < now() - interval '180 days';
+    delete from public.clubhouse_session_events
+    where received_at < now() - interval '14 days';
+    delete from public.clubhouse_sessions
+    where last_at < now() - interval '30 days';
+$$;
+
+ALTER FUNCTION "public"."clubhouse_signals_prune"() OWNER TO "postgres";
+
+-- The daily pg_cron job clubhouse-signals-prune (25 4 * * *) is scheduled by
+-- the migration and is not declarative.

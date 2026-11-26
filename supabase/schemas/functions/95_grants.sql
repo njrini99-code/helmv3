@@ -1845,3 +1845,20 @@ GRANT ALL ON FUNCTION "public"."golf_demo_begin"("p_team" "uuid", "p_prune" bool
 GRANT ALL ON FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text", "p_items" "jsonb", "p_version" integer) TO "service_role";
 GRANT ALL ON FUNCTION "public"."golf_demo_remove"("p_team" "uuid", "p_table" "text", "p_keys" "jsonb") TO "service_role";
 GRANT ALL ON FUNCTION "public"."golf_demo_finish_rounds"("p_team" "uuid", "p_rounds" "jsonb", "p_version" integer) TO "service_role";
+
+-- Clubhouse Bridge signals: held migration 20261124090000
+-- (clubhouse_bridge_signals.sql), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-11-25 by pg_dump of the file applied to a scratch Postgres 16
+-- with stub tables (PR #2611, branch bridge/pr1-spine).
+
+REVOKE ALL ON FUNCTION "public"."clubhouse_bucket_quantile"("p_buckets" integer[], "p_q" numeric) FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."clubhouse_bucket_quantile"("p_buckets" integer[], "p_q" numeric) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."clubhouse_forget_user"("p_user" "uuid") FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."clubhouse_forget_user"("p_user" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."clubhouse_ingest_signals"("p_batch" "jsonb") FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."clubhouse_ingest_signals"("p_batch" "jsonb") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."clubhouse_signals_prune"() FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."clubhouse_signals_prune"() TO "service_role";

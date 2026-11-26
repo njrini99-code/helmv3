@@ -279,3 +279,38 @@ CREATE INDEX "organizations_created_by_idx" ON "public"."organizations" USING "b
 CREATE UNIQUE INDEX "organizations_normalized_name_uidx" ON "public"."organizations" USING "btree" ("lower"("btrim"("name"))) WHERE ("name" IS NOT NULL);
 
 COMMENT ON INDEX "public"."organizations_normalized_name_uidx" IS 'One organization per school name, case + whitespace insensitive. Prevents duplicate-school org rows (e.g. the 2026-06 "University of Lynchburg " trailing-space dup). Onboarding catches the resulting 23505 and surfaces a friendly "already exists" error.';
+
+-- Clubhouse Bridge signals: held migration 20261124090000
+-- (clubhouse_bridge_signals.sql), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-11-25 by pg_dump of the file applied to a scratch Postgres 16
+-- with stub tables (PR #2611, branch bridge/pr1-spine).
+
+CREATE INDEX "bridge_notes_bridge_idx" ON "public"."bridge_notes" USING "btree" ("bridge_id") WHERE ("bridge_id" IS NOT NULL);
+
+CREATE INDEX "bridge_notes_code_idx" ON "public"."bridge_notes" USING "btree" ("code") WHERE ("code" IS NOT NULL);
+
+CREATE INDEX "bridge_notes_created_by_idx" ON "public"."bridge_notes" USING "btree" ("created_by") WHERE ("created_by" IS NOT NULL);
+
+CREATE INDEX "clubhouse_drift_last_idx" ON "public"."clubhouse_drift" USING "btree" ("last_seen" DESC);
+
+CREATE INDEX "clubhouse_session_events_at_idx" ON "public"."clubhouse_session_events" USING "btree" ("received_at");
+
+CREATE INDEX "clubhouse_sessions_failed_idx" ON "public"."clubhouse_sessions" USING "btree" ("last_at" DESC) WHERE ("failure_count" > 0);
+
+CREATE INDEX "clubhouse_sessions_last_idx" ON "public"."clubhouse_sessions" USING "btree" ("last_at" DESC);
+
+CREATE INDEX "clubhouse_sessions_team_idx" ON "public"."clubhouse_sessions" USING "btree" ("team_id") WHERE ("team_id" IS NOT NULL);
+
+CREATE INDEX "clubhouse_sessions_user_idx" ON "public"."clubhouse_sessions" USING "btree" ("user_id", "last_at" DESC) WHERE ("user_id" IS NOT NULL);
+
+CREATE INDEX "clubhouse_signal_hourly_bridge_idx" ON "public"."clubhouse_signal_hourly" USING "btree" ("bridge_id", "bucket_hour" DESC) WHERE ("bridge_id" IS NOT NULL);
+
+CREATE INDEX "clubhouse_signal_hourly_code_idx" ON "public"."clubhouse_signal_hourly" USING "btree" ("code", "bucket_hour" DESC);
+
+CREATE INDEX "clubhouse_signal_hourly_page_idx" ON "public"."clubhouse_signal_hourly" USING "btree" ("page_id", "bucket_hour" DESC) WHERE ("page_id" <> ''::"text");
+
+CREATE INDEX "idx_admin_events_bridge_id" ON "public"."admin_events" USING "btree" ("bridge_id", "created_at" DESC) WHERE ("bridge_id" IS NOT NULL);
+
+CREATE INDEX "idx_admin_events_ch_code" ON "public"."admin_events" USING "btree" ("ch_code", "created_at" DESC) WHERE ("ch_code" IS NOT NULL);
+
+CREATE INDEX "idx_admin_events_session_id" ON "public"."admin_events" USING "btree" ("session_id", "created_at" DESC) WHERE ("session_id" IS NOT NULL);

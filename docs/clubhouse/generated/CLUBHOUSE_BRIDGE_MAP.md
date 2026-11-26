@@ -148,6 +148,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-16683 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
 | CH-16684 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
 | CH-16685 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-17105 | 10 Warning | A warning on the plan (a player in no group); publishing still goes. |
+| CH-17106 | 10 Warning | A warning on the plan (past the end of practice); publishing still goes. |
+| CH-17205 | 23 Logging / observability | Logged on the server only (the fan-out after a publish); nothing on screen. |
+| CH-17505 | 15 Data freshness / sync | Another coach saved first: Load latest is data freshness, not a destructive confirm. |
 
 ## Count by page and category
 
@@ -169,7 +173,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 | — | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 | — | — | — | — | — | 69 |
 | P015 | — | 7 | 2 | 3 | 12 | 22 | 27 | 2 | 2 | — | — | 3 | — | 1 | — | 17 | 7 | 6 | 2 | 1 | 1 | — | 1 | — | — | 116 |
 | P016 | 33 | 2 | 1 | 29 | 4 | 40 | 3 | 1 | 2 | 2 | 6 | 1 | — | — | 5 | 2 | — | 4 | — | — | — | — | — | — | — | 135 |
-| P017 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 0 |
+| P017 | — | — | — | — | 12 | 9 | — | — | — | 2 | — | — | — | — | 1 | — | — | — | — | — | — | — | 1 | — | — | 25 |
 
 ## P001 Shell
 
@@ -281,7 +285,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11826 | CH-1817 | 18 Accessibility | `A_TOAST_IS_CLOSED_WITHOUT_A_FINGER` | reserved | A toast is closed without a finger: on a device with a mouse (`hover: hover`) it has a ghost Dismiss X ("Dismiss notification"), and Esc closes it while focus is inside it. Focus goes back where it was before it came into the toast; inside an open dialog (CH-1812) Esc closes only the toast. Closing it counts as letting it run out: held work (a calendar move, CH-6015) is written |
 | 11827 | CH-1823 | 18 Accessibility | `THE_RESUME_ROUND_ACCESSORY_CARRIES_A_DISCARD` | implemented | The Resume round accessory carries a discard control (×) beside Resume (owner, 2026-10-31: “let me discard it”). It opens CH-1824; nothing is deleted on the tap |
 | 11828 | CH-1824 | 18 Accessibility | `DISCARDING_FROM_THE_ACCESSORY_ASKS_THE_SCORECARDS` | implemented | Discarding from the accessory asks the scorecard's question (CH-11515, “Discard this round?”, with the round's course and hole). Confirmed, it deletes the round on the server, then clears this device's copy, marks it discarded and drops its queued submit, and the shell reads again so the accessory goes; a refusal keeps everything and says why (CH-11009) |
-| 11901 | — | 19 Responsive layout | `PHONE_CHROME` | implemented | On a phone the sidebar gives way to the role's tab bar (coach Home, CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub) and a More sheet with the rest. |
+| 11901 | — | 19 Responsive layout | `PHONE_CHROME` | implemented | On a phone the sidebar gives way to the section strip: the role's first sections (coach Home, CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub), then the rest in sidebar order, then Settings, each only once its screen is rebuilt for the role. There is no bottom tab bar. |
 | 12001 | CH-1906 | 20 Keyboard / input | `ON_THE_PHONE_THE_EDGE_SWIPE_OR` | implemented | On the phone, the edge swipe or the browser's back while a screen is pushed |
 | 12002 | CH-1907 | 20 Keyboard / input | `ON_THE_PHONE_TAPPING_THE_TAB_THAT` | implemented | On the phone, tapping the strip's pill for the section already open |
 | 12003 | CH-1908 | 20 Keyboard / input | `ON_IOS_A_BACK_THAT_SAFARI_OR` | implemented | On iOS, a Back that Safari or the app's WebView animated itself (the edge swipe; `PopStateEvent.hasUAVisualTransition`, Safari 18 and later) |
@@ -528,7 +532,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 40701 | CH-4901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, or Show the season) or the round filter while offline |
 | 40702 | CH-4902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window or filter change takes longer than 5 seconds |
 | 40703 | CH-4903 | 07 Network / offline | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | implemented | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
-| 40801 | — | 08 Permission / authorization | `COACH_ONLY_TEAM_STATS` | implemented | Team stats is a coach's page: a player on /golf/dashboard/stats gets their own profile and no team figure is read for them, and the old address /golf/dashboard/stats/team is a coach's route in the Clubhouse frame (the Fairway page sends a player back to /stats). |
+| 40801 | — | 08 Permission / authorization | `COACH_ONLY_TEAM_STATS` | implemented | Team stats is a coach's page: a player on /golf/dashboard/stats gets their own profile and no team figure is read for them, and the old address /golf/dashboard/stats/team opens /golf/dashboard/stats. |
 | 40802 | — | 08 Permission / authorization | `TEAM_IS_THE_COACHS_OWN` | implemented | The team is always the one resolveClubhouseTeam gives the signed-in coach, never one named in the address: the loader reads that team's row, its active roster (golf_team_members by team_id, status active) and only those players' rounds; a coach with no team gets the no-team state and nothing is read. |
 | 40901 | — | 09 Success | `EXPORT_LANDED` | implemented | Export downloads the player grid as a CSV named for the team and window (for example varsity-stats-season.csv), one row per player with a round in the window, and a toast says Team stats exported with the success haptic; with nothing to export there is no button. |
 | 41201 | — | 12 State preservation | `CHOICES_KEPT_ACROSS_WINDOWS` | implemented | Changing the window keeps the chosen leg and the focused player on the page while the new figures arrive. |
@@ -2244,6 +2248,36 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 161802 | CH-16641 | 18 Accessibility | `CALENDAR_GRID_BLOCK` | implemented | Calendar grid block (slice 4) |
 | 161803 | CH-16850 | 18 Accessibility | `HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE_2` | implemented | Home: a tournament arrives while the page is open |
 | 161880 | CH-16880 | 18 Accessibility | `ENTER_HOLES_THE_GRID_BY_KEYBOARD_AND` | implemented | Enter holes: the grid by keyboard and screen reader |
+
+## P017 Practice
+
+| Bridge ID | Code | Category | Name | Status | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| 170501 | CH-17101 | 05 Validation | `A_GROUP_IS_AT_TWO_STATIONS_IN` | implemented | A group is at two stations in one turn |
+| 170502 | CH-17102 | 05 Validation | `A_COACH_IS_IN_TWO_PLACES_AT` | implemented | A coach is in two places at once |
+| 170503 | CH-17103 | 05 Validation | `A_BLOCK_HAS_MORE_GROUPS_THAN_STATIONS` | implemented | A block has more groups than stations |
+| 170504 | CH-17104 | 05 Validation | `A_BLOCK_USES_A_GROUP_WITH_NO` | implemented | A block uses a group with no players |
+| 170505 | CH-17109 | 05 Validation | `A_PLAN_IS_OVER_ITS_LIMITS` | implemented | A plan is over its limits |
+| 170506 | CH-17110 | 05 Validation | `AN_ALL_DAY_PRACTICE_GETS_A_PLAN` | implemented | An all-day practice gets a plan |
+| 170507 | CH-17112 | 05 Validation | `A_DRILLS_FIELDS_ARE_NOT_VALID` | implemented | A drill's fields are not valid |
+| 170508 | CH-17113 | 05 Validation | `A_SAVED_GROUPS_NAME_OR_SIZE_IS` | implemented | A saved group's name or size is not valid |
+| 170509 | CH-17114 | 05 Validation | `A_COURSE_BLOCK_HAS_NO_HOLES` | implemented | A Course block has no holes |
+| 170510 | CH-17115 | 05 Validation | `PUBLISHING_IS_HELD_BY_PROBLEMS_IN_THE` | implemented | Publishing is held by problems in the plan |
+| 170511 | CH-17116 | 05 Validation | `AN_EMPTY_PLAN_IS_PUBLISHED` | implemented | An empty plan is published |
+| 170512 | CH-17117 | 05 Validation | `A_CANCELLED_PRACTICES_PLAN_IS_PUBLISHED` | implemented | A cancelled practice's plan is published |
+| 170601 | CH-17001 | 06 Server / system error | `A_PLAN_SAVE_FAILS` | implemented | A plan save fails |
+| 170602 | CH-17002 | 06 Server / system error | `PUBLISHING_A_PLAN_FAILS` | implemented | Publishing a plan fails |
+| 170603 | CH-17003 | 06 Server / system error | `REPUBLISHING_A_PLAN_FAILS` | implemented | Republishing a plan fails |
+| 170604 | CH-17004 | 06 Server / system error | `TAKING_A_PLAN_DOWN_FAILS` | implemented | Taking a plan down fails |
+| 170605 | CH-17006 | 06 Server / system error | `SAVING_OR_COPYING_A_DRILL_FAILS` | implemented | Saving or copying a drill fails |
+| 170606 | CH-17008 | 06 Server / system error | `DELETING_A_PLAN_FAILS` | implemented | Deleting a plan fails |
+| 170607 | CH-17009 | 06 Server / system error | `CREATING_A_MAKE_UP_FAILS` | implemented | Creating a make-up fails |
+| 170608 | CH-17014 | 06 Server / system error | `THE_PLAN_CARD_DOES_NOT_POST_TO` | implemented | The plan card does not post to team chat after a publish |
+| 170609 | CH-17201 | 06 Server / system error | `A_PLAN_CANNOT_BE_READ` | implemented | A plan cannot be read |
+| 171001 | CH-17105 | 10 Warning | `A_PLAYER_IS_IN_NO_GROUP` | implemented | A player is in no group |
+| 171002 | CH-17106 | 10 Warning | `THE_PLAN_RUNS_PAST_THE_END_OF` | implemented | The plan runs past the end of practice |
+| 171501 | CH-17505 | 15 Data freshness / sync | `ANOTHER_COACH_SAVED_THE_PLAN_FIRST` | implemented | Another coach saved the plan first |
+| 172301 | CH-17205 | 23 Logging / observability | `HOMES_PLAN_LINE_OR_THE_PLAYERS_NOTIFICATION` | implemented | Home's plan line or the players' notification fan-out fails |
 
 ## Tombstones
 

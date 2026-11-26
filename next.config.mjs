@@ -170,6 +170,11 @@ const nextConfig = {
   // all-clear inbox) — this entry closes the gap, it isn't load-bearing for
   // correctness.
     '/admin': ['./supabase/migrations/HELD.md'],
+    // `graph-server.ts` (`src/lib/admin/clubhouse/graph-server.ts`) reads the
+    // Bridge graph via `readFileSync` when POST /api/ch/signal resolves a
+    // batch: the same dynamic-read gap as above, carved back into the upload
+    // in .vercelignore.
+    '/api/ch/signal': ['./docs/clubhouse/generated/bridge-graph.json'],
   },
 
   // Bound the webpack production build and let its persistent cache trim

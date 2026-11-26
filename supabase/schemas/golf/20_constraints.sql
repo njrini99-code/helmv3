@@ -1440,3 +1440,13 @@ ALTER TABLE ONLY "public"."golf_division_cohort"
 
 ALTER TABLE ONLY "public"."golf_division_cohort"
     ADD CONSTRAINT "golf_division_cohort_metric_id_fkey" FOREIGN KEY ("metric_id") REFERENCES "public"."golf_metrics"("metric_id") ON DELETE CASCADE;
+
+-- Clubhouse Bridge signals: held migration 20261124090000
+-- (clubhouse_bridge_signals.sql), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-11-25 by pg_dump of the file applied to a scratch Postgres 16
+-- with stub tables (PR #2611, branch bridge/pr1-spine). Kept here, not in
+-- shared/20_constraints.sql, because golf_teams' primary key is added in this
+-- file, which config.toml's schema_paths applies after the shared one.
+
+ALTER TABLE ONLY "public"."clubhouse_sessions"
+    ADD CONSTRAINT "clubhouse_sessions_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE SET NULL;
