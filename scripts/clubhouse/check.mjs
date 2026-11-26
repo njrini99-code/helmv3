@@ -32,6 +32,7 @@ import { checkScreenshotLog } from './shots.mjs';
 import { checkLinks } from './links.mjs';
 import { checkDesignLanguage } from './design-language.mjs';
 import { checkClickableMap, checkControls } from './clickable-map.mjs';
+import { runBridgeUiMapCheck } from './bridge-ui-map.mjs';
 
 /**
  * Red is for errors only (MOTION-AND-VISUAL 4.7, Nick 15 Nov 2026): a red token paints an error, a destructive action,
@@ -518,6 +519,9 @@ function main() {
   // Foundation V2 registry: page manifests, Bridge IDs, contracts, held plans, generated docs.
   const registry = runRegistryCheck(root);
   violations.push(...registry.violations);
+
+  // The Bridge numbers itself (plan §6, D4): config/bridge/contracts.json is well formed and BRIDGE_UI_MAP.md current.
+  violations.push(...runBridgeUiMapCheck(root));
 
   // Docs move with the code: CHANGELOG per changed page, and the VERIFY screenshot log.
   const argBase = process.argv.indexOf('--base');
