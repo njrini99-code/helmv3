@@ -376,6 +376,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/clubhouse/**",
+        "pattern": "src/app/admin/clubhouse/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/database/**",
         "pattern": "src/app/admin/database/**",
         "category": "routes"
@@ -1639,6 +1644,11 @@
         "category": "services"
       },
       {
+        "id": "services:config/bridge/**",
+        "pattern": "config/bridge/**",
+        "category": "services"
+      },
+      {
         "id": "services:config/feature-flags.yml",
         "pattern": "config/feature-flags.yml",
         "category": "services"
@@ -1721,6 +1731,11 @@
       {
         "id": "services:scripts/claude.mjs",
         "pattern": "scripts/claude.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/clubhouse/bridge-ui-map.mjs",
+        "pattern": "scripts/clubhouse/bridge-ui-map.mjs",
         "category": "services"
       },
       {
@@ -3237,6 +3252,36 @@
         ]
       },
       {
+        "id": "bridge_notes",
+        "definedIn": [
+          "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        ]
+      },
+      {
+        "id": "clubhouse_drift",
+        "definedIn": [
+          "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        ]
+      },
+      {
+        "id": "clubhouse_session_events",
+        "definedIn": [
+          "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        ]
+      },
+      {
+        "id": "clubhouse_sessions",
+        "definedIn": [
+          "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        ]
+      },
+      {
+        "id": "clubhouse_signal_hourly",
+        "definedIn": [
+          "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        ]
+      },
+      {
         "id": "crm_stage_transitions",
         "definedIn": [
           "supabase/migrations/20260720150000_crm_stage_tracking.sql"
@@ -4038,6 +4083,22 @@
       {
         "id": "clear_dirty_standing_teams",
         "definedIn": "supabase/migrations/20261024150000_golf_standing_refresh_queue.sql"
+      },
+      {
+        "id": "clubhouse_bucket_quantile",
+        "definedIn": "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+      },
+      {
+        "id": "clubhouse_forget_user",
+        "definedIn": "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+      },
+      {
+        "id": "clubhouse_ingest_signals",
+        "definedIn": "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+      },
+      {
+        "id": "clubhouse_signals_prune",
+        "definedIn": "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
       },
       {
         "id": "coach_organization_is_claimable",
@@ -7395,6 +7456,61 @@
     },
     {
       "source": "admin_platform",
+      "target": "bridge_notes",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "clubhouse_drift",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "clubhouse_session_events",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "clubhouse_sessions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "clubhouse_signal_hourly",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "coachhelm_ai",
       "kind": "feature_relation",
       "evidence": [
@@ -8012,6 +8128,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/clubhouse/signal.ts",
+          "anchor": "src/lib/observability/redact-pii"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/data/helm-jobs.ts",
           "anchor": "src/lib/observability/redact-pii"
         },
@@ -8226,6 +8347,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "routes:src/app/admin/clubhouse/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/clubhouse/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "routes:src/app/admin/database/**",
       "kind": "feature_route",
       "evidence": [
@@ -8394,6 +8527,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "services:config/bridge/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "config/bridge/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "services:config/feature-flags.yml",
       "kind": "feature_service",
       "evidence": [
@@ -8413,6 +8558,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/check-feature-flags.mjs"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:scripts/clubhouse/bridge-ui-map.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/clubhouse/bridge-ui-map.mjs"
         }
       ]
     },
