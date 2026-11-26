@@ -222,7 +222,9 @@ export async function loadPlanDrills(planId: string): Promise<PrintDrill[]> {
   const teamIds = [...new Set(refs.filter((r) => r.src === 'team').map((r) => r.id))];
   const libIds = [...new Set(refs.filter((r) => r.src === 'lib').map((r) => r.id))];
   const [team, lib] = await Promise.all([
+    // chunk-audit-bounded: drills referenced by one practice plan
     teamIds.length ? db.from('golf_team_drills').select('name, area, minutes, setup, goal, diagram, scoring, levels').in('id', teamIds) : Promise.resolve({ data: [], error: null }),
+    // chunk-audit-bounded: drills referenced by one practice plan
     libIds.length ? sb.from('golf_drills').select('title, category, duration_min, description').in('id', libIds) : Promise.resolve({ data: [], error: null }),
   ]);
   if (team.error) drillsUnread('team drills', team.error);
