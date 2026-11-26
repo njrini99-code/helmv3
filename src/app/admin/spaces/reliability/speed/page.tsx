@@ -8,6 +8,7 @@ import { buildFeed, feedHref, DEFAULT_FEED, type FeedWindow } from '@/lib/admin/
 import { readFailures } from '@/lib/admin/clubhouse/feed-server';
 import { readHourly, readPipe } from '@/lib/admin/clubhouse/live';
 import { msText } from '@/lib/admin/clubhouse/live-model';
+import { describeServerCode, isMigrationMissingCode } from '@/lib/admin/server-codes';
 import { EMPTY_NOTES } from '@/lib/admin/clubhouse/notes';
 import { INP_LINE_MS, LCP_LINE_MS, SLOW_SAVE_LINE_MS } from '@/lib/admin/clubhouse/rules';
 import { clubhouseHref, markdownTable } from '@/lib/admin/clubhouse/screens';
@@ -34,6 +35,7 @@ import {
 import { CopyReportButton } from '@/app/admin/_components/CopyReportButton';
 import { fetchQueryPerformance } from '@/lib/admin/database/performance';
 import { Meter, Panel, Pill, SpaceHeader, SpaceRoot, SpaceState, Stat, type Tone } from '../../_ui/ui';
+import { SignalNotThere, ReadFailed } from '../../_ui/states';
 import { LinkGroup, ReliabilityTabs, PipeTruth } from '../_components/shared';
 
 export const metadata: Metadata = { title: 'Reliability · Speed' };
@@ -153,15 +155,11 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
       </PipeTruth>
 
       {!graph ? (
-        <SpaceState br={BR.speed.failed} title="The Bridge map could not be read.">Pages and buttons cannot be named without it.</SpaceState>
+        <ReadFailed br={BR.speed.failed} what="The Bridge map" why="docs/clubhouse/generated/bridge-graph.json is missing from this deploy, so pages and buttons cannot be named" />
       ) : hourly.state === 'error' ? (
-        <SpaceState br={BR.speed.failed} title="The speed counters could not be read.">
-          Nothing here is an all clear. {hourly.error ?? ''} Reload to try again.
-        </SpaceState>
+        <ReadFailed br={BR.speed.failed} what="The speed counters" why={hourly.error} />
       ) : hourly.state === 'no-signal' ? (
-        <SpaceState br={BR.speed.noSignal} title="No signal yet.">
-          The hourly counters are not there yet, so nothing can be timed. {pipe.label}.
-        </SpaceState>
+        <SignalNotThere br={BR.speed.noSignal} why={`The hourly counters are not there yet, so nothing can be timed (${pipe.label}).`} />
       ) : !rows.length && pipe.untrusted ? (
         <SpaceState br={BR.speed.noSignal} title={`Nothing was timed for ${who} in this window, and the pipe cannot vouch for it.`}>
           {pipe.label}.
@@ -300,6 +298,11 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
                       </span>
                       <span style={{ minWidth: 0 }}>
                         <b>{d.words}</b>
+                        {describeServerCode(d.code)?.match !== 'none' ? (
+                          <span className="bs-panel-note" style={{ display: 'block', color: 'var(--bs-ink-2)' }}>
+                            {describeServerCode(d.code)!.meaning} {isMigrationMissingCode(d.code) ? 'Check supabase/migrations/HELD.md first.' : ''}
+                          </span>
+                        ) : null}
                         <span className="bs-panel-note" style={{ display: 'block', overflowWrap: 'anywhere' }}>
                           {d.tables.length ? `${d.tables.join(', ')} · ` : ''}
                           {d.actions.length ? d.actions.join(', ') : d.pages.join(', ')}

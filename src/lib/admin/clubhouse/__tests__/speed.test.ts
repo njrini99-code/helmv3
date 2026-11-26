@@ -65,7 +65,7 @@ describe('dbErrors', () => {
   it('groups by server code with the role split and the action’s tables from the map', () => {
     const out = dbErrors([item({}), item({ role: 'player' }), item({ role: 'signed-out', serverCode: '57014', action: null }), item({ serverCode: null })], graph);
     expect(out).toEqual([
-      expect.objectContaining({ code: '42501', words: 'Not allowed by a row rule', total: 2, coach: 1, player: 1, signedOut: 0, tables: ['golf_messages'], actions: ['Send a message'] }),
+      expect.objectContaining({ code: '42501', words: 'Row rule refused', total: 2, coach: 1, player: 1, signedOut: 0, tables: ['golf_messages'], actions: ['Send a message'] }),
       expect.objectContaining({ code: '57014', total: 1, signedOut: 1, tables: [] }),
     ]);
   });

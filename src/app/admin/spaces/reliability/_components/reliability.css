@@ -247,3 +247,15 @@
   .bs .rl-speed-table .rl-c-meter { min-width: 0; }
   .bs .rl-speed-table .rl-meter { min-width: 0; }
 }
+
+/* The explanation block at the head of the error detail (what happened, likely cause, what to do, still failing?). */
+.bs .rl-explain { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--bs-line); background: var(--bs-panel-2); }
+.bs .rl-explain-means { margin: 0; font-size: 14px; line-height: 1.5; color: var(--bs-ink-2); }
+.bs .rl-explain-means .bs-eyebrow { display: inline; margin-right: 6px; }
+.bs .rl-explain-cause { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.bs .rl-explain-why { margin: 0; font-size: 15px; line-height: 1.5; color: var(--bs-ink); }
+.bs .rl-explain-fix { margin: 0; font-size: 13px; line-height: 1.5; padding-top: 10px; border-top: 1px solid var(--bs-line); }
+.bs .rl-explain-fix.bs-tone-muted { color: var(--bs-ink-3); }
+/* The cause chip on a feed row: words, not a coloured blob, so it reads without the colour. */
+.bs .rl-cause { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.bs .rl-cause.bs-tone-muted { color: var(--bs-ink-3); }

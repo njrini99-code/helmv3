@@ -101,3 +101,22 @@ xx90 to xx93 stay the four states (loading, empty, failed, no signal yet).
 
 - Retiring old tabs. They stay until the owner decides, after living with the spaces.
 - Deploying.
+
+## Follow-up: error explanation and one read-state vocabulary
+
+- **Headlines** (`src/lib/admin/clubhouse/explain.ts`): the catalog's "they see" and "meaning" are builder prose. A feed
+  headline is the quoted message the person read (only when the catalog row starts with it), else the meaning's first
+  plain line (spec references, backticks and code calls removed, capped at 120 characters), else the kind. Quoted
+  headlines show in quotes; descriptions do not. `explain.test.ts` runs every id in `bridge-graph.json` through it.
+- **Likely cause** (`explainFailure`): the server code first (`src/lib/admin/server-codes.ts`: exact Postgres or
+  PostgREST code, else its SQLSTATE class; PostgREST meanings from its errors reference), else the message's wording
+  (Safari's "Load failed", sign-in, forbidden, timeouts, old app version, schema missing...), else only the kind. Each
+  says how it knows and lists steps that name only real tools (Fix pack, Replay, Speed, `HELD.md`, `npm run test:rls`).
+  The copy report carries the cause label, never the raw message.
+- **Still failing?** (`fixStatus`): from the 8-day hourly history only. New in the live release, still failing, not seen
+  in the live release (points to fixed once it has had real use), or unknown when the history was not read whole. No
+  stored "resolved" flag.
+- **Read states** (`src/app/admin/spaces/_ui/states.tsx`): `ReadFailed` ("<What> could not be read." + "Nothing here is
+  an all clear."), `SignalNotThere`, `Incomplete` ("Part of this page could not be read": numbers may be low, never a
+  zero) and `incompleteLine` for reports. `states.test.ts` bans the old variants across the spaces.
+- `MIGRATION_MISSING_CODES` is shared with the query-performance reader so "migration not applied" means one thing.

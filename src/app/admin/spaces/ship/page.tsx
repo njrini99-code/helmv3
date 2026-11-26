@@ -215,7 +215,7 @@ export default async function ShipSpacePage() {
               <dd>{jobs.data.neverRan}</dd>
               {jobs.data.unreadable ? (
                 <>
-                  <dt>History unreadable</dt>
+                  <dt>History could not be read</dt>
                   <dd className="bs-tone-bad">{jobs.data.unreadable}</dd>
                 </>
               ) : null}

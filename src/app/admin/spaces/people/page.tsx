@@ -20,6 +20,7 @@ import {
 } from '@/lib/admin/data/people-space-model';
 import { CopyReportButton } from '../../_components/CopyReportButton';
 import { Panel, SpaceHeader, SpaceRoot, SpaceState, toneClass } from '../_ui/ui';
+import { Incomplete, ReadFailed, listWords } from '../_ui/states';
 import { Ring, SignedIn, Spark, SportChip, StatePill, STATE_TONE, TestChip } from './_parts';
 
 export const metadata: Metadata = { title: 'People' };
@@ -48,9 +49,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
     return (
       <SpaceRoot br={BR.teams.failed}>
         <SpaceHeader eyebrow="People · teams by activity" title="Teams could not be read." />
-        <SpaceState br={BR.teams.failed} title="The team read failed, so nothing here is all clear.">
-          {e instanceof Error ? e.message : String(e)}. Reload; if it persists, check error_logs for admin.people-space.
-        </SpaceState>
+        <ReadFailed br={BR.teams.failed} what="The teams" why={e instanceof Error ? e.message : String(e)} action="admin.people-space" />
       </SpaceRoot>
     );
   }
@@ -60,9 +59,13 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
     return (
       <SpaceRoot br={failed ? BR.teams.failed : BR.teams.empty}>
         <SpaceHeader eyebrow="People · teams by activity" title={failed ? 'Teams could not be read.' : 'No teams yet.'} />
-        <SpaceState br={failed ? BR.teams.failed : BR.teams.empty} title={failed ? 'The team read failed, so nothing here is all clear.' : 'No golf or baseball team exists yet.'}>
-          {failed ? `Could not read: ${result.degraded.join(', ')}.` : 'A team appears here as soon as a coach creates one.'}
-        </SpaceState>
+        {failed ? (
+          <ReadFailed br={BR.teams.failed} what="The teams" why={`${listWords(result.degraded)} failed`} action="admin.people-space" />
+        ) : (
+          <SpaceState br={BR.teams.empty} title="No golf or baseball team exists yet.">
+            A team appears here as soon as a coach creates one.
+          </SpaceState>
+        )}
       </SpaceRoot>
     );
   }
@@ -87,14 +90,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
         aside={<StateStrip counts={counts} rows={shown} />}
       />
 
-      {result.degraded.length > 0 ? (
-        <Panel tone="watch" br={BR.teams.failed} title="Incomplete this load">
-          <p className="bs-panel-note" style={{ padding: '0 22px 18px', margin: 0 }}>
-            {result.degraded.join(', ')} could not be read, so the counts below understate what happened. Reload; if it persists, check error_logs for
-            admin.people-space.
-          </p>
-        </Panel>
-      ) : null}
+      <Incomplete br={BR.teams.failed} sources={result.degraded} action="admin.people-space" />
 
       {cards.length > 0 ? (
         <section className="bp-needs" aria-label="Teams that need you">

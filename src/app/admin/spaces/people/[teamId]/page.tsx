@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { BR } from '@/lib/admin/clubhouse/br-codes';
 import { clubhouseHref } from '@/lib/admin/clubhouse/screens';
+import { codeHeadline } from '@/lib/admin/clubhouse/feed';
+import { loadBridgeGraph } from '@/lib/admin/clubhouse/graph-server';
 import { enterViewAs } from '@/app/admin/actions/view-as';
 import { ViewAsButton } from '@/app/admin/users/[id]/ViewAsButton';
 import { readTeamPeople, type TeamPeopleResult } from '@/lib/admin/data/people-space';
@@ -20,6 +22,7 @@ import {
 import { CopyReportButton } from '../../../_components/CopyReportButton';
 import { AreaChart } from '../../_ui/AreaChart';
 import { LinkTabs, Panel, RoleBadge, SpaceHeader, SpaceRoot, SpaceState, toneClass } from '../../_ui/ui';
+import { Incomplete, SignalNotThere, ReadFailed, incompleteLine } from '../../_ui/states';
 import { ActiveRings, DayStrip, StatePill, TestChip, initials } from '../_parts';
 
 export const metadata: Metadata = { title: 'Team' };
@@ -59,9 +62,7 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
       <SpaceRoot br={BR.team.failed}>
         <BackLink />
         <SpaceHeader eyebrow="People · one team" title="This team could not be read." />
-        <SpaceState br={BR.team.failed} title="The read failed, so nothing here is all clear.">
-          {e instanceof Error ? e.message : String(e)}. Reload; if it persists, check error_logs for admin.people-space.
-        </SpaceState>
+        <ReadFailed br={BR.team.failed} what="This team" why={e instanceof Error ? e.message : String(e)} action="admin.people-space" />
       </SpaceRoot>
     );
   }
@@ -161,14 +162,7 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
         ) : null}
       </section>
 
-      {data.degraded.length > 0 ? (
-        <Panel tone="watch" br={BR.team.failed} title="Incomplete this load">
-          <p className="bs-panel-note" style={{ padding: '0 22px 18px', margin: 0 }}>
-            {data.degraded.join(', ')} could not be read, so the numbers below understate what happened. Reload; if it persists, check error_logs for
-            admin.people-space.
-          </p>
-        </Panel>
-      ) : null}
+      <Incomplete br={BR.team.failed} sources={data.degraded} action="admin.people-space" />
 
       <div className="bp-two">
         <Panel
@@ -495,18 +489,14 @@ function ErrorsTab({ data }: { data: TeamPeopleResult }) {
   if (codes.state === 'no-signal') {
     return (
       <div style={pad}>
-        <SpaceState br={BR.team.noSignal} title="No Clubhouse signal yet.">
-          The session tables are not readable yet, so no code can be shown. This is not all clear.
-        </SpaceState>
+        <SignalNotThere br={BR.team.noSignal} why="The Clubhouse session tables are not there yet, so no code can be shown." />
       </div>
     );
   }
   if (codes.state === 'error') {
     return (
       <div style={pad}>
-        <SpaceState br={BR.team.failed} title="Clubhouse sessions could not be read.">
-          {codes.error ?? 'The read failed'}. Nothing here means all clear.
-        </SpaceState>
+        <ReadFailed br={BR.team.failed} what="Clubhouse sessions" why={codes.error} action="admin.people-space.readTeamPeople" />
       </div>
     );
   }
@@ -519,6 +509,9 @@ function ErrorsTab({ data }: { data: TeamPeopleResult }) {
       </div>
     );
   }
+  // What each code means, from the Bridge map (cleaned catalog words); a missing map just drops the line.
+  const graph = loadBridgeGraph();
+  const headlines = new Map(codes.rows.map((c) => [c.code, graph ? codeHeadline(graph, c.code) : null] as const));
   return (
     <>
       <ul className="bp-timeline bp-codes">
@@ -527,11 +520,12 @@ function ErrorsTab({ data }: { data: TeamPeopleResult }) {
             <Link href={clubhouseHref.code(c.code)} className="bs-chip" style={{ textDecoration: 'none', justifySelf: 'start' }} data-br={BR.team.errorRow}>
               {c.code}
             </Link>
-            <span>
-              <span style={{ fontWeight: 600 }}>{c.page || 'page not recorded'}</span>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ fontWeight: 600, display: 'block' }}>
+                {headlines.get(c.code) ? (headlines.get(c.code)!.quoted ? <q>{headlines.get(c.code)!.text}</q> : headlines.get(c.code)!.text) : 'Not in the Bridge map'}
+              </span>
               <span className="bp-sub">
-                {' '}
-                · in {c.sessions} {c.sessions === 1 ? 'session' : 'sessions'}
+                {c.page || 'page not recorded'} · in {c.sessions} {c.sessions === 1 ? 'session' : 'sessions'}
               </span>
             </span>
             <span className="bs-tone-bad" style={{ fontWeight: 600 }}>
@@ -570,6 +564,6 @@ function teamReport(data: TeamPeopleResult, now: Date): string {
     data.codes.state === 'ok' && data.codes.rows.length > 0
       ? ['Clubhouse codes:', ...data.codes.rows.map((c) => `- ${c.code} on ${c.page || 'unknown page'}: ${c.count}x in ${c.sessions} sessions`)].join('\n')
       : `Clubhouse codes: ${data.codes.state === 'ok' ? 'none failed' : data.codes.state}.`,
-    data.degraded.length > 0 ? `\nIncomplete: ${data.degraded.join(', ')} could not be read.` : '',
+    data.degraded.length > 0 ? `\n${incompleteLine(data.degraded)}` : '',
   ].join('\n');
 }

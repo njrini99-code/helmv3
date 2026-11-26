@@ -19,6 +19,8 @@ import { hourOf } from './ingest';
 import { isFailureRow, PLATFORM_WORDS, type SessionEventRow, type SessionRow } from './live-model';
 import type { LivePlatform } from './live-scope';
 import type { BridgeNoteRow, NotesIndex } from './notes';
+import { describeServerCode } from '@/lib/admin/server-codes';
+import { explainFailure, failureHeadline, type Explanation } from './explain';
 
 // ---------------------------------------------------------------------------
 // Scope: window, role, device, page, server code, the selected event and its tab (all in the URL)
@@ -210,8 +212,30 @@ export function toastFor(graph: Pick<BridgeGraph, 'ids'>, bridgeId: number | nul
 }
 
 /** The headline a row shows: what they saw, else what it means, else the bare code. */
+/**
+ * One readable line for a failure: the message the person read (quoted in the catalog), else the row's meaning in plain
+ * words, else the kind. The catalog's prose is cleaned in explain.ts; `itemHeadlineQuoted` says whether it is their words.
+ */
 export function itemHeadline(i: Pick<FeedItem, 'theySee' | 'meaning' | 'code' | 'kind'>): string {
-  return i.theySee ?? i.meaning ?? (i.code ? `${i.kind === 'crash' ? 'A section crashed' : 'An action failed'} (${i.code})` : i.kind === 'crash' ? 'A section crashed, with no code' : 'An action failed, with no code');
+  return failureHeadline(i).text;
+}
+
+/** A code's headline without an event (a list of codes): CH code or Bridge ID through the map; null when unmapped. */
+export function codeHeadline(graph: Pick<BridgeGraph, 'ids' | 'chIndex'>, code: string): { text: string; quoted: boolean } | null {
+  const id = graph.chIndex[code] ?? (/^\d+$/.test(code) ? Number(code) : null);
+  const row = id !== null && id !== undefined ? graph.ids[String(id)] : undefined;
+  if (!row) return null;
+  return failureHeadline({ theySee: row.catalogRow?.theySee ?? null, meaning: row.meaning, code, kind: 'failure' });
+}
+
+/** True when the headline is the exact words the person read (show it in quotes); false for a description. */
+export function itemHeadlineQuoted(i: Pick<FeedItem, 'theySee' | 'meaning' | 'code' | 'kind'>): boolean {
+  return failureHeadline(i).quoted;
+}
+
+/** Why this failure most likely happened and what to check (server code, else message, else kind). */
+export function itemExplanation(i: Pick<FeedItem, 'kind' | 'outcome' | 'serverCode' | 'message'>): Explanation {
+  return explainFailure({ kind: i.kind, outcome: i.outcome, serverCode: i.serverCode, message: i.message });
 }
 
 export function controlName(control: GraphControl | undefined): string | null {
@@ -478,7 +502,7 @@ export function trailLines(events: readonly SessionEventRow[], graph: Pick<Bridg
     const base = { seq: e.seq, at: e.sent_at, current };
     const bridgeId = e.bridge_id ?? (e.code ? (graph.chIndex[e.code] ?? null) : null);
     if (isFailureRow({ kind: e.kind, outcome: e.outcome })) {
-      return { ...base, text: `${e.kind === 'crash' ? 'Crashed' : 'Failed'}: ${e.code ?? 'no code'}${e.server_code ? ` (server ${e.server_code})` : ''}`, detail: e.duration_ms !== null ? `after ${secText(e.duration_ms)}` : null, tone: 'bad' };
+      return { ...base, text: `${e.kind === 'crash' ? 'Crashed' : 'Failed'}: ${e.code ?? 'no code'}${e.server_code ? ` · ${serverCodeWords(e.server_code).words} (${e.server_code})` : ''}`, detail: e.duration_ms !== null ? `after ${secText(e.duration_ms)}` : null, tone: 'bad' };
     }
     switch (e.kind) {
       case 'view':
@@ -629,22 +653,58 @@ export function howItCounts(item: FeedItem, key: HourlyKey, ctx: CountsContext):
 }
 
 // ---------------------------------------------------------------------------
+// Is it fixed? (read-only: from the hourly store's last 8 days, never a stored "resolved" flag)
+// ---------------------------------------------------------------------------
+
+export type FixState = 'unknown' | 'new-in-live' | 'still-failing' | 'not-seen-in-live' | 'no-history';
+
+export interface FixStatus {
+  state: FixState;
+  /** One sentence for the detail panel. */
+  words: string;
+  tone: 'bad' | 'watch' | 'good' | 'muted';
+}
+
+/**
+ * Whether a code still fails in the live release, from the failure rows of the 8 days before (code × release × hour).
+ * "Not seen in the live release" is not "fixed": it may just have had no traffic yet, and the words say so.
+ */
+export function fixStatus(
+  rows: ReadonlyArray<{ code: string; release: string; at: string }> | null,
+  code: string | null,
+  live: string | null,
+): FixStatus {
+  if (!rows) return { state: 'unknown', words: 'Whether it still fails is unknown: the 8-day release history could not be read whole.', tone: 'muted' };
+  if (!code) return { state: 'unknown', words: 'Whether it still fails is unknown: the failure carried no code to follow.', tone: 'muted' };
+  if (!live) return { state: 'unknown', words: 'Whether it still fails is unknown: the live release is not known here.', tone: 'muted' };
+  const mine = rows.filter((r) => r.code === code && r.release);
+  if (!mine.length) return { state: 'no-history', words: 'No failure of this code is in the hourly store for the last 8 days (it may be older than that).', tone: 'muted' };
+  const inLive = mine.filter((r) => r.release === live);
+  const others = [...new Set(mine.filter((r) => r.release !== live).map((r) => r.release))];
+  if (inLive.length && !others.length) return { state: 'new-in-live', words: `New in the live release ${live}: it never failed in an earlier release in the 8 days before.`, tone: 'bad' };
+  if (inLive.length) {
+    return { state: 'still-failing', words: `Still failing in the live release ${live}, and in ${others.length} earlier ${others.length === 1 ? 'release' : 'releases'} in the last 8 days.`, tone: 'bad' };
+  }
+  const last = mine.reduce((a, b) => (b.at > a.at ? b : a));
+  return {
+    state: 'not-seen-in-live',
+    words: `Not seen in the live release ${live} so far; it last failed in ${last.release} (${last.at.slice(0, 10)}). That points to fixed, but only once the live release has had real use.`,
+    tone: 'good',
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Server codes in plain words
 // ---------------------------------------------------------------------------
 
-const SERVER_WORDS: Readonly<Record<string, string>> = {
-  '42501': 'Not allowed by a row rule',
-  '57014': 'The query ran too long',
-  '23505': 'It already exists',
-  P0001: 'A database rule said no',
-  PGRST116: 'Expected one row, got none',
-};
-
-/** A Postgres or PostgREST code in plain words; an unknown one is shown as its code. */
-export function serverCodeWords(code: string | null): { words: string; known: boolean } {
-  if (!code) return { words: 'No server code came back', known: false };
-  const words = SERVER_WORDS[code];
-  return words ? { words, known: true } : { words: `Server code ${code}`, known: false };
+/**
+ * A Postgres or PostgREST code in a few plain words (src/lib/admin/server-codes.ts: the exact code, else its SQLSTATE
+ * class). `known` is false only when neither is listed; `meaning` is the one-sentence version.
+ */
+export function serverCodeWords(code: string | null): { words: string; known: boolean; meaning: string | null } {
+  const d = describeServerCode(code);
+  if (!d) return { words: 'No server code came back', known: false, meaning: null };
+  return d.match === 'none' ? { words: `Server code ${code}`, known: false, meaning: null } : { words: d.label, known: true, meaning: d.meaning };
 }
 
 /** Where a server code's name comes from: PGRST codes are PostgREST's, the rest Postgres's. */
@@ -667,11 +727,13 @@ export function feedReport(items: readonly FeedItem[], summary: RoleSummary, w: 
     `- Players: ${summary.player.errors} errors, ${summary.player.people} people`,
     `- Signed out: ${summary.signedOut} errors`,
     '',
-    '| Time (UTC) | Role | Saw | Code | Page | Button | Team | Server |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- |',
-    ...items.slice(0, 200).map((i) =>
-      `| ${i.at.slice(11, 19)} | ${i.role ?? 'unknown'} | ${esc(itemHeadline(i))} | ${i.code ?? '—'} | ${esc(i.pageName)} | ${esc(i.controlLabel ?? i.control ?? '—')} | ${esc(i.teamName ?? '—')} | ${i.serverCode ?? '—'} |`,
-    ),
+    // "Likely cause" is the explainer's fixed label, never the raw message (it can hold ids).
+    '| Time (UTC) | Role | Saw | Code | Page | Button | Team | Server | Likely cause |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...items.slice(0, 200).map((i) => {
+      const cause = itemExplanation(i);
+      return `| ${i.at.slice(11, 19)} | ${i.role ?? 'unknown'} | ${esc(itemHeadline(i))} | ${i.code ?? '—'} | ${esc(i.pageName)} | ${esc(i.controlLabel ?? i.control ?? '—')} | ${esc(i.teamName ?? '—')} | ${i.serverCode ?? '—'} | ${cause.basis === 'nothing' ? 'not reported' : cause.label} |`;
+    }),
   ];
   if (items.length > 200) lines.push('', `${items.length - 200} more not listed.`);
   return lines.join('\n');

@@ -6,6 +6,7 @@ import { fetchFeatureAdoption } from '@/lib/admin/data/feature-adoption';
 import { fetchFeatureHealthDbStatuses } from '@/lib/admin/data/feature-health';
 import { settleRead } from '@/lib/admin/data/today-space';
 import { Panel, SpaceHeader, SpaceRoot, SpaceState, Stat, toneClass, type Tone } from '../_ui/ui';
+import { ReadFailed } from '../_ui/states';
 import { TabLinkRow } from '../_landing/parts';
 import { APP_WORD, featureBands, plural, productHeadline, productSummary, type FeatureLite, type HealthStatus } from '../_landing/model';
 
@@ -57,12 +58,7 @@ export default async function ProductSpacePage() {
     return (
       <SpaceRoot br={BR.product.failed}>
         <SpaceHeader eyebrow="Product" title="Which parts of the app are alive." />
-        <SpaceState br={BR.product.failed} title="Feature usage could not be read.">
-          The Utilization reader failed, so no feature is shown as used or unused.{' '}
-          <Link href={HREF} className="bs-link">
-            Try again
-          </Link>
-        </SpaceState>
+        <ReadFailed br={BR.product.failed} what="Feature usage" why="The Utilization reader failed, so no feature is shown as used or unused" retryHref={HREF} />
         <TabLinkRow links={TABS} br={BR.product.tabLink} />
       </SpaceRoot>
     );
@@ -120,12 +116,7 @@ export default async function ProductSpacePage() {
       </section>
 
       {!health.ok ? (
-        <SpaceState br={BR.product.failed} title="Feature health could not be read.">
-          Dots below read “health unread”, never green.{' '}
-          <Link href={HREF} className="bs-link">
-            Try again
-          </Link>
-        </SpaceState>
+        <ReadFailed br={BR.product.failed} what="Feature health" why="Every dot below reads “Health not read”, never green" retryHref={HREF} />
       ) : null}
 
       {bands.map((band) => (
@@ -134,7 +125,7 @@ export default async function ProductSpacePage() {
             {band.features.map((f) => {
               const status = statuses?.get(f.key) ?? null;
               // statuses null = the read failed; a missing key = that feature has no health row yet.
-              const h = status ? HEALTH[status] : { word: statuses ? 'No data' : 'Health unread', tone: 'muted' as Tone };
+              const h = status ? HEALTH[status] : { word: statuses ? 'No data' : 'Health not read', tone: 'muted' as Tone };
               return (
                 <Link
                   key={f.key}

@@ -7,14 +7,18 @@ import {
   DETAIL_TAB_LABEL,
   STATE_WORDS,
   feedHref,
+  itemExplanation,
   itemHeadline,
+  itemHeadlineQuoted,
   serverCodeWords,
   serverSource,
   type FeedItem,
+  type FixStatus,
   type FeedScope,
   type TrailLine,
   type WhereModel,
 } from '@/lib/admin/clubhouse/feed';
+import { OWNER_TONE, OWNER_WORDS, plainLine } from '@/lib/admin/clubhouse/explain';
 import { liveHref, type LiveState } from '@/lib/admin/clubhouse/live-model';
 import type { BridgeNoteRow } from '@/lib/admin/clubhouse/notes';
 import { clubhouseHref, githubBlobUrl, liveRef } from '@/lib/admin/clubhouse/screens';
@@ -35,6 +39,43 @@ export interface DetailProps {
   outsideWindow: boolean;
   /** The existing Watch and Mark expected controls (CodeNotes.tsx), built by the route file. */
   noteControls: { watch: ReactNode; expected: ReactNode };
+  /** Whether the code still fails in the live release (fixStatus, from the 8-day hourly history). */
+  fix: FixStatus;
+}
+
+/**
+ * What happened, the likely cause and how we know it, what to do, and whether it still fails. Above the tabs, so the
+ * first thing on the panel is the explanation, not the plumbing.
+ */
+function Explain({ item, fix }: { item: FeedItem; fix: FixStatus }) {
+  const e = itemExplanation(item);
+  const quoted = itemHeadlineQuoted(item);
+  const means = quoted ? plainLine(item.meaning) : null;
+  return (
+    <div className="rl-explain" aria-label="What happened and what to do">
+      {means ? (
+        <p className="rl-explain-means">
+          <span className="bs-eyebrow">When it shows</span> {means}.
+        </p>
+      ) : null}
+      <div className="rl-explain-cause">
+        <Pill tone={OWNER_TONE[e.owner]}>
+          {OWNER_WORDS[e.owner]} · {e.label}
+        </Pill>
+        <span className="rl-note">{e.basisWords}</span>
+      </div>
+      <p className="rl-explain-why">{e.why}</p>
+      <div className="bs-eyebrow">What to do</div>
+      <ol className="rl-steps">
+        {e.steps.map((s) => (
+          <li key={s}>{s}</li>
+        ))}
+      </ol>
+      <p className={`rl-explain-fix bs-tone-${fix.tone}`} data-state={fix.state}>
+        {fix.words}
+      </p>
+    </div>
+  );
 }
 
 /** Why a code cannot be watched or marked, or undefined when it can. */
@@ -153,7 +194,7 @@ function TrailTab({ trail, item }: { trail: DetailProps['trail']; item: FeedItem
 }
 
 function ServerTab({ item, sameServer, tables }: { item: FeedItem; sameServer: DetailProps['sameServer']; tables: string[] }) {
-  const { words, known } = serverCodeWords(item.serverCode);
+  const { words, known, meaning } = serverCodeWords(item.serverCode);
   return (
     <>
       <div className="rl-server">
@@ -164,16 +205,19 @@ function ServerTab({ item, sameServer, tables }: { item: FeedItem; sameServer: D
               {serverSource(item.serverCode)} {item.serverCode}
             </div>
             <p>
-              {words}.{known ? '' : ' This code has no plain-words entry yet.'}
+              <b>{words}.</b> {meaning ?? (known ? '' : 'This code has no plain-words entry yet.')}
             </p>
           </>
         ) : (
-          <p style={{ marginTop: 8 }}>No server code came back with this failure; it failed in the app, or the server did not say why.</p>
+          <p style={{ marginTop: 8 }}>No server code came back with this failure: it failed in the app, or the server did not say why.</p>
         )}
         {item.message ? (
-          <p className="bs-mono" style={{ marginTop: 10, overflowWrap: 'anywhere' }}>
-            {item.message}
-          </p>
+          <>
+            <div className="bs-eyebrow" style={{ marginTop: 12 }}>The message, as sent</div>
+            <p className="bs-mono" style={{ marginTop: 4, overflowWrap: 'anywhere' }}>
+              {item.message}
+            </p>
+          </>
         ) : null}
       </div>
       <Facts
@@ -200,17 +244,18 @@ export function ErrorDetail(p: DetailProps) {
     <section className="bs-panel rl-detail" id="detail" aria-label="The selected error">
       <div className="rl-detail-head">
         <div className="rl-detail-meta">
-          {item.role ? <RoleBadge role={item.role} /> : <Pill tone="muted">Role not read</Pill>}
+          {item.role ? <RoleBadge role={item.role} /> : <Pill tone="muted">Role unknown</Pill>}
           {item.code ? <span className="bs-chip">{item.code}</span> : null}
           {id !== null ? <span className="bs-mono bs-tone-muted">Bridge ID {id}</span> : null}
           {item.state ? <Pill tone={STATE_TONE[item.state]}>{STATE_WORDS[item.state]}</Pill> : null}
         </div>
-        <h2 className="rl-detail-title">{itemHeadline(item)}</h2>
+        <h2 className="rl-detail-title">{itemHeadlineQuoted(item) ? <q>{itemHeadline(item)}</q> : itemHeadline(item)}</h2>
         <p className="bs-panel-note" style={{ margin: 0 }}>
           <LocalTime iso={item.at} variant="datetime" /> · {item.pageName}
           {item.controlLabel ? ` › ${item.controlLabel}` : ''} · {item.teamName ?? 'no team name'}
           {p.outsideWindow ? ' · outside this window, so the counts below are for it alone' : ''}
         </p>
+        <Explain item={item} fix={p.fix} />
         <LinkTabs
           label="Detail"
           current={scope.tab}
