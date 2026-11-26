@@ -122,9 +122,9 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
             {data.viewAsUserId && process.env.ADMIN_IMPERSONATION_SECRET ? (
               <ViewAsButton onEnter={enterViewAs.bind(null, data.viewAsUserId)} br={BR.team.viewAs} />
             ) : (
-              <button type="button" className="bs-button" disabled data-br={BR.team.viewAs} title={data.viewAsUserId ? 'ADMIN_IMPERSONATION_SECRET is not set' : 'This team has no coach to view as'}>
+              <span className="bs-button" aria-disabled="true" data-br={BR.team.viewAs} title={data.viewAsUserId ? 'ADMIN_IMPERSONATION_SECRET is not set' : 'This team has no coach to view as'}>
                 {data.viewAsUserId ? 'View as: not configured' : 'View as: no coach on the team'}
-              </button>
+              </span>
             )}
             <span data-br={BR.team.copy}>
               <CopyReportButton report={teamReport(data, now)} variant="labeled" size="sm" label="Copy team report" />
