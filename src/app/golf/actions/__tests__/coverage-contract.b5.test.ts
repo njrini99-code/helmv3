@@ -16,7 +16,7 @@ import {
  * demo-tracking.ts (auth_onboarding), v3/notification-prefs.ts (settings).
  *
  * golf.ts spans SIX batches (B0/B1/B2/B4/B5/B6 — plan
- * docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md "Batch
+ * docs/archive/superpowers-plans/helm-bridge/waves/w15-total-coverage.md "Batch
  * notes"). This contract asserts B0's exports + B1's 13 + B2's 18
  * (already wrapped, untouched) PLUS B5's 3 roster overrides
  * (invitePlayerToTeam, updatePlayerStatus, getPendingInvitations) and

@@ -3,7 +3,7 @@
  * The Clubhouse clickable map: every interactive control in src/clubhouse, per page, read from the code.
  *
  * Writes docs/clubhouse/generated/CLUBHOUSE_CLICKABLE_MAP.md (never edit it). It replaces the hand-written
- * snapshot docs/clubhouse/CLICKABLES.md (2026-09-30), whose line citations went stale.
+ * snapshot docs/clubhouse/history/CLICKABLES.md (2026-09-30), whose line citations went stale.
  *
  * A control is a JSX element that is a button or a link by tag (`button`, `a`, `summary`, a component named
  * `*Button` or `*Link`), or has an `onClick`, `onPress`, `onPointerDown` or `href` prop, or a role of button, link,
@@ -136,7 +136,7 @@ export function buildMap({ files, manifests }) {
     'label, what makes it a control, then the nearest `data-ch-code` or `code` prop',
     '(on the element or an ancestor) when there is one. A label built at run time',
     'says so. This supersedes the 2026-09-30 snapshot in',
-    '[CLICKABLES.md](../CLICKABLES.md).',
+    '[CLICKABLES.md](../history/CLICKABLES.md).',
   ].join('\n') + '\n';
   const total = [...byPage.values()].flat().reduce((n, f) => n + f.rows.length, 0);
   out += `\n${total} controls in ${[...byPage.values()].flat().length} files.\n`;

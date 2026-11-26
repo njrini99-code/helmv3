@@ -29,7 +29,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE_PATH = resolve(ROOT, '.healthy-on-error-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.healthy-on-error-baseline.json');
 const RULE = 'helm/no-healthy-value-on-error';
 const UPDATE = process.argv.includes('--update');
 
@@ -99,7 +99,7 @@ if (total < baseline) {
   console.error(
     `\nSLACK: ${total} against a baseline of ${baseline}. Lock the paydown in:\n` +
       '  npm run audit:healthy-on-error -- --update\n' +
-      'and commit .healthy-on-error-baseline.json alongside the fix.',
+      'and commit config/baselines/.healthy-on-error-baseline.json alongside the fix.',
   );
   process.exit(1);
 }

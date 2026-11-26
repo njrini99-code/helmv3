@@ -32,7 +32,7 @@ indent_size = 2
 
 [*.sql]
 # supabase/migrations is linted by sqlfluff with an 80-column LT05 rule and a
-# per-rule count ratchet (.sqlfluff-baseline.json holds the counts; they are
+# per-rule count ratchet (config/baselines/.sqlfluff-baseline.json holds the counts; they are
 # not repeated here because a number in a comment rots — this one did).
 # Keep this consistent with that.
 indent_size = 4

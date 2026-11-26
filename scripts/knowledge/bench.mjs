@@ -79,7 +79,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const DEFAULT_GOLD_SET = 'scripts/knowledge/bench/gold-set.v1.json';
 const REPORT_MD = 'docs/generated/RETRIEVAL_BENCH.md';
 const REPORT_JSON = 'docs/generated/retrieval-bench.json';
-const BENCH_BASELINE = 'retrieval-bench-baseline.json';
+const BENCH_BASELINE = 'config/baselines/retrieval-bench-baseline.json';
 
 // Same three-way staleness detector check-authority.mjs's retired() uses,
 // reproduced rather than imported because that script is a standalone CLI,

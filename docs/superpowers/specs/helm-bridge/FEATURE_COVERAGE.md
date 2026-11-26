@@ -24,8 +24,8 @@
 **Scope (updated 2026-07-04):** GOLFHELM + COACHHELM + BASEBALLHELM. BaseballHelm server actions are now first-class Helm Bridge emitters and registry rows. CRM is NEVER touched (no wrapping, no tagging, no board presence beyond the "excluded" registry row).
 
 **Companion plans:**
-- `docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md` (instrumentation)
-- `docs/superpowers/plans/helm-bridge/waves/w16-feature-health-board.md` (board)
+- `docs/archive/superpowers-plans/helm-bridge/waves/w15-total-coverage.md` (instrumentation)
+- `docs/archive/superpowers-plans/helm-bridge/waves/w16-feature-health-board.md` (board)
 
 ---
 

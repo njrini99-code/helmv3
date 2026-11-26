@@ -16,4 +16,4 @@ container job); the aggregate reads `steps.*.outcome` so one failing tool
 still cannot hide another. `ci.yml` made the same move (`Static checks`,
 `Lint`). Twelve jobs became three; nothing stopped running.
 `.claude/rules/code-review-tooling.md` and `.claude/rules/quality-gates.md`
-describe the current shape; `docs/CI_RUNBOOK.md` has rerun commands.
+describe the current shape; `docs/operations/CI_RUNBOOK.md` has rerun commands.

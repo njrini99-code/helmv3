@@ -1,7 +1,7 @@
 <!--
 STATUS: PARKED
 DATE: 2026-07-10
-PARKING DECISION: Companion "painterly SVG scenes" doc to docs/LANDING_ENTRY_WORLD_DESIGN.md. The Entry World / First Light landing was rejected and parked; #650 merged the flush-diamond login instead. Filed inside docs/baseball/ but is not actually a baseball doc — it is a homepage design that never shipped.
+PARKING DECISION: Companion "painterly SVG scenes" doc to docs/archive/stale-root-2026-11/LANDING_ENTRY_WORLD_DESIGN.md. The Entry World / First Light landing was rejected and parked; #650 merged the flush-diamond login instead. Filed inside docs/baseball/ but is not actually a baseball doc — it is a homepage design that never shipped.
 KEPT FOR HISTORY -- do not delete this file.
 -->
 

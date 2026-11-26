@@ -3,7 +3,7 @@ name: migration-lockdown
 # NO `paths:` filter, deliberately. A GitHub required status context must be
 # reported on EVERY run of the event it's required for, or a PR that never
 # triggers the workflow sits on "Expected — waiting for status to be
-# reported" forever (see docs/CI_RUNBOOK.md's `all`/CodeQL phantom-context
+# reported" forever (see docs/operations/CI_RUNBOOK.md's `all`/CodeQL phantom-context
 # incidents — same failure shape, different cause). With the old
 # `pull_request: paths: supabase/migrations/**` filter, a PR that didn't
 # touch migrations never started this workflow at all, so

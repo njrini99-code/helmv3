@@ -169,7 +169,7 @@
   artboard's two-stop cream. This one is a flat BAND in a divided list with no
   shadow and no radius at all.
 - The A03 request for the artboard's exact two-stop unread gradient is
-  WITHDRAWN for the conversation row, and `audit/A03-VARIANT-REQUESTS.md`
+  WITHDRAWN for the conversation row, and `docs/archive/messages-v2-audit-2026-09/A03-VARIANT-REQUESTS.md`
   records the withdrawal at source (its "Applied in this PR" table and entry
   #1). The composer's occurrences of the same value are untouched and still
   want it. The card face it was for no longer exists on this surface, so
@@ -574,7 +574,7 @@
   three orders". There are two. `Reactions.dc.html` and §12.4's prose agree
   exactly — Reply, Copy, Edit, — separator — Delete — and `Actions.dc.html`
   differs from them by ONE swap, leading with Copy. Same set, same tail.
-  `audit/DECISIONS.md:31` already records this. The consequence is that the
+  `docs/archive/messages-v2-audit-2026-09/DECISIONS.md:31` already records this. The consequence is that the
   decided RELATIVE order of Copy/Edit/Delete was what the code already
   shipped, so the implementable delta was never the order: it was the
   separator, which is the part that carries the meaning, and which neither
@@ -628,7 +628,7 @@
   this failure, which is permanent — so the retry could never succeed and the
   bubble stayed dead for the rest of the session, while the sender had been
   told the photo was delivered. Found as G-08 in the Wave 0 messages audit
-  (`audit/M00-MANIFEST.md`), the highest-severity item in it; open issue #1825
+  (`docs/archive/messages-v2-audit-2026-09/M00-MANIFEST.md`), the highest-severity item in it; open issue #1825
   ("Message image attachments render as nothing — two independent user
   reports") is the user-visible form.
 - Verification: `golf_messages_delete` and `golf_messages_update_v2` are each
@@ -656,7 +656,7 @@
   unobservable in vitest and both pre-existing message-pane suites passed over
   this defect. The new suite asserts DOM NESTING, which jsdom does model, and
   was verified to fail (2 of 3) against the pre-fix structure. Rendered geometry
-  remains open as `audit/PROGRESS.md` W8.
+  remains open as `docs/archive/messages-v2-audit-2026-09/PROGRESS.md` W8.
 
 ## 2026-09-07 — a failed send retains the message (G-19)
 
@@ -712,7 +712,7 @@
 - G-15, second half: `ConversationRow` declared 13 of the RPC's 14 columns, so
   `is_team_channel` never reached the client, and the supplemental team-chat
   query did not select it either. Both fixed.
-- The M01 authority question is answered in `audit/M01-TEAM-FLAGS.md`:
+- The M01 authority question is answered in `docs/archive/messages-v2-audit-2026-09/M01-TEAM-FLAGS.md`:
   `is_team_chat` is the grouping flag (the RPC's `is_group` output is literally
   `COALESCE(c.is_team_chat, FALSE)`); `is_team_channel` is a separate flag used
   only by the function's own `ORDER BY`. The manifest's "dropped in favour of"
@@ -879,7 +879,7 @@
 - The finding as first written said the artboard's bubble radii match no
   `--fw-radius-*` token, citing the ramp as sm/md/lg = 10/14/28px. That reading
   skips `--fw-radius-card`. Measured from both primary sources rather than from
-  either summary: `audit/reference/Bubbles.dc.html`'s dominant bubble corner is
+  either summary: `docs/archive/messages-v2-audit-2026-09/reference/Bubbles.dc.html`'s dominant bubble corner is
   `1.25rem`, byte-identical to `--fw-radius-card`, whose own comment calls it
   "THE card radius". So this was a token MISUSE, not a missing token, and the
   fix is a class swap rather than a new scale.
@@ -905,7 +905,7 @@
 
 - G-32's claim is that the token file already holds nearly everything the
   design needs and the gap is application, not vocabulary. Measuring both sides
-  confirms it. `audit/A03-VARIANT-REQUESTS.md` is the deliverable: every value
+  confirms it. `docs/archive/messages-v2-audit-2026-09/A03-VARIANT-REQUESTS.md` is the deliverable: every value
   taken out of `audit/reference/*.dc.html` and compared against
   `src/styles/design-tokens.css`, rather than read off a lane summary.
 - Applied here: the unread conversation row's lift, and the page wash.
@@ -1132,7 +1132,7 @@
   is the evidence it lacked: "The repo constrains bubble width by percentage
   only, with no absolute cap... on the desktop 720px-capped panel a bubble can
   reach ~475px — well past the readable measure §8.3 is protecting."
-- The decisive quote is the plan's own, via `audit/M03B-thread.md:94`: "D08
+- The decisive quote is the plan's own, via `docs/archive/messages-v2-audit-2026-09/M03B-thread.md:94`: "D08
   annotates a **288px maximum text measure**... constrained by available row
   width." A maximum narrowed by row width is a CEILING. A percentage cap cannot
   express one — it is a function of the container, which is the variable the
@@ -1257,7 +1257,7 @@
 ## G-20b — the §9.5 outcome taxonomy
 `src/hooks/golf/use-golf-messages.ts`, `FairwayMessages.tsx`, `MessageThreadPane.tsx`
 
-- §9.5, quoted in `audit/M03C-composer.md:36`: "An unknown commit outcome uses
+- §9.5, quoted in `docs/archive/messages-v2-audit-2026-09/M03C-composer.md:36`: "An unknown commit outcome uses
   Checking status or Confirmation unavailable, not a red definitive failure that
   invites duplication." F3 measures the collapse: every non-success path was
   treated identically and one generic toast covered all of them, so nothing on
@@ -1520,7 +1520,7 @@
   `0 0 0 4px color-mix(in oklab, var(--fw-color-border-focus) 10%,
   transparent)`. It replaces `focus-within:border-accent-500
   focus-within:ring-2 focus-within:ring-border-focus/30`.
-- Implements the owner's FROZEN call (`audit/DECISIONS.md` D-05): keep the
+- Implements the owner's FROZEN call (`docs/archive/messages-v2-audit-2026-09/DECISIONS.md` D-05): keep the
   tokens, take the artboard's geometry. Not a preference of this session's.
 - The conflict was real and the fix turns on it. `Composer.dc.html:24`'s
   `.track-on` glow is built from `oklch(0.648 0.149 149.6)` — accent-500 to the

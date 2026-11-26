@@ -106,7 +106,7 @@ After the "Start here" list above, read these for a specific doc cluster (in rou
   feature. This entry used to point at `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md`
   as the ledger "driving the current clean-slate work"; that file's own header
   reads `STATUS: SUPERSEDED` and has since 2026-07-10. Both dated issue ledgers
-  under `docs/audits/` are historical audits now — current defects flow through
+  under `docs/archive/audits-2026-08/` are historical audits now — current defects flow through
   the incident system, and `config/control-plane-gaps.json` holds the
   consciously accepted limitations.
 - **`docs/business/`** — the business-model cluster (personas, JTBD, product invariants,

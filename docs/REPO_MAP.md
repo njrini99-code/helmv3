@@ -174,7 +174,7 @@ wrapped in `withBaseballAction`/`withLiftingAction` — purely to add
 | Primitive | Location | Usage | Rule |
 |---|---|---|---|
 | `fromUntyped(client, table)` | `src/lib/supabase/untyped.ts:69` (`UntypedTable` allowlist union, lines 15-61) | 159 sites | Centralizes the `as any` escape hatch for tables not yet in generated `database.ts` types. Extend the `UntypedTable` union when adding a new hand-typed table module — don't scatter raw `as any` casts. Graduate a table off this list once `db:types` regen picks it up. |
-| `createAdminClient()` | `src/lib/supabase/admin.ts:4` | 200 sites — most-used data-access primitive in the repo | Throws if `NEXT_PUBLIC_SUPABASE_URL` is missing/placeholder, or if neither `SUPABASE_SECRET_KEY` (new format) nor its legacy fallback `SUPABASE_SERVICE_ROLE_KEY` is set — resolved by `src/lib/supabase/keys.mjs`'s `getSecretKey()`, new name first (Phase 2 / P6). Returns a service-role client (`autoRefreshToken:false, persistSession:false`) that **bypasses RLS**. The `service-role-scope` hard rule blocks any use outside `src/lib/supabase/admin*`, `src/lib/supabase/keys*`, and `src/app/api/**/admin/**` as a security incident — not a style nit. It is enforced deterministically by the **Review Gate** (`.github/workflows/review-gate.yml`, aggregate check `Review Gate aggregate`) via the custom packs under `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` — that directory name is historical, CI still consumes it. See `.claude/rules/code-review-tooling.md`. |
+| `createAdminClient()` | `src/lib/supabase/admin.ts:4` | 200 sites — most-used data-access primitive in the repo | Throws if `NEXT_PUBLIC_SUPABASE_URL` is missing/placeholder, or if neither `SUPABASE_SECRET_KEY` (new format) nor its legacy fallback `SUPABASE_SERVICE_ROLE_KEY` is set — resolved by `src/lib/supabase/keys.mjs`'s `getSecretKey()`, new name first (Phase 2 / P6). Returns a service-role client (`autoRefreshToken:false, persistSession:false`) that **bypasses RLS**. The `service-role-scope` hard rule blocks any use outside `src/lib/supabase/admin*`, `src/lib/supabase/keys*`, and `src/app/api/**/admin/**` as a security incident — not a style nit. It is enforced deterministically by the **Review Gate** (`.github/workflows/review-gate.yml`, aggregate check `Review Gate aggregate`) via the custom packs under `config/review-rules/ast-grep/` and `config/review-rules/semgrep/` — that directory name is historical, CI still consumes it. See `.claude/rules/code-review-tooling.md`. |
 | `fetchAllRows` / `fetchAllRowsResult` | `src/lib/supabase/fetch-all-rows.ts` — `fetchAllRows` (line 60, throws on error), `fetchAllRowsResult` (line 103, `{data,error}` shape) | 69 sites | `DEFAULT_PAGE_SIZE=1000` (line 34), loop bounded at 1000 pages as a circuit-breaker (line 74). Caller **must** supply a stable `.order()` on a unique column (lines 10-19) or page boundaries drift. Optional `rlsCtx` threads into `maybeCaptureRlsDenial` (lines 22-29). This is the fix for the PostgREST 1000-row-cap trap below — treat the two as one unit. |
 | `todayIsoInTz(tz, now)` / `resolveTeamTimezone(...)` | `src/lib/baseball/daily-contract/contract-day.ts:57` and `:193` | — | Canonical timezone-resolution primitives for any calendar/today/streak feature. Part of the "daily contract" module backing the `calendar-timezone-safety` rule (store UTC, display in team/user timezone, no naive `new Date()` day-boundaries) — now a Review Gate pack rule, not the external review bot. Don't hand-roll `new Date()` day-boundary math. |
 | `getAppBaseUrl()` | `src/lib/app-base-url.ts:32` | — | Canonical way to resolve the app's own base URL (email links, share links) instead of hardcoding a host or reading `NEXT_PUBLIC_SITE_URL` directly at each call site. |
@@ -291,7 +291,7 @@ Fairway-tokened boundary per its own comment), but:
 Eight traps found with concrete repo evidence (not assumed from memory).
 
 1. **Schema-drift — migration recorded-but-not-applied.**
-   `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md:128`: Supabase's
+   `docs/archive/audits-2026-08/REPO_UNTANGLE_AND_CLEAN_BASE.md:128`: Supabase's
    migration-history table can show a migration as applied without the DDL
    having actually run against the target DB (or vice versa). Never trust
    the history table alone before writing code that assumes a
@@ -324,7 +324,7 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    season must go through `fetchAllRowsResult` with a stable `.order('id')`.
 
 4. **Glob-shaped token inside a CSS/JS block comment prematurely closes it.**
-   `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md:101` (real, shipped
+   `docs/archive/audits-2026-08/REPO_UNTANGLE_AND_CLEAN_BASE.md:101` (real, shipped
    incident, PR #650): `src/app/globals.css` lines 2-4 contained comment
    text `--pursuit-*/` — the literal `*/` terminated the block comment
    early, causing a postcss syntax error at 3:42 and a broken Next build.
@@ -343,7 +343,7 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    when `VERCEL_ENV=production` even with an empty
    `VERCEL_GIT_COMMIT_REF`. Vercel preview builds being off is **by
    design** (cost control) — a red/skipped Vercel preview check on a PR is
-   expected, not a CI failure to chase. `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md:96`
+   expected, not a CI failure to chase. `docs/archive/audits-2026-08/REPO_UNTANGLE_AND_CLEAN_BASE.md:96`
    (archived) attributed a red `lighthouse-preview` check to this — that job
    was never defined in `.circleci/config.yml`; see `.circleci/README.md` and
    `.claude/rules/integrations.md` for the correction. Flipping the Ignored Build Step back on is a

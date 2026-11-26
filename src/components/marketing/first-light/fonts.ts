@@ -1,6 +1,6 @@
 /**
  * fonts.ts — Fraunces for the First Light landing surface (display /
- * serif moments only — docs/LANDING_ENTRY_WORLD_DESIGN.md decision #1).
+ * serif moments only — docs/archive/stale-root-2026-11/LANDING_ENTRY_WORLD_DESIGN.md decision #1).
  *
  * A dedicated `next/font/google` load, separate from `src/lib/fonts.ts`'s
  * single-weight-600 `fraunces` export (used by the BaseballHelm Living

@@ -14,7 +14,7 @@ import {
  * team-sg-baseline.ts, v3/qualifying.ts.
  *
  * golf.ts spans FIVE batches (B1/B2/B4/B5/B6 — plan
- * docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md "Batch
+ * docs/archive/superpowers-plans/helm-bridge/waves/w15-total-coverage.md "Batch
  * notes"), so this contract asserts ONLY B1's 13 golf.ts exports
  * (round_tracking/qualifiers/my_qualifiers, incl. the pre-existing
  * savePartialRound exemplar) and excludes every other golf.ts export until

@@ -13,7 +13,7 @@ Over 2026-10-06..21 the CI workflow ran 400 times on pull requests: 143 failed,
 (median 10.5, p90 20) and a failure usually costs a second full run. The
 levers are not the fast static checks; the pacer is the Next build (about 10
 minutes) plus the runner queue, so the saving is in CI runs not started:
-`docs/CI_RUNBOOK.md` has the job-by-job shape, and the measurements behind
+`docs/operations/CI_RUNBOOK.md` has the job-by-job shape, and the measurements behind
 these rules are in the project's pipeline folder (`measurements`).
 
 ## Roles

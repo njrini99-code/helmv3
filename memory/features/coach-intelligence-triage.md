@@ -148,4 +148,4 @@ CoachHelm generates insight/pattern/prediction
 - `memory/context/coachhelm-ai.md`
 - `memory/context/golfhelm-features.md`
 - `docs/architecture/coachhelm-evidence-contract.md`
-- `docs/v3-testing-standards.md`
+- `docs/archive/v3/v3-testing-standards.md`

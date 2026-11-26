@@ -204,7 +204,7 @@ export default tseslint.config(
       //
       // It runs instead as a RATCHET: `npm run audit:supabase-errors` counts
       // the violations and fails only if the number goes UP
-      // (.supabase-error-baseline.json). New code cannot add unchecked reads;
+      // (config/baselines/.supabase-error-baseline.json). New code cannot add unchecked reads;
       // the existing 1,111 can be paid down directory by directory, and the
       // baseline lowered as they are. Flip this to "warn" once it reaches 0.
       "helm/no-unchecked-supabase-error": "off",

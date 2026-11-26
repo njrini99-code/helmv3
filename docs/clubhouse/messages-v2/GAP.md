@@ -240,7 +240,7 @@ up to 3`, `Nothing unread`, `Loading conversations` finds no test, `e2e/` or
 `scripts/` file outside `src/` that pins inbox selectors or copy; the hits
 outside the code are docs: `docs/clubhouse/catalog/messages.md`,
 `docs/clubhouse/pages/P007-messages/changes/*` (inbox row, desktop seams, silent
-open), `docs/clubhouse/motion/2026-10-20-messages.md` and
+open), `docs/clubhouse/history/motion/2026-10-20-messages.md` and
 `design/handoff/messages.jsx`. The mapped feature docs carry the old copy and
 structure and must be updated with the build (AGENTS.md: update the mapped doc
 when its contract changes).
@@ -1804,7 +1804,7 @@ No pin action exists: pins use direct Supabase calls
   `npm run clubhouse:check`. Update `memory/features/team-communications.md` and
   P007 CONTRACT/DESIGN/WIRING if the contract changes.
 - `npm run lint:test-location` counts only `src/test/**` (baseline
-  `.test-location-baseline.json`); new tests go in
+  `config/baselines/.test-location-baseline.json`); new tests go in
   `src/clubhouse/screens/messages/__tests__/` (not counted), except
   catalog-naming tests (flat `src/clubhouse/__tests__/`).
 - Other per-file ratchets that list `messages.css` (only fall):

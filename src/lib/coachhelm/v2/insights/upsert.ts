@@ -4,7 +4,7 @@
  * (signature-based dedup), Rule 3 (lifecycle progression), and Rule 4
  * (category) from the design contract.
  *
- * Design contract: docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md
+ * Design contract: docs/archive/superpowers-plans/2026-04-22-insight-quality/00-design-contract.md
  *
  * Rules enforced here:
  *  - evidence.sample_n < 5 → throw. Do not emit.

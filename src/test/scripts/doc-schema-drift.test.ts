@@ -63,7 +63,7 @@ describe('doc schema drift — feature ids are a different namespace', () => {
   beforeEach(() => {
     root = realpathSync(mkdtempSync(join(tmpdir(), 'helm-drift-')));
     write('src/lib/types/database.ts', DATABASE_TS);
-    write('.doc-schema-baseline.json', JSON.stringify({ total: 0, identifiers: [] }));
+    write('config/baselines/.doc-schema-baseline.json', JSON.stringify({ total: 0, identifiers: [] }));
     write(
       'memory/registry.yml',
       ['version: 1', '', 'features:', '  golf_round_lifecycle:', '    name: Round Lifecycle', ''].join('\n'),

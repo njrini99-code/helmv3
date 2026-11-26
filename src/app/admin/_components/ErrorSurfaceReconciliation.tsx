@@ -17,7 +17,7 @@ import { RECONCILIATION_ROW_LABEL, OVERALL_HEALTH_LABEL } from '@/lib/admin/inci
  * the two surfaces were compared at all, or "no warning" and "never checked"
  * look identical again.
  *
- * Contract: docs/OBSERVABILITY_AUTHORITY.md. Verdict logic and its tests:
+ * Contract: docs/observability/OBSERVABILITY_AUTHORITY.md. Verdict logic and its tests:
  * src/lib/admin/incidents/reconciliation.ts.
  */
 const OVERALL_TONE: Record<Reconciliation['overall'], string> = {

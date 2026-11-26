@@ -57,7 +57,7 @@
         "src/app/golf/actions/tasks.ts",
         "src/lib/coachhelm/v3/qualifying/player-notify.ts",
         "supabase/migrations/20260819200000_preserve_golf_history_on_account_deletion.sql",
-        "docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md"
+        "docs/archive/reports-2026-08/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md"
       ],
       "task_description": "A schema fix that preserves golf round/shot history on account deletion is committed but not applied to production, so the delete route still cascades a player's round history today. Find the delete route, the prepared migration, and the four call sites patched ahead of it."
     },
@@ -270,7 +270,7 @@
       "seed_file": ".claude/rules/code-review-tooling.md",
       "gold_files": [
         ".claude/rules/quality-gates.md",
-        "docs/CI_RUNBOOK.md"
+        "docs/operations/CI_RUNBOOK.md"
       ],
       "task_description": "Roughly 47 check runs per PR were starving a 20-slot runner pool. Find where the consolidated CI job shape (one Review Gate checks job, one Static checks/Lint job) is documented."
     },

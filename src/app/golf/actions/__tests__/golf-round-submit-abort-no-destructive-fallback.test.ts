@@ -1,6 +1,6 @@
 /**
  * Regression test for the 2026-08-20 round-destruction incident.
- * See docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md.
+ * See docs/archive/audits-2026-08/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md.
  *
  * WHAT HAPPENED: `src/lib/supabase/server.ts` aborted the HTTP request at 10s,
  * but `submit_round_atomic` grants itself `statement_timeout=30s`. Aborting a

@@ -24,8 +24,8 @@ Two things are measured, not assumed. Both run on every PR:
 
 | Gate | Command | Finding | Baseline |
 |---|---|---|---|
-| Schema drift | `npm run docs:schema-drift` | database identifiers named here that don't exist in production — confirmed absent from `pg_class`, `pg_proc`, `pg_type` (count: see baseline) | `.doc-schema-baseline.json` |
-| Path drift | `npm run docs:path-drift` | file paths named here don't resolve (count: see baseline) | `.doc-path-baseline.json` |
+| Schema drift | `npm run docs:schema-drift` | database identifiers named here that don't exist in production — confirmed absent from `pg_class`, `pg_proc`, `pg_type` (count: see baseline) | `config/baselines/.doc-schema-baseline.json` |
+| Path drift | `npm run docs:path-drift` | file paths named here don't resolve (count: see baseline) | `config/baselines/.doc-path-baseline.json` |
 
 Both counts **may only go DOWN**. Anything new fails CI.
 

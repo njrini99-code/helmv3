@@ -13,12 +13,12 @@ import {
  * recruit-documents.ts, dashboard-data.ts, command-palette.ts,
  * player-profile-stats.ts, whats-new.ts. (`courses.ts` — the superseded,
  * zero-importer v1 course-model file this array used to also list — was
- * deleted per docs/audits/DEAD_CODE_DEAD_DB_2026-08-20.md §B3 while
+ * deleted per docs/archive/audits-2026-08/DEAD_CODE_DEAD_DB_2026-08-20.md §B3 while
  * resolving the duplicate-exports ratchet's createCourse/updateCourse
  * pairs; its exports never had any live caller.)
  *
  * golf.ts spans SIX batches (B0/B1/B2/B4/B5/B6 — plan
- * docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md "Batch
+ * docs/archive/superpowers-plans/helm-bridge/waves/w15-total-coverage.md "Batch
  * notes"). B6 owns the last 4 unwrapped golf.ts exports
  * (getPlayerSavedCourses, savePlayerCourse, touchSavedCourse,
  * getRecentCoursesForPlayer → course_library), so after this batch lands

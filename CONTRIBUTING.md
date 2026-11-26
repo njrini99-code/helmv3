@@ -13,7 +13,7 @@ first; this file is just the workflow summary.
    merge; use the "Update branch" button if you fall behind.
 3. **Pass the required checks.** Read the live list rather than trusting a
    copy: `gh api repos/njrini99-code/helmv3/branches/main/protection --jq
-   '.required_status_checks.contexts'`. `docs/CI_RUNBOOK.md` explains each
+   '.required_status_checks.contexts'`. `docs/operations/CI_RUNBOOK.md` explains each
    one; the jobs behind `CI aggregate` are must-pass too.
 
 ## Local checks before you push

@@ -1466,7 +1466,7 @@ export interface GolfConversationRpcRow {
    * `is_group` output is literally `COALESCE(c.is_team_chat, FALSE)`, so
    * is_team_chat is the GROUPING flag; is_team_channel is separate and is used
    * inside the function only by its own `ORDER BY`. See
-   * `audit/M01-TEAM-FLAGS.md`.
+   * `docs/archive/messages-v2-audit-2026-09/M01-TEAM-FLAGS.md`.
    *
    * Nothing branches on it yet — the inbox's ordering and sectioning are the
    * client's own (G-01), and this only stops the type from lying.

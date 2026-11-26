@@ -23,7 +23,7 @@ import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.
  * `task-templates.ts` was deleted 2026-09-05 while resolving the
  * duplicate-exports ratchet: `git grep` for the module specifier across src
  * found zero importers (independently confirmed by
- * docs/audits/DEAD_CODE_DEAD_DB_2026-08-20.md §B2's "16 server-action files
+ * docs/archive/audits-2026-08/DEAD_CODE_DEAD_DB_2026-08-20.md §B2's "16 server-action files
  * no route imports" list, which already named it). `crm-templates.ts` is the
  * live template-CRUD surface; `task-templates.ts`'s create/update/delete/
  * duplicateTemplate were the superseded, never-called duplicates. Dropped
