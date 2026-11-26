@@ -171,9 +171,7 @@ function StateStrip({ counts, rows }: { counts: Record<TeamState, number>; rows:
       <div className="bp-states">
         {order.map((s) => (
           <div key={s} className="bp-state">
-            <span className={`bs-eyebrow ${toneClass(STATE_TONE[s])}`} style={{ letterSpacing: '0.06em' }}>
-              {STATE_WORDS[s]}
-            </span>
+            <span className={`bs-eyebrow ${toneClass(STATE_TONE[s])}`}>{STATE_WORDS[s].charAt(0).toUpperCase() + STATE_WORDS[s].slice(1)}</span>
             <span className={`bp-state-n ${toneClass(s === 'never' || s === 'dormant' ? 'ink' : STATE_TONE[s])}`}>{counts[s]}</span>
             <span className="bp-state-sub">{STATE_SUB[s]}</span>
           </div>

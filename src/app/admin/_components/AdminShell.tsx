@@ -2,6 +2,7 @@
 
 import './admin-ivory.css';
 import './admin-phone.css';
+import { adminSans } from './admin-font';
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -730,7 +731,7 @@ export function AdminShell({
 
   return (
     <SessionActivityProvider>
-    <div className="fairway-ds bridge-ivory min-h-screen bg-canvas-gradient">
+    <div className={`fairway-ds bridge-ivory ${adminSans.variable} min-h-screen bg-canvas-gradient`}>
       <AppShell
         sections={sections}
         brand={brand}

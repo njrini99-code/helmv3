@@ -185,7 +185,8 @@ apply Fairway primitives or motion rules there. Fairway's shared primitives
 `.claude/rules/design-system.md`) remain the authority for the surfaces that
 still use them (admin, BaseballHelm, the CRM). The Bridge spaces (`src/app/admin/spaces/**`) are the one
 admin exception: by owner decision they use their own scoped light and dark look in `spaces/_ui`, which reaches
-nothing outside them (the Bridge spaces build plan in `docs/superpowers/specs/helm-bridge/`). Reuse the shared shell, safe
+nothing outside them. Since 2026-11-26 the whole admin wears Clubhouse's material (linen page under an ivory light,
+ivory cards, green frame, Instrument Sans), copied as values into `spaces/_ui` and `admin/_components/admin-ivory.css`, never by reading `--ch-*` (the Bridge spaces build plan in `docs/superpowers/specs/helm-bridge/`). Reuse the shared shell, safe
 areas, navigation, buttons, cards and empty states, and keep one primary action
 per screen. Golf reliability model: `memory/system/golfhelm-engineering-os.md`.
 

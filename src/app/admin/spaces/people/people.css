@@ -56,14 +56,16 @@
   min-height: 44px;
   padding: 0 14px;
   border-radius: 12px;
-  border: 1px solid var(--bs-line-strong);
+  border: 0;
+  background: var(--bs-key-bg);
+  box-shadow: 0 0 0 1px var(--bs-key-ring);
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   color: var(--bs-ink-2);
   text-decoration: none;
 }
-.bp-toggle[aria-pressed='true'] { background: var(--bs-ink); color: var(--bs-bg); border-color: transparent; }
+.bp-toggle[aria-pressed='true'] { background: var(--bs-seg-on); box-shadow: var(--bs-seg-on-shadow); color: var(--bs-seg-on-ink); border-color: transparent; }
 .bp-toggle:focus-visible { outline: 2px solid var(--bs-good); outline-offset: 2px; }
 
 /* Ranked list: a grid row per team at desktop, a stacked card per team on a phone. */
@@ -78,8 +80,7 @@
 .bp-list-head {
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--bs-ink-3);
   padding-top: 8px;
   padding-bottom: 8px;
@@ -140,9 +141,8 @@
 
 .bp-chip-sport {
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0;
   padding: 1px 6px;
   border-radius: 5px;
   background: var(--bs-panel-2);

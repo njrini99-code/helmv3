@@ -1,27 +1,93 @@
 /*
- * The admin's own light palette: ivory, flat. Owner, 2026-11-26: "that color is a cream, not an ivory" and "the
- * gradient isn't good". Fairway's vintage cream and its sunlit page wash stay everywhere else (BaseballHelm, the
- * CRM); inside the admin these tokens are re-declared on the shell's root, so every Fairway surface under it, the
- * Bridge spaces included, reads ivory. The theme boot script also puts `bridge-ivory` on <html> for /admin, so the
- * More sheet and dialogs (portalled to <body>) match, with no cream flash before hydration. Dark mode is untouched (html.dark keeps Fairway's dark tokens).
+ * The admin wears Clubhouse's material (owner, 2026-11-26: "darker ivory gradient", "the cards ... aren't clubhouse",
+ * "it doesn't look like the desktop site"). Every value below was read off a rendered Clubhouse page
+ * (/clubhouse-preview/home, Playwright WebKit, 1440 and 390) and copied here, because the admin may not read Clubhouse's
+ * own --ch-* tokens (they live only under [data-ui='clubhouse']). Their sources, for the next change:
+ *   page      --ch-workspace #e8e3d5 under --ch-light-canvas (an ivory light from the top)   src/clubhouse/styles/tokens.css
+ *   card      --ch-bg-surface #faf7ef, 16px, --ch-elevation-card (a hairline ring and two soft shadows)
+ *   well      --ch-bg-subtle #f1ede2           frame  --ch-frame #0a331f / --ch-green-800 #0b3a25
+ *   ink       --ch-ink-900 #1c1b18, -700 #3a3833, -600 #46433d   green  --ch-green-500/600/700
+ * Fairway's tokens are re-declared on the shell's root, so every Fairway page under it (Incidents, Users, Health ...)
+ * takes the same paper, and the theme boot script puts `bridge-ivory` on <html> for /admin, so portalled sheets match
+ * with no flash. Dark mode is untouched (html.dark keeps Fairway's dark tokens).
  */
 html.bridge-ivory:not(.dark),
 html:not(.dark) .bridge-ivory {
-  --fw-color-canvas: #f8f7f3; /* the page: ivory, a warm off-white with no yellow cast */
-  --fw-color-surface: #fffffe; /* cards: near white, lifting off the page by a hair */
-  --fw-color-surface-tint: #fffffe;
-  --fw-color-surface-sunken: #f1f0eb; /* wells, inputs, row highlights: a neutral ivory grey */
-  --fw-color-border-subtle: #e2e0d9; /* a neutral hairline, still visible on the ivory card */
-  --fw-color-border-strong: #c9c6be;
-  /* The phone's tab bar and sheets are glass: an ivory tint with a white rim, not a cream one, and no warm boost. */
-  --fw-glass-tint: 252 251 247;
-  /* Derived at :root, so they are re-declared here too (a custom property resolves where it is declared). */
-  --fw-glass-bg: rgb(252 251 247 / 0.74);
-  --fw-glass-bg-strong: rgb(252 251 247 / 0.88);
-  --fw-glass-border: rgb(255 255 255 / 0.6);
-  --fw-glass-highlight: rgb(255 255 255 / 0.5);
-  --fw-glass-saturate: 110%;
-  /* No wash: the page is one flat ivory, top to foot. */
-  --fw-gradient-canvas: linear-gradient(var(--fw-color-canvas), var(--fw-color-canvas));
-  background-color: var(--fw-color-canvas);
+  /* The page: Clubhouse's deeper linen. Cards are the lighter ivory paper above it. Nothing is white. */
+  --fw-color-canvas: #e8e3d5;
+  --fw-color-surface: #faf7ef;
+  --fw-color-surface-tint: #faf7ef;
+  --fw-color-surface-sunken: #f1ede2;
+  --fw-color-surface-elevated: #fcfaf5;
+  --fw-color-border-subtle: rgb(28 25 18 / 0.1);
+  --fw-color-border-strong: rgb(28 25 18 / 0.24);
+
+  /* Ink and the Augusta greens. */
+  --fw-color-text-primary: #1c1b18;
+  --fw-color-text-secondary: #3a3833;
+  --fw-color-text-tertiary: #46433d;
+  --fw-color-accent-500: #1f6b45;
+  --fw-color-accent-600: #155a39;
+  --fw-color-accent-650: #155a39;
+  --fw-color-accent-750: #0f4a2f;
+  --fw-color-accent-ink: #155a39;
+  --fw-color-accent-700: #155a39;
+  --fw-color-accent-800: #0f4a2f;
+  --fw-color-accent-900: #0b3a25;
+  --fw-color-accent-fill: #0b3a25;
+  --fw-color-accent-fill-hover: #0f4a2f;
+  --fw-color-text-on-accent-fill: #f4eedd;
+  --fw-color-text-on-accent: #f4eedd;
+  --fw-color-accent-wash: #dfe8dc;
+
+  /* The frame: Clubhouse's green around the ivory workspace (its desktop sidebar, its phone top bar). The phone's
+     status bar takes --bridge-chrome too (ThemeScript), so the bar and the green under it are one colour. */
+  --bridge-chrome: #0b3a25;
+  --fw-color-nav-bg: #0a331f;
+  --fw-color-nav-surface: rgb(244 238 221 / 0.1);
+  --fw-color-nav-text: #f4eedd;
+  --fw-color-nav-text-dim: rgb(244 238 221 / 0.72);
+  --fw-color-nav-accent: #9fe0b6;
+
+  /* Card material: one corner and Clubhouse's card shadow. */
+  --fw-radius-card: 16px;
+  --fw-shadow-card: 0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08);
+
+  /* The phone's tab bar and sheets: the linen as glass, as Clubhouse's floating navigation. */
+  --fw-glass-tint: 232 227 213;
+  --fw-glass-bg: rgb(232 227 213 / 0.78);
+  --fw-glass-bg-strong: rgb(232 227 213 / 0.9);
+  --fw-glass-border: rgb(255 255 255 / 0.45);
+  --fw-glass-highlight: rgb(255 255 255 / 0.4);
+  --fw-glass-saturate: 120%;
+
+  /* The light: Clubhouse's ambient ivory falling from the top of the page over the linen (its --ch-light-canvas with
+     the sun at its default), brightest at the top and never reaching the card's ivory. */
+  --fw-gradient-canvas:
+    radial-gradient(140% 1100px at 50% 0%, rgb(255 250 240 / 0.55), rgb(255 250 240 / 0.3) 60%, rgb(255 250 240 / 0.18) 100%),
+    linear-gradient(#e8e3d5, #e8e3d5);
+  background-color: #e8e3d5;
+  background-image: var(--fw-gradient-canvas);
+}
+
+/* Type: Instrument Sans, Clubhouse's face, at its narrower width for headings (admin-font.ts loads it). */
+html:not(.dark) .bridge-ivory,
+html.dark .bridge-ivory {
+  --fw-font-sans: var(--bridge-font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--fw-font-sans);
+}
+
+/* The phone's top bar is Clubhouse's: the green frame, ivory ink. */
+@media (max-width: 767px) {
+  html:not(.dark) .bridge-ivory [data-slot='fw-topbar'] {
+    --fw-color-text-primary: #f4eedd;
+    --fw-color-text-secondary: rgb(244 238 221 / 0.8);
+    --fw-color-text-tertiary: rgb(244 238 221 / 0.7);
+    --fw-color-border-subtle: rgb(244 238 221 / 0.14);
+    background: var(--bridge-chrome);
+    border-color: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    color: #f4eedd;
+  }
 }
