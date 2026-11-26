@@ -81,7 +81,7 @@ export function CoachPlanBar({ status, after = null }: { status: ChPlanStatus; a
       {/* On a phone a published plan's line is its word and who has seen it; the sentence that repeats the word is still read aloud. */}
       <p className={phone && state.key === 'live' ? 'ch-sr-only' : undefined}>{state.line}</p>
       {status.seen && (
-        <Button variant="ghost" size="sm" className="ch-num" onClick={() => setSeenOpen(true)}>
+        <Button data-ctl="CTL-P017-002" variant="ghost" size="sm" className="ch-num" onClick={() => setSeenOpen(true)}>
           Seen by {status.seen.names.length} of {status.seen.of}
         </Button>
       )}
@@ -89,12 +89,12 @@ export function CoachPlanBar({ status, after = null }: { status: ChPlanStatus; a
   );
   const keys = (
     <div className="ch-prc-planbar__a">
-      <Button variant={state.key === 'live' ? 'secondary' : 'primary'} leftIcon={Pencil} href={`${base}/edit`}>
+      <Button data-ctl="CTL-P017-003" variant={state.key === 'live' ? 'secondary' : 'primary'} leftIcon={Pencil} href={`${base}/edit`}>
         Edit
       </Button>
       {/* Print is its own key: here on a Mac, in the top bar on a phone. A draft has nobody to share with, so it has no Share. */}
       {!phone && (
-        <Button leftIcon={Printer} href={`/golf/dashboard/practice/print/${status.planId}`}>
+        <Button data-ctl="CTL-P017-004" leftIcon={Printer} href={`/golf/dashboard/practice/print/${status.planId}`}>
           Print
         </Button>
       )}
@@ -102,7 +102,7 @@ export function CoachPlanBar({ status, after = null }: { status: ChPlanStatus; a
         <Menu
           label="Share"
           trigger={(p) => (
-            <Button variant="secondary" rightIcon={ChevronDown} menu={p}>
+            <Button data-ctl="CTL-P017-005" variant="secondary" rightIcon={ChevronDown} menu={p}>
               Share
             </Button>
           )}
@@ -143,10 +143,10 @@ export function CoachPlanBar({ status, after = null }: { status: ChPlanStatus; a
         width={420}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setDownOpen(false)}>
+            <Button data-ctl="CTL-P017-006" variant="ghost" onClick={() => setDownOpen(false)}>
               Keep it up
             </Button>
-            <Button variant="danger" busy={busy} onClick={() => void takeDown()}>
+            <Button data-ctl="CTL-P017-007" variant="danger" busy={busy} onClick={() => void takeDown()}>
               Take down
             </Button>
           </>

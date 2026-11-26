@@ -32,7 +32,7 @@ const NEW = 'new';
 
 function Option({ on, title, line, disabled, onPick }: { on: boolean; title: string; line: string; disabled?: boolean; onPick: () => void }) {
   return (
-    <button type="button" className={'ch-prc-opt' + (on ? ' is-on' : '')} role="radio" aria-checked={on} disabled={disabled} onClick={onPick}>
+    <button data-ctl="CTL-P017-033" type="button" className={'ch-prc-opt' + (on ? ' is-on' : '')} role="radio" aria-checked={on} disabled={disabled} onClick={onPick}>
       <span className="ch-prc-opt__t">
         <b className="ch-num">{title}</b>
         <span className="ch-num">{wholeFacts(line)}</span>
@@ -219,7 +219,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, zone, now,
                   {WORK_ON.map((a) => {
                     const on = areas.includes(a);
                     return (
-                      <button key={a} type="button" className="ch-pill" aria-pressed={on} onClick={() => setAreas((list) => (on ? list.filter((x) => x !== a) : [...list, a]))}>
+                      <button data-ctl="CTL-P017-034" key={a} type="button" className="ch-pill" aria-pressed={on} onClick={() => setAreas((list) => (on ? list.filter((x) => x !== a) : [...list, a]))}>
                         {a}
                       </button>
                     );
