@@ -25,7 +25,7 @@ export function ChoiceGroup<V extends string>({ legend, value, options, onChange
         const on = o.value === value;
         return (
           <label key={o.value} className={'ch-choice' + (on ? ' is-on' : '') + (o.disabled ? ' is-disabled' : '')}>
-            <input
+            <input data-ctl="CTL-P000-002"
               type="radio"
               className="ch-choice__input"
               name={name}

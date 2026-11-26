@@ -35,7 +35,10 @@ export function ExportButton({
   variant = 'secondary',
   size,
   className,
+  'data-ctl': ctl,
 }: {
+  /** The caller's control id (CTL-P###-NNN, spec §4.7). */
+  'data-ctl'?: string;
   file: () => ChCsvFile | Promise<ChCsvFile>;
   /** The toast once the file is out, from what it holds: "Rounds exported · 42 rounds". */
   done: (file: ChCsvFile) => string;
@@ -84,14 +87,14 @@ export function ExportButton({
   if (icon)
     return (
       <>
-        <IconButton icon={Download} label={icon} variant={variant} size={size} disabled={busy} onClick={() => void run()} className={className} />
+        <IconButton data-ctl={ctl} icon={Download} label={icon} variant={variant} size={size} disabled={busy} onClick={() => void run()} className={className} />
         <span className="ch-sr-only" role="status" data-ch-code={busy ? busyCode : undefined}>
           {busy ? 'Exporting…' : ''}
         </span>
       </>
     );
   return (
-    <Button variant={variant} size={size} leftIcon={Download} busy={busy} onClick={() => void run()} className={className}>
+    <Button data-ctl={ctl} variant={variant} size={size} leftIcon={Download} busy={busy} onClick={() => void run()} className={className}>
       {busy && busyCode ? <span data-ch-code={busyCode}>Exporting…</span> : label}
     </Button>
   );

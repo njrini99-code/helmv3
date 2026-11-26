@@ -96,7 +96,7 @@ export function InlineNotice({
         </div>
         {!covered && onRetry && (
           <div className="ch-notice__act">
-            <Button variant="secondary" leftIcon={RotateCw} onClick={retry} busy={retrying} data={retryHook ? { 'data-ch': retryHook } : undefined}>
+            <Button data-ctl="CTL-P000-027" variant="secondary" leftIcon={RotateCw} onClick={retry} busy={retrying} data={retryHook ? { 'data-ch': retryHook } : undefined}>
               {retrying ? 'Trying again…' : 'Try again'}
             </Button>
           </div>
@@ -306,11 +306,11 @@ export function RouteErrorView({
             </p>
           )}
           <div className="ch-empty-page__a">
-            <Button variant="primary" leftIcon={RotateCw} onClick={retry} busy={isRetrying}>
+            <Button data-ctl="CTL-P000-028" variant="primary" leftIcon={RotateCw} onClick={retry} busy={isRetrying}>
               {isRetrying ? 'Trying again…' : reload ? 'Reload' : 'Try again'}
             </Button>
             {homePath && (
-              <Button variant="secondary" leftIcon={place ? ChevronLeft : House} href={homePath}>
+              <Button data-ctl="CTL-P000-029" variant="secondary" leftIcon={place ? ChevronLeft : House} href={homePath}>
                 {place ? `Back to ${place}` : 'Back to Home'}
               </Button>
             )}

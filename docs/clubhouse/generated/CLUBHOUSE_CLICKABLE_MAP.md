@@ -16,7 +16,7 @@ the ledger knows is marked `(ledger)`. `forwards` marks a shared component's
 element that carries its caller's id. This supersedes the 2026-09-30
 snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
-1799 controls in 394 files; 0 forward their caller's id.
+1799 controls in 394 files; 15 forward their caller's id.
 
 ## P001 Shell
 
@@ -2929,144 +2929,144 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/ui/Button.tsx`
 
-- 115 `Link` "{label}" (link, onClick, href)
-- 121 `button` "{label}" (button, onClick)
-- 195 `Link` "{label}" (link, onClick, href)
-- 203 `button` "{label}" (button, onClick)
+- forwards 117 `Link` "{label}" (link, onClick, href)
+- forwards 123 `button` "{label}" (button, onClick)
+- forwards 200 `Link` "{label}" (link, onClick, href)
+- forwards 208 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/ui/Checkbox.tsx`
 
-- 36 `input` "{children}" (type=checkbox)
+- CTL-P000-001 36 `input` "{children}" (type=checkbox)
 
 ### `src/clubhouse/ui/ChoiceGroup.tsx`
 
-- 28 `input` "{label} {{hint}|}" (type=radio)
+- CTL-P000-002 28 `input` "{label} {{hint}|}" (type=radio)
 
 ### `src/clubhouse/ui/ConfirmAction.tsx`
 
-- 42 `Button` "Cancel" (button, onClick)
-- 45 `Button` "{confirm}" (button, onClick)
+- CTL-P000-003 42 `Button` "Cancel" (button, onClick)
+- CTL-P000-004 45 `Button` "{confirm}" (button, onClick)
 
 ### `src/clubhouse/ui/DateField.tsx`
 
-- 159 `button` "Previous month" (button, onClick)
-- 177 `button` "Next month" (button, onClick)
-- 209 `button` "{formatDate}" (button, onClick)
-- 231 `button` "Today" (button, onClick)
-- 236 `button` "Clear" (button, onClick)
+- CTL-P000-005 159 `button` "Previous month" (button, onClick)
+- CTL-P000-006 177 `button` "Next month" (button, onClick)
+- CTL-P000-007 209 `button` "{formatDate}" (button, onClick)
+- CTL-P000-008 231 `button` "Today" (button, onClick)
+- CTL-P000-009 236 `button` "Clear" (button, onClick)
 
 ### `src/clubhouse/ui/ExportButton.tsx`
 
-- 87 `IconButton` "{icon}" (button, onClick)
-- 94 `Button` "{Exporting…|{label}}" (button, onClick)
+- forwards 90 `IconButton` "{icon}" (button, onClick)
+- forwards 97 `Button` "{Exporting…|{label}}" (button, onClick)
 
 ### `src/clubhouse/ui/FormSheet.tsx`
 
-- 116 `div` "(no label)" (onPointerDown)
-- 117 `header` "Cancel {title} {actionLabel}" (onPointerDown)
-- 118 `button` "Cancel" (button, onClick)
-- 124 `button` "{actionLabel}" (button)
-- 183 `div` "(no label)" (onPointerDown)
-- 184 `header` "{title} {{subtitle}|} Done" (onPointerDown)
-- 189 `button` "Done" (button, onClick)
-- 241 `dialog` "{retainContent}" (onClick)
-- 264 `button` "{label}" (button, onClick)
-- 269 `button` "{cancelLabel}" (button, onClick)
+- CTL-P000-010 116 `div` "Form sheet drag handle (head) (ledge…" (onPointerDown)
+- CTL-P000-011 117 `header` "Cancel {title} {actionLabel}" (onPointerDown)
+- CTL-P000-012 118 `button` "Cancel" (button, onClick)
+- CTL-P000-013 124 `button` "{actionLabel}" (button)
+- CTL-P000-014 183 `div` "Form sheet drag handle (ledger)" (onPointerDown)
+- CTL-P000-015 184 `header` "{title} {{subtitle}|} Done" (onPointerDown)
+- CTL-P000-016 189 `button` "Done" (button, onClick)
+- CTL-P000-017 241 `dialog` "{retainContent}" (onClick)
+- CTL-P000-018 264 `button` "{label}" (button, onClick)
+- CTL-P000-019 269 `button` "{cancelLabel}" (button, onClick)
 
 ### `src/clubhouse/ui/Ledger.tsx`
 
-- 100 `Link` "{label}" (link, onClick, onPointerDown, href)
-- 104 `button` "{label}" (button, onClick)
-- 182 `Link` "{label}" (link, onClick, href)
-- 188 `button` "{label}" (button, onClick)
+- forwards 103 `Link` "{label}" (link, onClick, onPointerDown, href)
+- forwards 107 `button` "{label}" (button, onClick)
+- forwards 186 `Link` "{label}" (link, onClick, href)
+- forwards 192 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/ui/Menu.tsx`
 
-- 304 `Link` "{content}" (link, onClick, href)
-- 315 `button` "{content}" (button, onClick)
+- CTL-P000-020 304 `Link` "{content}" (link, onClick, href)
+- CTL-P000-021 315 `button` "{content}" (button, onClick)
 
 ### `src/clubhouse/ui/Modal.tsx`
 
-- 93 `dialog` "{retainContent}" (onClick)
-- 115 `div` "(no label)" (onPointerDown)
-- 122 `header` "{title} {{description}|} {{action}|} Close" (onPointerDown)
-- 136 `button` "Close" (button, onClick)
+- CTL-P000-022 93 `dialog` "{retainContent}" (onClick)
+- CTL-P000-023 115 `div` "Modal drag handle (ledger)" (onPointerDown)
+- CTL-P000-024 122 `header` "{title} {{description}|} {{action…" (onPointerDown)
+- CTL-P000-025 136 `button` "Close" (button, onClick)
 
 ### `src/clubhouse/ui/NoTeam.tsx`
 
-- 26 `Button` "Open team settings" (button, href)
+- CTL-P000-026 26 `Button` "Open team settings" (button, href)
 
 ### `src/clubhouse/ui/Notices.tsx`
 
-- 99 `Button` "{Trying again…|Try again}" (button, onClick)
-- 309 `Button` "{Trying again…|{Reload|Try again}}" (button, onClick)
-- 313 `Button` "{Back to {place}|Back to Home}" (button, href)
+- CTL-P000-027 99 `Button` "{Trying again…|Try again}" (button, onClick)
+- CTL-P000-028 309 `Button` "{Trying again…|{Reload|Try agai…" (button, onClick)
+- CTL-P000-029 313 `Button` "{Back to {place}|Back to Home}" (button, href)
 
 ### `src/clubhouse/ui/Peek.tsx`
 
-- 324 `Link` "{body}" (link, onClick, href, role=menuitem)
-- 328 `button` "{body}" (button, onClick, role=menuitem)
-- 465 `dialog` "{label}" (onClick) CH-1830
+- CTL-P000-030 324 `Link` "{body}" (link, onClick, href, role=menuitem)
+- CTL-P000-031 328 `button` "{body}" (button, onClick, role=menuitem)
+- CTL-P000-032 465 `dialog` "{label}" (onClick) CH-1830
 
 ### `src/clubhouse/ui/PhoneBar.tsx`
 
-- 130 `button` "{ariaLabel}" (button, onClick)
-- 174 `button` "{label}" (button, onClick)
-- 183 `button` "{children}" (button, onClick)
+- CTL-P000-033 130 `button` "{ariaLabel}" (button, onClick)
+- forwards 174 `button` "{label}" (button, onClick)
+- forwards 183 `button` "{children}" (button, onClick)
 
 ### `src/clubhouse/ui/PickerHost.tsx`
 
-- 260 `button` "{label}, {shown}" (button, onClick)
-- 282 `input` "{undefined|label}" (onClick)
-- 333 `button` "{pickLabel}" (button, onClick)
+- CTL-P000-034 260 `button` "{label}, {shown}" (button, onClick)
+- CTL-P000-035 282 `input` "{undefined|label}" (onClick)
+- CTL-P000-036 333 `button` "{pickLabel}" (button, onClick)
 
 ### `src/clubhouse/ui/Retry.tsx`
 
-- 71 `Button` "{Trying again…|Try again}" (button, onClick)
+- CTL-P000-037 71 `Button` "{Trying again…|Try again}" (button, onClick)
 
 ### `src/clubhouse/ui/SearchField.tsx`
 
-- 52 `button` "Clear search" (button, onClick)
+- CTL-P000-038 52 `button` "Clear search" (button, onClick)
 
 ### `src/clubhouse/ui/Section.tsx`
 
-- 59 `Link` "{body}" (link, href)
-- 63 `button` "{body}" (button, onClick)
+- forwards 59 `Link` "{body}" (link, href)
+- forwards 63 `button` "{body}" (button, onClick)
 
 ### `src/clubhouse/ui/Segmented.tsx`
 
-- 118 `div` "{label}" (onPointerDown)
-- 122 `button` "{aria}" (button, onClick)
-- 164 `button` "{aria}" (button, onClick)
+- CTL-P000-039 118 `div` "{label}" (onPointerDown)
+- CTL-P000-040 122 `button` "{aria}" (button, onClick)
+- CTL-P000-041 164 `button` "{aria}" (button, onClick)
 
 ### `src/clubhouse/ui/StatTerm.tsx`
 
-- 35 `button` "{children}" (button, onClick)
-- 126 `button` "How stats are counted" (button, onClick)
-- 181 `button` "How stats are counted" (button, onClick)
+- CTL-P000-042 35 `button` "{children}" (button, onClick)
+- CTL-P000-043 126 `button` "How stats are counted" (button, onClick)
+- forwards 181 `button` "How stats are counted" (button, onClick)
 
 ### `src/clubhouse/ui/Stepper.tsx`
 
-- 41 `IconButton` "Less {toLowerCase}" (button, onClick)
-- 68 `IconButton` "More {toLowerCase}" (button, onClick)
+- CTL-P000-044 41 `IconButton` "Less {toLowerCase}" (button, onClick)
+- CTL-P000-045 68 `IconButton` "More {toLowerCase}" (button, onClick)
 
 ### `src/clubhouse/ui/Switch.tsx`
 
-- 74 `label` "{label}" (onPointerDown)
-- 92 `input` "{label}" (role=switch, type=checkbox)
+- CTL-P000-046 74 `label` "{label}" (onPointerDown)
+- CTL-P000-047 92 `input` "{label}" (role=switch, type=checkbox)
 
 ### `src/clubhouse/ui/TimeField.tsx`
 
-- 140 `button` "{formatTime}" (button, onClick, role=option)
-- 159 `button` "Clear" (button, onClick)
+- CTL-P000-048 140 `button` "{formatTime}" (button, onClick, role=option)
+- CTL-P000-049 159 `button` "Clear" (button, onClick)
 
 ### `src/clubhouse/ui/Toast.tsx`
 
-- 435 `m.div` "{title} {{body}|} {{label}|} Dismiss notificati…" (onPointerDown)
-- 467 `button` "{label}" (button, onClick)
-- 481 `button` "Dismiss notification" (button, onClick)
+- CTL-P000-050 435 `m.div` "{title} {{body}|} {{label}|} Dismi…" (onPointerDown)
+- CTL-P000-051 467 `button` "{label}" (button, onClick)
+- CTL-P000-052 481 `button` "Dismiss notification" (button, onClick)
 
 ### `src/clubhouse/ui/WeekStrip.tsx`
 
-- 139 `button` "{name}" (button, onClick)
-- 152 `Link` "{face} {name}" (link, href)
+- CTL-P000-053 139 `button` "{name}" (button, onClick)
+- CTL-P000-054 152 `Link` "{face} {name}" (link, href)

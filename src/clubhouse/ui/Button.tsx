@@ -31,6 +31,8 @@ interface CommonProps {
   code?: string;
   /** Extra `data-*` hooks, for a capture tool or a test to find this key. */
   data?: Record<`data-${string}`, string>;
+  /** The caller's control id (CTL-P###-NNN, spec §4.7), written on the DOM element so the Bridge can count it. */
+  'data-ctl'?: string;
   children: ReactNode;
 }
 
@@ -112,7 +114,7 @@ export function Button(props: ButtonProps) {
   );
   if (props.href !== undefined) {
     return (
-      <Link href={props.href} className={cls} aria-keyshortcuts={kbd} aria-label={aria?.label} data-ch-code={code} {...data} {...(props.ahead ? press(props.href) : {})} onClick={() => feel && haptic(feel)}>
+      <Link href={props.href} className={cls} aria-keyshortcuts={kbd} aria-label={aria?.label} data-ch-code={code} data-ctl={props['data-ctl']} {...data} {...(props.ahead ? press(props.href) : {})} onClick={() => feel && haptic(feel)}>
         {inner}
       </Link>
     );
@@ -130,6 +132,7 @@ export function Button(props: ButtonProps) {
       aria-pressed={aria?.pressed}
       aria-describedby={aria?.describedby}
       data-ch-code={code}
+      data-ctl={props['data-ctl']}
       {...data}
       disabled={props.disabled || props.busy}
       aria-busy={props.busy || undefined}
@@ -156,6 +159,8 @@ interface IconButtonBase {
   shortcut?: readonly string[];
   /** Ghost by default; secondary where the key sits among a toolbar's raised keys (Calendar's More). */
   variant?: 'ghost' | 'secondary';
+  /** The caller's control id (CTL-P###-NNN, spec §4.7), written on the DOM element. */
+  'data-ctl'?: string;
 }
 
 /** The icon key as a button. */
@@ -192,7 +197,7 @@ export function IconButton(props: IconButtonKey | IconButtonLink) {
   if (props.href !== undefined)
     return (
       <Tooltip label={label} shortcut={shortcut} ariaKeys={ariaKeys}>
-        <Link href={props.href} scroll={props.scroll} className={cls} aria-label={label} onClick={() => feel && haptic(feel)}>
+        <Link href={props.href} scroll={props.scroll} className={cls} aria-label={label} data-ctl={props['data-ctl']} onClick={() => feel && haptic(feel)}>
           <Icon icon={icon} size={size === 'sm' ? 15 : 16} />
         </Link>
       </Tooltip>
@@ -204,6 +209,7 @@ export function IconButton(props: IconButtonKey | IconButtonLink) {
         ref={menu?.ref}
         type="button"
         aria-label={label}
+        data-ctl={props['data-ctl']}
         aria-pressed={props.pressed}
         aria-expanded={menu?.['aria-expanded']}
         aria-haspopup={menu?.['aria-haspopup']}

@@ -32,7 +32,7 @@ export function StatTerm({ label, sg = false, children, className }: { label: st
   if (!def) return <span className={className}>{children ?? label}</span>;
   return (
     <>
-      <button
+      <button data-ctl="CTL-P000-042"
         ref={btn}
         type="button"
         className={['ch-term', open ? 'is-open' : '', className].filter(Boolean).join(' ')}
@@ -123,7 +123,7 @@ function TermCard({ id, anchor, def, onClose, onRule }: { id: string; anchor: HT
       <p className="ch-term-card__means">{def.means}</p>
       <p className="ch-term-card__counted">{def.counted}</p>
       <p className="ch-term-card__better">{def.better === 'higher' ? 'Higher is better.' : 'Lower is better.'}</p>
-      <button type="button" className="ch-term-card__rule" onClick={onRule}>
+      <button data-ctl="CTL-P000-043" type="button" className="ch-term-card__rule" onClick={onRule}>
         How stats are counted
       </button>
     </div>,
@@ -174,11 +174,12 @@ export function HowStatsCount({ open, onClose }: { open: boolean; onClose: () =>
 }
 
 /** The Stats pages' way in to the rule: a quiet text button for a hero's line or a page's foot. */
-export function HowStatsCountLink({ className }: { className?: string }) {
+export function HowStatsCountLink({ className, 'data-ctl': ctl }: { className?: string; 'data-ctl'?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
+        data-ctl={ctl}
         type="button"
         className={['ch-howc-link', className].filter(Boolean).join(' ')}
         aria-haspopup="dialog"

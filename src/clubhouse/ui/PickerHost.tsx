@@ -257,7 +257,7 @@ export function PickerField(p: PickerFieldProps) {
       {phone ? (
         // The invalid look is the field's own (.ch-input[aria-invalid]); on the phone the key stands in for the field.
         // eslint-disable-next-line jsx-a11y/role-supports-aria-props
-        <button
+        <button data-ctl="CTL-P000-034"
           ref={trigger}
           type="button"
           id={p.id}
@@ -279,7 +279,7 @@ export function PickerField(p: PickerFieldProps) {
         </button>
       ) : (
         <span className="ch-df__box">
-          <input
+          <input data-ctl="CTL-P000-035"
             ref={input}
             type="text"
             role="combobox"
@@ -330,7 +330,7 @@ export function PickerField(p: PickerFieldProps) {
             }}
           />
           <Tooltip>
-            <button
+            <button data-ctl="CTL-P000-036"
               ref={trigger}
               type="button"
               className="ch-df__open"

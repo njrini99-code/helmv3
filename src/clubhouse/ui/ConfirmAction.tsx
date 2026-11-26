@@ -39,10 +39,10 @@ export function ConfirmAction({
       initialFocus="[data-ch-confirm-cancel]"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose} data={{ 'data-ch-confirm-cancel': '' }} disabled={busy}>
+          <Button data-ctl="CTL-P000-003" variant="secondary" onClick={onClose} data={{ 'data-ch-confirm-cancel': '' }} disabled={busy}>
             Cancel
           </Button>
-          <Button variant={destructive ? 'danger' : 'primary'} onClick={onConfirm} busy={busy}>
+          <Button data-ctl="CTL-P000-004" variant={destructive ? 'danger' : 'primary'} onClick={onConfirm} busy={busy}>
             {confirm}
           </Button>
         </>

@@ -33,7 +33,7 @@ export function Checkbox({
   const [drew, setDrew] = useState(false);
   return (
     <label className={['ch-check', disabled && 'is-disabled', className].filter(Boolean).join(' ')}>
-      <input
+      <input data-ctl="CTL-P000-001"
         id={id}
         type="checkbox"
         className="ch-check__input"

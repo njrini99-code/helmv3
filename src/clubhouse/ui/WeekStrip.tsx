@@ -136,7 +136,7 @@ export function WeekStrip({
         return (
           <li key={d.date} aria-current={d.isToday ? 'date' : undefined} className={(d.isToday ? 'is-today' : '') + (d.mark ? ' is-major' : '') || undefined}>
             {onSelect ? (
-              <button
+              <button data-ctl="CTL-P000-053"
                 type="button"
                 className={cls}
                 aria-pressed={live && i === at}
@@ -149,7 +149,7 @@ export function WeekStrip({
                 {face}
               </button>
             ) : d.href ? (
-              <Link prefetch={false} href={d.href} className={cls} tabIndex={live ? undefined : -1}>
+              <Link data-ctl="CTL-P000-054" prefetch={false} href={d.href} className={cls} tabIndex={live ? undefined : -1}>
                 {face}
                 <span className="ch-sr-only">{name}</span>
               </Link>

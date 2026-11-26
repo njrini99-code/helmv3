@@ -23,7 +23,7 @@ export function NoTeam({ code, coach, body, action = true, inline = false }: { c
       body={body}
       action={
         settings ? (
-          <Button variant="primary" href={settings}>
+          <Button data-ctl="CTL-P000-026" variant="primary" href={settings}>
             Open team settings
           </Button>
         ) : undefined
