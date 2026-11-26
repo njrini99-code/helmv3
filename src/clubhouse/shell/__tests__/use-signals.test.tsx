@@ -23,7 +23,7 @@ describe('useChSignals', () => {
 
   it('tells the queue it is off, and counts nothing', () => {
     renderHook(() => useChSignals({ enabled: false, role: 'coach', teamId: TEAM_A, pathname: '/golf/dashboard/messages', search: '' }));
-    expect(signals.configureSignals).toHaveBeenCalledWith({ enabled: false, role: 'coach', teamId: TEAM_A, page: 'P007' });
+    expect(signals.configureSignals).toHaveBeenCalledWith({ enabled: false, role: 'coach', teamId: TEAM_A, page: 'P007', userId: null });
     expect(signals.chSignal).not.toHaveBeenCalled();
   });
 
@@ -34,7 +34,7 @@ describe('useChSignals', () => {
     rerender({ pathname: '/golf/dashboard/roster', teamId: TEAM_A });
     rerender({ pathname: '/golf/dashboard/roster', teamId: TEAM_B });
     expect(kinds()).toEqual([{ kind: 'view' }, { kind: 'view' }, { kind: 'view', code: '10103' }]);
-    expect(signals.configureSignals).toHaveBeenLastCalledWith({ enabled: true, role: 'coach', teamId: TEAM_B, page: 'P003' });
+    expect(signals.configureSignals).toHaveBeenLastCalledWith({ enabled: true, role: 'coach', teamId: TEAM_B, page: 'P003', userId: null });
   });
 
   it('reports the three vitals CH-1954 names, CLS in thousandths', () => {

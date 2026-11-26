@@ -232,7 +232,8 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
       // E1 (Bridge plan §4.2): every numbered toast is counted where it showed.
       if (code) {
         const failure = tone === 'error' && !reported;
-        chSignal({ kind: 'toast', code, outcome: failure ? 'failure' : undefined, message: failure ? (body ? `${title}: ${body}` : title) : undefined });
+        // No toast text travels: titles and bodies can name players, teams and files (D7). The code says which toast.
+        chSignal({ kind: 'toast', code, outcome: failure ? 'failure' : undefined });
       }
       const replaced = replace == null ? undefined : keys.get(replace);
       if (replaced != null) dismiss(replaced);

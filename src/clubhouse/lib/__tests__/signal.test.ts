@@ -94,8 +94,8 @@ describe('client signals', () => {
   });
 
   it("holds signals sent before the shell configured, then sends them under the shell's page", () => {
-    const ref = chSignal({ kind: 'state', code: 'CH-1211' });
-    expect(ref).toMatchObject({ seq: 0, page: 'P001' });
+    // No place to report yet: nothing reaches chReport, the error logs or Sentry while the switch is unknown (L1).
+    expect(chSignal({ kind: 'state', code: 'CH-1211' })).toBeNull();
     configureSignals({ enabled: true, role: 'coach', page: 'P003' });
     flushSignals();
     expect(beacons(beacon)[0]!.signals[0]).toMatchObject({ page: 'P003', code: 'CH-1211', seq: 0 });
@@ -106,6 +106,26 @@ describe('client signals', () => {
     configureSignals({ enabled: false, role: 'coach', page: 'P003' });
     flushSignals();
     expect(beacon).not.toHaveBeenCalled();
+  });
+
+  it('a toast sends its code, never its words (they can name players, teams and files)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/clubhouse/ui/Toast.tsx', 'utf8');
+    const call = src.match(/chSignal\(\{ kind: 'toast', code, outcome[^)]*\)/)?.[0] ?? '';
+    expect(call).not.toBe('');
+    expect(call).not.toMatch(/message|title|body/);
+  });
+
+  it('starts a new session when someone else signs in on the same tab', () => {
+    configureSignals({ enabled: true, role: 'coach', page: 'P007', userId: 'coach-1' });
+    const coach = chSignal({ kind: 'view' })!;
+    configureSignals({ enabled: true, role: 'player', page: 'P007', userId: 'player-2' });
+    const player = chSignal({ kind: 'view' })!;
+    expect(player.sessionId).not.toBe(coach.sessionId);
+    expect(player.seq).toBe(0);
+    resetSignalsForTests();
+    configureSignals({ enabled: true, role: 'coach', page: 'P007', userId: 'coach-1' });
+    expect(chSignal({ kind: 'view' })!.sessionId).not.toBe(player.sessionId);
   });
 
   it('keeps numbering through a reload in the same tab', () => {

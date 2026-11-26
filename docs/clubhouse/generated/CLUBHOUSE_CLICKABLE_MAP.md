@@ -3054,9 +3054,9 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ### `src/clubhouse/ui/Toast.tsx`
 
-- 435 `m.div` "(label built at run time)" (onPointerDown)
-- 467 `button` "(label built at run time)" (button, onClick)
-- 481 `button` "Dismiss notification" (button, onClick)
+- 436 `m.div` "(label built at run time)" (onPointerDown)
+- 468 `button` "(label built at run time)" (button, onClick)
+- 482 `button` "Dismiss notification" (button, onClick)
 
 ### `src/clubhouse/ui/WeekStrip.tsx`
 

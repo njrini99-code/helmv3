@@ -65,7 +65,7 @@ function post(body: unknown, headers: Record<string, string> = {}) {
 describe('POST /api/ch/signal', () => {
   beforeEach(() => {
     vi.mocked(isFlagEnabled).mockReturnValue(true);
-    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, remaining: 10, resetAt: Date.now() + 60_000 });
+    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, remaining: 10, resetAt: Date.now() + 60_000, durable: true });
     vi.mocked(createClient).mockResolvedValue({ auth: { getUser: vi.fn(async () => ({ data: { user: USER }, error: null })) } } as never);
     vi.mocked(loadBridgeGraph).mockReturnValue(fixtureGraph());
     vi.stubEnv('ADMIN_EVENTS_FORCE_CAPTURE', '1');
@@ -92,13 +92,47 @@ describe('POST /api/ch/signal', () => {
     expect(checkRateLimit).toHaveBeenCalledWith('ch-signal:ip:203.0.113.9', { maxAttempts: 30, windowMs: 60_000 });
   });
 
-  it('limits batches per session', async () => {
+  it('limits batches per signed-in user, not per the session id the client chose', async () => {
     vi.mocked(checkRateLimit)
-      .mockResolvedValueOnce({ allowed: true, remaining: 10, resetAt: Date.now() + 60_000 })
-      .mockResolvedValueOnce({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });
+      .mockResolvedValueOnce({ allowed: true, remaining: 10, resetAt: Date.now() + 60_000, durable: true })
+      .mockResolvedValueOnce({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000, durable: true });
     const res = await post({ signals: [signal()] });
     expect(res.status).toBe(429);
-    expect(checkRateLimit).toHaveBeenLastCalledWith('ch-signal:session:sess_12345678', { maxAttempts: 12, windowMs: 60_000 });
+    expect(checkRateLimit).toHaveBeenLastCalledWith(`ch-signal:user:${USER.id}`, { maxAttempts: 12, windowMs: 60_000 });
+  });
+
+  it('holds a global budget across every caller', async () => {
+    vi.mocked(checkRateLimit)
+      .mockResolvedValueOnce({ allowed: true, remaining: 10, resetAt: Date.now() + 60_000, durable: true })
+      .mockResolvedValueOnce({ allowed: true, remaining: 10, resetAt: Date.now() + 60_000, durable: true })
+      .mockResolvedValueOnce({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000, durable: true });
+    const res = await post({ signals: [signal()] });
+    expect(res.status).toBe(429);
+    expect(checkRateLimit).toHaveBeenLastCalledWith('ch-signal:global', expect.objectContaining({ windowMs: 60_000 }));
+  });
+
+  it('stores nothing in production when the limiter has fallen back to per-instance memory', async () => {
+    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, remaining: 10, resetAt: Date.now() + 60_000, durable: false });
+    const calls = fakeDb();
+    const res = await post({ signals: [signal()] });
+    expect(res.status).toBe(204);
+    expect(calls).toEqual([]);
+  });
+
+  it('stores nothing from another site (sendBeacon is a CORS-simple request)', async () => {
+    const calls = fakeDb();
+    expect((await post({ signals: [signal()] }, { 'sec-fetch-site': 'cross-site' })).status).toBe(204);
+    expect((await post({ signals: [signal()] }, { origin: 'https://evil.example' })).status).toBe(204);
+    expect(calls).toEqual([]);
+    expect(checkRateLimit).not.toHaveBeenCalled();
+  });
+
+  it('caps stamps per batch and stamps only the caller\'s own rows', async () => {
+    const calls = fakeDb();
+    await post({ signals: Array.from({ length: 12 }, (_, i) => signal({ seq: i + 1, kind: 'action', outcome: 'failure', code: 'CH-7004', reported: true })) });
+    const updates = calls.filter((c) => c.op === 'update');
+    expect(updates).toHaveLength(5);
+    for (const u of updates) expect(u.filters).toContainEqual(['eq', 'user_id', USER.id]);
   });
 
   it('answers an empty beacon with 204, a bad body with 400 and an oversized one with 413', async () => {
@@ -207,18 +241,25 @@ describe('POST /api/ch/signal', () => {
     expect(calls.some((c) => c.op === 'update')).toBe(false);
   });
 
-  it('answers 500 and reports it when the database fails', async () => {
-    fakeDb({ rpcError: { code: '57014' } });
-    const res = await post({ signals: [signal({ kind: 'view', outcome: undefined, code: undefined })] });
+  it('keeps the failure row and reports it when the counts call fails', async () => {
+    const calls = fakeDb({ rpcError: { code: '57014' } });
+    const res = await post({ signals: [signal({ seq: 1, kind: 'toast', outcome: 'failure', code: 'CH-7004' })] });
+    expect(res.status).toBe(202);
+    expect(calls.filter((c) => c.op === 'insert')).toHaveLength(1);
+  });
+
+  it('answers 500 and reports it when the failure row cannot be written', async () => {
+    fakeDb({ insertErrors: [{ code: '57014' }] });
+    const res = await post({ signals: [signal({ seq: 1, kind: 'toast', outcome: 'failure', code: 'CH-7004' })] });
     expect(res.status).toBe(500);
   });
 
-  it('accepts a signed-out sender, keeping no user', async () => {
+  it('stores nothing from a signed-out sender', async () => {
     vi.mocked(createClient).mockRejectedValueOnce(new Error('no cookies'));
     const calls = fakeDb();
-    await post({ signals: [signal({ kind: 'view', outcome: undefined, code: undefined, role: 'signed-out' })] });
-    const rpc = calls.find((c) => c.op === 'rpc')!;
-    expect((rpc.payload as { p_batch: { session: { user_id: string | null } } }).p_batch.session.user_id).toBeNull();
+    const res = await post({ signals: [signal({ kind: 'view', outcome: undefined, code: undefined, role: 'signed-out' })] });
+    expect(res.status).toBe(204);
+    expect(calls).toEqual([]);
   });
 
   it('the fixture envelope is one the schema accepts', () => {

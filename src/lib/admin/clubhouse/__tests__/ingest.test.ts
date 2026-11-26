@@ -152,3 +152,36 @@ describe('buildIngest', () => {
     expect(plan.sessions.map((s) => s.session.session_id)).toEqual(['sess_aaaaaaaa', 'sess_bbbbbbbb']);
   });
 });
+
+describe('buildIngest bounds what a client can mint (security review of #2611, M3)', () => {
+  it('stores a release other than the server\'s as "other"', () => {
+    const plan = build({
+      serverRelease: 'abc1234',
+      signals: Array.from({ length: 10 }, (_, i) => signal({ seq: i + 1, kind: 'view', outcome: undefined, code: undefined, release: `made-up-${i}` })),
+    });
+    const releases = new Set(plan.sessions[0]!.hourly.map((h) => h.release));
+    expect([...releases]).toEqual(['other']);
+    expect(plan.sessions[0]!.session.release).toBe('other');
+  });
+
+  it('keeps the release as sent when the server has none', () => {
+    const plan = build({ signals: [signal({ kind: 'view', outcome: undefined, code: undefined, release: 'r1' })] });
+    expect(plan.sessions[0]!.hourly[0]!.release).toBe('r1');
+  });
+
+  it('folds unknown acts, controls and codes into one hourly key each', () => {
+    const plan = build({
+      signals: Array.from({ length: 8 }, (_, i) => signal({ seq: i + 1, kind: 'state', outcome: undefined, code: `CH-9${i}999`, act: `NOT-AN-ACTION-${i}` })),
+    });
+    const hourly = plan.sessions[0]!.hourly;
+    expect(hourly).toHaveLength(1);
+    expect(hourly[0]).toMatchObject({ code: 'unknown', act: '', count: 8 });
+  });
+
+  it('caps drift rows per session batch', () => {
+    const plan = build({
+      signals: Array.from({ length: 20 }, (_, i) => signal({ seq: i + 1, kind: 'state', outcome: undefined, code: `CH-9${String(i).padStart(2, '0')}99` })),
+    });
+    expect(plan.sessions[0]!.drift.length).toBeLessThanOrEqual(5);
+  });
+});

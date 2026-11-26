@@ -20,8 +20,11 @@ import { describeError } from '@/lib/utils/describe-error';
  * envelopes, and with sendBeacon when the page is hidden. The route
  *
  * 1. does nothing while the `clubhouse_signals` kill switch is off (204);
- * 2. holds two durable limits (Upstash through checkRateLimit): 30 batches a minute per IP, and 12 a minute per session,
- *    which at the client's 20 per flush is the plan's 240 envelopes a minute;
+ * 2. answers only a signed-in caller from this site (Sec-Fetch-Site / Origin): Clubhouse is a signed-in surface, so an
+ *    anonymous or cross-site post stores nothing (security review of #2611, H1 and L3);
+ * 3. holds three durable limits (Upstash through checkRateLimit): 30 batches a minute per IP, 12 a minute per user (the
+ *    user is the server's, never the client's session id), and a global budget; in production it stores nothing when the
+ *    limiter has fallen back to its per-instance memory;
  * 3. parses the batch, dropping and counting what doesn't fit (signal.ts), and redacts free text as /api/log-error does;
  * 4. resolves each envelope against the graph this deploy was built with and builds one ingest call per session
  *    (ingest.ts), sent to `clubhouse_ingest_signals` through the service role;
@@ -36,7 +39,11 @@ import { describeError } from '@/lib/utils/describe-error';
 export const dynamic = 'force-dynamic';
 
 const SIGNAL_IP_LIMIT = { maxAttempts: 30, windowMs: 60_000 };
-const SIGNAL_SESSION_LIMIT = { maxAttempts: 12, windowMs: 60_000 };
+const SIGNAL_USER_LIMIT = { maxAttempts: 12, windowMs: 60_000 };
+/** Backstop across every caller: about 300 active tabs at one flush every 10 s. */
+const SIGNAL_GLOBAL_LIMIT = { maxAttempts: 1_800, windowMs: 60_000 };
+/** A batch stamps at most as many reported rows as it may write new ones (ingest.ts MAX_ADMIN_ROWS_PER_BATCH). */
+const MAX_STAMPS_PER_BATCH = 5;
 /** A batch is at most 50 envelopes plus 50 of context, each a few hundred bytes; sendBeacon itself stops at 64 KB. */
 const MAX_BODY_BYTES = 256 * 1024;
 /** One batch is one tab's; more sessions than this in one post is not a Clubhouse page. */
@@ -52,6 +59,19 @@ type DbError = { code?: string; message?: string } | null;
 
 function clientIp(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
+}
+
+/** sendBeacon posts are CORS-simple requests: only this site's own pages may send them. */
+export function isSameSite(request: NextRequest): boolean {
+  const site = request.headers.get('sec-fetch-site');
+  if (site) return site === 'same-origin' || site === 'none';
+  const origin = request.headers.get('origin');
+  if (!origin) return true; // Older WebKit and the iOS shell send neither on a same-origin beacon.
+  try {
+    return new URL(origin).host === request.nextUrl.host;
+  } catch {
+    return false;
+  }
 }
 
 function tooMany(resetAt: number) {
@@ -122,14 +142,16 @@ async function insertAdminRows(db: SupabaseClient, rows: AdminFailure[], user: {
   return { written: rows.length, columns: false };
 }
 
-async function stampReported(db: SupabaseClient, stamps: { sessionId: string; seq: number; columns: BridgeColumns }[]): Promise<number> {
+async function stampReported(db: SupabaseClient, userId: string, stamps: { sessionId: string; seq: number; columns: BridgeColumns }[]): Promise<number> {
   const since = new Date(Date.now() - STAMP_WINDOW_MS).toISOString();
   let stamped = 0;
-  for (const { sessionId, seq, columns } of stamps) {
+  // Only the caller's own rows, and no more than a batch may write: a known session id can't restamp someone else's row.
+  for (const { sessionId, seq, columns } of stamps.slice(0, MAX_STAMPS_PER_BATCH)) {
     const { error, count } = await db
       .from('admin_events')
       .update(columns, { count: 'exact' })
       .eq('source', 'client')
+      .eq('user_id', userId)
       .eq('metadata->context->chSignal->>sessionId', sessionId)
       .eq('metadata->context->chSignal->>seq', String(seq))
       .is('ch_code', null)
@@ -143,13 +165,28 @@ async function stampReported(db: SupabaseClient, stamps: { sessionId: string; se
 export async function POST(request: NextRequest) {
   if (!isFlagEnabled('clubhouse_signals', { skipTelemetry: true })) return new NextResponse(null, { status: 204 });
 
+  if (!isSameSite(request)) return new NextResponse(null, { status: 204 });
+
   const ipLimit = await checkRateLimit(`ch-signal:ip:${clientIp(request)}`, SIGNAL_IP_LIMIT);
   if (!ipLimit.allowed) return tooMany(ipLimit.resetAt);
+  // A per-instance count bounds nothing on serverless: in production, store nothing rather than trust it.
+  if (!ipLimit.durable && shouldPersistAdminTables()) return new NextResponse(null, { status: 204 });
+
+  // Clubhouse is signed in: an anonymous post writes no rows, sessions or counts (the server's user, never the client's).
+  let user: { id: string; email?: string | null } | null = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user ? { id: data.user.id, email: data.user.email ?? null } : null;
+  } catch {
+    user = null;
+  }
+  if (!user) return new NextResponse(null, { status: 204 });
 
   // sendBeacon flushes can arrive empty or cut short: read text first so they cost a cheap answer, not a 500.
   const raw = await request.text();
   if (!raw.trim()) return new NextResponse(null, { status: 204 });
-  if (raw.length > MAX_BODY_BYTES) return NextResponse.json({ error: 'Batch too large' }, { status: 413 });
+  if (Buffer.byteLength(raw, 'utf8') > MAX_BODY_BYTES) return NextResponse.json({ error: 'Batch too large' }, { status: 413 });
 
   let body: unknown;
   try {
@@ -163,10 +200,10 @@ export async function POST(request: NextRequest) {
 
   const sessionIds = [...new Set(batch.signals.map((s) => s.sessionId))];
   if (sessionIds.length > MAX_SESSIONS_PER_BATCH) return NextResponse.json({ error: 'Invalid batch', reason: 'too-many-sessions' }, { status: 400 });
-  for (const sid of sessionIds) {
-    const limit = await checkRateLimit(`ch-signal:session:${sid}`, SIGNAL_SESSION_LIMIT);
-    if (!limit.allowed) return tooMany(limit.resetAt);
-  }
+  const userLimit = await checkRateLimit(`ch-signal:user:${user.id}`, SIGNAL_USER_LIMIT);
+  if (!userLimit.allowed) return tooMany(userLimit.resetAt);
+  const globalLimit = await checkRateLimit('ch-signal:global', SIGNAL_GLOBAL_LIMIT);
+  if (!globalLimit.allowed) return tooMany(globalLimit.resetAt);
 
   const accepted = batch.signals.length;
   // Off-prod runtimes hold production Supabase credentials: their signals must not land in the production Bridge.
@@ -184,15 +221,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ accepted, dropped: batch.dropped, persisted: false, reason: 'graph-missing' }, { status: 202 });
     }
 
-    let user: { id: string; email?: string | null } | null = null;
-    try {
-      const supabase = await createClient();
-      const { data } = await supabase.auth.getUser();
-      user = data.user ? { id: data.user.id, email: data.user.email ?? null } : null;
-    } catch {
-      user = null;
-    }
-
     let redactionFailed = false;
     const onRedactionError = () => {
       redactionFailed = true;
@@ -203,14 +231,17 @@ export async function POST(request: NextRequest) {
       context: redact(batch.context),
       ended: batch.ended,
       graph,
-      userId: user?.id ?? null,
+      userId: user.id,
       now: Date.now(),
+      serverRelease: process.env.NEXT_PUBLIC_SENTRY_RELEASE || null,
     });
     if (redactionFailed) Sentry.captureMessage('Clubhouse signal route: redaction fell back to a placeholder', { level: 'warning', tags: { component: 'ch-signal-route' } });
 
     // The ingest function and admin_events don't share a transaction: counts are best-effort telemetry, a failure row
     // is the one store incidents read, and neither waits on the other.
     const db = createAdminClient() as unknown as SupabaseClient;
+    // Failure rows first: they are the incident record, so a counts call the database rejects can't take them with it.
+    const admin = await insertAdminRows(db, plan.adminRows, user);
     let held = false;
     for (const session of plan.sessions) {
       const { error } = await db.rpc('clubhouse_ingest_signals', { p_batch: session });
@@ -219,11 +250,10 @@ export async function POST(request: NextRequest) {
         held = true;
         break;
       }
-      throw error;
+      Sentry.captureException(error, { tags: { component: 'ch-signal-route', step: 'ingest' } });
     }
 
-    const admin = await insertAdminRows(db, plan.adminRows, user);
-    const stamped = held || !admin.columns ? 0 : await stampReported(db, plan.stamps);
+    const stamped = held || !admin.columns ? 0 : await stampReported(db, user.id, plan.stamps);
 
     return NextResponse.json(
       {

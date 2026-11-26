@@ -155,7 +155,16 @@ export interface IngestInput {
   userId: string | null;
   /** The server's clock, for envelopes whose client clock is far off. */
   now: number;
+  /**
+   * The release this deploy serves (NEXT_PUBLIC_SENTRY_RELEASE). A client's release that differs is stored as 'other',
+   * so a made-up release can't mint hourly and drift rows (security review of #2611, M3). Unset: kept as sent.
+   */
+  serverRelease?: string | null;
 }
+
+/** Drift rows one session's batch may add; the rest are still in the session's events. */
+export const MAX_DRIFT_ROWS_PER_BATCH = 5;
+const CONTROL_ID = /^CTL-P\d{3}-\d{3,}$/;
 
 function clampAt(at: number, now: number): number {
   return at < now - CLOCK_PAST_MS || at > now + CLOCK_FUTURE_MS ? now : at;
@@ -197,10 +206,11 @@ function titleFor(s: ChSignal, r: ResolvedSignal, graph: BridgeGraph, code: stri
 function addHourly(rows: Map<string, HourlyRow>, s: ChSignal, r: ResolvedSignal, at: number, graph: BridgeGraph, userId: string | null): void {
   const row: Omit<HourlyRow, 'count' | 'user_ids' | 'buckets' | 'first_at' | 'last_at'> = {
     hour: hourOf(at),
-    code: codeFor(s, r, graph),
+    code: r.bridgeId === null && s.code !== undefined ? 'unknown' : codeFor(s, r, graph),
     kind: s.kind,
     outcome: s.outcome ?? '',
-    act: s.act ?? s.control ?? '',
+    // Only keys the graph knows go into the hourly key: an unknown act, control or code is one bucket, not a new row each.
+    act: r.actionId && s.act ? s.act : s.control && CONTROL_ID.test(s.control) ? s.control : '',
     page_id: s.page,
     role: s.role,
     platform: s.platform,
@@ -266,14 +276,18 @@ function silentInBatch(session: ChSignal[], ended: boolean): Set<ChSignal> {
 
 export function buildIngest(input: IngestInput): IngestPlan {
   const { graph, userId, now } = input;
+  const release = (sent: string) => (input.serverRelease && sent !== input.serverRelease ? 'other' : sent);
+  const normalize = (list: ChSignal[]) => list.map((x) => (x.release === release(x.release) ? x : { ...x, release: release(x.release) }));
+  const signals = normalize(input.signals);
+  const context = normalize(input.context);
   const actions = actionIndex(graph);
   const sessions: SessionPlan[] = [];
   const adminRows: AdminFailure[] = [];
   const stamps: AdminStamp[] = [];
   let adminCapped = 0;
 
-  const contextBySession = groupBySession(input.context);
-  for (const [sessionId, batch] of groupBySession(input.signals)) {
+  const contextBySession = groupBySession(context);
+  for (const [sessionId, batch] of groupBySession(signals)) {
     const ordered = [...batch].sort((a, b) => a.seq - b.seq);
     const silent = silentInBatch(ordered, input.ended);
     const hourly = new Map<string, HourlyRow>();
@@ -347,7 +361,7 @@ export function buildIngest(input: IngestInput): IngestPlan {
         replay_id: [...ordered].reverse().find((s) => s.replayId)?.replayId ?? null,
       },
       events: [...events.values()].sort((a, b) => a.seq - b.seq),
-      drift: countDrift(driftItems).map((d) => ({
+      drift: countDrift(driftItems).slice(0, MAX_DRIFT_ROWS_PER_BATCH).map((d) => ({
         kind: d.kind,
         code: d.code,
         release: d.release,

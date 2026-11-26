@@ -156,7 +156,7 @@ export function ClubhouseFrame({
   useEffect(() => chTagSession(), []);
   // The Bridge's signals (plan §4.2, E6-E8): views, the team switch, vitals, numbered taps and rage clicks. Off unless
   // the `clubhouse_signals` switch is on.
-  useChSignals({ enabled: shell.signals === true, role, teamId: userData.teamId ?? null, pathname, search });
+  useChSignals({ enabled: shell.signals === true, role, teamId: userData.teamId ?? null, userId: userData.userId ?? null, pathname, search });
   // Arriving from the welcome or onboarding: the curtain holding the fold's last frame lifts now the frame is here.
   useEffect(() => liftHandoffCurtain(), []);
   useReloadFromBackForwardCache();

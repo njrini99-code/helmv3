@@ -70,13 +70,13 @@ export type ChSignalInput = {
 /** What chReport carries as `chSignal`, so the route can find the row it wrote and stamp it. */
 export type ChSignalRef = { sessionId: string; seq: number; code?: string; page: string; act?: string };
 
-type Config = { enabled: boolean; role: SignalRole; teamId: string | null; page: string };
+type Config = { enabled: boolean; role: SignalRole; teamId: string | null; page: string; userId: string | null };
 
 type Pending = { input: ChSignalInput; seq: number; at: number; trail: string[] | undefined; page: string | undefined };
 
 type State = {
   config: Config | null;
-  session: { id: string; seq: number } | null;
+  session: { id: string; seq: number; user?: string | null } | null;
   pending: Pending[];
   queue: ChSignal[];
   ring: ChSignal[];
@@ -108,9 +108,12 @@ function session(): { id: string; seq: number } {
   } catch {
     stored = null;
   }
-  const id = typeof stored?.id === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(stored.id) ? stored.id : randomHex32();
-  const seq = typeof stored?.seq === 'number' && Number.isInteger(stored.seq) && stored.seq >= 0 ? stored.seq : 0;
-  state.session = { id, seq };
+  const user = state.config?.userId ?? null;
+  // A session belongs to one signed-in person: a stored session of someone else (a shared iPad) starts afresh.
+  const sameUser = (stored as { user?: unknown } | null)?.user === user;
+  const id = sameUser && typeof stored?.id === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(stored.id) ? stored.id : randomHex32();
+  const seq = sameUser && typeof stored?.seq === 'number' && Number.isInteger(stored.seq) && stored.seq >= 0 ? stored.seq : 0;
+  state.session = { id, seq, user };
   return state.session;
 }
 
@@ -118,7 +121,7 @@ function session(): { id: string; seq: number } {
 function persist(): void {
   if (!state.config?.enabled || !state.session) return;
   try {
-    sessionStorage.setItem(STORE_KEY, JSON.stringify({ id: state.session.id, seq: state.session.seq }));
+    sessionStorage.setItem(STORE_KEY, JSON.stringify({ id: state.session.id, seq: state.session.seq, user: state.session.user ?? null }));
   } catch {
     // Private mode or a full store: the numbering still holds for this page.
   }
@@ -312,10 +315,17 @@ function listen(): void {
  * The shell's word on whether signals go out, and as whom. Called on every page, role or team change; the first call
  * with `enabled` sends what waited for it, and `enabled: false` drops everything queued.
  */
-export function configureSignals(next: { enabled: boolean; role: string; teamId?: string | null; page: string }): void {
+export function configureSignals(next: { enabled: boolean; role: string; teamId?: string | null; page: string; userId?: string | null }): void {
   try {
     const role: SignalRole = next.role === 'coach' || next.role === 'player' ? next.role : 'signed-out';
-    state.config = { enabled: next.enabled, role, teamId: next.teamId ?? null, page: next.page };
+    const userId = next.userId ?? null;
+    // Someone else signed in on this tab: their signals start a session of their own (security review of #2611, M4).
+    // The first configure adopts the session the page started before the shell knew who it was.
+    if (state.config && state.session && (state.config.userId ?? null) !== userId) {
+      if (state.queue.length) flushSignals();
+      state.session = null;
+    } else if (state.session && !state.config) state.session.user = userId;
+    state.config = { enabled: next.enabled, role, teamId: next.teamId ?? null, page: next.page, userId };
     if (!next.enabled) {
       state.pending = [];
       state.queue = [];
@@ -343,6 +353,8 @@ export function configureSignals(next: { enabled: boolean; role: string; teamId?
 export function chSignal(input: ChSignalInput): ChSignalRef | null {
   try {
     if (state.config && !state.config.enabled) return null;
+    // Before the shell says signals are on, a signal waits in memory but has no place yet to report: nothing reaches
+    // chReport, the error logs or Sentry while the switch is off (security review of #2611, L1).
     if (typeof window === 'undefined') return null;
     const failure = isFailure(input.kind, input.outcome);
     const trail = failure && state.trail.length ? state.trail.slice(-TRAIL_MAX) : undefined;
@@ -358,6 +370,7 @@ export function chSignal(input: ChSignalInput): ChSignalRef | null {
       if (!env) return null;
       enqueue(env);
     }
+    if (!state.config?.enabled) return null;
     const ref: ChSignalRef = { sessionId: id, seq, page };
     if (input.code) ref.code = input.code;
     if (input.act) ref.act = input.act;

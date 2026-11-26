@@ -30,17 +30,17 @@ function reportVital(metric: { name: string; value: number }) {
  * - E8: three clicks inside 600 ms on the same thing that isn't a working control (a disabled button, a label that looks
  *   like one) is a rage click, CH-1951. A text selection (a triple-click to select a paragraph) is not.
  */
-export function useChSignals({ enabled, role, teamId, pathname, search }: { enabled: boolean; role: string; teamId: string | null; pathname: string; search: string }): void {
+export function useChSignals({ enabled, role, teamId, userId = null, pathname, search }: { enabled: boolean; role: string; teamId: string | null; userId?: string | null; pathname: string; search: string }): void {
   const page = pageForPath(pathname, search, role);
   const lastTeam = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    configureSignals({ enabled, role, teamId, page });
+    configureSignals({ enabled, role, teamId, page, userId });
     if (!enabled) return;
     const switched = lastTeam.current !== undefined && lastTeam.current !== teamId;
     lastTeam.current = teamId;
     chSignal(switched ? { kind: 'view', code: TEAM_SWITCH } : { kind: 'view' });
-  }, [enabled, role, teamId, page, pathname]);
+  }, [enabled, role, teamId, userId, page, pathname]);
 
   useReportWebVitals(reportVital);
 
