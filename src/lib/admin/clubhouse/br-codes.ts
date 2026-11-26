@@ -222,6 +222,8 @@ export const BR = {
     fixPack: 'BR-1908',
     replay: 'BR-1909',
     copy: 'BR-1910',
+    /** Feed / How it counts / Speed, at the top of all three Reliability screens. */
+    spaceTab: 'BR-1911',
     ...states('19'),
   },
   /** B20 Counting rules (/admin/spaces/reliability/rules; plan 2026-11-26-bridge-spaces-build.md). */
@@ -237,6 +239,8 @@ export const BR = {
     actionRow: 'BR-2104',
     dbRow: 'BR-2105',
     copy: 'BR-2106',
+    /** 24 hours, 7 days or 30 days. */
+    window: 'BR-2107',
     ...states('21'),
   },
   /** B22 Product (/admin/spaces/product; plan 2026-11-26-bridge-spaces-build.md). */

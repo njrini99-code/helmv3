@@ -1521,6 +1521,13 @@
       "does": "Copies the feed as Markdown"
     },
     {
+      "code": "BR-1911",
+      "screen": "B19",
+      "key": "feed.spaceTab",
+      "label": "Space tab",
+      "does": "Switches between the error feed, How it counts (B20) and Speed (B21)"
+    },
+    {
       "code": "BR-1990",
       "screen": "B19",
       "key": "feed.loading",
@@ -1624,6 +1631,13 @@
       "key": "speed.copy",
       "label": "Copy report",
       "does": "Copies the speed table as Markdown"
+    },
+    {
+      "code": "BR-2107",
+      "screen": "B21",
+      "key": "speed.window",
+      "label": "Window switch",
+      "does": "Reads the last 24 hours, 7 days or 30 days"
     },
     {
       "code": "BR-2190",
