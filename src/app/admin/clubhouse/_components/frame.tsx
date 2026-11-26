@@ -104,14 +104,15 @@ export function TruthLine({
   const ref = liveRef();
   return (
     <p className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 font-fw-mono text-caption tabular-nums text-text-tertiary">
-      <span>
+      {/* Builder detail: on a phone it only pushes the page down, so it shows from sm up (and stays in Copy report). */}
+      <span className="hidden sm:inline">
         read <LocalTime iso={new Date().toISOString()} />
       </span>
-      <span aria-hidden>·</span>
-      <span title="The contract's content hash (bridge-graph.json)">contract {graph.contentHash}</span>
-      <span aria-hidden>·</span>
-      <span>release {ref === 'main' ? 'unstamped' : ref.slice(0, 7)}</span>
-      <span aria-hidden>·</span>
+      <span aria-hidden className="hidden sm:inline">·</span>
+      <span className="hidden sm:inline" title="The contract's content hash (bridge-graph.json)">contract {graph.contentHash}</span>
+      <span aria-hidden className="hidden sm:inline">·</span>
+      <span className="hidden sm:inline">release {ref === 'main' ? 'unstamped' : ref.slice(0, 7)}</span>
+      <span aria-hidden className="hidden sm:inline">·</span>
       {/* The pipe opens B11's pipe panel (BR-0106 on Pulse): ingest health lives there. */}
       {live ? (
         <Link
@@ -130,12 +131,14 @@ export function TruthLine({
         <Link href={clubhouseHref.pipe()} prefetch={false} className={cn(pipeLink, 'text-text-secondary')} title="Opens the pipe panel">
           <span data-br={noSignalCode} className="inline-flex items-center gap-1">
             <RadioTower size={12} aria-hidden />
-            pipe: no signal yet
+            {/* This screen does not read the pipe, so it cannot say whether signals flow: it says what it shows. */}
+            live counts: not on this screen
           </span>
         </Link>
       )}
-      <span aria-hidden>·</span>
-      <span className="min-w-0 break-words font-fw-sans">
+      <span aria-hidden className="hidden sm:inline">·</span>
+      {/* The scope bar right below says the same thing on a phone. */}
+      <span className="hidden min-w-0 break-words font-fw-sans sm:inline">
         {describeScope(scope, graph)}
         {live ? ` · ${describeLive(live.scope)}` : null}
       </span>
@@ -185,11 +188,17 @@ export function NoSignal({
   code,
   what,
   className,
+  notOnThisScreen = false,
 }: {
   code: string;
   /** What would be here: "Taps, success rate and frustration". */
   what: string;
   className?: string;
+  /**
+   * The screen does not read the pipe at all (Controls, Actions, a page's dossier). Then "no signal yet" would claim
+   * something about the pipe it never checked; it says what it shows instead.
+   */
+  notOnThisScreen?: boolean;
 }) {
   return (
     <div
@@ -202,8 +211,21 @@ export function NoSignal({
     >
       <RadioTower size={16} aria-hidden className="mt-0.5 shrink-0 text-text-tertiary" />
       <p className="min-w-0 text-body-sm text-text-secondary">
-        <span className="font-medium text-text-primary">No signal yet.</span> {what} will show here once Clubhouse
-        signals reach the Bridge. Until then nothing can be counted, so nothing is claimed.
+        {notOnThisScreen ? (
+          <>
+            <span className="font-medium text-text-primary">Not counted on this screen yet.</span> {what}: this screen does
+            not read the signal pipe, so nothing is claimed. Live errors and timings are on{' '}
+            <Link href="/admin/spaces/reliability" className="font-medium text-accent-ink underline-offset-2 hover:underline">
+              Reliability
+            </Link>
+            .
+          </>
+        ) : (
+          <>
+            <span className="font-medium text-text-primary">No signal yet.</span> {what} will show here once Clubhouse
+            signals reach the Bridge. Until then nothing can be counted, so nothing is claimed.
+          </>
+        )}
       </p>
     </div>
   );

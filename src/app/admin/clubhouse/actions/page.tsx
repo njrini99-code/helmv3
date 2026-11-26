@@ -90,13 +90,13 @@ export default async function ClubhouseActionsPage({
           {drift > 0 ? ` · ${drift} with an outcome off contract` : ''}
         </p>
       </div>
-      <NoSignal code={BR.actions.noSignal} what="Tries, success, failure, offline and stopped-waiting rates, retries rescued, and p50 and p95" />
+      <NoSignal notOnThisScreen code={BR.actions.noSignal} what="Tries, success, failure, offline and stopped-waiting rates, retries rescued, and p50 and p95" />
       {rows.length === 0 ? (
         <div data-br={BR.actions.empty}>
           <EmptyState variant="search" title="No action matches this scope" description="The action map lists none for this page or role." />
         </div>
       ) : (
-        <ActionList rows={rows} graph={graph} scope={scope} noSignalCode={BR.actions.noSignal} />
+        <ActionList rows={rows} graph={graph} scope={scope} />
       )}
     </ClubhouseFrame>
   );

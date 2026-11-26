@@ -157,7 +157,7 @@ export function withLive(href: string, scope: ClubhouseScope, live: LiveScope, e
 }
 
 export const liveHref = {
-  pulse: () => '/admin',
+  pulse: () => '/admin/pulse',
   sessions: () => '/admin/clubhouse/sessions',
   session: (id: string) => `/admin/clubhouse/sessions/${encodeURIComponent(id)}`,
   person: (id: string) => `/admin/clubhouse/people/${encodeURIComponent(id)}`,

@@ -120,7 +120,8 @@ const sev = (a: { severity: AlertSeverity } | null): AlertSeverity => {
 };
 
 const L = RULE_LINES;
-const PULSE = '/admin';
+// Pulse moved from /admin when Today became the front door (2026-11-26).
+const PULSE = '/admin/pulse';
 export const SPEED_HREF = '/admin/spaces/reliability/speed';
 
 /** R-01 to R-12 in words. Severities come from firing each rule. */

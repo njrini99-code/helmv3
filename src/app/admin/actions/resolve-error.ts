@@ -279,6 +279,7 @@ export async function resolveErrorFingerprint(
   }
 
   revalidatePath('/admin');
+  revalidatePath('/admin/pulse');
   revalidatePath('/admin/errors');
   revalidatePath(`/admin/errors/${trimmed}`);
   // The nav badge is `unstable_cache`d for 60s so the root layout does not pay
@@ -333,6 +334,7 @@ export async function unresolveErrorFingerprint(
   }
 
   revalidatePath('/admin');
+  revalidatePath('/admin/pulse');
   revalidatePath('/admin/errors');
   revalidatePath(`/admin/errors/${trimmed}`);
   updateTag(BRIDGE_INCIDENT_CACHE_TAG);

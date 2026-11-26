@@ -21,7 +21,7 @@ import { NewIncidents, PulseBody } from './PulseBody';
  */
 export async function ClubhousePulse({ searchParams }: { searchParams?: SearchParams }) {
   const read = readClubhouse(searchParams);
-  if (!read) return <GraphUnavailable code={BR.pulse.failed} title="Pulse" retryHref="/admin" />;
+  if (!read) return <GraphUnavailable code={BR.pulse.failed} title="Pulse" retryHref="/admin/pulse" />;
   const { graph, scope, pages } = read;
   const live = parseLiveScope(searchParams);
   const now = Date.now();

@@ -98,13 +98,13 @@ export default async function ClubhouseControlsPage({
               { key: 'frustrated', label: 'Frustrated', pending: 'Needs rage and dead clicks, which arrive with signals' },
             ]}
           />
-          <NoSignal code={BR.controls.noSignal} what="Taps, success rate and frustration (rage and dead clicks)" />
+          <NoSignal notOnThisScreen code={BR.controls.noSignal} what="Taps, success rate and frustration (rage and dead clicks)" />
           {rows.length === 0 ? (
             <div data-br={BR.controls.empty}>
               <EmptyState variant="search" title="No control matches" description="Nothing numbered matches this scope and filter." />
             </div>
           ) : (
-            <ControlList rows={rows} scope={scope} noSignalCode={BR.controls.noSignal} />
+            <ControlList rows={rows} scope={scope} pageNames={Object.fromEntries(Object.entries(graph.pages).map(([id, p]) => [id, p.name]))} />
           )}
         </>
       )}

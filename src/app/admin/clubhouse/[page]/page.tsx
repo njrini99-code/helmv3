@@ -159,7 +159,7 @@ export default async function ClubhousePageDossier({
             />
           </div>
         ) : (
-          <ControlList rows={controls} scope={scope} noSignalCode={BR.pages.noSignal} />
+          <ControlList rows={controls} scope={scope} />
         )
       ) : null}
       {view === 'actions' ? (
@@ -169,8 +169,8 @@ export default async function ClubhousePageDossier({
           </div>
         ) : (
           <>
-            <NoSignal code={BR.pages.noSignal} what="Each action's funnel (tries, success, failure, offline)" />
-            <ActionList rows={actions} graph={graph} scope={scope} noSignalCode={BR.pages.noSignal} />
+            <NoSignal notOnThisScreen code={BR.pages.noSignal} what="Each action's funnel (tries, success, failure, offline)" />
+            <ActionList rows={actions} graph={graph} scope={scope} />
           </>
         )
       ) : null}
@@ -178,7 +178,7 @@ export default async function ClubhousePageDossier({
       {view === 'phone' ? <PhoneView graph={graph} id={id} scope={scope} /> : null}
       {view === 'history' ? (
         <>
-          <NoSignal code={BR.pages.noSignal} what="Failures per release, marked where a release touched this page," />
+          <NoSignal notOnThisScreen code={BR.pages.noSignal} what="Failures per release, marked where a release touched this page," />
           {page.docs.CHANGELOG ? (
             <DocLink path={page.docs.CHANGELOG} label="Change log (newest first)" />
           ) : null}
@@ -240,7 +240,7 @@ function OverviewView({
         )}
       </Section>
       <Section title="Live">
-        <NoSignal code={BR.pages.noSignal} what="The failure rate by role and platform, the top codes and this page's incidents" />
+        <NoSignal notOnThisScreen code={BR.pages.noSignal} what="The failure rate by role and platform, the top codes and this page's incidents" />
       </Section>
       <Section
         title="Open audit findings"
@@ -407,7 +407,7 @@ function PhoneView({ graph, id, scope }: { graph: BridgeGraph; id: PageId; scope
           </ul>
         )}
       </Section>
-      <NoSignal code={BR.pages.noSignal} what="The iOS app and iPhone Safari, side by side," />
+      <NoSignal notOnThisScreen code={BR.pages.noSignal} what="The iOS app and iPhone Safari, side by side," />
     </div>
   );
 }

@@ -3,87 +3,85 @@ import { BR } from '@/lib/admin/clubhouse/br-codes';
 import type { BridgeGraph } from '@/lib/admin/clubhouse/graph';
 import {
   actionOutcomes,
+  audienceWords,
   clubhouseHref,
-  controlLabel,
+  controlSummaryForPeople,
   withScope,
   type ActionRow,
   type ClubhouseScope,
   type ControlRow,
 } from '@/lib/admin/clubhouse/screens';
 import { ActionChip, IdChip, PageChip } from './chips';
-import { NoSignalCell } from './frame';
 
 /**
- * B03 rows (plan §8): the control ID, the label as drawn, what it does, page and role, its board verdict and the
- * actions it runs. Taps, success and frustration are signal columns: a dash that says "No signal yet".
+ * B03 rows (plan §8): the label as a person reads it (a run-time template in words), the control ID, what it does,
+ * who sees it, its board verdict, its page and the actions it runs. Taps and success are not shown per row until the
+ * pipe counts them: the page says so once, instead of two dashes on every row.
  */
 export function ControlList({
   rows,
   scope,
-  noSignalCode,
+  pageNames,
 }: {
   rows: readonly ControlRow[];
   scope: ClubhouseScope;
-  noSignalCode: string;
+  /** Page id → its name, so a chip reads "Messages", not "P007". P000 is the shared pieces every page uses. */
+  pageNames?: Readonly<Record<string, string>>;
 }) {
   return (
     <ul className="divide-y divide-border-subtle rounded-fw-md border border-border-subtle bg-surface">
-      {rows.map((c) => (
-        <li key={c.id} className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-1.5 px-3 py-2.5">
+      {rows.map((c) => {
+        const summary = controlSummaryForPeople(c);
+        const audience = audienceWords(c.role, c.viewport);
+        const pageName = c.page === 'P000' ? 'Shared' : pageNames?.[c.page];
+        return (
+        <li key={c.id} className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-1.5 px-3 py-3">
           <div className="min-w-0 flex-1 basis-64">
             <Link
               href={withScope(clubhouseHref.control(c.id), scope)}
               data-br={BR.controls.row}
-              className="inline-flex min-h-8 min-w-0 flex-wrap items-baseline gap-x-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
+              className="flex min-h-11 min-w-0 flex-col justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
             >
-              <span className="font-fw-mono text-caption font-semibold text-text-primary">{c.id}</span>
-              <span className="min-w-0 break-words text-body-sm font-medium text-text-primary hover:underline">
-                {controlLabel(c)}
+              <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                <span className="min-w-0 break-words text-body font-semibold text-text-primary hover:underline">{summary.headline}</span>
+                {summary.runTime ? <span className="text-caption text-text-tertiary">label set at run time</span> : null}
               </span>
+              <span className="font-fw-mono text-caption text-text-tertiary">{c.id}</span>
             </Link>
-            {c.description ? <p className="text-caption text-text-secondary">{c.description}</p> : null}
-            <p className="mt-0.5 text-caption text-text-tertiary">
-              {[c.surface, c.role, c.viewport].filter(Boolean).join(' · ') || 'role and viewport not recorded'}
-              {c.verdict ? (
-                <span className={c.verdict.toUpperCase() === 'GAP' ? 'ml-1.5 font-semibold text-fw-warning-text' : 'ml-1.5'}>
-                  · board: {c.verdict}
-                </span>
-              ) : null}
-            </p>
+            {summary.detail ? <p className="mt-1 break-words text-body-sm text-text-secondary">{summary.detail}</p> : null}
+            {audience || c.verdict ? (
+              <p className="mt-1 text-caption text-text-tertiary">
+                {audience ?? ''}
+                {c.verdict ? (
+                  <span className={c.verdict.toUpperCase() === 'GAP' ? 'font-semibold text-fw-warning-text' : ''}>
+                    {audience ? ' · ' : ''}board: {c.verdict}
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <PageChip id={c.page} href={withScope(clubhouseHref.page(c.page), scope)} br={BR.pages.row} />
+            <PageChip id={c.page} name={pageName} href={withScope(clubhouseHref.page(c.page), scope)} br={BR.pages.row} />
             {c.actions.map((a) => (
               <ActionChip key={a} id={a} href={withScope(clubhouseHref.action(a), scope)} br={BR.controls.actionChip} />
             ))}
           </div>
-          <dl className="flex shrink-0 gap-3 text-caption text-text-tertiary">
-            <div className="flex gap-1">
-              <dt>taps</dt>
-              <dd><NoSignalCell code={noSignalCode} /></dd>
-            </div>
-            <div className="flex gap-1">
-              <dt>success</dt>
-              <dd><NoSignalCell code={noSignalCode} /></dd>
-            </div>
-          </dl>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }
 
-/** B04 rows (plan §8): page, label, the server action, and its outcomes; rates and timing are signal columns. */
+/** B04 rows (plan §8): page, label, the server action, and its outcomes. Rates and timing wait for the pipe, said once on the page. */
 export function ActionList({
   rows,
   graph,
   scope,
-  noSignalCode,
 }: {
   rows: readonly ActionRow[];
   graph: BridgeGraph;
   scope: ClubhouseScope;
-  noSignalCode: string;
 }) {
   return (
     <ul className="divide-y divide-border-subtle rounded-fw-md border border-border-subtle bg-surface">
@@ -93,25 +91,11 @@ export function ActionList({
             <Link
               href={withScope(clubhouseHref.action(a.id), scope)}
               data-br={BR.actions.row}
-              className="inline-flex min-h-8 min-w-0 flex-1 basis-64 flex-col rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
+              className="inline-flex min-h-11 min-w-0 flex-1 basis-64 flex-col justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
             >
-              <span className="break-words text-body-sm font-medium text-text-primary hover:underline">{a.label}</span>
+              <span className="break-words text-body font-semibold text-text-primary hover:underline">{a.label}</span>
               <span className="break-words font-fw-mono text-caption text-text-tertiary [overflow-wrap:anywhere]">{a.id}</span>
             </Link>
-            <dl className="flex shrink-0 flex-wrap gap-3 text-caption text-text-tertiary">
-              <div className="flex gap-1">
-                <dt>tries</dt>
-                <dd><NoSignalCell code={noSignalCode} /></dd>
-              </div>
-              <div className="flex gap-1">
-                <dt>success</dt>
-                <dd><NoSignalCell code={noSignalCode} /></dd>
-              </div>
-              <div className="flex gap-1">
-                <dt>p95</dt>
-                <dd><NoSignalCell code={noSignalCode} /></dd>
-              </div>
-            </dl>
           </div>
           <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
             <PageChip id={a.page} href={withScope(clubhouseHref.page(a.page), scope)} br={BR.pages.row} />

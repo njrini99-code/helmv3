@@ -29,6 +29,7 @@ async function resolveTriageEventsImpl(
   if (error) throw new Error(describeResolveFailure(error.message));
 
   revalidatePath('/admin');
+  revalidatePath('/admin/pulse');
   revalidatePath('/admin/errors');
   // The nav badge is `unstable_cache`d for 60s so the root layout does not pay
   // for the incident feed on every navigation. revalidatePath does NOT reach
