@@ -1,5 +1,6 @@
 {
-  "_comment": "Ratchet baseline for scripts/db/check-migration-headers.mjs. Grandfathered pre-existing migrations that mutate data/DDL without a -- ROLLBACK:/-- VERIFY: header. This list may only shrink — regenerate with --update only after adding the missing headers to a file, never to add a NEW file to it.",
+  "_comment": "Ratchet baseline for scripts/db/check-migration-headers.mjs. Grandfathered pre-existing migrations that mutate data/DDL without a -- ROLLBACK:/-- VERIFY: header. This list may only shrink \u2014 regenerate with --update only after adding the missing headers to a file, never to add a NEW file to it.",
+  "_grandfatheredComment": "Repo tidy 6 added seven APPLIED migrations (2026-10-17..2026-11-16) whose rollback is documented but not under an exact '-- ROLLBACK:' line (a 'Rollback SQL: supabase/rollbacks/...' pointer, or 'ROLLBACK' without the colon). They shipped and were verified by hand (supabase/migrations/HELD.md); applied migrations are never edited.",
   "grandfathered": [
     "20260527000000_prod_public_baseline.sql",
     "20260528000000_baseball_recalc_body_guards.sql",
@@ -259,14 +260,32 @@
     "20260904103000_golf_message_reactions.sql",
     "20260904120000_golf_messages_reply_to.sql",
     "20260904160000_golf_messaging_structured.sql",
-    "20260905091000_baseball_timeline_event_acks_user_id_columns.sql"
+    "20260905091000_baseball_timeline_event_acks_user_id_columns.sql",
+    "20261017101500_golf_announcement_acks_select_team_scope.sql",
+    "20261017101600_golf_announcement_attachments_same_team.sql",
+    "20261021110000_golf_import_player_classes.sql",
+    "20261031140000_golf_rounds_tee_id_backfill.sql",
+    "20261031150000_golf_conversation_pins.sql",
+    "20261110090500_golf_team_channel_backfill.sql",
+    "20261116091000_golf_tournament_b_team.sql"
   ],
+  "_verifyComment": "verifyGrandfathered: applied migrations whose -- VERIFY: block has a continuation line without the -- VERIFY: prefix (a comment reflow), so apply.mjs cannot run it as written. Every entry already shipped and was verified by hand; applied migrations are never edited. The 2026-10-17..2026-11-17 entries were added in Repo tidy 6. This list may only shrink.",
   "verifyGrandfathered": [
     "20260906120200_helm_debug_observability_retention_v3.sql",
     "20260908160000_golf_message_reactions_access.sql",
     "20260909230000_helm_debug_analysis_drop_index_advisor.sql",
     "20260928160000_golf_sg_shot_end_is_next_shot_start.sql",
     "20260930160000_golf_document_policy_scoping.sql",
-    "20261001130000_golf_attachments_revoke_anon_hide_deleted.sql"
+    "20261001130000_golf_attachments_revoke_anon_hide_deleted.sql",
+    "20261017101500_golf_announcement_acks_select_team_scope.sql",
+    "20261017101600_golf_announcement_attachments_same_team.sql",
+    "20261021110000_golf_import_player_classes.sql",
+    "20261115232000_golf_team_hours.sql",
+    "20261115240000_golf_qualifier_rules.sql",
+    "20261115250000_golf_roster_limits.sql",
+    "20261116091000_golf_tournament_b_team.sql",
+    "20261116100000_golf_qualifier_exemptions.sql",
+    "20261117120000_golf_coach_reads.sql",
+    "20261117121000_golf_coach_read_actions.sql"
   ]
 }

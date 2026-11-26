@@ -111,7 +111,9 @@ is the worst-case, business-ending failure. Patterns + required tests:
   in save/submit/sync SQL; importers update/merge, never duplicate, and
   preserve source/timestamp/confidence.
 - **Verify + rollback** — a data/DDL migration carries `-- ROLLBACK:` and
-  `-- VERIFY:` blocks (`npm run check:migration-headers`); `IF [NOT] EXISTS` guards; `DO $$…$$`
+  `-- VERIFY:` blocks (`npm run check:migration-headers`; every line of a
+  multi-line VERIFY query keeps the `-- VERIFY:` prefix, see
+  `docs/operations/APPLY_PATH.md`); `IF [NOT] EXISTS` guards; `DO $$…$$`
   around renames. A migration file being present does NOT mean it's
   applied in prod — verify against `information_schema`.
 
